@@ -582,7 +582,7 @@ Lowered again, 72 to 66, by milestone 139 round 10 (2026-10-08 UTC), the schedul
 token, counted from the merged tree: 1,029 blocks over 172,506 lines, density 59.7. 66
 keeps round 1's seven points.
 
-At most 23 `unsafe impl Send`/`Sync` claims <!--count-at-most:unsafe-thread-safety-claims-->,
+At most 24 `unsafe impl Send`/`Sync` claims <!--count-at-most:unsafe-thread-safety-claims-->,
 and this one has no headroom at all. Each is a hand-written assertion that the compiler is wrong
 about a type, which is the most consequential unsafe in the tree: a wrong one is a data race that
 no test reliably reproduces. The population moved twice in three weeks, so a zero-slack ceiling
@@ -603,15 +603,13 @@ endowment), and every access goes through the same immutable byte reads regardle
 process is doing the reading, so there is no non-atomic mutable aliasing for either trait to
 protect against. `ClockPage` needs the same two impls despite carrying a seqlock precisely because
 its *writer* uses atomics too; `ConfigPage` needs them for the simpler reason that it has no writer
-at all once it is mapped (see `environment_protocol`'s own docs on why it needs no seqlock), which makes the
-claim, if anything, easier to justify than its precedent's.
+at all once it is mapped (see `environment_protocol`'s own docs on why it needs no seqlock).
 
 Raised from 20 to 22 by milestone 161's x86_64 timebase-page work (2026-08-25):
 `crates/counter_frequency_protocol::TimebasePage`'s `unsafe impl Send`/`Sync`, the same pair `ConfigPage`
 already carries and for the identical argument. The page is computed once by the kernel at boot
 (`kernel::user::x86_timebase_page_phys`) and mapped read-only into every x86_64 process; it has no
-writer once mapped, the same shape that makes `ConfigPage`'s claim easy to justify, restated for a
-page carrying a calibrated clock rate instead of locale strings.
+writer once mapped.
 
 Raised from 22 to 23 by milestone 161's x86_64 SMP item (2026-08-25): `kernel::cpu::X86TrapPerCpu`'s
 `unsafe impl Sync`, a single claim over a struct of three plain `u64`s reached through `PerCpu`
@@ -621,8 +619,11 @@ own block. It carries no lock because it needs none: `trap.s`'s `isr_restore` an
 touch, and `IA32_GS_BASE` is an MSR no context switch saves or restores and no other core's write
 can name, so two cores can never reach the same instance. Same argument `PerCpu` itself already
 carries (`unsafe impl Sync for PerCpu`, cpu.rs's own comment: "no two cores ever reach the same
-block"), restated for the one architecture whose trap-entry assembly needs a second, smaller
-per-core scratch area beside it rather than folding into `PerCpu`'s existing fields directly.
+block").
+
+Raised from 23 to 24 by milestone 835 (a C library, stage 1: files, clock and memory), 2026-10-10
+(UTC): `OneThread`, the C library's descriptor table, sound because a stage-1 C process has one
+thread. Milestone 836 (a C library, stage 2: threads) takes it back out.
 
 Other than `Send`/`Sync`, at most 11 <!--count-at-most:unsafe-trait-claims--> `unsafe impl`s of
 an unsafe trait, at the tree's exact value for the reason the line above

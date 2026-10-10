@@ -1,0 +1,37 @@
+# Name: provisional, milestone 835's lane, 2026-10-10 (UTC). Named for the work it does, after
+# notes/c-library.md; §265 (a C library started from relibc, whose Rust platform layer holds the
+# capabilities) leaves the crate's name to calef, who has not ruled. The binary it builds,
+# `c_program`, is provisional on the same terms and is renamed to the C program's own name when
+# installed.
+[package]
+name = "c_library"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[lib]
+crate-type = ["rlib"]
+
+[workspace]
+
+[dependencies]
+# The `std::io::ErrorKind` to `errno` table, host-tested in the main workspace (milestone 835 (a C
+# library, stage 1: files, clock and memory)).
+c_library_errno = { path = "../crates/c_library_errno" }
+# Unix seconds to a civil date and back, for `gmtime` and `mktime`, in place of relibc's
+# `chrono` and `chrono-tz` (milestone 835).
+calendar = { path = "../crates/calendar" }
+# `math.h`: relibc's own Rust `math` module, which wraps this crate (rust-lang's port of musl's
+# libm, the code compiler-builtins also carries). A §46 (thin primitives or whole subsystems; we
+# write everything in between) ruling is asked on the pull request.
+libm = "0.2"
+
+[profile.release]
+overflow-checks = true
+opt-level = "s"
+debug = false
+strip = "debuginfo"
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

@@ -1,0 +1,12 @@
+# c-library: nife's C library, its errno mapping, and the relibc code it is seeded from.
+#
+# Milestone 835 (a C library, stage 1: files, clock and memory). `sdk`, as the `std` runtime is: a
+# C program links it on a developer's machine, and what ships is the program. The package's name,
+# kind, home and membership are provisional (calef ruled on #1896, 2026-10-10 UTC, that this lane's
+# names stay provisional); the format is helpers/packages.py's header.
+
+name = "c-library"
+kind = "sdk"
+home = { repo = "c-library", status = "provisional" }
+crates = ["c_library", "c_library_errno"]
+paths = ["vendor/relibc/"]

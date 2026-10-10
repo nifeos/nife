@@ -69,6 +69,7 @@ members = [
     "crates/ps",
     "crates/memory_regions",
     "crates/c_seam",
+    "crates/c_library_errno",
     "crates/supervision_protocol",
     "crates/system_initializer",
     "crates/swap_protocol",
