@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-10-08
+built: 2026-10-10
 milestone_dependencies: none
 decision_dependencies: 31, 265
 machine_requirements: none
@@ -64,11 +65,85 @@ ioping and SQLite's speedtest1 build from their unmodified upstream sources agai
 and run to completion on nife under QEMU on all three architectures, and a host test proves the
 platform layer's `errno` mapping. STREAM building and running counts too; its number waits on 534.
 
+## What is built (2026-10-10, lane `milestone/835-a-c-library-stage-one-files-clock-and-memory`)
+
+Two unmodified C programs run in the suite on aarch64, riscv64 and x86_64 under QEMU
+(`system_tests/src/user/c_program_tests.rs`, three tests), each skipping when its helper has not
+been run, as `rg`'s do:
+
+- SQLite 3.50.4's `speedtest1` (`helpers/build-speedtest1.sh`; 266,378 lines of C), with
+  `--testset main --size 1 --verify`, once in memory and once on a file in a directory granted
+  alone (`--vfs unix-none`). All 32 tests run, and on each architecture both runs print
+  `Verification Hash: 111130 1e792c9db61996c477b8ab5ce2d690052e8dae74824a430a`, the hash of every
+  value SQLite read back, which is what the same program prints on macOS.
+- ioping 1.3 (`helpers/build-ioping.sh`), five 4 KiB reads of a working file it makes with
+  `mkstemp` in its granted directory and removes. It reports four counted requests and 16 KiB read.
+
+The full suite passes on all three architectures with both programs present. The frame ledger
+holds: 22,838 frames kept on aarch64 and 22,782 on riscv64, against a budget of 23,764. Each test
+ends its caretaker and its clock service (`clock_service::start_in`, from milestone 801 (packages
+over the internet)). A host test proves the `errno` mapping
+(`crates/c_library_errno`, three tests), and `c_library` checks at compile time that its `errno.h`
+values equal the mapping's.
+
+The library is relibc's OS-neutral code seeded into `vendor/relibc/` (29,419 lines, every file
+stamped with its provenance) and nife's own platform layer in `c_library/` (1,613 lines), which
+implements relibc's `Pal` on nife's Rust `std`. [`c_library/README.md`](../../c_library/README.md)
+is the guide, with its `BUGS`; [`vendor/README.md`](../../vendor/README.md) says what was taken and
+left.
+
+ioping found what `speedtest1` could not. SQLite formats numbers with its own `printf`, so a C
+library whose `printf` lost every `double` argument still produced SQLite's hash. ioping prints
+through the library's `printf`, and every size and time it printed was 0: on nife's soft-float
+ABI a `double` vararg travels in a general register, and Rust's `va_arg::<f64>` on aarch64 and
+x86_64 reads the floating-point save area. The seed now reads the bits as a `u64`, and the ioping
+test asserts the figure that exposed it.
+
+## What this block decided
+
+Each was left to this block by §265 (a C library started from relibc, whose Rust platform layer
+holds the capabilities), and each is reversible:
+
+- Where the crate lives: nife's code in `c_library/`, the seed in `vendor/relibc/`, which every gate
+  already treats as somebody else's code. That also means about 580 seeded `unsafe fn`s carry no
+  `# Safety` section and no gate asks; `vendor/README.md` says so.
+- The headers: generated once by cbindgen 0.29.0, as relibc generates them, and committed;
+  `helpers/c-library-headers.sh` remakes them. No build runs cbindgen.
+- How clang finds them: `helpers/c-library-cflags.sh`, which also fixes each target's soft-float
+  ABI to match its Rust target (on x86_64 that needs SSE2 and the x87 off too, so clang has no
+  `long double` there).
+- The startup path: `std`'s `_start`, with the C `main` renamed in its object; no `crt0`.
+- The platform layer on `std` itself rather than on the protocol crates, so a C program and a Rust
+  program cannot disagree about a wire format.
+- The ABI values are Linux's generic ones (relibc's Linux `cfg` arms extended to nife).
+
+## Which fatal risk it serves
+
+Risk 1 (only software written for nife runs on nife): two foreign programs, neither Rust nor
+related to `ripgrep`, now run unmodified on all three architectures. One does a database's work,
+with results identical to macOS's. They run only where their helpers were run,
+never in CI, and under QEMU, not on silicon. The verdict is calef's (§216 (fatal-risk facts are
+correctable, and verdicts are the architect's)).
+
 ## BUGS
 
 - No signals. `sigaction` records a handler that never fires. Stage-1 consumers are checked for
   depending on one.
 - SQLite runs without file locking (`unix-none`), which is safe only with one process on the file.
+
+## Follow-on
+
+- **Milestone 831.** Milestone 831 (SQLite's speedtest1 on nife and Linux, a real database
+  workload): the same program against Linux on silicon, now that it runs here.
+- **Milestone 834.** Milestone 834 (ioping on nife and Linux, storage latency one request at a
+  time): the same program against Linux on xenon, now that it runs here.
+- **Milestone 836.** Milestone 836 (a C library, stage 2: threads): the descriptor, `errno` and
+  signal tables are single cells sound only for one thread, and stage 2 replaces them with locks.
+- **Milestone 868.** Milestone 868 (relibc's seed comes under the unsafe gates): the seed's
+  `unsafe fn`s gain `# Safety` sections and the census counts them, as calef ruled on #1896.
+- **Milestone 869.** Milestone 869 (SQLite and ioping run in CI, and the C headers cannot drift):
+  CI builds and runs both programs, and regenerates the headers and fails on a difference.
+- **Recorded.** The rest of this stage's limitations are in `c_library/README.md`.
 
 ## Index row
 
