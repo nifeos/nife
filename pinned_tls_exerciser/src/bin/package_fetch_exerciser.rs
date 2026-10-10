@@ -12,6 +12,7 @@
 //! | `fetched greeting-... from basalt.test's targets` | the repository's own copy is the fallback, admitted by the index's digest |
 //! | `refused uptime-...: NotCataloged` | a repository copy with one byte flipped: only the digest can tell |
 //! | `refused nosuch: not in the index` | nothing is fetched for a name the index does not list |
+//! | `passed over https://rebind.basalt.test...` then `fetched rebound-... from basalt.test's targets` | the twin listed under the rebinding name: what its refusal says is the record of the address-check attack (milestone 868 (a sixth outsider pass attacks the confinement claim)) |
 //!
 //! It installs nothing: installing from an index is milestone 809 (the package client becomes a
 //! program)'s `jig`. Under slirp every listed location is private, so taking bytes from one is
@@ -22,7 +23,7 @@
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
 use entropy_backend as _;
-use package_index::fixture::{ABSENT, BACKUP_HOST, GENUINE, INDEX_PORT, PRIMARY_HOST, TAMPERED};
+use package_index::fixture::{ABSENT, BACKUP_HOST, GENUINE, INDEX_PORT, PRIMARY_HOST, REBOUND, TAMPERED};
 use package_index::{
     Entry, Index, Location, Miss, PATH_MAX, PROVISIONAL_CHANNEL, Repository, STAND_IN_INDEX_FILE,
     Source, accept, public_address,
@@ -132,7 +133,7 @@ fn main() {
         from.host
     );
     let architecture = std::env::consts::ARCH;
-    for name in [GENUINE, TAMPERED, ABSENT] {
+    for name in [GENUINE, TAMPERED, ABSENT, REBOUND] {
         install_check(&index, from, name, architecture);
     }
     println!("package_fetch_exerciser done");

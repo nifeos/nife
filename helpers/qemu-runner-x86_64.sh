@@ -337,6 +337,13 @@ if [ -n "$NIFE_NET" ]; then
     NAME_SERVER_PEER="$(cd "$(dirname "$0")" && pwd)/name-server-peer"
     GUESTFWD="guestfwd=tcp:10.0.2.9:7777-cmd:/bin/cat,guestfwd=tcp:10.0.2.9:8080-cmd:$PACKAGE_PEER,guestfwd=tcp:10.0.2.9:8443-cmd:$TLS_PEER,guestfwd=tcp:10.0.2.9:53-cmd:$NAME_SERVER_PEER"
     TFTPDIR="$(dirname "$0")/../target/tftp"
+# **The boot's tag** (milestone 868 (a sixth outsider pass attacks the confinement claim)): a fresh
+# value per emulator start, exported so the per-connection guestfwd peers (which slirp spawns
+# through a shell, with no arguments and no stable parent to key on) can tell one boot from the
+# next. helpers/name-server-peer's rebinding answer is the user: a boot's first query for
+# rebind.basalt.test must say public where every later one says the private peer.
+export NIFE_BOOT_TAG="$$-$(date +%s)"
+
     mkdir -p "$TFTPDIR"
     printf 'nife-tftp!' > "$TFTPDIR/nife"
     NET="-netdev user,id=net0,$GUESTFWD,tftp=$TFTPDIR -device e1000e,netdev=net0,mac=52:54:00:e1:00:0e,romfile="

@@ -27,24 +27,56 @@ describes for the inbound gate's prober.
                        asked, which a resolver must not hand back
   loop.nife.test       an answer whose owner is a compression pointer to itself
   basalt.test          A 10.0.2.9: the stand-in for basalt.nifeos.org, the
-                       package index's host (milestone 801 (packages over the
-                       internet)); helpers/tls-peer answers there on 8443
+                        package index's host (milestone 801 (packages over the
+                        internet)); helpers/tls-peer answers there on 8443
   packages.basalt.test A 10.0.2.9: where the stand-in index lists the bytes as
-                       also living; a private address, so the client must refuse it
+                        also living; a private address, so the client must refuse it
+  rebind.basalt.test   A 192.0.2.1 on the FIRST query this QEMU makes for it, then
+                        10.0.2.9 on every later one: DNS rebinding, the shape
+                        milestone 868 (a sixth outsider pass attacks the confinement
+                        claim) boots against the client's check-then-connect gap.
+                        192.0.2.1 is RFC 5737 documentation space, public to
+                        package_index::public_address and unroutable, and the first
+                        answer is never connected to: only the second answer is.
   gone.basalt.test     falls to REFUSED below: the image's first index address,
-                       lost, so the client moves to its backup (basalt.test)
+                        lost, so the client moves to its backup (basalt.test)
   anything else        REFUSED
+
+The rebind counter is keyed to the boot, not to this process: slirp runs each
+connection's command through a shell, so this process's own parent is a
+short-lived `sh` that is usually gone before the query is even read, and no
+parent-chain walk survives that. The runner exports NIFE_BOOT_TAG (a fresh
+value per emulator start) and every guestfwd child inherits it, so one boot's
+queries share a state file and no boot sees another's. The files are a handful
+of bytes in the system temp directory per boot that used the rebind name and
+are never cleaned up.
 
 BUGS: one query per connection, and nothing past the first question is read,
 which is all the guest sends. Name: provisional 2026-10-04 (milestone 384's
 lane). "Name server" is RFC 1035's term for the thing; refused `dns-peer`
 under the acronym test, which `package-http-peer` predates.
 """
+import os
 import struct
 import sys
 
 A, CNAME, IN = 1, 5, 1
 PEER = bytes([10, 0, 2, 9])
+REBIND_PUBLIC = bytes([192, 0, 2, 1])
+REBIND = "rebind.basalt.test"
+
+
+def rebind_answer():
+    """The address for REBIND: the first query this boot asks says public,
+    every later one says the private peer, which is what a rebinding name
+    server does."""
+    tag = os.environ.get("NIFE_BOOT_TAG", "no-boot-tag")
+    state = os.path.join(os.environ.get("TMPDIR", "/tmp"), "nife-name-server-rebind-" + tag)
+    try:
+        os.close(os.open(state, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        return REBIND_PUBLIC
+    except FileExistsError:
+        return PEER
 
 
 def name(text):
@@ -71,6 +103,8 @@ def respond(query_id, question, asked):
     zone = at + 1 + len(asked.split(".")[0])
     if asked in ("basalt.test", "packages.basalt.test"):
         return answer(query_id, question, 0, [record(pointer(at), A, PEER)])
+    if asked == REBIND:
+        return answer(query_id, question, 0, [record(pointer(at), A, rebind_answer())])
     if asked == "packages.nife.test":
         return answer(query_id, question, 0, [record(pointer(at), A, PEER)])
     if asked == "mirror.nife.test":
