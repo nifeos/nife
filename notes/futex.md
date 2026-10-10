@@ -57,16 +57,16 @@ order, `max`, and removal.
   register, the way `CONFIGURE`'s thread pointer does, and be served by the timers milestone 106 (a
   wait that ends on either the interrupt or the deadline) built. Until then those `std` calls cannot
   be written, which the exit test does not need.
-- **The waker in the tests is the kernel**, not a second user thread, because two threads cannot
+- The waker in the tests is the kernel, not a second user thread, because two threads cannot
   share a space until the join is built. The syscall layer's checks are proved by a refused caller.
   The milestone's exit test is the end-to-end proof.
-- **The word is read through a page-table walk that does not hold the space's own lock.** If a
+- The word is read through a page-table walk that does not hold the space's own lock. If a
   concurrent revoke freed the frame between the walk and the load, the load reads one stale word of
   a frame being freed. Nothing read is returned, but whether the thread sleeps depends on it, which
   is a one-bit observation. Not argued either way yet; the fix is to walk under the lock the
   revocation path takes.
-- **A wake walks its whole bucket**, so its cost is the bucket's length, not `count`. Bounded by
+- A wake walks its whole bucket, so its cost is the bucket's length, not `count`. Bounded by
   `MAX_THREADS / 64` on average; measure before enlarging.
-- **Wakes place the woken thread on the waker's core**, as a notification's do. That is right for a
+- Wakes place the woken thread on the waker's core, as a notification's do. That is right for a
   lock handoff, where the waker is about to block, and wrong for a broadcast to many threads. Not
   measured.

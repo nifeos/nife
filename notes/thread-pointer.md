@@ -37,22 +37,22 @@ trap frame does (riscv64). A program that writes the register therefore works on
 and cannot be written on the third. That is the gap, and nothing in this tree writes the register:
 the `std` PAL sets it through the kernel on all three.
 
-**Why `x86_64` is the strict one, and stays so.** Turning `CR4.FSGSBASE` on would give ring 3
+Why `x86_64` is the strict one, and stays so. Turning `CR4.FSGSBASE` on would give ring 3
 `wrfsbase` and also `wrgsbase`, and a user-chosen `GS` base reaches the kernel's entry path, whose
 NMI exit window has no paranoid path yet (`kernel/src/arch/x86_64/trap.s`). calef ruled on parity
 over that convenience: *"I am hung up on parity."*
 
-**Why riscv64 is not made strict.** It cannot be: `tp` is an ordinary register.
+Why riscv64 is not made strict. It cannot be: `tp` is an ordinary register.
 
-**Why aarch64 is not, though it could be.** `TPIDRRO_EL0` is EL0-readable and EL1-writable, and
-LLVM will use it for TLS under the `tpidrro-el0` target feature (`rustc --print target-features`,
-checked 2026-10-10 UTC), so the `std` target could take thread-local storage off the writable
-register and leave riscv64 the only gap. This lane did not, for one reason: `TPIDR_EL0` would still
-be an EL0-writable register, and if the kernel stopped managing it, it would again be shared by
-every thread on a core, which is a channel between processes (a program writes it, the next program
-on that core reads it). That was the state of the kernel before this milestone. Closing it as well
-means switching two registers instead of one. The choice is reversible until the `std` target ships
-with the feature off, and it is put to calef on pull request #1892.
+Why aarch64 is not, though it could be. `TPIDRRO_EL0` is EL0-readable and EL1-writable. LLVM will
+use it for TLS under the `tpidrro-el0` target feature (`rustc --print target-features`, checked
+2026-10-10 UTC), so the `std` target could take thread-local storage off the writable register and
+leave riscv64 the only gap. This lane did not, for one reason. `TPIDR_EL0` would still be writable
+from EL0, and if the kernel stopped managing it, every thread on a core would share it again. That
+is a channel between processes: one writes it, and the next to run on that core reads it. That was
+the state of the kernel before this milestone. Closing it as well means switching two registers
+instead of one. The choice is reversible until the `std` target ships with the feature off, and it
+is put to calef on pull request #1892.
 
 ## What would close it
 

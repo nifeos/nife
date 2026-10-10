@@ -18,6 +18,8 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The IPC_TABLES lock inventory](../ipc-tables-lock-inventory.md): what the one remaining IPC lock protects, by heat.
 - [Capabilities, and why the kernel has no `open()`](../capabilities.md): capabilities, the confused deputy, first syscalls and IPC.
 - [Who does IPC name?](../ipc-naming.md): IPC names a rendezvous, never the peer.
+- [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
+- [The thread pointer, and the one asymmetry below its ABI](../thread-pointer.md): each thread's own `TPIDR_EL0`, `tp` or `FS` base, set by the kernel.
 - [Notification objects](../notification-objects.md): a doorbell bound to a thread, and why the receive tag lives in `w4`.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.
