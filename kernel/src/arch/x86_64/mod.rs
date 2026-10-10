@@ -69,6 +69,7 @@ pub mod segments;
 pub mod semihosting;
 #[cfg(feature = "watchdog_soak_test")]
 pub mod tco;
+pub mod thread_pointer;
 pub mod timer;
 /// The TSC calibration's estimator and its two boot assertions. Test-only; see the file header for
 /// why they run under QEMU rather than on the host.

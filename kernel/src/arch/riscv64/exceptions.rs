@@ -60,6 +60,13 @@ impl TrapFrame {
         self.x[10 + i] = v;
     }
 
+    /// Set the saved `tp` (`x4`) a return to U-mode restores (milestone 812 (`std::thread::spawn`
+    /// runs real threads in one address space)). Only a U-mode frame's `tp` is ever restored:
+    /// `trap_return` keeps the live per-hart pointer for an S-mode return. See `thread_pointer`.
+    pub fn set_thread_pointer(&mut self, v: u64) {
+        self.x[4] = v;
+    }
+
     /// Build the frame that drops a brand-new thread to U-mode at `entry` on `user_sp`, with `args`
     /// in `a0`..`a2`. The RISC-V side of the userspace-entry seam (notes/riscv-port.md, leak #3),
     /// mirroring aarch64's `for_user_entry`. `sret` will resume at `sepc` in the privilege named by

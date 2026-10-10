@@ -28,6 +28,7 @@ pub mod isa;
 pub mod mmu;
 pub mod pmu;
 pub mod semihosting;
+pub mod thread_pointer;
 pub mod timer;
 
 // The saved thread context and how a new one is faked (the Rust half of context.s). Re-exported

@@ -934,6 +934,15 @@ pub mod thread_control_block {
     ///
     /// **A space already bound to a thread is refused with `WrongObject`** (§249's amendment (b)),
     /// so one space never has two threads: §105 (`std::thread::spawn` stays declined) stands.
+    ///
+    /// **The sixth argument register is the thread's first thread pointer** (milestone 812
+    /// (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
+    /// process) fork 4; Linux's `CLONE_SETTLS`): `TPIDR_EL0`, `tp` or the `FS` base, which the
+    /// kernel then keeps per thread. `CONFIGURE` is the one method that reads that register. Zero
+    /// means none, which is what every caller built before 812 sends, since
+    /// `user_mode_runtime::invoke6` zeroes the word. A value that is neither zero nor a user
+    /// address is refused with `BadPointer` and nothing is bound. *(Encoding provisional, awaiting
+    /// calef on pull request #1892.)*
     pub const CONFIGURE: u64 = 0;
 
     /// `invoke(cap, CAP_INSERT, cap_slot, rights, target)` -> `child_slot`. Copy the capability in
@@ -956,6 +965,21 @@ pub mod thread_control_block {
     /// zeros. **Refuses a half-built thread** (no bound address space, or no entry): a TCB must be
     /// whole before it runs. Needs `WRITE`.
     pub const START: u64 = 2;
+
+    /// `invoke(cap, SET_THREAD_POINTER, value, _, _)` -> 0 (milestone 812, §269 (how threads share
+    /// a process) fork 4; seL4's `SetTLSBase`). **Change the thread pointer of the thread this TCB
+    /// names**: `TPIDR_EL0` on aarch64, `tp` on riscv64, the `FS` base on `x86_64`. Needs `WRITE`.
+    ///
+    /// - The target is an embryo (it takes the value when it first runs) or the caller itself (it
+    ///   takes it before this call returns). Any other started thread is refused with
+    ///   `WrongObject`.
+    /// - `value` is zero or a user address; anything else is `BadPointer` and changes nothing.
+    /// - The kernel keeps the value per thread and installs it at every switch, so a sibling never
+    ///   sees it. On aarch64 and riscv64 the hardware also lets a program write its own register,
+    ///   which is not part of this contract (`notes/thread-pointer.md`).
+    ///
+    /// *(Name and number provisional, milestone 812's lane, 2026-10-10 UTC.)*
+    pub const SET_THREAD_POINTER: u64 = 3;
 }
 
 /// Methods on an `AddressSpace` capability (milestone 19b): **another process's memory, under

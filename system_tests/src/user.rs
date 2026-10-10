@@ -728,6 +728,14 @@ mod unmap_tests;
 #[cfg(test)]
 mod running_space_tests;
 
+/// **Each thread has its own thread pointer, set by the kernel** (milestone 812
+/// (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
+/// process) fork 4): from `CONFIGURE` or the thread's own `SET_THREAD_POINTER`, kept apart across
+/// switches, and a kernel-half value refused. Cross-ISA, one hand-written spinner per ISA
+/// (DECISIONS §19).
+#[cfg(test)]
+mod thread_pointer_tests;
+
 /// **`free`, `vmstat` and `slabtop`'s two sources** (milestone 126 (the `procps` package),
 /// DECISIONS §225 (`free` sees the machine and your share)): `MemoryRegion::USAGE` under
 /// `ENUMERATE` alone, refused to a spender and answering a viewer, and the machine statistics page

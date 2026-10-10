@@ -630,6 +630,24 @@ pub struct Thread {
     /// worker's input, a driver's DMA address). All zero for a kernel thread.
     pub(crate) start_args: [u64; 3],
 
+    /// **This thread's thread pointer** (milestone 812 (`std::thread::spawn` runs real threads in
+    /// one address space), §269 (how threads share a process) fork 4): `TPIDR_EL0` on aarch64, `tp`
+    /// on riscv64, the `FS` base on `x86_64`. The one register a program's thread-local storage
+    /// hangs off, so two threads of one space must each have their own.
+    ///
+    /// **The kernel sets it, the same way on all three architectures.** `CONFIGURE` gives the first
+    /// value (Linux's `CLONE_SETTLS`), `ThreadControlBlock::SET_THREAD_POINTER` changes it later
+    /// (seL4's `SetTLSBase`), and `sched::schedule` installs it at every switch in through
+    /// `arch::thread_pointer::hand_over`. Zero, the value every thread had before this field, for a
+    /// thread nobody gave one. Always a user address or zero, which every writer checks: `x86_64`'s
+    /// `wrmsr` faults on a non-canonical value.
+    ///
+    /// Where the hardware lets userspace write the register itself (aarch64 and riscv64), this copy
+    /// can lag the register while the thread runs; the hand-over saves the register back on
+    /// aarch64, and on riscv64 the trap frame is the live copy. `arch::thread_pointer` in each
+    /// architecture says which. *(Field name provisional.)*
+    pub(crate) thread_pointer: u64,
+
     /// **Did this thread's TCB page come from `kmem`** (recycle it on death) or from a user
     /// process's own region (leave it; the region reclaims it at destroy)? True for every
     /// kernel-created thread; false for a user-retyped TCB (19c.3). The page-origin half of the
@@ -869,6 +887,7 @@ impl Thread {
             own_token: None,
             entry: (0, 0), // a kernel thread; never enters EL0 by this path
             start_args: [0; 3],
+            thread_pointer: 0,
             thread_control_block_kmem: true,
             killed: false,
             fault_ep: None,
@@ -921,6 +940,7 @@ impl Thread {
                 own_token: None,
                 entry: (0, 0), // a kernel thread; never enters EL0 by this path
                 start_args: [0; 3],
+                thread_pointer: 0,
                 thread_control_block_kmem: true,
                 killed: false,
                 fault_ep: None,
@@ -1067,6 +1087,7 @@ impl Thread {
                 own_token: None,
                 entry: (0, 0), // a kernel thread; becomes a user process via exec, not this path
                 start_args: [0; 3],
+                thread_pointer: 0,
                 thread_control_block_kmem: true,
                 killed: false,
                 fault_ep: None,
@@ -1107,6 +1128,7 @@ impl Thread {
             own_token: None,
             entry: (0, 0),
             start_args: [0; 3],
+            thread_pointer: 0,
             thread_control_block_kmem: false, // a user-retyped TCB page; the region owns it
             killed: false,
             fault_ep: None,

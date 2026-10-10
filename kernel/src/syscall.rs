@@ -428,31 +428,9 @@ pub fn invoke(
 
         // A thread under construction (19c.3). WRITE on the TCB cap is the authority to shape
         // and start it. Every method refuses a thread that is not an embryo, in the scheduler.
-        Object::ThreadControlBlock(tid) => match method {
-            // Body extracted (milestone 156): every `ThreadControlBlock` method is process-spawn machinery a
-            // loader runs once per child, never a step of the IPC round trip, so each moves out
-            // of `invoke`'s own bytes. See `memory_region_map`'s doc comment for the full reasoning.
-            abi::thread_control_block::CONFIGURE => {
-                if !cap.rights.allows(Rights::WRITE) {
-                    return Err(Error::NotPermitted);
-                }
-                thread_control_block_configure(tid, a0, a1, a2)
-            }
-            abi::thread_control_block::CAP_INSERT => {
-                if !cap.rights.allows(Rights::WRITE) {
-                    return Err(Error::NotPermitted);
-                }
-                thread_control_block_cap_insert(tid, a0, a1, a2)
-            }
-            abi::thread_control_block::START => {
-                if !cap.rights.allows(Rights::WRITE) {
-                    return Err(Error::NotPermitted);
-                }
-                sched::start_thread_control_block(tid, [a0, a1, a2])?; // the child's x0, x1, x2 (19d/19e)
-                Ok(0)
-            }
-            _ => Err(Error::BadMethod),
-        },
+        Object::ThreadControlBlock(tid) => {
+            thread_control_block_invoke(frame, cap.rights, tid, method, [a0, a1, a2])
+        }
 
         // A notification (milestone 151, DECISIONS §101 (notification objects)). Extracted and `#[inline(never)]` for
         // `memory_region_map`'s reason: none of these is a step of the IPC round trip
@@ -1447,6 +1425,54 @@ fn page_frame_revoke(phys: u64, count: u64) -> Result<i64, Error> {
     Ok(0)
 }
 
+/// **Every `ThreadControlBlock` method, out of line** (milestone 812 (`std::thread::spawn` runs
+/// real threads in one address space)). Each is process-spawn machinery a loader runs once per
+/// child, never a step of the IPC round trip, and milestone 812's `SET_THREAD_POINTER` arm put
+/// aarch64's flat `syscall_entry` 6% over `script/fastpath-footprint`'s 5% bound while it was
+/// folded into [`invoke`]. One call here instead costs the entry one branch. WRITE on the TCB
+/// capability is the authority to shape and start it; every method but a self-aimed
+/// `SET_THREAD_POINTER` refuses a thread that is not an embryo, in the scheduler.
+#[inline(never)]
+fn thread_control_block_invoke(
+    frame: &mut TrapFrame,
+    rights: Rights,
+    tid: crate::thread::ThreadId,
+    method: u64,
+    [a0, a1, a2]: [u64; 3],
+) -> Result<i64, Error> {
+    match method {
+        // Body extracted (milestone 156): every `ThreadControlBlock` method is process-spawn machinery a
+        // loader runs once per child, never a step of the IPC round trip, so each moves out
+        // of `invoke`'s own bytes. See `memory_region_map`'s doc comment for the full reasoning.
+        abi::thread_control_block::CONFIGURE => {
+            if !rights.allows(Rights::WRITE) {
+                return Err(Error::NotPermitted);
+            }
+            thread_control_block_configure(tid, a0, a1, a2, frame.arg(5))
+        }
+        abi::thread_control_block::SET_THREAD_POINTER => {
+            if !rights.allows(Rights::WRITE) {
+                return Err(Error::NotPermitted);
+            }
+            thread_control_block_set_thread_pointer(tid, a0, frame)
+        }
+        abi::thread_control_block::CAP_INSERT => {
+            if !rights.allows(Rights::WRITE) {
+                return Err(Error::NotPermitted);
+            }
+            thread_control_block_cap_insert(tid, a0, a1, a2)
+        }
+        abi::thread_control_block::START => {
+            if !rights.allows(Rights::WRITE) {
+                return Err(Error::NotPermitted);
+            }
+            sched::start_thread_control_block(tid, [a0, a1, a2])?; // the child's x0, x1, x2 (19d/19e)
+            Ok(0)
+        }
+        _ => Err(Error::BadMethod),
+    }
+}
+
 /// `ThreadControlBlock::CONFIGURE`: bind an address space to an embryo thread and set its entry point and stack
 /// (`a0` entry, `a1` stack, `a2` the address space cap slot, consumed; the space keeps its name). `#[inline(never)]` for the
 /// reason `memory_region_map` gives.
@@ -1456,6 +1482,7 @@ fn thread_control_block_configure(
     entry: u64,
     stack: u64,
     aspace_slot: u64,
+    thread_pointer: u64,
 ) -> Result<i64, Error> {
     // aspace_slot must name a WRITE AddressSpace cap, and it is consumed.
     let aspace = sched::current_cap(aspace_slot).map_err(|_| Error::NoSuchSlot)?;
@@ -1465,13 +1492,31 @@ fn thread_control_block_configure(
     if !aspace.rights.allows(Rights::WRITE) {
         return Err(Error::NotPermitted);
     }
-    sched::configure_thread_control_block(tid, entry, stack, aspace_name)?;
+    sched::configure_thread_control_block_with_thread_pointer(
+        tid,
+        entry,
+        stack,
+        aspace_name,
+        thread_pointer,
+    )?;
     // Consume the capability passed, which §249 (a running address space stays nameable) keeps: a
     // builder that wants to go on naming the child's space makes a copy first and says so, as §142
     // (what a spawner retains over a child after `START`) asks. The name itself is not retired, and
     // a second bind through some other copy is refused by the registry's bound mark, not by this
     // delete.
     let _ = sched::delete_current_cap(aspace_slot);
+    Ok(0)
+}
+
+/// `ThreadControlBlock::SET_THREAD_POINTER` (milestone 812): an embryo's or the caller's own
+/// thread pointer. Out of line for `memory_region_map`'s reason: never a step of the IPC round trip.
+#[inline(never)]
+fn thread_control_block_set_thread_pointer(
+    tid: crate::thread::ThreadId,
+    value: u64,
+    frame: &mut TrapFrame,
+) -> Result<i64, Error> {
+    sched::set_thread_pointer(tid, value, frame)?;
     Ok(0)
 }
 

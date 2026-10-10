@@ -2574,6 +2574,23 @@ pub fn schedule() {
         // is exactly the wrong thing to hold: its provenance stops at the struct.
         // `Threads::pointer` hands back the page cast unnarrowed and both addresses fall out of it.
         let prev_ptr = sched.threads.pointer(current).unwrap();
+
+        // **The thread pointer, handed from the outgoing thread to the incoming one** (milestone
+        // 812, §269 fork 4), here rather than after the lock drops because this core cannot return
+        // to user mode between now and the switch (interrupts are masked), and both `Thread`s are
+        // only touched under `IPC_TABLES`. aarch64 saves the outgoing register (EL0 can write it)
+        // and installs the incoming one; `x86_64` installs only when the value differs; riscv64
+        // does nothing, since `tp` rides each thread's trap frame. `arch::thread_pointer` has each.
+        //
+        // SAFETY: `prev_ptr` and `next_tcb` are live threads' TCB pages from the table, under
+        // `IPC_TABLES`; the projection takes no reference to anything but the one field.
+        unsafe {
+            crate::arch::thread_pointer::hand_over(
+                &mut (*prev_ptr).thread_pointer,
+                (*next_tcb).thread_pointer,
+            );
+        }
+
         // SAFETY: a live thread's TCB page, held under IPC_TABLES. Field projection through a raw
         // pointer, and `fp_state_of`'s contract is exactly what `pointer` returns.
         let (prev_slot, prev_fp): (*mut *mut Context, *mut crate::arch::fp::FpState) = unsafe {
@@ -5822,6 +5839,30 @@ pub fn configure_thread_control_block(
     user_sp: u64,
     aspace_name: u64,
 ) -> Result<(), abi::Error> {
+    configure_thread_control_block_with_thread_pointer(tid, entry, user_sp, aspace_name, 0)
+}
+
+/// [`configure_thread_control_block`], and the thread's first thread pointer with it (milestone
+/// 812, §269 (how threads share a process) fork 4; Linux's `CLONE_SETTLS`). `CONFIGURE` reads it
+/// from the sixth argument register, which every caller built before 812 sends as zero, and zero is
+/// what a thread had before there was a field to hold it.
+///
+/// Refused with `BadPointer` before anything is bound if it is neither zero nor a user address, so
+/// a refusal leaves the embryo exactly as it was. Set in the same critical section as the space and
+/// the entry, so a `START` racing this `CONFIGURE` sees all three or none.
+///
+/// Name: provisional (milestone 812 (`std::thread::spawn` runs real threads in one address space)'s
+/// lane, 2026-10-10 UTC).
+pub fn configure_thread_control_block_with_thread_pointer(
+    tid: ThreadId,
+    entry: u64,
+    user_sp: u64,
+    aspace_name: u64,
+    thread_pointer: u64,
+) -> Result<(), abi::Error> {
+    if !is_thread_pointer(thread_pointer) {
+        return Err(abi::Error::BadPointer);
+    }
     {
         let guard = IPC_TABLES.lock();
         let sched = guard.as_ref().ok_or(abi::Error::NoSuchSlot)?;
@@ -5845,8 +5886,71 @@ pub fn configure_thread_control_block(
         }
         t.space = Some(bound);
         t.entry = (entry, user_sp);
+        t.thread_pointer = thread_pointer;
         Ok(())
     })
+}
+
+/// **Is this a value a thread pointer may hold**: zero (none), or an address in the user half.
+///
+/// Not alignment, and not whether anything is mapped there: the register is a pointer the program
+/// dereferences itself, and a bad one faults the program that chose it. The half matters because
+/// `x86_64`'s `wrmsr` to `IA32_FS_BASE` raises `#GP` in the kernel on a non-canonical value, and a
+/// kernel-half value is a pointer no user access through it could use. The same rule on all three
+/// architectures, so a program refused on one is refused on every one (§19 (architectural parity is
+/// a tenet)).
+fn is_thread_pointer(value: u64) -> bool {
+    use paging::PageFormat;
+    value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
+}
+
+/// **The calling thread's thread pointer**, for the first entry to user mode (riscv64 writes it
+/// into the frame that entry builds; see `arch::thread_pointer::set_initial`). Zero for a thread
+/// that has none, and for a kernel thread calling from outside any thread table.
+pub fn current_thread_pointer() -> u64 {
+    let guard = IPC_TABLES.lock();
+    guard
+        .as_ref()
+        .and_then(|sched| sched.threads.get(current_thread_id()))
+        .map_or(0, |t| t.thread_pointer)
+}
+
+/// **`ThreadControlBlock::SET_THREAD_POINTER`**: change the thread pointer of the thread `tid`
+/// names (milestone 812, §269 fork 4; seL4's `SetTLSBase`).
+///
+/// Two targets are allowed, and the refusal of the third is what keeps this simple. An **embryo**
+/// (not started) takes the value at its first switch in. **The caller itself** takes it now: the
+/// field and the register (`arch::thread_pointer::set_live`, given `frame`, the frame the caller
+/// returns through) change under one hold of `IPC_TABLES`. One hold, because on aarch64 a switch
+/// between the two writes would save the old register over the new field. **Any other started thread is refused with
+/// `WrongObject`**: its register lives on whatever core it runs on, or in a saved context or trap
+/// frame whose location differs per architecture, and nothing `std` does needs to reach it. seL4
+/// allows it; the refusal can be lifted additively if a debugger ever wants it.
+///
+/// `BadPointer` for a value [`is_thread_pointer`] refuses, before anything changes.
+///
+/// Name: provisional (milestone 812's lane, 2026-10-10 UTC).
+pub fn set_thread_pointer(
+    tid: ThreadId,
+    value: u64,
+    frame: &mut crate::arch::exceptions::TrapFrame,
+) -> Result<(), abi::Error> {
+    if !is_thread_pointer(value) {
+        return Err(abi::Error::BadPointer);
+    }
+    let mut guard = IPC_TABLES.lock();
+    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
+    let caller = current_thread_id();
+    let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+    if t.handshake.state == State::Embryo {
+        t.thread_pointer = value;
+    } else if tid == caller {
+        t.thread_pointer = value;
+        crate::arch::thread_pointer::set_live(frame, value);
+    } else {
+        return Err(abi::Error::WrongObject);
+    }
+    Ok(())
 }
 
 /// **Grant an embryo the cycle counter** (milestone 229, DECISIONS 139 option 4): the thread this

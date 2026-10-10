@@ -1,0 +1,43 @@
+Falsifies `system_tests::user::thread_pointer_tests::each_thread_reads_through_its_own_thread_pointer`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: the kernel stops giving a thread the thread pointer it holds for it. The context switch
+no longer hands `TPIDR_EL0` or the `FS` base from the outgoing thread to the incoming one, and
+riscv64's first entry to U-mode no longer puts the thread's `tp` in the frame, which is the state
+of the kernel before milestone 812 (`std::thread::spawn` runs real threads in one address space).
+
+Expected to fail: "a spinner never ran, or faulted on its first read". Each spinner reads through
+a thread pointer of zero and faults at address 0 (replayed on all three architectures, 2026-10-10
+UTC).
+
+diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
+--- a/kernel/src/sched.rs
++++ b/kernel/src/sched.rs
+@@ -2584,12 +2584,6 @@ pub fn schedule() {
+         //
+         // SAFETY: `prev_ptr` and `next_tcb` are live threads' TCB pages from the table, under
+         // `IPC_TABLES`; the projection takes no reference to anything but the one field.
+-        unsafe {
+-            crate::arch::thread_pointer::hand_over(
+-                &mut (*prev_ptr).thread_pointer,
+-                (*next_tcb).thread_pointer,
+-            );
+-        }
+ 
+         // SAFETY: a live thread's TCB page, held under IPC_TABLES. Field projection through a raw
+         // pointer, and `fp_state_of`'s contract is exactly what `pointer` returns.
+diff --git a/kernel/src/user.rs b/kernel/src/user.rs
+--- a/kernel/src/user.rs
++++ b/kernel/src/user.rs
+@@ -1854,10 +1854,6 @@ fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
+         ));
+         // The thread's first thread pointer (milestone 812). On riscv64 `tp` is a frame register,
+         // so it goes in here; on the other two the switch that scheduled us in installed it.
+-        crate::arch::thread_pointer::set_initial(
+-            &mut *frame,
+-            crate::sched::current_thread_pointer(),
+-        );
+         enter_user(frame)
+     }
+ }
