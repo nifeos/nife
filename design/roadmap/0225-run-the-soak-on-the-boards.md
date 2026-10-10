@@ -9,8 +9,9 @@ needs_person: yes
 ---
 # 225. Run the soak on radon, argon and xenon, which is the only place its answer means anything
 
-Partial as of (2026-09-25). radon has run it, clean, for 8 h 09 m; argon and xenon have
-not.
+Partial as of (2026-10-10). radon has met §259's standard, 10.29 million crossings over 3 plain
+boots, clean (2026-10-09 to 10, opened by 592's proven self-reset); argon and xenon have
+not run it.
 
 Correction, 2026-10-06: argon is not in hand. The board delivered as argon is a Jetson TK1
 (32-bit Armv7), shipped against a TX1 order; it is going back and calef is getting the TX1 from the
@@ -99,6 +100,29 @@ million crossings, against 5,507 in the only earlier multi-hour run. Past that, 
 a new draw of the placement lottery, which is worth more than a ninth hour. The maintainer approved
 it. What remains on radon is more boots, not longer ones.
 
+## radon, 2026-10-09 to 10: §259 met, 10.29 million crossings over 3 plain boots
+
+Lane `milestone/225-radon-boots` (`bef2b40dc`, tree-identical to main `237cef6bc`), one power cycle
+from calef for the whole evening. It opened with the decisive bench test of milestone 592 (radon's
+cold reboot dies in OpenSBI's PMIC write), green: the
+rebooting build soaked its 120 seconds, called SBI SRST, and the board came back through
+`U-Boot SPL` to a netboot and a soak, so every boot after the first started itself (the board
+re-fetches over TFTP on each self-reboot; the lane swapped the served image during the reset's dark
+period). Three draws, zero defects:
+
+| row | boot | duration | rate | crossings |
+|---|---|---|---|---|
+| E5 | the rebooting soak's 120s draw | 2m | 314,841/s | 20,474 |
+| E6 | plain soak | 10h 17m | 178,629/s | 5,569,327 |
+| E7 | plain soak | 3h 53m | 317,457/s | 610,897 |
+
+Counting plain boots only, E4 + E6 + E7 = 10,288,805 crossings over 3 boots, which meets §259's
+standard (at least 10 million over at least 3); E5's reboot draw adds 20,474 on top. The account,
+the 592 transcript's one gap (the `JH7110:` bring-up lines never made it onto the wire before power
+dropped), the unwatched 7-hour tail of E6's boot that is not evidence, and the discarded card boot
+before E7 (radon's ethernet cable was unplugged, `phy_startup() failed: -110`) are in
+`notes/soak.md`, "radon, 2026-10-09 to 10"; the logs are `bench/radon-2026-10-10/`.
+
 ## argon, 2026-10-05: not yet a one-command run, and exactly why
 
 *(Awaiting the board, 2026-10-06: what is on the desk is a TK1 going back, not argon. The tegra210
@@ -157,7 +181,7 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
 
 - **The duration is now stated**: §259 (a multicore soak counts toward risk 5 at ten million crossings over three boots), ruled 2026-10-07 UTC, sets at least 10 million crossings
   per architecture across at least 3 boots. The radon run's 8 hours, chosen before the standard,
-  gave 4.1 million in one boot.
+  gave 4.1 million in one boot. Met for radon 2026-10-10: 10,288,805 over 3 plain boots.
 - One radon boot is one draw. It drew the fastest arrangement seen so far, and a slow draw
   crosses about 275 times less often, so the clean result says little about slow arrangements.
 - A hung board needs a person, since nothing can power-cycle radon remotely (milestone 224) and
@@ -181,11 +205,14 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   TK1, which is going back, and the TX1 has no date.
 - **Outstanding.** More radon boots, because one boot is one draw and a slow draw has never been
   soaked for long with this build. Checked 2026-09-25: E4 is the only radon row with a log.
+  Updated 2026-10-10: §259's count is met (E4, E6, E7), so further radon boots are draws for the
+  placement distribution rather than owed to the standard, and since milestone 592's reset is
+  proven they cost no plug cycle; unowned.
 - **Done.** The false `NOT SEALED` on a soak build that cost this run half an hour. Milestone 563
   (a seal check that reads bytes cannot see a check that was dropped) carried it, merged
   2026-09-26: soak builds now seal, and `script/board-image --soak` printed `SEALED` on a rebuild.
 
 ## Index row
 
-radon ran it clean on 2026-09-25: 8 h 09 m, 4.1 million cross-core handoffs, no refusal; argon
-and xenon have not run it
+radon met §259 on 2026-10-10: 10.29 million crossings over 3 plain boots, zero defects, and its
+board now resets itself (592 proven); argon and xenon have not run it
