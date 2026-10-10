@@ -257,6 +257,8 @@ fn each_thread_reads_through_its_own_thread_pointer() {
 /// A kernel-half address is the case that matters: on `x86_64` the `wrmsr` that installs a
 /// non-canonical `FS` base raises `#GP` in the kernel, and the same rule holds on all three
 /// architectures so a program refused on one is refused on each (§19).
+///
+/// Falsification: replayable `system_tests/falsifications/user.thread_pointer_tests.a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing.patch`
 #[test_case]
 fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     let region = crate::memory_region::create(16).expect("no region");

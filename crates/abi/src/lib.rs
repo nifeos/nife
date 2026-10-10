@@ -1061,6 +1061,61 @@ pub mod address_space {
     /// can take a page out from under the thread running there, which faults on its next touch of
     /// it wherever it runs.
     pub const UNMAP: u64 = 2;
+
+    /// `invoke(cap, WAIT, va, flags, expected)` -> `0` woken, `1` the word did not hold
+    /// `expected` (milestone 812 (`std::thread::spawn` runs real threads in one address space),
+    /// §269 (how threads share a process) fork 2). **Futex wait: park the calling thread on the
+    /// word at `va` in its own space, if that word still holds `expected`.** The check and the park
+    /// are one step against [`WAKE`], so a waker that changes the word and then wakes cannot slip
+    /// between them.
+    ///
+    /// - `flags` is [`super::futex::PRIVATE`] `|` [`super::futex::SIZE_U32`], and nothing else
+    ///   is admitted today: a shared futex or another size is `BadMethod` (§269 reserves both).
+    /// - The capability must name the caller's own address space, else `WrongObject`, and carry
+    ///   `READ`, else `NotPermitted`. The key is a word in memory the caller already has, so it
+    ///   carries no authority beyond that memory.
+    /// - `va` must be 4-aligned, in the user half and mapped readable, else `BadPointer`.
+    /// - `Gone` if the wait was ended without a wake (the thread's region was destroyed under it).
+    /// - A return of `0` may be spurious: a caller re-checks its word, as every futex user does.
+    ///
+    /// No timeout yet; see `notes/futex.md`'s `BUGS`. *(Name and number provisional, milestone 812's
+    /// lane, 2026-10-10 UTC.)*
+    pub const WAIT: u64 = 3;
+
+    /// `invoke(cap, WAKE, va, flags, count)` -> the number of threads woken (milestone 812, §269
+    /// fork 2). **Futex wake: release up to `count` threads parked by [`WAIT`] on the word at `va`
+    /// in the caller's own space**, oldest first. `u64::MAX` wakes all. Refuses what [`WAIT`]
+    /// refuses, except that the word need not be mapped: a wake reads no memory. *(Name and number
+    /// provisional, milestone 812's lane, 2026-10-10 UTC.)*
+    pub const WAKE: u64 = 4;
+}
+
+/// **The `flags` word of [`address_space::WAIT`] and [`address_space::WAKE`]** (milestone 812
+/// (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
+/// process) fork 2). The bit layout is Linux futex2's (`FUTEX2_SIZE_*` in bits 0 and 1,
+/// `FUTEX2_PRIVATE` at bit 7), so a reader who knows that ABI knows this one, and the two forms
+/// §269 reserves are spellable now and refused rather than undefined.
+///
+/// Name: provisional (milestone 812's lane, 2026-10-10 UTC).
+pub mod futex {
+    /// The word is 8 bits. Reserved; refused.
+    pub const SIZE_U8: u64 = 0;
+    /// The word is 16 bits. Reserved; refused.
+    pub const SIZE_U16: u64 = 1;
+    /// The word is 32 bits: the one size admitted, and the one `std`'s futex locks use.
+    pub const SIZE_U32: u64 = 2;
+    /// The word is 64 bits. Reserved; refused.
+    pub const SIZE_U64: u64 = 3;
+    /// Where the size lives.
+    pub const SIZE_MASK: u64 = 3;
+    /// Keyed by (address space, address): only threads of one space meet. Without it the futex is
+    /// shared, keyed by (memory object, offset), which §269 reserves and this kernel refuses.
+    pub const PRIVATE: u64 = 1 << 7;
+
+    /// **Is this a `flags` word the kernel answers?** Exactly one today.
+    pub const fn admitted(flags: u64) -> bool {
+        flags == PRIVATE | SIZE_U32
+    }
 }
 
 /// The rights bits, matching `capability::Rights`, so userspace can name the rights to narrow a

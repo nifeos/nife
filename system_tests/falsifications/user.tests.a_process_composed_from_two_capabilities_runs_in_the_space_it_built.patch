@@ -20,15 +20,14 @@ patch passes. riscv64 and x86_64 are first replayed by the per-PR `--affected-si
 Nothing here is architecture-specific, so one patch serves every leg.
 
 diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
-index cfd6facc8..0b217d2c4 100644
 --- a/kernel/src/syscall.rs
 +++ b/kernel/src/syscall.rs
-@@ -398,7 +398,7 @@ pub fn invoke(
-                 if !cap.rights.allows(Rights::WRITE) {
-                     return Err(Error::NotPermitted);
-                 }
--                sched::start_thread_control_block(tid, [a0, a1, a2])?; // the child's x0, x1, x2 (19d/19e)
-+                let _ = (tid, a0, a1, a2);
-                 Ok(0)
+@@ -1472,7 +1472,7 @@ fn thread_control_block_invoke(
+             if !rights.allows(Rights::WRITE) {
+                 return Err(Error::NotPermitted);
              }
-             _ => Err(Error::BadMethod),
+-            sched::start_thread_control_block(tid, [a0, a1, a2])?; // the child's x0, x1, x2 (19d/19e)
++            let _ = (tid, a0, a1, a2);
+             Ok(0)
+         }
+         _ => Err(Error::BadMethod),

@@ -736,6 +736,13 @@ mod running_space_tests;
 #[cfg(test)]
 mod thread_pointer_tests;
 
+/// **Futex wait and wake** (milestone 812 (`std::thread::spawn` runs real threads in one address
+/// space), §269 (how threads share a process) fork 2): a waiter sleeps until its word is woken, a
+/// changed word does not sleep, a destroyed waiter leaves the table, and every reserved form is
+/// refused. Cross-ISA, one hand-written waiter per ISA (DECISIONS §19).
+#[cfg(test)]
+mod futex_tests;
+
 /// **`free`, `vmstat` and `slabtop`'s two sources** (milestone 126 (the `procps` package),
 /// DECISIONS §225 (`free` sees the machine and your share)): `MemoryRegion::USAGE` under
 /// `ENUMERATE` alone, refused to a spender and answering a viewer, and the machine statistics page

@@ -423,6 +423,12 @@ pub fn invoke(
                 }
                 address_space_unmap(name, a0)
             }
+            // Futex wait and wake (milestone 812 (`std::thread::spawn` runs real threads in one
+            // address space), §269 (how threads share a process) fork 2), out of line: neither is
+            // a step of the IPC round trip the fastpath footprint bounds.
+            abi::address_space::WAIT | abi::address_space::WAKE => {
+                address_space_futex(cap.rights, name, method, a0, a1, a2)
+            }
             _ => Err(Error::BadMethod),
         },
 
@@ -1470,6 +1476,41 @@ fn thread_control_block_invoke(
             Ok(0)
         }
         _ => Err(Error::BadMethod),
+    }
+}
+
+/// `AddressSpace::WAIT` and `WAKE`: the checks every futex method shares, then the scheduler.
+/// The order of the refusals is the contract `abi::address_space::WAIT` states: the flags first
+/// (`BadMethod`, a form this kernel does not answer), then the right (`NotPermitted`), the address
+/// (`BadPointer`), and last whether the space is the caller's own (`WrongObject`).
+#[inline(never)]
+fn address_space_futex(
+    rights: Rights,
+    space: u64,
+    method: u64,
+    va: u64,
+    flags: u64,
+    word: u64,
+) -> Result<i64, Error> {
+    if !abi::futex::admitted(flags) {
+        return Err(Error::BadMethod);
+    }
+    if !rights.allows(Rights::READ) {
+        return Err(Error::NotPermitted);
+    }
+    if !va.is_multiple_of(4)
+        || !<crate::arch::mmu::Format as paging::PageFormat>::is_in_half(paging::Half::Low, va)
+    {
+        return Err(Error::BadPointer);
+    }
+    if !sched::is_current_space(space) {
+        return Err(Error::WrongObject);
+    }
+    if method == abi::address_space::WAIT {
+        // The expected value is the low 32 bits; the size admitted is 32 (§269).
+        sched::futex_wait(space, va, word as u32).map(|r| r as i64)
+    } else {
+        Ok(sched::futex_wake(space, va, word) as i64)
     }
 }
 

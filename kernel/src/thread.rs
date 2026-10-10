@@ -344,6 +344,10 @@ pub enum Wait {
     Rendezvous(crate::sched::RendezvousId, WaitRole),
     /// Parked in `WAIT` on a notification (milestone 151), on its wait queue.
     Notification(crate::sched::NotificationId),
+    /// Parked in `AddressSpace::WAIT` on a futex (milestone 812 (`std::thread::spawn` runs real
+    /// threads in one address space)), under this key in the scheduler's futex table. The key is
+    /// the whole identity: there is no futex object to name.
+    Futex(inter_process_communication::futex::Key),
 }
 
 pub struct Thread {

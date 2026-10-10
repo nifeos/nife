@@ -6,10 +6,9 @@ for `pmap` can take pages out of the space it was only allowed to look at.
 Expected to fail: the `NotPermitted` assertion, which gets `Ok(0)`.
 
 diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
-index f4089be81..6a93ac35a 100644
 --- a/kernel/src/syscall.rs
 +++ b/kernel/src/syscall.rs
-@@ -377,12 +377,7 @@ pub fn invoke(
+@@ -417,12 +417,7 @@ pub fn invoke(
              // DECISIONS §162 (whether a holder can give up a mapping), option A).
              // `WRITE`, the authority `MAP_INTO` takes: shaping a space is one right in both
              // directions. See `abi::address_space::UNMAP` and notes/unmap.md.
@@ -20,6 +19,6 @@ index f4089be81..6a93ac35a 100644
 -                address_space_unmap(name, a0)
 -            }
 +            abi::address_space::UNMAP => address_space_unmap(name, a0),
-             _ => Err(Error::BadMethod),
-         },
- 
+             // Futex wait and wake (milestone 812 (`std::thread::spawn` runs real threads in one
+             // address space), §269 (how threads share a process) fork 2), out of line: neither is
+             // a step of the IPC round trip the fastpath footprint bounds.

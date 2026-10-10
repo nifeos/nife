@@ -143,6 +143,7 @@ use core::ptr::NonNull;
 
 use intrusive_fifo::{Fifo, Node, Unqueued};
 
+pub mod futex;
 pub mod notification;
 pub mod timer;
 

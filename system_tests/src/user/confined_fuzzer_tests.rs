@@ -393,6 +393,10 @@ impl Conductor {
                 }
             }
             Wait::Notification(n) => sched::notification_signal(n, 1).is_ok(),
+            // A fuzzer that drew `AddressSpace::WAIT` on its own space with the one admitted form
+            // and a matching word (milestone 812 (`std::thread::spawn` runs real threads in one
+            // address space)) is parked on a futex, which a wake of its key releases.
+            Wait::Futex(k) => sched::futex_wake(k.space, k.address, 1) == 1,
         }
     }
 

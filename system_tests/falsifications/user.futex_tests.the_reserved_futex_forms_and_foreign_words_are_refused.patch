@@ -1,0 +1,24 @@
+Falsifies `system_tests::user::futex_tests::the_reserved_futex_forms_and_foreign_words_are_refused`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: the futex methods of milestone 812 (`std::thread::spawn` runs real threads in one
+address space) admit every flags word, so a shared futex and a 64-bit futex, both of which §269
+(how threads share a process) reserves, are served as if they were the private 32-bit form.
+
+Expected to fail: "a shared futex was not refused as a form this kernel does not answer", which
+gets `NotPermitted` from the next check instead of `BadMethod`.
+
+diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
+--- a/crates/abi/src/lib.rs
++++ b/crates/abi/src/lib.rs
+@@ -1114,7 +1114,8 @@ pub mod futex {
+ 
+     /// **Is this a `flags` word the kernel answers?** Exactly one today.
+     pub const fn admitted(flags: u64) -> bool {
+-        flags == PRIVATE | SIZE_U32
++        let _ = flags;
++        true
+     }
+ }
+ 

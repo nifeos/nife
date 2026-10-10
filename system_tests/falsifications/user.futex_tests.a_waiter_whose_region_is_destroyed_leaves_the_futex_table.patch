@@ -1,0 +1,29 @@
+Falsifies `system_tests::user::futex_tests::a_waiter_whose_region_is_destroyed_leaves_the_futex_table`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect, in milestone 812 (`std::thread::spawn` runs real threads in one address space)'s futex: the teardown of a blocked resident (`finish_blocked_resident`) forgets a futex waiter,
+so a thread parked in `AddressSpace::WAIT` whose region is destroyed stays linked on the futex
+table while its TCB page goes back to the region. The next wake of any key in that bucket walks it.
+
+Expected to fail: "a destroyed waiter's TCB is still linked on the futex table". The per-key count
+cannot see it, because the torn-down thread no longer records a key, which is why the test counts
+links (replayed on all three architectures, 2026-10-10 UTC).
+
+diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
+--- a/kernel/src/sched.rs
++++ b/kernel/src/sched.rs
+@@ -5467,12 +5467,7 @@ fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
+         }
+         // A thread blocked in `AddressSpace::WAIT` (milestone 812) is on the futex table under its
+         // key. Leaving it there would leave a freed TCB on a queue a later `WAKE` walks.
+-        Some(Wait::Futex(key)) => {
+-            let ptr = thread_control_block_ptr(sched, tid);
+-            if let Some(token) = sched.futexes.remove(key, ptr) {
+-                hold_token(token);
+-            }
+-        }
++        Some(Wait::Futex(_)) => {}
+         None => {}
+     }
+ 

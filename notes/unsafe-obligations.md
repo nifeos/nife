@@ -624,7 +624,12 @@ carries (`unsafe impl Sync for PerCpu`, cpu.rs's own comment: "no two cores ever
 block"), restated for the one architecture whose trap-entry assembly needs a second, smaller
 per-core scratch area beside it rather than folding into `PerCpu`'s existing fields directly.
 
-Other than `Send`/`Sync`, at most 11 <!--count-at-most:unsafe-trait-claims--> `unsafe impl`s of
+Raised from 11 to 12 by milestone 812 (`std::thread::spawn` runs real threads in one address
+space), 2026-10-10 (UTC): the host tests of `inter_process_communication::futex` give their test
+thread an `intrusive_fifo::Node` impl, the same field-storage assertion the crate's notification
+and rendezvous tests already make for their own, since a test module cannot reach another's.
+
+Other than `Send`/`Sync`, at most 12 <!--count-at-most:unsafe-trait-claims--> `unsafe impl`s of
 an unsafe trait, at the tree's exact value for the reason the line above
 gives (milestone 139 round 9, 2026-10-07 UTC; the marker's name is provisional). The census once
 counted `unsafe impl` as one number and the gate watched only its `Send`/`Sync` half. This is the

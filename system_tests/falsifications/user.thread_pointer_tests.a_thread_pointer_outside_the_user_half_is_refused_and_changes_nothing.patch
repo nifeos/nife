@@ -1,0 +1,24 @@
+Falsifies `system_tests::user::thread_pointer_tests::a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: the kernel stops checking that a thread pointer is a user address, so `CONFIGURE` and
+`SET_THREAD_POINTER` of milestone 812 (`std::thread::spawn` runs real threads in one address space)
+take a kernel-half value. On `x86_64` the next switch into that thread would `wrmsr` a
+non-canonical `FS` base and fault in the kernel.
+
+Expected to fail: "CONFIGURE took a kernel-half thread pointer", which gets `Ok(0)`.
+
+diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
+--- a/kernel/src/sched.rs
++++ b/kernel/src/sched.rs
+@@ -6060,7 +6060,8 @@ pub fn configure_thread_control_block_with_thread_pointer(
+ /// a tenet)).
+ fn is_thread_pointer(value: u64) -> bool {
+     use paging::PageFormat;
+-    value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
++    let _ = value;
++    true
+ }
+ 
+ /// **The calling thread's thread pointer**, for the first entry to user mode (riscv64 writes it

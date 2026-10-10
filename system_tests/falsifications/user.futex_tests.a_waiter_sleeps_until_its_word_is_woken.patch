@@ -1,0 +1,23 @@
+Falsifies `system_tests::user::futex_tests::a_waiter_sleeps_until_its_word_is_woken`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: `AddressSpace::WAIT` returns "woken" instead of parking when the word still holds what
+the waiter expected, so a futex never sleeps and every lock built on it becomes a spin.
+
+Expected to fail: "the waiter never parked on its word", with the waiter having returned hundreds
+of thousands of times (replayed on all three architectures, 2026-10-10 UTC).
+
+diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
+--- a/kernel/src/sched.rs
++++ b/kernel/src/sched.rs
+@@ -3480,6 +3480,9 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
+         if word != expected {
+             return Ok(1);
+         }
++        if word == expected {
++            return Ok(0);
++        }
+         let current = current_thread_id();
+         let token = take_token(sched, current);
+         sched.futexes.park(key, token);
