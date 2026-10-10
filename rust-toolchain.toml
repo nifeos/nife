@@ -28,7 +28,7 @@
 # re-export list is the common repair, not the only one**, when upstream's function touches a type
 # the overlay replaces, the overlay has to implement it. A scheduled non-gating CI job against a newer nightly, so the
 # bump is a notice rather than a surprise, is still outstanding (roadmap milestone 42's neighbourhood).
-channel = "nightly-2026-10-09"
+channel = "nightly-2026-10-10"
 components = ["rust-src", "llvm-tools", "rustfmt", "clippy"]
 # `aarch64-unknown-uefi` (tier 2, prebuilt `core`) is the stick's aarch64 boot file, `BOOTAA64.EFI`
 # (notes/boot-stick.md). riscv64 has no UEFI target in rustc at all, which is why its boot file is
