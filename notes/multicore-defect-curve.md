@@ -91,6 +91,13 @@ recorded with workload `soak-test (not crossing)` and excluded from the curve.
 | E2 | 2026-09-03 ~20:24 | radon | riscv64 | 4 | not recorded | soak-test | 2.97 | 5,507 | 2,137 | clean | [`soak.md`](soak.md), "The three-hour run" |
 | E3 | 2026-09-04 ~00:06 | radon | riscv64 | 4 | not recorded | soak-test, census build | ~0.4, end not recorded | not recorded | not recorded | clean as far as recorded | [`soak.md`](soak.md), "The three-hour run" |
 | E4 | 2026-09-25 ~01:02 | radon | riscv64 | 4 | `9e879f1e7` | soak-test | 8.16 | 4,108,581 | 5,818 | clean | `bench/radon-2026-09-25/soak-8h.log`; [`visionfive2.md`](visionfive2.md), "The eight-hour soak, 2026-09-25" |
+| E8 | 2026-10-10 ~18:12 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 104 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+| E9 | 2026-10-10 ~18:15 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 25,223 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+| E10 | 2026-10-10 ~18:18 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 22,116 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+| E11 | 2026-10-10 ~18:21 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 3,493 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+| E12 | 2026-10-10 ~18:24 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot, ended by power-off | 0.03 | 16,462 | 22 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+
+E8 through E12 are milestone 592's option-B evening, `23f0c8d87`, one capture: four 120-second draws each ended by the direct AXP15060 write (the reset milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) built, proven twice-deterministic in the same log), and a fifth boot ended when calef powered the board off. The crossings spread across five identical 120-second builds, 104 to 25,223, is the boot-lottery distribution the series milestone 249 (the boot lottery is sampled by a person walking to the board) wanted and had never sampled: a 243x range on identical silicon and build, zero defects throughout. E5 through E7, the same evening's plain-soak boots, are recorded by the 225 lane's pull request; this block leaves their numbers to it to keep one home per fact.
 
 The start times are Pacific local times from `notes/soak.md` converted to UTC; the note does not
 state its zone, and the conversion is inferred from the commits that recorded them (2026-09-03

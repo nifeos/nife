@@ -620,6 +620,21 @@ where
         direct_map(m, sys.base, sys.base + sys.size, Flags::device())?;
     }
 
+    // 6c-prime. Option B's two windows (milestone 592, 2026-10-10): the SYS syscon, where the PLL
+    // words the I2C input-clock computation reads live, and the I2C controller the PMIC's bus node
+    // names. Guarded on the PMIC plan itself, so neither is mapped on any machine CI boots.
+    if let Some((_sys, bus)) = memory::jh7110_pmic_bus() {
+        direct_map(
+            m,
+            jh7110_clock_and_reset::SYS_SYSCON_BASE,
+            jh7110_clock_and_reset::SYS_SYSCON_BASE + jh7110_clock_and_reset::SYS_SYSCON_SIZE,
+            Flags::device(),
+        )?;
+        if let Some((base, size)) = bus.controller {
+            direct_map(m, base, base + size, Flags::device())?;
+        }
+    }
+
     // 6d. The JH7110's first Ethernet port (milestone 53 (the board's own peripherals: network and
     // storage on real silicon)), device memory: the controller's 64 KiB, the AON clock-and-reset
     // window that holds its bus clocks and resets, and the AON syscon page that holds its

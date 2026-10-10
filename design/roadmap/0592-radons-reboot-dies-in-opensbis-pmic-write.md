@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-09-24
 promoted_from: radons-reboot-dies-in-opensbis-pmic-write
 milestone_dependencies: none
@@ -13,12 +13,31 @@ needs_person: yes
 *(Number provisional until the merge queue lands it.)* Promoted from the
 proposal radons-reboot-dies-in-opensbis-pmic-write, filed 2026-09-24 by the lane that brought
 milestone 249 (the boot lottery is sampled by a person walking to the board)'s reboot to aarch64
-and `x86_64`. Option A was built on 2026-09-25 on `milestone/592-radon-pmic-bus`: before the
-rebooting soak's SBI SRST call, a JH7110 kernel ungates I2C5's clock and releases I2C5's reset.
-It is green on everything a host and QEMU can gate. It has not run on radon.
+and `x86_64`. Option A was built on 2026-09-25 on `milestone/592-radon-pmic-bus` and merged
+(#1299): before the rebooting soak's SBI SRST call, a JH7110 kernel ungates I2C5's clock and
+releases I2C5's reset. The bench story below is three evenings long and ends with option B built
+and proven: the kernel writes the AXP15060 itself, and the reset is deterministic. BUILT by
+calef's ruling, 2026-10-10.
 
-One bench boot of radon decides it, and the procedure below says what each
-outcome means before it runs. Option C (new firmware) stays calef's call and is not touched here.
+One bench boot of radon decides the firmware route, and it needed three:
+
+- **2026-10-09, outcome row 1.** The rebooting build soaked 120 s, called SBI SRST, and the board
+  came back through `U-Boot SPL` to a netboot and a soak. The reset worked. The transcript's one
+  gap: every line between the last beat and the second banner was lost, because the kernel printed
+  and called the ecall without waiting for the UART to drain, and power dropped mid-line.
+- **2026-10-10, the drain, then outcome row 4.** The lane built `console::drain` (ring caught up,
+  then the transmitter waited out) into every arch reset path, and the next boot captured the
+  bring-up lines whole: clock 143 `running`, reset 81 `released`, the virtual specifier skipped.
+  OpenSBI's own read of the PMIC then failed ten times and the board hung in firmware. Row 4,
+  exactly: bus provably up, the firmware's driver still failing, most plausibly on the
+  controller's reset-default timing that OpenSBI never programs.
+- **2026-10-10, option B, four times over.** The same lane built the direct route: a polled
+  DesignWare I2C master with its timing computed from the machine's own clock tree (49.5 MHz on
+  radon: bus_root on PLL2, divisors 3/2/4), a read of the PMIC's `0x32` register, and a write of
+  bit 6 alone. Four consecutive 120-second cycles, four identical transcripts: read `0x24`, write
+  `0x64`, power cut mid-print on the line after the write's stop, second banner. SBI SRST was
+  never reached. `bench/radon-2026-10-10/592-optionb-four-cycles.log` is the artifact;
+  `592-sbi-row4-drain.log` beside it is row 4's.
 
 ## What happens
 
@@ -128,14 +147,23 @@ What each outcome means, decided before it runs:
 
 | | what | status |
 |---|---|---|
-| A | before the `ecall`, bring I2C5 back up from the kernel | built here, corrected to the reset line |
-| B | nife writes the AXP15060 itself: a minimal DesignWare I2C master, and bit 6 alone | not started; the next step on two of the rows above |
-| C | update radon's SPL and OpenSBI to a build with the upstream fixes | calef's call: writes the SPI flash of the only board of its kind |
+| A | before the `ecall`, bring I2C5 back up from the kernel | built and merged (#1299); necessary and, alone, intermittent: row 1 on 2026-10-09, row 4 on 2026-10-10 |
+| B | nife writes the AXP15060 itself: a minimal DesignWare I2C master, and bit 6 alone | built here and proven four times in a row, 2026-10-10; the machine's first route, SBI SRST the fallback |
+| C | update radon's SPL and OpenSBI to a build with the upstream fixes | calef's call: writes the SPI flash of the only board of its kind; unneeded while B holds |
 
 ## BUGS
 
-- Nothing here has run on radon. Every register above is read from source, in trees that agree;
-  none has been observed on this board. Milestone 220's clock driver has, on the STG window.
+- ~~Nothing here has run on radon.~~ Run on radon three ways now: the firmware route worked once
+  (2026-10-09) and hung once (2026-10-10, row 4), and the direct route reset the board four
+  consecutive times. Every register word in the transcripts is observed silicon, not source.
+- The SBI SRST fallback still sets the PMIC's power-off bit (bit 7) before the reset bit, per
+  radon's OpenSBI. The direct route is why that quirk no longer decides anything: its write sets
+  bit 6 alone, read-modify-write, and runs first.
+- The direct route's timing depends on the rate chain the crate computes from the machine's own
+  CRG and syscon words (49.5 MHz and divisors 3/2/4 on radon, printed in every transcript). A
+  future firmware that reprograms the APB chain changes the printed numbers and the timing with
+  them; the formula follows the words, so a stale number in an old transcript is a fact about that
+  boot, not a bug in this one.
 - The board test exit's shutdown takes the same road and is not changed. `arch::semihosting::exit`
   under `board` calls SRST shutdown, which on radon is the same PMIC write (notes/visionfive2.md,
   boot 15+). Preparing the bus there would make a board test run power radon off for real, which
@@ -143,7 +171,9 @@ What each outcome means, decided before it runs:
 - A controller released from reset is at its hardware defaults, and radon's OpenSBI programs no
   timing, only the target address and the enable. The defaults are the DesignWare IP's synthesis
   parameters and are not published for the JH7110. If they are wrong for a 100 kHz bus, the
-  fourth outcome row is the one that appears.
+  fourth outcome row is the one that appears. **That row is the one that appeared, 2026-10-10**,
+  which is why option B programs the standard-mode timing itself from the machine's own clock
+  words rather than trusting any default.
 - Radon's OpenSBI may power the board off rather than reset it: it sets bit 7 before choosing
   between bits 6 and 7. That is the second outcome row; nothing in the kernel can change it short of
   option B.
@@ -154,8 +184,9 @@ What each outcome means, decided before it runs:
 ## Evidence
 
 - Host tests: `cargo test -p jh7110_clock_and_reset -p device_tree_blob`, including
-  `radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipped` and
-  `finds_the_parent_of_a_compatible_node`.
+  `radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipped`,
+  `finds_the_parent_of_a_compatible_node`, the rate-chain tests (`the_osc_root_chain_divides_and_
+  the_pll2_chain_multiplies`), the worked-by-hand timing test and the controller/address fixtures.
 - QEMU, 2026-09-25 on patagonia, `script/soak-test --reboot --arch riscv64`, on this branch rebased
   onto `ac2f2adfd`. The boot tour printed `hw clock : skipped (this machine's tree names no JH7110
   ...)`, no `JH7110:` line appeared before the reset, and the run ended:
@@ -168,12 +199,39 @@ What each outcome means, decided before it runs:
   The same run first failed with `starts=0` on a fresh worktree, because the riscv64 runner needs
   `target/nifefs.img` and the reboot path never built it. `xtask/src/soak.rs` now runs `mkdisk`
   there, as the job-mix path already did.
+- QEMU, 2026-10-10, twice on this lane after the drain and after the direct route: the same PASS,
+  the reset still proven with both changes in the path (`130s in`, `PASS`).
+- radon, 2026-10-09: outcome row 1, the firmware route worked once, transcript lost to the
+  un-drained UART (the 225 lane's `bench/radon-2026-10-10/soak-boot2.log` holds the segment).
+- radon, 2026-10-10: `bench/radon-2026-10-10/592-sbi-row4-drain.log`, row 4 with every line
+  captured, and `bench/radon-2026-10-10/592-optionb-four-cycles.log`, four deterministic
+  direct-write resets:
+
+  ```text
+  soak-test-reboot: AXP15060: direct route, controller 0x12050000, PMIC 0x36, IC clock 49500000 Hz
+                    (bus_root 1, divs 3/2/4, pll2 fbdiv 99 prediv 2 postdiv1 1), standard mode
+                    hcnt 208 lcnt 229 sda_hold 15
+  soak-test-reboot: AXP15060: reg 0x32 read 0x24, writing 0x64 (bit 6 set, every other bit as
+                    found); this line is the last if the PMIC honours it
+  soak-test-reboot: AXP15060: write completed without a r        <- power cut mid-word, four times
+  ```
 
 ## Follow-on
 
-- **Outstanding.** The one bench reset above, on radon, by calef. It turns this block BUILT or names
-  which of options B and C comes next.
+- **Done.** The one bench reset the block was minted for, and three more besides: calef at the
+  bench, 2026-10-09 and 2026-10-10. The direct route is the machine's reset; the block is BUILT by
+  his ruling.
+- **Outstanding, homed in the BUGS above.** The board test exit's shutdown path (`exit` under
+  `board` powers radon off through SRST shutdown): now that the bus bring-up and a working I2C
+  master exist, deciding whether a board test run should power the board off, or `wfi` instead, is
+  a small lane of its own and a workflow question first.
+- **Unblocked.** Milestone 249's unattended boot-lottery series on radon: four cycles ran
+  themselves in fifteen minutes with zero attention, and the crossing counts they produced
+  (E8-E12 in the multicore curve) are the series' first data.
 
 ## Index row
 
-radon's SBI cold reboot hangs because OpenSBI resets the board over I2C5 and U-Boot left that bus's reset asserted; OpenSBI also ungates the wrong clock. The kernel now ungates I2C5's clock and releases its reset, read from the device tree, just before the reset. It has not run on radon.
+radon's cold reboot is the kernel's own now: a polled DesignWare I2C master with its timing
+computed from the machine's clock words writes the AXP15060's reset bit directly, proven
+deterministic over four consecutive self-reboots (2026-10-10); SBI SRST, which hung on the same
+bus a day earlier, is the fallback route

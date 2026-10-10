@@ -760,6 +760,31 @@ pub fn enter_reset() {
     });
 }
 
+/// **Wait for every printed byte to leave the machine**, for milestone 592 (radon's cold reboot
+/// dies in OpenSBI's PMIC write), found 2026-10-10.
+///
+/// Two halves, because kernel output has two places to be caught: [`kernel_log::flush`] moves what
+/// an attached drainer has not printed from the ring to the wire, and the driver's
+/// `drain_transmitter` then waits out the 115200-bit gap between the FIFO and the wire. `write_byte`
+/// returns when the FIFO has *room*, not when bytes are sent, so code that prints and then kills the
+/// machine loses the tail of its own last lines without both.
+///
+/// The 2026-10-09 radon bench caught it live: `arch::reboot` printed its line, called SBI SRST in
+/// the next microseconds, and the PMIC dropped power mid-line, so the reset's own transcript never
+/// reached the console log. Every arch reset and the board exit drain through this before the
+/// instruction that may never return.
+///
+/// Name: provisional (milestone 592, 2026-10-10): calef names public items.
+pub fn drain() {
+    let mut guard = CONSOLE.lock();
+    let con = &mut *guard;
+    let (line, mut wire) = con.split();
+    crate::kernel_log::flush(line, |s| {
+        let _ = CountedWrites(&mut wire).write_str(s);
+    });
+    wire.uart.drain_transmitter();
+}
+
 /// **Bytes handed to the console transmitter since boot** (first-silicon diagnostics, 2026-08-15).
 ///
 /// Counted after each `write_str` completes, so a count here means the driver's bounded world has

@@ -1,0 +1,281 @@
+s=2 deferred=0
+ drifted=0 crossings=821636 remote=5358442 stealkes=5583467 wakerate=404/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=611130 remote=3991611 steals=2 deferred=0
+soak-test: t=13963s beat=2765 rounds=4390814854 rate=317459/s wakes=5585487 wakerate=404/s workers=24 refused=0 mismatch=0 ss=2 deferred=0
+
+U-Boot SPL 2021.10 (Feb 12 2023 - 18:15:33 +0800)
+DDR version: dc2e84f0.
+Trying to boot from SPI
+
+OpenSBI v1.2
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : StarFive VisionFive V2
+Platform Features         : medeleg
+Platform HART Count       : 5
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 4000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : jh7110-hsm
+Platform PMU Device       : ---
+Platform Reboot Device    : pm-reset
+Platform Shutdown Device  : pm-reset
+Firmware Base             : 0x40000000
+Firmware Size             : 292 KB
+Runtime SBI Version       : 1.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 1
+Domain0 HARTs             : 0*,1*,2*,3*,4*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000040000000-0x000000004007ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000040200000
+Domain0 Next Arg1         : 0x0000000042200000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 1
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdcbx
+Boot HART ISA Extensions  : none
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 4096
+Boot HART PMP Address Bits: 34
+Boot HART MHPM Count      : 2
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+
+
+U-Boot 2021.10 (Feb 12 2023 - 18:15:33 +0800), Build: jenkins-VF2_515_Branch_SDK_Release-24
+
+CPU:   rv64imacu
+Model: StarFive VisionFive V2
+DRAM:  8 GiB
+MMC:   sdio0@16010000: 0, sdio1@16020000: 1
+Loading Environment from SPIFlash... SF: Detected gd25lq128 with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+StarFive EEPROM format v2
+
+--------EEPROM INFO--------
+Vendor : StarFive Technology Co., Ltd.
+Product full SN: VF7110B1-2253-D008E000-00004584
+data version: 0x2
+PCB revision: 0xb2
+BOM revision: A
+Ethernet MAC0 address: 6c:cf:39:00:47:2c
+Ethernet MAC1 address: 6c:cf:39:00:47:2d
+--------EEPROM INFO--------
+
+In:    serial@10000000
+Out:   serial@10000000
+Err:   serial@10000000
+Model: StarFive VisionFive V2
+Net:   eth0: ethernet@16030000, eth1: ethernet@16040000
+switch to partitions #0, OK
+mmc1 is current device
+found device 1
+bootmode flash device 1
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Hit any key to stop autoboot:  2  1  0 
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Importing environment from mmc1 ...
+## Warning: Input data exceeds 1048576 bytes - truncated
+## Info: input data size = 1048578 = 0x100002
+** Invalid partition 2 **
+Couldn't find partition mmc 1:2
+Can't set block device
+## Warning: defaulting to text format
+## Error: "boot2" not defined
+switch to partitions #0, OK
+mmc1 is current device
+Scanning mmc 1:1...
+Found U-Boot script /boot.scr.uimg
+1595 bytes read in 8 ms (194.3 KiB/s)
+## Executing script at 43900000
+nife: boot.scr is driving this boot, milestones 218 and 257
+nife: tftp server is 192.168.8.206, setenv nife_boot_server to point somewhere else
+ethernet@16030000 Waiting for PHY auto negotiation to complete...... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+DHCP client bound to address 192.168.8.200 (258 ms)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-vf2.img'.
+Load address: 0x40200000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #########################
+	 6.7 MiB/s
+done
+Bytes transferred = 3222748 (312cdc hex)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-initrd.img'.
+Load address: 0x90000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #####################################
+	 6.9 MiB/s
+done
+Bytes transferred = 12939776 (c57200 hex)
+nife: payload came from net
+Moving Image from 0x40200000 to 0x80200000, end=80512000
+## Flattened Device Tree blob at 86000000
+   Booting using the fdt blob at 0x86000000
+   Using Device Tree in place at 0000000086000000, end 000000008600d41a
+
+Starting kernel ...
+
+clk u5_dw_i2c_clk_core already disabled
+clk u5_dw_i2c_clk_apb already disabled
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc08022a510  (high half: Sv39 paging is on)
+  device tree : 0x0000000086000000
+  screen      : none (no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for); this console is the UART
+  traps       : stvec set; a breakpoint was caught and stepped over (1)
+  timer       : 21 ticks in ~0.2s (SBI timer + S-mode interrupt at 100 Hz)
+  memory      : device tree parsed, frame allocator up (first frame 0x400a0000)
+  smp: 5 core(s) in the device tree, 4 startable
+  smp: cpu 0's riscv,isa names user mode and not supervisor: it cannot run this kernel, whatever status and mmu-type claim; not started
+  plic: S contexts from the device tree differ from the 2h+1 formula (expected on the JH7110: the disabled S7 shifts every context down one)
+  paging      : fine-grained W^X Sv39 tables installed, satp switched (paging on: true)
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+  smp: sbi hsm hart_start (the only mechanism RISC-V defines)
+  smp: cpu 0 is not startable by this kernel (disabled, no supervisor
+       mode, or an enable-method we do not speak); leaving it alone.
+  smp: 4 core(s) online
+
+nife
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  stack top       : 0xffffffc080462000
+  firmware handoff: 0x0000000086000000  (device tree)
+  processors      : 4 online of 5 described, boot cpu hwid 0x1
+  memory          : 4096 MiB total, 4071 MiB free (24844 KiB in use)
+  console         : NS16550 at 0xffffffc010000000, interrupt line 32
+                  : no screen; this console is the UART alone
+  interrupts      : PLIC at 0x000000000c000000, this hart's S-mode context 2
+  timer           : 100 Hz tick, counter at 4 MHz, interrupts ON
+  initrd          : 12939776 bytes at 0x0000000090000000, a nifefs archive of 112 program(s)
+  pcie            : none (this machine describes no host bridge)
+  iommu           : none (no riscv-iommu-pci function on this machine's bus)
+  mmu             : Sv39 on, fine-grained W^X tables installed, one satp, kernel high half at 0xffffffc000000000
+                  : kernel root 0x00000000400a1000, live satp root 0x00000000400a1000
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: riscv64, 4 processor(s), 4096 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffffffc180000000 -> 0x408ce000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x408ce000; used 6213 -> Some(6214) -> Some(6213)
+  self-test       : timer      ok      the 4MHz counter advanced 80001 and 2 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+nife self-test: 5 of 5 passed
+  user address space : process satp activated (kernel half shared), user 0x400000 -> Some((408e2000, Flags(3)))
+  userspace   : a program was started at U-mode (yield/yield/exit via ecall)
+  user ELF    : an archive; the progenitor composes this machine's userspace at the handoff below
+  preemption  : two never-yield threads ran 7491704 and 6538141 iterations, 82 preemptions (a thread that refuses to yield is preempted anyway)
+  uart irq    : source 32 (machine description)
+  device IRQ  : userspace driver started (holds an Irq cap + a UART mapping); pipe a byte to see it
+  virtio      : no block device attached (pass NIFE_DISK to attach one)
+  pcie        : no virtio-blk on the bus (pass NIFE_DISK to attach one)
+  hw clock    : JH7110 STG CRG at 0x10230000 (named by this machine's device tree): clocks 0x00000000,0x00000000 -> 0x80000000,0x80000000 (running); reset 3 assert 0x007ffffe -> 0x007ffff6, status 0x00000009 (released, 1 polls)
+  capability slots: 2 of 64 at peak
+  hw entropy  : JH7110 TRNG at 0x1600c000 served 32+32 bytes to a client through a capability that names no device; first draw fbca1855.., second differs; STAT after init 0x00040308 (256-bit: all eight RAND words are the answer); since the pcie line 20842 us, of which bring-up 562 us (window mapped, driver spawned, reseed, first generation; the hw clock line's own console time excluded) and 64 bytes in 65 us (977099 bytes/s over 8 round trips)
+nife: the capability core runs on RISC-V.
+
+soak-test: started 4 groups of one responder, 3 callers, 1 grinder and 1 tick waiter (24 user threads) on 4 online core(s), beating every 5s
+  capability slots: 3 of 64 at peak
+soak-test: silence longer than a few beats is a hang, not a slow run; the beat is on the wall clock and does not depend on the workload making progress
+soak-test: a clean run is a number to compare against, NOT evidence that the concurrency is correct (design/roadmap/0219-a-workload-that-does-not-stop.md)
+soak-test: the threads that cross cores are the tick waiters, NOT the rendezvous pairs; a rising crossings count is the wake protocol sustained across cores under load, not the IPC workload migrating (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test: rounds counts IPC round trips and wakes counts tick-route wakes; they are separate because they are separate quantities, and neither rate compares with a soak built differently
+soak-test-reboot: THIS BUILD REBOOTS THE BOARD. It soaks for 120s, then asks for a cold reboot (SBI SRST system_reset, reset type 1) and draws the thread-placement lottery again, forever.
+soak-test-reboot: to stop the loop: press any key on this console. The check is a poll of the UART's data-ready bit once every 5s and again 5s before each reset, and the bit is sticky, so a keypress at any moment is found. Stopping disarms the reboot and leaves the soak running; it does not end the run.
+soak-test-reboot: the fallback that needs no cooperation from this kernel is the firmware's own autoboot countdown or boot menu on the next boot, and after that, the boot medium.
+soak-test-census: where the kernel placed each worker at spawn: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=1 threads=6 C0 G0 W1 W2 C3 G3
+soak-test-census: core=2 threads=5 R0 W0 R1 G2 R3
+soak-test-census: core=3 threads=6 C0 C1 C1 G1 R2 C2
+soak-test-census: core=4 threads=7 C0 C1 C2 C2 C3 C3 W3
+soak-test-census: this is the boot-time lottery and NOT where the run settles: a rendezvous wake queues the peer on the waker's own core (DECISIONS 138, how a saturated workload is made to hand threads across cores), so each group converges onto one core within a few exchanges
+soak-test-census: the beat line's drifted= is how many responders, callers and grinders are no longer on the core the census above put them on; while it reads 0 that census is current, and a nonzero one is followed by the census that replaces it
+soak-test-census: tick waiters are excluded from drifted= because their movement is the point rather than a surprise, and it is already crossings= (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test: t=5s beat=1 rounds=161251 rate=32250/s wakes=2122 wakerate=424/s workers=24 refused=0 mismatch=0 stalled=0 drifted=11 crossings=354 remote=1476 steals=4 deferred=22
+soak-test-census: where the workers are NOW, the arrangement above having changed: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=1 threads=5 R3 C3 C3 C3 G3
+soak-test-census: core=2 threads=5 R0 C0 C0 C0 G2
+soak-test-census: core=3 threads=9 R1 C1 C1 C1 G1 R2 C2 C2 C2
+soak-test-census: core=4 threads=5 G0 W0 W1 W2 W3
+soak-test: t=10s beat=2 rounds=316254 rate=31000/s wakes=4150 wakerate=405/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=660 remote=2869 steals=4 deferred=48
+soak-test: t=15s beat=3 rounds=470314 rate=30812/s wakes=6160 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=970 remote=4252 steals=4 deferred=75
+soak-test: t=20s beat=4 rounds=624374 rate=30812/s wakes=8174 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1295 remote=5617 steals=4 deferred=113
+soak-test: t=25s beat=5 rounds=778471 rate=30819/s wakes=10186 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1632 remote=6998 steals=4 deferred=135
+soak-test: t=30s beat=6 rounds=932621 rate=30830/s wakes=12196 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1997 remote=8375 steals=4 deferred=155
+soak-test: t=35s beat=7 rounds=1086534 rate=30782/s wakes=14205 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=2345 remote=9750 steals=4 deferred=180
+soak-test: t=40s beat=8 rounds=1240583 rate=30809/s wakes=16218 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=2692 remote=11131 steals=4 deferred=200
+soak-test: t=45s beat=9 rounds=1394410 rate=30765/s wakes=18224 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=3054 remote=12490 steals=4 deferred=227
+soak-test: t=50s beat=10 rounds=1548348 rate=30787/s wakes=20233 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=3417 remote=13867 steals=4 deferred=245
+soak-test: t=55s beat=11 rounds=1702402 rate=30810/s wakes=22246 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=3767 remote=15251 steals=4 deferred=260
+soak-test: t=60s beat=12 rounds=1856313 rate=30782/s wakes=24253 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=4108 remote=16642 steals=4 deferred=278
+soak-test: t=65s beat=13 rounds=2010319 rate=30801/s wakes=26266 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=4437 remote=18017 steals=4 deferred=307
+soak-test: t=70s beat=14 rounds=2164372 rate=30810/s wakes=28278 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=4719 remote=19424 steals=4 deferred=323
+soak-test: t=75s beat=15 rounds=2318168 rate=30759/s wakes=30286 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=5040 remote=20817 steals=4 deferred=340
+soak-test: t=80s beat=16 rounds=2471995 rate=30765/s wakes=32294 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=5410 remote=22187 steals=4 deferred=360
+soak-test: t=85s beat=17 rounds=2625805 rate=30762/s wakes=34302 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=5755 remote=23566 steals=4 deferred=382
+soak-test: t=90s beat=18 rounds=2779672 rate=30773/s wakes=36309 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=6090 remote=24945 steals=4 deferred=404
+soak-test: t=95s beat=19 rounds=2933706 rate=30806/s wakes=38322 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=6443 remote=26317 steals=4 deferred=426
+soak-test: t=100s beat=20 rounds=3087846 rate=30828/s wakes=40334 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=6809 remote=27693 steals=4 deferred=449
+soak-test: t=105s beat=21 rounds=3241589 rate=30748/s wakes=42342 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=7123 remote=29072 steals=4 deferred=476
+soak-test: t=110s beat=22 rounds=3395694 rate=30821/s wakes=44354 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=7465 remote=30451 steals=4 deferred=495
+soak-test: t=115s beat=23 rounds=3549825 rate=30826/s wakes=46366 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=7826 remote=31821 steals=4 deferred=515
+soak-test: t=120s beat=24 rounds=3703599 rate=30754/s wakes=48374 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=8152 remote=33192 steals=4 deferred=539
+soak-test-reboot: window reached at t=120s. Cold-rebooting in 5s to draw the placement lottery again; press any key on this console to stop the loop.
+soak-test-reboot: JH7110: bringing the PMIC's I2C bus back up first, because OpenSBI resets this board with an I2C write to the AXP15060 (milestone 592). SYS CRG at 0x13020000 (named by this machine's device tree); plan from the tree's own clocks and resets of the PMIC's bus (1 specifier(s) skipped).
+soak-test-reboot: JH7110: clock 143 0x80000000 -> 0x80000000 (running)
+soak-test-reboot: JH7110: reset 81 assert 0xffe7efcc -> 0xffe5efcc, status 0x001a1033 (released, 1 polls)
+soak-test-reboot: rebooting now (SBI SRST system_reset, reset type 1).
+soak-test-reboot: attempt 1 of 1: SBI SRST system_reset, reset type 1 (cold reboot). The next thing this console should show is the firmware's banner.
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+i2c read: read reg 32 to
+cannot read pmic power register

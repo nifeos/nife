@@ -614,11 +614,13 @@ fn draw_again(elapsed: u64) {
     }
 
     // Every attempt prints its own line before it is made, because a reset stops the UART
-    // draining and anything after the call may never reach the wire. `arch::reboot` returns only
-    // when every route this architecture has was refused, each refusal already on the console.
-    crate::reboot::prepare_reset_route(REBOOT_MARKER);
+    // draining and anything after the call may never reach the wire. `cold_reset` returns only
+    // when every route was refused, board routes before firmware routes (the direct AXP15060
+    // write milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) adds is the first on
+    // a JH7110), each refusal already on the console.
     println!("{REBOOT_MARKER} rebooting now ({REBOOT_ROUTE}).");
-    let refused = arch::reboot(REBOOT_MARKER);
+    crate::console::drain();
+    let refused = crate::reboot::cold_reset(REBOOT_MARKER);
     println!(
         "{REBOOT_MARKER} FAILED ({refused:?}): every reset route was refused (the lines above say \
          how), so an unattended series is not available on this machine by this route. The soak \

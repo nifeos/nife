@@ -288,8 +288,22 @@ fn commit(r: &Ring<'_>, line: &mut Line, cut: bool, out: &mut impl FnMut(&str)) 
 /// **The panic path's half.** From here on every line is direct, and whatever the drainer had not
 /// printed yet (the partial line too) goes to the UART before the panic's own message. Called
 /// with the console lock already broken open and held by the caller.
-pub fn enter_panic(line: &mut Line, mut out: impl FnMut(&str)) {
+pub fn enter_panic(line: &mut Line, out: impl FnMut(&str)) {
     PANICKING.store(true, Ordering::Relaxed);
+    flush(line, out);
+}
+
+/// **Catch the ring up to the wire, once, without the panic latch**, for milestone 592 (radon's
+/// cold reboot dies in OpenSBI's PMIC write), 2026-10-10.
+///
+/// [`enter_panic`](Self)'s mechanics for a caller that is not panicking and is not staying: whatever
+/// the drainer has not printed yet, plus the partial line, goes to the UART now, and the latch that
+/// makes every later line direct is *not* set, so a caller whose reset the firmware refuses leaves
+/// the console exactly as it found it. `console::drain` calls this before waiting on the
+/// transmitter, so a reset's last lines survive both halves of the path: the ring and the wire.
+///
+/// Name: provisional (milestone 592, 2026-10-10): calef names public items.
+pub fn flush(line: &mut Line, mut out: impl FnMut(&str)) {
     let Some(r) = ring() else {
         return;
     };

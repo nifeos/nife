@@ -136,7 +136,10 @@ fn sbi_system_reset(reset_type: usize) -> isize {
 /// and return only when every route this architecture has was refused. Here there is one route.
 /// The line is printed before the `ecall` because once the firmware begins a reset the UART stops
 /// draining; the refusal is printed after, with the firmware's own `sbiret.error`, so a firmware
-/// that says no is read off a console rather than assumed.
+/// that says no is read off a console rather than assumed. Since milestone 592 (radon's cold
+/// reboot dies in OpenSBI's PMIC write), `console::drain` runs between the two, because printing
+/// first is not sending first and the 2026-10-09 bench lost the un-drained tail of exactly these
+/// lines to the PMIC's power cut.
 ///
 /// Works under QEMU `virt` as well as on radon: OpenSBI implements reset type 1 there through the
 /// `sifive_test` device, the machine resets, and `-kernel` is loaded again. That is what
@@ -149,6 +152,11 @@ pub fn reboot(marker: &str) -> abi::Error {
         "{marker} attempt 1 of 1: SBI SRST system_reset, reset type 1 (cold reboot). The next thing \
          this console should show is the firmware's banner."
     );
+    // The reset the ecall starts cuts power mid-line if the transmitter is still draining: the
+    // 2026-10-09 radon bench lost this very line, and the soak's `rebooting now` above it, to
+    // exactly that (milestone 592, radon's cold reboot dies in OpenSBI's PMIC write). Draining
+    // first is what makes the "printed before the ecall" claim below true.
+    crate::console::drain();
     let error = sbi_system_reset(SRST_RESET_TYPE_COLD_REBOOT);
     crate::println!(
         "{marker} SBI SRST refused: sbiret.error={error} (-2 is SBI_ERR_NOT_SUPPORTED, an OpenSBI \
@@ -173,7 +181,9 @@ pub fn exit(code: u32) -> ! {
     } else {
         crate::println!("NIFE-TEST-EXIT: FAIL {}", code);
     }
-
+    // Same defect as `reboot` above, same fix: the marker this function exists to print is the one
+    // a shutdown ecall would cut mid-line, and a harness that misses it misreports the run.
+    crate::console::drain();
     sbi_system_reset(SRST_RESET_TYPE_SHUTDOWN);
 
     // SBI SRST should not return. If it does, stop rather than run on.

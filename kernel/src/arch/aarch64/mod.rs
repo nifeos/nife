@@ -205,7 +205,9 @@ const PSCI_SYSTEM_RESET: u64 = 0x8400_0009;
 /// The arch contract `soak::draw_again` and, since milestone 805 (`reboot` at the prompt),
 /// `kernel::reboot::restart` call on all three architectures: print one line per attempt, prefixed
 /// with `marker`, *before* making it (a reset stops the UART draining), and return only when every
-/// route was refused. aarch64 has one route, because PSCI is the firmware interface that owns the
+/// route was refused. `console::drain` runs between print and call, because milestone 592 (radon's
+/// cold reboot dies in OpenSBI's PMIC write) found that printing first is not sending first.
+/// aarch64 has one route, because PSCI is the firmware interface that owns the
 /// machine's power here: the same `/psci` node [`cpu_start`] reads names the conduit, so this
 /// cannot be on the wrong one of `hvc` and `smc` unless `CPU_ON` is too.
 ///
@@ -248,7 +250,14 @@ pub fn reboot(marker: &str) -> abi::Error {
         (version >> 16) & 0xffff,
         version & 0xffff,
     );
-    let error = call(PSCI_SYSTEM_RESET);
+    let error = {
+        // PSCI SYSTEM_RESET is the aarch64 twin of the reset that lost its own transcript on radon
+        // (milestone 592, radon's cold reboot dies in OpenSBI's PMIC write; 2026-10-09): print,
+        // drain, then call, or the marker line above is still in the FIFO when firmware kills the
+        // machine.
+        crate::console::drain();
+        call(PSCI_SYSTEM_RESET)
+    };
     println!(
         "{marker} PSCI SYSTEM_RESET refused: returned {error} (-1 is NOT_SUPPORTED, a PSCI 0.1 \
          firmware or one that does not offer system reset)"

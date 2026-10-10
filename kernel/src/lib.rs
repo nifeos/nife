@@ -91,6 +91,7 @@ mod e1000e;
 // See kernel/src/designware_ethernet.rs.
 #[cfg(target_arch = "riscv64")]
 mod designware_ethernet;
+mod designware_i2c;
 // The xHCI bring-up policy (milestone 242 (USB host and HID)): find the controller, take it from
 // the firmware, draw the driver's register window and confine its DMA, then hand the whole
 // controller to `usb_keyboard_driver` at EL0. See kernel/src/extensible_host_controller_interface.rs.

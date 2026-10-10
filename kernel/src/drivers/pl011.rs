@@ -166,6 +166,28 @@ impl Pl011 {
         }
         r.DR.set(byte as u32);
     }
+
+    /// **Wait until every byte written has left the wire.** Polls `FR::BUSY`, which the PL011 holds
+    /// set while anything (FIFO or shift register) is still transmitting; where
+    /// [`write_byte`](Self::write_byte) only waits for room, so returning from a print says nothing
+    /// about the bytes having been sent.
+    ///
+    /// The riscv64 twin (`Ns16550::drain_transmitter`, same name on purpose) was built for the
+    /// defect the 2026-10-09 radon bench caught: a reset called microseconds after a print drops
+    /// power with the UART mid-line, and the line is lost. aarch64 takes this through
+    /// `arch::reboot`'s PSCI call for the same reason. The bound is the same size as the ns16550's
+    /// for the same reason: the drain is milliseconds, the bound only trips on dead silicon, and
+    /// the caller is about to reset the machine, where proceeding beats hanging.
+    ///
+    /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
+    /// 2026-10-10: calef names public items.
+    pub fn drain_transmitter(&self) {
+        let mut spins = 1_000_000u32;
+        while self.regs().FR.is_set(FR::BUSY) && spins > 0 {
+            core::hint::spin_loop();
+            spins -= 1;
+        }
+    }
 }
 
 /// This is what earns us `println!("{:#x}", addr)` on bare metal.

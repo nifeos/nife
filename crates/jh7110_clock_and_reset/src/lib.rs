@@ -481,6 +481,13 @@ pub struct PmicBus {
     pub skipped: usize,
     /// True when the bus named more usable steps than [`MAX_PMIC_BUS_STEPS`].
     pub truncated: bool,
+    /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
+    /// tree states it. Option B's write needs it; a plan without one (the constant fallback, or a
+    /// tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
+    pub controller: Option<(u64, u64)>,
+    /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
+    /// trees. `None` when the tree names no known PMIC at all.
+    pub pmic_address: Option<u32>,
 }
 
 impl PmicBus {
@@ -498,9 +505,54 @@ impl PmicBus {
             pmic,
             skipped,
             truncated: false,
+            controller: None,
+            pmic_address: None,
         };
         bus.steps[..PMIC_BUS_BRING_UP.len()].copy_from_slice(PMIC_BUS_BRING_UP);
         bus
+    }
+}
+
+/// One `reg` property's first address and size, from the cells either tree spelling uses: four
+/// cells (`<hi lo size-hi size-lo>`, the root's `#address-cells 2` and `#size-cells 2`) or two
+/// (`<addr size>`). Big-endian, as every device tree cell is. `None` for a shorter or partial
+/// property, which the caller treats as "not stated".
+fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
+    let u32be = |at: usize| -> u64 {
+        u64::from(u32::from_be_bytes([
+            cells[at],
+            cells[at + 1],
+            cells[at + 2],
+            cells[at + 3],
+        ]))
+    };
+    if cells.len() >= 16 {
+        Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))
+    } else if cells.len() >= 8 {
+        Some((u32be(0), u32be(4)))
+    } else {
+        None
+    }
+}
+
+/// Read the two option-B facts out of `tree` for the PMIC `pmic`: the PMIC node's own `reg` (its
+/// I2C address) and its parent bus node's `reg` (the controller's window). Both are optional in the
+/// tree, so both are `Option`, and neither affects the clocks-and-resets plan.
+fn fill_pmic_address_and_bus(
+    tree: &device_tree_blob::DeviceTreeBlob<'_>,
+    pmic: &[u8],
+    bus: &mut PmicBus,
+) {
+    // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`, which
+    // `node_reg_compatible`'s Region shape cannot carry (it skips zero-size regions on purpose).
+    // So read the raw cells and take the first, which both of radon's trees spell `<0x36>`.
+    if let Ok(Some(cells)) = tree.node_prop_compatible(pmic, b"reg")
+        && cells.len() >= 4
+    {
+        bus.pmic_address = Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
+    }
+    if let Ok(Some(cells)) = tree.parent_prop_compatible(pmic, b"reg") {
+        bus.controller = parse_reg(cells);
     }
 }
 
@@ -535,9 +587,12 @@ pub fn pmic_bus(
             if tree.node_prop_compatible(pmic, b"compatible")?.is_none() {
                 continue;
             }
-            return Ok(PmicBus::fallback(Some(pmic), 0));
+            let mut bus = PmicBus::fallback(Some(pmic), 0);
+            fill_pmic_address_and_bus(tree, pmic, &mut bus);
+            return Ok(bus);
         }
         let mut bus = PmicBus::fallback(Some(pmic), 0);
+        fill_pmic_address_and_bus(tree, pmic, &mut bus);
         bus.len = 0;
         for (list, is_clock) in [(clocks, true), (resets, false)] {
             let Some(list) = list else { continue };
@@ -567,6 +622,204 @@ pub fn pmic_bus(
     }
     Ok(PmicBus::fallback(None, 0))
 }
+
+// ===== Option B: the direct reset write, and the numbers it needs (milestone 592, 2026-10-10) =====
+//
+// The 2026-10-10 bench (keep that transcript beside this) put radon's reset in the outcome table's
+// fourth row: the bus provably up (`running`, `released`), and OpenSBI's read of the PMIC still
+// failing ten times. Option B is this kernel writing the AXP15060 itself over a DesignWare I2C
+// master, which needs three numbers the tree and the CRG hold: the controller's base, the PMIC's
+// address, and the I2C input clock that scales every timing count. Everything here is host-testable
+// arithmetic over words the kernel reads; the sources are the same vendor trees 592 already pinned.
+
+/// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
+/// [`SYS_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
+/// (`SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`, fetched 2026-10-10), which resolves
+/// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
+/// different windows, same offsets.
+pub const SYS_SYSCON_BASE: u64 = 0x1303_0000;
+
+/// The SYS syscon window's size, matching the CRG window's.
+pub const SYS_SYSCON_SIZE: u64 = 0x1_0000;
+
+/// `JH7110_BUS_ROOT` in the vendor header radon's U-Boot builds from, **5**. Word `0x14`: a mux
+/// whose bit 24 picks `osc` (0) or `pll2_out` (1), per the vendor clock driver's registration
+/// (`bus_root_sels`, `starfive_clk_mux(..., SYS_OFFSET(JH7110_BUS_ROOT), 1, ...)`).
+pub const SYSCLK_BUS_ROOT: u32 = 5;
+
+/// `JH7110_AXI_CFG0`, **7**. Word `0x1c`: a one-based 2-bit divider off `bus_root`.
+pub const SYSCLK_AXI_CFG0: u32 = 7;
+
+/// `JH7110_STG_AXIAHB`, **8**. Word `0x20`: a one-based 2-bit divider off `axi_cfg0`.
+pub const SYSCLK_STG_AXIAHB: u32 = 8;
+
+/// `JH7110_APB_BUS_FUNC`, **11**. Word `0x2c`: a one-based 4-bit divider off `stg_axiahb`, the
+/// last divider before the APB tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
+pub const SYSCLK_APB_BUS_FUNC: u32 = 11;
+
+/// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
+pub const OSC_HZ: u64 = 24_000_000;
+
+/// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for PLL2), returned
+/// rather than guessed from fields that are not in integer mode.
+pub const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
+
+/// **The words the I2C input-clock chain reads**, one struct so the kernel can read them in one
+/// place and the arithmetic can be tested without a device (milestone 592, provisional). The CRG
+/// words come from [`SYS`]'s window at the offsets the ids above give; the PLL2 words from
+/// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
+/// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IcClkWords {
+    /// Word `0x14` of the CRG: `bus_root`'s mux, bit 24.
+    pub bus_root: u32,
+    /// Word `0x1c`: `axi_cfg0`'s divider, bits 1:0, one-based.
+    pub axi_cfg0: u32,
+    /// Word `0x20`: `stg_axiahb`'s divider, bits 1:0, one-based.
+    pub stg_axiahb: u32,
+    /// Word `0x2c` of the CRG: `apb_bus_func`'s divider, bits 3:0, one-based.
+    pub apb_bus_func: u32,
+    /// SYS syscon word `0x2c`: PLL2's DACPD, DSMPD and FBDIV.
+    pub pll2_dacpd_dsmpd_fbdiv: u32,
+    /// SYS syscon word `0x30`: PLL2's POSTDIV1, bits 29:28.
+    pub pll2_postdiv1: u32,
+    /// SYS syscon word `0x34`: PLL2's PREDIV, bits 5:0.
+    pub pll2_prediv: u32,
+}
+
+/// A one-based divider field of `width` bits: the value when nonzero, 1 when the field reads zero
+/// (a zero a one-based divider never means, and a boot that left one is a fact the caller's print
+/// should carry rather than a divide-by-zero).
+#[must_use]
+pub const fn one_based_div(word: u32, width: u32) -> u64 {
+    let mask = if width >= 32 {
+        u32::MAX
+    } else {
+        (1 << width) - 1
+    };
+    let value = (word & mask) as u64;
+    if value == 0 { 1 } else { value }
+}
+
+/// **The I2C input clock of the PMIC's bus**, from the words above: the rate chain
+/// `bus_root -> axi_cfg0 -> stg_axiahb -> apb_bus_func -> (gate) u5_dw_i2c_clk_apb`. Every step is
+/// the vendor clock driver's own registration; the gates do not divide. PLL2's rate follows the
+/// vendor `pll.c` exactly: integer mode (`dacpd == 1 && dsmpd == 1`) is
+/// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
+/// guess. The u64 divisions truncate, as the vendor's do.
+#[must_use]
+pub const fn i2c5_ic_clk(w: &IcClkWords) -> u64 {
+    let parent = if (w.bus_root >> 24) & 1 == 1 {
+        let dacpd = (w.pll2_dacpd_dsmpd_fbdiv >> 15) & 1;
+        let dsmpd = (w.pll2_dacpd_dsmpd_fbdiv >> 16) & 1;
+        let fbdiv = ((w.pll2_dacpd_dsmpd_fbdiv >> 17) & 0xfff) as u64;
+        let prediv_raw = (w.pll2_prediv & 0x3f) as u64;
+        let prediv = if prediv_raw == 0 { 1 } else { prediv_raw };
+        let postdiv1 = 1u64 << ((w.pll2_postdiv1 >> 28) & 3);
+        if dacpd == 1 && dsmpd == 1 && fbdiv > 0 {
+            OSC_HZ * fbdiv / (prediv * postdiv1)
+        } else {
+            PLL2_DEFAULT_HZ
+        }
+    } else {
+        OSC_HZ
+    };
+    parent
+        / one_based_div(w.axi_cfg0, 2)
+        / one_based_div(w.stg_axiahb, 2)
+        / one_based_div(w.apb_bus_func, 4)
+}
+
+/// **The 100 kHz standard-mode programming for a DesignWare I2C controller**, from the timing
+/// formula in the vendor U-Boot `drivers/i2c/designware_i2c.c` this board's firmware was built from
+/// (fetched 2026-10-10, same tree 592 pinned): counts of the input clock for the standard mode's
+/// minimum high (4000 ns) and low (4700 ns) times, the default rise (1000 ns) and fall (300 ns)
+/// times, no spike count, then the formula's period fill toward `ic_clk / 100_000`. U-Boot's own
+/// init constants give the control word: master mode, restart enable, slave disable, standard speed.
+///
+/// 100 kHz rather than the fast mode U-Boot defaults to, because the AXP15060's datasheet timing is
+/// met by every standard-mode controller and the 2026-10-10 failure this answers was OpenSBI
+/// trusting a controller at reset defaults; slower than the spec floor is safe, faster is not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StandardMode {
+    /// The `IC_CON` word: `IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS`.
+    pub con: u32,
+    /// `IC_SS_SCL_HCNT`.
+    pub hcnt: u32,
+    /// `IC_SS_SCL_LCNT`.
+    pub lcnt: u32,
+    /// `IC_SDA_HOLD`, the default 300 ns hold in input-clock counts.
+    pub sda_hold: u32,
+}
+
+/// `IC_CON`'s standard-speed field, `0b10` (the vendor header's `IC_CON_SPD_SS`).
+const IC_CON_SPD_SS: u32 = 0b10;
+/// `IC_CON`'s master-mode bit (`IC_CON_MM`).
+const IC_CON_MM: u32 = 1;
+/// `IC_CON`'s restart-enable bit (`IC_CON_RE`).
+const IC_CON_RE: u32 = 1 << 5;
+/// `IC_CON`'s slave-disable bit (`IC_CON_SD`).
+const IC_CON_SD: u32 = 1 << 6;
+
+/// Count of input-clock ticks that covers `period_ns`, the vendor `calc_counts` (a rounding-up
+/// division: `DIV_ROUND_UP(ic_clk / 1000 * period_ns, NANO_TO_KILO)`).
+const fn counts(ic_clk: u64, period_ns: u64) -> u64 {
+    (ic_clk / 1_000 * period_ns).div_ceil(1_000_000)
+}
+
+/// The formula the vendor driver names `dw_i2c_calc_timing`, standard mode, written as the
+/// four-line derivation its comment carries, with the period fill. Inputs below the spec minima
+/// clamp to the smallest legal counts rather than wrapping.
+#[must_use]
+pub const fn standard_mode_100k(ic_clk: u64) -> StandardMode {
+    let rise = counts(ic_clk, 1_000);
+    let fall = counts(ic_clk, 300);
+    let thigh = counts(ic_clk, 4_000);
+    let tlow = counts(ic_clk, 4_700);
+    let period = if ic_clk >= 100_000 {
+        ic_clk / 100_000
+    } else {
+        1
+    };
+
+    let mut hcnt = thigh.saturating_sub(fall + 7);
+    let mut lcnt = tlow
+        .saturating_sub(rise)
+        .saturating_add(fall)
+        .saturating_sub(1);
+
+    let tot = hcnt + lcnt + 7 + rise + 1;
+    if tot < period {
+        let diff = (period - tot) / 2;
+        hcnt += diff;
+        lcnt += diff;
+        let tot = hcnt + lcnt + 7 + rise + 1;
+        lcnt += period.saturating_sub(tot);
+    }
+    // Below a few MHz of input clock the standard-mode minima outrun the period and the
+    // derivation floors at zero; zero is not a count a controller can be programmed with, so it
+    // becomes 1, the slowest legal bus this formula can produce. A bench transcript carries the
+    // computed input clock, so a floored count is visible as one.
+    let hcnt = if hcnt == 0 { 1 } else { hcnt };
+    let lcnt = if lcnt == 0 { 1 } else { lcnt };
+    let sda_hold = counts(ic_clk, 300);
+    let sda_hold = if sda_hold == 0 { 1 } else { sda_hold };
+    StandardMode {
+        con: IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS,
+        hcnt: hcnt as u32,
+        lcnt: lcnt as u32,
+        sda_hold: sda_hold as u32,
+    }
+}
+
+/// The AXP15060 register OpenSBI's reset and shutdown both go through, `0x32`, and the bit that
+/// resets: bit 6 (bit 7 powers off). The 2026-10-09 and 2026-10-10 benches on radon, and 592's
+/// block, carry the reading; this kernel writes the reset bit alone, read-modify-write, so the
+/// register's other bits keep whatever the PMIC already holds.
+pub const PMIC_RESET_REG: u8 = 0x32;
+
+/// The reset bit of [`PMIC_RESET_REG`].
+pub const PMIC_RESET_BIT: u8 = 6;
 
 /// What one `<phandle id>` specifier turned out to be.
 enum Spec {
@@ -1497,5 +1750,146 @@ mod tests {
         assert_eq!(with_parent(running | 1 << 24, 0), running);
         // A parent too wide for the four-bit field cannot reach the enable bit.
         assert_eq!(with_parent(0, 0xff) & CLOCK_ENABLE, 0);
+    }
+
+    // ===== Option B: the rate chain, the timing formula, and the two tree facts (milestone 592) =====
+
+    #[test]
+    fn radons_pmic_bus_also_names_the_controller_window_and_the_pmic_address() {
+        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_RADON).unwrap();
+        let bus = pmic_bus(&tree).unwrap();
+        assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+        assert_eq!(bus.pmic_address, Some(0x36));
+    }
+
+    #[test]
+    fn the_mainline_tree_names_the_same_controller_and_address() {
+        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_MAINLINE).unwrap();
+        let bus = pmic_bus(&tree).unwrap();
+        assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+        assert_eq!(bus.pmic_address, Some(0x36));
+    }
+
+    #[test]
+    fn the_foreign_tree_names_neither() {
+        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_FOREIGN).unwrap();
+        let bus = pmic_bus(&tree).unwrap();
+        assert_eq!(bus.controller, None);
+        assert_eq!(bus.pmic_address, None);
+    }
+
+    #[test]
+    fn a_one_based_divider_field_reading_zero_divides_by_one() {
+        assert_eq!(one_based_div(0, 2), 1);
+        assert_eq!(one_based_div(0, 4), 1);
+        assert_eq!(one_based_div(3, 2), 3);
+        assert_eq!(one_based_div(0x1f, 4), 15);
+        assert_eq!(one_based_div(u32::MAX, 31), (1u64 << 31) - 1);
+    }
+
+    #[test]
+    fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
+        // bus_root on osc, every divider at 1: the chain is transparent.
+        let osc = IcClkWords {
+            bus_root: 0,
+            axi_cfg0: 1,
+            stg_axiahb: 1,
+            apb_bus_func: 1,
+            pll2_dacpd_dsmpd_fbdiv: 0,
+            pll2_postdiv1: 0,
+            pll2_prediv: 0,
+        };
+        assert_eq!(i2c5_ic_clk(&osc), OSC_HZ);
+
+        // bus_root on pll2 in integer mode. The fields are the vendor PLL2 table's 1228.8 MHz row
+        // (fbdiv 768, prediv 15, postdiv1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
+        // laid into the words at the syscon's offsets: 0x2c carries dsmpd<<16 | dacpd<<15 |
+        // fbdiv<<17, 0x30 carries postdiv1<<28, 0x34 carries prediv. The dividers are field
+        // values, not words: the 2-bit fields hold 2 and 2, the 4-bit field 12, so the chain is
+        // 1_228_800_000 / 2 / 2 / 12.
+        let pll2 = IcClkWords {
+            bus_root: 1 << 24,
+            axi_cfg0: 2,
+            stg_axiahb: 2,
+            apb_bus_func: 12,
+            pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16) | (768 << 17),
+            pll2_postdiv1: 0,
+            pll2_prediv: 15,
+        };
+        assert_eq!(i2c5_ic_clk(&pll2), 1_228_800_000 / 2 / 2 / 12);
+
+        // A zero divider field is treated as divide-by-one rather than a panic, because the words
+        // belong to firmware and a print of the computed rate is the transcript's fact.
+        let zeros = IcClkWords {
+            bus_root: 0,
+            axi_cfg0: 0,
+            stg_axiahb: 0,
+            apb_bus_func: 0,
+            pll2_dacpd_dsmpd_fbdiv: 0,
+            pll2_postdiv1: 0,
+            pll2_prediv: 0,
+        };
+        assert_eq!(i2c5_ic_clk(&zeros), OSC_HZ);
+
+        // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
+        // fields: 1_188_000_000 divided by the chain.
+        let frac = IcClkWords {
+            bus_root: 1 << 24,
+            axi_cfg0: 1,
+            stg_axiahb: 1,
+            apb_bus_func: 1,
+            pll2_dacpd_dsmpd_fbdiv: 768 << 17,
+            pll2_postdiv1: 0,
+            pll2_prediv: 15,
+        };
+        assert_eq!(i2c5_ic_clk(&frac), PLL2_DEFAULT_HZ);
+    }
+
+    #[test]
+    fn the_standard_mode_timing_is_the_vendor_formula_worked_by_hand() {
+        // 50 MHz in, the formula's own numbers: rise = ceil(50e6 * 1000ns / 1e9) = 50 counts,
+        // fall = 15, thigh = 200, tlow = 235, period = 500. Then
+        // hcnt = 200 - 15 - 7 = 178, lcnt = 235 - 50 + 15 - 1 = 199, tot = 178 + 199 + 7 + 50 + 1
+        // = 435 < 500, so diff = 32 and lcnt takes the remainder 1: (210, 232). sda_hold is
+        // ceil(300ns / 20ns) = 15.
+        let t = standard_mode_100k(50_000_000);
+        assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (210, 232, 15));
+        assert_eq!(t.con, 0b0110_0011);
+        // Every count legal and the mode word exactly the vendor's four init bits.
+        assert!(t.hcnt > 0 && t.lcnt > 0);
+    }
+
+    #[test]
+    fn a_slow_input_clock_still_produces_legal_counts() {
+        // 1 MHz: every minimum-time count is 1, the period is 10, and the formula must not wrap.
+        let t = standard_mode_100k(1_000_000);
+        assert!(t.hcnt > 0 && t.lcnt > 0 && t.sda_hold > 0);
+        // Below 100 kHz of input the period clamps to 1 rather than dividing by zero.
+        let t = standard_mode_100k(1_000);
+        assert!(t.hcnt > 0 && t.lcnt > 0);
+    }
+
+    #[test]
+    fn reg_cells_parse_in_both_spellings() {
+        // The vendor and mainline bus nodes: <0x0 0x12050000 0x0 0x10000>.
+        let four = 0x0000_0000u32
+            .to_be_bytes()
+            .iter()
+            .chain(0x1205_0000u32.to_be_bytes().iter())
+            .chain(0x0000_0000u32.to_be_bytes().iter())
+            .chain(0x0001_0000u32.to_be_bytes().iter())
+            .copied()
+            .collect::<Vec<u8>>();
+        assert_eq!(parse_reg(&four), Some((0x1205_0000, 0x1_0000)));
+        // A one-address-cell spelling: <0x12050000 0x10000>.
+        let two = 0x1205_0000u32
+            .to_be_bytes()
+            .iter()
+            .chain(0x0001_0000u32.to_be_bytes().iter())
+            .copied()
+            .collect::<Vec<u8>>();
+        assert_eq!(parse_reg(&two), Some((0x1205_0000, 0x1_0000)));
+        // A truncated property is not a window.
+        assert_eq!(parse_reg(&[0, 0, 0]), None);
     }
 }

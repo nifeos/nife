@@ -304,6 +304,27 @@ impl<S: RegisterSpace> Ns16550<S> {
         self.write(THR, byte);
     }
 
+    /// **Wait until every byte written has left the wire.** Polls `LSR_TEMT`, the transmitter-empty
+    /// bit that says the FIFO *and* the shift register are idle, where [`write_byte`](Self::write_byte)
+    /// only waits for room, so returning from a print says nothing about the bytes having been sent.
+    ///
+    /// This is the fix for a defect the 2026-10-09 radon bench caught: `arch::reboot` printed its
+    /// line and called SBI SRST in the next microseconds, and the reset dropped power with the
+    /// UART mid-line, so neither the `soak-test-reboot:` detail nor `rebooting now` ever reached
+    /// the console log. The bound is `init`'s bound for `init`'s reason: at 115200 the drain takes
+    /// low milliseconds, a bound this size only trips on silicon that is not answering, and the
+    /// caller is about to reset the machine, where proceeding beats hanging.
+    ///
+    /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
+    /// 2026-10-10: calef names public items.
+    pub fn drain_transmitter(&self) {
+        let mut spins = 1_000_000u32;
+        while self.read(LSR) & LSR_TEMT == 0 && spins > 0 {
+            core::hint::spin_loop();
+            spins -= 1;
+        }
+    }
+
     /// **Is a byte waiting to be read?** Reads LSR and consumes nothing, so the answer stays true
     /// until [`discard_rx`](Self::discard_rx) takes the byte.
     ///
