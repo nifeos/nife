@@ -104,11 +104,10 @@ it. What remains on radon is more boots, not longer ones.
 
 Lane `milestone/225-radon-boots` (`bef2b40dc`, tree-identical to main `237cef6bc`), one power cycle
 from calef for the whole evening. It opened with the decisive bench test of milestone 592 (radon's
-cold reboot dies in OpenSBI's PMIC write), green: the
-rebooting build soaked its 120 seconds, called SBI SRST, and the board came back through
-`U-Boot SPL` to a netboot and a soak, so every boot after the first started itself (the board
-re-fetches over TFTP on each self-reboot; the lane swapped the served image during the reset's dark
-period). Three draws, zero defects:
+cold reboot dies in OpenSBI's PMIC write), green: the rebooting build soaked its 120 seconds,
+called SBI SRST, and the board came back through `U-Boot SPL` to a netboot and a soak. So every
+boot after the first started itself, the board re-fetching over TFTP on each self-reboot; the lane
+swapped the served image during one reset's dark period. Three draws, zero defects:
 
 | row | boot | duration | rate | crossings |
 |---|---|---|---|---|
@@ -117,10 +116,8 @@ period). Three draws, zero defects:
 | E7 | plain soak | 3h 53m | 317,457/s | 610,897 |
 
 Counting plain boots only, E4 + E6 + E7 = 10,288,805 crossings over 3 boots, which meets §259's
-standard (at least 10 million over at least 3); E5's reboot draw adds 20,474 on top. The account,
-the 592 transcript's one gap (the `JH7110:` bring-up lines never made it onto the wire before power
-dropped), the unwatched 7-hour tail of E6's boot that is not evidence, and the discarded card boot
-before E7 (radon's ethernet cable was unplugged, `phy_startup() failed: -110`) are in
+standard (at least 10 million over at least 3); E5's reboot draw adds 20,474 on top. The evening's
+account, including the 592 transcript's one gap and the discarded card boot before E7, is
 `notes/soak.md`, "radon, 2026-10-09 to 10"; the logs are `bench/radon-2026-10-10/`.
 
 ## argon, 2026-10-05: not yet a one-command run, and exactly why

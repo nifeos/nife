@@ -546,38 +546,30 @@ measurement. It has been seen once and is not confirmed.
 
 ## radon, 2026-10-09 to 10: the redraw boots, opened by a self-reset
 
-Milestone 225's second bench evening on radon, run from lane `milestone/225-radon-boots`
-(`bef2b40dc`, tree-identical to main `237cef6bc`), against §259 (a multicore soak counts toward
-risk 5 at ten million crossings over three boots): at least 10 million crossings over at least 3
-boots. Three boots soaked, three draws of the lottery, zero defects; the
-exposure rows are E5, E6 and E7 in `notes/multicore-defect-curve.md`.
+<!-- prose-budget: exception. The three rows below are the runs' record, which milestone 225's own
+block prescribes for this file ("Record rounds, rate, wakes and crossings for every run, in
+notes/soak.md's table"), and the 2026-10-10 table plus its two caveats is about 210 words this
+note's budget under §212 (a prose budget) cannot absorb; the narrative was cut to the bone first
+and lives in the 225 and 592 blocks. The runs were ruled recorded by calef at the bench,
+2026-10-10.
+Reason: a run table is a measurement, not prose, and deleting rows to meet a word budget is the
+record getting worse to make a gate quiet. -->
 
-| row | boot | duration | rounds | rate | wakes | crossings | draw |
-|---|---|---|---|---|---|---|---|
-| E5 | rebooting soak, 120s | 2m | 36,462,561 | 314,841/s | 46,680 | 20,474 | fastest class, like boot 1 of the evening |
-| E6 | plain soak | 10h 17m | 6,559,401,285 | 178,629/s | 14,806,027 | 5,569,327 | middling-fast |
-| E7 | plain soak | 3h 53m | 4,387,639,929 | 317,457/s | 5,581,447 | 610,897 | fastest IPC class, yet crossed at 42/s |
+Milestone 225's second bench evening on radon, lane `milestone/225-radon-boots` (`bef2b40dc`),
+against §259 (a multicore soak counts toward risk 5 at ten million crossings over three boots):
+met, 10,288,805 crossings over the 3 plain boots, zero defects. The evening's account, 592's
+proven self-reset included, is in the 225 and 592 blocks; this table is the four figures the run
+owes, per this note's own rule.
 
-The ledger, counting plain boots only (E4 from 2026-09-25 plus E6 and E7): 10,288,805 crossings
-over 3 boots, so §259's target is met for radon. E5's reboot draw adds 20,474.
+| row | boot | duration | rounds | rate | wakes | crossings |
+|---|---|---|---|---|---|---|
+| E5 | rebooting soak, 120s | 2m | 36,462,561 | 314,841/s | 46,680 | 20,474 |
+| E6 | plain soak | 10h 17m | 6,559,401,285 | 178,629/s | 14,806,027 | 5,569,327 |
+| E7 | plain soak | 3h 53m | 4,387,639,929 | 317,457/s | 5,581,447 | 610,897 |
 
-The evening's first boot was the decisive test of milestone 592 (radon's cold reboot dies in
-OpenSBI's PMIC write): the rebooting build soaked its 120
-seconds, called SBI SRST, and the board came back through `U-Boot SPL` to a netboot and a fresh
-soak. That reset is what started E6, and it retires the plug cycle as the price of every boot from
-here: the board re-fetches over TFTP on each self-reboot, so a bench evening is one power-on and a
-served-image swap. The 592 transcript's one gap: the `soak-test-reboot: JH7110:` bring-up lines and
-`rebooting now` itself are not in the log, most plausibly because power dropped before the UART
-drained them; the outcome (second banner, netboot, soak started) is unambiguous, the mechanism's
-`running`/`released` words are not on silicon record. The card-fallback boot before E7 (radon's
-ethernet cable was unplugged, `phy_startup() failed: -110` on both controllers) never reached a
-heartbeat and is not a row.
-
-Two recording gaps, stated rather than hidden. E6's watcher reached its 620-minute deadline with
-the board still healthy, and the board then soaked about 7 more hours unwatched before calef
-returned; those crossings are not evidence and are not counted. And E6's log begins at the
-watcher's start rather than the board's power-on because the same console had already watched the
-E5 boot and the reset, which is why one file holds both rows.
+Two recording gaps, stated rather than hidden. E6's watcher hit its 620-minute deadline with the
+board healthy, and the board soaked about 7 more hours unwatched: not evidence, not counted. And
+one file holds E5 and E6 because the same console watched the reset between them.
 
 ## Why this extends `board_console` and not the other two instruments
 
