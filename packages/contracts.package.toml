@@ -20,6 +20,9 @@ interfaces = [
     "entropy_protocol",
     "environment_protocol",
     "filesystem_protocol",
+    # The C programs' test-image directory and command lines, which xtask and system_tests
+    # agree on (milestone 835 (a C library, stage 1: files, clock and memory)).
+    "c_program_fixture",
     "graphics_protocol",
     "login_protocol",
     "socket_protocol",

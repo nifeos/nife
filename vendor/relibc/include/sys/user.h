@@ -1,0 +1,17 @@
+/* Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835 (vendor/README.md). */
+#ifndef _SYS_USER_H
+#define _SYS_USER_H
+#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64)
+#include <arch/x64/user.h>
+#elif defined(__aarch64__)
+#include <arch/aarch64/user.h>
+#elif defined(__riscv) && __riscv_xlen==64
+#include <arch/riscv64/user.h>
+#elif defined(__i386__)
+// TODO: this is incorrect
+#include <arch/x64/user.h>
+#else
+#error "Unknown architecture"
+#endif
+
+#endif

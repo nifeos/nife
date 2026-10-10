@@ -1,0 +1,11 @@
+# Name: the block lives in src/lib.rs, where `script/names` reads it.
+[package]
+name = "c_library_errno"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

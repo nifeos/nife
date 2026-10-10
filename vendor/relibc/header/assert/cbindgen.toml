@@ -1,0 +1,34 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/assert.h.html
+#
+# There are no spec quotations relating to includes
+#
+# features.h included for Rust never type (no return)
+sys_includes = ["features.h"]
+include_guard = "_RELIBC_ASSERT_H"
+# trailer is placed outside include_guard
+trailer = """
+// Do not use include guard, to ensure assert is always defined
+#ifdef assert
+#undef assert
+#endif
+
+// _Static_assert in C23 (202311L) is considered deprecated but kept for comaptibility.
+// static_assert in C23 is considered a key word.
+#if __STDC_VERSION__ >= 201112L && !defined(__cplusplus)
+#define static_assert _Static_assert
+#endif
+
+#ifdef NDEBUG
+# define assert(cond) (void) 0
+#else
+# define assert(cond) \
+  ((void)((cond) || (__assert_fail(__func__, __FILE__, __LINE__, #cond), 0)))
+#endif
+"""
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true

@@ -1,0 +1,87 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+use crate::{
+    header::time::NANOSECONDS,
+    platform::types::{c_long, time_t},
+};
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/time.h.html>.
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Clone, Default, Debug)]
+pub struct timespec {
+    /// Whole seconds.
+    pub tv_sec: time_t,
+    /// Nanoseconds.
+    pub tv_nsec: c_long,
+}
+
+impl timespec {
+    // TODO: Write test
+
+    /// similar logic with timeradd
+    pub fn add(base: &timespec, interval: &timespec) -> Option<timespec> {
+        let delta_sec = base.tv_sec.checked_add(interval.tv_sec)?;
+        let delta_nsec = base.tv_nsec.checked_add(interval.tv_nsec)?;
+
+        if delta_sec < 0 || delta_nsec < 0 {
+            return None;
+        }
+
+        Some(Self {
+            tv_sec: delta_sec + time_t::from(delta_nsec / NANOSECONDS),
+            tv_nsec: delta_nsec % NANOSECONDS,
+        })
+    }
+    /// similar logic with timersub
+    pub fn subtract(later: &timespec, earlier: &timespec) -> Option<timespec> {
+        let delta_sec = later.tv_sec.checked_sub(earlier.tv_sec)?;
+        let delta_nsec = later.tv_nsec.checked_sub(earlier.tv_nsec)?;
+
+        let time = if delta_nsec < 0 {
+            let roundup_sec = -delta_nsec / NANOSECONDS + 1;
+            timespec {
+                tv_sec: delta_sec - time_t::from(roundup_sec),
+                tv_nsec: roundup_sec * NANOSECONDS - delta_nsec,
+            }
+        } else {
+            timespec {
+                tv_sec: delta_sec + time_t::from(delta_nsec / NANOSECONDS),
+                tv_nsec: delta_nsec % NANOSECONDS,
+            }
+        };
+
+        if time.tv_sec < 0 {
+            // https://man7.org/linux/man-pages/man2/settimeofday.2.html
+            // caller should return EINVAL
+            return None;
+        }
+
+        Some(time)
+    }
+    pub fn is_zero(&self) -> bool {
+        self.tv_nsec == 0 && self.tv_sec == 0
+    }
+}
+
+#[cfg(target_os = "redox")]
+impl<'a> From<&'a syscall::TimeSpec> for timespec {
+    fn from(value: &'a syscall::TimeSpec) -> Self {
+        Self {
+            tv_sec: value.tv_sec as _,
+            #[cfg(target_arch = "x86")]
+            tv_nsec: value.tv_nsec,
+            #[cfg(not(target_arch = "x86"))]
+            tv_nsec: value.tv_nsec.into(),
+        }
+    }
+}
+
+#[cfg(target_os = "redox")]
+impl From<&timespec> for syscall::TimeSpec {
+    fn from(tp: &timespec) -> Self {
+        Self {
+            tv_sec: tp.tv_sec as _,
+            tv_nsec: tp.tv_nsec as _,
+        }
+    }
+}

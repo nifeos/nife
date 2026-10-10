@@ -1,0 +1,289 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+//! `getopt.h` implementation.
+//!
+//! Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+
+use crate::{
+    casting::ByteLiteral,
+    header::{
+        stdio, string,
+        unistd::{optarg, opterr, optind, optopt},
+    },
+    platform::types::{c_char, c_int},
+};
+use core::ptr;
+
+/// cbindgen:ignore
+static mut CURRENT_OPT: *mut c_char = ptr::null_mut();
+
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+pub const no_argument: c_int = 0;
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+pub const required_argument: c_int = 1;
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+pub const optional_argument: c_int = 2;
+
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+#[repr(C)]
+pub struct option {
+    name: *const c_char,
+    has_arg: c_int,
+    flag: *mut c_int,
+    val: c_int,
+}
+
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+///
+/// Functions the same as `getopt` but also accepts long options.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getopt_long(
+    argc: c_int,
+    argv: *const *mut c_char,
+    optstring: *const c_char,
+    longopts: *const option,
+    longindex: *mut c_int,
+) -> c_int {
+    unsafe { getopt_long_impl(argc, argv, optstring, longopts, longindex, false) }
+}
+
+/// Non-POSIX, see <https://www.man7.org/linux/man-pages/man3/getopt.3.html>.
+///
+/// nife: added to the seed (relibc has no `getopt_long_only`; ioping calls it). `getopt_long`,
+/// except that a word with one dash is also tried as a long option. glibc's rule decides which:
+/// a single-dash word is a long option unless it is one character that `optstring` names, so
+/// `-c` stays the short option `c` while `-count` is the long option `count`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getopt_long_only(
+    argc: c_int,
+    argv: *const *mut c_char,
+    optstring: *const c_char,
+    longopts: *const option,
+    longindex: *mut c_int,
+) -> c_int {
+    unsafe { getopt_long_impl(argc, argv, optstring, longopts, longindex, true) }
+}
+
+unsafe fn getopt_long_impl(
+    argc: c_int,
+    argv: *const *mut c_char,
+    optstring: *const c_char,
+    longopts: *const option,
+    longindex: *mut c_int,
+    long_only: bool,
+) -> c_int {
+    // if optarg is not set, we still don't want the previous value leaking
+    unsafe {
+        optarg = ptr::null_mut();
+    }
+
+    // handle reinitialization request
+    unsafe {
+        if optind == 0 {
+            optind = 1;
+            CURRENT_OPT = ptr::null_mut();
+        }
+    }
+
+    if unsafe { CURRENT_OPT.is_null() || *CURRENT_OPT == 0 } {
+        if unsafe { optind >= argc } {
+            -1
+        } else {
+            let current_arg = unsafe { *argv.offset(optind as isize) };
+            if unsafe {
+                current_arg.is_null()
+                    || *current_arg != ByteLiteral::cast_cchar(b'-')
+                    || *current_arg.add(1) == 0
+            } {
+                -1
+            } else if unsafe { string::strcmp(current_arg, c"--".as_ptr()) == 0 } {
+                unsafe {
+                    optind += 1;
+                }
+                -1
+            } else {
+                // remove the '-'
+                let current_arg = unsafe { current_arg.add(1) };
+
+                let double_dash = unsafe { *current_arg == ByteLiteral::cast_cchar(b'-') };
+                let single_as_long = long_only
+                    && !double_dash
+                    && unsafe {
+                        *current_arg.add(1) != 0
+                            || string::strchr(optstring, c_int::from(*current_arg as u8)).is_null()
+                    };
+                if (double_dash || single_as_long) && !longopts.is_null() {
+                    let current_arg = if double_dash {
+                        unsafe { current_arg.add(1) }
+                    } else {
+                        current_arg
+                    };
+                    // is a long option
+                    for i in 0.. {
+                        let opt = unsafe { &*longopts.offset(i) };
+                        if opt.name.is_null() {
+                            break;
+                        }
+
+                        let mut end = 0;
+                        while {
+                            let c = unsafe { *current_arg.offset(end) };
+                            c != 0 && c != ByteLiteral::cast_cchar(b'=')
+                        } {
+                            end += 1;
+                        }
+
+                        if unsafe {
+                            string::strncmp(current_arg, opt.name, end.cast_unsigned()) == 0
+                        } {
+                            unsafe {
+                                optind += 1;
+                                if !longindex.is_null() {
+                                    *longindex =
+                                        c_int::try_from(i).expect("very unlikely to truncate");
+                                }
+                            }
+
+                            if opt.has_arg == optional_argument {
+                                unsafe {
+                                    if *current_arg.offset(end) == ByteLiteral::cast_cchar(b'=') {
+                                        optarg = current_arg.offset(end + 1);
+                                    }
+                                }
+                            } else if opt.has_arg == required_argument {
+                                unsafe {
+                                    if *current_arg.offset(end) == ByteLiteral::cast_cchar(b'=') {
+                                        optarg = current_arg.offset(end + 1);
+                                    } else if optind < argc {
+                                        optarg = *argv.offset(optind as isize);
+                                        optind += 1;
+                                    } else if *optstring == ByteLiteral::cast_cchar(b':') {
+                                        return c_int::from(b':');
+                                    } else {
+                                        stdio::fputs((*argv).cast_const(), &raw mut *stdio::stderr);
+                                        stdio::fputs(
+                                            c": option '--".as_ptr().cast(),
+                                            &raw mut *stdio::stderr,
+                                        );
+                                        stdio::fputs(current_arg, &raw mut *stdio::stderr);
+                                        stdio::fputs(
+                                            c"' requires an argument\n".as_ptr().cast(),
+                                            &raw mut *stdio::stderr,
+                                        );
+                                        return c_int::from(b'?');
+                                    }
+                                }
+                            }
+
+                            if opt.flag.is_null() {
+                                return opt.val;
+                            } else {
+                                unsafe { *opt.flag = opt.val };
+                                return 0;
+                            }
+                        }
+                    }
+                }
+
+                unsafe { parse_arg(argc, argv, current_arg, optstring) }
+            }
+        }
+    } else {
+        unsafe { parse_arg(argc, argv, CURRENT_OPT, optstring) }
+    }
+}
+
+unsafe fn parse_arg(
+    argc: c_int,
+    argv: *const *mut c_char,
+    current_arg: *mut c_char,
+    optstring: *const c_char,
+) -> c_int {
+    let update_current_opt = || unsafe {
+        CURRENT_OPT = current_arg.add(1);
+        if *CURRENT_OPT == 0 {
+            optind += 1;
+        }
+    };
+
+    let print_error = |desc: &[u8]| unsafe {
+        // NOTE: we don't use fprintf to get around the usage of va_list
+        stdio::fputs((*argv).cast_const(), &raw mut *stdio::stderr);
+        stdio::fputs(desc.as_ptr().cast(), &raw mut *stdio::stderr);
+        stdio::fputc((*current_arg).into(), &raw mut *stdio::stderr);
+        stdio::fputc(b'\n'.into(), &raw mut *stdio::stderr);
+    };
+
+    match unsafe { find_option(*current_arg, optstring) } {
+        Some(GetoptOption::Flag) => {
+            update_current_opt();
+
+            unsafe { c_int::from(*current_arg) }
+        }
+        Some(GetoptOption::OptArg) => unsafe {
+            CURRENT_OPT = c"".as_ptr().cast_mut();
+            if *current_arg.add(1) == 0 {
+                optind += 2;
+                if optind > argc {
+                    CURRENT_OPT = ptr::null_mut();
+
+                    optopt = c_int::from(*current_arg);
+                    let errch = if *optstring == ByteLiteral::cast_cchar(b':') {
+                        b':'
+                    } else {
+                        if opterr != 0 {
+                            print_error(b": option requries an argument -- \0");
+                        }
+
+                        b'?'
+                    };
+                    c_int::from(errch)
+                } else {
+                    optarg = *argv.offset(optind as isize - 1);
+
+                    c_int::from(*current_arg)
+                }
+            } else {
+                optarg = current_arg.add(1);
+                optind += 1;
+
+                c_int::from(*current_arg)
+            }
+        },
+        None => {
+            // couldn't find the given option in optstring
+            if unsafe { opterr != 0 } {
+                print_error(b": illegal option -- \0");
+            }
+
+            update_current_opt();
+
+            unsafe {
+                optopt = c_int::from(*current_arg);
+            }
+            c_int::from(b'?')
+        }
+    }
+}
+
+enum GetoptOption {
+    Flag,
+    OptArg,
+}
+
+unsafe fn find_option(ch: c_char, optstring: *const c_char) -> Option<GetoptOption> {
+    let mut i = 0;
+
+    while unsafe { *optstring.offset(i) != 0 } {
+        if unsafe { *optstring.offset(i) == ch } {
+            let result = if unsafe { *optstring.offset(i + 1) == ByteLiteral::cast_cchar(b':') } {
+                GetoptOption::OptArg
+            } else {
+                GetoptOption::Flag
+            };
+            return Some(result);
+        }
+        i += 1;
+    }
+
+    None
+}

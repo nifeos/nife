@@ -1,0 +1,21 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/fcntl.h.html
+#
+# These constants are split out to prevent including all of fcntl.h into stdlib.h
+#
+# POSIX headers that require some/all of these constants:
+# - fcntl.h (where they should be defined)
+# - mqueue.h (TODO not present in relibc)
+# - semaphore.h
+# - stdlib.h (uses these bits to avoid fcntl.h `open` conflicting with prboom)
+# - sys/mman.h
+# - unistd.h
+#
+# The POSIX spec states that in all of the above headers all of the symbols from
+# fcntl.h may be included fully.
+include_guard = "_RELIBC_BITS_OPEN_FLAGS_H"
+language = "C"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true

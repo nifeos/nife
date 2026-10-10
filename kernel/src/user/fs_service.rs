@@ -1738,7 +1738,8 @@ pub fn start_std_full(
 ) -> Option<StdSpawn> {
     let (file_ep, file_shared, readiness) = ensure(blk_image, fs_server_image)?;
     let report = crate::sched::create_rendezvous();
-    let (heap, thread, _stack, _args) = spawn_std(file_ep, 0, file_shared, report, std_image, None);
+    let (heap, thread, _stack, _args) =
+        spawn_std(file_ep, 0, file_shared, report, std_image, None, None);
     Some(StdSpawn {
         readiness,
         report,
@@ -1810,9 +1811,46 @@ pub fn start_std_narrowed(
     rights: u64,
     line: Option<&[u8]>,
 ) -> Option<NarrowedStd> {
+    start_std_narrowed_clocked(
+        blk_image,
+        fs_server_image,
+        caretaker_image,
+        std_image,
+        name,
+        rights,
+        line,
+        None,
+    )
+}
+
+/// [`start_std_narrowed`], **and a wall clock**: `clock_page` is a clock service's page
+/// (`clock_service::Wiring::page_phys`), granted read-only at `std_runtime_protocol::CLOCK_SLOT`
+/// and mapped at `CLOCK_PAGE`, so `SystemTime::now()` answers instead of refusing. Built for
+/// milestone 835 (a C library, stage 1: files, clock and memory): SQLite's `speedtest1` times every
+/// test with `gettimeofday`, which nife's C library answers from `SystemTime`.
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
+#[allow(clippy::too_many_arguments)]
+pub fn start_std_narrowed_clocked(
+    blk_image: &'static [u8],
+    fs_server_image: &'static [u8],
+    caretaker_image: &'static [u8],
+    std_image: &'static [u8],
+    name: &'static str,
+    rights: u64,
+    line: Option<&[u8]>,
+    clock_page: Option<u64>,
+) -> Option<NarrowedStd> {
     let (narrow_ep, file_shared, report, caretaker) =
         narrow_dir_held(blk_image, fs_server_image, caretaker_image, name, rights)?;
-    let (heap, thread, stack, args) = spawn_std(narrow_ep, 0, file_shared, report, std_image, line);
+    let (heap, thread, stack, args) = spawn_std(
+        narrow_ep,
+        0,
+        file_shared,
+        report,
+        std_image,
+        line,
+        clock_page,
+    );
     Some(NarrowedStd {
         report,
         heap,
@@ -1899,6 +1937,7 @@ pub fn start_std_bound(
         report,
         std_image,
         None,
+        None,
     );
     Some(BoundStd {
         report,
@@ -1966,111 +2005,8 @@ pub fn bind_subtree(
     })
 }
 
-/// The spawn both of the above share: a std program whose directory is whatever `file_ep` serves,
-/// with the file page it shares mapped where the PAL expects it, writing to `report`. Returns the
-/// heap's region, the thread, the stack frames, and the argument page if `line` gave one; the
-/// process owns none of the frames.
-///
-/// `line` is assembled onto a fresh page by `grant_plan::argv` and handed over the way the
-/// progenitor hands it (`crates/system_initializer`'s spawn): a `READ` page frame capability at
-/// `ARGS_SLOT`, the page mapped read-only at `ARGS_PAGE`. `None` leaves the slot empty, which the
-/// PAL reads as no arguments at all.
-///
-/// BUGS: [`start_std_full`] drops the stack frames, so every program it spawns keeps its 32 for
-/// the boot. That was true before this function was split out of it and is left as it was: its
-/// `std_exerciser` is spawned once and the ledger already carries it.
-fn spawn_std(
-    file_ep: RendezvousId,
-    badge: u64,
-    file_shared: u64,
-    report: RendezvousId,
-    std_image: &'static [u8],
-    line: Option<&[u8]>,
-) -> (
-    u64,
-    crate::thread::ThreadId,
-    [u64; STD_FS_STACK_PAGES as usize],
-    Option<u64>,
-) {
-    let heap =
-        crate::memory_region::create(STD_FS_HEAP_PAGES).expect("no untyped for the std fs heap");
-    let args = line.map(|line| {
-        let phys = page_frame();
-        // SAFETY: a frame just allocated and zeroed, reached through the direct map, which nothing
-        // else holds until the program below is given it read-only.
-        let page = unsafe { &mut *(mmu::phys_to_virt(phys) as *mut [u8; FRAME_SIZE as usize]) };
-        grant_plan::argv(line, page).expect("the harness's own command line is not an argv");
-        phys
-    });
-
-    // The shared file page, then the deep stack std needs. `run` maps one stack page; std's
-    // startup and formatting overflow it immediately, the same reason the other std spawns map
-    // extra pages below it.
-    let mut maps = [Mapping {
-        va: 0,
-        phys: 0,
-        flags: Flags::user_data(),
-    }; 2 + STD_FS_STACK_PAGES as usize];
-    maps[0] = Mapping {
-        va: FS_PAGE_STD,
-        phys: file_shared,
-        flags: Flags::user_data(),
-    };
-    let mut stack = [0u64; STD_FS_STACK_PAGES as usize];
-    for ((k, m), phys) in maps[1..=STD_FS_STACK_PAGES as usize]
-        .iter_mut()
-        .enumerate()
-        .zip(stack.iter_mut())
-    {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
-        m.phys = page_frame();
-        *phys = m.phys;
-    }
-    let mut maps_used = 1 + STD_FS_STACK_PAGES as usize;
-    if let Some(phys) = args {
-        maps[maps_used] = Mapping {
-            va: std_runtime_protocol::ARGS_PAGE,
-            phys,
-            flags: Flags::user_rodata(),
-        };
-        maps_used += 1;
-    }
-
-    let tid = crate::sched::spawn(move || {
-        // The directory capability goes in at its named slot BEFORE `run` grants in order, so
-        // `run`'s two grants land at 0 and 1 and slots 2 and 3 stay empty. See `grant_at`.
-        // A bound grant (milestone 606, ruling D) is the FS server's own endpoint carrying the
-        // badge the grant was bound to; every other spawn holds an unbadged one.
-        let dir = if badge == 0 {
-            rendezvous_cap(file_ep, Rights::WRITE)
-        } else {
-            rendezvous_cap_badged(file_ep, Rights::WRITE, badge)
-        };
-        crate::sched::grant_at(FS_DIR_SLOT, dir).expect("the std fs slot was already occupied");
-        if let Some(phys) = args {
-            crate::sched::grant_at(
-                std_runtime_protocol::ARGS_SLOT,
-                page_frame_cap(phys, Rights::READ),
-            )
-            .expect("the argument slot was already occupied");
-        }
-        run(
-            std_image,
-            Spawn {
-                arg0: 0,
-                arg1: 0,
-                arg2: 0,
-                grants: &[
-                    memory_region_cap(heap),               // slot 0: the heap's budget
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: stdout/stderr
-                ],
-                maps: &maps[..maps_used],
-            },
-        )
-    })
-    .expect("could not spawn the std fs program");
-    (heap, tid, stack, args)
-}
+mod std_spawn;
+use std_spawn::spawn_std;
 
 /// **Two directory grants to one process** (milestone 154,
 /// design/roadmap/0154-multi-directory-namespace.md). The endowment question milestone 47's

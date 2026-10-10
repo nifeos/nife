@@ -69,3 +69,13 @@ cargo fmt --manifest-path std_exerciser/Cargo.toml "$@"
 # It is ours, its own workspace, beside `std_exerciser`, and the disagreement it used to require an
 # explanation for is gone.
 cargo fmt --manifest-path entropy_backend/Cargo.toml "$@"
+
+# `c_library` (milestone 835 (a C library, stage 1: files, clock and memory)), a seventh, and the
+# first that cannot be `cargo fmt`-ed whole: its crate root includes relibc's seeded modules from
+# `vendor/relibc/` through a `#[path]` module, and `cargo fmt` follows it into 29,000 lines that are
+# relibc's shape, not ours, which every other gate leaves alone too (vendor/README.md). So it is
+# rustfmt on nife's own files, with `skip_children` so the `mod relibc` declaration is not followed.
+# `skip_children` is a nightly rustfmt option; the pinned toolchain is nightly.
+rustfmt --edition 2024 --config skip_children=true "$@" \
+    c_library/build.rs c_library/src/lib.rs c_library/src/start.rs c_library/src/long_double.rs \
+    c_library/src/bin/c_program.rs c_library/src/platform/nife.rs c_library/src/platform/allocator.rs

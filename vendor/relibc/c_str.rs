@@ -1,0 +1,527 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+//! Nul-terminated byte strings.
+
+use core::{alloc::Layout, marker::PhantomData, ptr::NonNull, str::Utf8Error};
+
+use alloc::{borrow::Cow, boxed::Box, string::String};
+
+use crate::platform::types::{c_char, wchar_t};
+
+mod private {
+    pub trait Sealed {}
+}
+#[derive(Clone, Copy, Debug)]
+pub enum Thin {}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Wide {}
+
+impl private::Sealed for Thin {}
+impl private::Sealed for Wide {}
+
+pub trait Kind: private::Sealed + Copy + 'static {
+    /// c_char or wchar_t
+    type C: Copy + 'static;
+    // u8 or u32
+    type Char: Copy + From<u8> + Into<u32> + PartialEq + 'static;
+
+    const NUL: Self::Char;
+
+    const IS_THIN_NOT_WIDE: bool;
+
+    fn r2c(c: Self::Char) -> Self::C;
+    fn c2r(c: Self::C) -> Self::Char;
+
+    fn chars_from_bytes(b: &[u8]) -> Option<&[Self::Char]>;
+    fn chars_to_bytes(c: &[Self::Char]) -> Option<&[u8]>;
+
+    unsafe fn strlen(s: *const Self::C) -> usize;
+    unsafe fn strchr(s: *const Self::C, c: Self::C) -> *const Self::C;
+    unsafe fn strchrnul(s: *const Self::C, c: Self::C) -> *const Self::C;
+    unsafe fn strncmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering;
+    unsafe fn strncasecmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering;
+}
+impl Kind for Thin {
+    type C = c_char;
+    type Char = u8;
+
+    const NUL: Self::Char = 0;
+    const IS_THIN_NOT_WIDE: bool = true;
+
+    unsafe fn strlen(s: *const c_char) -> usize {
+        unsafe { crate::header::string::strlen(s) }
+    }
+    unsafe fn strchr(s: *const c_char, c: c_char) -> *const c_char {
+        unsafe { crate::header::string::strchr(s, c.into()) }
+    }
+    unsafe fn strchrnul(s: *const c_char, c: c_char) -> *const c_char {
+        unsafe { crate::header::string::strchrnul(s, c.into()) }
+    }
+    unsafe fn strncmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering {
+        unsafe { crate::header::string::strncmp(s1, s2, n) }.cmp(&0)
+    }
+    unsafe fn strncasecmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering {
+        unsafe { crate::header::strings::strncasecmp(s1, s2, n) }.cmp(&0)
+    }
+    fn r2c(c: u8) -> c_char {
+        c as _
+    }
+    fn c2r(c: c_char) -> u8 {
+        c as _
+    }
+    fn chars_from_bytes(b: &[u8]) -> Option<&[Self::Char]> {
+        Some(b)
+    }
+    fn chars_to_bytes(c: &[Self::Char]) -> Option<&[u8]> {
+        Some(c)
+    }
+}
+impl Kind for Wide {
+    type C = wchar_t;
+    type Char = u32;
+
+    const NUL: Self::Char = 0;
+    const IS_THIN_NOT_WIDE: bool = false;
+
+    unsafe fn strlen(s: *const Self::C) -> usize {
+        unsafe { crate::header::wchar::wcslen(s) }
+    }
+    unsafe fn strchr(s: *const Self::C, c: Self::C) -> *const Self::C {
+        unsafe { crate::header::wchar::wcschr(s, c) }
+    }
+    unsafe fn strchrnul(mut s: *const Self::C, c: Self::C) -> *const Self::C {
+        // TODO: optimized function
+        while unsafe { s.read() } != c && unsafe { s.read() } != 0 {
+            s = unsafe { s.add(1) };
+        }
+        s
+    }
+    unsafe fn strncmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering {
+        unsafe { crate::header::wchar::wcsncmp(s1, s2, n) }.cmp(&0)
+    }
+    unsafe fn strncasecmp(s1: *const Self::C, s2: *const Self::C, n: usize) -> core::cmp::Ordering {
+        unsafe { crate::header::wchar::wcsncasecmp(s1, s2, n) }.cmp(&0)
+    }
+    fn r2c(c: Self::Char) -> Self::C {
+        c as _
+    }
+    fn c2r(c: Self::C) -> Self::Char {
+        c as _
+    }
+    fn chars_from_bytes(_: &[u8]) -> Option<&[Self::Char]> {
+        None
+    }
+    fn chars_to_bytes(_: &[Self::Char]) -> Option<&[u8]> {
+        None
+    }
+}
+
+/// Safe wrapper for immutable borrowed C strings, guaranteed to be the same layout as `*const u8`
+/// (nonnull).
+///
+/// As such, `Option<CStr>` is also guaranteed to be layout-compatible with nullable `*const u8`.
+#[derive(Clone, Copy)]
+#[repr(transparent)]
+pub struct NulStr<'a, T: Kind> {
+    ptr: NonNull<T::C>,
+    _marker: PhantomData<&'a [u8]>,
+}
+pub type CStr<'a> = NulStr<'a, Thin>;
+pub type WStr<'a> = NulStr<'a, Wide>;
+
+impl<'a, T: Kind> NulStr<'a, T> {
+    /// Safety
+    ///
+    /// The ptr must be valid up to and including the first NUL byte from the base ptr.
+    pub const unsafe fn from_ptr(ptr: *const T::C) -> Self {
+        Self {
+            ptr: unsafe { NonNull::new_unchecked(ptr.cast_mut()) },
+            _marker: PhantomData,
+        }
+    }
+    pub unsafe fn from_nullable_ptr(ptr: *const T::C) -> Option<Self> {
+        if ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { Self::from_ptr(ptr) })
+        }
+    }
+    /// Look for the closest occurence of `c`, and if found, split the string into a slice up to
+    /// that byte and a `CStr` starting at that byte.
+    #[allow(clippy::type_complexity)]
+    #[inline]
+    #[doc(alias = "strchrnul")]
+    pub fn find_get_subslice_or_all(
+        self,
+        c: impl Into<T::Char>,
+    ) -> Result<(&'a [T::Char], Self), (&'a [T::Char], Self)> {
+        let c = c.into();
+
+        // SAFETY: strchrnul expects self.as_ptr() to be valid up to and including its last NUL
+        // byte
+        let found = unsafe { T::strchrnul(self.as_ptr(), T::r2c(c)) };
+
+        // SAFETY: the pointer returned from strchrnul is always a substring of this string, and
+        // hence always valid as a CStr.
+        let found = unsafe { Self::from_ptr(found) };
+        let until = unsafe { self.slice_until_substr(found) };
+
+        if found.first() == T::NUL {
+            // The character was not found, and we got the end of the string instead.
+            Err((until, found))
+        } else {
+            Ok((until, found))
+        }
+    }
+    /// # Safety
+    ///
+    /// `substr` must be contained within `self`
+    #[inline]
+    pub unsafe fn slice_until_substr(self, substr: NulStr<'_, T>) -> &'a [T::Char] {
+        let index = unsafe {
+            // SAFETY: the sub-pointer as returned by strchr must be derived from the same
+            // allocation
+            substr.as_ptr().offset_from(self.as_ptr()).cast_unsigned()
+        };
+        unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<T::Char>(), index) }
+    }
+    /// Look for the closest occurence of `c`, and if found, split the string into a slice up to
+    /// that byte and a `CStr` starting at that byte.
+    #[inline]
+    pub fn find_get_subslice(self, c: T::Char) -> Option<(&'a [T::Char], Self)> {
+        let rest = self.find(c)?;
+
+        // SAFETY: the output of strchr is obviously a substring if it doesn't return NULL
+        Some((unsafe { self.slice_until_substr(rest) }, rest))
+    }
+    /// Look for the closest occurence of `c`, and return a new string starting at that byte if
+    /// found.
+    #[doc(alias = "strchr")]
+    #[doc(alias = "wcschr")]
+    #[inline]
+    pub fn find(self, c: T::Char) -> Option<Self> {
+        unsafe {
+            // SAFETY: the only requirement is for self.as_ptr() to be valid up to and including
+            // the nearest NUL byte, which this type requires
+            let ret = T::strchr(self.as_ptr(), T::r2c(c));
+            // SAFETY: strchr must either return NULL (not found) or a substring of self, which can
+            // never exceed the nearest NUL byte of self
+            Self::from_nullable_ptr(ret)
+        }
+    }
+    // TODO: strrchr, strchrnul wrappers
+
+    #[inline]
+    pub fn contains(self, c: T::Char) -> bool {
+        self.find(c).is_some()
+    }
+    #[inline]
+    pub fn first(self) -> T::Char {
+        unsafe {
+            // SAFETY: Self must be valid up to and including its nearest NUL byte, which certainly
+            // implies its readable length is nonzero (string is empty if this first byte is 0).
+            T::c2r(self.ptr.read())
+        }
+    }
+    #[inline]
+    pub fn first_char(self) -> Option<char> {
+        char::from_u32(self.first().into())
+    }
+    /// Same as `split_first` except also requires that the first char be convertible into `char`
+    #[inline]
+    pub fn split_first_char(self) -> Option<(char, Self)> {
+        self.split_first()
+            .and_then(|(c, r)| Some((char::from_u32(c.into())?, r)))
+    }
+    /// Split this string into `Some((first_byte, string_after_that))` or `None` if empty.
+    #[inline]
+    pub fn split_first(self) -> Option<(T::Char, Self)> {
+        if self.first() == T::NUL {
+            return None;
+        }
+        Some((self.first(), unsafe {
+            Self::from_ptr(self.as_ptr().add(1))
+        }))
+    }
+    pub fn to_chars_with_nul(self) -> &'a [T::Char] {
+        unsafe {
+            // SAFETY: The string must be valid at least until (and including) the NUL byte.
+            let len = T::strlen(self.ptr.as_ptr());
+            core::slice::from_raw_parts(self.ptr.as_ptr().cast(), len + 1)
+        }
+    }
+    pub fn to_chars(self) -> &'a [T::Char] {
+        let s = self.to_chars_with_nul();
+        &s[..s.len() - 1]
+    }
+    pub const fn as_ptr(self) -> *const T::C {
+        self.ptr.as_ptr()
+    }
+    pub const unsafe fn from_chars_with_nul_unchecked(chars: &'a [T::Char]) -> Self {
+        unsafe { Self::from_ptr(chars.as_ptr().cast()) }
+    }
+    pub fn from_chars_with_nul(chars: &'a [T::Char]) -> Result<Self, FromCharsWithNulError> {
+        if chars.last() != Some(&T::NUL) || chars[..chars.len() - 1].contains(&T::NUL) {
+            return Err(FromCharsWithNulError);
+        }
+
+        Ok(unsafe { Self::from_chars_with_nul_unchecked(chars) })
+    }
+    pub fn from_chars_until_nul(chars: &'a [T::Char]) -> Result<Self, FromCharsUntilNulError> {
+        if !chars.contains(&T::NUL) {
+            return Err(FromCharsUntilNulError);
+        }
+
+        Ok(unsafe { Self::from_chars_with_nul_unchecked(chars) })
+    }
+    /// Scan the string to get its length.
+    #[doc(alias = "strlen")]
+    #[doc(alias = "wcslen")]
+    pub fn len(self) -> usize {
+        self.to_chars().len()
+    }
+    #[inline]
+    pub fn is_empty(self) -> bool {
+        self.first() == T::NUL
+    }
+
+    /// Advances this pointer by `n`, simultaneously getting the slice
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `n` is less than `self.len() + 1`.
+    #[inline]
+    pub unsafe fn advance_unchecked(self, n: usize) -> (&'a [T::Char], Self) {
+        debug_assert!(n < self.len() + 1, "UB");
+
+        let until = unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<T::Char>(), n) };
+        let then = unsafe { Self::from_ptr(self.as_ptr().add(n)) };
+
+        (until, then)
+    }
+    /// If the string starts with `prefix`, return `Some(next)`.
+    #[inline]
+    pub fn strip_prefix(self, prefix: &[T::Char]) -> Option<Self> {
+        self.strip_prefix_full(prefix).map(|(_, n)| n)
+    }
+
+    /// If the string starts with `prefix`, return `Some((prefix_slice, next))`, otherwise return
+    /// `None`.
+    ///
+    /// It's a logic error for the prefix to contain NUL bytes.
+    #[inline]
+    pub fn strip_prefix_full(self, prefix: &[T::Char]) -> Option<(&'a [T::Char], Self)> {
+        assert!(!prefix.contains(&T::NUL));
+
+        // SAFETY:
+        // - strncmp can never read `prefix` out-of-bounds as it's already limited by its length
+        // - strncmp will never read `self` out-of-bounds as it respects the NUL terminator
+        if unsafe { T::strncmp(self.as_ptr(), prefix.as_ptr().cast::<T::C>(), prefix.len()) }
+            != core::cmp::Ordering::Equal
+        {
+            return None;
+        }
+        // SAFETY: We already know `prefix.len()` bytes of `self` equal `prefix`, so obviously we
+        // can advance by at least that. It's required that the prefix does not contain any NUL bytes, for this to be valid.
+        Some(unsafe { self.advance_unchecked(prefix.len()) })
+    }
+
+    /// If the string starts with `prefix`, ignoring case, return `Some(next)`.
+    #[inline]
+    pub fn strip_case_insensitive_prefix(self, prefix: &[T::Char]) -> Option<Self> {
+        assert!(!prefix.contains(&T::NUL));
+
+        // SAFETY:
+        // - strncasecmp can never read `prefix` out-of-bounds as it's already limited by its length
+        // - strncasecmp will never read `self` out-of-bounds as it respects the NUL terminator
+        if unsafe { T::strncasecmp(self.as_ptr(), prefix.as_ptr().cast::<T::C>(), prefix.len()) }
+            != core::cmp::Ordering::Equal
+        {
+            return None;
+        }
+        // SAFETY: We already know `prefix.len()` bytes of `self` equal `prefix`, so obviously we
+        // can advance by at least that. It's required that the prefix does not contain any NUL bytes, for this to be valid.
+        let (_, output) = unsafe { self.advance_unchecked(prefix.len()) };
+        Some(output)
+    }
+
+    /// Casts a slice of strings to raw pointers, valid because of memory layout compatibility.
+    #[inline]
+    pub fn strs_to_raw(slice: &[Self]) -> &[*const c_char] {
+        // SAFETY: CStr/WStr are guaranteed to have the same memory layout as *const c_char
+        // pointers, which is a superset of the valid bit patterns &[Self] can have.
+        unsafe { core::slice::from_raw_parts(slice.as_ptr().cast::<*const c_char>(), slice.len()) }
+    }
+    /// Casts a slice of optional-strings to raw pointers, valid because of memory layout compatibility.
+    #[inline]
+    pub fn opt_strs_to_raw(opt_slice: &[Option<Self>]) -> &[*const c_char] {
+        // SAFETY: same as in strs_to_raw, except being a "weaker" superset since opt_slice can
+        // have None, i.e. NULL.
+        unsafe {
+            core::slice::from_raw_parts(opt_slice.as_ptr().cast::<*const c_char>(), opt_slice.len())
+        }
+    }
+    // TODO: (unsafe) strs_to_raw_mut, opt_strs_to_raw_mut?
+
+    /// Upgrades a slice of raw pointers into a slice of strings.
+    ///
+    /// # Safety
+    ///
+    /// - for each string `s` in `raw`, it must be safe to call `Self::from_ptr(s)`, i.e. it must
+    ///   be valid and nonnull
+    pub unsafe fn strs_from_raw(raw: &[*const c_char]) -> &[Self] {
+        // SAFETY: layout compatible, and caller guarantees each element in `raw` is valid as a
+        // CStr/WStr
+        unsafe { core::slice::from_raw_parts(raw.as_ptr().cast::<Self>(), raw.len()) }
+    }
+    /// Upgrades a slice of raw pointers into a slice of optional-strings.
+    ///
+    /// # Safety
+    ///
+    /// - for each string `s` in `raw`, it must be safe to call `Self::from_nullable_ptr(s)`, i.e. it must
+    ///   be valid or null
+    pub unsafe fn opt_strs_from_raw(raw: &[*const c_char]) -> &[Option<Self>] {
+        // SAFETY: layout compatible, and caller guarantees each element in `raw` is valid as an
+        // Option<CStr/WStr>
+        unsafe { core::slice::from_raw_parts(raw.as_ptr().cast::<Option<Self>>(), raw.len()) }
+    }
+}
+impl<'a> CStr<'a> {
+    pub fn to_owned_cstring(self) -> CString {
+        CString::from(self.to_cstr())
+    }
+    pub fn borrow(string: &'a CString) -> Self {
+        unsafe { Self::from_ptr(string.as_ptr()) }
+    }
+    #[inline]
+    pub fn to_bytes(self) -> &'a [u8] {
+        self.to_chars()
+    }
+    #[inline]
+    pub fn to_bytes_with_nul(self) -> &'a [u8] {
+        self.to_chars_with_nul()
+    }
+    pub fn to_str(self) -> Result<&'a str, Utf8Error> {
+        core::str::from_utf8(self.to_bytes())
+    }
+    pub fn to_cstr(self) -> &'a core::ffi::CStr {
+        unsafe { core::ffi::CStr::from_ptr(self.ptr.as_ptr()) }
+    }
+    pub fn to_string_lossy(self) -> Cow<'a, str> {
+        String::from_utf8_lossy(self.to_bytes())
+    }
+    #[inline]
+    pub const unsafe fn from_bytes_with_nul_unchecked(bytes: &'a [u8]) -> Self {
+        unsafe { Self::from_chars_with_nul_unchecked(bytes) }
+    }
+    #[inline]
+    pub fn from_bytes_with_nul(bytes: &'a [u8]) -> Result<Self, FromCharsWithNulError> {
+        Self::from_chars_with_nul(bytes)
+    }
+    #[inline]
+    pub fn from_bytes_until_nul(bytes: &'a [u8]) -> Result<Self, FromCharsUntilNulError> {
+        Self::from_chars_until_nul(bytes)
+    }
+
+    pub fn trim_start_whitespace(mut self) -> Self {
+        while let Some((c, next)) = self.split_first()
+            && crate::header::ctype::isspace(c.into()) != 0
+        {
+            self = next;
+        }
+        self
+    }
+}
+
+impl<'a> WStr<'a> {
+    pub fn trim_start_whitespace(mut self) -> Self {
+        while let Some((c, next)) = self.split_first()
+            && crate::header::wctype::iswspace(c) != 0
+        {
+            self = next;
+        }
+        self
+    }
+}
+
+unsafe impl<T: Kind> Send for NulStr<'_, T> {}
+unsafe impl<T: Kind> Sync for NulStr<'_, T> {}
+
+impl From<&core::ffi::CStr> for CStr<'_> {
+    fn from(s: &core::ffi::CStr) -> Self {
+        // SAFETY:
+        // * We can assume that `s` is valid because the caller should have upheld its
+        // safety concerns when constructing it.
+        unsafe { Self::from_ptr(s.as_ptr()) }
+    }
+}
+
+impl<'a> core::fmt::Debug for CStr<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self.to_str() {
+            Ok(s) => write!(f, "{:?}", s),
+            Err(_) => write!(f, "{:?}", "[non-utf8 CStr]"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct FromCharsWithNulError;
+
+#[derive(Debug)]
+pub struct FromCharsUntilNulError;
+
+pub use alloc::ffi::CString;
+
+/// Owned variant of CStr, allocated by the global allocator used by Rust (which currently is the
+/// same as malloc/free for relibc).
+#[repr(transparent)]
+pub struct OwnedThinCStr {
+    ptr: NonNull<c_char>,
+}
+impl OwnedThinCStr {
+    #[inline]
+    pub const unsafe fn from_ptr(ptr: *mut c_char) -> Self {
+        Self {
+            ptr: unsafe { NonNull::new_unchecked(ptr) },
+        }
+    }
+    #[inline]
+    pub unsafe fn from_nullable_ptr(ptr: *mut c_char) -> Option<Self> {
+        Some(Self {
+            ptr: NonNull::new(ptr)?,
+        })
+    }
+    #[inline]
+    pub const fn as_cstr(&self) -> CStr<'_> {
+        unsafe { CStr::from_ptr(self.ptr.as_ptr()) }
+    }
+    pub const fn into_ptr(self) -> *mut c_char {
+        let ptr = self.ptr.as_ptr();
+        core::mem::forget(self);
+        ptr
+    }
+}
+impl From<CString> for OwnedThinCStr {
+    fn from(value: CString) -> Self {
+        unsafe { Self::from_ptr(value.into_raw()) }
+    }
+}
+impl From<CStr<'_>> for OwnedThinCStr {
+    fn from(value: CStr<'_>) -> Self {
+        let owned = Box::<[u8]>::from(value.to_bytes());
+        unsafe { Self::from_ptr(Box::into_raw(owned).as_mut_ptr().cast()) }
+    }
+}
+impl Drop for OwnedThinCStr {
+    fn drop(&mut self) {
+        unsafe {
+            // TODO: Getting the length can be ignored if we know it was allocated with malloc and
+            // (len-unaware) free. But the guarantee that the Rust and C allocators are identical
+            // in relibc, must be documented better in that case.
+            let len = CStr::from_ptr(self.ptr.as_ptr()).len();
+            let layout = Layout::array::<u8>(len).unwrap();
+            alloc::alloc::dealloc(self.ptr.as_ptr().cast(), layout);
+        }
+    }
+}

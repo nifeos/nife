@@ -1,0 +1,15 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/errno.h.html
+#
+# There are no spec quotations relating to includes
+after_includes = """
+#define errno (*__errno_location())
+#define program_invocation_name (*__program_invocation_name())
+#define program_invocation_short_name (*__program_invocation_short_name())
+"""
+include_guard = "_RELIBC_ERRNO_H"
+language = "C"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true

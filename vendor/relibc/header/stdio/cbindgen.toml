@@ -1,0 +1,50 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/stdio.h.html
+#
+# Spec quotations relating to includes:
+# - "off_t As described in <sys/types.h>."
+# - "size_t As described in <stddef.h>."
+# - "ssize_t As described in <sys/types.h>."
+# - "va_list As described in <stdarg.h>."
+# - "The <stdio.h> header shall define NULL as described in <stddef.h>."
+# - "Inclusion of the <stdio.h> header may also make visible all symbols from <stddef.h>."
+#
+# stddef.h brings in size_t and NULL
+# features.h required for deprecated annotations
+sys_includes = ["stddef.h", "features.h"]
+after_includes = """
+#include <bits/off-t.h>   // for off_t from sys/types.h
+#include <bits/ssize-t.h> // for ssize_t from sys/types.h
+#include <bits/fcntl.h>   // for SEEK_CUR, SEEK_END and SEEK_SET
+#include <bits/valist.h>  // for va_list from stdarg.h
+"""
+include_guard = "_RELIBC_STDIO_H"
+trailer = """
+#ifndef _RELIBC_BITS_STDIO_H
+#define _RELIBC_BITS_STDIO_H
+
+// XXX: this is only here because cbindgen can't handle string constants
+#define P_tmpdir "/tmp"
+
+// TODO: figure out why this duplicate is needed to compile libiconv
+typedef struct FILE FILE;
+
+// A typedef doesn't suffice, because libgmp uses this definition to check if
+// STDIO was loaded.
+#define FILE FILE
+// Likewise, stdin, stdout, and stderr are expected to be macros.
+#define stdin stdin
+#define stdout stdout
+#define stderr stderr
+
+#endif // _RELIBC_BITS_STDIO_H
+"""
+language = "C"
+style = "Type"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true
+
+[export.rename]
+"AtomicBool" = "volatile char"

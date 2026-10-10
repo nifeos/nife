@@ -1,0 +1,26 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/time.h.html
+#
+# This type is split out to avoid including all of time.h in the other headers.
+#
+# POSIX headers that require timespec:
+# - aio.h
+# - poll.h
+# - sched.h
+# - semaphore.h
+# - signal.h
+# - sys/select.h
+# - sys/stat.h
+# - sys/time.h
+# - time.h (where it should be defined)
+after_includes = """
+#include <bits/time-t.h>
+"""
+include_guard = "_RELIBC_BITS_TIMESPEC_H"
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+[export]
+include = ["timespec"]
+[enum]
+prefix_with_name = true

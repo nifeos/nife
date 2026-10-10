@@ -1,0 +1,42 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+use alloc::vec::Vec;
+use core::slice;
+
+use crate::platform::types::{c_void, size_t};
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_uio.h.html>.
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Debug, CheckVsLibcCrate)]
+pub struct iovec {
+    /// Base address of a memory region for input or output.
+    pub iov_base: *mut c_void,
+    /// The size of the memory pointed to by `iov_base`.
+    pub iov_len: size_t,
+}
+
+impl iovec {
+    #[expect(clippy::mut_from_ref)]
+    unsafe fn to_slice(&self) -> &mut [u8] {
+        unsafe { slice::from_raw_parts_mut(self.iov_base.cast::<u8>(), self.iov_len) }
+    }
+}
+
+pub unsafe fn gather(iovs: &[iovec]) -> Vec<u8> {
+    let mut vec = Vec::new();
+    for iov in iovs {
+        // SAFETY: only a single mutable reference created
+        vec.extend_from_slice(unsafe { iov.to_slice() });
+    }
+    vec
+}
+
+pub unsafe fn scatter(iovs: &[iovec], vec: &[u8]) {
+    let mut i = 0;
+    for iov in iovs {
+        // SAFETY: only a single mutable reference created
+        let slice = unsafe { iov.to_slice() };
+        slice.copy_from_slice(&vec[i..][..slice.len()]);
+        i += slice.len();
+    }
+}

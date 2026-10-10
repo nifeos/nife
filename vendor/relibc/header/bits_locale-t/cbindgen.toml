@@ -1,0 +1,23 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/locale.h.html
+#
+# This type is split out to prevent importing all of locale.h into other headers.
+#
+# POSIX headers that require locale_t:
+# - ctype.h
+# - langinfo.h
+# - libintl.h (relibc does not define this header, supplied externally by gettext > libint)
+# - locale.h (where it should be defined)
+# - monetary.h
+# - string.h
+# - strings.h
+# - time.h
+# - wchar.h
+# - wctype.h
+include_guard = "_RELIBC_BITS_LOCALE_T_H"
+language = "C"
+no_includes = true
+cpp_compat = true
+[export]
+include = ["locale_t"]
+[enum]
+prefix_with_name = true

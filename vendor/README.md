@@ -4,6 +4,9 @@ Engines we pin by carrying the source in-tree, per milestone 32's vendored-engin
 pin a version, carry patches, record divergence. Vendoring (rather than a registry or git
 dependency) is what lets the pin carry a patch and keeps the build hermetic.
 
+One directory here is not a pin: `relibc/`, a seed nife owns and does not track (below). It lives
+here because it is somebody else's code in shape, and every gate already treats `vendor/` that way.
+
 ## redoxfs 0.9.1
 
 The on-disk engine for milestone 32's FS server (design/roadmap/0032-redoxfs-fs-server.md; the audit that chose
@@ -154,6 +157,54 @@ and priced it is notes/redoxfs-audit.md).
   `--manifest-path`, since it is outside the main workspace their `--workspace`/`--all` sweeps see.
   `script/vendor-verify` asks the different question those cannot: not "does it still build" but
   "is this tree what we say it is".
+
+## relibc, seeded at 893a3b9133ac (not a pin)
+
+The C library's relibc half, for milestone 835 (a C library, stage 1: files, clock and memory) and
+§265 (a C library started from relibc, whose Rust platform layer holds the capabilities). The crate
+that compiles it, and nife's own half (the platform layer, `malloc`, the start of a C program), is
+[`c_library/`](../c_library/README.md).
+
+- **Source:** `gitlab.redox-os.org/redox-os/relibc` at commit
+  `893a3b9133ac2fb3089f71b02d5b61d145d97968` (2026-10-07), MIT (`relibc/LICENSE`, "Copyright (c)
+  2018 Redox OS"), seeded 2026-10-10 (UTC). Every seeded file's first line says so.
+- **Not a pin, deliberately.** notes/c-library.md measured it: Redox does not accept
+  LLM-generated contributions, so a nife platform layer can never go upstream, and tracking
+  upstream would mean rebasing a private fork whose divergence outgrows what it patches. So there
+  is no `.pin`, `script/vendor-verify` and `script/vendor-watch` do not cover it, and an upstream
+  fix is ported by hand from reading, with a commit naming the upstream one. A bug nife finds in
+  relibc's generic code goes back as a bug report.
+- **What was taken:** relibc's root modules (`c_str`, `io`, `sync`, `fs`, `error`, `out` and the
+  rest), its `Pal` and `PalSignal` traits, its types, and the header modules a stage-1 program
+  reaches: `assert`, `ctype`, `dirent`, `errno`, `fcntl`, `float`, `getopt`, `inttypes`, `langinfo`,
+  `limits`, `locale`, `malloc`, `math`, `signal`, `stdio`, `stdlib`, `string`, `strings`,
+  `sys_mman`, `sys_stat`, `sys_time`, `sys_types`, `sys_uio`, `sys_utsname`, `sys_wait`, `time`,
+  `unistd`, `utime`, `wchar`, `wctype`, and the `bits_*` type modules. Its static headers
+  (`include/`) and its one C file (`c/stdlib.c`).
+- **What was left behind:** `redox-rt`, `platform/redox`, `platform/linux`, `ld_so` (the dynamic
+  linker and TLS), `start.rs` and `crt0`, dlmalloc, `pthread` (stage 2, milestone 836), sockets and
+  `netdb` (stage 3, milestone 837), `spawn` (milestone 838), terminals, `crypt`, `regex`, and every
+  header module above not listed. The thirty-odd crates relibc depends on are gone too except
+  `libm`; c_library/README.md says what replaced each.
+- **How it diverges:** every edit says `nife:` where it is, with its reason. The kinds: relibc's
+  Linux `cfg` arms are extended to `target_os = "nife"` (nife takes Linux's generic C ABI values);
+  `#[thread_local]` statics become single cells (one thread); the `syscall()` function and the
+  Linux signal trampoline are not built (no syscalls, §31 rule 1); functions that need what stage 1
+  lacks were removed (`pthread_*`, pseudo-terminals, `crypt`, `alarm`, timers); time zones are UTC
+  on `crates/calendar`; `printf` reads a `double` vararg as the soft-float ABI passes it; and
+  `getopt_long_only`, which relibc lacks, was added.
+- **The headers** in `relibc/include/` are generated from the modules by cbindgen 0.29.0, as relibc
+  generates them, and committed. `helpers/c-library-headers.sh` regenerates them; no build runs it.
+- **Gates: a dated exception (2026-10-10, UTC).** Like everything under `vendor/`, the seed is
+  outside `script/lint`'s unsafe census, its `unsafe fn` contract check, its citation and
+  house-style checks and `cargo fmt`, and about 580 of its `unsafe fn`s carry no `# Safety`
+  section. That is a hole, not a design: calef ruled on #1896 (2026-10-10) that the seed comes under
+  the unsafe census and the contract check, in milestone 868 (relibc's seed comes under the unsafe
+  gates). This entry is removed when it lands. The code that is nife's, `c_library/`, is under
+  every gate now.
+- **`math.h`** is relibc's own Rust `math` module over the `libm` crate (calef, #1896). relibc
+  offers it behind its opt-in `math_libm` feature; its default build compiles openlibm instead
+  (`USE_RUST_LIBM` empty in its Makefile), which was not seeded.
 
 ## Bumping a pin
 

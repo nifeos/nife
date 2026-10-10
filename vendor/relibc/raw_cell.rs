@@ -1,0 +1,56 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+use core::cell::UnsafeCell;
+
+/// Wrapper over `UnsafeCell` that can directly be used in statics, where all modifications require
+/// unsafe.
+#[repr(transparent)]
+pub struct RawCell<T> {
+    inner: UnsafeCell<T>,
+}
+impl<T> RawCell<T> {
+    #[inline]
+    pub const fn new(t: T) -> Self {
+        Self {
+            inner: UnsafeCell::new(t),
+        }
+    }
+    #[inline]
+    pub fn as_mut_ptr(&self) -> *mut T {
+        self.inner.get()
+    }
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.inner.get_mut()
+    }
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.inner.into_inner()
+    }
+    #[inline]
+    pub unsafe fn unsafe_ref(&self) -> &T {
+        unsafe { &*self.inner.get() }
+    }
+    #[inline]
+    pub unsafe fn unsafe_set(&self, t: T) {
+        unsafe { *self.inner.get() = t };
+    }
+    /// # Safety
+    /// This allows creation of multiple mutable references from an immutable
+    /// reference. Caller must ensure this is not called on the same `RawCell`
+    /// multiple times.
+    #[expect(clippy::mut_from_ref, reason = "documented safety usage")]
+    #[inline]
+    pub unsafe fn unsafe_mut(&self) -> &mut T {
+        unsafe { &mut *self.inner.get() }
+    }
+}
+
+// SAFETY: Sync requires that no safe interface be allowed to act on &self in a way that is
+// undefined behavior when accessed concurrently. The interface above only allows get, set, and
+// as_mut_ptr, where the former two that access memory are unsafe anyway.
+unsafe impl<T> Sync for RawCell<T> {}
+
+const _: () = {
+    // Check that RawCell works for non-Sync types.
+    static X: RawCell<*mut ()> = RawCell::new(core::ptr::null_mut());
+};

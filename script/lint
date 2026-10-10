@@ -1014,11 +1014,15 @@ echo "==> roadmap status"
 # `walk_pricing` (milestone 121 (`ripgrep` on nife: enumeration as a capability), 2026-09-26) is the fifth, and it is `std` for a different reason:
 # it is plain `std::fs` code so that one walk runs on a host and on nife's `std` targets alike. It
 # has no bare-metal build to document, and its nife build is `std_exerciser`'s.
+#
+# `c_library_errno` (milestone 835 (a C library, stage 1: files, clock and memory), 2026-10-10) is
+# the sixth, for `walk_pricing`'s reason: it maps `std::io::ErrorKind` to `errno`, so it is `std` by
+# nature, and its nife build is `c_library`'s.
 echo "==> rustdoc (broken intra-doc links)"
 DOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags"
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --workspace --exclude xtask \
     --exclude board_console --exclude stick_maker --exclude sealed_pair --exclude walk_pricing \
-    --exclude kernel --target aarch64-unknown-none-softfloat
+    --exclude c_library_errno --exclude kernel --target aarch64-unknown-none-softfloat
 # The kernel on its own, private items included (milestone 609 (the system tests leave the kernel
 # crate)). It was a binary, and rustdoc documents a binary's private items by default; it is a
 # library now, and a library's docs are its public surface, which for the kernel is nearly nothing.
@@ -1027,7 +1031,7 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --workspace --exclude xtask
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p kernel --lib --document-private-items \
     --target aarch64-unknown-none-softfloat
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p xtask -p board_console -p stick_maker \
-    -p sealed_pair -p walk_pricing
+    -p sealed_pair -p walk_pricing -p c_library_errno
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_server/Cargo.toml --lib
 
 # The decision index (design/decisions/README.md and one file per decision, milestone 114): its

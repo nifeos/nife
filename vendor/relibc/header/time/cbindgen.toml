@@ -1,0 +1,42 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/time.h.html
+#
+# Spec quotations relating to includes:
+# - "The <time.h> header shall define the clock_t, size_t, time_t, types as described in <sys/types.h>."
+# - "The <time.h> header shall define the clockid_t and timer_t types as described in <sys/types.h>."
+# - "The <time.h> header shall define the locale_t type as described in <locale.h>."
+# - "The <time.h> header shall define the pid_t type as described in <sys/types.h>."
+# - "The tag sigevent shall be declared as naming an incomplete structure type, the contents of which are described in the <signal.h> header."
+# - "NULL As described in <stddef.h>."
+# - "Inclusion of the <time.h> header may make visible all symbols from the <signal.h> header."
+#
+# Cycle warning:
+# POSIX states signal.h may include time.h and time.h may include signal.h.
+# To prevent a cycle between both headers we only import the needed types through bits.
+#
+# bits/timespec.h brings in time_t
+# features.h included for deprecated annotations
+sys_includes = ["features.h"]
+include_guard = "_RELIBC_TIME_H"
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+after_includes = """
+#include <bits/null.h>      // for NULL from stddef.h
+#include <bits/size-t.h>    // for size_t from sys/types.h
+#include <bits/clock-t.h>   // for clock_t from sys/types.h
+#include <bits/clockid-t.h> // for clockid_t from sys/types.h
+#include <bits/pid-t.h>     // for pid_t from sys/types.h
+#include <bits/timer-t.h>   // for timer_t from sys/types.h
+#include <bits/timespec.h>  // for timespec
+#include <bits/locale-t.h>  // for locale_t from locale.h
+
+struct sigevent;
+"""
+
+[enum]
+prefix_with_name = true
+
+[export.rename]
+"timespec" = "struct timespec"
+"sigevent" = "struct sigevent"

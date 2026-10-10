@@ -152,6 +152,22 @@ What stage 1 must decide in its own block: where the crate lives, its name (an a
 how clang finds the generated headers, and whether cbindgen is taken or the headers are written by
 hand (a §46 question).
 
+## What stage 1 found (2026-10-10, UTC)
+
+Milestone 835 (a C library, stage 1: files, clock and memory) built the shape recommended above.
+Three findings against this note's predictions:
+
+- The platform layer was the Linux kind in size, not the Redox kind. This note expected nife's
+  layer to be near Redox's 14,000 lines. Built on nife's own Rust `std` rather than on the protocol
+  crates, it is 1,311 lines (`c_library/src/platform/nife.rs`), because `std` already holds every
+  client nife needs: files, clock, heap and standard streams.
+- Of relibc's thirty-odd crates, one survived. `libm`, for `math.h`. The rest were replaced by
+  a few lines each or by what the tree already had (`crates/calendar` for `chrono`).
+- The soft-float ABI is where C and Rust disagree. C on a soft-float target passes a `double`
+  vararg in a general register, and Rust's `va_arg::<f64>` on aarch64 and x86_64 reads the
+  floating-point save area. relibc's `printf` printed every `double` as 0 until it read the bits as
+  a `u64`. SQLite's `speedtest1` did not notice, because SQLite formats numbers itself; ioping did.
+
 ## BUGS
 
 - Measured from a shallow clone. Submodules were not fetched, so dlmalloc's and openlibm's sizes are

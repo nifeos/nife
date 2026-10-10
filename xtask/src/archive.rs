@@ -5,8 +5,8 @@
 
 use crate::disk::{mkfs_elf, redoxfs_server_elf};
 use crate::farm::{
-    cryptography_exerciser_elf, package_fetch_exerciser_elf, pinned_tls_exerciser_elf, ripgrep_elf,
-    std_exerciser_elf, std_resolve_elf,
+    C_PROGRAMS, c_program_elf, cryptography_exerciser_elf, package_fetch_exerciser_elf,
+    pinned_tls_exerciser_elf, ripgrep_elf, std_exerciser_elf, std_resolve_elf,
 };
 use crate::host::{bin_elf, workspace_root};
 use crate::inspect::read_stripped;
@@ -364,6 +364,16 @@ pub(crate) fn initrd_riscv() -> bool {
     if let Ok(bytes) = read_stripped(&ripgrep_elf("riscv64-unknown-nife").display().to_string()) {
         blobs.push(("rg", bytes));
     }
+    // **The unmodified C programs** (milestone 835), on `rg`'s terms: each present iff its
+    // `helpers/build-<name>.sh` has been run.
+    for name in C_PROGRAMS {
+        let path = c_program_elf(name, "riscv64-unknown-nife")
+            .display()
+            .to_string();
+        if let Ok(bytes) = read_stripped(&path) {
+            blobs.push((name, bytes));
+        }
+    }
     // **The crypto-provider workload** of milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets), on the same terms and for the same
     // reason: present iff `helpers/build-cryptography-exerciser.sh` has been run.
     if let Ok(bytes) = read_stripped(
@@ -548,6 +558,15 @@ pub(crate) fn initrd_x86() -> bool {
     if let Ok(bytes) = read_stripped(&ripgrep_elf("x86_64-unknown-nife").display().to_string()) {
         blobs.push(("rg", bytes));
     }
+    // **The unmodified C programs** (milestone 835), each present iff its helper ran.
+    for name in C_PROGRAMS {
+        let path = c_program_elf(name, "x86_64-unknown-nife")
+            .display()
+            .to_string();
+        if let Ok(bytes) = read_stripped(&path) {
+            blobs.push((name, bytes));
+        }
+    }
     // **The crypto-provider workload** (milestone 442), on the same terms and for the same
     // reason: present iff `helpers/build-cryptography-exerciser.sh` has been run.
     if let Ok(bytes) = read_stripped(
@@ -693,6 +712,20 @@ pub(crate) fn initrd_aarch64() -> bool {
     let ripgrep = read_stripped(&ripgrep_elf("aarch64-unknown-nife").display().to_string()).ok();
     if let Some(bytes) = &ripgrep {
         files.push(("rg", bytes.as_slice()));
+    }
+    // **The unmodified C programs** (milestone 835 (a C library, stage 1: files, clock and
+    // memory)), on exactly `rg`'s terms: each present iff its `helpers/build-<name>.sh` has run.
+    let c_programs: Vec<(&str, Vec<u8>)> = C_PROGRAMS
+        .iter()
+        .filter_map(|&name| {
+            let path = c_program_elf(name, "aarch64-unknown-nife")
+                .display()
+                .to_string();
+            read_stripped(&path).ok().map(|bytes| (name, bytes))
+        })
+        .collect();
+    for (name, bytes) in &c_programs {
+        files.push((name, bytes.as_slice()));
     }
     // **The crypto-provider workload** (milestone 442), on exactly those terms: present iff
     // `helpers/build-cryptography-exerciser.sh` has been run, absent from every ordinary build and

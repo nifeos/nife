@@ -24,6 +24,9 @@ address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # "what pages exist" cannot be discovered at runtime and has to be computed at image time. Only the
 # writer is behind the `builder` feature; the reader that runs confined allocates nothing.
 documentation = { version = "0.1.0", path = "../crates/documentation", features = ["builder"] }
+# The C programs' directory in the test image and their command lines (milestone 835 (a C library,
+# stage 1: files, clock and memory)).
+c_program_fixture = { path = "../crates/c_program_fixture" }
 filesystem_protocol = { version = "0.1.0", path = "../crates/filesystem_protocol" }
 # Milestone 121 (`ripgrep` on nife: enumeration as a capability)'s priced tree: the image builder stages it with the same function a host
 # comparison stages it with, so the two cannot be walks over different shapes.

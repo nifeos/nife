@@ -86,6 +86,19 @@ pub(crate) fn ripgrep_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!("target/ripgrep/{triple}/rg"))
 }
 
+/// **The C programs milestone 835 (a C library, stage 1: files, clock and memory) runs unmodified,
+/// by name.** Each is built by its own `helpers/build-<name>.sh`, which fetches somebody else's C
+/// and links it with nife's C library; the archive carries whichever are on disk.
+pub(crate) const C_PROGRAMS: [&str; 2] = ["speedtest1", "ioping"];
+
+/// **One of [`C_PROGRAMS`], if somebody built it**, on [`ripgrep_elf`]'s terms and for its reason:
+/// fetching SQLite or ioping in a gate is a dependency decision (§46 (thin primitives or whole
+/// subsystems; we write everything in between)), which the pull request that added this asks calef
+/// to make. `system_tests/src/user/c_program_tests.rs` skips each test whose program is absent.
+pub(crate) fn c_program_elf(name: &str, triple: &str) -> PathBuf {
+    workspace_root().join(format!("target/{name}/{triple}/{name}"))
+}
+
 /// **The crypto-provider workload, if somebody built it**: milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets).
 ///
 /// `helpers/build-cryptography-exerciser.sh` puts it here, and it rides in the archive on exactly

@@ -1,0 +1,20 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_socket.h.html
+#
+# This type is split out to prevent importing all of sys/socket.h into other headers.
+#
+# POSIX headers that require socklen_t:
+# - arpa/inet.h
+# - netdb.h
+# - sys/socket.h (where it should be defined)
+#
+# sys/socket.h spec states socklen_t must be at least 32bit wide.
+# Application usage section recommends socklen_t value should not be larger than 2^31 -1.
+sys_includes = ["bits/uint32-t.h"]
+include_guard = "_RELIBC_BITS_SOCKLEN_T_H"
+language = "C"
+no_includes = true
+cpp_compat = true
+[export]
+include = ["socklen_t"]
+[enum]
+prefix_with_name = true

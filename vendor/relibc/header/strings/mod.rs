@@ -1,0 +1,184 @@
+// Seeded from relibc (MIT, vendor/relibc/LICENSE) at 893a3b9133ac, 2026-10-10 (UTC), for milestone 835; nife owns it from here, and its edits say `nife:` where they are (vendor/README.md).
+//! `strings.h` implementation.
+//!
+//! See <https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/strings.h.html>.
+
+use core::{
+    arch,
+    iter::{once, zip},
+    ptr,
+};
+
+use crate::{
+    header::{ctype, string},
+    iter::NulTerminated,
+    platform::types::{c_char, c_int, c_long, c_longlong, c_void, size_t},
+};
+
+/// See <https://pubs.opengroup.org/onlinepubs/009695399/functions/bcmp.html>.
+///
+/// # Deprecation
+/// The `bcmp()` function was marked legacy in the Open Group Base
+/// Specifications Issue 6, and removed in Issue 7.
+#[deprecated]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bcmp(first: *const c_void, second: *const c_void, n: size_t) -> c_int {
+    unsafe { string::memcmp(first, second, n) }
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/009695399/functions/bcopy.html>.
+///
+/// # Deprecation
+/// The `bcopy()` function was marked legacy in the Open Group Base
+/// Specifications Issue 6, and removed in Issue 7.
+#[deprecated]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bcopy(src: *const c_void, dst: *mut c_void, n: size_t) {
+    unsafe {
+        ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), n);
+    }
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/009695399/functions/bzero.html>.
+///
+/// # Deprecation
+/// The `bzero()` function was marked legacy in the Open Group Base
+/// Specifications Issue 6, and removed in Issue 7.
+#[deprecated]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bzero(dst: *mut c_void, n: size_t) {
+    unsafe {
+        ptr::write_bytes(dst.cast::<u8>(), 0, n);
+    }
+}
+
+/// Non-POSIX, see <https://man7.org/linux/man-pages/man3/bzero.3.html>.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn explicit_bzero(s: *mut c_void, n: size_t) {
+    for i in 0..n {
+        unsafe {
+            *s.cast::<u8>().add(i) = 0_u8;
+        }
+    }
+    unsafe {
+        arch::asm!("");
+    }
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/ffs.html>.
+#[unsafe(no_mangle)]
+pub extern "C" fn ffs(i: c_int) -> c_int {
+    if i == 0 {
+        return 0;
+    }
+    1 + c_int::try_from(i.trailing_zeros()).expect("amount of zeros always within c_int::MAX")
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/ffs.html>.
+#[unsafe(no_mangle)]
+pub extern "C" fn ffsl(i: c_long) -> c_int {
+    if i == 0 {
+        return 0;
+    }
+    1 + c_int::try_from(i.trailing_zeros()).expect("amount of zeros always within c_int::MAX")
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/ffs.html>.
+#[unsafe(no_mangle)]
+pub extern "C" fn ffsll(i: c_longlong) -> c_int {
+    if i == 0 {
+        return 0;
+    }
+    1 + c_int::try_from(i.trailing_zeros()).expect("amount of zeros always within c_int::MAX")
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/009695399/functions/index.html>.
+///
+/// # Deprecation
+/// The `index()` function was marked legacy in the Open Group Base
+/// Specifications Issue 6, and removed in Issue 7.
+#[deprecated]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn index(s: *const c_char, c: c_int) -> *mut c_char {
+    unsafe { string::strchr(s, c) }
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/009695399/functions/rindex.html>.
+///
+/// # Deprecation
+/// The `rindex()` function was marked legacy in the Open Group Base
+/// Specifications Issue 6, and removed in Issue 7.
+#[deprecated]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rindex(s: *const c_char, c: c_int) -> *mut c_char {
+    unsafe { string::strrchr(s, c) }
+}
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/strcasecmp.html>.
+///
+/// Compares, ignoring differences in case, the string pointed to by `s1` to
+/// the string pointed to by `s2`.
+///
+/// Returns an integer greater than, equal to, or less than `0`, if the string
+/// pointed to by `s1` is, ignoring case, greater than, equal to, or less than
+/// the string pointed to by `s2`.
+///
+/// # Safety
+/// `s1` and `s2` must point to a valid string terminated by nul.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcasecmp(s1: *const c_char, s2: *const c_char) -> c_int {
+    // SAFETY: the caller must ensure that s1 points to a nul-terminated buffer.
+    let s1_iter = unsafe { NulTerminated::new(s1).expect("s1 should be valid string from C") }
+        .chain(once(&0));
+    // SAFETY: the caller must ensure that s2 points to a nul-terminated buffer.
+    let s2_iter = unsafe { NulTerminated::new(s2).expect("s2 should be valid string from C") }
+        .chain(once(&0));
+
+    let zipped = zip(s1_iter, s2_iter);
+    inner_casecmp(zipped)
+}
+
+// TODO: needs locale_t
+// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/strcasecmp.html>.
+// #[unsafe(no_mangle)]
+/*pub extern "C" fn strcasecmp_l(s1: *const c_char, s2: *const c_char, locale: locale_t) -> c_int {
+    unimplemented!();
+}*/
+
+/// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/strcasecmp.html>.
+///
+/// Compares, ignoring differences in case, not more than `n` bytes, the string
+/// pointed to by `s1` to the string pointed to by `s2`.
+///
+/// Returns an integer greater than, equal to, or less than `0`, if `n` bytes
+/// of the string pointed to by `s1` is, ignoring case, greater than, equal to,
+/// or less than the string pointed to by `s2`.
+///
+/// # Safety
+/// `s1` and `s2` must point to a valid string terminated by nul.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strncasecmp(s1: *const c_char, s2: *const c_char, n: size_t) -> c_int {
+    // SAFETY: the caller must ensure that s1 points to a nul-terminated buffer.
+    let s1_iter = unsafe { NulTerminated::new(s1).expect("s1 should be valid string from C") }
+        .chain(once(&0));
+    // SAFETY: the caller must ensure that s2 points to a nul-terminated buffer.
+    let s2_iter = unsafe { NulTerminated::new(s2).expect("s2 should be valid string from C") }
+        .chain(once(&0));
+
+    let zipped = zip(s1_iter, s2_iter).take(n);
+    inner_casecmp(zipped)
+}
+
+// TODO: needs locale_t
+// See <https://pubs.opengroup.org/onlinepubs/9799919799/functions/strcasecmp.html>.
+// #[unsafe(no_mangle)]
+/*pub extern "C" fn strncasecmp_l(s1: *const c_char, s2: *const c_char, n: size_t, locale: locale_t) -> c_int {
+    unimplemented!();
+}*/
+
+/// Given two zipped `&c_char` iterators, either find the first comparison != 0, or return 0.
+fn inner_casecmp<'a>(iterator: impl Iterator<Item = (&'a c_char, &'a c_char)>) -> c_int {
+    let cmp_iter = iterator.map(|(&c1, &c2)| ctype::tolower(c1.into()) - ctype::tolower(c2.into()));
+    let mut skip_iter = cmp_iter.skip_while(|&cmp| cmp == 0);
+    skip_iter.next().unwrap_or(0)
+}

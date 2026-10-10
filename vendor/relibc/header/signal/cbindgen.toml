@@ -1,0 +1,78 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/signal.h.html
+#
+# Spec quotations relating to includes:
+# - "The <signal.h> header shall define the pthread_t, size_t, and uid_t types as described in <sys/types.h>."
+# - "The <signal.h> header shall define the timespec structure as described in <time.h>."
+# - "pid_t As described in <sys/types.h>."
+# - "The <signal.h> header shall define the pthread_attr_t type as described in <sys/types.h>."
+# - "Inclusion of the <signal.h> header may make visible all symbols from the <time.h> header."
+#
+# Cycle warning:
+# POSIX states signal.h may include time.h and time.h may include signal.h.
+# To prevent a cycle between both headers we only import the needed types through bits.
+#
+# features.h required for deprecated annotations
+sys_includes = ["features.h"]
+include_guard = "_RELIBC_SIGNAL_H"
+after_includes = """
+#include <bits/size-t.h>        // for size_t from sys/types.h
+#include <bits/pid-t.h>         // for pid_t from sys/types.h
+#include <bits/uid-t.h>         // for uid_t from sys/types.h
+#include <bits/pthread-t.h>     // for pthread_t from sys/types.h
+#include <bits/pthreadattr-t.h> // for pthread_attr_t from sys/types.h
+#include <bits/sigset-t.h>      // for sigset_t
+#include <bits/timespec.h>      // for timespec from time.h
+
+// Request for default signal handling.
+#define SIG_DFL ((void (*)(int))0)
+// Request that signal be ignored.
+#define SIG_IGN ((void (*)(int))1)
+// Return value of signal() in case of error.
+#define SIG_ERR ((void (*)(int))-1)
+// Obsolete in issue 7, removed in issue 8.
+// Request that signal be held.
+#define SIG_HOLD ((void (*)(int))2)
+
+typedef struct siginfo siginfo_t;
+typedef struct ucontext ucontext_t;
+typedef struct mcontext mcontext_t;
+typedef long sig_atomic_t;
+
+struct sigaction {
+  union {
+    void (*sa_handler)(int);
+    void (*sa_sigaction)(int, siginfo_t *, void *);
+  };
+  int sa_flags;
+  void (*sa_restorer)(void);
+  sigset_t sa_mask;
+};
+"""
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+trailer = """
+#if defined(__linux__) || defined(__nife__)
+#define si_pid _sifields.__si_common.si_pid
+#define si_uid _sifields.__si_common.si_uid
+#define si_value _sifields.__si_common.si_value
+#define si_status si_value.sival_int
+#define si_addr _sifields.__sigfault.si_addr
+#endif
+"""
+
+[enum]
+prefix_with_name = true
+
+[export]
+include = [
+  "mcontext",
+  "sigevent",
+  "siginfo",
+  "ucontext"
+]
+
+[export.rename]
+"sigaction" = "struct sigaction"
+"timespec" = "struct timespec"

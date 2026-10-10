@@ -1,0 +1,50 @@
+# POSIX header spec: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_select.h.html
+#
+# Spec quotations relating to includes:
+# - "The <sys/select.h> header shall define the time_t and suseconds_t types as described in <sys/types.h>."
+# - "The <sys/select.h> header shall define the sigset_t type as described in <signal.h>."
+# - "The <sys/select.h> header shall define the timespec structure as described in <time.h>."
+# - "Inclusion of the <sys/select.h> header may make visible all symbols from the headers <signal.h> and <time.h>."
+#
+# bits/timeval.h brings in time_t and suseconds_t from sys/types.h.
+include_guard = "_RELIBC_SYS_SELECT_H"
+# FD_SETSIZE and fd_set is also defined in C (below) because cbindgen is incompatible with mem::size_of
+after_includes = """
+#include <bits/sigset-t.h> // for sigset_t from signal.h
+#include <bits/timespec.h> // for timespec from time.h
+#include <bits/timeval.h>  // for timeval
+
+// from musl license MIT {
+#define FD_SETSIZE 1024
+
+typedef unsigned long fd_mask;
+
+typedef struct {
+    unsigned long fds_bits[FD_SETSIZE / 8 / sizeof(long)];
+} fd_set;
+
+// Initializes the descriptor set pointed to by `s` to the null set.
+#define FD_ZERO(s) do { int __i; unsigned long *__b=(s)->fds_bits; for(__i=sizeof (fd_set)/sizeof (long); __i; __i--) *__b++=0; } while(0)
+// Adds the file descriptor `d` to the set pointed to by `s`.
+#define FD_SET(d, s)   ((s)->fds_bits[(d)/(8*sizeof(long))] |= (1UL<<((d)%(8*sizeof(long)))))
+// Removes the file descriptor `d` from the set pointed to by `s`.
+#define FD_CLR(d, s)   ((s)->fds_bits[(d)/(8*sizeof(long))] &= ~(1UL<<((d)%(8*sizeof(long)))))
+// Evaluates to non-zero if the file descriptor `d` is a member of the set pointed to by `s`, otherwise evaluates to zero.
+#define FD_ISSET(d, s) !!((s)->fds_bits[(d)/(8*sizeof(long))] & (1UL<<((d)%(8*sizeof(long)))))
+
+#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
+#define NFDBITS (8*(int)sizeof(long))
+#endif
+// } from musl license MIT
+"""
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true
+
+[export.rename]
+"timespec" = "struct timespec"
+"timeval" = "struct timeval"

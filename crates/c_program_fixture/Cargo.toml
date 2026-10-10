@@ -1,0 +1,11 @@
+# Name: the block lives in src/lib.rs, where `script/names` reads it.
+[package]
+name = "c_program_fixture"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
