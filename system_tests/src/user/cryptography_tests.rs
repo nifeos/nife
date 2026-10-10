@@ -16,10 +16,9 @@
 //!
 //! **The program here is ours, and its dependencies are not this repository's**, under DECISIONS
 //! §46 (thin primitives or whole subsystems; we write everything in between). It is built by
-//! `helpers/build-cryptography-exerciser.sh` and rides in the archive only when somebody ran it,
-//! exactly as `ripgrep` does and for the same reason: making a gate fetch a hundred crypto crates
-//! would take a dependency decision that is an architect's. So this **skips** on every ordinary
-//! build and in all of CI.
+//! `helpers/build-cryptography-exerciser.sh`, which `cargo xtask test` runs for every leg it boots
+//! since milestone 855 (the TLS graph enters the gated build), so `script/test` and CI run this.
+//! A boot that skips that build (`cargo xtask run`, a bench) carries no program, and this skips.
 //!
 //! **All three ISAs run it**, which is DECISIONS §19 (architectural parity is a tenet; the targets are aarch64, riscv64 and x86_64) rather than thoroughness, and here parity is not a formality: x86_64 is the only
 //! one of the three whose build forced a different implementation, so it is the one whose answers
@@ -28,9 +27,8 @@
 use super::*;
 
 /// The reason this test gives when nobody built the program.
-const NO_CRYPTOGRAPHY_EXERCISER: &str = "no cryptography_exerciser in this archive: build it with \
-     helpers/build-cryptography-exerciser.sh, which fetches `rustls`, a crypto provider and the \
-     RustCrypto primitives from crates.io (milestone 442)";
+const NO_CRYPTOGRAPHY_EXERCISER: &str = "no cryptography_exerciser in this archive: \
+     `cargo xtask test` builds it, as does helpers/build-cryptography-exerciser.sh (milestone 442)";
 
 /// Every line the program prints before its last, in order, one per vector.
 ///

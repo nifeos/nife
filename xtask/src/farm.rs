@@ -66,9 +66,9 @@ pub(crate) fn std_resolve_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!("std_exerciser/target/{triple}/release/std_resolve"))
 }
 
-/// **The package index's in-guest client, if somebody built it**: milestone 801 (packages over the
-/// internet). The second binary of `pinned_tls_exerciser`'s workspace, which
-/// `helpers/build-pinned-tls-exerciser.sh` puts beside the first, on its terms and for its reason.
+/// **The package index's in-guest client**: milestone 801 (packages over the internet). The second
+/// binary of `pinned_tls_exerciser`'s workspace, which `helpers/build-pinned-tls-exerciser.sh`
+/// puts beside the first; [`tls_graph`] runs that for every `cargo xtask test`.
 pub(crate) fn package_fetch_exerciser_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!(
         "target/pinned-tls-exerciser/{triple}/package_fetch_exerciser"
@@ -86,29 +86,70 @@ pub(crate) fn ripgrep_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!("target/ripgrep/{triple}/rg"))
 }
 
-/// **The crypto-provider workload, if somebody built it**: milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets).
+/// **The crypto-provider workload**: milestone 442 (a crypto provider `rustls` can use on all three
+/// bare-metal targets).
 ///
-/// `helpers/build-cryptography-exerciser.sh` puts it here, and it rides in the archive on exactly
-/// `ripgrep`'s terms and for exactly its reason. The program depends on `rustls` and a crypto
-/// provider; DECISIONS §196 (nife carries TLS: `rustls` for the protocol, and a crypto provider we
-/// make work) ruled on the first and explicitly not on the second, so making a gate fetch a
-/// hundred crates would take a dependency decision that is an architect's. The archive carries it
-/// when it is on disk and does not when it is not, and `system_tests/src/user/cryptography_tests.rs`
-/// skips.
+/// `helpers/build-cryptography-exerciser.sh` puts it here, and [`tls_graph`] runs that for every
+/// `cargo xtask test` since milestone 855 (the TLS graph enters the gated build). Until then it
+/// rode in the archive on `ripgrep`'s terms, because the provider's crates were calef's to rule on;
+/// §196 (nife carries TLS) and §198 (the glue is ours, the primitives are not) ruled them. The
+/// archive still packs it only when it is on disk, so a boot that skips the build (`cargo xtask
+/// run`, a bench) carries none and `system_tests/src/user/cryptography_tests.rs` skips there.
 pub(crate) fn cryptography_exerciser_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!(
         "target/cryptography-exerciser/{triple}/cryptography_exerciser"
     ))
 }
 
-/// **The pinned TLS client's workload, if somebody built it**: milestone 501 (a TLS client that
-/// speaks to one pinned peer). `helpers/build-pinned-tls-exerciser.sh` puts it here, on
-/// [`cryptography_exerciser_elf`]'s terms and for its reason, and
-/// `system_tests/src/user/pinned_tls_tests.rs` skips when the archive has none.
+/// **The pinned TLS client's workload**: milestone 501 (a TLS client that speaks to one pinned
+/// peer). `helpers/build-pinned-tls-exerciser.sh` puts it here, on [`cryptography_exerciser_elf`]'s
+/// terms, and `system_tests/src/user/pinned_tls_tests.rs` skips when the archive has none.
 pub(crate) fn pinned_tls_exerciser_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!(
         "target/pinned-tls-exerciser/{triple}/pinned_tls_exerciser"
     ))
+}
+
+/// **Build the TLS graph's two programs for `triples`**: milestone 855 (the TLS graph enters the
+/// gated build).
+///
+/// `cryptography_exerciser` (milestone 442) and `pinned_tls_exerciser`'s workspace, whose second
+/// binary is milestone 801 (packages over the internet)'s `package_fetch_exerciser`. Each is its own
+/// workspace, fetched from crates.io as the rest of the tree is, and this runs the two helpers that
+/// already built them by hand rather than a second copy of their cargo lines. calef launched the
+/// milestone on 2026-10-10 (UTC), option 1 of its block: the programs build wherever the kernel
+/// suite runs, so a toolchain bump or a `std` overlay change that breaks them turns a pull request
+/// red instead of nobody's.
+///
+/// Only the legs being run are built, through `NIFE_CRYPTO_TRIPLES`, so `--arch riscv64` pays for
+/// one triple. Cold, both workspaces measured about 28 s a triple on patagonia (the block's figure);
+/// warm, cargo finds nothing to do. The helpers start with `cargo xtask std-src`, which the caller's
+/// [`std_exerciser`] has just run, so it returns on its stamp.
+///
+/// Name: provisional, 2026-10-10 (UTC), after the milestone's own words.
+pub(crate) fn tls_graph(triples: &[&str]) -> bool {
+    let started = std::time::Instant::now();
+    for helper in [
+        "helpers/build-cryptography-exerciser.sh",
+        "helpers/build-pinned-tls-exerciser.sh",
+    ] {
+        let ok = Command::new(workspace_root().join(helper))
+            .current_dir(workspace_root())
+            .env("NIFE_CRYPTO_TRIPLES", triples.join(" "))
+            .status()
+            .map(|st| st.success())
+            .unwrap_or(false);
+        if !ok {
+            eprintln!("tls-graph: {helper} failed for {}", triples.join(" "));
+            return false;
+        }
+    }
+    eprintln!(
+        "tls-graph: built for {} in {:.1} s",
+        triples.join(" "),
+        started.elapsed().as_secs_f64()
+    );
+    true
 }
 
 /// A cheap FNV-1a over a byte slice, folded into the running hash. No crypto, no dep: this only

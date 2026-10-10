@@ -9,11 +9,11 @@
 # package does is select, name and plumb: five fields of a `CryptoProvider`. See src/lib.rs for
 # that line drawn out loud, and notes/cryptography-provider.md for the pricing that preceded it.
 #
-# Deliberately NOT a member of the main workspace, and that is a live constraint rather than
-# habit. The primitive set is not fully settled: `rsa` is still calef's (see the `BUGS` in
-# src/lib.rs), and until the set is ratified none of these crates belongs in this repository's
-# `Cargo.lock`, in `deny.toml`'s reach, or in CI. `helpers/build-cryptography-exerciser.sh` builds
-# it, nothing else does, and the kernel test skips when nobody has.
+# Not a member of the main workspace, so its crates stay out of this repository's `Cargo.lock`.
+# It was kept out of CI too while the primitive set was calef's; §198 (the glue is ours, the
+# primitives are not) and his "Take rsa" settled it, and since milestone 855 (the TLS graph enters
+# the gated build) `cargo xtask test` runs its host tests and builds the program over it, and
+# `script/supply-chain` scans its graph.
 #
 # Name: provisional, minted on 2026-09-20 by this milestone's lane. Names are an architect's.
 # `cryptography_provider` takes `entropy_backend`'s shape, which is the domain word this tree

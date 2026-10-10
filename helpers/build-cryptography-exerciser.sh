@@ -2,22 +2,18 @@
 # Build `cryptography_exerciser` for the three nife custom targets, for milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets).
 
 #
-# **This is an experiment's apparatus, not part of the build**, and that is the same posture
-# `helpers/build-ripgrep.sh` takes for the same reason. Nothing in `script/test` runs it and no gate
-# needs it: `xtask` packs the resulting ELF only if it is already on disk, and
-# `system_tests/src/user/cryptography_tests.rs` skips when it is not.
-#
-# DECISIONS §46 (thin primitives or whole subsystems; we write everything in between) is why. The
-# program depends on `rustls` and a crypto provider, and while §196 (nife carries TLS: `rustls` for the protocol, and a crypto provider we make work)
-# ruled on `rustls`, it ruled
-# explicitly **not** on a provider: that is an architect's decision and not a lane's. Keeping the
-# build
-# here rather than in `script/test` keeps roughly a hundred crates out of this repository's
-# `Cargo.lock`, out of `deny.toml`'s reach, and out of CI, until there is a ruling to put them in.
+# **Part of the gated build since milestone 855 (the TLS graph enters the gated build).** `cargo
+# xtask test` runs this for the legs it boots (`xtask::farm::tls_graph`), so `script/test` and CI's
+# kernel legs build the program and the suite runs it. calef launched 855 on 2026-10-10 (UTC),
+# option 1 of its block: fetch from crates.io as the rest of the workspace does. The dependency
+# question this header used to defer was ruled by §196 (nife carries TLS: `rustls` for the protocol)
+# and §198 (the glue is ours, the primitives are not). It is its own workspace still, so its crates
+# stay out of the main `Cargo.lock`; `script/supply-chain` scans its graph.
 #
 # The one thing it does that `build-ripgrep.sh` does not: the package is **ours**, so it carries its
 # own `.cargo/config.toml` with the `getrandom` backend selector and the four soft-implementation
-# cfgs, and this script adds nothing to the command line beyond the target and build-std. If a
+# cfgs, and this script adds nothing to the command line beyond the target, build-std and the two pins
+# below. If a
 # build fails, the configuration is in the package where a reader will find it.
 #
 # Usage: helpers/build-cryptography-exerciser.sh
@@ -43,7 +39,10 @@ OUT="$ROOT/target/cryptography-exerciser"
 for TRIPLE in ${NIFE_CRYPTO_TRIPLES:-aarch64-unknown-nife riscv64-unknown-nife x86_64-unknown-nife}; do
   (
     cd "$SRC"
-    RUSTUP_TOOLCHAIN="$ROOT/target/nife-farm" cargo build --release \
+    # `CARGO_TARGET_DIR` is pinned because the copy below reads `$SRC/target`, and an exported
+    # one would put the build elsewhere (xtask::farm::exerciser_target_dir has the 2026-09-30
+    # story). `--locked` because a gate must build the graph the lockfile names, not a newer one.
+    CARGO_TARGET_DIR="$SRC/target" RUSTUP_TOOLCHAIN="$ROOT/target/nife-farm" cargo build --release --locked \
       -Zjson-target-spec \
       -Zbuild-std=core,alloc,std,panic_abort \
       -Zbuild-std-features=compiler-builtins-mem \

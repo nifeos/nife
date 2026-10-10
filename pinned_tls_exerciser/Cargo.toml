@@ -1,8 +1,9 @@
 # The in-guest half of milestone 501 (a TLS client that speaks to one pinned peer): a `std` program
 # that runs `pinned_tls_client` against helpers/tls-peer through slirp, on all three architectures.
-# Built by helpers/build-pinned-tls-exerciser.sh for the `*-unknown-nife` targets, packed into the
-# archive iff that ran, and run by system_tests/src/user/pinned_tls_tests.rs, which skips otherwise.
-# That is `cryptography_exerciser`'s posture, for its reason: no gate fetches this graph yet.
+# Built by helpers/build-pinned-tls-exerciser.sh for the `*-unknown-nife` targets, which `cargo
+# xtask test` runs for every leg it boots since milestone 855 (the TLS graph enters the gated
+# build), packed into the archive, and run by system_tests/src/user/pinned_tls_tests.rs and
+# package_index_tests.rs.
 #
 # Name: provisional, minted 2026-10-06 (UTC) by this milestone's lane, `cryptography_exerciser`'s
 # shape: the thing exercised, then the role.

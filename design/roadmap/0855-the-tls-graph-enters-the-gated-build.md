@@ -1,9 +1,10 @@
 ---
-status: NOT-STARTED
+status: IN-PROGRESS
 raised: 2026-10-06
+branch: milestone/855-the-tls-graph-enters-the-gated-build
 promoted_from: the-tls-graph-enters-the-gated-build
 milestone_dependencies: 501
-decision_dependencies: unwritten
+decision_dependencies: 196, 198
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -54,6 +55,53 @@ written, and the crates are the ones §196 and §198 already took.
 The lane recommends the first. The second buys nothing §46 asks for. The third finds a break
 days late, on nobody's pull request. The fourth leaves the client unchecked through the toolchain
 bumps most likely to break it.
+
+## Ruled 2026-10-10 (UTC): option 1
+
+calef launched this milestone on 2026-10-10 (UTC) with "launch 855". Option 1 was the lane's
+recommendation and he raised no objection, so option 1 is the ruling; options 2 to 4 were not
+contenders. The fork was this block's alone, so the ruling lives here. The dependencies it rests on
+were already ruled: §196 (nife carries TLS) and §198 (the glue is ours, the primitives are not),
+which are this block's decision dependencies in place of `unwritten`. No new section was written,
+as none was for milestone 121 (`ripgrep` on nife)'s crates.io fetch in `swish-check`.
+
+## Built (lane `milestone/855-the-tls-graph-enters-the-gated-build`, PR #1902)
+
+- The kernel legs. `cargo xtask test` builds the TLS graph's programs for every leg it boots,
+  after `std_exerciser` and before the archive (`xtask::farm::tls_graph`, provisional). It runs the
+  two helpers as they were, with `NIFE_CRYPTO_TRIPLES` set to the legs in the run, so `--arch
+  riscv64` pays for one triple. That puts `cryptography_exerciser`, `pinned_tls_exerciser` and
+  milestone 801 (packages over the internet)'s `package_fetch_exerciser` in every suite archive,
+  and their three tests stop skipping in `script/test` and in CI's `test` job alike. A build that
+  breaks fails the gate rather than turning three tests into skips.
+- Not a `script/ci-build` row, which is where `rg` is built. A row would have made `script/test`
+  and CI's kernel legs two different suites, and would have needed a CI-only refusal to keep the
+  skip from coming back; building inside `test` needs neither. The CPU-model matrix and the
+  falsification replays go through `cargo xtask test` too, and build their one triple.
+- The host phase. `cryptography_provider` and `pinned_tls_client` run their own tests, the
+  client's against `helpers/tls-peer` (OpenSSL through Python's `ssl`), each by `--manifest-path`
+  and `--locked`, beside `redoxfs_server`. The one test that needs the internet stays `#[ignore]`d.
+- The helpers pin `CARGO_TARGET_DIR` to the package and build `--locked`: the copy step reads
+  `$SRC/target`, and a gate builds the graph its lockfile names.
+- `script/supply-chain` scans `pinned_tls_client` and `pinned_tls_exerciser` beside the
+  provider. Both were clean against `deny.toml` on 2026-10-10.
+
+## Architectural parity
+
+All three architectures, by the same suite: each leg builds its own triple and boots its own
+archive. Nothing here is per-ISA code.
+
+## BUGS
+
+- `package_index_tests`' falsification is attested, not replayable. When it was attested no sweep
+  built the TLS graph; the suite now does, so a patch (`package_index::public_address` admitting
+  every address) can be written and replayed. Owed by whoever next touches that test.
+
+## Follow-on
+
+- **Milestone 801.** Its whole-fetch gate runs in CI from this merge; its `BUGS` line is removed.
+- **Milestone 501.** Its "absent from CI" `BUGS` line is removed; the host tests it named run in
+  the host phase.
 
 ## Index row
 

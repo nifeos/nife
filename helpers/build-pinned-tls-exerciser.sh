@@ -3,10 +3,10 @@
 # target/pinned-tls-exerciser/<triple>/pinned_tls_exerciser. Milestone 501 (a TLS client that
 # speaks to one pinned peer).
 #
-# helpers/build-cryptography-exerciser.sh's posture and shape, for its reason: this fetches `rustls`
-# and the provider's RustCrypto primitives from crates.io, which no gate does yet, so the program
-# rides in the archive only when somebody ran this, and system_tests/src/user/pinned_tls_tests.rs
-# skips otherwise. `cargo xtask std-src` first, because it builds the `std` farm `-Zbuild-std`
+# helpers/build-cryptography-exerciser.sh's shape. Part of the gated build since milestone 855 (the
+# TLS graph enters the gated build): `cargo xtask test` runs this for the legs it boots, so
+# system_tests/src/user/pinned_tls_tests.rs and milestone 801's package_index_tests.rs run in
+# `script/test` and CI. `cargo xtask std-src` first, because it builds the `std` farm `-Zbuild-std`
 # compiles against; that also relinks the machine-wide `nife-dev` toolchain (notes/std.md).
 #
 #     helpers/build-pinned-tls-exerciser.sh
@@ -24,7 +24,8 @@ OUT="$ROOT/target/pinned-tls-exerciser"
 for TRIPLE in ${NIFE_CRYPTO_TRIPLES:-aarch64-unknown-nife riscv64-unknown-nife x86_64-unknown-nife}; do
   (
     cd "$SRC"
-    RUSTUP_TOOLCHAIN="$ROOT/target/nife-farm" cargo build --release \
+    # Pinned and locked for build-cryptography-exerciser.sh's reasons.
+    CARGO_TARGET_DIR="$SRC/target" RUSTUP_TOOLCHAIN="$ROOT/target/nife-farm" cargo build --release --locked \
       -Zjson-target-spec \
       -Zbuild-std=core,alloc,std,panic_abort \
       -Zbuild-std-features=compiler-builtins-mem \

@@ -214,12 +214,11 @@ falls back to a weak source is worse than one that does not build.
 script/crypto-probes                              # the build table
 script/crypto-probes --soft                       # the same with the portable paths forced
 helpers/build-cryptography-exerciser.sh           # build the vector program for all three ISAs
-script/test                                       # now runs it; without the line above it skips
+script/test                                       # builds it (the line above) and runs it
 ```
 
-Nothing above is a gate and `script/test` does not build the program. That is
-`helpers/build-ripgrep.sh`'s posture, taken for its reason: fetching a hundred crypto crates into
-this repository's build is a dependency decision, not a lane's convenience.
+Since milestone 855 (the TLS graph enters the gated build), `script/test` builds and runs the
+program, and runs the provider's host tests.
 
 ## The refusal: `rustls-rustcrypto`
 

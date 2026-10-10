@@ -307,6 +307,22 @@ pub(crate) fn test() -> bool {
         ) {
             return false;
         }
+        // The TLS graph's host tests (milestone 855 (the TLS graph enters the gated build)): the
+        // provider's own checks, and the pinned client against `helpers/tls-peer`, which is Python's
+        // `ssl` and so OpenSSL, the same peer the guest meets. Each is its own workspace, so the
+        // `--workspace` pass above never reached them. `--locked` because the graph a gate builds
+        // is the one the lockfile names. The client's one test that needs the internet stays
+        // `#[ignore]`d.
+        eprintln!();
+        eprintln!("--- the TLS graph: cryptography_provider and pinned_tls_client (host) ---");
+        for manifest in [
+            "cryptography_provider/Cargo.toml",
+            "pinned_tls_client/Cargo.toml",
+        ] {
+            if !run("cargo", &["test", "--locked", "--manifest-path", manifest]) {
+                return false;
+            }
+        }
         for target in [TARGET, RISCV_TARGET] {
             if !run(
                 "cargo",
@@ -329,6 +345,25 @@ pub(crate) fn test() -> bool {
     // the leg guards below because BOTH legs need it, and the nifefs data disk with it: it is
     // arch-neutral, and the riscv leg reads it whether or not the aarch64 leg ran.
     if !std_exerciser() || !mkdisk() {
+        return false;
+    }
+    // The TLS graph's programs, for the legs this run boots (milestone 855 (the TLS graph enters
+    // the gated build)): `cryptography_exerciser`, `pinned_tls_exerciser` and milestone 801
+    // (packages over the internet)'s `package_fetch_exerciser`. Built here rather than in a `script/ci-build` row, as `rg` is, so
+    // that `script/test` and CI's kernel legs mean the same suite and a build that breaks fails
+    // this gate instead of turning three tests into skips. After `std_exerciser`, whose `std-src`
+    // the helpers repeat for nothing.
+    let mut tls_triples = Vec::new();
+    if legs.aarch64() {
+        tls_triples.push("aarch64-unknown-nife");
+    }
+    if legs.riscv64() {
+        tls_triples.push("riscv64-unknown-nife");
+    }
+    if legs.x86_64() {
+        tls_triples.push("x86_64-unknown-nife");
+    }
+    if !crate::farm::tls_graph(&tls_triples) {
         return false;
     }
     // Attach a virtio-gpu for the display test (milestone 29). Set here, in `test`, rather than in
