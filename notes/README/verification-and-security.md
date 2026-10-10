@@ -25,6 +25,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A second outsider pass over the confinement claims](../confinement-outsider-pass-2.md): each claim attacked, and where each attack landed.
 - [A third outsider pass over the confinement claims](../confinement-outsider-pass-3.md): every claim attacked again, counted only when booted on three ISAs, and the one escape it found.
 - [A fourth outsider pass over the confinement claims](../confinement-outsider-pass-4.md): the informed non-Anthropic attack. A booted re-discovery of the socket capture in milestone 649 (every client of a network stack shares its socket numbers), claim 26's own test made falsifiable, and a refusal log.
+- [A sixth outsider pass over the confinement claims](../confinement-outsider-pass-6.md): the informed non-Anthropic attack on the newest shipped surface, the milestone 801 (packages over the internet) fetch path. A booted escape: the listed-location address check and the connection resolve the name twice and a rebinding DNS answers them apart, so the client reaches a private address Q1 forbids. In progress.
 - [Verdict briefs for fatal risks 6 and 7](../fatal-risks-6-and-7-verdict-briefs.md): evidence and a recommended color each, for the architect to rule on.
 - [A security audit](../security.md): the first adversarial review of the whole kernel.
 - [Auditing the shared pages](../shared-page-audit.md): the second security audit, reading for double fetches.

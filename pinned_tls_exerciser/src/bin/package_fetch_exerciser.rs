@@ -19,6 +19,17 @@
 //! proved only by `package_index`'s host tests.
 //!
 //! Name: provisional 2026-10-09 (UTC), milestone 801's lane, `pinned_tls_exerciser`'s shape.
+//!
+//! # BUGS
+//!
+//! - `from_location`'s address check inspects only `SocketAddr::V4`; a IPv6 answer passes the
+//!   check untouched, while Q1's ruling says "a private or link-local address" with no family
+//!   named. Unreachable today (the tree carries no IPv6); found by milestone 868 (a sixth
+//!   outsider pass attacks the confinement claim), 2026-10-10.
+//! - `from_location` checks one resolution of a listed location's host and then hands the name
+//!   to `TcpStream::connect`, which resolves again; the resolver has no cache, so a rebinding
+//!   name server reaches the client past the check. Booted red by milestone 868; the fix
+//!   (connect by a checked address) is not this program's to choose unilaterally.
 
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
