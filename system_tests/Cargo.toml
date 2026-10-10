@@ -70,6 +70,9 @@ confined_fuzz_protocol = { version = "0.1.0", path = "../crates/confined_fuzz_pr
 elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_protocol = { version = "0.1.0", path = "../crates/entropy_protocol" }
 environment_protocol = { version = "0.1.0", path = "../crates/environment_protocol" }
+# The C programs' directory in the test image and their command lines (milestone 835 (a C library,
+# stage 1: files, clock and memory)).
+c_program_fixture = { path = "../crates/c_program_fixture" }
 filesystem_protocol = { version = "0.1.0", path = "../crates/filesystem_protocol" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a

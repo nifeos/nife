@@ -325,6 +325,12 @@ mod std_tests;
 #[cfg(all(test, initrd))]
 mod ripgrep_tests;
 
+/// **Somebody else's C, unmodified, on nife's C library**: SQLite's `speedtest1` and ioping
+/// (milestone 835 (a C library, stage 1: files, clock and memory)). Each skips unless somebody ran
+/// its `helpers/build-<name>.sh`. Every ISA, per DECISIONS §19.
+#[cfg(all(test, initrd))]
+mod c_program_tests;
+
 /// **A TLS crypto provider's primitives against published test vectors**, for milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets), on
 /// `ripgrep`'s exact terms: present only when `helpers/build-cryptography-exerciser.sh` has been
 /// run, because the crates under it are a dependency decision DECISIONS §46 (thin primitives or whole subsystems; we write everything in between) makes calef's. Every
