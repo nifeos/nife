@@ -74,12 +74,9 @@ radon or xenon will measure, where nothing is emulated and every cipher runs its
 
 ## Follow-on
 
-- **Milestone 855.** Milestone 855 (the TLS graph enters the gated build), promoted 2026-10-09.
-  Today
-  `pinned_tls_exerciser` rides in the archive only when somebody ran
-  `helpers/build-pinned-tls-exerciser.sh`, and the test skips in CI, which is 442's posture.
-  Milestone 801 (packages over the internet) cannot ship a client no gate builds. Whether a gate
-  fetches these crates is an architect's call, put on this milestone's pull request with its costs.
+- **Milestone 855.** Milestone 855 (the TLS graph enters the gated build), promoted 2026-10-09 and
+  ruled 2026-10-10 (UTC): `cargo xtask test` builds `pinned_tls_exerciser` for every leg it boots,
+  so its test runs in CI, and the host tests below run in the suite's host phase.
 - **Milestone 595.** Milestone 801 also needs a `std` program to hold the network from the prompt.
   Milestone 595 (the shell runs a `std` program)'s `BUGS` already carries why it cannot: the
   progenitor does not mint the socket frames' budget. The rung 3a fetch lives in the progenitor,
@@ -99,8 +96,8 @@ radon or xenon will measure, where nothing is emulated and every cipher runs its
   on our side. The rotation story this block always lacked now has a date.
 - No wall clock a stranger's machine can trust. Expiry is checked against the clock service's
   time, so a clock far behind accepts an expired certificate; one far ahead fails closed.
-- Absent from CI, per the first follow-on. The host tests in `pinned_tls_client/` are not run by
-  any gate either, and the one that reaches the internet is `#[ignore]`d.
+- The host test in `pinned_tls_client/` that reaches the internet is `#[ignore]`d, so no gate
+  checks the production pin against a live Let's Encrypt chain.
 - The test authorities' private keys are committed. They protect nothing, and
   `fixtures/regenerate.sh` says why they must be readable.
 - TLS 1.3 only, no client certificate, one request per connection: the provider's and

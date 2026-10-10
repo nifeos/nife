@@ -8,9 +8,8 @@
 //! entropy. The repository is `helpers/tls-peer` as `basalt.test`, the image's backup index
 //! address, standing in for `basalt.nifeos.org`. Nothing leaves slirp.
 //!
-//! Skips unless somebody built the program, on `pinned_tls_tests`' terms and for its reason:
-//! `helpers/build-pinned-tls-exerciser.sh` fetches `rustls` and the provider's graph, which no gate
-//! does yet (milestone 855 (the TLS graph enters the gated build)).
+//! Skips only where the program was not built, on `pinned_tls_tests`' terms: `cargo xtask test`
+//! builds it for every leg it boots since milestone 855 (the TLS graph enters the gated build).
 
 use super::name_resolver_tests::{entropy, grant, start_resolver};
 use super::*;
@@ -18,8 +17,8 @@ use super::*;
 /// The badge the program's resolver capability carries.
 const GRANTED: u32 = 0x8010;
 
-const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: build it with \
-     helpers/build-pinned-tls-exerciser.sh (milestone 801), which fetches the TLS graph from crates.io";
+const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: `cargo xtask test` builds \
+     it, as does helpers/build-pinned-tls-exerciser.sh (milestone 801)";
 
 /// **The index arrives over TLS from the image's backup address once the first is lost, a listed
 /// location on a private address is refused, the repository's own copy is fetched instead and
@@ -29,7 +28,9 @@ const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: build it w
 /// The refusal is what gives the fetch its meaning: the altered copy is a complete, correct HTTPS
 /// exchange of a well-formed package, so only the digest the index carried can refuse it.
 ///
-/// Falsification: attested 2026-10-10. Not replayable: no sweep builds the TLS graph. With
+/// Falsification: attested 2026-10-10. Not replayable then, since no sweep built the TLS graph;
+/// the suite builds it since milestone 855, and the patch that would make this replayable is that
+/// block's `BUGS`. With
 /// `package_index::public_address` admitting every address (on aarch64), the client connected to
 /// the listed location at 10.0.2.9 and the test went red on the private-address line. Earlier, with
 /// `accept` hashing the fetched bytes instead of reading the entry's digest, `uptime` was refused

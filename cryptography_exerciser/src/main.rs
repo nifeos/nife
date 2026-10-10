@@ -60,11 +60,11 @@
 //! - **A vector proves the answer, not the manner.** Nothing here measures timing, so a portable
 //!   fallback that is correct and not constant-time would pass every line below. On
 //!   `x86_64-unknown-nife` the fallbacks are exactly what is being run.
-//! - **It is absent from every ordinary build and from CI**, because its dependencies are not this
-//!   repository's to take, which is DECISIONS §46 (thin primitives or whole subsystems; we
-//!   write everything in between), until an architect rules on them. The kernel test skips when
-//!   the archive has no `cryptography_exerciser`; `helpers/build-cryptography-exerciser.sh` is
-//!   what puts one there.
+//! - **`cargo xtask test` builds it for every leg it boots**, through
+//!   `helpers/build-cryptography-exerciser.sh`, since milestone 855 (the TLS graph enters the gated
+//!   build). §196 (nife carries TLS) and §198 (the glue is ours, the primitives are not) ruled the
+//!   dependencies that DECISIONS §46 (thin primitives or whole subsystems) had made an architect's.
+//!   The kernel test skips only in a boot that did not build it.
 
 // `entropy_backend` defines `getrandom`'s two custom-backend symbols and nothing references them
 // from Rust, so an rlib nobody names is not linked. Same shape as a panic handler. See that

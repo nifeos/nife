@@ -7,9 +7,9 @@
 # taken on calef's ruling of 2026-09-20, and `http_response` is milestone 198 (a package manager)'s own request writer
 # and response reader. What this package adds is the pin, the session and the tests.
 #
-# Deliberately NOT a member of the main workspace, for `cryptography_provider`'s reason: its graph is
-# fetched from crates.io and no gate builds it yet. Whether one should is the question this
-# milestone's pull request puts to an architect.
+# Not a member of the main workspace, for `cryptography_provider`'s reason. Since milestone 855 (the
+# TLS graph enters the gated build) `cargo xtask test` runs its host tests, `tests/peer.rs` against
+# helpers/tls-peer among them, and `script/supply-chain` scans its graph.
 #
 # Name: provisional, minted 2026-10-06 (UTC) by this milestone's lane. Names are an architect's.
 # The words are the milestone's own: a client, for TLS, that trusts one pinned peer.

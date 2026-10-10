@@ -79,8 +79,13 @@ fi
 # whose graph no gate scans is a suppression nobody can check: listing the manifests here is what
 # makes the entry mean something, and it is narrower than the alternative, which is trusting that
 # somebody remembers to look before those crates are taken into the workspace.
+#
+# **`pinned_tls_client` and `pinned_tls_exerciser` joined** with milestone 855 (the TLS graph enters
+# the gated build), on the same reasoning: once a gate builds a graph, the gate that audits graphs
+# reads it too. Both were clean against this deny.toml on 2026-10-10 (UTC).
 for manifest in Cargo.toml redoxfs_server/Cargo.toml tools/redoxfs_host/Cargo.toml fuzz/Cargo.toml \
-    cryptography_provider/Cargo.toml cryptography_exerciser/Cargo.toml; do
+    cryptography_provider/Cargo.toml cryptography_exerciser/Cargo.toml \
+    pinned_tls_client/Cargo.toml pinned_tls_exerciser/Cargo.toml; do
     echo "==> cargo-deny: $manifest"
     cargo deny --manifest-path "$manifest" --all-features --config deny.toml \
         check -A unmatched-skip -A license-exception-not-encountered

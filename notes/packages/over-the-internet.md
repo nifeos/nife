@@ -64,11 +64,11 @@ lookup packages.nife.test: Unsupported
 | What `name@version` means, written once | `package_archive::matching_stem` | host tests, in CI |
 | A std program resolves through its grant | `lookup_host` in `patches/std-nife`, `std_runtime_protocol::RESOLVER_SLOT` (9, provisional) | `a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant`, all three, in CI |
 | The resolver's client words, copied into std | `crates/name_resolution_protocol/src/wire.rs` | the same test |
-| The whole fetch | `pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs` | `a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`, all three, skipped in CI |
+| The whole fetch | `pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs` | `a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`, all three, in CI |
 | The test hosts | `helpers/tls-peer` (index), `helpers/name-server-peer` (two names) | the same test |
 
-The whole-fetch test skips in CI on the terms milestone 501's does: no gate builds the TLS graph
-yet, and whether one should is milestone 855 (the TLS graph enters the gated build).
+The whole-fetch test runs in CI since milestone 855 (the TLS graph enters the gated build), which
+builds the TLS graph wherever the kernel suite runs.
 
 ### Why the resolver is a std slot
 

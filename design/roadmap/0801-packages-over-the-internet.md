@@ -68,8 +68,8 @@ seams are `notes/packages/over-the-internet.md`.
   index address gone and reads the index from the second, by name, over TLS pinned to the test
   root. It passes over a listed location that resolves to a private address, fetches `greeting`
   from the repository's own `targets/` and admits it by the index's digest, and refuses an altered
-  copy. Green on all three architectures locally; it skips in CI until milestone 855 (the TLS graph
-  enters the gated build).
+  copy. Green on all three architectures locally, and in CI since milestone 855 (the TLS graph
+  enters the gated build) builds the TLS graph in every suite run.
 - Item 2. The format family was already TUF (§250's amendment and milestone 858 (lab machines
   update themselves through packages)'s Fork 9); calef ruled what TUF leaves open on #1884, and
   `notes/packages/the-index-format.md` has the rulings. The encoding stays a stand-in until the
@@ -122,7 +122,6 @@ exists. aarch64 silicon waits on an aarch64 board.
   vouches for; an index copy it trusts is `jig` writing one, milestone 809's ruling I2.
 - The index client cannot run at the prompt: the booted system starts no resolver and gives a std
   program no network. Proposed: `design/roadmap/proposals/a-std-program-at-the-prompt-holds-the-network-and-a-resolver.md`.
-- The whole-fetch gate skips in CI, as milestone 501's does, until milestone 855.
 - `notes/packages/over-the-internet.md`'s BUGS carry the stand-in's limits (no "moved to", one plain
   HTTP location, no producer in the tree).
 

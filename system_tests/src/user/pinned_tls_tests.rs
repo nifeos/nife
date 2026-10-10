@@ -12,17 +12,15 @@
 //! similar ones. The virtio NICs would have served aarch64 and riscv64 and left x86_64 to a
 //! second path.
 //!
-//! **Skips unless somebody built the program**, on `cryptography_tests`' terms and for its reason:
-//! `helpers/build-pinned-tls-exerciser.sh` fetches `rustls` and the provider's primitives from
-//! crates.io, which no gate does yet. Whether one should is milestone 501's question for an
-//! architect.
+//! **Skips only where the program was not built**, on `cryptography_tests`' terms: `cargo xtask
+//! test` runs `helpers/build-pinned-tls-exerciser.sh` for every leg it boots since milestone 855
+//! (the TLS graph enters the gated build), so `script/test` and CI run this.
 
 use super::*;
 
 /// The reason this test gives when nobody built the program.
-const NO_PINNED_TLS_EXERCISER: &str = "no pinned_tls_exerciser in this archive: build it with \
-     helpers/build-pinned-tls-exerciser.sh, which fetches `rustls`, the crypto provider's \
-     primitives and their graph from crates.io (milestone 501)";
+const NO_PINNED_TLS_EXERCISER: &str = "no pinned_tls_exerciser in this archive: \
+     `cargo xtask test` builds it, as does helpers/build-pinned-tls-exerciser.sh (milestone 501)";
 
 /// Every line the program prints that a pass requires, in order of printing. The `cost` lines are
 /// left out: they are a measurement and change with the host, so they are printed to the log and
