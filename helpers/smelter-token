@@ -58,6 +58,12 @@ BUGS
   somebody widens the App further in the web UI.
 - Two sessions that find the cache stale at the same moment both mint. Tokens are independent, so
   this costs an API call, not correctness.
+- The selftest fails on a host whose `python3` is the macOS CLT 3.9 (patagonia, 2026-10-10): that
+  interpreter writes `__pycache__` bytecode into the selftest's own sandbox HOME, so the "home and
+  working directory untouched" check trips on the interpreter's litter rather than on anything the
+  script kept. Homebrew 3.14 (what CI and a normal `script/lint` run pick up) does not. Run it with
+  `PYTHONDONTWRITEBYTECODE=1`, or point `python3` at Homebrew, until the selftest scrubs or forbids
+  the caches itself.
 """
 
 import base64

@@ -544,6 +544,33 @@ more than can be said for the eightfold figure above. It is recorded because a r
 regime it was measured in: whether a reader was draining the serial port is part of the
 measurement. It has been seen once and is not confirmed.
 
+## radon, 2026-10-09 to 10: the redraw boots, opened by a self-reset
+
+<!-- prose-budget: exception. The three rows below are the runs' record, which milestone 225's own
+block prescribes for this file ("Record rounds, rate, wakes and crossings for every run, in
+notes/soak.md's table"), and the 2026-10-10 table plus its two caveats is about 210 words this
+note's budget under §212 (a prose budget) cannot absorb; the narrative was cut to the bone first
+and lives in the 225 and 592 blocks. The runs were ruled recorded by calef at the bench,
+2026-10-10.
+Reason: a run table is a measurement, not prose, and deleting rows to meet a word budget is the
+record getting worse to make a gate quiet. -->
+
+Milestone 225's second bench evening on radon, lane `milestone/225-radon-boots` (`bef2b40dc`),
+against §259 (a multicore soak counts toward risk 5 at ten million crossings over three boots):
+met, 10,288,805 crossings over the 3 plain boots, zero defects. The evening's account, 592's
+proven self-reset included, is in the 225 and 592 blocks; this table is the four figures the run
+owes, per this note's own rule.
+
+| row | boot | duration | rounds | rate | wakes | crossings |
+|---|---|---|---|---|---|---|
+| E5 | rebooting soak, 120s | 2m | 36,462,561 | 314,841/s | 46,680 | 20,474 |
+| E6 | plain soak | 10h 17m | 6,559,401,285 | 178,629/s | 14,806,027 | 5,569,327 |
+| E7 | plain soak | 3h 53m | 4,387,639,929 | 317,457/s | 5,581,447 | 610,897 |
+
+Two recording gaps, stated rather than hidden. E6's watcher hit its 620-minute deadline with the
+board healthy, and the board soaked about 7 more hours unwatched: not evidence, not counted. And
+one file holds E5 and E6 because the same console watched the reset between them.
+
 ## Why this extends `board_console` and not the other two instruments
 
 `script/repeat-under-load` and `script/interleaving-check` are the tree's existing load and
