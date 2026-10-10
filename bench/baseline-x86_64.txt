@@ -1,4 +1,4 @@
-# toolchain: nightly-2026-10-09
+# toolchain: nightly-2026-10-10
 # qemu: 11.1.1
 # date: 2026-10-03
 # why: milestone 629 (the context-switch statistic stops costing the switch path): the switch count moved from a fetch_add on the machine statistics page to PerCpu::switches, published on the tick; per switch 134 -> 31 instructions at -O0 (riscv64), ruled option B on #1489
@@ -10,6 +10,7 @@
 # why: 2026-10-07: restamped from nightly-2026-10-06 to nightly-2026-10-07 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-10-08: restamped from nightly-2026-10-07 to nightly-2026-10-08 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-10-09: restamped from nightly-2026-10-08 to nightly-2026-10-09 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
+# why: 2026-10-10: restamped from nightly-2026-10-09 to nightly-2026-10-10 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
