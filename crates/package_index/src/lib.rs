@@ -378,6 +378,10 @@ pub mod fixture {
     pub const TAMPERED: &str = "uptime@0.1.0";
     /// A package the index does not list, so nothing is fetched.
     pub const ABSENT: &str = "nosuch";
+    /// The `greeting` twin the index lists under the rebinding name
+    /// `rebind.basalt.test`, for the address-check attack of milestone 868 (a sixth
+    /// outsider pass attacks the confinement claim).
+    pub const REBOUND: &str = "rebound@0.1.0";
 }
 
 #[cfg(test)]

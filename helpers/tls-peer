@@ -29,7 +29,10 @@ After the handshake it answers one HTTP/1.0 GET:
                       package index, composed from the build's catalog: one
                       line per package, the catalog's line and then one
                       listed location on packages.basalt.test, which resolves
-                      to this private address and so must be refused
+                      to this private address and so must be refused; and one
+                      `rebound` twin line under rebind.basalt.test, whose name
+                      rebinds (milestone 868 (a sixth outsider pass attacks
+                      the confinement claim))
   GET /rolling/targets/<stem>.nifepkg
                       the repository's own copy, the fallback; `uptime`'s has
                       one byte flipped halfway, a lying repository only the
@@ -60,12 +63,21 @@ PACKAGE_SOURCE = os.environ.get("NIFE_PACKAGE_SOURCE") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "target", "packages"
 )
 LISTED = "https://packages.basalt.test:8443"
+# Milestone 868's rebinding probe: where the index lists `rebound` as also
+# living. The name answers public on the first query and private (this peer) on
+# every later one, so what the client does here shows whether its address check
+# and its connection agree.
+REBOUND_LISTED = "https://rebind.basalt.test:8443"
+REBOUND_STEM = "rebound-0.1.0-"
+GENUINE_STEM = "greeting-0.1.0-"
 CHANNEL = "rolling"
 TARGET = re.compile(rb"^/rolling/targets/([A-Za-z0-9._-]+\.nifepkg)$")
 
 
 def stand_in_index():
-    """Every catalog line, with one listed location after it."""
+    """Every catalog line, with one listed location after it; `greeting` also
+    gets a `rebound` twin under the rebinding name, with greeting's digest, so
+    the client's behavior at a listed location is observable."""
     lines = []
     try:
         with open(os.path.join(PACKAGE_SOURCE, "catalog"), "rb") as f:
@@ -78,11 +90,20 @@ def stand_in_index():
             continue
         stem, digest = parts
         lines.append("%s %s %s/%s/targets/%s.nifepkg\n" % (stem, digest, LISTED, CHANNEL, stem))
+        if stem.startswith(GENUINE_STEM):
+            twin = REBOUND_STEM + stem[len(GENUINE_STEM):]
+            lines.append(
+                "%s %s %s/%s/targets/%s.nifepkg\n" % (twin, digest, REBOUND_LISTED, CHANNEL, twin)
+            )
     return "".join(lines).encode("ascii")
 
 
 def target(name):
-    """The repository's copy of one package, or None. `uptime` is served altered."""
+    """The repository's copy of one package, or None. `uptime` is served altered.
+    A `rebound` twin is served `greeting`'s bytes, which is what its index line
+    says they hash to."""
+    if name.startswith(REBOUND_STEM.encode()):
+        name = GENUINE_STEM.encode() + name[len(REBOUND_STEM.encode()):]
     try:
         with open(os.path.join(PACKAGE_SOURCE, name.decode()), "rb") as f:
             body = bytearray(f.read())

@@ -159,6 +159,13 @@ GUESTFWD="$GUESTFWD,guestfwd=tcp:10.0.2.9:8443-cmd:$TLS_PEER"
 # instead of NAT'ing a DNS query to the host's resolver. The parity twin of the aarch64 runner's
 # block; the fixture must match components/src/socket_test_client.rs. See the aarch64 runner for the full reasoning.
 TFTPDIR="$(dirname "$0")/../target/tftp"
+# **The boot's tag** (milestone 868 (a sixth outsider pass attacks the confinement claim)): a fresh
+# value per emulator start, exported so the per-connection guestfwd peers (which slirp spawns
+# through a shell, with no arguments and no stable parent to key on) can tell one boot from the
+# next. helpers/name-server-peer's rebinding answer is the user: a boot's first query for
+# rebind.basalt.test must say public where every later one says the private peer.
+export NIFE_BOOT_TAG="$$-$(date +%s)"
+
 mkdir -p "$TFTPDIR"
 printf 'nife-tftp!' > "$TFTPDIR/nife"
 

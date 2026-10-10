@@ -947,7 +947,13 @@ class HostTest(Harness):
 def host_tests(pkgs=None):
     """Every host `#[test]` that carries a `Falsification:` block. Opt-in: the rest are skipped."""
     pkgs = pkgs if pkgs is not None else packages()
-    found = subprocess.run(["git", "-C", root, "grep", "-lE", r"^\s*#\[test\]\s*$", "--", "*.rs"],
+    # `[[:space:]]`, not `\s`: git's ERE honors `\s` as a class under glibc (Linux CI) and as a
+    # literal `s` on macOS, so the `\s` form found only column-0 tests here and orphaned the
+    # indented `mod tests` records (found 2026-10-10, when the pre-push hook on patagonia reported
+    # the job_windows patch unswept while Linux CI counted it). The POSIX class means the same
+    # thing on both.
+    found = subprocess.run(["git", "-C", root, "grep", "-lE",
+                            r"^[[:space:]]*#\[test\][[:space:]]*$", "--", "*.rs"],
                            capture_output=True, text=True).stdout.split()
     out = []
     for rel in sorted(found):

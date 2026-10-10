@@ -35,6 +35,18 @@ const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: build it w
 /// `accept` hashing the fetched bytes instead of reading the entry's digest, `uptime` was refused
 /// as `MemberMismatch` rather than `NotCataloged`: the flipped byte is also caught by the package's
 /// own table of contents, which is why the test names the refusal.
+///
+/// **The rebinding half (milestone 868 (a sixth outsider pass attacks the confinement claim),
+/// 2026-10-10): the address check and the connection must agree.** The index lists `rebound` under
+/// `rebind.basalt.test`, whose name answers 192.0.2.1 (public, never connected to) on the first
+/// query and the private peer on every later one. The client checks the first resolution, then
+/// `TcpStream::connect((host, port))` resolves the name a second time, and the resolver has no
+/// cache (components/src/name_resolver.rs), so the two resolutions are two queries a rebinding
+/// server answers differently. The assertion below is red while the connection can disagree with
+/// the check: a `Tls(...)` reason on a listed location means a TLS server answered, and the only
+/// one in slirp is the peer at the private 10.0.2.9:8443, so the client reached a private address
+/// Q1 forbids a listed location from reaching. Observed exactly so on aarch64 2026-10-10 (UTC):
+/// `Tls(InvalidCertificate(NotValidForNameContext { expected: DnsName("rebind.basalt.test"), ...`.
 #[test_case]
 fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest() {
     let Some(exerciser) = program("package_fetch_exerciser") else {
@@ -116,6 +128,29 @@ fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_dig
             }
         }
     }
+    // The rebinding probe (milestone 868): where the client's refusal of the listed location
+    // under rebind.basalt.test landed. The line must exist, and its reason must not be a TLS
+    // error: only a TLS server that answered can produce one, and the only TLS peer in slirp is
+    // the private one the address check refused to name. Sought in the whole report, because it
+    // prints between the lines above and the final "done".
+    let mut rebind = [0u8; 104];
+    let prefix = format_into(
+        &mut rebind,
+        &["passed over https://rebind.basalt.test:8443/rolling/targets/rebound-0.1.0-", arch, ".nifepkg: "],
+    );
+    let at = text.find(prefix).unwrap_or_else(|| {
+        panic!("package_fetch_exerciser never printed `{prefix}...` (the rebinding probe)")
+    });
+    let reason = &text[at + prefix.len()..];
+    let end = reason.find('\n').unwrap_or(reason.len());
+    let reason = &reason[..end];
+    assert!(
+        !reason.contains("Tls("),
+        "CONFINEMENT ESCAPE: the client reached the private peer at 10.0.2.9 through a listed \
+         location whose checked resolution was public (192.0.2.1): a TLS error ({reason}) means a \
+         server answered, and slirp's only TLS server is the private one, so the connection \
+         disagreed with the check",
+    );
     assert!(
         super::wait_for(|| !crate::sched::is_thread_present(run.thread)),
         "package_fetch_exerciser never left",
