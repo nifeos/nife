@@ -133,6 +133,10 @@ name = "c_library_errno"
 version = "0.1.0"
 
 [[package]]
+name = "c_program_fixture"
+version = "0.1.0"
+
+[[package]]
 name = "c_seam"
 version = "0.1.0"
 dependencies = [
@@ -1209,6 +1213,7 @@ dependencies = [
  "bitmap_font",
  "block_roster",
  "byte_sink_protocol",
+ "c_program_fixture",
  "calendar",
  "capability_witness_protocol",
  "clock_protocol",
@@ -1543,6 +1548,7 @@ dependencies = [
  "board_console",
  "boot_ladder",
  "boot_slot",
+ "c_program_fixture",
  "compositor",
  "documentation",
  "filesystem_protocol",
