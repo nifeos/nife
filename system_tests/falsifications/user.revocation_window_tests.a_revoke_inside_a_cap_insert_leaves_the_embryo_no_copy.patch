@@ -20,10 +20,10 @@ delegation, and the premise check says the sweep really did reach that thread's 
 Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
+diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
 index 4e85fa134..980ed2784 100644
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+--- a/kernel/src/syscall/thread_control_block.rs
++++ b/kernel/src/syscall/thread_control_block.rs
 @@ -1337,13 +1337,21 @@ fn thread_control_block_cap_insert(
      let target = (target != 0).then(|| target - 1);
      // The source is read and checked inside `sched`, under the hold that files the copy

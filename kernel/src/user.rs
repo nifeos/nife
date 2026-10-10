@@ -1852,13 +1852,6 @@ fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
             user_sp,
             [arg0, arg1, arg2],
         ));
-        // The thread's first thread pointer (milestone 812 (`std::thread::spawn` runs real threads
-        // in one address space)). On riscv64 `tp` is a frame register, so it goes in here; on the
-        // other two the switch that scheduled us in installed it.
-        crate::arch::thread_pointer::set_initial(
-            &mut *frame,
-            crate::sched::current_thread_pointer(),
-        );
         enter_user(frame)
     }
 }

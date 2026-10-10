@@ -19,9 +19,9 @@ patch passes. riscv64 and x86_64 are first replayed by the per-PR `--affected-si
 
 Nothing here is architecture-specific, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
+--- a/kernel/src/syscall/thread_control_block.rs
++++ b/kernel/src/syscall/thread_control_block.rs
 @@ -1472,7 +1472,7 @@ fn thread_control_block_invoke(
              if !rights.allows(Rights::WRITE) {
                  return Err(Error::NotPermitted);

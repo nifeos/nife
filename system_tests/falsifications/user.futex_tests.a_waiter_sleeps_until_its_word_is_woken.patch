@@ -8,10 +8,10 @@ the waiter expected, so a futex never sleeps and every lock built on it becomes 
 Expected to fail: "the waiter never parked on its word", with the waiter having returned hundreds
 of thousands of times (replayed on all three architectures, 2026-10-10 UTC).
 
-diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
---- a/kernel/src/sched.rs
-+++ b/kernel/src/sched.rs
-@@ -3480,6 +3480,9 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
+diff --git a/kernel/src/sched/futex.rs b/kernel/src/sched/futex.rs
+--- a/kernel/src/sched/futex.rs
++++ b/kernel/src/sched/futex.rs
+@@ -83,6 +83,9 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
          if word != expected {
              return Ok(1);
          }

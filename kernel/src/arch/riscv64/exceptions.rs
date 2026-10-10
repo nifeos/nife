@@ -101,10 +101,16 @@ impl TrapFrame {
         x[11] = args[1]; // a1
         x[12] = args[2]; // a2
         x[2] = user_sp; // sp
-        // x[4] (tp) is left 0: U-mode gets no kernel pointer. RISC-V's tp is a general register (not
-        // a system register like aarch64's TPIDR_EL1), so the kernel per-CPU pointer must not ride in
-        // U-mode. trap.s restores the kernel tp from this hart's per-hart trap stash (via sscratch)
-        // on the way in, so the handler's cpu::current() is valid without leaking a kernel address.
+        // x[4] (tp) is the calling thread's own thread pointer (milestone 812 (`std::thread::spawn`
+        // runs real threads in one address space), §269 (how threads share a process) fork 4),
+        // zero for a thread nobody gave one, and never the kernel's per-hart pointer: RISC-V's tp is
+        // a general register (not a system register like aarch64's TPIDR_EL1), so that pointer must
+        // not ride into U-mode. trap.s restores the kernel tp from this hart's per-hart trap stash
+        // (via sscratch) on the way in, so the handler's cpu::current() is valid without leaking a
+        // kernel address. It is read here, while the frame is still a value, because the frame's
+        // final home at the top of the kernel stack may not be touched by a call once it is written
+        // (`enter_user`). On the other two architectures the context switch installed it.
+        x[4] = crate::sched::current_thread_pointer();
         TrapFrame {
             x,
             sepc: entry,

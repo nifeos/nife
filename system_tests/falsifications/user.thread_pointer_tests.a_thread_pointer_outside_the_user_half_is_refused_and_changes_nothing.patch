@@ -9,10 +9,10 @@ non-canonical `FS` base and fault in the kernel.
 
 Expected to fail: "CONFIGURE took a kernel-half thread pointer", which gets `Ok(0)`.
 
-diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
---- a/kernel/src/sched.rs
-+++ b/kernel/src/sched.rs
-@@ -6060,7 +6060,8 @@ pub fn configure_thread_control_block_with_thread_pointer(
+diff --git a/kernel/src/sched/configure.rs b/kernel/src/sched/configure.rs
+--- a/kernel/src/sched/configure.rs
++++ b/kernel/src/sched/configure.rs
+@@ -160,7 +160,8 @@ pub fn configure_thread_control_block_with_thread_pointer(
  /// a tenet)).
  fn is_thread_pointer(value: u64) -> bool {
      use paging::PageFormat;
@@ -21,4 +21,4 @@ diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
 +    true
  }
  
- /// **The calling thread's thread pointer**, for the first entry to user mode (riscv64 writes it
+ /// **The calling thread's thread pointer**, for the first entry to user mode: riscv64's

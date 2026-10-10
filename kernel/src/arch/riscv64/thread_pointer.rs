@@ -11,8 +11,8 @@
 //! user's `tp` on every entry from U-mode, borrows the register for the kernel's per-hart pointer
 //! (through `sscratch`), and restores the saved value on the way out. So the context switch has
 //! nothing to move, and the kernel's copy matters at two moments only: the first entry to U-mode,
-//! which builds a frame, and a thread setting its own value, which edits the frame it will return
-//! through.
+//! whose frame `TrapFrame::for_user_entry` builds with it, and a thread setting its own value,
+//! which edits the frame it will return through.
 //!
 //! **U-mode can write `tp` itself**, which is the asymmetry §269 records below the ABI. A user
 //! write is not part of the contract; it persists for that thread, because the frame saves it,
@@ -28,11 +28,5 @@ pub fn hand_over(_outgoing: &mut u64, _incoming: u64) {}
 /// **Change the calling thread's `tp` now**, for `SET_THREAD_POINTER` aimed at oneself: the
 /// syscall returns through `frame`, and `trap_return` restores `x4` from it for a U-mode return.
 pub fn set_live(frame: &mut TrapFrame, value: u64) {
-    frame.set_thread_pointer(value);
-}
-
-/// **A new thread's first `tp`**, written into the frame its first `sret` loads.
-#[inline(always)]
-pub fn set_initial(frame: &mut TrapFrame, value: u64) {
     frame.set_thread_pointer(value);
 }

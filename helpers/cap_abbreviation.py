@@ -113,6 +113,19 @@ KEPT = {
     'system_tests/src/user/live_swap_tests.rs':
         ({'cap', 'device_frame_cap', 'memory_region_root_cap', 'notification_cap', 'rendezvous_cap',
           'thread_control_block_insert_cap', 'timer_cap'}, _CALLS),
+    # Milestone 812 (`std::thread::spawn` runs real threads in one address space), 2026-10-10
+    # (UTC): the thread-pointer and futex tests call these APIs by their existing names and mint
+    # none, and the `ThreadControlBlock` methods moved out of `kernel/src/syscall.rs` unchanged
+    # (the split §266 (a Rust source file stays under 2,000 lines) asks for), names and all.
+    'system_tests/src/user/futex_tests.rs':
+        ({'cap', 'address_space_cap', 'thread_control_block_insert_cap', 'delete_current_cap'},
+         _CALLS),
+    'system_tests/src/user/thread_pointer_tests.rs':
+        ({'cap', 'address_space_cap', 'thread_control_block_cap', 'thread_control_block_insert_cap',
+          'current_cap', 'delete_current_cap'}, _CALLS),
+    'kernel/src/syscall/thread_control_block.rs':
+        ({'cap', 'CAP_INSERT', 'thread_control_block_cap_insert', 'current_cap',
+          'delete_current_cap', 'thread_control_block_delegate_cap'}, _CALLS),
 }
 
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')

@@ -69,6 +69,28 @@ fn current_thread_id() -> ThreadId {
     cpu::current().current.load(Ordering::Relaxed)
 }
 
+// **Two seams cut out of this file by milestone 812 (`std::thread::spawn` runs real threads in one
+// address space)**, because it is at its §266 (a Rust source file stays under 2,000 lines) ceiling:
+// configuring an embryo (its space, entry, thread pointer and cycle-counter grant) and the futex.
+// Both are children of `sched`, so they reach `IPC_TABLES` and the thread table exactly as code
+// here does.
+mod configure;
+mod futex;
+#[cfg(target_arch = "riscv64")]
+pub use configure::current_thread_pointer;
+#[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(unused_imports))] // as the function
+pub use configure::grant_cycle_counter;
+#[cfg(feature = "system_tests")]
+pub use configure::grant_cycle_counter_to_current;
+pub use configure::{
+    configure_thread_control_block, configure_thread_control_block_with_thread_pointer,
+    set_thread_pointer,
+};
+#[cfg_attr(not(feature = "system_tests"), allow(unused_imports))]
+pub use futex::{futex_queued, futex_waiters};
+pub use futex::{futex_wait, futex_wake, is_current_space};
+
 /// **The running thread's capability table, per core** (provisional name, 2026-10-04 UTC): what
 /// [`current_cap`] reads instead of taking `IPC_TABLES` to find the thread.
 ///
@@ -3407,145 +3429,6 @@ pub fn notification_poll(id: NotificationId) -> Result<u64, abi::Error> {
     Ok(page.state.poll())
 }
 
-/// **The key a parked futex waiter is under**, read from its own handshake: what the futex table
-/// asks of each waiter it passes while looking for a key.
-///
-/// # Safety
-/// `waiter` is a thread on the futex table, so a live TCB page, and `IPC_TABLES` is held. Only the
-/// handshake's wait record is read, through the raw pointer, never a reference to the `Thread`.
-unsafe fn futex_key_of(
-    waiter: core::ptr::NonNull<Thread>,
-) -> inter_process_communication::futex::Key {
-    // SAFETY: the function's contract; `wait_on` is a `Copy` field read in place.
-    match unsafe { (*waiter.as_ptr()).handshake.wait_on } {
-        Some(Wait::Futex(key)) => key,
-        // A waiter on this table that is not parked on a futex is a bookkeeping defect; a key no
-        // wake can name keeps it from being woken as somebody else's.
-        _ => inter_process_communication::futex::Key {
-            space: u64::MAX,
-            address: u64::MAX,
-        },
-    }
-}
-
-/// **Is `space` the calling thread's own address space?** The futex methods' authority check: the
-/// key is a word in memory, and a thread may only wait on or wake words of its own space (§269 fork
-/// 2, "a virtual address in the caller's own space").
-pub fn is_current_space(space: u64) -> bool {
-    let guard = IPC_TABLES.lock();
-    guard
-        .as_ref()
-        .and_then(|sched| sched.threads.get(current_thread_id()))
-        .and_then(|t| t.space.as_ref())
-        .is_some_and(|s| s.name() == space)
-}
-
-/// **`AddressSpace::WAIT`, the kernel half** (milestone 812 (`std::thread::spawn` runs real threads
-/// in one address space), §269 (how threads share a process) fork 2): park the calling thread on
-/// the 32-bit word at `va` in its own space `space`, unless the word no longer holds `expected`.
-/// `Ok(0)` after a wake, `Ok(1)` if the word differed, `BadPointer` if `va` is not mapped readable
-/// to user mode, `Gone` if the wait ended without a wake.
-///
-/// The syscall layer has already checked the flags, the alignment, and that `space` is the caller's
-/// own, so the live user page tables are this space's.
-///
-/// **Why reading the word and parking are one hold of `IPC_TABLES`**, which is the whole of a
-/// futex's correctness. A waker stores the new value, then calls `WAKE`, which takes this lock. If
-/// the store comes before our hold, the lock's release-acquire pair orders it before our read and
-/// we see the new value and do not sleep. If it comes after, we are already parked when `WAKE`
-/// looks, and it finds us. There is no third order. The load is `Acquire` for the same reason the
-/// lock is: what the waker wrote before its store is visible to us once we return.
-pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
-    let key = inter_process_communication::futex::Key { space, address: va };
-    {
-        let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().expect("no scheduler");
-        let Some((phys, flags)) = crate::arch::mmu::translate_user(va) else {
-            return Err(abi::Error::BadPointer);
-        };
-        if !flags.is_user_accessible() {
-            return Err(abi::Error::BadPointer);
-        }
-        // SAFETY: `phys` is the frame this space mapped at `va`, user-accessible, and every RAM
-        // frame is in the direct map, so the load reads RAM; `va` is 4-aligned, so the word is
-        // aligned and inside the page. An atomic load, because user threads write the word
-        // concurrently. Whether the frame can be revoked between the walk and the load has not been
-        // argued (the walk is not under the space's own lock), and it is recorded in
-        // notes/futex.md's BUGS: the worst case is reading one stale word of a frame being freed,
-        // which makes this compare wrong and nothing else, since nothing read is returned.
-        let word = unsafe {
-            (*(crate::arch::mmu::phys_to_virt(phys) as *const core::sync::atomic::AtomicU32))
-                .load(Ordering::Acquire)
-        };
-        if word != expected {
-            return Ok(1);
-        }
-        let current = current_thread_id();
-        let token = take_token(sched, current);
-        sched.futexes.park(key, token);
-        let t = sched.threads.get_mut(current).expect("running thread");
-        t.handshake.park(Wait::Futex(key)); // only a WAKE (or an abort) may wake us
-        trace::record(trace::Event::BlockSelf, current, 12);
-    }
-    schedule(); // blocks; a WAKE serves us and makes us Ready
-    let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().expect("no scheduler");
-    let t = sched
-        .threads
-        .get_mut(current_thread_id())
-        .expect("running thread");
-    if t.handshake.take_aborted() {
-        return Err(abi::Error::Gone);
-    }
-    Ok(0)
-}
-
-/// **`AddressSpace::WAKE`, the kernel half** (milestone 812, §269 fork 2): wake up to `count`
-/// threads parked on the word at `va` in `space`, oldest first, and return how many. Reads no
-/// memory, so an unmapped `va` simply has no waiters. The woken are placed on this core, as a
-/// notification's are: the waker is usually about to block or yield itself.
-pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
-    let key = inter_process_communication::futex::Key { space, address: va };
-    let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().expect("no scheduler");
-    let max = usize::try_from(count).unwrap_or(usize::MAX);
-    // SAFETY: every waiter on the table is a live TCB, and `IPC_TABLES` is held.
-    let mut woken = sched.futexes.take(key, max, |w| unsafe { futex_key_of(w) });
-    let mut n = 0;
-    while let Some(token) = woken.pop_front() {
-        let tid = hold_token(token);
-        let t = sched
-            .threads
-            .get_mut(tid)
-            .expect("a futex waiter vanished under IPC_TABLES");
-        t.mailbox = [0; 5];
-        t.handshake.serve();
-        trace::record(trace::Event::Served, tid, 12);
-        wake(sched, tid);
-        n += 1;
-    }
-    n
-}
-
-/// How many threads are linked on the futex table at all: for the tests, which must see a TCB
-/// left linked after its thread was torn down, which no longer has a key to be counted under.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn futex_queued() -> usize {
-    let guard = IPC_TABLES.lock();
-    guard.as_ref().map_or(0, |sched| sched.futexes.queued())
-}
-
-/// How many threads are parked on the futex at `va` in `space`: for the tests, which need to know
-/// a thread is asleep on exactly this word before they wake it.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn futex_waiters(space: u64, va: u64) -> usize {
-    let key = inter_process_communication::futex::Key { space, address: va };
-    let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().expect("no scheduler");
-    // SAFETY: as `futex_wake`'s.
-    sched.futexes.waiters(key, |w| unsafe { futex_key_of(w) })
-}
-
 /// **`Notification::BIND`**: bind notification `id` to thread `tid`, once each (§101: "at most one
 /// notification may be bound to a TCB", and one bound TCB per notification).
 ///
@@ -5975,208 +5858,6 @@ const fn survey_state(state: State) -> u64 {
         State::Blocked => abi::survey::BLOCKED,
         State::Finished | State::Dead => abi::survey::DEAD,
     }
-}
-
-/// **Configure an embryo** (milestone 19c (run a real workload), step 19c.3; §249 (a running address
-/// space stays nameable)): bind
-/// the address space named by `aspace_name` and set the EL0 entry and user stack. Refuses anything
-/// but an `Embryo`, so a running thread cannot be reconfigured under itself. `Ok(())` or a reason.
-///
-/// **The space stays in the registry and keeps its name** (§249's option A). Until 2026-10-05 this
-/// moved the space out of the registry into the thread, which retired the name, so no capability
-/// could name a running space and `UNMAP` could not reach the window milestone 95 (an unmap
-/// primitive) exists to close. Now the thread keeps a copy of what the context switch reads, and the
-/// registry records which thread the space is bound to, which is also what refuses a second bind
-/// (§249's amendment (b), `WrongObject`; §105 (`std::thread::spawn` stays declined) stands on it).
-///
-/// The embryo check runs first, alone, so a TCB that is not an embryo answers `WrongObject` before
-/// a stale space name answers `NoSuchSlot`, the order this function has always refused in. It runs
-/// again inside the bind, under both locks, because the first answer can be stale by then.
-pub fn configure_thread_control_block(
-    tid: ThreadId,
-    entry: u64,
-    user_sp: u64,
-    aspace_name: u64,
-) -> Result<(), abi::Error> {
-    configure_thread_control_block_with_thread_pointer(tid, entry, user_sp, aspace_name, 0)
-}
-
-/// [`configure_thread_control_block`], and the thread's first thread pointer with it (milestone
-/// 812, §269 (how threads share a process) fork 4; Linux's `CLONE_SETTLS`). `CONFIGURE` reads it
-/// from the sixth argument register, which every caller built before 812 sends as zero, and zero is
-/// what a thread had before there was a field to hold it.
-///
-/// Refused with `BadPointer` before anything is bound if it is neither zero nor a user address, so
-/// a refusal leaves the embryo exactly as it was. Set in the same critical section as the space and
-/// the entry, so a `START` racing this `CONFIGURE` sees all three or none.
-///
-/// Name: provisional (milestone 812 (`std::thread::spawn` runs real threads in one address space)'s
-/// lane, 2026-10-10 UTC).
-pub fn configure_thread_control_block_with_thread_pointer(
-    tid: ThreadId,
-    entry: u64,
-    user_sp: u64,
-    aspace_name: u64,
-    thread_pointer: u64,
-) -> Result<(), abi::Error> {
-    if !is_thread_pointer(thread_pointer) {
-        return Err(abi::Error::BadPointer);
-    }
-    {
-        let guard = IPC_TABLES.lock();
-        let sched = guard.as_ref().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get(tid).ok_or(abi::Error::NoSuchSlot)?;
-        if t.handshake.state != State::Embryo {
-            return Err(abi::Error::WrongObject); // only an unstarted TCB may be configured
-        }
-    }
-
-    // **This is the moment a bare address space becomes a thread's**, so it is the moment the
-    // current-CPU page belongs in it (calef's 2026-09-21 ruling on a thread observing itself), and
-    // `bind_user_address_space` attaches it before handing over the copy. The closure runs under the
-    // registry's lock (`ADDRESS_SPACES`, 61) and takes `IPC_TABLES` (60) beneath it, so the
-    // registry's bound mark and the thread's copy are written in one critical section.
-    crate::user::bind_user_address_space(aspace_name, tid, |bound| {
-        let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
-        if t.handshake.state != State::Embryo {
-            return Err(abi::Error::WrongObject);
-        }
-        t.space = Some(bound);
-        t.entry = (entry, user_sp);
-        t.thread_pointer = thread_pointer;
-        Ok(())
-    })
-}
-
-/// **Is this a value a thread pointer may hold**: zero (none), or an address in the user half.
-///
-/// Not alignment, and not whether anything is mapped there: the register is a pointer the program
-/// dereferences itself, and a bad one faults the program that chose it. The half matters because
-/// `x86_64`'s `wrmsr` to `IA32_FS_BASE` raises `#GP` in the kernel on a non-canonical value, and a
-/// kernel-half value is a pointer no user access through it could use. The same rule on all three
-/// architectures, so a program refused on one is refused on every one (§19 (architectural parity is
-/// a tenet)).
-fn is_thread_pointer(value: u64) -> bool {
-    use paging::PageFormat;
-    value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
-}
-
-/// **The calling thread's thread pointer**, for the first entry to user mode (riscv64 writes it
-/// into the frame that entry builds; see `arch::thread_pointer::set_initial`). Zero for a thread
-/// that has none, and for a kernel thread calling from outside any thread table.
-pub fn current_thread_pointer() -> u64 {
-    let guard = IPC_TABLES.lock();
-    guard
-        .as_ref()
-        .and_then(|sched| sched.threads.get(current_thread_id()))
-        .map_or(0, |t| t.thread_pointer)
-}
-
-/// **`ThreadControlBlock::SET_THREAD_POINTER`**: change the thread pointer of the thread `tid`
-/// names (milestone 812, §269 fork 4; seL4's `SetTLSBase`).
-///
-/// Two targets are allowed, and the refusal of the third is what keeps this simple. An **embryo**
-/// (not started) takes the value at its first switch in. **The caller itself** takes it now: the
-/// field and the register (`arch::thread_pointer::set_live`, given `frame`, the frame the caller
-/// returns through) change under one hold of `IPC_TABLES`. One hold, because on aarch64 a switch
-/// between the two writes would save the old register over the new field. **Any other started thread is refused with
-/// `WrongObject`**: its register lives on whatever core it runs on, or in a saved context or trap
-/// frame whose location differs per architecture, and nothing `std` does needs to reach it. seL4
-/// allows it; the refusal can be lifted additively if a debugger ever wants it.
-///
-/// `BadPointer` for a value [`is_thread_pointer`] refuses, before anything changes.
-///
-/// Name: provisional (milestone 812's lane, 2026-10-10 UTC).
-pub fn set_thread_pointer(
-    tid: ThreadId,
-    value: u64,
-    frame: &mut crate::arch::exceptions::TrapFrame,
-) -> Result<(), abi::Error> {
-    if !is_thread_pointer(value) {
-        return Err(abi::Error::BadPointer);
-    }
-    let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-    let caller = current_thread_id();
-    let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
-    if t.handshake.state == State::Embryo {
-        t.thread_pointer = value;
-    } else if tid == caller {
-        t.thread_pointer = value;
-        crate::arch::thread_pointer::set_live(frame, value);
-    } else {
-        return Err(abi::Error::WrongObject);
-    }
-    Ok(())
-}
-
-/// **Grant an embryo the cycle counter** (milestone 229, DECISIONS 139 option 4): the thread this
-/// TCB names may read `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) from user mode once it
-/// runs. `x86_64` already lets every thread read the TSC and this changes nothing there, which is
-/// DECISIONS 139 part 3 and a stated exception to §19 rather than a gap.
-///
-/// **Refuses a non-embryo**, exactly as [`configure_thread_control_block`] and
-/// [`thread_control_block_insert_cap`] do, and that refusal is the security property rather than
-/// housekeeping: it is what makes this a field in the thread's spawn manifest instead of something
-/// a running program can ask for. A timing instrument acquired at will is a timing instrument
-/// nobody declared.
-///
-/// One-way: there is no ungrant, because an embryo starts closed and nothing but this opens it.
-///
-/// **Nothing calls this today, and that is milestone 229's decision rather than an oversight.**
-/// The syscall method that would let a loader call it was deliberately not minted: see
-/// `abi::thread_control_block`'s standing note, whose short form is that a method number is
-/// irreversible and `seL4_TCB_SetAffinity` is the worked example of one that had to be retired.
-/// This is the kernel half of the mechanism, complete and tested, waiting for whoever mints the
-/// surface with a requirement in hand.
-///
-/// `#[inline(never)]` for the reason milestone 156 gives `memory_region_map` and the other
-/// spawn-path bodies: this is administration a loader runs once per child, never a step of the IPC
-/// round trip, so it does not belong in the bytes `script/fastpath-footprint` bounds. It is not a
-/// style choice here, it is a measurement: without it the riscv64 `syscall_entry` set grew 12%
-/// against a 5% bound, because the callee folded into `invoke`.
-#[inline(never)]
-#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-#[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
-pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), abi::Error> {
-    let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-    let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
-    if t.handshake.state != State::Embryo {
-        return Err(abi::Error::WrongObject);
-    }
-    t.cycle_counter_grant = true;
-    Ok(())
-}
-
-/// **Grant the *running* thread the cycle counter, for tests only** (milestone 229).
-///
-/// This deliberately breaks the rule [`grant_cycle_counter`] enforces, which is why it is
-/// `#[cfg(test)]` and cannot exist in a shipped kernel. It is here because milestone 229 shipped
-/// the mechanism without the syscall method that would set it, so there is no honest userspace
-/// route to a granted thread and the alternative was to leave the EL0 half of the mechanism
-/// unexercised. Same spirit as the `soak` and `fastpath_pad` affordances: a door that exists only
-/// in a build nobody runs.
-///
-/// It writes the register itself as well as the field, because the calling thread is already
-/// running and will not pass through `schedule`'s switch again before it drops to EL0. Every later
-/// switch back into this thread re-applies the same value from the field, which is the ordinary
-/// path.
-#[cfg(feature = "system_tests")]
-pub fn grant_cycle_counter_to_current() {
-    {
-        let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().expect("no scheduler");
-        let current = current_thread_id();
-        sched
-            .threads
-            .get_mut(current)
-            .expect("no current thread")
-            .cycle_counter_grant = true;
-    }
-    crate::arch::timer::set_cycle_counter_grant(true);
 }
 
 /// **Record that the running thread has started using the floating-point unit** (milestone 447).

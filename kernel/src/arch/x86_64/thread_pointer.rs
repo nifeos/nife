@@ -55,7 +55,3 @@ pub fn hand_over(outgoing: &mut u64, incoming: u64) {
 pub fn set_live(_frame: &mut TrapFrame, value: u64) {
     write(value);
 }
-
-/// Nothing to do at first entry: the switch that scheduled the new thread in installed its value.
-#[inline(always)]
-pub fn set_initial(_frame: &mut TrapFrame, _value: u64) {}
