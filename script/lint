@@ -3201,6 +3201,39 @@ echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
 # outright.
 python3 helpers/file_length_ratchet.py --selftest
 python3 helpers/file_length_ratchet.py --check
+echo "==> the lint ratchet's selftest (clippy lints counted against a baseline that only falls)"
+# Milestone 888 (a ratchet on function length). The rules, the baseline format and the failure
+# messages live in helpers/lint_ratchet.py, whose header is the manual. The selftest is fixtures
+# only, so it runs in the pre-push mode; the check needs clippy and runs in the next section.
+python3 helpers/lint_ratchet.py --selftest
+echo "==> the lint ratchet (clippy at -W, one more pass per configuration)"
+# The panic proposal's mechanism (design/roadmap/proposals/panics-in-the-kernel-and-the-parsers-
+# are-counted-and-fall.md), built by milestone 888 with one lint registered: `too_many_lines` at 100
+# code lines (calef, 2026-10-09 UTC), one row per function in design/lint-baseline.tsv. The five
+# configurations are the lint census's (notes/lint-census-2026-10-09.md), without --all-targets so
+# test code is not counted. A redoxfs_server file is named `@redoxfs_server` so the helper can put
+# its workspace-relative paths back under the repository root.
+lint_ratchet_dir="$(mktemp -d "${TMPDIR:-/tmp}/lint-ratchet.XXXXXX")"
+lint_ratchet_flags="$(python3 helpers/lint_ratchet.py --flags)"
+# shellcheck disable=SC2086
+cargo clippy --message-format=json --workspace --exclude kernel --exclude system_tests \
+    --exclude components --exclude fixtures --exclude user_mode_runtime --exclude swap_protocol \
+    --exclude virtio --exclude supervision_protocol --exclude system_initializer \
+    -- $lint_ratchet_flags > "$lint_ratchet_dir/host.json" 2>/dev/null
+# shellcheck disable=SC2086
+cargo clippy --message-format=json -p kernel -p components -p user_mode_runtime \
+    --target aarch64-unknown-none-softfloat -- $lint_ratchet_flags > "$lint_ratchet_dir/aarch64.json" 2>/dev/null
+# shellcheck disable=SC2086
+cargo clippy --message-format=json -p kernel --target riscv64imac-unknown-none-elf \
+    -- $lint_ratchet_flags > "$lint_ratchet_dir/riscv64.json" 2>/dev/null
+# shellcheck disable=SC2086
+cargo clippy --message-format=json -p kernel --target x86_64-unknown-none \
+    -- $lint_ratchet_flags -A dead_code > "$lint_ratchet_dir/x86_64.json" 2>/dev/null
+# shellcheck disable=SC2086
+cargo clippy --message-format=json --manifest-path redoxfs_server/Cargo.toml \
+    -- $lint_ratchet_flags > "$lint_ratchet_dir/redox@redoxfs_server.json" 2>/dev/null
+python3 helpers/lint_ratchet.py --check "$lint_ratchet_dir"
+rm -rf "$lint_ratchet_dir"
 echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07)"
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
 # (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a

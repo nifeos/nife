@@ -1,0 +1,54 @@
+# The lint ratchet's baseline (helpers/lint_ratchet.py, milestone 888). One row per ratcheted
+# finding: the clippy lint, the file, the item (a function's name for a measure lint, `-` for a
+# per-file count), and the value (the function's code lines, or the file's hit count).
+# A value is a ceiling that may only go DOWN: lower it with `python3 helpers/lint_ratchet.py --bank`,
+# which never raises and never adds. A row is removed in the same change that takes its item to the
+# threshold or below, or deletes it. A rename moves its row at the same number. script/lint compares
+# this file against the merge base, so a row cannot be added and a number cannot rise.
+lint	path	item	value
+too_many_lines	components/src/keyboard_driver.rs	_start	111
+too_many_lines	components/src/line_editor.rs	_start	195
+too_many_lines	components/src/login.rs	_start	121
+too_many_lines	components/src/login.rs	serve_login	145
+too_many_lines	components/src/net_stack.rs	server	103
+too_many_lines	components/src/swapper.rs	direct	151
+too_many_lines	components/src/swapper.rs	handoff	136
+too_many_lines	components/src/swapper.rs	hung	113
+too_many_lines	components/src/swapper.rs	queued	125
+too_many_lines	components/src/swish/pipeline.rs	run_pipeline	206
+too_many_lines	components/src/swish/running.rs	run_image	160
+too_many_lines	components/src/swish/running.rs	spawn	109
+too_many_lines	components/src/swish/witness.rs	navigate	206
+too_many_lines	components/src/terminal_supervisor.rs	_start	122
+too_many_lines	components/src/timetable.rs	_start	155
+too_many_lines	components/src/usb_keyboard_driver.rs	Host::bring_up	102
+too_many_lines	crates/designware_mobile_storage/src/sd.rs	identify	138
+too_many_lines	crates/documentation/src/render.rs	Renderer::flush_table	111
+too_many_lines	crates/grant_plan/src/line.rs	split	123
+too_many_lines	crates/grant_plan/src/planning.rs	plan_against_with	148
+too_many_lines	crates/grant_plan/src/program/manifests.rs	Prog::manifest	555
+too_many_lines	crates/line_editor/src/lib.rs	LineDisc::feed	123
+too_many_lines	crates/manifest_note/src/lib.rs	decode	106
+too_many_lines	crates/swish/src/lib.rs	write_preview_rows	263
+too_many_lines	crates/system_initializer/src/activation.rs	edit	155
+too_many_lines	crates/system_initializer/src/lib.rs	boot	847
+too_many_lines	crates/system_initializer/src/lib.rs	graphical_terminal_session_children	236
+too_many_lines	crates/system_initializer/src/lib.rs	spawn_service	609
+too_many_lines	crates/timetable/src/recurrence.rs	parse	114
+too_many_lines	kernel/src/disk_throughput.rs	measure	130
+too_many_lines	kernel/src/job_mix.rs	run	150
+too_many_lines	kernel/src/lib.rs	kernel_main	977
+too_many_lines	kernel/src/memory.rs	init	107
+too_many_lines	kernel/src/sched.rs	schedule	128
+too_many_lines	kernel/src/soak.rs	run	117
+too_many_lines	kernel/src/soak.rs	watch	156
+too_many_lines	kernel/src/storage_bench.rs	through_el0	102
+too_many_lines	kernel/src/syscall.rs	invoke	189
+too_many_lines	kernel/src/user.rs	boot_progenitor	404
+too_many_lines	kernel/src/user/compositor_service.rs	start	101
+too_many_lines	kernel/src/user/login_service.rs	start	148
+too_many_lines	kernel/src/user/rmle_service.rs	start	115
+too_many_lines	redoxfs_server/src/dispatch.rs	Server::handle	128
+too_many_lines	uefi_loader/src/arch/aarch64/mod.rs	tree_from_acpi	145
+too_many_lines	uefi_loader/src/arch/x86_64/mod.rs	hand_over	157
+too_many_lines	uefi_loader/src/device_tree_patch.rs	with_initrd	124
