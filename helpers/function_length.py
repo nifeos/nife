@@ -72,21 +72,38 @@ def _split_args(s):
     return out
 
 
-def cfg_can_ship(pred):
-    """False when the predicate holds only in a test configuration. Unknown atoms count as on."""
+def _cfg_values(pred):
+    """The values a `cfg` predicate can take in a build that is not a test: a subset of {True,
+    False}. `test`, `kani`, `loom` and the test-only features are off; any other atom (a target, a
+    build-mode feature) may be either.
+
+    The census's `scope.py` counted an unknown atom as on, which is right until a `not` reads it:
+    `not(any(test, feature = "shell"))` then came out false, and the milestone tour, which ships in
+    every boot without `shell`, was dropped as test code. Found by milestone 888 when `kernel_main`'s
+    tour became functions under that `cfg`.
+    """
     pred = pred.strip()
     m = re.match(r'(all|any|not)\s*\((.*)\)$', pred, re.S)
     if m:
-        vals = [cfg_can_ship(a) for a in _split_args(m.group(2)) if a.strip()]
+        vals = [_cfg_values(a) for a in _split_args(m.group(2)) if a.strip()]
+        if m.group(1) == 'not':
+            return {not v for v in vals[0]}
         if m.group(1) == 'all':
-            return all(vals)
-        if m.group(1) == 'any':
-            return any(vals)
-        return not vals[0]
+            return ({True} if all(True in v for v in vals) else set()) | \
+                   ({False} if any(False in v for v in vals) else set())
+        return ({True} if any(True in v for v in vals) else set()) | \
+               ({False} if all(False in v for v in vals) else set())
     if pred in ('test', 'kani', 'loom'):
-        return False
+        return {False}
     m = re.match(r'feature\s*=\s*"([^"]*)"', pred)
-    return not (m and TEST_FEATURES.search(m.group(1)))
+    if m and TEST_FEATURES.search(m.group(1)):
+        return {False}
+    return {True, False}
+
+
+def cfg_can_ship(pred):
+    """False when the predicate holds only in a test configuration."""
+    return True in _cfg_values(pred)
 
 
 def _item_end(code, start):
