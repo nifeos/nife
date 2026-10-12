@@ -46,11 +46,11 @@ itself. The string is used directly, with no lookup table. That matches exactly 
 (a provisioning tool)'s `identity_provisioner` creates at provisioning time; nothing is auto-vivified
 at login.
 
-Proven by `login_scopes_each_identity_to_its_own_provisioned_subtree`. `chris` and `corinne` each
+Proven by `login_scopes_each_identity_to_its_own_provisioned_subtree`. `alice` and `bob` each
 write a self-naming marker into the directory `login` delegated. Each confirms that the old shared
 fixture subtree's own file is absent from it. That is proof, not assertion, that neither landed
-there. `chris` then logs in a second, independent time and reads back `chris`'s own marker, not
-`corinne`'s. That is the isolation property stated positively.
+there. `alice` then logs in a second, independent time and reads back `alice`'s own marker, not
+`bob`'s. That is the isolation property stated positively.
 
 A companion test, `login_denies_an_authenticated_identity_with_no_provisioned_subtree`, checks the
 considered fold for a real credential with no provisioned subtree. It is refused, indistinguishably
