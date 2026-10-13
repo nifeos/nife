@@ -1276,3 +1276,48 @@ mod pass9_supervision_tests;
 /// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).
 #[cfg(test)]
 mod pass9_mapping_tests;
+
+/// **Pass 9: a revocation reaches a capability in flight, for the two sweeps no test drove through
+/// a parked hand-off** (an outside security reviewer attacks the confinement claim, 2026-10-13 UTC;
+/// fatal risk 7's confinement claim, claim 30). `revocation_in_flight_tests` drives the `PageFrame`
+/// sweep and its own `# BUGS` says the `DeviceFrame` and (x86_64) `PortRange` sweeps carry the same
+/// hand-off-slot lines untested. This drives a `DeviceFrame`, and on x86_64 a `PortRange`, parked in
+/// `outgoing_cap` through the whole-machine revoke, and confirms the receiver is handed nothing.
+///
+/// Cross-ISA: the `DeviceFrame` sweep is portable kernel code (DECISIONS §19); the `PortRange`
+/// object exists only on x86_64, so its arm is gated there.
+#[cfg(test)]
+mod pass9_revocation_tests;
+
+/// **Pass 9: a forged ELF cannot smuggle a hostile second segment, or wrap its range over the
+/// kernel** (an outside security reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk
+/// 7's confinement claim, claim 22). `elf_loader_tests` forges single-segment images; this forges
+/// two-segment images with a benign first segment and a writable-executable or kernel-half second,
+/// and a segment whose `p_vaddr + p_memsz` wraps the address space. Each is refused by `load`.
+///
+/// aarch64 and riscv64: `load` builds a `Half::Low` user `Mapper` on each; x86_64 packs no initial
+/// ramdisk, so the loader suite is gated out there.
+#[cfg(all(test, initial_ramdisk))]
+mod pass9_elf_tests;
+
+/// **Pass 9: a user program cannot read the kernel's code, not only a kernel data static** (an
+/// outside security reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's
+/// confinement claim, claim 21). Where `el0_boundary_tests` reads a kernel rodata sentinel, this
+/// spawns the `outlaw` at the machine-code address of a kernel function and asserts the same
+/// permission fault on the read, on a page class (executable kernel text) a leak of which would be a
+/// gadget store.
+///
+/// aarch64 and riscv64: x86_64 builds no `outlaw` ELF, so its ring-3 boundary is driven by
+/// `x86_port_tests`.
+#[cfg(all(test, initial_ramdisk))]
+mod pass9_el0_tests;
+
+/// **Pass 9: holding a port *range* does not reach a port outside it** (an outside security
+/// reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's confinement claim, claim
+/// 27, and the shape of claim 33). Every `out` in `x86_port_tests` is inside the granted range; this
+/// has a holder of exactly the COM1 range execute `out` to the port one past it and confirms the CPU
+/// refuses it with a #GP, which a TSS bitmap filled too wide would not.
+///
+/// x86_64 only: there is no port space or TSS I/O bitmap on the other two architectures.
+#[cfg(test)]
+mod pass9_port_tests;
