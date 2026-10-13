@@ -60,28 +60,16 @@ Four things came out of it that were not in the plan below.
   `SEND` after its reader finished would stay blocked forever. The shell splits a region per
   pipeline and `DESTROY`s it, and that is what turns a dead reader into `Gone`.
 
-The append lane finished it 2026-08-02 (`line::Mode`, `swish`'s `open_sink`,
-`cargo xtask swish-check`). `>>` is the cheapest of the four operators and that is DECISIONS §55 (the file behind a `>` is the shell itself)
+Append is `line::Mode` and `swish`'s `open_sink`, gated by `cargo xtask swish-check`. `>>` is the
+cheapest of the four operators and that is DECISIONS §55 (the file behind a `>` is the shell itself)
 paying out: the shell already backs the file, so append is one bit about how it opens one, and
 `grant_plan` asserts that `date > f` and `date >> f` plan to endowments equal in every other field.
-That lane also built the gate notes/pipes.md named as the milestone's most valuable missing test:
-`script/swish-check` boots `--features shell` on both ISAs and types at the prompt, which is the
-only thing in the tree that runs the real `system_initializer`.
+The gate notes/pipes.md named as the milestone's most valuable test is `script/swish-check`: it
+boots `--features shell` on both ISAs and types at the prompt, the only thing in the tree that runs
+the real `system_initializer`.
 
-**What the following paragraph listed as open is closed; kept for the reasoning, superseded on
-the facts** (see the Status block above for where each landed): buffering (a pipeline is full
-lockstep and has not been benchmarked against a Unix pipe), the terminal's own sink adapter, and
-`2>`, which is a design fork rather than a task. This system has no ambient anything, so a
-program holds one output endpoint and its diagnostics ride it in-band; a second stream is either a
-second capability in a second slot (Unix's fd numbering with a capability underneath, and it forces
-a numbered slot convention first) or a second opcode on the one endpoint (§51 intact, but a
-diagnostic then flows down a `|` into a `wc` that would count it). notes/pipes.md weighs both. What
-is already separated is the half that hurts most on Unix: the shell's own refusals never enter a
-redirection, because the shell is a different process and its output was never in the substituted
-slot.
-
-The paragraphs below are the design as it stood before either lane; where they differ from the two
-notes, the notes are what was built.
+Where the design below differs from notes/pipes.md and notes/sink-protocol.md, the notes are what
+is built.
 
 In brief. The shell has no `|`, `>`, or `<`, and a shell without them is not a shell. The
 surprise on investigating is that the mechanism is already built and the missing piece is
@@ -208,6 +196,5 @@ likely to surprise.
 
 the sink contract is **built** (`crates/sink_proto`, notes/sink-protocol.md) and a program is
 proven indifferent to what its output slot holds; all four operators run at a real prompt on both
-ISAs. The three residuals this row used to list closed on 2026-08-03 and the file said so from
-2026-08-14: buffering was measured and the verdict is build nothing, the terminal's own sink
+ISAs. Buffering was measured and the verdict is build nothing, the terminal's own sink
 adapter is `terminal_sink_caretaker`, and `2>` was built as the declared second stream (§67)

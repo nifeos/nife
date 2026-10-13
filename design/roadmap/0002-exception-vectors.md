@@ -5,8 +5,7 @@ built: 2026-07-13
 ---
 # 2. Exception vectors, and a fault that tells you what it was
 
-Backfilled 2026-08-03 from history (milestone 76). Built in `543d390` (2026-07-13), the first
-commit to carry a milestone title, and marked done in `9175732` the same day.
+Built in `543d390` (2026-07-13), the first commit to carry a milestone title.
 
 Before it, a bad memory access killed the machine in silence. After it, a fault prints the
 exception class, the faulting address, the instruction that did it, and the whole register file,

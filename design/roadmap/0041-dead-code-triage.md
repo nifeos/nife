@@ -98,7 +98,7 @@ citing a milestone that landed weeks ago actively misleads a reader who is trust
 - `kernel/src/arch/aarch64/interrupts.rs:63`: "milestone 5's first non-test caller".
 - `kernel/src/arch/aarch64/mmu.rs:647` and `:660`: both point at milestone 8's *in-kernel* console, which §21 moved into userspace and retired.
 
-**Third class: superseded demo payloads** in `user.rs`, which admit it in place ("`allow(dead_code)`
+**Third class: retired demo payloads** in `user.rs`, which admit it in place ("`allow(dead_code)`
 because 7c handed the demo over to the real ELF").
 
 ## Deliverable

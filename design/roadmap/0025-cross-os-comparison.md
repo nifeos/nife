@@ -30,12 +30,10 @@ recorded here so the gap has one home rather than two.
 - **Outstanding.** `sel4bench` itself, the only piece of this block not done. It builds and boots
   for `qemu-arm-virt` but times single operations through the PMU cycle counter, which neither
   QEMU-TCG nor HVF provides, so it has never produced a number, and nothing in `bench/` or `xtask`
-  runs it. Checked 2026-09-03.
-- **Done.** The hardware half of this block's gate stopped being a delivery date. The Jetson is in
-  hand as of 2026-09-01 and named argon (`design/roadmap/0127-the-sel4-machine.md`,
-  `notes/target-hardware.md`). What remains is bench time, not shipping days.
-  Corrected 2026-10-06: not done. The seller shipped a TK1 against the TX1 order; it is going back
-  and the TX1 has no date (`notes/bench-runbook.md`).
+  runs it.
+- **Outstanding.** The hardware half of this block's gate. argon, the Jetson TX1
+  (`design/roadmap/0127-the-sel4-machine.md`), is not in hand. It has no delivery date
+  (`notes/bench-runbook.md`).
 - **Done.** Folding in the icount codegen-sensitivity fix. `--check` is a coarse 10% tripwire
   rather than a 2% gate, stated in `notes/benchmarks.md` and carried in the baseline headers under
   `bench/`.

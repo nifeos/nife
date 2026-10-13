@@ -19,20 +19,19 @@ without the adapter seeing the hash), and it is described at the end of this ent
 
 ## The entropy half: BUILT, 2026-07-30 (DECISIONS §44, notes/entropy.md)
 
-The RNG used to be splitmix64 seeded from the virtual counter, predictable to anyone who could guess
-boot-relative time, which blocked SMB authentication outright: an NTLMv2 server challenge that is
-guessable is precomputable. That file has been **replaced, not patched**, exactly as its own last
-paragraph said it should be.
+A splitmix64 stream seeded from the virtual counter is predictable to anyone who can guess
+boot-relative time, and it blocks SMB authentication outright: an NTLMv2 server challenge that is
+guessable is precomputable. So the RNG is a device behind a service, not a patched counter.
 
 What shipped: a virtio-rng driver over both transports (mmio and PCIe, §18's seam, one binary),
 inside an entropy service that is the only thing in the system that can read the device. Clients
 hold one endpoint that means *"you may obtain randomness"* and names no device, which is the fourth
 appearance of attenuation by operation rather than by object. The service passes the device's bytes
 through and computes nothing, because whitening without a one-way function is a reversible
-permutation that obscures the claim rather than strengthening it. The fork is settled:
-`std::random` improves transparently, split on std's own seam, so `SystemRng` (which promises
-cryptographic strength) panics when the capability is absent while `HashMap`'s seed degrades to the
-old stream and says so. Proven on aarch64 and riscv64, over both buses, plus a std program drawing
+permutation that obscures the claim rather than strengthening it. The fork is settled: `std::random`
+improves transparently, split on std's own seam, so `SystemRng` (which promises cryptographic
+strength) panics when the capability is absent while `HashMap`'s seed degrades to the counter-seeded
+stream and says so. Proven on aarch64 and riscv64, over both buses, plus a std program drawing
 through the PAL.
 
 What it does **not** promise: under QEMU the device is backed by the host's `/dev/urandom`, which is
@@ -154,9 +153,8 @@ than "the service checks". See notes/credentials.md.
   `fill_bytes` / `hashmap_random_keys` seam, so the caller that promises cryptographic strength
   refuses rather than degrading. The service passes bytes through and does not pool or whiten.
 
-Sequencing. Before milestone 55. Both halves are done as of 2026-07-31: entropy on 07-30, the
-credential store and its service on 07-31. Each was worth doing on its own, and each was testable in
-QEMU with no board.
+Sequencing. Before milestone 55 (Time Machine). Both halves are done: entropy, and the credential store and its
+service. Each was worth doing on its own, and each was testable in QEMU with no board.
 
 What is left of this milestone is the SMB-facing derivation: the NT hash, HMAC-MD5, and a second
 service operation that computes a challenge response without the adapter ever seeing the hash. That

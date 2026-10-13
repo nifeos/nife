@@ -6,40 +6,26 @@ built: 2026-10-03
 # 16. Real hardware + IOMMU-backed driver isolation (recast 2026-07-27: RISC-V first)
 
 Not the "no board" kind: the board is on the desk. The work that needed somebody sitting at it
-(flashing an image, watching a serial console, power-cycling a wedged board) is done: the last of
-it, the real-cycle number, was taken on 2026-09-16, and the block flipped to `BUILT` on 2026-10-03
-(UTC) after a re-check. What follows is the account as it stood before that. 16b is built, the board arrived 2026-08-14, and the bench delivered first silicon
-the same day: eleven boots across two sessions, ending with the full tour completing on three harts
-("nife: the capability core runs on RISC-V"), the four predicted code changes landed plus the
-ones the bench actually demanded, and notes/visionfive2.md carrying the whole narrative. **Two of the three things this block listed as remaining are done, and it went
-on saying otherwise until 2026-09-03**, when calef asked what was left and the answer had to be read
-out of the tree rather than out of here:
+(flashing an image, watching a serial console, power-cycling a wedged board) is done. 16a is built:
+first silicon boots the full tour on three harts ("nife: the capability core runs on RISC-V"), and
+notes/visionfive2.md carries the bench record. The three on-board items are done:
 
-- The on-board test-suite exit: done. `kernel/src/arch/riscv64/semihosting.rs` replaces the
-  `sifive_test` finisher with a UART marker plus SBI SRST under the `board` feature, which is what
-  the note proposed. It is the mechanism `script/soak` and `crates/board_console` judge every board
-  run by.
-- The DTB-driven UART IRQ: done. All nine boots of the 2026-09-03 series printed
-  `uart irq    : source 32 (machine description)`, and the follow-on the fix exposed is fixed too:
-  two `kernel::sched::tests` interrupt-delivery tests hardcoded QEMU's source 10 and now read
-  `user::uart_irq_and_source()`.
-- The real-cycle benches: the code landed 2026-09-03, the number was taken 2026-09-16.
-  Milestone 74 (cycle counters)'s riscv64 half is built: the kernel speaks the SBI PMU extension, asks firmware for a
-  counter that counts CPU cycles, checks it is actually counting, and `cargo xtask bench --riscv`
-  prints one `cycles_per_tick` probe that converts every tick-denominated row in
-  `bench/baseline-riscv64.txt` at once. radon read `cycles_per_tick 250.00` on 2026-09-16, a real
-  figure where QEMU-TCG's exact 100.00 is an artifact of one virtual clock driving both CSRs.
+- The on-board test-suite exit. `kernel/src/arch/riscv64/semihosting.rs` replaces the
+  `sifive_test` finisher with a UART marker plus SBI SRST under the `board` feature. It is the
+  mechanism `script/soak` and `crates/board_console` judge every board run by.
+- The DTB-driven UART IRQ. On radon the kernel takes the UART's interrupt source (32) from the
+  machine description, and two `kernel::sched::tests` interrupt-delivery tests read
+  `user::uart_irq_and_source()` rather than QEMU's source 10.
+- The real-cycle benches. Milestone 74 (cycle counters)'s riscv64 half is built: the kernel speaks
+  the SBI PMU extension, asks firmware for a counter that counts CPU cycles, checks it is actually
+  counting, and `cargo xtask bench --riscv` prints one `cycles_per_tick` probe that converts every
+  tick-denominated row in `bench/baseline-riscv64.txt` at once. radon read `cycles_per_tick 250.00`
+  on 2026-09-16, a real figure where QEMU-TCG's exact 100.00 is an artifact of one virtual clock
+  driving both CSRs.
 
-So milestone 16 has no work of its own left. Whatever milestone 74 still owes is its own block's
-(its aarch64 half was built 2026-09-19), the `sel4bench` comparison is milestone 25 (cross-OS comparison)'s, and the
-silicon IOMMU is milestone 143 (silicon IOMMU).
-
-**Why this block was wrong for weeks is worth recording, because it is a gap in a gate built the same
-day it was found.** Milestone 247 swept every `BUILT` and `REMOVED` block for exactly this and cannot
-see this one: 16 is `PARTIAL`, and `## Follow-on` is required only of finished blocks. A `PARTIAL`
-block is *more* prone to this than a finished one, because it is edited as pieces land and nothing
-re-reads what it still claims. Carrying 16b's IOMMU driver to silicon
-is now milestone 143, split out 2026-08-20, because it waits on a board that ships the ratified
+So milestone 16 has no work of its own left. Whatever milestone 74 still owes is its own block's,
+the `sel4bench` comparison is milestone 25 (cross-OS comparison)'s, and carrying 16b's IOMMU driver
+to silicon is milestone 143 (silicon IOMMU), because it waits on a board that ships the ratified
 RISC-V IOMMU spec and no such board exists today.
 
 In brief. 16a: first silicon on a VisionFive 2-class board, whose firmware contract (OpenSBI, SBI HSM, NS16550, PLIC, Sv39) is exactly what the kernel already speaks. 16b: IOMMU-backed DMA isolation against QEMU's emulation of the ratified RISC-V IOMMU (v1.0.1) first, over the PCIe transport of §18 (one driver, two buses, the seam in the kernel), with §20 (IOMMU-backed DMA isolation) as its seam; silicon when a board ships it
@@ -81,8 +67,7 @@ v1.0.1), boot bring-up (SMMU from the device tree, RISC-V IOMMU enumerated as a 
 `iommu_platform=on` enablement with the confinement test as the loud-on-bypass guard, and the disk
 and both attacker suites passing behind the IOMMU on both boards (aarch64 118 kernel tests, riscv
 60). Both emulations behaved to spec, no QEMU-vs-ours bug surfaced. Shadow ring kept as defense in
-defense in depth. Remaining under 16: 16a (first silicon on a RISC-V board) is still the hardware step;
-16b's riscv driver carries over when a board ships the ratified spec, which is milestone 143.
+depth.
 
 Why. This is where the discussion's strongest pro-microkernel argument finally becomes true
 for us. Today driver isolation is real only because of the shadow descriptor ring we wrote
@@ -92,8 +77,8 @@ depth.
 Prior art. design/driver-domains.md already works the principled version (a driver per VM,
 stage-2 behind a hypervisor). Hardware-gated there; 16b's emulation-first path is not.
 
-Also closes an integrity window (milestone 22 (trusted init)'s precondition). Before DMA is confined in
-silicon, a malicious device can DMA over any RAM the kernel has not walled off, *including the
+Also closes an integrity window (milestone 22 (trusted init)'s precondition). Before DMA is confined
+in silicon, a malicious device can DMA over any RAM the kernel has not walled off, *including the
 initrd holding init before the kernel has loaded and measured it*. Software confinement (the shadow
 ring) governs a driver the kernel already trusts to run; it does nothing about a device corrupting
 init's bytes at rest. So verifying init (22) is only airtight once 16 removes the way to tamper with
@@ -109,9 +94,8 @@ it underneath the check.
 - **Milestone 74.** The real-cycle benches were the last of 16a, and the riscv64 number was
   taken on 2026-09-16: `cycles_per_tick 250.00`, which converts every tick-denominated board row to
   cycles. 74's own block carries the figure, the reason a round number is real here rather than the
-  emulator artifact 16a warned about, and the cycle table it unlocks. 74's aarch64 half was built 2026-09-19, and 74's own block
-  says what is left of it. (This bullet said 74 was `NOT-STARTED`,
-  which was already stale when written: its riscv64 code landed 2026-09-03.)
+  emulator artifact 16a warned about, and the cycle table it unlocks. 74's own block says what is
+  left of its aarch64 half.
 - **Milestone 143.** Carrying 16b's RISC-V IOMMU driver to silicon is that block, gated on hardware
   because no board shipping the ratified spec exists.
 - **Milestone 241.** The aarch64 board this block deferred to when milestone 25's leftover

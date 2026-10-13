@@ -1,11 +1,10 @@
 # Milestone 57 appendix: extended attributes
 
-An appendix to [milestone 57 (partitioning and formatting a real drive, and extended
-attributes)](../0057-partitioning-and-xattrs.md), moved out of that page on 2026-10-12 (UTC) under
-[§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main page is
-complete without it. This is the block's account of the extended-attribute fork, the two ways it
-could have gone, the transaction check that decided it, and what was built on 2026-07-31 and
-2026-08-01.
+An appendix to
+[milestone 57 (partitioning and formatting a real drive, and extended attributes)](../0057-partitioning-and-xattrs.md),
+under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main
+page is complete without it. This is the extended-attribute fork, the two ways it could go, the
+transaction check that decided it, and what is built.
 
 ## Decided in direction, and then in mechanism
 
@@ -17,7 +16,7 @@ the requirement adds a gap to fill rather than a comparison to redo. ext4 works 
 importing it means importing C, which §34 chose RedoxFS specifically to avoid. There is no
 `no_std` Rust ext4.
 
-Verified: RedoxFS has no xattr support. The fork is closed as of 2026-07-31: the layer
+Verified: RedoxFS has no xattr support. The fork is closed: the layer
 (§34's amendment). Reversibility decides it: `fs_proto` hides which implementation was chosen, so
 the format extension stays available later without any client changing. Attributes key on
 `TreePtr<Node>`, so rename is free and correct, which sidecars get wrong.
@@ -88,7 +87,6 @@ write into one transaction? If yes, layering is safe and much cheaper. If no, at
 file and its metadata cannot hold across a crash (§42's exact territory, and a rename must move both
 together). Then the format extension is the only correct answer.
 
-Answered yes, 2026-07-31, before the layer was built (notes/xattr.md): `fs.tx(|tx| …)` groups
-arbitrary mutations into one commit. So the file write and the attribute write land together, and a
-delete removes both or neither. Milestone 37's crash sweep then measured it rather than inheriting
-it. This paragraph read as an open question until 2026-08-03; it is not one.
+Answered yes (notes/xattr.md): `fs.tx(|tx| …)` groups arbitrary mutations into one commit. So the
+file write and the attribute write land together, and a delete removes both or neither. Milestone
+37's crash sweep measured it rather than inheriting it.

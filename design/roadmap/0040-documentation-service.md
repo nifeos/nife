@@ -5,28 +5,22 @@ built: 2026-08-26
 ---
 # 40. Documentation as a system service: searchable, rendered, and installed by packages
 
-Built, 2026-08-26. Phases 1 and 2 are built, phase 2's own known gap (ranking by raw
-occurrence count rather than document length) closed 2026-08-22, and phase 3's caretaker-narrowing
-increment is built too (DECISIONS §106, 2026-08-22): `doc <page>` renders at the prompt with no
-`| wc` in front of it, which is the milestone's own headline demonstration. Phase 3's other half,
-a graphical viewer, is struck rather than built. Traced to its origin 2026-08-26: calef's own
-quoted direction below never asked for one; a graphical viewer was the scoping lane's own addition
-("the first *application* on the display ladder that anybody would actually use"), carried forward
-unquestioned through every later revision of this file, including the one that kept the status at
-PARTIAL for it. calef, asked directly once the origin was traced: *"I don't need a graphical
-viewer."* Struck below wherever it was named; the status moves to BUILT because the milestone's own
-quoted direction, and everything a lane actually decided to build against it, is now complete.
+Built. Phases 1 and 2 are built, with search ranked by document length, and phase 3's
+caretaker-narrowing increment is built too (DECISIONS §106 (take the `terminal_sink_caretaker`
+narrowing)): `doc <page>` renders at the prompt with no `| wc` in front of it, which is the
+milestone's own headline demonstration. There is no graphical viewer, by calef's word: *"I don't
+need a graphical viewer."* His quoted direction below never asked for one.
 
 What exists: `crates/documentation` (a streaming markdown renderer, the byte layout of a search
 index, and the query that reads one, all pure and host-tested in `tests/render.rs`),
 `components/src/mdr.rs`, the viewer program, which the shell can spawn as `Prog::Mdr`, the store the
 image installs, `apropos` at the nife prompt, and `script/apropos` over the whole repository. The
 renderer was written against `line_editor`'s contract rather than `pulldown-cmark`, which the
-block's own text anticipated as the alternative and which the crate's header records. Renamed
-2026-09-13 (commit `f60c541ca`): the crate was `manual` and the program `doc`, and the phase records
-below keep the names of their time.
+block's own text anticipated as the alternative and which the crate's header records. In the phase
+records below, `manual` is the crate now called `documentation` and `doc` the program now called
+`mdr`.
 
-Phase 2 landed 2026-08-16. The store is built on the host from the `DOC_BUNDLES` table
+In phase 2 the store is built on the host from the `DOC_BUNDLES` table
 (`cargo xtask manual`), installed into the filesystem image as `doc/<bundle>/` with `doc/bundles`
 naming what is there, and searched from the prompt by `apropos <word>`, a shell builtin. The
 whole of it is gated by `script/swish-check` on both architectures: `apropos capability` names the
@@ -35,18 +29,12 @@ capabilities, which is why it may be a builtin: a searching *program* would have
 whole store to read every shard in it, which is more authority than the answer needs. See
 notes/documentation.md.
 
-What happened between phase 2 and BUILT, in order. On 2026-08-18 three defects in the record were
-fixed: a renderer bug the corpus test could not see, three `BUGS` entries in notes/manual.md (now
-notes/documentation.md) that described a system no longer there, and an index defect where the
-builder and the query disagreed about what a word is. The same index was pointed at the repository
-as `script/apropos`, for the finding of milestone 117 (the stranger test). On 2026-08-22 the one
-remaining fork, where a tail stage's output goes when the shell cannot read it, was worked through
-in notes/tail-output-narrowing.md, decided as DECISIONS §106 (take the `terminal_sink_caretaker`
-narrowing) and built the same day, and ranking was made to divide by page length.
+The same index is pointed at the repository as `script/apropos`, for the finding of milestone 117
+(the stranger test). Where a tail stage's output goes when the shell cannot read it is decided as
+DECISIONS §106, from notes/tail-output-narrowing.md.
 
-- [build-record.md](0040-documentation-service/build-record.md): the three 2026-08-18 fixes,
-  `script/apropos`, the fork as it stood, §106's decision and build with the verifying transcript,
-  the ranking change, and why the status waited until 2026-08-26.
+- [build-record.md](0040-documentation-service/build-record.md): `script/apropos`, the fork §106
+  decided, its build with the verifying transcript, and the ranking by page length.
 
 calef's direction, 2026-07-30. Markdown as the authored format, rendered for display rather than
 shown raw, searchable on the local machine, and installed *by the package that owns it*, so a
@@ -57,13 +45,6 @@ argument is written in markdown: `design/decisions/`, thirty-plus notes, this ro
 serves its own design notes, on itself, through a capability-confined viewer, is a better
 demonstration of milestone 23's component story than another synthetic test, and it costs the
 documentation nothing because it already exists.
-
-What this section used to say next, struck 2026-08-26: that this would also be "the first
-*application* on the display ladder that anybody would actually use," an unattributed sentence never
-in calef's own quoted direction above it. It is the traced origin of "phase 3 = graphical viewer,"
-which calef confirmed he never asked for once the origin was found; see the Status block. Kept here
-rather than deleted, because the sentence that quietly became a requirement is worth a reader seeing
-exactly where it entered.
 
 ## Two constraints found while scoping, both real
 
@@ -121,19 +102,16 @@ That split is the reuse judgment, and it is the same one milestone 32 made about
   headings, emphasis, lists, block quotes, code blocks, and a pager. Works on the serial console
   today and inherits the display terminal for free when 29's glyph work lands. Host-tested in
   milliseconds like every other pure-logic piece: markdown in, styled bytes out.
-- Phase 2, search. BUILT (2026-08-16). The host-built index, the shard merge, and the search
+- Phase 2, search. BUILT. The host-built index, the shard merge, and the search
   verb, which is `apropos <word>` rather than the `doc search` proposed above: `doc` is a
   program and a builtin sharing its first word would make the parse ambiguous, and `man`/`apropos`
   is the split this design already borrowed everywhere else. The merge is
   `manual::index::Ranked`, a fixed sixteen-result table with no allocator, so a shell with one
-  stack page can hold it. Ranking by document length, not just raw occurrence count, closed
-  2026-08-22: `manual::index::Page::tokens` and the `score` function above `Ranked::offer`, see
-  this page's status block.
-- Phase 3. BUILT (DECISIONS §106, 2026-08-22): `doc <page>` renders straight at the prompt,
-  with no `| wc` needed to give it a reader that is not the shell. A graphical viewer was named here
-  as the phase's other half through every revision of this file until 2026-08-26, when it was traced
-  to its origin (an unattributed sentence, not calef's own quoted direction) and struck once calef
-  confirmed he never asked for one. See the Status block.
+  stack page can hold it. Ranking is by document length, not just raw occurrence count:
+  `manual::index::Page::tokens` and the `score` function above `Ranked::offer`.
+- Phase 3. BUILT (DECISIONS §106): `doc <page>` renders straight at the prompt, with no `| wc`
+  needed to give it a reader that is not the shell. There is no graphical viewer half; see the top
+  of this block.
 
 Prior art worth reading: `man` plus `apropos` plus `mandb` for the split between format, index and
 pager, which is the architecture this proposes minus the troff. Dash/Zeal *docsets* (a bundle with its

@@ -5,9 +5,8 @@ built: 2026-07-13
 ---
 # 3. Hand out physical memory, and detect a smashed stack
 
-Backfilled 2026-08-03 from history (milestone 76). Built in `ba47a27` (2026-07-13), written up in
-`097ef52` ("including the two hours it cost"), with the initrd reservation and the bitmap's
-placement proven in `bad2e28`.
+Built in `ba47a27` (2026-07-13), written up in `097ef52`, with the initrd reservation and the
+bitmap's placement proven in `bad2e28`.
 
 The kernel reads its memory map from the device tree instead of a constant, and hands out 4 KiB
 frames. The commit records the two decisions that still describe the allocator: the bitmap is

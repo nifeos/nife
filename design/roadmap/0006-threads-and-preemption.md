@@ -5,9 +5,9 @@ built: 2026-07-14
 ---
 # 6. Threads, the context switch, and preemption
 
-Backfilled 2026-08-03 from history (milestone 76). Built in `782d4bb` (2026-07-14): two threads
-that never yield, 48 preemptions in half a second, "neither asked to be interrupted; both were."
-The argument from DECISIONS §5 (preemptive threads with real stacks), executable.
+Built in `782d4bb` (2026-07-14): two threads that never yield, 48 preemptions in half a second,
+"neither asked to be interrupted; both were." The argument from DECISIONS §5 (preemptive threads
+with real stacks), executable.
 
 What the commit records that still shapes the kernel:
 

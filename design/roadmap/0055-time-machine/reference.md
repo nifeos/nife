@@ -1,15 +1,11 @@
-# Milestone 55 appendix: the reference implementation and the original framing
+# Milestone 55 appendix: the reference implementation and what it requires
 
-An appendix to [milestone 55 (Time Machine: SMB3 with Apple's extensions, and
-mDNS)](../0055-time-machine.md), moved out of that page on 2026-10-12 (UTC) under [§212 (a prose
-budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main page is complete
-without it. This is the block's original framing, from 2026-07-30 onward: the router whose
-configuration became the requirement list, what that list implied, and the corrections each section
-picked up as the tree moved.
-
-The block's first summary read: the actual goal, and probably the largest single piece of work in the
-project. It was recorded at full size deliberately, because the failure mode here is starting it while
-imagining it is "a file server".
+An appendix to
+[milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)](../0055-time-machine.md),
+under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main
+page is complete without it. It holds the router whose configuration became the requirement list,
+and what that list implies. The work is recorded at full size deliberately, because the failure mode
+here is starting it while imagining it is "a file server".
 
 ## The reference implementation is known, and calef supplied its exact configuration
 
@@ -36,20 +32,15 @@ That is a measured feature list rather than a guess, and it decodes into these r
 | `fruit:posix_rename = yes` | Rename over an open file, POSIX semantics |
 | `catia` | Character mapping for names macOS permits and the backing filesystem does not |
 
-## The discovery that changes scope: we have no extended attributes at all
+## Extended attributes, and the SMB half that is still missing
 
-Stale as of 2026-08-17, and left standing because the argument below is still the argument.
 Milestone 57 (partitioning and formatting a real drive, and extended attributes) built xattrs into
-`fs_proto` (`GETXATTR`/`SETXATTR`/`LISTXATTR`/`REMOVEXATTR`, ops 14-17), the FS server and the store.
-So the sentence this section is named after is no longer true, and the choice it frames is no longer
-a stack-deep one. What is still missing is the SMB half: alternate data streams. That is a stream
-name in a CREATE path, `FileStreamInformation` in `QUERY_INFO`, and `FILE_NAMED_STREAMS` in the
-volume attributes. The stream-versus-sidecar decision was still open then, and still a decision about
-what lands on disk; §99 (where Apple's metadata lands: stream or sidecar) later answered it.
-
-Verified, not assumed (when this was written): no xattr support in `fs_proto`, in the FS server, or
-in vendored RedoxFS. `streams_xattr` stores Apple metadata in NTFS-style alternate data streams
-backed by filesystem xattrs, and we had neither layer.
+`fs_proto` (`GETXATTR`/`SETXATTR`/`LISTXATTR`/`REMOVEXATTR`, ops 14-17), the FS server and the
+store, so the choice below is not a stack-deep one. What is missing is the SMB half: alternate data
+streams. That is a stream name in a CREATE path, `FileStreamInformation` in `QUERY_INFO`, and
+`FILE_NAMED_STREAMS` in the volume attributes. Where the metadata lands, stream or sidecar, is §99
+(where Apple's metadata lands: stream or sidecar). `streams_xattr` stores Apple metadata in
+NTFS-style alternate data streams backed by filesystem xattrs.
 
 There is an escape, and it should be chosen deliberately rather than discovered late. Samba's
 `fruit:metadata` also accepts `netatalk`, which keeps the same metadata in AppleDouble sidecar files
@@ -57,11 +48,10 @@ There is an escape, and it should be chosen deliberately rather than discovered 
 xattrs. So this is a design choice between adding xattrs down the whole stack (protocol, FS server,
 RedoxFS) and accepting sidecar files. It is not the hard blocker it first appears to be.
 
-Corrected 2026-08-18, and the correction is about the reference rather than about us. The router's
-stanza sets `fruit:metadata = stream` and does not set `fruit:resource`, whose default is `file`,
-meaning a `._` AppleDouble sidecar. So the working reference implementation is a hybrid: Finder
-metadata in an extended attribute, resource forks in sidecars on the disk. That was read off Samba's
-own manual page rather than recalled. §99 carries this and the rest of the evidence.
+The router's stanza sets `fruit:metadata = stream` and does not set `fruit:resource`, whose default
+is `file`, meaning a `._` AppleDouble sidecar. So the working reference implementation is a hybrid:
+Finder metadata in an extended attribute, resource forks in sidecars on the disk. That was read off
+Samba's own manual page rather than recalled. §99 carries this and the rest of the evidence.
 
 ## `fruit:posix_rename` is not work at all
 
@@ -70,19 +60,17 @@ the setting as rename over an open file. That is precisely the territory of §42
 declares what it offers and must be truthful) and of the `mv` section of milestone 47 (navigation and
 naming).
 
-Corrected again, 2026-08-17. Samba's `fruit:posix_rename` switches on two behaviors:
+Samba's `fruit:posix_rename` switches on two behaviors:
 
 - renaming onto an existing name, which is already `fs_proto::fs::RENAME`'s documented semantics;
 - renaming a file that is open, which cannot fail here, because the SMB server consults
   `ShareAccess` nowhere and has neither oplocks nor leases.
 
-So there is no sharing violation for POSIX semantics to be an exception to. The section's remaining
-value is the correction below, and §42's atomicity split, which is still exactly what Time Machine's
-durability expectations will test.
+So there is no sharing violation for POSIX semantics to be an exception to. What matters is
+`RENAME` itself, below, and §42's atomicity split, which is exactly what Time Machine's durability
+expectations will test.
 
-Corrected 2026-08-14. This paragraph said `fs_proto` had "no `RENAME` verb at all" and that the PAL
-answered `Unsupported`, and called that a hard dependency. Both halves were wrong by the time anyone
-read them. `fs_proto::fs::RENAME` is op 11, with its rights and its atomicity documented. The PAL's
+`fs_proto::fs::RENAME` is op 11, with its rights and its atomicity documented. The PAL's
 `rename` packs both names into the shared page and issues the request. It returns
 `unsupported_err()` only when no filesystem is granted at all, which is equally true of `open`.
 
@@ -93,9 +81,8 @@ concurrency-versus-crash atomicity split was always right.
 
 ## Three users, and this is where the thesis gets a concrete demonstration
 
-calef's setup served three macOS users' Time Machine shares when this was written. As of 2026-08-15
-it serves two (measured: the router's `_adisk._tcp` TXT advertises two disks, one per user). The
-third user moved to Windows, whose backups leave Time Machine entirely.
+calef's setup serves two macOS users' Time Machine shares (measured 2026-08-15: the router's
+`_adisk._tcp` TXT advertises two disks, one per user).
 
 One partition and one share each, and privacy between users rests on Samba correctly
 honoring a "Read-Write User = alice" line in a config file. A Samba bug, a misedit, or a
@@ -124,9 +111,9 @@ So this milestone carries two protocols: SMB3 on TCP, and mDNS/DNS-SD on UDP mul
 convention and the probe-before-claim rules. Check whether smoltcp gives us multicast group
 membership before estimating it.
 
-One structural detail from the measurement: there is one `_adisk._tcp` instance for three shares.
+One structural detail from the measurement: there is one `_adisk._tcp` instance for all the shares.
 The advertisement is per server, with the disks enumerated inside its TXT record (`dk0=…`, `dk1=…`),
-not one announcement per share. Emitting three would be wrong.
+not one announcement per share. Emitting one per share would be wrong.
 
 Three service types are in scope:
 
@@ -139,33 +126,7 @@ Still to capture, and free: `dns-sd -L GL-BE9300 _adisk._tcp local` prints the a
 flag values. Those bytes are the specification for what we must emit, and having the working ones
 beats deriving them from the RFC.
 
-## The remaining scope risk is still worth measuring directly
-
-Superseded 2026-08-22, and left standing because it shows the delta between assumption and
-measurement. This section is the milestone's original framing, written before the capture it asks for
-had happened. Every capture it calls for has since happened:
-
-- the router is confirmed full Samba with `vfs_fruit` (above);
-- the mDNS records are captured (notes/mdns.md);
-- the SMB3 subset question it poses at the end is the one decided 2026-08-15.
-
-Read it as the record of what was unknown, not as a live task list. [path-to-built.md](path-to-built.md)
-is the current one.
-
-calef's router serves Time Machine over SMB today (2026-07-30). That is a working reference
-implementation on his own network, so the requirement list below stops being something to guess at.
-The first task of this milestone needs no board and no code: capture the SMB session between the Mac
-and the router and read off the truth. The negotiated dialect, the capability bits, which create
-contexts actually appear, what the mDNS records advertise, and which operations Time Machine really
-issues. That converts this milestone's largest risk from unknown scope into a measured feature list.
-It is exactly the "measure, do not argue" rule applied to a requirement rather than a benchmark.
-
-Worth establishing what the router runs, because it bounds the answer. If it is full Samba with
-`vfs_fruit`, the reference is large. If it is `ksmbd` or another minimal server, then a much smaller
-implementation is already known to satisfy Time Machine, and that is the target to match.
-
-What Time Machine over a network is believed to require (from knowledge, superseded by the capture
-above the moment it exists):
+## What Time Machine over a network requires
 
 - SMB3, not AFP. Apple deprecated and removed AFP serving; SMB is the supported path.
 - Apple's SMB extensions, the `AAPL` create context, which is what Samba implements as `vfs_fruit`.
@@ -175,21 +136,16 @@ above the moment it exists):
 - Durability semantics macOS trusts. Time Machine writes a sparse bundle and depends on the server
   honoring flushes. This is the same clause §42 makes central, arriving as a compatibility
   requirement: a server that lies about durability produces backups that cannot be restored. Built
-  2026-08-18 ([what-landed.md](what-landed.md)).
+  ([what-landed.md](what-landed.md)).
 
-Considered and rejected: porting Samba over the §31 (the foreign-language seam) C seam. It is
-superficially the right move, since we already confine a component we did not write (RedoxFS) and the
-seam exists for exactly this. It does not survive contact. Samba assumes `fork`, threads, and an
-enormous POSIX surface, and milestone 52 (subshells without `fork`) records that we have no `fork`
-and that getting one is not cheap. Worth stating, because it is an honest limit of the C-seam story
-rather than a gap nobody noticed.
+Not a port of Samba over the §31 (the foreign-language seam) C seam, because it does not survive
+contact. It is superficially the right move, since we already confine a component we did not write
+(RedoxFS) and the seam exists for exactly this. But Samba assumes `fork`, threads, and an enormous
+POSIX surface, and milestone 52 (subshells without `fork`) records that we have no `fork` and that
+getting one is not cheap. That is an honest limit of the C-seam story rather than a gap nobody
+noticed.
 
-~~The scoping decision to make first, before any code: whether to implement the subset of SMB3 that
-Time Machine needs, or a more general SMB3 server.~~ Decided 2026-08-15: the subset. The general
-server is the question of milestone 137 (the share as a Mac file server) to reopen if it ever wants
-one, not this milestone's.
-
-~~Effort: not estimated, and deliberately so.~~ Superseded 2026-08-22. Effort from here to BUILT was
-then bounded rather than open: it is the hardware gate of milestone 53 (the board's own
-peripherals), Steps A through C in [path-to-built.md](path-to-built.md), not an unscoped rewrite.
-That scoping pass is the re-scope this note asked for.
+Decided 2026-08-15: implement the subset of SMB3 that Time Machine needs, not a general SMB3 server.
+The general server is the question of milestone 137 (the share as a Mac file server) to reopen if it
+ever wants one. Effort to BUILT is bounded by the hardware gate of milestone 53 (the board's own
+peripherals), Steps A through C in [path-to-built.md](path-to-built.md).

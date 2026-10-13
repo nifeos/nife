@@ -11,12 +11,10 @@ carries the working its prose budget has no room for.
 - [`bugs-found.md`](bugs-found.md): two resource leaks and two boot hangs found while building it,
   the boot's build order, and why the construction budget and the capability table were raised.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `build` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  parent's "What is built" and its per-piece BUGS entries. calef names files.
-- `bugs-found` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the leaks and hangs the parent's opening and BUGS recorded, and the budget raise. calef names
-  files.
+- `build` Name: provisional. For the parent's "What is built" and its per-piece BUGS entries. calef
+  names files.
+- `bugs-found` Name: provisional. For the leaks and hangs the parent's opening and BUGS recorded,
+  and the budget raise. calef names files.

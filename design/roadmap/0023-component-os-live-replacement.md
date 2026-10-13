@@ -11,10 +11,9 @@ needs_person: no
 
 Every residual this block named is built, and so are the advisory warning (§231) and the live
 swap of `line_editor` (§232 (the line editor swap contract), with a terminal supervisor). What keeps
-it PARTIAL, as of 2026-09-27: the installer does not yet ask the terminal to swap (proposed, an
-architect's), `display_terminal` and `compositor` are not swapped, and no supervisor yet ends a hung
-incumbent, although the kernel can (corrected 2026-10-08: milestone 133 answered that on 2026-09-04,
-and this block said otherwise until today).
+it PARTIAL: the installer does not yet ask the terminal to swap (proposed, an architect's),
+`display_terminal` and `compositor` are not swapped, and no supervisor yet ends a hung incumbent,
+although the kernel can (milestone 133 (ending a permanently blocked thread, and deciding who may)).
 
 ## The idea
 
@@ -108,9 +107,7 @@ build in both instances and sequenced by the drain. And §209 needs a refusal it
 supervisor that routes no handoff page is refused a component that declares one, since wiring it
 anyway is a kill-and-replace that looks like a successful swap.
 
-§116 (live component state handoff is declined, for want of a customer), which §209 supersedes,
-declined on 2026-08-23 because no stateful component existed. `redoxfs_server`'s first commit is
-dated the next day.
+§209 replaces §116 (live component state handoff is declined, for want of a customer).
 
 ### The unwarned dependent, measured (2026-09-26)
 
@@ -132,19 +129,16 @@ warning is a `CALL`. notes/non-cooperative-fallback.md.
   three architectures) was RECORDED rather than a blocker. No swap supervisor uses it yet:
   `components/src/swapper.rs` and `terminal_supervisor.rs` hold no deadline wait (checked
   2026-10-03), so nothing notices a hang on its own yet: `ROLE_HUNG`'s wedge announces itself.
-- **Done.** Answered elsewhere, and this line was wrong for a month. What may be done to a
-  component that never cooperates? Its region holder `DESTROY`s it. Milestone 133 (ending a
-  permanently blocked thread, and deciding who may) was ruled by calef on 2026-09-03 (proposal A).
-  Built 2026-09-04, it finishes a `Blocked` resident in place without waking it
-  (`sched::finish_blocked_resident`). Milestone 254 (a caller stranded by a server that died) landed
-  the same day. It wakes every caller such a server held a reply capability for with
-  `abi::Error::Gone` (`sched::strand_callers_of`). Each is tested on all three architectures: 133 in
+- **Done.** What may be done to a component that never cooperates? Its region holder `DESTROY`s it.
+  Milestone 133 (ending a permanently blocked thread, and deciding who may), ruled by calef on
+  2026-09-03 (proposal A), finishes a `Blocked` resident in place without waking it
+  (`sched::finish_blocked_resident`). Milestone 254 (a caller stranded by a server that died) wakes
+  every caller such a server held a reply capability for with `abi::Error::Gone`
+  (`sched::strand_callers_of`). Each is tested on all three architectures: 133 in
   `system_tests/src/user/force_kill_tests.rs`, 254 in `kernel/src/sched.rs`. Their composition is
-  argued in 133's block and run nowhere. By the code, a hang costs no unreclaimable region. The
-  "Checked 2026-09-26" this line carried was a check of notes/hung-component.md, not of `sched.rs`.
-  A holder of only the supervision endpoint still cannot end a child. That is 133's refused proposal
-  B, open behind a customer, and every supervisor here is also its child's builder. Found 2026-10-08
-  by lane/blocked-thread-fork. It was briefed to open this as a fresh fork, and wrote none.
+  argued in 133's block and run nowhere. By the code, a hang costs no unreclaimable region. A holder
+  of only the supervision endpoint still cannot end a child. That is 133's refused proposal B, open
+  behind a customer, and every supervisor here is also its child's builder.
 - **Outstanding.** No supervisor demonstrates it. `swapper`'s `ROLE_HUNG` deletes the incumbent's
   region capability in `start_child`. It frees the stranded client by a cooperative `NOTE_RELEASE`.
   The task: keep the incumbent's region and `DESTROY` it after `STARTED`, with no release. Assert

@@ -5,13 +5,13 @@ built: 2026-08-17
 ---
 # 31. A capability shell: designation is authorization
 
-Closed 2026-08-17 by the lane that built phase 3's last item, init building a
-`fs_subtree_caretaker` per grant. The gate is `script/swish-check` on both ISAs: it types `caps rm
-rmtree/rm-solo`, `rm -v rmtree/rm-solo` and `ls rmtree | wc` at the real prompt, so the authority is
-previewed, the name the command line designated is removed, and the two names beside it inside the
-same capability are still there. `rm gate.txt` beside them is the one grant shape that is still a
-refusal, and it is a refusal about what a name *is* rather than about a missing feature; see "The two
-shapes a grant cannot take" below, which names the design fork it waits on.
+Built. Phase 3's last item is init building a `fs_subtree_caretaker` per grant. The gate is
+`script/swish-check` on both ISAs: it types `caps rm rmtree/rm-solo`, `rm -v rmtree/rm-solo` and
+`ls rmtree | wc` at the real prompt, so the authority is previewed, the name the command line
+designated is removed, and the two names beside it inside the same capability are still there.
+`rm gate.txt` beside them is the one grant shape that is still a refusal, and it is a refusal about
+what a name *is* rather than about a missing feature; see "The two shapes a grant cannot take"
+below, which names the design fork it waits on.
 
 (The Gate paragraph that stood here said `NONE`, and then named the one remaining item; a BUILT
 milestone gates nothing, so it is gone rather than stale.)
@@ -51,49 +51,31 @@ reports a bitmap of what got through. Read-only grant: every bit clear, against 
 that exists and that the caretaker could open. Read/write grant, same shape: the two write bits set
 and everything else clear. A caretaker that refused every request passes the first and fails the
 second. Phase 2 also landed the contract's `CREATE` and `TRUNCATE` (so `File::create` and
-`std::fs::write` work rather than returning `Unsupported`), a name check that was previously true
-only by the absence of a path walker, and a measured stack for the FS server after a 528-byte
+`std::fs::write` work rather than returning `Unsupported`), a name check that does not rely on the
+absence of a path walker, and a measured stack for the FS server after a 528-byte
 overflow presented as a mystery 900-second test.
 
-Why the status was PARTIAL, and the paragraph that was true until 2026-08-16. It read: the
-mechanism is complete and gated on both ISAs, but this milestone's headline is about *the one interface
-a human touches*, and at that interface `wc report.txt` is still a refusal, because the boot that
-starts the interactive shell wires no FS service and it holds no directory to narrow.
+This milestone's headline is about *the one interface a human touches*, and it is gated at the real
+prompt on both ISAs. `script/swish-check` (`xtask/src/swish_check/`) runs `wc` on `gate.txt` at the
+interactive shell, beside a pipeline into `wc`, `caps` printing the endowment, and bare `wc`
+refused as the negative control. That is the claim stated as a pair rather than asserted. The
+shell's `holdings()` reports a directory, the shell's boot path grants an FS service on both ISAs,
+and the interactive runner carries a RedoxFS disk.
 
-That is no longer true, and the headline is now gated at the real prompt on both ISAs.
-`xtask/src/main.rs:5368` runs `wc gate.txt` at the interactive shell and expects `2 4 24`, with
-`wc gate.txt | wc` beside it, `caps wc gate.txt` printing the endowment, and bare `wc` refused as the
-negative control, which is the claim stated as a pair rather than asserted. `holdings()` is flipped
-(`components/src/swish.rs:128`, `dir: nav.dir.is_some()`), the kernel's shell boot path grants an FS service
-on both ISAs (`kernel/src/user.rs:1351` for riscv64, `fixtures/src/hello.rs:390` for aarch64), and the
-interactive runner carries a RedoxFS disk (`xtask/src/main.rs:5646`). The harness that was said not to
-exist is `script/swish-check`, which is the gate for `user/src/system_initializer.rs` and runs both
-legs.
+Phase 3 is built on both ISAs. Init keeps the file service for the life of the boot (two of its
+sixteen cspace slots, taking a directory-granted spawn's peak to fifteen). It builds a
+`fs_subtree_caretaker` per grant out of the client's own region, which is DECISIONS §92 (a caretaker
+is supervised by the client it serves) read through §40 (a supervisor's death is its subtree's
+death)'s mechanism. A caretaker's serve loop never returns, so one built in a region of its own
+never comes home, and §16 (object revocation)'s LIFO rule then pins the region above it too.
 
-**Why this block did not say so for twelve days**, which is worth recording because it is the §76
-defect class arriving sideways rather than by neglect: the work landed under **milestone 50**, whose
-commit `43a2967e` says it in its own message, "Milestone 31 phase 3 is 'wire an FS service into the
-interactive boot and flip holdings()', and milestone 50 did both. Nothing read the result." A
-milestone's status is maintained by its own lane, and nothing maintains it when another lane finishes
-its work. Found 2026-08-17 by the status-accuracy sweep.
-
-Phase 3 built (both ISAs), 2026-08-17: init builds a `fs_subtree_caretaker` per grant. Init used
-to delete the file service during the boot, with a comment in `crates/system_initializer` saying what
-would have to change; the shell's copy of that endpoint carries no `GRANT`, so the shell held nothing
-it could hand a caretaker and `rm` was a refusal at the prompt for six weeks. Init now keeps the
-service for the life of the boot (two of its sixteen cspace slots, taking a directory-granted spawn's
-peak to fifteen) and builds a caretaker per grant out of the client's own region, which is
-DECISIONS §92 read through §40's mechanism: a caretaker's serve loop never returns, so one built in a
-region of its own never comes home and §16's LIFO rule then pins the region above it too.
-
-Three things fell out that were latent defects rather than new work, and each is worth naming because
-each was invisible until something real ran. `rm` declared the sink contract and never sent its
-end-of-stream, so `rm -rv logs | wc` had never been expressible. `fs_subtree_caretaker` panicked on a
-refused descent, which cost a kernel test a watchdog and would have cost the prompt the machine, since
-init is the waiter and has no second thread. And `job_undertaker` trapped on a refused reclaim, which
-is exactly what the *first* reclaim of a two-process region is by construction: the endpoint sweep
-wakes the caretaker so it can be collected, and a thread that can be scheduled is refused with §16's
-kill armed. It now yields and retries, bounded, and still traps at the end so a real leak stays loud.
+Three behaviors keep that working. `rm` declares the sink contract and sends its end-of-stream, so
+`rm -rv logs | wc` is expressible. `fs_subtree_caretaker` refuses a refused descent rather than
+panicking, which matters because init is the waiter and has no second thread. And `job_undertaker`
+yields and retries a refused reclaim, bounded, and still traps at the end so a real leak stays
+loud. A refused reclaim is exactly what the *first* reclaim of a two-process region is by
+construction: the endpoint sweep wakes the caretaker so it can be collected, and a thread that can
+be scheduled is refused with §16's kill armed.
 
 The two shapes a grant cannot take, both refused at the prompt with nothing spawned, and neither
 is a permission:
@@ -131,21 +113,17 @@ what exists (program spawns, endpoints, frames, untyped, device caps), and per-f
 arrive with milestone 32's FS server, whose handles must be capability-shaped from birth partly
 BECAUSE this milestone will point at them.
 
-Prior art and reuse. Designs only; nothing portable. SHILL (OSDI 2014: capability
-contracts for scripts, on Capsicum) is the academic anchor; Mark Miller's object-capability
-line (E, CapDesk, Polaris) supplies the organizing principle; Plash is the Linux attempt worth
-reading as the mistake catalog. Feeds 23 and 22 (shrinking ambient authority, met at the human
-layer); sits behind 28's terminal contract. Effort: 4 lanes built (the grant expression; then CREATE/TRUNCATE and per-file grants; then
-phase 3's larger half landing free under milestone 50; then init building the caretaker per grant,
-2026-08-17). Gating the interactive boot, which this line long named as the remaining cost, turned
-out to be `script/swish-check` and already built.
+Prior art and reuse. Designs only; nothing portable. SHILL (OSDI 2014: capability contracts for
+scripts, on Capsicum) is the academic anchor; Mark Miller's object-capability line (E, CapDesk,
+Polaris) supplies the organizing principle; Plash is the Linux attempt worth reading as the mistake
+catalog. Feeds 23 and 22 (shrinking ambient authority, met at the human layer); sits behind 28's
+terminal contract. Effort: built in four lanes. The interactive boot's gate is `script/swish-check`.
 
 ## Follow-on
 
-- **Milestone 47.** A grant of more than one name. This block could only build one subtree caretaker
-  per grant, so `caps rm globmany/m-*.txt` previewed an authority nothing could deliver. Milestone
-  47's globbing lane built `components/src/fs_nameset_caretaker.rs`, which takes its set in a frame rather
-  than in argument words; the reasoning is design/decisions/0052-nameset-glob-grant.md.
+- **Milestone 47.** A grant of more than one name is `components/src/fs_nameset_caretaker.rs`, from
+  milestone 47 (navigation and naming)'s globbing, which takes its set in a frame rather than in
+  argument words; the reasoning is design/decisions/0052-nameset-glob-grant.md.
 - **Recorded.** `notes/dir-capability.md` carries it beside the feature: a grant more than one level
   down is still not delivered, because init builds one caretaker per grant and that shape is a chain
   of them, so removing a file two levels down is a refusal at the prompt.
@@ -154,10 +132,9 @@ out to be `script/swish-check` and already built.
   instead, because it makes the claim checkable from outside: the confined program holds an endpoint
   to the caretaker and nothing that names the FS server, so "it cannot reach a second file" is a
   property of its cspace rather than of a branch it is trusted to take.
-- **Recorded.** `design/decisions/0076-roadmap-status-versus-tree.md` is the standing record of the
-  defect class this block met: its own status sat wrong for twelve days because phase 3's larger
-  half landed under milestone 50 and nothing read the result. A milestone's status is maintained by
-  its own lane, and nothing maintains it when another lane finishes its work.
+- **Recorded.** `design/decisions/0076-roadmap-status-versus-tree.md` is the standing record of a
+  defect class this block met: a milestone's status is maintained by its own lane, and nothing
+  maintains it when another lane finishes its work.
 - **Milestone 328.** Narrowing a grant on
   the **root** of the shell's namespace, so that `rm gate.txt`
   at the top prompt stops being a refusal when `rm rmtree/rm-solo` works. Both permanent answers are

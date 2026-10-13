@@ -10,13 +10,10 @@ carries the build accounts its prose budget has no room for.
 - [`host-recovery.md`](host-recovery.md): reading the drive from a Mac or a Linux host, and the
   decision against filesystem-level encryption on the backup volume.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
-beside `design/roadmap/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default,
+`design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `extended-attributes` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  after the parent's "Extended attributes: decided in direction, open in mechanism". calef names
-  files.
-- `host-recovery` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  for the parent's "Reading the drive from a MacBook or a Linux host" and "Decided: no
-  filesystem-level encryption on the backup volume". calef names files.
+- `extended-attributes` Name: provisional. After the parent's "Extended attributes: decided in
+  direction, open in mechanism". calef names files.
+- `host-recovery` Name: provisional. For the parent's "Reading the drive from a MacBook or a Linux
+  host" and "Decided: no filesystem-level encryption on the backup volume". calef names files.

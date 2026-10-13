@@ -5,8 +5,7 @@ built: 2026-07-12
 ---
 # 1. Boot to Rust on QEMU `virt`, and print to the PL011 UART
 
-Backfilled 2026-08-03 from the first day's history (milestone 76). This is a record of what the
-commits show, not a reconstruction of what anyone remembers.
+This block is a record of what the commits show, not a reconstruction of what anyone remembers.
 
 The original plan is the first commit, `b7f10e7` (2026-07-12), whose `## Milestones` table in
 DECISIONS.md carried this as "Boot to Rust on QEMU `virt`, print to UART. What it teaches:

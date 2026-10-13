@@ -5,12 +5,12 @@ built: 2026-07-14
 ---
 # 7. User mode: EL0, capabilities, the ELF loader, and IPC
 
-Backfilled 2026-08-03 from history (milestone 76). The densest citation target in the tree (79
-references when the backfill was written), and the one early milestone whose outcome is a
-decision as much as code: DECISIONS §10, capability-based and microkernel-shaped, recorded in
-`491f23d` (2026-07-14) at the decision point §8 had deliberately parked. The original plan row
-called this "the actual OS boundary. Decision point," and the deferral held: the decision was
-made before any of milestone 7 was written, not hacked in mid-syscall.
+The one early milestone whose outcome is a decision as much as code: DECISIONS §10 (process model:
+capability-based, microkernel), capability-based and microkernel-shaped, recorded in `491f23d`
+(2026-07-14) at the decision point §8 (process model / syscall ABI: deferred to a hard decision
+point) had deliberately parked. The original plan row called this "the actual OS boundary. Decision
+point," and the deferral held: the decision was made before any of milestone 7 was written, not
+hacked in mid-syscall.
 
 The build then landed as lettered commits, same day:
 

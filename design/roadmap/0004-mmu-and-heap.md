@@ -5,8 +5,7 @@ built: 2026-07-13
 ---
 # 4. MMU on: page tables, the kernel heap, the high half
 
-Backfilled 2026-08-03 from history (milestone 76). The one early milestone that landed as named
-steps rather than one commit, all on 2026-07-13:
+The one early milestone that landed as named steps rather than one commit, all on 2026-07-13:
 
 - `fbf5ed6` "step 1": aarch64 page tables, host-tested, which is the first appearance of the
   method the whole project now runs on (pure logic in a host-testable crate, the machine gets the
@@ -28,7 +27,7 @@ whole host core, the finding CLAUDE.md still carries.
 
 ## Follow-on
 
-- **None.** Backfilled history. Everything it names either landed the same day (the TLB proof, the
+- **None.** Everything it names either landed the same day (the TLB proof, the
   slab allocator, the `wfi` fix) or was undone on purpose by milestone 14, and the block leaves no
   hazard, phase or fork open.
 

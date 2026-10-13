@@ -72,9 +72,8 @@ while imagining it is "a file server".
 | 2026-08-19 | | throughput: the 64 KiB transfer reaches the mount, write 4.8x (0.065 to 0.31 MiB/s), read 2.4x (0.15 to 0.36) |
 
 The `fs_proto` xattr layer (ops 14-17) came from milestone 57 (partitioning and formatting a real
-drive, and extended attributes), not from this block. Two items the block had treated as blockers
-turned out not to be: `RENAME` already existed (corrected 2026-08-14), and `fruit:posix_rename`
-needs no work (corrected 2026-08-17).
+drive, and extended attributes), not from this block. Two apparent blockers are not: `RENAME`
+exists, and `fruit:posix_rename` needs no work.
 
 ### What stood open when the premise was retired
 
@@ -109,9 +108,8 @@ family's real backup target.
 
 ## Follow-on
 
-- **Milestone 137.** The Mac file-server workload this block split out on 2026-08-18. Its subject
-  went with the SMB implementation on 2026-08-30 and its own index row says the block needs
-  retiring, which is an architect's call.
+- **Milestone 137.** The Mac file-server workload. Its subject went with the SMB implementation, and
+  its own index row says the block needs retiring, which is an architect's call.
 - **Recorded.** `notes/smb.md` keeps everything the removal took, including the two things this
   milestone most wanted and never got: no Mac ever saw the `AAPL` answer, and nobody proved macOS
   would offer the share as a backup destination. Those needed the kernel on hardware on a real

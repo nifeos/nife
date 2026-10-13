@@ -5,11 +5,11 @@ built: 2026-07-14
 ---
 # 10. A shell at EL0, and processes spawned on command
 
-Backfilled 2026-08-03 from history (milestone 76). Built in `61ed8c2` (2026-07-14), the rung the
-original table called "proof the whole stack works," and the commit claims exactly that: four
-processes and the channels between them, an input driver owning UART RX, the shell, a console
-server, and a worker spawned on demand through a process service. "Everything the user sees is a
-conversation between processes, and the kernel is a message router that touches none of it."
+Built in `61ed8c2` (2026-07-14). The original table called this rung "proof the whole stack
+works," and the commit claims exactly that: four processes and the channels between them, an input driver
+owning UART RX, the shell, a console server, and a worker spawned on demand through a process
+service. "Everything the user sees is a conversation between processes, and the kernel is a message
+router that touches none of it."
 
 The revised row (`491f23d`) reads "A process server, and a shell that spawns binaries," which
 absorbed the original milestone 9 ("Processes: spawn, exit, wait") when the ladder was rewritten

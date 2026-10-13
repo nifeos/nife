@@ -5,7 +5,7 @@ built: 2026-07-14
 ---
 # 9. A virtio-blk driver at EL0, and an interrupt becomes a message
 
-Backfilled 2026-08-03 from history (milestone 76). Two commits on 2026-07-14:
+Two commits on 2026-07-14:
 
 - `0eb187c` **9a**: an interrupt becomes a message, "the foundational piece of milestone 9, and
   the thing a userspace driver cannot live without." A routed INTID is masked at the GIC the

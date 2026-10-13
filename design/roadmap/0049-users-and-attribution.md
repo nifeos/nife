@@ -34,11 +34,11 @@ Two appendices carry the working this page has no room for. Neither is needed to
 - [`bugs-found.md`](0049-users-and-attribution/bugs-found.md): the resource leaks and boot hangs
   found while building it, each of which outlives `login`, and why two kernel limits were raised.
 
-A named prerequisite for milestone 152 (durable delegation), minted 2026-08-22: a scheduled job
-registered by a specific user (milestone 129 (scheduled execution)'s #387) needs a durable principal to be supervised by.
-Login-produces-capabilities is where that principal first exists. 152 gates on this milestone rather
-than guessing at identity itself. It inherits §109 (attribution is a channel property)'s
-channel-shaped answer to how attribution composes with its own per-user sessions.
+A named prerequisite for milestone 152 (durable delegation): a scheduled job registered by a
+specific user (milestone 129 (scheduled execution)'s #387) needs a durable principal to be
+supervised by. Login-produces-capabilities is where that principal first exists. 152 gates on this
+milestone rather than guessing at identity itself. It inherits §109 (attribution is a channel
+property)'s channel-shaped answer to how attribution composes with its own per-user sessions.
 
 ## In brief
 
@@ -101,9 +101,8 @@ Unix login authenticates and then mutates an identity field. Here it authenticat
 over a capability set: a root directory, a budget, a terminal. That is a better failure mode as
 well as a cleaner model. A compromised login service leaks *what it can grant*, not the ability to
 become anyone. It is the powerbox pattern with the human at one end. It needs a real answer to a
-question we never faced before: who gets which capabilities at startup. That used to be a
-build-time fact baked into `crates/system_initializer`'s boot wiring. For the one login path this
-milestone builds, it is now decided at run time.
+question: who gets which capabilities at startup. For the one login path this milestone builds,
+that is decided at run time rather than baked into `crates/system_initializer`'s boot wiring.
 
 ## What is built
 
@@ -181,22 +180,22 @@ Named here as well as at the component, so a reader meets the scope where they m
   today's single-tenant boot: `LOGOUT` is unauthenticated, and nothing checks the liveness of an
   abandoned holder. Real multiplexing stays unbuilt on purpose; the narrow shape commits to nothing
   the wider one would later have to unwind.
-- Resolved, 2026-08-27: the interactive boot. All four services are built by `boot` on both ISAs,
-  with a generated demo password. The three-step plan and the order of its builds are in
+- Resolved: the interactive boot. All four services are built by `boot` on both ISAs, with a
+  generated demo password. The three-step plan and the order of its builds are in
   [`build.md`](0049-users-and-attribution/build.md#wiring-the-interactive-boot). The two hangs found
   on the way, and the budget and table raises, are in
-  [`bugs-found.md`](0049-users-and-attribution/bugs-found.md). `audit_sink`'s doc is now
-  `components/src/login_audit_receiver.rs` (renamed 2026-09-24).
-- Resolved, 2026-08-24: the caretaker load is measured. `login` used to load
-  `fs_subtree_caretaker` by name with no check, against milestone 104 (the measurement continues past init)'s
-  discipline. It now verifies against the same measurement table init uses, once at startup. A
-  refusal answers every login `DENIED` rather than crashing the service.
-- Resolved, 2026-08-23: logout reclaims a session. A caretaker's construction memory used to be spent
-  forever. The client now gets a fourth capability, a logout ticket, and destroying it reclaims the
-  caretaker. The order the client destroys its two regions in matters.
-- Resolved: channel per client. `login`'s front door used to be one endpoint pair sharing one staging
-  page across every client. Two callers reaching it together can now contend only for service order,
-  never for each other's secret. A channel, answered or not, is never reclaimed in this slice.
+  [`bugs-found.md`](0049-users-and-attribution/bugs-found.md). The audit receiver is
+  `components/src/login_audit_receiver.rs`.
+- Resolved: the caretaker load is measured. `login` verifies `fs_subtree_caretaker` against the same
+  measurement table init uses, once at startup, per milestone 104 (the measurement continues past
+  init)'s discipline. A refusal answers every login `DENIED` rather than crashing the service.
+- Resolved: logout reclaims a session. The client gets a fourth capability, a logout ticket, and
+  destroying it reclaims the caretaker's construction memory. The order the client destroys its two
+  regions in matters.
+- Resolved: channel per client. `login`'s front door gives each client its own channel rather than
+  one staging page shared across every client, so two callers reaching it together contend only for
+  service order, never for each other's secret. A channel, answered or not, is never reclaimed in
+  this slice.
 - Open, accepted: the audit endpoint proves establishment, not per-request attribution. §109
   describes a server establishing a channel and, separately, a server logging which channel a later
   request arrived on. `login` is only the first half. No server here needs the second: every
@@ -247,8 +246,7 @@ Named here as well as at the component, so a reader meets the scope where they m
 - **Refused.** Real terminal multiplexing. `login` hands the terminal to the first successful caller
   and refuses the rest with a dedicated code until `LOGOUT`, deliberately, because the narrow shape
   commits to nothing the wider one would later have to unwind.
-  This refusal is milestone 481 (design/roadmap/0481-terminal-multiplexing.md), superseded on
-  2026-10-06 (UTC) by milestone 806 (concurrent login sessions).
+  Milestone 806 (concurrent login sessions) is the work that lifts it.
 
 ## Index row
 

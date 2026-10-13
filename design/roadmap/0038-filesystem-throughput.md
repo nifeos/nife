@@ -30,8 +30,8 @@ Why it matters. **"primary filesystem" invites a comparison we cannot currently 
 ## Follow-on
 
 - **Milestone 138.** The 32x write amplification this milestone measured, where every 4 KiB file
-  request moved 128 KiB because RedoxFS reads and rewrites a whole record. Minted by calef from this
-  measurement; step 1 took the record to 8 KiB and step 3 took the client's transfer unit to 64 KiB.
+  request moved 128 KiB because RedoxFS reads and rewrites a whole record. Its step 1 takes the
+  record to 8 KiB and its step 3 takes the client's transfer unit to 64 KiB.
 - **Recorded.** `notes/fs-server.md`: a fixed per-request cost of about 204 us that neither the
   record size nor the transfer unit touches. It is device latency under HVF rather than anything the
   architecture adds, and the note carries the share it accounts for before and after 138.

@@ -1,11 +1,10 @@
 # Milestone 40 appendix: the build record, 2026-08-18 to 2026-08-22
 
 An appendix to [milestone 40 (documentation as a system service)](../0040-documentation-service.md),
-moved out of that page on 2026-10-12 (UTC) under [§212 (a prose
-budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main page is complete
-without it. This is the block's dated account of what happened after phase 2 landed: three defects
-in the record, `script/apropos`, the tail-output fork worked through and built, and ranking by
-length. It keeps the names the tree used at the time.
+under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main
+page is complete without it. This is the block's build record after phase 2: three defects in the
+record, `script/apropos`, the tail-output fork worked through and built, and ranking by length. It
+keeps the names the tree used then (`manual` for `crates/documentation`).
 
 ## 2026-08-18: the record was the defect three times over, and all three are fixed
 
@@ -52,9 +51,9 @@ that names a repository path rather than a store location. Crate and program mod
 indexed as pages, which is what makes `crates/abi/src/lib.rs` findable at all. The document a reader
 wants about the ABI *is* that file's header, and no markdown page was ever going to fix it.
 
-## The one fork, as of 2026-08-18
+## The one fork
 
-What remained, as of 2026-08-18, was one fork rather than a list. There was still no line a person
+What remained after phase 2 was one fork rather than a list. There was still no line a person
 could type that rendered a page at the prompt, and the reason was not the shell's scheduling. A
 process has one wait point, so a shell that feeds a chain cannot also read from it, and no
 interleaving fixes that. What fixes it is somewhere for the viewer's output to go that is not the
@@ -62,12 +61,12 @@ shell. The tree already had that thing: `terminal_sink_caretaker`, the terminal'
 where a declared second stream goes by default.
 
 Putting it in a tail stage's *output* slot was a spawn-protocol decision, the same decision the
-pager and the color bit still want. notes/pipes.md had been holding it open since milestone 50 (pipes and redirection):
-*"a shell that wanted a program to print straight to the screen rather than through its own result
-endpoint could hand it over, and would lose the ability to redirect that program at all."*
-DECISIONS §106 (take the `terminal_sink_caretaker` narrowing) took that fork on 2026-08-22, and it is built; see below. At the time, phase 3's
-other half, the graphical viewer, still waited on the display ladder. That half was struck on
-2026-08-26.
+pager and the color bit still want. notes/pipes.md had been holding it open since milestone 50
+(pipes and redirection): *"a shell that wanted a program to print straight to the screen rather than
+through its own result endpoint could hand it over, and would lose the ability to redirect that
+program at all."* DECISIONS §106 (take the `terminal_sink_caretaker` narrowing) took that fork, and
+it is built; see below. There is no graphical viewer half (calef: *"I don't need a graphical
+viewer."*).
 
 ## 2026-08-22: the fork is worked through, not just named
 
@@ -78,11 +77,11 @@ undecided: "That is milestone 40's fork, and this decision does not take it."
 
 notes/tail-output-narrowing.md answers CLAUDE.md's six questions against it. It confirms the premise
 against `grant_plan::check_chain` rather than trusting this block's own framing. It prices the two
-previously-refused alternatives (a pull-based source, a buffering stage) against measured numbers
-already in notes/pipes.md. And it finds two things not previously in the tree. The shell can reuse
-DECISIONS §26 (the fault endpoint), already built, as its completion signal instead of reading the child's
-bytes. And moving output off the shell's own read loop opens a narrower race than notes/manual.md
-named, between a child's exit and its own trailing delivery through the caretaker.
+refused alternatives (a pull-based source, a buffering stage) against measured numbers already in
+notes/pipes.md. And it finds two things the tree did not have. The shell can reuse DECISIONS §26
+(the fault endpoint), already built, as its completion signal instead of reading the child's bytes.
+And moving output off the shell's own read loop opens a narrower race than notes/manual.md named,
+between a child's exit and its own trailing delivery through the caretaker.
 
 Decided (§106, 2026-08-22): take it. Checking `SINK_BIT`'s existing contract
 (`crates/grant_plan/src/spawnproto.rs`) found the fork's own write-up had overpriced it. The child's
@@ -109,8 +108,7 @@ The first line is the control this milestone has carried since phase 1 (the barr
 render countable). The second is the line nobody could type before that day, rendering with no
 `| wc` in front of it. The caretaker-hop display race notes/tail-output-narrowing.md named is carried
 as a documented, accepted interim rather than fixed here; see the main page's `BUGS` and milestone
-151. This is also the milestone's own headline demonstration, decided 2026-08-26 to be the whole of
-phase 3 rather than half of it.
+151. This is also the milestone's own headline demonstration, and the whole of phase 3.
 
 ## 2026-08-22, later the same day: ranking divides by length
 
@@ -123,14 +121,5 @@ store." That price was accurate. A page record grew a `tokens` field (four of th
 raw `count`. `Found::count` still reports the raw occurrence count in the printed answer; only the
 merge order changed. It is pure crate logic with no spawn-protocol or syscall-surface change, unlike
 the two items above it. See notes/manual.md's `BUGS` and "Where this goes next" for detail, and
-`crates/manual`'s own new test, `ranking_divides_by_page_length`. This does not move phase 2 status.
-Phase 2 was already BUILT, and this is a quality improvement inside it, named as future work at the
-time and now closed.
-
-## The status did not move to BUILT that day
-
-This closed phase 3's caretaker-narrowing increment, not phase 3 as this file then defined it. A
-graphical viewer, waiting on the display ladder (font rendering from milestone 29 (a display terminal),
-and milestone 33 (a compositor)), was still named as the phase's other half. That naming was struck 2026-08-26, traced to
-its origin and found unrequested; see the main page's status. Phase 3 is therefore complete as of
-the caretaker-narrowing increment, and so is this milestone.
+`crates/manual`'s own test, `ranking_divides_by_page_length`. It is a quality improvement inside
+phase 2.

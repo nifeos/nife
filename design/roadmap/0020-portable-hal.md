@@ -64,9 +64,7 @@ precedent.
 
 ## Follow-on
 
-- **Milestone 161.** The x86_64 half of "Deliverable, in two parts". It was never tracked as open
-  work here and was split out on 2026-08-23, after a direct check found `kernel/src/arch/` holding
-  only `aarch64/` and `riscv64/`.
+- **Milestone 161.** The x86_64 half of "Deliverable, in two parts".
 - **Milestone 176.** The device-discovery seam this block asked for ("here is the hardware", device
   tree today and ACPI/PCI later), taken up as the x86_64 discovery seam's wide half.
 - **Milestone 16.** Real-hardware aarch64, which this block names as the cheapest portability proof

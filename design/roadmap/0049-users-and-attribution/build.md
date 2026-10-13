@@ -1,9 +1,9 @@
 # Milestone 49: how each piece was built and proven
 
-This appendix belongs to [milestone 49 (users, login, and
-attribution)](../0049-users-and-attribution.md). It was moved out of that page on 2026-10-12 (UTC)
-under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main
-page is complete without it; this is the record of each piece as it landed, and its proof.
+This appendix belongs to
+[milestone 49 (users, login, and attribution)](../0049-users-and-attribution.md), under
+[§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The main page is
+complete without it; this is how each piece is built, and its proof.
 
 ## The login service
 
@@ -32,10 +32,9 @@ Proven end to end by `system_tests/src/user/login_tests.rs` on both ISAs, with `
   `RECV_CAP` on that path, rather than by asserting a negative.
 - Two different identities each get an independently working channel. Each is named correctly in
   the audit trail, in the order they were established.
-- A fourth test proves the service survives past what used to be a hard, silent ceiling of eight
-  logins ever. The cause was a leaked capability-table slot per login (see
-  [bugs-found.md](bugs-found.md)). The test takes the shared instance's login count to nine and
-  checks that each one's directory and budget work.
+- A fourth test proves the service survives more than eight logins, the ceiling a leaked
+  capability-table slot per login would impose (see [bugs-found.md](bugs-found.md)). The test takes
+  the shared instance's login count to nine and checks that each one's directory and budget work.
 
 ## Per-identity subtrees
 
@@ -63,25 +62,21 @@ argument words to the caretaker (`filesystem_protocol::grant::MAX_NAME`). That i
 
 ## The channel-per-client front door
 
-`login`'s front door (`REQUEST`/`RESULT`) used to be a single endpoint pair. It shared one staging
-page across every client this process would ever serve, for its whole life. That was the structural
-"one client at a time" limit the block's BUGS named. `credentialer.rs` still documents the same
-limit for its own verify page.
+A single `REQUEST`/`RESULT` endpoint pair would share one staging page across every client the
+process ever serves, which is a structural "one client at a time" limit. `credentialer.rs`
+documents that limit for its own verify page.
 
-The front door now accepts exactly one word, `login_protocol::CONNECT`. It mints a fresh, private
+The front door accepts exactly one word, `login_protocol::CONNECT`. It mints a fresh, private
 request/result pair and staging page per caller, before any identity or secret is staged. That is
 `filesystem_proto`'s own "a fresh object per client" answer, copied here. Two callers reaching the
-front door together can now contend only for service order. They can never observe or corrupt each
+front door together contend only for service order. They can never observe or corrupt each
 other's secret. The cost is that a channel, answered or not, is never reclaimed in this slice.
 
 `components/src/login.rs`'s own BUGS has the full design. The proof is
 `kernel::user::login_tests::two_clients_connecting_together_get_independent_channels_and_neither_observes_the_others_secret`.
 
-This piece did not move the status line. Interactive boot wiring and the terminal were still open,
-blocked on DECISIONS §120 (a QEMU-only virtio-rng stopgap): no interactive login needs to work
-before real hardware entropy is sorted: milestone 159 (a real hardware entropy source). The block said so at the time, per its own
-convention for a piece that lands without changing the status. Two resource leaks this piece
-introduced were found and fixed before it landed; [bugs-found.md](bugs-found.md) has both.
+Two resource leaks in this piece were fixed before it landed; [bugs-found.md](bugs-found.md) has
+both.
 
 ## Logout reclaims a session
 
@@ -158,9 +153,8 @@ own BUGS names what this slice does not build: an authenticated `LOGOUT`, and a 
 abandoned holder. Both are named limitations, not oversights, scoped to what today's single-tenant
 boot needs.
 
-Real multiplexing was the second shape the block used to name as the undecided fork. It remains
-undecided and unbuilt, on purpose. Choosing the narrow shape commits to nothing the wider one would
-later have to unwind. Proven end to end by
+Real multiplexing is the other shape, undecided and unbuilt on purpose. Choosing the narrow shape
+commits to nothing the wider one would later have to unwind. Proven end to end by
 `kernel::user::login_tests::login_hands_out_the_terminal_once_and_denies_a_concurrent_second_login_until_logout`
 on both ISAs.
 

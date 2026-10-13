@@ -9,15 +9,16 @@ needs_person: yes
 ---
 # 53. The board's own peripherals: network and storage on real silicon
 
-The storage half is built for QEMU as of 2026-08-15 (pull request #193): the
-`non_volatile_memory_express` crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver confined
-through the IOMMU before enable, class-code enumeration over §18, and an end-to-end boot test on
-both ISAs. The network half is built to the bench as of 2026-10-06 (below, "The network half"),
-and so is the radon SD card and eMMC half (below, "The storage half on radon").
-What remains of the milestone: both halves' first runs on radon, the board-side
-PLDA XpressRICH root complex that carries the NVMe driver to the real M.2 slot (now tracked as its
-own milestone, 163, NOT-STARTED), and the EL0
-question, which is §86 (PROPOSED). Scope and honest limits: notes/non-volatile-memory-express.md, BUGS included.
+The storage half is built for QEMU (pull request #193). It is the `non_volatile_memory_express`
+crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver confined through the
+IOMMU before enable, class-code enumeration over §18 (the PCIe transport), and an end-to-end boot
+test on both ISAs. The network half is built to the bench (below, "The network half"), and so is the
+radon SD card and eMMC half (below, "The storage half on radon"). What remains of the milestone is
+three things. Both halves need their first runs on radon. The board-side PLDA XpressRICH root
+complex that carries the NVMe driver to the real M.2 slot is milestone 163 (the JH7110's PCIe root
+complex), NOT-STARTED. And the EL0 NVMe driver that §86 (whether an NVMe driver can leave the
+kernel) decides on is unbuilt. Scope and honest limits: notes/non-volatile-memory-express.md, BUGS
+included.
 
 In the second sense: the board is here and this needs hands on it. Bringing up
 an NVMe controller and a real NIC means flashing, a serial console, and power-cycling a board that
@@ -50,13 +51,13 @@ equivalent board yet, so rule 5's "a scope note records the gap and the plan" ap
 "ships on every architecture". Say so explicitly; do not let it look like an oversight.
 
 **Effort: not estimated.** Two device drivers against real hardware with no emulator to iterate
-against is a different activity from everything done so far, and estimates calibrated on QEMU work do
-not transfer.
-## The network half, 2026-10-06
+against is a different activity from everything done so far, and estimates calibrated on QEMU work
+do not transfer.
+## The network half
 
 calef, 2026-10-06 (UTC): radon is the most convenient lab machine, so move its hardware support
-forward, and do not split this milestone. Built by lane/53-gmac (pull request #1762), every name
-provisional. notes/designware-ethernet.md has the split, the evidence and the runbook.
+forward, and do not split this milestone. Built in pull request #1762, every name provisional.
+notes/designware-ethernet.md has the split, the evidence and the runbook.
 
 - `crates/designware_ethernet`: the controller (`snps,dwmac-5.20`) and its YT8531 PHY as
   host-tested logic, 47 tests against a simulated controller, two Kani harnesses with replayable
@@ -88,10 +89,10 @@ reasons 494 refused Redox's `e1000d`. It slices a receive buffer by the descript
 place for the kernel/process split, and it would bring `bitflags` and `log`. It was read as a
 third cross-check.
 
-## The storage half on radon, 2026-10-06
+## The storage half on radon
 
 calef, 2026-10-06 (UTC): radon is the most convenient lab machine, so move its hardware support
-forward, and do not split this milestone. Built by lane/53-sdmmc, every name provisional.
+forward, and do not split this milestone. Every name in the storage half is provisional.
 notes/designware-mobile-storage.md has the evidence, the safety argument and the runbook.
 
 - The part is a Synopsys DesignWare Mobile Storage Host Controller (`snps,dw-mshc` in the vendor
@@ -128,11 +129,10 @@ and both trees are GPL and were read for hardware facts only.
   notes/designware-ethernet.md, about ten minutes, nothing on the card changes. It answers the
   coherence question by measurement, and passing it lifts `PROVEN_ON_SILICON`.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
-  to the real M.2 slot. Minted 2026-08-25, still NOT-STARTED on a HARDWARE gate.
-- **Decision.** Whether the NVMe driver can leave the kernel is answered rather than pending:
-  `design/decisions/0086-el0-nvme-driver.md` is DECIDED as of 2026-09-03, option 2a now with option 4
-  addable without reshaping the EL0 driver, and the choice between them settled by measurement. The
-  block's own prose still reads as though the fork were open.
+  to the real M.2 slot. NOT-STARTED on a HARDWARE gate.
+- **Decision.** Whether the NVMe driver can leave the kernel is answered:
+  `design/decisions/0086-el0-nvme-driver.md` is DECIDED, option 2a now with option 4 addable without
+  reshaping the EL0 driver, and the choice between them settled by measurement.
 - **Outstanding.** RedoxFS crash consistency proven by actually cutting power on radon. Nothing can
   power-cycle the board: milestone 224 is NOT-STARTED on a DECISION gate, and its own measurements
   record zero replies from the plug on the subnet. Checked 2026-09-03.

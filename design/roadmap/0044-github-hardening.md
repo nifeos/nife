@@ -39,13 +39,12 @@ required check that never reports blocks every merge.
 
 In brief. Four items, and they split into files we can commit and settings someone with admin has to toggle. Files: a `SECURITY.md` policy stating what is in scope (the kernel's confinement boundaries) and what is not (a demonstrator running under QEMU is not a production system), and a code-scanning workflow. Settings: private vulnerability reporting, and a ruleset requiring pull requests into `main`. Note the plumbing for the last one already exists, since CI runs on `pull_request`; what is missing is the branch protection that makes it mandatory. One thing to check rather than assume: CodeQL's Rust support has been moving through preview, so confirm its current state before committing to it; if it is not ready, the practical scanners are the clippy gate we already run, `cargo-audit`/`cargo-deny` from milestone 42, and a SARIF upload from whatever does work
 
-**Signed commits: a fifth item, deferred on purpose and not previously written down here.** Added
-2026-08-04 from `notes/repo-hardening.md`, which files it under **Do NOT enable** with its reason:
+**Signed commits: a fifth item, deferred on purpose.** `notes/repo-hardening.md` files it under
+**Do NOT enable** with its reason:
 "Nothing here is signed today; turning this on would block every merge until signing is set up.
 Worth doing eventually, as its own decision, not as a side effect of this one."
 
-That reasoning is right about sequencing and it left the eventual decision with no home, so it lives
-here now. Three things it needs, and the second is the one with a real cost:
+That reasoning is right about sequencing, and this block is the eventual decision's home. Three things it needs, and the second is the one with a real cost:
 
 - A key and a signing method. SSH signing is the cheap path (git supports it, GitHub verifies it,
   and the key already exists on the machine that pushes); GPG is the older path with more tooling

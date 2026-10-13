@@ -5,9 +5,9 @@ built: 2026-07-15
 ---
 # 11. Untyped memory, and the number that proves the kernel stops allocating
 
-Backfilled 2026-08-03 from history (milestone 76). The one early milestone that was not in the
-first commit's plan: `491f23d` (2026-07-14) added it to the table as "§10's deferred axis. The
-allocators leave," and `9b089e0` built it the next day.
+The one early milestone that was not in the first commit's plan. `491f23d` (2026-07-14) added it to
+the table as "§10 (process model: capability-based, microkernel)'s deferred axis. The allocators
+leave," and `9b089e0` built it the next day.
 
 The commit's headline is a single measurement: a process mapped 23 pages out of an untyped it
 was handed, and the kernel's used-frame count went 991 -> 991. A test asserts that equality, and
