@@ -267,9 +267,6 @@ applied, stated so it can be disagreed with:
 - The captured transcripts in `notes/trusted-init.md` still read `init:`. They are evidence from
   a dated run and their bytes are the record, so they were not rewritten; a reader comparing them
   against a boot today will see a different prefix.
-- *Corrected 2026-10-12 (UTC); this entry said the grant orders still differ under a `cfg`.*
-  Milestone 166 (one boot loader, reached two inconsistent ways) unified them on 2026-09-15, as the
-  Follow-on says, and `components/src/progenitor.rs` now has one `GRANTS` table and no `cfg`.
 
 ## Index row
 

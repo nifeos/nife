@@ -5,14 +5,13 @@ built: 2026-09-21
 ---
 # 282. A thread's CPU time, and the `top` it makes possible
 
-Minted 2026-09-13, when calef ruled milestone 126 (who else is running, and who is allowed to ask)'s eighteen-day-old fork.
-The decision is `design/decisions/0150-per-thread-cpu-accounting.md`, amended the day this was built
-by DECISIONS §204 (how userspace asks where a thread runs). *(Number provisional until the merge queue lands it.)*
+The decision is `design/decisions/0150-per-thread-cpu-accounting.md` (calef, 2026-09-13, ruling
+the fork of milestone 126 (who else is running, and who is allowed to ask)), with DECISIONS §204
+(how userspace asks where a thread runs).
 
-Nothing was gated on calef here, and that is worth one line because the block carried a
-`Gate: NONE` from the day it was minted: §150 (how does a thread's CPU time reach userspace?) settled the semantics, the sampling point and the
-unit, and §204 settled the wire shape the day this was built, replacing the widened `SURVEY` return
-with a selector inside the window §150 left open for exactly that. What remains his is the
+Nothing was gated on calef here. §150 (how does a thread's CPU time reach userspace?) settles the
+semantics, the sampling point and the unit, and §204 settles the wire shape: a selector inside the
+window §150 left open for exactly that, not a widened `SURVEY` return. What remains his is the
 program's name and whether the ranking view is a program at all; neither blocked the build, and the
 naming note below says what he is being asked.
 
@@ -62,10 +61,9 @@ promise held, on the first fact added after it was made.
 
 ## The name was earned rather than assumed
 
-`top` means *the top N by resource consumption*; it is defined by ranking. On 2026-09-13 `ps`'s
-table was `TID` and `STATE`, so there was nothing to rank by and the name would have overclaimed,
-which is the fault `flaky` was renamed for on the same day this was minted. Under §150's option 2
-it became both available and correct. Under the two refused options it would not have: wall-clock
+`top` means *the top N by resource consumption*; it is defined by ranking. A table of `TID` and
+`STATE` alone has nothing to rank by, and the name would overclaim. Under §150's option 2 it is both
+available and correct. Under the two refused options it would not have: wall-clock
 age is not `%CPU`, and a sampled estimate is not a measurement.
 
 Two things about the name are an architect's and neither blocks anything. The name `top` itself,
@@ -113,9 +111,8 @@ in `crates/top`'s module docs. Folding it into `ps` as a flag is a day's work an
 
 ## Index row
 
-Minted 2026-09-13 when calef ruled milestone 126 (who else is running, and who is allowed to ask)'s eighteen-day-old fork; the decision is
-§150, amended by §204 the day this was built. There was no per-thread CPU accounting anywhere in
-this kernel, dead or live. Built a tick counter per thread slot incremented in `on_tick()`, exposed
+The decision is §150 (how does a thread's CPU time reach userspace?), with §204 (how userspace asks where a thread
+runs). Built a tick counter per thread slot incremented in `on_tick()`, exposed
 as `abi::survey::record::CPU_TIME` in milliseconds, then a `TIME(ms)` column on `ps` and `top`
 itself. The counter is an array beside the thread table rather than a field on `Thread`, because the
 increment is in interrupt context and reaching a `Thread` there means `IPC_TABLES`. `top` is

@@ -113,11 +113,10 @@ be the same failure with a new cause.
 
 ## What this does not do, and what it says so
 
-**On the dev Mac the ceiling is off by default**, and the honest reason is not the one this lane
-first wrote down. XNU *does* enforce `RLIMIT_AS` (`vm_map_set_size_limit`, `KERN_NO_SPACE` out of
-`vm_map_enter`, inherited across exec, since at least macOS 13), so the folklore is wrong and so was
-the first draft of the runner's `BUGS` section. What is unknown is what number is safe there, since
-this lane had only Linux to measure on and macOS reserves address space far more freely. Shipping it
+**On the dev Mac the ceiling is off by default**, and the reason is not that XNU ignores it. XNU
+*does* enforce `RLIMIT_AS` (`vm_map_set_size_limit`, `KERN_NO_SPACE` out of `vm_map_enter`,
+inherited across exec, since at least macOS 13). What is unknown is what number is safe there, since
+only Linux was measured and macOS reserves address space far more freely. Shipping it
 on with a guessed number would fail every Mac sweep at its baseline; shipping it off leaves the Mac
 as exposed as it was, which is the cost, stated rather than hidden. One environment variable turns
 it on, and the first person to measure should write the number into the runner's header.

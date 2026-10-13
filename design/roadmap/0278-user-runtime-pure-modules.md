@@ -9,11 +9,6 @@ needs_person: no
 ---
 # 278. Two modules are fenced out of the prover by a `Cargo.toml`, not by what they do
 
-Minted 2026-09-12 by calef, out of the naming review of `crates/user_rt`
-(milestone 115's unratified worklist). The question that produced it was not a naming question:
-"what does `user_rt` do", then "should it be one program". Neither, but the measurement taken to
-answer them found this. *(Number provisional until the merge queue lands it.)*
-
 A packaging change. Nothing here is a design fork, and it is reversible: the modules
 move back by moving the files back.
 
@@ -90,7 +85,7 @@ a name had been refused. Read before sweeping.
 - Make the runtime a program. Refused on a bootstrapping impossibility rather than on taste:
   `invoke` *is* `svc`/`ecall`, and IPC is built on it, so a program that had to send a message to
   reach the syscall layer would need the syscall layer to send the message. The upper modules escape
-  that circle and still lose, for the opposite reason: they make **no** syscalls, so routing them
+  that circle and still lose, for the opposite reason: they make no syscalls, so routing them
   through a server would add syscalls to code that has none, and a `GlobalAlloc` that performs IPC
   per allocation is its own disaster. In a capability system the program already holds its budget;
   there is nothing for a server to arbitrate.
@@ -126,8 +121,7 @@ a name had been refused. Read before sweeping.
 
 ## Index row
 
-Minted 2026-09-12 by calef out of the `user_rt` naming review, from a question that was not about
-naming. `crates/user_rt` is excluded from the host pass, coverage, mutation and Kani because it is
+`crates/user_rt` is excluded from the host pass, coverage, mutation and Kani because it is
 the EL0 syscall floor, and the exclusion is crate-level: `mapped_window` (176 lines, 29 consumers)
 and `initial_ramdisk` (60 lines) make no syscall at all and inherit it from the file they are declared
 in. `MappedWindow`'s one-line bounds check with an overflow guard stands behind 29 call sites and

@@ -1,8 +1,10 @@
 # One progenitor: the grant-order `cfg`, argued
 
-Moved from [milestone 266 (one progenitor, on all three architectures)](../0266-init-is-an-action-and-the-thing-is-a-process.md)
-under §212 (a prose budget). This appendix holds the lane's argument for putting the one difference
-between the boards under a `cfg`, and the three alternatives it considered.
+An appendix to [milestone 266 (one progenitor, on all three architectures)](../0266-init-is-an-action-and-the-thing-is-a-process.md).
+It holds the lane's argument for putting the one difference between the boards under a `cfg`, and
+the three alternatives it considered. The tree has no such `cfg`: `components/src/progenitor.rs`
+has one `GRANTS` table for all three architectures, since milestone 166 (one boot loader, reached
+two inconsistent ways) unified the kernels' grant order.
 
 ## Why a `cfg`
 

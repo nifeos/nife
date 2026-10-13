@@ -6,11 +6,7 @@ promoted_from: two-boot-mode-features-for-one-decision
 ---
 # 296. The `initboot` feature was `shell`, and one of them went
 
-Built 2026-09-14. Promoted from
-`design/roadmap/proposals/two-boot-mode-features-for-one-decision.md`, written by milestone 267's
-lane on 2026-09-09 and carrying this block's measurement in its git history. Minted by the
-maintainer on **calef's ruling of 2026-09-14: delete `initboot`.**
-*(Number provisional until the merge queue lands it.)*
+**calef's ruling of 2026-09-14: delete `initboot`.**
 
 The question arrived sideways. `script/initboot` was the **only one of fifty-five `script/` entry
 points that ran two words together** (fifty-four now that it is gone), against the hyphen rule for

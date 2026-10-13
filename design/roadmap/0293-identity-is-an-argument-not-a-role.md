@@ -5,10 +5,8 @@ built: 2026-09-14
 ---
 # 293. A role that differs only in its credentials is an argument
 
-Built 2026-09-14. Minted by calef 2026-09-14, deliberately apart from its three
-same-day siblings (290 `ntp`, 291 `hello`, 292 `sink`), which he ruled into separate programs on
-*"small programs with specific functions."* This one he ruled the other way: the answer here is not
-eleven programs. *(Number provisional until the merge queue lands it.)*
+calef ruled milestones 290, 291 and 292 into separate programs on *"small programs with specific
+functions."* He ruled this one the other way (2026-09-14): the answer here is not eleven programs.
 
 `fixtures/src/login_test_client.rs` had eleven roles, and its first act on entry was a lookup from
 role number to a pair of byte strings. Several of the eleven ran the same code and differed only in
@@ -181,4 +179,4 @@ which is milestone 115's own rule.
 
 ## Index row
 
-Minted 2026-09-14 by calef, deliberately apart from 290/291/292, which he ruled into separate programs the same day: the answer here is not eleven programs. `fixtures/src/login_test_client.rs` had eleven roles and its first act was a lookup from role number to a pair of byte strings. Classified by code rather than by name: five of the eleven were pure credential, byte-identical runs differing only in that pair (`ROLE_TERM_SECOND` included, whose distinguishing fact was a precondition the caller arranges), and two more were one behavior written twice because the only thing separating them was the identity written into a marker file. `_start` now takes `(behaviour, identity, secret)`, so the wrong-secret run is `LOGIN` with a different secret rather than an arm that could drift from the honest one. Credentials travel as `credential_proto::fixture` indices because nothing here hands a `no_std` program a string it was not compiled against, recorded in the file's BUGS. Six behaviors stayed in one binary and the equal-cost test says so: the preamble they share is the contract under test. 293's premise about `credentialer_test_client` was **false** and checking it was the work; what it did hold was the `PEOPLE` definition two other files hand-copied, one saying it had *chosen* to match. All 24 `const ROLE_` files swept: the only role-to-data lookup in the tree. Behavior names provisional.
+calef ruled this apart from 290/291/292, which he ruled into separate programs (2026-09-14): the answer here is not eleven programs. `fixtures/src/login_test_client.rs` had eleven roles and its first act was a lookup from role number to a pair of byte strings. Classified by code rather than by name: five of the eleven were pure credential, byte-identical runs differing only in that pair (`ROLE_TERM_SECOND` included, whose distinguishing fact was a precondition the caller arranges), and two more were one behavior written twice because the only thing separating them was the identity written into a marker file. `_start` now takes `(behaviour, identity, secret)`, so the wrong-secret run is `LOGIN` with a different secret rather than an arm that could drift from the honest one. Credentials travel as `credential_proto::fixture` indices because nothing here hands a `no_std` program a string it was not compiled against, recorded in the file's BUGS. Six behaviors stayed in one binary and the equal-cost test says so: the preamble they share is the contract under test. 293's premise about `credentialer_test_client` was **false** and checking it was the work; what it did hold was the `PEOPLE` definition two other files hand-copied, one saying it had *chosen* to match. All 24 `const ROLE_` files swept: the only role-to-data lookup in the tree. Behavior names provisional.

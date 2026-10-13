@@ -5,9 +5,6 @@ built: 2026-09-05
 ---
 # 264. Sixty names the history cannot justify, and the research that would let calef rule on them
 
-Built 2026-09-05. Minted the same day by calef, after measuring the naming backlog
-rather than working through it. *(Number provisional until the merge queue lands it.)*
-
 It gated on nothing while it ran, which is `script/names --unratified`'s own design: a worklist
 rather than a wall, so an unratified name never fails anybody's build. `script/names --unratified`
 now reports zero unrecorded, which was this block's own proof condition and is checkable by

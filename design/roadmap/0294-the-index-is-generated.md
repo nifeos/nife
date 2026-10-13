@@ -5,15 +5,10 @@ built: 2026-09-14
 ---
 # 294. `design/roadmap/README.md`'s index is generated, not hand-maintained
 
-Built 2026-09-14. Minted by the maintainer on 2026-09-14, out of a session that
-resolved eight merge conflicts and found every one of them in the same table.
-
-The table this built was retired on 2026-09-21, by calef: *"I don't think the milestone index
-table is worth building any more. It has too many rows to be digestible as a table."* **That is not
-this milestone being undone.** The migration below is exactly what made the retirement cost nothing:
-by the time the table went, every cell in it was a rendering of text living in a milestone's own
-file, so deleting it deleted no writing. Retiring it a month earlier would have destroyed 288
-hand-written summaries and 288 dates. What survives of the generator is `script/roadmap --index`,
+There is no index table: calef, 2026-09-21, *"I don't think the milestone index table is worth
+building any more. It has too many rows to be digestible as a table."* The derivation this milestone
+built is what made that cost nothing: every cell was a rendering of text living in a milestone's own
+file, so deleting the table deleted no writing. What survives of the generator is `script/roadmap --index`,
 which assembles the same five columns as a feed for `script/audits` and `script/fatal-risks`; the
 vocabularies that surrounded the table are in `notes/roadmap.md`. The status stays **BUILT** rather
 than becoming REMOVED, because what this milestone built was the *derivation*, and the derivation
@@ -90,9 +85,9 @@ hand-maintained table, none of them a defect in the generator:
   | 48 | Job control: jobs, wait, kill, fg, bg, and a stopped state | Job control: `jobs`, `wait`, `kill`, `fg`, `bg`, and a stopped state |
   | 121 | `ripgrep`: enumeration as a capability, and what the walk costs | `ripgrep` on nife: enumeration as a capability, and what the walk costs |
 
-  `script/roadmap`'s header used to list row-title-versus-file-title under "deliberately NOT
-  checked", on the ground that rows abbreviate on purpose. Two of the five abbreviations dropped
-  backticks off command names, which is a loss rather than an abbreviation.
+  Row title versus file title is checked, not left out on the ground that rows abbreviate on
+  purpose: two of the five abbreviations dropped backticks off command names, which is a loss
+  rather than an abbreviation.
 
 ## What a lane does differently
 
@@ -164,8 +159,8 @@ back. The cost of not failing is in BUGS below, named rather than hidden.
 
 ## Index row
 
-Minted 2026-09-14 after a session resolved eight merge conflicts and found every one of them in
-`design/roadmap/README.md`'s index table and nowhere else. Structural rather than unlucky: check 4b
+Eight merge conflicts in one session were all in `design/roadmap/README.md`'s index table and
+nowhere else. Structural rather than unlucky: check 4b
 makes every lane touch its own block, every milestone also needed a row in one sorted table, so
 every milestone in flight collided with every other. The row is now derived from the block. Two of
 the five columns had to move rather than be derived, and measuring that is what decided the shape:

@@ -5,9 +5,8 @@ built: 2026-09-14
 ---
 # 289. Does milestone 20's RISC-V tour still earn its place?
 
-Built 2026-09-14. Minted by the maintainer after calef asked what
-`components/src/builder.rs` does and why it is still needed "in a world where we boot to swish".
-*(Number provisional until the merge queue lands it.)*
+calef asked what `components/src/builder.rs` does and why it is still needed "in a world where we
+boot to swish".
 
 **The answer is keep, and the evidence changed the question.** The brief leaned toward retirement on
 a premise that reads well and is false: that booting to `swish` means `builder` never runs. It does
@@ -181,8 +180,8 @@ from the tree; these two bullets are the first thing it found.)*
 
 ## Index row
 
-Minted 2026-09-14 after calef asked what `components/src/builder.rs` is for in a world that boots
-to swish. The answer is keep, and the premise was false: booting to swish describes aarch64 and
+calef asked what `components/src/builder.rs` is for in a world that boots to swish. The answer is
+keep, and the premise was false: booting to swish describes aarch64 and
 riscv64's `--features shell`, not the default riscv64 build, which is what `script/board-image` puts on a card. `progenitor` has never run on RISC-V silicon; `riscv_shell_boot` needs the PLIC, the NS16550 delegated and a UART source number that differs
 between QEMU (10) and the JH7110 (32), and `builder` needs a budget and a report endpoint and
 nothing else. `crates/board_console` parses its `init/build` line into `userspace_ran`, asserted

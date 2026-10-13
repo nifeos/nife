@@ -5,16 +5,10 @@ built: 2026-09-11
 ---
 # 275. A gate that diffs `design/fatal-risks/README.md` against the roadmap it cites
 
-Minted 2026-09-11 by calef, from a maintainer review of
-`design/fatal-risks/README.md` against the tree the previous day, which found the file's own `BUGS`
-warning ("nothing gates this file") firing four separate ways in one pass. *(Number provisional
-until the merge queue lands it.)*
-
-Built the same day as `script/fatal-risks`, wired into `script/lint`. It found all four of the
-review's findings on its first run against the tree, which had not been corrected in the
-meantime, and the corrections are part of this milestone rather than a follow-on: milestone 191's
-block and index row (both `NOT-STARTED` twelve days after pull request #589 merged its study), and
-three dated corrections in `design/fatal-risks/README.md` for risks 3, 6 and 9.
+Built as `script/fatal-risks`, wired into `script/lint`. It found all four of the findings of a
+review of `design/fatal-risks/README.md` against the tree, the file's own `BUGS` warning ("nothing
+gates this file") firing four separate ways in one pass, and the corrections were part of this
+milestone rather than a follow-on.
 
 ## What the 2026-09-10 review found, because this milestone exists to stop finding it by hand
 
@@ -23,7 +17,7 @@ Four instances, one review, no gate involved in catching any of them:
 - **Risk 2** cited milestone 191 as `RUN, 2026-08-30. AMBER`, and that was true. Milestone 191's own
   roadmap block still read `NOT-STARTED`, eleven days after the work merged (PR #589), which is the
   status-in-two-places defect `§76`'s own sweep found before, recurring in the one place nothing
-  compares the two records. **It read `NOT-STARTED` for twelve days**, because nothing corrected it
+  compares the two records. It read `NOT-STARTED` for twelve days, because nothing corrected it
   between the review and this milestone's build; this gate's first run found it and the correction
   landed with the gate.
 - **Risk 3** said re-running the mutation sweep was cheap because "the weekly workflow already
@@ -165,16 +159,15 @@ once, and by this file's own standard that is an attestation rather than evidenc
 - **Recorded.** `script/fatal-risks`' name is provisional and its `Name:` block carries the
   refusals (`risk-check`, `falsifications-check`, `fatal-risk-drift`). `script/names --unratified`
   is the worklist.
-- **Done.** Risk 3's green was from 2026-08-03 and the weekly mutation workflow had published
-  nothing since, so the re-run this gate made visible was nobody's until milestone 277 bounded the
-  runaway mutant that blocked it. The workflow then completed on 2026-09-14 and calef read the
-  census on 2026-09-19; risk 3 is MEASURED, AMBER and the proposal that held the re-read was
-  drained with the ruling.
-- **Milestone 306.** Risk 6's remaining half was one boot of radon against an instrument that now
-  exists. The proposal this bullet used to name was promoted and the boot happened on 2026-09-16:
-  955,223 bytes/s, and risk 6's third bullet carries it.
+- **Done.** Risk 3's re-run, which this gate made visible, is done: milestone 277 (bound what one
+  mutant may allocate) bounded the runaway mutant that blocked the weekly mutation workflow, and
+  risk 3 is MEASURED, AMBER.
+- **Milestone 306.** Risk 6's remaining half is measured: milestone 306 (time the hw-entropy step)
+  timed it on one boot of radon at 955,223 bytes/s (2026-09-16), and risk 6's third bullet carries
+  it.
 
 ## Index row
 
-calef, 2026-09-11, from a 2026-09-10 review that found the same status-in-two-places defect four
-separate times in one file, one pass, nothing catching any of them.
+`script/fatal-risks`, in `script/lint`, diffs `design/fatal-risks/README.md` against the roadmap
+it cites, because a review found the same status-in-two-places defect four separate times in one
+file, one pass, with nothing catching any of them.

@@ -9,10 +9,8 @@ needs_person: no
 ---
 # 279. Documentation search is a shell builtin, so a second shell has none
 
-Minted 2026-09-13 by calef, from his own question while ratifying
-`crates/manual`'s name: if the search is built into swish, is there no documentation search with a
-different shell? There is not. *(Number provisional until the merge queue lands it; 278 is in flight
-ahead of it.)*
+calef's question: if the search is built into swish, is there no documentation search with a
+different shell? There is not.
 
 calef decided the shape when he raised it: loosen the coupling with a service rather
 than record it as a limitation. What is still his at build time is the wire format and the protocol
@@ -82,7 +80,7 @@ lane ships a provisional one.
 
 ## Index row
 
-Minted 2026-09-13 by calef, from his own question while ratifying `crates/manual`'s name. `apropos` is a builtin in `crates/swish` and the capability argument for that is sound: searching
+If the search is built into swish, there is no documentation search with a different shell. `apropos` is a builtin in `crates/swish` and the capability argument for that is sound: searching
 reads the store, and a program holding that capability widens the contract `doc`'s two-slot table
 exists to demonstrate. The consequence nobody recorded is that the search is not a component. Only `manual::index::search` is portable; the store walk (`swish.rs:937`) and the presentation are not,
 and the walk already exists three times. A server holding the store with `apropos` as a thin

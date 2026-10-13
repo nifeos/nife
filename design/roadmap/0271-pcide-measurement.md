@@ -9,11 +9,9 @@ needs_person: yes
 ---
 # 271. Measure `CR4.PCIDE`, and settle the ASID-tagging skip it leaves on x86_64
 
-Minted 2026-09-10 by calef, from the live skip inventory. Raised as
-Outstanding in milestone 161 (the x86_64 kernel port), checked 2026-09-03 and still
-unmeasured, and referenced but not answered by milestone 186 (derive the architecture list),
-whose only claim on it is that the bench-tooling caller for the x86 baseline is one of its eleven
-silent gaps. *(Number provisional until the merge queue lands it.)*
+Outstanding in milestone 161 (the x86_64 kernel port), and referenced but not answered by
+milestone 186 (derive the architecture list), whose only claim on it is that the bench-tooling
+caller for the x86 baseline is one of its eleven silent gaps.
 
 In the second sense `notes/roadmap.md` names: xenon is here and this
 needs an evening at it. PCID's whole benefit is a TLB that survives a `mov cr3`, and the only

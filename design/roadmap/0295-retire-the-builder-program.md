@@ -156,11 +156,9 @@ says so in those terms. The default riscv64 boot's userspace is covered by the i
 same code aarch64 runs), not by an exception to it. Two loaders are left and both really are QEMU
 only.
 
-The measured-boot refusal moved rather than went, which is the one behavior change a board
-operator will see. The archive used to be checked against the trust root at tour step 4; it is now
-checked in `riscv_shell_boot` at the handoff. A card with the wrong archive still halts with
-`MEASURED BOOT REFUSED`, later in the transcript than it used to, and `board_console` reads the same
-marker either way.
+The measured-boot refusal stays, which is the one thing a board operator will see differently.
+The archive is checked against the trust root in `riscv_shell_boot` at the handoff. A card with the
+wrong archive halts with `MEASURED BOOT REFUSED` there, and `board_console` reads that marker.
 
 And the name went without a ruling, which was the point. `builder`'s provisional
 `process_builder` was parked by calef on 2026-09-13 (*"Skip this one because it will go away with

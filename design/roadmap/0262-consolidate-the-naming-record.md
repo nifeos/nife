@@ -5,14 +5,10 @@ built: 2026-09-19
 ---
 # 262. The naming rule is written twice, so changing it means changing two files and remembering to
 
-The note half was done by this block's lane; the `AGENTS.md` half was
-done by DECISIONS §155 on 2026-09-18, which went further than this block's diff (the naming section
-is 26 lines, a pointer and the authority, and the conventions live only in `design/naming.md`); the
-duplicate heading was renamed on calef's ruling of 2026-09-19. It was PARTIAL from 2026-09-05 with
-the note half done and the `AGENTS.md` half proposed as a diff, which is the split this block's own
-BUGS section predicted. Minted 2026-09-05 by calef, on finding that a rule change had to land in
-`AGENTS.md` and `design/naming.md` together or the note would have contradicted the constitution the
-moment it merged. *(Number provisional until the merge queue lands it.)*
+Both halves are done. This block did the note's half. DECISIONS §155 (the naming conventions move
+out of the constitution) did the `AGENTS.md` half, further than this block's diff: `AGENTS.md` keeps
+a pointer and the authority, and the conventions live only in `design/naming.md`. The duplicate
+heading carries the name calef ruled (2026-09-19).
 
 ## The measurement
 
@@ -21,8 +17,8 @@ moment it merged. *(Number provisional until the merge queue lands it.)*
 
 Both stated the same rule. `AGENTS.md` said standard terms *"should not be touched"* with a
 list; `design/naming.md` said *"Standard terms are already right and must not be touched"* with
-the same list. On 2026-09-05 that rule changed, and it had to be edited in both places in one commit.
-Nothing would have caught it if it had not been: no gate compares the two, and the note is the file a
+the same list. A change to that rule had to be edited in both places in one commit, and nothing
+would have caught a miss: no gate compares the two, and the note is the file a
 lane reads *second*, so the contradiction would have been discovered by somebody acting on the wrong
 one.
 
@@ -102,25 +98,20 @@ three crates the noun rule settled, and the domain table's two arguments.
 
 ## Follow-on
 
-- **Done.** On 2026-09-19. The `AGENTS.md` half: DECISIONS §155 (2026-09-18) moved the naming
-  conventions out of `AGENTS.md` entirely, superseding this block's diff. The `agents-md-lines`
-  ceiling in 118's block is now 922, the file's exact count after §155, where this item had asked
-  for 988 against the smaller diff.
-- **Done.** On 2026-09-19, `design/naming.md`'s second `## Crates` became
-  `` ## What `crates/` holds ``, calef's ruling that day. Its audience lists now name the crates as
-  they are called today; its census, taken on 2026-08-01, keeps that day's names and now says so.
+- **Done.** The `AGENTS.md` half: DECISIONS §155 (the naming conventions move out of the
+  constitution) moved the naming conventions out of `AGENTS.md` entirely, in place of this block's
+  diff.
+- **Done.** `design/naming.md`'s second `## Crates` is `` ## What `crates/` holds `` (calef,
+  2026-09-19). Its audience lists name the crates as they are called today; its census, taken on
+  2026-08-01, keeps that day's names and says so.
 - **Recorded.** The merge queue and the lane roles are stated twice in the milder shape, and the
   dependency rule is not; the reading is in the pull request body and the lane report.
 
 ## Index row
 
-AGENTS.md's naming section is 132 lines, 12% of a file with a zero-headroom ceiling, and
-design/naming.md is 760 more on the same subject. Both stated the rule that changed on 2026-09-05.
-The constitution should keep the tests a lane applies; the note should keep the argument. The note
-half is done: it opens by saying it is the case rather than a second authority, and it received
-the `dwarden`/`conx` evidence, the shared-module history, the milestone 160 extension, the noun
-rule's three settled crates and the domain table's two arguments. The `AGENTS.md` half is a **60-line** reclaim (137 lines to 77, 1,048 to 988) proposed as a diff, because a lane cannot edit
-that file. **Most of the reclaim was argument already written out in full in both files**, not
-argument being moved: the two-tier rejection, the `wc` example, "0 of 57", the standard-terms rail
-and the `NAME_LEN` history were each duplicated before this milestone, which is the same defect
-found four more times while fixing it once
+`design/naming.md` is the one statement of the naming conventions, and `AGENTS.md` keeps a pointer
+and the authority (§155 (the naming conventions move out of the constitution)). The note opens by
+saying it is the rule rather than a second authority, and holds the `dwarden`/`conx` evidence, the
+shared-module argument, the extension of milestone 160 (review the public function names across the
+kernel's dependency crates), the noun rule's three settled crates and the domain table's two
+arguments. No gate compares two statements of one rule, so the fix was to keep one.

@@ -5,12 +5,9 @@ built: 2026-09-13
 ---
 # 286. One enumeration of the checks that gate a pull request
 
-Minted 2026-09-13 by calef, from a maintainer review of the two
-places the gating set was written down. *(Number provisional until the merge queue lands it.)*
-
 `script/gates` is retired. `script/ci-build` carries one table of every check a pull request must
-pass, with a tier saying whether a developer waits for it; with no arguments it runs that tier,
-cheapest first, and with names it runs exactly those, which is how `.github/workflows/ci.yml` fans
+pass, with a tier saying whether a developer waits for it. With no arguments it runs that tier,
+cheapest first. With names it runs exactly those, which is how `.github/workflows/ci.yml` fans
 them into parallel jobs. The tier names and what "no arguments" means are provisional pending
 calef: milestone 440, `design/roadmap/0440-what-no-arguments-means.md`, states the options, their
 costs and the recommendation.
@@ -171,7 +168,7 @@ now records that it asserted the opposite for a month.
 
 ## Index row
 
-Minted 2026-09-13 by calef. The gating set was written down twice, in `script/gates` and in `.github/workflows/ci.yml`, with nothing comparing them; `ci.yml` carried three prose comments
+The gating set was written down twice, in `script/gates` and in `.github/workflows/ci.yml`, with nothing comparing them; `ci.yml` carried three prose comments
 explaining why a check was not in the other list. Six places described the local set and four were
 wrong, each having been correct when written. `script/gates` is retired rather than kept as a
 wrapper (calef: a wrapper to avoid making the changes is an argument from implementation cost, and

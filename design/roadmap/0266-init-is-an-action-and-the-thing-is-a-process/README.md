@@ -10,12 +10,10 @@ the build made, which its prose budget has no room for.
 - [`the-grant-order.md`](the-grant-order.md): why the one difference between the boards went under
   a `cfg`, and the alternatives considered.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
-beside `design/roadmap/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default,
+`design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `the-brief` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, for
-  the parent's pre-build sections from "The measurement, so nobody starts by guessing" to its first
-  `BUGS`. calef names files.
-- `the-grant-order` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  for the parent's "The one genuine difference, argued rather than reached for". calef names files.
+- `the-brief` Name: provisional. For the parent's pre-build sections from "The measurement, so
+  nobody starts by guessing" to its first `BUGS`. calef names files.
+- `the-grant-order` Name: provisional. For the parent's "The one genuine difference, argued rather
+  than reached for". calef names files.

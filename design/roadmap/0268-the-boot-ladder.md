@@ -5,20 +5,10 @@ built: 2026-09-19
 ---
 # 268. Every architecture boots the same way: describe the machine, test yourself, hand over
 
-Built 2026-09-19. Minted 2026-09-09 by calef, from the parity review that followed [milestone 267
-(the tour is three things wearing one name)](0267-the-tour-is-three-things-wearing-one-name.md) and
-its measurement. *(Number provisional until the merge queue lands it.)* Every rung below the last
-one landed on all three architectures on 2026-09-14. The top rung's gate landed 2026-09-19, once
-x86_64 could reach a prompt; see [the third pass](#third-pass-2026-09-19-the-top-rung-gated).
+Every rung is built on all three architectures, and the top rung is gated; see
+[the third pass](#third-pass-2026-09-19-the-top-rung-gated).
 
-The gate, kept as the record. The ladder itself was decided (calef, 2026-09-09, in conversation)
-and nothing in it was a design fork. Only its last rung on x86_64 was gated: that architecture could
-not reach a prompt until §149 (may the kernel answer on an endpoint) said how `swish` gets a console
-there. Milestone 182 (x86_64's interactive boot) owed the entry point, the other half of the gate.
-Every rung below the last one runs before userspace exists and waited on neither, so the bulk of
-this milestone landed first. *(The `**Gate:**` line itself is gone, because `script/roadmap`
-refuses one on a BUILT milestone and would be right. It read `NONE` from 2026-09-19, when milestone
-182's lane cleared it.)*
+The ladder was decided (calef, 2026-09-09, in conversation), and nothing in it was a design fork.
 
 This page is complete on its own. The working behind it is in four appendices, indexed in
 [0268-the-boot-ladder/README.md](0268-the-boot-ladder/README.md):
@@ -144,13 +134,9 @@ finding had finding 3's shape: `Stage::Banner` was unreachable on aarch64, which
 `mmu::print_summary` was `unimplemented!()`, and x86_64's `exceptions::self_test` returned a
 cumulative count rather than a delta.
 
-calef ruled mid-lane (2026-09-14) that `components/src/builder.rs` should go away with this
-milestone, its claim becoming one of the collected self-tests. The lane proposed rather than
-performed the removal, believing `x86_64` could not yet run a compiled ELF. calef answered the
-one-sentence question the same day, *"Retire builder"*, and [milestone 295 (retire
-`components/src/builder.rs`)](0295-retire-the-builder-program.md) performed it. Milestone 182's lane
-corrected the premise that day: `crates/user_mode_runtime` had had `x86_64` arms since milestone 161
-(the x86_64 kernel port).
+`components/src/builder.rs` is retired, its claim one of the collected self-tests (calef,
+2026-09-14: *"Retire builder"*). [Milestone 295 (retire
+`components/src/builder.rs`)](0295-retire-the-builder-program.md) performed it.
 
 ### Second pass (2026-09-14): `x86_64` stops halting
 
@@ -194,14 +180,13 @@ called the rung unreachable on `x86_64`.
 - **Milestone 269.** `machine` as a program that can be run from the prompt.
 - **Recorded.** The `attach_screen` asymmetry is named in BUGS rather than left for a lane to
   rediscover, because the wrong move is the obvious one.
-- **Done.** 2026-09-19, by other lanes: the ladder's top rung on `x86_64`. §149 was resolved
-  2026-09-15 by reversing §121: x86's console is a userspace driver holding a port-range capability.
-  Milestone 299 (the x86 port-range capability) built that capability and the prompt with it.
-  Milestone 182 added the third `script/swish-check` leg, which types 60 of 64 script lines at it.
-  The two bullets above record what was true on 2026-09-14.
-- **Done.** 2026-09-19: `script/boot-check` asserting the prompt on all three architectures. See
-  the third pass.
-- **Done.** 2026-09-14: [milestone 295 (retire
+- **Done.** The ladder's top rung on `x86_64`. x86's console is a userspace driver holding a
+  port-range capability, as §149 (may the kernel answer on an endpoint) resolved. Milestone 299 (the
+  x86 port-range capability) built that capability and the prompt with it. Milestone 182 (x86_64's
+  interactive boot) added the third `script/swish-check` leg, which types 60 of 64 script lines at
+  it.
+- **Done.** `script/boot-check` asserting the prompt on all three architectures. See the third pass.
+- **Done.** [Milestone 295 (retire
   `components/src/builder.rs`)](0295-retire-the-builder-program.md) retired `builder`;
   [first-pass.md](0268-the-boot-ladder/first-pass.md) keeps the handoff.
 - **Milestone 409.** Trim the duplicated bring-up narrative on riscv64 and `x86_64`. The constraint

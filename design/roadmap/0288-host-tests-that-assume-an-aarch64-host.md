@@ -5,10 +5,6 @@ built: 2026-09-14
 ---
 # 288. Host tests that assume the host is aarch64
 
-Built 2026-09-14. Minted by the maintainer 2026-09-14, promoting the proposal milestone
-277 wrote 2026-09-12, which a second lane re-found 2026-09-13 from the other side of the same wall
-and filed again. *(Number provisional until the merge queue lands it.)*
-
 **`cargo test -p elf` failed 20 of 25 unit tests, both integration tests and the module doc-test on
 an `x86_64-unknown-linux-gnu` host.** `script/test` runs the host pass first, so on the commonest
 developer machine there is it could not reach a single kernel leg. Every failure was
@@ -59,15 +55,13 @@ phrase now has a definition, decided by the same `cfg` that decides what is *acc
 is `KNOWN_MACHINES.len() - 1`, so a new architecture that reaches `EXPECTED_MACHINE` without
 reaching the list **fails the build** on the host that adds it.
 
-`machine_no_nife_build_accepts`, checked at compile time. The "a machine nife does not run at
-all" test uses SPARC (2), and its own doc comment records that the number *used to be* `x86_64`'s
-and had to move the day x86_64 became a target (milestone 161). That number now goes through a
-`const fn` asserting it is in none of `KNOWN_MACHINES`, so the next time this happens it is a build
-error rather than a test that quietly asserts nothing. **Deliberately stronger than "not this
-build's machine"**: checking against `EXPECTED_MACHINE` alone would fail only on an x86_64 build,
-which is to say only on a machine nobody working on this had. Checking against all three fails on
-the aarch64 laptop where the mistake gets made. A gate that fires only where nobody is standing is
-not a gate.
+`machine_no_nife_build_accepts`, checked at compile time. The "a machine nife does not run at all"
+test uses SPARC (2), and that number goes through a `const fn` asserting it is in none of
+`KNOWN_MACHINES`, so the next time this happens it is a build error rather than a test that quietly
+asserts nothing. **Deliberately stronger than "not this build's machine"**: checking against
+`EXPECTED_MACHINE` alone would fail only on an x86_64 build, which is to say only on a machine
+nobody working on this had. Checking against all three fails on the aarch64 laptop where the mistake
+gets made. A gate that fires only where nobody is standing is not a gate.
 
 Three fuzz seeds, one per machine. `fuzz/seeds/elf_parse/` held `minimal_rx.elf`, aarch64, under
 an honest note that a riscv64 build would reject it; the note predated x86_64 being a target and
@@ -127,11 +121,10 @@ applied to a gate rather than to a proof:
 | `Builder::new()` reverted to `EM_AARCH64` | 19 of 25 red again |
 | A fourth machine in `KNOWN_MACHINES` with no `EXPECTED_MACHINE` arm | **compiles, correctly**: that build accepts aarch64 and is right to call the newcomer foreign |
 
-The last row is the one worth reading. The first draft of `FOREIGN_MACHINES`' doc comment claimed
-the guard fires "or the other way round"; the injection showed it does not, and the asymmetry is now
-written out in the crate rather than left standing as an overclaim. The second row's first attempt
-failed with `index out of bounds` rather than the intended message, so the bound check moved ahead
-of the write and the build error now names its cause.
+The last row is the one worth reading. The guard does not fire "the other way round", and
+`FOREIGN_MACHINES`' doc comment writes the asymmetry out rather than overclaiming. For the second
+row, the bound check runs ahead of the write, so the build error names its cause rather than
+`index out of bounds`.
 
 The seed generator in `fuzz/seeds/README.md` was re-run and reproduces the aarch64 seed
 byte-identically to the file it replaces (`md5 b559ce57`), which is how the other two were
@@ -237,8 +230,7 @@ cuts both ways here, and the honest statement is that the aarch64 and riscv64 ho
 
 ## Index row
 
-Minted 2026-09-14 by the maintainer, promoting a proposal two lanes filed eight days apart
-(milestone 277 on 2026-09-12, and a second lane on 2026-09-13) after `cargo test -p elf` failed 20
+`cargo test -p elf` failed 20
 of 25 unit tests, both integration tests and the module doc-test on an x86_64 Linux host, blocking `script/test`'s host pass before a single kernel leg. One defect written four times: a machine
 literal where the meaning was host-relative, three of the four within a screen of the `NATIVE_MACHINE` that exists to prevent them. Rung one twice: `FOREIGN_MACHINES` is `KNOWN_MACHINES` minus `EXPECTED_MACHINE`, so the pair cannot be written by hand and a fourth
 architecture fails the build; `machine_no_nife_build_accepts` checks a never-a-nife-machine number

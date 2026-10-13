@@ -167,8 +167,7 @@ right reason.
 
 ## Index row
 
-Minted 2026-09-13 by the maintainer, one message from asking calef to ratify `serial_driver` a
-second time; he ratified it 2026-09-08, and `job_mix_task` 2026-09-05. A stale `Name: provisional`
+A stale `Name: provisional`
 block above a bolded `**Name: ratified ...**` was silent both ways: the parse stops at the first
 block and cannot see a bolded one, so the gate reported a plausible wrong answer. Rung four to
 rung two: `strays()` in the shared module finds every comment line a reader would take as a header

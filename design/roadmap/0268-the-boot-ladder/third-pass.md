@@ -1,9 +1,8 @@
 # The third pass, 2026-09-19: the top rung, gated
 
-An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md),
-moved from its section "Third pass" on 2026-10-12 (UTC) under §212 (a prose budget). The main page
-keeps what changed, the cost, why the gate boots the PVH image, and both findings, and is complete
-without this file. This one keeps the transcript, the cost table and the full reasoning.
+An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md).
+The main page keeps what changed, the cost, why the gate boots the PVH image, and both findings, and
+is complete without this file. This one keeps the transcript, the cost table and the full reasoning.
 
 The last outstanding item. `script/boot-check` asserts the `swish` prompt on all three
 architectures, which is the rung this milestone named as the terminal state of a default boot and

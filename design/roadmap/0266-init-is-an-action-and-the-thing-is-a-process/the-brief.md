@@ -1,10 +1,10 @@
 # One progenitor: the brief as minted
 
-Moved from [milestone 266 (one progenitor, on all three architectures)](../0266-init-is-an-action-and-the-thing-is-a-process.md)
-under §212 (a prose budget). This appendix holds what the block asked of its lane before the build
-on 2026-09-08. That is the measurement it started from, what a lane had to do rather than assume,
-the one difference and the contradiction it was asked to resolve, and the limits it predicted. What the lane found is on the
-page.
+An appendix to
+[milestone 266 (one progenitor, on all three architectures)](../0266-init-is-an-action-and-the-thing-is-a-process.md).
+It holds what the block asked of its lane before the build. That is the measurement it started
+from, what a lane had to do rather than assume, the one difference and the contradiction it was
+asked to resolve, and the limits it predicted. What the lane found is on the page.
 
 ## The measurement, so nobody starts by guessing
 

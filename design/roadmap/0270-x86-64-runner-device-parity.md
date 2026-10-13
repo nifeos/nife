@@ -9,17 +9,14 @@ needs_person: no
 ---
 # 270. Wire `virtio-gpu-pci` and `virtio-input` into the x86_64 test runner
 
-Minted 2026-09-10 by calef, from the live skip inventory taken while
-reviewing milestone 268's parity plan. *(Number provisional until the merge queue lands it.)*
-
 Not a design fork. `helpers/qemu-runner-aarch64.sh` and
-`helpers/qemu-runner-riscv64.sh` already wire these devices; this is bringing the third runner
+`helpers/qemu-runner-riscv64.sh` already wire these devices. This brings the third runner
 script into line with the other two, the way `notes/architecture-list-sweep.md`'s eleven gaps
 already are.
 
 ## What is skipping, and why this is the cheapest fix in the inventory
 
-Four `#[test_case]`s skip on every x86_64 test run, all for the same reason:
+Four `#[test_case]`s skip on every x86_64 test run, all for the same reason.
 `helpers/qemu-runner-x86_64.sh` wires no `virtio-gpu-pci` and no `virtio-input` function onto the
 PCI bus it enumerates.
 
@@ -27,12 +24,12 @@ PCI bus it enumerates.
 - `kernel/src/user/compositor_tests.rs` (GPU driver start)
 
 Each site's own comment already states the cause correctly and calls it "an honest, expected gap
-rather than a bug" (milestone 164's shape: a scope gap named where the reader meets the feature).
-It is not a capability gap. virtio-gpu and virtio-input are PCIe, their BARs are memory, and
-neither driver maps device registers directly; both hold a kernel-mediated `Virtio` capability
-(`components/src/gpu_driver.rs`, `components/src/keyboard_driver.rs`). DECISIONS §121 does not touch them. The
-`xtask` comment that once lumped `gpu_driver` in with the port-I/O programs it cannot run was
-corrected 2026-09-09 (PR #785) for exactly this reason.
+rather than a bug" (milestone 164 (x86_64 userspace can't build `aes`)'s shape: a scope gap named
+where the reader meets the feature). It is not a capability gap. virtio-gpu and virtio-input are
+PCIe, their BARs are memory, and neither driver maps device registers directly; both hold a
+kernel-mediated `Virtio` capability (`components/src/gpu_driver.rs`,
+`components/src/keyboard_driver.rs`). DECISIONS §121 (what a device capability is when the device
+has no page) does not touch them.
 
 So this is a missing command-line flag in a shell script, not a design question, and it is the
 single change that closes four of the seven skips found in the 2026-09-10 inventory.

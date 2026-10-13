@@ -5,9 +5,6 @@ built: 2026-09-13
 ---
 # 287. `script/bootstrap` installs a working QEMU on Linux, instead of printing how to
 
-Built 2026-09-13. Minted by the maintainer after reproducing the whole failure on a
-stock Ubuntu box. *(Number provisional until the merge queue lands it.)*
-
 This is AGENTS.md's third principle failing, and the tell is that the fix for it had already been
 written once. *A newcomer must be able to succeed without asking anyone.* Milestone 117's second
 stranger run found that `script/setup` could not complete on a stock Linux box; the remedy applied
@@ -98,7 +95,7 @@ them and loses on a measurement, not on taste.
 
 ## What was built
 
-- `helpers/qemu-path.sh` (**name provisional**, minted by this lane): prepends
+- `helpers/qemu-path.sh` (**name provisional**): prepends
   `${QEMU_PREFIX:-$HOME/.cache/nife-qemu}/bin` to PATH when that prefix holds the pinned version.
   Idempotent, so an entry point calling another cannot stack the prefix up.
 - `script/bootstrap`: the dead `linux` comparison is `Linux`; on a Linux `qemu-check` failure it
@@ -237,12 +234,13 @@ half is fixed and proven, and a different wall is standing behind it.
 
 ## Index row
 
-Minted 2026-09-13 after reproducing the whole failure on a stock Ubuntu box. Milestone 117's
-stranger run found `script/setup` could not complete on cold Linux; the remedy applied was a
-better error message, and three defects sat on it. The message never printed (`[ "$os" = linux ]`,
-while `uname -s` says `Linux`). Printing is rung four. And the two commands it printed looped: `script/ci-qemu` installs into `$HOME/.cache/nife-qemu` and the only thing in the tree that ever
-put that on PATH was `ci.yml`, so twelve minutes of building ended at `/usr/bin`'s 8.2.2 again,
-forever. notes/stranger-test.md had recorded it fixed and was wrong for twenty-eight days.
-bootstrap now runs `ci-qemu` itself; `helpers/qemu-path.sh` (**name provisional**) is the PATH
-half, sourced rather than executed because the emulator is named bare from 38 sites and
-inheritance reaches them all; `script/lint` gates that every entry point resolves it.
+Reproduced whole on a stock Ubuntu box. Milestone 117 (the stranger test)'s stranger run found
+`script/setup` could not complete on cold Linux; the remedy applied was a better error message, and
+three defects sat on it. The message never printed (`[ "$os" = linux ]`, while `uname -s` says
+`Linux`). Printing is rung four. And the two commands it printed looped: `script/ci-qemu` installs
+into `$HOME/.cache/nife-qemu` and the only thing in the tree that ever put that on PATH was
+`ci.yml`, so twelve minutes of building ended at `/usr/bin`'s 8.2.2 again, forever.
+notes/stranger-test.md had recorded it fixed and was wrong for twenty-eight days. bootstrap now runs
+`ci-qemu` itself; `helpers/qemu-path.sh` (**name provisional**) is the PATH half, sourced rather
+than executed because the emulator is named bare from 38 sites and inheritance reaches them all;
+`script/lint` gates that every entry point resolves it.

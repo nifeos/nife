@@ -9,10 +9,7 @@ needs_person: no
 ---
 # 273. Port `ipc_thread_scaling` and `app_displacement` to x86_64, or record why not
 
-Minted 2026-09-10 by calef, from the live skip inventory.
-*(Number provisional until the merge queue lands it.)*
-
-Not a design fork; these are two existing benchmark functions gated
+Not a design fork. These are two existing benchmark functions gated
 `#[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]` in `kernel/src/bench.rs`, and this
 is either extending the `cfg` to x86_64 or recording a reason the extension does not apply.
 
@@ -31,7 +28,7 @@ core-pinning story differs that could be it) that simply was never written down.
 
 ## What this needs
 
-1. Find out why, before building anything: read `real_single_hart_or_skip` and whatever else
+1. Find out why, before building anything. Read `real_single_hart_or_skip` and whatever else
    both functions depend on, and check whether it already supports x86_64 or would need porting.
 2. If nothing blocks it, extend the `cfg` to include x86_64 and take the measurement, the same
    register-of-measures shape milestone 134 already uses for the other two architectures.

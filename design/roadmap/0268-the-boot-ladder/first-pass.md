@@ -1,10 +1,9 @@
 # The first pass, 2026-09-14: what was built and how it was proved
 
-An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md),
-moved from its section "What was built (2026-09-14)" on 2026-10-12 (UTC) under §212 (a prose
-budget). The main page keeps each item, each finding and the `builder` outcome in summary and is
-complete without this file. This one keeps the transcripts, the per-item detail and the `builder`
-reasoning as the lane wrote them, with long sentences split.
+An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md).
+The main page keeps each item, each finding and the `builder` outcome in summary and is complete
+without this file. This one keeps the transcripts, the per-item detail and the `builder` reasoning
+as the lane wrote them.
 
 The block was PARTIAL that day, and deliberately so. Every rung below the last one landed on all
 three architectures on 2026-09-14. The last rung was reached on aarch64 and riscv64 and was still

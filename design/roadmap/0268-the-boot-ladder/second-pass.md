@@ -1,9 +1,8 @@
 # The second pass, 2026-09-14: the top rung's entry point, and two BUGS closed
 
-An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md),
-moved from its section "Second pass" on 2026-10-12 (UTC) under §212 (a prose budget). The main page
-keeps what changed and which BUGS closed, and is complete without this file. This one keeps the
-transcripts that proved it.
+An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md).
+The main page keeps what changed and which BUGS closed, and is complete without this file. This one
+keeps the transcripts that proved it.
 
 Built in one lane with [milestone 182 (x86_64's interactive
 boot)](../0182-x86-64-interactive-boot.md), whose block carries the entry point in full.

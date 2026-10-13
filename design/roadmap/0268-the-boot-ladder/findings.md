@@ -1,10 +1,8 @@
 # The four findings and the name, in full
 
-An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md),
-moved from its sections "The four findings this is built on" and "Why `self_test`" on 2026-10-12
-(UTC) under §212 (a prose budget). The main page keeps each finding and the naming verdict in a
-sentence or two and is complete without this file. This one keeps the measurements behind them as
-they stood on 2026-09-09.
+An appendix of [milestone 268 (every architecture boots the same way)](../0268-the-boot-ladder.md).
+The main page keeps each finding and the naming verdict in a sentence or two and is complete without
+this file. This one keeps the measurements behind them as they stood on 2026-09-09.
 
 ## The four findings this is built on, each measured
 

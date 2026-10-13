@@ -9,9 +9,8 @@ needs_person: no
 ---
 # 269. `machine` at the prompt: ask what this computer is without rebooting it
 
-Minted 2026-09-09 by calef, in the same conversation as milestone 268:
-*"If we can get every OS to boot to swish, then we can run machine to get the unified display of
-each machine."* *(Number provisional until the merge queue lands it.)*
+calef, 2026-09-09: *"If we can get every OS to boot to swish, then we can run machine to get the
+unified display of each machine."*
 
 Milestone 268 builds the kernel-side description and settles what questions it
 answers. This puts the same answers behind a program.

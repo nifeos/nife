@@ -56,7 +56,7 @@ could quietly break.
 Verified on the machine rather than asserted, in both directions.
 
 - Negative control first, so the positive result cannot be vacuous: the witness's `REPORT` slot
-  was moved from 0 to 5 with the client's grant list left at five entries.
+  set to 5 instead of 0, with the client's grant list left at five entries.
   `an_ntp_client_holds_no_writable_clock_page` failed, because slot 5 held nothing and the witness's
   first `send` had nowhere to go.
 - Then the client gained a sixth slot: one more `rendezvous_cap(report, Rights::WRITE)` appended
@@ -119,25 +119,6 @@ The old header claimed *"There is no test-only branch anywhere in the client"* o
 `ROLE_PROBE_CLOCK`, which is a test-only branch in the client's binary. After the split the sentence
 needs no qualification, and `components/src/network_time_client.rs` says so where the old one did not.
 
-## What milestone 265 needs to know, and this block does not edit it
-
-`design/roadmap/0265-proto-is-a-truncation-not-an-abbreviation.md` owns `ntp_proto` →
-`network_time_protocol` and the `_proto` → `_protocol` sweep across 14 crates and 349 files. None of
-it is performed here: these three programs depend on `ntp_proto` spelled the way it is spelled
-today, and 265 will sweep their `use` lines with everything else.
-
-Two things in 265 are overtaken by this ruling and are left for the maintainer rather than edited from
-this lane:
-
-- **Its table does not list the `ntp` program**, because when it was written the program was one
-  thing. It is three now, and two of them are in `fixtures/`.
-- Its paragraph "The `ntp` program stays `ntp`, and that is an exception that must say so" is
-  superseded. That exception rested on `AGENTS.md` leaving the length of a typed command to its
-  author, and nothing types this one: the kernel's wiring loads it from the archive by name. After
-  290 there is no `ntp` program at all, the client's name already carries the `network_time` stem
-  calef ruled on 2026-09-13, and the pair `network_time_protocol`/`network_time_client` does not
-  disagree. **265 gets smaller because of this milestone, not larger.**
-
 ## What was built
 
 - `components/src/network_time_client.rs`, the client, with the role dispatch gone: `_start`
@@ -148,7 +129,7 @@ this lane:
 - `fixtures/src/unwritable_clock_witness.rs`, thirteen lines of body: report, write, report again
   (which is the failure), exit.
 - `kernel/src/user/ntp_service.rs`: `spawn_role` is `spawn_with_client_endowment`
-  (**function name provisional**, minted by this lane), `start_probe` is `start_witness`, the role
+  (**function name provisional**), `start_probe` is `start_witness`, the role
   constants are gone, and the module header states the one-list invariant.
 - `kernel/src/user/ntp_tests.rs`: one `ntp_image()` becomes `client_image()`,
   `test_server_image()` and `witness_image()`, so a test that spawns the witness where it meant the
@@ -250,19 +231,11 @@ three new names ratified and carrying eight refusals between them.
 - **Milestone 402.** `entropy_service::ensure` hands its first caller a `Wiring` whose `ready`
   endpoint must be drained, because the service announces itself with a blocking send, and nothing
   in the type says so. This lane hit it in `ntp_tests` and fixed that one caller; the general
-  remedy, making the obligation unrepresentable rather than documented, is 402. Numbered on
-  2026-09-19 by milestone 433's drain of the pile. **The prose on this bullet was not this
-  bullet's**: until 2026-09-19 it described the six shared-frame accessors, which is the subject of
-  the bullet directly above this one, and the mismatch predates this pass. The displaced paragraph
-  was not carried anywhere, because the shared-frame block that bullet names already states all of
-  it and more, with the table of six programs the paragraph only listed.
-- **Recorded.** Milestone 265's table row and its `ntp` exception paragraph, both named in the
-  section above. Neither is editable from this lane, so they are recorded here and in this lane's
-  report, and they are the maintainer's at merge.
+  remedy, making the obligation unrepresentable rather than documented, is 402.
 - **Recorded.** The four limitations above stay in this block's `BUGS`, and the two stale citations
   are the ones most likely to waste somebody's minute: a reader following §139's path finds nothing
   at all rather than something wrong.
 
 ## Index row
 
-Minted 2026-09-14 when calef, working the unratified worklist, ruled the split and named all three: `network_time_client` in `components/`, `network_time_test_server` and `unwritable_clock_witness` in `fixtures/`. One binary dispatched three roles on `arg0` and justified it as keeping the initrd's directory small, which is implementation convenience and ranks below everything else. The interesting half is the argument that looked load-bearing and was false: the docs claimed the clock-page probe had to be the *same binary* as the client, and the fault is caused by the capability set rather than the code. What keeps the witness honest is that one function endows both and takes the image as a parameter. `an_ntp_client_holds_no_writable_clock_page` asserts exactly what it asserted before; one line changed, the image. Milestone 265's `ntp`-stays-`ntp` exception is overtaken and is left for the maintainer rather than edited from a lane.
+calef ruled the split and named all three (2026-09-14): `network_time_client` in `components/`, `network_time_test_server` and `unwritable_clock_witness` in `fixtures/`. One binary dispatched three roles on `arg0` and justified it as keeping the initrd's directory small, which is implementation convenience and ranks below everything else. The interesting half is the argument that looked load-bearing and was false: the docs claimed the clock-page probe had to be the *same binary* as the client, and the fault is caused by the capability set rather than the code. What keeps the witness honest is that one function endows both and takes the image as a parameter. `an_ntp_client_holds_no_writable_clock_page` asserts exactly what it asserted before; one line changed, the image. Milestone 265 (`_proto` is a truncation)'s `ntp`-stays-`ntp` exception is overtaken and is left for the maintainer rather than edited from a lane.

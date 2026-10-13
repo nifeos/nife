@@ -15,15 +15,11 @@ for.
 - [`third-pass.md`](third-pass.md): the 2026-09-19 prompt rung, its transcript, the cost table, the
   PVH reasoning and the two things found on the way.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `findings` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  parent's "The four findings this is built on" and "Why `self_test`". calef names files.
-- `first-pass` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "What was built (2026-09-14)". calef names files.
-- `second-pass` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "Second pass (2026-09-14)". calef names files.
-- `third-pass` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "Third pass (2026-09-19)". calef names files.
+- `findings` Name: provisional. For the parent's "The four findings this is built on" and "Why
+  `self_test`". calef names files.
+- `first-pass` Name: provisional. For the parent's "What was built (2026-09-14)". calef names files.
+- `second-pass` Name: provisional. For the parent's "Second pass (2026-09-14)". calef names files.
+- `third-pass` Name: provisional. For the parent's "Third pass (2026-09-19)". calef names files.

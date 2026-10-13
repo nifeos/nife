@@ -5,17 +5,14 @@ built: 2026-09-14
 ---
 # 265. `_proto` is a truncation, and it collides with the other word it could be short for
 
-Built 2026-09-14. Minted 2026-09-05 by calef, on being shown `timebase_proto` for
-ratification: *"I think `_proto` was lazy on my part. It should have been `_protocol` globally to
-differentiate from prototype."* *(Number provisional until the merge queue lands it.)*
+calef, 2026-09-05, on being shown `timebase_proto` for ratification: *"I think `_proto` was lazy
+on my part. It should have been `_protocol` globally to differentiate from prototype."*
 
-## The measurement, and this block's own numbers were wrong
+## The measurement
 
-Re-measured on 2026-09-14 against `origin/main` at `2487a1f7`: 15 crates carrying `_proto`, one
-more crate and one program carrying a stem that had to travel with them, referenced across 424
-files. The block said 14 crates and 349 files, and both figures are corrected here rather than
-quietly: the crate count was written before `capability_demo_proto` arrived with milestone 291 on
-2026-09-14, and the file count was never re-derived. The precise measurement is
+Measured on 2026-09-14 against `origin/main` at `2487a1f7`: 15 crates carrying `_proto`, one more
+crate and one program carrying a stem that had to travel with them, referenced across 424 files.
+The measurement is
 `git grep -lE '\b(<the seventeen names>)\b'`, which is also the enumeration the rename was performed
 from.
 
@@ -92,24 +89,14 @@ line drawn rather than derived, and a reader is owed the reason: `elf` and `pci`
 is the `pci` case one level down: domain name system teaches nothing a reader did not already
 have.
 
-The cost is honest and is this block's to carry: the exemption used to be one rule and is now a
-rule with a boundary, and nothing mechanical can tell a format from a protocol. The next name that
+The cost is honest and is this block's to carry: the exemption is a rule with a boundary rather
+than one rule, and nothing mechanical can tell a format from a protocol. The next name that
 tests it comes to calef.
 
-The `ntp` program was to stay `ntp`, and the exception expired before this milestone ran.
-Milestone 388, `design/roadmap/0388-an-acronym-sweep-the-tree-can-do-at-once.md`, named this exact pair as a
-reason not to work one name at a time: *"Spelling out the program alone leaves the pair disagreeing;
-spelling out the crate alone overturns a ratification as a side effect of tidying a program."* This
-block accepted the disagreement, on the ground that `AGENTS.md` leaves the length of a typed command
-to its author and `ntp` is what a person types.
-
-Milestone 290 found that premise false on 2026-09-14 and dissolved the exception rather than
-overruling it. Nothing types `ntp`: the kernel's wiring loads it from the archive by name. So the
-program was split into `network_time_client`, `network_time_test_server` and
-`unwritable_clock_witness`, all three already spelled the way this milestone would spell the crate,
-and there is no `ntp` program left to disagree with `network_time_protocol`. The paragraph is kept
-rather than deleted because the reasoning was sound and the fact under it was not, which is worth a
-reader's minute.
+There is no `ntp` program. Milestone 290 (`components/src/ntp.rs` is three programs wearing one
+name) split it into `network_time_client`, `network_time_test_server` and
+`unwritable_clock_witness`, all three spelled the way this milestone spells the crate, so nothing
+disagrees with `network_time_protocol`.
 
 ## Why, and the rule it fails is the tree's own
 
@@ -171,42 +158,16 @@ change. calef held it back on 2026-09-05 for exactly that reason, and its succes
 `counter_frequency_protocol` is still `provisional` for the same one: he ruled the stem and has not
 been shown the whole name.
 
-## `login_protocol` keeps a stem that is still open, and the second rename is accepted
+## `login_protocol` is final
 
-`login_proto` became `login_protocol`, suffix only, stem untouched, and that will cost a second
-rename. calef parked the whole `login` family on 2026-09-14 without ruling what it is named for.
-The alternative was to leave one crate spelled `_proto` while fourteen siblings read `_protocol`,
-which is exactly the split state this milestone exists to end, so the uniform suffix won and the
-cost was taken with its eyes open rather than overlooked.
-
-Where the stem question lived: a proposal carrying the measurement and the options, which took no
-position. It was answered and deleted on 2026-09-15; see the correction at the end of this section.
-
-**It was not on `main` while this milestone was performed, and that is why the cost is written twice
-here rather than cited once.** It sat unlanded on the branch `maintainer/ratify-entropy` until PR
-#861 merged partway through this lane, so for most of the work the only record a reader could reach
-was this block and the crate's own provenance. That is the branch-as-record failure `AGENTS.md`
-names, nobody reads branches, and it is worth leaving recorded now that it is closed: the duplication
-above is not redundancy, it is what a lane has to do when the record it depends on is somewhere a
-reader cannot get to.
-
-What that costs, stated so nobody has to rediscover it: when the `login` stem is ruled, these
-files move again. It is one crate, 27 files at the time of writing, and the compiler finds every
-site because a crate rename is compiler-checked. The cost is the record rather than the code, which
-is this tree's usual asymmetry: a second rename means a second set of provenance edits and a second
-chance to sweep an account. The crate's own provenance block says all of this where a reader meets
-it.
-
-**Corrected 2026-09-15: the second rename will not happen.** calef ruled that the `login` stem stays
-for the whole family, so the cost this section accepted is never paid and `login_protocol` is final.
-The account above is kept as written, because it is what this lane knew and chose when it performed
-the suffix; the argument for keeping the stem is in `design/naming/vocabulary-rulings.md`, "The
-`login` stem stays".
+`login_proto` became `login_protocol`, suffix only. calef ruled that the `login` stem stays for the
+whole family (2026-09-15), so `login_protocol` is final. The argument for keeping the stem is in
+`design/naming/vocabulary-rulings.md`, "The `login` stem stays".
 
 ## How it was performed, and what the sweep took
 
-Moved on 2026-10-12 (UTC) into [`how-it-was-performed.md`](0265-proto-is-a-truncation-not-an-abbreviation/how-it-was-performed.md)
-under §212 (a prose budget): the pattern and the two habits it relied on, the five records the
+[`how-it-was-performed.md`](0265-proto-is-a-truncation-not-an-abbreviation/how-it-was-performed.md)
+holds the pattern and the two habits it relied on, the five records the
 sweep took and how they were restored, the `script/lint` check 3 glob, and the status rule that
 decided which markdown moved.
 
@@ -246,15 +207,18 @@ decided which markdown moved.
   in the same pull request, with the hazard written into the check's comment.
 - **Milestone 401.** The class that glob belongs to. One instance is a fix; the question of how
   many other gates pick their own subject with a pattern that is allowed to stop matching is a lane,
-  and this milestone measured only what it tripped over. Numbered on 2026-09-19 by milestone 433's
-  drain of the pile.
+  and this milestone measured only what it tripped over.
 - **Recorded.** The other truncations nobody has swept for, in this block's `BUGS`. It is the same
   shape as the acronym question, and milestone 388 (an acronym sweep the tree can do at once) is the list that already exists for acronyms,
-  with its `BUGS` carrying the names still waiting on an architect. This entry's disposition was
-  `**Proposed.` until 2026-09-19 and was wrong then: that word names the proposal file holding *this*
-  work, and the file it named holds the acronym question instead, so the gate passed on the path's
-  shape rather than on what it held.
+  with its `BUGS` carrying the names still waiting on an architect.
 
 ## Index row
 
-calef, 2026-09-05: it was lazy and should have been `_protocol` globally. `proto` is equally short for `prototype`, which this tree uses for a real thing, and design/naming.md already refuses truncation. The block's own numbers were wrong and are corrected in it: 15 crates, not 14 (`capability_demo_proto` arrived with milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one name) after it was written), across 424 files, not 349. Five stems calef ruled on 2026-09-13 travelled in the same pass rather than renaming the same files twice, and the block's table listed four: `timebase_proto`'s provenance records him ruling `counter_frequency_proto` that day and refusing `timebase_proto`, whose suffixed form `timebase_protocol` a lane working from the table alone would have created. `mdns_config` and `mdns_responder` moved with their protocol's stem. The sweep took five records it should not have (a refusal, two accounts of what the 2026-08-23 renames produced, the 2026-07-30 four-ways account in four crates, and `socket_proto`'s ratification), all restored by enumerating the diff, and `script/lint`'s `crates/*proto` glob would have gone blind rather than red. `login_protocol` took the suffix with its stem still open, accepting a second rename that calef's 2026-09-15 ruling (the stem stays) made unnecessary
+calef, 2026-09-05: it was lazy and should have been `_protocol` globally. `proto` is equally short
+for `prototype`, which this tree uses for a real thing, and design/naming.md already refuses
+truncation. 15 crates carried `_proto`, across 424 files (measured 2026-09-14 at `2487a1f7`). Five
+stems calef ruled on 2026-09-13 travelled in the same pass rather than renaming the same files
+twice: `counter_frequency_proto` was ruled and `timebase_proto` refused, and `mdns_config` and
+`mdns_responder` moved with their protocol's stem. `login_protocol` took the suffix and is final,
+since calef ruled that the `login` stem stays (2026-09-15). The appendix records the five records
+the sweep took and restored, and why `script/lint`'s `crates/*proto` glob had to move with it.

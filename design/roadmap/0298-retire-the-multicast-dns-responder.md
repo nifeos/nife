@@ -5,8 +5,7 @@ built: 2026-09-15
 ---
 # 298. Retire the multicast DNS responder and its two crates, which advertised a goal that is gone
 
-Minted 2026-09-15 by the maintainer on calef's ruling of the same day:
-*"Retire all three."* *(Number provisional until the merge queue lands it.)*
+calef, 2026-09-15: *"Retire all three."*
 
 ## How it came up, because it came up as a naming question
 

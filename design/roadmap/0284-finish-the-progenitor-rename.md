@@ -18,9 +18,9 @@ bullets, of which the second is:
 > A present-tense claim about the system changes, because it is now false.
 
 It applied that to three claims, all in `notes/`, out of 748 occurrences of the role it had
-counted. A measurement on 2026-09-13 found the rest: hundreds of live sentences saying that `init`
-holds the budget, endows the clock, builds the shell and refuses an unmeasured program, in module
-headers, doc comments and notes, about a process that has not been called `init` for five days.
+counted. A measurement against `main` (2026-09-13) found the rest. Hundreds of live sentences, in
+module headers, doc comments and notes, said that `init` holds the budget, endows the clock, builds
+the shell and refuses an unmeasured program, about a process that is not called `init`.
 
 That is a defect rather than a naming decision, which is why a lane may take it. Correcting a
 sentence that is false is not the same act as choosing what a thing is called; 266's own policy
@@ -211,10 +211,12 @@ them, deliberately, so that a rename moves one set of words and not two.
 
 ## Index row
 
-Minted 2026-09-13 by the maintainer from a measurement against `main`. Milestone 266 renamed the
-first process and published the rule that a present-tense claim about the system changes because
-it is now false; it applied that to three claims out of the 748 it counted. 1,751 whole-word `init` remained where a lane may edit, hundreds of them live sentences about a process that has
-not been called that since 2026-09-08. 775 changed across 98 files, 976 left and each class named:
-the verb `fn init` (correct and untouched), records, quotations, captured transcripts, `fixtures/src/hello.rs`'s six role constants (calef's, proposed with `PARENT_*` recommended and
-four refusals) and 471 in files a lane may not edit. Three claims were wrong about more than the
-name. calef's refusal of a `system_initializer` rename now sits in that crate's own `Name:` block.
+Milestone 266 (one progenitor, on all three architectures) renamed the first process and published
+the rule that a present-tense claim about the system changes because it is now false; it applied
+that to three claims out of the 748 it counted. 1,751 whole-word `init` remained where a lane may
+edit, hundreds of them live sentences about a process that has not been called that since
+2026-09-08. 775 changed across 98 files, 976 left and each class named: the verb `fn init` (correct
+and untouched), records, quotations, captured transcripts, `fixtures/src/hello.rs`'s six role
+constants (calef's, proposed with `PARENT_*` recommended and four refusals) and 471 in files a lane
+may not edit. Three claims were wrong about more than the name. calef's refusal of a
+`system_initializer` rename now sits in that crate's own `Name:` block.

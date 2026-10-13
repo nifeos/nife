@@ -5,13 +5,8 @@ built: 2026-09-13
 ---
 # 281. `watch` holds exactly what `ps` holds, so it is nothing
 
-Minted 2026-09-13 by calef, from his own question while ratifying `watch`'s name:
-should the refresh behavior just be a command option for `ps` instead of a program? Reshaped the
-same day, by calef again, once the answer to that question made a better one available: *"We can cut
-`ps` with the `watch` and simplify."* Built on `milestone/281-watch-is-cut-not-folded`. *(Number
-provisional until the merge queue lands it. Title and filename provisional: the block was minted
-as `281-watch-is-a-ps-flag.md` and the filename then contradicted its content; a title is a name and
-therefore calef's.)*
+calef, 2026-09-13: *"We can cut `ps` with the `watch` and simplify."* *(Title and filename
+provisional: a title is a name and therefore calef's.)*
 
 In brief. In a capability system the question "should these be one program or two" has an answer
 that is not a matter of taste: two programs are two programs when they hold different authority.
@@ -95,17 +90,17 @@ the provisional flag existed to keep open, and it is recorded here so a reader m
 disappeared unratified does not have to wonder whether somebody forgot.
 
 The provenance blocks lived at the things themselves (milestone 115's shape), so they died with the
-files. What they said is carried in `crates/grant_plan`'s `Prog` enum, where the variant used to be,
-and in notes/process-view.md's own section, because nobody reads a deleted file any more than they
-read a branch.
+files. What they said is carried in `crates/grant_plan`'s `Prog` enum, at the variant's place, and
+in notes/process-view.md's own section, because nobody reads a deleted file any more than they read
+a branch.
 
 ## What it retires
 
 One program, one `[[bin]]`, one archive entry in each of `xtask`'s two architecture manifests, one
 typed command, one `Prog` variant and its wire id, two scripted swish-check lines, one crate, one
-kernel test module, and two unratified names. `ps` and `crates/ps` are untouched: the whole point
-of the reshaped milestone is that `ps` gains nothing, including the spin loop it would have gained
-from the flag.
+kernel test module, and two unratified names. `ps` and `crates/ps` are untouched: the whole point of
+the reshaped milestone is that `ps` gains nothing, including the spin loop it would have gained from
+the flag.
 
 ## The refusals
 
@@ -137,13 +132,8 @@ from the flag.
   with the program. `ps` and `pgrep` were already reachable only from an interactive prompt, which
   `crates/ps`'s `BUGS` records; this does not widen that gap but it does remove the one neighboring
   line that would have caught a regression in the domain grant at a real prompt.
-- `design/decisions/0139-cycle-counter-authority/trap-and-emulate.md`, that decision's appendix since
-  2026-10-11, cited `components/src/watch.rs:171` as one of its spin-yield sites, and a developer
-  lane may not edit a decision, so it was named here for the integrator. The maintainer noted the
-  deletion in place in that appendix on 2026-10-11 (UTC). This bullet used to name `design/roadmap/0126-who-else-is-running.md` too, for
-  describing `watch` in the present tense; pull request #1349 (milestone 126 (the `procps` package: who else is running)'s re-sweep) fixed that
-  on 2026-09-26. `design/roadmap/0158-kernel-object-rename-build.md` is `BUILT` and correctly keeps
-  the old names: it is an account.
+- `design/roadmap/0158-kernel-object-rename-build.md` is `BUILT` and keeps the old names: it is an
+  account.
 
 ## Follow-on
 
@@ -162,9 +152,8 @@ from the flag.
 
 ## Index row
 
-Minted 2026-09-13 by calef from his own question while ratifying `watch`'s name, and reshaped by
-him the same day: *"We can cut `ps` with the `watch` and simplify."* The measurement that decides
-it is durable even though the conclusion moved: `ps` and `watch` held the same three slots from
+calef, 2026-09-13: *"We can cut `ps` with the `watch` and simplify."* The measurement that decides
+it: `ps` and `watch` held the same three slots from
 the same `grant_plan` constants, and in a capability system two programs are two programs when
 they hold different authority, so the split was arbitrary. The refresh needed no capability of its
 own either, the interval being a yield-spin over the ambient monotonic counter. That argued for a
