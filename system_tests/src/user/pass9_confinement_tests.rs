@@ -56,8 +56,9 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-/// **A capability deleted with `cap_delete` cannot be invoked again** (claim 4, §12 (a consumed
-/// capability cannot be used again)).
+/// **A capability deleted with `cap_delete` cannot be invoked again** (claim 4, §12 (call/reply
+/// IPC: a one-shot reply capability), the decision "a consumed capability cannot be used again"
+/// lives under).
 ///
 /// A `PageFrame` is carved from a budget holding `Rights::ALL`, so it carries `GRANT` and
 /// `PageFrame::SLICE` is permitted: the positive control is one successful slice. The frame
