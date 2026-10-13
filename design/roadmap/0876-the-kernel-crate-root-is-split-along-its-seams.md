@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 876. The kernel crate root is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`kernel/src/lib.rs` is 2,984 lines at `396187b0b`. It was `kernel/src/main.rs` until 2026-09-26,
-when it moved unchanged; as `main.rs` it was 1,033 lines on 2026-08-08 and 2,659 on 2026-09-24.
-It is the kernel crate root, and it holds the boot self-tests AGENTS.md calls the model. §266 (a
+`kernel/src/lib.rs` is 2,984 lines at `396187b0b`. It is the kernel crate root, and it holds the boot self-tests AGENTS.md calls the model. §266 (a
 Rust source file stays under 2,000 lines) sets the ceiling. Milestone 840 (the scheduler file is
 split along its seams) is the model, and milestone 843 (the system-initializer crate root is split
 along its seams) is the nearest case, because most of this file is one function.
@@ -171,10 +168,8 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
 
 ## What was built
 
-Built 2026-10-12 (UTC) on `17b23264e` by lane
-`milestone/876-the-kernel-crate-root-is-split-along-its-seams`, carrying the function-length ratchet
-lane's `kernel_main` split by boot phase (calef's ruling of 2026-10-09 (UTC), moved here by his "A"
-on #1963). The cut is
+Built on `17b23264e`, with `kernel_main` split by boot phase (calef's ruling, 2026-10-09 UTC,
+and his "A" on #1963). The cut is
 [§284 (the kernel crate root splits into child modules, one per boot)](../decisions/0284-the-kernel-crate-root-splits-into-child-modules-one-per-boot.md),
 decided. Its questions 1 and 3 above were answered by those rulings and by §282 (when a file is
 split, the parent becomes an index); calef answered question 2 on 2026-10-12 (UTC): the crate root,

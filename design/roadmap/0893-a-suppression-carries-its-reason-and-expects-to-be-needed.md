@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 893. A suppression carries its reason in the attribute, and fails when it is no longer needed
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by a maintainer session on 2026-10-09 (UTC), one of five lint proposals asked for together.
-Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
+One of five lint milestones. Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
 It reuses the lint ratchet specified in
 [the panic proposal](0896-panics-in-the-kernel-and-the-parsers-are-counted-and-fall.md).
 

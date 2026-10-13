@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 879. The kernel's file-service wiring is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `kernel/src/user/fs_service.rs` is 2,258 lines at `396187b0b`. §266 (a Rust source file stays
 under 2,000 lines) sets the ceiling. Milestone 840 (the scheduler file is split along its seams)

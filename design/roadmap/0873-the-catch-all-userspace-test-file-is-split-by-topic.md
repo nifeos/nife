@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 873. The catch-all userspace test file is split by topic
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`system_tests/src/user/tests.rs` is 3,533 lines at `396187b0b`. It was 3,360 lines on 2026-09-26,
-when milestone 609 (the system tests leave the kernel crate) moved it out of the kernel unchanged.
+`system_tests/src/user/tests.rs` is 3,533 lines at `396187b0b`. 
 §266 (a Rust source file stays under 2,000 lines) sets the ceiling. Milestone 846 (the file-server
 core moves its tests out) is the closest model, since this file is tests and nothing else.
 

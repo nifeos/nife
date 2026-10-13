@@ -9,13 +9,10 @@ needs_person: no
 ---
 # 868. relibc's seed comes under the unsafe gates
 
-*(Minted 2026-10-10 (UTC) by lane `milestone/835-a-c-library-stage-one-files-clock-and-memory`
-from calef's ruling on #1896 the same day; the number is provisional until the merge queue lands
-it. The title and slug are drafts. Debt paydown.)*
+*(The title and slug are provisional.)*
 
 calef ruled Q4 on #1896 (2026-10-10 UTC) as option G1. The C library's seed in `vendor/relibc/`
-comes under the unsafe census and the `unsafe fn` contract check, in a lane of its own. #1896
-merged with a dated exception in `vendor/README.md` naming this milestone.
+comes under the unsafe census and the `unsafe fn` contract check, in a lane of its own.
 
 ## The debt
 

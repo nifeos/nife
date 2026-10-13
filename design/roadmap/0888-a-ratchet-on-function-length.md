@@ -11,12 +11,9 @@ needs_person: no
 ---
 # 888. A ratchet on function length, beside the one on file length
 
-*(Promoted 2026-10-11 (UTC) by lane `milestone/888-a-ratchet-on-function-length` from the proposal
-`a-ratchet-on-function-length`, at the number the maintainer assigned. The number is provisional
-until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by a maintainer session on 2026-10-09 (UTC), one of five lint proposals asked for together.
-Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
+One of five lint milestones. Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
 It reuses the lint ratchet specified in
 [the panic proposal](0896-panics-in-the-kernel-and-the-parsers-are-counted-and-fall.md).
 

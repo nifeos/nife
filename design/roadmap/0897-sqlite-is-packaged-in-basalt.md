@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 897. SQLite is packaged in basalt, and its tests run in basalt's package build
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-10 (UTC) by lane `milestone/835-a-c-library-stage-one-files-clock-and-memory`, from
-calef's ruling the same day: *"We can't add testing of every program that nife will ever run into
+calef, 2026-10-10 (UTC): *"We can't add testing of every program that nife will ever run into
 this tree. We need packages working."*
 
 The sibling of milestone 810 (`ripgrep` is packaged in basalt and installed with `jig`), for SQLite.
@@ -31,8 +28,7 @@ kernel's tree, which calef ruled is the wrong place.
 - basalt's package build runs `speedtest1 --verify` in memory and on a file, on each architecture,
   and fails unless both print the hash nife's tests check today.
 - ioping is packaged the same way by a sibling of its own. That is milestone 906 (ioping is
-  packaged in basalt, and its test installs it with `jig`), minted 2026-10-12 (UTC). It was minted
-  under §297 (software reaches a nife system as a package `jig` installs from basalt's index, the
+  packaged in basalt, and its test installs it with `jig`), under §297 (software reaches a nife system as a package `jig` installs from basalt's index, the
   kernel included).
 - When basalt's build runs them, the C program tests leave nife, and so do the two helpers.
 

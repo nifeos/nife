@@ -11,12 +11,10 @@ needs_person: no
 ---
 # 899. The progenitor's boot is split by phase
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-11 (UTC) by lane `milestone/843-the-system-initializer-crate-root-is-split-along-its-seams`
-as that milestone's named follow-on. Title and slug are drafts.
+It is the named follow-on of milestone 843 (the system-initializer crate root is split along its
+seams).
 
 Milestone 843 (the system-initializer crate root is split along its seams) moves
 `system_initializer::boot` into a file of its own unchanged. That meets the ceiling of §266 (a Rust
@@ -83,8 +81,7 @@ belongs in the same milestone or the next.
 
 ## What was built
 
-Built 2026-10-12 (UTC) by lanes `maintainer/long-function-paydown` (#1993) and
-`maintainer/long-function-paydown-2`, under milestone 888 (a ratchet on function length).
+Built in #1993 and its follow-up, under milestone 888 (a ratchet on function length).
 
 - `boot` is 75 code lines, a sequence of step calls. Its steps live in a new private module,
   `crates/system_initializer/src/boot_steps.rs` (name provisional), because keeping them beside

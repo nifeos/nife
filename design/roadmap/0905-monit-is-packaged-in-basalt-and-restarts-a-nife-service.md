@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 905. monit is packaged in basalt, installed with `jig`, and restarts a nife service it watches
 
-*(Minted 2026-10-12 (UTC) by lane `maintainer/mint-monit-milestone` at calef's request, directly
-rather than through the proposal pile, as milestones 836 to 838 were minted from his ruling. The
-number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 calef, 2026-10-12 (UTC): *"monit is really useful. Lets add a milestone for porting it to nife."*
 And the same day: *"That milestone should require it as a package delivered via jig through

@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 875. The ACPI table parser is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/machine_discovery/src/acpi.rs` is the Advanced Configuration and Power Interface (ACPI)
-table parser, and it is 3,009 lines at `396187b0b`. It was 1,966 lines on 2026-09-24. It is a
+table parser, and it is 3,009 lines at `396187b0b`. It is a
 module of the `machine_discovery` crate, not its root. §266 (a Rust source file stays under 2,000
 lines) sets the ceiling. Milestone 840 (the scheduler file is split along its seams) is the model.
 
@@ -22,9 +21,8 @@ The cut and every module name below are calef's call. A lane writes them up as a
 `status: PROPOSED` file in `design/decisions/` before it moves a line, and its pull request
 carries `needs-architect`.
 
-The lane wrote it up on 2026-10-12 (UTC) as §293 (the ACPI table parser splits into one private
-module per table), `status: PROPOSED`, with the file re-measured on main at `17b23264e`. Three
-decisions had answered forks 1 and 2 below by then: §272 (the grant-plan crate root splits into
+§293 (the ACPI table parser splits into one private module per table) is that write-up, decided,
+with the file measured on main at `17b23264e`. Three decisions answer forks 1 and 2 below: §272 (the grant-plan crate root splits into
 private modules), §274 (the filesystem-protocol crate root splits into its module files) and §279
 (the system-initializer crate root splits into private modules). §282 (when a file is split, the
 parent becomes an index) moves the RSDP, header and root walk out of `acpi.rs` too. §293 applies

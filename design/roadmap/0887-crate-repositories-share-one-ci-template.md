@@ -9,14 +9,13 @@ needs_person: yes
 ---
 # 887. Crate repositories share one CI template, adapted from nife's gates
 
-*(Minted 2026-10-11 (UTC) by lane/crate-release-gates, under calef's direction of that day on
-milestone 857 (crates released on their own). The number is provisional until the merge queue lands
-it; the title, the slug and the template repository's name are drafts for calef's naming pass.)*
+*(The title, the slug and the template repository's name are provisional, for calef's naming
+pass.)*
 
 calef, 2026-10-11 (UTC): *"As a gate for each of these milestones, I want to ensure that we're
 exposing clean crates without nife assumptions. I also want to ensure that the gates that we have
-for nife will be adapted for these crate repos as well."* Approving the plan that minted this
-block: *"Yes. Don't we want proofs and falsifications for our crates?"*
+for nife will be adapted for these crate repos as well."* Approving this block's plan:
+*"Yes. Don't we want proofs and falsifications for our crates?"*
 
 857's Fork 1 already ruled the shape on 2026-10-07: one repository per crate under `nifeos`. Its
 words: *"Every crate repository uses one shared CI template (Kani, lint, release) through reusable
@@ -173,7 +172,7 @@ without being on the list, and `helpers/ci_job_times.py` reads the test reposito
 
 ## BUGS
 
-- The table is this lane's reading of nife's gates on 2026-10-11, not a ruling. A gate added to nife
+- The table is a reading of nife's gates on 2026-10-11, not a ruling. A gate added to nife
   after that date is not in it, and nothing yet makes adding one ask "and the template?".
 - The template's own repository name, workflow names and release cadence are provisional.
 - `needs_person` is `yes` because the crates.io team, the trusted publisher and the approval

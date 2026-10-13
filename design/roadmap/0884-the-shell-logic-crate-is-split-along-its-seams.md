@@ -10,12 +10,10 @@ needs_person: no
 ---
 # 884. The shell logic crate is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/swish/src/lib.rs` is 3,850 lines at `396187b0b`. Its row in
-`design/file-length-baseline.tsv` says 3,885, the size on 2026-10-08 before milestone 809 (the package client
-becomes a program, `jig`, with the verbs an index needs) trimmed it. It was 2,439 lines on 2026-09-01 and 2,636 on 2026-09-24. §266 (a Rust source file stays under
+`design/file-length-baseline.tsv` says 3,885. §266 (a Rust source file stays under
 2,000 lines) sets the ceiling. Milestone 840 (the scheduler file is split along its seams) is the
 model, and milestone 842 (the grant-plan crate root is split along its seams) is the closest case.
 

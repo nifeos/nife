@@ -10,11 +10,9 @@ needs_person: yes
 ---
 # 902. nife's tooling, sorted by who needs it, before any of it moves
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-12 (UTC) by lane `maintainer/tooling-inventory`, on calef's prompt of that day: *"It
+calef, 2026-10-12 (UTC): *"It
 seems like we have a fair amount of automation for how I work in the nife tree. Maybe we need to
 step back and figure out what's mine and what another developer or architect needs and extract that
 out."* He agreed to an inventory first. This is that inventory. It moves nothing. The title, the slug
@@ -261,7 +259,7 @@ independent of the merge queue on day one. It is also how tidy and triagebot alr
 
 ## BUGS
 
-- The class of each file is this lane's reading, not a ruling. The ambiguous rows are the ones a
+- The class of each file is one reading, not a ruling. The ambiguous rows are the ones a
   second reader would most likely move.
 - Callers are found by path search, so a file named only in a comment counts as a reader. Every
   edge above was checked as a real invocation; the table columns were not.

@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 896. Panics in the kernel and in the parsers of untrusted bytes are counted, and the count falls
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by a maintainer session on 2026-10-09 (UTC), one of five lint proposals asked for together.
-Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md),
+One of five lint milestones. Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md),
 which says how each was taken. This one also specifies the lint ratchet the other four reuse.
 
 Reuse: clippy's own `unwrap_used`, `expect_used`, `panic`, `unreachable`, `todo`, `unimplemented`

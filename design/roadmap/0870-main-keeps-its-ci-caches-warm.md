@@ -10,9 +10,7 @@ needs_person: no
 ---
 # 870. `main` keeps its CI caches warm
 
-*(Minted 2026-10-10 (UTC) by lane milestone/870-main-keeps-its-ci-caches-warm, a debt-paydown lane
-launched by the maintainer. The number is provisional until the merge queue lands it; the title, the
-slug and the `main-caches` job name are drafts.)*
+*(The title, the slug and the `main-caches` job name are provisional.)*
 
 ## The defect
 

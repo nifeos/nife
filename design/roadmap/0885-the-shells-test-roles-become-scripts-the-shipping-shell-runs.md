@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 885. The shell's test roles become scripts the shipping shell runs
 
-*(Minted 2026-10-11 (UTC) by lane swish-witnesses-become-scripts, filed at calef's ruling the same
-day; number provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 calef ruled on 2026-10-11 (UTC), on pull request #1914 (milestone 844's cut), "Proceed with both".
 The second of the two was this, in his words: "It seems like we shouldn't need the test roles in

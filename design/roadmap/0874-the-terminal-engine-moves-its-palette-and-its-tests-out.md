@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 874. The terminal engine moves its palette and its tests out
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`crates/video_terminal/src/lib.rs` is 3,242 lines at `396187b0b`. It was 1,778 on 2026-09-08 and
-2,036 on 2026-09-24. §266 (a Rust source file stays under 2,000 lines) sets the ceiling.
+`crates/video_terminal/src/lib.rs` is 3,242 lines at `396187b0b`. §266 (a Rust source file stays under 2,000 lines) sets the ceiling.
 Milestone 840 (the scheduler file is split along its seams) is the model for the form.
 Milestone 846 (the file-server core moves its tests out) is the model for most of the answer.
 

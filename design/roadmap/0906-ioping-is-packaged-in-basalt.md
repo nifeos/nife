@@ -9,10 +9,7 @@ needs_person: no
 ---
 # 906. ioping is packaged in basalt, and its test installs it with `jig`
 
-*(Minted 2026-10-12 (UTC) by lane `maintainer/foreign-programs-via-jig`, under §297 (software
-reaches a nife system as a package `jig` installs from basalt's index, the kernel included). The
-number is provisional until the merge queue lands it; 905 was held by #2022 when this was written.
-The title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 calef, 2026-10-12 (UTC): *"They should all be installed via jig through basalt. I missed that for
 our benchmarking tools, so I created debt by prioritizing them first."* This is that debt for
@@ -66,8 +63,7 @@ Reuse: the helper's pinned fetch and flags, `helpers/build-c-program.sh`'s link,
 ## BUGS
 
 - `helpers/build-ioping.sh`'s header names `system_tests/src/user/ioping_tests.rs`, which does not
-  exist; the test is in `c_program_tests.rs`. Found 2026-10-12 (UTC) and left for whoever next
-  edits the helper, since this lane changes no code.
+  exist; the test is in `c_program_tests.rs`. Left for whoever next edits the helper.
 - basalt has no package build yet. This waits on milestone 810 for the first one.
 
 ## Index row

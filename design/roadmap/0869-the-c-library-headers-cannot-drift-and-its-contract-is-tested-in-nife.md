@@ -9,13 +9,11 @@ needs_person: no
 ---
 # 869. The C library's headers cannot drift, and its contract is tested in nife
 
-*(Minted 2026-10-10 (UTC) by lane `milestone/835-a-c-library-stage-one-files-clock-and-memory`
-from calef's rulings on #1896 the same day; the number is provisional until the merge queue lands
-it. The title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 calef ruled Q2 on #1896 (2026-10-10 UTC) as option B. The cbindgen headers stay committed, and CI
-regenerates them and fails on any difference, the shape rustls-ffi uses. On Q3 he first ruled that
-CI fetch SQLite and ioping, then reshaped it the same day: *"We can't add testing of every program
+regenerates them and fails on any difference, the shape rustls-ffi uses. On Q3 he ruled the same
+day: *"We can't add testing of every program
 that nife will ever run into this tree. We need packages working."*
 
 ## What this milestone is, and is not

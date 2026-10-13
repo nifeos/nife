@@ -9,12 +9,10 @@ needs_person: no
 ---
 # 883. The three longest scripts are split, and a ruling says whether scripts have a ceiling
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Three files under `script/` are over 2,000 lines at `396187b0b`. `script/lint` is 4,006, up from
-2,519 on 2026-09-11. `script/metrics` is 3,297, up from 645. `script/falsifications` is 2,305, up
-from 837. No other file under `script/` or `helpers/` is over 2,000; the next is `script/roadmap`
+Three files under `script/` are over 2,000 lines at `396187b0b`. `script/lint` is 4,006,
+`script/metrics` is 3,297 and `script/falsifications` is 2,305. No other file under `script/` or `helpers/` is over 2,000; the next is `script/roadmap`
 at 1,819.
 
 §266 (a Rust source file stays under 2,000 lines) does not reach them. Its scope is `.rs` files,

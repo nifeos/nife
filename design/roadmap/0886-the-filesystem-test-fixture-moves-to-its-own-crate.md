@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 886. The filesystem test fixture moves to its own crate
 
-*(Minted 2026-10-11 (UTC) by lane fsproto-fixture-gets-its-own-crate, at calef's ruling the same
-day; number provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 calef ruled on #1915, milestone 845 (the filesystem-protocol crate root is split along its seams),
 on 2026-10-11 (UTC): "Keep it for now, and open the follow-up milestone". This is that milestone.

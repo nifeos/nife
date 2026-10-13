@@ -11,13 +11,11 @@ needs_person: no
 ---
 # 891. A mutable static becomes an atomic, a lock or a recorded cell, and `static mut` leaves the kernel
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-## What was built, 2026-10-12 (UTC)
+## What is built
 
-Built by lane `maintainer/static-mut-891` (#1997), from base `0e72ca92a`. Every site in scope is
+Built in #1997, from base `0e72ca92a`. Every site in scope is
 converted. `SERVER_MAPS` was done last, after #1988 moved it into
 `kernel/src/user/fs_service/wiring.rs`.
 
@@ -59,8 +57,7 @@ rollback-boot` (the chooser spends a try, dies at the handoff and comes back on 
 Open question 2 is answered by measurement rather than ruled: the atomics land in `.data` and
 `.bss` as the `u64`s did. calef may still prefer the volatile form.
 
-Raised by a maintainer session on 2026-10-09 (UTC), one of five lint proposals asked for together.
-Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
+One of five lint milestones. Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
 
 Reuse: the tree's own `IrqSafeMutex`, `core::sync::atomic`, and `core::cell::SyncUnsafeCell`
 (nightly feature `sync_unsafe_cell`, compiled on the pinned nightly-2026-10-09 for this proposal).
@@ -186,7 +183,8 @@ sites, each a small change.
 
 - **Milestone 812.** The 27 in `components/` convert in milestone 812 (real threads in one address
   space), each one lowering the ceiling. Open question 3 stands.
-- **Done.** `SERVER_MAPS`, held for #1988, converted in this lane once it landed.
+- **Done.** `SERVER_MAPS` is converted, in #1997: its ownership is `SERVER_MAPS_TAKEN` in
+  `kernel/src/user/fs_service/wiring.rs`.
 
 ## Index row
 

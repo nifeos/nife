@@ -10,13 +10,10 @@ needs_person: no
 ---
 # 890. riscv64 and x86_64 join the shared boot path
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`milestone/890-riscv64-and-x86-64-join-the-shared-boot-path`; number provisional until the merge
-queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-12 (UTC) by lane `milestone/876-the-kernel-crate-root-is-split-along-its-seams`,
-when calef ruled on §284 (the kernel crate root splits into child modules, one per boot): "We should
-treat them as temporary." Title and slug are drafts.
+calef, 2026-10-12 (UTC), ruling on §284 (the kernel crate root splits into child modules, one per
+boot): "We should treat them as temporary."
 
 Reuse: not applicable; this moves and deletes kernel code and adds none.
 

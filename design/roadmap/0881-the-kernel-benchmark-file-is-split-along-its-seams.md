@@ -9,10 +9,9 @@ needs_person: no
 ---
 # 881. The kernel benchmark file is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`kernel/src/bench.rs` is 2,110 lines at `396187b0b`. It was 1,848 lines on 2026-09-24. §266 (a
+`kernel/src/bench.rs` is 2,110 lines at `396187b0b`. §266 (a
 Rust source file stays under 2,000 lines) sets the ceiling. Milestone 840 (the scheduler file is
 split along its seams) is the model. This file is compiled only under `--features bench`, and its
 one entry point, `bench::run`, never returns.

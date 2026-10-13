@@ -10,10 +10,7 @@ needs_person: no
 ---
 # 867. A fifth outsider pass attacks the confinement claim
 
-*(Minted 2026-10-10 (UTC) by this lane as the maintainer's delegate, the way milestone 800 (a
-non-Anthropic model attacks the confinement claim) was minted. The number 867 is provisional; other
-lanes are minting nearby, so expect renumbering at merge. Title, slug and every name below are
-drafts.)*
+*(Title, slug and every name below are provisional.)*
 
 **Reuse:** the counting rule, the report format and the refusal log are milestone 800's, unchanged,
 so the passes compare row for row. This pass is by Claude (Opus 5.5), so it serves criterion (c)'s

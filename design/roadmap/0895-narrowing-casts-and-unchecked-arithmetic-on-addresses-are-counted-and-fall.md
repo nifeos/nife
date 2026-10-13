@@ -10,15 +10,12 @@ needs_person: no
 ---
 # 895. Narrowing casts and unchecked arithmetic on syscall arguments and addresses are counted, and the count falls
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by a maintainer session on 2026-10-09 (UTC), one of five lint proposals asked for together.
-Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
+One of five lint milestones. Its numbers are in [notes/lint-census-2026-10-09.md](../../notes/lint-census-2026-10-09.md).
 It reuses the lint ratchet specified in
 [the panic proposal](0896-panics-in-the-kernel-and-the-parsers-are-counted-and-fall.md); whichever of the
-two is promoted first builds it.
+two is built first builds it.
 
 Reuse: clippy's `cast_possible_truncation`, `cast_sign_loss`, `cast_possible_wrap` and
 `arithmetic_side_effects`. Nothing is written but the ratchet's filter described below.

@@ -9,12 +9,10 @@ needs_person: no
 ---
 # 880. The x86-64 MMU file is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `kernel/src/arch/x86_64/mmu.rs` is the x86-64 memory management unit (MMU) module, and it is 2,192
-lines at `396187b0b`. It was 2,079 on 2026-09-08 and 2,197 on 2026-09-24, so it is not growing
-fast. §266 (a Rust source file stays under 2,000 lines) sets the ceiling. Milestone 840 (the
+lines at `396187b0b`. It is not growing fast. §266 (a Rust source file stays under 2,000 lines) sets the ceiling. Milestone 840 (the
 scheduler file is split along its seams) is the model. Everything stays under `kernel/src/arch/`,
 since this is architecture code.
 

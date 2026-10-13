@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 894. An image carries its distribution's TUF root as a default owner trust line
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-10 (UTC) by milestone 801 (packages over the internet)'s lane, from calef's ruling
-of Q3 on #1884 that day ("K4, a default owner trust line"). The comment there is the record.
+calef ruled Q3 on #1884 on 2026-10-10 (UTC): "K4, a default owner trust line". The comment there is the record.
 
 ## What was ruled
 

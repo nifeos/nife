@@ -10,13 +10,10 @@ needs_person: no
 ---
 # 898. `swish_check_boot` is decomposed into its phases
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by the lane of milestone 847 (the swish-check harness is split along its seams) on
-2026-10-12 (UTC). That milestone moved `swish_check_boot` whole into
-`xtask/src/swish_check/boot.rs`. It is 1,051 lines in one body.
+`swish_check_boot`, in `xtask/src/swish_check/boot.rs` since milestone 847 (the swish-check harness
+is split along its seams), is 1,051 lines in one body.
 
 The body already has phases a reader can see. It builds the images and the disk. It chooses the
 devices each leg's runner attaches. It starts QEMU and the transcript reader. It types each line

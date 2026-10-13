@@ -9,21 +9,13 @@ needs_person: no
 ---
 # 871. A sixth outsider pass attacks the confinement claim
 
-*(Minted 2026-10-10 (UTC) by this lane as the maintainer's delegate, the way milestone 800 (a
-non-Anthropic model attacks the confinement claim) was minted. The number 871 is provisional; other
-lanes are minting nearby, so expect renumbering at merge. Title, slug and every name below are
-drafts. Renumbered from 868 on 2026-10-10 (UTC), because a concurrently merged lane, relibc's seed
-coming under the unsafe gates, took 868 on main and 869 went the same day. It went to 870 and then,
-the same day, to 871, because the lane keeping main's CI caches warm (#1906) claimed 870 at the
-same moment and its claim was the visible one. The branch and pull
-request #1901 keep the old number: GitHub closes a pull request whose head branch is renamed, and
-#1901 carries calef's ruling.)*
+*(Title, slug and every name below are provisional.)*
 
-**Reuse:** the counting rule, the report format and the refusal log are milestone 800's, unchanged,
-so the passes compare row for row. This pass is by GLM 5.3, the non-Anthropic model that ran pass 4
-(milestone 800), so it serves criterion (c)'s non-Anthropic half. If the fifth pass (PR #1895,
-Anthropic, unmerged when this was written) lands clean, this pass can be the second of the two
-consecutive clean passes.
+**Reuse:** the counting rule, the report format and the refusal log are milestone 800 (a
+non-Anthropic model attacks the confinement claim)'s, unchanged, so the passes compare row for row.
+This pass is by GLM 5.3, the non-Anthropic model that ran pass 4 (milestone 800), so it serves
+criterion (c)'s non-Anthropic half. If the fifth pass, milestone 867 (a fifth outsider pass attacks
+the confinement claim), is clean, this pass can be the second of the two consecutive clean passes.
 
 ## Index row
 
@@ -86,7 +78,7 @@ at zero, they could no longer make this pass a clean one. See
 
 - **Outstanding.** The rest of this pass: the 34-row sweep and the variant work, unrun. A seventh
   pass starts criterion (c)'s count afresh and would cover the same rows, so this remainder is
-  likely superseded by it rather than run on its own; that is the maintainer's call when it is
+  likely covered by it rather than run on its own; that is the maintainer's call when it is
   minted.
 - **Milestone 855.** A claims-table row for the package fetch: "A listed location never reaches a
   private or link-local address" has no row in `notes/confinement-claims.md`. Criterion (b) wants

@@ -10,12 +10,10 @@ needs_person: no
 ---
 # 900. The swish-check script splits by topic before it crosses the ceiling
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised by the lane of milestone 847 (the swish-check harness is split along its seams) on
-2026-10-12 (UTC). It moved the script table into its own module.
+Milestone 847 (the swish-check harness is split along its seams) gave the script table its own
+module.
 
 `xtask/src/swish_check/script.rs` holds the rows `script/swish-check` types. It starts at 1,287
 lines. `SWISH_CHECK_SCRIPT` alone was 405 lines on 2026-09-23. It was 1,004 on 2026-10-04 and 1,099

@@ -10,9 +10,7 @@ needs_person: no
 ---
 # 903. A seventh outsider pass attacks the confinement claim
 
-*(Minted 2026-10-12 (UTC) by this lane as the maintainer's delegate, the way milestone 871 (a sixth
-outsider pass attacks the confinement claim) was minted. The number 903 is provisional; other lanes
-are minting nearby, so expect renumbering at merge. Title, slug and every name below are drafts.)*
+*(Title, slug and every name below are provisional.)*
 
 Reuse: the counting rule, the report format and the refusal log are milestone 800 (a
 non-Anthropic model attacks the confinement claim)'s, unchanged, so the passes compare row for row.

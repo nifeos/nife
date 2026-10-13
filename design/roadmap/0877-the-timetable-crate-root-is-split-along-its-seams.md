@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 877. The timetable crate root is split along its seams
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`crates/timetable/src/lib.rs` is 2,468 lines at `396187b0b`. It was 1,619 lines on 2026-09-24,
-reached 2,468 by 2026-10-03, and has not moved since. §266 (a Rust source file stays under 2,000
+`crates/timetable/src/lib.rs` is 2,468 lines at `396187b0b`. It
+has not grown since 2026-10-03. §266 (a Rust source file stays under 2,000
 lines) sets the ceiling. Milestone 842 (the grant-plan crate root is split along its seams) is the
 model for this block.
 
@@ -23,9 +22,8 @@ The cut and every module name below are calef's call. A lane writes them up as a
 carries `needs-architect`.
 
 **BUILT, 2026-10-12 (UTC).** The lane wrote the cut up as §294 (the timetable crate root splits
-into private modules). §282 (when a file is split, the parent becomes an index) was ruled after
-this block was written and answers its rulings 1 to 3: the registry leaves `lib.rs` too, so the
-cut below is superseded. `lib.rs` is 118 lines: the crate docs, the module lines, a named
+into private modules). §282 (when a file is split, the parent becomes an index) answers its
+rulings 1 to 3, and where the cut below disagrees, §282 holds: the registry leaves `lib.rs` too. `lib.rs` is 118 lines: the crate docs, the module lines, a named
 re-export of every public item, and the two constants. The rest moved unchanged into four private
 modules, each with its tests inline beside it: `document` (349 lines), `admission` (714),
 `registry` (782) and `plan_text` (496), with `test_support` for the three helpers more than one

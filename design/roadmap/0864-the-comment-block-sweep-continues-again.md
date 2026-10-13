@@ -11,16 +11,15 @@ needs_person: no
 ---
 # 864. The comment-block sweep continues again, worth four
 
-*(Minted 2026-10-10 (UTC) by lane `milestone/864-the-comment-block-sweep-continues-again` from the proposal `the-comment-block-sweep-continues-again`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised 2026-10-09 (UTC) by the lane that built milestone 863 (the comment-block sweep continues,
-worth three), at the end of its worth. §267 (a comment states the constraint as it is now) caps a
-comment block at 40 lines. Its 2026-10-09 amendment rules the method: the constraint stays,
+§267 (a comment states the constraint as it is now) caps a comment block at 40 lines. It follows
+milestone 863 (the comment-block sweep continues, worth three). §267's amendment of 2026-10-09
+rules the method: the constraint stays,
 history goes to the commit message and git, and no refusal narrative is transplanted into a
 document.
 
-The baseline holds 336 rows. The worst after worth three:
+This worth's rows:
 `crates/jh7110_clock_and_reset/src/lib.rs:2` (184), `crates/current_cpu_protocol/src/lib.rs:1`
 (183), `components/src/login.rs:1` (178), then `crates/jh7110_entropy/src/lib.rs:2` and
 `crates/board_console/src/lib.rs:1` (176 each). A worth takes the worst handful that is not a

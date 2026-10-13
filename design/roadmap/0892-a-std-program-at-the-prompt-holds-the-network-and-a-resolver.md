@@ -18,13 +18,10 @@ day ("yes, record c"). Then he ruled that a manifest declares the network beside
 the owner grants both at install ("a", the same day). What is left is building both for installed
 programs, under "Item 3, ruled" and "The network at install, ruled" below.
 
-*(Promoted from the proposal pile on 2026-10-12 (UTC) by lane
-`maintainer/promote-proposals`; number provisional until the merge queue lands it. Title
-and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Raised 2026-10-09 (UTC) by milestone 801 (packages over the internet)'s lane. It built a std
-program resolving a name through `std::net` and fetching the package index over TLS, and could only
-start it from the kernel test harness.
+Milestone 801 (packages over the internet) built a std program that resolves a name through
+`std::net` and fetches the package index over TLS. Only the kernel test harness can start it.
 
 ## The gap
 

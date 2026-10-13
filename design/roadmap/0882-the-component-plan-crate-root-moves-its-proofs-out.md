@@ -10,12 +10,11 @@ needs_person: no
 ---
 # 882. The component-plan crate root moves its proofs out
 
-*(Minted 2026-10-11 (UTC) by lane split-milestones-2, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/component_plan/src/lib.rs` is 2,067 lines at `396187b0b`, the smallest file over the
-ceiling that §266 (a Rust source file stays under 2,000 lines) sets. It was 1,558 lines on
-2026-09-24. Milestone 846 (the file-server core moves its tests out) is the model, and this block
+ceiling that §266 (a Rust source file stays under 2,000 lines) sets.
+Milestone 846 (the file-server core moves its tests out) is the model, and this block
 reaches a similar answer for a different layer.
 
 Its row in `design/file-length-baseline.tsv` says 2,094. The file lost 27 lines on 2026-10-09,
