@@ -1251,3 +1251,17 @@ mod seventh_pass_delegation_tests;
 /// (DECISIONS §19 (architectural parity is a tenet)).
 #[cfg(test)]
 mod pass9_confinement_tests;
+
+/// **Pass 9: a foreign endpoint cannot reap or survey a child it does not supervise** (an outside
+/// security reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's confinement
+/// claim, claims 6, 7, 8 and 9). A real supervised child is spawned, then a holder of an unrelated
+/// endpoint carrying `READ | ENUMERATE` (every right a supervisor needs) is refused `REAP`
+/// (`NotSupervised`), gets the same answer for a made-up tid (no liveness disclosure), and surveys
+/// `DONE`; the owning endpoint sees and reaps the same child. Reap and survey are refused and
+/// permitted by the same relationship. Where `confinement_attack_tests` drives the right endpoint
+/// with a missing right, this drives the wrong endpoint with every right.
+///
+/// Cross-ISA: the supervision relationship and its decisions are portable kernel code (DECISIONS
+/// §19 (architectural parity is a tenet)); the child stub is per-architecture in `supervision_tests`.
+#[cfg(test)]
+mod pass9_supervision_tests;
