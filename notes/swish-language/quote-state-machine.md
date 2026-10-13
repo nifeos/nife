@@ -1,7 +1,6 @@
 # Where the quote state machine lives, and why there is one of it
 
-Moved verbatim from [`../swish-language.md`](../swish-language.md) under §212 (a prose budget) on
-2026-10-13 (UTC).
+An appendix to [`../swish-language.md`](../swish-language.md).
 
 Three scanners need to know whether a byte is quoted and none of them can share a tokenizer:
 `grant_plan::tokenize` splits on whitespace, `grant_plan::line::split` splits on `>`, `<` and `|`,

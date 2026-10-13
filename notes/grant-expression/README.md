@@ -14,16 +14,12 @@ for.
 - [`clock-grant.md`](clock-grant.md): the four links `date` needed, the one this note got wrong,
   and what a delegable clock would still need.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `two-words` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, after the
-  parent's heading.
-- `memory-grant` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `per-file-grants` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes,
-  after the parent's heading.
-- `clock-grant` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
+- `two-words` Name: provisional, after the parent's heading.
+- `memory-grant` Name: provisional.
+- `per-file-grants` Name: provisional, after the parent's heading.
+- `clock-grant` Name: provisional.

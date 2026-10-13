@@ -1,12 +1,9 @@
 # The tail-stage output fork: milestone 40's last piece, decided the six-questions way
 
-*Written 2026-08-22, by the lane milestone 40's roadmap block handed this to
-(`design/roadmap/0040-documentation-service.md`). The question itself is not new: notes/pipes.md has
-carried it open since milestone 50 (2026-08-04), notes/documentation.md restated it as milestone 40's
-remaining fork on 2026-08-18, and DECISIONS §101 (notification objects), decided 2026-08-20,
-ratified the *direction* without taking milestone 40's specific fork. This note is the six-questions writeup CLAUDE.md's "A fork
-reaches calef with its questions already answered" asks for, so the remaining decision can be made
-in a sentence. See the PR body for the one-paragraph ask.*
+*The six-questions writeup of the fork that milestone 40 (documentation as a system service)'s
+roadmap block (`design/roadmap/0040-documentation-service.md`) names, as "A fork reaches calef with
+its questions already answered" asks. DECISIONS §101 (notification objects) ratifies the
+*direction*, and DECISIONS §106 (take the `terminal_sink_caretaker` narrowing) takes the fork.*
 
 ## The premise, checked against the code rather than trusted
 
@@ -64,7 +61,7 @@ render at a prompt, which is the one thing phase 1 and 2 of this milestone were 
 (notes/documentation.md's own "In brief": rendered for display, not shown raw).
 
 (d) `terminal_sink_caretaker` takes the tail stage's primary output (the option the roadmap
-block names). Not previously refused; DECISIONS §101 explicitly calls it "the right short-term
+block names). DECISIONS §101 calls it "the right short-term
 move" and reserves the specific wiring as milestone 40's own fork, undecided. This is the option
 this note works out in full below, because it is the one live candidate.
 
@@ -210,12 +207,11 @@ separate, later kernel milestone. Nothing here depends on it landing first; §10
 **Phase 3, the graphical viewer**, waits on the display ladder (milestone 29's font rendering,
 milestone 33's compositor) regardless of how this fork resolves.
 
-## Recommendation, and the correction to this note's own question 6
+## Recommendation, and question 6 checked against the code
 
-**No recommendation was offered here originally**, on the reasoning that this is a syscall-adjacent,
-two-programs-must-agree wire decision on the expensive side of *move fast on what can be undone*.
-**That framing was checked against the code during the decision discussion and did not hold.**
-`SINK_BIT`'s own contract (`crates/grant_plan/src/spawnproto.rs`) already makes the child's output
+Take it. The fork looks like a syscall-adjacent, two-programs-must-agree wire decision on the
+expensive side of *move fast on what can be undone*, and the code says it is not. `SINK_BIT`'s own
+contract (`crates/grant_plan/src/spawnproto.rs`) already makes the child's output
 slot opaque to the program: "the shell delegates an endpoint and the progenitor puts it where the result
 endpoint would have gone, so the child writes to a pipe or a file sink without knowing which."
 Nothing about what a program declares changes; no manifest is touched, because the primary output
@@ -226,8 +222,8 @@ itself, which had a real manifest-declaration axis this fork does not.
 
 **Decided 2026-08-22 (DECISIONS §106): take it.** See that decision for the full record. This note's
 contribution stands: the fault-endpoint reuse (question 4) and the caretaker-hop race (question 5)
-are real findings, carried forward as the concrete spec for the build. Milestone 151 (notification
-objects) is minted to track the race's fix, per §106's condition for taking this fork.
+are real findings, and the concrete spec for the build. Milestone 151 (notification objects) tracks
+the race's fix, per §106's condition for taking this fork.
 
 ## BUGS
 

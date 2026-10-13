@@ -1,8 +1,8 @@
 # The three faults the prompt walk exposed
 
-Moved verbatim from [`../ripgrep-on-nife.md`](../ripgrep-on-nife.md)'s "The walk at the prompt"
-under §212 (a prose budget) on 2026-10-13 (UTC). The walk ran on 2026-10-07 (UTC) for milestone
-121 (`ripgrep` on nife: enumeration as a capability, and what the walk costs).
+An appendix to [`../ripgrep-on-nife.md`](../ripgrep-on-nife.md), holding its "The walk at the
+prompt". The walk ran on 2026-10-07 (UTC) for milestone 121 (`ripgrep` on nife: enumeration as a
+capability, and what the walk costs).
 
 The walk exposed three faults, each fixed in the same change:
 

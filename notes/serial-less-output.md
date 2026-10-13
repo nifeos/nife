@@ -168,11 +168,9 @@ Everything is on the monitor. Nothing else is connected.
 3. The boot tour, beginning `nife on x86_64 (long mode, ring 0, 4-level paging)`, with a
    `screen      :` line naming the geometry.
 4. The screen clears a second time and the shell's banner and `$ ` fill it at the tour's
-   scale (137x67 on 1920x1080). When this was written there was no keyboard on a machine without
-   a serial port, so the prompt was as far as it went. *Corrected 2026-10-11 (UTC), from milestone
-   242 (USB host and HID)'s block:* a USB keyboard has typed into the shell under QEMU on all three
-   architectures since 2026-10-04, and nobody has yet typed on a real one. If the keyboard answers
-   here, that is the first record; `notes/usb.md` is the page.
+   scale (137x67 on 1920x1080). A USB keyboard types into the shell under QEMU on all three
+   architectures (milestone 242 (USB host and HID)), and nobody has yet typed on a real one. If
+   the keyboard answers here, that is the first record; `notes/usb.md` is the page.
 
 Photograph the screen at that point. That is the record, and it is the only record this machine
 can produce today (see `BUGS`).

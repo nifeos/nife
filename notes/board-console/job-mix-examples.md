@@ -1,7 +1,6 @@
-# Watching a job-mix sweep: an example moved from notes/board-console.md
+# Watching a job-mix sweep: an example
 
-Moved verbatim from [`notes/board-console.md`](../board-console.md)'s EXAMPLES on 2026-10-13 (UTC),
-to bring that note under the cap of §212 (a prose budget) by the graph's whole-file count.
+An appendix to [`notes/board-console.md`](../board-console.md), holding its job-mix example.
 
 Watching a job-mix sweep, which is the same recognizer under QEMU and is where it was proved
 (milestone 324 part 2, 2026-09-19, aarch64 `virt` with four cores). The three endings, all real

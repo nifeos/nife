@@ -7,7 +7,7 @@ pricing behind it. It is a recommendation, not a decision.
 
 The roadmap names libghostty-vt as the strongest form of the claim of milestone 23 (a
 capability-routed component OS with live replacement). It is Ghostty's extracted VT core: no libc, a
-C ABI, written in Zig. It needs a supplied allocator, corrected 2026-10-03 UTC per
+C ABI, written in Zig. It needs a supplied allocator, per
 [the proposal](../../design/roadmap/0705-the-graphical-terminal-runs-full-screen-programs.md).
 Milestone 36 (a foreign-language component, seam first) built the C seam to de-risk it: DECISIONS §31
 (the foreign-language seam), [c-seam.md](../c-seam.md). The Rust engine is built, so the comparison

@@ -2,9 +2,7 @@
 
 *An appendix to [`notes/scripts.md`](../scripts.md), the front door to `script/`. It holds the
 reasons `script/` and `helpers/` are split the way they are, and why `bootstrap` installs and builds
-what it does. It moved here on 2026-09-25 (UTC) under §212 (a prose budget). The move then edited it
-only to meet §213 (writing standards), splitting long sentences and dropping bold, with the meaning
-unchanged. A reader who only needs to run a command should not have to open it. The directory
+what it does. A reader who only needs to run a command should not have to open it. The directory
 `notes/scripts/` and this file's stem are provisional names; naming is calef's.*
 
 `script/` is the front door and `helpers/` is the drawer behind it. The normalized entry points are
@@ -18,13 +16,11 @@ directories an `s` apart is a little awkward, but each follows its own conventio
 runner where cargo already expects it (`.cargo/config.toml` points at
 `helpers/qemu-runner-aarch64.sh`) was cheaper than moving it.
 
-The drawer was called `scripts/` until 2026-09-23, and the rename is the reason this paragraph
-reads the way it does. The split was always sound; the two names were not. `script/` and `scripts/`
-differ by one character, they sorted next to each other, and nothing in either name said which one a
-person types. calef ratified `helpers/` after opening the tree and losing his place in it: *"I'm
-totally disoriented in the script directory. Also, why do we have script and scripts?"* Captured
-transcripts and dated accounts keep `scripts/` where they describe the past, the same way this tree
-keeps `cricker-os`.
+The drawer is named `helpers/`, not `scripts/`, because `script/` and `scripts/` differ by one
+character, sort next to each other, and neither says which one a person types. calef ratified it:
+*"I'm totally disoriented in the script directory. Also, why do we have script and scripts?"*
+Captured transcripts and dated accounts keep `scripts/` where they describe the past, the same way
+this tree keeps `cricker-os`.
 
 One thing in `helpers/` is not internal plumbing, and it is worth naming so the rule above is not
 misread. `helpers/qemu-uefi-x86_64.sh` (milestone 87) boots the x86_64 kernel under OVMF, the real

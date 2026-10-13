@@ -3,9 +3,8 @@
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the PVH entry, the real-firmware path, and the 32-bit trampoline. It exists to verify or challenge
 the main page. A reader who only needs to build, boot or test the x86_64 port should not have to
-open it. Moved from the main page on 2026-09-25 (UTC), verbatim apart from links that had to follow
-it. The directory `notes/x86-port/` and this file's stem are provisional names, minted by the lane
-that split the file; naming is calef's.*
+open it. The directory `notes/x86-port/` and this file's stem are provisional names; naming is
+calef's.*
 
 *Records cited below: milestone 87 (the x86_64 bare-metal machine).*
 
@@ -93,8 +92,6 @@ diagnostic is `-d int,cpu_reset -no-reboot`, which prints the full register stat
 escalation.
 
 ## The tour's expected output, and how to read it
-
-Moved verbatim from the parent's "Reproducing it" under §212 (a prose budget) on 2026-10-13 (UTC).
 
 Expected output, 2026-08-24 (the memory-map and ACPI blocks elided; they are quoted in full
 in [acpi-and-pci.md](acpi-and-pci.md)):

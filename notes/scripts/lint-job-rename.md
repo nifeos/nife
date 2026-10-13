@@ -1,17 +1,17 @@
-# The lint job's rename from `clippy`
+# The lint job, and renaming a required check
 
-Moved verbatim from [`../scripts.md`](../scripts.md)'s "CI leverages them" under §212 (a prose
-budget) on 2026-10-13 (UTC). Name: provisional, minted the same day by lane/prose-cap-notes-c;
-calef names files.
+An appendix to [`../scripts.md`](../scripts.md), holding the rename of a required check. Name:
+provisional; calef names files.
 
-The lint job was named `clippy` until 2026-10-08 (UTC). It runs every check in `script/lint`, then
-`script/lint-fleet`, and
-a red `clippy` was usually a citation, decision or roadmap check. calef asked "Should the gate named
-clippy be renamed? It seems to cause you some confusion when I cite it", then said "Go ahead with
-lint". A required check is matched by name, so the rename goes in three steps, each safe
+The lint job is named `lint` (calef, 2026-10-08 UTC: "Go ahead with lint"). It runs every check in
+`script/lint`, then `script/lint-fleet`, so a red `clippy` was usually a citation, decision or
+roadmap check. A required check is matched by name, so a rename goes in three steps, each safe
 alone. First, `ci.yml` gains `lint` and keeps a `clippy` job that only re-reports `lint`'s verdict.
 Second, once every open pull request has run that workflow, ruleset 19596094 requires `lint` in
-place of `clippy`. Third, the `clippy` job is deleted. The second step, by the maintainer:
+place of `clippy`. Third, the `clippy` job is deleted.
+
+Outstanding: the first step is done and the second is not. The ruleset still requires `clippy`, so
+the relay job in `ci.yml` stays until the maintainer runs the second step:
 
 ```sh
 gh pr list --state open --json number,isDraft,statusCheckRollup --jq '.[] | select(.isDraft | not)

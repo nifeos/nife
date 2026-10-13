@@ -2,10 +2,9 @@
 
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 how the archive reaches the machine, the suite's skips, and the bugs userspace found. It exists to
-verify or challenge the main page. A reader who only needs to build, boot or test the x86_64
-port should not have to open it. Moved from the main page on 2026-09-25 (UTC), verbatim apart from
-links that had to follow it. The directory `notes/x86-port/` and this file's stem are provisional
-names, minted by the lane that split the file; naming is calef's.*
+verify or challenge the main page. A reader who only needs to build, boot or test the x86_64 port
+should not have to open it. The directory `notes/x86-port/` and this file's stem are provisional
+names; naming is calef's.*
 
 *Records cited below: §121 (a device with no page), milestone 150 (adding a program), milestone 162
 (real hardware entropy) and milestone 184 (extend the `std` port).*
@@ -46,16 +45,9 @@ inventing a policy for a case the machine never produces would be code nobody co
 
 ### `xtask` grew a third packer, and one latent bug came out with it
 
-`initial_ramdisk_x86` packs the same table `initial_ramdisk_riscv` does, which is now
-`portable_archive_entries()`: one list, two callers, because duplicating it would have let the two
-drift the first time somebody added a program to one of them. x86 builds the whole `user` package
-rather than naming binaries, which is both shorter and self-maintaining now that everything
-compiles for the target.
-
-Superseded by milestone 150 (2026-09-19): there is no table at all now. All three packers pack
+There is no table of programs to pack. All three packers, `initial_ramdisk_x86` among them, pack
 every `[[bin]]` in `components/Cargo.toml` and `fixtures/Cargo.toml` (`declared_programs()` in
-`xtask`), so the drift this paragraph guarded against between two callers cannot happen between
-three either. See notes/adding-a-program.md.
+`xtask`, milestone 150), so no list can drift between callers. See notes/adding-a-program.md.
 
 `read_stripped`'s cache tag is the latent bug. It namespaces stripped copies by the target directory
 a binary came from, and an `x86_64-unknown-none` path fell through to `"host"`, sharing a filename
@@ -66,10 +58,6 @@ real program, and the wrong one, in a trust root. The check is anchored on the f
 than a substring, because a host path on an x86 CI runner contains `x86_64-unknown-linux-gnu`.
 
 ### The suite: 170 pass, 67 skip
-
-It was 97 pass, 7 skip the day the scheduler landed and nothing in `user/` compiled. Item 4's
-hand-off (2026-08-24) built the userspace, packed an archive, and turned `cfg(initial_ramdisk)` on, and the
-whole of `kernel/src/user/` came into the binary at once.
 
 Every skip prints why. Grouped by cause, largest first:
 
@@ -122,9 +110,9 @@ the argument for doing item 4's hand-off rather than deferring it.
 2. `user_mode_runtime::trap()` cannot use `int3` from ring 3. A *software* interrupt is refused unless the
    IDT gate's DPL admits the caller's privilege, and every gate here is DPL 0. So `int3` from a
    process raises #GP with error code 0x1a (`(3 << 3) | 2`: the vector it was refused, tagged as
-   an IDT selector) rather than #BP. The process died either way, so the first version looked like
-   it worked. What it reported was a general protection fault at address zero, naming neither the
-   instruction nor the reason. It is `ud2` now: a fault the CPU raises on a permanently invalid
+   an IDT selector) rather than #BP. The process dies either way, so `int3` looks like it works,
+   but what it reports is a general protection fault at address zero, naming neither the
+   instruction nor the reason. It is `ud2`: a fault the CPU raises on a permanently invalid
    opcode, so no gate DPL is involved. Opening vector 3 to ring 3 is what Linux does, and Linux has
    ptrace to justify it. This kernel has no debugger, so that would widen what a process may do and
    buy nothing.

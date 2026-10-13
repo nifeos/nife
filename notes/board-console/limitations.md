@@ -106,10 +106,8 @@ A sweep has no heartbeat, so its wedge timer is a guess with headroom. The sixty
 `script/job-mix` is fifteen times the longest subrun measured on one host under TCG. A board slower
 than fifteen-to-one is called wedged when it is merely slow, and `--quiet-after 0` gives up the
 detection to avoid that. Giving the sweep a real wall-clock heartbeat, the way `kernel/src/soak.rs`
-has one, is a kernel change and was not made here. (This entry said twenty times until 2026-10-11
-(UTC). The margin was twenty to one against an earlier 2.6-second subrun; milestone 168 (a
-multi-tasking workload benchmark)'s mix made
-the longest 4.0 seconds, and `script/job-mix`'s own header says fifteen.)
+has one, is a kernel change and was not made here. The longest subrun is 4.0 seconds since milestone
+168 (a multi-tasking workload benchmark)'s mix, and `script/job-mix`'s own header says fifteen.
 
 No sweep has been watched on a board. The recognizer was proved against QEMU on 2026-09-19. A
 finished sweep exits 0, one wedged by a one-second quiet window exits 2, and one cut off by a

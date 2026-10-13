@@ -14,17 +14,14 @@ boundary and the limits. These files carry the evidence its prose budget has no 
   change.
 - [`window-tearing.md`](window-tearing.md): why a window can tear, and why reads stay bounded.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `wayland` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `terminal-focus` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `screen-sharing` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `proofs` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `missing-primitive` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes,
-  after the main page's own heading.
-- `window-tearing` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
+- `wayland` Name: provisional.
+- `terminal-focus` Name: provisional.
+- `screen-sharing` Name: provisional.
+- `proofs` Name: provisional.
+- `missing-primitive` Name: provisional, after the main page's own heading.
+- `window-tearing` Name: provisional.

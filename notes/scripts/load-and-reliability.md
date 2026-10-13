@@ -1,11 +1,9 @@
 # Load, concurrency and reliability
 
 *An appendix to [`notes/scripts.md`](../scripts.md), the front door to `script/`. It holds the full
-table rows for the commands that run the suite under load, in parallel, or for a long time. It moved
-here on 2026-09-25 (UTC) under §212 (a prose budget). The move then edited it only to meet §213
-(writing standards), splitting long sentences and dropping bold, with the meaning unchanged. A
-reader who only needs to run a command should not have to open it. The directory `notes/scripts/`
-and this file's stem are provisional names; naming is calef's.*
+table rows for the commands that run the suite under load, in parallel, or for a long time. A reader
+who only needs to run a command should not have to open it. The directory `notes/scripts/` and this
+file's stem are provisional names; naming is calef's.*
 
 | script | what it does |
 |---|---|

@@ -20,16 +20,17 @@ what a truncated blob means are all tested without a filesystem. There are seven
 - both rights directions and every ceiling;
 - and the shrink-without-a-tail.
 
-Crash-consistent, measured rather than argued (milestone 57, closing what used to be a BUGS
-entry here). The old claim was sound and second-hand: every mutation runs inside one `fs.tx`, and
-milestone 37's sweep proves prefix consistency for whatever a transaction contains, so the property
-held by construction. It is now in the sweep. `redoxfs_server/tests/crash_consistency.rs` reads each
-name's attributes as part of the filesystem's state. The workload grew four attribute operations
-covering the three shapes the store has: creating it (two node creations in one commit),
-growing a blob, and shrinking one, which is the path that must truncate afterwards. They are
-interleaved with a write to the same file, so the claim being decided is the interesting one. An
-attribute lives in a *different file* from the data it describes, and a recovery holding the new
-bytes without the new attribute (or the reverse) is a state that never existed and fails the sweep.
+Crash-consistent, measured rather than argued (milestone 57 (partitioning and formatting a real
+drive, and extended attributes)). Every mutation runs inside one `fs.tx`, and the sweep of milestone
+37 (prove RedoxFS's crash consistency) proves prefix consistency for whatever a transaction
+contains, so the property holds by construction, and it is also in the sweep.
+`redoxfs_server/tests/crash_consistency.rs` reads each name's attributes as part of the filesystem's
+state. The workload has four attribute operations covering the three shapes the store has: creating
+it (two node creations in one commit), growing a blob, and shrinking one, which is the path that
+must truncate afterwards. They are interleaved with a write to the same file, so the claim being
+decided is the interesting one. An attribute lives in a *different file* from the data it describes,
+and a recovery holding the new bytes without the new attribute (or the reverse) is a state that
+never existed and fails the sweep.
 
 The workload's own sanity check does double duty here. An attribute operation changes nothing
 observable unless the snapshot reads attributes, so a harness that quietly stopped looking fails at

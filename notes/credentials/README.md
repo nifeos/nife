@@ -10,14 +10,10 @@ files carry the evidence its prose budget has no room for.
 - [`what-is-proven.md`](what-is-proven.md): every host test, Kani harness and guest test, and what
   each pins.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `argon2id` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, after the
-  algorithm it records.
-- `what-is-proven` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes,
-  after the parent's own heading.
+- `argon2id` Name: provisional, after the algorithm it records.
+- `what-is-proven` Name: provisional, after the parent's own heading.

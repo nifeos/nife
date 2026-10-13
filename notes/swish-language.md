@@ -188,8 +188,8 @@ same constraint quoting met, met again from the other side.
 
 ### `$?` is the previous *command*, not the previous line
 
-The first draft of the boot gate put `echo $?` straight after `least_authority_demo || echo no` and got `0`. That
-was the shell being right: the last thing that ran was the `echo`. A skipped segment leaves `$?`
+`echo $?` straight after `least_authority_demo || echo no` prints `0`, and that is the shell being
+right: the last thing that ran was the `echo`. A skipped segment leaves `$?`
 alone, because nothing happened, which is bash's rule and now this shell's.
 
 The mechanism is two cells rather than one (`CURRENT` and `LAST` in `components/src/swish/main.rs`), because a

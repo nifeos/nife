@@ -5,6 +5,5 @@ reader can act without opening anything here, and its appendix table is the inde
 each command's full table row, with its flags, gates and history, and the longer explanations the
 main page summarizes.
 
-*Name: provisional, minted 2026-09-25 (UTC) by the lane that split the file, for the directory and
-every stem in it. Each appendix's own preamble says the same of its stem. Naming is calef's;
-`script/names --unratified` lists each stem.*
+*Name: provisional, for the directory and every stem in it. Each appendix's own preamble says the
+same of its stem. Naming is calef's; `script/names --unratified` lists each stem.*

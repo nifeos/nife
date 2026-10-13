@@ -3,9 +3,8 @@
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the trap-path split, `TSS.RSP0`, the self-IPI, and the portable-code bugs a third architecture
 found. It exists to verify or challenge the main page. A reader who only needs to build, boot or
-test the x86_64 port should not have to open it. Moved from the main page on 2026-09-25 (UTC),
-verbatim apart from links that had to follow it. The directory `notes/x86-port/` and this file's
-stem are provisional names, minted by the lane that split the file; naming is calef's.*
+test the x86_64 port should not have to open it. The directory `notes/x86-port/` and this file's
+stem are provisional names; naming is calef's.*
 
 *Records cited below: milestone 161 (the x86_64 kernel port), milestone 71 (the thread-start fault)
 and §9 (locking).*
@@ -111,9 +110,8 @@ unmapped address and its death arrives on its supervision endpoint naming the th
 address. Then both regions are destroyed and the frame count is compared.
 
 The round runs twice, and that is what makes the frame number evidence. A first round pays
-first-use carves that are not leaks; a system in steady state charges the second round zero. The
-first version of this reported sixteen frames a round going missing. That was true, and it was
-the demo's own fault twice over. The reporting child's corpse was never collected, so its region was
-still holding a live TCB when `destroy` refused it (silently, because `destroy` has nowhere to
-report). And both endpoints were drawn from the kernel's shared pool rather than from the region
-being reclaimed.
+first-use carves that are not leaks; a system in steady state charges the second round zero. Two
+mistakes in the demo itself would show as frames going missing each round. One is a reporting
+child's corpse left uncollected, so its region still holds a live TCB when `destroy` refuses it
+(silently, because `destroy` has nowhere to report). The other is endpoints drawn from the kernel's
+shared pool rather than from the region being reclaimed.

@@ -7,8 +7,7 @@ the four pairs of assertions.
 ## The wiring
 
 `system_tests::user::language_tests` reads the tail of the same run of the same script
-`redirection_tests` reads. *(Corrected 2026-10-11 UTC: this said `kernel::user::language_tests`;
-the module is `system_tests/src/user/language_tests.rs`.)* The script runs the real shell binary
+`redirection_tests` reads, in `system_tests/src/user/language_tests.rs`. The script runs the real shell binary
 with a terminal, a spawn channel, a result channel and a budget. Its directory is narrowed by an
 `fs_subtree_caretaker` to one subtree of the real RedoxFS image. Both halves of the milestone need
 that wiring. A quoted name is only worth something if it reaches a filesystem, and a `&&` needs a
@@ -16,14 +15,13 @@ command that can succeed.
 
 ## Why it shares the witness
 
-It shares the witness rather than wiring its own, and that is a memory finding worth keeping.
-The first version had a seventh role, `ROLE_LANGUAGE`, with the identical endowment. Every scripted
-shell in this suite is a live process whose frames nothing reclaims. The seventh one put
-`time_tests` over the frame pool *intermittently*. Two consecutive runs of unchanged code differed,
+It shares the witness rather than wiring its own, because of memory. Not a seventh role,
+`ROLE_LANGUAGE`, with the identical endowment: every scripted shell in this suite is a live process
+whose frames nothing reclaims, and a seventh put `time_tests` over the frame pool *intermittently*. Two consecutive runs of unchanged code differed,
 one green and one dying with `refused to load a user program: Unmappable(OutOfFrames)` and then a lost-wakeup
-watchdog sixty seconds later. The wiring the new lines needed was already there, so the second copy
-of it bought nothing but the flake. The transcript buffer grew from 4 KiB to 8 KiB to hold the longer
-script, which is kernel `.bss` and costs no frames at all.
+watchdog sixty seconds later. The wiring the new lines needed was already there, so a second copy of
+it buys nothing but the flake. The transcript buffer is 8 KiB to hold the longer script, which is
+kernel `.bss` and costs no frames at all.
 
 The lesson generalizes past this milestone: a scripted-shell witness is not free, and the price is
 paid by whatever test runs last. A new claim about the shell should look for a witness whose

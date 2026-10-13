@@ -9,11 +9,10 @@ budget has no room for.
 - [`quote-state-machine.md`](quote-state-machine.md): where the quote state machine lives, and why
   the three scanners share it and not a tokenizer.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-- `the-guest-test` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  after the parent's "What the guest test proves". calef names files.
-- `quote-state-machine` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-c,
-  after the parent's heading of the same name. calef names files.
+- `the-guest-test` Name: provisional, after the parent's "What the guest test proves". calef names
+  files.
+- `quote-state-machine` Name: provisional, after the parent's heading of the same name. calef names
+  files.

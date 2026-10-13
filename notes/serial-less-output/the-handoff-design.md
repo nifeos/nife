@@ -43,9 +43,6 @@ graphical terminal are the same letters, which is what makes the gate below poss
 
 ### The gate's first green run, in full
 
-Moved verbatim from the parent's "The gate: a program reading a screen" under §212 (a prose budget)
-on 2026-10-13 (UTC).
-
 Measured, 2026-09-04, OVMF on QEMU 11.x, `-display none`:
 
 ```console

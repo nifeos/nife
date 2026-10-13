@@ -10,11 +10,9 @@ and BUGS. This directory carries the detail its prose budget has no room for.
 - [`argon.md`](argon.md): the argon bench check in full, its three U-Boot commands and what each
   answer means.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-- `device-tree-handover` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/seventh-ten-longest-notes, for the handover the appendix measures. calef names files.
-- `argon` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-a, for the parent's argon
-  bench check moved under §212's cap. calef names files.
+- `device-tree-handover` Name: provisional, for the handover the appendix measures. calef names
+  files.
+- `argon` Name: provisional, for the parent's argon bench check. calef names files.

@@ -4,5 +4,5 @@
 and test the port without opening anything here, and its appendix table is the index. These files
 hold the bring-up history, the transcripts and the measurements behind it.
 
-*Name: provisional, minted 2026-09-25 (UTC) by the lane that split the note, for the directory and
-every stem in it. Naming is calef's; `script/names --unratified` lists each stem.*
+*Name: provisional, for the directory and every stem in it. Naming is calef's; `script/names
+--unratified` lists each stem.*

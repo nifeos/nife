@@ -17,22 +17,14 @@ budget has no room for. All of it was read or run on 2026-09-20.
   Atmosphere's syscall figures second-hand, and the extrapolation to this kernel.
 - [`examples.md`](examples.md): the parent's EXAMPLES, each command and its output whole.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `sources` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, for the
-  source table it holds.
-- `what-kani-stops-at` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/seventh-ten-longest-notes, after the parent's "What Kani actually stops at".
-- `what-verus-is` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  after the parent's own heading.
-- `atmospheres-trusted-base` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/seventh-ten-longest-notes, for the trusted computing base it quotes.
-- `proof-effort` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  after the parent's "The number that decides it: proof effort".
-- `examples` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-c, for the
-  parent's EXAMPLES section.
+- `sources` Name: provisional, for the source table it holds.
+- `what-kani-stops-at` Name: provisional, after the parent's "What Kani actually stops at".
+- `what-verus-is` Name: provisional, after the parent's own heading.
+- `atmospheres-trusted-base` Name: provisional, for the trusted computing base it quotes.
+- `proof-effort` Name: provisional, after the parent's "The number that decides it: proof effort".
+- `examples` Name: provisional, for the parent's EXAMPLES section.

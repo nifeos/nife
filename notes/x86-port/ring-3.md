@@ -2,10 +2,9 @@
 
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the address spaces, `swapgs`, the `syscall` pair, and the first ring-3 proof. It exists to verify or
-challenge the main page. A reader who only needs to build, boot or test the x86_64 port should
-not have to open it. Moved from the main page on 2026-09-25 (UTC), verbatim apart from links that
-had to follow it. The directory `notes/x86-port/` and this file's stem are provisional names, minted
-by the lane that split the file; naming is calef's.*
+challenge the main page. A reader who only needs to build, boot or test the x86_64 port should not
+have to open it. The directory `notes/x86-port/` and this file's stem are provisional names; naming
+is calef's.*
 
 *Records cited below: milestone 161 (the x86_64 kernel port) and milestone 71 (the thread-start
 fault).*
@@ -18,8 +17,7 @@ exists for.
 
 ### The address spaces are RISC-V's model, not aarch64's
 
-`arch/x86_64/mmu.rs`'s header used to say the x86 shape was "aarch64's rather than RISC-V's". That
-is the wrong way round and it was corrected while implementing it. What matters is how many roots
+What matters is how many roots
 the hardware has: aarch64 has two (`TTBR0` for the user, `TTBR1` for the kernel), so switching a
 process leaves the kernel mapped for free. RISC-V has one `satp` and x86 has one `CR3`, so a
 process's own root must carry the kernel's entries or the `mov cr3` unmaps the instruction after

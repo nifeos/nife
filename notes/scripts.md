@@ -161,8 +161,8 @@ $ script/lint > /tmp/lint.txt 2>&1; echo "exit=$?"
 ```
 
 `set -o pipefail` also fixes it, and `script/` entry points use it. Nothing can gate this.
-[piped-gate.md](scripts/piped-gate.md) has the 2026-09-18 lane that read exit 0 over a failing
-clippy, and why it stays rung four.
+[piped-gate.md](scripts/piped-gate.md) has the redirect to use instead, and why it stays rung
+four.
 
 ## CI leverages them
 
@@ -173,15 +173,9 @@ from milestone 286 (one enumeration of the checks that gate a pull request). The
 developer does, from one list, and a job without a row is the defect that list prevents. `verify.yml` is the exception and says so: Kani is sharded
 across jobs with its own scope predicate, and the table does not claim it.
 
-The lint job was named `clippy` until 2026-10-08 (UTC), when calef asked for `lint`. It runs every
-check in `script/lint`, then `script/lint-fleet`. The three-step rename of a required check, with the
-maintainer's ruleset commands, is in [lint-job-rename.md](scripts/lint-job-rename.md).
-
-Before that milestone the set was written twice, here and in `script/gates`, and nothing compared
-them. All three places explaining the difference were stale by 2026-09-13:
-`ci.yml` said `script/icount` was not in the local set (it had been since milestone 62), this file
-listed four stages where the script ran six, and `CONTRIBUTING.md` and the pull request template
-both said "five".
+The lint job is named `lint` (calef, 2026-10-08 UTC). It runs every check in `script/lint`, then
+`script/lint-fleet`. The three-step rename of a required check, with the maintainer's ruleset
+commands and the step still outstanding, is in [lint-job-rename.md](scripts/lint-job-rename.md).
 
 ## The versioned hooks
 
@@ -314,7 +308,6 @@ nothing is counting across images for it.
 
 ## Appendices
 
-Split out on 2026-09-25 (UTC) under §212 (a prose budget). Every former section kept its heading.
 The directory and stems are provisional names; [the directory's README](scripts/README.md) says so.
 
 | Appendix | What it holds |
@@ -327,5 +320,5 @@ The directory and stems are provisional names; [the directory's README](scripts/
 | [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md) | full rows for analysis, proofs and the supply chain |
 | [helpers-and-bootstrap.md](scripts/helpers-and-bootstrap.md) | Two things that are deliberately the way they are |
 | [one-kernel-test.md](scripts/one-kernel-test.md) | How the filter reaches the kernel; What the flag turns off |
-| [piped-gate.md](scripts/piped-gate.md) | a piped gate's exit status, the incident and the fix |
-| [lint-job-rename.md](scripts/lint-job-rename.md) | why the lint job was renamed from `clippy`, and the three steps |
+| [piped-gate.md](scripts/piped-gate.md) | a piped gate's exit status, and the fix |
+| [lint-job-rename.md](scripts/lint-job-rename.md) | the lint job, and the three steps that rename a required check |

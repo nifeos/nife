@@ -5,7 +5,7 @@ Atmosphere papers, their comparison table and its inconsistency, the OOPSLA exam
 Atmosphere's syscall figures second-hand, and the extrapolation to this kernel.
 
 All figures are quoted, with the paper each came from. The two papers disagree, because the second
-supersedes the first.
+revises the first.
 
 | | KISV '23 | SOSP '25 |
 |---|---|---|

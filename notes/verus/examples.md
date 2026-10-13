@@ -1,7 +1,7 @@
 # Verus: the examples, runnable
 
-Moved verbatim from [`../verus.md`](../verus.md)'s EXAMPLES under §212 (a prose budget) on
-2026-10-13 (UTC). Every command here was run on this Mac on 2026-09-20.
+An appendix to [`../verus.md`](../verus.md), holding its EXAMPLES. Every command here was run on
+this Mac on 2026-09-20.
 
 Reproduce the `asm!` boundary in Kani. Append to `kernel/src/arch/aarch64/timer.rs`, run, then
 `git checkout` the file:

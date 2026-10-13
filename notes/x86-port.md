@@ -105,10 +105,8 @@ That is the whole diff above `arch/`. A new ISA was a new directory.
 
 ## The appendices
 
-Everything below the status used to live on this page. It moved into
-[`notes/x86-port/`](x86-port/README.md) on 2026-09-25 (UTC), verbatim apart from the links that had
-to follow it, under §212 (a prose budget). Each file holds the history and measurements behind one
-part of milestone 161 (the x86_64 kernel port). None of them is needed to build, boot or test it.
+[`notes/x86-port/`](x86-port/README.md) holds the measurements and reasons behind each part of
+milestone 161 (the x86_64 kernel port), one file each. None of them is needed to build, boot or test it.
 
 | appendix | what it holds |
 |---|---|
@@ -188,13 +186,10 @@ Every item is a device or a toolchain, and none is `user_mode_runtime` any more.
   an RNG, or a second disk: each is a line in `helpers/qemu-runner-x86_64.sh` and a wiring, not a
   mechanism.
 - The ACPI walk reads the boot map, and the boot map ends at 4 GiB.
-  `arch::x86_64::machine::BOOT_DIRECT_MAP_LIMIT` is that bound, and it said 1 GiB until 2026-09-02
-  on a comment `boot.s` had never matched. Firmware puts its tables just under the top of RAM, both
-  QEMU runners passed `-m 256M`, and so every gate booted a machine whose tables happened to fit:
-  at 2 GiB under OVMF the same kernel found no RSDP, no MADT, no MCFG and no DMAR, and came up
-  with no APIC, no timer, no PCI and no VT-d on a machine that described all four. That was
-  unconditional on any real machine. `cargo xtask uefi-boot` now boots at 2 GiB for exactly this
-  reason (`NIFE_MEM` sets it back), and an unreachable table says so during the walk rather than
+  `arch::x86_64::machine::BOOT_DIRECT_MAP_LIMIT` is that bound. Firmware puts its tables just under
+  the top of RAM, so a bound below it finds no RSDP, no MADT, no MCFG and no DMAR, and comes up with
+  no APIC, no timer, no PCI and no VT-d on a machine that describes all four. A 256 MiB QEMU run
+  cannot show it, so `cargo xtask uefi-boot` boots at 2 GiB for exactly this reason (`NIFE_MEM` sets it back), and an unreachable table says so during the walk rather than
   being skipped with the checksum failures. A machine that put its tables above 4 GiB (none
   seen; firmware keeps ACPI low so 32-bit loaders can read it) needs `boot.s` widened, not the
   bound loosened.

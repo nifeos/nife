@@ -71,17 +71,15 @@ an attacker must be pointed at a real neighbor rather than a fictional one.
 
 ## At the interactive prompt (milestone 50 (pipes and redirection) wired it; milestone 31 (a capability shell) phase 3 finished it)
 
-The refusal this section used to describe is gone, and the reason it went is the point of the way it
-was written. It said "you hold no such capability: this shell was granted no directory to narrow",
-which was a fact about the shell's capability table rather than a release date. Milestone 50 gave the
-interactive boot a RedoxFS disk and had the progenitor narrow the file service into the shell. The same
-sentence then stopped being printed with no edit to the condition that prints it. Phase 1's first draft
-hardcoded "arrives with milestone 32", which was true when written and would have become a lie the
-moment the mechanism landed.
+The shell's refusal, "you hold no such capability: this shell was granted no directory to narrow",
+states a fact about its capability table rather than a release date, so it stops printing on its own
+once a grant exists, with no edit to the condition that prints it. A refusal that names the milestone
+it waits on becomes a lie the moment that milestone lands.
 
-So at the prompt today the shell holds the image root, `holdings().dir` is true, a name on the line
-resolves, and since 2026-08-17 The progenitor builds a `fs_subtree_caretaker` per directory grant, so `rm`
-runs. `script/swish-check` types four lines on both ISAs:
+At the prompt the shell holds the image root, because milestone 50 gave the interactive boot a
+RedoxFS disk and the progenitor narrows the file service into the shell. `holdings().dir` is true, a
+name on the line resolves, and the progenitor builds a `fs_subtree_caretaker` per directory grant,
+so `rm` runs. `script/swish-check` types four lines on both ISAs:
 
 - the preview: `caps rm rmtree/rm-solo` names the directory and says what `-r` would have added;
 - the removal: `rm -v rmtree/rm-solo` prints the name it was given;

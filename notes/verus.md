@@ -153,9 +153,7 @@ Verus frontend, Z3, the Rust toolchain and `core`, and about 700 lines of unveri
 write down what the hardware seam promises and then proving the rest against that promise. Kani
 cannot do that, and that difference is real and is the honest case for Verus. But it is a different
 claim from "the prover reaches the driver", and the timer re-arm drift, which lives in that seam,
-would have been on the trusted side of an Atmosphere-shaped boundary too. (This sentence named the
-VisionFive 2 undelivered wake until 2026-09-24; that reading is retracted, as
-[`what-kani-stops-at.md`](verus/what-kani-stops-at.md) records.)
+would have been on the trusted side of an Atmosphere-shaped boundary too.
 
 ## The number that decides it: proof effort
 
@@ -278,10 +276,6 @@ axiom (`seam.rs`, the worked example above) passing green.
   asserts *"due to the lack of managed runtime, verified Rust code can be compiled and executed on
   bare metal"*, which is the authors' claim about their own x86_64 kernel, not a Verus project
   statement, and says nothing about a custom target JSON or `aarch64-unknown-none-softfloat`.
-- `design/fatal-risks/README.md` risk 2 and `notes/proof-retrospective.md` both said `kernel/src` was
-  unreachable by construction when this was written, three weeks stale. Risk 2 now says it in the
-  past tense, its reach corrected 2026-09-24; the retrospective is a dated record of 2026-08-30 and
-  reads as one.
 - This note names no winner and is not evidence for a decision either way. It was written to
   price a question, and the pricing has a factor-of-several uncertainty that only running Verus on
   real code would remove.
