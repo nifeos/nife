@@ -1237,3 +1237,17 @@ mod seventh_pass_retype_tests;
 /// Cross-ISA: the delegation rule and the rendezvous are portable kernel code (DECISIONS §19).
 #[cfg(test)]
 mod seventh_pass_delegation_tests;
+
+/// **Pass 9's four fresh dispatcher attacks on the rights model** (an outside security reviewer
+/// attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's confinement claim, claims 2, 4, 5
+/// and 26). A consumed capability cannot be reused (`cap_delete` then re-invoke answers
+/// `NoSuchSlot`); deleting one capability leaves its neighbours resolving and invoking; `BADGE` is
+/// `GRANT`-gated and mints no wider right than its source; and a slot past the table or empty inside
+/// it names nothing. Each drives `syscall::invoke` and none blocks, so a regression is red at an
+/// assertion. Fresh constructions, not replays: the header says which existing test each comes at
+/// from a new angle.
+///
+/// Cross-ISA: `invoke`, the rights model and the capability table are portable kernel code
+/// (DECISIONS §19 (architectural parity is a tenet)).
+#[cfg(test)]
+mod pass9_confinement_tests;
