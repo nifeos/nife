@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 257. A required review that the App would give is refused
 
-*Section number provisional until the merge queue lands it; 256 was the highest on `main` when this
-was written. Minted by the maintainer session for milestone 588 (a merge needs a review no fork can
-supply), on 2026-10-07 (UTC).*
+*Raised for milestone 588 (a merge needs a review no fork can supply).*
 
 ## The question
 

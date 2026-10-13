@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 256. A server that keeps windows for many clients scopes each by the caller's badge
 
-*Section number provisional until the merge queue lands it; 255 was the highest on `main` when this
-was written. Minted by the maintainer session at the merge of PR #1798, milestone 800 (a
-non-Anthropic model attacks the confinement claim), on 2026-10-07 (UTC).*
+*Raised at PR #1798, milestone 800 (a non-Anthropic model attacks the confinement claim).*
 
 ## The rulings
 

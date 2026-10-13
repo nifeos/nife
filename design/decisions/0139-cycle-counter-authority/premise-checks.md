@@ -2,11 +2,8 @@
 
 Evidence for [§139 (who may read the cycle counter, and by what
 authority)](../0139-cycle-counter-authority.md), the four checks that reframed the question of
-milestone 75 (who may read the cycle counter). Moved out of that page on 2026-10-11 (UTC) under
-[§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete
-without this one, which exists to verify or challenge it. Headings moved up, cross-references became
-links, and a sentence over the 40 words of [§213 (writing standards)](../0213-writing-standards.md)
-was split, changing as few words as it could. Nothing else changed.
+milestone 75 (who may read the cycle counter). The main page is complete without this one, which
+exists to verify or challenge it.
 
 Milestone 75's block frames this as a decision about whether to open something that is closed.
 Three checks say the framing is wrong in three different directions, and each one changes what the
@@ -39,8 +36,7 @@ its one eyes-open exception) and this milestone's question are the same register
 `CR4.TSD` today would break `Instant`, `thread::sleep`, the random seed, smoltcp's timestamps, and
 the benchmark harness, all at once.
 
-Checked, and it held: a research lane went looking for a second source on 2026-09-02 and found
-none. The evidence is its own appendix, [`x86-clock-sources.md`](x86-clock-sources.md).
+Checked, and it held: a search for a second source on 2026-09-02 found none. The evidence is its own appendix, [`x86-clock-sources.md`](x86-clock-sources.md).
 
 This is not an argument for leaving it open. It is the statement of what closing it costs. The
 shape of the fix already exists in this tree. §43 (reading the clock is a page) put the wall clock
@@ -97,12 +93,9 @@ firmware's on every board. That part is a defect fix and this document
 
 ## 4. And 74's aarch64 half is blocked on more than this
 
-Milestone 127's other prerequisite, the EL2 to EL1 entry drop, is **PR #650 and is open, not
-merged**, with `mergeStateStatus: DIRTY` as of 2026-09-02. Its diff does carry the `MDCR_EL2 = 0`
-write and names `MDCR_EL2.TPM` as the trap that would otherwise catch every EL1 access to
-`PMCCNTR_EL0`. So the EL2 half of the path exists and is real, and it is one merge away rather than
-landed. Nothing in this document depends on that PR, but a plan that assumed it had landed would be
-a day early.
+Milestone 127's other prerequisite, the EL2 to EL1 entry drop, is built (PR #650): `boot.s`'s EL2
+drop writes `MDCR_EL2 = 0`, clearing `MDCR_EL2.TPM`, the trap that would otherwise catch every EL1
+access to `PMCCNTR_EL0`. So the EL2 half of the path exists.
 
 ## BUGS
 

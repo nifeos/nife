@@ -2,11 +2,7 @@
 
 Evidence for [§139 (who may read the cycle counter, and by what
 authority)](../0139-cycle-counter-authority.md), the check behind its ruling that `x86_64` keeps its
-ambient counter. Moved out of that page on 2026-10-11 (UTC) under [§212 (a prose
-budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete without this one,
-which exists to verify or challenge it. Headings moved up, cross-references became links, and a
-sentence over the 40 words of [§213 (writing standards)](../0213-writing-standards.md) was split,
-changing as few words as it could. Nothing else changed.
+ambient counter. The main page is complete without this one, which exists to verify or challenge it.
 
 Finding 2 in [`premise-checks.md`](premise-checks.md) was written from knowledge rather than from reading, and the maintainer said so when
 he presented it. A research lane was briefed on 2026-09-02 to check it. The claim holds. There is
@@ -232,9 +228,8 @@ established rather than asserted. Option 4 on `x86_64` is blocked behind giving 
 second time source, and there is no cheap one to give. The realistic order for the x86 row is
 therefore a tick-resolution page, and it is a decision with a price rather than a gap in §19
 (architectural parity) that a lane can close by trying harder. Trap-and-emulate was the other
-candidate and it has since been measured and lost: this paragraph originally priced it at "roughly
-the syscall", and [`trap-and-emulate.md`](trap-and-emulate.md) measures it at 1,667 ns on cordoba, four times the syscall it
-was meant to beat. `x86_64` keeping `rdtsc` ambient, with a recorded
+candidate, and it lost: [`trap-and-emulate.md`](trap-and-emulate.md) measures it at 1,667 ns on
+cordoba, four times the syscall it was meant to beat. `x86_64` keeping `rdtsc` ambient, with a recorded
 reason, remains the right state until one of those is chosen. That is a published confinement
 position and it is still calef's.
 

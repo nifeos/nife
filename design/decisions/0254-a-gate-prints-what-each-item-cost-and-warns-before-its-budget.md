@@ -113,9 +113,6 @@ one run at a time.
   would flap, since one job on one commit varies by about 30% across hosted runners
   (`helpers/verify_times.py`, measured 2026-10-06). `helpers/ci_job_times.py` holds the rule
   (`CLOSE_AFTER`).
-- `helpers/job-budget.py check` already prints a warning at 75% of the budget on every run, a fact
-  the fork as presented did not mention. The ruling's line is about 85%. Milestone 808's lane moves
-  the existing line to 85% so there is one warning, not two; if calef wants both, this section is
-  amended.
-  Done on PR #1825 (2026-10-07 UTC): the line moved from 75% to 85%, so there is one warning.
+- `helpers/job-budget.py check` prints its warning at 85% of the budget on every run, the ruling's
+  line, so there is one warning, not two; if calef wants both, this section is amended.
 - The label's name and the shared crate's name wait on ratification.

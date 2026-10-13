@@ -7,13 +7,10 @@ ratified_by: calef
 
 # 267. A comment states the constraint as it is now
 
-Raised 2026-10-09 (UTC) by the lane building milestone 860 (comments state the constraint as it is
-now). Decided two days earlier: calef ruled the forks of `notes/comment-cost-2026-10-07.md` on
+calef ruled the forks of `notes/comment-cost-2026-10-07.md` on
 [PR #1800](https://github.com/nifeos/nife/pull/1800) (2026-10-07, UTC) and ratified fork (c) in the
-sharper form, *"ratify #1800 Fork (c) in the sharper form"*. The ruling is recorded on that pull
-request; this section is the tree's copy of it, written by lane
-`milestone/860-comments-state-the-constraint-as-it-is-now`. *(Section number provisional until the
-merge queue lands it. Every script and file name below is provisional too.)*
+sharper form, *"ratify #1800 Fork (c) in the sharper form"*. This section is the tree's copy of
+that ruling. Every script and file name below is provisional.
 
 The build is [milestone 860 (comments state the constraint as it is
 now)](../roadmap/0860-comments-state-the-constraint-as-it-is-now.md): the gate, and the first

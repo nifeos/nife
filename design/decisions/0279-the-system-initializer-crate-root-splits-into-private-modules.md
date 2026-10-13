@@ -9,9 +9,7 @@ ratified_by: calef
 
 Raised 2026-10-11 (UTC) as the cut that
 [milestone 843 (the system-initializer crate root is split along its seams)](../roadmap/0843-the-system-initializer-crate-root-is-split-along-its-seams.md)
-says is calef's call before a line moves. Written by lane
-`milestone/843-the-system-initializer-crate-root-is-split-along-its-seams`. *(Section number
-provisional until the merge queue lands it.)*
+says is calef's call before a line moves.
 
 It blocked the move and nothing else. Two questions were raised, each with a recommendation, and
 both are now answered. Every module name is provisional and is left to calef's naming pass, so

@@ -14,16 +14,14 @@ evidence its prose budget has no room for:
 - [`options.md`](options.md): the working behind options A and B, all of option C, and how option D
   was read, run and costed.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `premise` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  parent's "The premise, verified by this lane rather than taken from the milestone". calef names
+- `premise` Name: provisional. After the parent's "The premise, verified by this lane rather than
+  taken from the milestone". calef names files.
+- `prior-art` Name: provisional. After the parent's "The prior art, read rather than recalled".
+  calef names files.
+- `linux` Name: provisional. After the parent's "Linux balances continuously, at four moments".
+  calef names files.
+- `options` Name: provisional. After the working under the parent's "The options". calef names
   files.
-- `prior-art` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "The prior art, read rather than recalled". calef names files.
-- `linux` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  parent's "Linux balances continuously, at four moments". calef names files.
-- `options` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  working under the parent's "The options". calef names files.

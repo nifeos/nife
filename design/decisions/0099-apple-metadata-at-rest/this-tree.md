@@ -1,10 +1,8 @@
 # §99 appendix: what this tree already does
 
 Evidence for [§99 (where Apple's metadata lands: stream or
-sidecar)](../0099-apple-metadata-at-rest.md): what this tree already does in the analogous case. Moved out of
-that page on 2026-10-12 (UTC) under [§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md).
-The main page is complete without this one, which exists to verify or challenge it. Paragraphs moved
-whole and unchanged.
+sidecar)](../0099-apple-metadata-at-rest.md): what this tree already does in the analogous case. The
+main page is complete without this one, which exists to verify or challenge it.
 
 ## What this tree already does in the analogous case
 

@@ -7,14 +7,11 @@ ratified_by: calef
 
 # 297. Software reaches a nife system as a package `jig` installs from basalt's index, the kernel included
 
-*Section number provisional until the merge queue lands it; 296 was the highest on `main` when this
-was written. The title and the file's slug are drafts, and neither is calef's. Recorded by lane
-`maintainer/foreign-programs-via-jig` on 2026-10-12 (UTC), from rulings calef made the same day.*
+*The title and the file's slug are drafts, and neither is calef's.*
 
 ## The ruling
 
-The question came up over the monit milestone, which another lane was writing. calef, 2026-10-12
-(UTC), first on monit:
+calef, 2026-10-12 (UTC), first on the monit milestone:
 
 > That milestone should require it as a package delivered via jig through basalt.
 
@@ -25,8 +22,7 @@ Then, on every other program:
 
 Then, on the plan this section, its amendments and its new milestones carry out: *"Launch it."*
 
-The first draft of this section covered only software not written for nife. He corrected its scope
-the same day:
+And on its scope, the same day:
 
 > §297 is not about foreign software. It is about all software.
 
@@ -170,9 +166,9 @@ Tools and applications:
 The 169 in 170's title is milestone 169 (`kilo`: the smallest real text editor, as the forcing
 function for raw terminal input).
 
-Two more are covered but not amended here, because other lanes hold the files. Milestone 830
-(Wakeup latency on nife and Linux, from each kernel's own scheduler trace) was rewritten by #2021. The monit milestone
-is being minted by #2022 as 905. Both fall under this ruling.
+Two more fall under this ruling without an amendment here. They are milestone 830 (Wakeup latency
+on nife and Linux, from each kernel's own scheduler trace) and milestone 905 (monit is packaged in
+basalt, installed with `jig`, and restarts a nife service it watches).
 
 The first-party programs already shipping (swish, process-tools, kilo and the rest) are covered
 through milestones 607 and 611 above rather than amended one by one. Milestone 121 (`ripgrep` on

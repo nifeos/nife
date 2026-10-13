@@ -9,9 +9,7 @@ ratified_by: calef
 
 Raised 2026-10-12 (UTC) as the cut that
 [milestone 873 (the catch-all userspace test file is split by topic)](../roadmap/0873-the-catch-all-userspace-test-file-is-split-by-topic.md)
-says is calef's call before a line moves. Written by lane
-`milestone/873-the-catch-all-userspace-test-file-is-split-by-topic`. *(Section number provisional
-until the merge queue lands it.)*
+says is calef's call before a line moves.
 
 It blocked the move and nothing else.
 

@@ -1,10 +1,8 @@
 # §138 appendix: the prior art on migration and affinity
 
 An appendix of [§138 (how a saturated workload is made to hand threads across
-cores)](../0138-cross-core-handoff-under-load.md), moved out of that page on 2026-10-12 (UTC) under
-[§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete
-without it. This file holds what seL4, L4Re, Barrelfish and QNX do, and how Linux authorizes
-affinity.
+cores)](../0138-cross-core-handoff-under-load.md). The main page is complete without it. This file
+holds what seL4, L4Re, Barrelfish and QNX do, and how Linux authorizes affinity.
 
 Every quote below was fetched and read, and every one was re-checked against the downloaded source
 before it went in this file: the seL4, Barrelfish, L4Re and QNX material on 2026-09-01, the Linux

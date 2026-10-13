@@ -7,10 +7,6 @@ ratified_by: calef
 
 # 258. Names for two installed versions of one program
 
-*Section number provisional until the merge queue lands it; 256 was the highest on `main` and 257 was
-held by open PR #1841 when this was written. Minted by a maintainer-delegated lane,
-`lane/614-names`, on 2026-10-07 (UTC).*
-
 ## The ruling
 
 calef ruled on 2026-10-07 (UTC) on every name milestone 614 (two installed versions of one

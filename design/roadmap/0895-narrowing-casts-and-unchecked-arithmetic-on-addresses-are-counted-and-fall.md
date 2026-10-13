@@ -111,8 +111,9 @@ proposal, which shares the overflow boundary.
 
 ## Open questions for an architect
 
-1. Ruled 2026-10-09 (UTC): a section of its own, §268 (provisional). The question was whether a
-   filtered ratchet is acceptable against §61's rule.
+1. Ruled 2026-10-09 (UTC): a section of its own, §268 (the cast ratchet does not count a 64-bit
+   integer cast to `usize`). The question was whether a filtered ratchet is acceptable against
+   §61's rule.
 2. Ruled 2026-10-09 (UTC): the 16 measured files, and a file is added only when a concrete path
    from a syscall argument is shown. So `sched.rs` and `cap.rs` stay out until one is.
 3. Address newtypes in `paging`: worth a milestone of their own? It is the rung-one answer and the

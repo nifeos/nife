@@ -1,11 +1,9 @@
 # §99 appendix: what macOS does, and prior art outside the tree
 
 Evidence for [§99 (where Apple's metadata lands: stream or
-sidecar)](../0099-apple-metadata-at-rest.md): read from the source of Apple's SMB client
-and XNU, and what Samba, calef's router and ksmbd do. Moved out of that page on
-2026-10-12 (UTC) under [§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The
-main page is complete without this one, which exists to verify or challenge it. Paragraphs moved
-whole and unchanged.
+sidecar)](../0099-apple-metadata-at-rest.md): read from the source of Apple's SMB client and XNU,
+and what Samba, calef's router and ksmbd do. The main page is complete without this one, which
+exists to verify or challenge it.
 
 ## What macOS actually does, which is the fact the options hang from
 

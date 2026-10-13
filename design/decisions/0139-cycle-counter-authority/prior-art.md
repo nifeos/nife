@@ -2,11 +2,7 @@
 
 Evidence for [§139 (who may read the cycle counter, and by what
 authority)](../0139-cycle-counter-authority.md), what seL4, Linux and L4Re do, and why a grant is
-not confinement. Moved out of that page on 2026-10-11 (UTC) under [§212 (a prose
-budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete without this one,
-which exists to verify or challenge it. Headings moved up, cross-references became links, and a
-sentence over the 40 words of [§213 (writing standards)](../0213-writing-standards.md) was split,
-changing as few words as it could. Nothing else changed.
+not confinement. The main page is complete without this one, which exists to verify or challenge it.
 
 ## Prior art, read rather than recalled
 

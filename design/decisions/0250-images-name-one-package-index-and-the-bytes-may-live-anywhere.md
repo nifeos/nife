@@ -10,9 +10,9 @@ ratified_by: calef
 calef, 2026-10-06 (UTC), refining the maintainer's recommendation himself: *"can't we plan to be
 able to change where the packages are served from? We just can't change where the list of packages
 is served from?"* Then: *"yes, index at packages.nifeos.org."* Later the same day he changed
-the host: *"confirm basalt.nifeos.org"*, one host per distribution. *(Section number provisional until
-the merge queue lands it.)* Recorded by the maintainer's lane from the milestone 198 (a package
-manager) decision review, question 1, researched 2026-10-05 against `main` at `8848a701f`.
+the host: *"confirm basalt.nifeos.org"*, one host per distribution. This is question 1 of the
+milestone 198 (a package manager) decision review, researched 2026-10-05 against `main` at
+`8848a701f`.
 
 *Amended 2026-10-07 (UTC) by calef, on #1805: basalt's index is an image's default source, not its only one, and CI never deploys. See the amendment at the end.*
 

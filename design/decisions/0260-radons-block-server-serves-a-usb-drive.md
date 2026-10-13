@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 260. Radon's block server serves a USB drive
 
-*Section number provisional until the merge queue lands it; 259 (PR #1847) was the highest minted
-when this was written. Recorded by lane/radon-storage for milestone 53 (the board's own
-peripherals: network and storage on real silicon), on 2026-10-07 (UTC).*
+*Raised for milestone 53 (the board's own peripherals: network and storage on real silicon).*
 
 ## The ruling
 

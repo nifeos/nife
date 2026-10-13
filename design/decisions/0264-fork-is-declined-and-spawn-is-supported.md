@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 264. `fork` is declined for good, and spawn is the supported way to start a program
 
-*Section number provisional until the merge queue lands it. Recorded by lane/threads-and-fork for
-the maintainer on 2026-10-08 (UTC), beside §263 (threads are built: more than one thread in an
-address space).*
+*Beside §263 (threads are built: more than one thread in an address space).*
 
 ## The ruling
 

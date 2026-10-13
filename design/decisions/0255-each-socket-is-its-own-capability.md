@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 255. Each socket is its own capability, and a reply carries it
 
-*Section number provisional until the merge queue lands it; 254 was the highest on `main` when this
-was written. Raised by lane/649-sockets-are-capabilities for milestone 649 (every client of a
-network stack shares its socket numbers), on 2026-10-07 (UTC).*
+*Raised for milestone 649 (every client of a network stack shares its socket numbers).*
 
 Two rulings, both calef's, both 2026-10-07 (UTC). The first is the shape: each socket is its own
 capability. Building it found that a reply could not carry a capability, which was a fork on the

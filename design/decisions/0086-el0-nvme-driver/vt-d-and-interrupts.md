@@ -1,16 +1,12 @@
 # §86 appendix: what the VT-d exercise needed, who may forge an interrupt, and reversibility
 
 Three passages of [§86 (whether an NVMe driver can leave the kernel, and what capability would let
-it)](../0086-el0-nvme-driver.md). Moved out of that page on 2026-10-12 (UTC) under [§212 (a prose
-budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete without this one,
-which exists to verify or challenge it. calef ruled on 2026-10-12 (UTC) that §86 is split rather
-than given an exception. Headings moved up, and each sentence that [§213 (writing
-standards)](../0213-writing-standards.md) counts as over 40 words was split, changing as few words
-as it could. Nothing else changed. "Above" and "below" mean the original page. The first section
-continues that page's "Recommendation" after its paragraph on the VT-d exercise. Three milestones
-are cited here by number alone. They are milestone 87 (the x86_64 bare-metal machine), milestone 227
-(a GICv3 driver, because GICv2 boots and silently loses every interrupt) and milestone 261 (the NVMe
-driver leaves the kernel, on the machine that can finally confine it).
+it)](../0086-el0-nvme-driver.md). The main page is complete without this one, which exists to verify
+or challenge it. "Above" and "below" mean the main page. The first section continues that page's
+"Recommendation" after its paragraph on the VT-d exercise. Three milestones are cited here by number
+alone. They are milestone 87 (the x86_64 bare-metal machine), milestone 227 (a GICv3 driver, because
+GICv2 boots and silently loses every interrupt) and milestone 261 (the NVMe driver leaves the
+kernel, on the machine that can finally confine it).
 
 ## Recommendation
 
@@ -62,10 +58,9 @@ deliver one.
 **Every option here that maps any part of BAR0 to EL0 has to answer where the MSI-X table lives and
 who may write it, and this tree has never asked.** Measured, not asserted:
 
-- ~~`helpers/qemu-runner-x86_64.sh` sets `IOMMU="-device intel-iommu"` with no `intremap=on`, so
-  interrupt remapping is off in every x86_64 boot this tree runs.~~ False. Amended 2026-09-18
-  by milestone 317, which asked the machine instead of the script. `ECAP` read from inside the
-  guest, QEMU 11.1.1, `q35`/TCG: `-device intel-iommu` gives `0xf00f4a` with `IR` **set**;
+- `helpers/qemu-runner-x86_64.sh` sets `IOMMU="-device intel-iommu"` with no `intremap=on`, and
+  interrupt remapping is still on. Milestone 317 (the interrupt-remapping flags, and where MSI
+  confinement actually lives) read `ECAP` from inside the guest, QEMU 11.1.1, `q35`/TCG: `-device intel-iommu` gives `0xf00f4a` with `IR` **set**;
   `intremap=on` gives the identical `0xf00f4a`, a no-op; only `intremap=off` clears it, at `0xf42`.
   QEMU's `intremap` defaults to `auto`, which resolves **on** with no in-kernel irqchip.
   **So the capability was offered in every boot this tree has ever run, and the kernel never writes

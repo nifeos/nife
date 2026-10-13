@@ -1,12 +1,8 @@
 # §86 appendix: the research pass's findings, and what the lane would decide
 
 Five sections of the 2026-09-03 research pass in [§86 (whether an NVMe driver can leave the kernel,
-and what capability would let it)](../0086-el0-nvme-driver.md). Moved out of that page on 2026-10-12
-(UTC) under [§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The main page is
-complete without this one, which exists to verify or challenge it. calef ruled on 2026-10-12 (UTC)
-that §86 is split rather than given an exception. Headings moved up, and each sentence that [§213
-(writing standards)](../0213-writing-standards.md) counts as over 40 words was split, changing as
-few words as it could. Nothing else changed. "Above" and "below" mean the original page.
+and what capability would let it)](../0086-el0-nvme-driver.md). The main page is complete without
+this one, which exists to verify or challenge it. "Above" and "below" mean the main page.
 
 ## The hold is spent, and it was measuring the wrong variable
 

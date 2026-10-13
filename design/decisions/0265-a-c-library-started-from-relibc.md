@@ -7,9 +7,7 @@ ratified_by: calef
 
 # 265. A C library started from relibc, whose Rust platform layer holds the capabilities
 
-*Section number provisional until the merge queue lands it; 264 (PR #1856) was the highest in flight
-when this was written. The file name is a lane's coinage. Recorded by lane/c-library on 2026-10-08
-(UTC).*
+*The file name is a lane's coinage.*
 
 ## The ruling
 

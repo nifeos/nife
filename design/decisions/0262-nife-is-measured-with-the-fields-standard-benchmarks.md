@@ -7,10 +7,6 @@ ratified_by: calef
 
 # 262. nife is measured with the field's standard benchmarks, run unmodified, against Linux
 
-*Section number provisional until the merge queue lands it; 260 was the highest on `main` when this
-was written, 261 (#1840) and 263 to 265 (#1856, #1857) were in flight. Recorded by lane/standard-benchmarks on
-2026-10-08 (UTC), from a ruling calef made the same day.*
-
 ## The ruling
 
 The maintainer had filed eight proposals, one per standard benchmark, each naming the fatal risks it

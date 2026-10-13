@@ -7,10 +7,6 @@ ratified_by: calef
 
 # 263. Threads are built: more than one thread in an address space
 
-*Section number provisional until the merge queue lands it; 259 (PR #1847) and 261 (PR #1840) were
-in flight and lane/standard-benchmarks was recording a ruling when this was written, so 262 was left
-to it. Recorded by lane/threads-and-fork for the maintainer on 2026-10-08 (UTC).*
-
 ## The ruling
 
 §105 (`std::thread::spawn` stays declined, until a customer needs it) declined threads, and its

@@ -11,14 +11,11 @@ files hold what its prose budget has no room for:
 - [`prior-art.md`](prior-art.md): the research pass on the hold, the premise, this tree's analogues
   and prior art, and the research lane's reading.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-cap-86-and-27, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
 - `vt-d-and-interrupts` Name: ratified 2026-10-12 (calef, on #2015: "Rename to prior-art, keep
-  the other two."). Minted that day by maintainer/prose-cap-86-and-27, for the end of the parent's
-  "Recommendation", "The axis nothing in this section has named" and "Reversibility, and who has
-  acted".
+  the other two."). It holds the end of the parent's "Recommendation", "The axis nothing in this
+  section has named" and "Reversibility, and who has acted".
 - `prior-art` Name: ratified 2026-10-12 (calef, on #2015: "Rename to prior-art, keep the other
-  two."). Minted that day as `research-findings` by maintainer/prose-cap-86-and-27, for five
-  sections of the parent's research pass, and renamed under that ruling.
+  two."). It holds five sections of the parent's research pass.

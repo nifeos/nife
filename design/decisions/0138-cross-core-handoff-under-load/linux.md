@@ -1,10 +1,9 @@
 # §138 appendix: how Linux v6.12 balances
 
 An appendix of [§138 (how a saturated workload is made to hand threads across
-cores)](../0138-cross-core-handoff-under-load.md), moved out of that page on 2026-10-12 (UTC) under
-[§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete
-without it. This file holds how Linux balances load, the push for running tasks, the domain
-hierarchy, and the control that turns it off.
+cores)](../0138-cross-core-handoff-under-load.md). The main page is complete without it. This file
+holds how Linux balances load, the push for running tasks, the domain hierarchy, and the control
+that turns it off.
 
 ## Linux balances continuously, at four moments, because nothing ever tells it anything
 
@@ -16,7 +15,7 @@ reader may have in their head were changed in v6.10 and are wrong for any tree n
 `sched_balance_newidle`, and `scheduler_tick` became `sched_tick`. All three carry the old names in
 v6.9 and the new ones in v6.10, checked in both. The rot is not hypothetical either: the comment
 above `sched_balance_softirq` in v6.12 still says `scheduler_tick()`, two releases after that
-function was renamed.
+function took its new name.
 
 **EEVDF did not change this.** `Documentation/scheduler/sched-eevdf.rst`: *"The Linux kernel began
 transitioning to EEVDF in version 6.6 (as a new option in 2024), moving away from the earlier

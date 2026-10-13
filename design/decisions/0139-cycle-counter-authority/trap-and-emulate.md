@@ -2,11 +2,7 @@
 
 Evidence for [§139 (who may read the cycle counter, and by what
 authority)](../0139-cycle-counter-authority.md), the measurement that took trap-and-emulate off the
-`x86_64` row. Moved out of that page on 2026-10-11 (UTC) under [§212 (a prose
-budget)](../0212-a-prose-budget-for-every-document.md). The main page is complete without this one,
-which exists to verify or challenge it. Headings moved up, cross-references became links, and a
-sentence over the 40 words of [§213 (writing standards)](../0213-writing-standards.md) was split,
-changing as few words as it could. Nothing else changed.
+`x86_64` row. The main page is complete without this one, which exists to verify or challenge it.
 
 Xen's "15-20 times slower than the rdtsc instruction when executed natively" is Xen's number on
 Xen's path, and [the clock-sources appendix](x86-clock-sources.md#what-a-virtualized-guest-does-when-the-host-denies-the-tsc)
@@ -117,9 +113,8 @@ would not care. Four shapes would.
    standing in for the timed wait this kernel does not have, one counter read per iteration. That
    program is gone: milestone 281 (`watch` holds exactly what `ps` holds, so it is nothing) deleted
    it on 2026-09-13 (noted here 2026-10-11 UTC).
-3. `components/src/ntp.rs:382`, the retry gap, the identical shape. As of 2026-10-11 (UTC) it is
-   `poll_gap` in `components/src/network_time_client.rs:402` to `:405`. Since 2026-09-26 the spin
-   is only the fallback. The client first sleeps on a timer from milestone 106 (a wait that ends on
+3. `poll_gap` in `components/src/network_time_client.rs`, the retry gap, the identical shape. The
+   spin is only the fallback: the client first sleeps on a timer from milestone 106 (a wait that ends on
    either the interrupt or the deadline), and spins only when its untyped cannot pay for one.
 4. `fixtures/src/login_test_client.rs:573` to `:580`, a polling loop reading the counter up to three
    times per iteration.
