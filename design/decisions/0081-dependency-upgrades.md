@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 81. A dependency stays upgradable; we suppress churn, never the upgrade
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 calef decided this on 2026-08-13, on the pull request that corrected the
 mistake described below: *"We want the upgrades on all of our dependencies. We don't want to
 foreclose upgrades."*

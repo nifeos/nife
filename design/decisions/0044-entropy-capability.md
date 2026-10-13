@@ -46,9 +46,8 @@ requests into one.
 
 **A short read is asked again, and the boundary is not the client's problem.** virtio-rng may return
 fewer bytes than the buffer holds and says how many in the used ring's `len`. QEMU's really does,
-which is a measurement rather than a spec allowance: the first version passed the short buffer
-through to the client and the test caught a five-byte reply to an eight-byte request thirty draws
-in. So the service gathers across the boundary, and a count below what was asked means one thing
+which is a measurement rather than a spec allowance: a five-byte reply to an eight-byte request,
+thirty draws in. So the service gathers across the boundary, and a count below what was asked means one thing
 only, that the device went dry part-way through. It never pads, never repeats a byte it has served,
 and never substitutes a pseudo-random stand-in. A device that produces nothing across four attempts
 gets `NO_ENTROPY` and the caller finds out, which is [§42](0042-truthful-filesystem.md)'s no-silent-degradation rule applied to

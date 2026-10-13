@@ -7,12 +7,9 @@ ratified_by: calef
 
 # 101. Notification objects: async multiplexing without wait-any
 
-Raised 2026-08-20 by the architect's question ("let's decide on the seL4
-model"), at the point where milestone 40's remaining fork exposed the single-wait-point limitation
-as the structural constraint every component in this tree is working around. Decided the same day:
-the seL4 notification object model is the right long-term solution for this kernel, and this file is
-the specification a build lane works from. Nothing is built on it yet; the first build flips the
-status to AMENDED with the implementation record.
+The single-wait-point limitation is the structural constraint every component in this tree works
+around. Decided 2026-08-20: the seL4 notification object model is the right long-term solution for
+this kernel, and this file is the specification a build lane works from.
 
 What is blocked: nothing directly. The `terminal_sink_caretaker` narrowing (the remaining fork of
 milestone 40 (documentation as a system service)) unblocks the documentation viewer without this.
@@ -23,10 +20,10 @@ thing at once gets the primitive it is currently working around the absence of.
 
 calef, 2026-09-26 (recorded 16:54 UTC): *"151: confirm B."*
 
-The lane for milestone 151 (notification objects) found the encoding in "The return-value
-distinction" forgeable. `RECV` returns the sender's own first data word in `w0` (the `RECV` arm of
-`kernel/src/syscall.rs` returns `msg[0]`), so any sender can `SEND(2, word, 0)` and pass for a bound
-notification. That section stands as ruled; this replaces it.
+The encoding in "The return-value distinction" is forgeable. `RECV` returns the sender's own first
+data word in `w0` (the `RECV` arm of `kernel/src/syscall.rs` returns `msg[0]`), so any sender can
+`SEND(2, word, 0)` and pass for a bound notification. That section stands as ruled; this replaces
+it.
 
 The ruling, option B:
 

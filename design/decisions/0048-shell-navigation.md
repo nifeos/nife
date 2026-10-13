@@ -47,21 +47,20 @@ re-resolve a name later would be ambient authority smuggled in through a conveni
 §27 stays intact: the resolver lives in the client, so the server still only ever sees one component
 relative to a capability presented to it.
 
-## `rm` is an unlink, and the first version was accidentally a revoke
+## `rm` is an unlink, not a revoke
 
 Milestone 47 required these be distinguished: unlink removes a name while existing holders keep
 reading (the atomic-replace and temp-file idioms depend on it); revoke kills the object and every
 capability goes stale.
 
-The first implementation was a revoke, and the machine said so: RedoxFS frees a node the instant its
-last link goes, so a read after unlink got `ENOENT` from a deallocated node. The engine already had
-Unix's deferred delete (`on_open_node`/`on_close_node` and a release list), and nothing was using
-it. Registering on open and deregistering on close is what makes the verb an unlink; deleting either
-half turns the test red.
+RedoxFS frees a node the instant its last link goes, so on its own a read after unlink gets `ENOENT`
+from a deallocated node, which is a revoke. The engine has Unix's deferred delete
+(`on_open_node`/`on_close_node` and a release list). Registering on open and deregistering on close
+is what makes the verb an unlink; deleting either half turns the test red.
 
-The test also caught a gap in itself: with only the `open` registration removed it stayed green,
-because it exercised the `create` path. It now goes through both doors. A test that passes when half
-the mechanism is deleted is the failure that matters.
+The test goes through both doors, `open` and `create`, because a test that exercised only `create`
+stays green with the `open` registration removed. A test that passes when half the mechanism is
+deleted is the failure that matters.
 
 Revoke is not offered, for a structural reason rather than a scheduling one: it would mean
 invalidating handles the FS server minted for clients it cannot enumerate, because the handle table is

@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 97. Six gates run on every pull request and none of them can stop one
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 calef, 2026-08-25, in conversation: *"Ratify as written."* Raised 2026-08-18 by
 the maintainer, from a red trunk rather than from a worry: `main` failed `script/fastpath-footprint`
 for several hours and the mechanism that should have prevented it had been disabled by configuration
@@ -72,33 +69,30 @@ queue.
 
 ## The options
 
-Sharpened 2026-08-18 by calef, who refused the first version of this section and was right to.
-His question was the one that matters: *if we want a proven OS, how do we detect when we are no
-longer proven?* Answering it properly required reading `.github/workflows/verify.yml` rather than
-reasoning about it, and the reading moved two of the six and corrected the reason for a third.
+calef's question (2026-08-18) is the one that matters: *if we want a proven OS, how do we detect
+when we are no longer proven?* Answering it requires reading `.github/workflows/verify.yml` rather
+than reasoning about it.
 
 1. Require four (recommended): `fastpath footprint`, `stack frames`, `cpu matrix`, `fuzz`.
    None carries a job-level `if:`, so each runs and reports on every change and none can leave a
    required context unreported. The only thing that changes is whether their failure is
    authoritative.
 
-2. `fuzz` moved into that list and the first version of this section was wrong to exclude it.
-   The argument against was that a 60-second-per-target run is a sample rather than an exhaustive
-   search. True, and it does not follow: **a fuzz red is never a false positive.** `cargo-fuzz`
-   goes red when it has an input that crashes; the sampling makes the *timing of discovery*
-   nondeterministic, not the finding. The two were being conflated. Its steps are guarded rather
-   than its job, with a comment saying exactly why, so it is structurally safe to require. The
-   residual cost is honest and small: a red can hold a change hostage to a pre-existing crash the
-   fuzzer surfaced on that run rather than one that change introduced, which is true of every gate
-   on a shared trunk.
+2. `fuzz` is in that list. The argument against is that a 60-second-per-target run is a sample
+   rather than an exhaustive search. True, and it does not follow: **a fuzz red is never a false
+   positive.** `cargo-fuzz` goes red when it has an input that crashes; the sampling makes the
+   *timing of discovery* nondeterministic, not the finding. Its steps are guarded rather than its
+   job, with a comment saying exactly why, so it is structurally safe to require. The residual cost
+   is honest and small: a red can hold a change hostage to a pre-existing crash the fuzzer surfaced
+   on that run rather than one that change introduced, which is true of every gate on a shared
+   trunk.
 
 3. `verify scope` comes OUT of the list, as redundant. The aggregator below already refuses to
    report green when the scope job did not succeed, so requiring it separately buys nothing.
 
-4. `prove` stays unrequired, and the first version of this section gave the wrong reason. It
-   said `prove` is the queue's long pole. That is true and it is not the argument. The argument is
-   that requiring it would wedge the repository, permanently, on exactly the changes that need
-   it least:
+4. `prove` stays unrequired. It is the queue's long pole, and that is not the argument. The argument
+   is that requiring it would wedge the repository, permanently, on exactly the changes that need it
+   least:
 
    `prove` is a matrix job whose name is a template, `prove (shard ${{ matrix.shard }}/2)`, and the
    matrix only expands **if the job runs**. It carries `if: needs.scope.outputs.needed == 'true'`,
@@ -194,10 +188,5 @@ call:
   A check added to CI is advisory by default, so the list grows silently in the direction of less
   enforcement. A gate comparing the workflow's job names against the ruleset's required contexts is
   conceivable and is not built.
-- This section's first version got `fuzz` and `prove` wrong, and was corrected only because
-  calef refused it and asked how we would detect being no longer proven. Both errors were the same
-  error: reasoning about CI from the shape of the check names instead of reading the workflow. The
-  corrected text is above; the failure is recorded here because a section that reads as though it
-  were right the first time teaches the wrong method.
 - The follow-on above is unbuilt. Until it exists, "the proofs are gated" rests on the
   aggregator's `needs:` list being complete, and nothing checks that it is.

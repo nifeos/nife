@@ -45,10 +45,10 @@ the filter would be bypassed and the set would stop meaning anything.
 
 ## The table shares dispatch and never attenuation
 
-This is the constraint the milestone was rewritten around, and it survived contact.
+This is the constraint the milestone is built around.
 
-The milestone was first drafted as "one caretaker parameterized by how the namespace is described",
-which is refuted in `swarden.rs`'s own header under a section answering that exact question.
+Not "one caretaker parameterized by how the namespace is described", because `swarden.rs`'s own
+header refutes it under a section answering that exact question.
 `fs_subtree_caretaker` performs **no checks at all** by design: one `OPENDIR` at startup, the server
 intersects the granted rights and mints a restricted handle, and everything after is reached through
 it. A name filter would trade that program's single strongest property for a switch.

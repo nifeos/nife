@@ -16,13 +16,10 @@ quarterly proposal, and it unblocks milestones 92 and 93.
 The count trigger fires at 15 milestones built since the last audit, or 8 new crates and
 programs, whichever comes first. Both are read from the same place the tripwire already reads.
 
-Corrected 2026-08-16, the same day, by milestone 92's lane: this entry said three security
-audits existed and there are **four**. `notes/security.md` (2026-07-15) predates the three counted
-below, and `SECURITY.md` undercounts by one for the same reason. The interval arithmetic is
-unaffected, because the two audits with countable milestone history are still the pair used, but a
-decision that miscounts its own evidence should say so where the evidence is cited. The index in
-`design/audit-reports/README.md` is now the authority, and it derives its counts from the tree
-rather than from prose, which is what makes a third miscount catchable.
+There are **four** security audits: `notes/security.md` (2026-07-15) predates the three counted
+below. The interval arithmetic uses the two audits with countable milestone history. The index in
+`design/audit-reports/README.md` is the authority for the count, and it derives its counts from the
+tree rather than from prose, which is what makes a miscount catchable.
 
 Neither number was picked in the abstract; they are the interval this project chose when nobody
 was counting. Four security audits exist. The arch-and-assembly pass (notes/arch-audit.md) came

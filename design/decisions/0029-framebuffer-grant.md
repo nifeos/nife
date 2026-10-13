@@ -63,13 +63,13 @@ picks the victim frame and hands it to the attacker.
 
 A found limit, recorded for whoever handles faults in production: the RISC-V IOMMU's fault queue
 overflows silently. The driver gives it 128 records and never clears the queue's overflow bit, so a
-flood of faults latches the overflow and no further fault is recorded at all. Found the right way: the
-escape test's first version attached a 4096-byte backing, produced a flood, and the *next* test in the
-suite (§20's `the_iommu_faults_a_dma_that_escapes_the_domain`) then reported the IOMMU as not confining
-the device. Mitigated locally (the escape attaches four bytes, so one translation and one fault; the
-test drains the queue afterwards) rather than by changing the arch driver, which is a different lane.
-What is left for a fault-handling milestone: clear the overflow bit when draining, and decide what a
-production kernel does when a confined device faults. See notes/framebuffer-contract.md.
+flood of faults latches the overflow and no further fault is recorded at all. The tell is the *next*
+test in the suite (§20 (IOMMU-backed DMA isolation)'s `the_iommu_faults_a_dma_that_escapes_the_domain`) reporting the IOMMU as
+not confining the device. Mitigated locally (the escape attaches four bytes, so one translation and
+one fault; the test drains the queue afterwards) rather than by changing the arch driver, which is a
+different lane. What is left for a fault-handling milestone: clear the overflow bit when draining,
+and decide what a production kernel does when a confined device faults. See
+notes/framebuffer-contract.md.
 
 Correction: the PCI transport was synthesizing a device id nobody had checked. `Transport::Pci`
 answered a driver's virtio-mmio `DeviceID` read with a hardcoded 2 ("I am a block device") for every

@@ -7,8 +7,6 @@ ratified_by: calef
 
 # 27. The filesystem service: a capability-shaped contract over a component we did not write (milestone 32 phase 2)
 
-(one amendment and three superseded accounts below, all kept for the record.)
-
 RedoxFS runs confined as a userspace FS-server component, and its interface is **capability-shaped
 from birth**. Three processes, wired by the kernel and named by nobody else: a **block server** (a
 role of the virtio driver) that serves blocks over blk IPC with the DMA confinement unchanged; an
@@ -39,13 +37,11 @@ the device DMAs straight in, no copy), which is what keeps the mount's request c
 hundreds and affordable. It then WAITs on the device's completion interrupt, the milestone-9
 driver discipline, and lets `used.idx` decide when a wakeup is really its own.
 
-*This paragraph is a correction* (fix/irq-delivery, 2026-07-29). It used to say the server polled the
-used ring deliberately, because "a reschedule per read overran the watchdog". It does not: with the
-WAIT path the fs_server test passes on both ISAs at the 4-core SMP boot, all of the mount's
-interrupt-driven completions landing well inside the 60 s watchdog. QEMU still completes virtio-blk
+With the WAIT path the fs_server test passes on both ISAs at the 4-core SMP boot, all of the mount's
+interrupt-driven completions landing well inside the 60 s watchdog. QEMU completes virtio-blk
 synchronously inside `NOTIFY` (notes/dma.md), so the interrupt is already pending when the server
 WAITs, and the pending-signal count (§9a) returns that WAIT at once instead of blocking on an event
-already over. The machine overruled the note.
+already over.
 
 The runners also order the two mmio disks with care, because QEMU assigns virtio-mmio slots in
 reverse command-line order and the kernel enumerates by ascending slot.
@@ -60,37 +56,14 @@ capability and read back byte for byte, plus a host-tool consistency check after
 core is host-tested for read AND write (`fs_server` lib), so the filesystem logic is proven both ways
 independently of any device.
 
-**Amendment (2026-07-29, corrected four times in one day; THIS paragraph is the settled account, and
-it is the one that explains the other three). There was never a filesystem bug. The write always
-succeeded.** Everything below this paragraph is superseded and kept only because how this fact
-wobbled is worth more than the fact.
+**Amendment (2026-07-29). There was never a filesystem bug. The write always succeeded.**
 
-Moved to [`the-2026-07-29-amendment.md`](0027-filesystem-service/the-2026-07-29-amendment.md): the
-account of the missing `TRUNCATE`, its lessons, the hypotheses measured, the errno plumbing, and the
-first superseded account.
+[`the-2026-07-29-amendment.md`](0027-filesystem-service/the-2026-07-29-amendment.md) holds the
+account of the missing `TRUNCATE`, its lessons, the hypotheses measured and the errno plumbing.
 
-*Superseded, kept for the record.* An earlier amendment claimed a first write works and a repeat
-write to the same block still loops, reasoning that `mkredoxfs` rewriting the target to a placeholder
-made every gated write a first write. The premise about `mkredoxfs` was right and the conclusion was
-wrong: the harness was indeed hiding something, but not a loop. This
-section used to carry an open item, that an end-to-end write "loops inside RedoxFS's allocator commit
-on bare metal even on a pristine image" (the `prev`-chain walk in `Transaction::sync_allocator`). It
-does not. Driven through `std::fs` (§22's phase-two amendment), the write completes on both ISAs and
-reads back byte for byte when the host tool reopens the image afterwards with the pinned engine,
-which is the half a cache cannot fake; that reopen is now part of the gate rather than a comment. The
-likely cause of the old symptom is the interrupt-delivery fix of the same day (the block server WAITs
-on the completion IRQ instead of polling the used ring, the same correction the read path needed);
-stated as likely, not proven, because what was measured is that the write completes, not why the poll
-path did not. The milestone-32 client stays read-only by choice now rather than by blocker.
-
-**The remaining gap is in the contract: there is no `CREATE` and no `TRUNCATE` verb**, so
-`std::fs::write` and `File::create` are honestly `Unsupported` and a write means opening a file the
-image already carries. Both verbs are addable (`Transaction::create_node` is not std-gated; "creation
-stays host-side" above is about creating a *filesystem*, which needs uuid and getrandom, not a file),
-and adding them is a change to `fs_proto`, the FS server, and this section, so it is a decision to
-take deliberately rather than a hole to plug. Reported up, with the reply-space overlap noted in
-notes/std.md (the wire's negated errnos collide with the kernel's invoke errors, -1..-8). See
-notes/fs-server.md.
+Driven through `std::fs` (§22 (Rust `std` on the native ABI)'s phase-two amendment), the write
+completes on both ISAs and reads back byte for byte when the host tool reopens the image afterwards
+with the pinned engine, which is the half a cache cannot fake; that reopen is part of the gate.
 
 ## Amendment (milestone 31 phase 2, 2026-07-30): `CREATE` and `TRUNCATE` exist, and a per-file grant is a caretaker process
 
@@ -148,37 +121,23 @@ Read/write, same shape: the two write bits set and everything else clear. A care
 refused every request passes the first test and fails the second. Each accepted write is read
 straight back, because "the server accepted my write" and "my write landed" are different claims.
 
-The interactive shell still refuses a named file, and that refusal is true rather than pending.
-(It was spelled `file:NAME` when this was written; milestone 47 removed the designator, and a bare
-token in a file position designates the file now. The mechanism is unchanged.) The
-boot that starts the shell wires no FS service, so the shell holds no directory to narrow, and `caps`
+The interactive shell refuses a named file, and that refusal is true rather than pending. A bare
+token in a file position designates the file. The boot that starts the shell wires no FS service, so the shell holds no directory to narrow, and `caps`
 says so in those words. `grant_plan` carries the whole vocabulary (a `FileSpec` in the manifest, a
 `FileGrant` in the endowment, refusals both ways) and the decision is a function of what the shell
-*holds*, not of the calendar; phase 1 hardcoded that refusal, which was true when written and would
-have quietly become a lie. Wiring an FS service into the interactive boot is the remaining step, and
+*holds*, not of the calendar. Wiring an FS service into the interactive boot is the remaining step, and
 nothing in the suite gates that boot, which is why it is recorded here instead of built.
 
-Also settled, by measurement: the FS server's stack. RedoxFS recurses in 8 KiB frames, and the 33
-pages it had were 528 bytes short once `CREATE` and `TRUNCATE` added a level of tree recursion.
-The server died mid-request and its client blocked forever on a `CALL` nobody would answer. The size
-is now measured rather than chosen: the kernel poisons every FS-server stack page and
-`fs_service::fs_stack_used` reports the deepest word that is no longer poison (135,696 bytes on
-aarch64, 135,824 on riscv64, of a 397,312-byte grant), with a test on both ISAs that prints it every
-run and fails under a quarter left. notes/fs-server.md carries the incident, including the two
-instruments it blinded and why a ceiling failure reports the ceiling and not the cost. *Milestone 37
-measures 127,408 and 127,536 for the same grant, 8 KiB lower, and does not attribute the drop; both
-numbers and the reasoning are in the note. It also widened the instrument to a maximum over every FS
-server a boot starts, so the mount that recovers a crashed disk is measured too, which is the case
-most likely to recurse further than a clean one.*
+Also settled, by measurement: the FS server's stack. RedoxFS recurses in 8 KiB frames, and a server
+that runs out dies mid-request while its client blocks forever on a `CALL` nobody will answer. The
+size is measured rather than chosen: the kernel poisons every FS-server stack page and
+`fs_service::fs_stack_used` reports the deepest word that is no longer poison, as a maximum over
+every FS server a boot starts, so the mount that recovers a crashed disk is measured too.
+Milestone 37 (prove RedoxFS's crash consistency) measures 127,408 bytes on aarch64 and 127,536 on
+riscv64, of a 397,312-byte grant, and a test on both ISAs prints it every run and fails under a quarter left. notes/fs-server.md
+carries the incident, including the two instruments it blinded and why a ceiling failure reports the
+ceiling and not the cost.
 
 The remaining honest gap: a client of a dead server blocks forever. §26's fault endpoint is the
 mechanism that would turn that into a message a supervisor can act on, and wiring the FS service into
 a supervision tree belongs to milestone 23.
-
-**The missing `TRUNCATE` is no longer only a missing feature; it is a sharp edge that cost a day.**
-The four-times-corrected amendment above traces to exactly this gap: a short write leaves the old
-tail, so a caller that reasonably expects `write` to replace a file's contents gets a longer file than
-it wrote. `std::fs::write` reporting `Unsupported` is honest, but the *partial* capability underneath
-it is the trap, because a write that half-works reads as a write that failed. Adding `TRUNCATE` would
-remove the edge rather than merely add a verb, which is the strongest argument yet for taking the
-decision, and it belongs with `CREATE` in milestone 31 phase 2.

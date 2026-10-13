@@ -65,8 +65,8 @@ every other holder is a derivative. Revoking one *named* holder while sparing an
 the real derivation tree, and still is not built.
 
 Surface cost. No new syscall, no new method number, no new object type, no new error: it is an
-existing method answering on a second object type, where that object previously returned
-`BadMethod`. Recorded here rather than only in code, per the project's rule.
+existing method answering on a second object type. Recorded here rather than only in code, per the
+project's rule.
 
 The asymmetry is deliberate and is the one thing to remember. `Frame::REVOKE` on a frame takes
 the page from everyone including you; on a device it takes it from everyone but you. Same verb, two
@@ -120,10 +120,9 @@ real engineering:
   capabilities a vendor's build could be wired from.
 - Dependency-aware orchestration. One channel is swapped at a time, with no dependency graph and
   no quiescence protocol across components.
-- A hung component. Recorded here as resting on the outgoing instance cooperating with
-  `OP_QUIESCE` and needing §32's stronger right otherwise. Corrected 2026-08-17 (calef): the
-  sequence does *not* rest on that cooperation. `swapper`'s `ROLE_HUNG` runs it against a component
-  that cooperates with nothing and three of the four steps are unchanged, because `OP_QUIESCE` is
-  the step a hang makes redundant rather than the step it blocks. What stays open is reclaiming the
-  hung instance's memory, and §32's amended consequence 2 records why the stronger right does not
-  fix that either. See notes/hung-component.md.
+- A hung component. The sequence does *not* rest on the outgoing instance cooperating with
+  `OP_QUIESCE`. `swapper`'s `ROLE_HUNG` runs it against a component that cooperates with nothing
+  and three of the four steps are unchanged, because `OP_QUIESCE` is the step a hang makes
+  redundant rather than the step it blocks. Reclaiming the hung instance's memory is §32 (a
+  supervisor may collect a corpse without being able to build one)'s consequence 2. See
+  notes/hung-component.md.

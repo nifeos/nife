@@ -9,13 +9,10 @@ opening anything here. These files hold what its prose budget has no room for.
 - [`alternatives.md`](alternatives.md): why not the alternatives.
 - [`methods.md`](methods.md): the four methods and the rights table, as ruled.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `prior-art` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, for the
-  parent's "What other operating systems do". calef names files.
-- `alternatives` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, for
-  the parent's "Why not the alternatives". calef names files.
-- `methods` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-decisions, for the parent's
-  "New methods" and "Rights". calef names files.
+- `prior-art` Name: provisional. For the parent's "What other operating systems do". calef names
+  files.
+- `alternatives` Name: provisional. For the parent's "Why not the alternatives". calef names files.
+- `methods` Name: provisional. For the parent's "New methods" and "Rights". calef names files.

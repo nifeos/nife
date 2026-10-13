@@ -7,18 +7,15 @@ ratified_by: calef
 
 # 91. A region's endpoints are swept before its refusal, not after
 
-Minted by the integrator at merge (2026-08-16), which is where a section
-global to the tree is assigned. The change is milestone-level rather than architectural: it
-reorders two phases inside an existing verb and adds no method, no object and no syscall.
-Recorded here because §16's revocation semantics are stated here, and a reader who learns that
-reclamation refuses a busy region deserves to learn in the same place why it stopped refusing
-forever.
+The change is milestone-level rather than architectural. It reorders two phases inside an existing
+verb and adds no method, no object and no syscall. Recorded here because §16 (object revocation)'s
+revocation semantics are stated here, and a reader who learns that reclamation refuses a busy region
+deserves to learn in the same place why it does not refuse forever.
 
 ## What changed
 
-`sched::reap_region_objects` sweeps a region's **endpoints first, on every pass, refusal or
-not.** It used to sweep them after the refusal check, and that ordering made one shape
-permanently unreclaimable.
+`sched::reap_region_objects` sweeps a region's **endpoints first, on every pass, refusal or not.**
+Sweeping them after the refusal check makes one shape permanently unreclaimable.
 
 ## The shape it could not reclaim, and why
 

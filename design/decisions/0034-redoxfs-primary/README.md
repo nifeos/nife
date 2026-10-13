@@ -9,11 +9,10 @@ here. These files hold the evidence its prose budget has no room for.
   check.
 - [`zfs-and-xfs.md`](zfs-and-xfs.md): the 2026-07-30 comparison with ZFS and XFS.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `crash-consistency` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown,
-  for the parent's crash-consistency evidence. calef names files.
-- `zfs-and-xfs` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "Amendment (2026-07-30): ZFS and XFS". calef names files.
+- `crash-consistency` Name: provisional. For the parent's crash-consistency evidence. calef names
+  files.
+- `zfs-and-xfs` Name: provisional. For the parent's "Amendment (2026-07-30): ZFS and XFS". calef
+  names files.

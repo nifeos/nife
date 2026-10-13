@@ -11,10 +11,9 @@ calef, 2026-08-25, in conversation, ratifying the recommendation below as
 written: *"Ratify it."* (raised 2026-08-04 after nine milestones were found misrecorded in one
 sweep.)
 
-What. `script/roadmap --check` verifies that `design/roadmap/README.md` and the milestone's own
-file agree. That was built on 2026-08-03 to catch the split-brain defect, and it does. **It cannot
-see a status that is wrong in both places**, because the tree is a third record and nothing compares
-against it.
+What. `script/roadmap --check` verifies that `design/roadmap/README.md` and the milestone's own file
+agree. It catches the split-brain defect. **It cannot see a status that is wrong in both places**,
+because the tree is a third record and nothing compares against it.
 
 The cost, measured. On 2026-08-04 nine milestones (81, 82, 85, 94, 96, 100, 101, 109, 110, 113)
 had merged implementation PRs while both records read `NOT-STARTED`. `script/roadmap --ready` is the

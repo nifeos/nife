@@ -101,12 +101,10 @@ git commit --allow-empty -m "claim: milestone N"
 ```
 
 The head then carries something the base never will, so nothing that happens to the base can conclude
-the pull request is finished. AGENTS.md's instruction now says this; this section carries the reason.
+the pull request is finished. AGENTS.md's instruction says this; this section carries the reason.
 
-The sentence this corrects. AGENTS.md used to justify the convention with *"a draft cannot be
-stuck in the merge queue because a draft cannot be merged."* A draft cannot be enqueued, which is
-the useful half and is still true. It can be merged, by GitHub, without passing through the queue at
-all.
+A draft cannot be enqueued. It can be merged, by GitHub, without passing through the queue at all,
+so "a draft cannot be merged" is not a reason for the convention.
 
 ### The four cases, and why the rate mattered more than the mechanism
 

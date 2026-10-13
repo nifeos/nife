@@ -19,8 +19,7 @@ reporting is enabled, so `SECURITY.md` no longer points at a button that does no
 Require branches to be up to date before merging was turned on the same evening, after a merge
 order put two individually-green pull requests onto a red trunk.
 
-One caveat below turned out to be moot. `undefined-behavior check` (formerly `miri`) cannot be a
-required check at all: it runs on a weekly cron and `workflow_dispatch`, never on a pull request. The
+`undefined-behavior check` cannot be a required check at all: it runs on a weekly cron and `workflow_dispatch`, never on a pull request. The
 same is true of `mutation`. A check that does not run on a pull request cannot gate one.
 
 **Five checks run on every pull request and deliberately do not block:** `cpu matrix`, `fuzz`,
@@ -38,9 +37,8 @@ What. Enable private vulnerability reporting (the committed `SECURITY.md` points
 does not exist), and apply the `main` ruleset with its required checks, an empty bypass list, and
 not linear history. Exact steps are in notes/repo-hardening.md.
 
-One caveat that moved today. The check names changed: `miri` is now `undefined-behavior check`,
-and the HVF leg is deliberately not a CI check (GitHub's hosted macOS runners have no nested
+The HVF leg is deliberately not a CI check (GitHub's hosted macOS runners have no nested
 virtualization), so it must not appear in the required list.
 
-Milestone 44 is BUILT as of 2026-08-04. Its fifth item, signed commits, remains deliberately
-deferred and now has its own home in §78 rather than dying with this section.
+Milestone 44 (GitHub repository hardening) has a fifth item, signed commits. It is deliberately
+deferred to §78 (signed commits: worth doing, and not as a side effect).

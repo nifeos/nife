@@ -91,10 +91,6 @@ compares outcomes against a build that does not is a real gate and is rung two.
 
 ### Amended 2026-08-18: the boundary is further away than the paragraph above implies
 
-calef read the original as trading provability for specialization and asked whether there is not
-already an unproven subset, and therefore a judgment rather than a line. He is right, and the
-correction is larger than the question assumed.
-
 `script/verify` states it: the proofs are a function of the harness crates and their dependency
 closure, and `cargo kani` never compiles the kernel. So the tiers are:
 
@@ -133,9 +129,8 @@ invariants that the compiler is unable to determine by static analysis". The pro
 the optimization. It was an input to it: a verified invariant licenses a reordering the compiler
 cannot justify by itself.
 
-That is a stronger argument for option 2 than the one this file originally gave, which was only that
-the predicate cannot be retrofitted honestly. It is also why the three decisions here are separable
-and should not be taken as one:
+That is a stronger argument for option 2 than that the predicate cannot be retrofitted honestly. It
+is also why the three decisions here are separable and should not be taken as one:
 
 - Assembly is refused on two grounds that are independent of proof: maintenance cost, and the
   evidence that it no longer buys anything.
@@ -195,5 +190,5 @@ measurement we cannot currently take.** We do not know what the 5.6 KiB costs, b
 tree models a cache, and building a second IPC path on an estimate is the argument-instead-of-measure
 move that the benchmark discipline exists to refuse.
 
-**What happens if calef says no to all of it:** nothing breaks. The gate keeps the number from
+What happens if calef says no to all of it: nothing breaks. The gate keeps the number from
 growing, milestone 132 records the gap, and the trigger stated there still stands.

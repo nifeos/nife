@@ -66,16 +66,15 @@ exposure is bounded by construction: `MAX_THREADS` is 256, so kernel stacks (6 p
 total 6.00 MiB, static. An event kernel would spend `MAX_CPUS` (8) stacks, 192 KiB, plus larger
 TCBs for the continuations. The saving is 5.81 MiB.
 
-Against what, and this is the part the first draft got wrong. That figure was originally written
-as "2.81 MiB, or 0.069% of a 4 GiB board", and the percentage was doing the persuading. **No board's
-memory size is recorded anywhere in this tree**, so 4 GiB was an assumption rather than a
-measurement, and it flattered the argument by two orders of magnitude. The number that is actually
-measured is the machine this kernel runs on: all three QEMU runners use `-m 256M`. So:
+Against what. **No board's memory size is recorded anywhere in this tree**, so a percentage of a
+board is an assumption rather than a measurement, and against an assumed 4 GiB board it flatters
+the argument by more than an order of magnitude. The number that is measured is the machine this
+kernel runs on: all three QEMU runners use `-m 256M`. So:
 
-| denominator | at the old 128 | at 256 |
-|---|---|---|
-| a 4 GiB board (assumed, no board recorded) | 0.069% | 0.14% |
-| **256 MiB, what the suite actually runs on** | **1.10%** | **2.27%** |
+| denominator | share |
+|---|---|
+| a 4 GiB board (assumed, no board recorded) | 0.14% |
+| **256 MiB, what the suite actually runs on** | **2.27%** |
 
 The conclusion survives, and it is worth being precise about why, because the honest denominator
 removes the easy version of the argument. 2.27% is not a rounding error and should not be waved
@@ -121,10 +120,10 @@ it rather than additional to it.
 
 The obvious cheap alternative is to keep the model and take part of the memory win by making stacks
 smaller. It is not available. Milestone 84's high-water instrument measured thread stacks at 11,352
-bytes on aarch64 and 11,672 on riscv64, across roughly 420 stacks over the full suite. Stacks were
-*raised* from 4 pages to 6 on 2026-08-15, because milestone 124 found `spawn_on` carrying a 4,592-byte
-frame that could step past a one-page guard. At 16 KiB, measured usage was already 69 to 71%. There
-is no slack to reclaim.
+bytes on aarch64 and 11,672 on riscv64, across roughly 420 stacks over the full suite. At 4 pages
+(16 KiB) that is 69 to 71%, and stacks are 6 pages because milestone 124 (a thread is born where it
+lives) found `spawn_on` carrying a 4,592-byte frame that could step past a one-page guard. There is
+no slack to reclaim.
 
 3. Performance. The live argument, and we cannot currently measure it.
 
@@ -207,11 +206,10 @@ not currently use.
 
 Their stated argument is specific: an event kernel avoiding in-kernel page-fault exceptions
 "preserves the semantics of the C language", and staying inside C's semantics reduces verification
-complexity. We are not verifying C and Kani does not reach `kernel/src` at all (§95), so that
-argument is simply not ours. *(That parenthetical is stale as of 2026-08-30: milestone 193 put
-`kernel/src` within the prover's reach and two syscall properties are proved there. `kernel/src/arch/`
-remains unreachable. It does not change this paragraph's conclusion, which is about C's semantics
-rather than about coverage.)*
+complexity. We are not verifying C, so that argument is simply not ours. Milestone 193 (put
+`kernel/src` within reach of the prover) proves two syscall properties in `kernel/src`, and
+`kernel/src/arch/` is unreachable, but the conclusion is about C's semantics rather than about
+coverage.
 
 The version that may transfer is an inference and is marked as one: a continuation is explicit,
 data-shaped state, where a kernel stack is implicit, control-shaped state, and explicit

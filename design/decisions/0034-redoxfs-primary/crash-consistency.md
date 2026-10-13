@@ -26,13 +26,11 @@ the injector is demonstrably destructive. Removing the header ring's older gener
 a commit torn at 2048 bytes fails `Header::valid()` outright while the previous generation's slot
 stays valid and stays older, which is the whole recovery argument in three assertions and no mount.
 
-A fourth control arrived unbidden and is worth more than the other three. The first version of
-the harness read *any* failed lookup as "the name is absent", so a dropped write to a directory's
-tree block produced what looked like a filesystem that never existed, empty root and all. Nine fault
-points reported a filesystem bug that was a test bug: `ENOENT` is the only error that means absence,
-and the engine refusing to guess at a block whose checksum did not match is the property working.
-An instrument that can produce a false positive and did is an instrument that is connected to
-something.
+A fourth control is worth more than the other three: `ENOENT` is the only error the harness reads
+as absence. A harness that read *any* failed lookup as "the name is absent" would turn a dropped
+write to a directory's tree block into what looks like a filesystem that never existed, empty root
+and all. It would report a filesystem bug that is a test bug. The engine refusing to guess at a block
+whose checksum did not match is the property working.
 
 Two mechanisms we had named wrong, corrected here. `cleanup: true` is **not** the header-ring
 replay; `FileSystem::open` scans all 256 slots and keeps the newest valid one unconditionally, and

@@ -65,9 +65,9 @@ question that deserves an answer before the label hardens.
 `nifefs` is not among them, because it is not a competitor: a boot archive and a read-write
 filesystem are different jobs, and the initrd wants exactly what nifefs is. It stays.
 
-- Write our own. Rejected on the same grounds as milestone 32 originally: the thesis is the kernel
-  confining the filesystem, not the filesystem. A crash-consistent CoW filesystem is a large, subtle
-  project that proves nothing the thesis needs.
+- Write our own. Rejected on the same grounds as milestone 32 (a real filesystem: RedoxFS behind a
+  capability FS server): the thesis is the kernel confining the filesystem, not the filesystem. A
+  crash-consistent CoW filesystem is a large, subtle project that proves nothing the thesis needs.
 - ext2. Simple, well documented, Rust implementations exist, and it buys real interop (mount the
   image on Linux). Rejected for a *root*: no journaling, so power loss means `fsck` and possible loss,
   which is a step down from CoW. ext4 has no serious no_std Rust write implementation, and writing one

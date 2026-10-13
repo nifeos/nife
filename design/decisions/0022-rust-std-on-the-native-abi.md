@@ -69,8 +69,7 @@ networking only if it holds those two slots; without them `std::net` returns `Un
 "no ambient network" (§10) made visible from inside a process. The same `std_exerciser` binary proves
 both: spawned without the net slots it runs the offline transcript, spawned with them (and a running
 net_stack) it does a real UDP DNS query and a TCP echo round trip, each asserted byte for byte on both
-ISAs. `TcpListener` stopped being a gap on 2026-08-18 and the entry it used to hold is spent: the
-PAL binding milestone 107 deferred is built, `bind` is `OP_LISTEN` and `accept` is `OP_ACCEPT` into a
+ISAs. `TcpListener` is not a gap: `bind` is `OP_LISTEN` and `accept` is `OP_ACCEPT` into a
 second id, and a program without a listen grant gets `PermissionDenied` rather than `Unsupported`,
 which is the difference between an authority it was refused and a platform that cannot. The honest
 gap in its place is an accepted connection's peer address: `accept` must return a `SocketAddr`
@@ -96,16 +95,13 @@ reaches the wire so a would-be escape becomes a legible error rather than an `EN
 
 - An absolute path names the root of the caller's own namespace (milestone 47, 2026-08-18), and
   any `..` that would climb above it is refused as `ErrorKind::InvalidFilename`, with a message
-  naming which case it was. This bullet refused absolute paths outright until then, and that was the
-  honest statement of what the binding did rather than a principle: `/` in a system where every
+  naming which case it was. `/` in a system where every
   program holds its own directory capability is Plan 9's answer, not a global root, so two programs
   in two subtrees resolve the same absolute token to two different files and neither can name the
-  other's. The refusal was the missing machinery, not a property worth keeping. A nested path is a chain of attenuated descents (milestone 122), one
+  other's. A nested path is a chain of attenuated descents (milestone 122 (a directory handle `std` can hold)), one
   `OPENDIR` per component, each hop asking for `DESCEND` plus what the final verb needs; the grant is
   exactly as tight as it was, because a child's rights are its parent's intersected with the request.
-  This bullet refused nested paths outright until 2026-08-18, which was the honest statement of what
-  the binding then did rather than a principle: a chain of descents never had the authority problem,
-  only the machinery was missing. Deliberately **not** `PermissionDenied`: nothing consulted
+  Deliberately **not** `PermissionDenied`: nothing consulted
   a permission, and there is no name here for what was asked, because no capability designates it.
   Mapping a capability refusal onto EPERM would smuggle in exactly the POSIX fiction this milestone
   exists to avoid. A name that is expressible but absent stays an ordinary `NotFound`, which is what

@@ -18,10 +18,10 @@ is also what builds a process out of that region. So a supervisor whose entire j
 spaces. That is a large right granted for a small purpose, and it is backwards for a capability
 system: a compromised supervisor should be able to restart what it supervises and nothing else.
 
-This was a prediction until milestone 36 made it a measurement. Its `c_confiner` had to hold a
+Milestone 36 (a foreign-language component, seam first) measured it. Its `c_confiner` had to hold a
 full-rights untyped budget for its whole life (`SPLIT`, `RETYPE`, `RETYPE_OBJ`, `DESTROY`) because
-it needed the last one; everything else came attached. What it wanted was `DESTROY` on one region
-it did not create: not `RETYPE`, not `SPLIT`, not a budget. Recorded in §31.
+it needed the last one; everything else came attached. What it wanted was `DESTROY` on one region it
+did not create: not `RETYPE`, not `SPLIT`, not a budget. Recorded in §31 (the foreign-language seam).
 
 ## The decision
 
@@ -42,39 +42,24 @@ Four consequences, each deliberate:
 2. **It authorizes collecting a corpse, not killing.** The method refuses a thread that is still
    alive. Killing a live child is strictly more dangerous than collecting a dead one, and it
    already has a home: §24's forcible `^C` tier uses `Untyped::DESTROY`, which needs the
-   construction authority precisely because it is the stronger act. The honest limitation, corrected 2026-08-17
-   (calef) after milestone 23's watchdog lane tested it: a supervisor that must deal with a *hung*
-   child (livelocked, not crashed, so no death message ever arrives) was recorded here as still
-   needing the stronger right. That sentence is half wrong, and the two halves fail in opposite
-   directions.
+   construction authority precisely because it is the stronger act.
 
-   **Restoring the service needs no new right at all.** `swapper`'s `ROLE_HUNG` runs the four
+   A supervisor that must deal with a *hung* child (livelocked, not crashed, so no death message
+   ever arrives) splits in two.
+
+   Restoring the service needs no new right at all. `swapper`'s `ROLE_HUNG` runs the four
    live-replacement steps against a component that cooperates with nothing, and three of the four
    are unchanged, because the only step that needed the incumbent's cooperation (`OP_QUIESCE`) is
    the one a hang makes redundant. You do not ask a wedged component to stop.
 
-   Reclaiming its memory needs the stronger right and, for the worst shape, is not fixed by it.
-   `Untyped::DESTROY` on a region holding a live thread marks the thread `killed` and refuses, and
-   the kill is spent in `schedule()`, only for a thread whose state is `Running`. A thread blocked
-   forever on an endpoint its supervisor cannot reach never reaches `schedule()` again, so the kill
-   is armed and never lands and the refusal is permanent. No privilege closes that, because it is
-   a scheduler property rather than an authorization one, which `reap_region_objects` says in its
-   own comment. So this decision's refusal to hand over construction authority costs less than it
-   appeared to: for that case the authority would not have worked.
-
-   What remains open is therefore not "should a supervisor get the stronger right" but "what can end
-   a permanently blocked thread at all", which is a fork nobody has opened. notes/hung-component.md
-   carries the taxonomy (three hang shapes, three answers), the evidence, and the options. The
-   SUSPEND tracker is still where the resumable half lives.
-
-   Amended 2026-10-08 (UTC): the fork was opened and answered, and the two paragraphs above are
-   history. Milestone 133 (ending a permanently blocked thread, and deciding who may) opened it on
-   2026-08-17. calef chose its proposal A on 2026-09-03, and it was built 2026-09-04. `DESTROY` now
-   finishes a `Blocked` resident in place without waking it, so the construction authority *is*
-   sufficient for the worst shape. Milestone 254 (a caller stranded by a server that died) wakes
-   the callers such a server held with `abi::Error::Gone`. This decision's own line is unchanged.
-   A holder of only the supervision endpoint may collect a corpse and nothing more, and a terminate
-   right for it is 133's proposal B, refused for want of a customer.
+   Reclaiming its memory needs the stronger right, and the stronger right is sufficient. `DESTROY`
+   finishes a `Blocked` resident in place without waking it (milestone 133 (ending a permanently
+   blocked thread, and deciding who may), calef's choice of its proposal A on 2026-09-03).
+   Milestone 254 (a caller stranded by a server that died is stranded forever) wakes the callers
+   such a server held with `abi::Error::Gone`. notes/hung-component.md carries the taxonomy (three
+   hang shapes, three answers) and the evidence. This decision's own line holds: a holder of only
+   the supervision endpoint may collect a corpse and nothing more, and a terminate right for it is
+   133's proposal B, refused for want of a customer.
 3. It settles the queued tid-to-handle question for this case, and only this case. The second
    fork raised alongside this one was how a supervisor names a child: a `Tcb::NAME` method,
    per-child fault endpoints, or a builder-reported tid. None is needed here, because the tid is

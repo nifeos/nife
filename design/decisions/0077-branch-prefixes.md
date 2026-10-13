@@ -14,12 +14,8 @@ machine-generated, `docs/` and `design/` stay out with their single uses standin
 they cost a word each and removing a permitted name is how a lane that read an older file gets
 its branch refused.
 
-Applied the same day. The gate's own blind spot, recorded below and worth keeping in view, bit
-twice more before this landed: on 2026-08-15 it rejected `notes/` (a fifth unlisted prefix, whose
-branch was renamed rather than argued with) and, more expensively, it rejected GitHub's own
-`gh-readonly-queue/*` and so failed **every merge-queue group build** for most of an evening,
-which read as a hung queue. That exemption landed in its own change (#217); this one is the
-vocabulary half.
+The gate exempts GitHub's own `gh-readonly-queue/*` branches (#217); refusing them fails **every
+merge-queue group build**, which reads as a hung queue. Its blind spot is recorded below.
 
 What. `script/lint` check 4 accepts `milestone/`, `fix/`, `bench/`, `audit/`, `integration/`,
 `finalize/` and `feature/`, and rejects everything else. It runs on the current branch only, and
