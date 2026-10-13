@@ -1321,3 +1321,15 @@ mod pass9_el0_tests;
 /// x86_64 only: there is no port space or TSS I/O bitmap on the other two architectures.
 #[cfg(test)]
 mod pass9_port_tests;
+
+/// **Pass 9: a holder that drops its construction authority cannot build again** (an outside
+/// security reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's confinement
+/// claim, claim 23). `authority_tests` boots the real `root_supervisor` program for this; this
+/// drives the mechanism through the dispatcher with no ramdisk: a full untyped budget retypes and
+/// splits (the positive control), is deleted the way `SYS_CAP_DELETE` deletes it, and the identical
+/// build operations then answer `NoSuchSlot`.
+///
+/// Cross-ISA: untyped retype and split and the capability table are portable kernel code
+/// (DECISIONS §19).
+#[cfg(test)]
+mod pass9_authority_tests;
