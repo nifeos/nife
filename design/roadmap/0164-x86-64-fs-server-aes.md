@@ -5,16 +5,10 @@ built: 2026-09-01
 ---
 # 164. x86_64 userspace can't build `aes` (and therefore `fs_server`): no SSE, no scalar fallback
 
-Minted 2026-08-25 from milestone 161's x86_64 userspace lane (pull
-request #476), which named the `aes` failure plainly as "the finding that is not our bug" and
-proposed it as its own milestone rather than routing around it. It was minted **Gate: NONE**, on
-the grounds that this was a toolchain and dependency problem rather than a hardware one, and that
-held: a lane made the whole of it without a board.
-
-The title is now a statement about the past. x86_64 userspace builds `aes`, `redoxfs_server`
-and `mkfs`, and the x86_64 archive carries the last two. Both routes this block sized are
-superseded and neither was taken; the section below says why, and is kept rather than deleted
-because the sizing was wrong in an instructive direction.
+x86_64 userspace builds `aes`, `redoxfs_server` and `mkfs`, and the x86_64 archive carries the last
+two; the title names the blocker this milestone removed. It is a toolchain and dependency problem
+rather than a hardware one, so it needs no board. Neither route this block sized is needed; the
+section below says why, because the sizing was wrong in an instructive direction.
 
 ## What it turned out to need: one build flag
 
@@ -43,7 +37,7 @@ this target gets the cfg, and it is inert in all of them but `aes`, which is the
 tree or its dependency graph that reads the name. `cargo clippy` at the bars `script/lint` already
 sets passes for the kernel, for `bench`, and for `user` + `user_rt` with it on.
 
-## Why both sized routes are superseded
+## Why neither sized route is needed
 
 Route 1 (patch the vendored `aes` for a scalar fallback) is unnecessary, and `patches/` does not
 grow a third entry. This block named the right next step ("is it a feature flag this tree isn't
@@ -76,14 +70,13 @@ Zero tests were recovered, and reading that table as though eleven were is the m
 paragraph exists to prevent. All eleven that moved do not skip through `skip!` at all: they
 `println!` a line and `return`, which the harness counts as a pass. They were honestly skipped for
 want of an FS server and are now silently green for want of a disk, which is *less* signal than
-before. Forty-six sites across sixteen files share that shape; see milestone 214 (provisional), on tests that print a skip line and return.
+before. Forty-six sites across sixteen files share that shape; see milestone 214 (a test that
+prints "skipping" and returns is counted as passed).
 
 What did change, and is real: the FS server and `mkfs` are in the x86_64 archive, so **the reason
 those tests do not run is now a machine fact rather than a toolchain one**, which is what the next
 milestone can act on. `kernel::user::disk_tests::the_write_half_...` now skips with "no blank-disk
-fixture attached" instead of blaming `aes`, and the two `fs_service` constants that stated the old
-blocker as fact have been corrected: they claimed `aes` does not compile for this target, which is
-exactly what stopped being true.
+fixture attached" instead of blaming `aes`.
 
 ## What broke after `aes`, and what it costs
 
@@ -132,9 +125,8 @@ architecture costs a restructure rather than a port") named this as a piece of.
   reverted because `PCI_IRQ_BASE` is 0 and the block server was armed on the PIT's legacy line. 215
   fixed the routing; `mkfs` and milestone 57's two `disk_service` wirings ride it for their
   fixtures.
-- **Milestone 214.** Eleven tests moved from the skip column to the pass column without running a
-  line of them, because they `println!` a line and `return` instead of using `skip!`. This lane
-  named 46 such sites; 214 found 80.
+- **Milestone 214.** Eleven tests count as passed without running a line of them, because they
+  `println!` a line and `return` instead of using `skip!`. Milestone 214 found 80 such sites.
 - **Refused.** Route 1, patching the vendored `aes` for a scalar fallback, was unnecessary and
   `patches/` does not grow a third entry. The portable constant-time backend is already in
   `src/soft/` and every architecture arm is gated `not(aes_force_soft)`, so it was a cfg nobody had
@@ -159,10 +151,11 @@ architecture costs a restructure rather than a port") named this as a piece of.
 
 ## Index row
 
-The blocker was one build flag, and both routes this block sized are superseded. `aes` 0.8.4 gates
-every architecture-specific backend `not(aes_force_soft)` and ships a portable software one; `--cfg aes_force_soft` on `[target.x86_64-unknown-none]` turns exit 101 into exit 0, so `patches/`
-grows no third entry and the SSE context-switch state Route 2 priced is not owed. `redoxfs_server`
-and `mkfs` now build for x86_64 and ride its archive. **No test was recovered**: the eleven that
-moved out of the skip column `println!` and return rather than `skip!`, which is milestone 214.
-The wall behind `aes` is the disk, and it is one bounded piece of interrupt routing (milestone
-215), not a port.
+The blocker was one build flag, and neither route this block sized is needed. `aes` 0.8.4 gates
+every architecture-specific backend `not(aes_force_soft)` and ships a portable software one; `--cfg
+aes_force_soft` on `[target.x86_64-unknown-none]` turns exit 101 into exit 0, so `patches/` grows no
+third entry and the SSE context-switch state Route 2 priced is not owed. `redoxfs_server` and `mkfs`
+now build for x86_64 and ride its archive. **No test was recovered**: the eleven that moved out of
+the skip column `println!` and return rather than `skip!`, which is milestone 214. The wall behind
+`aes` is the disk, and it is one bounded piece of interrupt routing, not a port: milestone 215 (a
+PCI function's interrupt reaches nothing on x86_64).

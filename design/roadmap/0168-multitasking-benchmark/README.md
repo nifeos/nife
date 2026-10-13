@@ -11,12 +11,10 @@ for.
   the statistic and the mix, what it found on the way, the HVF attempt, and the two proposals it
   absorbed.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
-beside `design/roadmap/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default,
+`design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `radon-2026-09-16` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  after the parent's "What five boots measured, radon, 2026-09-16". calef names files.
-- `holes-closed-2026-09-19` Name: provisional, minted 2026-10-12 (UTC) by
-  maintainer/prose-budget-backlog, after the parent's "What changed on 2026-09-19: the two holes,
-  closed without a board". calef names files.
+- `radon-2026-09-16` Name: provisional. After the parent's "What five boots measured, radon,
+  2026-09-16". calef names files.
+- `holes-closed-2026-09-19` Name: provisional. After the parent's "What changed on 2026-09-19: the
+  two holes, closed without a board". calef names files.

@@ -9,12 +9,12 @@ needs_person: no
 ---
 # 172. A capability-native subprocess primitive: what `cargo`'s "spawn a helper, wait, collect its output" needs, without fork/exec
 
-Minted 2026-08-25, the second of four self-hosting milestones from calef's
-question about developing nife on a nife host. This is the real architectural piece: research into
-what `rustc`/`cargo` (see [milestone 173](0173-rustc-cargo-self-host.md)) actually need found that
-their build model runs one process per compilation unit and links via a spawned linker, structurally,
-with no supported single-process bypass in either case, even in "self-contained" builds. nife has no
-primitive for one program to start another, wait for it, and read back what it produced.
+The second of four self-hosting milestones, for developing nife on a nife host. This is the real
+architectural piece: research into what `rustc`/`cargo` (see [milestone
+173](0173-rustc-cargo-self-host.md)) actually need found that their build model runs one process per
+compilation unit and links via a spawned linker, structurally, with no supported single-process
+bypass in either case, even in "self-contained" builds. nife has no primitive for one program to
+start another, wait for it, and read back what it produced.
 
 This is a new syscall-surface question, and [DECISIONS
 §10](../decisions/0010-capability-microkernel.md)'s own rule applies: "A method that does not fit the

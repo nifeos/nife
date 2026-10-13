@@ -1,9 +1,9 @@
 # The `Endpoint` rename, as built
 
-Moved from [milestone 158 (build the eleven kernel object and identifier renames)](../0158-kernel-object-rename-build.md)
-under §212 (a prose budget). This appendix holds the lane's account of `Endpoint`/`EpId`/`EpFail`
-becoming `Rendezvous`/`RendezvousId`/`RendezvousFailure`: its real surface, its scope call and how
-it was verified.
+An appendix to [milestone 158 (build the eleven kernel object and identifier
+renames)](../0158-kernel-object-rename-build.md). It holds the lane's account of
+`Endpoint`/`EpId`/`EpFail` becoming `Rendezvous`/`RendezvousId`/`RendezvousFailure`: its real
+surface, its scope call and how it was verified.
 
 ## The surface
 

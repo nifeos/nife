@@ -9,10 +9,9 @@ needs_person: no
 ---
 # 171. `git` core plumbing: version control on a nife host with no new primitive
 
-Minted 2026-08-25, the first of four milestones from calef's self-hosting
-question: "how could I shift nife development onto a nife host, so that would have me using nife
-daily." Broken into pieces by tractability rather than proposed as one undertaking; this is the
-piece that needs the least.
+The first of four milestones answering calef's self-hosting question: "how could I shift nife
+development onto a nife host, so that would have me using nife daily." They are split by
+tractability rather than proposed as one undertaking; this is the piece that needs the least.
 
 Software-only. Informed by [milestone 169](0169-kilo-editor.md) (`kilo`, the first
 real C program against [DECISIONS §31](../decisions/0031-foreign-language-seam.md)'s seam) but not
@@ -68,9 +67,8 @@ protocol, since the two may end up sharing a network-client crate. Left for whoe
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+calef, 2026-10-12 (UTC), under §297 (software reaches a nife system as a package `jig` installs
+from basalt's index, the kernel included): "They should all be installed via jig through basalt."
 
 `git` must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

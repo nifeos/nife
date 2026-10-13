@@ -1,7 +1,7 @@
 # The `Untyped` rename, as built
 
-Moved from [milestone 158 (build the eleven kernel object and identifier renames)](../0158-kernel-object-rename-build.md)
-under §212 (a prose budget). This appendix holds the lane's account of `Untyped` becoming
+An appendix to [milestone 158 (build the eleven kernel object and identifier
+renames)](../0158-kernel-object-rename-build.md). It holds the lane's account of `Untyped` becoming
 `MemoryRegion`, the last of the seven: its real surface, its scope call, the compositor check and
 how it was verified.
 

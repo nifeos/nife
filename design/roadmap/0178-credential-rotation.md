@@ -9,10 +9,10 @@ needs_person: no
 ---
 # 178. A credential a user can change, without reopening the whole store
 
-Minted 2026-08-26, calef, while deciding how a real interactive boot's
-demo credential is provisioned (§120's amendment, milestone 49's login-boot-wiring piece): the boot
-now generates a fresh password each boot and prints it before the prompt, and the first thing
-calef expects a person to do with a new system is set their own. Nothing in this tree lets them.
+A real interactive boot generates a fresh demo password each boot and prints it before the prompt.
+That is the amendment of §120 (a QEMU-only virtio-rng stopgap for the interactive boot) and the
+login-boot-wiring piece of milestone 49 (users, login, and attribution). The first thing calef
+expects a person to do with a new system is set their own password. Nothing in this tree lets them.
 
 Where a proof-gated rotation verb lives is a `credential_protocol` wire change two
 programs must agree on, and the options below are close enough in cost that the choice is an architect's

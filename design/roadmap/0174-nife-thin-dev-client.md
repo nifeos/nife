@@ -9,11 +9,11 @@ needs_person: no
 ---
 # 174. nife as a thin development client: edit and commit locally, build on a remote service
 
-Minted 2026-08-25, the fourth of four self-hosting milestones, and the
-nearer-term alternative to [milestone 173](0173-rustc-cargo-self-host.md)'s full local self-hosting.
-Named explicitly during the same research that sized 173: "daily driver" does not have to mean
-100% local compilation, and this path reaches it without either
-[milestone 172](0172-capability-native-subprocess.md)'s new primitive or an LLVM port.
+This is the fourth of four self-hosting milestones. It is the nearer-term alternative to the full
+local self-hosting of
+[milestone 173 (`rustc`/`cargo`/LLVM natively on nife)](0173-rustc-cargo-self-host.md).
+"Daily driver" does not have to mean 100% local compilation. This path reaches it without an LLVM
+port or the new primitive of [milestone 172 (a capability-native subprocess primitive)](0172-capability-native-subprocess.md).
 
 [Milestone 171](0171-git-core-userspace.md)'s git core is the structural
 precondition: there has to be something to commit and send before a remote-build protocol matters.

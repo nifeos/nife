@@ -16,17 +16,16 @@ object and identifier names move to the plain, standard term).
 - [`untyped-rename.md`](untyped-rename.md): `Untyped`, its surface, scope call and the compositor
   check.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
-beside `design/roadmap/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default,
+`design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `endpoint-rename` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  for the parent's account of the `Endpoint` lane. calef names files.
-- `tcb-rename` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, for
-  the parent's account of milestone/158-tcb-rename. calef names files.
-- `aspace-rename` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, for
-  the parent's account of the `Aspace` lane. calef names files.
-- `frame-rename` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  after the parent's "`Frame` -> `PageFrame`: what was built". calef names files.
-- `untyped-rename` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  for the parent's account of milestone/158-untyped-rename. calef names files.
+- `endpoint-rename` Name: provisional. For the parent's account of the `Endpoint` lane. calef names
+  files.
+- `tcb-rename` Name: provisional. For the parent's account of milestone/158-tcb-rename. calef names
+  files.
+- `aspace-rename` Name: provisional. For the parent's account of the `Aspace` lane. calef names
+  files.
+- `frame-rename` Name: provisional. After the parent's "`Frame` -> `PageFrame`: what was built".
+  calef names files.
+- `untyped-rename` Name: provisional. For the parent's account of milestone/158-untyped-rename.
+  calef names files.

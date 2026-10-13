@@ -9,10 +9,9 @@ needs_person: no
 ---
 # 179. Pointer input: a mouse in text mode
 
-Minted 2026-08-26, calef, checking the roadmap for a gap `notes/glyphs.md`
-already names as an honest limit rather than an unmentioned one: **"No mouse."** The compositor and
-terminal milestones (29, 33, 142) attach only a keyboard today, deliberately, not for want of a
-device.
+`notes/glyphs.md` names this gap as an honest limit rather than an unmentioned one: **"No mouse."**
+The compositor and terminal milestones (29, 33, 142) attach only a keyboard today, deliberately, not
+for want of a device.
 
 Nothing here is known to be blocked on a design fork the way milestone 178 is, but
 the "what this needs" section below has not been checked against the compositor's actual event

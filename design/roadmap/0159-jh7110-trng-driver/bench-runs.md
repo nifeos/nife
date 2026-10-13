@@ -1,9 +1,8 @@
 # The first two bench runs, 2026-09-04: a dead block, then a wrong tour
 
 An appendix to [milestone 159 (a real hardware entropy source: the JH7110's
-TRNG)](../0159-jh7110-trng-driver.md), moved out on 2026-10-12 (UTC) under §212 (a prose budget).
-The main page is complete without it. Both runs came before the run that served (see the main
-page), and each found a defect the main page summarizes.
+TRNG)](../0159-jh7110-trng-driver.md). The main page is complete without it. Both runs came before
+the run that served (see the main page), and each found a defect the main page summarizes.
 
 ## The bench ran it, 2026-09-04, and the failure is cleanly attributed
 

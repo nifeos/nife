@@ -5,20 +5,18 @@ built: 2026-09-02
 ---
 # 165. x86_64 PCI enumeration: wire `kernel/src/pci.rs` to ACPI's MCFG
 
-Was PARTIAL from 2026-08-24 until then; the three things it owed are
-either built elsewhere (PCI interrupt routing by milestone 215, VT-d by milestone 161's item 6) or
-closed below (a real BAR placement, now measured under real firmware). Minted 2026-08-24, provisional number pending the integrator (mint against the
-current index at merge; two other numbers in this neighborhood were already taken by open pull
-requests when this was written, one of them proposing a milestone for the JH7110's PLDA PCIe root
-complex driver, unmerged as of this writing so not cited here by number). Scoped the same day as
-that other proposal, as a parallel check of whether x86_64 can reach a real-hardware data point for
-[DECISIONS §86 (whether an NVMe driver can leave the kernel)](../decisions/0086-el0-nvme-driver.md)
-faster and cheaper than a from-scratch JH7110 driver would. The reason to expect so: x86's PCIe discovery is ACPI-described and architecturally identical
-between QEMU's `q35` and real x86 hardware (unlike RISC-V's QEMU-only fake ECAM device).
+BUILT. Of the three things it owed, two are built elsewhere (PCI interrupt routing by milestone 215
+(a PCI function's interrupt reaches nothing on x86_64), VT-d by milestone 161's item 6) and the
+third, a real BAR placement, is closed below, measured under real firmware.
 
-It never needed a syscall surface, a new dependency or a `DECISIONS.md` section of its own, and it
-took none. What it unblocks (real NVMe-behind-IOMMU on x86) was gated on VT-d, roadmap item 6 of
-milestone 161, which has since been built.
+It checks whether x86_64 can reach a real-hardware data point for [DECISIONS §86 (whether an NVMe
+driver can leave the kernel)](../decisions/0086-el0-nvme-driver.md) faster and cheaper than a
+from-scratch JH7110 driver would. The reason to expect so: x86's PCIe discovery is ACPI-described
+and architecturally identical between QEMU's `q35` and real x86 hardware (unlike RISC-V's QEMU-only
+fake ECAM device).
+
+It needed no syscall surface, new dependency or decision section of its own. What it unblocks (real
+NVMe-behind-IOMMU on x86) is gated on VT-d, item 6 of milestone 161, which is built.
 
 ## The gap, as `notes/x86-port.md` already named it
 

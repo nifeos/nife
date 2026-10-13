@@ -9,9 +9,8 @@ needs_person: no
 ---
 # 173. `rustc`/`cargo`/LLVM natively on nife: full local self-hosting
 
-Minted 2026-08-25, the third of four self-hosting milestones, and the big
-one. Sized by research before being minted rather than guessed at: the blocker is not what it first
-looks like.
+The third of four self-hosting milestones, and the big one. It is sized by research rather than
+guessed at: the blocker is not what it first looks like.
 
 [Milestone 172](0172-capability-native-subprocess.md)'s capability-native
 subprocess primitive is a hard prerequisite, not a convenience: `cargo` spawns `rustc` once per
@@ -76,9 +75,8 @@ yet to measure against.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+calef, 2026-10-12 (UTC), under §297 (software reaches a nife system as a package `jig` installs
+from basalt's index, the kernel included): "They should all be installed via jig through basalt."
 
 `rustc`, `cargo` and the linker they spawn must run on nife installed by `jig install` from basalt's
 package index. basalt builds the package against the nife commit it pins. The install waits on

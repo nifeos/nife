@@ -5,25 +5,22 @@ built: 2026-08-26
 ---
 # 162. Real hardware entropy on x86_64 and aarch64: RDSEED and RNDRRS
 
-Built, confirmed 2026-08-26. aarch64 is fully built and proven; riscv64 is correctly
-excluded (neither instruction exists on that ISA). x86_64's blocker, milestone 161 item 4's
-userspace-compilation hand-off, landed on `main` via PR #476 (merged 2026-08-25), so `cfg(initrd)`
-now covers x86_64 and `kernel::user::entropy_tests` compiles and runs there.
-`a_client_obtains_unpredictable_bytes_from_rndrrs_with_no_device_at_all` passes for real on
-`x86_64` (`script/test --arch x86_64`, 2026-08-26): `entropy : rdseed supported (cpuid leaf 7
-ebx.18), drew 0xaf76297f70e4c32a`. No code changed; this is a status flip on a test that now
-compiles and passes, not new work. Minted 2026-08-24, from
-calef asking for architectural parity with milestone
-159 (the JH7110's TRNG, riscv64/VisionFive 2 only) after "we now have a customer" reopened the
-question DECISIONS §120 declined for want of one. Unlike 159, this is **not hardware-gated**: RDSEED
-(x86_64) and RNDRRS (aarch64, ARMv8.5-RNG/FEAT_RNG) are CPU instructions, not board peripherals, and
-QEMU's TCG emulation of both is real rather than a paravirtual stand-in (confirmed empirically
-2026-08-24: `query-cpu-model-expansion` on `-cpu max` reports `rdrand`/`rdseed` as enabled props on
-x86_64; QEMU has modeled ARMv8.5-RNG unconditionally under `-cpu max` since QEMU 7.0, though it is not
-independently toggleable, so this milestone confirms the actual instruction executes rather than trusts
-the absence of a prop either way). So this milestone can be fully built and verified without
-physical hardware, unlike 159. See "What was built" below for why the title says `RDSEED`/`RNDRRS`
-rather than the more familiar `RDRAND`/`RNDR`.
+Built. aarch64 is built and proven; riscv64 is correctly excluded (neither instruction exists on
+that ISA). On x86_64, `kernel::user::entropy_tests` compiles and runs, and
+`a_client_obtains_unpredictable_bytes_from_rndrrs_with_no_device_at_all` passes
+(`script/test --arch x86_64`, 2026-08-26): `entropy : rdseed supported (cpuid leaf 7 ebx.18), drew
+0xaf76297f70e4c32a`.
+
+This is the architectural-parity counterpart of milestone 159 (a real hardware entropy source: the
+JH7110's TRNG), which is riscv64 and VisionFive 2 only. Unlike 159, it is **not hardware-gated**:
+RDSEED (x86_64) and RNDRRS (aarch64, ARMv8.5-RNG/FEAT_RNG) are CPU instructions, not board
+peripherals, and QEMU's TCG emulation of both is real rather than a paravirtual stand-in.
+`query-cpu-model-expansion` on `-cpu max` reports `rdrand`/`rdseed` as enabled props on x86_64
+(2026-08-24). QEMU models ARMv8.5-RNG unconditionally under `-cpu max` since QEMU 7.0, though it is
+not independently toggleable, so this milestone confirms the instruction executes rather than
+trusting the absence of a prop either way. So it is built and verified without physical hardware.
+See "What was built" below for why the title says `RDSEED`/`RNDRRS` rather than the more familiar
+`RDRAND`/`RNDR`.
 
 ## Why this is not "the JH7110 driver on two more architectures"
 

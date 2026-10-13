@@ -5,27 +5,22 @@ built: 2026-08-25
 ---
 # 176. The x86_64 discovery seam's wide half: COM1's IRQ and a CMOS RTC
 
-Minted 2026-08-25, from milestone 161's own item 0, "the wide half is
-still owed and should be its own milestone." Re-scoped fresh against the current tree rather than
-carried over from 161's own text, which turned out to describe a partly stale state. Piece 1 built
-the same day (below); piece 2 was sized, found to need a decision
-([DECISIONS §130](../decisions/0130-cmos-rtc-delegation.md), ratified 2026-08-26), and built against
-it (below).
+This is the wide half of milestone 161 (the x86_64 kernel port)'s item 0. Piece 1 is built (below).
+Piece 2 needed a decision, ratified 2026-08-26:
+[DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../decisions/0130-cmos-rtc-delegation.md).
+It is built against it (below).
 
-## What 161's own text got right, and what it no longer does
+## The four device windows, and which two are this milestone's
 
-`kernel/src/arch/x86_64/machine.rs`'s own `BUGS` section lists four device windows as "still read
-from a tree by the front end and stay `None` here": the interrupt controller, the RTC, the UART's
-interrupt line, and the PCIe ECAM range. **Two of those four are stale claims, checked directly
-against the tree this milestone was minted from:**
+The x86_64 discovery seam has four device windows that a tree supplies on the other architectures.
+They are the interrupt controller, the RTC, the UART's interrupt line, and the PCIe ECAM range.
+**Two of those four are built elsewhere:**
 
 - **The interrupt controller (IO APIC) is built**, milestone 161's own item 2, reached directly by
   `arch::x86_64::irq` rather than through `memory.rs`'s statics.
 - **PCI is wired**, and has been since milestone 165's ACPI/MCFG work: `kernel/src/main.rs`
   calls `memory::record_pci_regions` from the ACPI `ecam` path, so `memory::pci_regions()` returns
-  `Some` on x86_64 today. `machine.rs`'s own comment ("still report nothing on x86 even though the
-  MCFG answered a few lines earlier") predates this and needs correcting as part of this
-  milestone's own cleanup, not left standing as a live claim.
+  `Some` on x86_64.
 
 **Two are real**, and are this milestone's actual scope:
 

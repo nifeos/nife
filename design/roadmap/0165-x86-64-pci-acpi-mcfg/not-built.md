@@ -1,8 +1,7 @@
 # What was deliberately not built: an appendix to milestone 165
 
-Moved from [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md) on 2026-10-12
-(UTC) under §212 (a prose budget). It is the block's record, as of its first landing, of the runner
-it left alone and the NVMe attach it investigated and did not make.
+An appendix to [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). It is the
+block's record of the runner it left alone and the NVMe attach it investigated and did not make.
 
 ## What was deliberately not built
 

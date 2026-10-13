@@ -10,22 +10,20 @@ needs_person: yes
 ---
 # 168. A multi-tasking workload benchmark: the number that would decide the event-kernel question
 
-The instrument is built, gated and rehearsed on all three architectures, and since 2026-10-04 every
-point of its sweep is a number on silicon. Five radon boots with the 2026-09-19 instrument (median
-of 21 repeats, seven jobs) agreed within 1.67% at every point: 2.62x at four tasks, 2.78x at 32, no
-decline. That is the first row of `notes/job-mix.md`'s step 7, read in "What five boots measured,
-radon, 2026-10-04" below. Risk 4's entry was written from them in the same change. Minted 2026-08-25, from [DECISIONS §96](../decisions/0096-process-kernel-or-event-kernel.md)'s own recommendation: *"Build the instrument that could decide it. The blocker is that a multi-tasking workload is the only place the difference appears, and we have none."*
+The instrument is built, gated and rehearsed on all three architectures, and every point of its
+sweep is a number on silicon. Five radon boots with the current instrument (median of 21 repeats,
+seven jobs) agreed within 1.67% at every point: 2.62x at four tasks, 2.78x at 32, no decline. That
+is the first row of `notes/job-mix.md`'s step 7, read in "What five boots measured, radon,
+2026-10-04" below, and risk 4's entry is written from them. This is the instrument [DECISIONS §96
+(process kernel or event kernel, and how to decide
+it)](../decisions/0096-process-kernel-or-event-kernel.md) recommends: *"Build the instrument that
+could decide it. The blocker is that a multi-tasking workload is the only place the difference
+appears, and we have none."*
 
-Real silicon, and that is all. Corrected 2026-09-04 by calef; it read
-`HARDWARE, MILESTONE 127` from 2026-08-25 until then, and the paragraph below explains why that was
-right when written and is not now.
-
-The old gate was doing two jobs and only one of them still needs argon. Its stated reasons are
-that a multi-tasking difference *"needs real hardware scheduling behavior, not TCG or HVF timing"*
-and that it wants *"a place to run it that has real PMU access"*. radon satisfies both. It is
-real silicon, it boots, and milestone 74's riscv64 half landed on 2026-09-04, so
-`kernel/src/arch/riscv64/pmu.rs` reads cycles through the SBI PMU extension. When this block was
-written radon had no cycle counter at all, which is why milestone 127 was named.
+Real silicon, and that is all (calef, 2026-09-04). A multi-tasking difference *"needs real hardware
+scheduling behavior, not TCG or HVF timing"* and wants *"a place to run it that has real PMU
+access"*. radon satisfies both. It is real silicon, it boots, and `kernel/src/arch/riscv64/pmu.rs`
+reads cycles through the SBI PMU extension, from milestone 74 (cycle counters).
 
 What milestone 127 (seL4) is for is a different question, and its own title says so: *the seL4
 machine: a Jetson TX1, so identical silicon referees the comparison.* That matters for milestone
@@ -96,7 +94,6 @@ a kernel feature printing to the serial console.
   number, because milestone 240 (soak reports) found placement decides throughput on radon by up to fifteenfold
   and a figure without its arrangement is a draw rather than a result.
 - `script/job-mix` (QEMU rehearsal) and `script/board-image --job-mix` (the card).
-  All three were spelled `jobmix` until 2026-09-14.
   `notes/job-mix.md` is the bench procedure, with a table mapping every observable outcome to what it
   means and where it routes.
 
@@ -149,13 +146,10 @@ grows 6%: a per-crossing cost that rises with busy cores, unexplained, and recor
 
 The 2026-10-04 numbers above are the second silicon reading. The first, five radon boots on
 2026-09-16 with the old instrument (best of three repeats, five-job mix), established the curve's
-shape and showed that `tasks=4` was not a number under that statistic. On 2026-09-19 a lane with no
-hardware changed the instrument: every point became the median of 21 repeats with the ends beside it,
-the printed line changed on purpose, and page-mapping and process-creation jobs joined the mix with
-no new syscall, method or object type. It also fixed `script/job-mix --arch riscv64` on a fresh
-checkout, tried the HVF cross-check calef asked for, and absorbed milestones 382 and 419 as `BUILT`
-blocks. §191 (whether the job mix reports the spread rather than the best) records the line format,
-and calef ratified it as shipped on 2026-09-26.
+shape and showed that `tasks=4` was not a number under that statistic. The current instrument takes
+every point as the median of 21 repeats with the ends beside it, and its mix includes page-mapping
+and process-creation jobs with no new syscall, method or object type. §191 (whether the job mix
+reports the spread rather than the best) records the line format, ratified by calef on 2026-09-26.
 
 - [radon-2026-09-16.md](0168-multitasking-benchmark/radon-2026-09-16.md): the five boots' table,
   the within-boot spread behind `tasks=4`, why that point and no other, the census correction, and

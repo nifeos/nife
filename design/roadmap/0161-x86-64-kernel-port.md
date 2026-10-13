@@ -5,28 +5,22 @@ built: 2026-09-19
 ---
 # 161. The x86_64 kernel port: bring up the HAL's third architecture
 
-BUILT 2026-09-19. The four items the 2026-09-03 follow-on left open were closed by the lane on
-`milestone/161-x86-64-port-remainder`; see [Closing the follow-on](#closing-the-follow-on-2026-09-19).
-What remains is recorded where a reader meets it rather than held here. The two-core runner default
-belongs to [milestone 315 (a port revoke that reaches every core)](0315-port-revoke-every-core.md),
-under [DECISIONS §153 (how a two-core x86_64 test earns its place)](../decisions/0153-two-core-x86-test-sequencing.md).
-Whether to set `CR4.PGE` waits on a machine with a real TLB (`kernel/src/arch/x86_64/mmu.rs`'s
-BUGS).
+BUILT. [Closing the follow-on](#closing-the-follow-on-2026-09-19) has the last four items and their
+measurements. What remains is recorded where a reader meets it rather than held here. The two-core
+runner default belongs to [milestone 315 (a port revoke that reaches every
+core)](0315-port-revoke-every-core.md), under [DECISIONS §153 (how a two-core x86_64 test earns its
+place)](../decisions/0153-two-core-x86-test-sequencing.md). Whether to set `CR4.PGE` waits on a
+machine with a real TLB (`kernel/src/arch/x86_64/mmu.rs`'s BUGS).
 
-The milestone was minted 2026-08-23, splitting real work out of the stale text of
-[milestone 20 (a portable HAL, proven on a second architecture)](0020-portable-hal.md). Early boot
-was built and gated the same day. By 2026-08-24 the kernel booted on QEMU's `q35`, ran real ELF
-programs at ring 3 from an initrd, and ran the kernel's own suite. That met milestone 20's scope note
-("enough of each ISA to boot, confine a ring-3/U process, and run the test suite"), on QEMU. SMP
-bring-up kept it PARTIAL until the 2026-09-19 lane. `notes/x86-port.md` is the working record.
+The kernel boots on QEMU's `q35`, runs real ELF programs at ring 3 from an initrd, and runs the
+kernel's own suite, which meets the scope note of milestone 20 (a portable HAL, proven on a second
+architecture): "enough of each ISA to boot, confine a ring-3/U process, and run the test suite".
+`notes/x86-port.md` is the working record.
 
 ## The appendices
 
-This block was split under [§212 (a prose budget)](../decisions/0212-a-prose-budget-for-every-document.md)
-on 2026-10-12 (UTC). The page is complete without them; they hold the per-step working.
+The page is complete without them; they hold the per-step working.
 
-- [history.md](0161-x86-64-kernel-port/history.md): the status history the block kept, the scope it
-  carried forward from milestone 20, and the physical machine it did not wait for.
 - [early-boot.md](0161-x86-64-kernel-port/early-boot.md): steps 1 to 10, boot path to IO APIC, with
   what each verified.
 - [ring-3.md](0161-x86-64-kernel-port/ring-3.md): step 11 and item 3, the `syscall` pair, the

@@ -5,13 +5,9 @@ built: 2026-08-25
 ---
 # 158. Build the eleven kernel object and identifier renames DECISIONS §113 decided
 
-Minted 2026-08-23, from calef asking what the milestone was that renamed
-the kernel components and finding the answer was "none": DECISIONS §113 (eleven kernel object and
-identifier names move from contraction or borrowed jargon to the plain, standard term) was decided
-2026-08-23 and never turned into tracked build work. Checked directly before minting this:
-`kernel/src/cap.rs`'s `Object` enum still read
-`Aspace(u64)`, not `AddressSpace(u64)` -- the decision was real, the rename was not, until each of
-the seven names below was renamed in its own lane. `Untyped` -> `MemoryRegion` was the last.
+This is the build work for DECISIONS §113 (eleven kernel object and identifier names move from
+contraction or borrowed jargon to the plain, standard term). Each of the seven names below, with its
+companions, is renamed in the tree.
 
 ## What was built
 
@@ -27,16 +23,15 @@ account, with its scope call, what it left alone and how it was verified, is an 
   milestone/158-tcb-rename.
 - [`aspace-rename.md`](0158-kernel-object-rename-build/aspace-rename.md): `Aspace`/`FreeVas` -> `AddressSpace`/`FreeAddressSpace`,
   with the near-collision it checked and the bug its own build caught.
-- [`frame-rename.md`](0158-kernel-object-rename-build/frame-rename.md): `Frame` -> `PageFrame`, built 2026-08-24, with the
-  senses of "frame" it told apart and the `DeviceFrame` call.
+- [`frame-rename.md`](0158-kernel-object-rename-build/frame-rename.md): `Frame` -> `PageFrame`, with
+  the senses of "frame" it told apart and the `DeviceFrame` call.
 - [`untyped-rename.md`](0158-kernel-object-rename-build/untyped-rename.md): `Untyped` -> `MemoryRegion`, the last, in
   milestone/158-untyped-rename.
 
 ## What is still open
 
-Nothing. `Untyped` -> `MemoryRegion` was the last of the seven names, done to completion in its
-own lane, the same shape as `Endpoint`, `Tcb`, `Aspace` and `Frame` before it. Its gap against the
-pre-rename estimate was the largest of the seven; see the table below.
+Nothing. All seven names are renamed. `Untyped` -> `MemoryRegion` had the largest gap against the
+pre-rename estimate; see the table below.
 
 ## The seven renames, and what each one actually touches
 
@@ -50,11 +45,11 @@ pre-rename estimate was the largest of the seven; see the table below.
 | `EpId` | `RendezvousId` | **done**, with `Endpoint`: 216 occurrences across 43 files, once the type alias's own call sites were counted |
 | `Tid` | `ThreadId` | **done**, with `Tcb`: 82 occurrences across 13 `.rs` files by fresh count |
 
-Plus the four companions §113 also decided in the same entry: `TcbPtr` -> `ThreadControlBlockPointer`
-(done, with `Tcb`; 11 occurrences, `kernel/src/sched.rs` only), `TidSet` -> `ThreadIdSet`
-(done, with `Tcb`; 6 occurrences, `kernel/src/user/survey_tests.rs` only), `EpFail` ->
-`RendezvousFailure` (done, with `Endpoint`), `FreeVas` -> `FreeAddressSpace` (done, with
-`Aspace`). That test file has since moved to `system_tests/src/user/`.
+Plus the four companions §113 also decided in the same entry: `TcbPtr` ->
+`ThreadControlBlockPointer` (done, with `Tcb`; 11 occurrences, `kernel/src/sched.rs` only), `TidSet`
+-> `ThreadIdSet` (done, with `Tcb`; 6 occurrences, `kernel/src/user/survey_tests.rs` only), `EpFail`
+-> `RendezvousFailure` (done, with `Endpoint`), `FreeVas` -> `FreeAddressSpace` (done, with
+`Aspace`). That test file is now in `system_tests/src/user/`.
 
 Re-measure before starting, not from this table. §113's own count is from 2026-08-23 and this
 tree changes fast; a lane that trusts a stale number here repeats §76's own recorded mistake.
@@ -70,8 +65,8 @@ not have to re-derive them:
 - `Untyped`/`Region` collides with the compositor's own use of "region" for a damaged screen
   rectangle, the same file. `MemoryRegion` is deliberately not bare `Region` for this reason.
 - `Endpoint` has real prior art (seL4's own term) that some doc comments and notes may still cite
-  approvingly; a rename should not silently rewrite a historical citation that correctly described
-  what the tree used to be called. Read `notes/ipc-naming.md` before touching it -- §113 cites it
+  approvingly; a rename should not silently rewrite a citation that correctly names the older
+  term. Read `notes/ipc-naming.md` before touching it -- §113 cites it
   directly and it may need updating rather than blind search-and-replace.
 - `Aspace`/`AddressSpace` had no collision of this shape (checked directly: `crates/compositor`, the
   file that collided with both `Frame` and `Untyped`/`Region`, has no "aspace" or "address space"

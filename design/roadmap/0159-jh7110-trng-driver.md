@@ -5,11 +5,9 @@ built: 2026-09-04
 ---
 # 159. A real hardware entropy source: the JH7110's TRNG
 
-Minted 2026-08-23, surfaced while investigating milestone 49's boot-wiring
-fork (DECISIONS §120): the entropy service (milestone 56, `BUILT`) only has a virtio-rng backend,
-which exists in QEMU and not on the VisionFive 2 the tree already boots (milestone 16a). Checked
-before minting: the StarFive JH7110's TRNG is already named as the real-hardware candidate in two
-places (`notes/entropy.md`, milestone 56's own doc) and tracked by no milestone in either.
+The entropy service from milestone 56 (secrets, credentials, and the entropy to make them safe)
+has a virtio-rng backend, which exists in QEMU and not on the VisionFive 2 the tree boots. The
+StarFive JH7110's TRNG is the real-hardware source, and this milestone drives it.
 
 The driver's own logic can be written and host-tested without silicon; whether it actually produces
 usable entropy, and at what rate, can only be verified by reading real bits off a real TRNG.

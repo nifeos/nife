@@ -18,37 +18,30 @@ come up on a machine with no device tree, and the port stopped there. `memory::i
 explicitly a device-tree front end, and `arch::x86_64::machine::bring_up_memory` is the x86 one.
 
 The wide half was split into its own milestone,
-[milestone 176 (the x86_64 discovery seam's wide half)](../0176-x86-64-discovery-seam-wide-half.md), PARTIAL,
-minted 2026-08-25. Checking this item's own claim against the tree had found it stale in two of its
-four places, rather than uniformly still open.
+[milestone 176 (the x86_64 discovery seam's wide half)](../0176-x86-64-discovery-seam-wide-half.md). Two of the four places this item named are
+built:
 
 - The interrupt controller is built, by item 2. The boot tour hands the MADT's answers to
   `arch::x86_64::irq` directly. That path goes around `memory.rs`'s statics rather than through them.
 - PCI is wired, and has been since the ACPI/MCFG work of
-  [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). `main.rs` calls
-  `memory::record_pci_regions` from the ACPI `ecam` path, so `memory::pci_regions()` returns `Some` on
-  x86_64 today.
+  [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). `main.rs` calls `memory::record_pci_regions` from
+  the ACPI `ecam` path, so `memory::pci_regions()` returns `Some` on x86_64.
 
-What 176 tracks is the two windows that were genuinely still open. Piece 1, COM1's ISA IRQ into
-`memory::UART_IRQ` (`Acpi::isa_irqs[4]`, via a new `memory::record_uart_irq`), was BUILT on
-2026-08-25. Piece 2, a CMOS RTC seam, was then DECIDED but not yet built.
+Milestone 176 builds the other two windows. Piece 1 routes COM1's ISA IRQ into `memory::UART_IRQ`
+(`Acpi::isa_irqs[4]`, via `memory::record_uart_irq`). Piece 2 is a CMOS RTC seam. The PC-compatible
+CMOS RTC is two fixed I/O ports, not a page, so the "map the device, let userspace drive it" pattern
+the other two architectures' RTCs use has no CMOS equivalent.
+[DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../../decisions/0130-cmos-rtc-delegation.md)
+rules it (2026-08-26, "Ratify option 3"). The kernel reads CMOS once at boot and hands the seed to
+the clock service as a `Spawn` argument, the same way `kind` already crosses that boundary.
 
-Sizing piece 2 found a real design fork. The PC-compatible CMOS RTC is two fixed I/O ports, not a
-page. So the "map the device, let userspace drive it" pattern the other two architectures' RTCs use
-has no CMOS equivalent. It was resolved as
-[DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../../decisions/0130-cmos-rtc-delegation.md),
-DECIDED 2026-08-26, "Ratify option 3". The kernel reads CMOS once at boot and hands the seed to the
-clock service as a `Spawn` argument, the same way `kind` already crosses that boundary.
-
-`kernel/src/arch/x86_64/machine.rs`'s own `BUGS` section then named only the CMOS RTC as the device
-window with no seam at all. notes/x86-port/acpi-and-pci.md has the table of which fact has which
-source. Milestone 176 has the current state of both pieces; the page's follow-on list records that
-the RTC seam is now built.
+notes/x86-port/acpi-and-pci.md has the table of which fact has which source, and milestone 176 has
+both pieces.
 
 ## Item 1: fine-grained page tables, and the address-space layout they force
 
-BUILT 2026-08-24; [early-boot.md](early-boot.md) step 9 has what landed and what it cost. The number
-was kept in place rather than struck out, because the items cite each other by it.
+BUILT; [early-boot.md](early-boot.md) step 9 has what landed and what it cost. The number stays,
+because the items cite each other by it.
 
 The decision this item existed to record (two bases, Linux's) was taken as recorded. The hazard it
 flagged was removed rather than sequenced around: `boot.s` installs the direct map's PML4 entry

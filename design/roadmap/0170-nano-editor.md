@@ -9,9 +9,9 @@ needs_person: no
 ---
 # 170. `nano`: a real, full-featured screen editor on the primitive milestone 169 builds
 
-Minted 2026-08-25, alongside [milestone 169](0169-kilo-editor.md), from the
-same dependency review. Sequenced explicitly as `kilo`'s follow-on rather than started in parallel:
-calef's own framing was "mint kilo instead, nano as a follow-on."
+This is the follow-on to [milestone 169 (`kilo`)](0169-kilo-editor.md), from the same dependency
+review, sequenced after it rather than in parallel. calef, 2026-08-25: "mint kilo instead, nano as a
+follow-on."
 
 Sequenced behind milestone 169 in practice, not by a hard gate: nano needs the
 identical raw-keystroke input primitive 169 exists to build, and starting nano before that primitive
@@ -55,9 +55,8 @@ Left for whoever picks this up, once milestone 169's primitive exists to build a
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+calef, 2026-10-12 (UTC), under §297 (software reaches a nife system as a package `jig` installs
+from basalt's index, the kernel included): "They should all be installed via jig through basalt."
 
 `nano` must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

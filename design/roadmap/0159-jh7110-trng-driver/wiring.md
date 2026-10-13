@@ -1,8 +1,7 @@
 # What the first two lanes built, 2026-08-24 and 2026-09-01
 
 An appendix to [milestone 159 (a real hardware entropy source: the JH7110's
-TRNG)](../0159-jh7110-trng-driver.md), moved out on 2026-10-12 (UTC) under §212 (a prose budget).
-The main page is complete without it.
+TRNG)](../0159-jh7110-trng-driver.md). The main page is complete without it.
 
 ## Why the status did not move on 2026-08-24 or 2026-09-01
 

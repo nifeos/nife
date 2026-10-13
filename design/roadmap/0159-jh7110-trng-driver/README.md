@@ -14,16 +14,14 @@ its prose budget has no room for.
 - [`register-sequence.md`](register-sequence.md): the third lane's bring-up changes and their
   sources.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `wiring` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for the
-  parent's "What the second lane built" and its account of why the status did not move. calef names
+- `wiring` Name: provisional. For the parent's "What the second lane built" and its account of why
+  the status did not move. calef names files.
+- `bench-procedure` Name: provisional. After the parent's "The bench procedure, in order". calef
+  names files.
+- `bench-runs` Name: provisional. For the parent's "The bench ran it" and "The second bench run".
+  calef names files.
+- `register-sequence` Name: provisional. For the parent's "What the third lane changed". calef names
   files.
-- `bench-procedure` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown,
-  after the parent's "The bench procedure, in order". calef names files.
-- `bench-runs` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown, for
-  the parent's "The bench ran it" and "The second bench run". calef names files.
-- `register-sequence` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-paydown,
-  for the parent's "What the third lane changed". calef names files.

@@ -1,9 +1,9 @@
 # What milestone 165 does and does not establish for §86: an appendix
 
-Moved from [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md) on 2026-10-12
-(UTC) under §212 (a prose budget). It is the block's reading, as of its first landing, of which half
-of [§86 (whether an NVMe driver can leave the kernel)](../../decisions/0086-el0-nvme-driver.md)'s
-evidence this work reaches and which half it cannot.
+An appendix to [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). It is the
+block's reading of which half of [§86 (whether an NVMe driver can leave the
+kernel)](../../decisions/0086-el0-nvme-driver.md)'s evidence this work reaches and which half it
+cannot.
 
 ## What this does and does not establish for DECISIONS §86
 

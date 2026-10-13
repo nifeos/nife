@@ -80,8 +80,7 @@ capability and dispatched to ring 3 by the scheduler, invokes that capability, a
 faults, and its death arrives on its supervision endpoint naming the thread, the pc and the address.
 
 The round runs twice, because a first round pays first-use carves that are not leaks. A system in
-steady state charges the second one zero. The first version reported sixteen frames a round going
-missing. That was true, and it was the demo's own fault.
+steady state charges the second one zero.
 
 ### The suite
 
@@ -198,8 +197,7 @@ nothing to open it with.
 AGENTS.md's ladder says an exception must say it is one. `spawn_init` grants slot 2 a device
 capability over `user::UART_PHYS`, which on this architecture is physical page zero. The slot is
 positional. Declining to grant would renumber the interrupt capability and every role that names it.
-There was nothing better to put there until §121 answered what a port capability is, and its
-answer is that there is none.
+Nothing better can go there: §121's answer to what a port capability is, is that there is none.
 
 Nothing reaches it. Every fixture that would map it asks
 `user::machine_has_no_device_page_for_the_console()` first and skips. A role that mapped it anyway
@@ -218,7 +216,7 @@ of them has since changed.
   wired, by [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). But
   `helpers/qemu-runner-x86_64.sh` still did, since it attached no PCI device (`-device
   virtio-blk-pci` and friends) for anything to enumerate.
-- 5 want a UART page. §121 now answers that permanently: kernel-resident forever, no port capability.
+- 5 want a UART page. §121 answers that permanently: kernel-resident forever, no port capability.
   These five stay skipped by design rather than by omission.
 - 4 wanted a second core (item 5).
 - 1 wanted `CR4.PCIDE` (item 3's measurement).

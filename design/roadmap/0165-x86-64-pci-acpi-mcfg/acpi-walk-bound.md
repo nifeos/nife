@@ -1,7 +1,6 @@
 # The ACPI walk that refused every table: an appendix to milestone 165
 
-Moved from [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md) on 2026-10-12
-(UTC) under §212 (a prose budget). It is the first of the three things the 2026-09-02 pass found:
+An appendix to [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). It holds
 the bug, why no gate caught it, the fix, and the gate that now watches for it.
 
 ## The ACPI walk refused every table on a machine with real RAM

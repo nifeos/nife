@@ -5,15 +5,15 @@ built: 2026-09-13
 ---
 # 175. Split `user/`: `components/` for services, `fixtures/` for test and benchmark programs
 
-Minted 2026-08-25, from calef asking when nife development should split
-into different repositories. [Milestone 39 (repository)](0039-repository-structure.md)'s own analysis already
-answered the bigger question (monorepo now, distribution as a separate manifest repo later, gated
-on milestone 23 forcing it, and 23's residual piece was declined for want of a customer rather than
-forcing anything, the same shape as [DECISIONS §105](../decisions/0105-thread-spawn-decline-for-now.md)):
-not yet, by the tree's own stated trigger ("when a component is first built outside this tree, or a
-binary is first distributed to someone who cannot rebuild it"), which has not happened. This
-milestone is 39's own "cheap first move, which commits to none of the four options", re-scoped
-against how much bigger the strain has gotten since 39 last measured it.
+When should nife development split into different repositories? [Milestone 39
+(repository)](0039-repository-structure.md)'s own analysis already answered the bigger question
+(monorepo now, distribution as a separate manifest repo later, gated on milestone 23 (a
+capability-routed component OS) forcing it, and 23's residual piece was declined for want of a
+customer rather than forcing anything, the same shape as [DECISIONS §105 (`std::thread::spawn` stays
+declined)](../decisions/0105-thread-spawn-decline-for-now.md)): not yet, by the tree's own stated
+trigger ("when a component is first built outside this tree, or a binary is first distributed to
+someone who cannot rebuild it"), which has not happened. This milestone is 39's own "cheap first
+move, which commits to none of the four options", scoped against the strain as it is now.
 
 ## The strain, measured fresh rather than trusted from 39's own numbers
 

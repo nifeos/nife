@@ -1,8 +1,8 @@
 # What the third lane changed, 2026-09-04, none of it run on silicon at the time
 
 An appendix to [milestone 159 (a real hardware entropy source: the JH7110's
-TRNG)](../0159-jh7110-trng-driver.md), moved out on 2026-10-12 (UTC) under §212 (a prose budget).
-The main page is complete without it. The run that served, later the same day, is on the main page.
+TRNG)](../0159-jh7110-trng-driver.md). The main page is complete without it. The run that served,
+later the same day, is on the main page.
 
 Read this as "matches upstream's order, host-tested, unverified on hardware." radon was powered
 down for all of it and no part of a JH7110 exists in QEMU, so nothing below had met the device when

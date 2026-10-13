@@ -9,12 +9,10 @@ needs_person: yes
 ---
 # 163. The JH7110's PCIe root complex: a real driver for the PLDA XpressRICH controller
 
-Minted 2026-08-25, provisional number pending the integrator (mint against
-the current index at merge). Named as needing "its own milestone" in three places without ever
-getting one: `design/roadmap/0053-board-peripherals.md` ("driving it is its own milestone, not a
-bench fix"), `notes/visionfive2.md`'s own "PCIe" section (identical words), and
-`design/decisions/0086-el0-nvme-driver.md`, which holds itself `PROPOSED` pending exactly this work.
-This block gives that debt a home.
+Three places name this as needing "its own milestone": `design/roadmap/0053-board-peripherals.md`
+("driving it is its own milestone, not a bench fix"), `notes/visionfive2.md`'s own "PCIe" section
+(identical words), and `design/decisions/0086-el0-nvme-driver.md`, which holds itself `PROPOSED`
+pending exactly this work. This block gives that debt a home.
 
 In milestone 159's sense: the board is on the desk and this needs hands on it.
 Bringing up a real PCIe root complex means flashing, a serial console, and power-cycling a board

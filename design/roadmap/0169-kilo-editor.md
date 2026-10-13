@@ -16,17 +16,17 @@ DECISIONS §31's foreign-language seam as actually built is a one-shot call and 
 full naming note. This milestone's own primary deliverable, the raw-keystroke primitive, is
 unaffected by the naming question either way.
 
-Minted 2026-08-25, from calef asking what a lightweight first text editor
-for nife might be, after a dependency review of Emacs, nano and vim (in that order) found the same
-wall under all three: [DECISIONS §31](../decisions/0031-foreign-language-seam.md) forbids C code from
-making a syscall or holding a capability directly, so any C program's port is really "rewrite its
-syscall layer against nife's Rust-mediated shim," and no editor sidesteps that by being smaller.
-What *does* scale with size is how much of that rewrite there is to do. antirez's `kilo`
-(<https://github.com/antirez/kilo>) is a public-domain, single-file, roughly 1,000-line terminal
-text editor written explicitly to have almost no dependencies: raw termios mode and hand-written
-ANSI escape sequences, no ncurses, no subprocess calls, no dynamic linking, no threads. It is the
-cheapest real program that exercises nife's one missing terminal capability without also carrying
-nano's or vim's much larger optional-feature surface.
+A dependency review of Emacs, nano and vim, for a lightweight first text editor, found the same wall
+under all three: [DECISIONS §31 (the foreign-language
+seam)](../decisions/0031-foreign-language-seam.md) forbids C code from making a syscall or holding a
+capability directly, so any C program's port is really "rewrite its syscall layer against nife's
+Rust-mediated shim," and no editor sidesteps that by being smaller. What *does* scale with size is
+how much of that rewrite there is to do. antirez's `kilo` (<https://github.com/antirez/kilo>) is a
+public-domain, single-file, roughly 1,000-line terminal text editor written explicitly to have
+almost no dependencies: raw termios mode and hand-written ANSI escape sequences, no ncurses, no
+subprocess calls, no dynamic linking, no threads. It is the cheapest real program that exercises
+nife's one missing terminal capability without also carrying nano's or vim's much larger
+optional-feature surface.
 
 ## The one real gap this milestone exists to close
 

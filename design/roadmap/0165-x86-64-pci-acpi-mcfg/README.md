@@ -12,14 +12,12 @@ room for.
 - [`acpi-walk-bound.md`](acpi-walk-bound.md): the ACPI walk that refused every table on a machine
   with real RAM, and its gate.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
-beside `design/roadmap/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default,
+`design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `not-built` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, after
-  the parent's "What was deliberately not built". calef names files.
-- `decision-86` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, after
-  the parent's "What this does and does not establish for DECISIONS §86". calef names files.
-- `acpi-walk-bound` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  after the parent's "The ACPI walk refused every table on a machine with real RAM". calef names
+- `not-built` Name: provisional. After the parent's "What was deliberately not built". calef names
   files.
+- `decision-86` Name: provisional. After the parent's "What this does and does not establish for
+  DECISIONS §86". calef names files.
+- `acpi-walk-bound` Name: provisional. After the parent's "The ACPI walk refused every table on a
+  machine with real RAM". calef names files.
