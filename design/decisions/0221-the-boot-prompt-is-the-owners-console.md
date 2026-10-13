@@ -7,11 +7,8 @@ ratified_by: calef
 
 # 221. The boot prompt is the owner's console
 
-Raised 2026-09-26 (UTC) by milestone 198 (a package manager) rung 3a's installer lane, as
-[notes/who-may-write-the-activation-set.md](../../notes/who-may-write-the-activation-set.md), and
-answered by calef the same day. Written by the lane `milestone/198-owner-console` on the
-maintainer's instruction, because §219 (how the shell names an installed program to the spawner) is
-at its prose cap. *(Section number provisional until the merge queue lands it.)*
+The question and its analysis are in
+[notes/who-may-write-the-activation-set.md](../../notes/who-may-write-the-activation-set.md).
 
 **Amended 2026-10-06 (UTC) by calef: there is no standing unauthenticated owner console.** Every
 console shows a greeter, and an unauthenticated owner shell exists only in a recovery boot chosen at

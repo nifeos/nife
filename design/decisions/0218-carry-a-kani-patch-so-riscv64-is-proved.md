@@ -53,7 +53,7 @@ From the proposal's options, each with its reason:
   executing pull request code on calef's LAN.
 - Compile asm-free riscv64 files as a proof-only module on the aarch64 host (the
   `riscv64-code-the-prover-can-already-compile` proposal's option 1, which milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs) builds).
-  Superseded for reach, since the target flag compiles every riscv64 line with the real `crate::arch`
+  Not chosen, because its reach is smaller: the target flag compiles every riscv64 line with the real `crate::arch`
   underneath. It is not wasted: its harnesses run natively under this job once both land.
 - A maintained fork now. One fifty-line patch does not justify a fork's upkeep; see the revisit
   condition above.

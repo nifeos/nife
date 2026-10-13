@@ -12,7 +12,7 @@ ratified_by: calef
 Raised 2026-09-27 (UTC) by calef: *"we need to come back to minimizing
 the set of programs in the base so that we can update more without updating the base... However it
 seems like maybe the base need not contain the kernel... Really, don't we just want a thread bare
-base?"* Written by the lane `proposal/threadbare-base`, which builds nothing.
+base?"*
 
 *Amended 2026-10-07 (UTC): a slot holds only the kernel, progenitor and root supervisor; the rest of the floor is packages. See §159 (only a new kernel needs a reboot).*
 

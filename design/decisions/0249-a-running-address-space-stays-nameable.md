@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 249. A running address space stays nameable, and a capability never decides when it dies
 
-*Section number minted by the maintainer on 2026-10-05 (UTC) from merged `main` and the open pull
-requests; it stays provisional until the merge queue lands it.*
-
 calef, 2026-10-05 14:39 UTC, on [#1678](https://github.com/nifeos/nife/pull/1678), the pull request of milestone 95 (an
 unmap primitive, and the mappings init never lets go). Quoted from
 [ruling 3 of 3](https://github.com/nifeos/nife/pull/1678#issuecomment-5996726490): "Yes" to option A

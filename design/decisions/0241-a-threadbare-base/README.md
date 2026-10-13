@@ -6,9 +6,7 @@ hold what its prose budget has no room for.
 
 - [`prior-art.md`](prior-art.md): prior art.
 
-*Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-decisions, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default. calef names
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
 
-- `prior-art` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-decisions, for the
-  parent's "Prior art". calef names files.
+- `prior-art` Name: provisional. After the parent's "Prior art". calef names files.

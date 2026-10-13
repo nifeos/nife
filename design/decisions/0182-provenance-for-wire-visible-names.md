@@ -53,27 +53,22 @@ refusal"* for weeks about eight real packages, and the argument written at the t
 a registry with a hole is worse than no registry, because it answers confidently about the names
 it happens to cover.
 
-And this gap is already a recorded limitation rather than an unknown. `design/naming.md`'s BUGS
-carries "Three surfaces, and the tree has more than three kinds of name", which tracks the closures
-(directories by §75 in 2026-08-16, Cargo packages in 2026-08-18) and states plainly that types and
-`helpers/` helpers are still uncovered. It also records a live casualty: `fs_maker` was resolved to
+And this gap is already a recorded limitation rather than an unknown.
+[design/naming/provenance-limits.md](../naming/provenance-limits.md) carries it, under "The tree has
+more kinds of name than the table covers", which is the one place the worklist's scope is stated. It
+also records a live casualty: `fs_maker` was resolved to
 `mkfs` by whoever was mid-task, because `redoxfs_server/src/bin/` is a place nothing looks. That is
 a `BUGS` entry, which under §71 is a fact rather than a plan, and this section is where it becomes a
 plan or is refused on the record.
 
-*(Dated note, 2026-09-26, decisions-hygiene lane.)* That entry has moved, and the tree under it
-has changed. On 2026-09-24 `design/naming.md` was split and the entry now lives in
-[design/naming/provenance-limits.md](../naming/provenance-limits.md), under "The tree has more kinds
-of name than the table covers", which is the one place the worklist's scope is stated. The same day
-`script/names` learned four kinds read by marker (`design/naming.md`, "Four more kinds are read by
+`script/names` reads four kinds by marker (`design/naming.md`, "Four more kinds are read by
 marker"), one of them an `item`: any function, constant, type, field or variant whose `///` doc holds
 a `Name:` paragraph. That is a mechanical answer to sub-questions 2 and 3 above, since the block
 lives in the constant's own doc and enumeration is by marker rather than by directory. It does not
 answer question 1, whether a wire string is a name at all, and `PROGRAM_MEASUREMENTS` carries no
 marker: `script/names program_measurements` still answers "neither a name in the tree nor a recorded
 refusal". Its doc comment's reason for not wearing `Name:` (milestone 283's one-block-per-file
-spelling) predates the `item` kind and is stale. The worklist figures below are also from
-2026-09-19; `--unratified` now reports 333 provisional, 3 unrecorded and 30 recorded.
+spelling) predates the `item` kind and is stale. The worklist figures below are from 2026-09-19.
 
 ## What it costs, counted rather than asserted
 

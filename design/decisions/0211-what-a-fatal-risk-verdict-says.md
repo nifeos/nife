@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 211. What a fatal-risk verdict says, and what the chart can plot as a result
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 The field is Experiment status, with values
 RUN, NOT-RUN, CANNOT-RUN. Raised by calef, 2026-09-23, reading
 `notes/project-metrics/fatal-risks.svg`: it seems like the wrong graph, because it plots tested

@@ -7,11 +7,6 @@ ratified_by: calef
 
 # 171. Where a program image starts, and where the stack goes
 
-Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s lane, which found milestone 206 (a program image has under 896 KiB) gated on
-`DECISION` with no decision anywhere a reader can open. The block was minted 2026-08-31 from
-milestone 121's lane, which hit the ceiling the hard way. *(Section number provisional until the
-merge queue lands it.)*
-
 ## The ruling
 
 calef, 2026-09-26 (recorded 16:35 UTC): *"Lets do D."* The address-space map gets written down, and

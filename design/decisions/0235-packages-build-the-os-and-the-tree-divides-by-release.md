@@ -7,15 +7,12 @@ ratified_by: calef
 
 # 235. The OS is built and updated from packages, and the tree divides by what releases together
 
-*Section number provisional, and the file name a lane's coinage.*
-
 *Amended 2026-09-27T15:06Z: Fork 3 gains a home-sizing rule, below.*
 
 *Amended 2026-10-07 (UTC): a slot holds only the kernel and what nothing can restart; see §159 (only a new kernel needs a reboot).*
 
 Raised 2026-09-26 (UTC) by calef, who asked for milestone 607 (provisional number): nothing ties
-together how packages build and update the OS and how the monorepo splits into divisions. Written by
-the design lane `milestone/607-packages-and-divisions`, which builds nothing. The measurements and
+together how packages build and update the OS and how the monorepo splits into divisions. The measurements and
 the prior art are in [notes/packages-and-divisions.md](../../notes/packages-and-divisions.md); this
 section holds the forks and does not restate the numbers beyond what a fork needs.
 

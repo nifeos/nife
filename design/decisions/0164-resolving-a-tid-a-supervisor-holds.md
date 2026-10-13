@@ -6,20 +6,8 @@ superseded_by: 148
 
 # 164. Whether the kernel resolves a tid it already sent to the supervisor that received it
 
-**Superseded by §148 (a supervisor restarts by asking, and resolves by asking the kernel), in [`0148-reap-and-thread-identity.md`](0148-reap-and-thread-identity.md), which had already ruled this on 2026-09-05.**
-This section asks again a question calef answered fourteen days before it was raised: §148's fork
-two ([lines 90-92](0148-reap-and-thread-identity.md)) decides that the kernel owes a supervisor a way
-to resolve the tid it already sends, named `ThreadControlBlock::RESOLVE`. The one part §148 left
-open, in "What a lane must not decide by accident" (lines 133-155), was whether `RESOLVE` returns a
-capability or an identifier. calef ruled it on 2026-10-04 as an amendment to §148: the death
-message carries the builder's label, and no `RESOLVE` method is built. Kept rather than deleted,
-because the reasoning is the record. Marked 2026-10-04 (UTC).
-
-Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s lane, which found milestone 105 (the two forks named and left) gated on
-`DECISION` with no decision anywhere a reader can open. The block named two forks; one of them
-was already decided before the block was written, which is recorded below rather than quietly
-fixed. This decision is the other one. *(Section number provisional until the merge queue lands
-it.)*
+Milestone 105 (the two forks named and left) named two forks; one of them was already decided
+before the block was written, which is recorded below. This section is the other one.
 
 ## The correction that comes first, because it changes what is owed
 

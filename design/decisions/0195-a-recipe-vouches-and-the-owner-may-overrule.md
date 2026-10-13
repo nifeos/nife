@@ -161,7 +161,7 @@ premise §135 rests on, checked.
 ## If calef says no to T2 and T3
 
 Packages remain build inputs to images, which is the first slice. Runtime install, and therefore
-§135's channel for `git` and `nano` reaching a machine by the user's own act, waits. *(2026-09-19: that first slice is superseded by DECISIONS §157; see milestone 198's "Rescoped 2026-09-19". Under §157 a "no" here also stops rung 3.)*
+§135 (running GPL software is aggregation)'s channel for `git` and `nano` reaching a machine by the user's own act, waits. *(DECISIONS §157 (a trivial install is a web page, a USB drive, and packages over the internet) replaces that first slice; see milestone 198 (a package manager)'s "Rescoped 2026-09-19". Under §157 a "no" here also stops rung 3.)*
 
 ## Amendment, 2026-10-10 (UTC): basalt holds a root key, and its images carry it
 

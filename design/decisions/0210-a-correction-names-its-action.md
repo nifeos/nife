@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 210. A correction of error, and its action items are decisions, proposals or milestones
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 calef, 2026-09-23: this tree runs corrections of error, and an action item
 is a decision, a proposal, or a milestone. Nothing else counts. *(Section number provisional until
 the merge queue lands it: two other decision files, numbered 208 and 209, are open on
@@ -146,8 +143,8 @@ Why reuse beats a second implementation, and this tree has already paid for the 
 places; milestone 175 (`components/` for services, `fixtures/` for test and benchmark programs)
 moved the programs on
 2026-09-13, `script/names` was told and `script/metrics` was not, and `names_total` showed a collapse
-from 204 to 133 that never happened until 2026-09-19. One level in, `script/roadmap`'s own path list
-used to be typed out and drifted the same way, still naming `user/` nineteen days after that split,
+from 204 to 133 that never happened until 2026-09-19. One level in, `script/roadmap`'s own path list,
+typed out by hand, drifted the same way, still naming `user/` nineteen days after that split,
 and it was fixed by deriving the list from `git ls-tree` instead. A second copy of a
 vocabulary that eight openers wide and growing (`Done.`, `Proposed.` and `Outstanding.` were all
 added after the first draft) would drift on its next addition, and the drift is invisible: a COE
@@ -230,8 +227,7 @@ The path is `notes/corrections/<date>-<slug>.md`, and that is the standard rathe
 suggestion (calef, 2026-09-23, reviewing the first COE written against this section). The date is
 UTC, as every date in this tree is. A record does not argue for its own location, say that its
 location is provisional, or explain the naming authority: it sits at the path and describes its
-event. The first draft of this paragraph offered the path as a lane's suggestion and the first COE
-duly spent a paragraph on it, which is the shape this correction closes. It sits awkwardly beside
+event. It sits awkwardly beside
 the file of the same stem, and the tidier end state is the index moving to
 `notes/corrections/README.md`, which is a later lane's work and not this one's.
 

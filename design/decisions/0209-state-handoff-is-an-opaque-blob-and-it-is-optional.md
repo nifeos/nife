@@ -7,15 +7,8 @@ ratified_by: calef
 
 # 209. State handoff is an opaque blob over a granted frame, and it is optional
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 Ruled by calef on 2026-09-23, on the maintainer's recommendation, reopening
-§116 (live component state handoff is declined, for want of a customer). *(Section number provisional until the merge queue lands it. A second
-lane has already minted a different 209 on an unmerged branch, so expect renumbering.)*
-
-Supersedes §116 (live component state handoff is declined, for want of a customer), whose text is left as written. §116's own status line carries a
-dated pointer forward.
+§116 (live component state handoff is declined, for want of a customer).
 
 ## The ruling, in three parts
 

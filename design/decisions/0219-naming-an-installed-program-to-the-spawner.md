@@ -7,13 +7,9 @@ ratified_by: calef
 
 # 219. How the shell names an installed program to the spawner
 
-Raised 2026-09-24 by milestone 198 (a package manager, and the trivial install that makes a second
-customer possible)'s rung 3a consumer lane (`milestone/198-rung-3a-consumer`), which built the fetch
-and the digest check and stopped here.
-
-Amended 2026-09-26 (UTC) on calef's question: *"What approach allows a developer to build on
-nife and then run what they build? What about running a script they write?"* A, B and C answer
-only "run something installed". The maintainer added option D to answer both.
+calef's question, 2026-09-26 (UTC): *"What approach allows a developer to build on nife and then
+run what they build? What about running a script they write?"* A, B and C answer only "run
+something installed". Option D answers both.
 
 ## The ruling
 

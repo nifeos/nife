@@ -23,10 +23,7 @@ One question: does that line stay, go, or get a client?
 
 ## Is the premise true
 
-Checked 2026-09-19 in this worktree. Yes, on both halves. *(Line citations in this section re-pointed 2026-09-26 against `main` at
-`508333ebe` by the decisions-hygiene lane: the `map` line moved from 1768 to 1881 and
-`system_initializer`'s load from 769 to 868. The other three still point where they did, and each
-still says what the section says it does.)*
+Yes, on both halves. *(Line citations in this section are against `main` at `508333ebe`.)*
 
 - `kernel/src/main.rs:1881` still carries the `map` line, in the tour arm.
 - `console_service.rs:20` still carries `#[expect(dead_code, reason = "no client since the narrator

@@ -11,19 +11,16 @@ The field names are as written below. Raised by calef, 2026-09-22, after a week 
 going wrong: *"I don't quite get why promotions are so hard. This has been killing us for weeks."*
 and then, once numbering turned out not to be the cause, *"Even more important is expressing
 dependencies between milestones so that we execute the graph of milestones efficiently."*
-*(Section number provisional until the merge queue lands it.)*
 
 ## Amended 2026-10-02: the backfill starts with the finished work, not the ready set
 
-calef, 2026-10-02 (UTC), ruled that this amendment lands. It was written on 2026-09-22, the day
-this section was raised, and sat on a local branch through ratification. Most of its argument
-reached `main` anyway, in "The measurements taken before ratifying" below. What did not was the
-scope: "Scope, so this is not a 547-file project" still said to backfill the ready set first, which
-is the population that section's own census calls the wrong place to look. This replaces that scope.
+calef, 2026-10-02 (UTC), ruled that this amendment lands. It sets the scope in "Scope, so this is
+not a 547-file project": the finished work first, not the ready set, which is the population the
+census in "The measurements taken before ratifying" calls the wrong place to look.
 
 The reference counts behind it were measured 2026-09-22 by counting references to other milestones in
-each block's body. They are three weeks stale and were not retaken; the census below supersedes
-them as evidence, and they stay because the gap between the rows is the point:
+each block's body. The census below is the better evidence; these stay because the gap between the
+rows is the point:
 
 | Status | Blocks | Mean references | With none |
 |---|---|---|---|
@@ -117,9 +114,6 @@ IPC number that pays for the trap)'s, as it stands on 2026-10-02:
     needs_person: yes
     ---
 
-*Amended 2026-10-02: this example was the bold-label prose form the section first proposed. The
-fields and their meanings are unchanged; only the spelling moved, with 596.*
-
 The first two are the graph. The last three are the machine model below.
 
 ## Why the machine model is three fields and not one
@@ -159,8 +153,6 @@ one dependency, a decision and a milestone at once, and the difference between a
 a missing person.
 
 ## Scope, so this is not a 547-file project
-
-*Amended 2026-10-02 (the amendment at the top). This first said to backfill the 145 ready milestones.*
 
 Backfill the finished work first: BUILT and PARTIAL blocks, starting from the census's 128
 prerequisite edges, because hindsight records what a milestone actually stood on. The ready set is a

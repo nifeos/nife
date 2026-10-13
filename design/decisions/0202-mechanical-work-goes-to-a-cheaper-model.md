@@ -7,15 +7,12 @@ ratified_by: calef
 
 # 202. Mechanical work goes to a cheaper model, and the gates are why that is safe
 
-*Amended 2026-09-26: rule text says "an architect" where it said calef, per §217 (every architect
-holds the whole role). Records and quotations keep his name.*
-
 *Amended 2026-10-02 (UTC): the routing rule is four Claude tiers and a new criterion, below. No
 price is recorded, by ruling.*
 
 calef, 2026-09-20: *"You have permission to route mechanical work to cheaper
 models and should capture that somewhere durable. To start, Sonnet is already available under our
-Claude subscription."* *(Section number provisional until the merge queue lands it.)*
+Claude subscription."*
 
 ## Amended 2026-10-02: route by whether anyone specified the valuable output
 

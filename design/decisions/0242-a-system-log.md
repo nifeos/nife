@@ -67,7 +67,7 @@ by design."*
 
 ## Prior art, read
 
-Read on 2026-09-27 from primary sources by this lane; "(memory)" marks what was not verified.
+Read on 2026-09-27 from primary sources; "(memory)" marks what was not verified.
 
 | system | record | largest record | kernel ring | who names the sender |
 |---|---|---|---|---|

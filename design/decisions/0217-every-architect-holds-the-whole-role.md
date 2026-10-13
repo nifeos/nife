@@ -7,9 +7,6 @@ ratified_by: calef
 
 # 217. Every architect holds the whole role
 
-*Section number provisional: minted by the lane `maintainer/architect-role`, and the integrator
-renumbers it at merge if another lane lands 217 first.*
-
 calef, 2026-09-25 (UTC), in the conversation that asked for [`ARCHITECTS.md`](../../ARCHITECTS.md):
 
 > "A second architect will have all of the authority of the first one. Same with the third, fourth,
