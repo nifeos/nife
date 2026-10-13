@@ -1265,3 +1265,14 @@ mod pass9_confinement_tests;
 /// §19 (architectural parity is a tenet)); the child stub is per-architecture in `supervision_tests`.
 #[cfg(test)]
 mod pass9_supervision_tests;
+
+/// **Pass 9: the map gate admits only the aligned low half, and no mapping flag is W+X** (an
+/// outside security reviewer attacks the confinement claim, 2026-10-13 UTC; fatal risk 7's
+/// confinement claim, claims 10 and 11). Through the live dispatcher, a confined budget holder's
+/// `MemoryRegion::MAP` is refused `BadPointer` for a kernel-half address and for an unaligned one,
+/// tied to the proved `is_user_page_va` gate; and every `Flags` a mapping path installs is writable
+/// or user-executable, never both. One layer up from `crates/paging`'s per-format proofs.
+///
+/// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).
+#[cfg(test)]
+mod pass9_mapping_tests;
