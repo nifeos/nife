@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 847. The swish-check harness is split along its seams
 
-*(Minted 2026-10-08 (UTC) by lane split-milestones, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-`xtask/src/swish_check.rs` is 4,576 lines at `0435a9aeb`. It was 1,886 lines on 2026-09-23, when it
-was renamed from `shell_check.rs`. §266 (a Rust source file stays under 2,000 lines) sets the
+`xtask/src/swish_check.rs` is 4,274 lines at `ae6b91e79`. §266 (a Rust source file stays under 2,000 lines) sets the
 ceiling and a 2026-12-31 goal of no file over 4,000. Milestone 840 (the scheduler file is split
 along its seams) is the model, and milestone 365 (`xtask/src/main.rs` is 6,785 lines with no module
 structure) is the precedent inside `xtask`.
@@ -23,10 +21,9 @@ The cut and every module name below are calef's call. A lane writes them up as a
 `status: PROPOSED` file in `design/decisions/` before it moves a line, and its pull request
 carries `needs-architect`.
 
-The lane wrote it up on 2026-10-11 (UTC) as §280 (the swish-check harness splits into submodules,
-with its script in one), re-measured on main at `ae6b91e79` at 4,274 lines. Its one fork, whether
-the script table gets its own module, was settled on 2026-10-11 (UTC) by calef's tree-wide
-precedent on #1959: *"Agreed, make the parent an index."* A parent that may hold only module docs,
+§280 (the swish-check harness splits into submodules, with its script in one) is that write-up. Its
+one fork, whether the script table gets its own module, follows calef's tree-wide precedent on
+#1959 (2026-10-11 UTC): *"Agreed, make the parent an index."* A parent that may hold only module docs,
 `mod` lines, `use` and re-exports cannot keep the rows, so the table has its own module.
 
 Reuse: not applicable; this moves code and adds none.
@@ -105,9 +102,8 @@ Found with `grep` at `0435a9aeb`.
 ## Done when
 
 1. `xtask/src/swish_check.rs` is an index, and no file under `xtask/src/swish_check/` is over 2,000
-   lines. *(Corrected 2026-10-11 (UTC): this said the file is gone, for a `mod.rs` layout.
-   Milestone 809 (the package client becomes a program) had already put `gauge.rs` beside the
-   parent, the layout milestone 840 kept.)*
+   lines. The parent stays beside its directory, the layout milestone 840 (the scheduler file is
+   split along its seams) kept, not a `mod.rs`.
 2. No Rust file outside `xtask/src/swish_check/` changes.
 3. `cargo xtask`'s host tests pass, the 33 here among them, with no test body changed.
 4. `script/swish-check` passes on aarch64, riscv64 and x86_64.

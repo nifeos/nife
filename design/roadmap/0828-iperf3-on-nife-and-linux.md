@@ -10,12 +10,9 @@ needs_person: yes
 ---
 # 828. iperf3 on nife and Linux, throughput for the network drivers
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks from the proposal `iperf3-on-nife-and-linux`,
-under §262 (nife is measured with the field's standard benchmarks). The number is provisional until
-the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Written by an agent, 2026-10-08 (UTC), at calef's request. Model: milestone 833 (the same storage
-benchmark on nife and Linux, by porting real fio). Starts after a
+Model: milestone 833 (the same storage benchmark on nife and Linux, by porting real fio). Starts after a
 NIC works on silicon, so it waits on milestones 494 (a driver for the network card a PC actually
 has) and 53 (the board's own peripherals).
 
@@ -53,10 +50,8 @@ Reuse: iperf3 is taken and ported; no nife-side traffic generator is written.
 
 ## What it waits on
 
-Corrected 2026-10-10 (UTC). The C library this waited on exists. calef ruled the question on
-2026-10-08 as §265 (a C library started from relibc), and milestone 835 (a C library, stage 1:
-files, clock and memory) built its first stage in #1896. The fields now name 835 and §265 in place
-of `unwritten`. This program's other needs are below.
+The C library is §265 (a C library started from relibc), and its first stage, milestone 835 (a C
+library, stage 1: files, clock and memory), is built. This program's other needs are below.
 
 A NIC on silicon, milestones 494 (a driver for the network card a PC actually has) and 53 (the
 board's own peripherals).
@@ -78,9 +73,9 @@ nothing rather than a TCG number.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+*§297 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
+included) binds this. calef, 2026-10-12 (UTC): "They should all be installed via jig through
+basalt."*
 
 iperf3 must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

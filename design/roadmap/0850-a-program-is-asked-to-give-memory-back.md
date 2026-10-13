@@ -10,15 +10,14 @@ needs_person: no
 ---
 # 850. A program is asked to give memory back before anyone is refused
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `a-program-is-asked-to-give-memory-back`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 calef asked for this on 2026-10-06 (UTC), ruling fork 6 of milestone 851 (a running program acquires
 more memory as it needs it): "Approve Fork 6 A with both follow-ons". It is the "please shrink"
 notice milestone 851's fork 4 named. In his words from fork 3 of the same milestone: "Most of my
 professional work has involved
-large programs with spikes in memory that would need to be returned." A writing-only lane wrote
-it and built nothing. calef ruled all four forks on #1786 the same day.
+large programs with spikes in memory that would need to be returned." calef ruled all four forks
+on #1786 the same day.
 
 It depends on milestone 851's `memory_broker`, its accounts, and reserve and commit (forks 1, 4 and
 5 there, ruled). Every name here is provisional: the signal, its levels, the runtime hook and the

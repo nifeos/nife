@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 840. The scheduler file is split along its seams
 
-*(Minted 2026-10-08 (UTC) by lane roadmap-rule2-and-sched-split, filed at calef's approval the
-same day; number provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `kernel/src/sched.rs` is 8,921 lines at `ea7a58d`. Milestone 41 (dead-code triage) measured it at
 3,166. Its header says "a round-robin scheduler, and the preemption that makes it mean something",

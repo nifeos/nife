@@ -10,9 +10,7 @@ needs_person: no
 ---
 # 824. A retype mints no right its budget lacks
 
-*(Minted 2026-10-07 (UTC) by the maintainer session at the merge of PR #1798, milestone 800 (a
-non-Anthropic model attacks the confinement claim), on calef's ruling of decision 6 in that thread.
-The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 ## In brief
 
@@ -71,9 +69,9 @@ the same `Rights::ALL` mint in each.
 Names `SPEND_ONLY` (abi and kernel), `abi::rights::ALL` and `memory_region_lending_capability` are
 provisional. The test names are provisional.
 
-Not done in this lane, for the maintainer at merge: The decisions record §10 (process model:
-capability-based, microkernel) asks for: a section stating what a retype mints, and that §16 (object
-revocation)'s sentence "`RETYPE` mints a frame `READ|WRITE|GRANT`" is superseded. A lane does not
+Outstanding, for the maintainer: the decisions section §10 (process model: capability-based,
+microkernel) asks for, stating what a retype mints and that §16 (object revocation)'s sentence
+"`RETYPE` mints a frame `READ|WRITE|GRANT`" no longer holds. A lane does not
 edit `design/decisions/`. Risk 7's appendix also wants the citation under §216 (fatal-risk facts are
 correctable, and verdicts are the architect's).
 
@@ -96,6 +94,6 @@ minted. Closes the near miss on claim 3 that milestone 633's passes carried.
   the budget itself. The sharpest case, a networked `std` program's job region, is in the `BUGS`
   of `crates/system_initializer/src/std_layout.rs`, and the narrower shape with its cost in
   `notes/memory-regions.md`.
-- **Recorded.** The decisions section §10 asks for, and §16's superseded sentence, are left to the
-  maintainer at merge; the reasoning they need is in `notes/memory-regions.md`, "What a retype
+- **Recorded.** The decisions section §10 asks for, and the correction of §16's sentence, are left
+  to the maintainer; the reasoning they need is in `notes/memory-regions.md`, "What a retype
   mints".

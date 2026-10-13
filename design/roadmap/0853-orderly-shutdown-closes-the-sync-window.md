@@ -10,16 +10,14 @@ needs_person: no
 ---
 # 853. Orderly shutdown closes the sync window
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `orderly-shutdown-closes-the-sync-window`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 Reuse: the design is borrowed from the prior art below; no code is taken, because nothing
 outside a service manager can own the order, and nife's would be written here.
 
 calef asked for this on 2026-10-06 (UTC), ruling on #1783, milestone 805 (`reboot` at the prompt).
 He approved the sync-only binding (option A in §251 (restarting the machine is a kernel object the
-progenitor hands out)'s amendment) and asked that option D be filed as follow-on work. Written by
-lane/805-reboot, which built nothing for it.
+progenitor hands out)'s amendment) and asked that option D be filed as follow-on work.
 
 ## The gap
 

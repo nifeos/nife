@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 841. A ratchet on Rust file length, and its dashboard row
 
-*(Minted 2026-10-08 (UTC) by lane file-size-budget, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 §266 (a Rust source file stays under 2,000 lines) sets a 2,000-line ceiling on every tracked
 Rust file outside `vendor/`, held by a ratchet. This milestone builds the ratchet in `script/lint`

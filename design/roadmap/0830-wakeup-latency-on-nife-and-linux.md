@@ -10,21 +10,17 @@ needs_person: yes
 ---
 # 830. Wakeup latency on nife and Linux, from each kernel's own scheduler trace
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks from the proposal
-`schbench-on-nife-and-linux`, under §262 (nife is measured with the field's standard benchmarks,
-run unmodified, against Linux). Rewritten 2026-10-12 (UTC) by
-maintainer/wakeup-latency-from-scheduler-traces after calef dropped schbench, below. The title and
-the slug `wakeup-latency-on-nife-and-linux` are provisional: names are calef's, and he has not
-ruled on these. The file was `0830-schbench-on-nife-and-linux.md` until then.)*
+*(The title and the slug `wakeup-latency-on-nife-and-linux` are provisional: names are calef's,
+and he has not ruled on these.)*
 
 **In brief.** Measure wakeup latency, the time from a thread being made runnable to that thread
 running on a CPU, as a distribution (p50, p99, p99.9 and the maximum), on nife and on Linux. Each
 side reads it from its own kernel's scheduler trace, under the same load from a generator that runs
 unmodified on both.
 
-## The ruling, and what it changed
+## The ruling
 
-This block first planned to port `schbench`. schbench is Linux-only: it calls `syscall(SYS_futex)`
+Not a port of `schbench`, because schbench is Linux-only: it calls `syscall(SYS_futex)`
 and `syscall(SYS_gettid)` directly, and §265 (a C library started from relibc, whose Rust platform
 layer holds the capabilities) does not build `syscall()`. Of the options put to calef, he chose (c):
 measure the quantity the way the field does across operating systems, from each kernel's own
@@ -32,8 +28,8 @@ scheduler trace. calef, 2026-10-12 (UTC):
 
 > c, and drop schbench
 
-So this is no longer a port. §262 prefers one upstream program, run unmodified on both systems
-(its second commitment); here that holds for the load and not for the instrument. **The comparison
+So this is not a port. §262 (nife is measured with the field's standard benchmarks) prefers one
+upstream program, run unmodified on both systems (its second commitment); here that holds for the load and not for the instrument. **The comparison
 is the same quantity measured by each kernel's own tracer, not one binary on both sides.** Every row
 this block writes says so. It is how wakeup latency is compared between operating systems in
 practice: no single tool runs on all of them, and each kernel's scheduler already knows when it made

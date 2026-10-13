@@ -10,12 +10,9 @@ needs_person: no
 ---
 # 854. The init package holds only what init does
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `the-init-package-holds-only-what-init-does`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised 2026-10-06 (UTC) by lane `init-package-regrouping`, on calef's approval of a maintainer
-request the same day. The lane moved nothing in code or in `packages/`; this file is the whole of
-its work. Package names follow calef's 2026-10-06 ruling: spelled out and hyphenated, as in
+Package names follow calef's 2026-10-06 ruling: spelled out and hyphenated, as in
 `core-tools`, `disk-tools` and `process-tools`.
 
 ## The rulings

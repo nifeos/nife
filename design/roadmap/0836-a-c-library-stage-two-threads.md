@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 836. A C library, stage 2: threads
 
-*(Minted 2026-10-08 (UTC) by lane/c-library from calef's ruling the same day; number provisional
-until the merge queue lands it.)*
+*(The title and slug are provisional.)*
 
 Stage 2 of §265 (a C library started from relibc): `pthread_create`, `pthread_join`, mutexes,
 condition variables, thread-local storage for more than one thread, and the thread-safe `stdio`
@@ -20,8 +19,8 @@ address space), which PR #1856 rules is to be built.
 
 ## First consumers
 
-hackbench (827) in its thread mode, schbench (830), iperf3 (828) and the storage
-benchmark (833), all on PR #1854.
+hackbench (827) in its thread mode, iperf3 (828) and the storage benchmark (833), all on PR
+#1854.
 
 Reuse: relibc's `src/pthread/` and `src/sync/` (MIT), seeded as stage 1 seeded the headers.
 
@@ -37,14 +36,13 @@ futex (`notes/futex.md`). It has no timeout yet, which a timed wait such as
 
 ## Done when
 
-hackbench's thread mode and schbench build unmodified and run on all three architectures.
+hackbench's thread mode builds unmodified and runs on all three architectures. It is this block's
+one program. Not schbench, because the C library does not build `syscall()` and §265 (a C library
+started from relibc) stands as written (calef, 2026-10-12 UTC, on #2009: "c, and drop schbench").
+Milestone 830 (wakeup latency on nife and Linux, from each kernel's own scheduler trace) measures
+the tails by tracing instead.
 
-Amended 2026-10-12 (UTC) by calef's ruling on #2009, "c, and drop schbench": the C library does not
-build `syscall()`, §265 (a C library started from relibc) stands as written, and schbench is
-dropped. Milestone 830 (Wakeup latency on nife and Linux, from each kernel's own scheduler trace) measures the tails by
-tracing instead. hackbench is this block's one program.
-
-## What is built (2026-10-12, lane `milestone/836-a-c-library-stage-two-threads`)
+## What is built
 
 hackbench (rt-tests 2.11, `helpers/build-hackbench.sh`) runs unmodified in its thread mode on
 aarch64, riscv64 and x86_64 under QEMU (`system_tests/src/user/c_thread_tests.rs`, two tests,
@@ -100,8 +98,7 @@ Each is reversible:
 
 - **Milestone 912.** Milestone 912 (C thread-locals on nife's thread pointer): C's own
   `__thread`, which fio (milestone 833 (the same storage benchmark on nife and Linux, by porting
-  real fio)) uses only when it links. Without it fio falls back to `pthread_getspecific`
-  (corrected 2026-10-12 UTC by milestone 912's lane).
+  real fio)) uses only when it links. Without it fio falls back to `pthread_getspecific`.
 - **Milestone 827.** Milestone 827 (hackbench on nife and Linux, as a scheduler benchmark and a
   multicore soak): the same program on silicon beside Linux, now that its thread mode runs here.
 - **Recorded.** The per-call limits, in `c_library/README.md`'s `BUGS`.

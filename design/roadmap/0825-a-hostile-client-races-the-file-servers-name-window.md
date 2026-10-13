@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 825. A hostile client races the file server's name window
 
-*(Minted 2026-10-07 (UTC) by the maintainer session at the merge of PR #1798. That is milestone 800
-(a non-Anthropic model attacks the confinement claim), and calef ruled this in its thread as decision
-5. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 ## In brief
 

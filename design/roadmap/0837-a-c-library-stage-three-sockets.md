@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 837. A C library, stage 3: sockets
 
-*(Minted 2026-10-08 (UTC) by lane/c-library from calef's ruling the same day; number provisional
-until the merge queue lands it.)*
+*(The title and slug are provisional.)*
 
 Stage 3 of §265 (a C library started from relibc): `socket`, `connect`, `bind`, `listen`, `accept`,
 `send`, `recv`, `setsockopt` for the options the consumers set, `getaddrinfo` for literal addresses,

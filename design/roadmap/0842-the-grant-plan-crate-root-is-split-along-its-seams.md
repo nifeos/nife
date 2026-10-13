@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 842. The grant-plan crate root is split along its seams
 
-*(Minted 2026-10-08 (UTC) by lane split-milestones, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/grant_plan/src/lib.rs` is 7,080 lines at `0435a9aeb`, the largest Rust file after
 `kernel/src/sched.rs`. It was 5,060 lines on 2026-09-24. §266 (a Rust source file stays under

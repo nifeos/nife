@@ -10,16 +10,14 @@ needs_person: no
 ---
 # 848. A client pays for its session in a server
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `a-client-pays-for-its-session-in-a-server`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 calef asked for this on 2026-10-06 (UTC), ruling fork 6 of milestone 851 (a running program acquires
 more memory as it needs it): "Approve Fork 6 A with both follow-ons". Fork 6 kept boot servers on
 fixed budgets,
 because a server that grew from a shared pool would let one person's traffic spend another's
 memory. This is the first follow-on: a server whose load grows with its clients is paid by those
-clients. A writing-only lane wrote it and built nothing. calef ruled all four forks on #1786 the
-same day.
+clients. calef ruled all four forks on #1786 the same day.
 
 It depends on milestone 851's `memory_broker` and its account tree (forks 1 and 5 there, both
 ruled). Every

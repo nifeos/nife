@@ -11,11 +11,10 @@ needs_person: no
 ---
 # 855. The TLS graph enters the gated build
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `the-tls-graph-enters-the-gated-build`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised 2026-10-06 (UTC) by the lane for milestone 501 (a TLS client that speaks to one pinned
-peer). It built the client and found that nothing checks it keeps working.
+Milestone 501 (a TLS client that speaks to one pinned peer) built the client, and nothing checks
+that it keeps working.
 
 ## The gap
 

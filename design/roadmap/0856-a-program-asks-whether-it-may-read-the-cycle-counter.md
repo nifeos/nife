@@ -10,10 +10,9 @@ needs_person: no
 ---
 # 856. A program asks whether it may read the cycle counter
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `a-program-asks-whether-it-may-read-the-cycle-counter`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Written by the `milestone/353-cycle-read` lane, from the block of milestone 353 (the aarch64 half of 74).
+It follows from the block of milestone 353 (the aarch64 half of 74).
 
 **In brief.** calef ruled decision B of milestone 353 as B4 in two steps on 2026-10-07 (UTC). Step
 1 is built: `user_mode_runtime::cycle_reading()` returns a count paired with an

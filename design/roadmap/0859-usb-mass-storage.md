@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 859. A USB mass-storage driver: bulk-only transport and SCSI, as a confined server
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `usb-mass-storage`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Filed by lane/radon-storage under §260 (radon's block server serves a USB drive), after a search
-of `design/roadmap/` for mass storage, UAS and bulk-only found no milestone that owns it.
+It is filed under §260 (radon's block server serves a USB drive): nothing else in
+`design/roadmap/` owns mass storage, UAS or bulk-only transport.
 Milestone 618 (USB keyboards behind the console) lists mass storage as explicitly out, and
 milestone 242 (USB host and HID) builds the host controller and input only. Name provisional.
 

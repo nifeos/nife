@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 851. A running program acquires more memory as it needs it
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `a-running-program-acquires-more-memory`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 calef asked for this on 2026-10-06 (UTC): a running program should get more memory when
-it needs it. A writing-only lane wrote it. calef ruled every fork on #1777 the same day.
+it needs it. calef ruled every fork on #1777 the same day.
 
 It is the program half of #1769 (concurrent login sessions), whose fork 4 calef ruled "D" the same
 day: a `memory_broker` holding the pool left after the boot's carve, handing out geometric
@@ -108,8 +107,8 @@ Refused: one arena per region. Refused for now: backing on fault, which needs a 
 ### Fork 3. Giving memory back while running
 
 Ruled, calef, 2026-10-06 (UTC): "Approve Fork 3, but we need to be more like linux and make the
-limit [large] enough that nobody notices it." He had sent the first draft back because large programs
-spike, and memory they cannot return looks like a leak. Fork 7 takes the second half of the ruling.
+limit [large] enough that nobody notices it." Large programs spike, and memory they cannot return
+looks like a leak. Fork 7 takes the second half of the ruling.
 The [appendix](0851-a-running-program-acquires-more-memory/returning-memory.md) has the arithmetic.
 
 A region is the smallest unit the kernel takes back; nife cannot `madvise` a page inside one.

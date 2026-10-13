@@ -11,12 +11,11 @@ needs_person: no
 ---
 # 860. Comments state the constraint as it is now
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `comments-state-the-constraint-as-it-is-now`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised for calef, who ruled the shape on 2026-10-07 (UTC) while deciding the forks of
-`notes/comment-cost-2026-10-07.md` (PR #1800, fork (c)); this block files the sweep that ruling
-wants, which nothing yet builds.
+calef ruled the shape on 2026-10-07 (UTC), fork (c) of
+`notes/comment-cost-2026-10-07.md` (PR #1800). This block is the sweep that ruling wants, which
+nothing yet builds.
 
 ## The ruling, as made
 

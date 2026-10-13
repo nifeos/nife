@@ -10,12 +10,9 @@ needs_person: yes
 ---
 # 832. STREAM on nife and Linux, the memory-bandwidth baseline
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks from the proposal `stream-on-nife-and-linux`,
-under §262 (nife is measured with the field's standard benchmarks). The number is provisional until
-the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-Written by an agent, 2026-10-08 (UTC), at calef's request. Model: milestone 833 (the same storage
-benchmark on nife and Linux, by porting real fio). It pairs with
+Model: milestone 833 (the same storage benchmark on nife and Linux, by porting real fio). It pairs with
 `coremark`, the compute control in `notes/benchmarks.md` that must never move.
 
 **In brief.** Port STREAM (one C file) for the Copy, Scale, Add and Triad bandwidth numbers. If nife
@@ -51,10 +48,8 @@ Reuse: stream.c is taken unmodified except the timer shim.
 
 ## What it waits on
 
-Corrected 2026-10-10 (UTC). The C library this waited on exists. calef ruled the question on
-2026-10-08 as §265 (a C library started from relibc), and milestone 835 (a C library, stage 1:
-files, clock and memory) built its first stage in #1896. The fields now name 835 and §265 in place
-of `unwritten`. This program's other needs are below.
+The C library is §265 (a C library started from relibc), and its first stage, milestone 835 (a C
+library, stage 1: files, clock and memory), is built. This program's other needs are below.
 
 Threads, for the per-core half only. The single-threaded build needs none; one thread per core waits
 on milestone 812 (`std::thread::spawn` runs real threads in one address space).
@@ -70,9 +65,9 @@ nothing rather than a TCG number.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+*§297 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
+included) binds this. calef, 2026-10-12 (UTC): "They should all be installed via jig through
+basalt."*
 
 STREAM must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

@@ -10,14 +10,11 @@ needs_person: no
 ---
 # 861. Every workflow file parses
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `every-workflow-file-parses`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised by lane/codeql-advanced-setup (2026-10-08 UTC), which nearly shipped a workflow that did
-not. One comment line in `.github/workflows/codeql.yml` lost its `#` prefix to a line-wrap slip,
-and every text gate passed. `script/lint` reads workflows line by line and never parses one, the
-pin and swallow checks matched their regexes, and the pre-push hook waved it through. A local
-`ruby -ryaml` parse caught it before the push. The name of this block is provisional.
+`script/lint` reads workflows line by line and never parses one. A comment line that loses its `#`
+prefix to a line-wrap slip passes every text gate: the pin and swallow checks match their regexes,
+and the pre-push hook waves it through. Only a YAML parse (`ruby -ryaml`) catches it.
 
 ## What almost happened
 

@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 843. The system-initializer crate root is split along its seams
 
-*(Minted 2026-10-08 (UTC) by lane split-milestones, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/system_initializer/src/lib.rs` is 6,358 lines at `0435a9aeb`. It was 2,805 lines on
 2026-09-24, so it more than doubled in two weeks, faster than any other file over 4,000. §266 (a

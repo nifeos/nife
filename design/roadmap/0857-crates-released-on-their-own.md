@@ -10,10 +10,9 @@ needs_person: yes
 ---
 # 857. Crates released on their own, and proofs offered to the projects that already exist
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `crates-released-on-their-own`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
-
-Raised 2026-10-07 (UTC) by lane/releasable-crates. calef, ruling fork 2 of #1803 (nife writes its
+calef, 2026-10-07 (UTC), ruling fork 2 of #1803 (nife writes its
 own FAT crate): *"It seems like something we should build and prove and release on its own
 independently of nife. I suspect we have other such crates."* Then: *"Dispatch the crates that
 could be released on their own. We should also assess for each of the releasable ones what the
@@ -134,8 +133,8 @@ product line. Three things have moved since:
   already says a piece earns separation when it can ship on its own schedule.
 - The trigger is met. Every one of the 30 crates classed A or B has at least one consumer in this
   tree, counted from the `Cargo.toml` files.
-- §46 (thin primitives or whole subsystems) was amended 2026-10-04: take first outside the kernel
-  and the proven crates. That rule cuts both ways here. Where a maintained crate exists, it argues
+- §46 (thin primitives or whole subsystems) says take first outside the kernel and the proven
+  crates. That rule cuts both ways here. Where a maintained crate exists, it argues
   for offering our proofs to it rather than publishing a rival.
 
 And one thing has not moved. §235 (the OS is built and updated from packages, and the tree divides
@@ -207,7 +206,7 @@ the evidence, and the evidence is milestone 39's reason to publish at all.
 
 Options only, because a crates.io name cannot be taken back: a crate can be yanked but its name
 stays. Each name is ratified under naming-authority and `script/names` before the crate leaves the
-tree (amended 2026-10-11).
+tree.
 
 - N-a. This tree's names, prefixed only where taken. Free today: `device_tree_blob`,
   `globally_unique_identifier_partition_table`, `network_time_protocol` and most of the long names.

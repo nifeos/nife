@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 858. Lab machines update themselves through packages, and only a new kernel reboots them
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `lab-machines-update-themselves`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 calef asked on 2026-10-07 (UTC): *"We should have a milestone that lets our lab machines updated
 themselves for runs using our package management solution. Download their updates, apply them, and
@@ -50,26 +49,18 @@ endpoint badged to it: milestone 911 (scripted installs grant only what the owne
 allows), added 2026-10-12 (UTC). Fork 6 said automatic updates are an owner setting; 911 is what
 bounds one.
 
-This file stayed a proposal until 2026-10-09 (UTC). #1796's all-ruled proposal stayed one with its
-worklist, and milestone 809 was promoted only on calef's word. Every number below is the
-integrator's.
+## Only a new kernel reboots
 
-## A correction, first
-
-The first version of this proposal updated the whole base set through a boot slot, with a reboot.
-calef stopped it the same day: *"The whole system needs to be updatable through packages. The kernel
+calef, 2026-10-07 (UTC): *"The whole system needs to be updatable through packages. The kernel
 will need a reboot for now and that is fine. However should base updates require reboot? Why?"*
 Then, to the model below: *"Yes. We have discussed this before so it definitely needs updating in
 the tree."*
 
-He had. §159 (only a new kernel needs a reboot) ruled on 2026-09-19 that *"Upgrading a userspace
-component does not reboot the machine"*, and §208 (installing is granting) built on it four days
-later. The tree drifted from both, and this proposal followed the drift. §235 (the OS is built and
-updated from packages) put a full copy of the base in each slot. §229 (how a bare name reaches an
-installed program) refused any package that names a base program, because a slot would update it.
-§241 (a threadbare base) kept twelve programs whose only update was a reboot. Milestone 198 (a package
-manager) never carried the exit criterion §159 gave it. None of them cited §159. This lane's commit
-records the ruling as §159's amendment of 2026-10-07 and points each drifted record at it.
+§159 (only a new kernel needs a reboot), ratified 2026-09-19, is the rule: *"Upgrading a userspace
+component does not reboot the machine"*, and §208 (installing is granting) builds on it. §159's
+amendment of 2026-10-07 records this ruling. §235 (the OS is built and updated from packages),
+§229 (how a bare name reaches an installed program), §241 (a threadbare base) and milestone 198 (a
+package manager) point at it.
 
 ## The model, ruled
 

@@ -10,14 +10,10 @@ needs_person: yes
 ---
 # 833. The same storage benchmark on nife and Linux, by porting real fio
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks from the proposal
-`the-same-storage-benchmark-on-nife-and-linux`, under §262 (nife is measured with the field's
-standard benchmarks). The number is provisional until the merge queue lands it; the title and slug
-are drafts.)*
+*(The title and slug are provisional.)*
 
-Written by an agent, 2026-10-07 (UTC), at calef's request, from fatal risk 6's GREEN verdict
-(`design/fatal-risks/6-a-confined-driver-is-too-slow.md`) and milestone 261 (the NVMe driver leaves
-the kernel). calef, 2026-10-07: *"Of course we should port fio. That makes perfect sense."*
+It follows from fatal risk 6's GREEN verdict (`design/fatal-risks/6-a-confined-driver-is-too-slow.md`)
+and milestone 261 (the NVMe driver leaves the kernel). calef, 2026-10-07 (UTC): *"Of course we should port fio. That makes perfect sense."*
 
 **In brief.** Port real `fio` to nife and run the same binary and the same job file on both systems.
 Risk 6 went GREEN on one pair of numbers: nife's confined driver at 4 KiB, queue depth 1, against a
@@ -72,10 +68,8 @@ the Linux side. No nife-side benchmark program is written, so there is no shim t
 
 ## What it waits on
 
-Corrected 2026-10-10 (UTC). The C library this waited on exists. calef ruled the question on
-2026-10-08 as §265 (a C library started from relibc), and milestone 835 (a C library, stage 1:
-files, clock and memory) built its first stage in #1896. The fields now name 835 and §265 in place
-of `unwritten`. This program's other needs are below.
+The C library is §265 (a C library started from relibc), and its first stage, milestone 835 (a C
+library, stage 1: files, clock and memory), is built. This program's other needs are below.
 
 Threads. fio times its jobs with its own threads even when jobs are processes. Threads are milestone
 812 (`std::thread::spawn` runs real threads in one address space), option A of §105
@@ -85,9 +79,9 @@ threads.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+*§297 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
+included) binds this. calef, 2026-10-12 (UTC): "They should all be installed via jig through
+basalt."*
 
 fio must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

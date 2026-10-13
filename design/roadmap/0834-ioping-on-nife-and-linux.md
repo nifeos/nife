@@ -9,11 +9,9 @@ needs_person: yes
 ---
 # 834. ioping on nife and Linux, storage latency one request at a time
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks under §262 (nife is measured with the field's
-standard benchmarks). The number is provisional until the merge queue lands it; the title and slug
-are drafts.)*
+*(The title and slug are provisional.)*
 
-Written by an agent, 2026-10-08 (UTC), from calef's lean the same day: *"I'm leaning ioping now ...
+calef, 2026-10-08 (UTC): *"I'm leaning ioping now ...
 ioping beats SQLite to move our risks, but SQLite is way more useful."*
 
 In brief. Port unmodified `ioping` and run it on nife and on Linux on xenon, against the same files,
@@ -60,11 +58,9 @@ transcribed by hand.
 
 ## What it waits on
 
-Corrected 2026-10-10 (UTC). The C library this waited on is built. calef ruled the question on
-2026-10-08 as §265 (a C library started from relibc), and milestone 835 (a C library, stage 1:
-files, clock and memory) built it in #1896. ioping 1.3 already runs unmodified on nife under QEMU on
-all three architectures. What remains is the comparison on xenon. The fields now name 835 and §265
-in place of `unwritten`.
+The C library is §265 (a C library started from relibc), built as milestone 835 (a C library,
+stage 1: files, clock and memory). ioping 1.3 runs unmodified on nife under QEMU on all three
+architectures. What remains is the comparison on xenon.
 
 It needs nothing else that is missing. From memory, to be checked against the pinned source, ioping
 uses `open`, `pread` and `pwrite`, `clock_gettime` and `getopt`, with no threads and no `fork`. Of
@@ -82,9 +78,9 @@ cannot reach the board writes nothing rather than a TCG number.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+*§297 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
+included) binds this. calef, 2026-10-12 (UTC): "They should all be installed via jig through
+basalt."*
 
 ioping must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

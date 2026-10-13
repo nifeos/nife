@@ -10,8 +10,7 @@ promoted_from: the-actions-cache-horizon-is-charted
 ---
 # 822. The Actions cache horizon is charted
 
-*(Minted 2026-10-07 (UTC) by lane/actions-cache-budget on calef's ruling of fork 3 on #1814. The
-number is provisional until the merge queue lands it; the title and slug are drafts.)*
+*(calef ruled it as fork 3 on #1814, 2026-10-07 UTC. The title and slug are provisional.)*
 
 Written from the measurement in
 [notes/actions-cache-budget-2026-10-07.md](../../notes/actions-cache-budget-2026-10-07.md).

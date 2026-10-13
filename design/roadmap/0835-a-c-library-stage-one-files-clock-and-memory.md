@@ -10,15 +10,13 @@ needs_person: no
 ---
 # 835. A C library, stage 1: files, clock and memory
 
-*(Minted 2026-10-08 (UTC) by lane/c-library from calef's ruling the same day; number provisional
-until the merge queue lands it. The file name is a lane's coinage.)*
+*(The file name is provisional.)*
 
 calef chose relibc for nife's C library on 2026-10-08 (UTC), expecting "we end up building our own
 with a similar approach". §265 (a C library started from relibc) records the ruling.
 notes/c-library.md is the evaluation this stage is shaped by: take relibc's OS-neutral code and its
 `Pal` seam once, into an in-tree crate nife owns, and write the nife platform layer in Rust. This
-stage is the smallest library that runs a real C benchmark unmodified. It supersedes part of
-milestone 478 (tier three: full POSIX behind the foreign-language seam).
+stage is the smallest library that runs a real C benchmark unmodified.
 
 ## First consumers
 

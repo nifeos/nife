@@ -10,14 +10,9 @@ needs_person: yes
 ---
 # 831. SQLite's speedtest1 on nife and Linux, a real database workload
 
-*(Minted 2026-10-08 (UTC) by lane/standard-benchmarks from the proposal
-`sqlite-speedtest1-on-nife-and-linux`, under §262 (nife is measured with the field's standard
-benchmarks). The number is provisional until the merge queue lands it; the title and slug are
-drafts.)*
+*(The title and slug are provisional.)*
 
-Written by an agent, 2026-10-08 (UTC), at calef's request ("Yes" to one proposal per benchmark,
-2026-10-07/08). Model: milestone 833 (the same storage benchmark on nife and Linux, by porting real
-fio).
+Model: milestone 833 (the same storage benchmark on nife and Linux, by porting real fio).
 
 **In brief.** Port SQLite's `speedtest1` (one C file beside the amalgamation) and run it on nife and
 Linux with identical parameters. It is the cheapest real database workload there is.
@@ -57,11 +52,9 @@ Reuse: SQLite itself is taken unmodified; no benchmark program is written.
 
 ## What it waits on
 
-Corrected 2026-10-10 (UTC). The C library this waited on is built. calef ruled the question on
-2026-10-08 as §265 (a C library started from relibc), and milestone 835 (a C library, stage 1:
-files, clock and memory) built it in #1896. `speedtest1` already runs unmodified on nife under QEMU on
-all three architectures. What remains is the Linux comparison on silicon. The fields now name 835
-and §265 in place of `none` and `unwritten`.
+The C library is §265 (a C library started from relibc), built as milestone 835 (a C library,
+stage 1: files, clock and memory). `speedtest1` runs unmodified on nife under QEMU on all three
+architectures. What remains is the Linux comparison on silicon.
 
 Neither threads nor fork. SQLite builds single-threaded (`SQLITE_THREADSAFE=0`), and `speedtest1`
 runs in one process. Of the C programs here, this is the one the most people would run for its own
@@ -78,9 +71,9 @@ nothing rather than a TCG number.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+*§297 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
+included) binds this. calef, 2026-10-12 (UTC): "They should all be installed via jig through
+basalt."*
 
 `speedtest1` must run on nife installed by `jig install` from basalt's package index. basalt builds
 the package against the nife commit it pins. The install waits on milestone 809 (the package client

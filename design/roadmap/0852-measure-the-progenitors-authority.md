@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 852. Measure the progenitor's authority
 
-*(Minted 2026-10-09 (UTC) by lane/promote-proposals from the proposal `measure-the-progenitors-authority`. The number is provisional until the merge queue lands it; the title and slug are drafts.)*
-
+*(The title and slug are provisional.)*
 
 calef asked for this on 2026-10-06 (UTC): "Record a separate proposal to measure the progenitor's
 authority." He was ruling on #1783, milestone 805 (`reboot` at the prompt). That build had the

@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 846. The file-server core moves its tests out
 
-*(Minted 2026-10-08 (UTC) by lane split-milestones, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `redoxfs_server/src/lib.rs` is 4,785 lines at `0435a9aeb`, up from 3,806 on 2026-09-24. §266 (a
 Rust source file stays under 2,000 lines) sets the ceiling and a 2026-12-31 goal of no file over

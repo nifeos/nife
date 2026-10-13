@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 839. The kernel-side drivers take what they need as parameters
 
-*(Minted 2026-10-08 (UTC) by lane roadmap-rule2-and-sched-split, filed at calef's approval the
-same day; number provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 Codebase rule 2 says a driver never reaches into a kernel global: it gets a base address, "later a
 DMA allocator, later an interrupt registration". The driver crates underneath already obey it.

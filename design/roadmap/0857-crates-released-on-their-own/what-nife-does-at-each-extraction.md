@@ -1,8 +1,7 @@
 # What nife does at each extraction
 
-An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md),
-written 2026-10-11 (UTC) by lane/crate-release-gates at the maintainer's direction. None of it is
-built yet. Each item is built with the first extraction, milestone 813 (a proven FAT crate,
+An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md).
+None of it is built yet. Each item is built with the first extraction, milestone 813 (a proven FAT crate,
 released on its own), and every later extraction runs the same list.
 
 ## Before the first extraction
@@ -12,7 +11,7 @@ released on its own), and every later extraction runs the same list.
 - The tree-wide citation lint accepts a citation into a crate repository at a tag, by symbol, in
   the form §277 (cite a heading or a symbol, never a line number) allows. Until it does, repointing
   the citations below fails `script/lint`.
-- The crate's name is ratified (Fork 5 as amended 2026-10-11), and `script/crate-standalone` exits 0.
+- The crate's name is ratified (Fork 5), and `script/crate-standalone` exits 0.
 
 ## At each extraction
 

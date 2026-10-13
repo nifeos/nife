@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 845. The filesystem-protocol crate root is split along its seams
 
-*(Minted 2026-10-08 (UTC) by lane split-milestones, filed at calef's approval the same day; number
-provisional until the merge queue lands it. Title and slug are drafts.)*
+*(The title and slug are provisional.)*
 
 `crates/filesystem_protocol/src/lib.rs` is 5,744 lines at `0435a9aeb`. It was 5,327 on 2026-09-24,
 so it is the slowest grower of the six files over 4,000. §266 (a Rust source file stays under 2,000

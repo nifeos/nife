@@ -9,8 +9,7 @@ needs_person: no
 ---
 # 838. A C library: `posix_spawn`, and no fork
 
-*(Minted 2026-10-08 (UTC) by lane/c-library from calef's ruling the same day; number provisional
-until the merge queue lands it.)*
+*(The title and slug are provisional.)*
 
 The fork ruling on PR #1856 declines fork permanently and supports spawn. §265 (a C library started
 from relibc) follows it. relibc already routes `posix_spawn` through a platform call rather than
