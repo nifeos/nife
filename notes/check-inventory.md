@@ -83,12 +83,11 @@ had never once succeeded. The table of each one's cadence, result and purpose is
 
 Fifty-four files. Not all of them are checks: `apropos`, `bootstrap`, `setup`, `update`, `console`,
 `server`, `board-console`, `board-image`, `catch-up`, `qemu-check`, `ci-qemu` and
-`runner-container` are tools or provisioning. (`initboot` was on that list until milestone 296
-deleted it: it ran the same kernel `console` runs.) What follows is every entry point that renders a
+`runner-container` are tools or provisioning. What follows is every entry point that renders a
 verdict or a measurement, and who calls it.
 
-*The "called by" column was re-spelled 2026-09-13 by milestone 286, which retired `script/gates`
-into `script/ci-build`'s table; the measurements are still 2026-09-03's, taken under the old name.*
+*The "called by" column names `script/ci-build`'s table (milestone 286 (one enumeration of the
+checks that gate a pull request)); the measurements are 2026-09-03's.*
 
 | script | called by | blocks a merge | result 2026-09-03 |
 |---|---|---|---|
@@ -248,16 +247,12 @@ census found no fall (`notes/mutation-testing/the-first-weekly-censuses.md`).
   green means less than their name, and they were found by opening each file and asking. There is no
   reason to believe six is the whole set. Milestone 233's `login` was found by somebody asking what a
   passing check proved, and that remains the only known way to find the next one.
-- ~~The mutation failure is described, not diagnosed.~~ Diagnosed by milestone 238 on
-  2026-09-03, and both guesses in the original sentence were wrong. `--shard 4/4` is an argument
-  error, because cargo-mutants counts shards from zero, so shard 4 never ran a mutant and shard 0
-  never ran at all. The other deaths were first read as runner eviction, from a 60-second sampler
-  showing 10 to 15 GB free. That was wrong (corrected 2026-10-11 UTC, from the workflow header). At
-  10 seconds one mutant went from 1.4 GB to 15.8 GB in twenty seconds and took the runner down.
-  Milestone 277 (bound what one mutant may allocate) bounded it on 2026-09-12. See
-  notes/mutation-testing.md and the workflow header.
-  The reading that survives is the one this note made about the *category*: a scheduled check that
-  fails silently. That is why `script/cadence-check` exists.
+- The mutation failure is diagnosed (milestone 238). `--shard 4/4` is an argument error,
+  because cargo-mutants counts shards from zero, so shard 4 never ran a mutant and shard 0 never
+  ran at all. The other deaths were one mutant going from 1.4 GB to 15.8 GB in twenty seconds and
+  taking the runner down, which milestone 277 (bound what one mutant may allocate) bounds. See
+  notes/mutation-testing.md and the workflow header. The lesson is about the *category*: a
+  scheduled check that fails silently. That is why `script/cadence-check` exists.
 - The `result 2026-09-03` column for the required checks is read from `main`'s last run, not from
   a run of this branch. A check green on `main` this morning is not a promise about tonight.
 - `script/toolchain-bump`'s status is unknown and was not measured. Running it would raise the

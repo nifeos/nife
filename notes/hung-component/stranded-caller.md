@@ -1,11 +1,10 @@
 # The hung component: the caller a hang strands
 
-An appendix to [`notes/hung-component.md`](../hung-component.md), whose question 3 it supports. It
-describes the kernel as of 2026-08-17 (UTC), when the note was written. Since 2026-09-04, milestone
-133 (ending a permanently blocked thread, and deciding who may) lets the region holder end a blocked
-server. Milestone 254 (a caller stranded by a server that died) wakes the callers of a server that
-dies with `abi::Error::Gone`. A server that is hung and alive still strands its caller exactly as
-below.
+An appendix to [`notes/hung-component.md`](../hung-component.md), whose question 3 it supports.
+Milestone 133 (ending a permanently blocked thread, and deciding who may) lets the region holder end
+a blocked server. Milestone 254 (a caller stranded by a server that died) wakes the callers of a
+server that dies with `abi::Error::Gone`. A server that is hung and alive still strands its caller
+exactly as below.
 
 The path, from the code:
 

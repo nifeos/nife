@@ -7,7 +7,7 @@ The table is kept because it also says what each workflow is for, which no API c
 
 | workflow | cadence | last result | what it is for |
 |---|---|---|---|
-| `mutation testing` | 05:00 UTC Monday | failure through 08-31, never once succeeded; repaired in part by milestone 238, and the runaway-mutant memory kill left after it bounded by milestone 277 (bound what one mutant may allocate) on 2026-09-12 (corrected 2026-10-11) | milestone 85 (mutation testing over the host crates), the instrument behind fatal risk 3 |
+| `mutation testing` | 05:00 UTC Monday | failure through 08-31, never once succeeded; repaired in part by milestone 238, and the runaway-mutant memory kill bounded by milestone 277 (bound what one mutant may allocate) | milestone 85 (mutation testing over the host crates), the instrument behind fatal risk 3 |
 | `undefined-behavior check` | 06:00 UTC Monday | failure 08-10, 08-17, 08-24; cancelled 08-31; repaired by milestone 238 | milestone 79 (Miri over the host crates) |
 | `toolchain drift` | 07:00 UTC daily | failure 09-02, 09-03 | builds against the newest nightly; red is its signal, not a defect on `main` |
 | `audit cadence` | weekly | failure 08-17, 08-24, 08-31 | red means an audit is due; two are |

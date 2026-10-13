@@ -130,10 +130,9 @@ mistake:
 - TODOs that name a milestone. Mechanically checkable and not worth a mechanism: the whole tree
   has two, and one of them is a retrospective *about* a TODO that was already removed. A gate with
   one live subject is a gate nobody remembers exists.
-- Prose asserting the system lacks something it now has. `notes/stack.md` carried "we don't have
-  that" about guard pages from milestone 1 until 2026-08-14; milestone 4 built them and milestone 90
-  finished the job. Real, common, and **not checkable**: it needs a reader who knows the system, which
-  is milestone 117, the stranger test.
+- Prose asserting the system lacks something it now has, such as a note saying "we don't have that"
+  about guard pages that milestones 4 and 90 built. Real, common, and **not checkable**: it needs a
+  reader who knows the system, which is milestone 117 (the stranger test).
 
 ## Three relations, and equality is the wrong one for anything that moves
 

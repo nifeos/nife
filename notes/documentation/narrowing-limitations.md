@@ -1,9 +1,7 @@
 # The manual: two BUGS entries about narrowing, in full
 
-Moved from [`notes/documentation.md`](../documentation.md)'s BUGS on 2026-10-13 (UTC), to bring that
-note under the cap of §212 (a prose budget) by the graph's whole-file count. Three long sentences
-were split so the entries meet §213 (writing standards) as a document of their own; no fact changed.
-The note keeps one line for each.
+An appendix to [`notes/documentation.md`](../documentation.md)'s BUGS, which keeps one line for each
+under the cap of §212 (a prose budget).
 
 - The caretaker-hop display race is a known, accepted interim, not a bug this decision missed. A
   page's last line and the shell's next `$ ` prompt can interleave under contention. Kernel

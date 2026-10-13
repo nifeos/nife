@@ -75,9 +75,9 @@ behind proof work nobody can hurry.
 
 The sweep is a report, weekly (`.github/workflows/falsifications.yml`, 06:00 UTC Monday), with
 `script/mutation`'s posture deliberately copied. A **survivor** is a harness that stayed green with
-its own falsification applied, which is exactly the signal nothing in this tree could previously
-detect. A **stale** patch is one that no longer applies, which §134 argues is the mechanism working:
-the covered code moved, so the falsification must be redone rather than trusted.
+its own falsification applied, which is exactly the signal nothing else in this tree detects. A
+**stale** patch is one that no longer applies, which §134 argues is the mechanism working: the
+covered code moved, so the falsification must be redone rather than trusted.
 
 The per-pull-request half is a gate, in `verify.yml`, and the split is `script/lint`'s own: a
 patch that a commit staled is a defect in that commit, where a weekly survivor is a fact about the
@@ -185,13 +185,10 @@ detail is in [falsification/machine-discovery-sweep.md](falsification/machine-di
 
 ## BUGS
 
-- ~~The weekly sweep in CI has swept nothing since it was written, and reported success every
-  time~~. Fixed 2026-09-24. The step wrote its transcript (`tee sweep.txt`) into the checkout, which
-  `script/falsifications --sweep` read as a dirty tree and refused, and the pipe made the step exit
-  0. The transcript now goes to `$RUNNER_TEMP`. Found 2026-09-23 by a lane that dispatched
-  `falsifications.yml` and read the log rather than the green tick; the account is
-  `notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md`. *(Corrected 2026-10-13 (UTC): this
-  entry still read as open after the fix merged.)*
+- The weekly sweep's transcript goes to `$RUNNER_TEMP`, not the checkout: `script/falsifications
+  --sweep` refuses a dirty tree, and a `tee` into the checkout behind a pipe makes the step refuse
+  and still exit 0. Read the log, not the green tick. The account is
+  `notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md`.
 
 - The self-referential sweep cannot be a gate and cannot be repeated cheaply. No check
   distinguishes "asserts through the function under test" from "legitimately asserts agreement",
@@ -228,11 +225,9 @@ detail is in [falsification/machine-discovery-sweep.md](falsification/machine-di
   but it is a real limit of a 30-line derivation standing in for `syn`.
 - `kernel/src/arch/` carries no harnesses and gains nothing here. The architecture layer is
   outside this record entirely, the same scope gap §134 (a harness carries a machine-replayable
-  falsification record, or it is not evidence) names. (This entry used to say that is where "the
-  VisionFive 2's undelivered-wake defect actually lived." That reading is retracted,
-  `notes/visionfive2.md`'s fifth bench stop, 2026-08-15: it was a completed tour's terminal state,
-  not a stranded receiver, and never happened. Found still repeating it here 2026-09-23; §134 lives
-  in `design/decisions/` and was left for its own lane to correct, see that section's own text.)
+  falsification record, or it is not evidence) names. The VisionFive 2's "undelivered wake" was a
+  completed tour's terminal state, not a stranded receiver (`notes/visionfive2.md`'s fifth bench
+  stop), so no defect lives there.
 - A file's module path comes from the Cargo target it belongs to, and one shape defeats that.
   `components/src` holds 49 `[[bin]]` roots and two single-consumer `#[path]` modules that rule 7
   permits; `fixtures/src` holds 23.

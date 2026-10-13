@@ -184,10 +184,10 @@ through SBI, so it works on both.
   `cortex-a53` is the same exercise and the mechanism is already there.
 
   **Run by hand, `--cpu max` is the aarch64 model that has found something**, and the matrix would
-  have found it on the first run. Until 2026-09-19 the kernel refused to boot on `max` at all,
-  because `crates/machine_discovery` read `ID_AA64MMFR0_EL1.TGran4 = 0b0001` (4 KiB with
-  `FEAT_LPA2`, a stronger yes) as "no 4 KiB granule"; a real Armv8.7+ part would have been refused
-  the same way. After the fix, `cargo xtask test --arch aarch64 --cpu max` passed on 2026-09-19
+  have found it on the first run: `crates/machine_discovery` must read
+  `ID_AA64MMFR0_EL1.TGran4 = 0b0001` (4 KiB with `FEAT_LPA2`, a stronger yes) as a 4 KiB granule,
+  or a real Armv8.7+ part is refused at boot. `cargo xtask test --arch aarch64 --cpu max` passed on
+  2026-09-19
   (325 passed, 2 skipped, both skips unrelated to the model), including the `RNDRRS` entropy test
   the default `cortex-a72` always skips. So `max` is worth adding if the matrix grows an aarch64
   leg: it has the most features switched on, as `rv64` does on riscv64.

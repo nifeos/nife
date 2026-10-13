@@ -20,23 +20,15 @@ a summary of every sweep. These files carry the evidence its prose budget has no
 - [`machine-discovery-sweep.md`](machine-discovery-sweep.md): the 2026-09-23 sweep of
   `machine_discovery`, and the harness that did not exist.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `inductive-validity-cores` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes, after the main page's own heading.
-- `record-limit` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `milestone-212-scope` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes.
-- `six-real-records` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes,
-  after the main page's own heading.
-- `self-referential-sweep` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes.
-- `duplicated-implementation-sweep` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes.
-- `machine-discovery-sweep` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes.
+- `inductive-validity-cores` Name: provisional. Named after the main page's own heading.
+- `record-limit` Name: provisional.
+- `milestone-212-scope` Name: provisional.
+- `six-real-records` Name: provisional. Named after the main page's own heading.
+- `self-referential-sweep` Name: provisional.
+- `duplicated-implementation-sweep` Name: provisional.
+- `machine-discovery-sweep` Name: provisional.

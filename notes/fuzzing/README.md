@@ -12,18 +12,14 @@ These files carry the evidence its prose budget has no room for.
   showed the job is a sweep.
 - [`elf-seeds.md`](elf-seeds.md): why there is one ELF seed per machine, and what a seed buys.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `kani-and-fuzzing` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `not-fuzzed` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `why-cargo-fuzz` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes,
-  after the main page's own heading.
-- `three-bugs` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, after
-  the main page's own heading.
-- `ci-budget` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `elf-seeds` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
+- `kani-and-fuzzing` Name: provisional.
+- `not-fuzzed` Name: provisional.
+- `why-cargo-fuzz` Name: provisional. Named after the main page's own heading.
+- `three-bugs` Name: provisional. Named after the main page's own heading.
+- `ci-budget` Name: provisional.
+- `elf-seeds` Name: provisional.

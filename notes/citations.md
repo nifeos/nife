@@ -42,9 +42,8 @@ DECISIONS §24 (interrupting the foreground process)
 Both are self-checking: the parenthetical can be compared against the record's own title, which is
 the comparison neither existing gate can make. Write one and it binds.
 
-Until 2026-09-19 the other half of that sentence was "write the citation without a gloss and nothing
-new happens", and for everything already in the tree it still is. On a line a commit adds, it is
-no longer true: see the ratchet below.
+An existing citation without a gloss changes nothing. On a line a commit adds, the gloss is
+required: see the ratchet below.
 
 ### The tolerance rule
 
@@ -313,14 +312,13 @@ Each limit in one sentence. The full entries, with how each was found and what w
 - A wrong citation whose gloss is wrong in the same direction passes, and tier 2 is weaker the
   longer the target document.
 - Fenced code blocks in markdown are skipped, so a citation inside one is unchecked.
-- The ratchet reads the committed tip; since 2026-09-24 an uncommitted edit that adds or removes a
-  citing line fails the run with "Commit first".
+- The ratchet reads the committed tip; an uncommitted edit that adds or removes a citing line
+  fails the run with "Commit first".
 - A tool that reads only stdout can see this gate as clean while it fails; check the exit code.
 
-Two entries this list carried are resolved, and [citations/bugs.md](citations/bugs.md) says so
-beside each: a file whose only glossed citations were lettered is now scanned, and a gloss may wrap
-onto the line after its number. Both were closed by milestone 583 (`script/citations` could not see
-a citation a line break split, or a lettered milestone).
+A file whose only glossed citations are lettered is scanned, and a gloss may wrap onto the line
+after its number: milestone 583 (`script/citations` could not see a citation a line break split, or
+a lettered milestone).
 
 ## What it found on the first run
 

@@ -12,16 +12,11 @@ files carry the history its prose budget has no room for.
 - [`adding-a-count.md`](adding-a-count.md): the worked example of adding a marked count, with the
   derivation checked against real shapes and the gate's output on success and failure.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `first-runs` Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, after
-  the parent's own heading.
-- `the-ceiling` Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, after
-  the parent's own heading.
-- `adding-a-count` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-a, for the
-  parent's worked example moved under §212's cap.
+- `first-runs` Name: provisional. Named after the parent's own heading.
+- `the-ceiling` Name: provisional. Named after the parent's own heading.
+- `adding-a-count` Name: provisional. For the parent's worked example.

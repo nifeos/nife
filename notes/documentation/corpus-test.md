@@ -7,12 +7,10 @@ output, in order.
 ## A dropped image destination, which it caught
 
 A link and an image both show their destination, because a terminal cannot follow one or draw
-the other, so the path is the only thing a reader can act on. An image used to render as
-`[image: alt text]` with the path dropped, which named a picture the reader had no way to find.
-That was invisible until 2026-09-02, when notes/project-metrics.md became the first page under
-`notes/` to carry an image and `every_character_survives` failed on the missing bytes. The test is a
+the other, so the path is the only thing a reader can act on. Rendered as `[image: alt text]`
+alone, an image names a picture the reader has no way to find. `every_character_survives` is a
 subsequence check over the source, so a dropped destination is exactly what it exists to catch, and
-the first page that could trip it did.
+notes/project-metrics.md, which carries an image, trips it if the path goes missing.
 
 ## The bug the corpus test could not see, and the honest filter that kept it findable
 

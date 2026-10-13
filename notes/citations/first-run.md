@@ -1,7 +1,6 @@
 # Citations: what the gate found on its first run
 
-Moved verbatim from [`notes/citations.md`](../citations.md) on 2026-10-13 (UTC), to bring that note
-under the cap of §212 (a prose budget) by the graph's whole-file count.
+An appendix to [`notes/citations.md`](../citations.md), under the cap of §212 (a prose budget).
 
 ## What it found on the first run
 

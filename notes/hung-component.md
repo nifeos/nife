@@ -5,10 +5,10 @@ without dying. The swap itself is DECISIONS §41 and notes/live-replacement.md. 
 `ROLE_HUNG`, and `a_component_that_stops_answering_without_dying_is_invisible_to_its_supervisor` in
 `system_tests/src/user/live_swap_tests.rs`.*
 
-Corrected 2026-10-08 (UTC). Case (c) and question 3's stranded caller describe the kernel before
-2026-09-04. Milestone 133 (ending a permanently blocked thread, and deciding who may), ruled by calef
-on 2026-09-03, made the region holder's `DESTROY` finish a `Blocked` resident in place. Milestone
-254 (a caller stranded by a server that died) wakes its stranded callers with `abi::Error::Gone`.
+Case (c) and question 3's stranded caller are partly resolved in the kernel. Milestone 133 (ending
+a permanently blocked thread, and deciding who may), ruled by calef on 2026-09-03, makes the region
+holder's `DESTROY` finish a `Blocked` resident in place. Milestone 254 (a caller stranded by a
+server that died) wakes its stranded callers with `abi::Error::Gone`.
 Only a holder of the supervision endpoint alone still cannot end a child (133's refused proposal B).
 The two halves are tested apart, not together; milestone 23 (a capability-routed component OS with
 live replacement) records that task. notes/blocked-thread-teardown.md has the decision.

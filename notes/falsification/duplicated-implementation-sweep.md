@@ -87,8 +87,7 @@ limitation rather than a split.
 
 ### The negative half: two that have the shape and are not findings
 
-Recording these is not modesty. 211 found its own first draft wrong about one of these once, and
-a sweep that reports only its hits is unfalsifiable prose.
+Recording these is not modesty: a sweep that reports only its hits is unfalsifiable prose.
 
 `credential_protocol::a_request_word_round_trips_every_field` is blind on its own, and covered by
 its neighbor. It is an encoder round-tripped through its own decoder, which is 211's third

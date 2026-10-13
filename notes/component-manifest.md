@@ -261,11 +261,9 @@ for a program run by its path: owner `nife`, type 1 and the encoding were ratifi
 component are still endowed from a manifest compiled into their supervisor, not read from their
 own bytes; see `design/roadmap/0597-a-program-carries-its-manifest-in-an-elf-note.md`.
 
-Correction, 2026-09-26. This entry used to say the note option meant teaching `crates/elf` "section
-headers or notes", which would extend the parser this tree is most careful about. That joined two
-mechanisms. A `PT_NOTE` is a program header, in the table the crate already walks, so the crate
-stays program-headers-only; #1319 measured the reader at 113 lines, off the kernel's path. The
-premise was the reason this entry called the note option costly and the member cheaper.
+The note option does not teach `crates/elf` section headers. A `PT_NOTE` is a program header, in
+the table the crate already walks, so the crate stays program-headers-only; #1319 measured the
+reader at 113 lines, off the kernel's path.
 
 `Requirements::pages` is a property of the build, not of the contract, and it is the only field
 here that is. How many pages an instance needs depends on its image size, its stack and its page

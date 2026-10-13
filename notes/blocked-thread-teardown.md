@@ -256,9 +256,7 @@ See the precedent for unlinking a thread from an endpoint outside the region bei
 grep -n -B10 'remove_sender' kernel/src/sched.rs
 ```
 
-Read the taxonomy this note starts from, which is `notes/hung-component.md` on `main`. *(Corrected
-2026-10-11 (UTC): this example ran `git show` against the branch
-`origin/milestone/23-hung-component`, which no longer exists; the note merged.)*
+Read the taxonomy this note starts from, which is `notes/hung-component.md` on `main`.
 
 ## BUGS
 

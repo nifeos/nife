@@ -1,8 +1,7 @@
 # Counted claims: adding a new marked count, worked through
 
-Moved verbatim from [`notes/counted-claims.md`](../counted-claims.md)'s EXAMPLES on 2026-10-13
-(UTC), to bring that note under the cap of §212 (a prose budget) by the graph's whole-file count.
-The note keeps the five steps in short.
+An appendix to [`notes/counted-claims.md`](../counted-claims.md), whose EXAMPLES keep the five
+steps in short under the cap of §212 (a prose budget).
 
 Take the tree's harness count as the worked example, from nothing to gated.
 

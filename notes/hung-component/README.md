@@ -19,21 +19,15 @@ and evidence behind those answers, which its prose budget has no room for.
 - [`examples.md`](examples.md): the Rust examples, a watcher's `SURVEY` loop, its one-right
   endowment, and restoring a service under a hung component.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `the-armed-kill` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
-- `liveness-watch` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes,
-  after the provisional program name the note proposes.
-- `what-counts-as-hung` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes,
-  after the parent's question 2.
-- `stranded-caller` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
-- `the-wedge-test` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
-- `milestone-23-residuals` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fifth-ten-longest-notes, after the parent's own heading.
-- `examples` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-b, for the parent's
-  Rust EXAMPLES. calef names files.
+- `the-armed-kill` Name: provisional.
+- `liveness-watch` Name: provisional. Named after the provisional program name the note proposes.
+- `what-counts-as-hung` Name: provisional. Named after the parent's question 2.
+- `stranded-caller` Name: provisional.
+- `the-wedge-test` Name: provisional.
+- `milestone-23-residuals` Name: provisional. Named after the parent's own heading.
+- `examples` Name: provisional. For the parent's Rust EXAMPLES. calef names files.

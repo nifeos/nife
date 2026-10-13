@@ -1,7 +1,7 @@
 # The hung component: the code examples
 
-Moved verbatim from the EXAMPLES section of [`notes/hung-component.md`](../hung-component.md) on
-2026-10-13 (UTC) under §212 (a prose budget). The parent keeps the shell examples.
+An appendix to the EXAMPLES section of [`notes/hung-component.md`](../hung-component.md), under
+§212 (a prose budget). The parent keeps the shell examples.
 
 Watch the domain of a running supervisor from a program that cannot touch it. The pattern a
 `liveness_watch` would use, and it is `ps`'s loop with the acting half absent:

@@ -90,8 +90,7 @@ the readback is evidence and on riscv64 it is bookkeeping"). The residual gap is
 that keeps `DEADLINE` on the grid and arms SBI with something else, and it would pass every other
 test in this tree.
 
-It does not pass this one, proved by building it (see "The injections" below, which also corrects
-the expectation this paragraph used to state).
+It does not pass this one, proved by building it (see "The injections" below).
 
 aarch64 asserts the same thing, at the same site, for the reason rule 5 gives: a claim that holds on
 one ISA and is unmade on the other is the gap, not the parity.
@@ -106,18 +105,13 @@ spans across the two ISAs.
 
 **This is the quantity `MISSED_TICKS` has always been a coarse proxy for.** A miss is this number
 exceeding one whole tick period, which is **10,000,000 instructions of virtual time on both ISAs**:
-ten milliseconds at 100 Hz, and one instruction is one nanosecond. The missed-tick assertions could
-therefore only ever say "the handler did not take ten milliseconds", and could not tell a handler
-that took ten milliseconds from an emulator that was not running for ten milliseconds. The bounds
-here are about 4,000 times tighter and have no second explanation.
-
-*(Corrected 2026-08-18. This paragraph said "625,000 instructions of virtual time on aarch64",
-which is the tick interval in counter ticks wearing instructions' units: 625,000 counter ticks
-at 16 instructions each is the 10,000,000 above, and the run's own `tick_interval 625000 10000000`
-line prints both numbers side by side. The same slip is in the doc comment on `HANDLER_BOUND` in
-`kernel/src/arch/aarch64/timer.rs`, fixed in the same change, and it carried the understated "more
-than two orders of magnitude" with it. It is the mistake this whole note exists to make hard, made
-in the note: a number in the wrong unit, next to the right one.)*
+ten milliseconds at 100 Hz, and one instruction is one nanosecond. The missed-tick assertions can
+therefore only say "the handler did not take ten milliseconds". They cannot tell a handler that took
+ten milliseconds from an emulator that was not running for ten milliseconds. The bounds here are
+about 4,000 times tighter and have no second explanation. On aarch64 the tick is 625,000 counter
+ticks at 16 instructions each, and the run's own `tick_interval 625000 10000000` line prints both
+numbers side by side. Reading the first as instructions is a number in the wrong unit, the mistake
+this note exists to make hard.
 
 The bounds live in the arch layer (`ARRIVAL_BOUND`, `HANDLER_BOUND`) because the trap path is the
 arch's own. They are **ceilings with room for ordinary codegen movement, not baselines**: a change

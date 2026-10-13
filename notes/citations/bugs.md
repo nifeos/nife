@@ -48,7 +48,10 @@ commentary instead.
 The candidate pre-filter accepts a line that *ends* in a citation, because that is what a wrapped
 one looks like to a line-based `git grep`. That widens the file list from 649 to 853 and costs about
 a second. Tightening it for speed is how the gate goes blind again, and the selftest is what would
-notice.
+notice. It also accepts `[a-z]?` after the number (`PREFILTER` in `script/citations`), so a lettered
+citation, a number with a letter after it, puts its file on the list. The
+general shape: when a checker chooses its inputs with one pattern and reads them with another, the
+gap between the two is unreachable by any test that only runs the checker.
 
 ## A possessive gloss is not recognized, although the tree is full of them
 
@@ -171,30 +174,6 @@ cost is that a genuine citation inside a fence is unchecked. `script/lint`'s TOD
 of markdown for the same reason, so this is the narrower version of a carve-out the tree already
 makes.
 
-## Resolved: a file whose only glossed citations were lettered was not scanned at all
-
-Found by accident on 2026-08-16. The `git grep` that picks candidate files matched
-`[Mm]ilestone [0-9]+,? \(`, with no `[a-z]?` where the whole-file regex had one. So a lettered
-citation never put a file on the list:
-
-```
-Milestone 16b (DECISIONS §20, notes/iommu.md)
-```
-
-Three files were invisible to the gate for this reason (`design/decisions/0026-fault-endpoint.md`
-and both `iommu.rs` files), and every citation in them, lettered or not, went unchecked.
-`notes/trusted-init.md` was the fourth until milestone 94's blessing lane added an ordinary citation
-to it. That pulled the file onto the list and surfaced a lettered gloss that had never been read.
-The gate reported a defect on line 31 in response to an edit on line 167, which is how the blind
-spot was noticed at all. That one was fixed in the same lane; the other three were left, because
-fixing the pattern is one character and then four sites need rewording or an allowlist entry.
-
-Resolved since by milestone 583, whose pre-filter (`PREFILTER` in `script/citations`) now accepts
-`[a-z]?` after the number. Checked 2026-10-11 (UTC). The
-general shape is worth more than the bug: when a checker chooses its inputs with one pattern and
-reads them with another, the gap between the two is unreachable by any test that only runs the
-checker.
-
 ## Nothing checks `design/decisions/`'s index rows' own titles
 
 That is `script/decisions`' stated non-goal (a row may abbreviate), so a row that abbreviates
@@ -223,15 +202,6 @@ reads raw diff lines, fences and all), so it can ask for a commit that would not
 verdict; that is the cheap direction to be wrong in. Checking the working tree instead was refused,
 because it would make a local pass mean something different from a CI pass, which only ever sees
 commits.
-
-## Resolved: a gloss had to sit on the same line as its number
-
-This entry said the parenthetical is matched near its citation, so a citation at the end of a line
-whose gloss wraps onto the next one is read as unglossed, and the fix is to rewrap. It bit hardest in
-long table rows and in markdown wrapped at 100 columns. Milestone 583 made the scanner join one line
-break, and `script/citations --selftest` now pins a citation whose gloss is on the next, indented
-line ("split, and the next line is indented"). Checked 2026-10-11 (UTC). The limit that remains is
-the two-line-break one above.
 
 ## A tool that reads only stdout can report this gate as clean while it is failing
 

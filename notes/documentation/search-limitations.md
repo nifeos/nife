@@ -47,7 +47,7 @@ at that root, and a `cd` does not move the manual. A shell granted a *subtree* t
 
 ## The index ratio
 
-The index is 1.16x the markdown it indexes, per the table in [index-cost.md](index-cost.md), and it
-was 1.56x when phase 1 measured it. The floor is what moves it. Page alignment costs every bundle
+The index is 1.16x the markdown it indexes, per the table in [index-cost.md](index-cost.md). The
+floor is what moves it. Page alignment costs every bundle
 16 KiB however small, so the ratio improves as the bundles grow rather than because anything got
-better. This entry said 1.18x until 2026-10-11, while the table it cited gave 1.16x.
+better.

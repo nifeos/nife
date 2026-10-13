@@ -55,9 +55,9 @@ corpus, many full of the exact characters the other rules hunt for. If that orde
 
 ### The bug the corpus test could not see, and the honest filter that kept it findable
 
-A fenced code block opened inside a block quote never closed, from phase 1 until 2026-08-18, so one
-quoted transcript misrendered every line after it. `every_character_survives` could not see it,
-because verbatim output loses no characters. A unit test is the guard. The lesson generalizes: a
+A fenced code block opened inside a block quote must close inside it, or one quoted transcript
+misrenders every line after it. `every_character_survives` cannot see that failure, because verbatim
+output loses no characters. A unit test is the guard. The lesson generalizes: a
 subsequence check proves nothing was dropped and nothing about what was ruined, so a renderer wants
 both kinds of test. The bug, the filter that was left wrong on purpose and the measurement are in
 [documentation/corpus-test.md](documentation/corpus-test.md).
@@ -242,10 +242,9 @@ mdr: reads an input stream: name a file, redirect with '<', or pipe into it
 
 ## BUGS
 
-Three entries this list used to carry are resolved: `mdr <page>` renders at the prompt
-(DECISIONS §106 (take the `terminal_sink_caretaker` narrowing), 2026-08-22), a pipeline head now
-delivers its file, and ranking divides by page length. What each was and why, including the kernel's
-one wait point that made the first one hard, is in
+`mdr <page>` renders at the prompt (DECISIONS §106 (take the `terminal_sink_caretaker`
+narrowing)), a pipeline head delivers its file, and ranking divides by page length. Why each took
+what it did, including the kernel's one wait point that made the first one hard, is in
 [documentation/resolved-bugs.md](documentation/resolved-bugs.md).
 
 - A page's last line and the shell's next `$ ` prompt can interleave under contention: an

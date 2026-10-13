@@ -33,4 +33,3 @@ The `manual` row indexes the main page, so editing it moves its own numbers. Rer
 
 The number that justifies the layout is the last column. A lookup is at most six page reads and
 24 KiB of IO (`kernel`; the others take four or five), with no allocation and a 4 KiB working set.
-This said at most five until 2026-10-11, which the table's own `kernel` row contradicted.
