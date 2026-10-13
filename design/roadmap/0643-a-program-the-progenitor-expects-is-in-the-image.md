@@ -10,10 +10,8 @@ needs_person: no
 ---
 # 643. A program the progenitor expects is in the image, or the build says so
 
-Promoted from `design/roadmap/proposals/a-program-the-progenitor-expects-is-in-the-image.md` on 2026-10-03 (UTC). The number 643 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-This was raised by the `maintainer/audit-sink-rename` lane (#1228),
-which renamed `audit_sink` to `login_audit_receiver`. The file's name is provisional;
+*Title and slug are drafts.*
+This was raised by the rename of `audit_sink` to `login_audit_receiver` (#1228). The file's name is provisional;
 `design/naming.md` is the rule.
 
 Either option below is a host-side check or a transcript assertion. Neither touches

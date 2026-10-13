@@ -6,7 +6,7 @@ promoted_from: a-region-retypes-a-frame-run
 ---
 # 659. A region retypes a frame run
 
-Promoted from `design/roadmap/proposals/a-region-retypes-a-frame-run.md` on 2026-10-03 (UTC). The number 659 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-27: built on PR #1373, recorded as DECISIONS §233. *(Title and slug are drafts.)*
+Status BUILT 2026-09-27: built on PR #1373, recorded as DECISIONS §233. *(Title and slug are drafts.)*
 
 Raised by the lane for milestone 23 (a capability-routed component
 OS with live replacement) while starting the handoff page count the `line_editor` swap needs. Its

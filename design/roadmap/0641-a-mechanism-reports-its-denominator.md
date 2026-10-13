@@ -11,8 +11,7 @@ needs_person: no
 ---
 # 641. A mechanism that reports clean says over how many units, and zero is loud
 
-Promoted from `design/roadmap/proposals/a-mechanism-reports-its-denominator.md` on 2026-10-03 (UTC). The number 641 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 `a-mechanism-reports-its-denominator`: ratified 2026-09-23 (calef, reviewing
 `notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md` on pull request #1166). Raised by
 `notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md`, whose fifth why reaches a habit
@@ -113,7 +112,7 @@ prove trivia and the real bugs live where Kani cannot reach). `script/falsificat
 180 harnesses, `script/metrics` carries several ratios of the same family, and none of them states
 the population it drew from or what it excluded.
 
-**The survey is the deliverable, not the fix.** Walk the ratios this tree publishes, and for each
+The survey is the deliverable, not the fix. Walk the ratios this tree publishes, and for each
 one write down what its denominator counts and what falls outside it, beside the number. Whether a
 better denominator exists for the falsification ratio (lines, functions, public surface) is a real
 question with real costs and this proposal deliberately does not answer it; naming which numbers

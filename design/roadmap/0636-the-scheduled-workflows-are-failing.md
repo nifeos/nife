@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 636. The scheduled workflows are failing, and nothing says so
 
-Raised 2026-10-03 (UTC) by calef, minted by the maintainer the same day. The number is
-provisional until the merge queue lands it; the title and slug are drafts.
+Raised by calef (2026-10-03 UTC). The title and slug are drafts.
 
 ## Why
 

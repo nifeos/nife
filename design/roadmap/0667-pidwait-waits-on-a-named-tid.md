@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 667. `pidwait`: a way to wait on a named tid with less authority than `pgrep`'s
 
-Promoted from `design/roadmap/proposals/pidwait-waits-on-a-named-tid.md` on 2026-10-03 (UTC). The number 667 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by milestone 126 (the `procps` package)'s lane
-`milestone/126-free`, building `pidwait` under DECISIONS §226 (`pidwait` takes tids and composes with
-`pgrep`), and moved out of 126 when the build found it needs a new kernel method.
+*Title and slug are drafts.*
+Raised by milestone 126 (the `procps` package), building `pidwait` under DECISIONS §226 (`pidwait`
+takes tids and composes with `pgrep`). It is a milestone of its own because it needs a new kernel
+method.
 
 The wait primitive is a method on the syscall surface, so it is calef's, and
 the options are written but not chosen.

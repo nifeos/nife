@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 655. DMA on a non-coherent RISC-V machine
 
-Promoted from `design/roadmap/proposals/dma-on-a-non-coherent-risc-v-machine.md` on 2026-10-03 (UTC). The number 655 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane that measured milestone 89 (Scaleway EM-RV1: a
 second RISC-V implementation, rented)'s distance. Name provisional, this file's slug only.
 

@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 638. The soak supervisor is a program too
 
-Promoted from `design/roadmap/proposals/the-soak-supervisor-is-a-program-too.md` on 2026-10-03 (UTC). The number 638 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by calef, asking whether any other special kernel build
 should be a userspace program instead, after milestone 523 (moving the job-mix supervisor into userspace) was
 minted for the same reason.

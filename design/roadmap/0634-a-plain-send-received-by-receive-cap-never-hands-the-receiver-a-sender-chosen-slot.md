@@ -10,15 +10,13 @@ needs_person: no
 ---
 # 634. A plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen slot
 
-*(Number and title provisional: the integrator confirms both at merge. Minted by the maintainer on
-calef's 2026-10-03 UTC ruling to launch this fix now. It drives fatal risk 7, the confinement
-claim.)* Found by the lane for milestone 613 (a system log service: the in-memory
-half), PR #1494, while it audited the tree's `RECV` consumers for calef's ruling that a plain `SEND`
-carries its capability's badge. The audit found that the `RECV_CAP` path a server uses to receive a
-`CALL`'s reply slot hands a plain `SEND`'s sender a free choice of what lands in `x1`, the register
-a server reads as a capability slot. Two escapes were confirmed under QEMU before any fix. This is
+*(Title provisional. It drives fatal risk 7, the confinement claim.)* The `RECV_CAP` path a server
+uses to receive a `CALL`'s reply slot hands a plain `SEND`'s sender a free choice of what lands in
+`x1`, the register a server reads as a capability slot. An audit of the tree's `RECV` consumers
+found it, for calef's ruling that a plain `SEND` carries its capability's badge (milestone 613 (a
+system log service: the in-memory half), PR #1494). Two escapes were confirmed under QEMU before any fix. This is
 within the established capability model: a semantics fix to one delivery path, no new method and no
-new syscall number, so it needed no architect fork beyond the ruling to proceed.
+new syscall number.
 
 ## Why: what each arrival order left in the registers
 

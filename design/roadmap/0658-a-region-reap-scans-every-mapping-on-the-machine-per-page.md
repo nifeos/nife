@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 658. A region reap scans every mapping on the machine, once per page
 
-Promoted from `design/roadmap/proposals/a-region-reap-scans-every-mapping-on-the-machine-per-page.md` on 2026-10-03 (UTC). The number 658 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane for milestone 604 (the builder's scratch cursor is bounded), whose guest test
 runs in 3 seconds alone and took 104 inside CI's whole aarch64 suite.
 

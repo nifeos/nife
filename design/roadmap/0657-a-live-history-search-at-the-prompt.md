@@ -10,10 +10,8 @@ needs_person: no
 ---
 # 657. A live history search at the prompt
 
-Promoted from `design/roadmap/proposals/a-live-history-search-at-the-prompt.md` on 2026-10-03 (UTC). The number 657 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the coordinator's brief to milestone 47 (navigation and
-naming)'s lane `milestone/47-line-editing`, recorded rather than built. The stem is provisional.
+*Title and slug are drafts.*
+Raised by milestone 47 (navigation and naming), recorded rather than built. The stem is provisional.
 
 Shell-side, in `crates/line_editor` (DECISIONS §227 (how Tab reaches the shell)
 option D put the engine in the shell).

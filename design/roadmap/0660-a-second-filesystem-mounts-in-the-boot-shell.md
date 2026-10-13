@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 660. A second filesystem mounts in the boot shell
 
-Promoted from `design/roadmap/proposals/a-second-filesystem-mounts-in-the-boot-shell.md` on 2026-10-03 (UTC). The number 660 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 154 (a process that holds two directory
 capabilities). It built the mechanism and was closed BUILT without wiring a second tree into the
 interactive shell, on calef's instruction. Name provisional: this file's stem is a lane's coinage.

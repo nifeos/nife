@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 664. Build the firmware-screen terminal in userspace
 
-Promoted from `design/roadmap/proposals/build-the-firmware-screen-terminal-in-userspace.md` on 2026-10-03 (UTC). The number 664 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by lane `milestone/600-userspace-graphical-stack` (milestone 600
-(provisional), the graphical terminal stack is built in userspace). It moved the virtio-gpu stack's
-construction into the progenitor and found the firmware-screen terminal still built by the kernel.
+*Title and slug are drafts.*
+Raised by milestone 600 (the graphical terminal stack is built in userspace), which builds the
+virtio-gpu stack in the progenitor. The firmware-screen terminal is still built by the kernel.
 
 Ordinary work, unless the handover below turns out to need a new kernel method, in
 which case that part is calef's.

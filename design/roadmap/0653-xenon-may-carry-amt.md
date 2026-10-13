@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 653. xenon may carry Intel AMT, which would power-cycle it and give it a console with nobody at the desk
 
-Promoted from `design/roadmap/proposals/xenon-may-carry-amt.md` on 2026-10-03 (UTC). The number 653 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane that brought milestone 249 (the boot lottery is sampled by a person walking to the board)'s reboot to `x86_64`,
 while pricing hang recovery that needs no person. Milestone 87 (the x86_64 bare-metal machine) chose a smart plug over management
 firmware (`design/roadmap/0087-x86-machine.md`, "Remote power cycling by smart plug, not by management

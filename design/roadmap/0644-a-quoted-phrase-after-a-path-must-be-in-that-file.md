@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 644. A phrase quoted after a path must still be in that file
 
-Promoted from `design/roadmap/proposals/a-quoted-phrase-after-a-path-must-be-in-that-file.md` on 2026-10-03 (UTC). The number 644 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the 2026-09-24 documentation audit
 (`design/audit-reports/2026-09-24-split-documents-read-from-the-inbound-side.md`), whose lens was
 the day's document splits read from the side of the files that cite them. **Name provisional**, this

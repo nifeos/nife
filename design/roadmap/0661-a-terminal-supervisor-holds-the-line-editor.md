@@ -6,7 +6,7 @@ promoted_from: a-terminal-supervisor-holds-the-line-editor
 ---
 # 661. A terminal supervisor holds the line editor
 
-Promoted from `design/roadmap/proposals/a-terminal-supervisor-holds-the-line-editor.md` on 2026-10-03 (UTC). The number 661 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
+Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
 
 Raised by the lane for milestone 23 (a capability-routed component
 OS with live replacement) on reaching step 4 of the `line_editor` swap, "the swap in

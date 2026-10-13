@@ -10,11 +10,8 @@ needs_person: no
 ---
 # 663. Bound the host pass, so a test that spins fails instead of running for days
 
-Promoted from `design/roadmap/proposals/bound-the-host-pass.md` on 2026-10-03 (UTC). The number 663 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by #1323 (a doctest that spun forever under a mutant). The
-maintainer's delegate filed it, since the lane that found it could only name it in a pull request
-body. The title is provisional.
+*Title and slug are drafts.*
+Raised by #1323 (a doctest that spun forever under a mutant). The title is provisional.
 
 The change is inside `xtask`, touches no syscall surface and needs no dependency.
 

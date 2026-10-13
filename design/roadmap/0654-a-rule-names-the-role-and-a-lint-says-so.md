@@ -10,13 +10,10 @@ needs_person: no
 ---
 # 654. A present-tense rule names the architect role, and a lint says so
 
-Promoted from `design/roadmap/proposals/a-rule-names-the-role-and-a-lint-says-so.md` on 2026-10-03 (UTC). The number 654 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the `maintainer/architect-role-census` lane, which swept
-the tree for sentences assuming calef is the only architect (calef, 2026-09-25 UTC: *"I want to
-strike all assumptions from the tree that I am the only architect so that when we have another we
-need not scour."*) and was asked to add a lint that stops new ones, only if it could be made
-precise. It could not, yet. **Name provisional**: this file's stem is a lane's coinage.
+*Title and slug are drafts.*
+calef, 2026-09-25 UTC: *"I want to strike all assumptions from the tree that I am the only
+architect so that when we have another we need not scour."* A lint that stops new ones is wanted
+only if it can be made precise, and it cannot yet. **Name provisional**: this file's stem is a lane's coinage.
 
 A lint in `script/lint` is reversible in AGENTS.md's sense: nothing outside this
 repository reads it.

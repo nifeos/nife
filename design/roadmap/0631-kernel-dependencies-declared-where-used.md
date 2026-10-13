@@ -6,10 +6,7 @@ promoted_from: kernel-dependencies-declared-where-used
 ---
 # 631. The kernel declares each dependency where it is used
 
-Built 2026-10-03. Promoted from `design/roadmap/proposals/kernel-dependencies-declared-where-used.md`,
-which the maintainer raised on 2026-10-02 (UTC) to ask calef about a feature split, and which carries
-the original argument in its git history. *(Number provisional until the merge queue lands it; the
-proposal's body said 625, which milestone 625 (fatal risk colors, counted by week) has since taken.)*
+Built 2026-10-03.
 
 **calef ruled on 2026-10-03 (UTC), on PR #1477: `tock-registers` moves into the aarch64 target
 table as proposed, and option B for `memory_corruption_canary_gate`.** No new feature, no default

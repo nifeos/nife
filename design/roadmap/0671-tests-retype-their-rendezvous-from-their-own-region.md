@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 671. Tests retype their rendezvous from their own region, so the registry stops filling
 
-Promoted from `design/roadmap/proposals/tests-retype-their-rendezvous-from-their-own-region.md` on 2026-10-03 (UTC). The number 671 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Filed by the lane of milestone 601 (the region table prints its
 peak), from the rendezvous ledger at `sched::PEAK_RENDEZVOUS`. The title is provisional.
 

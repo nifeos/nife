@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 639. Which benchmarks must be the kernel, and which are just programs
 
-Promoted from `design/roadmap/proposals/which-benchmarks-must-be-the-kernel.md` on 2026-10-03 (UTC). The number 639 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by calef, asking which other special kernel builds should be
 userspace programs. `bench` is the one that cannot be answered without measuring, which is why it is
 a proposal rather than a lane.

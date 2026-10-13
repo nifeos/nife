@@ -10,12 +10,10 @@ needs_person: no
 ---
 # 647. A virtio slot should come back when its driver dies
 
-Promoted from `design/roadmap/proposals/a-virtio-slot-comes-back-when-its-driver-dies.md` on 2026-10-03 (UTC). The number 647 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by milestone 198 (a package manager)'s rung 3a consumer
-lane, whose package-fetch test was the first thing to run the virtio device table out after its
-thirty-third slot: both QEMU legs panicked with `more virtio devices than MAX_DEVICES` in CI. The
-lane took the tenth bump (to 34) and wrote this down. `kernel/src/virtio.rs`'s own comment
+*Title and slug are drafts.*
+Raised by milestone 198 (a package manager)'s rung 3a, whose package-fetch test ran the virtio
+device table out after its thirty-third slot: both QEMU legs panicked with `more virtio devices
+than MAX_DEVICES` in CI, and `MAX_DEVICES` took its tenth bump. `kernel/src/virtio.rs`'s own comment
 on `MAX_DEVICES` names the unregister as "the next lane's work item"; a bump is not that.
 **Name provisional**: this file's stem is a lane's coinage.
 

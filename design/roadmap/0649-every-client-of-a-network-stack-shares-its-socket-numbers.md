@@ -11,8 +11,7 @@ needs_person: no
 ---
 # 649. Every client of a network stack shares its socket numbers
 
-Promoted from `design/roadmap/proposals/every-client-of-a-network-stack-shares-its-socket-numbers.md` on 2026-10-03 (UTC). The number 649 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 590 (the booted system starts its network
 stack), whose number is provisional, which gave programs at the prompt a `WRITE` view of one
 `net_stack` endpoint and had to say in `caps` what that view does not narrow.
@@ -62,13 +61,12 @@ argued for from scratch.
 calef ruled the shape on 2026-10-07 (UTC), recorded on PR #1798 at 15:04Z: each socket is its own
 capability. The stack mints a badged endpoint per socket on open, and every later call is made on it.
 The stack names the socket by the kernel-stamped badge, so `socket_protocol` drops the `sid`. Close
-unbinds the badge, and a socket moves to another program by passing the capability. That supersedes
-his per-caller-windows ruling of about 03:50Z the same day, and it refuses this block's option 1 as
-written ((badge, sid) keying) and its option 3.
+unbinds the badge, and a socket moves to another program by passing the capability. It refuses
+this block's option 1 as written ((badge, sid) keying) and its option 3.
 
-Building it found that a reply could not carry the minted capability, and that `SEND_CAP` would park
-the one-threaded stack on any client that never receives. calef ruled that fork the same day, on PR
-#1817 at 15:23Z: option A, a new Reply method that carries one capability. §255 (each socket is its
+A reply cannot carry the minted capability through a plain `REPLY`, and `SEND_CAP` would park the
+one-threaded stack on any client that never receives, so calef ruled (2026-10-07, PR #1817): option
+A, a new Reply method that carries one capability. §255 (each socket is its
 own capability), number provisional, records both rulings, the method's semantics and the contract.
 
 Reuse: none exists to take. The contract and the stack are this tree's own; the method follows
@@ -76,7 +74,7 @@ seL4's reply-carries-a-capability and Fuchsia's `zx_channel_call`, read for §25
 
 ## Result
 
-Built by lane/649-sockets-are-capabilities (PR #1817), on aarch64, riscv64 and x86_64.
+Built on aarch64, riscv64 and x86_64 (PR #1817).
 
 - The kernel method. `abi::reply::REPLY_CAPABILITY` (method 1 on a Reply; name ratified 2026-10-07 UTC, number provisional): answers a
   `CALL` and files a `GRANT`-checked copy of one capability in the caller's table, whose `CALL`

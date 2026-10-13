@@ -6,7 +6,7 @@ promoted_from: swap-line-editor-live-under-system-initializer
 ---
 # 669. Swap `line_editor` live under `system_initializer`
 
-Promoted from `design/roadmap/proposals/swap-line-editor-live-under-system-initializer.md` on 2026-10-03 (UTC). The number 669 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
+Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
 
 Raised by the lane for milestone 23 (a capability-routed component
 OS with live replacement), which built state handoff and then checked why the interactive stack is

@@ -6,10 +6,9 @@ promoted_from: designating-a-foreign-programs-words
 ---
 # 665. Designating a foreign program's words
 
-Promoted from `design/roadmap/proposals/designating-a-foreign-programs-words.md` on 2026-10-03 (UTC). The number 665 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-28: built by milestone 205 on PR #1402. *(Title and slug are drafts.)*
+Status BUILT 2026-09-28: built by milestone 205 on PR #1402. *(Title and slug are drafts.)*
 
-Raised by milestone 205 (how a foreign program is told what to do)'s lane,
-`milestone/205-foreign-program-arguments`. That lane built §170 (how a foreign program is told what to do)'s clause 1: a `std` program at the
+Raised by milestone 205 (how a foreign program is told what to do), which built §170 (how a foreign program is told what to do)'s clause 1: a `std` program at the
 prompt hears its line as bytes. This is clauses 2 to 5, which turn the words that name something
 into a grant. The slug and every name below are a lane's coinage.
 

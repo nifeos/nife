@@ -10,12 +10,12 @@ needs_person: no
 ---
 # 632. Graphics on demand: `graphical_terminal`, launched from the swish prompt
 
-*(Number and title provisional; the integrator confirms the number at merge.)* calef, 2026-09-30:
+*(Title provisional.)* calef, 2026-09-30:
 *"I don't want graphics at boot and won't for a long time. Change to launching a program from the
 swish prompt to get graphics; graphics is going to sit there largely unused for some time."*
 
 The ruling reverses the boot half of milestone 177 (wire the graphical terminal stack into the real
-interactive boot). Every `--features shell` boot is now the minimal UART system of DECISIONS §26
+interactive boot). Every `--features shell` boot is the minimal UART system of DECISIONS §26
 (the fault endpoint: thread death becomes a message a supervisor holds). A gpu on the bus changes
 only who holds the grants. The answer is the shell, until a person at the prompt delegates them
 into a session. Milestone 600's mechanism survives whole; only its moment moved, from the boot to
@@ -47,8 +47,8 @@ the launch.
   drops the authority the user asked for. On a launch the shell delegates the seven caps, narrowed
   to the rights the boot endowment carried. It keeps its own copies, so a session can run again.
 - The launch belongs to the spawn service (`build_graphical_terminal_session`). Milestone 600 (the graphical
-  terminal stack is built in userspace)'s builder moved from the boot into the `Prog::GraphicalTerminal`
-  branch. It refuses anything but the exact shape: the program and the caps together, and the
+  terminal stack is built in userspace)'s builder lives in the `Prog::GraphicalTerminal` branch.
+  It refuses anything but the exact shape: the program and the caps together, and the
   keyboard bit exactly when the boot's verdict says. Everything is carved from one 528-page job
   region. The session program is born supervised on `deaths` like any job, so its one reap sweeps
   the drivers with it. The drivers are unsupervised for `build_caretaker`'s recorded reason: a death
@@ -57,30 +57,27 @@ the launch.
 
 ## What proves it
 
-`script/swish-check`, on aarch64 and riscv64 (until 2026-10-03 UTC these were `--graphical` and
-`--graphical-serial` and a CI job of their own; see the fold line below). Two of each leg's boots
+`script/swish-check`, on aarch64 and riscv64 (see the fold line below). Two of each leg's boots
 attach a gpu. Each asserts the swish prompt on the serial console first, which is the claim that the
 boot stayed minimal, then types `graphical_terminal` over the UART. It requires the session's `$ `
 prompt on the screen and one keystroke echoed back. The keystroke goes by `sendkey` through the
-session's keyboard in one boot and by the raw UART round trip in the other. The old graphical boot
-legs are retired: the boot they booted no longer exists, and the retarget subsumes their claim. The
+session's keyboard in one boot and by the raw UART round trip in the other. The
 first boot of every leg, on all three ISAs, attaches no gpu and types `graphical_terminal` too,
 requiring the refusal sentence.
 
-**2026-10-03 (UTC), the `swish-check-graphical` job folded into `swish-check`** (calef's ruling: a
-job of its own cost a runner and about ten minutes of build per pull request for about a minute of
-boots). A launch ends the boot it is typed into, so each aarch64 and riscv64 leg is three boots.
+**The graphical legs are part of `swish-check`, not a job of their own** (calef's ruling,
+2026-10-03 UTC: a job of its own cost a runner and about ten minutes of build per pull request for
+about a minute of boots). A launch ends the boot it is typed into, so each aarch64 and riscv64 leg is three boots.
 The first is the full script with no gpu, which keeps the refusal covered on all three ISAs at no
 extra boot. The second runs the after-reboot script, then attaches a gpu with no keyboard (the UART
 arm, the boards' configuration). The third is scriptless, with a gpu and a keyboard (the `sendkey`
 arm). Both arms stay because they test different drivers and cost about thirteen seconds a boot. The
-flags are removed and refuse themselves. The required check `swish-check-graphical (the shell on the
-graphical console)` no longer posts, so the ruleset must stop requiring it.
+`--graphical` and `--graphical-serial` flags refuse themselves.
 
 ## BUGS
 
-- `GRAPHICAL_TERMINAL_SESSION_PAGES` is 528. The count from the constants said 464, and CI's
-  graphical leg failed every launch at that size (2026-10-03). Bisected on the keyboard arm, a
+- `GRAPHICAL_TERMINAL_SESSION_PAGES` is 528, not the 464 the constants add up to, because a launch
+  fails at 464. Bisected on the keyboard arm, a
   session needs 490 to 493 pages on aarch64 and 494 to 495 on riscv64. While a session runs, its
   region is 528 of the pool's 672 pages, so a `std` job and a second session are refused until it
   ends. The serial arm builds one child fewer and was not bisected separately.
@@ -93,17 +90,13 @@ graphical console)` no longer posts, so the ruleset must stop requiring it.
   whether they exit on a swept endpoint.
 - A session cannot be interrupted under §24 (interrupting the foreground process). It ends on its
   own, so a second `^C` cannot escalate and a hung session holds its region until reboot.
-- The boot now carries the seven device grants from kernel spawn until the shell's build. The
-  previous shape deleted them mid-boot. With a gpu, a keyboard, a virtio-rng and a NIC attached,
+- The boot carries the seven device grants from kernel spawn until the shell's build. With a gpu, a keyboard, a virtio-rng and a NIC attached,
   that resting baseline is counted from the code, not measured. No gate boots all four devices.
-- A boot with a gpu and a keyboard peaks at 26 capability slots and a launch at 28 (2026-10-03,
-  aarch64 and riscv64), so `CAPABILITY_TABLE_PEAK_MEASURED` is raised to 28. A boot with no gpu
-  peaks at 24, so it has four slots of slack before that record fires. Which grants sit on the
-  peak is not traced. **Corrected 2026-10-03 (UTC) by the fold.** The fold made the plain legs' slot gauge read the
-launch, which the graphical legs never did. The keyboard arm's launch peaks at **30** on both ISAs.
-The serial arm, with the plain legs' NIC and virtio-rng, peaks at 27. The record is now 30 and the
-headroom two. The keyboard boot leaves its NIC off to stay the configuration this milestone
-measured; with the NIC on, it also reads 30.
+- Measured 2026-10-03 on aarch64 and riscv64: a boot with a gpu and a keyboard peaks at 26
+  capability slots and a boot with no gpu at 24. The plain legs' slot gauge reads the launch: the
+  keyboard arm's launch peaks at **30** on both ISAs, with or without the NIC, and the serial arm,
+  with the plain legs' NIC and virtio-rng, at 27. `CAPABILITY_TABLE_PEAK_MEASURED` in
+  `kernel/src/cap.rs` holds the tree's record. Which grants sit on the peak is not traced.
 - x86_64 has no `graphical_terminal` session. No virtio-gpu is wired there, the verdict answers empty, and
   `graphical_terminal` is refused with the sentence, which the plain swish-check legs assert on all three ISAs.
   The plan for the launch itself is milestone 270 (wire `virtio-gpu-pci` and `virtio-input` into the
@@ -117,9 +110,7 @@ measured; with the NIC on, it also reads 30.
   behind `intel-iommu` has never run on x86_64, and the four display tests that skip there say so.
   (3) Keystrokes: the UART arm needs no new driver. The session reads the boot's line discipline
   raw. On x86_64 that is already fed by the progenitor's `input` over a COM1 `PortRange` capability
-  (milestones 299 and 505, DECISIONS section 121 reversed 2026-09-15), which is how swish-check's
-  x86_64 leg types today. Milestone 192's "the serial source refuses itself" described the retired
-  kernel-side `input_service::start_direct`. The keyboard arm would be `virtio-input` over PCIe, the
+  (milestones 299 and 505), which is how swish-check's x86_64 leg types today. The keyboard arm would be `virtio-input` over PCIe, the
   same arch-neutral driver, behind the same runner flag. (4) Screen: the OVMF runner emulates VGA
   with `-display none` and the firmware console tee (milestone 400) paints it. A `screendump` must
   name the virtio-gpu's console, as the aarch64 runner does for ramfb. (5) Re-bisect the page count
@@ -145,5 +136,5 @@ calef's 2026-09-30 ruling reverses milestone 177's boot half. Every boot is the 
 and the shell holds the display devices' seven grants at slots 22-28. A new `graphical_terminal` program,
 launched from the prompt, takes them by delegation. The progenitor builds the session's driver,
 terminal and (with a keyboard) discipline from one supervised region. Launch proven on aarch64 and riscv64
-by `script/swish-check`'s aarch64 and riscv64 legs (folded in from the `--graphical` legs on 2026-10-03 UTC); the refusal, on all three. Without a keyboard, a session reads the boot
+by `script/swish-check`'s aarch64 and riscv64 legs; the refusal, on all three. Without a keyboard, a session reads the boot
 discipline raw over the UART: milestone 192's option A at launch.

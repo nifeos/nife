@@ -16,10 +16,9 @@ harnesses `arch "arm64"`. It was green after the patch fix, in `verify` run 3710
 `41601b1e2`. There, 7 of 7 verified and every linked binary carried the model Kani wrote, with
 `os "linux"` added by the link and not judged. On patagonia, CBMC run directly on both sets of linked binaries gave the same
 property statuses and SAT variable and clause counts. The changed patch cost one cold Kani build in
-CI, 140 to 145 s, about 3 minutes for the job. Promoted from `design/roadmap/proposals/riscv64-proofs-check-against-the-riscv64-model.md`; the maintainer minted the number on 2026-10-03 and the lane `milestone/635-riscv64-proof-model` took it. *(Title and slug are drafts.)*
+CI, 140 to 145 s, about 3 minutes for the job. *(Title and slug are drafts.)*
 
-Raised by the `lane/kani-upstream` lane on 2026-10-03 (UTC), after calef approved a follow-up for
-the architecture overwrite that tautschnig traced in review of
+This follows up the architecture overwrite that tautschnig traced in review of
 [model-checking/kani#4913](https://github.com/model-checking/kani/pull/4913). The parent record is
 [`notes/kani-upstream.md`](../../notes/kani-upstream.md).
 

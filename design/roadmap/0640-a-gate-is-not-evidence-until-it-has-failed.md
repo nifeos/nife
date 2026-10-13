@@ -11,8 +11,7 @@ needs_person: no
 ---
 # 640. A gate is not evidence until somebody has watched it fail
 
-Promoted from `design/roadmap/proposals/a-gate-is-not-evidence-until-it-has-failed.md` on 2026-10-03 (UTC). The number 640 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 `a-gate-is-not-evidence-until-it-has-failed`: ratified 2026-09-23 (calef, reviewing
 `notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md` on pull request #1166). It stays
 beside `design/roadmap/0641-a-mechanism-reports-its-denominator.md` rather than folding into it,

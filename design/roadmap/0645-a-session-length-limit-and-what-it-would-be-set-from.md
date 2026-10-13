@@ -10,13 +10,12 @@ needs_person: no
 ---
 # 645. A session length limit, and what it would be set from
 
-Promoted from `design/roadmap/proposals/a-session-length-limit-and-what-it-would-be-set-from.md` on 2026-10-03 (UTC). The number 645 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by calef on 2026-09-24, after a measurement across this
 project's session records showed that 98% of every token spent is a cache read and 0.1% is
 output. A turn costs roughly the size of its context, not the size of its thought. He asked the
 question this file exists to answer: *"How do we set a checkpoint to re-evaluate that will not be
-forgotten?"* The lane that built the measurement wrote this block.
+forgotten?"*
 
 The threshold is an architect's, and it is deliberately not being chosen yet.
 `AGENTS.md`'s *measure first, then decide* rules that a threshold set before the data exists is no

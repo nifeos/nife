@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 662. Tab completes an argument from the program's manifest
 
-Promoted from `design/roadmap/proposals/argument-completion-reads-the-manifest.md` on 2026-10-03 (UTC). The number 662 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the coordinator's brief to milestone 47 (navigation and
-naming)'s lane `milestone/47-line-editing`, which built name completion (DECISIONS §227 (how Tab
-reaches the shell) option D) and recorded this rather than building it. The stem is provisional.
+*Title and slug are drafts.*
+Raised by milestone 47 (navigation and naming), which built name completion (DECISIONS §227 (how
+Tab reaches the shell) option D) and recorded this rather than building it. The stem is provisional.
 
 Shell-side, over the line the shell now edits itself, with no wire change.
 

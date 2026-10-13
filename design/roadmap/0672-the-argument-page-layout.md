@@ -10,10 +10,8 @@ needs_person: no
 ---
 # 672. The argument page's layout
 
-Promoted from `design/roadmap/proposals/the-argument-page-layout.md` on 2026-10-03 (UTC). The number 672 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by milestone 205 (how a foreign program is told what to do)'s lane,
-`milestone/205-foreign-program-arguments`, which built the layout below provisionally so nothing
+*Title and slug are drafts.*
+Raised by milestone 205 (how a foreign program is told what to do), which built the layout below provisionally so nothing
 waits on this. §170 (how a foreign program is told what to do) left the layout open because two
 programs agree on it: the shell writes the page and `std` reads it. The slug, the crate name
 `argument_protocol` and every constant here are a lane's coinage.

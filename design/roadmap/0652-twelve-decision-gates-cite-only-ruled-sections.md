@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 652. Twelve `DECISION` gates cite only sections that are already ruled
 
-Promoted from `design/roadmap/proposals/twelve-decision-gates-cite-only-ruled-sections.md` on 2026-10-03 (UTC). The number 652 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 591 (a ruling should make the gate it answers
 fail until someone updates it). Its lane converted 27 `DECISION` gates to `DECISION §N` and could
 not convert these twelve. Every section each one cites is `DECIDED` or `AMENDED`, so the new token

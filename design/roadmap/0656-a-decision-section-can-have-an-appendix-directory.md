@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 656. A decision section can have an appendix directory
 
-Promoted from `design/roadmap/proposals/a-decision-section-can-have-an-appendix-directory.md` on 2026-10-03 (UTC). The number 656 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the `proposal/signed-builds` lane (#1325). It was writing
 §220 (a vendor signs, a developer self-signs, and trusting a key is scoped) and had been told to put
 overflow in an appendix directory named after the section.
@@ -28,7 +27,7 @@ where sections are longest.
 
 It lists `design/decisions/` and matches every entry against `FNAME =
 re.compile(r"(\d+)-[a-z0-9][a-z0-9-]*\.md")`. An entry that does not match is a problem. Reproduced
-on 2026-09-26 in the lane's worktree by creating an empty
+on 2026-09-26 by creating an empty
 `design/decisions/0220-signed-builds-and-scoped-key-trust/`:
 
 ```

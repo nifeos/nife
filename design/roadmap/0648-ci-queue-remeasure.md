@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 648. Re-measure CI queue waits by runner label, a week after the arm64 split
 
-Promoted from `design/roadmap/proposals/ci-queue-remeasure.md` on 2026-10-03 (UTC). The number 648 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 587 (most CI jobs do not need an arm64 host),
 which moved 15 of 18 jobs to `ubuntu-24.04` on one afternoon's evidence. It named this check as
-what decides whether that evidence generalized. **Name provisional**, this file's alone.
+what decides whether that evidence generalized. Name provisional, this file's alone.
 
 Due on or after 2026-10-01; before then there is not a week of data.
 

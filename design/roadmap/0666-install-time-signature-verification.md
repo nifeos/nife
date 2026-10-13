@@ -10,9 +10,8 @@ needs_person: no
 ---
 # 666. A signed build installs up to its key's ceiling, and removing the key drops what it vouched
 
-Promoted from `design/roadmap/proposals/install-time-signature-verification.md` on 2026-10-03 (UTC). The number 666 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Filed by `maintainer/220-ruling` while recording calef's rulings on
+*Title and slug are drafts.*
+Filed with calef's rulings on
 §220 (signed builds: a vendor signs, a developer self-signs, and trusting a key is scoped), in
 [`design/decisions/0220-signed-builds-and-scoped-key-trust.md`](../decisions/0220-signed-builds-and-scoped-key-trust.md). This is the build those rulings describe. Every
 name below is provisional.

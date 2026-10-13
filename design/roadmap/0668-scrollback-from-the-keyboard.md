@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 668. Scrollback from the keyboard: shift and page up scrolls the display terminal's history
 
-Promoted from `design/roadmap/proposals/scrollback-from-the-keyboard.md` on 2026-10-03 (UTC). The number 668 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 142 (a text display good enough that people use
 it instead of a GUI)'s lane. It went to wire the scrollback it built in August to a key and found
 the key never reaches the component that holds the history.

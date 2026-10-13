@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 646. A typed prompt outruns the undertaker, and the job pool fills with holes
 
-Promoted from `design/roadmap/proposals/a-typed-prompt-outruns-the-undertaker.md` on 2026-10-03 (UTC). The number 646 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 590 (the booted system starts its network stack)'s lane. It ran
 `script/swish-check --arch riscv64` repeatedly and found it failing on a line its change does not
 touch.

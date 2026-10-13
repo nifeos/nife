@@ -11,8 +11,7 @@ needs_person: no
 ---
 # 673. The confinement table lists the unvouched child
 
-Promoted from `design/roadmap/proposals/the-confinement-table-lists-the-unvouched-child.md` on 2026-10-03 (UTC). The number 673 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by milestone 198 (a package manager) rung 3a's D2 lane,
 which built and falsified the claim milestone 202 (every confinement test is a ritual until
 somebody breaks the confinement) was owed and could not add its row. Name provisional.

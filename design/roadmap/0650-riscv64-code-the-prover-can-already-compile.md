@@ -10,12 +10,10 @@ needs_person: no
 ---
 # 650. Some of `arch/riscv64/` compiles under Kani on an aarch64 host today, and the tree says none can
 
-Promoted from `design/roadmap/proposals/riscv64-code-the-prover-can-already-compile.md` on 2026-10-03 (UTC). The number 650 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the lane `lane/price-kani-kernel-reach` (pull request
-#1276), briefed to price closing `design/fatal-risks/README.md` risk 2 (the proofs prove trivia) on the
-premise that `cargo kani` has never compiled the kernel. The premise was false, and the measurement
-that replaced it found a wall that is lower than the tree records. *(Slug provisional; naming is
+*Title and slug are drafts.*
+Raised while pricing `design/fatal-risks/README.md` risk 2 (the proofs prove trivia) (pull request
+#1276). `cargo kani` does compile parts of the kernel, and the wall it hits is lower than the tree
+records. *(Slug provisional; naming is
 calef's.)*
 
 Option 1 below is reversible code and one harness. Risk 2's color is not asked
@@ -36,9 +34,7 @@ Complete - 4 successfully verified harnesses, 0 failures, 4 total.
            446873600  maximum resident set size
 ```
 
-No compile failure to classify. The sentence the brief inherited is `script/verify`'s own header,
-which still said *"never compiles the kernel"*; this lane corrected that line (it is a script
-comment, not a record), and milestone 536 owns the copies in `design/fatal-risks/README.md`, its appendix
+No compile failure to classify. Milestone 536 owns the *"never compiles the kernel"* copies in `design/fatal-risks/README.md`, its appendix
 and `notes/proof-retrospective.md`.
 
 So what keeps risk 2 amber today is two things, per its own 2026-09-24 correction: **`arch/riscv64/`
