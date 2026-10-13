@@ -2,7 +2,7 @@
 
 The four types the [heap](heap.md) gave back. Each solves a problem the stack cannot.
 
-They all live in the **`alloc` crate**: the middle layer from [no-std.md](no-std.md), between
+They all live in the `alloc` crate: the middle layer from [no-std.md](no-std.md), between
 `core` (needs nothing) and `std` (needs an OS). `extern crate alloc;` pulls it in, and it only
 works because we supplied a `#[global_allocator]`.
 
@@ -207,27 +207,20 @@ see, and a kernel spends a great deal of time outside that boundary.
 `LDXR`/`STXR` retry loop rather than a single `CAS`, which is precisely the cliff
 [design/fat-binaries.md](../design/fat-binaries.md) is about.
 
-## What we still don't have, and the pattern in it
+## What std needs a kernel service for, and where each stands
 
-Corrected 2026-09-05 (milestone 259), and the old column is kept because the rate is the point.
-This table was written when none of these services existed, said "every gap is a milestone", and
-was then not reread for the six weeks in which five of its six rows were built. The `Then` column
-is what it claimed; `Now` is what `script/test` runs.
+Everything `std` has that a bare kernel lacks needs a kernel service, and each one is a milestone.
+`script/test` runs every row below. The full current map of the `std` surface is [std.md](std.md),
+which is derived from what the compiler actually built.
 
-| | Then | Now |
+| | Needs | Now |
 |---|---|---|
-| `HashMap` | "needs a randomly-seeded hasher; a seed needs OS entropy" | **Works.** Entropy is a capability (milestone 56, [entropy.md](entropy.md)). Granted, the seed is real; ungranted, std's PAL falls back to a splitmix64 stream over the counter **and labels it**, which is the §42 rule about not inventing a value silently |
-| `Mutex`, `RwLock` | "these **block**, and blocking needs a scheduler to block *on*" | **Compile and work uncontended**, because a process is still one thread. `Condvar::wait` and `Once::wait` are the two that genuinely have no answer and end the process; see [std.md](std.md)'s abort census |
-| `thread::spawn` | "needs a scheduler / M6" | **Still `Unsupported`, and this is the one row that held.** The scheduler arrived at milestone 6; what is missing is a decision, not a service. See [thread-spawn-fork.md](thread-spawn-fork.md) |
-| `Instant`, `SystemTime` | "needs a clock / M5" | **Both real.** `Instant` is the virtual counter; `SystemTime` is a clock page a granted program maps read-only (milestone 51, [clock.md](clock.md)) |
-| `File`, `Path`, `fs` | "needs a filesystem / M8" | **Real and writable.** RedoxFS confined as a userspace server (milestone 32, [fs-server.md](fs-server.md)), bound into `std::fs` by milestone 27 phase two; `std::fs::write` works |
-| `TcpStream` | "needs a network stack / out of scope" | **Bound, and it was never out of scope.** smoltcp in a confined net server (milestone 30, [net.md](net.md)); `TcpStream`, `TcpListener` and outbound `UdpSocket` all speak the socket contract |
-
-The third column's claim survived and the rows under it did not, which is the useful half.
-Everything `std` had that we lacked, we lacked because it needed a kernel service nobody had built,
-and every one of those gaps did turn out to be a milestone. What the table got wrong was tense: it
-described a floor as though it were a ceiling. The honest current map of the `std` surface is
-[std.md](std.md), which is derived from what the compiler actually built rather than written once.
+| `HashMap` | a randomly-seeded hasher, so OS entropy | **Works.** Entropy is a capability (milestone 56 (secrets, credentials, and the entropy to make them safe), [entropy.md](entropy.md)). Granted, the seed is real; ungranted, std's PAL falls back to a splitmix64 stream over the counter and labels it, which is the §42 (a filesystem must be truthful) rule about not inventing a value silently |
+| `Mutex`, `RwLock` | a scheduler to block *on* | **Compile and work uncontended**, because a process is still one thread. `Condvar::wait` and `Once::wait` are the two that genuinely have no answer and end the process; see [std.md](std.md)'s abort census |
+| `thread::spawn` | a scheduler | **`Unsupported`.** The scheduler exists (milestone 6 (threads, the context switch, and preemption)); what is missing is a decision, not a service. See [thread-spawn-fork.md](thread-spawn-fork.md) |
+| `Instant`, `SystemTime` | a clock | **Both real.** `Instant` is the virtual counter; `SystemTime` is a clock page a granted program maps read-only (milestone 51 (wall-clock time), [clock.md](clock.md)) |
+| `File`, `Path`, `fs` | a filesystem | **Real and writable.** RedoxFS confined as a userspace server (milestone 32 (a real filesystem: RedoxFS behind a capability FS server), [fs-server.md](fs-server.md)), bound into `std::fs` by milestone 27 (Rust `std` on the native ABI) phase two; `std::fs::write` works |
+| `TcpStream` | a network stack | **Bound.** smoltcp in a confined net server (milestone 30 (the network stack as a confined component), [net.md](net.md)); `TcpStream`, `TcpListener` and outbound `UdpSocket` all speak the socket contract |
 
 (`core::time::Duration` already exists, incidentally: it is arithmetic on nanoseconds and needs
 nothing. It is `Instant` that needs hardware, because `Instant` means now, and nothing in

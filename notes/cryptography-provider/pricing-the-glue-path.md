@@ -11,9 +11,8 @@ priced the same way before a line of it was written.
 ## The graph, measured the same way for both
 
 `cargo tree -e normal`, normal edges only, so build scripts and proc-macro crates that run on the
-host are excluded from every column. The earlier figure of 107 in this milestone's pull request was
-`Cargo.lock` lines, which counts build dependencies too; it is superseded here by a like-for-like
-count, and the honest headline is that the glue path is barely smaller.
+host are excluded from every column, so the count is like for like (`Cargo.lock` lines would count
+build dependencies too). The honest headline is that the glue path is barely smaller.
 
 | | crates | `rsa` in the graph | alpha crate in the trust path |
 |---|---|---|---|
@@ -150,7 +149,7 @@ rather than by reading a spec, and it says in so many words that cryptography is
 The glue path is barely smaller and meaningfully better in the one dimension calef named. At
 equal coverage it is 67 crates against 73, which is nothing. It takes an abandoned alpha out of
 the trust path and replaces it with code this tree can read, over primitives that are individually
-maintained, widely used, and in two cases audited. It also unpins the superseded majors. If the
+maintained, widely used, and in two cases audited. It also unpins the outdated majors. If the
 argument for it were crate count it would be a bad argument, and that is recorded here rather
 than smoothed over.
 

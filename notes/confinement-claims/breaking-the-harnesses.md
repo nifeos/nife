@@ -63,8 +63,8 @@ one is redundant moves when the other is repaired.
 ## Row 17's harness could not see the real defect
 
 Row 17 was recorded `unfalsifiable` because no line of the crate can alias the driver's table and the
-shadow. True, and the wrong defect. Corrected 2026-10-06 (UTC): the bug a shadow copy prevents is a
-double fetch, validating one load and copying a second. The harness read a fixed table, so the second
-load always equaled the first, and the double fetch stayed green. It now reads through
+shadow. True, and the wrong defect: the bug a shadow copy prevents is a double fetch, validating
+one load and copying a second. A harness that reads a fixed table makes the second load always
+equal the first, so the double fetch stays green. Row 17's harness reads through
 `ChainMem::racing`, a fresh symbolic value per load, and the double fetch is red. Its sibling harness
 still reads a fixed table and stays green under it.

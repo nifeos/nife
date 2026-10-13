@@ -220,7 +220,7 @@ re-deriving it. Read from crates.io on 2026-09-20 rather than recalled:
   specification. An alpha abandoned for seventeen months has had the least exposure of anything in
   the graph it assembles, which is the argument in one sentence: the glue is the weakest link in a
   chain of otherwise well-worn primitives.
-- **It pins superseded majors.** It requires `sha2` 0.10, `aes-gcm` 0.10 and `p256` 0.13; the
+- **It pins outdated majors.** It requires `sha2` 0.10, `aes-gcm` 0.10 and `p256` 0.13; the
   current releases of those three are 0.11.0 (2026-03-25), 0.11.1 (2026-08-21) and 0.14.0
   (2026-07-03). Taking it would fix this tree to the dependency choices of an unmaintained crate.
 

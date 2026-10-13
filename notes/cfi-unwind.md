@@ -121,11 +121,10 @@ part that differs by architecture:
   `.cfi_offset 16, 16` / `.cfi_offset 7, 40`, and by the FDE the unwind continues past the trap,
   into whatever Rust function was interrupted and from there into *its* caller. That is read from
   `llvm-objdump --dwarf=frames`, not from a live GDB session: no x86_64 transcript was captured (see
-  BUGS). *(Corrected 2026-10-11 (UTC): this bullet pointed at a "hit 6" x86_64 transcript below.
-  No x86_64 transcript was ever in this note; the frames it listed are aarch64's case 2.)*
+  BUGS).
 - aarch64 cannot, today, though the DWARF spec has an answer. The interrupted PC lives in
   `elr_el1`, a system register the hardware does not restore into `x30`/`lr` the way a `bl` does.
-  AArch64's own DWARF register mapping anticipates exactly this: register 33 is `ELR_mode`, defined
+  AArch64's own DWARF register mapping anticipates exactly this. Register 33 is `ELR_mode`, defined
   for describing an asynchronously-created (signal/exception) frame (`aadwarf64.rst`, ARM's DWARF
   for the ARM 64-bit Architecture). `vectors.s` states `.cfi_return_column 33` and
   `.cfi_offset 33, -24` -- spec-correct, and there for whichever tool honors it. GDB is not one
@@ -215,9 +214,7 @@ byte-for-byte, not merely argued.
   megabytes, and a new strip-then-boot step was not judged worth it at the time. The note said to
   revisit this if either port grew a real flat-image path, and riscv64 has one now:
   `script/board-image` runs `llvm-objcopy -O binary` for the VisionFive 2 with no
-  `--remove-section`. *(Corrected 2026-10-11 (UTC): this entry called the VisionFive 2 aarch64's
-  board. It is the riscv64 board, `notes/visionfive2.md`.)* What that costs the board image has not
-  been measured.
+  `--remove-section`. What that costs the board image has not been measured.
 
 - **GDB does not honor AArch64's spec-correct `ELR_mode` return column** (DWARF register 33;
   `.cfi_return_column 33` in `vectors.s`). So a backtrace on this architecture stops one frame short

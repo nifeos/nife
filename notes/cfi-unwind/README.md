@@ -10,13 +10,10 @@ evidence showed, and BUGS. These files carry the evidence its prose budget has n
 - [`gdb-transcripts.md`](gdb-transcripts.md): the before-and-after GDB backtraces on aarch64, for a
   brand-new thread and for a resumed one.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `link-script-discovery` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/sixth-ten-longest-notes, after the parent's own heading.
-- `gdb-transcripts` Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes.
+- `link-script-discovery` Name: provisional. After the parent's own heading.
+- `gdb-transcripts` Name: provisional.

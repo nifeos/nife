@@ -1,8 +1,7 @@
 # A C library for nife: relibc, measured
 
-Written 2026-10-08 (UTC) by lane/c-library, for §265 (a C library started from relibc) and
-milestone 835 (a C library, stage 1: files, clock and memory). The file name is this lane's
-coinage and provisional.
+The measurements behind §265 (a C library started from relibc) and milestone 835 (a C library,
+stage 1: files, clock and memory). The file name is provisional.
 
 calef chose relibc on 2026-10-08 (UTC), over keeping the refusal in milestone 478 (tier three: full
 POSIX behind the foreign-language seam), musl, and picolibc/newlib: *"B, although I suspect we end

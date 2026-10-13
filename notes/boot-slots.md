@@ -229,11 +229,9 @@ frames from anything that mentions memory. `user::load` now takes the number and
 it from `spawn.maps`, so no caller has to remember it: the same move as any other accounting that
 was a comment and is now a computation.
 
-The first version of that fix overcharged, and the frame ledger caught it, which is worth
-recording because it is the gate working rather than a detour. Charging the full window put a frame
-into every long-lived process's region that the region never used, sixty-eight of them, to pay for a
-window one caller has; the aarch64 suite went from 22249 kept frames to 22317 and failed. What a
-caller owes is the cost above what `AS_OVERHEAD`'s margin was already providing, which is
+Charging the full window would put a frame into every long-lived process's region that the region
+never uses, sixty-eight of them, to pay for a window one caller has, and the frame ledger fails
+that. What a caller owes is the cost above what `AS_OVERHEAD`'s margin was already providing, which is
 `WINDOW_IN_OVERHEAD` and its reasoning at the arithmetic.
 
 ## See also

@@ -12,12 +12,10 @@ The short answer: the qualifier was pessimistic, and the table was measuring the
 current-thread runtime, `rayon`, `clap`, `chrono` and `walkdir`. Of the 11 that failed, eight
 failed on one crate, and it is not part of `std`.
 
-> The split is 43/7 today, and it was 39/11 before `entropy_backend` landed (re-derived
-> 2026-08-18, milestone 64's third pass, by `script/crate-probes`). Bare `script/crate-probes` gives
-> 43 built and 7 failed; `--no-backend` gives the 39/11. An earlier headline of 35/15 double-counted
-> four crates that sit in two failure classes, and was wrong for thirteen days (corrected
-> 2026-08-17). How each number was derived and corrected is in
-> [crates-io-on-nife/probe-results.md](crates-io-on-nife/probe-results.md).
+> The split is 43/7 (re-derived 2026-08-18, milestone 64's third pass, by `script/crate-probes`).
+> Bare `script/crate-probes` gives 43 built and 7 failed; `--no-backend`, without
+> `entropy_backend`, gives 39/11. A crate in two failure classes counts once. How each number was
+> derived is in [crates-io-on-nife/probe-results.md](crates-io-on-nife/probe-results.md).
 
 The measurement, and the reasoning behind every pass over it, is in
 [crates-io-on-nife/](crates-io-on-nife/README.md).
@@ -123,9 +121,6 @@ the host and can call anything they like), then grep every package's `src/` for 
 std APIs the PAL refuses. The "probes" column is how many of the 50 dependency closures contain at
 least one call site.
 
-Six rows in this table were stale until 2026-09-05 (milestone 259 (sweep)'s notes sweep), all
-`Unsupported` where milestone 64 had since bound the call; the account is in
-[crates-io-on-nife/later-passes.md](crates-io-on-nife/later-passes.md).
 
 | rank | gap | PAL today | probes | packages | note |
 |---|---|---|---|---|---|

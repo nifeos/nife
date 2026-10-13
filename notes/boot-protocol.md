@@ -79,7 +79,7 @@ the image.
 
 | What starts us | Entry level | `/psci` method |
 |---|---|---|
-| QEMU `virt` (the default, and every run in this tree until 2026-09-02) | **EL1** | `hvc` |
+| QEMU `virt` (the default) | **EL1** | `hvc` |
 | QEMU `virt,virtualization=on` (`NIFE_EL2=1 script/test`) | **EL2** | `smc` |
 | U-Boot on a board, with TF-A's BL31 below it | **EL2** | `smc` |
 

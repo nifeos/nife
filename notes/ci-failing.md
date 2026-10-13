@@ -23,7 +23,7 @@ What it does, per open non-draft pull request:
   active ruleset on `main`, looked up through the rulesets API each pass (19596094 today), never
   hardcoded.
 - A check name is failing only if its newest run (highest check-run id) concluded `failure` or
-  `timed_out`. A failure a later run superseded does not count, and neither does one hidden by a
+  `timed_out`. A failure a later run replaced does not count, and neither does one hidden by a
   newer run that is in progress or cancelled. The recorded case is a real head whose `ready status`
   failed and then passed; the raw rollup shows both.
 - Failing: adds the label and posts one comment per head SHA naming each failing check with its job
@@ -40,10 +40,9 @@ person's queue and not a failing build.
 
 ## Who acts on it
 
-A maintainer session, through `needs-maintainer`. Until 2026-10-04 this label was a report with no
-reader: #1617 and #1653 wore it, armed and red, until calef pointed at them, because their lanes had
-ended `WAITING` and a session's queue is the other label. So the merge drain reads this one: a
-ready pull request from this repository, not held, that has worn `ci-failing` for 30 minutes gets
+A maintainer session, through `needs-maintainer`. A label alone has no reader: a lane that ended
+`WAITING` is not watching, and a session's queue is the other label. So the merge drain reads this
+one: a ready pull request from this repository, not held, that has worn `ci-failing` for 30 minutes gets
 `needs-maintainer` with cause `red` ([queue-ejection.md](queue-ejection.md)). One queue for a
 session to read, rather than two.
 

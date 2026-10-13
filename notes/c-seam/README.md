@@ -9,14 +9,10 @@ and the caveats. These files carry the detail its prose budget has no room for.
 - [`the-confinement-test.md`](the-confinement-test.md): the layout and its two witnesses, the five
   assertions and the control, and the fault transcripts from both ISAs.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `the-toolchain` Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes,
-  after the parent's own heading.
-- `the-confinement-test` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/sixth-ten-longest-notes, after the parent's own heading.
+- `the-toolchain` Name: provisional. After the parent's own heading.
+- `the-confinement-test` Name: provisional. After the parent's own heading.

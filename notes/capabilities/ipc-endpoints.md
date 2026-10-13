@@ -72,14 +72,11 @@ register and a message is three. Writing the trap frame is writing the user's re
 
 ## Single core was a gift here, and the bill arrived
 
-*(Written at milestone 7e (user mode), when §6 (SMP) said one core. SMP landed at milestone 41 (dead code) under §11 (SMP), which
-supersedes §6, so read the paragraph below as the record of what was true before it did. That was
-this section's own stated purpose; the tense is corrected here rather than the argument deleted.)*
-
 Every worry that makes IPC hard on a real machine: a sender and receiver racing on the queue, a
-message half-delivered: could not arise, because only one thread ran at a time. Between a
-thread releasing the scheduler lock and calling `schedule()` to block, the *only* thing that could
-run was the timer IRQ, and the one-line `runnable` check already handled that.
+message half-delivered: cannot arise on one core, because only one thread runs at a time. Between a
+thread releasing the scheduler lock and calling `schedule()` to block, the *only* thing that can run
+there is the timer IRQ, and the one-line `runnable` check handles that. nife runs on many cores
+under §11 (SMP).
 
 What it costs now that cores are real is written down rather than left to inference.
 [scheduler.md](../scheduler.md) has the per-core run queues and the message-shaped stealing that

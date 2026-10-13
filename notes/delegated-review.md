@@ -1,8 +1,7 @@
 # Does a delegated AI review catch what the gates and the maintainer miss
 
-*Name: provisional, minted 2026-09-22 by milestone 521's lane (`3bea19adf`), for
-`notes/delegated-review/`. Moved out of that directory to this path on 2026-10-11 (UTC) by calef's
-ruling on #1921, which puts a page beside its appendices (§212 (a prose budget: 3,000 words of main body)).*
+*Name: provisional, shared with `notes/delegated-review/`. The page sits beside its appendices by
+calef's ruling on #1921 (§212 (a prose budget: 3,000 words of main body)).*
 
 This is the run of milestone 521 (does an AI review
 of a pull request catch anything the gates and the maintainer do not), executed 2026-09-22 against

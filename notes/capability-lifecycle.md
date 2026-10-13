@@ -2,10 +2,7 @@
 
 The companion to [ipc-naming.md](ipc-naming.md). That note is about *naming* (IPC names an
 endpoint, never the peer). This one is about the *lifecycle* of the capabilities themselves: how
-authority is copied, how it narrows, and, at the end, how it is revoked. *(That last clause read
-"why it cannot yet be revoked" until 2026-09-05, contradicting this note's own "Revocation
-(milestone 13 (capability revocation + untyped reclamation))" section, which has said Built since 13 landed. The section was updated and its
-own opening sentence was not.)*
+authority is copied, how it narrows, and, at the end, how it is revoked.
 
 ## Authority moves by copy-with-narrowing, never by widening
 

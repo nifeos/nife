@@ -62,15 +62,13 @@ person to remember to take the label off.
 protocol) both say to add `Blocked-by:` to a draft's own body before ending a turn that pauses on
 another pull request rather than on CI.
 
-## Correcting the record
+## How `Blocked-by:` is read
 
-`notes/merge-queue.md`'s BUGS list used to say only the first `Blocked-by:` number was read at all.
-That was true when the parser was a single `sed` line inside `merge-drain.sh`. As of 2026-09-27 the
-parser lives in `helpers/blocked-by.sh`, reads every number on the line, and both consumers, the
+The parser is `helpers/blocked-by.sh`. It reads every number on the line, and both consumers, the
 admission hold and this draft pass, honor the whole list. Only the first *line* naming
-`Blocked-by:` still counts; a second one lower in the body is still ignored. That correction belongs
-in `notes/merge-queue.md` itself and does not fit there yet for the reason in this note's own
-opening paragraph; whoever next touches that document's bold count should fold this note back in.
+`Blocked-by:` counts; a second one lower in the body is ignored. This belongs in
+`notes/merge-queue.md` itself and does not fit there yet for the reason in this note's own opening
+paragraph; whoever next touches that document's bold count should fold this note back in.
 
 ## BUGS
 

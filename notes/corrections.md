@@ -1,7 +1,7 @@
 # Things this project has already gotten wrong
 
-**Provisional name** (`notes/corrections.md`): calef names what a reader meets, and this page was
-split out of `README.md` on 2026-09-21 at his suggestion rather than minted with a ratified name.
+**Provisional name** (`notes/corrections.md`): calef names what a reader meets, and this page's
+name is not ratified.
 
 Kept on purpose, because the corrections were the most instructive part. This tree's habit is to
 fix the record loudly rather than quietly: `AGENTS.md` says the machine overrules the documentation

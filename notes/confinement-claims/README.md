@@ -14,7 +14,6 @@ files here hold each pass in full.
 - [`adversarial-pass-2026-09-21.md`](adversarial-pass-2026-09-21.md): risk 7's adversarial pass.
 - [`limitations.md`](limitations.md): the BUGS list in full.
 
-Name: provisional, minted 2026-10-11 (UTC) by `lane/ten-longest-notes`, which split the parent under
-§212 (a prose budget), for the directory and every stem in it. The directory follows the
-`notes/<stem>/` appendix convention §212 set, so its name is the parent's stem. Each file is named
+Name: provisional, for the directory and every stem in it. The directory follows the
+`notes/<stem>/` appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named
 for its content. calef names directories and files, and `script/names --unratified` lists each stem.

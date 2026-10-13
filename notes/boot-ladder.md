@@ -51,11 +51,11 @@ would delete riscv64's, which is the trap milestone 268's block warns about. The
 it for every tool are `Machine` and `SelfTest`, which every architecture reaches.
 
 `Prompt` needs an archive on every architecture, because the shell that prints it is loaded out
-of one. It was unreachable on `x86_64` until 2026-09-19: DECISIONS §149 (may the kernel answer on
-an endpoint) settled how `swish` gets a console there, milestone 299 (the x86 port-range
-capability) built the capability that makes `console` a userspace driver on that machine, and
-milestone 182 (x86_64's own interactive-boot entry point) added the `script/swish-check` leg that
-types at it. `script/boot-check` asserts this rung on all three architectures since the same day.
+of one. On `x86_64`, DECISIONS §149 (may the kernel answer on an endpoint) settles how `swish` gets
+a console, milestone 299 (the x86 port-range capability) built the capability that makes `console`
+a userspace driver on that machine, and milestone 182 (x86_64's own interactive-boot entry point)
+added the `script/swish-check` leg that types at it. `script/boot-check` asserts this rung on all
+three architectures.
 
 ## The machine description: the same questions, not the same lines
 

@@ -4,15 +4,15 @@ What the machine knows about the time, who is allowed to change it, and why the 
 three different capabilities. Milestone 51 lane A; the decision and its argument are
 [DECISIONS §43](../design/decisions/0043-clock-authority.md), the contract is `crates/clock_protocol`.
 
-## The thing this replaced
+## Why not the counter alone
 
-`SystemTime` used to be the monotonic counter offset from `UNIX_EPOCH`. That means the machine
-reported 1 January 1970 plus however long it had been up, and the interface said nothing about
-it. `notes/std.md` carried the caveat, honestly, and the caveat was the problem: a program does not
-read the notes. Differencing two `SystemTime`s gave a correct duration; any absolute reading was a
-fiction that looked exactly like a fact.
+`SystemTime` is not the monotonic counter offset from `UNIX_EPOCH`, because that reports 1 January
+1970 plus however long the machine has been up, and the interface says nothing about it. A caveat
+in the notes does not fix that: a program does not read the notes. Differencing two `SystemTime`s
+would give a correct duration; any absolute reading would be a fiction that looked exactly like a
+fact.
 
-The defect was never the missing hardware. It was that the interface lied, which is the same shape
+The defect is not missing hardware. It is an interface that lies, which is the same shape
 [§42](../design/decisions/0042-truthful-filesystem.md) forbids for filesystems: not that FAT is weak, but that `rename()` on it
 succeeds and the caller cannot tell.
 
@@ -142,11 +142,9 @@ hole: a machine that does not know the time holds no belief a step limit could p
 Both drivers are in the one portable `clock` binary, compiled on both ISAs, each taking a base
 address and knowing nothing else (rule 2).
 
-Discovery is by `compatible`, and this is where matching on the node name finally ran out. The
-aarch64 board calls the node `pl031@9010000`; the RISC-V board calls its RTC `rtc@101000`. No name
-prefix finds both, so `dtb::node_reg_compatible` is new for this milestone. `node_reg`'s own comment
-had predicted needing it ("a real driver would match `arm,cortex-a15-gic`... written down for the Pi
-port"), and this is that day. Two wrinkles the fixture tests pin: `compatible` is a NUL-separated
+Discovery is by `compatible`, not by node name. The aarch64 board calls the node
+`pl031@9010000`; the RISC-V board calls its RTC `rtc@101000`. No name prefix finds both, so this
+uses `dtb::node_reg_compatible`. Two wrinkles the fixture tests pin: `compatible` is a NUL-separated
 list and a match on any entry counts (the PL031 declares `"arm,pl031", "arm,primecell"`), and the
 node writes `reg` before `compatible`, so the decode has to wait for the node to close rather
 than decide at the `reg` property.
@@ -159,8 +157,8 @@ garbage on the first real board.
 ## Where the interactive boot puts it (milestone 51's wiring)
 
 Both ISAs' `--features shell` boots start the clock service before the progenitor exists and grant the progenitor the
-page with `READ` and `GRANT`: slot 3 on every architecture (`boot_progenitor`, which milestone 166
-made one function; until then it was slot 3 on RISC-V and slot 5 on aarch64). The progenitor hands
+page with `READ` and `GRANT`: slot 3 on every architecture, set in one function, `boot_progenitor`.
+The progenitor hands
 a read-only copy plus a read-only mapping at `0x00c0_0000` to any child whose `grant_plan` manifest
 declares `clock`, which today is `date` and nothing else.
 
@@ -169,8 +167,7 @@ Three things about that shape are deliberate:
 - **The grant does not depend on what the machine has.** A boot with no `clock` program in its initrd
   gets a zeroed frame instead, which reads as `UNKNOWN` and is the honest answer. Slot numbers that
   moved with the hardware would be a wiring nobody could check by reading.
-- **The shell cannot put a clock on the path.** It was granted none at all until milestone 86; since
-  then it holds one with `READ` and no `GRANT`, which it reads to time a command (`time
+- **The shell cannot put a clock on the path.** It holds one with `READ` and no `GRANT`, which it reads to time a command (`time
   <command>`, notes/time-command.md) and cannot hand to anything it spawns. Either way the set of
   processes that can read the time is decided by manifests the progenitor reads rather than by anything typed
   at a prompt. `caps date` prints the child's row and `caps` prints the shell's, rights included, so
@@ -201,22 +198,14 @@ wants to check first, and a `no_std` component simply reads the page.
   block and the choice is open. The distinction worth holding onto: *reading* time is ambient and
   harmless, *blocking* on time is a scheduler interaction, and that is the part that wants a
   capability.
-- **No calendar, no `date`, no NTP.** Sibling lanes. The propose endpoint is the seam NTP arrives
-  at, and the sanity floor above is the anchor its NTS bootstrap needs. (`crates/calendar` and
-  `date` have since landed; see notes/calendar.md and notes/date.md.)
+- **Calendar, `date` and NTP are other programs.** The propose endpoint is the seam NTP arrives at,
+  and the sanity floor above is the anchor its NTS bootstrap needs. See notes/calendar.md and
+  notes/date.md.
 - No alarm interrupt. Both RTCs have one; nothing here uses it. The service reads the clock once
   at startup and lets the monotonic counter carry the time, because re-reading would import the
   RTC's drift and coarse resolution into a clock that already has better.
-- The unknown-clock path is not proven in the guest. Both QEMU boards always have a working RTC,
-  so the service's refusal to publish an implausible reading is host-tested and the std panic is
-  proven by construction rather than by a booted test.
-
-  **Half of that is no longer true, and the reasoning was the part that was wrong.** It is about the
-  *machine*, and what a reader tests against is the *page*: a frame nobody has published to reads as
-  `UNKNOWN`, which is exactly what a reader on a machine with no believable RTC holds. So the
-  `date` lane proves the reader's unknown-clock path in the guest, on both ISAs, by allocating a
-  blank frame and granting it (notes/date.md,
-  `kernel::user::date_tests::an_unknown_clock_is_said_plainly_rather_than_printed_as_1970`). What
-  remains proven only by construction is the service's side: its refusal to publish an
-  implausible RTC reading is still host-tested, because that genuinely does need a machine whose RTC
-  lies, and neither QEMU board has one.
+- The service's refusal to publish an implausible RTC reading is host-tested only. Proving it in
+  the guest needs a machine whose RTC lies, and neither QEMU board has one. The reader's
+  unknown-clock path is proven in the guest on both ISAs, by allocating a blank frame and granting
+  it: a frame nobody has published to reads as `UNKNOWN` (notes/date.md,
+  `kernel::user::date_tests::an_unknown_clock_is_said_plainly_rather_than_printed_as_1970`).

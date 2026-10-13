@@ -92,7 +92,8 @@ is the matching source, not a proven one.
 The likely cause is in the same log. At `Starting kernel`, U-Boot prints `clk u5_dw_i2c_clk_core
 already disabled` and `clk u5_dw_i2c_clk_apb already disabled`. U-Boot gated I2C5, the PMIC's bus.
 OpenSBI turns the APB gate back on, but only when that register reads zero, and never the core
-clock. That is an inference, and milestone 592 found it half right (corrected 2026-09-25). radon
+clock. That inference is half right, by milestone 592 (radon's cold reboot dies in OpenSBI's PMIC
+write). radon
 runs an older OpenSBI than the branch above, pinned by SDK tag `VF2_v2.10.4`. U-Boot's handover
 also asserts I2C5's reset, which that OpenSBI never releases. It computes the clock word from the
 node name, and U-Boot's `i2c@12050000` gives UART4's core clock instead of I2C5's gate. The "core

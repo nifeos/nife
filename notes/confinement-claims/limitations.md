@@ -1,20 +1,8 @@
 # The confinement claims' limitations, in full
 
 An appendix to [notes/confinement-claims.md](../confinement-claims.md), whose BUGS section keeps the
-short list. This is every entry as it was written, sentence-split for the prose limits.
+short list. This is every entry in full.
 
-- Closed: six kernel confinement tests in the table used to be marked "no", with no mechanism to
-  change that. Milestone 305 (the six kernel confinement rows get a falsification a machine can
-  replay) closed it, and the mechanism it needed had existed since 2026-08-31 without anyone
-  connecting the two. The sentence this replaces said that automating a kernel falsification "needs a
-  way to run one kernel test by name, which does not exist". Milestone 210 (no kernel test can be run
-  by name, so one falsification costs a whole suite) built exactly that: `cargo xtask test --test
-  <substring>`, with the filter baked into the test binary by `kernel/build.rs` and read by
-  `kernel/src/testing.rs`'s runner. This note went on saying it did not exist for a fortnight.
-  `script/falsifications` now reads a `Falsification:` block above a `#[test_case]` and replays it by
-  booting one architecture. `kernel/falsifications/` is the path §134 (a harness carries a
-  machine-replayable falsification record) already spells, and row 20's patch is swept rather than
-  remembered.
 - Rows 19, 22, 23, 24 and 30 carry a record on all three ISAs, row 19 on one of four kernel tests.
   Milestone 323 (the falsification record is incomplete in five ways) replayed the four older ones on
   riscv64 and `x86_64` on 2026-10-03 (UTC).
@@ -70,9 +58,8 @@ short list. This is every entry as it was written, sentence-split for the prose 
   children could run on different cores, each with its own port bitmap. Its record has the
   measurement and fix.
 - The rows citing kernel tests are still not evidence at the same grade as the rows citing
-  harnesses, and the reason changed. It used to be that nothing could replay a kernel falsification
-  at all. Since milestone 305 a machine can, so the gap is narrower, and it is now about what the
-  replay *proves*. A Kani harness is checked by a solver over every input in its bound. A kernel test
+  harnesses. A machine can replay a kernel falsification (milestone 305 (the six kernel confinement
+  rows get a falsification a machine can replay)), so the gap is about what the replay *proves*. A Kani harness is checked by a solver over every input in its bound. A kernel test
   is one boot of one machine with one fixture attached, on one architecture. A kernel row that skipped
   for want of a disk or a device page is not evidence at all. That is why `--sweep` reports a skipped
   test as an error rather than as either color.
