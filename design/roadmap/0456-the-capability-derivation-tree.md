@@ -5,16 +5,11 @@ refused_by: 13, 14, 26, 448
 ---
 # 456. The capability derivation tree, and subtree-granular revocation
 
-Refused by milestone 13 (design/roadmap/0013-capability-revocation.md), milestone
-14 (design/roadmap/0014-kernel-objects-from-untyped.md),
-milestone 26 (design/roadmap/0026-object-revocation.md), and recorded there on 2026-09-03. Backfilled here on
-2026-09-20 by milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal
-that names work a number, a status and a condition that would change it. *(Number provisional until
-the merge queue lands it.)*
-
-**The dates are when the refusals were written down, not necessarily when they were made.** Most of
-this tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so a decision is
-usually older than the bullet recording it.
+Refused by milestone 13 (design/roadmap/0013-capability-revocation.md), milestone 14
+(design/roadmap/0014-kernel-objects-from-untyped.md), and milestone 26
+(design/roadmap/0026-object-revocation.md), each of which records it in its Follow-on. Milestone 448
+(design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names work a number, a status
+and a condition that would change it.
 
 ## The refusal, in its own words
 

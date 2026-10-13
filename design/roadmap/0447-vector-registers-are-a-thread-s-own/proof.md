@@ -1,9 +1,7 @@
 # Milestone 447 appendix: the five tests, and why they are kernel threads
 
 An appendix to [milestone 447 (a thread's vector registers are its
-own)](../0447-vector-registers-are-a-thread-s-own.md), moved out of that block on 2026-10-12 (UTC)
-under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The block
-is complete without it: its [proof
+own)](../0447-vector-registers-are-a-thread-s-own.md). The block is complete without it: its [proof
 summary](../0447-vector-registers-are-a-thread-s-own.md#the-proof-and-it-fails-against-a-kernel-without-this)
 names the tests and the falsification. This holds what each test catches.
 

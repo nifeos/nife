@@ -10,22 +10,14 @@ needs_person: no
 ---
 # 481. Real terminal multiplexing
 
-Superseded 2026-10-06 (UTC), by milestone 806 (concurrent login sessions). Its revisit condition
-came true that day, when calef asked for more than one person on the machine at once. He ruled the
-six forks of the proposal 806 was promoted from the same day, and §253 (concurrent login sessions)
-records them. The refusal is kept below because it
-is the argument 806 answers. 806 took its own number rather than reviving this one, because it is
-wider than multiplexing a terminal: a greeter per console, authority granted at login, memory from
-a broker and the owner's login all ride with it.
+The work is milestone 806 (concurrent login sessions), and §253 (concurrent login sessions) records
+calef's rulings on it. It is wider than multiplexing a terminal: a greeter per console, authority
+granted at login, memory from a broker and the owner's login all ride with it. The refusal is kept
+below because it is the argument 806 answers.
 
-Refused by milestone 49 (design/roadmap/0049-users-and-attribution.md), and
-recorded there on 2026-09-03. Backfilled here on 2026-09-20 by
-milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal that names work a number, a
-status and a condition that would change it. *(Number provisional until the merge queue lands it.)*
-
-**The date is when the refusal was written down, not necessarily when it was made.** Most of this
-tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so the decision is usually
-older than the bullet and its reasoning sits in the block's own prose above it.
+Refused by milestone 49 (design/roadmap/0049-users-and-attribution.md), which records it in its
+Follow-on. Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names
+work a number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 
@@ -46,7 +38,9 @@ would later have to unwind, and the refusal it returns is explicit rather than a
 
 ## The condition that reopened it
 
-The condition was met on 2026-10-06 (UTC). It read:
+The condition, met on 2026-10-06 (UTC) when calef asked for more than one person on the machine at
+once:
+
 
 - **Condition.** Somebody needing two sessions at once. The refusal's argument is about commitment
   rather than difficulty: the narrow shape can grow into the wide one, and the wide one cannot be

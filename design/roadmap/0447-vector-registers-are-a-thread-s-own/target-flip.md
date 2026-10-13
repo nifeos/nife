@@ -1,11 +1,11 @@
 # Milestone 447 appendix: the target flip, as priced when the save was built
 
 An appendix to [milestone 447 (a thread's vector registers are its
-own)](../0447-vector-registers-are-a-thread-s-own.md), moved out of that block on 2026-10-12 (UTC)
-under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The block
-is complete without it. The flip itself is now [milestone 534 (the soft-float targets could now be
-flipped)](../0534-the-soft-float-targets-could-now-be-flipped.md); this is the pricing 447 wrote
-on 2026-09-20 so that the flip could be made on evidence.
+own)](../0447-vector-registers-are-a-thread-s-own.md). The block is complete without it. The flip
+itself is [milestone 534 (the soft-float targets could now be
+flipped)](../0534-the-soft-float-targets-could-now-be-flipped.md); this is 447's pricing of it,
+taken on 2026-09-20, so that the flip can be made on evidence.
+
 
 ## What it would take
 

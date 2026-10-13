@@ -1,9 +1,8 @@
 # Milestone 447 appendix: what RISC-V cost, and the boot path it exposed
 
 An appendix to [milestone 447 (a thread's vector registers are its
-own)](../0447-vector-registers-are-a-thread-s-own.md), moved out of that block on 2026-10-12 (UTC)
-under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The block
-is complete without it. It holds the working behind the block's RISC-V summary.
+own)](../0447-vector-registers-are-a-thread-s-own.md). The block is complete without it. It holds
+the working behind the block's RISC-V summary.
 
 Of the three rows in the block's [mechanism
 table](../0447-vector-registers-are-a-thread-s-own.md#three-architectures-three-mechanisms-one-rule),
@@ -39,23 +38,24 @@ incoming thread's `live`, and that thread's frame carries the same value for the
 
 ## What it found: one architecture's boot path does not run `arch::init`
 
-`arch::fp::init` shuts the unit for a core before any thread exists. The obvious home was
-`arch::init`, and that is where it went first. It was green on aarch64 and x86_64 and silently
-wrong on RISC-V. The test that caught it is the one written to catch exactly this.
+`arch::fp::init` shuts the unit for a core before any thread exists. It does not live in
+`arch::init`, the obvious home, because there it is green on aarch64 and x86_64 and silently wrong
+on RISC-V.
 
 `main`'s RISC-V tour installs `stvec` by calling `arch::exceptions::init()` directly. It reaches
 `sched::init` and never passes through `arch::init` at all. OpenSBI hands the kernel a hart with
-`sstatus.FS` already set. So no thread ever took the first-use trap, and `live` stayed false on
-every thread. `hand_over` took its early return every time, and two threads shared a register file
-with nothing in the system saying so.
+`sstatus.FS` already set. So no thread would take the first-use trap, `live` would stay false on
+every thread, `hand_over` would take its early return every time, and two threads would share a
+register file with nothing in the system saying so.
 
-The fix is not a third call site. The invariant is about threads, so it lives where threads begin
+The answer is not a third call site. The invariant is about threads, so it lives where threads begin
 to exist: `sched::init` and `sched::adopt_secondary_idle`. Both are portable, and both are on the
 path of every core that will ever own a thread. That is AGENTS.md's ladder read downward. The
-rung-four version (remember to call it from each architecture's bring-up) is what failed. The
-property and the mechanism are now in the same function.
+rung-four version (remember to call it from each architecture's bring-up) is what fails. The
+property and the mechanism are in the same function.
 
-`the_first_floating_point_instruction_takes_a_trap` exists because of this, and it does not merely
+`the_first_floating_point_instruction_takes_a_trap` guards this, and it does not merely
+
 assert that FP works. It distinguishes three outcomes and names each one. "A brand-new thread
 started with the unit already open" and "an FP instruction executed without opening the unit" are
 different bugs with the same symptom.

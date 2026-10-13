@@ -10,25 +10,17 @@ needs_person: no
 ---
 # 478. Tier three: full POSIX behind the foreign-language seam
 
-Superseded 2026-10-08 (UTC), by milestones 835 to 838 (a C library in four stages: files, clock and
-memory; threads; sockets; `posix_spawn`). Its revisit condition came true with the benchmark ruling
-(PR #1854), which requires the field's standard benchmarks to run unmodified. The nine programs it
-mints as milestones 826 to 834 are POSIX C, and adapting them to a narrower tier is exactly what
-that ruling forbids. calef chose relibc the same day, and §265 (a C library started from relibc)
-records the ruling and amends the first rule of §31 (the foreign-language seam). The refusal is kept
-below because it is the argument the stages answer. They took their own numbers rather than reviving
-this one, because what is built is not this milestone's subject. Full POSIX includes `fork`, which
-the fork ruling (PR #1856) declines permanently. So "tier three" is now three stages and a spawn,
-with no fork in any of them.
+The work is milestones 835 to 838 (a C library in four stages: files, clock and memory; threads;
+sockets; `posix_spawn`). The benchmark ruling (PR #1854) requires the field's standard benchmarks
+to run unmodified, and the nine programs it names as milestones 826 to 834 are POSIX C, which no
+narrower tier may adapt. §265 (a C library started from relibc) records calef's choice of relibc and
+amends the first rule of §31 (the foreign-language seam). Full POSIX includes `fork`, which the fork
+ruling (PR #1856) declines permanently, so "tier three" is three stages and a spawn, with no fork in
+any of them. The refusal is kept below because it is the argument the stages answer.
 
-Refused by milestone 36 (design/roadmap/0036-foreign-component.md), and recorded
-there on 2026-09-03. Backfilled here on 2026-09-20 by
-milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal that names work a number, a
-status and a condition that would change it. *(Number provisional until the merge queue lands it.)*
-
-**The date is when the refusal was written down, not necessarily when it was made.** Most of this
-tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so the decision is usually
-older than the bullet and its reasoning sits in the block's own prose above it.
+Refused by milestone 36 (design/roadmap/0036-foreign-component.md), which records it in its
+Follow-on. Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names
+work a number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 
@@ -57,5 +49,6 @@ much larger project than this one.
 ## Index row
 
 The largest single thing this tree had declined to build, refused for want of a component that
-would need it. The standard benchmarks became that component on 2026-10-08, and a C library started
-from relibc, staged by consumer and without fork, replaces it.
+would need it. The standard benchmarks are that component, and the work is a C library started from
+relibc, staged by consumer and without fork.
+

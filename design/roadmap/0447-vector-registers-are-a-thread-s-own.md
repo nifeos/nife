@@ -5,13 +5,12 @@ built: 2026-09-20
 ---
 # 447. A thread's vector registers are its own
 
-Built 2026-09-20. Minted 2026-09-20 by the maintainer, on calef opening Route 2 of
-milestone 164 (x86_64 userspace can't build `aes`: no SSE, no scalar fallback), whose
-[block](0164-x86-64-fs-server-aes.md) refused that route and priced it, after a conversation about
-why SSE is switched off. *(Number provisional until the merge queue lands it.)*
+Built 2026-09-20. This is Route 2 of milestone 164 (x86_64 userspace can't build `aes`: no SSE, no
+scalar fallback), opened by calef; that milestone's [block](0164-x86-64-fs-server-aes.md) prices
+the route.
 
-This block is complete on its own. Four appendices, moved out on 2026-10-12 (UTC) under §212 (a
-prose budget), hold the working ([index](0447-vector-registers-are-a-thread-s-own/README.md)):
+This block is complete on its own. Four appendices hold the working
+([index](0447-vector-registers-are-a-thread-s-own/README.md)):
 
 - [`riscv.md`](0447-vector-registers-are-a-thread-s-own/riscv.md): why the RISC-V handler retries
   rather than decodes, why it sets `sstatus` in the trap frame, and how the missing `arch::init`
@@ -120,19 +119,20 @@ account is in [`riscv.md`](0447-vector-registers-are-a-thread-s-own/riscv.md#wha
 The tables and working are in [`costs.md`](0447-vector-registers-are-a-thread-s-own/costs.md).
 
 - IPC fastpath: `script/fastpath-footprint` is within the 5% bound on every ISA; the largest
-  increase is riscv64's `syscall_entry`, +2.2%. The first measurement put riscv64's
-  `ipc_send_recv` 7.5% over the 5% bound. Making `hand_over`'s register-touching half and `enable_for_current`
-  `#[cold]` and out of line fixed it. `crate::fp::ENABLES` checks the claim: it counts threads that
-  ever asked for the unit, and it is zero on every shipping boot.
+  increase is riscv64's `syscall_entry`, +2.2%. `hand_over`'s register-touching half and
+  `enable_for_current` are `#[cold]` and out of line, which keeps riscv64's `ipc_send_recv` inside
+  the bound. `crate::fp::ENABLES` checks the claim: it counts threads that ever asked for the unit,
+  and it is zero on every shipping boot.
 - Benchmarks: `script/bench` shows a context switch costing 2-3% more instructions, about seventeen
   per switch on aarch64. Every figure is inside the 10% tripwire and `coremark` did not move.
 - Memory: none. The register file (544 bytes on aarch64, 528 on x86_64, 272 on riscv64) lives in
   the 2,944 idle bytes of each thread's 4096-byte TCB page, and a `const` assertion fails the build
   if it ever stops fitting.
-- Stack frames: the first shape put `FpState` inline in `Thread`, and `script/stack-frame-check`
-  failed it, with `Thread::spawn::<sched::init>` at 5152 bytes against the 4096-byte guard page.
-  An unoptimized build copies the `Thread`, so each byte added costs two of frame. Moving the
-  register file into the TCB page restored `main`'s numbers exactly.
+- Stack frames: unchanged. `FpState` lives in the TCB page, not inline in `Thread`, because inline
+  `script/stack-frame-check` fails `Thread::spawn::<sched::init>` at 5152 bytes against the
+  4096-byte guard page: an unoptimized build copies the `Thread`, so each byte added costs two of
+  frame.
+
 - Instruction clock: `script/icount` is identical before and after, as it should be. The timer
   handler does not switch threads.
 

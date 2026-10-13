@@ -5,16 +5,10 @@ refused_by: 90, 124, 448
 ---
 # 454. The two stack sizes this tree has parked rather than measured
 
-Refused by
-milestone 124 (design/roadmap/0124-a-thread-is-born-where-it-lives.md),
-milestone 90 (design/roadmap/0090-secondary-stack-guard.md), and recorded there on 2026-09-03. Backfilled here on
-2026-09-20 by milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal
-that names work a number, a status and a condition that would change it. *(Number provisional until
-the merge queue lands it.)*
-
-**The dates are when the refusals were written down, not necessarily when they were made.** Most of
-this tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so a decision is
-usually older than the bullet recording it.
+Refused by milestone 124 (design/roadmap/0124-a-thread-is-born-where-it-lives.md) and milestone 90
+(design/roadmap/0090-secondary-stack-guard.md), each of which records it in its Follow-on. Milestone
+448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names work a number, a
+status and a condition that would change it.
 
 ## The refusal, in its own words
 

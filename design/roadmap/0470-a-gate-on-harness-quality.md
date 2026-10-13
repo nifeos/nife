@@ -5,15 +5,10 @@ refused_by: 211, 213, 448
 ---
 # 470. A gate on harness quality: self-reference and re-implementation
 
-Refused by milestone 211 (design/roadmap/0211-self-referential-harnesses.md),
-milestone 213 (design/roadmap/0213-harnesses-that-duplicate-the-implementation.md), and recorded
-there on 2026-09-03. Backfilled here on 2026-09-20 by
-milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal that names work a number, a
-status and a condition that would change it. *(Number provisional until the merge queue lands it.)*
-
-**The dates are when the refusals were written down, not necessarily when they were made.** Most of
-this tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so a decision is
-usually older than the bullet recording it.
+Refused by milestone 211 (design/roadmap/0211-self-referential-harnesses.md) and milestone 213
+(design/roadmap/0213-harnesses-that-duplicate-the-implementation.md), each of which records it in
+its Follow-on. Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that
+names work a number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 

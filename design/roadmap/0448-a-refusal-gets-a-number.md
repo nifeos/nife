@@ -5,10 +5,10 @@ built: 2026-09-20
 ---
 # 448. A refusal gets a number, a status, and a condition that would change it
 
-Built 2026-09-20. Minted from calef's ruling the same day, that refusals which name
-work should be milestones rather than bullets, backfilled so the inventory is comprehensive; he
-ratified the status word `REFUSED` in the same conversation. *(Number provisional until the merge
-queue lands it.)*
+Built 2026-09-20, on calef's ruling of that day that refusals which name work are milestones rather
+than bullets, backfilled so the inventory is complete. He ratified the status word `REFUSED` in the
+same ruling.
+
 
 ## The defect, measured
 

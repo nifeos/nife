@@ -5,15 +5,10 @@ refused_by: 161, 215, 448
 ---
 # 459. Legacy INTx interrupt routing on x86_64
 
-Refused by milestone 161 (design/roadmap/0161-x86-64-kernel-port.md), milestone
-215 (design/roadmap/0215-x86-64-pci-interrupt-routing.md), and recorded there on 2026-09-03.
-Backfilled here on 2026-09-20 by milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md),
-which gave a refusal that names work a number, a status and a condition that would change it.
-*(Number provisional until the merge queue lands it.)*
-
-**The dates are when the refusals were written down, not necessarily when they were made.** Most of
-this tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so a decision is
-usually older than the bullet recording it.
+Refused by milestone 161 (design/roadmap/0161-x86-64-kernel-port.md) and milestone 215
+(design/roadmap/0215-x86-64-pci-interrupt-routing.md), each of which records it in its Follow-on.
+Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names work a
+number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 

@@ -5,11 +5,9 @@ built: 2026-09-20
 ---
 # 445. The screen check stops sampling and starts asking
 
-Built 2026-09-20. Minted 2026-09-20 by the maintainer, after calef chose option A among
-three put to him the same day. The ruling is
+The ruling is
 [§199 (the screen check asks instead of sampling)](../decisions/0199-the-screen-check-asks-instead-of-sampling.md);
-this block is what was built against it. *(Number provisional until the merge queue
-lands it.)*
+this block is what was built against it.
 
 ## The defect, measured
 
@@ -172,8 +170,8 @@ next person meets it.
 
 - **Recorded.** The parity scope note is on `kernel::console::hold_screen_at_handover`, and names
   milestone 157 as what makes the other two architectures need the knob.
-- **Recorded.** `notes/qemu.md`'s BUGS entry is rewritten: this milestone supersedes it, and it now
-  carries the starved-monitor finding, which is general.
+- **Recorded.** `notes/qemu.md`'s BUGS entry carries the starved-monitor finding, which is
+  general.
 - **Recorded.** The three-ESP-directory hazard, in `notes/x86-uefi-boot.md` beside the commands and
   in `uefi_loader/Cargo.toml` beside the feature.
 - **Recorded.** Every name below is provisional (`AGENTS.md`: calef names these). `screen-hold` the token and `SCREEN_HOLD`
@@ -187,6 +185,7 @@ next person meets it.
 time, so a loaded machine read zero rows and blamed the framebuffer. The kernel is asked to hold the
 screen instead: `screen-hold` on the boot command line makes `yield_screen` announce itself on the
 serial line and wait up to ten seconds for a byte before it clears, bounded twice so no knob can
-wedge a machine. Three runs at load 17, 32 and 38 each read exactly 95 rows. Two corrections fell
-out of building it: a spinning guest starves QEMU's own monitor so the wait parks the core, and the
-tour is taller than the screen and scrolls, so the marker goes back to its tail.
+wedge a machine. Three runs at load 17, 32 and 38 each read exactly 95 rows. A spinning guest
+starves QEMU's own monitor, so the wait parks the core, and the tour is taller than the screen and
+scrolls, so the marker sits at its tail.
+

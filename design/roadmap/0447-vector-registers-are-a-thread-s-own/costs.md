@@ -1,13 +1,11 @@
 # Milestone 447 appendix: what it costs, measured
 
 An appendix to [milestone 447 (a thread's vector registers are its
-own)](../0447-vector-registers-are-a-thread-s-own.md), moved out of that block on 2026-10-12 (UTC)
-under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md). The block
-is complete without it: its [cost
+own)](../0447-vector-registers-are-a-thread-s-own.md). The block is complete without it: its [cost
 summary](../0447-vector-registers-are-a-thread-s-own.md#what-it-costs-measured) carries every
 headline figure. This holds the tables and the working.
 
-## The IPC fastpath: within bound on every ISA, after a correction
+## The IPC fastpath: within bound on every ISA
 
 `script/fastpath-footprint`, before and after, on this tree:
 
@@ -17,9 +15,8 @@ headline figure. This holds the tables and the working.
 | riscv64 | 4632 → 4700 (+1.5%) | 5936 → 6004 (+1.1%) | 1870 → 1912 (+2.2%) |
 | x86_64 | 5356 → 5432 (+1.4%) | 7028 → 7104 (+1.1%) | 1504 → 1504 (0) |
 
-The first measurement was not that, and the correction is the useful part. Inlined into
-`schedule`, `hand_over`'s expensive half put riscv64's `ipc_send_recv` 7.5% over the 5% bound and
-`ipc_call_reply` 5.8% over. That was for code that no thread in this tree executes.
+Inlined into `schedule`, `hand_over`'s expensive half would put riscv64's `ipc_send_recv` 7.5% over
+the 5% bound and `ipc_call_reply` 5.8% over, for code that no thread in this tree executes.
 
 The gate measures the transitive closure of non-cold calls, because Liedtke's argument is about
 what a round trip evicts from L1i. Five hundred bytes of register-file machinery that no IPC runs
@@ -34,8 +31,8 @@ shipping boot.
 `riscv_trap_body`, one of the symbols this gate measures flat. The trap decoder's bytes are on
 every `ecall`, so an arm that inlined a register-file load there would be charged to every syscall
 this kernel serves. The decoder's own compare and branch is riscv64's `syscall_entry` row above.
-That row read +2.5% (1870 to 1916) in the first shape's table, and +2.2% since the 2026-09-20
-re-measurement of the shipped shape (commit `28e165e26`).
+That row is +2.2%, measured on 2026-09-20 on the shipped shape (commit `28e165e26`).
+
 
 ## The benchmarks: the switch costs one to three percent more instructions
 

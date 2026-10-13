@@ -5,14 +5,9 @@ refused_by: 188, 448
 ---
 # 467. `ReplyRecv` fusion: the IPC round trip in two syscalls instead of three
 
-Refused by milestone 188 (design/roadmap/0188-ipc-fastpath.md), and recorded
-there on 2026-09-04. Backfilled here on 2026-09-20 by
-milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal that names work a number, a
-status and a condition that would change it. *(Number provisional until the merge queue lands it.)*
-
-**The date is when the refusal was written down, not necessarily when it was made.** Most of this
-tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so the decision is usually
-older than the bullet and its reasoning sits in the block's own prose above it.
+Refused by milestone 188 (design/roadmap/0188-ipc-fastpath.md), which records it in its Follow-on.
+Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names work a
+number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 

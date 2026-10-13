@@ -5,14 +5,9 @@ refused_by: 216, 448
 ---
 # 472. A bench console that can power-cycle a board
 
-Refused by milestone 216 (design/roadmap/0216-board-console.md), and recorded
-there on 2026-09-03. Backfilled here on 2026-09-20 by
-milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md), which gave a refusal that names work a number, a
-status and a condition that would change it. *(Number provisional until the merge queue lands it.)*
-
-**The date is when the refusal was written down, not necessarily when it was made.** Most of this
-tree's `- **Refused.**` bullets were written in one sweep on 2026-09-03, so the decision is usually
-older than the bullet and its reasoning sits in the block's own prose above it.
+Refused by milestone 216 (design/roadmap/0216-board-console.md), which records it in its Follow-on.
+Milestone 448 (design/roadmap/0448-a-refusal-gets-a-number.md) gives a refusal that names work a
+number, a status and a condition that would change it.
 
 ## The refusal, in its own words
 

@@ -5,8 +5,6 @@ built: 2026-09-20
 ---
 # 446. The naming worklist says what it covers, and stops saying what it used to
 
-*(Number provisional until the merge queue lands it.)*
-
 This milestone exists because of a false premise, and the premise is the interesting part.
 A lane on milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets)
 reported that `cryptography_provider`, `cryptography_exerciser` and `script/crypto-probes` were
@@ -23,13 +21,12 @@ costs more, because it sends somebody to build a thing that already exists.
 
 ## What was false, and what is true
 
-`script/names` grew a fourth kind, `package`, on 2026-08-18, after calef found
-`script/names std_exerciser` answering *"neither a name in the tree nor a recorded refusal"*. It is
-discovered rather than listed: the tool walks for `Cargo.toml` outside `crates/`, so a package
-arriving tomorrow is covered without anyone editing the script. `kernel`, `xtask`,
-`redoxfs_server`, `tools/redoxfs_host`, `components`, `fixtures`, `std_exerciser` and
-`entropy_backend` are all in the table today, which `script/names --check` counts as 10 packages of
-229 names.
+`script/names` has a fourth kind, `package`, so `script/names std_exerciser` no longer answers
+*"neither a name in the tree nor a recorded refusal"*. It is discovered rather than listed: the tool
+walks for `Cargo.toml` outside `crates/`, so a package arriving tomorrow is covered without anyone
+editing the script. `kernel`, `xtask`, `redoxfs_server`, `tools/redoxfs_host`, `components`,
+`fixtures`, `std_exerciser` and `entropy_backend` are all in the table today, which `script/names
+--check` counts as 10 packages of 229 names.
 
 Four places still told the old story, and one told a different stale story in the same direction:
 
