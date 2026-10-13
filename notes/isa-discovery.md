@@ -28,7 +28,7 @@ nife
                   : 44-bit PA, 48-bit VA available, 16-bit ASIDs, granules 4K 64K
 ```
 
-Everything on those lines was previously either unknown to the kernel or assumed.
+Without discovery, everything on those lines is either unknown to the kernel or assumed.
 
 ## The three tiers, and the one RISC-V does not have
 
@@ -166,10 +166,10 @@ is what should tell us what the abstraction is, if there is one.
 
 ## Naming
 
-The crate was `isa`, settled by calef on 2026-08-03 as a term of art. It collided with the ISA bus
-and undersold the crate's scope, so calef renamed it to `machine_discovery` on 2026-08-23, after
-the "machine" that Linux ARM and FreeBSD use for the same device-tree-plus-probe scope. The
-reasoning and the names it beat are in [the-crate-name.md](isa-discovery/the-crate-name.md).
+calef named the crate `machine_discovery` on 2026-08-23, after the "machine" that Linux ARM and
+FreeBSD use for the same device-tree-plus-probe scope. Not `isa`, because it collides with the ISA
+bus and undersells the crate's scope. The reasoning and the names it beat are in
+[the-crate-name.md](isa-discovery/the-crate-name.md).
 
 ## The tables, and a line nothing covers
 
@@ -265,10 +265,6 @@ reasoning are in [psci-conduit.md](isa-discovery/psci-conduit.md).
   binding permits it per hart, and a machine whose harts genuinely differ would be misread. The
   kernel treats the counter as machine-wide regardless, so this is a limitation of the model rather
   than of the parse.
-- Closed 2026-09-21: `user_mode_runtime::cntfrq` returned 10 MHz on RISC-V until then, a silent
-  2.5x on radon, whose rate is 4 MHz. The fix widened a `cfg` so the kernel hands userspace the
-  rate in a page, as `x86_64` already did. The reasoning that had kept it open was wrong, and the
-  lesson is in [counter-rate-in-userspace.md](isa-discovery/counter-rate-in-userspace.md).
 - A `status = "disabled"` CPU node is counted in the intersection. Firmware sometimes describes
   a core the OS will never run on, and including it narrows `common` further than it needs to be.
   That is the safe direction and it is not free: a board describing a disabled core with no FPU
@@ -280,10 +276,9 @@ reasoning are in [psci-conduit.md](isa-discovery/psci-conduit.md).
   implementation-defined, so decoding it as `1.7` would be a guess that happens to be right for one
   vendor, which is the sort of guess `implementer_name` deliberately refuses elsewhere.
 - Little here has met a real board. Every ISA and CPU-list fixture is QEMU's or hand-written. That
-  is the limitation the milestone exists to prepare for, not one it removes. Corrected 2026-10-11
-  (UTC), which this line used to say of every fixture:
-  `crates/machine_discovery/tests/fixtures/visionfive2-uboot-control.dts` is the VisionFive 2's
-  U-Boot control tree's PLIC node, captured at the bench on 2026-08-21.
+  is the limitation the milestone exists to prepare for, not one it removes. The one fixture from a
+  board is `crates/machine_discovery/tests/fixtures/visionfive2-uboot-control.dts`, the VisionFive
+  2's U-Boot control tree's PLIC node, captured at the bench on 2026-08-21.
 
 ## See also
 
@@ -292,5 +287,7 @@ reasoning are in [psci-conduit.md](isa-discovery/psci-conduit.md).
   them, including `sifive-u54`. That is what made discovery worth building anyway: the one place a
   real chip may differ is the one place no emulator can tell us about.
 - [ASIDs](address-space-identifiers.md) for what the ASID width is load-bearing for.
+- [The counter rate in userspace](isa-discovery/counter-rate-in-userspace.md): how
+  `user_mode_runtime::cntfrq` learns RISC-V's rate from a page the kernel maps, and the lesson.
 - [The device tree](device-tree.md) for the parser this reads through.
 - [The RISC-V port](riscv-port.md) for the SBI calls whose extensions are now probed.

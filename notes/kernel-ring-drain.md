@@ -100,7 +100,7 @@ inside the shell's echo (`notes/swish-check-flake.md`). The kernel does write af
 gauge lines in a 111-line, 17.6-second aarch64 transcript
 (`notes/kernel-console-arbitration-pricing.md`, part 1). The drain does need new authority. No
 capability in the tree today names a kernel-owned ring, and handing the service the UART lock
-instead is option C, which §175 ruled superseded by B.
+instead is option C, which §175 refused in favor of B.
 
 ### 5. What each costs.
 

@@ -9,13 +9,10 @@ timer behavior, and BUGS. These files carry the evidence its prose budget has no
 - [`five-assertions.md`](five-assertions.md): the five tests the physical core found, each failure
   and its fix, and the settle windows the leg makes weaker rather than flakier.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `semihosting` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
-- `five-assertions` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes,
-  after the parent's own heading.
+- `semihosting` Name: provisional.
+- `five-assertions` Name: provisional. After the parent's own heading.

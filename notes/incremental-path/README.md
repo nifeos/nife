@@ -11,14 +11,11 @@ budget has no room for.
 - [`rust-in-linux.md`](rust-in-linux.md): the timeline, line counts, maintainer positions, policy
   and stable-Rust gap behind the parent's scorecard.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-- `sources` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the
-  parent's "What was read, and when". calef names files.
-- `linux-research-challenges` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/final-longest-notes, for the paper's research-challenges section. calef names files.
-- `rust-in-linux` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for the
-  evidence under the parent's "The claim to check: is anyone actually walking the path". calef
+- `sources` Name: provisional. After the parent's "What was read, and when". calef names files.
+- `linux-research-challenges` Name: provisional. For the paper's research-challenges section. calef
   names files.
+- `rust-in-linux` Name: provisional. For the evidence under the parent's "The claim to check: is
+  anyone actually walking the path". calef names files.

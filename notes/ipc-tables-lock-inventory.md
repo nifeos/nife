@@ -3,11 +3,9 @@
 *The inventory milestone 17 asks for before anyone partitions anything. Method: every
 `IPC_TABLES.lock()` site in `kernel/src/sched.rs` (41 functions as of 2026-08-03), classified by call
 path. The classification is by reading, not by measurement; the measurement is exactly what
-milestone 88's scaling curve exists to add. Filed under the lock's name at the time
-(`SCHED`); milestone 98 renamed the type and the static to `IpcTables`/`IPC_TABLES`
-(DECISIONS §118), on this note's own finding below that the hot set is IPC rather than
-scheduling. This note follows the code, so its own text now says `IPC_TABLES`; this
-paragraph is the historical pointer for a reader who remembers the old name.*
+milestone 88's scaling curve exists to add. The type and the static are `IpcTables`/`IPC_TABLES`,
+per DECISIONS §118 (`Scheduler`/`SCHED` rename to `IpcTables`/`IPC_TABLES`), because, as this note
+finds below, the hot set is IPC rather than scheduling.*
 
 The scheduler's per-CPU migration (DECISIONS §28) already moved run queues, `current`, and
 held-rank out of shared state. What still lives under the one `IPC_TABLES` lock is the thread
@@ -52,21 +50,20 @@ loom-checked; the wake-before-switch-out race is the standing proof that SMP int
 from this tree's other tools). Until the curve bends, the one lock is the right design, on
 purpose.
 
-## What the first measurement found (2026-10-04)
+## What the measurement found (2026-10-04)
 
-The table above classifies by call path, and a call path's temperature is not its hold time. The
-first measurement of who holds `IPC_TABLES` longest was taken under QEMU, the job mix at four tasks.
-The worst holder was `finish_switch`, and not for its own work: it reaped dead threads under the
-lock, and freeing a thread's kernel stack is six TLB shootdowns that interrupt every core. `start_thread_control_block`, filed as cold, built a stack under the lock too.
-Both now do that work outside it, and the hold time left is the IPC path's own, spread across
-`schedule`, `CALL`, `REPLY` and `current_cap`. The lesson for this table: a cold function that runs
+The table above classifies by call path, and a call path's temperature is not its hold time.
+Measured under QEMU, the job mix at four tasks, the hold time on `IPC_TABLES` is the IPC path's own,
+spread across `schedule`, `CALL`, `REPLY` and `current_cap`. `finish_switch` reaps dead threads, and
+`start_thread_control_block` (filed as cold) builds a stack, outside the lock, because freeing a
+thread's kernel stack is six TLB shootdowns that interrupt every core. The lesson for this table: a cold function that runs
 a cross-core operation under the global lock is hot for everyone else.
 [`job-mix/null-syscall-under-load.md`](job-mix/null-syscall-under-load.md) has the numbers.
 
 ## BUGS
 
-- The temperature classification is by reading call paths, not by counting acquisitions. Since
-  2026-10-04 there is a counter, though not the per-acquisition one this entry asked for.
+- The temperature classification is by reading call paths, not by counting acquisitions. There is
+  a counter, though not a per-acquisition one.
   `--features lock_wait` (kernel/src/lock_wait.rs) counts every *contended* acquisition per lock
   rank and its spin time, in the job mix's timed windows, and reads no clock on an uncontended one. A per-site hold-time table would turn the rows above into numbers; one was built for QEMU
   and not committed, because reading the clock on every acquisition may itself be expensive on

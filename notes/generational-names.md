@@ -54,7 +54,7 @@ audit may pass over it; §71 says what would promote it. See notes/untracked-wor
 ## The details that matter
 
 - **The boot thread is tid 0 by construction**: a fresh table's first insert mints slot 0,
-  generation 0, which packs to 0. What used to be a hardcoded key is now a property.
+  generation 0, which packs to 0. That is a property, not a hardcoded key.
 - **`u64::MAX` can never be minted** (slot would have to be 2^32-1 with 128 slots), so
   `cpu::NO_TID` keeps working as the "no thread" sentinel, and it is also the `UNNAMED`
   placeholder a `Thread` carries between construction and insertion.

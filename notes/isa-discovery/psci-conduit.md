@@ -1,10 +1,9 @@
 # The PSCI conduit: two failure shapes and the `smc` fixture
 
-An appendix of [ISA discovery](../isa-discovery.md), moved from its section "The sequel: PSCI and
-the CPU list (milestone 100)" on 2026-10-11 (UTC) under §212 (a prose budget). The parent keeps what
-milestone 100 (read the machine's PSCI and its CPU list) reads, what it still assumes and what the
-boot says. This file keeps why the two hardcoded facts failed differently, and how a QEMU option
-made the `smc` half parseable.
+An appendix of [ISA discovery](../isa-discovery.md). The parent keeps what milestone 100 (read the
+machine's PSCI and its CPU list) reads, what it still assumes and what the boot says. This file
+keeps why the two hardcoded facts failed differently, and how a QEMU option made the `smc` half
+parseable.
 
 ## The two failure shapes were not the same, and the plan had to say so
 

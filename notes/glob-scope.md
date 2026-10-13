@@ -1,8 +1,8 @@
 # What glob deliberately does not match
 
-*Name provisional. Moved from `crates/glob`'s module doc by milestone 863 (the comment-block sweep
-continues, worth three) on 2026-10-09 (UTC), because §267 (a comment states the constraint
-as it is now) puts the design argument here and the constraint in the doc. Wording kept except where a sentence had to split.*
+*Name: provisional. The design argument behind `crates/glob`'s module doc, kept here because §267
+(a comment states the constraint as it is now) puts the argument in a note and the constraint in
+the doc.*
 
 The matcher answers one question, does this pattern match this name, and two whole features of
 other glob engines are refused here rather than deferred.

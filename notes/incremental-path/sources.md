@@ -1,7 +1,6 @@
 # The incremental path: what was read, and when
 
-An appendix of [the incremental path](../incremental-path.md), moved from its section "What was
-read, and when" on 2026-10-11 (UTC) under §212 (a prose budget). The parent quotes the paper and
+An appendix of [the incremental path](../incremental-path.md). The parent quotes the paper and
 the sources below; this file is the record of where each came from and the day it was read.
 
 ## What was read, and when

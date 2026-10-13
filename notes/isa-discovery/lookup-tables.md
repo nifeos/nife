@@ -1,8 +1,8 @@
 # Lookup tables, and the one line nothing covers
 
-An appendix of [ISA discovery](../isa-discovery.md), moved from it on 2026-10-11 (UTC) under §212
-(a prose budget). It holds two code-shape decisions in `crates/machine_discovery` that a reader
-editing the crate needs and a reader of the discovery design does not.
+An appendix of [ISA discovery](../isa-discovery.md). It holds two code-shape decisions in
+`crates/machine_discovery` that a reader editing the crate needs and a reader of the discovery
+design does not.
 
 ## Four lookup tables, and why none of them is a `match`
 

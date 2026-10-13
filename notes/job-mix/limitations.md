@@ -34,14 +34,12 @@ An appendix to [notes/job-mix.md](../job-mix.md), whose BUGS section lists each 
 - The mix proportions are chosen, not derived. AIM7 ships workfiles for four machine roles and
   nobody here has one for a capability microkernel. A different mix gives a different number, and no
   result from this instrument should be quoted without saying which mix produced it.
-- The repeat count was sized from the five-job mix's distribution, because no seven-job run
-  on silicon exists yet. The map and spawn jobs may widen or narrow `tasks=4`'s spread. Step 6.1
-  of the procedure is the check, and if 21 is not enough the count is one constant
-  (`job_mix::REPEATS`). Corrected 2026-10-11 (UTC): a seven-job run on silicon now exists. The
-  2026-10-04 evening on radon read every point within 1.67% across five boots, `tasks=4` within
-  1.12% (the Results table in [notes/job-mix.md](../job-mix.md)), so 21 was enough there.
-- Since milestone 227 (a GICv3 driver) `--hvf` boots, and since 2026-10-05 the full mix completes
-  there ([`spawn-destroy-gone.md`](spawn-destroy-gone.md)).
+- The repeat count was sized from the five-job mix's distribution. On radon it is enough: the
+  seven-job run of 2026-10-04 read every point within 1.67% across five boots, `tasks=4` within
+  1.12% (the Results table in [notes/job-mix.md](../job-mix.md)). Step 6.1 of the procedure is the
+  check on another machine, and if 21 is not enough the count is one constant (`job_mix::REPEATS`).
+- `--hvf` boots (milestone 227 (a GICv3 driver)), and the full mix completes there
+  ([`spawn-destroy-gone.md`](spawn-destroy-gone.md)).
 - The supervisor is in the kernel, and that is what makes the build special (milestone 523 (moving the job-mix supervisor into userspace, and the five permissions it turns out to need)). A userspace supervisor would delete the whole
   class of problem a diverted boot has, and would measure the more honest thing. Its
   own releases and drains would be real `svc` round trips inside the timed window. And it would be

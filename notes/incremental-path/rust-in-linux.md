@@ -1,12 +1,10 @@
 # Is anyone walking the path: Rust in Linux, 2022 to 2026
 
-An appendix of [the incremental path](../incremental-path.md), moved from its section "The claim
-to check: is anyone actually walking the path" on 2026-10-11 (UTC) under §212 (a prose budget).
-The parent keeps the question, the scorecard and what it does and does not prove. This file keeps
+An appendix of [the incremental path](../incremental-path.md). The parent keeps the question, the scorecard and what it does and does not prove. This file keeps
 the evidence: the timeline, the line counts, the maintainers on the record, the policy, and the two
 gaps at the top of the ladder. Every source is listed in [sources.md](sources.md).
 
-## The timeline and the line counts
+## Releases and line counts
 
 Rust is permanent and it is real. Support merged for Linux 6.1 in October 2022, and the first Rust
 drivers landed in 6.8 in March 2024. The hedging ended at the Kernel Maintainers Summit in December

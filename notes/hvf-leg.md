@@ -45,8 +45,8 @@ Two things failed on the way there, and neither is the GIC:
   milestone 74's finding as much as this leg's: an HVF run is not evidence about that register.
 - **`user::tests::a_std_program_serves_a_granted_listening_port` hung in two of three full `--hvf`
   runs**, and passed when run alone. It was not HVF-only: the riscv64 CPU matrix hit it under TCG
-  twice (notes/net/the-inbound-check.md, corrected 2026-10-13). Fixed by milestone 514 (the HVF std
-  listener hangs in some full runs) on 2026-10-12. The prober's third connection, opened within a
+  twice (notes/net/the-inbound-check.md). Milestone 514 (the HVF std listener hangs in some full
+  runs) fixed it. The prober's third connection, opened within a
   millisecond of the hand-written listener's second answer, could complete its handshake into the
   socket `net_stack` re-arms after every `ACCEPT`. The hand-written client's `CLOSE` then dropped
   that socket without a reset. So the prober held an established connection to nobody while the std
@@ -122,21 +122,19 @@ does not intercept ARM semihosting on the HVF path. The `hlt` trap is not swallo
 Unknown-reason exception in the guest, the panic handler tries to exit the same way, and four cores
 write interleaved garbage forever. So the host ends the run. `hvf_kernel_leg` reads the transcript
 for three markers printed before the exit (`test result: ok. N passed`, `[PANIC] `, `WATCHDOG:`),
-relays 200 more lines after a failure, and stops. The probe, the exception and the first version's
-four-minute spin are in [`hvf-leg/semihosting.md`](hvf-leg/semihosting.md).
+relays 200 more lines after a failure, and stops. The probe, the exception and why the relay is
+bounded are in [`hvf-leg/semihosting.md`](hvf-leg/semihosting.md).
 
 ## The SMMU correction
 
-`helpers/qemu-runner-aarch64.sh` used to attach `iommu=smmuv3` on the TCG path only, on the
-recorded ground that "smmuv3 emulation alongside HVF acceleration is the fragile combination."
-**Nobody had run it.** The suite on the physical core runs green with the SMMU attached, including
-`a_backing_outside_the_grant_is_refused_by_the_iommu`, the test that asserts the *hardware* faults
-a DMA leaving its domain.
+`helpers/qemu-runner-aarch64.sh` attaches `iommu=smmuv3` on the HVF path as well as TCG. smmuv3
+emulation alongside HVF acceleration is not a fragile combination: the suite on the physical core
+runs green with the SMMU attached, including `a_backing_outside_the_grant_is_refused_by_the_iommu`,
+the test that asserts the *hardware* faults a DMA leaving its domain.
 
-The belief was also costing a real gap while it stood: with no SMMU under HVF, the compositor test
-fails outright ("a virtio-gpu is present but the IOMMU is not active"), and the DMA-confinement
-tests would have had no hardware to assert about. The flag now applies on both paths, which is
-where it belongs on principle too. The accelerator chooses how CPU instructions execute, while the
+Without the SMMU under HVF the compositor test fails outright ("a virtio-gpu is present but the
+IOMMU is not active"), and the DMA-confinement tests would have no hardware to assert about. Both
+paths are where the flag belongs on principle too. The accelerator chooses how CPU instructions execute, while the
 SMMU sits in front of the PCIe root complex and translates *device* traffic that QEMU emulates in
 the host process either way. This is a correction to the record, in the sense CLAUDE.md means: the
 machine overruled the comment.
@@ -159,23 +157,18 @@ stating plainly. Each test, its failure and its fix are in
 
 Under HVF guest time is host time (`CNTVCT_EL0` is passed through at the host's 24 MHz) and there is
 no icount instrument, so the milestone expected the wall-clock assertions to be the casualties. None
-of them failed. The reason is milestone 78 (the load-sensitive assertions), which landed the night
-before. The timer-drift twins had already been re-aimed at the re-arm law: over a window in which
+of them failed. The reason is milestone 78 (the load-sensitive assertions). The timer-drift twins
+are aimed at the re-arm law: over a window in which
 `MISSED_TICKS` did not move, the deadline advanced by exactly one interval per delivered tick. That
 law is a statement about state the kernel owns, not about how fast the clock runs. A test that
-measures the right thing does not care which accelerator it is on, which is a stronger endorsement
-of that work than the milestone could have written for itself.
+measures the right thing does not care which accelerator it is on.
 
-The assertions that *do* keep wall-clock exposure passed here as well: the handler-latency pair
-(`the_handler_keeps_up_when_no_lock_is_held`), named in that note's BUGS as unfixed, and
-`ticks_arrive_at_the_configured_rate`'s surviving bound. HVF makes them no worse in principle: a
-deschedule of a host thread running a vCPU produces the same missed tick either way.
-
-*Half of that is history as of 2026-08-18.* Milestone 62 deleted the handler-latency pair on
-both ISAs rather than fixing the taxonomy, and made `ticks_arrive_at_the_configured_rate`'s retry
-budget report `UNMEASURED` instead of failing, so the only wall-clock timer exposure this leg still
-inherits is that report. The local tier runs `script/icount` before `script/test`, which means this
-leg is now preceded by an instrument the accelerator cannot influence at all.
+The only wall-clock timer exposure this leg inherits is `ticks_arrive_at_the_configured_rate`'s
+retry budget, which reports `UNMEASURED` instead of failing (milestone 62 (tests that assert on
+time: make a red run mean something)). HVF makes it no worse in principle: a deschedule of a host
+thread running a vCPU produces the same missed tick either way. The local tier runs `script/icount`
+before `script/test`, so this leg is preceded by an instrument the accelerator cannot influence at
+all.
 
 ### The settle windows the leg makes weaker, not flakier
 
@@ -191,26 +184,11 @@ a duration is a design question. The three sites are named in
   (a GICv3 driver) put the leg back on a machine QEMU 11.1.1 will start. When the probe cannot start
   that machine, `script/ci-build` skips the leg out loud, which is milestone 222 (a leg that fails
   instead of skipping), and a loud skip is a record of a gap and not a substitute for one.
-- **The leg was red on `main` from 2026-09-19 to 2026-09-24 and nobody saw it**, because nothing
-  runs it but a person. Milestone 134 (the register of measures) merged a per-IPC stack depth
-  calibration, `null_median == null_floor`, that failed on every HVF run. Both runs at its merge
-  failed there, while on the commit before it one run was green and the other failed only on the
-  known inbound flake. A local queue preflight found it five days later. The check was a timing
-  assertion, and `kernel/src/ipc_stack_depth.rs` has the measurement. It is the same shape as the
-  five yield-count assertions above, found from the same direction, and the only mechanism that
-  would have caught it sooner is running this leg.
-- With the calibration fixed, two older failures are what stand between this leg and green. They
-  were measured on 2026-09-24 over six runs, on a host that other lanes held at a 1-minute load of 14
-  to 25 on 8 cores. Two runs were green (355 passed, 3 skipped, every host check). Three hung at
-  `a_std_program_serves_a_granted_listening_port`. One passed the whole suite and then failed
-  the scanout referee on the display-terminal and display-pattern checks (the referee sampled too
-  late; the guest's own tests passed). The listener hang had one prober shape in all four runs
-  that showed it. Two rounds were answered around +19 s. Then a connection opened within a
-  millisecond of the second answer, waited 90 s and was never accepted, while the std program aborted
-  (`BRK`) on its bounded `accept`. That is the shape the hypothesis at the top of this page
-  predicts, a connection handed to the hand-written listener's socket after its last round, now seen
-  four times rather than inferred. Milestone 514 forced it and fixed it in `net_stack`'s `CLOSE`,
-  not in the prober, which still holds every connection on purpose (`xtask/src/inbound.rs`).
+- **A timing assertion that fails on every HVF run can sit on `main` unseen**, because nothing
+  runs this leg but a person. The tell is a red `script/ci-build hvf` on a commit whose CI is green.
+- The scanout referee can sample too late on a loaded host. Measured 2026-09-24 over six runs, on a
+  host held at a 1-minute load of 14 to 25 on 8 cores: one run passed the whole suite and then
+  failed the display-terminal and display-pattern checks while the guest's own tests passed.
 - One failure ends the suite, on both legs. The custom test framework does not unwind, so a
   panicking test is the end of the run under TCG too; what differs here is only the exit. The scanout
   and inbound checks still report afterwards and can fail because the guest never reached their

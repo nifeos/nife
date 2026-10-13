@@ -10,7 +10,7 @@ the parent's Results row points to it.
   nearly doubled from one busy core to four (the reaper freed kernel stacks under `IPC_TABLES`),
   the fix, and the radon procedure that will size it.
 - [`null-syscall-first-radon-run.md`](null-syscall-first-radon-run.md): what TCG could not say about
-  that fix, and the procedure radon sized it by, moved out of the note above for §212 (a prose budget).
+  that fix, and the procedure radon sized it by.
 - [`null-syscall-off-radon.md`](null-syscall-off-radon.md): the rest was the global lock on every
   capability lookup, measured under TCG and on four Apple cores under HVF (2026-10-05).
 - [`null-syscall-hvf-full-mix.md`](null-syscall-hvf-full-mix.md): the same, spawning included.
@@ -25,17 +25,6 @@ the parent's Results row points to it.
   not run.
 - [`limitations.md`](limitations.md): the parent's BUGS list in full.
 
-*Name: provisional, minted 2026-10-04 (UTC) by the `lane/radon-jobmix-2026-10-04` lane, for the
-directory and every stem in it; `lane/null-syscall-under-load` added two stems on 2026-10-05. `lane/null-syscall-hvf` added one, and `lane/radon-2026-10-05-record` one. Naming is an architect's; `script/names --unratified` lists each
-stem.*
-
-The stems `warton-aim7`, `instrument-change-2026-09-19`, `hvf-cross-check-2026-09-19` and
-`limitations` were minted on 2026-10-11 (UTC) by `lane/next-ten-longest-notes`, which split the
-parent under §212 (a prose budget). Each is named for its content, and calef names files.
-
-- `warton-aim7` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `instrument-change-2026-09-19` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/next-ten-longest-notes, dated like `radon-2026-10-04`.
-- `hvf-cross-check-2026-09-19` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/next-ten-longest-notes.
-- `limitations` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
+*Name: provisional, for the directory and every stem in it. Naming is an architect's;
+`script/names --unratified` lists each stem. Each stem is named for its content, and
+`instrument-change-2026-09-19` is dated like `radon-2026-10-04`.*

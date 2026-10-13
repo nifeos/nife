@@ -1,6 +1,6 @@
 # Can GLM-5.3 Flash do lane work?
 
-*Name: provisional (2026-10-10 UTC). calef asked on 2026-10-10 (UTC): "Can you launch a lane to
+*Name: provisional. calef asked on 2026-10-10 (UTC): "Can you launch a lane to
 assess GLM-5.3 Flash for lane work?". The method below was committed before the first trial run;
 anything that changed after it is recorded as a deviation.*
 

@@ -9,20 +9,18 @@ sequel, and the `BUGS`. This directory carries the detail its prose budget has n
   not callable.
 - [`lookup-tables.md`](lookup-tables.md): why the crate's four lookup tables are arrays rather than
   `match`es, why SBI ids are derived from their tags, and the one line no test covers.
-- [`the-crate-name.md`](the-crate-name.md): how `isa` became `machine_discovery`, and the prior art
-  behind the name.
-- [`counter-rate-in-userspace.md`](counter-rate-in-userspace.md): the closed limitation on
-  `user_mode_runtime::cntfrq`, and why the reasoning that kept it open was wrong.
+- [`the-crate-name.md`](the-crate-name.md): why the crate is `machine_discovery`, the prior art
+  behind the name, and the names it beat.
+- [`counter-rate-in-userspace.md`](counter-rate-in-userspace.md): how `user_mode_runtime::cntfrq`
+  learns RISC-V's counter rate, and the lesson.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-- `psci-conduit` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for the
-  parent's PSCI failure shapes and `smc` fixture. calef names files.
-- `lookup-tables` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the
-  parent's "Four lookup tables, and why none of them is a `match`". calef names files.
-- `the-crate-name` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the
-  parent's "Naming". calef names files.
-- `counter-rate-in-userspace` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/final-longest-notes, for the closed `cntfrq` entry in the parent's `BUGS`. calef names files.
+- `psci-conduit` Name: provisional. For the parent's PSCI failure shapes and `smc` fixture. calef
+  names files.
+- `lookup-tables` Name: provisional. After the parent's "Four lookup tables, and why none of them is
+  a `match`". calef names files.
+- `the-crate-name` Name: provisional. After the parent's "Naming". calef names files.
+- `counter-rate-in-userspace` Name: provisional. For how `cntfrq` learns the rate. calef names
+  files.

@@ -20,8 +20,7 @@ Real `SoC` peripherals are not like that. Most of the JH7110's blocks boot gated
 ungates only what the firmware itself uses. A gated block's register window is not absent, which is
 the part that makes this hard to diagnose: it accepts every store and reads back zero.
 
-**This was a prediction until 2026-09-04, and then it was a measurement.** Two boots of radon,
-byte-identical:
+**Measured on 2026-09-04.** Two boots of radon, byte-identical:
 
 ```text
 hw entropy  : FAILED: JH7110 TRNG at 0x1600c000 (tree says starfive,trng, status disabled):

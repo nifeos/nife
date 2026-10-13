@@ -10,14 +10,10 @@ detail its prose budget has no room for.
 - [`devices-and-partitions.md`](devices-and-partitions.md): the partition selectors, the correction
   about the old tool on a partitioned disk, transcripts, how it is proven, and its BUGS.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `extended-attributes` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/sixth-ten-longest-notes, after the parent's own heading.
-- `devices-and-partitions` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/sixth-ten-longest-notes, after the parent's own heading.
+- `extended-attributes` Name: provisional. After the parent's own heading.
+- `devices-and-partitions` Name: provisional. After the parent's own heading.

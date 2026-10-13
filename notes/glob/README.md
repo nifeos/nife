@@ -9,11 +9,9 @@ budget has no room for.
   it, the solver-time cost, the defect Kani found in a harness, and the host-test enumeration that
   carries the length-independent claims.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stem below was minted the same day by the same lane. It is named for its content, and calef
-names files.
+The stem below is named for its content, and calef names files.
 
-- `proofs` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
+- `proofs` Name: provisional.

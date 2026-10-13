@@ -15,10 +15,10 @@ unterminated bracket and two stars. What it does not buy is quantification over 
 Two things had to change to get there, and both are DECISIONS §46 (thin primitives or whole
 subsystems) rule 1 in practice: restructure the code, do not weaken the claim.
 
-- The bracket expression is scanned once, not twice. The first version found the closing `]` in
-  one loop and tested membership in another, and Kani unrolls both. Both sat nested inside the match
-  loop it is already unrolling. Merging them into a single pass that decides membership as it goes removed a
-  whole loop from the unrolling. It is also less work at runtime, which is the usual shape of these.
+- The bracket expression is scanned once, not twice. Finding the closing `]` in one loop and
+  testing membership in another would give Kani two loops to unroll, both nested inside the match
+  loop it is already unrolling. A single pass that decides membership as it goes removes a whole
+  loop from the unrolling. It is also less work at runtime, which is the usual shape of these.
 - The unwind bounds are measured, not guessed. Every outer iteration adds at least one to the
   step count. So the worst step count over a domain is a safe upper bound for the iteration count
   over it. `the_worst_case_over_the_proof_domain_is_what_the_unwind_bounds_are_set_from` enumerates

@@ -1,9 +1,8 @@
 # model-checking/kani#4913: what stands between the draft and "ready for review"
 
-*Name: provisional, minted 2026-10-03 (UTC) by the lane `milestone/589-upstream-flag`. The parent
-note is [kani-upstream.md](../kani-upstream.md). Nothing here is posted. calef reads and posts
-every upstream word; this lane pushed nothing to calef/kani and wrote nothing on GitHub outside
-nifeos/nife.*
+*Name: provisional. The parent note is [kani-upstream.md](../kani-upstream.md). Nothing here is
+posted. calef reads and posts every upstream word; nothing here was pushed to calef/kani or written
+on GitHub outside nifeos/nife.*
 
 ## The premise was stale
 
@@ -90,7 +89,7 @@ places are now stale or wrong. Replacement text, ready to paste:
 3. **Testing, CI bullet.** Append: "None of the regression workflows have run on this PR yet; they
    are waiting for approval to run for a first-time contributor."
 4. **Disclosure.** `https://github.com/crickertech/nife` becomes `https://github.com/nifeos/nife`.
-   The organization was renamed on 2026-10-03; the old link redirects for now.
+   The `crickertech` organization is now `nifeos`, and the old link redirects for now.
 
 The heading "Something I noticed and did not change" now holds the corrected cause and the
 follow-up offer, which is current. It can stay.

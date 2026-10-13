@@ -283,10 +283,9 @@ page tables sit under every later carve and cannot break their last-in first-out
 several times what a line needs. A leak therefore exhausts the heap and refuses lines long before
 it could touch the pages children are built from.
 
-The first version split a 12-page region off the budget for the heap instead. CI caught what that
-costs: a region that has been split cannot be destroyed while its child lives, so every kernel test
-that ran the shell kept its whole budget, 247 to 283 frames each, and a later test on each
-architecture ran out of page frames.
+Not a 12-page region split off the budget, because a region that has been split cannot be
+destroyed while its child lives. Every kernel test that ran the shell would keep its whole budget,
+247 to 283 frames each, and CI showed a later test on each architecture running out of page frames.
 
 No word splitting, ever. §141 (application is grant) said the `$?` guarantee held only because
 there was no allocator. It now holds because substitution has one seam, `swish::pieces`, which

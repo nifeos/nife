@@ -28,12 +28,11 @@ predicted exactly this in a comment ("without one it raises a real exception"). 
 knowing it had a case.
 
 So the host, not the guest, ends the run. `hvf_kernel_leg` owns the QEMU child and reads its
-transcript, the same shape `run_bench` has used since milestone 21 (performance measurement). It
+transcript, the same shape `run_bench` uses (milestone 21 (performance measurement)). It
 takes its verdict from three markers the harness prints *before* the exit that will not happen:
 `test result: ok. N passed`, `[PANIC] `, and `WATCHDOG:`. Once something has failed it relays 200
 more lines (enough for the longest thread dump) and stops, because there is no end of output to read
 to.
 
-The first version of this leg had no such budget. It left an xtask spinning on the storm for four
-minutes, holding `target/nifefs-blank.img`. That failed the *next* run with `Failed to get "write"
-lock`, which is precisely the trap CLAUDE.md warns about.
+Without that budget an xtask spins on the storm, holding `target/nifefs-blank.img`, and the *next*
+run fails with `Failed to get "write" lock`, which is precisely the trap CLAUDE.md warns about.

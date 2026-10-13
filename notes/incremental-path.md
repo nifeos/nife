@@ -230,10 +230,3 @@ behind them has a citation, a measurement, and a name.
   behind a retrofitted modular interface" rests on the published policy, the per-subsystem line
   counts, and the LWN coverage. A retrofit in progress somewhere that has not landed would not
   appear in any of those.
-- Closed, corrected 2026-10-11 (UTC). This entry said `design/fatal-risks/README.md` was not
-  edited by this note, so the connection to risk 8 was asserted only here, at rung four. The
-  paragraph proposed in PR #1063 has since been applied: risk 8's appendix,
-  `design/fatal-risks/nobody-needs-it.md`, carries it and links here, and risk 1's file and its
-  appendix cite this note too.
-- Closed, corrected 2026-10-11 (UTC). This entry said `notes/bibliography.md` was not on `main` at
-  `b6d8fa2d`, so the paper's row was owed at merge. The bibliography carries the row now.

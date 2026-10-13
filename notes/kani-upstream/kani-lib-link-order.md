@@ -1,10 +1,9 @@
 # Draft: the `kani_lib.c` link-order follow-up to model-checking/kani#4913
 
-*Name: provisional, minted 2026-10-03 (UTC) by milestone 635 (riscv64 proofs check against the
-riscv64 model). The parent note is [kani-upstream.md](../kani-upstream.md). **Not posted.** calef
-reads every upstream word before anything goes to model-checking/kani, and nothing here has been
-pushed to calef/kani. Measured and rewritten 2026-10-03 (UTC) by the lane
-`lane/kani-lib-link-order`.*
+*Name: provisional, for milestone 635 (riscv64 proofs check against the riscv64 model). The parent
+note is [kani-upstream.md](../kani-upstream.md). **Not posted.** calef reads every upstream word
+before anything goes to model-checking/kani, and nothing here has been pushed to calef/kani.
+Measured 2026-10-03 (UTC).*
 
 This is the pull request promised in calef's reply to tautschnig on #4913
 ([discussion_r4172069063](https://github.com/model-checking/kani/pull/4913#discussion_r4172069063)):
@@ -22,22 +21,19 @@ read as one change: keep Kani's model, and make that model right for Apple. It a
 first-time contributor at two open pull requests. Effort was not the reason. The options weighed
 are in this file's history (`git log -p` on it).
 
-## What the measurements changed in the earlier draft
+## What the measurements show
 
-The first draft (merged earlier on 2026-10-03) made three claims the machine overruled:
-
-1. That an Apple Silicon host run moves `long_double_width` from 64 to 128. Kani's aarch64 model
-   has used 64 off Linux since #2757; the 128 was nife's riscv64 model. Only `char_is_unsigned`
-   changes on this Mac, as calef's #4913 comment said.
-2. That only macOS differs. x86_64 macOS matches Kani's model (by proxy, below); aarch64 Linux does
-   not (`wchar_t_is_unsigned`: `goto-cc` 0, Kani 1).
-3. That Linux sees no change. True for x86_64, false for aarch64, where Kani's 1 is right.
+1. An Apple Silicon host run does not move `long_double_width`: Kani's aarch64 model uses 64 off
+   Linux (#2757), and 128 is nife's riscv64 model. Only `char_is_unsigned` changes on this Mac, as
+   calef's #4913 comment said.
+2. macOS is not the only host that differs. x86_64 macOS matches Kani's model (by proxy, below);
+   aarch64 Linux does not (`wchar_t_is_unsigned`: `goto-cc` 0, Kani 1).
+3. Linux sees no change on x86_64, and a change on aarch64, where Kani's 1 is right.
 
 ## Branch plan
 
 - Base: upstream `main` at `1640445da3fa0d2cb19739652057dc992fef3f18` (2026-10-02, "Stop a SIMD
-  comparison with float mask lanes from aborting the crate (#4951)"). Unchanged since the first
-  draft.
+  comparison with float mask lanes from aborting the crate (#4951)").
 - Fork `calef/kani`, branch `kani-lib-link-order` (provisional). Cut from `main`, not from #4913,
   because it changes host runs and should not wait for or be reverted with #4913.
 - One commit: [kani-lib-link-order.patch](kani-lib-link-order.patch), `git format-patch` form. To

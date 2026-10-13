@@ -88,9 +88,9 @@ old instrument the same day; seven times the repeats accounts for most of that g
 
 ## What changed on 2026-09-19, and how to tell an old transcript from a new one
 
-Two things changed at once, and each on its own makes old and new numbers incomparable. Each sweep
-point used to be the best of three repeats and is now the median of 21, with the fastest and slowest
-beside it. And the mix grew from five job kinds to seven, adding `MAP` and `SPAWN`.
+Each sweep point is the median of 21 repeats, with the fastest and slowest beside it, and the mix has
+seven job kinds, including `MAP` and `SPAWN`. A transcript from before 2026-09-19 took the best of
+three repeats over five kinds, and each difference on its own makes its numbers incomparable.
 
 A new transcript's started line says `one of 7 kinds`, and the next line says `median of 21
 repeats`. A new point line carries `jpm_median=` and no `jpm=` or `ticks=`, so a script written
