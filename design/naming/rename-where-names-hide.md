@@ -4,7 +4,7 @@
 compiler cannot see when a program or crate is renamed, and why the census is taken twice. It exists
 to verify or challenge the main page. A reader who only needs to name, ratify or rename something
 should not have to open it. The directory `design/naming/` and this file's stem are provisional
-names, minted 2026-09-24 by the lane that split the file; naming is an architect's.*
+names; naming is an architect's.*
 
 ## Renaming a crate is compiler-checked; renaming a program is not
 
@@ -29,17 +29,13 @@ Where it hides, from the two renames that found it:
 | Archive tuples in `xtask` | `("doc", "doc")`, **once per architecture** |
 | A gate's expectation row | `("doc", &["name a file"])` |
 | `program(...)` lookups | `user::program("jh7110_trng")` in `kernel/src/main.rs` and the entropy tests |
-| `[[bin]]` name and path | `user/Cargo.toml` |
+| `[[bin]]` name and path | `components/Cargo.toml`, `fixtures/Cargo.toml` |
 | Shell command strings inside tests | `parse(b"heeder report.txt")` |
 | Fixture strings in other crates | `crates/timetable`'s `"every 5s heeder"` |
 | A configuration file the tree ships | `components/timetable.conf`'s `at-boot budgeter --mem 4` |
 | Identifiers derived from the program's name | `saw_budgeter_grant`, `budgeter_reports`, four test function names |
 | A provenance block's "replacing" clause | `Name: ... replacing the provisional jh7110_trng` |
 | Another project's file name, URL, version string or identifier | `$NetBSD: jh7110_trng.c,v 1.2 ...`, the fetch URL beside it, and `jh7110_trng_init` in its text |
-
-Corrected 2026-09-24: the `[[bin]]` row names `user/Cargo.toml`, which was right when the `doc` and
-`jh7110` renames ran early on 2026-09-13. Milestone 175 split `user/` hours later (`a146a173e`), and
-the manifests are now `components/Cargo.toml` and `fixtures/Cargo.toml`.
 
 ### Two rows that hide in their own way
 
@@ -160,7 +156,7 @@ name the move happened under.)
 
 | Site | Example | Why the compiler is blind to it |
 |---|---|---|
-| A linker script referenced by path from a `build.rs` | `../crates/user_mode_runtime/link.ld`, in **four** build scripts, two of them in separate workspaces | it is a string handed to `rust-lld`, and the main workspace never builds the other two |
+| A linker script referenced by path from a `build.rs` | `../crates/user_mode_runtime/link.ld`, in **eight** build scripts, six of them in separate workspaces (`git grep` lists them) | it is a string handed to `rust-lld`, and the main workspace never builds the separate ones |
 | `--exclude <crate>` in a gate | `script/lint`, `script/coverage`, and two lists in `xtask/src/main.rs` | cargo takes an unknown `--exclude` name silently, so the gate keeps passing while covering less |
 | A mutation-testing exclusion glob | `.cargo/mutants.toml`'s `"crates/user_mode_runtime/**"` | a glob that matches nothing is not an error |
 | A crate-keyed row in a measurement baseline | `.cargo/mutants-baseline.txt`'s `user_mode_heap 20 3 5 7` | a plain data file, keyed by crate name, that no build reads |
@@ -169,10 +165,6 @@ name the move happened under.)
 | A generated module in the patched-`std` overlay | `sys/alloc/nife/user_mode_heap.rs`, written by `xtask` from the crate and declared `mod user_mode_heap;` in the overlay | it compiles only when the `std` farm is rebuilt, in a source tree outside every workspace |
 | `Cargo.lock` in each separate workspace | `redoxfs_server/Cargo.lock`, `tools/redoxfs_host/Cargo.lock` | regenerated on their own next build, not on the main workspace's |
 | A **glob that selects the set a gate then judges** | `script/lint` check 3 looped over `crates/*proto` and rejected any name not ending `_proto` | after milestone 265 that glob matches no directory, so the loop body never runs and the check passes by checking zero crates |
-
-Corrected 2026-09-24: `git grep` now finds `crates/user_mode_runtime/link.ld` in five `build.rs`
-files, three of them (`cryptography_exerciser`, `redoxfs_server`, `std_exerciser`) in separate
-workspaces, plus `helpers/build-ripgrep.sh`.
 
 The glob row is worse than the `--exclude` row above it and belongs beside it anyway. Both fail by
 going quiet. But an `--exclude` that has gone stale still covers everything else; a selector that
@@ -184,9 +176,8 @@ once and confirm it still says no.
 The habit that catches all of them is the one the program clause asks for, applied a directory
 wider. Grep the path (`crates/<name>`) as well as the identifier. Then build every workspace, not
 the one `cargo build` means by default. `find . -name Cargo.toml -maxdepth 3 | xargs grep -l
-'\[workspace\]'` is the enumeration; there are five. (Corrected 2026-09-24: there are eight
-outside `vendor/` and `target/`: the root, `cryptography_exerciser`, `cryptography_provider`,
-`entropy_backend`, `fuzz`, `redoxfs_server`, `std_exerciser` and `tools/redoxfs_host`.)
+'\[workspace\]'` is the enumeration, outside `vendor/` and `target/`; it lists twelve on
+2026-10-13.
 
 ## A suffix rename is one decision and N provenance blocks
 

@@ -10,8 +10,7 @@ record, and it is written so that a reader can decide what to work on next witho
 file. This one exists to be verified or challenged: it holds the evidence, the dates, the numbers,
 the corrections and the refusals behind the verdict, at the length they need rather than the length
 the six-pager has. Where a study has its own home in `notes/` this page links it rather than copying
-it. Name provisional (`design/fatal-risks/` and this file's stem), minted 2026-09-23 by the lane
-that split the file; naming is an architect's.*
+it. Name provisional (`design/fatal-risks/` and this file's stem); naming is an architect's.*
 
 ### The claim
 
@@ -29,7 +28,7 @@ ratified-IOMMU silicon does not exist (milestone 143).
 ### The verdict of record
 
 RUN, and as of 2026-09-16 all three of its parts are measured on silicon. The two 2026-09-04 halves
-are below; the third was taken on 2026-09-16 and is the bullet that used to read *unmeasured*. This
+are below; the third was taken on 2026-09-16. This
 does not retire the risk, and the reason is in the third bullet and repeated at the foot of this
 entry: a TRNG is the smallest real device on the board, and throughput is what a TRNG cannot test.
 

@@ -2,13 +2,11 @@ Run a bench session on a real board (radon, xenon or argon) from a lane, safely,
 the bench. You are a developer lane. The maintainer relays everything between you and calef. Do the
 work; stop only where this brief says stop.
 
-*(Name provisional, minted 2026-09-25 by milestone 225 (run the soak on radon, argon and xenon)'s radon lane, the first bench session
-ever run from a lane rather than from a maintainer session. calef names things.)*
+*(Name provisional. calef names things.)*
 
-Why this brief exists. Until 2026-09-25 every bench session was run by a maintainer, from
-memory, with calef beside the board, and the notes were written for that person. A lane cannot
-flip a switch or type at U-Boot, and it cannot see the desk. This brief is the list of things a lane
-did have to guess on its first session, with the guesses turned into answers.
+Why this brief exists. The board notes are written for a maintainer beside the board with calef. A
+lane cannot flip a switch or type at U-Boot, and it cannot see the desk. This brief is the list of
+things a lane would otherwise have to guess, with the guesses turned into answers.
 
 ## Ready to run: take the top entry for the board calef names
 
@@ -93,9 +91,8 @@ false alarm. That is why older notes and bench logs say to ignore it.
     script/soak-test --arch riscv64 --for 45s      # radon's architecture
 
 This is the baseline a red on the board gets compared against. A defect only counts as silicon-only
-if the same tree does not reproduce it here (fatal risk 5). A fresh worktree had no
-`target/nifefs.img`, and until 2026-09-25 this command exited 3 in 0.2 s; it builds the disk image
-now.
+if the same tree does not reproduce it here (fatal risk 5). In a fresh worktree with no
+`target/nifefs.img`, this command builds the disk image first.
 
 ## Step 3: serve, watch, then ask for power
 

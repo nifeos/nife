@@ -3,8 +3,7 @@
 *An appendix to [`design/naming.md`](../naming.md), which is the rule, and a companion to
 [boolean-predicates.md](boolean-predicates.md), which argues it. This file is the census the pass
 took on 2026-09-24 and what became of each name. It is a dated record: the counts are from that
-day's tree, and a later reader should expect them to drift. The file's stem is a provisional name,
-minted 2026-09-24 by the lane that wrote it; naming is an architect's.*
+day's tree, and a later reader should expect them to drift. The file's stem is a provisional name; naming is an architect's.*
 
 ## How the census was taken
 

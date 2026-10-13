@@ -8,17 +8,12 @@ known failure modes named. Nothing about who reads it. Hand one to a lane the or
 or read it yourself and follow it by hand. Both are the same document, because self-containment is
 what a brief is for, not a concession to a weaker reader.
 
-## This directory was scoped narrower, and it was wrong
+## A brief is for every reader, whatever its model
 
-The first version of this file called these "briefs a rented model can be handed" and said what
-belongs here is work "whose correctness a gate can check... Not design, not prose a reader will
-trust", implying the opposite belonged to whichever model was judged capable enough to be trusted
-without one. calef challenged that on 2026-09-23: *"Why are the briefs reserved for just the low
-powered agents?"* It does not survive the question. The maintainer wrote that framing the same day
-it built `helpers/open-lane.sh`, and generalised from the one case in front of it, a rented
-open-weight model, to a rule about the directory that the case never justified.
+A brief is not reserved for a cheaper model or for work a gate can check. calef, 2026-09-23:
+*"Why are the briefs reserved for just the low powered agents?"*
 
-The evidence against it is `notes/effort-levels.md` (landing in pull request #1115): five
+The evidence is `notes/effort-levels.md`: five
 `--effort` levels, twenty runs, one real query against this repository. Correctness was explained
 100% by the wording of the prompt and 0% by the effort level. An ambiguous wording produced the
 identical wrong answer at every level up to and including `max`; a disambiguated wording produced
@@ -26,13 +21,10 @@ the correct answer at every level down to and including `low`. A brief is exactl
 disambiguation, done once and kept. It is worth as much to the most capable model reading it as to
 the cheapest, because the thing it fixes is not a reasoning gap, it is an instruction gap.
 
-And the maintainer's own night supplied the second half of the argument by accident. The four
-gates, the ratchet reading the committed tip rather than the working tree, the gloss-on-the-same-line
-rule, the `script/verify` memory ceiling: every one of those clauses got retyped into lane brief
-after lane brief, by the maintainer, to lanes running the same model as the maintainer itself. That
-is the failure this file already named in its own words, "written from memory each time, that brief
-would lose a clause a month", and it was happening to the *expensive* lanes too. `briefs/gate-a-lane.md`
-exists because of that, not because of anything about model tier.
+The other half: the four gates, the ratchet reading the committed tip rather than the working
+tree, the gloss-on-the-same-line rule and the `script/verify` memory ceiling get retyped into lane
+brief after lane brief unless they are written down, for lanes on the most capable model as much as
+any. `briefs/gate-a-lane.md` holds them for that reason, not because of anything about model tier.
 
 ## Why these exist as files rather than as something typed each time
 
@@ -49,10 +41,9 @@ that stops a wrong conflict resolution shipping as housekeeping.
 ## The gates go to CI, not to this laptop
 
 `briefs/gate-in-ci.md` is the one every other brief defers to, and it is here for a reason that
-is about hardware rather than about models. Lanes gated locally until 2026-09-22: three
-architectures of QEMU and `script/verify` at about 3.5 GB a harness, on an 8-core M3 with 16 GB.
-That is the whole reason the lane count topped out at three or four, and it was the ceiling long
-after disk (the previously binding one) stopped mattering.
+is about hardware rather than about models. Gating locally means three architectures of QEMU and
+`script/verify` at about 3.5 GB a harness, on an 8-core M3 with 16 GB, and that caps the lane count
+at three or four.
 
 Lanes are asynchronous: nobody sits waiting on one. So a CI round trip of 23 to 29 minutes costs
 a resource this project has in abundance and saves the one that actually binds. That trade is only

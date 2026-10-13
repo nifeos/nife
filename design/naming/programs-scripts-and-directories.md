@@ -4,7 +4,7 @@
 that a name is a claim, the component and program conventions, shell builtins, `script/` against
 `helpers/`, and directories. It exists to verify or challenge the main page, and a reader who only
 needs to name, ratify or rename something should not have to open it. The directory `design/naming/`
-and this file's stem are provisional names, minted 2026-09-24 by the lane that split the file;
+and this file's stem are provisional names;
 naming is an architect's.*
 
 ## The rule everything else is a corollary of
@@ -29,10 +29,6 @@ Two ways a name can be a false claim, and the tree had both:
 So: name a component for what it is, and prefer a word that parses without prior Unix exposure.
 `spawner`, `console`, `input`, `painter`, `window` were always right, and were always the majority.
 The four `-d` names were the outliers.
-
-(`blk` and `kbd` stood in this list until 2026-08-28, when they were renamed to `block_driver` and
-`keyboard_driver`. They belonged to the second failure below, not to this one. They parse fine to a
-Unix reader and badly to anyone else, which is the whole point the sentence above makes.)
 
 The shell is the one exception, and it is deliberate. It is called `swish`, not `shell`, because
 shell names are identities rather than descriptions (`bash`, `zsh`, `fish`, `rc`). The argument is
@@ -84,13 +80,11 @@ contract is the wire protocol it offers it over. "Server" is a fine role word in
   shorthand. Shorthand is what the third principle ("a newcomer must be able to succeed without
   asking anyone") exists to refuse.
 - The binary name, the source file name and the archive entry name are the same string. `xtask`'s
-  `initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) pairs them positionally in a flat array. So a
+  `initial_ramdisk_aarch64` pairs them positionally in a flat array. So a
   mismatch is a runtime "program not found" rather than a compile error, which is exactly the kind
   of thing to keep boring.
-- There used to be one deliberate exception, and milestone 266 (one progenitor) closed it. `builder`
-  was packed as `init` on riscv64 and `hello` was packed as `init` on aarch64, because `init` was
-  the entry the kernel loaded by name. The archive name was a role and the `user/src/` name was the
-  program, so one string named two binaries. The role is now a program of its own, `progenitor`, and
+- There is no exception. The entry the kernel loads by name is a program of its own, `progenitor`
+  (milestone 266 (one progenitor)), rather than a role name packed over two different binaries, so
   the three names agree in every row.
 
 Fixtures and benchmarks (`interrupt_heeder`, `interrupt_ignorer`, `flaky`, `allocator_exerciser`,
@@ -167,8 +161,8 @@ Two directories, on purpose, and the split is by audience.
 - `helpers/` is the helper drawer: `.sh` extension, called by other scripts and by `xtask`, not by
   people (`qemu-bounded.sh`, `qemu-runner-aarch64.sh`, `qemu-runner-riscv64.sh`).
 
-  **It was `scripts/` until 2026-09-23**, when calef ratified `helpers` after opening the tree and
-  failing to tell the two directories apart. His reason, verbatim: *"I'm totally disoriented in the
+  **calef ratified `helpers` on 2026-09-23**, not `scripts/`, after opening the tree and failing to
+  tell `script/` and `scripts/` apart. His reason, verbatim: *"I'm totally disoriented in the
   script directory. Also, why do we have script and scripts?"* The split above was never the
   problem. The names were: one character of difference carried the whole distinction between what a
   person types and what `xtask` calls, `script` and `scripts` sorted next to each other in every
@@ -194,11 +188,10 @@ directories, so the tree carried three spellings. Two rules, and neither is a ne
   as markdown filenames and `script/` entry points, because a directory is a path element and paths
   are hyphenated in the world outside this repository.
 
-Three directories violated the first rule and all three moved in milestone 63. `fs-server/`
-(package `fs-server`) is `fs_server/`, and `tools/redoxfs-host/` is `tools/redoxfs_host/`.
-`user-std/`, whose package was called `hellostd` and matched neither, is `std_exerciser/` twice
-over. *(Corrected 2026-09-24: `fs_server/` has since been renamed again and is `redoxfs_server/`
-today.)*
+Three directories violated the first rule, and milestone 63 (directory and package names) moved all
+three: `fs-server/` (package `fs-server`, `redoxfs_server/` today), `tools/redoxfs-host/` (now
+`tools/redoxfs_host/`) and `user-std/`, whose package was called `hellostd` and matched neither
+(now `std_exerciser/` twice over).
 
 A hyphenated package name is not wrong in the wider ecosystem. `wasm-bindgen` and
 `tracing-subscriber` are ordinary, and Cargo normalises a hyphen to an underscore for `use`, so

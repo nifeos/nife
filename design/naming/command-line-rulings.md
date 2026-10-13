@@ -3,8 +3,7 @@
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. It holds the spellings ruled
 under calef's "We abbreviate on the command line." (2026-10-06), whose heading is in
 [vocabulary-rulings.md](vocabulary-rulings.md), a document with no room left under the prose
-budget. The file and its stem are provisional, minted 2026-10-10 by milestone 809 (the package
-client becomes a program)'s lane; naming is an architect's.*
+budget. The file and its stem are provisional; naming is an architect's.*
 
 ## `jig` takes apt's verbs
 

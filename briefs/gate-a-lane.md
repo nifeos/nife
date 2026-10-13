@@ -117,8 +117,8 @@ bare `nife-dev` link: lanes cut before 2026-10-10 still write it, and only the m
 Every file you write outside the worktree is shared with other lanes. That includes `/tmp` and the
 session scratchpad, since every lane a session launches gets the same one. A patch file standing in
 for `git stash`, a pull request body and a gate log all live there. Prefix each with your lane or
-milestone, as in `586-pr-body.md`, never `pr-body.md`. On 2026-09-21 two lanes both wrote
-`/tmp/pr-body.md`, and one pushed the other's text.
+milestone, as in `586-pr-body.md`, never `pr-body.md`. Two lanes that both write
+`/tmp/pr-body.md` push each other's text.
 [design/tenets/git-in-a-worktree.md](../design/tenets/git-in-a-worktree.md) has the stash half.
 
 ## If you add or change a `script/` command

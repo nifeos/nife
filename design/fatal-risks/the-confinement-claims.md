@@ -10,8 +10,7 @@ record, and it is written so that a reader can decide what to work on next witho
 file. This one exists to be verified or challenged: it holds the evidence, the dates, the numbers,
 the corrections and the refusals behind the verdict, at the length they need rather than the length
 the six-pager has. Where a study has its own home in `notes/` this page links it rather than copying
-it. Name provisional (`design/fatal-risks/` and this file's stem), minted 2026-09-23 by the lane
-that split the file; naming is an architect's.*
+it. Name provisional (`design/fatal-risks/` and this file's stem); naming is an architect's.*
 
 ### The claim
 
@@ -48,10 +47,8 @@ RUN, 2026-08-31, and it found the thing this risk exists to find. notes/confinem
   reading *"a livelock, not a lost wakeup"*, a correct red with nothing in it about confinement.
 
 The adversarial pass: AUDITED, 2026-09-17, and the answer is a qualified yes with one exception
-found and fixed. This paragraph was a second `Status:` line until 2026-09-23, and
-`script/fatal-risks` read only the first one per entry, so `AUDITED` was invisible to every tool
-reading this file. Risk 7's Experiment status is the entry's one status; how well the experiment
-was done belongs here, in prose, where it always was.
+found and fixed. Risk 7's Experiment status is the entry's one status, which is all
+`script/fatal-risks` reads; how well the experiment was done belongs here, in prose.
 
 Milestone 313 (the security audit that was due since August: userspace confinement, read
 adversarially) read this risk's question adversarially under the userspace-confinement lens, the

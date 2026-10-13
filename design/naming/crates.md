@@ -4,7 +4,7 @@
 rule and how far it reaches, nouns over verbs, the acronym history, and what `crates/` holds. It
 exists to verify or challenge the main page, and a reader who only needs to name, ratify or rename
 something should not have to open it. The directory `design/naming/` and this file's stem are
-provisional names, minted 2026-09-24 by the lane that split the file; naming is an architect's.*
+provisional names; naming is an architect's.*
 
 ## Crates
 
@@ -145,16 +145,16 @@ overturns that rather than quietly dropping it from a list.
 The sweep is its own milestone, because `ipc` in particular is load-bearing across the tree. A
 rename that size is not a side effect of a rule change.
 
-*Corrected 2026-09-24: four of the five have since been renamed, to `device_tree_blob`,
+*Four of the five are renamed, to `device_tree_blob`,
 `globally_unique_identifier_partition_table`, `inter_process_communication` and
-`address_space_identifier`. `crates/dma_validator` became `crates/direct_memory_access_validator`
-on 2026-09-24, calef ruling on #1229.*
+`address_space_identifier`, and `crates/dma_validator` is `crates/direct_memory_access_validator`
+(calef, 2026-09-24, #1229).*
 
 One constraint: `nifefs` caps archive names at `NAME_LEN = 32` bytes, so a program's name is
 bounded. Crates are not in the archive and are unbounded.
 
-It was 24 until 2026-08-01, when it had started deciding names rather than bounding them. Two
-settled names were within four bytes of it and `os_primitives_benchmarker` exceeded it. Raising it
+At 24 it decided names rather than bounding them: two settled names were within four bytes of it
+and `os_primitives_benchmarker` exceeded it. Raising it
 costs directory entries per block, and nothing else now that `Fs` no longer holds an entry array.
 See [nifefs.md](../../notes/nifefs.md) for the numbers. The rule that survives the raise: do not let
 the limit pick a name, and do not spend a format change on bytes nothing needs.
@@ -178,9 +178,9 @@ known gap rather than a decision.
   `counter_frequency_protocol`, `capability_witness_protocol`. Plus `abi`, which is the syscall
   boundary and predates the suffix.
 
-  The suffix was `_proto` until milestone 265 (calef, 2026-09-05, on being shown `timebase_proto`:
-  *"I think `_proto` was lazy on my part. It should have been `_protocol` globally to differentiate
-  from prototype."*). `proto` is a truncation rather than an abbreviation. It is equally short for
+  The suffix is `_protocol`, not `_proto`, by milestone 265 (calef, 2026-09-05: *"I think `_proto`
+  was lazy on my part. It should have been `_protocol` globally to differentiate from
+  prototype."*). `proto` is a truncation rather than an abbreviation. It is equally short for
   `prototype`, which this tree uses for a real thing. Wherever a dated passage below spells a crate
   `_proto`, that is what it was called then and the passage is left alone.
 - Format and hardware parsers: `elf`, `device_tree_blob`, `pci`,
@@ -191,8 +191,7 @@ known gap rather than a decision.
 
 ### Two crates that look like contracts
 
-`compositor` and `line_editor` look like contracts and are not, and an earlier version of this
-section listed them as such. Both are *logic* crates that happen to contain a protocol module.
+`compositor` and `line_editor` look like contracts and are not. Both are *logic* crates that happen to contain a protocol module.
 `compositor` is the scene, the clipping and damage-rectangle arithmetic, and the composition itself.
 `line_editor` is a sans-IO editor with a `line_editor::proto` inside it. Renaming either to
 `*_proto` would promise a wire definition and deliver an algorithm, which is exactly the kind of
@@ -205,10 +204,8 @@ What the names actually do, over the 39 directories under `crates/` on 2026-08-0
 was taken. It has not been re-taken (there were 68 on 2026-09-19). The names in it are the ones
 those directories had that day.
 
-*Corrected 2026-09-24: a sweep on 2026-09-13 (`f5e69e701`) rewrote `user_rt` and `user_heap` in this
-dated account to `user_mode_runtime` and `user_mode_heap`. The words the account used are restored
-here and in this section's opening sentence and the milestone 63 paragraph; the crates are called
-`user_mode_runtime` and `user_mode_heap` today.*
+*The census uses that day's names; `user_rt` and `user_heap` are `user_mode_runtime` and
+`user_mode_heap` today.*
 
 - One word where one word will do, which is 21 of the 39: `abi`, `capability`, `compositor`,
   `elf`, `frames`, `ipc`, `paging`, `regions`, `slots`, `virtio`.
@@ -218,12 +215,11 @@ here and in this section's opening sentence and the milestone 63 paragraph; the 
   `user_rt` is the runtime *for* userspace, `user_heap` the heap *for* userspace, `measured_boot`
   the measurement *of* boot.
 
-Milestone 63 deleted the third bullet, which used to read "run together when the result is one
-word". It was a real observation (`capsh`, `lineedit`, `uheap`, `crickerfs`, `bitfont`), and it was
-the rule that produced every abbreviation a reader had to decode.
+There is no third bullet, "run together when the result is one word". It was a real observation
+(`capsh`, `lineedit`, `uheap`, `crickerfs`, `bitfont`), and milestone 63 (directory and package
+names) removed it because it was the rule that produced every abbreviation a reader had to decode.
 
-Two of the five survive it, not one; this sentence said otherwise until milestone 115 (the names
-that were ratified) checked the history. `crickerfs` (now `nifefs`, milestone 120 (the OS becomes
+Two of the five survive it. `crickerfs` (now `nifefs`, milestone 120 (the OS becomes
 `nife`)) stayed with a reason: `procfs` is the shape of a filesystem name outside this project, and
 nobody writes `proc_fs`. `bitfont` stayed with none, having never been renamed at all. The
 kernel-dependency crate naming review ratified it as `bitmap_font` on 2026-08-23. Three moved, to

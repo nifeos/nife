@@ -2,12 +2,9 @@
 steward role, a pull request you were watching has just landed, and the lane that produced it is
 finished. Do the work; do not ask questions.
 
-Where this came from. The three clauses below lived in `AGENTS.md` (the merge-checklist line, the
-prune-the-worktree paragraph, and the `nife-dev` relink, retired 2026-10-10), moved here on
-2026-09-23 by the extraction that milestone 579 (which of the constitution must be carried, and
-which is a brief) proposed. They fire at one event and are performed by one role, which is the whole test that moved
-them. The constitution keeps a pointer. Its one ambient clause, that every lane takes `nife-dev`,
-stopped being true on 2026-10-10, when each worktree got a toolchain name of its own.
+Why a brief. The clauses below (the merge checklist and the worktree prune) fire at one event and
+are performed by one role, which is milestone 579 (which of the constitution must be carried, and
+which is a brief)'s test for a brief. `AGENTS.md` keeps a pointer.
 
 Why the mechanics belong in a file rather than in prose nobody re-reads. The failure this
 prevents is the one failure in this system that destroys work rather than delaying it, and it has
@@ -79,8 +76,8 @@ machine on 2026-09-23, ten lane worktrees held between 1.0 GB and 4.8 GB of `tar
 check at the top of this brief and the reason not to reach for `--force`. If it refuses, go back and
 find out whose work you are about to delete.
 
-The build output does not wait for this step. On 2026-10-12 (UTC) 32 merged lanes' worktrees filled
-the disk and every running lane failed with ENOSPC, so calef asked for it to go on its own. An hourly
+The build output does not wait for this step, because merged lanes' worktrees can fill the disk and
+fail every running lane with ENOSPC; calef asked for it to go on its own (2026-10-12 UTC). An hourly
 launchd job (its plist kept off-tree by the maintainers) runs:
 
     python3 helpers/prune_build_output.py           # dry run
@@ -93,10 +90,10 @@ already holds the worker's commits. The worktree and its work stay for this step
 
 ### 4. The toolchains
 
-There is no relink. Since 2026-10-10 each worktree links its farm under its own name,
+There is no relink. Each worktree links its farm under its own name,
 `nife-dev-<directory>-<hash>`, and the next `cargo xtask std-src` anywhere on the machine removes
-the link a pruned worktree left (notes/std.md). The bare `nife-dev` link that every lane used to
-take is now written only by lanes cut before that date. Once `gh pr list --draft` shows none of
+the link a pruned worktree left (notes/std.md). The bare `nife-dev` link is written only by lanes
+cut before 2026-10-10. Once `gh pr list --draft` shows none of
 them still open, remove it once, and this paragraph with it:
 
     rustup toolchain uninstall nife-dev

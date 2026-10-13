@@ -1,7 +1,6 @@
 # The nine things that would kill nife
 
-*Name: provisional, minted 2026-09-23 by the lane that split the file (`7b4c6b4f2`), for the
-directory and every appendix stem in it. Each appendix's own preamble says the same of its stem.
+*Name: provisional, for the directory and every appendix stem in it. Each appendix's own preamble says the same of its stem.
 Naming is calef's; `script/names --unratified` lists each stem.*
 
 The nine risk files are ratified (2026-10-05, UTC; calef, PR #1675: "Use the claim forms."): each
@@ -24,9 +23,9 @@ It is a six-pager, and the depth is in appendices (calef, 2026-09-23). At 17,742
 once cost a maintainer session most of a context window. A reader can decide what to work on next from
 this page and the nine entries, without opening a single appendix. Each entry links one, in
 [`design/fatal-risks/`](.), holding that risk's evidence, numbers, corrections and refusals
-for anyone who wants to verify or challenge a verdict. Each entry has a file of its own since
-2026-10-05 (calef), because one shared file was the conflict point for merge-queue ejections. Studies with a home of their own stay in
-`notes/`. Superseded numbers are in `git log -p -- design/fatal-risks/`.
+for anyone who wants to verify or challenge a verdict. Each entry has a file of its own (calef,
+2026-10-05), because one shared file was the conflict point for merge-queue ejections. Studies with a home of their own stay in
+`notes/`. Earlier numbers are in `git log -p -- design/fatal-risks/`.
 
 ## The rule an entry has to meet
 
@@ -153,7 +152,6 @@ Ranked by chance-of-fatal times cheapness-of-test, not by number. Each cell's ve
 - The ranking is a judgement, not a calculation. "Chance of fatal" is nobody's measurement, and two
   readers could order this differently on the same evidence.
 - A green result is not proof of anything. Every experiment here can only fail to kill the project.
-- The word budget is a constraint on these documents, not on the truth. calef asked for 3,000 words
-  and accepted 4,235 on 2026-09-24 (UTC) for the single file. Splitting it one file per risk on
-  2026-10-05 put this page near 1,900 words and the largest entry (risk 7) near 1,700, so the exception
-  marker is gone and nothing here uses it. Put any growth in the appendix beside the entry.
+- The word budget is a constraint on these documents, not on the truth. calef asked for 3,000 words.
+  With one file per risk this page is near 1,900 words and the largest entry (risk 7) near 1,700,
+  so nothing here carries an exception marker. Put any growth in the appendix beside the entry.

@@ -15,8 +15,8 @@ teaches the next session to ignore the procedure.
   the run whose `headSha` is `main`'s current tip, which is what `helpers/trunk-health.sh --once`
   already filters for. If you are reading a pull request's checks, you are reading the wrong thing.
 - A cancelled shard. A cancelled run reads as a failure in most listings and is not one. Ask what
-  cancelled it: a superseded group build, an eviction, or somebody's `gh run cancel` (including this
-  procedure's own step 3, one incident ago). Nothing was learned by a cancelled run, in either
+  cancelled it: a newer push to the same concurrency group, an eviction, or somebody's `gh run
+  cancel` (including this procedure's own step 3). Nothing was learned by a cancelled run, in either
   direction.
 - A dead cadence, not a broken trunk. `script/cadence-check` reports a weekly job that has
   produced no result, and `trunk-health.sh` relays it. That is a real problem and it is not this
@@ -24,9 +24,8 @@ teaches the next session to ignore the procedure.
   queue.
 
 And the fourth case, which is the opposite mistake: green does not mean healthy. `ci.yml` skips
-the build jobs' steps (`test`, `swish-check`, `boot-check`, and `swish-check-graphical` until its 2026-10-03 fold into `swish-check`; one
-chained job until the 2026-09-30 split) for a commit that touches only `notes/`, `design/` or a
-root `*.md`, and the checks still post `success`. On 2026-09-23 that hid a broken
+the build jobs' steps (`test`, `swish-check`, `boot-check`) for a commit that touches only
+`notes/`, `design/` or a root `*.md`, and the checks still post `success`. That can hide a broken
 `crates/documentation` test for hours. So if a lane reports a failure that CI says did not happen,
 believe the lane and reproduce locally (`cargo test -p documentation`) before concluding the trunk
 is fine.
@@ -34,9 +33,8 @@ is fine.
 ## The drain is on your side now
 
 `helpers/merge-drain.sh` runs unattended as the `merge drain` Actions workflow every five minutes.
-Until 2026-10-03 it enqueued every pull request that did not need an architect, and it re-enqueued
-a held set three times on 2026-09-23 while the operator watched. It arms nothing now (milestone 727 (a queue eviction goes to a maintainer session),
-provisional), and it dequeues anything labelled `held-for-red-trunk` that is still in the queue, so
+It arms nothing (milestone 727 (a queue eviction goes to a maintainer session), provisional), and
+it dequeues anything labelled `held-for-red-trunk` that is still in the queue, so
 leave it running. What can still undo a hold is a lane arming a new pull request; re-run `hold` to
 sweep new arrivals.
 

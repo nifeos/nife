@@ -28,8 +28,7 @@ and write it down.
 
 ## A fork reaches calef with its questions already answered
 
-calef, 2026-08-18, sharpening his own rule from the day before. The first version said to bring
-options and costs. That is not enough, and the correction is his: *"my intent is not just to
+calef, 2026-08-18: bringing options and costs is not enough. *"my intent is not just to
 have a lane surface a problem, but to investigate and propose solutions so that the questions I
 usually ask to help decide I don't need to ask."*
 

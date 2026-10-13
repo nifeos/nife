@@ -2,11 +2,9 @@ Provisional name. What a maintainer session does before it briefs anything. You 
 a session, on patagonia or in a cloud container, and you do not yet know what happened while nobody
 was here. Do the work; do not ask questions.
 
-Where this came from. The two clauses below lived in `AGENTS.md` (the `launchd` watchers, and
-reading the queue for what the watchers already found), moved here on 2026-09-23 by the extraction
-that milestone 579 (which of the constitution must be carried, and which is a brief) proposed. The
-trigger is a specific, recurring, nameable moment, the start of a session, which is the test that
-moved them.
+Why a brief. The two clauses below (the watchers, and reading the queue for what they already
+found) fire at a specific, recurring, nameable moment, the start of a session. That is
+milestone 579 (which of the constitution must be carried, and which is a brief)'s test for a brief.
 
 Why it is a checklist rather than a habit. Both of these are duties that belong to whoever
 happens to notice, and that is precisely the arrangement this project has already watched fail. On

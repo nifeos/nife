@@ -4,8 +4,7 @@
 limits of `Name:` blocks and `script/names`, including the kinds of name the worklist does not
 cover and why `helpers/` helpers are left out. It exists to verify or challenge the main page. A
 reader who only needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names, minted 2026-09-24 by the lane that
-split the file; naming is an architect's.*
+`design/naming/` and this file's stem are provisional names; naming is an architect's.*
 
 ## BUGS
 
@@ -47,25 +46,17 @@ dismissals and it is also what an operating system means by it (`auditd`). Bare 
 passed over because every file in the directory is a report. Recorded here rather than stretched
 into a schema that does not fit it.
 
-- Closed for directories on 2026-08-16 by §75 (carry provenance in their own README). A directory
-  under `design/` or `notes/` now carries its provenance in its own `README.md`. That was applied
-  the same day to `design/decisions/`, `design/roadmap/` and `notes/`, with
-  `design/audit-reports/`'s line owed by the milestone-92 commit that creates it. (Corrected
-  2026-09-24: that line is paid. `design/audit-reports/README.md` opens with its `Name: ratified`
-  paragraph and the `audit-trail` refusal.)
-- Closed for Cargo packages on 2026-08-18. calef found `script/names std_exerciser` answering
-  "neither a name in the tree nor a recorded refusal", and the `package` kind was added. `kernel`,
-  `xtask`, `redoxfs_server` and `tools/redoxfs_host` now carry blocks in their manifests. The weekly
-  series of milestone 276 (the dashboard counts milestones and decisions by status) shows the hole
-  closing in 2026W34.
-- Types are still uncovered. (Corrected 2026-09-24: `script/names` now reads four more kinds by
-  marker. An `item` is any function, constant, type, module, macro, field or variant whose `///` doc
+- Closed for directories by §75 (carry provenance in their own README). A directory under
+  `design/` or `notes/` carries its provenance in its own `README.md`, as `design/decisions/`,
+  `design/roadmap/`, `notes/` and `design/audit-reports/` (`Name: ratified`, with the
+  `audit-trail` refusal) do.
+- Closed for Cargo packages by the `package` kind. `kernel`, `xtask`, `redoxfs_server` and
+  `tools/redoxfs_host` carry blocks in their manifests.
+- Types are covered only when marked. `script/names` reads four more kinds by marker. An `item` is any function, constant, type, module, macro, field or variant whose `///` doc
   holds a `Name:` paragraph. A `module` is a `//!` block outside a crate root or program. A
   `directory` is the README block §75 asked for, now gated, and each `.md` stem inside is a
   `document`. Only marked items are tracked, so an unmarked type is still invisible; that is the
-  price of not failing thousands of names nobody recorded. The conversion that day turned 27 bold
-  `**Provisional name**` doc lines into blocks, created nine directory READMEs, and grew the
-  worklist from 88 to 215.)
+  price of not failing thousands of names nobody recorded.
 - `script/metrics` still counts the original four kinds only, so the dashboard's provenance series
   does not see the kinds above. Its enumeration reads `git ls-tree` at past revisions, and teaching
   it the item parse is its own piece of work.
@@ -82,7 +73,7 @@ exists to prevent, still happening one directory over.
 
 ### `helpers/` helpers are deliberately outside the worklist, and the numbers are why
 
-There were 17 files in `scripts/` (the drawer's name until 2026-09-23), of which 9 already carried a `Name:` paragraph that nobody asked
+There were 17 files in the helper drawer when this was priced, of which 9 already carried a `Name:` paragraph that nobody asked
 them for, written by the lane that added the file. So the question is not whether a helper may argue
 its own name. It may, and more than half did. The question is whether the worklist should enumerate
 them. Enumerating cost about 15 rows on a worklist 76 deep that day: a fifth again of the only queue
@@ -115,10 +106,8 @@ machine-invoked set, so the third reason is weaker than it was.
 
 - A type's name is a naming decision the mechanism does not see. `BootEndowment` was ratified on
   2026-08-04 (replacing `Grants`) and is mentioned inside `system_initializer`'s block only because
-  its crate happens to export it. `supervision_protocol::Endow` is an open naming question (§69
-  (`Endow` is `ChildEndowment`)) and appears nowhere in this record. (Corrected 2026-09-24: §69 is
-  DECIDED. calef ruled `ChildEndowment` on 2026-08-15, and `Endow` no longer appears in the tree's
-  Rust. The point stands: that ruling lives in a decision, not in any `Name:` block.)
+  its crate happens to export it. `ChildEndowment` was ruled by calef on 2026-08-15 in §69
+  (`Endow` is `ChildEndowment`), and that ruling lives in a decision, not in any `Name:` block.
 - The `Name:` marker is a string in a comment. A header that never had one is caught by the gate.
   A header that loses one to an edit is caught only if the edit removes the whole line.
 

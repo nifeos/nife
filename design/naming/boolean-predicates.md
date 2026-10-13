@@ -3,7 +3,7 @@
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds the prior
 art behind the rule for boolean predicates, measured rather than recalled, and the cases where the
 rule needed a judgement. It exists to verify or challenge the main page. The file's stem is a
-provisional name, minted 2026-09-24 by the lane that wrote it; naming is an architect's.*
+provisional name; naming is an architect's.*
 
 ## The ruling
 

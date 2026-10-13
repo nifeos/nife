@@ -4,15 +4,13 @@
 occurrences of a ratified name move and which stay, the refusal-count gate, and the habits that keep
 a sweep from rewriting a record. It exists to verify or challenge the main page. A reader who only
 needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names, minted 2026-09-24 by the lane that
-split the file; naming is an architect's.*
+`design/naming/` and this file's stem are provisional names; naming is an architect's.*
 
 ## Performing a ratified rename
 
-`AGENTS.md` carries the three rules. This is the argument, the worked example and what is not
-gateable. (Corrected 2026-09-24: since §155 (the naming conventions move out of the constitution)
-the three rules live in [`design/naming.md`](../naming.md#performing-a-ratified-rename), and
-`AGENTS.md` keeps only the authority.)
+[`design/naming.md`](../naming.md#performing-a-ratified-rename) carries the three rules, by §155
+(the naming conventions move out of the constitution). This is the argument, the worked example and
+what is not gateable.
 
 The asymmetry is what makes this worth writing down. A rename is trivial mechanically and expensive
 in every other way, which the *move fast on what can be undone* tenet already says. What it does not
@@ -37,10 +35,9 @@ the names review that performed six renames.
 | A **`BUILT` block, a transcript, a dated account** | **Never** | The [status table](#status-decides-what-moves-not-directory) below |
 
 The note half has a cost the crate half does not: every citation of the old path breaks.
-`notes/gpt.md` was cited by 18 files when it moved. `script/lint` check 4c verifies that a markdown
-*link* target resolves, so it catches those. It does not catch a path written in prose outside a
-link, and both forms exist in this tree. Grep for both. (Corrected 2026-09-24: `script/lint` no
-longer numbers that check 4c. It is the block headed "markdown links and the notes index".)
+`notes/gpt.md` was cited by 18 files when it moved. `script/lint`'s "markdown links and the notes index"
+block verifies that a markdown *link* target resolves, so it catches those. It does not catch a path written in prose outside a
+link, and both forms exist in this tree. Grep for both.
 
 The relative depth is where it actually goes wrong. A citation from `design/roadmap/*.md` reads
 `../../notes/...`, and one from inside `notes/` is a bare sibling with no directory at all. Moving
@@ -86,10 +83,11 @@ If yes, the name is not ours and does not move. One question settles the class t
 most occurrences in every rename so far.
 
 It kept `satp.ASID` and `TTBR0_EL1.ASID` (fields in two instruction-set manuals). It kept
-`crates/pci`'s `CLASS_NVME` and `find_nvme_device` when the `nvme` crate was renamed around them:
+`crates/pci`'s `CLASS_NVME` and `find_nvme_device` through the rename of the `nvme` crate:
 `01:08:02` is a class code the NVM Express specification defines, and it keeps that name whatever
-this tree calls its driver. Waiting for the renames still to come: `.dtb` is a file format `dtc`
-writes and QEMU reads, and `GUID Partition Table` is UEFI's phrase.
+this tree calls its driver. Likewise `.dtb` is a file format `dtc` writes
+and QEMU reads, and `GUID Partition Table` is UEFI's phrase, so both kept their names through the
+`device_tree_blob` and `globally_unique_identifier_partition_table` renames.
 
 The test is ownership rather than subject matter. A thing can be *about* our crate and still not be
 named by us.
@@ -129,19 +127,13 @@ sweep looking for `asid::` never saw it, and no gate reports it: rustdoc warns o
 which is not on every build. It is the stale-pointer-upgrade class one level down, so grep
 `](<name>)` as its own pass.
 
-### `components/` is a second workspace, and `cargo check` is blind to it
+### The host-side gates do not build `components/`
 
-The main workspace's check does not compile `components/`. So a rename that breaks a consumer there
-is green until something builds it. `gpt` has consumers in it (the `gpt` rename built and ran them).
-`dtb` has none, which this line wrongly said it had until the `dtb` lane checked with `git grep`.
-`asid` had only the kernel, which is why the first three renames never exercised this. Build both
-workspaces, or run `script/test`, which does.
-
-Corrected 2026-09-24: `components/` is not a second workspace. It has been a member of the root
-`Cargo.toml` workspace since the split of milestone 175 (split `user/`) (`a146a173e`, 2026-09-13),
-before this section was written. What is true is that the host-side gates exclude it (`script/lint`
-passes `--exclude components --exclude fixtures`) and build it only for the kernel's targets. So a
-host `cargo check` still misses it, and the advice to run `script/test` stands.
+`components/` is a member of the root `Cargo.toml` workspace, but the host-side gates exclude it
+(`script/lint` passes `--exclude components --exclude fixtures`) and build it only for the kernel's
+targets. So a host `cargo check` misses it, and a rename that breaks a consumer there is green until
+something builds it. `gpt` has consumers in it; `dtb` has none (check with `git grep`). Run
+`script/test`, which builds it.
 
 ### Two mechanical tells worth ten seconds each
 

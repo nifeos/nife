@@ -3,8 +3,7 @@
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. It holds rulings that spell
 out a contraction nothing outside the tree owns, after the `receive` ruling in
 [vocabulary-rulings.md](vocabulary-rulings.md), which sat in a document with no room left under the
-prose budget. The file and its stem are provisional, minted 2026-10-04 by the lane that performed
-the first of them; naming is an architect's.*
+prose budget. The file and its stem are provisional; naming is an architect's.*
 
 ## The tree spells `operation`, never `op`
 
@@ -41,7 +40,7 @@ whether the tree spells that `SEND_TO`. This ruling does not touch it.
 Closed records (`BUILT` roadmap blocks, `design/decisions/`, dated audit reports) keep the name they
 used, so a grep for `OP_` finds them.
 
-The live notes and roadmap documents that cited `OP_` were swept on 2026-10-04 UTC (lane `records/rename-pointer-sweep`).
+Live notes and roadmap documents spell the names out.
 
 ## The tree spells `capability`, never `cap`
 

@@ -55,7 +55,7 @@ See `notes/what-a-session-carries.md`.
   128's App, and this is what the record says in the meantime. (calef, 2026-08-16: *"it looks like
   I'm talking to myself a lot and the record would be nice to clarify who is talking."*)
 - A lane's first act is a draft pull request, §90 (the claim is a draft pull request),
-  2026-08-16, amended 2026-09-05. Cut the branch, make one empty commit (`git commit
+  2026-08-16. Cut the branch, make one empty commit (`git commit
   --allow-empty -m "claim: milestone N"`), push it, and open the pull request as a draft, before
   any work. That is the claim, and it is why two lanes cannot silently take the same milestone: the
   board is `gh pr list --draft` and it costs one command. The claim and the deliverable are one

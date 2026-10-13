@@ -88,7 +88,7 @@ of 193, 65 crates, 69 user programs, about 194,000 lines of Rust, 145 Kani proof
 commits, on three architectures, with a booting kernel on real RISC-V silicon, a shell, a
 filesystem, a network stack and a compositor. That line count included comments, and `kernel/src`
 measured 40% of them on that date, so a size comparison against another project belonged in code
-lines then as it does now. The 2026-08-05 figures that it superseded are in git.
+lines then as it does now. Earlier figures are in git.
 
 ## 3. A newcomer must be able to succeed without asking anyone
 

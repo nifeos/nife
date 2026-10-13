@@ -5,7 +5,7 @@ individual words calef has ruled on and the tests they set: halves and arms, abb
 receive, structural termini, identity and principal, the `login` stem, and the casing of `nife`. It
 exists to verify or challenge the main page, and a reader who only needs to name, ratify or rename
 something should not have to open it. The directory `design/naming/` and this file's stem are
-provisional names, minted 2026-09-24 by the lane that split the file; naming is an architect's.*
+provisional names; naming is an architect's.*
 
 ## A half implies two; a third of anything is an arm
 
@@ -95,8 +95,7 @@ third process was refused *for now*. The moment somebody grants it, the program 
 its name says it does not. A name that has to change when a capability is granted is naming the gap
 rather than the thing.
 
-*Corrected 2026-09-24: the rename had not been performed when this file was split. It was
-performed later the same day, and the program's `Name:` block now reads `ratified 2026-09-13`.*
+*The rename is performed, and the program's `Name:` block reads `ratified 2026-09-13`.*
 
 The three that survived the same question, and each for its own reason:
 

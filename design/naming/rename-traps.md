@@ -4,8 +4,7 @@
 failures past renames hit: foreign identifiers, parser artefacts, stale pointers, broken word
 boundaries, rewraps and generated files. It exists to verify or challenge the main page. A reader
 who only needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names, minted 2026-09-24 by the lane that
-split the file; naming is an architect's.*
+`design/naming/` and this file's stem are provisional names; naming is an architect's.*
 
 ## A neighbouring crate's identifiers are the hardware's, not yours
 

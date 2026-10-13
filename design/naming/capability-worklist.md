@@ -4,7 +4,7 @@
 ruling recorded in [spelled-out-rulings.md](spelled-out-rulings.md#the-tree-spells-capability-never-cap).
 It is a dated census of the tree on 2026-10-06 (UTC), taken before any rename. The counts will
 drift as lanes land; `python3 helpers/cap_abbreviation.py --list` prints the live list. The file's
-stem is a provisional name, minted 2026-10-06 by lane/no-cap-abbreviation; naming is an
+stem is a provisional name; naming is an
 architect's.*
 
 Every spelled-out name below is a proposal for calef. None has been ruled on.

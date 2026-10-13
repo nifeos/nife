@@ -4,13 +4,12 @@
 115's mechanism: why the record is derived, the states, the `Name:` block forms, the numbers, and
 worked `script/names` examples. It exists to verify or challenge the main page. A reader who only
 needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names, minted 2026-09-24 by the lane that
-split the file; naming is an architect's.*
+`design/naming/` and this file's stem are provisional names; naming is an architect's.*
 
 ## Where a name's provenance lives (milestone 115)
 
-The refusals are the valuable half, and they used to live nowhere. A ratified name is visible in
-the tree, because it *is* the name. A refused one is visible in no file at all. The person who most
+The refusals are the valuable half. A ratified name is visible in the tree, because it *is* the
+name. A refused one is visible in no file at all unless something records it. The person who most
 needs it is the person about to propose it again.
 
 That is not hypothetical. A lane proposed `system_builder` for the crate milestone 96 (one init)
@@ -26,8 +25,8 @@ That program was retired on 2026-09-14 (milestone 295 (retire `components/src/bu
 refusal stands unchanged. A refusal records why a name lost on the day it lost. One rewritten every
 time the tree moves is one nobody can check.
 
-The record is derived, not maintained. The first draft of the fix was one ratified-names table,
-here in this file. calef rejected it on 2026-08-04 for scaling the way the original `DECISIONS.md`
+The record is derived, not maintained. Not one ratified-names table in this file: calef refused it
+on 2026-08-04 for scaling the way the original `DECISIONS.md`
 and `design/roadmap.md` scaled, and size is the smaller half of that argument. The conflict shape
 is the real one: every lane that adds a name would edit one file, which is exactly what produced
 three section-number collisions in a day.
@@ -86,9 +85,7 @@ that a name say which state it is in.
 
 There are four states rather than these three. §89 (`provisional` becomes the fourth provenance
 state) added `provisional` on 2026-08-16: a claim about intent, where the other three are claims
-about the record. This sentence called it the largest of the four on 2026-09-20 (48 of 229).
-Corrected 2026-09-24: `ratified` was larger then and is now (156 of 245, against 61 provisional).
-`provisional` is the largest of the three unratified states. The section *Those two captures print
+about the record. `provisional` is the largest of the three unratified states. The section *Those two captures print
 the worklist two different ways* below is where it is argued. This table is milestone 115's and is
 left as it was written.
 
@@ -122,9 +119,8 @@ entry says it does not say and cites the commit that introduced the name.
 
 Of 126 names: **72 ratified, 10 recorded, 44 unrecorded.** So 43% of this tree's most reader-facing
 vocabulary arrived without a recorded decision. Only a fifth of that backlog is the cheap kind,
-where the argument exists and wants a signature. (Corrected 2026-09-24, as a dated marker rather
-than a rewrite: `script/names --check` now reports 245 names, 156 ratified, 61 provisional, 27
-recorded and 1 unrecorded. The research backlog this section measured is nearly cleared.)
+where the argument exists and wants a signature. These are milestone 115's counts; `script/names
+--check` prints today's, and the research backlog they measured is nearly cleared.
 
 Every name a rename ever touched is ratified, because a rename is an argument and somebody wrote it
 down. What is left over is what nobody objected to at the time.
@@ -160,11 +156,9 @@ underscore. `gfx_proto` was ratified 2026-08-23 (a kernel-dependency crate namin
 `graphics_proto`, spelling the abbreviation out in full. `cred` was the sharper case, and was
 renamed to `credentialer` on 2026-09-08. Milestone 63 expanded `credcli` and argued `credentialer`
 in full, then left two crates spelled `cred` without saying why. `user_rt` fails the same way twice
-over, since the only thing establishing `user_` as a prefix is `user_rt` itself. (Corrected
-2026-09-24: this sentence named `user_mode_runtime` in both places. Commit `f5e69e701` swept the
-rename of `user_rt` into this dated account on 2026-09-13, which left it saying a name established
-itself. The crate is `user_mode_runtime` now, and that rename answered the abbreviation half of this
-finding.)
+over, since the only thing establishing `user_` as a prefix is `user_rt` itself. (`user_rt` is
+the census's name; the crate is `user_mode_runtime` now, and that rename answered the abbreviation
+half of this finding.)
 
 ### EXAMPLES
 
