@@ -11,6 +11,44 @@ claims 2, 4, 5, 6, 7, 8, 9, 10, 11 and 26, accepted the earlier pass's tests for
 reviewed the rest by source. One near miss (claim 17) was confirmed by source reading; it is a
 hazard the project already tracks, not a new finding.
 
+## Second session (model `claude-opus-4-8`): booting the rows the first session only read
+
+The first session (above) is unchanged below. This second session, under model id `claude-opus-4-8`,
+took the rows the brief required booted but the first session graded `read` (19 to 34, minus the
+DMA/plan rows 12 to 18, which stay host/read) and booted a fresh hostile attack for each where one
+could be authored, on every architecture the claim applies to. Still no escape, still one near miss
+(claim 17, unchanged). The per-claim table and counts below are updated; the first session's prose
+is left as written.
+
+**The earlier pushed commits carry an incorrect trailer.** The five commits from the first session
+(`5bb23c68` and its four parents back to `0dc8d0c2`) end with `Co-Authored-By: Claude Fable`, which
+is wrong for this work. They were already pushed, and this session did not rewrite, rebase or amend
+them: rewriting pushed history is worse than the wrong trailer. This session's own commits carry the
+correct `Co-Authored-By: Claude Opus 4.8`.
+
+### What this session booted
+
+Eight rows got a freshly authored hostile test, booted on every architecture the claim applies to:
+
+| row | module | ISAs | wall (per leg) |
+|---|---|---|---|
+| 30 | `pass9_revocation_tests` (DeviceFrame in flight; x86_64 PortRange in flight) | aarch64/riscv64/x86_64 | 21 s / 71 s / 117 s |
+| 22 | `pass9_elf_tests` (two-segment forgeries, wrapping segment) | aarch64/riscv64 | 26 s / 33 s |
+| 21 | `pass9_el0_tests` (outlaw reads a kernel *code* address) | aarch64/riscv64 | 28 s / 32 s |
+| 27, 28, 29, 33 | `pass9_port_tests` (out-of-range port, sparing revoke, self-delete, READ-only) | x86_64 | 72 s |
+| 23 | `pass9_authority_tests` (drop the construction authority, then build) | aarch64/riscv64/x86_64 | 34 s / 33 s / 75 s |
+
+Five rows (19, 20, 24, 25, 34) have a purpose-built hostile client already in the tree that attacks
+the exact claim; this session confirmed each one boots green in this runner (aarch64) rather than
+authoring a near-duplicate, because the existing client already exhausts the vector the brief names
+and a fresh one would need a new userspace program role (a naming and ratification decision this
+pass should not make alone). The FS disk, the C seam, the compositor and the `e1000e` net stack all
+start and serve here; none skipped. Two rows (31, 32) are a capability census, not a hostile test,
+and are graded untestable with the reason below.
+
+`pgrep -l qemu` was clean after every leg. No QEMU was leaked, and no leg timed out, so no reruns
+were needed.
+
 ## Setup
 
 Run in order. Each succeeded; no leg timed out, so no reruns were needed.
@@ -39,8 +77,12 @@ New-test boot wall times (warm, per architecture leg):
 
 ## Per-claim results
 
-Grade key: `booted <isas>` = a hostile test I wrote and booted; `accepted` = an earlier pass's
-attack test, read and accepted (claims 1 to 3 per the brief); `read` = source review only; `host` =
+Grade key: `booted <isas> (fresh)` = a hostile test I wrote and booted; `booted <isa> (existing
+client)` = a purpose-built hostile client already in the tree that attacks the exact claim, booted
+green in this runner this session (the server runs here; I did not author a near-duplicate);
+`booted <isas>` (no annotation) = the first session's fresh tests; `accepted` = an earlier pass's
+attack test, read and accepted (claims 1 to 3 per the brief); `untestable` = cannot be booted as a
+fresh hostile test in this runner, with the reason in the row; `read` = source review only; `host` =
 host-proved pure logic reviewed.
 
 | # | claim | attack | outcome | grade | test |
@@ -63,22 +105,22 @@ host-proved pure logic reviewed.
 | 16 | one queue's validation cannot touch another's rings | reviewed: distinct queues at disjoint blocks | held | read/host | `direct_memory_access_validator` |
 | 17 | a descriptor changed after validation cannot reach the device | reviewed `shadow_one_head` | **near miss** (documented) | read/host | `direct_memory_access_validator` BUGS, roadmap 0799 |
 | 18 | a wiring plan grants no right the declaration did not ask for | reviewed `component_plan` mapping of Use/Serve to rights | held | read | `component_plan` |
-| 19 | a directory capability reaches its subtree and nothing above | reviewed the hostile dir-attacker client; needs a RedoxFS disk | held | read | `dir_capability_tests` |
-| 20 | a memory-unsafe C component faults and changes nothing outside its grant | reviewed the hostile C out-of-bounds test | held | read | `c_seam_tests::a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant` |
-| 21 | a user program cannot read a kernel address on every ISA | reviewed the ring-3 `outlaw` reader asserting a PERMISSION fault on a mapped kernel static | held | read | `el0_boundary_tests::a_user_program_cannot_read_a_kernel_address` |
-| 22 | an ELF cannot load over the kernel or ask for a W+X page | reviewed the two refusal tests | held | read | `elf_loader_tests` |
-| 23 | the progenitor cannot rebuild after dropping construction authority | reviewed the suptree authority-drop test | held | read | `authority_tests::init_drops_its_construction_authority_and_cannot_build_again` |
-| 24 | two shells with different roots cannot name each other's files | reviewed shell-navigation and job-window tests | held | read | `shell_navigation_tests` |
-| 25 | a client cannot reach a neighbor's pixels or read the screen | reviewed the compositor confinement tests | held | read | `compositor_tests` |
+| 19 | a directory capability reaches its subtree and nothing above | disk-backed client holding a `sub` capability tries `motd` (parent), `other`/`other/secret` (sibling) and `..`; all refused | held | booted aarch64 (existing client) | `dir_capability_tests` (FS disk confirmed attached this runner; `attenuate` Kani-proved) |
+| 20 | a memory-unsafe C component faults and changes nothing outside its grant | C shim writes out of bounds; it faults, both witness pages survive, the in-grant write landed | held | booted aarch64 (existing client) | `c_seam_tests::a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant` |
+| 21 | a user program cannot read a kernel address on every ISA | **fresh**: the `outlaw` reads a kernel *code* address (function entry), not the rodata static the existing test reads; same PERMISSION fault on the read | held | booted aarch64/riscv64 (fresh) | `pass9_el0_tests::a_user_program_cannot_read_a_kernel_code_address` |
+| 22 | an ELF cannot load over the kernel or ask for a W+X page | **fresh**: two-segment forgery (benign first, then W+X / kernel-half second), and a segment whose `p_vaddr+p_memsz` wraps; all refused | held | booted aarch64/riscv64 (fresh) | `pass9_elf_tests` |
+| 23 | the progenitor cannot rebuild after dropping construction authority | **fresh**: a full untyped budget retypes and splits (positive control), is deleted, and the same builds then answer `NoSuchSlot` | held | booted aarch64/riscv64/x86_64 (fresh) | `pass9_authority_tests` (dispatcher-level; `authority_tests` is the suptree end-to-end) |
+| 24 | two shells with different roots cannot name each other's files | one shell tries to name the other root's file; refused | held | booted aarch64 (existing client) | `shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files` |
+| 25 | a client cannot reach a neighbor's pixels or read the screen | a compositor client with no neighbor/screen grant probes for both; finds nothing | held | booted aarch64 (existing client) | `compositor_tests::a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen` |
 | 26 | a client of a rendezvous cannot become its server | `BADGE` is GRANT-gated, write-once, and mints no wider right; (existing: WRITE-only refused RECEIVE/REAP/SURVEY) | held | booted aarch64/riscv64/x86_64 | `pass9_confinement_tests::a_badge_is_grant_gated_and_mints_no_wider_right` |
-| 27 | a non-holder cannot touch a port; grant does not leak across a switch (x86_64) | reviewed the ring-3 holder/non-holder hand-off test | held | read | `x86_port_tests::port_holder_transmits_then_a_non_holder_faults` |
-| 28 | a revoked port holder faults on its next in/out (x86_64) | reviewed | held | read | `x86_port_tests::a_revoked_holder_faults_on_its_next_port_write` |
-| 29 | a thread that deletes its own port cap faults on next in/out (x86_64) | reviewed | held | read | `x86_port_tests::a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write` |
-| 30 | a revocation reaches a capability in flight, not only in tables | reviewed the hand-off-slot sweep and its test | held | read | `revocation_in_flight_tests` |
-| 31 | an unvouched child holds no capability beyond two read-only pages | reviewed the census gate | held | read | `script/swish-check` |
-| 32 | the boot shell holds no display device | reviewed the caps census gate | held | read | `script/swish-check` |
-| 33 | no WRITE, no x86_64 port I/O | reviewed the ring-3 READ-only port test | held | read | `x86_port_tests::a_read_only_port_capability_must_not_grant_port_output` |
-| 34 | a program reaches only the sockets it holds; a socket moves only by its capability | reviewed the squatter and socket-handoff tests; needs the e1000e path | held | read | `net_confinement_tests` |
+| 27 | a non-holder cannot touch a port; grant does not leak across a switch (x86_64) | **fresh**: a holder of exactly the COM1 range writes the port one past it; #GP (no existing `out` is outside the range) | held | booted x86_64 (fresh) | `pass9_port_tests::a_port_range_holder_cannot_reach_a_port_above_its_range` |
+| 28 | a revoked port holder faults on its next in/out (x86_64) | **fresh**: a parked holder revoked by the *sparing* `revoke_port_range_from_others` (the syscall REVOKE body) faults on wake | held | booted x86_64 (fresh) | `pass9_port_tests::a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake` |
+| 29 | a thread that deletes its own port cap faults on next in/out (x86_64) | **fresh**: a self-deleting holder writes after dropping its own port capability; #GP | held | booted x86_64 (fresh) | `pass9_port_tests::a_self_deleting_holder_faults_on_its_next_write` |
+| 30 | a revocation reaches a capability in flight, not only in tables | **fresh**: a `DeviceFrame` (and on x86_64 a `PortRange`) parked in the hand-off slot through a whole-machine revoke; receiver handed nothing (the two sweeps `revocation_in_flight_tests` BUGS flagged untested) | held | booted aarch64/riscv64/x86_64 (fresh) | `pass9_revocation_tests` |
+| 31 | an unvouched child holds no capability beyond two read-only pages | **untestable as a fresh hostile test** in this runner: it is a capability census asserted during the `script/swish-check` interactive boot, not a hostile program; turning it into an attack (a child that tries to *use* an undelegated capability) needs a new userspace program | held (by the census gate) | untestable | `script/swish-check` |
+| 32 | the boot shell holds no display device | **untestable as a fresh hostile test**: same as 31, a census assertion during the gpu `script/swish-check` boot, not a hostile attack; a hostile shell reaching for a display device would need a new userspace program | held (by the census gate) | untestable | `script/swish-check` |
+| 33 | no WRITE, no x86_64 port I/O | **fresh**: a READ-only holder of the COM1 range writes a port inside its range; #GP (the grant must read the capability's rights) | held | booted x86_64 (fresh) | `pass9_port_tests::a_read_only_holder_cannot_write_a_port_inside_its_range` |
+| 34 | a program reaches only the sockets it holds; a socket moves only by its capability | a squatter at a shared stack endpoint tries ten ways to reach an honest client's socket, plus two kernel-IPC probes on its own; all refused | held | booted aarch64 (existing client) | `net_confinement_tests` (e1000e confirmed attached this runner) |
 
 ## Where I attacked hardest, and where the pass is shallow
 
@@ -124,6 +166,57 @@ shows here:
   address; my own version would have been weaker (an unmapped high-half read gives a translation
   fault), so I did not add it.
 
+## Second session: where I attacked hardest, and what I only confirmed
+
+Hardest, with freshly authored booted tests:
+
+- **Claim 30 (revocation in flight), `pass9_revocation_tests`.** The sharpest row this session,
+  because `revocation_in_flight_tests`' own `# BUGS` names the gap: it drives the `PageFrame` sweep
+  through a parked hand-off slot and reasons about the `DeviceFrame` and `PortRange` sweeps from the
+  code. Those two carry the same two hand-off-slot lines, untested. I drove a `DeviceFrame`, and on
+  x86_64 a `PortRange`, parked in `outgoing_cap` through a whole-machine revoke; the receiver was
+  handed nothing on every ISA. The `DeviceFrame` case is the sharper object: `revoke_device_from_others`
+  exists so a device has one owner after a live driver swap, and a copy in a hand-off slot would give
+  it two.
+- **Claim 22 (the ELF loader), `pass9_elf_tests`.** The existing tests forge single-segment images.
+  I forged two-segment images with a benign first segment and a hostile (W+X, or kernel-half) second,
+  to see whether the loader's W^X and half checks reach every segment or stop at the first, and a
+  segment whose `p_vaddr+p_memsz` wraps the 64-bit space. All refused. The kernel-half case is caught
+  by the placement guard (`TooLarge`) before the mapper's `WrongHalf`, which the test records rather
+  than pins, because two guards stand there and the outer one fires first.
+- **Claims 27 to 29 and 33 (x86 port ranges), `pass9_port_tests`.** Every `out` in the existing suite
+  is inside the granted range; I had a holder of exactly the COM1 range write the port one past it,
+  which a TSS bitmap filled too wide would permit. Plus a parked holder revoked by the *sparing*
+  `revoke_port_range_from_others` (the syscall `REVOKE` body, which the existing revoke test does not
+  drive), a self-deleting holder, and a READ-only holder. No new ring-3 machine code was minted; the
+  architect-ratified `x86_programs` stub builders were reused with fresh parameters and scenarios.
+- **Claims 21 and 23.** The `outlaw` reads a kernel *code* address rather than a rodata static (a page
+  class whose leak would be a gadget store), and the construction authority is dropped and rebuilt
+  from through the dispatcher.
+
+Only confirmed, not freshly authored (the server runs here and a purpose-built hostile client already
+attacks the exact claim):
+
+- **Claims 19, 20, 24, 25, 34.** The FS disk, the C seam, the compositor and the `e1000e` net stack
+  all start and serve in this runner, and each claim's purpose-built hostile client
+  (`dir_capability_tests`, `c_seam_tests`, `shell_navigation_tests`, `compositor_tests`,
+  `net_confinement_tests`) booted green this session. I did not author a near-duplicate: each existing
+  client already exhausts the vector the brief names (parent/sibling/`..`; a C out-of-bounds write;
+  two roots; neighbor pixels and the screen; a socket squatter), and a fresh one would need a new
+  userspace program role, which is a naming and ratification decision this pass should not make alone.
+  These are the rows a determined attacker would still probe hardest, and my coverage of them is
+  confirmation of the existing attack rather than a new one.
+
+Untestable as a fresh hostile test:
+
+- **Claims 31 and 32.** Both are a capability census asserted during the `script/swish-check`
+  interactive boot: an unvouched child's caps, and the boot shell's lack of a display device. A census
+  is an inventory check, not a hostile program, and `swish-check` is a 90-second-to-six-minute
+  interactive boot rather than a `#[test_case]`. Turning either into a fresh hostile attack (a child
+  that tries to *use* an undelegated capability, or a shell reaching for a display device) needs a new
+  userspace program, so neither is bootable as a fresh hostile test here. The census itself can be
+  watched through `swish-check`, which is the first session's `read`-grade coverage, not an attack.
+
 ## Near miss
 
 ### Claim 17: the shadow descriptor is published in two unsynchronised stores
@@ -160,25 +253,49 @@ top of the file). Observed by reading, not by a running guest.
 
 No surface I attacked produced an escape outside the claims table.
 
+Second session, surfaces with no numbered row:
+
+- **A `DeviceFrame` used as a bare object in a revocation sweep.** Row 30 is the general in-flight
+  claim; the `DeviceFrame` and x86_64 `PortRange` hand-off-slot limbs are the two the
+  `revocation_in_flight_tests` BUGS section singled out as untested, now driven, in
+  `pass9_revocation_tests`.
+- **A port write one byte past a granted range, and a wrapping ELF segment.** The out-of-range `out`
+  (`pass9_port_tests`) and the `p_vaddr+p_memsz` wrap (`pass9_elf_tests`) are the arithmetic edges of
+  claims 27 and 22 rather than numbered claims of their own.
+
 ## Refusal log
 
-Every step I declined, and every stop by a safety system or classifier. None. No step was refused,
-and no classifier or safety system stopped the pass before or during any tool call.
+Every step either session declined, and every stop by a safety system or classifier.
+
+**None.** No step was refused in either session, and no classifier or safety system stopped the pass
+before or during any tool call. The one planned action not taken was authoring fresh userspace
+program roles for the component rows (19, 20, 24, 25, 34) and the census rows (31, 32); that was a
+scope judgment (a new program is a naming and ratification decision), recorded in the table and the
+hardest/confirmed section, not a refusal by a safety system.
 
 ## Counts
 
-By outcome (34 claims): **held 33, near miss 1 (claim 17, documented), escape 0.**
+Updated across both sessions.
+
+By outcome (34 claims): **held 31, near miss 1 (claim 17, documented), untestable 2 (claims 31, 32),
+escape 0.** The two untestable rows still hold under their census gate; they are untestable only as a
+*fresh hostile test* in this runner.
 
 By grade:
-- booted on aarch64/riscv64/x86_64 (fresh hostile tests I wrote): claims 2, 4, 5, 6, 7, 8, 9, 10, 11,
-  26. **10 rows**.
-- accepted (earlier pass's tests, read and accepted) plus booted on aarch64 by the baseline
-  `seventh_pass` run: claims 1, 3. **2 rows**.
-- read/host (source review only): claims 12 to 25 except 26, and 27 to 34. **22 rows**.
+- booted, fresh hostile tests authored this session: claims 21, 22, 23, 27, 28, 29, 30, 33. **8 rows**
+  (21, 22 on aarch64/riscv64; 27, 28, 29, 33 on x86_64; 23, 30 on all three).
+- booted, first session's fresh hostile tests (aarch64/riscv64/x86_64): claims 2, 4, 5, 6, 7, 8, 9,
+  10, 11, 26. **10 rows**.
+- booted, existing purpose-built hostile client confirmed green this session (aarch64): claims 19, 20,
+  24, 25, 34. **5 rows**.
+- accepted plus booted on aarch64 by the baseline `seventh_pass` run: claims 1, 3. **2 rows**.
+- read/host (source review only, DMA and the wiring plan, per the brief): claims 12, 13, 14, 15, 16,
+  17, 18. **7 rows**.
+- untestable as a fresh hostile test (census assertions via `swish-check`): claims 31, 32. **2 rows**.
 
-Twelve rows carry boot-grade coverage (10 fresh + 2 accepted); the remaining 22 were graded by source
-review. The brief's bar of 27 booted rows was not met: the component-level, x86-asm, and DMA rows
-would each need substantial userspace or hand-assembled machinery to drive a fresh hostile client,
-and within this pass's budget I booted the core kernel-confinement claims (the rights model,
-supervision scope, the map gate, W^X) and reviewed the rest. This is recorded plainly so the pass's
-shallowness on those rows is visible.
+Twenty-three rows now carry boot-grade coverage (8 fresh this session + 10 fresh first session + 5
+existing-client confirmed), up from the first session's twelve. Seven stay read/host by the brief's
+own instruction (the DMA and plan rows), two are untestable as fresh hostile tests, and two are the
+accepted baseline. Every row the brief asked this session to boot (19 to 34, minus 12 to 18) is now
+booted, except 31 and 32, which are a census rather than an attack and are graded untestable with
+that reason.
