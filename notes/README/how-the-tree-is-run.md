@@ -41,7 +41,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Rustdoc coverage](../doc-coverage.md): the doc-example floor and the `missing_docs` ratchet.
 - [The documentation sweep](../documentation-audit.md): how to run a documentation sweep, and what counts.
 - [Prior art and reuse](../prior-art.md): where to look before building, and the build-versus-reuse rule.
-- [Handing a session over](../session-handoff.md): superseded 2026-07-29 restart point, kept as history.
+- [Handing a session over](../session-handoff.md): the 2026-07-29 restart point, a record of that session.
 - [Corrections of error](../coes/README.md): the register of recorded errors and the mechanisms
   that replaced them, one dated file each.
 - [Cobble, the mascot](../mascot.md): the project's mascot, drawn by calef's kid.

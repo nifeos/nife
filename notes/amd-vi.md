@@ -24,9 +24,9 @@ cited across `design/` as where x86's IOMMU lives, and a lane may not edit those
 
 Two seam changes were forced by the hardware, and both reach the other architectures:
 
-- **The DMA page-table format is chosen at run time.** It used to be a type alias per architecture
-  (`arch::mmu::DmaFormat`). An x86 machine has VT-d or AMD-Vi and they walk different formats, so
-  each architecture's `iommu::build_domain` now names its format, and x86's asks which unit is up.
+- **The DMA page-table format is chosen at run time,** not fixed per architecture. An x86 machine
+  has VT-d or AMD-Vi and they walk different formats, so each architecture's `iommu::build_domain`
+  names its format, and x86's asks which unit is up.
 - **`PageFormat::table_entry` takes the level.** An AMD-Vi directory entry carries `NextLevel`
   (bits 11:9), the level of the table it points at. There is no level-free encoding of it, and a
   wrong value is a skipped level rather than a typo. `paging::x86_64::AmdVi` is the format.

@@ -1,7 +1,7 @@
 # The works this project is arguing with
 
-**Provisional name** (`notes/bibliography.md`): split out of `README.md` on 2026-09-21 at calef's
-suggestion, so the page's name has not been through `script/names`.
+**Provisional name** (`notes/bibliography.md`): the page's name has not been through
+`script/names`.
 
 **One rule, and it is what stops this page becoming a reading list nobody read.** An entry belongs
 here only when some page in this tree *reads* it: quotes it, audits the tree against it, or takes a
@@ -48,7 +48,7 @@ a cost this project chose rather than inherited.
 ## Learning material, which is a different thing
 
 These are not arguments this project is having. They are what someone starting on the same ground
-would want, and they are listed because `README.md` used to list them.
+would want.
 
 - The **xv6 book** (MIT, ~100pp), for how a real Unix-shaped kernel is put together.
 - [`rust-raspberrypi-OS-tutorials`](https://github.com/rust-embedded/rust-raspberrypi-OS-tutorials),

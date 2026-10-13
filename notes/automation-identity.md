@@ -28,20 +28,18 @@ anti-recursion rule says a pull request opened with a workflow's own ephemeral `
 triggers no further workflow runs, so such a pull request sits with every required check stuck on
 "Expected", permanently unmergeable. The workflow therefore authenticates as something else.
 
-Until 2026-10-03 UTC that something else was `TOOLCHAIN_BUMP_PAT`, a fine-grained personal access
-token on calef's account (retired that day, and the secret and the token were deleted the same day). It had two
-structural flaws: it expires on a personal timer that nobody reading
-the workflow can inspect, and it couples the project's automation to one person's account. A
-GitHub App owned by the `nifeos` organization, installed on `nife`, fixes both. Its
+That something else is a GitHub App, not a personal access token, because a token on calef's
+account has two structural flaws: it expires on a personal timer that nobody reading the workflow
+can inspect, and it couples the project's automation to one person's account. A GitHub App owned
+by the `nifeos` organization, installed on `nife`, fixes both. Its
 installation tokens are minted fresh per run, so nothing stored expires, and the identity belongs to
 the role rather than to the person. That is `needs-architect`'s principle applied to credentials.
 
-As of 2026-09-23 the App exists: `smelter`, App ID 5053502, created by calef under
-`nifeos` and installed on `nife` alone, with both secrets first stored as organization secrets,
-which calef deleted on 2026-10-03 (UTC); they now exist only as secrets of the environment
-`automation`, and steps 10 and 11 below are history on that point. This note stays written as a procedure rather than as a history, because the
-next person to run it will be provisioning a second App or replacing a lost key, and the steps are
-the same either way. Where a step has already been taken, it says so.
+The App exists: `smelter`, App ID 5053502, created by calef under `nifeos` and installed on `nife`
+alone. Its two secrets exist only as secrets of the environment `automation`, which the workflows
+name (`environment: automation`), not as organization secrets; steps 10 and 11 below still say
+organization secrets, so store them in the environment instead. This note is written as a procedure, because the next person to run it will be
+provisioning a second App or replacing a lost key, and the steps are the same either way.
 
 ## What it does not fix
 
@@ -147,8 +145,8 @@ Once, by an owner of the `nifeos` organization.
 
     `gh` offers `gh auth refresh -h github.com -s admin:org`, and it works. Do not run it. That
     token is shared by every agent on this machine, and widening it permanently for a one-time task
-    grants organization-admin to automation: on 2026-09-23 eight lanes were using that token while
-    merging unattended. Least privilege says do the one-time thing by hand. The reasoning is the
+    grants organization-admin to automation, and many lanes use that token while merging
+    unattended. Least privilege says do the one-time thing by hand. The reasoning is the
     durable part of this paragraph; the clicks below are not.
 
     So use the browser. https://github.com/organizations/nifeos/settings/secrets/actions,

@@ -88,8 +88,7 @@ a set capability cannot express by design (`notes/glob-grant.md`); and the provi
 ## The limits 2b asks for, proposed
 
 calef's ruling asked the building lane to propose the page limit, its memory cost, and a new
-`grant::MAX_NAME`. Proposed here on 2026-09-26 by milestone 47's lane, before 2b is built, so the
-numbers can be ruled on while the badged endpoints of PR #1372 land.
+`grant::MAX_NAME`. They are proposed here, before 2b is built, so the numbers can be ruled on first.
 
 `grant::MAX_NAME`: 252 bytes. That is RedoxFS's own limit (`DIR_ENTRY_MAX_LENGTH` in
 `vendor/redoxfs/src/lib.rs`). Unix's 255 would let a grant name a file the filesystem can never

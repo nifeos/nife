@@ -2,10 +2,9 @@
 
 Every process on nife has the same low half, and several programs agree on where things go in it:
 the linker script, two loaders, std's runtime, the kernel's test harnesses and every fixture that
-shares a page. Until 2026-09-26 nobody had written down which addresses meant what, so each new page
-was placed by looking for a gap. Two things came of that. A program image had under 896 KiB before
-it ran into its own stack, and a page the kernel maps into every process was first placed on top of
-a fixture's window. Milestone 206 (a program image has under 896 KiB) drew the map (DECISIONS §171 (where a program image starts), option D, ruled by calef that day).
+shares a page. This page is the map they agree on, so a new page is placed by the map rather than
+by looking for a gap. Milestone 206 (a program image has under 896 KiB) drew it, under DECISIONS
+§171 (where a program image starts), option D, ruled by calef on 2026-09-26.
 The map is a crate, [`crates/address_space_map`](../crates/address_space_map/src/lib.rs), because
 it is a list of numbers several binaries agree on (AGENTS.md rule 7). This page explains it; the
 crate is the rule.
@@ -26,8 +25,8 @@ crate is the rule.
 The bands tile the first 2 GiB with no gap. Above that the only resident is the timebase page on
 `x86_64` and `riscv64` (`counter_frequency_protocol::PAGE_VA`), which predates the map.
 
-**A program image may now be 496 MiB. It was 896 KiB.** `ripgrep`, measured at 2.61 MiB by milestone
-121, fits with room for a hundred and ninety of it.
+A program image may be up to 496 MiB. `ripgrep`, measured at 2.61 MiB by milestone 121 (`ripgrep`
+on nife), fits with room for a hundred and ninety of it.
 
 ## Where a new page goes
 
@@ -61,8 +60,8 @@ them.
   and the static relocation model, which promise LLVM that every symbol fits a sign-extended 32-bit
   immediate. `riscv64` and `aarch64` would accept a higher image; one layout for three architectures
   is the parity rule.
-- **The heap and the block channel did not move.** Both were already sited, and the heap's numbers are
-  generated into std's PAL. The image band starts at the first address above them.
+- The heap and the block channel sit below the image band, and the heap's numbers are generated
+  into std's PAL. The image band starts at the first address above them.
 - **The stack sits directly above the image**, so the one limit on an image is the stack's base, and
   a refusal can say exactly that (below). The guard page at the bottom of `STACK` means a stack at its
   limit faults before it touches a full image.
@@ -92,24 +91,21 @@ refused to load a user program: the program image is too large: it ends at 0x7f0
 stack's base at 0x7f000000; an image may be at most 496 MiB
 ```
 
-It used to be `Unmappable(AlreadyMapped)`, from whichever stack page the image happened to reach
-first. An image linked for the old layout at `0x40_0000` is refused as outside the band, naming the
+An image linked for the old layout at `0x40_0000` is refused as outside the band, naming the
 base to relink at. `supervision_protocol`'s loader makes the same check, but it reports every failure
 as `Err(())`, so there the check only makes the failure early and clean.
 
 ## What changed with it
 
 - `kernel::user::USER_STACK_VA` and `supervision_protocol::CHILD_STACK_VA` are both the map's
-  `STACK_TOP_PAGE`. Moving the first alone once broke `authority_tests` at stage 10, because the
-  second did not move with it; neither can move alone now.
+  `STACK_TOP_PAGE`, so neither can move alone.
 - `crates/user_mode_runtime/link.ld` links at `0x6000_0000`. A linker script cannot name a Rust
   constant, so the map's host test parses the script's `. =` line and fails if the two differ.
 - `helpers/build-ripgrep.sh` and `cryptography_exerciser/build.rs` no longer relink at 16 MiB.
-- The screen aperture moved from `0x4000_0000`, the heap band's first page, to `0x5800_0000`.
+- The screen aperture is at `0x5800_0000`, outside the heap band.
 - Hand-built children in the kernel's tests and in `fixtures/` put their code at `IMAGE_BASE` and
   their stack at `STACK_TOP_PAGE`, so their page tables have a real program's shape.
-- `cargo xtask` checks every program it packs into an archive against the image band. The first
-  CI run found `mkfs` linked outside the shared script, at lld's default `0x20_0000`.
+- `cargo xtask` checks every program it packs into an archive against the image band.
 - The progenitor's job regions grew by the one table counted above: 41 pages, and 98 for a job
   that also builds a directory caretaker.
 

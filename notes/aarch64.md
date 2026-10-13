@@ -51,8 +51,7 @@ milestone 7 runs at EL1. Milestone 7 is the moment we construct a world at EL0, 
 it, and catch it when it asks us for something. That transition *is* what an operating
 system is.
 
-But the kernel does not always *arrive* at EL1, and until 2026-09-02 this tree assumed it
-did. QEMU's `virt` starts a payload at EL1; every real aarch64 bootloader starts one at EL2,
+But the kernel does not always *arrive* at EL1. QEMU's `virt` starts a payload at EL1; every real aarch64 bootloader starts one at EL2,
 because that is where a hypervisor would go and firmware does not know you are not one. U-Boot
 on the Jetson TX1 (milestone 127, the seL4 machine) does exactly this, with TF-A's tegra210 BL31
 at EL3 below it providing PSCI.

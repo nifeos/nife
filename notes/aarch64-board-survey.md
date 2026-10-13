@@ -38,12 +38,10 @@ Foundation has never validated, which is the "seL4 only boots there" failure wit
 
 ## Requirements, traced to the tree
 
-- GICv2, and since milestone 227 GICv3. When this survey was taken `kernel/src/drivers/gic.rs`
-  spoke GICv2 only, and a GICv3-only board (any recent Rockchip or i.MX8M) bought a new
-  interrupt-controller driver before the first interrupt; the tables below are priced that way.
-  As of 2026-09-19 the kernel drives GICv3 too (`drivers/gicv3.rs`,
+- GICv2 and GICv3. The kernel drives GICv3 (`drivers/gicv3.rs`,
   `arch/aarch64/gic_cpu_interface.rs`, `notes/interrupts.md`), proven under QEMU's TCG and under
-  HVF but on no GICv3 silicon, so the "new GICv3 driver" cells below are now "an unproven one".
+  HVF but on no GICv3 silicon, so the "new GICv3 driver" cells in the tables below mean "an
+  unproven one".
 - PL011 or NS16550 UART. `kernel/src/drivers/pl011.rs` and `ns16550.rs`; the 16550 driver
   already parameterizes `reg-shift` and `reg-io-width` (built for the JH7110's DW-8250), which is
   exactly the shape Tegra's 8250-compatible UART needs.
@@ -119,8 +117,7 @@ strongest purchasable seL4 story with the most expensive port.
 
 ## The recommendation: a used Jetson TX1 developer kit
 
-Corrected 2026-10-06: the purchase arrived as a Jetson TK1, shipped against the TX1 order. It is
-going back and calef is getting the TX1 from the seller (`notes/bench-runbook.md`). The recommendation stands.
+The TX1 is on order and not yet in hand (`notes/bench-runbook.md`). The recommendation stands.
 
 The argument, in one paragraph. The TX1 is the silicon under the only published aarch64 seL4
 numbers, the very 413-plus-426-cycle pair notes/benchmarks.md already compares against, and that

@@ -14,18 +14,13 @@ has no room for.
 - [`design-options.md`](design-options.md): options A, B and C, each priced.
 - [`methods.md`](methods.md): the four methods and what each cannot see.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `silent-gaps` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, after
-  the main page's own heading.
-- `virtio-ring-barrier` Name: provisional, minted 2026-10-11 (UTC) by
-  lane/fourth-ten-longest-notes, after the function finding 9 became.
-- `not-findings` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `design-options` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.
-- `methods` Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, after the
-  main page's own heading.
+- `silent-gaps` Name: provisional. After the main page's own heading.
+- `virtio-ring-barrier` Name: provisional. After the function finding 9 became.
+- `not-findings` Name: provisional.
+- `design-options` Name: provisional.
+- `methods` Name: provisional. After the main page's own heading.

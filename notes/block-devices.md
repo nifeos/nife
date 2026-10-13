@@ -131,11 +131,9 @@ crash image at 2. Both runner scripts explain this where they do it; getting it 
 hands a test the wrong disk. Its own image, for the same reason milestone 37's crash test has one:
 a test that shares a fixture couples its result to whether some other test ran first.
 
-## The write half, and the disk it has to itself (2026-08-03)
+## The write half, and the disk it has to itself
 
-The two items this section used to list as "deliberately not done" were done later the same day, by
-the lane that took the vendor divergence. They are recorded here because they change the picture
-above: there is now a fifth mmio disk, at slot 4, and it is blank on purpose.
+There is a fifth mmio disk, at slot 4, and it is blank on purpose.
 
 - **`disk_partitioner`** (provisional name) writes the table `disk_surveyor` reads, drawing its
   unique GUIDs from the entropy service. notes/globally-unique-identifier-partition-table.md has the details, including why every write is

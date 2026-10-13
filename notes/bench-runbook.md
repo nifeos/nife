@@ -4,8 +4,8 @@
 
 This page points at procedures rather than repeating them. Every step below lives somewhere
 already, and a second copy would drift from the first, which is the defect milestone 236 (three
-derivations are copied between scripts, and nothing notices when they drift) was minted for on the
-same day this was written. What this page adds is the part nothing else holds: which machine to
+derivations are copied between scripts, and nothing notices when they drift) exists for. What this
+page adds is the part nothing else holds: which machine to
 spend an evening on, in what order, and what a result would mean.
 
 ## The three machines, honestly
@@ -14,14 +14,14 @@ spend an evening on, in what order, and what a result would mean.
 |---|---|---|
 | **radon** | StarFive VisionFive 2, JH7110, riscv64 | **yes**, including userspace, `init`, a child process and a confined driver |
 | **xenon** | Dell OptiPlex 7050 Micro, x86_64 | **yes**, first light 2026-09-05: the milestone 243 framebuffer console carried the whole boot tour on video, with no serial cable. `notes/x86-uefi-boot.md` |
-| **argon** | NVIDIA Jetson TX1, aarch64. Not in hand: the board delivered was a TK1 and is going back (2026-10-06, below) | **no.** Milestone 127 is first light |
+| **argon** | NVIDIA Jetson TX1, aarch64. Not in hand (below) | **no.** Milestone 127 is first light |
 
 `notes/target-hardware.md` records the names and why they exist.
 
-## argon is not in hand: the seller shipped a Jetson TK1 (corrected 2026-10-06)
+## argon is not in hand: the seller shipped a Jetson TK1
 
-The board this tree recorded as argon from 2026-09-01 is not a TX1. calef photographed it on
-2026-10-06 (UTC), still in its sealed anti-static bag. The silkscreen reads `PM375 DEV KIT` and
+The board delivered against argon's order is not a TX1. calef photographed it on 2026-10-06 (UTC),
+still in its sealed anti-static bag. The silkscreen reads `PM375 DEV KIT` and
 `PCB:180-7R375-1002-D00`, and the SoC's label reads `NVIDIA TEGRA K1`. That is a Jetson TK1
 developer kit. Two sources, both read on 2026-10-06:
 
@@ -40,18 +40,16 @@ seL4."*
 
 What follows, as facts:
 
-- The plan stands. argon is still the name of the aarch64 seL4 machine, a Jetson TX1, identical
-  silicon to seL4's published figures. Only the board in hand was wrong.
-- argon is not in hand and has no delivery date. Records that said it was in hand, on the desk, or
-  waiting only on bench time carry a dated correction pointing here (pull request #1739).
+- The plan stands. argon is the name of the aarch64 seL4 machine, a Jetson TX1, identical silicon
+  to seL4's published figures.
+- argon is not in hand and has no delivery date.
 - The TX1 facts recorded about argon (tegra210, Cortex-A57, RAM at `0x8000_0000`, a 16550 at
   `0x7000_6000`, the P2597 carrier's J21 header) are awaiting the board, not false. None was ever
   read off a TX1.
-- The TK1 cannot run nife: nife has no 32-bit Arm port. So nife's aarch64 kernel has still never
-  run on bare-metal aarch64 silicon. Its only real-silicon runs are the HVF leg on patagonia
+- The TK1 cannot run nife: nife has no 32-bit Arm port. So nife's aarch64 kernel has never run on
+  bare-metal aarch64 silicon. Its only real-silicon runs are the HVF leg on patagonia
   ([hvf-leg.md](hvf-leg.md)), which is virtualization.
-- How the error survived five weeks: the bag was never opened, and nothing compared the board
-  with its order. The first `BUGS` entry below records the mechanism that was missing.
+- The first `BUGS` entry below records the mechanism that would have caught the wrong board.
 
 ## Spend the first evening on radon, and the reason is arithmetic
 
@@ -61,9 +59,8 @@ written down. One card and one power-on can settle work on two fatal risks:
 
 - **Fatal risk 5** (it cannot be made reliable on multicore, and the bugs appear only on silicon).
   Milestone 225 (run the soak on radon, argon and xenon) is the run; milestones 219, 221 and 216
-  built the workload, the cross-core hook and the console that watches it. This entry used to say
-  the risk had already fired once on this machine; that reading was retracted on 2026-08-15
-  (`notes/visionfive2.md`, fifth bench stop), and every result goes into
+  built the workload, the cross-core hook and the console that watches it. The risk has not fired
+  on this machine (`notes/visionfive2.md`, fifth bench stop), and every result goes into
   `notes/multicore-defect-curve.md`.
 - **Fatal risk 6** (a capability-confined userspace driver cannot drive real hardware at real speed).
   Milestone 159 (a real hardware entropy source: the JH7110's TRNG) is written, host-tested and has
@@ -117,14 +114,14 @@ on 2026-09-05. The procedure is `notes/x86-uefi-boot.md`'s "The bench: booting n
 to a FAT32 stick at `\EFI\BOOT\BOOTX64.EFI`, and the serial chain already on the desk. A second
 evening on xenon is now a bench evening rather than a bring-up one.
 
-Milestone 195 closed two of the three questions only xenon could answer, on patagonia, on
-2026-09-02: a real function's MSI-X table reachable once *firmware* placed the BARs, and a
+Milestone 195 (finish the UEFI boot path) closed two of the three questions only xenon could
+answer, on patagonia: a real function's MSI-X table reachable once *firmware* placed the BARs, and a
 multi-APIC machine still delivering to the boot core. One remains and no emulator can answer it:
 whether this firmware leaves VT-d interrupt remapping off.
 
-And one question 195 created: whether the Dell leaves 32 MiB free. `PHYS_START` moved from 1 MiB
-to 32 MiB because OVMF holds ACPI NVS and its own allocations across the low range. If the Dell does
-not, the loader now prints which range it wanted and which descriptors are in the way, rather than
+And one question 195 created: whether the Dell leaves 32 MiB free. `PHYS_START` is 32 MiB, not
+1 MiB, because OVMF holds ACPI NVS and its own allocations across the low range. If the Dell does
+not, the loader prints which range it wanted and which descriptors are in the way, rather than
 `Load Error` and nothing else.
 
 ## argon, and why it is last
@@ -150,11 +147,10 @@ made that instrument a feature rather than something production carries.
 
 ## BUGS
 
-- A board's identity was recorded from its order and never checked against the silicon. argon was
-  written down as an aarch64 Jetson TX1 in hand from 2026-09-01, and milestones 127, 225 and 353, a
-  fatal-risk ruling and this page planned on it. The board in the bag was a 32-bit Jetson TK1,
-  found on 2026-10-06 when calef photographed it. Nothing in the tree could have caught it, because
-  no record of a machine says how anyone knows what it is.
+- A board's identity is recorded from its order and never checked against the silicon, because no
+  record of a machine says how anyone knows what it is. Milestones 127, 225 and 353, a fatal-risk
+  ruling and this page plan on what the order says. The tell is argon: ordered as an aarch64 Jetson
+  TX1, delivered as a 32-bit Jetson TK1 that sat unopened in its bag.
 
   Proposed mechanism, not built: every bench machine's row in `notes/target-hardware.md` cites
   provenance under `bench/<name>/identity/`, either a photo of the board's markings (the SoC label

@@ -1,10 +1,8 @@
 # Adding a user program
 
-Task-oriented, because milestone 117 (stranger)'s first stranger run found that no file described this. It
-used to be long because the tree was: until milestone 150 (2026-09-19) a program's name went into
-seven hand-maintained places and this page was an eighth. It is now one place for a program, and
-four for one the shell can spawn (five if it answers in a register), and only the first two of
-those are places you have to remember: the build or a host test sends you to each of the rest. What follows is what survived, not a description of what went.
+Task-oriented: what to do, in order. A program is declared in one place, and in four if the shell
+can spawn it (five if it answers in a register). Only the first two of those are places you have to
+remember: the build or a host test sends you to each of the rest.
 
 A program is a `[[bin]]` in one of two packages, running at EL0, linked against `user_mode_runtime`.
 
@@ -122,7 +120,7 @@ it again costs directory entries per block, so do not let a name spend it.
 
 There is also a ceiling on how many programs an archive holds, `nifefs::MAX_FILES`, 127 since
 milestone 291 raised `DIR_BLOCKS` from 6 to 10. Every archive packs 87 programs plus up to five
-optional entries as of 2026-09-19, so the headroom is about thirty. It fails loudly: `write_image`
+optional entries, so the headroom is about thirty. It fails loudly: `write_image`
 returns `TooManyFiles` and each `initial_ramdisk_*` function prints the error, the file count and the size.
 
 ### 5. If the shell should be able to spawn it
@@ -244,9 +242,9 @@ is the record. What was considered and refused for each choice is in
   pin a later one.
 - Every archive packs every program, including ones that cannot run there, which is the rule
   rather than an oversight (see
-  [why-it-works-this-way.md](adding-a-program/why-it-works-this-way.md)). On 2026-09-19 that added
-  `serial_driver`, `jh7110_entropy` and `pmap` to the aarch64 archive and `pmap` to the other two. `pmap` is packed
-  and spawned by nothing (see `crates/pmap`'s `BUGS`); it costs a directory slot, which is what the
+  [why-it-works-this-way.md](adding-a-program/why-it-works-this-way.md)). So the aarch64 archive
+  carries `serial_driver`, `jh7110_entropy` and `pmap`, and the other two carry `pmap`. `pmap` is
+  packed and spawned by nothing (see `crates/pmap`'s `BUGS`); it costs a directory slot, which is what the
   rule prices it at.
 - Whether a program may take an argument and an input together is open, and it is an architect's
   call:

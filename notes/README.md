@@ -1,6 +1,6 @@
 # Concept notes
 
-*Name: ratified (§75 covers this directory). `notes` predates every convention here and stays for the reason `elf` stays: it is the plain word for what the files are, and renaming it would spend a reader's recognition to buy nothing. (This said `elf` and `dtb` until 2026-09-19, when DECISIONS §154 expanded `dtb` to `device_tree_blob`; `notes` is an ordinary English word and was never an acronym, so §154 does not reach it.)*
+*Name: ratified (§75 (directories carry provenance in their own README) covers this directory). `notes` predates every convention here and stays for the reason `elf` stays: it is the plain word for what the files are, and renaming it would spend a reader's recognition to buy nothing. `notes` is an ordinary English word and not an acronym, so DECISIONS §154 (the acronym test is whether the phrase is spoken) does not reach it.*
 
 Running glossary for nife, written as concepts come up. If something in the code or the
 conversation does not make sense, it belongs here.

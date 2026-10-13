@@ -8,9 +8,8 @@ directory carries the reasoning its prose budget has no room for.
   program should not need eight hand-maintained lists) for declaring a program once, and the
   designs it considered and refused.
 
-*Name: provisional, minted 2026-10-11 (UTC) by notes/split-adding-a-program, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-- `why-it-works-this-way` Name: provisional, minted 2026-10-11 (UTC) by
-  notes/split-adding-a-program, after the parent's "Why it works this way". calef names files.
+- `why-it-works-this-way` Name: provisional. After the parent's "Why it works this way". calef names
+  files.

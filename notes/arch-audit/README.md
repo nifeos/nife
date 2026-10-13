@@ -9,13 +9,10 @@ prose budget has no room for.
 - [`plic-lock.md`](plic-lock.md): how finding 3 was closed, why the lock is IRQ-safe, at that rank
   and scoped to that register, and what the tests can and cannot prove.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
-`notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `candidates-cleared` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes,
-  after the parent's own heading.
-- `plic-lock` Name: provisional, minted 2026-10-11 (UTC) by lane/fifth-ten-longest-notes.
+- `candidates-cleared` Name: provisional. After the parent's own heading.
+- `plic-lock` Name: provisional.

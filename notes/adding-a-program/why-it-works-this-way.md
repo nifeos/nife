@@ -1,11 +1,8 @@
 # Why adding a program works this way
 
-Moved whole from [`notes/adding-a-program.md`](../adding-a-program.md)'s "Why it works this way" on
-2026-10-11 (UTC), under §212 (a prose budget). Each bold lead became a heading, so the page meets
-the bold limit of §213 (writing standards), and two sentences over its 40 words were split at their
-joints. The wording is otherwise unchanged.
+An appendix to [`notes/adding-a-program.md`](../adding-a-program.md): the reasoning behind its steps.
 
-Milestone 150, 2026-09-19. The block is
+Milestone 150 (adding a program should not need eight hand-maintained lists) built this. The block is
 [design/roadmap/0150-program-declaration-data.md](../../design/roadmap/0150-program-declaration-data.md);
 this page is the reasoning, and
 [DECISIONS §158 (a program is declared once)](../../design/decisions/0158-a-program-is-declared-once.md)

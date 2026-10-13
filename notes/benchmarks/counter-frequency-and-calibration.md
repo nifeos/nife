@@ -12,18 +12,10 @@ ensure that the program only returns accurate numbers versus leveraging hard cod
 
 ### No committed number was wrong, and why
 
-*(Corrected 2026-09-30: the second bullet below was wrong, and
-[the icount tick scales appendix](icount-tick-scales.md) is the record. A baseline file holds
-counter ticks, and a tick is `counter_frequency / 1e9` of a guest instruction under `shift=0`: one
-riscv64 tick is 100 instructions, one aarch64 tick is 16, one x86_64 tick is 1. The bullet's claim
-that no counter frequency enters the baseline files is the mistake this lane was opened by. The
-conclusion it served, that no committed number was wrong, still holds: every baseline is compared
-only against itself.)*
-
-- The bench baselines are icount, not time. `bench/baseline-riscv64.txt` holds guest instruction
-  counts, which no counter frequency enters. *(Corrected 2026-09-30: it holds ticks at the counter's
-  rate, one tick per 100 guest instructions on that leg; see [icount tick
-  scales](icount-tick-scales.md).)*
+- The bench baselines are icount, not time, and every baseline is compared only against itself. A
+  baseline file holds counter ticks, and a tick is `counter_frequency / 1e9` of a guest instruction
+  under `shift=0`: one riscv64 tick is 100 instructions, one aarch64 tick is 16, one x86_64 tick is
+  1 ([the icount tick scales appendix](icount-tick-scales.md)).
 - The `ns/iter` column does not come from userspace. `os_primitives_benchmarker` reports raw ticks
   over IPC, and `xtask/src/bench.rs` divides them by the `bench: cntfrq <hz>` line the *kernel*
   prints from `arch::timer::frequency()`. That has read `/cpus/timebase-frequency` since milestone
