@@ -17,20 +17,18 @@ behind each section of the main page.
 - [`how-long-to-run-it.md`](how-long-to-run-it.md): the survey behind "no duration is prescribed".
 - [`limitations.md`](limitations.md): the BUGS list in full.
 
-*Name: provisional (milestone 225 (run the soak on radon, argon and xenon), 2026-10-10 (UTC)): the directory `notes/soak/` and the stem
+*Name: provisional: the directory `notes/soak/` and the stem
 `radon-2026-10-10` follow `notes/benchmarks/`'s shape, a page's appendices beside it, dated by the
 board and the evening. calef names directories.*
 
-The stems below were minted on 2026-10-11 (UTC) by `lane/ten-longest-notes`, which split the parent
-under §212 (a prose budget). Each is named for its content, and calef names files.
+Each stem below is named for its content, and calef names files.
 
-- `qemu-baselines` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `migration-finding` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `tick-route` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `placement-census` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `radon-2026-09-03` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes, dated
-  like `radon-2026-10-10`.
-- `rebooting-soak` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `rebooting-soak-procedure` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `how-long-to-run-it` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `limitations` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
+- `qemu-baselines` Name: provisional.
+- `migration-finding` Name: provisional.
+- `tick-route` Name: provisional.
+- `placement-census` Name: provisional.
+- `radon-2026-09-03` Name: provisional. Dated like `radon-2026-10-10`.
+- `rebooting-soak` Name: provisional.
+- `rebooting-soak-procedure` Name: provisional.
+- `how-long-to-run-it` Name: provisional.
+- `limitations` Name: provisional.

@@ -97,9 +97,9 @@ script/test --test a_component_keeps_its_state_across_a_swap
 
 ## BUGS
 
-A handoff was one page until 2026-09-26, and is now a run. `Handoff` carries a page count, and the
-supervisor mints the run as one frame with `MemoryRegion::RETYPE`'s count (calef's ruling of that
-day, which a lane proposed because `line_editor` with its history needs a little over 4 KiB). The
+A handoff is a run of pages, not one page. `Handoff` carries a page count, and the supervisor mints
+the run as one frame with `MemoryRegion::RETYPE`'s count (calef, 2026-09-26 UTC), because
+`line_editor` with its history needs a little over 4 KiB. The
 stateful fixture declares two pages and writes its tally on the second, so a run that stopped at
 its first page would lose the state and fail the test.
 
@@ -124,7 +124,7 @@ The refusal is staged. No build in the tree writes `LAYOUT_2`; the refusing repl
 `c_swappable` started claiming to understand only that layout. The operator's behavior on refusal
 is real. The incompatibility is configured.
 
-Every new name here is provisional, minted 2026-09-26: `handoff` (§209's own), `Handoff`,
+Every new name here is provisional: `handoff` (§209's own), `Handoff`,
 `HANDOFF_ROLE`, `Plan::handoff`, `TALLY` and its contract string `tally`, `ROLE_HANDOFF`,
 `START_FRESH`, `START_ABSORB`, `STATE_VA`, `LAYOUT_1`, `LAYOUT_2`, `STATE_MAGIC`, `state_blob`,
 `absorb`, `serve_with_state`, `start`, `POKE_RESUME`, `NOTE_ABSORBED`, `NOTE_REFUSED`,
@@ -133,6 +133,6 @@ Every new name here is provisional, minted 2026-09-26: `handoff` (§209's own), 
 ## See also
 
 - DECISIONS §209 (state handoff is an opaque blob over a granted frame, and it is optional) and
-  §116 (live component state handoff is declined, for want of a customer), which it supersedes
+  §116 (live component state handoff is declined, for want of a customer)
 - notes/live-replacement.md, notes/component-manifest.md, notes/hung-component.md
 - notes/non-cooperative-fallback.md for the case a handoff cannot reach

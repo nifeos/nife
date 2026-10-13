@@ -22,13 +22,9 @@ entry as it was written, sentence-split for the prose limits.
   thinks it printed them. The three-beat margin absorbs the ordinary case. A machine running a
   mutation sweep beside a soak can produce a false `WentQuiet`. `--quiet-after` is the knob. Not
   running a soak beside other heavy work is the better answer (`AGENTS.md`'s memory ceiling).
-- `--arch x86_64` soaked one core until 2026-09-23 unless `--smp` said otherwise, because that
-  runner defaulted to one. Milestone 315 (a port revoke that reaches every core) closed the
-  port-revocation window that was the last thing holding it there. It moved the default to 2 per
-  DECISIONS §153 (how a two-core x86_64 test earns its place), so an x86 soak now crosses cores like
-  the other two. Every x86_64 number in the tables predates that. Each was taken at one core, and its
-  `crossings=0` says so out loud. They are single-core soaks and should not be reread as multicore
-  ones.
+- `--arch x86_64` soaks two cores by default, per DECISIONS §153 (how a two-core x86_64 test earns
+  its place), but every x86_64 number in the tables was taken at one core, and its `crossings=0`
+  says so out loud. They are single-core soaks and should not be reread as multicore ones.
 - A soak build is not the binary that ships, so its timing is not the shipping binary's timing.
   [qemu-baselines.md](qemu-baselines.md) quantifies it. This is normal and accepted. It is stated
   here because the round-trip figures would otherwise read as IPC benchmarks, which they are not.

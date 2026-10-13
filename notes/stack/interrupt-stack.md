@@ -2,12 +2,9 @@
 
 *An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
 This file holds milestone 124's per-CPU interrupt stack: what was built, the rule that holds it, and
-what it measured (its BUGS are on the main page). It moved here on 2026-09-25 (UTC) under §212 (a
-prose budget). The move then edited it only to meet §213 (writing standards), splitting long
-sentences and dropping bold, with the meaning unchanged. The five appendices were one file until
-then, in the order the main page's table lists them, so "above", "below" and "this file" in them
-mean that whole sequence. The directory `notes/stack/` and this file's stem are provisional names;
-naming is calef's.*
+what it measured (its BUGS are on the main page). The five appendices read in the order the main
+page's table lists them, so "above", "below" and "this file" in them mean that whole sequence. The
+directory `notes/stack/` and this file's stem are provisional names; naming is calef's.*
 
 
 Everything above this line describes a kernel in which an interrupt was paid for by whoever it
@@ -93,8 +90,8 @@ like, and the reason is worth reading. The remaining 3728 bytes are almost entir
 own chain: `preempt_if_needed` 16, `schedule` 448, `finish_switch` 224. Then comes the reaper
 freeing a finished predecessor's address space, plus the panic-and-print tail the walker appends to
 any chain that can reach a `panic!`. Every byte of that is the cost of scheduling at all, which a
-thread already pays when it blocks voluntarily in `ipc_receive`. What used to sit beside it on the
-thread stack, and now cannot, is the handler. That is the GIC or PLIC claim, the tick, the watchdog
+thread already pays when it blocks voluntarily in `ipc_receive`. The handler is not on the thread
+stack. That is the GIC or PLIC claim, the tick, the watchdog
 (whose `dump_threads` alone carries a 1728-byte frame in a test build), the inbox drain, the
 interrupt routing.
 

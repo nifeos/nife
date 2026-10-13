@@ -65,25 +65,17 @@ already existed for the canary.
 |---|---|---|---|---|
 | Boot stack (boot core) | `link-aarch64.ld` / `link-riscv64.ld`, `__stack_bottom`..`__stack_top` | 64 KiB | guard page below | at `stack::init` time, canary to a margin below live `sp` |
 | Secondary stacks (per core) | `SECONDARY_STACKS` in `kernel/src/smp.rs`, `.secondary_stacks` | 64 KiB x MAX_CPUS | guard page below (milestone 90 (a guard page under the per-CPU secondary stacks)) | whole stack, before `CPU_ON` |
-| Kernel thread stacks | `KernelStack` in `kernel/src/thread.rs` | 24 KiB (6 pages; 16 KiB until 2026-08-15) | guard page below | whole stack, at allocation |
+| Kernel thread stacks | `KernelStack` in `kernel/src/thread.rs` | 24 KiB (6 pages) | guard page below | whole stack, at allocation |
 | Interrupt stacks (per core) | `kernel/src/interrupt_stack.rs`, `.interrupt_stacks` | 16 KiB x MAX_CPUS | guard page below | whole region, at `interrupt_stack::init` |
 
-The secondary row said `.bss` and no guard page when this note was written, and that asymmetry
-is what milestone 90 closed; the section below summarizes how, and the numbers it did not change.
-
-The last row is new on 2026-08-16 and this paragraph used to say the opposite, so it is worth
-being exact about what changed rather than editing the claim away. Until milestone 124 there were no
-separate interrupt or exception stacks on either ISA, verified in the arch code rather than assumed.
-aarch64's `vectors.s` built its 272-byte frame on `SP_EL1`, which is whatever kernel stack was live
-(the hardware banks `SP_EL0` away, so a user program's `sp` never enters into it). RISC-V's
-`trap.s` stayed on the interrupted `sp` for an S-mode trap. So trap depth landed on, and was measured
-as part of, whichever stack the trap interrupted, which is exactly how a preemption came to be billed
-to the thread it preempted (notes/stack.md).
-
-Both halves of that are still true of the trap frame, which is the part to keep: the frame is
-still built on the interrupted stack, because a preempted thread's frame must survive until that
-thread runs again. What moved to the new row is the handler above the frame, on a trap taken from
-kernel mode. A trap from user mode does not switch at all.
+The trap frame is built on the interrupted stack on both ISAs. aarch64's `vectors.s` builds its
+272-byte frame on `SP_EL1`, which is whatever kernel stack is live (the hardware banks `SP_EL0`
+away, so a user program's `sp` never enters into it). RISC-V's `trap.s` stays on the interrupted
+`sp` for an S-mode trap. It has to: a preempted thread's frame must survive until that thread runs
+again. So the frame's depth is measured as part of whichever stack the trap interrupted, which is
+how a preemption gets billed to the thread it preempted (notes/stack.md). The handler above the
+frame, on a trap taken from kernel mode, runs on the interrupt stack in the last row. A trap from
+user mode does not switch at all.
 
 The boot core's slot in `SECONDARY_STACKS` exists and is never used (the boot core runs on the
 linker-script stack); the report skips it. On RISC-V the boot hart is whichever one OpenSBI's
@@ -180,7 +172,7 @@ limits on both ISAs, per the parity gate:
 |---|---|---|---|
 | boot | 61440 | +7224 (13%) | the suite's deepest chain grew ~7 KiB; one page left before the guard |
 | secondary | 16384 | ~2x | something new is running deep on an idle-and-traps stack |
-| thread | 18432 (14336 until 2026-08-15) | +6760 over observed; ~+3 KiB over worst-case stacking | some kernel thread is 6 KiB from its (24 KiB stack's) guard |
+| thread | 18432 | +6760 over observed; ~+3 KiB over worst-case stacking | some kernel thread is 6 KiB from its (24 KiB stack's) guard |
 
 The margins are deliberately margins over *observed* depth, not fractions of the stack: the
 observed spread is a few hundred bytes, so a few thousand bytes of allowance absorbs toolchain

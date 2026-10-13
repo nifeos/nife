@@ -144,12 +144,8 @@ helpers/qemu-bounded.sh 200 cargo test -p kernel \
 ```
 
 The outermost backstop is on the host. Both guest watchdogs run off the boot core's timer IRQ, so a
-kernel that loses it loses both. This section used to name `helpers/qemu-bounded.sh` for that case,
-but no kernel leg of `script/test` runs through it, and on 2026-10-11 (UTC) an x86_64 run sat 9.5
-hours in one e1000e test with neither watchdog printing (#1912). The cause there was simpler:
-x86_64's tick never called `watchdog_tick`, so that architecture had no guest watchdog at all
-until the same day. xtask now watches the transcript
-for the running test's name and kills QEMU at that test's budget plus `HOST_GRACE_SECS` (60 s), 150
+kernel that loses it loses both. No kernel leg of `script/test` runs through
+`helpers/qemu-bounded.sh`, so xtask watches the transcript for the running test's name and kills QEMU at that test's budget plus `HOST_GRACE_SECS` (60 s), 150
 s by default. The failure line names the leg, the image, the test and how long it ran:
 
 ```text

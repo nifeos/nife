@@ -28,14 +28,14 @@ the stack's top.
 
 A `null` series wraps an operation that does nothing. Its median must not read deeper than its floor
 (the ceiling of the paint), or the margin is too small for the build and every other line is
-contaminated. It said "must equal" until 2026-09-24. That held under TCG for a reason unrelated to
+contaminated. It is not "must equal", because equality holds under TCG for a reason unrelated to
 the margin. The words between the instrument's own reach and the ceiling are never repainted. So a
 single interrupt trap frame that lands on the ceiling word early in the run sets every later sample
 to exactly the floor.
 
 On the physical core (the HVF leg) the 256 samples usually finish before that happens. There the
-median reads the true reach, 120 bytes shallower than the floor in the debug build. That failed the
-equality on every HVF run from the day this merged. `kernel/src/ipc_stack_depth.rs` has the
+median reads the true reach, 120 bytes shallower than the floor in the debug build, so an equality
+check fails on every HVF run. `kernel/src/ipc_stack_depth.rs` has the
 measurement at the check.
 
 That check found both of this lane's own mistakes. A single 512-byte margin put every release series

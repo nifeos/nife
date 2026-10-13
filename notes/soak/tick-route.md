@@ -69,27 +69,25 @@ is going to claim by the time that check runs.
 
 ## Two bugs this mechanism had, both found by running it, both about ordering
 
-They are worth writing down because neither was visible in review, and both produced the same
-symptom: a soak reporting workers as wedged when the defect was in the instrument.
+Neither is visible in review, and getting either wrong produces the same symptom: a soak reporting
+workers as wedged when the defect is in the instrument.
 
-One rendezvous for every waiter starves all but one, on a loaded host. The first version had a single
-tick route and four waiters blocked on it. `crates/inter_process_communication`'s
+One rendezvous for every waiter starves all but one, on a loaded host, so each group has its own.
+`crates/inter_process_communication`'s
 `Rendezvous::receive` takes a pending signal before it looks at the receiver queue. That is right
 for a driver, since an interrupt that already happened must not be missed. It is wrong for four peers
 sharing a source. When ticks arrive in a burst, whichever waiter is already running drains the whole
-backlog through the pending path and never queues. The others sit at the head of a queue nothing
-pops. Three of four stalled, and the run failed. The fix is a rendezvous per group, so a backlog can
-only ever belong to the waiter it accumulated for. The shared version passed several idle-machine
-runs first. That is the part worth remembering: the bug needed a busy host to appear at all.
+backlog through the pending path and never queues, and the others sit at the head of a queue
+nothing pops. A rendezvous per group means a backlog can only ever belong to the waiter it
+accumulated for. A shared rendezvous passes on an idle machine: the starvation needs a busy host to
+appear at all.
 
-Binding the routes after spawning the waiters is a race, and the reasoning that put it there was
-right about the wrong thing. Arming last is correct for the *signaling*. A route signaled before
-anyone waits on it hands the first waiter a backlog, and makes the first beat measure setup. It is
-wrong for the *routing*. A waiter that reached `Irq::WAIT` before its route existed got
-`WrongObject`. A waiter has no channel to report a refusal on, so it stopped counting. The run failed
-a beat later with four workers apparently wedged. aarch64 got away with it and riscv64 did not,
-which is the ordinary shape of this class. The two halves are now separate: routes are bound before
-the first waiter is spawned, and the signaling is switched on last.
+Routes are bound before the first waiter is spawned, and the signaling is switched on last. Arming
+last is correct for the *signaling*. A route signaled before anyone waits on it hands the first
+waiter a backlog, and makes the first beat measure setup. It is wrong for the *routing*. A waiter
+that reaches `Irq::WAIT` before its route exists gets `WrongObject`, and with no channel to report
+a refusal on, it stops counting. The run fails a beat later with workers apparently wedged. aarch64
+tolerates the race and riscv64 does not, which is the ordinary shape of this class.
 
 ## What it establishes about risk 5, and what it does not
 

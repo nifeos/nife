@@ -18,10 +18,7 @@ harness below proves that as a property of the protocol rather than as a story a
 changes is the claim: this is hardening against a reachable state, not a repair of a field failure,
 and anything that cites it as the latter is now wrong.
 
-Recorded here on 2026-08-15, ahead of the lane that found it, because `crates/thread_wake_handshake` and
-this section both asserted the original reading as fact while that lane sat blocked on a merge
-conflict. The fifth stop's full write-up is notes/visionfive2.md's fifth bench stop, landed with
-the same change that added the `serve:` witnesses.
+The fifth stop's full write-up is notes/visionfive2.md's fifth bench stop.
 
 Two companions from the same boot are kept for the same hardening reason. The first is `ipc_reply`,
 the one wake site addressed by a tid rather than through an endpoint pop. It delivers only to a

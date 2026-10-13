@@ -116,30 +116,29 @@ does not track which client holds which handle. §13 revokes frames and §16 rev
 the kernel owns those tables; nothing owns this one that way yet. `crates/generational_table`' generational names
 would make a revoked handle fail safely once something does.
 
-### Unlink was not free, and the first version of it was a revoke
+### Unlink defers the free, so it is not a revoke
 
-RedoxFS frees a node the instant its last link goes, so `remove_node` plus a handle table gave a verb
-that removed the *object*: the read that followed an unlink returned `ENOENT` from a deallocated
-node. The engine has the right mechanism (`on_open_node`/`on_close_node` and a release list, which is
-Unix's deferred delete), and nothing was using it, because our handle table is ours.
+RedoxFS frees a node the instant its last link goes, so `remove_node` plus a handle table alone
+would remove the *object*: a read after an unlink would get `ENOENT` from a deallocated node. The
+engine has the right mechanism (`on_open_node`/`on_close_node` and a release list, which is Unix's
+deferred delete), and our handle table has to drive it, because the table is ours.
 
-So `Server::open_file_at` and `Server::create_file_at` now register the node as open and
+So `Server::open_file_at` and `Server::create_file_at` register the node as open and
 `Server::close` deregisters it, and that pairing is what makes this verb an unlink. The sabotage
 check is direct: delete either registration and
-`unlink_takes_the_name_and_leaves_the_object_for_whoever_holds_it` goes red. It caught something the
-first time it was run, too: with only the `open` registration deleted the test stayed green, because
-it exercised only the `create` path, so it now goes through both doors.
+`unlink_takes_the_name_and_leaves_the_object_for_whoever_holds_it` goes red. The test goes through
+both doors, because one that exercised only the `create` path stays green with the `open`
+registration deleted.
 
 The cost is stated where it is paid: a handle nobody closes pins the node for the life of the
 server, exactly as a leaked fd does on Unix, and this table outlives its clients.
 
 ### `rm` refuses a directory, and `rmdir` removes only an empty one
 
-`UNLINK` answers `EISDIR` for a directory, which is POSIX's own answer. This section said "there
-is no `RMDIR` verb on this contract" until 2026-08-18, and that stopped being true when DECISIONS
-§49 landed one (`filesystem_protocol::fs::RMDIR`, refusing a non-empty directory with `ENOTEMPTY`, and the
-two halves proven by `navscape::RMDIR_REFUSED_NON_EMPTY` and `RMDIR_REMOVED_EMPTY`). The reasoning
-this paragraph carried survived the change and is what shaped the verb: a single call that removed
+`UNLINK` answers `EISDIR` for a directory, which is POSIX's own answer. The directory verb is
+`filesystem_protocol::fs::RMDIR`, from DECISIONS §49 (removal is a directory operation), which
+refuses a non-empty directory with `ENOTEMPTY`; `navscape::RMDIR_REFUSED_NON_EMPTY` and
+`RMDIR_REMOVED_EMPTY` prove the two halves. The reasoning that shaped it: a single call that removed
 whatever it found is how one word takes a subtree away, so the recursion in `rm -r` lives in
 userspace as a loop of individually safe steps and no single call on this contract can take a
 subtree away.

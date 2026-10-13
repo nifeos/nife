@@ -256,9 +256,8 @@ switched.
 # The incidents since, and where each is recorded
 
 Milestone 3 (hand out physical memory, and detect a smashed stack) was the first overflow, not the
-last. Each later incident has its own appendix, split out on 2026-09-25 (UTC) under §212 (a prose
-budget), with every section heading kept, and [the directory's README](stack/README.md) marks the
-names provisional. Two rules came out of them and hold today. A frame larger than the guard page
+last. Each later incident has its own appendix, and [the directory's README](stack/README.md) marks
+the names provisional. Two rules came out of them and hold today. A frame larger than the guard page
 defeats the guard page, so `script/stack-frame-check` gates every frame at 4096 bytes and growing
 the stack is not the fix. And nothing on an interrupt stack may context-switch away from it.
 

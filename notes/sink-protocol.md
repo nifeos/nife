@@ -157,10 +157,10 @@ that speaks the sink contract to its client and the underlying protocol to whate
   tests. It writes a fixed transcript to whatever is in slot 0 and reports the classification it got
   back, which is how the "gone" path is asserted by value.
 
-These were one binary until milestone 292, dispatching `ROLE_FILE`, `ROLE_VERIFY` and
-`ROLE_WRITER` out of `arg0`. The role numbers existed in three files (this program, the kernel's
-`sink_tests`, and `fs_service`) with nothing keeping them equal, and a mismatch spawned the wrong
-role and hung. Three programs have no role numbers to keep equal.
+They are three programs, not one binary dispatching `ROLE_FILE`, `ROLE_VERIFY` and `ROLE_WRITER`
+out of `arg0`. Role numbers would live in three files (the program, the kernel's `sink_tests`, and
+`fs_service`) with nothing keeping them equal, and a mismatch spawns the wrong role and hangs. Three
+programs have no role numbers to keep equal.
 
 ## What the indifference test proves
 
@@ -194,11 +194,9 @@ The table and both caveats are in [sink-protocol/benchmarks.md](sink-protocol/be
 - **stdin.** `Stdin::read` still returns honest EOF. Both `< file` and a pipe's read end need an
   input-slot convention that does not exist, and this lane did not invent one: the sink contract is
   one-directional by construction and a source contract is its own design.
-  *(Answered by the operators lane the same day: a source is the sink contract received rather than
-  sent. See notes/pipes.md.)*
-- **The terminal is a sink now** (`components/src/terminal_sink_caretaker.rs`, 2026-08-03), and it
-  took one new opcode and one process. The analysis this bullet used to carry was right about the
-  shape and wrong about the cost; see "The terminal's sink adapter" below.
+  *(Answered: a source is the sink contract received rather than sent. See notes/pipes.md.)*
+- **The terminal is a sink** (`components/src/terminal_sink_caretaker.rs`), at the cost of one new
+  opcode and one process; see "The terminal's sink adapter" below.
 - **The console server's page-plus-ack channel is untouched**, and after building the adapter that
   looks like the right answer rather than a gap. `line_editor` is its only client and now speaks for
   two writers; a second client of the *console* would hit the same one-page wall one layer down,

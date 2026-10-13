@@ -30,17 +30,16 @@ themselves stay exactly where `pick_spawn_target` put them.
   hard to hold at once, and a steady-state workload holds neither.
 - Nothing rebalances periodically. There is no such thing in this scheduler.
 
-## The instrument that found it was the second one
+## A placement counter cannot see this migration
 
-The first version counted `trace::Event::PlaceRemote` and reported 23, frozen. That was read as "the
-threads are not moving". It was true, but the counter could not have shown it. A rendezvous wake
+Counting `trace::Event::PlaceRemote` reports 23, frozen, which reads as "the threads are not
+moving". That is true, but the counter could not have shown it. A rendezvous wake
 queues its peer locally, so the placement is local *even when the thread has moved between cores*.
 A placement counter is structurally blind to the migration this workload performs.
 
 `thread::Thread::last_cpu` and `trace::Event::Migrated` answer the question where it cannot be
 dodged. That is `schedule()`'s `switch_in`, the one place every path to a CPU passes through,
-whatever moved the thread. The finding survived the better instrument. That is the only reason it is
-written here as a finding rather than as a guess.
+whatever moved the thread, and the finding holds under it.
 
 Take the lesson, not just the number: a counter that is *near* the question is not the same as one
 that answers it, and the two agree right up until they matter.

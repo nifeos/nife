@@ -12,14 +12,12 @@ the rest.
   says about E1's knee.
 - [`limitations.md`](limitations.md): the BUGS list in full.
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes, which split the parent
-under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
-names files.
+Each stem below is named for its content, and calef names files.
 
-- `secondary-guard-page` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `frame-cost` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `per-ipc-depth` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `limitations` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
+- `secondary-guard-page` Name: provisional.
+- `frame-cost` Name: provisional.
+- `per-ipc-depth` Name: provisional.
+- `limitations` Name: provisional.

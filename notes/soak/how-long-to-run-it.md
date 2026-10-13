@@ -8,9 +8,7 @@ randomized and stress testing.
 
 This note and milestone 225 (run the soak on radon, argon and xenon) both say no duration is
 prescribed, because nobody knows what would be persuasive. Only the boards are where its answer means
-anything. That was written as an admission. It went unchecked until 2026-09-03, when a lane went
-looking for whoever does know. The honest result is that the admission was correct, and it is the
-field's condition rather than this project's. Nothing found prescribes a duration for a concurrency
+anything. The admission is correct, and it is the field's condition rather than this project's. Nothing found prescribes a duration for a concurrency
 soak. The one place a duration *is* derived derives it from a thermal model that has nothing to do
 with interleavings.
 

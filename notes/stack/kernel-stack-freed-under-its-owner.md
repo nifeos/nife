@@ -2,11 +2,9 @@
 
 *An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
 This file holds the answer to the 2026-08-16 faults, a kernel stack freed under its owner (its BUGS
-are on the main page). It moved here on 2026-09-25 (UTC) under §212 (a prose budget). The move then
-edited it only to meet §213 (writing standards), splitting long sentences and dropping bold, with
-the meaning unchanged. The five appendices were one file until then, in the order the main page's
-table lists them, so "above", "below" and "this file" in them mean that whole sequence. The
-directory `notes/stack/` and this file's stem are provisional names; naming is calef's.*
+are on the main page). The five appendices read in the order the main page's table lists them, so
+"above", "below" and "this file" in them mean that whole sequence. The directory `notes/stack/` and
+this file's stem are provisional names; naming is calef's.*
 
 
 Everything above this line about "two addresses, six faults" reached the right verdict on depth

@@ -67,11 +67,9 @@ Two facts this tree did not have, and the bench gets both in the first four minu
 
 ### Does the reset work? Answered 2026-09-04, with a third outcome
 
-The answer was an outcome this note did not predict. radon's OpenSBI accepts SRST reset type 1 and
-never returns. The board does not come back.
-
-Corrected 2026-09-24: there is no reset. OpenSBI's reset is an I2C write to the PMIC. It fails, and
-OpenSBI hangs (notes/board-reboot.md). From `target/board/radon-2026-09-04-srst-reset-pmic.log`, in
+radon's OpenSBI accepts SRST reset type 1 and never returns, and the board does not come back.
+There is no reset: OpenSBI's reset is an I2C write to the PMIC, it fails, and OpenSBI hangs
+(notes/board-reboot.md). From `target/board/radon-2026-09-04-srst-reset-pmic.log`, in
 file order:
 
 ```

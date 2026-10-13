@@ -86,7 +86,7 @@ pointer path at all. Corrected, and the historical `abi::console` methods are ma
   reads a descriptor the driver can mutate after the check. The driver's ABI is unchanged, the
   end-to-end disk read still works through the copy, and a test points a descriptor at the kernel
   after validation and confirms the shadow is untouched. See notes/dma.md.
-- Per-process resource limits: closed, but not by the mechanism this note used to name. The
+- Per-process resource limits: closed by the untyped budget, not by a per-spawner quota. The
   spawn-exhaustion vector is bounded because a process spawns out of its own untyped budget
   (§10 (process model), §16 (object revocation)): the budget is the limit, and retyping enforces it. The per-spawner quota in
   notes/quotas.md still exists in the kernel but has had no caller since §28 retired the kernel-wired
@@ -130,9 +130,5 @@ above as current would be wrong about all four:
   defense in depth. notes/iommu.md carries the honest limits, which are real.
 - **"without resource quotas".** The mechanism exists (`Thread`'s quota slot, returned by ownership
   rather than by bookkeeping; notes/quotas.md), and `sched::spawn_with_quota` has no caller
-  today, so the exhaustion attack this audit named is still reachable. That row moved from
-  "no mechanism" to "a mechanism nobody wired", which is a different piece of work.
-
-The word "learning" was in this paragraph and is removed. The project pivoted from a learning
-project to a demonstrator on 2026-07-26, before this note was written, and `AGENTS.md` asks for the
-old framing to be corrected wherever it is found.
+  today, so the exhaustion attack this audit named is still reachable. The gap is "a mechanism
+  nobody wired" rather than "no mechanism", which is a different piece of work.

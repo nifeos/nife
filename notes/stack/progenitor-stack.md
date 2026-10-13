@@ -1,7 +1,6 @@
 # The progenitor's stack, measured
 
-*Name: provisional, minted 2026-09-27 (UTC) by lane `milestone/progenitor-stack`, for this stem.
-Naming is calef's.*
+*Name: provisional, for this stem. Naming is calef's.*
 
 The progenitor is the first process, and its stack lives for the whole boot because the spawn
 service runs inside `system_initializer::boot`. It ran on eight pages (32 KiB), a size whose doc

@@ -54,9 +54,8 @@ current census whenever one exists, and is quiet otherwise.
 Nine to eleven of the twenty non-waiter threads are off their spawn core by the first beat, on every
 QEMU run of it, with `steals=` at three to five. So it is not work stealing. The parent said what it
 is: *a rendezvous wake is local on purpose, so a communicating set converges onto one core within a
-few exchanges and stays there.* DECISIONS 138 says it in the same words. The census measured what
-the tree had written down, and what the first draft of this instrument's own comments had got
-backwards.
+few exchanges and stays there.* DECISIONS 138 says it in the same words. The census measures what
+the tree has written down.
 
 That settles the question milestone 240's block left open: should the census also be reported after
 the start? It must be. Not because threads might move, but because they provably do, immediately,

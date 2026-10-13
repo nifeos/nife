@@ -51,7 +51,7 @@ Each option names its cost. Three are refused; two are live.
    slots that hold grays; `Attr::colours` consults it, and bold on those four colors keeps the
    base color. Bold on red, magenta and white still lands on orange, violet and `base3`, which are
    Schoonover's own pairings. On-palette, deterministic, host-testable, and milestone 142 (a text
-   display good enough that people use it) supersedes it without ceremony. The cost is honest: a
+   display good enough that people use it) can replace it without ceremony. The cost is honest: a
    fact about the palette lives in the rendition code, and bold green will look identical to green.
 
 ## Recommendation

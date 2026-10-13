@@ -36,11 +36,10 @@ All four on 2026-10-07 (UTC), on #1828:
 
 ## The gap this closes
 
-A security audit on 2026-10-07 (UTC) found that every agent session on patagonia ran `gh` and `git
-push` as calef. His classic `gh` token carries the scopes repo, workflow, admin:public_key, gist
-and read:org, so any lane held a credential that reaches his personal repositories and his SSH
-keys. Every pull request, comment and label a lane made carried his name too. The scheduled
-workflows had already moved onto the `nife-smelter` App; the sessions had not.
+Without it, an agent session on patagonia runs `gh` and `git push` as calef. His classic `gh` token
+carries the scopes repo, workflow, admin:public_key, gist and read:org, so such a lane holds a
+credential that reaches his personal repositories and his SSH keys. Every pull request, comment and
+label it makes carries his name. The scheduled workflows run as the `nife-smelter` App.
 
 ## How a session becomes the App
 

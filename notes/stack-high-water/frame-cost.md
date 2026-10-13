@@ -35,8 +35,7 @@ three scratch arrays sized to their table maxima:
 | `doomed_eps: [u64; MAX_ENDPOINTS]` | **4096** |
 | `waiters: [u64; MAX_THREADS]` | 1024 |
 
-All three are gone as of 2026-08-27, and the last two were removed by the same pressure that found
-them. `doomed_eps` went first, replaced by the rescan-for-one-at-a-time loop. Its comment in
+All three are gone, and the last two were removed by the same pressure that found them. `doomed_eps` went first, replaced by the rescan-for-one-at-a-time loop. Its comment in
 `sched::reap_region_objects` is the general statement of the rule. The other two survived because
 1024 bytes each looked affordable. That is the tell this table exists to make visible: a `[T; MAX]`
 local is a stack allocation wearing the clothes of a bound. It grows when the bound does, and nobody
