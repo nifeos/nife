@@ -9,18 +9,16 @@ needs_person: yes
 ---
 # 192. A keyboard on real silicon: the input half of every graphical story, which nothing owns
 
-Minted 2026-08-30, discovered while tracing journey 3 (login to `kilo` on
-real silicon) the way journey 1's trace discovered milestone 177 (wire the graphical terminal stack
-into the real interactive boot). Option A's wiring built 2026-09-02
-(`milestone/192-keyboard-silicon`); see "What option A's lane built" below, and the paragraph after
-it on why the status stops here rather than at BUILT.
+Journey 3 (login to `kilo` on real silicon) needs a keyboard on real hardware, and nothing else on
+the roadmap owns one. Option A's wiring is built; "What option A built" below says what it is,
+and why the status stops at PARTIAL rather than BUILT.
 
 **Decided 2026-08-30 by calef:** *"we will do Option A first and follow with Option B
 later."* Both options are in scope; the decision is their order, not a choice between them.
 
 ## What done looks like, and option A does not meet it
 
-**calef, 2026-08-30, correcting this block within the hour it was written:** *"192 isn't done until
+**calef, 2026-08-30:** *"192 isn't done until
 we can sit down at the keyboard connected to the computer and display the OS on the dedicated
 monitor."*
 
@@ -56,49 +54,39 @@ over the UART, which is real on all three boards. Nothing broke, so nothing aske
 It only becomes visible when the story is *a person sitting at the machine*, which is what journey 3
 is and what journey 1 is a QEMU-shaped rehearsal for.
 
-## What option A's lane built (2026-09-02), and why the status did not move to BUILT
+## What option A built, and why the status is not BUILT
 
-The status is `PARTIAL` and stays there, by calef's completion criterion above. Nothing in this
-lane's work lets anyone sit down at a keyboard, and flipping this block to BUILT would claim exactly
-the story he said it does not tell. The lane of milestone 159 (a real hardware entropy source) wrote the same
-paragraph for the same reason and it is the right precedent: a lane may advance a milestone without
-being allowed to close it.
+The status is `PARTIAL` and stays there, by calef's completion criterion above. Nothing option A
+built lets anyone sit down at a keyboard, and flipping this block to BUILT would claim exactly the
+story he said it does not tell. Milestone 159 (a real hardware entropy source) stops short of BUILT
+for the same reason: a lane may advance a milestone without being allowed to close it.
 
-What existed already, checked rather than assumed. Input has an owner and milestone 177 already
-built the graphical boot around it:
+Input already had an owner:
 
-- `components/src/input.rs` is the UART receive driver, raw since milestone 28. It holds `WRITE` on one
-  terminal endpoint, `READ` on the UART receive `Irq`, and one device-typed page of registers. It
-  forwards bytes as `line_editor::proto::OPERATION_BYTES`, up to eight per `CALL`.
-- `components/src/keyboard_driver.rs` gained `MODE_DIRECT` in milestone 177: a virtio-input driver
-  holding `WRITE` on one fixed endpoint, sending byte for byte the same `OPERATION_BYTES` framing.
-- So the two sources were already interchangeable at DECISIONS §21's line-discipline contract.
-  Nothing had ever put them behind one choice, and the graphical boot's condition was "a GPU
-  and a keyboard", which on argon, radon and xenon is never true.
+- `components/src/input.rs` is the UART receive driver. It holds `WRITE` on one terminal endpoint,
+  `READ` on the UART receive `Irq`, and one device-typed page of registers. It forwards bytes as
+  `line_editor::proto::OPERATION_BYTES`, up to eight per `CALL`.
+- `components/src/keyboard_driver.rs` is a virtio-input driver holding `WRITE` on one fixed
+  endpoint, sending byte for byte the same `OPERATION_BYTES` framing.
+- So the two sources are interchangeable at DECISIONS §21 (the terminal is a userspace
+  component)'s line-discipline contract.
 
-What the lane added is one choice and its second arm. `kernel::user::boot_graphical_terminal`
-picked the keystroke source: the virtio keyboard when the bus has one, the board's own UART when
-it does not. `kernel::user::input_service::start_direct` is `keyboard_service::start_direct`'s twin,
-spawning `input` kernel-side against the endpoint the kernel creates before init exists (which is
-the reason the keyboard is spawned there too, recorded in full in milestone 177's finding 1).
-`crates/system_initializer` needed no line changed: it cannot tell which source it got, and
-that it cannot is the property this block asked option A to be finished by.
+Option A puts them behind one choice, made when a `graphical_terminal` session launches, in
+`crates/system_initializer`'s `build_graphical_terminal_session` (milestone 632 (graphics on
+demand)). With a keyboard the session gets `keyboard_driver` behind its own line discipline;
+without one it reads the boot line discipline's endpoint raw, which on a board is the UART. The session
+cannot tell which source it got, and that it cannot is the property this block asked option A to be
+finished by.
 
-Option B is a third arm of that `match`. Nothing else in the guest is downstream of the choice.
-
-*Corrected 2026-10-12 (UTC): milestone 600 (the graphical terminal stack is built in userspace)
-retired that function on 2026-09-26. Since milestone 632 (graphics on demand) the choice is made
-when a `graphical_terminal` session launches, in `crates/system_initializer`'s
-`build_graphical_terminal_session`: `keyboard_driver` behind the session's own line discipline when
-the boot has a keyboard, otherwise the boot line discipline's endpoint read raw.*
+Option B is a third arm of that choice. Nothing else in the guest is downstream of it.
 
 ## What authority the serial source holds, which is the risk-6 claim
 
-Stated precisely, because milestone 159's lane established that precision is what makes a
-confinement claim evidence rather than a slogan (its own driver: one page of device memory and two
+Stated precisely, because precision is what makes a confinement claim evidence rather than a
+slogan, as milestone 159 shows (its own driver: one page of device memory and two
 rendezvous capabilities, no DMA page and no `Irq` cap).
 
-`input`, spawned by `input_service::start_direct`, holds two capabilities and one mapping:
+`input` holds two capabilities and one mapping:
 
 | What | Rights | Why that and no more |
 |---|---|---|
@@ -108,8 +96,7 @@ rendezvous capabilities, no DMA page and no `Irq` cap).
 
 It holds no DMA page, no `Virtio` transport, no budget, no report endpoint, and no
 capability naming any other process. It cannot print, cannot spawn, and cannot read what anyone
-else typed. This is `components/src/input.rs`'s documented authority unchanged; the only thing this lane
-altered is who spawns it.
+else typed. This is `components/src/input.rs`'s documented authority.
 
 The honest comparison with option B, since risk 6 is what this is evidence for: a UART is a
 memory-mapped register file with an interrupt, and confining one proves considerably less than
@@ -120,56 +107,39 @@ reaches the line discipline through a capability naming one endpoint.
 
 ## What is proven, and where
 
-In QEMU, on both architectures (`script/swish-check`, folded in 2026-10-03 UTC), a boot
-with a virtio-gpu and no keyboard brings up the GPU driver and the display terminal. Both are
-asserted before anything else happens. It then chooses the UART, spawns `input` against
-`line_editor`'s endpoint, and prints `keystrokes: Serial (graphical boot)`. aarch64 and riscv64 both reach that
-line. On x86_64 the serial source refused itself (`machine_has_no_device_page_for_the_console`),
-and the whole graphical stack reported absent.
+In QEMU on aarch64 and riscv64, `script/swish-check`'s graphical legs launch a
+`graphical_terminal` session from the normal UART boot, with a virtio-gpu and no keyboard, and a
+keystroke reaches the screen over the UART path. Both legs are green in CI. They prove option A at
+session launch rather than at boot.
 
-*Corrected 2026-10-03 (UTC): that refusal belonged to the retired kernel-side
-`boot_graphical_terminal`. A `graphical_terminal` session reads the boot's line discipline raw, and
-on x86_64 that is fed by `input` over a COM1 `PortRange` (milestones 299 and 505), so the serial
-source needs no new driver. x86_64 also has an interactive boot, `swish-check-x86_64` in CI. It lacks
-a virtio-gpu in its runners (milestone 270 (wire `virtio-gpu-pci` and `virtio-input` into the x86_64
-test runner)), and milestone 632's BUGS lists what a graphical leg needs.*
+On x86_64 the session reads the boot's line discipline raw, fed by `input` over a COM1 `PortRange`
+(milestones 299 and 505), so the serial source needs no new driver. x86_64 has an interactive boot,
+`swish-check-x86_64` in CI, but no virtio-gpu in its runners (milestone 270 (wire `virtio-gpu-pci`
+and `virtio-input` into the x86_64 test runner)), and milestone 632's BUGS lists what a graphical
+leg needs.
 
-*Corrected 2026-10-03: this paragraph said a keystroke could not reach the screen, blocked by
-milestone 177's second-`FLUSH` hang. That hang was root-caused 2026-09-19, and both legs have been
-green in CI since.*
-
-And the lane found `script/swish-check` red on `main` for an unrelated reason. With a virtio-rng
-attached (`NIFE_RNG=1`, which both plain legs set unconditionally) the interactive boot traps in
-init on aarch64 and riscv64 alike, before the console prints anything; with the device absent the
-same build reaches a prompt normally. Reproduced at `8167d806` on nightly-2026-09-01 as well as
--09-02, so it is not the toolchain bump; the shape matches the sixteen-slot wall
-`crates/system_initializer`'s own comments describe around the entropy build. It has no owner and
-is recorded in that crate's `BUGS` rather than held in this block, since a reader meets it there.
-
-## The bench procedure, and the fork as first written
+## The bench procedure, and the fork
 
 Two appendices hold what the page has no room for:
 
 - [`bench-procedure.md`](0192-keyboard-on-real-silicon/bench-procedure.md): the ordered bench
-  procedure for option A on radon, why it cannot run yet, and what each `keystrokes:` line means.
-- [`the-fork.md`](0192-keyboard-on-real-silicon/the-fork.md): options A, B and C as the block first
-  laid them out, with why option C is closed and what would start option B.
+  procedure for option A on radon, and why it cannot run yet.
+- [`the-fork.md`](0192-keyboard-on-real-silicon/the-fork.md): options A, B and C, with why option C
+  is closed and what would start option B.
 
 ## What option B will still need
 
-Unchanged by this lane except that the wiring is no longer part of it: an xHCI driver, enough USB
-core to enumerate and configure a device, and a HID keyboard driver, on three architectures, plus
-the scoping pass that splits those into their own milestones. What it will not need is any change to
+An xHCI driver, enough USB core to enumerate and configure a device, and a HID keyboard driver,
+on three architectures, plus the scoping pass that splits those into their own milestones. What it will not need is any change to
 `line_editor`, `display_terminal`, `swish`, or the boot's capability layout: a HID driver that holds
-`WRITE` on one endpoint and sends `OPERATION_BYTES` is one more keystroke source. That choice now
-lives in `crates/system_initializer`'s `build_graphical_terminal_session`, which knows two arms
+`WRITE` on one endpoint and sends `OPERATION_BYTES` is one more keystroke source. That choice lives
+in `crates/system_initializer`'s `build_graphical_terminal_session`, which knows two arms
 today (`keyboard_driver` by name, or the boot's discipline read raw).
 
 ## Why A goes first, which was the recommendation
 
-Recorded here rather than withheld, correcting this block's own first draft. It said "no
-recommendation is offered, deliberately", and that was wrong by AGENTS.md's rule: recommend on
-reversible forks, give options only on irreversible ones. This fork is reversible. Choosing
+AGENTS.md's rule is to recommend on reversible forks and give options only on irreversible ones,
+and this fork is reversible. Choosing
 serial input forecloses nothing, because option B can be built at any point afterward, against the
 same `DECISIONS §21` line-discipline contract that both the UART console and `display_terminal`
 already speak identically.
@@ -207,34 +177,24 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 - The decision is a sequencing call, not a claim that option B is wrong. A demonstration
   operating system that cannot accept a keyboard is limited in a way no scope note repairs, and this
   block should not be read as saying otherwise.
-- Option A has still never been run on a board, and that remains where the unglamorous
-  problems live. What changed on 2026-09-02 is narrower than it sounds: the wiring exists and comes
-  up in QEMU on both architectures, so "zero new drivers" is no longer only a reading of the code.
-  Nobody has yet displayed a terminal on a *board's* framebuffer while taking keystrokes over that
+- Option A has never been run on a board, and that is where the unglamorous problems live. The
+  wiring exists and comes up in QEMU, so "zero new drivers" is more than a reading of the code, but
+  nobody has displayed a terminal on a *board's* framebuffer while taking keystrokes over that
   board's UART, and nobody can until milestone 157 lands.
-- *Corrected 2026-10-03 (this bullet said both graphical legs were red).* They are green in CI
-  since milestone 177's 2026-09-19 root cause. Since milestone 632 (graphics on demand) they launch
-  `graphical_terminal` from the normal UART boot, so they prove option A at launch rather than at boot.
 
 ## Follow-on
 
 - **Milestone 242.** Option B, the xHCI driver, USB core and HID keyboard, plus the scoping pass
-  this block asks for, is `design/roadmap/0242-usb-host-and-a-keyboard-that-is-not-a-uart.md`,
-  minted 2026-09-03 by calef precisely so option B stops being priced as a line item here.
-- **Milestone 230.** That is milestone 230 (`script/shell-check` is red on `main`), which keeps the
-  name the script had then. `script/swish-check` red on `main` with a virtio-rng attached was not unowned:
-  `design/roadmap/0230-shell-check-is-red.md` is BUILT 2026-09-02, root-caused to slot exhaustion
-  four blocks later than this block guessed, and both plain legs are green.
+  this block asks for, is `design/roadmap/0242-usb-host-and-a-keyboard-that-is-not-a-uart.md`, so
+  option B is not priced as a line item here.
 - **Outstanding.** Option A has still never been run on a board and cannot be until milestone 157
   puts a pixel on a board's framebuffer. The six-step bench procedure is written and unexecuted.
-  Checked 2026-09-03.
 - **Outstanding.** No keystroke has reached a screen on real silicon; that waits on milestone 157.
-  *Corrected 2026-10-03: the QEMU half of this bullet (red legs, nothing in CI) was overtaken.*
-- **Milestone 179.** A mouse is `design/roadmap/0179-mouse-pointer-input.md`, minted 2026-08-26,
-  rather than an unnamed gap this block has to carry.
+- **Milestone 179.** A mouse is milestone 179 (pointer input: a mouse in text mode), rather than an unnamed gap
+  this block has to carry.
 - **Outstanding.** Neither option is priced. Nobody has looked at what the JH7110, the Jetson TX1
   and the OptiPlex each expose for USB, and milestone 242 declines to price xHCI in hours as well,
-  so the adjective is still an adjective. Checked 2026-09-03.
+  so the adjective is still an adjective.
 - **Recorded.** The order is a sequencing call rather than a claim that option B is wrong. A system
   that cannot accept a keyboard is limited in a way no scope note repairs, and calef's completion
   bar for this block stays literal.
@@ -243,16 +203,13 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 
 ## Index row
 
-Discovered 2026-08-30 by tracing journey 3, the way journey 1's trace discovered milestone 177.
 Nothing in nife can read a keypress on real hardware: milestone 29's driver is virtio-input, a
-QEMU device none of the three boards has, and the whole roadmap returns nothing for `usb`, `xhci`, `hid` or `ps/2`. Decided 2026-08-30: both options are in scope and the decision is their
-order. Option A (serial input, framebuffer output, no new driver) goes first so the rest of
-journey 3 can be proved on hardware; option B (xHCI plus USB core plus HID, on three
-architectures, months) follows. Done means a keyboard plugged into the machine and the OS on its
-own monitor, so A reaches PARTIAL and cannot close this. The one cheap shortcut is closed: the
-OptiPlex has no PS/2 port. Option A's wiring built 2026-09-02: the graphical boot's keystroke
-source is now one choice in `kernel::user::boot_graphical_terminal` (a virtio keyboard when the
-bus has one, the board's own UART when it does not), `crates/system_initializer` needed no line
-changed, and option B is a third arm of that `match`. *2026-09-30: the choice moved to the launch
-of a `graphical_terminal` session (milestone 632); a session without a keyboard reads the boot's UART raw.* The
-board half waits on milestone 157.
+QEMU device none of the three boards has, and the roadmap has nothing for `usb`, `xhci`, `hid` or
+`ps/2`. Decided 2026-08-30: both options are in scope and the decision is their order. Option A
+(serial input, framebuffer output, no new driver) goes first so the rest of journey 3 can be proved
+on hardware; option B (xHCI plus USB core plus HID, on three architectures, months) follows. Done
+means a keyboard plugged into the machine and the OS on its own monitor, so A reaches PARTIAL and
+cannot close this. The one cheap shortcut is closed: the OptiPlex has no PS/2 port. Option A's
+wiring is built: the keystroke source is one choice made when a `graphical_terminal` session
+launches (milestone 632), a virtio keyboard when the boot has one and the boot's UART read raw when
+it does not, and option B is a third arm of that choice. The board half waits on milestone 157 (real display output on the board).

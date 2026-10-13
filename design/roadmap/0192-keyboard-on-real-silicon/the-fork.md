@@ -1,8 +1,8 @@
 # The fork: what a keystroke arrives on
 
 An appendix to [milestone 192 (a keyboard on real silicon)](../0192-keyboard-on-real-silicon.md).
-It holds the three options as the block first laid them out on 2026-08-30. The page carries the
-decision on their order and the reasoning behind it.
+It holds the three options. The page carries the decision on their order and the reasoning behind
+it.
 
 Option A: serial input, framebuffer output. Display on the board's own framebuffer (milestone
 157, U-Boot's `simple-framebuffer` handoff), keystrokes over the existing UART. On the OptiPlex this
@@ -21,8 +21,8 @@ Note the peer project Atom keeps xHCI in the kernel, which is exactly the contra
 (the foreign-language seam) already draws for FAT32.
 
 Option C: split the difference by architecture. Serial input on the boards, a cheaper native
-path where one exists. This had exactly one candidate and it is now closed. A PS/2 port on the
-OptiPlex would have been a few dozen lines against xHCI's spec. calef confirmed on 2026-08-30
+path where one exists. This had exactly one candidate and it is closed. A PS/2 port on the
+OptiPlex would have been a few dozen lines against xHCI's spec, but calef confirmed (2026-08-30)
 that the 7050 Micro has no PS/2 port and that he owns neither a PS/2 keyboard nor an adapter. So
 there is no cheap native shortcut on any of the three machines, and the fork is genuinely binary.
 Recorded rather than deleted, because the next person will have the same idea.

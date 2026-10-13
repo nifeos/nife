@@ -6,14 +6,13 @@ authority the serial source holds, what is proven and where, what option B will 
 `BUGS` and its Follow-on. This directory carries what its prose budget has no room for.
 
 - [`bench-procedure.md`](bench-procedure.md): the ordered bench procedure for option A on radon,
-  and what each `keystrokes:` line means.
-- [`the-fork.md`](the-fork.md): options A, B and C as first laid out, with why option C is closed.
+  and why it cannot run yet.
+- [`the-fork.md`](the-fork.md): options A, B and C, with why option C is closed.
 
-*Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, which split the
-parent under §212 (a prose budget). The directory follows §212's siting default, `design/roadmap/X/`
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, `design/roadmap/X/`
 beside `design/roadmap/X.md`. calef names directories.*
 
-- `bench-procedure` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog,
-  after the parent's "The bench procedure, in order". calef names files.
-- `the-fork` Name: provisional, minted 2026-10-12 (UTC) by maintainer/prose-budget-backlog, after
-  the parent's "The fork: what a keystroke arrives on". calef names files.
+- `bench-procedure` Name: provisional. After the parent's "The bench procedure, in order". calef
+  names files.
+- `the-fork` Name: provisional. After the parent's "The fork: what a keystroke arrives on". calef
+  names files.
