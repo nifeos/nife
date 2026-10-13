@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 683. What `..` does at a mount point
 
-Promoted from `design/roadmap/proposals/what-dot-dot-does-at-a-mount-point.md` on 2026-10-03 (UTC). The number 683 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-09-26 by the lane for milestone 154 (a process that holds two directory capabilities).
 The decision record for calef's ruling, "the prompt shows one tree" (pull request #1380, not yet
 on `main`), and says outright that what `..` does at a

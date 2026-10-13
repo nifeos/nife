@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 694. The installer asks the terminal to swap
 
-Promoted from `design/roadmap/proposals/the-installer-asks-the-terminal-to-swap.md` on 2026-10-03 (UTC). The number 694 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane for milestone 23 (a capability-routed component
 OS with live replacement) after building `terminal_supervisor`, which can replace `line_editor` live
 but which nothing on a real boot asks to. calef asked for the trigger to be written up as the next

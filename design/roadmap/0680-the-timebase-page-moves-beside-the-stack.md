@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 680. The timebase page moves beside the stack
 
-Promoted from `design/roadmap/proposals/the-timebase-page-moves-beside-the-stack.md` on 2026-10-03 (UTC). The number 680 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane for milestone 206 (a program image has under 896 KiB)
 while drawing the user address-space map, `crates/address_space_map`.
 

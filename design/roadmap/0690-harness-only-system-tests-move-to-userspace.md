@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 690. The harness-only system tests move to userspace
 
-Promoted from `design/roadmap/proposals/harness-only-system-tests-move-to-userspace.md` on 2026-10-03 (UTC). The number 690 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 calef's third rule of 2026-09-27: existing tests that touch no kernel internals migrate to userspace
 over time. Milestone 609 (the system tests leave the kernel crate) measured which do. Of the 66 files
 in `system_tests/src/user/`, three name nothing in the kernel but the test harness (`skip!`):

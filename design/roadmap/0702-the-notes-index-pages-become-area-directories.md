@@ -10,23 +10,21 @@ needs_person: no
 ---
 # 702. The notes index pages become area directories
 
-Promoted from `design/roadmap/proposals/the-notes-index-pages-become-area-directories.md` on 2026-10-03 (UTC). The number 702 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 ## What is being decided
 
 The shape of `notes/` going forward. Today it is flat, 233 top-level files, indexed by
 `notes/README.md` plus 14 area pages under `notes/README/`. That directory exists because the index
-outgrew the 3,000-word prose cap on 2026-09-26 and its lines moved one level down rather than the
-notes moving. calef's diagnosis on 2026-09-30: a directory named `README/` is an index split
+outgrew the 3,000-word prose cap, so its lines sit one level down rather than the notes moving. calef's diagnosis on 2026-09-30: a directory named `README/` is an index split
 masquerading as structure, and the collection, not the pointer, should have the home.
 
 ## The options
 
-- **A. Full migration.** Every note moves into an area directory (`notes/kernel/`,
+- A. Full migration. Every note moves into an area directory (`notes/kernel/`,
   `notes/memory/`, ...) with a `README.md` beside it, the shape `design/fatal-risks/` and
   `notes/net/` already ratified. `notes/README/` is deleted and `script/lint`'s index check reads
   area READMEs instead.
-- **B. New collections get directories; legacy stays flat.** Adopt "a collection gets a directory
+- B. New collections get directories; legacy stays flat. Adopt "a collection gets a directory
   with its README beside it" as the rule for anything new (`notes/coes/` is the first). The flat
   notes and the `notes/README/` pages remain as the legacy shape, migrated area by area only when
   an area is next swept anyway.

@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 699. A local editor for the graphical terminal session's UART arm
 
-Promoted from `design/roadmap/proposals/a-local-editor-for-the-screen-sessions-uart-arm.md` on 2026-10-03 (UTC). The number 699 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-09-30 by the milestone 632 (graphics on demand: `graphical_terminal`, launched from the
 swish prompt) lane (graphics on demand). The `graphical_terminal` program has a UART arm. It reads
 the boot's line discipline raw with `OPERATION_READRAW`, per DECISIONS §227 (how Tab reaches the

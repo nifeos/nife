@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 684. A documentation site, and documentation that ships in packages
 
-Promoted from `design/roadmap/proposals/a-documentation-site.md` on 2026-10-03 (UTC). The number 684 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane of milestone 611 (every program and crate belongs to a package) while giving every
 tracked path a home. It builds nothing. It is the tracked home for an idea of calef's, so that the
 undecided homes it leaves behind point somewhere.

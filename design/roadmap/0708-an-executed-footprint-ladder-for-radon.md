@@ -10,9 +10,8 @@ needs_person: yes
 ---
 # 708. An executed footprint ladder for radon
 
-Promoted from `design/roadmap/proposals/an-executed-footprint-ladder-for-radon.md` on 2026-10-03 (UTC). The number 708 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised 2026-10-03 by the `maintainer/radon-footprint-experiment` lane. Title and stem provisional.
+*Title and slug are drafts.*
+Title and stem provisional.
 
 Whether the 4 KiB fastpath target is right waits on an experiment nobody can run yet. E3's padding
 is never executed, so even under milestone 370 (a layout control) it tests counted bytes and code

@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 705. The graphical terminal runs full-screen programs
 
-Promoted from `design/roadmap/proposals/the-graphical-terminal-runs-full-screen-programs.md` on 2026-10-03 (UTC). The number 705 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by a maintainer-assigned lane, from calef's question of whether the graphical terminal can run
 `vim`, `less` and `top`, and what the engine choice that §29 (framebuffer grant) deferred has to do
 with it. Every claim below was checked in the tree or upstream on 2026-10-02 (UTC); a claim from memory
@@ -106,9 +105,8 @@ Answers to questions 2 and 4 of the seven are the same for every option, so they
   (text as a value), which says "Architect's call, not taken here". Vendoring policy for a foreign
   library is §18 (the PCIe transport), the RedoxFS precedent.
 - *Is the premise true?* Partly. The gap is real and measured above, but it needs a program to hit it,
-  and no such program ships (Part 1). Separately, a premise in the record is stale. `notes/glyphs.md`
-  and `notes/c-seam.md` (tier 1 of "The libc question, answered by tier") listed libghostty-vt as
-  freestanding with "no allocation" (both corrected 2026-10-03 UTC). Upstream's
+  and no such program ships (Part 1). Separately, libghostty-vt is freestanding but not allocation-free
+  (tier 1 of `notes/c-seam.md`'s "The libc question, answered by tier"). Upstream's
   `allocator.h` says it "does require memory allocation for various operations", that on a native
   freestanding target the default allocator always fails, and that the consumer must supply one. So
   tier 1 of the C seam holds, but "fixed buffers, no allocation" does not. `display_terminal` has no

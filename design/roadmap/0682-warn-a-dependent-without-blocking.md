@@ -6,7 +6,7 @@ promoted_from: warn-a-dependent-without-blocking
 ---
 # 682. Warn a dependent without blocking the supervisor
 
-Promoted from `design/roadmap/proposals/warn-a-dependent-without-blocking.md` on 2026-10-03 (UTC). The number 682 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
+Status BUILT 2026-09-27: built on PR #1382. *(Title and slug are drafts.)*
 
 Raised by the lane for milestone 23 (a capability-routed component
 OS with live replacement), answering the block's open question of what a supervisor does when a

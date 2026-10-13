@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 689. Contracts leave the implementation crates they live in
 
-Promoted from `design/roadmap/proposals/contracts-leave-implementation-crates.md` on 2026-10-03 (UTC). The number 689 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane of milestone 611 (every program and crate belongs to a package). Its gate refuses a
 link to another package's internal crate, and four of the kernel's links were the same finding: a
 layout two programs agree on lives inside the crate of one of them. Pull request #1392 (the system

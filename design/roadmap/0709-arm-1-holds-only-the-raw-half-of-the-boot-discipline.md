@@ -11,8 +11,7 @@ needs_person: no
 ---
 # 709. A graphical terminal session on the no-keyboard arm holds only the raw half of the boot discipline
 
-Promoted from `design/roadmap/proposals/arm-1-holds-only-the-raw-half-of-the-boot-discipline.md` on 2026-10-03 (UTC). The number 709 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the 2026-10-03 security audit
 (`design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md`, finding 2), reading
 `graphical_terminal`, one of the thirteen components the window added, for what it holds against

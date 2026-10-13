@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 700. A graphical terminal session can be interrupted and torn down like any job
 
-Promoted from `design/roadmap/proposals/a-screen-session-can-be-interrupted-and-torn-down-like-any-job.md` on 2026-10-03 (UTC). The number 700 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-09-30 by the milestone 632 (graphics on demand: `graphical_terminal`, launched from the
 swish prompt) lane (graphics on demand). That lane built the `graphical_terminal` session as a
 plain spawn and recorded the cost in its own block. A session ends on its own (`^C` through its

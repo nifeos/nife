@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 692. Processes share a verified image's code pages
 
-Promoted from `design/roadmap/proposals/processes-share-a-verified-images-code-pages.md` on 2026-10-03 (UTC). The number 692 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Filed by the maintainer, from a finding raised by the lane building milestone 595 (the shell runs
 a std program): while a child is staged, one program's image is held three times at once. The
 copies are shell staging, the progenitor's own copy, and the child's mapped pages. Name

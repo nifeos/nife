@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 686. A package's license is derived from what it links, and a lint checks it
 
-Promoted from `design/roadmap/proposals/a-package-licence-derived-from-what-it-links.md` on 2026-10-03 (UTC). The number 686 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Owed to `design/decisions/0135-running-gpl-software.md`'s amendment (calef, 2026-09-27T15:11Z: the
 project will serve GPL packages). Not built by that amendment; filed here so the work has a home.
 

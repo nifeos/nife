@@ -10,10 +10,9 @@ needs_person: no
 ---
 # 698. The week flag fires every week
 
-Promoted from `design/roadmap/proposals/the-week-flag-fires-every-week.md` on 2026-10-03 (UTC). The number 698 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised on 2026-09-29 (UTC) by the lane building milestone 623 (bullet under the chart explains a
-cliff), while it built the flag calef commissioned.
+*Title and slug are drafts.*
+Raised by milestone 623 (bullet under the chart explains a cliff), which built the flag calef
+commissioned.
 The threshold came from the proposal verbatim. The build measured what it does on real data, and
 the measurement belongs in front of whoever rules on the constant.
 

@@ -10,11 +10,10 @@ needs_person: no
 ---
 # 696. The spawn service runs outside `boot`'s frame
 
-Promoted from `design/roadmap/proposals/the-spawn-service-runs-outside-boots-frame.md` on 2026-10-03 (UTC). The number 696 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by lane `milestone/progenitor-stack`, which measured the progenitor's stack for the first time
-(notes/stack/progenitor-stack.md) and raised it from eight pages to twelve rather than do this,
-because four open lanes were editing `system_initializer::boot` and `spawn_service` that day.
+*Title and slug are drafts.*
+Raised by the progenitor's stack measurement (notes/stack/progenitor-stack.md). Until this is
+built, the stack is made big enough instead (`INIT_STACK_PAGES` in
+`kernel/src/user/progenitor_boot.rs`).
 
 ## The finding
 

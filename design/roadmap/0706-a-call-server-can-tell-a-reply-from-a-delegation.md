@@ -11,9 +11,7 @@ needs_person: no
 ---
 # 706. A `CALL` server can tell a Reply from a delegation
 
-Promoted from `design/roadmap/proposals/a-call-server-can-tell-a-reply-from-a-delegation.md` on
-2026-10-03 (UTC). The number 706 was minted by the maintainer in a batch promotion of the proposal
-pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
+*Title and slug are drafts.*
 
 Raised by the 2026-10-03 security audit's follow-up (finding 11, item (b) of
 `design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md`'s reconciliation). An

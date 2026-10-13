@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 712. The install gates run nowhere, so rung 2a can rot without anybody hearing
 
-Promoted from `design/roadmap/proposals/the-install-gates-run-nowhere.md` on 2026-10-03 (UTC). The number 712 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-10-03 by the lane briefed to build milestone 198 (a package manager, and the trivial
 install) rung 2a. It found the rung already built and re-ran its gates instead (see the status
 section of milestone 515 (the installer: a stick that puts itself on the machine's disk and is then

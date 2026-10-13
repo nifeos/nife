@@ -10,11 +10,9 @@ needs_person: no
 ---
 # 679. The prompt suggests the rest of a line from history
 
-Promoted from `design/roadmap/proposals/the-prompt-suggests-from-history.md` on 2026-10-03 (UTC). The number 679 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the coordinator's brief to milestone 47 (navigation and
-naming)'s lane `milestone/47-line-editing`, which built DECISIONS §227 (how Tab reaches the shell)
-option D and was told to record fish's extras rather than build them. The stem is provisional.
+*Title and slug are drafts.*
+Raised by milestone 47 (navigation and naming), which built DECISIONS §227 (how Tab reaches the
+shell) option D and records fish's extras here rather than building them. The stem is provisional.
 
 The shell edits its own line, so this is shell-side work with no wire change.
 

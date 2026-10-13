@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 701. The graph counts the names calef calls
 
-Promoted from `design/roadmap/proposals/the-graph-counts-the-names-calef-calls.md` on 2026-10-03 (UTC). The number 701 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 ## What is being decided
 
 Whether the weekly metrics grow a counted series for public function and method names, the surface

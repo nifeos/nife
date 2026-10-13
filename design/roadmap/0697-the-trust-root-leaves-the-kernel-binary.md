@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 697. The trust root leaves the kernel binary
 
-Promoted from `design/roadmap/proposals/the-trust-root-leaves-the-kernel-binary.md` on 2026-10-03 (UTC). The number 697 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 calef ruled this on 2026-09-27, beside the ruling that moved the system tests out of the kernel
 crate (milestone 609 (the system tests leave the kernel crate)). Today `kernel/build.rs` compiles
 the progenitor's digest and the base manifest's digests into `TRUST_ROOT`. A kernel binary is

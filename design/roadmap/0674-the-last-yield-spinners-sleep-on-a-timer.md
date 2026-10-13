@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 674. The last yield-spinners sleep on a timer
 
-Promoted from `design/roadmap/proposals/the-last-yield-spinners-sleep-on-a-timer.md` on 2026-10-03 (UTC). The number 674 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane for milestone 106 (a wait that ends on either
 the interrupt or the deadline), which built the `Timer` object and converted four consumers. This
 records the ones it did not convert, and what each needs.
@@ -38,10 +37,10 @@ should record the round-trip rate before and after, and say which one the soak's
 
 ### A long-running network time client
 
-`components/src/network_time_client.rs` is one-shot because a 64-second poll used to mean 64 seconds
-of yield-spin. That reason is gone. A continuously polling client still needs a supervisor and a
+`components/src/network_time_client.rs` is one-shot, and the kernel does not force that: a
+64-second poll sleeps on a timer rather than yield-spinning. A continuously polling client still needs a supervisor and a
 policy for what it does between polls, which is the territory of milestone 51 (wall-clock time, the `date` command, and an NTP service). This
-item is only the record that the kernel is no longer the blocker.
+item is only the record that the kernel is not the blocker.
 
 ### The timetable, and the per-user session's cost
 

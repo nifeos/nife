@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 707. aarch64 registers spelled the way riscv64 and x86_64 spell them
 
-Promoted from `design/roadmap/proposals/aarch64-registers-spelled-the-way-riscv64-and-x86-64-spell-them.md` on 2026-10-03 (UTC). The number 707 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-10-03 (UTC) by the maintainer at calef's request, while PR #1477 (the kernel declares
 each dependency where it is used) moved `tock-registers` into the aarch64 target table. calef's call
 was to file this, not launch it. Title and slug are drafts.
@@ -29,9 +28,9 @@ Measured on `d6a902a9b` with `grep` under `kernel/src`.
 So aarch64 alone reaches registers two ways, and alone carries two third-party crates for it.
 DECISIONS §3 (use the crate ecosystem) chose both on 2026-07-13, before the in-tree pattern existed.
 `kernel/Cargo.toml`'s comment on the aarch64 table calls the asymmetry history rather than a
-decision. It has had one visible cost already: `aarch64-cpu` was unconditional until 2026-08-31, and
-that pinned Kani, and so CI, to an aarch64 runner. Milestone 193 (put `kernel/src` within reach of
-the prover, because today the proofs cannot see it) found it, and target-gating fixed it.
+decision. It has a visible cost: an unconditional `aarch64-cpu` pins Kani, and so CI, to an aarch64 runner,
+which is why it is target-gated (milestone 193 (put `kernel/src` within reach of the prover,
+because today the proofs cannot see it)).
 
 **A second cost is current.** `arch/aarch64/instructions.rs` exists so a proof can stub each
 instruction. Its own header says registers reached through `aarch64-cpu` are not moved there, so
@@ -73,8 +72,8 @@ bugs someone wrote down in those words, not bugs fixed silently.
 
 ## Costs and risks
 
-- Churn in 11 working files whose behavior is proven on argon (the aarch64 Jetson board). *(Corrected 2026-10-06: nothing
-  has run on argon; QEMU and HVF are the proof.)* A wrong
+- Churn in 11 working files whose behavior is proven under QEMU and HVF (nothing has run on argon,
+  the aarch64 Jetson board). A wrong
   `SCTLR` or `TCR` bit is a boot that never prints, so the failure is loud but slow to diagnose.
 - It reverses DECISIONS §3, so it needs a written decision before it is built; that is the
   `unwritten` dependency above.
@@ -91,8 +90,8 @@ dependencies, and every register access stubbable by a proof. The only argument 
 
 ## Blocked by
 
-PR #1477 landing, which moves `tock-registers` into the aarch64 table first, and a decision
-superseding DECISIONS §3.
+A decision that replaces DECISIONS §3. `tock-registers` is already in the aarch64 target table
+(PR #1477).
 
 ## Index row
 

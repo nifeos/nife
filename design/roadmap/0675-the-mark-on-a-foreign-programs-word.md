@@ -6,13 +6,12 @@ refused_by: 170
 ---
 # 675. The mark on a foreign program's word
 
-Promoted from `design/roadmap/proposals/the-mark-on-a-foreign-programs-word.md` on 2026-10-03 (UTC). The number 675 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status REFUSED: calef ruled on 2026-09-27 that there is no mark; recorded as an amendment to DECISIONS §170. *(Title and slug are drafts.)*
+Status REFUSED: calef ruled on 2026-09-27 that there is no mark; recorded as an amendment to DECISIONS §170. *(Title and slug are drafts.)*
 
-Raised by milestone 205 (how a foreign program is told what to do)'s lane,
-`milestone/205-foreign-program-arguments`. §170 (how a foreign program is told what to do) clause 4
+Raised by milestone 205 (how a foreign program is told what to do). §170 (how a foreign program is told what to do) clause 4
 gives an unvouched program every named file read-only. A person widens one word with a mark: "this
 word is writable", or "this word may be created". §170 left the spelling to calef, because it is a
-name a person types and every script will carry. The slug is a lane's coinage.
+name a person types and every script will carry. The slug is provisional.
 
 Nothing is built yet, because the mark qualifies a grant and the grant is the designation half
 ([`0665-designating-a-foreign-programs-words.md`](0665-designating-a-foreign-programs-words.md)). This page

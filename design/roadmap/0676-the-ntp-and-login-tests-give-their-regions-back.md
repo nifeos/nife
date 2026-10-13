@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 676. The NTP and login tests give their regions back, or say why they keep them
 
-Promoted from `design/roadmap/proposals/the-ntp-and-login-tests-give-their-regions-back.md` on 2026-10-03 (UTC). The number 676 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Filed by the lane of milestone 601 (the region table prints its
 peak), from the per-test measurement that built the ledger at `memory_region::MAX_REGIONS`. The
 title is provisional.

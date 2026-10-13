@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 703. A claim with its work on another branch is reported
 
-Promoted from `design/roadmap/proposals/a-claim-with-work-on-another-branch-is-reported.md` on 2026-10-03 (UTC). The number 703 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised 2026-10-02 by the lane that built the empty-diff check (milestone 627 (a pull request that
 changes nothing does not merge), provisional number).
 Pull request #1460 claimed under `lane/fatal-risk-colors` while the work was pushed to

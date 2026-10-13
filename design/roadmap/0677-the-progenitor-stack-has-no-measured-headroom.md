@@ -6,11 +6,10 @@ promoted_from: the-progenitor-stack-has-no-measured-headroom
 ---
 # 677. The progenitor's stack has no measured headroom
 
-Promoted from `design/roadmap/proposals/the-progenitor-stack-has-no-measured-headroom.md` on 2026-10-03 (UTC). The number 677 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-09-27: built on PR #1409. *(Title and slug are drafts.)*
+Status BUILT 2026-09-27: built on PR #1409. *(Title and slug are drafts.)*
 
-Raised by lane `milestone/600-userspace-graphical-stack` (milestone
-600 (provisional), the graphical terminal stack is built in userspace), when its first gate on top
-of #1340 overflowed the progenitor's stack.
+Raised by milestone 600 (the graphical terminal stack is built in userspace), whose growth of the
+progenitor's frame overflowed the progenitor's stack.
 
 A measurement, then a constant or a gate.
 
@@ -21,11 +20,10 @@ The progenitor runs on eight stack pages (`kernel::user::INIT_STACK_PAGES`, whos
 boots (`sub sp` in its prologue, aarch64), and it lives for the whole boot because the spawn service
 runs inside it.
 
-This lane's first version grew that frame by 560 bytes. `swish-check` on aarch64 then died at
-`package install greeting` with a data abort 24 bytes below the stack's last page (`far
-0x4f8fe8`, `sp 0x4f8fe0`). Main passed the same script. So main's deepest path reaches within
-roughly 540 bytes of the guard, inferred from those two numbers rather than measured. The lane cut
-its own growth to 16 bytes and went green, which fixes its change and not the margin.
+Growing that frame by 560 bytes makes `swish-check` on aarch64 die at `package install greeting`
+with a data abort 24 bytes below the stack's last page (`far 0x4f8fe8`, `sp 0x4f8fe0`), while main
+passes the same script. So main's deepest path reaches within roughly 540 bytes of the guard,
+inferred from those two numbers rather than measured.
 
 Nothing measures this stack. `script/stack-depth-check` walks kernel thread stacks only, and
 `script/stack-frame-check` gates single frames.
@@ -37,9 +35,9 @@ Nothing measures this stack. `script/stack-depth-check` walks kernel thread stac
 2. Then either raise `INIT_STACK_PAGES` with the number beside it, or gate the depth, so the next
    lane that adds a local to `boot` fails loudly instead of at a prompt.
 
-## Built (lane `milestone/progenitor-stack`, 2026-09-27)
+## Built
 
-*Promotion and a number are the integrator's at merge. Names below are provisional.*
+*Names below are provisional.*
 
 **Measured.** A kernel gauge, `kernel/src/progenitor_stack.rs`, paints the progenitor's stack pages
 as `boot_progenitor` maps them and prints the high-water mark from the idle loop (the yield syscall
@@ -51,8 +49,7 @@ on `x86_64`) each time it settles at a new peak. On `script/swish-check`, out of
 | debug, `package install` | **32,440** | **32,184** | **31,304** |
 | release, `package install` | 16,432 | 16,544 | not run |
 
-So main had 328 bytes to spare on aarch64 debug, which is what three lanes in a row hit. The finding
-above had inferred about 540. `boot`'s frame is 12,848 bytes of it in debug and stays live under the
+So eight pages left 328 bytes to spare on aarch64 debug, against the 540 inferred above. `boot`'s frame is 12,848 bytes of it in debug and stays live under the
 spawn service.
 
 **Gated.** `kernel::progenitor_stack::HEADROOM_FLOOR` is two pages. A boot that leaves less prints
@@ -74,8 +71,8 @@ notes/stack/progenitor-stack.md has the frames, the decision and the `BUGS`.
 
 ## Follow-on
 
-- **Milestone 696.** Milestone 696 (the spawn service runs outside `boot`'s frame). The more elegant fix the raise to twelve pages did not take, running the spawn service outside `boot`'s frame: `design/roadmap/0696-the-spawn-service-runs-outside-boots-frame.md`.
+- **Milestone 696.** Milestone 696 (the spawn service runs outside `boot`'s frame). The more elegant fix than a bigger stack, running the spawn service outside `boot`'s frame: `design/roadmap/0696-the-spawn-service-runs-outside-boots-frame.md`.
 
 ## Index row
 
-The progenitor runs on eight stack pages and one lane's 560-byte frame growth overflowed it. Proposed: measure the headroom, then set a constant or add a gate.
+On eight stack pages the progenitor had 328 bytes to spare, and a 560-byte frame growth overflowed it. Built: a kernel gauge reports the stack's high-water mark, and `script/swish-check` fails a boot that leaves less than two pages.

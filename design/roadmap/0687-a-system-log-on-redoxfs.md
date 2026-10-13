@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 687. The system log persists through RedoxFS: what a directory grant has to answer
 
-Promoted from `design/roadmap/proposals/a-system-log-on-redoxfs.md` on 2026-10-03 (UTC). The number 687 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by lane `proposal/system-log` (pull request #1423), from calef's request for a roadmap
 proposal covering §242 (a system log)'s Question 5. Storage is decided as "in memory now, RedoxFS
 later through a directory grant," and this is what that later half needs to answer before a
@@ -69,8 +68,7 @@ before the event-driven switch-over above can be wired up.
 
 ## Retention and rotation
 
-Decided, 2026-09-27: rotated files from the start, not one growing file per boot. The proposal's
-original reason was wrong and is corrected here. RedoxFS records are capped at 128 KiB regardless
+Decided, 2026-09-27: rotated files from the start, not one growing file per boot. RedoxFS records are capped at 128 KiB regardless
 of file size, so an append's recompression cost (below) is bounded either way, whether the log
 lives in one growing file or many rotated ones. The deciding reason is retention instead. RedoxFS
 cannot drop the front of a file without rewriting it, while deleting a whole rotated file costs
@@ -181,8 +179,8 @@ calef ruled all four questions this proposal raised on 2026-09-27 (UTC), each as
 request #1423 (`gh pr view 1423 --comments` has the full text). The sections above carry each
 ruling's reasoning where a reader meets the design it settles.
 
-1. Rotated files from the start, not one growing file, corrected to retention rather than
-   record-recompression cost as the reason (Retention and rotation, above).
+1. Rotated files from the start, not one growing file, for retention rather than
+   record-recompression cost (Retention and rotation, above).
 2. One store, filtered at read time by the stamped `user` field. Two known limitations are recorded
    where they apply (What persists, and where, above): a shared quota lets one user crowd out
    everyone's history, and deleting one user's records means rewriting files.

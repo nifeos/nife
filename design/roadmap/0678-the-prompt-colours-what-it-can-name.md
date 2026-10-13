@@ -10,10 +10,8 @@ needs_person: no
 ---
 # 678. The prompt colors a command by whether the shell can run it
 
-Promoted from `design/roadmap/proposals/the-prompt-colours-what-it-can-name.md` on 2026-10-03 (UTC). The number 678 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by the coordinator's brief to milestone 47 (navigation and
-naming)'s lane `milestone/47-line-editing`, recorded rather than built. The stem is provisional.
+*Title and slug are drafts.*
+Raised by milestone 47 (navigation and naming), recorded rather than built. The stem is provisional.
 
 Shell-side, over the line the shell now edits itself (DECISIONS §227 (how Tab
 reaches the shell) option D).

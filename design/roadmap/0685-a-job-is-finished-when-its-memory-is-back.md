@@ -11,11 +11,9 @@ needs_person: no
 ---
 # 685. A job is finished when its memory is back
 
-Promoted from `design/roadmap/proposals/a-job-is-finished-when-its-memory-is-back.md` on 2026-10-03 (UTC). The number 685 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
-Raised by milestone 205 (how a foreign program is told what to do)'s lane,
-`milestone/205-designation` (#1402). The slug and every name below are a lane's coinage and
-provisional. Every real fix is a change two programs agree on, so it is calef's.
+*Title and slug are drafts.*
+Raised by milestone 205 (how a foreign program is told what to do) (#1402). The slug and every
+name below are provisional. Every real fix is a change two programs agree on, so it is calef's.
 
 ## The ruling
 
@@ -44,8 +42,7 @@ is unreaped.
 
   `w0` and `w1` are what a `RECEIVE_CAP` returns as data, so the message reads whole wherever in a
   request it lands. The shell's copy is unbadged and lacks `GRANT`, so it cannot forge the badge.
-- The premise, corrected. The block said the progenitor already holds each child's tid from
-  `build_child`. It does not: `build_child` returns a thread capability, and no method reads a tid
+- The progenitor does not hold each child's tid from `build_child`: `build_child` returns a thread capability, and no method reads a tid
   from one. So the progenitor labels each job's supervision capability with a number it mints,
   and keys on that; the tid rides along as the ruling asked.
 - The progenitor. Every receive on the spawn endpoint goes through `SpawnEndpoint`, which takes

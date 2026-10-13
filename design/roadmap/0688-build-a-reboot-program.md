@@ -10,8 +10,7 @@ needs_person: no
 ---
 # 688. Build a reboot program
 
-Promoted from `design/roadmap/proposals/build-a-reboot-program.md` on 2026-10-03 (UTC). The number 688 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane for §243 (notices for people), pull request #1424. Its own worked example, a
 reboot warning shown on every session, has no publisher: "No program reboots the machine" today
 (§243, "What the tree has today"). calef ruled §243's six questions on 2026-09-27 (UTC), so this

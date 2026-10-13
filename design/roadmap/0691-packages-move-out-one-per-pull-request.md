@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 691. Packages move out of this repository, one per pull request
 
-Promoted from `design/roadmap/proposals/packages-move-out-one-per-pull-request.md` on 2026-10-03 (UTC). The number 691 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by the lane of milestone 611 (every program and crate belongs to a package), which drew the
 package boundaries and gated them but moved nothing, as briefed. calef ruled on 2026-09-27 that the
 end state is everything leaving this repository, with no default of staying. This is how the moving

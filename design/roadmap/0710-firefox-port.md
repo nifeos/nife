@@ -10,8 +10,7 @@ needs_person: yes
 ---
 # 710. Porting Firefox to nife
 
-Promoted from `design/roadmap/proposals/firefox-port.md` on 2026-10-03 (UTC). The number 710 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. *(Title and slug are drafts.)*
-
+*Title and slug are drafts.*
 Raised by calef's ruling below. It builds nothing. It is the tracked home for the browser question
 so that §131 and §145's "out of reach" has somewhere to point. The file name is provisional.
 
@@ -60,9 +59,8 @@ Until it is run, nothing here is an estimate.
 
 ## Done when
 
-*Amended 2026-10-12 (UTC) under §297 (software reaches a nife system as a package `jig` installs
-from basalt's index, the kernel included). calef, that day: "They should all be installed via jig
-through basalt."*
+Under §297 (software reaches a nife system as a package `jig` installs from basalt's index, the
+kernel included); calef, 2026-10-12 UTC: "They should all be installed via jig through basalt."
 
 Firefox must run on nife installed by `jig install` from basalt's package index. basalt builds the
 package against the nife commit it pins. The install waits on milestone 809 (the package client

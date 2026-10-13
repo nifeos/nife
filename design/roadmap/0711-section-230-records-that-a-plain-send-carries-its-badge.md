@@ -6,7 +6,7 @@ promoted_from: section-230-records-that-a-plain-send-carries-its-badge
 ---
 # 711. §230 records that a plain `SEND` carries its capability's badge
 
-Promoted from `design/roadmap/proposals/section-230-records-that-a-plain-send-carries-its-badge.md` on 2026-10-03 (UTC). The number 711 was minted by the maintainer in a batch promotion of the proposal pile and is provisional until the queue lands it. Status BUILT 2026-10-03: the amendment to DECISIONS §230 landed in PR #1524 (merged 2026-10-03T17:04Z). *(Title and slug are drafts.)*
+Status BUILT 2026-10-03: the amendment to DECISIONS §230 landed in PR #1524 (merged 2026-10-03T17:04Z). *(Title and slug are drafts.)*
 
 Raised by the 2026-10-03 security audit
 (`design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md`, finding 1). It is a
