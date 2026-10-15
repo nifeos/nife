@@ -1,7 +1,12 @@
 ---
-status: REFUSED
+status: SUPERSEDED
 raised: 2026-09-20
-refused_by: 438, 448
+superseded_by: 924
+milestone_dependencies: none
+decision_dependencies: none
+machine_requirements: none
+specific_machine: none
+needs_person: no
 ---
 # 479. A blocking `--in-diff` mutation gate
 
@@ -28,7 +33,7 @@ have caught, and the experiment that would settle it runs against pull requests 
 contain. The block's own rule ends the work at measurement 1, and nothing was switched on: no
 workflow, no `script/ci-build` row, no ruleset entry.
 
-## Revisit
+## The conditions it was refused on
 
 - **Condition.** A second measurement, on the experiment measurement 1 could not run. The block is
   explicit that the mechanism is not refuted and the story is, so what would change this is evidence
@@ -69,6 +74,11 @@ workflow, no `script/ci-build` row, no ruleset entry.
   which was deliberately written so the verdict does not depend on this gate existing. The triage it
   asks for is measurable after the merge, weekly, without blocking anybody. What this gate would
   change is when the triage happens, not whether.
+
+Milestone 924 (a survivor on a pull request's own lines cannot merge untriaged) is the rule in force,
+on calef's ruling of 2026-10-15 (UTC): *"Reopen, build it."* It holds that the proof-module
+objection is answered by `.cargo/mutants.toml`'s name exclusion, and that the kernel objection
+limits the gate's scope rather than arguing against it.
 
 ## Index row
 
