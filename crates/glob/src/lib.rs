@@ -1178,3 +1178,14 @@ mod verification {
         kani::cover!(matches_with(&plain, &name, Dot::Ordinary));
     }
 }
+
+/// Staged for milestone 924's first observation: a function no test calls, so every mutant of it
+/// survives, which is the red the diff gate exists to raise. Reverted on the lane branch; this
+/// branch is deleted once the run is read.
+pub fn staged_gate_observation(x: u8) -> u8 {
+    if x > 200 {
+        x
+    } else {
+        x.wrapping_add(1)
+    }
+}
