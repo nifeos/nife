@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # Provisional name, calef has not ruled on it. Watch the CI runs that lanes are WAITING on
 # (briefs/session-start.md, briefs/gate-in-ci.md): a lane ends its turn with one line,
-# `WAITING <run_id> [<run_id>...] on <what>`, and this script is what turns that line into a wake-up
+# `WAITING [<owner>/<repo>:]<run_id> [...] on <what>`, and this script is what turns that line into a wake-up
 # instead of a lane nobody is watching for.
 #
-# Usage: the maintainer appends one line per run to runs.txt, "<run_id> <lane_agent_id> <label>",
-# then starts (or leaves running, with run_in_background) `python3 helpers/runwatch.py [timeout]`.
+# Usage: the maintainer appends one line per run to runs.txt, "<run> <lane_agent_id> <label>", where
+# <run> is the WAITING token copied verbatim: a bare `<run_id>` means nifeos/nife, and
+# `<owner>/<repo>:<run_id>` (nifeos/basalt:123, nifeos/crate-workflows:456) names another
+# repository. The repository rides in the first field, not a trailing `repo=` key, because <label>
+# is free text with spaces and a trailing key would be ambiguous with it. Then starts (or leaves running, with run_in_background) `python3 helpers/runwatch.py [timeout]`.
 # It polls every two minutes and exits (so the maintainer wakes) the moment a lane's runs are ALL
 # finished, or ANY of them did not succeed; fired lines move to runs-done.txt with their conclusions
 # and everything else stays in runs.txt so a relaunch keeps watching the rest. `timeout` (seconds,
@@ -28,8 +31,17 @@ DONE = os.path.join(D, "runs-done.txt")
 deadline = time.time() + float(sys.argv[1] if len(sys.argv) > 1 else 7200)
 
 
-def status(run):
-    r = subprocess.run(["gh", "run", "view", run, "-R", "nifeos/nife", "--json",
+DEFAULT_REPO = "nifeos/nife"
+
+
+def split_run(token):
+    repo, sep, run_id = token.rpartition(":")
+    return (repo, run_id) if sep else (DEFAULT_REPO, token)
+
+
+def status(token):
+    repo, run_id = split_run(token)
+    r = subprocess.run(["gh", "run", "view", run_id, "-R", repo, "--json",
                          "status,conclusion"], capture_output=True, text=True).stdout
     try:
         j = json.loads(r)

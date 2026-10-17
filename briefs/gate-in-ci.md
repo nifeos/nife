@@ -67,7 +67,9 @@ one line:
 
     WAITING <ci-run-id> <verify-run-id> on ci.yml + verify.yml for <branch>
 
-The maintainer adds those ids to the watch list; a watcher wakes the maintainer when both finish,
+A run in another repository (basalt, crate-workflows, crate-workflows-test) is written
+`<owner>/<repo>:<run_id>`, for example `WAITING nifeos/basalt:<run_id> on build.yml for <branch>`;
+a bare id means nifeos/nife. The maintainer adds those ids to the watch list; a watcher wakes the maintainer when both finish,
 or when either fails, and resumes you with the result. If a run looks stuck, that is the
 maintainer's call on resumption, not a reason to re-run it yourself.
 
@@ -116,7 +118,8 @@ ready and arm land in the same command:
 
 ## Pausing on another pull request, rather than on CI
 
-`WAITING <run-id>` is for CI, and only for CI: it names a run the maintainer's watcher is polling on
+`WAITING <run-id>` is for CI, and only for CI (in any nifeos repository, with the repository
+prefix when it is not nife): it names a run the maintainer's watcher is polling on
 your behalf. Your draft might instead be parked on another pull request: stacked on its branch,
 sharing a file another lane is mid-edit on, or waiting on a decision only that other pull request
 settles. That is not a `WAITING` line, and CI is not what will unblock it.

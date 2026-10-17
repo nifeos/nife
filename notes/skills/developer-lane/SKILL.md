@@ -5,7 +5,7 @@ description: >-
   and branch. Load first, before any work in a lane, and when briefing one. Covers the claim
   (script/claim, an empty commit and a draft pull request before any work), what a developer may
   never do (merge, mint, edit design/decisions/, design/ or AGENTS.md except its own roadmap block),
-  never polling CI (end the turn with `WAITING <run_id>... on <what>`), when a lane stops, the
+  never polling CI (end the turn with `WAITING [<owner>/<repo>:]<run_id>... on <what>`), when a lane stops, the
   report and its handoff, where identified work must go (a proposed milestone or a BUGS entry), and
   shared state (provisional section numbers, each worktree's own toolchain link, branches that hold
   knowledge).
@@ -21,8 +21,9 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
 - Developer. A subagent executing exactly one milestone. Reports; never merges, never mints, never
   edits `design/decisions/`, `design/` or this file, except its own milestone's roadmap block,
   which `script/lint-fleet` 4b requires it to edit. Names anything new provisionally and says so. A
-  developer never polls CI. It ends its turn with `WAITING <run_id>... on <what>` and the
-  maintainer resumes it once the runs finish. The report comes after the gate, and nothing about a
+  developer never polls CI. It ends its turn with `WAITING [<owner>/<repo>:]<run_id>... on <what>` and the
+  maintainer resumes it once the runs finish. A run in a repository other than nifeos/nife
+  carries it, `WAITING nifeos/basalt:<run_id> on <what>`; a bare id is a nife run. The report comes after the gate, and nothing about a
   gate is finished until you have read its exit. A lane continues until it needs a human or it is
   done (calef, 2026-08-26): finishing one item on a milestone's own list is not a stopping
   condition when the list has more on it. The one genuine stop is hitting something that is an

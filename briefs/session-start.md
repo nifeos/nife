@@ -158,7 +158,8 @@ CI re-reads 200 to 400k tokens per check; one lane made 309 tool calls over six 
 them waiting. Three rules follow.
 
 A lane never polls CI. `briefs/gate-in-ci.md` has the mechanics; the shape is that a lane ends its
-turn after dispatching with one line, `WAITING <run_id> [<run_id>...] on <what>`, and stops there. A
+turn after dispatching with one line, `WAITING [<owner>/<repo>:]<run_id> [...] on <what>`, and stops there. A bare id is a nifeos/nife
+run; a run in another repository carries it (`nifeos/basalt:<run_id>`). A
 `PreToolUse` hook on Bash (`.claude/settings.json`, script at `helpers/hooks/refuse-ci-polling`)
 refuses `gh run watch`, `gh pr checks --watch`, a `sleep` of 30 seconds or more, and a shell loop
 combining `sleep` with `gh run view`, `gh run list`, `gh pr checks`, or `gh pr view`. It does not
@@ -183,7 +184,9 @@ because it usually means the plan changed. The label removes itself on the next 
 The watch list is what turns a WAITING line into something that actually wakes you: every run id a
 lane reports goes on it, because a lane nobody is watching for stops forever. Two provisional
 scripts under `helpers/` do the watching, and their names are not yet ratified. Append one line per
-run to `$NIFE_WATCH_DIR/runs.txt` (`<run_id> <lane_agent_id> <label>`), then start, or leave running:
+run to `$NIFE_WATCH_DIR/runs.txt` (`<run> <lane_agent_id> <label>`, `<run>` being the WAITING token
+exactly as the lane wrote it, repository prefix included, so a basalt or crate-workflows run is
+watched in its own repository), then start, or leave running:
 
     python3 helpers/runwatch.py &   # per-lane run watcher: exits when a lane's runs all finish
     python3 helpers/nanny.py &      # merge-queue watcher: exits on the first event needing you
