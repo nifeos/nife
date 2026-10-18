@@ -23,7 +23,7 @@ grant_plan = { version = "0.1.0", path = "../grant_plan" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
 # they carry.
-manifest_note = { version = "0.1.0", path = "../manifest_note" }
+capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
 # The filesystem contract, for exactly one word: the readiness sentinel a `fs_subtree_caretaker`
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings

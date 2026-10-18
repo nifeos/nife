@@ -1,4 +1,4 @@
-Falsifies `manifest_note::verification::a_decoded_manifest_encodes_back_to_its_bytes`.
+Falsifies `capability_manifest_note::verification::a_decoded_manifest_encodes_back_to_its_bytes`.
 
 The defect: `decode` stops checking that the three bytes after the option letters are zero. Every
 manifest then has eight spellings, and two readers could each be handed a different one of them.
@@ -6,10 +6,10 @@ The fields still decode correctly, which is why no host test built from real man
 
 Expected to fail: the assertion that `encode` of the decoded manifest is the descriptor again.
 
-diff --git a/crates/manifest_note/src/lib.rs b/crates/manifest_note/src/lib.rs
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
 index a22e350ce..8e89afd9e 100644
---- a/crates/manifest_note/src/lib.rs
-+++ b/crates/manifest_note/src/lib.rs
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
 @@ -376,7 +376,6 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
      let output = decode_output(d)?;
      let input = decode_input(d)?;

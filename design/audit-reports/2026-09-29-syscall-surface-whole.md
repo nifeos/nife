@@ -67,7 +67,7 @@ not prose. The shell's asked rights are intersected with the manifest's declared
 is read-only. The set page is copied into a page from the job's region before the caretaker maps
 it (`lib.rs:3469-3476`). Milestone 597 (a program carries its manifest in an ELF note) puts the
 manifest inside the hashed bytes, and `decode` refuses every second spelling of a version 1
-descriptor (`crates/manifest_note/src/lib.rs:55-61`).
+descriptor (`crates/capability_manifest_note/src/lib.rs:55-61`).
 
 The nine new external packages are the TOML and serde stacks, plus `glob`. `toml` is depended on
 by `xtask` alone, over recipes that are version-controlled, human-reviewed files; unknown keys are

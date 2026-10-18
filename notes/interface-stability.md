@@ -16,6 +16,8 @@ The headline measures the boundary, two parts:
 
 - The syscall surface: every public constant in `abi`, the `SYS_*` numbers, the `objtype::*`
   object types, and the method numbers and argument or result encodings in the object modules.
+  The values of `abi`'s enums (the `Error::*` codes) count too, because a program matches
+  them by number exactly as it does a constant.
   A new syscall number or a method outside the capability model is a design fork, so this
   surface moves by decision.
 - The wire formats: a contract crate's public constant named `*VERSION*`, `*MAGIC*` or
@@ -41,13 +43,13 @@ commit (the same commit `script/metrics` picks) is compared with the previous we
 
 | column | counts |
 |---|---|
-| `interface_breaking` | boundary moves: `abi` constants renumbered, removed, or renamed with the number kept, and format identity value changes |
-| `interface_additions` | `abi` constants added |
+| `interface_breaking` | boundary moves: `abi` constants and enum variants (the `Error::*` codes) renumbered, removed, or renamed with the number kept. Format identity value changes count too |
+| `interface_additions` | `abi` constants and enum variants added |
 | `interface_std_abi_breaking`, `_additions` | item-level churn in the std copy set; reported, not thresholded |
 | `interface_contract_api_breaking`, `_additions` | item-level churn in the contract crates beyond the boundary; reported, not thresholded |
-| `interface_syscall_changed` | `abi` constants removed or renumbered with no successor |
+| `interface_syscall_changed` | `abi` constants and enum variants removed or renumbered with no successor |
 | `interface_syscall_renamed` | `abi` constants renamed with the number kept |
-| `interface_syscall_added` | `abi` constants added |
+| `interface_syscall_added` | `abi` constants and enum variants added |
 | `interface_format_bumps` | a format identity's value changed |
 | `interface_format_amendments` | dated entries in a format's own amendment ledger |
 | `interface_contract_commits`, `_crossing`, `_cochange_pct` | co-change, below |
@@ -108,7 +110,7 @@ recorded at the format, AGENTS.md's rung 3, in the crate's own module documentat
 ```
 
 One list item per amendment, opening with its UTC date. The heading and the shape are this lane's,
-provisional. No crate carries one yet. `manifest_note`'s version 1, amended in place on 2026-09-27
+provisional. No crate carries one yet. `capability_manifest_note`'s version 1, amended in place on 2026-09-27
 on a branch not yet merged, is the first that should.
 
 ## First reading, and the trend

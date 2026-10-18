@@ -586,17 +586,17 @@ calendar,UtcOffset::from_hm,replace < with <=,equivalent,"a zero argument has no
 calendar,Writer::byte,replace < with <=,killed,killed; a_full_writer_drops_the_next_byte_instead_of_panicking in crates/calendar/src/tests.rs
 calendar,Writer::offset,replace < with <=,equivalent,"Writer::offset is only called for a non-zero offset (zero prints Z or UTC), so m < 0 and m <= 0 agree on every call"
 calendar,DateTime::parse_rfc3339_bytes,replace + with -,equivalent,"the dropped length check is repeated by number() and expect(), which return the same Error::Syntax for a short tail"
-capability,note_peak,replace | with ^,equivalent,argued in notes/mutation-testing/regressions-capability-to-dtb.md; the 2026-10-07 per-crate re-run still reports it
+capability,note_peak,replace | with ^,equivalent,argued in notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md; the 2026-10-07 per-crate re-run still reports it
 capability,,replace << with >>,equivalent,"1 << 0 under >> is 1 >> 0, which is also 1"
-clock_protocol,spin_hint,replace spin_hint with (),equivalent,argued in notes/mutation-testing/regressions-clock-protocol-swish-filesystem-protocol.md; the 2026-10-07 per-crate re-run still reports it
-clock_protocol,ClockPage::publish,replace + with *,equivalent,"argued in notes/mutation-testing/regressions-clock-protocol-swish-filesystem-protocol.md; the 2026-10-07 per-crate re-run still reports it; equivalent under cargo test, killed by script/interleaving-check"
-clock_protocol,policy::decide,replace > with >=,equivalent,argued in notes/mutation-testing/regressions-clock-protocol-swish-filesystem-protocol.md; the 2026-10-07 per-crate re-run still reports it
+clock_protocol,spin_hint,replace spin_hint with (),equivalent,argued in notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md; the 2026-10-07 per-crate re-run still reports it
+clock_protocol,ClockPage::publish,replace + with *,equivalent,"argued in notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md; the 2026-10-07 per-crate re-run still reports it; equivalent under cargo test, killed by script/interleaving-check"
+clock_protocol,policy::decide,replace > with >=,equivalent,argued in notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md; the 2026-10-07 per-crate re-run still reports it
 coremark,list_work,replace > with >=,equivalent,"the tie-break > against >= only reorders two equal u16 values, which are indistinguishable"
 coremark,fsm_work,replace >> with <<,equivalent,"each count is at most FSM_LEN (256), so n >> 16 and n << 16 both truncate to 0 as u16"
 credential_protocol,req,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (opcode at bit 56, id_len masked into bits 16-31, secret_len into 0-15)"
 credentialer,,replace - with /,killed,killed; the_restated_bounds_are_argon2s_own in crates/credentialer/src/lib.rs
 credentialer,,replace - with +,killed,killed; the_restated_bounds_are_argon2s_own in crates/credentialer/src/lib.rs
-device_tree_blob,DeviceTreeBlob<'a>::cells,replace | with ^,equivalent,value << 32 has its low 32 bits clear and a be32 cannot reach the high ones; argued in notes/mutation-testing/regressions-capability-to-dtb.md; the 2026-10-07 per-crate re-run still reports it
+device_tree_blob,DeviceTreeBlob<'a>::cells,replace | with ^,equivalent,value << 32 has its low 32 bits clear and a be32 cannot reach the high ones; argued in notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md; the 2026-10-07 per-crate re-run still reports it
 generational_table,"Table<T, N>::name",replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (generation in the high half, slot below N in the low)"
 generational_table,"Table<T, N>::remove",replace + with *,killed,killed; a_hole_below_the_bound_does_not_truncate_the_walk and an_emptied_table_costs_a_walk_nothing now read the bound top
 generational_table,"Table<T, N>::remove",replace == with !=,killed,killed; a_hole_below_the_bound_does_not_truncate_the_walk and an_emptied_table_costs_a_walk_nothing now read the bound top
@@ -621,16 +621,16 @@ network_time_protocol,Timestamp::from_unix,replace % with +,equivalent,(secs + U
 network_time_protocol,Timestamp::from_unix,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (seconds in the high half, ticks in the low)"
 network_time_protocol,Timestamp::randomise_low,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (self & !mask and random & mask)"
 network_time_protocol,Packet::to_bytes,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (leap, version and mode masked into their own bits)"
-non_volatile_memory_express,cc_enabled,replace | with ^,equivalent,argued in notes/mutation-testing/clock-and-reset-nvme-screen-console.md; the 2026-10-07 per-crate re-run still reports it
-non_volatile_memory_express,Command::create_io_cq,replace | with ^,equivalent,argued in notes/mutation-testing/clock-and-reset-nvme-screen-console.md; the 2026-10-07 per-crate re-run still reports it
-non_volatile_memory_express,Command::create_io_sq,replace | with ^,equivalent,argued in notes/mutation-testing/clock-and-reset-nvme-screen-console.md; the 2026-10-07 per-crate re-run still reports it
-non_volatile_memory_express,Handoff::pack,replace | with ^,equivalent,argued in notes/mutation-testing/clock-and-reset-nvme-screen-console.md; the 2026-10-07 per-crate re-run still reports it
+non_volatile_memory_express,cc_enabled,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
+non_volatile_memory_express,Command::create_io_cq,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
+non_volatile_memory_express,Command::create_io_sq,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
+non_volatile_memory_express,Handoff::pack,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
 page_frames,PageFrameAllocator<'a>::alloc,replace + with *,equivalent,"hint = i rather than i + 1: slot i was just taken, so the next scan steps over it and finds the same first free frame"
 page_frames,PageFrameAllocator<'a>::alloc_contiguous,replace || with &&,equivalent,argued in notes/mutation-testing/baseline-survivors-abi-to-ipc.md; the 2026-10-07 per-crate re-run still reports it
 page_frames,PageFrameAllocator<'a>::largest_free_run,replace > with >=,equivalent,a tie in a running maximum assigns the same value
 portable_executable,from_elf,replace | with ^,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
 portable_executable,base_relocations,replace | with ^,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
-screen_console,Aperture::to_words,replace | with ^,equivalent,argued in notes/mutation-testing/clock-and-reset-nvme-screen-console.md; the 2026-10-07 per-crate re-run still reports it
+screen_console,Aperture::to_words,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
 stick_maker,Reader<'a>::close_tag,replace - with /,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
 stick_maker,Reader<'a>::close_tag,replace - with +,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
 abi,CycleMeaning::is_core_cycles,delete !,killed,killed by only_the_reference_clock_is_not_core_cycles

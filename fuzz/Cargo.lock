@@ -139,6 +139,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "capability_manifest_note"
+version = "0.1.0"
+dependencies = [
+ "grant_plan",
+]
+
+[[package]]
 name = "cc"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -504,13 +511,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "373f5eceeeab7925e0c1098212f2fbc4d416adec9d35051a6ab251e824c1854a"
 
 [[package]]
-name = "manifest_note"
-version = "0.1.0"
-dependencies = [
- "grant_plan",
-]
-
-[[package]]
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
@@ -663,10 +663,10 @@ name = "redoxfs_server"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "capability_manifest_note",
  "filesystem_contract",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
- "manifest_note",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",

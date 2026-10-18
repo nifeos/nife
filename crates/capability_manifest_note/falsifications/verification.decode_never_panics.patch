@@ -1,4 +1,4 @@
-Falsifies `manifest_note::verification::decode_never_panics`.
+Falsifies `capability_manifest_note::verification::decode_never_panics`.
 
 The defect: `decode` reads the version and then trusts the length. A note's descriptor size is a
 word in the file, so a hostile program can carry a four-byte descriptor that says version 1, and
@@ -6,10 +6,10 @@ every later field read then indexes past it.
 
 Expected to fail: an index out of bounds in `decode`.
 
-diff --git a/crates/manifest_note/src/lib.rs b/crates/manifest_note/src/lib.rs
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
 index a22e350ce..351733fdf 100644
---- a/crates/manifest_note/src/lib.rs
-+++ b/crates/manifest_note/src/lib.rs
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
 @@ -359,9 +359,6 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
      if u32::from_le_bytes([d[0], d[1], d[2], d[3]]) != VERSION {
          return Err(Error::UnknownVersion);

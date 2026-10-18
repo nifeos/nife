@@ -252,7 +252,7 @@ what it did, including the kernel's one wait point that made the first one hard,
   (notification objects). See notes/tail-output-narrowing.md.
 - A screen-narrowed child is invisible to a concurrent `ps`/`pgrep` for its short life, though
   nothing leaks. Both entries are in full in
-  [documentation/narrowing-limitations.md](documentation/narrowing-limitations.md).
+  [documentation/narrowing-bugs.md](documentation/narrowing-bugs.md).
 - **No pager, and the reason is authority rather than effort.** Paging needs a keypress; a keypress
   needs `line_editor::proto::OPERATION_READLINE`; and that opcode rides on the terminal endpoint
   whose read side *is* the keyboard. The spawn protocol has no way to hand a child the right to read

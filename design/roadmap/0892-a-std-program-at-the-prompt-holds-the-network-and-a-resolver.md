@@ -103,7 +103,7 @@ versioned)). The owner can narrow them later. The details he accepted:
 
 What that leaves to build:
 
-1. The zones in a program's manifest note, the ask. `manifest_note` is a format two programs agree
+1. The zones in a program's manifest note, the ask. `capability_manifest_note` is a format two programs agree
    on, so the encoding is decided once.
 2. The granted zones in the installed-programs table's entry, which is where an owner's narrowing lands too.
 3. The progenitor grants one badge per granted zone at spawn and forgets each at the reap. The std
@@ -131,7 +131,7 @@ The question as put was loose on two points. The ruling reads as follows with bo
   installed programs are versioned), and milestone 911 (scripted installs grant only what the owner's
   approval file allows) lists them apart.
 - A manifest can already declare the network. `Manifest::network` is one flag (byte 34 of
-  `manifest_note`), and a program in the image table gets it today. What is missing is the install
+  `capability_manifest_note`), and a program in the image table gets it today. What is missing is the install
   path: `grant_plan::image_can_carry` refuses installed bytes whose note sets it, and nothing at
   install lists it.
 

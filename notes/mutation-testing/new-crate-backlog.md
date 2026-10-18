@@ -13,7 +13,7 @@ them. The block says to take it as a worklist and not to try to close it. So thi
 for those seven and stops there.
 
 The discipline is the same as the
-[2026-09-19 triage](regressions-capability-to-dtb.md#2026-09-19-milestone-326-triaging-the-censuss-regressions).
+[2026-09-19 triage](regressions-2026-09-14-capability-to-device-tree-blob.md#2026-09-19-milestone-326-triaging-the-censuss-regressions).
 Every crate was re-derived with `script/mutation -p <crate>` on this lane's own worktree rather
 than read out of the census. Every kill was verified by re-running the sweep and watching the mutant
 die. Every equivalence claim below is a mutant the second run still reports.

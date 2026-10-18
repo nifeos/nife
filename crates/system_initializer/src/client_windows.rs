@@ -84,16 +84,16 @@ pub(super) const fn job_windows() -> Windows {
 }
 
 /// **Whether a file server's image says it enforces subtree grants itself** (milestone 606, ruling
-/// T1): it carries a `manifest_note::SUBTREE_GRANTS` note naming the one scope crate there is. No
+/// T1): it carries a `capability_manifest_note::SUBTREE_GRANTS` note naming the one scope crate there is. No
 /// image, no note, or a note that does not decode all answer `false`.
 pub(super) fn subtree_grants(server: Option<&elf::Elf<'_>>) -> bool {
     let Some(server) = server else {
         return false;
     };
     matches!(
-        server.note(manifest_note::OWNER, manifest_note::SUBTREE_GRANTS),
-        Ok(Some(d)) if manifest_note::decode_subtree_grants(d)
-            == Ok(manifest_note::Scope::SubtreeScope)
+        server.note(capability_manifest_note::OWNER, capability_manifest_note::SUBTREE_GRANTS),
+        Ok(Some(d)) if capability_manifest_note::decode_subtree_grants(d)
+            == Ok(capability_manifest_note::Scope::SubtreeScope)
     )
 }
 

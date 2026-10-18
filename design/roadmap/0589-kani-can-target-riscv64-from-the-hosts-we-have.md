@@ -266,7 +266,7 @@ Warm: 45 s, 3 s of it proving. On patagonia a cold build took 244 to 621 s by lo
 
 - **Outstanding.** The upstream half is [kani#4913](https://github.com/model-checking/kani/pull/4913),
   a draft since 2026-09-30 (UTC), whose CI awaits a maintainer's approval.
-  `notes/kani-upstream/pr-4913-before-ready.md` holds a retest, a patch, body edits and calef's
+  `notes/kani-upstream/pull-request-4913-before-ready.md` holds a retest, a patch, body edits and calef's
   checklist, all unposted. Then review, the `kani_lib.c` follow-up, and dropping our patch.
 - **Done.** The stub half of containment landed as #1302. Its three riscv64 `satp` proofs run
   only in this job.

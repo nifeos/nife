@@ -20,7 +20,7 @@ use std::process::ExitCode;
 // Unvouched bytes are granted what §219 (how the shell names an installed program to the spawner)
 // and §170 say whatever this declares; it declares what is
 // true: it hears words, reads what they name, and runs on `std`.
-manifest_note::carry!(grant_plan::Manifest {
+capability_manifest_note::carry!(grant_plan::Manifest {
     arg: grant_plan::ProgramArgumentDeclaration::Words(grant_plan::WordGrant::ReadOnly),
     runtime: grant_plan::Runtime::Std,
     ..grant_plan::UNVOUCHED_MANIFEST

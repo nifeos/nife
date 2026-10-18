@@ -433,11 +433,11 @@ def evaluate(tracked, texts):
 
     # **A server's claim to enforce subtree grants itself, held to account** (milestone 606, calef's
     # ruling T1 of 2026-09-27). The progenitor reads the claim from a note in the server's own ELF
-    # (`manifest_note::carry_subtree_grants!`) and gives that server's clients a bound badge instead
+    # (`capability_manifest_note::carry_subtree_grants!`) and gives that server's clients a bound badge instead
     # of a caretaker, so a wrong claim is confinement lost. Three things must agree: a crate that
     # carries the note depends on the scope crate, its package declares `subtree_grants`, and a
     # package that declares it has a crate carrying the note. The macro's own definition, in
-    # `manifest_note`, is not a use of it.
+    # `capability_manifest_note`, is not a use of it.
     carriers = set()
     for c, info in crates.items():
         prefix = info['dir'] + '/' if info['dir'] else None
@@ -455,7 +455,7 @@ def evaluate(tracked, texts):
     for pkg in packages.values():
         if pkg['subtree_grants'] and not any(crate_pkg.get(c) == pkg['name'] for c in carriers):
             errors.append(f'{pkg["file"]}: declares subtree_grants, and no crate in it carries the '
-                          'note (`manifest_note::carry_subtree_grants!`)')
+                          'note (`capability_manifest_note::carry_subtree_grants!`)')
 
     # Where things live now: a package is still here while any path it claims is tracked here.
     in_repo = {owner for (owner, _h, _a) in file_home.values() if owner}
@@ -708,7 +708,7 @@ def selftest():
         lambda s, t, x: s['extra'].update(hme=s['extra'].pop('home'))))['errors'])
     # A server carrying the subtree-grants note in a package that does not say so, and not linking
     # the scope crate (milestone 606, ruling T1): both halves are caught.
-    plant = 'manifest_note::carry_subtree_grants!(S);\n'
+    plant = 'capability_manifest_note::carry_subtree_grants!(S);\n'
     planted(lambda s, t, x: x.update({'host/src/a.rs': plant}), 'does not depend on subtree_scope')
     planted(lambda s, t, x: x.update({'host/src/a.rs': plant}),
             'so this package declares subtree_grants = "subtree_scope"')

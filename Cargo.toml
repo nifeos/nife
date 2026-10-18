@@ -90,7 +90,7 @@ members = [
     "crates/domain_name_system",
     "crates/domain_name_resolution_contract",
     "crates/measured_boot",
-    "crates/manifest_note",
+    "crates/capability_manifest_note",
     "crates/network_time_protocol",
     "crates/non_volatile_memory_express",
     "crates/e1000e",

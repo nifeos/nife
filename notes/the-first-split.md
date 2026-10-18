@@ -34,7 +34,7 @@ checked below.
 
 | precondition | source | met? | measured |
 |---|---|---|---|
-| Protocols carry version numbers | §151, milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
+| Protocols carry version numbers | §151, milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
 | Protocols stopped churning weekly | §151 | no | Milestone 610's own series, last four weeks (2026W37 to W40): 6, 44, 46 and 61 breaking changes to the contract crates, 157 in all against the proposed threshold of four. Co-change excluding mass commits: 66.7%, 51.9%, 74.4%, 74.4%, against the proposed 50% line. Syscall surface: 3 changed and 1 renamed in W40. |
 | A package format exists | §151, milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
 | No package moves before a per-package co-change column exists | §235 Fork 3 amendment | no | Milestone 610 is BUILT and its own Follow-on records the column as owed and not built. Section 2 below is a one-off reading of it, which is not the column. |
@@ -73,7 +73,7 @@ makes into two or three pull requests.
 
 Settled by 610's proposed rule (four weeks with no breaking change): `program_argument_contract`,
 `boot_slot`, `capability_witness_contract`, `compositor`, `current_cpu_contract`, `elf`,
-`manifest_note`, `measured_boot`, `std_runtime_contract`. Nine of the 30 crates 610 measures.
+`capability_manifest_note`, `measured_boot`, `std_runtime_contract`. Nine of the 30 crates 610 measures.
 
 ## 2. Which division could go first: coupling by candidate
 
@@ -113,7 +113,7 @@ What the table says, read rather than summarized:
   workspaces of its own, outside the root workspace, with its own `Cargo.lock` files, gated by
   `--manifest-path`, and nothing links it. But 12 of its 17 focused commits crossed, almost all
   milestone 606 (a directory walk costs what it does on Linux)'s subtree-grant work against `filesystem_contract`, `subtree_scope` and
-  `manifest_note`. Its interfaces are the least settled ones: `filesystem_contract` 10 breaking
+  `capability_manifest_note`. Its interfaces are the least settled ones: `filesystem_contract` 10 breaking
   changes in four weeks, the partition table 27, `entropy_contract` 3. Every QEMU runner starts it,
   which is the 254 path references.
 - **Programs in `components` cannot move at all yet.** `rmle`, `mdr`, `demos`, `core-tools`,

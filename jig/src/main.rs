@@ -60,8 +60,8 @@ use user_mode_runtime as rt;
 // hold. The image's own `jig` is endowed from `grant_plan`'s table and never reads this; a copy run
 // from a file is, and it finds no installer endpoint and says so, which is how `script/swish-check`
 // shows a program without the grant is refused. The note cannot carry `installer` or `catalog`
-// (`manifest_note::encode` refuses both at compile time), and a `std` image cannot carry the network.
-manifest_note::carry!(grant_plan::Manifest {
+// (`capability_manifest_note::encode` refuses both at compile time), and a `std` image cannot carry the network.
+capability_manifest_note::carry!(grant_plan::Manifest {
     network: false,
     installer: false,
     catalog: false,

@@ -231,7 +231,7 @@ mechanism had failed every attempt. And the sentence "the weekly workflow alread
 report" was false, which is the clause that made a stale number acceptable. Neither said the 92.4%
 was wrong when it was taken. The full argument is in [the five
 findings](check-inventory/the-five-findings.md). The number has since been refreshed: the 2026-09-14
-census found no fall (`notes/mutation-testing/the-first-weekly-censuses.md`).
+census found no fall (`notes/mutation-testing/first-weekly-runs.md`).
 
 ## BUGS
 

@@ -52,7 +52,7 @@ SCRATCH = pathlib.Path('target/interface-stability')
 
 # The contracts division: notes/packages-and-divisions.md (#1389, not yet on main), `abi`, the
 # fifteen `*_protocol` crates that are contracts (not `network_time_protocol`, a service whose name
-# says protocol), and the named formats two programs agree on. `manifest_note` is the one addition:
+# says protocol), and the named formats two programs agree on. `capability_manifest_note` is the one addition:
 # it was born on 2026-09-26, after that note's census, and it is exactly the kind of crate the
 # division names. Membership is by the crate's name TODAY; a week in the past counts the crates
 # whose directory later became one of these (LINEAGE below), which is a restatement like every
@@ -66,7 +66,7 @@ CONTRACTS = (
     'hot_swap_contract',
     'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs',
     'globally_unique_identifier_partition_table', 'grant_plan', 'component_plan', 'compositor',
-    'line_editor', 'manifest_note',
+    'line_editor', 'capability_manifest_note',
 )
 
 # The std ABI is every crate `cargo xtask std-src` copies into the standard library's platform
@@ -426,14 +426,27 @@ def surface(doc, read_span=None):
 # ---------------------------------------------------------------------------------------------
 # Comparing two weeks.
 
+def is_wire_variant(fingerprint):
+    """Is this the fingerprint of an enum VARIANT (`walk` writes only variants with these two keys)?"""
+    try:
+        d = json.loads(fingerprint)
+    except ValueError:
+        return False
+    return isinstance(d, dict) and set(d) == {'fields', 'discriminant'}
+
+
 def is_syscall_item(crate, path, fingerprint):
-    """Is this item part of the syscall surface? abi's public constants, which are all of it.
+    """Is this item part of the syscall surface? abi's public constants and enum variants.
 
     The syscall numbers (`SYS_*`), the object types (`objtype::*`), and every method number and
-    argument or result encoding the object modules define. Functions in `abi` are helpers, not
-    surface, so only constants count.
+    argument or result encoding the object modules define are constants. The error codes
+    (`Error::*`) and the other `#[repr]` enums' values are variants, and a program outside the
+    tree matches on them by number exactly as it does on a constant, so a renumbered or removed
+    variant is a boundary move too (calef, 2026-10-18 UTC). Functions and the enum items
+    themselves are helpers, not surface.
     """
-    return crate == 'abi' and fingerprint.startswith('{"constant"')
+    return crate == 'abi' and (fingerprint.startswith('{"constant"')
+                               or is_wire_variant(fingerprint))
 
 
 def syscall_class(path):
@@ -442,6 +455,8 @@ def syscall_class(path):
         return 'syscall'
     if path.startswith('objtype::'):
         return 'object type'
+    if path.startswith('Error::'):
+        return 'error code'
     return 'method or encoding'
 
 
@@ -1010,6 +1025,19 @@ def selftest():
         set())
     std_add, _pc, _e = compare({'n': {'dir': 'user_mode_heap', 'items': {}}},
                                {'n': {'dir': 'user_mode_heap', 'items': {'a': '1'}}}, {'n'})
+    def variant(value):
+        return _fp({'fields': [], 'discriminant': {'expr': str(value), 'value': str(value)}})
+
+    def one(crate, old_items, new_items):
+        return compare({crate: {'dir': crate, 'items': old_items}},
+                       {crate: {'dir': crate, 'items': new_items}}, set())[0]
+
+    err_renumbered = one('abi', {'Error::NoSuchSlot': variant(-1)}, {'Error::NoSuchSlot': variant(-7)})
+    err_added = one('abi', {}, {'Error::Fresh': variant(-99)})
+    err_removed = one('abi', {'Error::NoSuchSlot': variant(-1)}, {})
+    enum_item = one('abi', {'Error': _fp({'kind': 'enum', 'variants': ['A']})},
+                    {'Error': _fp({'kind': 'enum', 'variants': ['A', 'B']})})
+    other_variant = one('grant_plan', {'Mode::A': variant(1)}, {'Mode::A': variant(2)})
     ledger = ledger_dates('//! Intro\n//!\n//! # Amendments\n//!\n//! - 2026-09-27: field order\n'
                           '//!   continued, not an item\n//! - 2026-10-02 (UTC): again\n'
                           '//! # BUGS\n//! - 2026-01-01: not an amendment\n')
@@ -1084,6 +1112,17 @@ def selftest():
         ('the version constant is a format bump', counts['format_bumps'], 1),
         ('the renumber is classed as a syscall', syscall_class('SYS_EXIT'), 'syscall'),
         ('an object type is classed as one', syscall_class('objtype::NOTIFICATION'), 'object type'),
+        ('an error code is classed as one', syscall_class('Error::NoSuchSlot'), 'error code'),
+        ('a renumbered abi error code is boundary',
+         (err_renumbered['breaking'], err_renumbered['syscall_changed'],
+          err_renumbered['contract_breaking']), (1, 1, 0)),
+        ('a new abi error code is a boundary addition',
+         (err_added['additions'], err_added['syscall_added']), (1, 1)),
+        ('a removed abi error code is boundary', err_removed['breaking'], 1),
+        ('the enum item itself is not boundary',
+         (enum_item['breaking'], enum_item['contract_breaking']), (0, 1)),
+        ('a variant outside abi stays contract api',
+         (other_variant['breaking'], other_variant['contract_breaking']), (0, 1)),
         ('std abi reports the items that are not the boundary', counts['std_breaking'], 1),
         ('a crate rename is one decision; off the boundary it is contract churn',
          (renamed['breaking'], renamed['renamed'], renamed['contract_breaking']), (0, 1, 1)),

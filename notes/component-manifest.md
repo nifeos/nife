@@ -257,7 +257,7 @@ calef ruled on 2026-09-26 (UTC): *"M2 is right."* The manifest travels inside th
 ELF note found through a `PT_NOTE` program header. DECISIONS §197 (a package is one archive file)
 has the ruling, and draft pull request #1319 has the evidence. Milestone 597 (provisional) built it
 for a program run by its path: owner `nife`, type 1 and the encoding were ratified 2026-09-26, and
-`crates/manifest_note` is the format. This entry stays because a boot image's programs and every
+`crates/capability_manifest_note` is the format. This entry stays because a boot image's programs and every
 component are still endowed from a manifest compiled into their supervisor, not read from their
 own bytes; see `design/roadmap/0597-a-program-carries-its-manifest-in-an-elf-note.md`.
 

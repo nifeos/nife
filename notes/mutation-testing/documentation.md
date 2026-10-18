@@ -7,7 +7,7 @@ gate, and the crate's full survivor ledger.
 ## 2026-09-13: `documentation`'s 52% was a crate scored with a third of its tests compiled away
 
 This is milestone 280 (`uefi_loader` at 15% and `documentation` at 52% are unexplained holes in the
-published score). [The 2026-09-03 sample](the-first-weekly-censuses.md) named `manual` (ratified
+published score). [The 2026-09-03 sample](first-weekly-runs.md) named `manual` (ratified
 `documentation` on 2026-09-13) as the second of two crates carrying the tree's fall from 92.4%. It
 stood at 56 caught, 60 missed in the round-robin sample. [`uefi_loader`](uefi-loader.md) went first
 and turned out to be arithmetic. This one was expected to be the real gap, because it is ordinary

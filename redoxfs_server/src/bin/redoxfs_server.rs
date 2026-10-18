@@ -43,7 +43,7 @@
 // `subtree_scope::walk` and every handle through `subtree_scope::admit`, in `redoxfs_server`'s
 // core. The note is what the progenitor reads to give this server's clients a bound badge instead of
 // a caretaker; `script/lint` checks it against the package declaration and the dependency.
-manifest_note::carry_subtree_grants!(manifest_note::Scope::SubtreeScope);
+capability_manifest_note::carry_subtree_grants!(capability_manifest_note::Scope::SubtreeScope);
 
 extern crate alloc;
 

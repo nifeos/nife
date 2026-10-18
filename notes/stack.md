@@ -80,7 +80,7 @@ nothing below it but more of our own kernel, so blowing the stack silently overw
 
 We have it now. Milestone 4 put an unmapped page below the boot stack once the MMU was on;
 milestone 90 finished the job, so today the boot stack, every per-CPU secondary stack and every
-kernel thread stack has one. See ["The overflows of 2026-08-14"](stack/overflows-2026-08-14.md) for what that
+kernel thread stack has one. See ["The overflows of 2026-08-14"](stack/kernel-stack-overflows-2026-08-14.md) for what that
 buys, what it does not, and the two real overflows that tested it.
 
 ---
@@ -289,8 +289,8 @@ the stack is not the fix. And nothing on an interrupt stack may context-switch a
 
 | date | what it was | appendix |
 |---|---|---|
-| 2026-08-14 | Two real overflows, one per architecture, found by CI. A frame over the guard page stepped past it. | [overflows-2026-08-14.md](stack/overflows-2026-08-14.md) |
-| 2026-08-15 | A different shape: one preemption landing at a thread's deepest point. `STACK_PAGES` went 4 to 6. | [overflow-2026-08-15.md](stack/overflow-2026-08-15.md) |
+| 2026-08-14 | Two real overflows, one per architecture, found by CI. A frame over the guard page stepped past it. | [kernel-stack-overflows-2026-08-14.md](stack/kernel-stack-overflows-2026-08-14.md) |
+| 2026-08-15 | A different shape: one preemption landing at a thread's deepest point. `STACK_PAGES` went 4 to 6. | [kernel-stack-overflow-2026-08-15.md](stack/kernel-stack-overflow-2026-08-15.md) |
 | 2026-08-16 | Guard-page faults that were not overflows, though the kernel's own report said they were. | [guard-page-faults-2026-08-16.md](stack/guard-page-faults-2026-08-16.md) |
 | 2026-08-16 | The per-CPU interrupt stack of milestone 124 (a thread is born where it lives), which stopped billing an interrupt to whoever it interrupted. | [interrupt-stack.md](stack/interrupt-stack.md) |
 | 2026-08-17 | The answer to the 2026-08-16 faults: a reaper freed a dead thread's stack while the thread still stood on it. | [kernel-stack-freed-under-its-owner.md](stack/kernel-stack-freed-under-its-owner.md) |
@@ -307,7 +307,7 @@ The two incident write-ups that carried a `BUGS` section keep it here, beside th
 - An overflow whose first fault is the vector's own frame store still cascades. The vector saves
   before any Rust can decide to switch, so this does not rescue a stack that is already past its
   guard; it makes reaching that state much less likely. The cascade is described under the
-  [2026-08-15 section](stack/overflow-2026-08-15.md) and is unchanged.
+  [2026-08-15 section](stack/kernel-stack-overflow-2026-08-15.md) and is unchanged.
 - The static bound is a lower bound, for the reasons `script/stack-depth-check`'s own BUGS
   section gives: indirect calls and assembly frames are invisible to a call-graph walker. The
   trampoline's own 32 bytes (aarch64) and 16 (riscv64) are exactly such a frame, uncounted.

@@ -95,7 +95,7 @@ Measured at the lane's base `8fad33799`: 128 citations in the shape, 125 with a 
 - 1 is routed, not fixed: design/decisions/0196 quotes design/roadmap/0198's "Rescoped
   2026-09-19", gone from that block. A developer lane does not edit `design/decisions/`; the
   finding is in the pull request for the maintainer to land or drop.
-- 1 is unchecked by construction: `notes/kani-upstream/pr-4913-review.md` cites `kani-upstream.md`
+- 1 is unchecked by construction: `notes/kani-upstream/pull-request-4913-review.md` cites `kani-upstream.md`
   for `notes/kani-upstream.md`, a walk-up shorthand that resolves neither from the root nor from
   the citing file's directory. That is a BUGS entry, not a false positive.
 

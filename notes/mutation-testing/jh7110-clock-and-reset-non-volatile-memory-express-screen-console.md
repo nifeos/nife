@@ -15,7 +15,7 @@ before picking, per the rule the block gained on 2026-09-21:
   closed their census-era survivors in the intervening week.
 - `documentation` was set aside as a lane of its own: 98 survivors, 1056 mutants, and a
   resolver-feature history spanning [documentation](documentation.md) and
-  [the-first-weekly-censuses](the-first-weekly-censuses.md).
+  [first-weekly-runs](first-weekly-runs.md).
 - `firmware_configuration`, `portable_executable`, `sealed_pair` and `stick_maker` were new enough
   that no census had measured them, and were left for a lane that can give them attention.
 

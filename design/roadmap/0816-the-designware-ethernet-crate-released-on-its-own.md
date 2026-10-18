@@ -45,7 +45,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `net_stack.rs`.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". elliott10's `dwmac-my` 0.2.0
 (2026-02, MIT) is the one Rust DWMAC crate on crates.io, with 35 downloads, no reverse dependencies
 and no proofs found. Linux's `stmmac` (GPL-2.0) stays the reference for behavior and is read, never

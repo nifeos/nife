@@ -145,7 +145,7 @@ remains) or fixed. A fixed site can still carry a residual in BUGS below.
 | five sites found on the physical core, milestone 81 (an HVF leg) | `sched.rs` (3), `user/reap_tests.rs`, `user/supervision_tests.rs` | fixed | yield counts became waits on the property (08-04) | [notes/hvf-leg.md](hvf-leg.md) |
 | `reclaim_frees_an_embryo_tcbs_region` | `sched.rs` | fixed | `is_thread_present(tid)` in place of a global headcount (08-16) | [miss taxonomy](load-sensitive-assertions/miss-taxonomy-and-clockless-loops.md) |
 | `a_migrated_kernel_thread_keeps_its_hart_pointer` | `smp.rs` | fixed | the drain budget is 200 delivered ticks through `testing::TickBudget` (08-18) | [migration drain](load-sensitive-assertions/migration-drain-tick-budget.md) |
-| `a_userspace_driver_reads_a_file_over_the_pcie_transport`, and three siblings | `user/tests.rs`, `user/riscv_virtio_tests.rs` | fixed | the baseline moved before `start_pci`; x86_64's `ROUTED_IRQS` stopped counting timer ticks (09-04) | [PCIe interrupt counter](load-sensitive-assertions/x86-pcie-interrupt-counter.md) |
+| `a_userspace_driver_reads_a_file_over_the_pcie_transport`, and three siblings | `user/tests.rs`, `user/riscv_virtio_tests.rs` | fixed | the baseline moved before `start_pci`; x86_64's `ROUTED_IRQS` stopped counting timer ticks (09-04) | [PCIe interrupt counter](load-sensitive-assertions/x86-pci-express-interrupt-counter.md) |
 | `run_swap`, "returned 277 of 224 pages" | `user/live_swap_tests.rs` | fixed | the region's absence after reclaim is the measurement (09-22, #1101) | [unowned reds](load-sensitive-assertions/unowned-reds.md) |
 | `the_page_is_returned_when_the_space_is_dropped` | `user/current_cpu_tests.rs` | fixed | asks the frame's own allocator bit (09-23) | [unowned reds](load-sensitive-assertions/unowned-reds.md) |
 | 35 assertions bracketing `free_page_frames()` | `sched.rs`, `user/force_kill_tests.rs`, `user/tests.rs`, `user/cpu_time_tests.rs` | fixed | `testing::RegionRun` asks the region's own frames (09-23) | [free-page-frames sweep](load-sensitive-assertions/free-page-frames-sweep.md) |
@@ -226,7 +226,7 @@ of them, so the citation still resolves.
 | [confirmation-run](load-sensitive-assertions/confirmation-run.md) | 45 of 45 green | "The confirmation run, 2026-08-22" |
 | [caretaker-teardown-wait](load-sensitive-assertions/caretaker-teardown-wait.md) | a user-program retry loop, and five siblings | "The fifth round, 2026-08-27", "The disposition, 2026-08-28", "The measurement, and the number that settles it" |
 | [unowned-reds](load-sensitive-assertions/unowned-reds.md) | `run_swap`, the current-cpu frame, the liveness check | "Two unowned reds, recorded rather than chased: 2026-08-27" |
-| [x86-pcie-interrupt-counter](load-sensitive-assertions/x86-pcie-interrupt-counter.md) | a counter sampled late | "A counter that could not have been late, only sampled late: 2026-09-04" |
+| [x86-pci-express-interrupt-counter](load-sensitive-assertions/x86-pci-express-interrupt-counter.md) | a counter sampled late | "A counter that could not have been late, only sampled late: 2026-09-04" |
 | [free-page-frames-sweep](load-sensitive-assertions/free-page-frames-sweep.md) | 46 reads of the global counter | "The sweep, 2026-09-23" |
 | [preemption-window-tick](load-sensitive-assertions/preemption-window-tick.md) | a tick raised late, read as one dropped | "A tick not yet raised: 2026-09-24" |
 | [inbound-eintr](load-sensitive-assertions/inbound-eintr.md) | a signal read as a dead connection | "An interrupted read: 2026-09-24" |

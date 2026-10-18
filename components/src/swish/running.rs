@@ -526,7 +526,7 @@ static mut NOTE_SEGMENT: [u8; filesystem_contract::PAGE] = [0; filesystem_contra
 /// **The manifest the open file `handle` carries in its own bytes** (milestone 597, provisional),
 /// read the way the progenitor reads its copy: the `PT_NOTE` headers from the file's first page
 /// (`elf::NoteSegments::from_head`), each note segment read whole and searched with the same
-/// `elf::NoteSearch`, the descriptor decoded by `manifest_note::decode`. `Ok(None)` is a file with
+/// `elf::NoteSearch`, the descriptor decoded by `capability_manifest_note::decode`. `Ok(None)` is a file with
 /// no manifest note, and a note that is there and cannot be read is a refusal, as it is at the
 /// progenitor.
 ///
@@ -555,7 +555,10 @@ pub(super) fn read_manifest_note(
     let Ok(segs) = elf::NoteSegments::from_head(&head[..head_len]) else {
         return Ok(None);
     };
-    let mut search = elf::NoteSearch::new(manifest_note::OWNER, manifest_note::MANIFEST);
+    let mut search = elf::NoteSearch::new(
+        capability_manifest_note::OWNER,
+        capability_manifest_note::MANIFEST,
+    );
     let mut found = None;
     for seg in segs {
         let r = seg.range(size as usize).map_err(|_| Unreadable)?;
@@ -569,7 +572,7 @@ pub(super) fn read_manifest_note(
             .segment(&seg_buf[..len], seg.p_align)
             .map_err(|_| Unreadable)?
         {
-            found = Some(manifest_note::decode(d).map_err(|_| Unreadable)?);
+            found = Some(capability_manifest_note::decode(d).map_err(|_| Unreadable)?);
         }
     }
     Ok(found)

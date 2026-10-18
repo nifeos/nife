@@ -10,7 +10,7 @@ home = { status = "undecided", reason = "the server and host tool are ours and t
 crates = ["redoxfs_server", "redoxfs_host", "redoxfs"]
 # The server enforces subtree grants itself (milestone 606 (a directory walk costs what it does on
 # Linux), rulings D and T1 of 2026-09-27): `redoxfs_server` carries
-# `manifest_note::carry_subtree_grants!`, and the progenitor gives its clients a bound badge instead
+# `capability_manifest_note::carry_subtree_grants!`, and the progenitor gives its clients a bound badge instead
 # of a caretaker. `helpers/packages.py` checks the two agree. Field name provisional.
 subtree_grants = "subtree_scope"
 paths = ["vendor/redoxfs.divergence.patch", "vendor/redoxfs.pin"]

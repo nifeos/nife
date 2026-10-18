@@ -16,7 +16,7 @@ needs_person: no
 calef asked on 2026-10-06 (UTC) how a nife package says what it needs at run time, as distinct from
 what it links. Written by lane `package-runtime-requirements`, which built nothing but this file.
 
-Reuse: the per-program half reuses `grant_plan::Manifest` and `crates/manifest_note` as they
+Reuse: the per-program half reuses `grant_plan::Manifest` and `crates/capability_manifest_note` as they
 stand, and the gate extends `helpers/packages.py`. No outside tool fits, for the reasons in
 [the appendix](0849-a-package-declares-what-it-needs-at-run-time/prior-art.md).
 
@@ -38,7 +38,7 @@ What a program needs at run time is declared, but per program and in code, never
   be endowed with: `clock`, `domain`, `config`, `entropy` (`:1836`), `network` (`:1857`), `machine`
   and `share`. Its `runtime` field (`:1888`) says whether capabilities land in native order or at
   `std`'s fixed slots. An archive program's manifest is a `match` arm. A foreign program's travels
-  as an ELF note (milestone 597 (a program carries its manifest in an ELF note), `crates/manifest_note`).
+  as an ELF note (milestone 597 (a program carries its manifest in an ELF note), `crates/capability_manifest_note`).
 - Who provides each service is a string at a call site. `crates/system_initializer/src/lib.rs:1168`
   looks up `"system_log"`, `:1190` `"entropy"`, `:1194` `"net_stack"` and `:1244` `"redoxfs_server"`.
   Each is optional by design: a missing provider costs a feature, and a declaring child gets an empty
