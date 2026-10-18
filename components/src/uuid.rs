@@ -29,7 +29,7 @@
 //!
 //! # BUGS
 //!
-//! - One identifier per invocation, until `ArgSpec` has positional arguments.
+//! - One identifier per invocation, until `ProgramArgumentDeclaration` has positional arguments.
 //! - Version 4 only; v1, v3, v5 and v7 need a hash or a clock this program does not hold.
 //! - "Unpredictable" is a claim about the boot: on QEMU the bytes come from a host-backed
 //!   virtio-rng (§120 (a QEMU-only virtio-rng stopgap)), and a real TRNG's soundness is open.

@@ -13,8 +13,10 @@ use crate::spawnproto;
 /// **What a program's output slot carries.** Declared per program because this system has two
 /// conventions for "a program said something" and they are not interchangeable; see
 /// [`Manifest::output`].
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum OutputSpec {
+pub enum OutputDeclaration {
     /// Nothing. The program holds no output capability (the interrupt demonstrators report through
     /// a shared frame). Redirecting it is [`Refusal::NotAByteStream`](crate::Refusal::NotAByteStream), and so is piping it, because
     /// there is no slot to substitute.
@@ -26,7 +28,7 @@ pub enum OutputSpec {
     /// only output that `>` and `|` can substitute, because it is the only one whose meaning does
     /// not depend on who is reading it.
     Bytes,
-    /// [`Bytes`](OutputSpec::Bytes) **and a second byte stream** for this program's own
+    /// [`Bytes`](OutputDeclaration::Bytes) **and a second byte stream** for this program's own
     /// diagnostics, in the capability table slot named here (DECISIONS §67).
     ///
     /// This is what `2>` binds to, and the slot number is why it is a declaration rather than
@@ -45,14 +47,14 @@ pub enum OutputSpec {
     },
 }
 
-impl OutputSpec {
+impl OutputDeclaration {
     /// **Whether `>` and `|` have anything to substitute**, which is what the operators' check asks.
     /// A declared second stream does not change the answer: the first stream is still the sink
     /// contract, and a redirection still names where *it* goes.
     pub fn is_byte_stream(self) -> bool {
         matches!(
             self,
-            OutputSpec::Bytes | OutputSpec::BytesAndDiagnostics { .. }
+            OutputDeclaration::Bytes | OutputDeclaration::BytesAndDiagnostics { .. }
         )
     }
 
@@ -60,7 +62,7 @@ impl OutputSpec {
     /// declares none. `Some` is the whole of what makes `2>` legal on a command line.
     pub fn diagnostics_slot(self) -> Option<u64> {
         match self {
-            OutputSpec::BytesAndDiagnostics { slot } => Some(slot),
+            OutputDeclaration::BytesAndDiagnostics { slot } => Some(slot),
             _ => None,
         }
     }
@@ -68,13 +70,15 @@ impl OutputSpec {
 
 /// **Whether a program reads an input stream**, milestone 50's `<` and the right-hand end of `|`.
 ///
-/// The asymmetry with [`OutputSpec`] is deliberate and it is a fact about the two directions.
+/// The asymmetry with [`OutputDeclaration`] is deliberate and it is a fact about the two directions.
 /// Output has three shapes because the system grew two of them before the sink contract existed.
 /// Input has one shape, because nothing read a stream at all until this milestone: the source
 /// contract is the sink contract received rather than sent, and there was never a chance for a
 /// second convention to establish itself.
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum InputSpec {
+pub enum InputDeclaration {
     /// The program reads nothing. Giving it an input is [`Refusal::InputForbidden`](crate::Refusal::InputForbidden) rather than a
     /// capability it would never receive on, because a slot nobody reads is authority that moved
     /// for no reason.
@@ -345,13 +349,13 @@ pub const SYNC_SLOT: u64 = 14;
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26).
 pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
-    arg: ArgSpec::Forbidden,
-    mem: MemSpec::Forbidden,
-    file: FileSpec::Forbidden,
-    dir: DirSpec::Forbidden,
+    arg: ProgramArgumentDeclaration::Forbidden,
+    mem: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Forbidden,
+    dir: DirectoryGrantDeclaration::Forbidden,
     flags: NO_FLAGS,
-    output: OutputSpec::Bytes,
-    input: InputSpec::Forbidden,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
     reports: true,
     interruptible: false,
     clock: true,
@@ -365,7 +369,7 @@ pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
     sync: false,
     installer: false,
     catalog: false,
-    indexes: IndexStore::Forbidden,
+    indexes: IndexStoreDeclaration::Forbidden,
     runtime: Runtime::Native,
 };
 
@@ -374,14 +378,16 @@ pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
 /// configuration at slot 7), plus the line's words at slot 8, which §170 ruled carry no authority.
 /// No entropy, network or domain, whatever the note asks. Name: provisional.
 pub const UNVOUCHED_STD_MANIFEST: Manifest = Manifest {
-    arg: ArgSpec::Words(WordGrant::ReadOnly),
+    arg: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
     runtime: Runtime::Std,
     ..UNVOUCHED_MANIFEST
 };
 
 /// A program's expectation about the integer argument (`least_authority_demo 9`'s `9`).
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum ArgSpec {
+pub enum ProgramArgumentDeclaration {
     /// The program consumes an argument; omitting it is [`Refusal::ArgRequired`](crate::Refusal::ArgRequired).
     Required,
     /// The program takes no argument; supplying one is [`Refusal::ArgForbidden`](crate::Refusal::ArgForbidden).
@@ -402,16 +408,16 @@ pub enum ArgSpec {
     Words(WordGrant),
 }
 
-impl ArgSpec {
-    /// Whether the program hears the line as its argv ([`ArgSpec::Words`]).
+impl ProgramArgumentDeclaration {
+    /// Whether the program hears the line as its argv ([`ProgramArgumentDeclaration::Words`]).
     pub const fn hears_words(&self) -> bool {
-        matches!(self, ArgSpec::Words(_))
+        matches!(self, ProgramArgumentDeclaration::Words(_))
     }
 }
 
 /// **What a word that names an existing file is granted** (§170 (how a foreign program is told what
 /// to do) clause 2, and clause 3's create), declared by a program that hears words. The field §170
-/// calls the manifest's `words`, carried inside [`ArgSpec::Words`] so a program that hears no words
+/// calls the manifest's `words`, carried inside [`ProgramArgumentDeclaration::Words`] so a program that hears no words
 /// cannot declare one.
 ///
 /// Every variant grants the named names and nothing else in their directory, with the walk below a
@@ -455,8 +461,10 @@ impl WordGrant {
 }
 
 /// A program's expectation about a memory grant (`--mem N`).
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum MemSpec {
+pub enum MemoryGrantDeclaration {
     /// The program takes no memory grant; supplying one is [`Refusal::MemForbidden`](crate::Refusal::MemForbidden).
     Forbidden,
     /// The program must be granted a budget in `[min, max]` pages. Omitting it is
@@ -464,7 +472,7 @@ pub enum MemSpec {
     Required { min: u64, max: u64 },
 }
 
-/// A program's expectation about a **file grant**, milestone 31 phase 2.
+/// A program's expectation about a **file grant**, milestone 31 (a capability shell: designation is authorization) phase 2.
 ///
 /// **The manifest declares the direction; the command line designates the file.** That split is the
 /// SHILL shape and it is deliberate: a program knows whether it needs to write (that is a property of
@@ -479,8 +487,10 @@ pub enum MemSpec {
 ///
 /// One file, not a list. A program that needs two files needs a manifest that says so, and that is a
 /// later widening (`Required { count }`) rather than something to leave ambiguous now.
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum FileSpec {
+pub enum FileGrantDeclaration {
     /// The program takes no file; naming one is [`Refusal::FileForbidden`](crate::Refusal::FileForbidden).
     Forbidden,
     /// The program is granted exactly one file, `writable` or not. Omitting it is
@@ -490,7 +500,7 @@ pub enum FileSpec {
 
 /// A program's expectation about a **directory grant**, milestone 47's `rm -r`.
 ///
-/// [`FileSpec`] narrows a directory capability down to one file. This is the rung above: the program
+/// [`FileGrantDeclaration`] narrows a directory capability down to one file. This is the rung above: the program
 /// is granted a capability to **a whole directory**, because what it does cannot be expressed as one
 /// file. `rm` is the case that forced it: removing a name is an operation on the *directory that
 /// holds it*, and no per-file capability carries the authority to do it.
@@ -511,8 +521,10 @@ pub enum FileSpec {
 /// six-rung ladder is the filesystem contract's vocabulary, and translating into it belongs to the
 /// shell, which holds both contracts; keeping it out of `grant_plan` is [`MAX_FILE_NAME`](crate::MAX_FILE_NAME)'s rule, that a
 /// command line can be checked without linking the filesystem.
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum DirSpec {
+pub enum DirectoryGrantDeclaration {
     /// The program takes no directory.
     Forbidden,
     /// The program is granted a capability to the directory that holds what the command names,
@@ -531,15 +543,15 @@ pub enum DirSpec {
 /// mystery hang inside a program that did not get what it needed. See notes/program-manifest.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Manifest {
-    pub arg: ArgSpec,
-    pub mem: MemSpec,
-    /// A per-file grant, milestone 31 phase 2. See [`FileSpec`] for why the direction lives here
+    pub arg: ProgramArgumentDeclaration,
+    pub mem: MemoryGrantDeclaration,
+    /// A per-file grant, milestone 31 phase 2. See [`FileGrantDeclaration`] for why the direction lives here
     /// and the name lives on the command line.
-    pub file: FileSpec,
-    /// A per-**directory** grant, milestone 47's `rm -r`. See [`DirSpec`]: the program is handed a
+    pub file: FileGrantDeclaration,
+    /// A per-**directory** grant, milestone 47's `rm -r`. See [`DirectoryGrantDeclaration`]: the program is handed a
     /// capability to the directory holding what the command names, because what it does (taking a
     /// name out) is an operation on a directory and not on a file.
-    pub dir: DirSpec,
+    pub dir: DirectoryGrantDeclaration,
     /// **The short options this program accepts**, as their letters, in the order their bits are
     /// numbered ([`Endowment::flags`](crate::Endowment::flags)). Empty for a program that takes none, which is every program
     /// but `rm` today.
@@ -560,11 +572,11 @@ pub struct Manifest {
     /// instead of a file full of nothing. Unix has no equivalent because on Unix every program's
     /// stdout is bytes by construction; here the register fastpath is real and older than the sink
     /// contract, so the two conventions coexist and the manifest is where they are told apart.
-    pub output: OutputSpec,
-    /// **Whether this program reads an input stream** (milestone 50). See [`InputSpec`]: a program
-    /// that declares [`InputSpec::Required`] and is given nothing would block forever on a receive,
+    pub output: OutputDeclaration,
+    /// **Whether this program reads an input stream** (milestone 50 (pipes and redirection)). See [`InputDeclaration`]: a program
+    /// that declares [`InputDeclaration::Required`] and is given nothing would block forever on a receive,
     /// and that is a mistake the shell can catch at the prompt.
-    pub input: InputSpec,
+    pub input: InputDeclaration,
     /// Endowed with the shared result endpoint (so it can report back). Every phase-1 program
     /// reports; the field exists so a program that does not can drop the channel it never uses.
     pub reports: bool,
@@ -744,7 +756,7 @@ pub struct Manifest {
     /// `std_runtime_contract::INDEX_SOURCES_PAGE`. The directory holds the index copy a package
     /// manager writes, which the progenitor then installs from: ruling I2 of 2026-10-06 (calef, "I
     /// would think jig"), under which the progenitor trusts the copy in a directory only the owner's
-    /// console grants. See [`IndexStore`].
+    /// console grants. See [`IndexStoreDeclaration`].
     ///
     /// Only the owner's console grants it, as [`installer`](Manifest::installer), and no image may
     /// declare it ([`image_can_carry`](crate::image_can_carry)). A line that designates a
@@ -752,7 +764,7 @@ pub struct Manifest {
     /// has one directory slot.
     ///
     /// **Provisional field name.**
-    pub indexes: IndexStore,
+    pub indexes: IndexStoreDeclaration,
     /// **Which runtime contract the program was built against**, and so where it expects each
     /// capability to be (milestone 595 (provisional)). See [`Runtime`].
     ///
@@ -770,10 +782,10 @@ pub struct Manifest {
 /// `jig list` and `jig install <name>` only read it, so a verb chooses between the two
 /// ([`crate::verbs::Grants::INDEXES_WRITE`]).
 ///
-/// Name: provisional 2026-10-12 (UTC), lane `milestone/801-jig-installs-from-the-index`, as are
-/// the variants.
+/// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
+/// The variants are provisional (lane `milestone/801-jig-installs-from-the-index`, 2026-10-12 UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum IndexStore {
+pub enum IndexStoreDeclaration {
     /// None of it. Every program but `jig`.
     Forbidden,
     /// The copies read, the sources page mapped.
@@ -782,15 +794,15 @@ pub enum IndexStore {
     ReadWrite,
 }
 
-impl IndexStore {
+impl IndexStoreDeclaration {
     /// The rights the store's directory is opened with, as `filesystem_contract::dir`'s bits:
     /// [`WordGrant::ReadOnly`]'s for reading, and [`WordGrant::Create`]'s for writing, since the
-    /// first `update` creates the copy. `None` for [`IndexStore::Forbidden`].
+    /// first `update` creates the copy. `None` for [`IndexStoreDeclaration::Forbidden`].
     pub const fn rights(self) -> Option<u64> {
         match self {
-            IndexStore::Forbidden => None,
-            IndexStore::ReadOnly => Some(WordGrant::ReadOnly.rights()),
-            IndexStore::ReadWrite => Some(WordGrant::Create.rights()),
+            IndexStoreDeclaration::Forbidden => None,
+            IndexStoreDeclaration::ReadOnly => Some(WordGrant::ReadOnly.rights()),
+            IndexStoreDeclaration::ReadWrite => Some(WordGrant::Create.rights()),
         }
     }
 }

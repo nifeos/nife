@@ -158,7 +158,7 @@ pub fn log_pages_for(n: u64) -> u64 {
 /// one): twelve of this kernel's fourteen mapping sites map a page no capability names, and passing
 /// the page's own address as "the object" a second time would read as a duplicated argument rather
 /// than as the decision it is. The variant makes the case explicit at every call site and makes the
-/// wrong one hard to write by accident. It is the same move `InputSpec::Required` made when it
+/// wrong one hard to write by accident. It is the same move `InputDeclaration::Required` made when it
 /// stopped being a unit variant.
 ///
 /// Name: ratified 2026-08-27 (calef). Landed as `MappedUnder`; renamed to `PageMapSource` on

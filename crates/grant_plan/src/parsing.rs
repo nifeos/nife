@@ -43,7 +43,7 @@ pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8
 }
 
 /// **Assemble the argv of a program that hears words** (milestone 205 (how a foreign program is
-/// told what to do), DECISIONS §170; see [`ArgSpec::Words`](crate::ArgSpec::Words)), onto `page`, and return how many
+/// told what to do), DECISIONS §170; see [`ProgramArgumentDeclaration::Words`](crate::ProgramArgumentDeclaration::Words)), onto `page`, and return how many
 /// words it carries.
 ///
 /// `line` is one command: the program's name and its words, with no operator on it. Every word is
@@ -384,7 +384,7 @@ pub struct RunSpec<'a> {
     /// The program name as typed (may not resolve).
     pub prog: &'a [u8],
     /// **The whole invocation as it was typed**, which is what a program that hears words is given
-    /// ([`ArgSpec::Words`], milestone 205). Everything else here is a classification of it, and a
+    /// ([`ProgramArgumentDeclaration::Words`], milestone 205). Everything else here is a classification of it, and a
     /// classification is exactly what §170 (how a foreign program is told what to do) said such a
     /// program must not get.
     line: &'a [u8],

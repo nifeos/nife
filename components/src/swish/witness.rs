@@ -55,7 +55,7 @@ pub(super) fn piping() -> ! {
         // The shell as the producer: a builtin's bytes into a pipe, counted by a real process.
         &b"echo hello world | wc"[..],
         // Three stages, so a middle stage is a real middle: `wc`'s own output is a byte stream, so
-        // it composes, which is what `OutputSpec::Bytes` on `wc` is for.
+        // it composes, which is what `OutputDeclaration::Bytes` on `wc` is for.
         b"echo hello world | wc | wc",
         // The same unmodified `date`, twice, to two different destinations.
         b"date",

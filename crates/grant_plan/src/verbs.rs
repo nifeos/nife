@@ -6,7 +6,7 @@
 //!
 //! Name: provisional (milestone 809), as are the module, the types and the bit positions.
 
-use crate::{IndexStore, Manifest, each_word};
+use crate::{IndexStoreDeclaration, Manifest, each_word};
 
 /// **The authorities a verb table may hand out**, as bits (milestone 809 (the package client
 /// becomes a program), option V2). Each names one of [`Manifest`]'s fields the progenitor endows
@@ -160,13 +160,17 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
         installer: m.installer && g.contains(Grants::INSTALLER),
         catalog: m.catalog && g.contains(Grants::CATALOG),
         indexes: match m.indexes {
-            IndexStore::ReadWrite if g.contains(Grants::INDEXES.union(Grants::INDEXES_WRITE)) => {
-                IndexStore::ReadWrite
+            IndexStoreDeclaration::ReadWrite
+                if g.contains(Grants::INDEXES.union(Grants::INDEXES_WRITE)) =>
+            {
+                IndexStoreDeclaration::ReadWrite
             }
-            IndexStore::ReadWrite | IndexStore::ReadOnly if g.contains(Grants::INDEXES) => {
-                IndexStore::ReadOnly
+            IndexStoreDeclaration::ReadWrite | IndexStoreDeclaration::ReadOnly
+                if g.contains(Grants::INDEXES) =>
+            {
+                IndexStoreDeclaration::ReadOnly
             }
-            _ => IndexStore::Forbidden,
+            _ => IndexStoreDeclaration::Forbidden,
         },
         ..*m
     }
@@ -224,18 +228,21 @@ mod tests {
         assert!(remove.installer && !remove.catalog && !remove.network);
         // Milestone 801: only `update` writes the index store; `list` and `install` read it, and
         // `remove` holds none of it.
-        assert_eq!(as_typed(b"jig update").indexes, IndexStore::ReadWrite);
+        assert_eq!(
+            as_typed(b"jig update").indexes,
+            IndexStoreDeclaration::ReadWrite
+        );
         assert!(!as_typed(b"jig update").installer);
-        assert_eq!(list.indexes, IndexStore::ReadOnly);
-        assert_eq!(install.indexes, IndexStore::ReadOnly);
-        assert_eq!(remove.indexes, IndexStore::Forbidden);
+        assert_eq!(list.indexes, IndexStoreDeclaration::ReadOnly);
+        assert_eq!(install.indexes, IndexStoreDeclaration::ReadOnly);
+        assert_eq!(remove.indexes, IndexStoreDeclaration::Forbidden);
         // The progenitor's reading of the page the shell assembles agrees with the shell's.
         let mut page = [0u8; program_argument_contract::PAGE_BYTES];
         argv(b"jig 'install' greeting", &mut page).unwrap();
         assert_eq!(verb_of_page(&page), Some(&b"install"[..]));
         let nothing = as_typed(b"jig upgrade");
         assert!(!nothing.installer && !nothing.catalog && !nothing.network);
-        assert_eq!(nothing.indexes, IndexStore::Forbidden);
+        assert_eq!(nothing.indexes, IndexStoreDeclaration::Forbidden);
         assert_eq!(as_typed(b"jig"), nothing);
         // Everything else about the manifest is untouched.
         assert_eq!(list.arg, jig.arg);
@@ -257,9 +264,12 @@ mod tests {
                     (narrowed.share, Grants::SHARE),
                     (narrowed.installer, Grants::INSTALLER),
                     (narrowed.catalog, Grants::CATALOG),
-                    (narrowed.indexes != IndexStore::Forbidden, Grants::INDEXES),
                     (
-                        narrowed.indexes == IndexStore::ReadWrite,
+                        narrowed.indexes != IndexStoreDeclaration::Forbidden,
+                        Grants::INDEXES,
+                    ),
+                    (
+                        narrowed.indexes == IndexStoreDeclaration::ReadWrite,
                         Grants::INDEXES_WRITE,
                     ),
                 ]
@@ -291,7 +301,7 @@ mod tests {
             share: true,
             installer: true,
             catalog: true,
-            indexes: IndexStore::ReadWrite,
+            indexes: IndexStoreDeclaration::ReadWrite,
             ..Prog::Jig.manifest()
         };
         let one = |verb: &'static str, grants| VerbGrant { verb, grants };
@@ -320,8 +330,8 @@ mod tests {
                 n.share,
                 n.installer,
                 n.catalog,
-                n.indexes != IndexStore::Forbidden,
-                n.indexes == IndexStore::ReadWrite,
+                n.indexes != IndexStoreDeclaration::Forbidden,
+                n.indexes == IndexStoreDeclaration::ReadWrite,
             ];
             let bits = held
                 .iter()
@@ -358,12 +368,12 @@ mod tests {
             let m = p.manifest();
             assert_eq!(m.installer, p == Prog::Jig, "{}", p.name());
             assert_eq!(
-                m.indexes != IndexStore::Forbidden,
+                m.indexes != IndexStoreDeclaration::Forbidden,
                 p == Prog::Jig,
                 "{}",
                 p.name()
             );
-            if m.installer || m.catalog || m.indexes != IndexStore::Forbidden {
+            if m.installer || m.catalog || m.indexes != IndexStoreDeclaration::Forbidden {
                 assert_eq!(m.runtime, Runtime::Std, "{}", p.name());
             }
         }
@@ -383,7 +393,7 @@ mod tests {
         assert!(image_can_carry(&Manifest {
             installer: false,
             catalog: false,
-            indexes: IndexStore::Forbidden,
+            indexes: IndexStoreDeclaration::Forbidden,
             network: false,
             ..jig
         }));

@@ -440,7 +440,7 @@ pub enum Retention {
     /// given.
     ///
     /// The reason is a required part of the variant rather than a comment beside it, which is
-    /// milestone 50's `InputSpec::Required` shape: a spawn path cannot keep a capability without
+    /// milestone 50 (pipes and redirection)'s `InputDeclaration::Required` shape: a spawn path cannot keep a capability without
     /// saying why, because the variant will not build. Every one of the five sites that kept theirs
     /// before §142 was written had no reason at all, and all five turned out to be
     /// [`Nothing`](Retention::Nothing) once anybody asked.

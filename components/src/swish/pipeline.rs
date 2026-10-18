@@ -455,7 +455,7 @@ fn write_stage_words(
         let Some(e) = plans[i].filter(|_| !(i == 0 && head_builtin)) else {
             continue;
         };
-        let grant_plan::ArgSpec::Words(grant) = e.prog.manifest().arg else {
+        let grant_plan::ProgramArgumentDeclaration::Words(grant) = e.prog.manifest().arg else {
             continue;
         };
         let assembled = assemble_argv(l.stages()[i], i)
@@ -991,7 +991,7 @@ fn spawn_stage(
         diagnostics: diagnostics.is_some(),
         // **A stage is directory-granted only for words** (milestone 205): a program that hears
         // words is granted what they designated, here as on a plain line. `rm`'s grant is still
-        // met only in `spawn`: the one program with `DirSpec::Required` writes a byte stream and
+        // met only in `spawn`: the one program with `DirectoryGrantDeclaration::Required` writes a byte stream and
         // takes no input, so `rm x | wc` puts it at the head, and delivering it here would be a
         // second copy of `dir_grant`'s refusals. See notes/dir-capability.md's BUGS.
         dir: words.is_some(),
@@ -1006,7 +1006,7 @@ fn spawn_stage(
         machine: machine_wiring(&e),
         // **A stage never promises devices** (milestone 632 (provisional)): `graphical_terminal`'s manifest
         // refuses every operator that builds a stage (`Words` output refuses `>` and a pipe's
-        // left, `InputSpec::Forbidden` its right), so this is false by construction rather than
+        // left, `InputDeclaration::Forbidden` its right), so this is false by construction rather than
         // by decision, and says so for the reader checking the wire.
         graphics: false,
         keyboard: false,

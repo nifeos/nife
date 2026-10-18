@@ -12,7 +12,7 @@ use super::*;
 /// The `std`-program rows of [`SWISH_CHECK_SCRIPT`], in table order.
 pub(super) const LINES: &[Line] = &[
     // **An installed `std` program run by path hears its words** (milestone 205 (how a foreign
-    // program is told what to do)). `std_echo`'s note declares `ArgSpec::Words` in the `std`
+    // program is told what to do)). `std_echo`'s note declares `ProgramArgumentDeclaration::Words` in the `std`
     // runtime, so the shell sent the line as its argv, the progenitor sized a `std` region from the
     // argv bit and built the `std` layout for an image, and `std::env::args_os()` read the page.
     // Unvouched, so its grants are §219's two pages at the `std` slots, and the preview says so.

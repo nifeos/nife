@@ -111,7 +111,7 @@ pub(super) fn spawn_interruptible(e: Endowment) {
             sink: false,
             source: false,
             // A supervised job reports through the shared frame, not through a stream, and neither
-            // demonstrator declares a second one. `OutputSpec::Silent` and a diagnostic rendezvous
+            // demonstrator declares a second one. `OutputDeclaration::Silent` and a diagnostic rendezvous
             // would be a contradiction the manifest can already refuse.
             diagnostics: false,
             // Neither demonstrator declares a directory either, and a supervised job is built out of

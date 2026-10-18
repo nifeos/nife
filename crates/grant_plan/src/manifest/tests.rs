@@ -21,10 +21,10 @@ fn word_rights_are_the_filesystem_contracts() {
 fn the_index_store_opens_with_a_word_grants_rights() {
     use filesystem_contract::dir;
     let read = dir::ENUMERATE | dir::READ | dir::DESCEND;
-    assert_eq!(IndexStore::Forbidden.rights(), None);
-    assert_eq!(IndexStore::ReadOnly.rights(), Some(read));
+    assert_eq!(IndexStoreDeclaration::Forbidden.rights(), None);
+    assert_eq!(IndexStoreDeclaration::ReadOnly.rights(), Some(read));
     assert_eq!(
-        IndexStore::ReadWrite.rights(),
+        IndexStoreDeclaration::ReadWrite.rights(),
         Some(read | dir::WRITE | dir::CREATE)
     );
 }

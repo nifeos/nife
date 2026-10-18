@@ -40,7 +40,7 @@ pub(super) fn build_grant(
     manifest: Option<grant_plan::Manifest>,
 ) -> Option<u64> {
     let words = match manifest.map(|m| m.arg) {
-        Some(grant_plan::ArgSpec::Words(g)) => {
+        Some(grant_plan::ProgramArgumentDeclaration::Words(g)) => {
             use filesystem_contract::grant as gr;
             let rights = gr::spec_rights(care_words.2) & g.rights();
             (

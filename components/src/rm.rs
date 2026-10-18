@@ -359,7 +359,7 @@ fn text(bytes: &[u8]) {
 /// **The last message, and it closes the stream** ([`byte_sink_contract::eof`]) rather than inventing a
 /// terminator of its own.
 ///
-/// This program's manifest declares [`grant_plan::OutputSpec::Bytes`], which is the sink contract:
+/// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], which is the sink contract:
 /// self-framing byte messages ending in `OPERATION_EOF`. [`text`] always produced them, and the verdict
 /// used to be `filesystem_fixture::VERDICT`, a word that contract has no meaning for. Under the guest
 /// wiring the reader was a test that knew to look for it; at the real prompt the reader is the shell,

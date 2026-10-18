@@ -68,7 +68,7 @@ line."
 The builtin's two reasons were checked first. The progenitor alone holds what installing needs,
 which keeps the installer there, not the client in the shell. And a program could not be told which
 package: stale since milestone 205 (how a foreign program is told what to do) built
-`ArgSpec::Words` on 2026-09-27.
+`ProgramArgumentDeclaration::Words` on 2026-09-27.
 
 So the builtin left the shell and the fetch left the progenitor, in one change, so the owner never
 had two clients for one store. Under §195 (a reviewed recipe vouches for a package) the digest
@@ -87,14 +87,14 @@ reversible.
 | A client view of the network stack (`NETWORK_SLOT`; slots 2 and 3 for a `std` program) | `install <name>`, `update` | `Manifest::network` | yes (milestone 590 (the booted system starts its network stack)); for a `std` program at the prompt, since this block |
 | The index directory, read and write | `list`, `list -u`, `update`, `add-repository`, `install <name>` | `Manifest::indexes`, a directory grant on `activation/indexes`, owner's console only | yes (801) |
 | `activation/`, read only | `list -u` | a directory grant | as above |
-| The file a line names | `install <path>` | `ArgSpec::Words` designation (§170 (how a foreign program is told what to do)) | yes |
+| The file a line names | `install <path>` | `ProgramArgumentDeclaration::Words` designation (§170 (how a foreign program is told what to do)) | yes |
 | A request to the installer | `install`, `remove`, `rollback` | `Manifest::installer`, below | yes, since this block (§270) |
 | The image's catalog, read only | `list`, `install <name>` | `Manifest::catalog` | yes, since this block |
 
 The installer endpoint is the one new grant, recorded in §270 (a package manager holds an
 installer endpoint, not the spawn endpoint). It is a copy of the spawn endpoint, badged for one job.
 It serves install, remove and rollback, never `Vouch`, and only the owner's console grants it. The field the draft called `activation` is `installer`, and `catalog` came with it. The
-program is `Runtime::Std`, because `ArgSpec::Words` requires it.
+program is `Runtime::Std`, because `ProgramArgumentDeclaration::Words` requires it.
 
 ## One program with verbs: ruled
 

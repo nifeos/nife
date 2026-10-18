@@ -198,21 +198,21 @@ programs! {
         /// `rm -r` is a destructive loop, not a rebinding. A builtin would run with the shell's **entire
         /// endowment**, while a program takes an explicit attenuated grant, so `caps rm -r logs` prints
         /// the subtree at risk before anything happens and a bug in the recursion can only reach what it
-        /// was handed. See [`DirSpec`](crate::DirSpec).
+        /// was handed. See [`DirectoryGrantDeclaration`](crate::DirectoryGrantDeclaration).
         // `rm` stopped being a builtin in milestone 47's rmdir lane, which is what makes this
         // name reachable: a builtin would have shadowed it, because `parse` matches those first.
         Rm { id: 5, name: "rm" },
         /// **Count what arrives on its input** (milestone 50, `components/src/wc.rs`): lines, words and
         /// bytes, printed as one line of text.
         ///
-        /// The first program that declares [`InputSpec::Required`](crate::InputSpec::Required), and the reason that spec exists.
+        /// The first program that declares [`InputDeclaration::Required`](crate::InputDeclaration::Required), and the reason that spec exists.
         /// `wc` with nothing feeding it would block on a receive forever, and the shell can see that at
         /// the prompt: the manifest says it reads a stream, so a line that gives it none is
         /// [`Refusal::InputRequired`](crate::Refusal::InputRequired) before anything is spawned. Unix cannot make that check, because
         /// there fd 0 always exists and "nobody is ever going to write to it" is not a property of the
         /// command line.
         ///
-        /// Its output is [`OutputSpec::Bytes`](crate::OutputSpec::Bytes) because it has to be: `wc`'s answer is text, so `echo a
+        /// Its output is [`OutputDeclaration::Bytes`](crate::OutputDeclaration::Bytes) because it has to be: `wc`'s answer is text, so `echo a
         /// | wc | wc` composes, and a program that reported a number in a register could not be on the
         /// left of a pipe at all.
         ///
@@ -250,11 +250,11 @@ programs! {
         /// is no `Prog::Pkill` for it to be compared against, because a tid is a name and no method
         /// turns one into a capability.
         ///
-        /// `ArgSpec::Forbidden` is [`Prog::Date`]'s deliberate under-declaration, for the same reason
+        /// `ProgramArgumentDeclaration::Forbidden` is [`Prog::Date`]'s deliberate under-declaration, for the same reason
         /// and with the same consequence: `pgrep` reads a state mask out of a register the shell cannot
         /// set, so at this prompt it takes the default and names every member. Nothing in this system
         /// delivers *bytes* from a command line to a program, so a pattern is not something the line can
-        /// carry until [`ArgSpec`](crate::ArgSpec) grows the positional arity milestone 47 deferred; see `crates/pgrep`'s
+        /// carry until [`ProgramArgumentDeclaration`](crate::ProgramArgumentDeclaration) grows the positional arity milestone 47 deferred; see `crates/pgrep`'s
         /// `BUGS`.
         Pgrep { id: 9, name: "pgrep" },
         // **There was a `Watch` here until milestone 281** (`watch` holds exactly what `ps` holds,
@@ -337,7 +337,7 @@ programs! {
         /// can reach today.
         ///
         /// Takes no argument, no memory, no file: its whole authority is the client view of the entropy
-        /// service. `OutputSpec::BytesAndDiagnostics` for [`Prog::Ps`]'s reason, and here the second
+        /// service. `OutputDeclaration::BytesAndDiagnostics` for [`Prog::Ps`]'s reason, and here the second
         /// stream carries the one sentence that matters: a boot with no entropy service must leave
         /// `uuid > id.txt` **empty** and say why on the terminal, because a file containing a
         /// predictable identifier is worse than a file containing nothing.
@@ -358,7 +358,7 @@ programs! {
         /// and the rule no longer argues for folding it into `ps`. Whether that settles it is
         /// calef's; `crates/top`'s module docs carry the argument.
         ///
-        /// `ArgSpec::Forbidden` rather than an optional count, because there is no such spec: a
+        /// `ProgramArgumentDeclaration::Forbidden` rather than an optional count, because there is no such spec: a
         /// `top N` would have to make the argument `Required`, and a `top` that cannot be typed
         /// bare is not a `top`. Every row is printed, ranked. Same boundary limitation
         /// [`Prog::Pgrep`] records for its missing pattern.
@@ -454,7 +454,7 @@ programs! {
         ///
         /// Declares nothing a line designates, which is what makes every operator on it a refusal:
         /// `Words` output refuses `>` and the left of a `|` (a session is not a byte stream),
-        /// `InputSpec::Forbidden` refuses the right of one, and a graphical terminal session reached any way
+        /// `InputDeclaration::Forbidden` refuses the right of one, and a graphical terminal session reached any way
         /// but a plain line is a line this manifest turns away at the prompt.
         ///
         /// Name: ratified 2026-10-03 (calef, #1493). Refused `screen` (clashes with `SCREEN_BIT`,

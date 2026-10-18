@@ -23,7 +23,7 @@ pub enum Refusal {
     /// milestone's inversion cuts both ways: a name the program has no use for is authority the user
     /// did not mean to move, so it is refused rather than granted-and-ignored. **This is the refusal
     /// the `file:` prefix was wrongly credited with**: `least_authority_demo 5 extra` stops here because `least_authority_demo`'s
-    /// manifest says `FileSpec::Forbidden`, which is what refused it before the prefix went away.
+    /// manifest says `FileGrantDeclaration::Forbidden`, which is what refused it before the prefix went away.
     FileForbidden,
     /// The program is endowed a file and the command named none. Naming it on the line is the only
     /// way it can get one, so this is caught at the prompt rather than as an empty slot at runtime.
@@ -110,7 +110,7 @@ pub enum Refusal {
     /// the line writes to depend on what is in the directory.
     PatternInRedirect,
     /// **This program's output is not a byte stream**, so there is nothing for `>` or `|` to
-    /// substitute. See [`OutputSpec`](crate::OutputSpec): `least_authority_demo 9` answers with a number in a register, and a file
+    /// substitute. See [`OutputDeclaration`](crate::OutputDeclaration): `least_authority_demo 9` answers with a number in a register, and a file
     /// sink handed that word would write nothing legible into the file.
     NotAByteStream,
     /// **This program declares no second output stream**, and the line put a `2>` on it (DECISIONS
@@ -128,7 +128,7 @@ pub enum Refusal {
     InputRequired,
     /// **This shell would be both the writer and the reader of the line, and it can only wait on
     /// one thing.** Every stage declares that it writes while it reads
-    /// ([`InputSpec::Required::writes_while_reading`](crate::InputSpec::Required::writes_while_reading)), so nothing in the chain absorbs the stream,
+    /// ([`InputDeclaration::Required::writes_while_reading`](crate::InputDeclaration::Required::writes_while_reading)), so nothing in the chain absorbs the stream,
     /// and the shell's feed would block against a stage that is blocked writing back.
     ///
     /// It is a fact about **this shell** rather than about the program, which is why the fix is to

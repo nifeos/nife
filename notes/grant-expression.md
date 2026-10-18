@@ -196,7 +196,7 @@ authority is still exactly what the line says, because the program's half is fix
 
 Since milestone 50 (pipes and redirection) the interactive shell holds the image root, and since 2026-08-17 the progenitor
 builds a `fs_subtree_caretaker` per directory grant, so `rm` runs; `script/swish-check` proves it on
-both ISAs. `FileSpec::Required` still has no consumer: no shipped program declares a file. Of the
+both ISAs. `FileGrantDeclaration::Required` still has no consumer: no shipped program declares a file. Of the
 four obstacles this note predicted, three landed as written. Depth is the one still open: every
 caretaker descends exactly one name, so `rm gate.txt` at the top prompt is refused. The fourth, the
 lifetime, cost the most care, because the first reclaim of a caretaker's region is refused by

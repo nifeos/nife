@@ -385,7 +385,7 @@ fn plan_image(nav: &mut Nav, spec: RunSpec) -> Option<PlannedImage> {
     // have their words designated rather than their patterns expanded, and only the note says
     // whether these do.
     let expanded = match m.arg {
-        grant_plan::ArgSpec::Words(grant) => {
+        grant_plan::ProgramArgumentDeclaration::Words(grant) => {
             swish::designation(spec.line(), grant, &mut |token| nav.expand(token))
         }
         _ => expansion(nav, &spec),
@@ -474,23 +474,25 @@ fn carve_image_grants(
     // **And what its words designated** (milestone 205's designation half), on a page carved
     // after the argv's and still below staging.
     let set_grant = match (e.dir, m.arg) {
-        (Some(g), grant_plan::ArgSpec::Words(grant)) => match words_grant(&g, grant, 0) {
-            Ok(w) => Some(w),
-            Err(why) => {
-                nav.close_in(t, handle);
-                if let Some(a) = argv {
-                    release_argv(a, true);
-                }
-                match why {
-                    Some(sentence) => {
-                        refused();
-                        print(sentence);
+        (Some(g), grant_plan::ProgramArgumentDeclaration::Words(grant)) => {
+            match words_grant(&g, grant, 0) {
+                Ok(w) => Some(w),
+                Err(why) => {
+                    nav.close_in(t, handle);
+                    if let Some(a) = argv {
+                        release_argv(a, true);
                     }
-                    None => out_of_budget(),
+                    match why {
+                        Some(sentence) => {
+                            refused();
+                            print(sentence);
+                        }
+                        None => out_of_budget(),
+                    }
+                    return None;
                 }
-                return None;
             }
-        },
+        }
         _ => None,
     };
     let Some(staging) = memory_region_split(pages) else {
@@ -995,23 +997,25 @@ fn spawn_dir_grant(
     let mut set_grant = None;
     let dir_words = match (e.dir, e.prog.manifest().arg) {
         (None, _) => None,
-        (Some(g), grant_plan::ArgSpec::Words(grant)) => match words_grant(&g, grant, 0) {
-            Ok(w) => {
-                set_grant = Some(w);
-                Some(w.words)
-            }
-            Err(why) => {
-                match why {
-                    Some(sentence) => {
-                        refused();
-                        print(sentence);
-                    }
-                    None => out_of_budget(),
+        (Some(g), grant_plan::ProgramArgumentDeclaration::Words(grant)) => {
+            match words_grant(&g, grant, 0) {
+                Ok(w) => {
+                    set_grant = Some(w);
+                    Some(w.words)
                 }
-                release_unsent_argv(argv);
-                return None;
+                Err(why) => {
+                    match why {
+                        Some(sentence) => {
+                            refused();
+                            print(sentence);
+                        }
+                        None => out_of_budget(),
+                    }
+                    release_unsent_argv(argv);
+                    return None;
+                }
             }
-        },
+        }
         (Some(g), _) => match dir_grant(&g, e.flags) {
             Ok(words) => Some(words),
             Err(sentence) => {
@@ -1050,7 +1054,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // **Also always false here** (DECISIONS §106), and for the same shape of reason as
             // `diagnostics`: a program only reaches this path (no file operand, no pipe, no
             // redirection at all) when `plan` put nothing in its source slot, and every program
-            // that declares `writes_while_reading` also declares `InputSpec::Required`, which
+            // that declares `writes_while_reading` also declares `InputDeclaration::Required`, which
             // sends it down [`run`]'s other arm (`Source::File`) instead. So this bit would never
             // have anything to narrow.
             screen: false,
@@ -1064,7 +1068,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // none, so the bit is the whole request, and a boot with no display answers
             // `spawnproto::SPAWN_NO_DISPLAY`. Set only on a plain line, which is the only line
             // `graphical_terminal`'s manifest can reach this path on (`Words` output refuses `>`
-            // and a pipe's left, `InputSpec::Forbidden` its right). `keyboard` is never set: the
+            // and a pipe's left, `InputDeclaration::Forbidden` its right). `keyboard` is never set: the
             // spawn service decides the arm from what the boot granted.
             graphics: e.prog == grant_plan::Prog::GraphicalTerminal,
             keyboard: false,

@@ -58,7 +58,7 @@ Unix needs a *numbered convention* because a process cannot ask its parent for a
 process gets three descriptors by inheritance, so what fd 2 is has to be agreed in advance by
 everybody, forever. Nothing here is ambient. A program holds an endpoint because the progenitor put
 one in a slot. The progenitor put it there because the shell's plan said to, and the plan came from
-a manifest that already declares what kind of output the program has (`OutputSpec`). The mechanism
+a manifest that already declares what kind of output the program has (`OutputDeclaration`). The mechanism
 for "this program has a second thing to say" is therefore a declaration, not a number.
 
 ### The two shapes it could take, and what each costs
@@ -105,5 +105,5 @@ refusals never enter a redirection) is the part that was worth having. That is t
 it is not obviously wrong.
 
 Inventing the convention before a program has two things to say would be inventing it rather than
-discovering it, which is the same argument milestone 50 made about `InputSpec` and got right by
+discovering it, which is the same argument milestone 50 made about `InputDeclaration` and got right by
 waiting.

@@ -62,7 +62,7 @@ and the root cannot be narrowed to one name.
 | slot | what | from |
 |---|---|---|
 | 2, 3 | the network stack, and its own region for each socket's page | `Manifest::network` |
-| 8 | its words | `ArgSpec::Words` |
+| 8 | its words | `ProgramArgumentDeclaration::Words` |
 | 15 | the installer endpoint, `WRITE` | `Manifest::installer`, §270 (a package manager holds an installer endpoint, not the spawn endpoint) |
 | 16 | the endpoint its answers come back on, `READ` | the same |
 | 17, and a page | a copy of the image's catalog | `Manifest::catalog` |

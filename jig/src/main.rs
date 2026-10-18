@@ -65,7 +65,7 @@ manifest_note::carry!(grant_plan::Manifest {
     network: false,
     installer: false,
     catalog: false,
-    indexes: grant_plan::IndexStore::Forbidden,
+    indexes: grant_plan::IndexStoreDeclaration::Forbidden,
     ..grant_plan::Prog::Jig.manifest()
 });
 

@@ -19,7 +19,7 @@
 //! - **A redirection names one file**: a pattern there is [`Refusal::PatternInRedirect`].
 //!
 //! `2>` (§67 (a program's second stream is a declaration)) names where a program's declared second
-//! output goes: it binds to a stream the manifest declares ([`OutputSpec`](crate::OutputSpec)) and
+//! output goes: it binds to a stream the manifest declares ([`OutputDeclaration`](crate::OutputDeclaration)) and
 //! is [`Refusal::NoDiagnosticStream`] for a program declaring none. The `2` is the familiar
 //! spelling, not a file descriptor, and counts only at a word boundary (`wc2>f` is a word).
 //!
@@ -106,7 +106,7 @@ pub enum Diagnostics {
 /// [`Sink`]'s mirror, and deliberately the same contract read from the other end.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Source {
-    /// No input slot at all. A program declaring [`InputSpec::Forbidden`](crate::InputSpec) always
+    /// No input slot at all. A program declaring [`InputDeclaration::Forbidden`](crate::InputDeclaration) always
     /// has this, and it is the reason such a program can never block waiting for bytes nobody is
     /// going to send.
     #[default]

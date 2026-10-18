@@ -133,7 +133,7 @@ Named here rather than in a tracker, next to the feature.
   step and disagree. Nothing here needs better.
 - **The prompt spawns it with the defaults only.** Milestone 47 gave `date` a `Prog` entry and a
   manifest, so typing `date` at the shell runs it (`Human`, UTC, no provenance line). The three
-  register selectors are not reachable from there: `ArgSpec` is `Required`/`Forbidden` with no
+  register selectors are not reachable from there: `ProgramArgumentDeclaration` is `Required`/`Forbidden` with no
   position or arity, and growing it is deferred until a program wants both an argument and a file.
   See notes/program-manifest.md. Recorded-accepted by milestone 94's sweep (2026-08-04): the
   deferral carries its own trigger, and a manifest grammar grown ahead of a program that needs it

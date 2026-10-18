@@ -2,7 +2,7 @@
 //! (milestone 47 (navigation and naming)'s `rm -r`, `components/src/rm.rs`).
 //!
 //! **Where these two words travel** (corrected 2026-08-17). `rm` declares the sink contract
-//! (`grant_plan::OutputSpec::Bytes`), so its report is framed text and then `byte_sink_contract`'s
+//! (`grant_plan::OutputDeclaration::Bytes`), so its report is framed text and then `byte_sink_contract`'s
 //! `OPERATION_EOF`; the status and the removal count ride in the two words that end-of-stream message
 //! leaves free. They used to ride on `filesystem_fixture::VERDICT`, a word the sink contract has no
 //! meaning for, which no reader but a guest test could have decoded.

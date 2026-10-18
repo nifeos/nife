@@ -24,7 +24,7 @@
 //! # BUGS
 //!
 //! - **No filtering.** Unix's `printenv NAME` prints one variable; this always prints all three,
-//!   because `ArgSpec` has no position yet.
+//!   because `ProgramArgumentDeclaration` has no position yet.
 //! - **The three keys are hardcoded.** Nothing here enumerates the page; a fourth validated domain
 //!   would need a fourth line written by hand.
 //!

@@ -23,8 +23,8 @@ is cheap to carry out.
 
 ## In brief
 
-The question: may a program's manifest declare `ArgSpec::Required` together with
-`InputSpec::Required`, so that `nth 21 report.txt` runs `nth` with the integer 21 and `report.txt`
+The question: may a program's manifest declare `ProgramArgumentDeclaration::Required` together with
+`InputDeclaration::Required`, so that `nth 21 report.txt` runs `nth` with the integer 21 and `report.txt`
 streamed into it?
 
 **Today the tree allows it and nothing uses it.** The planner composes the two by fixed position
@@ -42,7 +42,7 @@ Milestone 117's fifth stranger picked the combination deliberately, as the one m
 had used, and hit the swish sweep. `notes/adding-a-program.md` then recorded it as open because the
 planner's comment ruled out the neighboring case, a file together with an input, and said
 nothing about this one. The 2026-08-22 correction established by test that the two are not
-analogous: `FileSpec` and `InputSpec` both take a bare name, so a manifest with both would leave the
+analogous: `FileGrantDeclaration` and `InputDeclaration` both take a bare name, so a manifest with both would leave the
 parser two indistinguishable positions. An argument is numeric-shaped and claims position 0
 before the input's bare-name fallback looks at what remains.
 
@@ -85,6 +85,6 @@ by a comment.
 
 ## Index row
 
-The question: may a program's manifest declare `ArgSpec::Required` together with
-`InputSpec::Required`, so that `nth 21 report.txt` runs `nth` with the integer 21 and `report.txt`
+The question: may a program's manifest declare `ProgramArgumentDeclaration::Required` together with
+`InputDeclaration::Required`, so that `nth 21 report.txt` runs `nth` with the integer 21 and `report.txt`
 streamed into it?

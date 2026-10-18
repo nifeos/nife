@@ -144,7 +144,7 @@ fn a_bare_unplaceable_token_is_still_refused() {
     // **The safety property the `file:` prefix was credited with, proven without it.** The old
     // note argued the prefix stopped a stray word from becoming a capability transfer. It did
     // not: the manifest did. `least_authority_demo 5 extra` has no slot for `extra` because least_authority_demo declares
-    // `FileSpec::Forbidden`, so nothing is granted and the prompt says why.
+    // `FileGrantDeclaration::Forbidden`, so nothing is granted and the prompt says why.
     let Command::Run(r) = parse(b"least_authority_demo 5 extra") else {
         panic!()
     };
@@ -196,22 +196,22 @@ fn an_unknown_flag_never_reaches_the_file_position() {
 
 /// The writable twin: a program that is endowed a file it may write.
 const WRITES_A_FILE: Manifest = Manifest {
-    file: FileSpec::Required { writable: true },
+    file: FileGrantDeclaration::Required { writable: true },
     ..READS_A_FILE
 };
 
 /// The shape milestone 47 says nothing ships yet and everything hinges on: a program that takes
 /// **both** an integer and a file. It is the reason the prefix could be removed now (positional
-/// resolution is unambiguous while at most one bare token is a file) and the reason `ArgSpec`
+/// resolution is unambiguous while at most one bare token is a file) and the reason `ProgramArgumentDeclaration`
 /// will have to grow position and arity later.
 const STAMPS_A_FILE: Manifest = Manifest {
-    arg: ArgSpec::Required,
-    mem: MemSpec::Forbidden,
-    file: FileSpec::Required { writable: true },
-    dir: DirSpec::Forbidden,
+    arg: ProgramArgumentDeclaration::Required,
+    mem: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Required { writable: true },
+    dir: DirectoryGrantDeclaration::Forbidden,
     flags: NO_FLAGS,
-    output: OutputSpec::Words,
-    input: InputSpec::Forbidden,
+    output: OutputDeclaration::Words,
+    input: InputDeclaration::Forbidden,
     reports: true,
     interruptible: false,
     clock: false,
@@ -225,7 +225,7 @@ const STAMPS_A_FILE: Manifest = Manifest {
     sync: false,
     installer: false,
     catalog: false,
-    indexes: IndexStore::Forbidden,
+    indexes: IndexStoreDeclaration::Forbidden,
     runtime: Runtime::Native,
 };
 
@@ -304,7 +304,7 @@ fn anchor_consumes_a_bound_name_and_nothing_else() {
 }
 
 /// The combination milestone 117's fifth stranger found no program declares: an integer
-/// argument **and** an input stream. Unlike [`STAMPS_A_FILE`]'s pairing with `FileSpec`, this
+/// argument **and** an input stream. Unlike [`STAMPS_A_FILE`]'s pairing with `FileGrantDeclaration`, this
 /// one needs no "positional arity" widening, because `arg` consumes a fixed position (index 0,
 /// numeric-shaped) before `input`'s bare-name fallback ever looks at what is left; see the
 /// `positionals_fill_the_manifest_slots_in_the_order_typed` and
@@ -313,9 +313,9 @@ fn anchor_consumes_a_bound_name_and_nothing_else() {
 /// not
 /// this test's (design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
 const TAKES_ARG_AND_READS: Manifest = Manifest {
-    arg: ArgSpec::Required,
-    file: FileSpec::Forbidden,
-    input: InputSpec::Required {
+    arg: ProgramArgumentDeclaration::Required,
+    file: FileGrantDeclaration::Forbidden,
+    input: InputDeclaration::Required {
         writes_while_reading: false,
     },
     ..READS_A_FILE
@@ -383,7 +383,7 @@ fn positionals_fill_the_manifest_slots_in_the_order_typed() {
 
 /// **An argument and an input stream compose today, with no widening owed.** Milestone
 /// 117's fifth stranger left `notes/adding-a-program.md`'s `BUGS` section unsure whether this
-/// combination "needs `ArgSpec`'s widening" the way `FileSpec` + `InputSpec` genuinely does
+/// combination "needs `ProgramArgumentDeclaration`'s widening" the way `FileGrantDeclaration` + `InputDeclaration` genuinely does
 /// (see the comment above the input operand in [`plan_against_with`]): two bare names cannot
 /// both self-classify, but an integer argument and a bare-name input feed can, because `arg`
 /// is numeric-shaped and consumes a fixed earlier position before `input`'s fallback ever

@@ -6,7 +6,7 @@ use std::string::String;
 use std::vec::Vec;
 
 use grant_plan::nav::Cwd;
-use grant_plan::{FileSpec, InputSpec, MemSpec};
+use grant_plan::{FileGrantDeclaration, InputDeclaration, MemoryGrantDeclaration};
 
 use super::*;
 use crate::test_support::{endowment, listing, shown};
@@ -531,7 +531,7 @@ fn caps_previews_every_stage_of_a_pipeline() {
 ///
 /// This is written as a sweep over the whole enum on purpose. The line used to read
 /// `matches!(e.prog, Prog::LeastAuthorityDemo)`, which is correct for the tree as it stands (`LeastAuthorityDemo` is the
-/// only `ArgSpec::Required` program) and silently wrong for the next one added: the shell would
+/// only `ProgramArgumentDeclaration::Required` program) and silently wrong for the next one added: the shell would
 /// print `arg (none)` and then hand the argument over anyway. A test naming `LeastAuthorityDemo` would have
 /// passed against the bug. A test that asks the manifest cannot.
 ///
@@ -550,14 +550,14 @@ fn the_arg_line_follows_the_manifest_for_every_program() {
     };
     for &prog in Prog::ALL {
         let m = prog.manifest();
-        let takes_arg = m.arg == ArgSpec::Required;
+        let takes_arg = m.arg == ProgramArgumentDeclaration::Required;
         let mut line = String::from(prog.name());
-        if let MemSpec::Required { min, .. } = m.mem {
+        if let MemoryGrantDeclaration::Required { min, .. } = m.mem {
             line.push_str(&std::format!(" --mem {min}"));
         }
         line.push_str(" 21");
-        let wants_a_name = matches!(m.input, InputSpec::Required { .. })
-            || matches!(m.file, FileSpec::Required { .. });
+        let wants_a_name = matches!(m.input, InputDeclaration::Required { .. })
+            || matches!(m.file, FileGrantDeclaration::Required { .. });
         if wants_a_name {
             line.push_str(" report.txt");
         }
@@ -749,9 +749,9 @@ fn a_manifest_note_names_the_kind_of_output_it_asks_for() {
             write_note_asks(Some(m), o);
         })
     };
-    assert!(asks(OutputSpec::Words).contains("asks for: a word of output"));
-    assert!(asks(OutputSpec::Silent).contains("asks for: no output"));
-    assert!(asks(OutputSpec::Bytes).contains("asks for: output bytes"));
+    assert!(asks(OutputDeclaration::Words).contains("asks for: a word of output"));
+    assert!(asks(OutputDeclaration::Silent).contains("asks for: no output"));
+    assert!(asks(OutputDeclaration::Bytes).contains("asks for: output bytes"));
 }
 
 /// **A slot number's column is three wide**, so the kind after it lines up: two spaces after a

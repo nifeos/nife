@@ -27,7 +27,7 @@
 //!   table ranks on, so `top` would report itself as the busiest thread.
 //! - No `%CPU`: a percentage needs two samples, and a cumulative one against uptime is the
 //!   wall-clock-age error §150 refused. `TIME(ms)` is the cumulative figure, as Unix's `TIME+`.
-//! - No top *N*: `ArgSpec` cannot declare an optional integer.
+//! - No top *N*: `ProgramArgumentDeclaration` cannot declare an optional integer.
 //! - The summary counts this domain, not the machine, because nothing here is ambient.
 //! - Ties break by tid, so a quiet machine ranks in slot order.
 //!

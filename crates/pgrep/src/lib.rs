@@ -25,7 +25,7 @@
 //! # BUGS
 //!
 //! - The selector cannot be typed at the prompt: a command line delivers capabilities and a few
-//!   words, never bytes, so the shipped `pgrep` is `pgrep '*'` until `ArgSpec` gains positional
+//!   words, never bytes, so the shipped `pgrep` is `pgrep '*'` until `ProgramArgumentDeclaration` gains positional
 //!   arguments.
 //! - It is glob, not an extended regex (no regex engine here, §46 (thin primitives or whole
 //!   subsystems)), so `pgrep 'r*'` works and `pgrep 'r.*'` does not; matched with
@@ -97,7 +97,7 @@ impl Selector {
     /// This is the one place zero is generous, and the asymmetry with [`of`](Selector::of) is
     /// deliberate. A program is started with its registers zeroed by whoever did not think about
     /// them (`system_initializer` starts every child `start_child(child, 0, arg, 0)` and the shell
-    /// leaves `arg` at zero for a program whose `ArgSpec` is `Forbidden`), so "nobody said" has to
+    /// leaves `arg` at zero for a program whose `ProgramArgumentDeclaration` is `Forbidden`), so "nobody said" has to
     /// mean "no filter" or `pgrep` would print nothing at the prompt and look broken.
     ///
     /// A **pattern** that matched no state must not collapse into the same value, because that

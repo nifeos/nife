@@ -77,7 +77,7 @@ its keep by there being one. A bundle that lists a page which has moved fails th
 The roadmap proposed that "the viewer holds a directory capability to the doc store". It should not,
 and does not.
 
-`mdr`'s manifest is byte-identical to `wc`'s: `InputSpec::Required`, `OutputSpec::Bytes`, and
+`mdr`'s manifest is byte-identical to `wc`'s: `InputDeclaration::Required`, `OutputDeclaration::Bytes`, and
 `Forbidden` for argument, memory, file and directory. Its capability table holds two endpoints. `mdr
 glob.md` is the shell resolving that name against the directory capability *it* holds and streaming
 the bytes in. Nothing in the program names a file, a directory or the filesystem, and there is no

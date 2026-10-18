@@ -81,7 +81,7 @@ pub const SHIPPED_HELD: Held = Held {
 /// # BUGS
 ///
 /// **[`Unbacked::File`] is reached only through a streamed operand** (`wc report.txt`), never
-/// through `Endowment::file`, because no shipped program declares a `FileSpec::Required`.
+/// through `Endowment::file`, because no shipped program declares a `FileGrantDeclaration::Required`.
 /// `grant_plan` keeps that branch live with a fixture of its own rather than a program.
 ///
 /// Fixed 2026-09-26 by milestone 129 (scheduled execution): `admit` used to plan against the scheduler's own `dir`, so a
@@ -110,7 +110,7 @@ pub enum Unbacked {
     Interrupt,
     /// The entry's `--mem` grant is larger than this scheduler's whole budget. An entry cannot ask
     /// for more than the scheduler was given, and that ceiling is the scheduler's rather than the
-    /// program manifest's, which is why the manifest's own `MemSpec` range did not catch it.
+    /// program manifest's, which is why the manifest's own `MemoryGrantDeclaration` range did not catch it.
     Memory,
     /// The line is a calendar entry, and this timetable holds no clock to keep a time of day by.
     /// Unlike [`Unbacked::Clock`] this is the timetable's own need, whatever the program is.
@@ -218,7 +218,7 @@ fn admit_installed(command: &[u8], m: Manifest, held: Held) -> Admission {
 
 /// **Whether a timetable can build a program that carries `m` at all**, before any line is planned
 /// against it: what an image request can carry (`grant_plan::image_can_carry`), less what no
-/// timetable endows. An argv (`grant_plan::ArgSpec::Words`), entropy, the network and a
+/// timetable endows. An argv (`grant_plan::ProgramArgumentDeclaration::Words`), entropy, the network and a
 /// configuration page have no slot in `components/src/timetable.rs`'s `fire`, and the verdicts a
 /// page carries have no word for them, so an installed program declaring one is refused when its
 /// document is resolved rather than planned. Name: provisional.
@@ -334,7 +334,7 @@ mod tests {
         // simply have run.
         assert_eq!(rows[2].admission, Admission::Unbacked(Unbacked::Clock));
         // `wc` reads a stream, and `grant_plan` refuses that at the prompt already
-        // (`InputSpec::Required` with nothing feeding it). It arrives here as the shell's own
+        // (`InputDeclaration::Required` with nothing feeding it). It arrives here as the shell's own
         // refusal rather than as an `Unbacked`, which is the right shape: one authority decides
         // whether a line is runnable, and this crate only adds the question the shell cannot ask,
         // which is what the *scheduler* holds.
@@ -415,7 +415,7 @@ mod tests {
     /// `unbacked` then re-tested, and the mutants that deleted both `!`s survived on exactly that;
     /// `a_designation_the_scheduler_cannot_back_is_unbacked_rather_than_refused` now reaches them
     /// through `register`. `e.file` has no route in at all, since no shipped program declares a
-    /// `FileSpec::Required`, so the grant below is lifted off a real `wc` plan rather than forged.
+    /// `FileGrantDeclaration::Required`, so the grant below is lifted off a real `wc` plan rather than forged.
     #[test]
     fn a_designation_is_backed_by_the_directory_the_scheduler_holds() {
         let doc = parse("every 5s rm -r logs\nevery 5s wc report.txt\n").unwrap();

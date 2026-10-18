@@ -8,8 +8,9 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, Manifest, MemSpec,
-    NO_FLAGS, OutputSpec, Prog, Runtime, VerbGrant, WordGrant, verbs,
+    DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, Flags,
+    IndexStoreDeclaration, InputDeclaration, Manifest, MemoryGrantDeclaration, NO_FLAGS,
+    OutputDeclaration, Prog, ProgramArgumentDeclaration, Runtime, VerbGrant, WordGrant, verbs,
 };
 
 impl Prog {
@@ -78,16 +79,16 @@ impl Prog {
 /// The manifest of `least_authority_demo`, [`Prog::LeastAuthorityDemo`].
 const fn least_authority_demo_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Required,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Required,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // A least_authority_demo answers with a number in a register, which is older than the sink
         // contract and still the right shape for one integer. It is also why `least_authority_demo 9 >
         // out.txt` is refused: there are no bytes to put in the file.
-        output: OutputSpec::Words,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Words,
+        input: InputDeclaration::Forbidden,
         reports: true,
         // A least_authority_demo finishes in one step; there is no long computation to interrupt, so it
         // is granted no interrupt channel. The shell waits for its result and no ^C tier
@@ -104,7 +105,7 @@ const fn least_authority_demo_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -112,17 +113,17 @@ const fn least_authority_demo_manifest() -> Manifest {
 /// The manifest of `memory_grant_depleter`, [`Prog::MemoryGrantDepleter`].
 const fn memory_grant_depleter_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
         // A budget between 1 and 64 pages. The lower bound makes "memory_grant_depleter with no --mem"
         // a refusal (it exists to spend memory); the upper bound is a sanity ceiling the
         // shell's own budget can actually back.
-        mem: MemSpec::Required { min: 1, max: 64 },
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        mem: MemoryGrantDeclaration::Required { min: 1, max: 64 },
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // The page count it managed to map, in a register. Same reason as least_authority_demo's.
-        output: OutputSpec::Words,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Words,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -136,7 +137,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -148,16 +149,16 @@ const fn memory_grant_depleter_manifest() -> Manifest {
 /// The manifest of `interrupt_heeder`, [`Prog::InterruptHeeder`].
 const fn interrupt_heeder_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // It reports through the shared job frame and holds no output capability at all,
-        // which is a third thing a slot can be and the reason `OutputSpec` has three
+        // which is a third thing a slot can be and the reason `OutputDeclaration` has three
         // variants: `Silent` is not "bytes nobody reads", it is no slot.
-        output: OutputSpec::Silent,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Silent,
+        input: InputDeclaration::Forbidden,
         reports: false,
         interruptible: true,
         clock: false,
@@ -171,7 +172,7 @@ const fn interrupt_heeder_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -179,13 +180,13 @@ const fn interrupt_heeder_manifest() -> Manifest {
 /// The manifest of `interrupt_ignorer`, [`Prog::InterruptIgnorer`].
 const fn interrupt_ignorer_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Silent,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Silent,
+        input: InputDeclaration::Forbidden,
         reports: false,
         interruptible: true,
         clock: false,
@@ -199,7 +200,7 @@ const fn interrupt_ignorer_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -207,22 +208,22 @@ const fn interrupt_ignorer_manifest() -> Manifest {
 // `date` declares an empty grant expression, and that is the interesting part: its
 // authority (a read-only mapping of the clock page) is not something the command line
 // can hand over, so there is nothing to type and nothing to forbid getting wrong.
-// `FileSpec::Forbidden` and `MemSpec::Forbidden` are the load-bearing half: a clock
+// `FileGrantDeclaration::Forbidden` and `MemoryGrantDeclaration::Forbidden` are the load-bearing half: a clock
 // reader has no use for either, so naming one is refused rather than granted-and-
 // ignored. It reports through the shared result endpoint, one framed line of text.
 //
-// `ArgSpec::Forbidden` is a **deliberate under-declaration**: `date` reads three
+// `ProgramArgumentDeclaration::Forbidden` is a **deliberate under-declaration**: `date` reads three
 // registers (format, UTC offset, provenance), and a manifest that could express that
 // needs positional arity, which milestone 47 explicitly defers. So the shell spawns it
 // with the defaults (`Human`, UTC, no provenance line), which is the `date` a person
-// typing `date` wants; the selectors arrive when `ArgSpec` grows.
+// typing `date` wants; the selectors arrive when `ProgramArgumentDeclaration` grows.
 /// The manifest of `date`, [`Prog::Date`].
 const fn date_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // **`date` was speaking the sink contract before the contract existed**, because
         // its hand-rolled framing is bit for bit a `BYTES` message (notes/sink-protocol.md
@@ -236,10 +237,10 @@ const fn date_manifest() -> Manifest {
         // `date > when.txt` on a clockless machine wrote it into the file. Declaring the
         // second output is what lets `2>` name where it goes, and what makes the default
         // (the shell prints it) a different place from where the answer went.
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         // **The one program in this table that declares a clock**, and the reason the field
@@ -256,7 +257,7 @@ const fn date_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -272,10 +273,10 @@ const fn date_manifest() -> Manifest {
 /// The manifest of `rm`, [`Prog::Rm`].
 const fn rm_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Required {
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Required {
             subtree_flag: Some(b'r'),
         },
         // In `rmopt`'s bit order, which is what that module pins.
@@ -283,8 +284,8 @@ const fn rm_manifest() -> Manifest {
         // `-v` prints names, and it prints them the way `date` prints a time. Piping `rm
         // -rv logs | wc` is therefore expressible; whether it is a good idea is the user's
         // business and not the manifest's.
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -298,7 +299,7 @@ const fn rm_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -309,17 +310,17 @@ const fn rm_manifest() -> Manifest {
 /// The manifest of `wc`, [`Prog::Wc`].
 const fn wc_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
+        output: OutputDeclaration::Bytes,
         // **The barrier**, and the only one in this tree. `wc` prints nothing until end of
         // stream, which is what lets this shell feed it and read it back with the one wait
-        // point a process has. See [`InputSpec::Required::writes_while_reading`]: a filter
+        // point a process has. See [`InputDeclaration::Required::writes_while_reading`]: a filter
         // that answered as it read could not be run this way at all.
-        input: InputSpec::Required {
+        input: InputDeclaration::Required {
             writes_while_reading: false,
         },
         reports: true,
@@ -335,7 +336,7 @@ const fn wc_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -351,13 +352,13 @@ const fn wc_manifest() -> Manifest {
 /// The manifest of `mdr`, [`Prog::Mdr`].
 const fn mdr_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Required {
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Required {
             writes_while_reading: true,
         },
         reports: true,
@@ -373,7 +374,7 @@ const fn mdr_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -385,22 +386,22 @@ const fn mdr_manifest() -> Manifest {
 // what this program sees. Its whole authority is `domain`, which the progenitor endows and the
 // command line cannot name, exactly as `date`'s clock is.
 //
-// `OutputSpec::BytesAndDiagnostics` because a refusal and a listing must not travel on
+// `OutputDeclaration::BytesAndDiagnostics` because a refusal and a listing must not travel on
 // the same stream: `ps > running.txt` on a domain it was not granted has to leave the
 // file empty and put the reason on the terminal, which is the whole of DECISIONS §67
-// applied to a monitor. `InputSpec::Forbidden` because a snapshot reads nothing.
+// applied to a monitor. `InputDeclaration::Forbidden` because a snapshot reads nothing.
 /// The manifest of `ps`, [`Prog::Ps`].
 const fn ps_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -414,7 +415,7 @@ const fn ps_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -428,7 +429,7 @@ const fn ps_manifest() -> Manifest {
 // there is no such pair here: a tid is a name, and killing a live child is
 // `MemoryRegion::DESTROY` on its region, held by whoever spawned it (DECISIONS §24).
 //
-// `ArgSpec::Forbidden` is `date`'s deliberate under-declaration, not an oversight.
+// `ProgramArgumentDeclaration::Forbidden` is `date`'s deliberate under-declaration, not an oversight.
 // `pgrep` reads a state mask out of the integer-argument register, and a *pattern* is
 // bytes, which nothing in this system carries from a command line to a program. So the
 // prompt sends the default and `pgrep` names every member; see `crates/pgrep`'s `BUGS`
@@ -436,15 +437,15 @@ const fn ps_manifest() -> Manifest {
 /// The manifest of `pgrep`, [`Prog::Pgrep`].
 const fn pgrep_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -458,7 +459,7 @@ const fn pgrep_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -474,15 +475,15 @@ const fn pgrep_manifest() -> Manifest {
 /// The manifest of `top`, [`Prog::Top`].
 const fn top_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -496,7 +497,7 @@ const fn top_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -507,13 +508,13 @@ const fn top_manifest() -> Manifest {
 /// The manifest of `printenv`, [`Prog::Printenv`].
 const fn printenv_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -527,27 +528,27 @@ const fn printenv_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
 
 // **`least_authority_demo`'s manifest, not `date`'s.** `uptime` reads `user_mode_runtime::monotonic_nanos`,
 // which is granted to every process unconditionally, so there is no capability here to
-// declare: no clock, no domain, no memory, no file. `OutputSpec::Bytes` rather than
+// declare: no clock, no domain, no memory, no file. `OutputDeclaration::Bytes` rather than
 // `BytesAndDiagnostics` because the program cannot fail (the counter is always there to
 // read), so there is nothing a second stream would ever carry; `wc`'s manifest makes the
 // same call for the same reason.
 /// The manifest of `uptime`, [`Prog::Uptime`].
 const fn uptime_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -561,7 +562,7 @@ const fn uptime_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -575,13 +576,13 @@ const fn uptime_manifest() -> Manifest {
 /// The manifest of `network_echo_client`, [`Prog::NetworkEchoClient`].
 const fn network_echo_client_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Required { min: 4, max: 16 },
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Required { min: 4, max: 16 },
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -595,7 +596,7 @@ const fn network_echo_client_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -605,13 +606,13 @@ const fn network_echo_client_manifest() -> Manifest {
 /// The manifest of `unreachable_network_witness`, [`Prog::UnreachableNetworkWitness`].
 const fn unreachable_network_witness_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -625,7 +626,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -636,7 +637,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
 // reaches, and its whole authority is `entropy`, which the progenitor endows and the command line
 // cannot name.
 //
-// `OutputSpec::BytesAndDiagnostics` is load-bearing rather than copied. `uuid` has
+// `OutputDeclaration::BytesAndDiagnostics` is load-bearing rather than copied. `uuid` has
 // exactly one way to fail (it was spawned holding no entropy capability), and the
 // failure must not travel on the byte stream: `uuid > id.txt` on a boot with no entropy
 // service has to leave the file empty and put the reason on the terminal, because a
@@ -645,15 +646,15 @@ const fn unreachable_network_witness_manifest() -> Manifest {
 /// The manifest of `uuid`, [`Prog::Uuid`].
 const fn uuid_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -667,7 +668,7 @@ const fn uuid_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -678,15 +679,15 @@ const fn uuid_manifest() -> Manifest {
 /// The manifest of `free`, [`Prog::Free`].
 const fn free_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -700,7 +701,7 @@ const fn free_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -710,15 +711,15 @@ const fn free_manifest() -> Manifest {
 /// The manifest of `vmstat`, [`Prog::Vmstat`].
 const fn vmstat_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -732,7 +733,7 @@ const fn vmstat_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -741,15 +742,15 @@ const fn vmstat_manifest() -> Manifest {
 /// The manifest of `slabtop`, [`Prog::Slabtop`].
 const fn slabtop_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -763,7 +764,7 @@ const fn slabtop_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -771,16 +772,16 @@ const fn slabtop_manifest() -> Manifest {
 /// The manifest of `graphical_terminal`, [`Prog::GraphicalTerminal`].
 const fn graphical_terminal_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // A session reports one word when it ends (it ran, or it was interrupted); there is
         // no byte stream to redirect, and `graphical_terminal > out.txt` is refused for the same reason
         // `least_authority_demo 9 > out.txt` is.
-        output: OutputSpec::Words,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Words,
+        input: InputDeclaration::Forbidden,
         reports: true,
         // Not the §24 supervised shape in this first cut: the session ends on its own
         // (`^C` reaches it through its terminal, in either arm) rather than through a job
@@ -797,7 +798,7 @@ const fn graphical_terminal_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -812,15 +813,15 @@ const fn graphical_terminal_manifest() -> Manifest {
 /// The manifest of `reboot`, [`Prog::Reboot`].
 const fn reboot_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::BytesAndDiagnostics {
+        output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
-        input: InputSpec::Forbidden,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         clock: false,
@@ -834,7 +835,7 @@ const fn reboot_manifest() -> Manifest {
         sync: true,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Native,
     }
 }
@@ -845,18 +846,18 @@ const fn std_exerciser_manifest() -> Manifest {
         // **The line's words are its argv** (milestone 205, DECISIONS §170): `std_exerciser
         // one 'two words'` prints what `std::env::args()` yielded, which is the transcript
         // proving the page reaches `std`.
-        arg: ArgSpec::Words(WordGrant::ReadOnly),
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
         // No directory. §170 ruled that a word's bytes carry no authority and that the
         // directories granted on the line bound what they reach; this program is spawned
         // holding none and runs its offline transcript, the one that asserts the most slots.
-        dir: DirSpec::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
         // std's `stdout` and `stderr` both send on `std_runtime_contract::STDOUT_SLOT` in
         // the sink framing, so the program is one byte stream and `>` and `|` work on it.
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         // The three `std` needs to answer `SystemTime::now()`, `SystemRng` and
@@ -872,7 +873,7 @@ const fn std_exerciser_manifest() -> Manifest {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime: Runtime::Std,
     }
 }
@@ -883,13 +884,13 @@ const fn jig_manifest() -> Manifest {
         // **Its words are its verb and operands** (milestone 205, DECISIONS §170): `jig
         // install downloads/noteless.nifepkg` designates the file read-only, as `std_grep`'s
         // words do, and a word with no `/` is a package name, which designates nothing.
-        arg: ArgSpec::Words(WordGrant::ReadOnly),
-        mem: MemSpec::Forbidden,
-        file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+        mem: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        dir: DirectoryGrantDeclaration::Forbidden,
         flags: NO_FLAGS,
-        output: OutputSpec::Bytes,
-        input: InputSpec::Forbidden,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
         reports: true,
         interruptible: false,
         // TLS to the index (milestone 801): a certificate's dates are checked against the
@@ -910,7 +911,7 @@ const fn jig_manifest() -> Manifest {
         catalog: true,
         // The index copy it writes at `update` and resolves a name against after that
         // (milestone 801 (packages over the internet), ruling I2).
-        indexes: IndexStore::ReadWrite,
+        indexes: IndexStoreDeclaration::ReadWrite,
         runtime: Runtime::Std,
     }
 }

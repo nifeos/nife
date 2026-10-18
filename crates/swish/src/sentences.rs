@@ -264,7 +264,7 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
             out(b"\n");
         }
         // **Every other program answers somewhere else, so there is nothing to render here.** Only a
-        // program whose manifest says `OutputSpec::Words` answers in a register, and those are
+        // program whose manifest says `OutputDeclaration::Words` answers in a register, and those are
         // the arms above. Supervised jobs report through the job frame and the interruptible path;
         // byte-stream programs (`date`, `wc`, `ps`, ...) are drained by the byte-stream reader
         // before this is reached.

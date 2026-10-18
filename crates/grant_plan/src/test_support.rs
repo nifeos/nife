@@ -26,16 +26,16 @@ pub(crate) fn plan_against(
 }
 
 /// A manifest no shipped program declares yet: one endowed a readable file. Checked through
-/// [`plan_against`] so the `FileSpec::Required` logic is live and tested rather than a branch
+/// [`plan_against`] so the `FileGrantDeclaration::Required` logic is live and tested rather than a branch
 /// nothing reaches, which is the same door milestone 23 will come through.
 pub(crate) const READS_A_FILE: Manifest = Manifest {
-    arg: ArgSpec::Forbidden,
-    mem: MemSpec::Forbidden,
-    file: FileSpec::Required { writable: false },
-    dir: DirSpec::Forbidden,
+    arg: ProgramArgumentDeclaration::Forbidden,
+    mem: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Required { writable: false },
+    dir: DirectoryGrantDeclaration::Forbidden,
     flags: NO_FLAGS,
-    output: OutputSpec::Words,
-    input: InputSpec::Forbidden,
+    output: OutputDeclaration::Words,
+    input: InputDeclaration::Forbidden,
     reports: true,
     interruptible: false,
     clock: false,
@@ -49,7 +49,7 @@ pub(crate) const READS_A_FILE: Manifest = Manifest {
     sync: false,
     installer: false,
     catalog: false,
-    indexes: IndexStore::Forbidden,
+    indexes: IndexStoreDeclaration::Forbidden,
     runtime: Runtime::Native,
 };
 

@@ -73,8 +73,8 @@ fn the_recursion_option_is_what_widens_the_grant() {
 /// `rm` declares `r` first, so its bit is zero, where `1 << bit` and every wrong spelling of it
 /// agree. Through [`plan_against`], the door an external manifest (milestone 23) comes through.
 const SWEEPS_A_TREE: Manifest = Manifest {
-    file: FileSpec::Forbidden,
-    dir: DirSpec::Required {
+    file: FileGrantDeclaration::Forbidden,
+    dir: DirectoryGrantDeclaration::Required {
         subtree_flag: Some(b'r'),
     },
     // `r` deliberately second, so the widening reads bit 1.
@@ -481,9 +481,9 @@ fn a_program_that_hears_words_places_no_positional_grant() {
         hearing += 1;
         let name = p.name();
         assert_eq!(m.runtime, Runtime::Std, "{name}: only std reads an argv");
-        assert_eq!(m.file, FileSpec::Forbidden, "{name}");
-        assert_eq!(m.dir, DirSpec::Forbidden, "{name}");
-        assert_eq!(m.input, InputSpec::Forbidden, "{name}");
+        assert_eq!(m.file, FileGrantDeclaration::Forbidden, "{name}");
+        assert_eq!(m.dir, DirectoryGrantDeclaration::Forbidden, "{name}");
+        assert_eq!(m.input, InputDeclaration::Forbidden, "{name}");
         assert!(
             m.flags.letters().is_empty(),
             "{name}: its options are its own"

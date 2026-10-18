@@ -68,7 +68,7 @@ One line from each of the first six rows, quoted as found, bare numbers and all:
 crates/timetable/src/lib.rs           a cron whose every entry is a grant** (milestone 129).
 crates/clock_contract/src/lib.rs      it was missing here until milestone 80's loom run found it
 crates/grant_plan/src/program/catalog.rs
-                                      until ArgSpec grows the positional arity milestone 47 deferred
+                                      until ProgramArgumentDeclaration grows the positional arity milestone 47 deferred
 xtask/src/bench.rs                    still refuses `--arch x86_64`, because milestone 78's claims
                                       compare an interrupt's arrival
 system_tests/src/user/c_thread_tests.rs

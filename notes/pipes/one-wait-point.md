@@ -41,7 +41,7 @@ And a fourth, underneath: even with a page arriving, the shell printed at most 5
 
 A named file did not reach a pipeline stage. `wc report.txt` is `wc < report.txt` with the
 operator left out, and the resolution is the planner's, because deciding that a trailing
-positional is a stream needs the manifest (`InputSpec::Required` plus a bare token, in
+positional is a stream needs the manifest (`InputDeclaration::Required` plus a bare token, in
 `grant_plan::plan_against_with`). `run` read that answer off the plan. `pipeline` did not: it wired
 the head's input off the `Line`, which has no `<` on it, so a planned `Source::File` was thrown away
 and the stage was spawned with an empty input slot.
@@ -58,7 +58,7 @@ That is why nothing caught it, and it is the shape to recognize: an empty capabi
 byte stream reads as an empty stream, everywhere, by construction. There is no reader in this
 system that can tell "nobody granted me an input" from "the input was empty", because the sink
 contract deliberately gives a reader nothing to ask with. The check that can tell them apart is the
-shell's, at plan time, which is where `InputSpec` already lives.
+shell's, at plan time, which is where `InputDeclaration` already lives.
 
 Nothing caught it because the only line anybody had typed with an operand *and* an operator on it
 was `wc out.txt`, which is one stage and goes down `run`. `wc out.txt | wc` is now in the guest test
@@ -118,7 +118,7 @@ completes, and only then does anything travel back.
 
 `wc` is a barrier and is the only one in this tree, which is exactly why nobody found this until a
 second reader existed. So it is now a manifest declaration, in the shape DECISIONS §67 used for the
-second output stream: `InputSpec::Required { writes_while_reading }`, carried onto the `Endowment`,
+second output stream: `InputDeclaration::Required { writes_while_reading }`, carried onto the `Endowment`,
 and checked over a whole planned line by `grant_plan::check_chain`. That is because the barrier may
 be any stage in the chain and no single stage can answer the question.
 

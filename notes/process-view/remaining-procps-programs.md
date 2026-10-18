@@ -140,7 +140,7 @@ How it would wait, checked in `kernel/src/syscall.rs`:
   the kernel, it is a yield-spin, the same cost that got `watch` cut.
 
 And there is nothing to wait for from the prompt yet: `pgrep` cannot be given a pattern at all,
-since its manifest is `ArgSpec::Forbidden` until milestone 47 (navigation and naming) grows
+since its manifest is `ProgramArgumentDeclaration::Forbidden` until milestone 47 (navigation and naming) grows
 positional arity.
 
 Considered and refused: no `pidwait` program, only a wait mode on `pgrep` once milestone 106 (a wait

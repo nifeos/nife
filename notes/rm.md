@@ -1,7 +1,7 @@
 # `rm`, `rm -r`, and why removal needs a directory
 
 Milestone 47. Built 2026-07-31. The contract side is `filesystem_contract::fs::RMDIR`; the program is
-`components/src/rm.rs`; the grant is `grant_plan::DirSpec`.
+`components/src/rm.rs`; the grant is `grant_plan::DirectoryGrantDeclaration`.
 
 ## Removal is an operation on the directory, not on the file
 
@@ -10,12 +10,12 @@ A name lives in a directory, so removing it is an operation on the directory tha
 report.txt` can be granted the file; `rm report.txt` cannot.
 
 So `rm` is the first program granted a directory rather than a file, which is why `Manifest`
-grew `DirSpec` alongside `FileSpec`. The child receives a capability to the directory the name is
+grew `DirectoryGrantDeclaration` alongside `FileGrantDeclaration`. The child receives a capability to the directory the name is
 *in*, plus the name.
 
 ## `-r` widens the grant, and that is the whole safety property
 
-`DirSpec::Required { subtree_flag: Some(b'r') }`. Without the flag, the capability carries the
+`DirectoryGrantDeclaration::Required { subtree_flag: Some(b'r') }`. Without the flag, the capability carries the
 authority to take names out of one directory and nothing else: it cannot list what is under a
 subdirectory and cannot descend into one. With the flag, it widens to walking and listing underneath,
 which is what a recursive removal needs at every level.

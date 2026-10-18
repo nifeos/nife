@@ -148,7 +148,7 @@ about one, so they hold whichever way the deferred question is eventually answer
 1. Rung-one mechanisms are exempt by construction. `AGENTS.md`'s ladder puts *make the wrong
    state unrepresentable* at the top, and its worked example is
    milestone 50 (pipes and redirection), which turned
-   `InputSpec::Required` into a variant that carries `writes_while_reading`, so a program that
+   `InputDeclaration::Required` into a variant that carries `writes_while_reading`, so a program that
    writes while it reads cannot be declared without saying so. That mechanism will catch zero
    things forever, because the defect it prevents cannot be typed. A zero-catch count on a rung-one
    mechanism is the mechanism working perfectly. This test applies only to mechanisms that operate

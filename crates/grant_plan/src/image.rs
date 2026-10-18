@@ -7,8 +7,9 @@
 //! ratchet; the root re-exports every item at its old path.
 
 use crate::{
-    ArgSpec, DirSpec, FileSpec, IndexStore, InputSpec, Manifest, MemSpec, OutputSpec, Prog,
-    Runtime, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST,
+    DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
+    Manifest, MemoryGrantDeclaration, OutputDeclaration, Prog, ProgramArgumentDeclaration, Runtime,
+    UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST,
 };
 
 /// **What a file's bytes are bound and endowed with when they carry no manifest note** (milestone
@@ -63,17 +64,17 @@ pub enum ImageRefusal {
 /// needs. `spawnproto`'s BUGS carries each.
 ///
 /// **A `std` image is carried when it hears words, and only then** (milestone 205 (how a foreign
-/// program is told what to do)): `Runtime::Std` and [`ArgSpec::Words`] go together or not at all.
+/// program is told what to do)): `Runtime::Std` and [`ProgramArgumentDeclaration::Words`] go together or not at all.
 /// The progenitor sizes an image's region before its frames arrive, so before it can read the note,
 /// and the one thing the request tells it is whether an argv follows (`spawnproto::ARGS_BIT`). Tying
 /// the two makes that bit the region's size: [`image_hears_words`]. A `std` image also declares no
 /// memory grant, domain or network, which is what the `std` layout can hold.
 pub fn image_can_carry(m: &Manifest) -> bool {
     let std = m.runtime == Runtime::Std;
-    matches!(m.output, OutputSpec::Bytes | OutputSpec::Words)
-        && m.file == FileSpec::Forbidden
-        && m.dir == DirSpec::Forbidden
-        && m.input == InputSpec::Forbidden
+    matches!(m.output, OutputDeclaration::Bytes | OutputDeclaration::Words)
+        && m.file == FileGrantDeclaration::Forbidden
+        && m.dir == DirectoryGrantDeclaration::Forbidden
+        && m.input == InputDeclaration::Forbidden
         && m.flags.letters().is_empty()
         && !m.interruptible
         // Milestone 805: the reboot object is endowed to the one program in this table that
@@ -87,11 +88,11 @@ pub fn image_can_carry(m: &Manifest) -> bool {
         && !m.catalog
         // Milestone 801 (packages over the internet): the index store is the owner's console's to
         // grant, as the installer is.
-        && m.indexes == IndexStore::Forbidden
+        && m.indexes == IndexStoreDeclaration::Forbidden
         && std == (m.arg.hears_words())
         && (!std
-            || (m.output == OutputSpec::Bytes
-                && m.mem == MemSpec::Forbidden
+            || (m.output == OutputDeclaration::Bytes
+                && m.mem == MemoryGrantDeclaration::Forbidden
                 && !m.domain
                 && !m.network))
 }
@@ -148,10 +149,10 @@ pub fn image_request_fits(m: &Manifest, arg: u64, mem_pages: u64, words: bool) -
     if words != image_hears_words(m) {
         return false;
     }
-    let arg_ok = m.arg == ArgSpec::Required || arg == 0;
+    let arg_ok = m.arg == ProgramArgumentDeclaration::Required || arg == 0;
     let mem_ok = match m.mem {
-        MemSpec::Forbidden => mem_pages == 0,
-        MemSpec::Required { min, max } => mem_pages >= min && mem_pages <= max,
+        MemoryGrantDeclaration::Forbidden => mem_pages == 0,
+        MemoryGrantDeclaration::Required { min, max } => mem_pages >= min && mem_pages <= max,
     };
     arg_ok && mem_ok
 }

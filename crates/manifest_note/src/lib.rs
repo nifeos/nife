@@ -70,8 +70,9 @@
 #![no_std]
 
 use grant_plan::{
-    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, MAX_DECLARED_FLAGS,
-    Manifest, MemSpec, OutputSpec, Runtime, WordGrant,
+    DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, Flags,
+    IndexStoreDeclaration, InputDeclaration, MAX_DECLARED_FLAGS, Manifest, MemoryGrantDeclaration,
+    OutputDeclaration, ProgramArgumentDeclaration, Runtime, WordGrant,
 };
 
 /// **The note's owner string**, without its NUL: the project's name, lowercase as
@@ -201,7 +202,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     );
     // Milestone 801 (packages over the internet): the index store likewise, for the same reason.
     assert!(
-        matches!(m.indexes, IndexStore::Forbidden),
+        matches!(m.indexes, IndexStoreDeclaration::Forbidden),
         "a manifest note cannot carry `indexes`: only the owner's console grants the index store"
     );
     let mut out = [0u8; DESCRIPTOR_LEN];
@@ -211,27 +212,27 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[2] = v[2];
     out[3] = v[3];
     out[ARG] = match m.arg {
-        ArgSpec::Forbidden => 0,
-        ArgSpec::Required => 1,
+        ProgramArgumentDeclaration::Forbidden => 0,
+        ProgramArgumentDeclaration::Required => 1,
         // A program whose line is its argv (milestone 205 (how a foreign program is told what to
         // do), §170 (how a foreign program is told what to do)). Added to version 1 in place on 2026-09-27; see the module's "one encoding"
         // paragraph for calef's ruling.
-        ArgSpec::Words(WordGrant::ReadOnly) => 2,
-        ArgSpec::Words(WordGrant::ReadWrite) => 3,
-        ArgSpec::Words(WordGrant::Create) => 4,
+        ProgramArgumentDeclaration::Words(WordGrant::ReadOnly) => 2,
+        ProgramArgumentDeclaration::Words(WordGrant::ReadWrite) => 3,
+        ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
     };
-    if let MemSpec::Required { min, max } = m.mem {
+    if let MemoryGrantDeclaration::Required { min, max } = m.mem {
         out[MEM] = 1;
         put8(&mut out, MEM_MIN, min);
         put8(&mut out, MEM_MAX, max);
     }
     out[FILE] = match m.file {
-        FileSpec::Forbidden => 0,
-        FileSpec::Required { writable: false } => 1,
-        FileSpec::Required { writable: true } => 2,
+        FileGrantDeclaration::Forbidden => 0,
+        FileGrantDeclaration::Required { writable: false } => 1,
+        FileGrantDeclaration::Required { writable: true } => 2,
     };
     let letters = m.flags.letters();
-    if let DirSpec::Required { subtree_flag } = m.dir {
+    if let DirectoryGrantDeclaration::Required { subtree_flag } = m.dir {
         out[DIR] = 1;
         if let Some(letter) = subtree_flag {
             let mut i = 0;
@@ -248,10 +249,10 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         }
     }
     out[OUTPUT] = match m.output {
-        OutputSpec::Silent => 0,
-        OutputSpec::Words => 1,
-        OutputSpec::Bytes => 2,
-        OutputSpec::BytesAndDiagnostics { slot } => {
+        OutputDeclaration::Silent => 0,
+        OutputDeclaration::Words => 1,
+        OutputDeclaration::Bytes => 2,
+        OutputDeclaration::BytesAndDiagnostics { slot } => {
             assert!(
                 slot == DIAGNOSTICS_SLOT,
                 "a second stream lands at grant_plan::DIAGNOSTICS_SLOT"
@@ -259,7 +260,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
             3
         }
     };
-    if let InputSpec::Required {
+    if let InputDeclaration::Required {
         writes_while_reading,
     } = m.input
     {
@@ -380,59 +381,59 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         sync: false,
         installer: false,
         catalog: false,
-        indexes: IndexStore::Forbidden,
+        indexes: IndexStoreDeclaration::Forbidden,
         runtime,
     })
 }
 
 /// The `arg` field.
-fn decode_arg(d: &[u8]) -> Result<ArgSpec, Error> {
+fn decode_arg(d: &[u8]) -> Result<ProgramArgumentDeclaration, Error> {
     Ok(match d[ARG] {
-        0 => ArgSpec::Forbidden,
-        1 => ArgSpec::Required,
-        2 => ArgSpec::Words(WordGrant::ReadOnly),
-        3 => ArgSpec::Words(WordGrant::ReadWrite),
-        4 => ArgSpec::Words(WordGrant::Create),
+        0 => ProgramArgumentDeclaration::Forbidden,
+        1 => ProgramArgumentDeclaration::Required,
+        2 => ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+        3 => ProgramArgumentDeclaration::Words(WordGrant::ReadWrite),
+        4 => ProgramArgumentDeclaration::Words(WordGrant::Create),
         _ => return Err(Error::BadField(ARG)),
     })
 }
 
 /// The `mem` field and its bounds, which are zero when it is absent.
-fn decode_mem(d: &[u8]) -> Result<MemSpec, Error> {
+fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
     Ok(match d[MEM] {
         0 => {
             zero(d, MEM_MIN, 16)?;
-            MemSpec::Forbidden
+            MemoryGrantDeclaration::Forbidden
         }
         1 => {
             let (min, max) = (get8(d, MEM_MIN), get8(d, MEM_MAX));
             if min > max {
                 return Err(Error::BadField(MEM_MIN));
             }
-            MemSpec::Required { min, max }
+            MemoryGrantDeclaration::Required { min, max }
         }
         _ => return Err(Error::BadField(MEM)),
     })
 }
 
 /// The `file` field.
-fn decode_file(d: &[u8]) -> Result<FileSpec, Error> {
+fn decode_file(d: &[u8]) -> Result<FileGrantDeclaration, Error> {
     Ok(match d[FILE] {
-        0 => FileSpec::Forbidden,
-        1 => FileSpec::Required { writable: false },
-        2 => FileSpec::Required { writable: true },
+        0 => FileGrantDeclaration::Forbidden,
+        1 => FileGrantDeclaration::Required { writable: false },
+        2 => FileGrantDeclaration::Required { writable: true },
         _ => return Err(Error::BadField(FILE)),
     })
 }
 
 /// The `dir` field and its subtree letter, which must be one of the declared `letters`.
-fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirSpec, Error> {
+fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirectoryGrantDeclaration, Error> {
     Ok(match d[DIR] {
         0 => {
             zero(d, SUBTREE, 1)?;
-            DirSpec::Forbidden
+            DirectoryGrantDeclaration::Forbidden
         }
-        1 => DirSpec::Required {
+        1 => DirectoryGrantDeclaration::Required {
             subtree_flag: match d[SUBTREE] {
                 0 => None,
                 l if letters.contains(&l) => Some(l),
@@ -444,12 +445,12 @@ fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirSpec, Error> {
 }
 
 /// The `output` field.
-fn decode_output(d: &[u8]) -> Result<OutputSpec, Error> {
+fn decode_output(d: &[u8]) -> Result<OutputDeclaration, Error> {
     Ok(match d[OUTPUT] {
-        0 => OutputSpec::Silent,
-        1 => OutputSpec::Words,
-        2 => OutputSpec::Bytes,
-        3 => OutputSpec::BytesAndDiagnostics {
+        0 => OutputDeclaration::Silent,
+        1 => OutputDeclaration::Words,
+        2 => OutputDeclaration::Bytes,
+        3 => OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
         _ => return Err(Error::BadField(OUTPUT)),
@@ -457,13 +458,13 @@ fn decode_output(d: &[u8]) -> Result<OutputSpec, Error> {
 }
 
 /// The `input` field and whether it writes while reading, which is zero when it is absent.
-fn decode_input(d: &[u8]) -> Result<InputSpec, Error> {
+fn decode_input(d: &[u8]) -> Result<InputDeclaration, Error> {
     Ok(match d[INPUT] {
         0 => {
             zero(d, WRITES_WHILE_READING, 1)?;
-            InputSpec::Forbidden
+            InputDeclaration::Forbidden
         }
-        1 => InputSpec::Required {
+        1 => InputDeclaration::Required {
             writes_while_reading: flag(d, WRITES_WHILE_READING)?,
         },
         _ => return Err(Error::BadField(INPUT)),
@@ -1090,7 +1091,11 @@ mod tests {
         for p in Prog::ALL {
             let m = p.manifest();
             // The two manifests with no note, by design (milestones 805 and 809): see `encode`.
-            if m.reboot || m.sync || m.installer || m.catalog || m.indexes != IndexStore::Forbidden
+            if m.reboot
+                || m.sync
+                || m.installer
+                || m.catalog
+                || m.indexes != IndexStoreDeclaration::Forbidden
             {
                 continue;
             }
@@ -1101,7 +1106,7 @@ mod tests {
         // Each word grant a program that hears words may declare (milestone 205).
         for g in [WordGrant::ReadOnly, WordGrant::ReadWrite, WordGrant::Create] {
             let m = Manifest {
-                arg: ArgSpec::Words(g),
+                arg: ProgramArgumentDeclaration::Words(g),
                 ..grant_plan::UNVOUCHED_STD_MANIFEST
             };
             assert_eq!(decode(&encode(&m)), Ok(m), "{g:?}");
@@ -1192,7 +1197,7 @@ mod tests {
     #[test]
     fn a_memory_range_upside_down_is_refused() {
         let m = Manifest {
-            mem: MemSpec::Required { min: 4, max: 8 },
+            mem: MemoryGrantDeclaration::Required { min: 4, max: 8 },
             ..Prog::Uptime.manifest()
         };
         let mut d = encode(&m);
@@ -1224,33 +1229,36 @@ mod tests {
     #[test]
     fn every_value_of_every_field_round_trips() {
         let args = [
-            ArgSpec::Forbidden,
-            ArgSpec::Required,
-            ArgSpec::Words(WordGrant::ReadOnly),
-            ArgSpec::Words(WordGrant::ReadWrite),
-            ArgSpec::Words(WordGrant::Create),
+            ProgramArgumentDeclaration::Forbidden,
+            ProgramArgumentDeclaration::Required,
+            ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+            ProgramArgumentDeclaration::Words(WordGrant::ReadWrite),
+            ProgramArgumentDeclaration::Words(WordGrant::Create),
         ];
         for arg in args {
             let m = Manifest { arg, ..base() };
             assert_eq!(decode(&encode(&m)), Ok(m), "{arg:?}");
         }
         for file in [
-            FileSpec::Forbidden,
-            FileSpec::Required { writable: false },
-            FileSpec::Required { writable: true },
+            FileGrantDeclaration::Forbidden,
+            FileGrantDeclaration::Required { writable: false },
+            FileGrantDeclaration::Required { writable: true },
         ] {
             let m = Manifest { file, ..base() };
             assert_eq!(decode(&encode(&m)), Ok(m), "{file:?}");
         }
-        for dir in [DirSpec::Forbidden, DirSpec::Required { subtree_flag: None }] {
+        for dir in [
+            DirectoryGrantDeclaration::Forbidden,
+            DirectoryGrantDeclaration::Required { subtree_flag: None },
+        ] {
             let m = Manifest { dir, ..base() };
             assert_eq!(decode(&encode(&m)), Ok(m), "{dir:?}");
         }
         for output in [
-            OutputSpec::Silent,
-            OutputSpec::Words,
-            OutputSpec::Bytes,
-            OutputSpec::BytesAndDiagnostics {
+            OutputDeclaration::Silent,
+            OutputDeclaration::Words,
+            OutputDeclaration::Bytes,
+            OutputDeclaration::BytesAndDiagnostics {
                 slot: DIAGNOSTICS_SLOT,
             },
         ] {
@@ -1265,7 +1273,7 @@ mod tests {
     #[should_panic(expected = "DIAGNOSTICS_SLOT")]
     fn a_second_stream_at_any_other_slot_has_no_encoding() {
         let m = Manifest {
-            output: OutputSpec::BytesAndDiagnostics {
+            output: OutputDeclaration::BytesAndDiagnostics {
                 slot: DIAGNOSTICS_SLOT + 1,
             },
             ..base()
@@ -1287,7 +1295,7 @@ mod tests {
     fn a_subtree_option_must_be_a_declared_letter_even_the_only_one() {
         let with = |letters: &[u8], flag: u8| Manifest {
             flags: Flags::try_new(letters).unwrap(),
-            dir: DirSpec::Required {
+            dir: DirectoryGrantDeclaration::Required {
                 subtree_flag: Some(flag),
             },
             ..base()
@@ -1319,7 +1327,7 @@ mod tests {
         assert_eq!(decode(&encode(&m)), Ok(m));
 
         let m = Manifest {
-            mem: MemSpec::Required { min: 8, max: 8 },
+            mem: MemoryGrantDeclaration::Required { min: 8, max: 8 },
             ..base()
         };
         assert_eq!(decode(&encode(&m)), Ok(m));

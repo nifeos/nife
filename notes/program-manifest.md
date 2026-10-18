@@ -30,13 +30,13 @@ A manifest declares what a program expects to be handed (`grant_plan::Manifest`)
 
 ```rust
 struct Manifest {
-    arg:           ArgSpec,     // Required | Forbidden   -- an integer argument?
-    mem:           MemSpec,     // Forbidden | Required { min, max }  -- a memory grant, in pages?
-    file:          FileSpec,    // Forbidden | Required { writable }  -- one file
-    dir:           DirSpec,     // a directory capability, and with which rights
+    arg:           ProgramArgumentDeclaration,     // Required | Forbidden   -- an integer argument?
+    mem:           MemoryGrantDeclaration,     // Forbidden | Required { min, max }  -- a memory grant, in pages?
+    file:          FileGrantDeclaration,    // Forbidden | Required { writable }  -- one file
+    dir:           DirectoryGrantDeclaration,     // a directory capability, and with which rights
     flags:         &'static [u8],  // the option letters the program accepts
-    output:        OutputSpec,  // where its bytes may go
-    input:         InputSpec,   // and where they may come from; Required carries
+    output:        OutputDeclaration,  // where its bytes may go
+    input:         InputDeclaration,   // and where they may come from; Required carries
                                 // writes_while_reading, which the type will not let you omit
     reports:       bool,        // is it endowed the shared result endpoint?
     interruptible: bool,        // does ^C reach it (DECISIONS §24)?
@@ -71,7 +71,7 @@ ambient entropy would be ambient authority (DECISIONS §44, notes/entropy.md).
 
 ### The file endowment declares a direction, not a name
 
-`FileSpec::Required { writable }` is the phase-2 addition, and the interesting part is the split it
+`FileGrantDeclaration::Required { writable }` is the phase-2 addition, and the interesting part is the split it
 makes: the manifest declares the direction, the command line designates the file. So `wc
 report.txt` reads and `tee report.txt` writes, and the human never types a mode.
 
@@ -101,7 +101,7 @@ ignored. A manifest is as much about what a program will *not* accept as what it
 
 No shipped program declares a file yet, because the shell it would be spawned from holds no directory
 to narrow (notes/grant-expression.md says why, and why that refusal is true rather than pending). The
-`FileSpec::Required` logic is not therefore untested: `plan_against` takes an explicit manifest
+`FileGrantDeclaration::Required` logic is not therefore untested: `plan_against` takes an explicit manifest
 rather than reading the static table, so the host tests check a manifest shape no program declares.
 That split was worth making anyway, because milestone 23 needs exactly it: a manifest that travels
 with a component, checked by a composer that did not write the program.
@@ -150,10 +150,10 @@ checked by whoever wires it up, so a bad wiring is caught at composition, not at
   program's own declaration. The shape is the same; the manifest just travels with the binary.
 - **milestone 32** adds file and directory grants to the endowment vocabulary, so a manifest can
   declare "one readable file" and the checker can match a designated name against it. The
-  `ArgSpec`/`MemSpec` pattern extends directly to a `FileSpec`.
-- **milestone 47** will have to grow `ArgSpec` into something with position and arity the first
+  `ProgramArgumentDeclaration`/`MemoryGrantDeclaration` pattern extends directly to a `FileGrantDeclaration`.
+- **milestone 47** will have to grow `ProgramArgumentDeclaration` into something with position and arity the first
   time a program wants both an argument and a file (`grep pattern file.txt`), or wants two of
   either. Today's rule (the argument takes the first positional, the file the next) is unambiguous
   only because at most one bare token can be a file. `date` is already pressing on this: it reads
-  three registers (format, UTC offset, provenance) and declares `ArgSpec::Forbidden`, so the shell
+  three registers (format, UTC offset, provenance) and declares `ProgramArgumentDeclaration::Forbidden`, so the shell
   spawns it with the defaults and its selectors are unreachable from the prompt.

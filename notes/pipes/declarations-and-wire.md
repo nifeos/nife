@@ -1,7 +1,7 @@
 # The manifest declarations, the input slot and the wire
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds
-`OutputSpec` and `InputSpec`, how the input slot's shape was decided, the spawn request's bits and
+`OutputDeclaration` and `InputDeclaration`, how the input slot's shape was decided, the spawn request's bits and
 delegation order, and why a builtin can lead a pipeline. It was moved here verbatim from the main
 page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
@@ -17,7 +17,7 @@ The records this file cites by number:
 
 ## The two manifest declarations, which were not in the plan
 
-### `OutputSpec`: not every program has bytes to redirect
+### `OutputDeclaration`: not every program has bytes to redirect
 
 This system has two conventions for "a program said something", and only one of them can be
 redirected:
@@ -29,7 +29,7 @@ redirected:
 | `date`, `wc`, `rm` | the sink contract's byte messages | yes |
 
 `date` went one further on 2026-08-03 and declares a second byte stream as well (DECISIONS §67),
-which is what `2>` binds to. `OutputSpec` is where that is written down too.
+which is what `2>` binds to. `OutputDeclaration` is where that is written down too.
 
 `least_authority_demo 9 > out.txt` would otherwise put a raw word into a file sink, producing a file
 with nothing legible in it and no error anywhere. Declaring the convention makes it
@@ -37,12 +37,12 @@ with nothing legible in it and no error anywhere. Declaring the convention makes
 is bytes by construction; here the register fastpath is real and older than the sink contract, and
 the manifest is where the two are told apart.
 
-### `InputSpec`: the refusal Unix cannot produce
+### `InputDeclaration`: the refusal Unix cannot produce
 
 `wc` reads a stream. A `wc` with nothing feeding it blocks on a receive forever, and on Unix
 that is a shell that appears to hang, because there fd 0 always exists and "nobody is ever going to
 write to it" is not a property of the command line. Here it is: `wc` declares
-`InputSpec::Required`, so a line that gives it neither a `<` nor a pipe is refused before anything
+`InputDeclaration::Required`, so a line that gives it neither a `<` nor a pipe is refused before anything
 is spawned.
 
 The mirror holds too. `date < report.txt` is `Refusal::InputForbidden`, on the same grounds an
@@ -69,7 +69,7 @@ No new protocol, no new opcodes, no reply. Three consequences fall out and all t
    finished; inferring it from a death notification would be a fact about process supervision
    standing in for a fact about a stream. This is why `date` gained an end-of-stream message.
 
-The asymmetry with `OutputSpec` is real and worth naming: output has three shapes because the system
+The asymmetry with `OutputDeclaration` is real and worth naming: output has three shapes because the system
 grew two of them before the sink contract existed, and input has one because nothing read a
 stream at all until this milestone. There was never a chance for a second convention to establish
 itself.

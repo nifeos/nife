@@ -77,8 +77,8 @@ Three refusals that bash does not make, each because a line should mean what it 
 ## What the shell checks before it spawns anything
 
 A program's manifest says what it reads and writes, so the prompt can refuse a line that would
-misbehave. `OutputSpec` says whether a program writes a byte stream: `least_authority_demo 9 >
-out.txt` is `NotAByteStream`, because that program answers in a register. `InputSpec` says whether
+misbehave. `OutputDeclaration` says whether a program writes a byte stream: `least_authority_demo 9 >
+out.txt` is `NotAByteStream`, because that program answers in a register. `InputDeclaration` says whether
 it reads one. A `wc` with neither a `<` nor a pipe is refused rather than left blocked forever, and
 `date < report.txt` is `InputForbidden`.
 
@@ -345,7 +345,7 @@ One line each.
 
 | appendix | what it holds |
 |---|---|
-| [declarations-and-wire](pipes/declarations-and-wire.md) | `OutputSpec`, `InputSpec`, the input slot and the spawn wire |
+| [declarations-and-wire](pipes/declarations-and-wire.md) | `OutputDeclaration`, `InputDeclaration`, the input slot and the spawn wire |
 | [the-file-end](pipes/the-file-end.md) | why the shell backs the file, and `>>` |
 | [second-stream](pipes/second-stream.md) | `2>` as built, and what building it found |
 | [second-stream-fork](pipes/second-stream-fork.md) | `2>` as it stood open |

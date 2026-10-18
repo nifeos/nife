@@ -88,7 +88,7 @@ so `rm` runs. `script/swish-check` types four lines on both ISAs:
 - the one grant shape that is still a refusal: `rm gate.txt`.
 
 
-`FileSpec::Required` still has no consumer, and that is unchanged. The per-file caretaker is built
+`FileGrantDeclaration::Required` still has no consumer, and that is unchanged. The per-file caretaker is built
 and proven on both ISAs (below), and no shipped program declares a file. The one the milestone block
 names is `wc`, and milestone 50 deliberately made it something else: a stream consumer that cannot
 speak the filesystem contract at all, on the argument that "a `wc` that could open the file it counts
@@ -144,16 +144,16 @@ endpoint.
 
 This is milestone 47's move applied to the other direction. The `file:` prefix came out on the
 finding that the manifest was doing all the work, and it is doing all of it here too. A program that
-declares `InputSpec::Required` reads a stream and declares no file and no directory, so a bare name
+declares `InputDeclaration::Required` reads a stream and declares no file and no directory, so a bare name
 after its declared grants can only be the thing feeding it. There is nothing for the parser to
 classify. A manifest that declared both an input and a file would need positional arity, which is the
-same widening `ArgSpec` is waiting on, and no manifest declares both today.
+same widening `ProgramArgumentDeclaration` is waiting on, and no manifest declares both today.
 
 Designation is authorization here, and the negative control is what says so. `wc` with no name is
 refused at the prompt, before anything is spawned, because its manifest says it reads a stream; on
 Unix the same command is a shell that appears to hang. So the name is what moved something.
 
-What it is not is the per-file capability `FileSpec::Required` describes, and the difference is
+What it is not is the per-file capability `FileGrantDeclaration::Required` describes, and the difference is
 worth stating rather than glossing. The child gets bytes: it cannot seek, re-read, stat, or name a
 second thing, and it cannot tell a file from a pipe from a builtin typing at it. That is *narrower*
 than a file capability, not wider, so nothing is over-granted; what is missing is the claim that the

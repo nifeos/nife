@@ -74,15 +74,19 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
         let name = p.name();
         assert_eq!(
             m.file,
-            FileSpec::Forbidden,
+            FileGrantDeclaration::Forbidden,
             "{name}: no std slot carries a file"
         );
         assert_eq!(
             m.input,
-            InputSpec::Forbidden,
+            InputDeclaration::Forbidden,
             "{name}: no std slot carries an input"
         );
-        assert_eq!(m.mem, MemSpec::Forbidden, "{name}: slot 0 is the heap");
+        assert_eq!(
+            m.mem,
+            MemoryGrantDeclaration::Forbidden,
+            "{name}: slot 0 is the heap"
+        );
         assert!(
             !m.domain,
             "{name}: DOMAIN_SLOT is the config page's in the std layout"
@@ -90,7 +94,7 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
         assert!(!m.interruptible, "{name}: no std slot carries a job frame");
         assert_eq!(
             m.output,
-            OutputSpec::Bytes,
+            OutputDeclaration::Bytes,
             "{name}: std's output is one byte stream"
         );
     }
@@ -108,8 +112,8 @@ fn no_program_declares_both_a_file_and_an_input() {
     for &p in Prog::ALL {
         let m = p.manifest();
         assert!(
-            !(matches!(m.file, FileSpec::Required { .. })
-                && matches!(m.input, InputSpec::Required { .. })),
+            !(matches!(m.file, FileGrantDeclaration::Required { .. })
+                && matches!(m.input, InputDeclaration::Required { .. })),
             "{} declares a file and an input, and the command line cannot tell them apart",
             p.name()
         );

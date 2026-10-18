@@ -15,7 +15,7 @@ positional, no `<`, no `|`, no `>`) plans as a one-stage pipeline whose input is
 itself feeds (`grant_plan::plan_against_with` turns a trailing positional into `Source::File`,
 exactly as it does for `wc report.txt`; see notes/pipes/the-file-end.md, "the file behind a `>` is
 this shell").
-`doc` also writes while it reads (`InputSpec::Required { writes_while_reading: true }`, the only
+`doc` also writes while it reads (`InputDeclaration::Required { writes_while_reading: true }`, the only
 declarer today). So the shell would have to be both the feeder of its input and the reader of its
 output. This kernel gives a process exactly one blocking wait point (`SEND`/`RECEIVE`, no select,
 no receive-on-a-set, no timed wait). `grant_plan::check_chain` refuses the line before anything is

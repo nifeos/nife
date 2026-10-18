@@ -116,7 +116,7 @@ fn caps_image(nav: &mut Nav, spec: RunSpec) {
     // have their words designated rather than their patterns expanded, and only the note says
     // whether these do.
     let expanded = match m.arg {
-        grant_plan::ArgSpec::Words(grant) => {
+        grant_plan::ProgramArgumentDeclaration::Words(grant) => {
             swish::designation(spec.line(), grant, &mut |token| nav.expand(token))
         }
         _ => expansion(nav, &spec),

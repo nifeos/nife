@@ -87,7 +87,7 @@ A job-mix supervisor is a program whose entire job is building 34 processes. Adm
 list is a change to what the shell's manifest is willing to grant, and the manifest is a published
 contract between the shell and the progenitor.
 
-What would close it: a new `MemSpec`-shaped declaration for construction authority, or a
+What would close it: a new `MemoryGrantDeclaration`-shaped declaration for construction authority, or a
 decision that this one program is endowed by the progenitor at boot rather than by the shell. Both
 are an architect's, and the second brings blocker 1b with it: a boot-built supervisor needs a wire
 protocol for the shell to ask it to run, which is squarely *anything two programs agree on*.
@@ -113,7 +113,7 @@ rather than a patch.
 ### Blocker three: `--mem` tops out at 64 pages against a need of about 3,000
 
 The only non-`Forbidden` memory manifest in the tree is `memory_grant_depleter`'s,
-`MemSpec::Required { min: 1, max: 64 }` (`crates/grant_plan/src/lib.rs:450-454`), and its comment
+`MemoryGrantDeclaration::Required { min: 1, max: 64 }` (`crates/grant_plan/src/lib.rs:450-454`), and its comment
 says why the ceiling is where it is: *"a sanity ceiling the shell's own budget can actually back"*.
 The shell's whole budget is `SH_BUDGET_PAGES = 128` (`components/src/swish.rs:143`, matched at
 `crates/system_initializer/src/lib.rs:503`), and a job's region is `JOB_REGION_PAGES = 40` out of a

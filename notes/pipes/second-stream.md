@@ -31,7 +31,7 @@ the shape it does. What follows first is what exists.
 ### The five moving parts, and none of them is a number everybody agrees on
 
 ```text
-  crates/grant_plan            OutputSpec::BytesAndDiagnostics { slot }   the declaration
+  crates/grant_plan            OutputDeclaration::BytesAndDiagnostics { slot }   the declaration
                                line::Diagnostics { None, Printed, File }  where they go
                                Refusal::NoDiagnosticStream                aimed at a non-declarer
 

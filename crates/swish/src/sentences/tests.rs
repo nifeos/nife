@@ -114,13 +114,13 @@ fn a_program_that_reports_elsewhere_prints_nothing_here() {
 /// **A program that answers in a register gets a sentence here, or the answer is lost**
 /// (milestone 150). [`write_outcome`]'s match ends in a wildcard, because byte-stream programs
 /// have nothing to render there; this is what keeps that wildcard from swallowing the one case
-/// where it would be wrong. A new `OutputSpec::Words` program with no arm prints nothing at the
+/// where it would be wrong. A new `OutputDeclaration::Words` program with no arm prints nothing at the
 /// prompt, which is the silence this fails on.
 #[test]
 fn every_program_that_answers_in_words_renders_its_answer() {
     let mut checked = 0;
     for &p in Prog::ALL {
-        if p.manifest().output != OutputSpec::Words {
+        if p.manifest().output != OutputDeclaration::Words {
             continue;
         }
         let s = shown(|o| write_outcome(&endowment(p), 441, o));

@@ -39,7 +39,9 @@ pub fn expansion(
     // program is told what to do)). A pattern would designate names and grant nothing they name, so
     // `grant_plan::check_words` refuses an unquoted one; a word that names something here is
     // granted it, by [`designation`].
-    if let Some(ArgSpec::Words(grant)) = Prog::from_name(spec.prog).map(|p| p.manifest().arg) {
+    if let Some(ProgramArgumentDeclaration::Words(grant)) =
+        Prog::from_name(spec.prog).map(|p| p.manifest().arg)
+    {
         return designation(spec.line(), grant, expand);
     }
     for (i, token) in spec.positionals().iter().enumerate() {

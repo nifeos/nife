@@ -203,14 +203,14 @@ pub struct Endowment {
     /// the per-job interrupt channel and runs the escalation policy while the job is foreground.
     pub interruptible: bool,
     /// **Whether this stage may write before it has read to the end** (mirrors
-    /// [`InputSpec::Required::writes_while_reading`](crate::InputSpec::Required::writes_while_reading); `false` for a program that reads nothing,
+    /// [`InputDeclaration::Required::writes_while_reading`](crate::InputDeclaration::Required::writes_while_reading); `false` for a program that reads nothing,
     /// which cannot be fed and so cannot be the thing that blocks).
     ///
     /// It is carried on the endowment rather than looked up from `prog.manifest()` because
     /// [`check_chain`](crate::check_chain) asks about a **whole planned line** and because [`plan_against_with`](crate::plan_against_with) can be
     /// given an explicit manifest. That is what keeps the check live, tested logic rather than a
     /// branch nothing reaches: no shipped program declares `true` yet, and the host tests plan one
-    /// that does, exactly as `FileSpec::Required` is exercised.
+    /// that does, exactly as `FileGrantDeclaration::Required` is exercised.
     pub writes_while_reading: bool,
 }
 

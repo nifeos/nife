@@ -80,7 +80,7 @@ transcript under [EXAMPLES](#examples).
 Both forms are literal. The difference POSIX draws between them is `$` expansion, and this shell has
 no variables (milestone 47 owns them, and studies them as "the same question wearing a string
 costume"). Inventing the distinction now would be inventing it rather than discovering it, which is
-the argument milestone 50 made about `InputSpec` and got right by waiting.
+the argument milestone 50 (pipes and redirection) made about `InputDeclaration` and got right by waiting.
 
 What they do differ in today is which byte they let you write: `echo "it's"` and `echo 'say "hi"'`
 both work and neither would with one form.

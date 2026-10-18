@@ -62,7 +62,8 @@ use grant_plan::expand::{Expansion, NameSet};
 use grant_plan::line::{self, Line};
 use grant_plan::nav::{self, Refused};
 use grant_plan::{
-    ArgSpec, Command, Endowment, Holdings, OutputSpec, Prog, Refusal, RunSpec, Streams, spawnproto,
+    Command, Endowment, Holdings, OutputDeclaration, Prog, ProgramArgumentDeclaration, Refusal,
+    RunSpec, Streams, spawnproto,
 };
 pub use number::write_num;
 pub use preview::{Vouched, write_capabilities, write_image_capabilities, write_preview};

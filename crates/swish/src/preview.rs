@@ -132,14 +132,20 @@ fn write_note_asks(declared: Option<grant_plan::Manifest>, out: &mut dyn FnMut(&
     };
     out(b"    its manifest note asks for: ");
     out(match m.output {
-        OutputSpec::Words => b"a word of output".as_slice(),
-        OutputSpec::Silent => b"no output",
+        OutputDeclaration::Words => b"a word of output".as_slice(),
+        OutputDeclaration::Silent => b"no output",
         _ => b"output bytes",
     });
     let items: [(bool, &[u8]); 9] = [
-        (m.arg == ArgSpec::Required, b"an argument"),
+        (
+            m.arg == ProgramArgumentDeclaration::Required,
+            b"an argument",
+        ),
         (m.arg.hears_words(), b"its words"),
-        (!matches!(m.mem, grant_plan::MemSpec::Forbidden), b"memory"),
+        (
+            !matches!(m.mem, grant_plan::MemoryGrantDeclaration::Forbidden),
+            b"memory",
+        ),
         (m.clock, b"the clock"),
         (m.config, b"the configuration page"),
         (m.entropy, b"entropy"),
@@ -309,7 +315,7 @@ fn write_preview_rows(
     // that reading the command is reading its whole authority, and a preview that under-reports
     // authority is one a reader would trust. Found by someone adding their first program, who hit
     // it because the manifest already knew the answer.
-    if m.arg == ArgSpec::Required {
+    if m.arg == ProgramArgumentDeclaration::Required {
         write_num(e.arg, out);
         out(b"\n");
     } else if m.arg.hears_words() {
@@ -407,7 +413,7 @@ fn write_file_and_directory_rows(
         // directory for `.`, and what it may do with them, which is its manifest's word grant (the
         // progenitor makes it read-only for bytes nobody vouched for, and says so in the manifest
         // this preview was given).
-        if let grant_plan::ArgSpec::Words(w) = m.arg {
+        if let grant_plan::ProgramArgumentDeclaration::Words(w) = m.arg {
             if g.names.is_empty() {
                 out(b"  (this directory itself)\n");
             } else {
@@ -678,10 +684,10 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
 /// places the line's and not this one (`grant_plan::Manifest::indexes`).
 fn write_index_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
     let write = match m.indexes {
-        grant_plan::IndexStore::Forbidden => return,
+        grant_plan::IndexStoreDeclaration::Forbidden => return,
         _ if e.dir.is_some() => return,
-        grant_plan::IndexStore::ReadOnly => false,
-        grant_plan::IndexStore::ReadWrite => true,
+        grant_plan::IndexStoreDeclaration::ReadOnly => false,
+        grant_plan::IndexStoreDeclaration::ReadWrite => true,
     };
     write_slot(std_runtime_contract::FS_DIR_SLOT, out);
     out(if write {

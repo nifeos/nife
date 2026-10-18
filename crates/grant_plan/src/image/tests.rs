@@ -101,7 +101,7 @@ fn an_image_is_endowed_from_its_note_only_when_vouched() {
         "a note that asks more than its vouch allows is refused"
     );
     let asks_memory = Manifest {
-        mem: MemSpec::Required { min: 1, max: 4 },
+        mem: MemoryGrantDeclaration::Required { min: 1, max: 4 },
         ..NO_NOTE_MANIFEST
     };
     assert_eq!(
@@ -161,7 +161,7 @@ fn an_image_request_that_does_not_fit_its_manifest_is_refused() {
         "memory the manifest forbids"
     );
     let mem = Manifest {
-        mem: MemSpec::Required { min: 2, max: 4 },
+        mem: MemoryGrantDeclaration::Required { min: 2, max: 4 },
         ..none
     };
     assert!(image_request_fits(&mem, 0, 2, false));
@@ -198,7 +198,7 @@ fn a_std_image_is_carried_when_it_hears_words_and_unvouched_gets_two_pages() {
     assert_eq!(image_manifest(Some(ex), false), Ok(UNVOUCHED_STD_MANIFEST));
     assert_eq!(
         Manifest {
-            arg: ArgSpec::Forbidden,
+            arg: ProgramArgumentDeclaration::Forbidden,
             runtime: Runtime::Native,
             ..UNVOUCHED_STD_MANIFEST
         },
@@ -206,11 +206,11 @@ fn a_std_image_is_carried_when_it_hears_words_and_unvouched_gets_two_pages() {
     );
     // Either half without the other is not carried.
     assert!(!image_can_carry(&Manifest {
-        arg: ArgSpec::Forbidden,
+        arg: ProgramArgumentDeclaration::Forbidden,
         ..ex
     }));
     assert!(!image_can_carry(&Manifest {
-        arg: ArgSpec::Words(WordGrant::ReadOnly),
+        arg: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
         ..NO_NOTE_MANIFEST
     }));
 }
@@ -222,12 +222,12 @@ fn a_std_image_is_carried_when_it_hears_words_and_unvouched_gets_two_pages() {
 #[test]
 fn a_std_image_is_refused_for_each_thing_its_layout_cannot_hold() {
     let ok = Manifest {
-        output: OutputSpec::Bytes,
+        output: OutputDeclaration::Bytes,
         ..UNVOUCHED_STD_MANIFEST
     };
     assert!(image_can_carry(&ok), "the baseline must be carriable");
     assert!(!image_can_carry(&Manifest {
-        output: OutputSpec::Words,
+        output: OutputDeclaration::Words,
         ..ok
     }));
     assert!(!image_can_carry(&Manifest {

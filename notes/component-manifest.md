@@ -42,9 +42,9 @@ reason no reader could find from the operator's source.
 ## Is a component manifest the same thing as `grant_plan::Manifest`?
 
 It has to be asked, because `crates/grant_plan` already has a `Manifest` and it already does the
-declaring-what-you-need job: `ArgSpec`, `MemSpec`, `FileSpec`, `DirSpec`, the short options a program
+declaring-what-you-need job: `ProgramArgumentDeclaration`, `MemoryGrantDeclaration`, `FileGrantDeclaration`, `DirectoryGrantDeclaration`, the short options a program
 accepts, `clock`, `domain`. `caps <program>` prints a program's endowment before anything spawns, and
-`InputSpec::Required` carries `writes_while_reading` so a program that writes while reading cannot be
+`InputDeclaration::Required` carries `writes_while_reading` so a program that writes while reading cannot be
 declared without saying so. A second parallel manifest concept with a similar name would be a
 comprehension disaster in a tree whose first tenet is that a reader meets a name before anything else.
 
@@ -60,7 +60,7 @@ supervisor with nothing typed.
 
 The vocabularies are disjoint. Nothing in `grant_plan::Manifest` can name an endpoint, a device
 or a shared page. Nothing in `Requirements` can name an argument or a short option. The nearest thing
-to an overlap is memory, and even there `MemSpec::Required { min, max }` is a *range a person picks
+to an overlap is memory, and even there `MemoryGrantDeclaration::Required { min, max }` is a *range a person picks
 from* with `--mem N`, while a component's page count is an exact number the supervisor must supply.
 
 A component serves; a program only consumes. This is the new axis, and it is the one §41's
