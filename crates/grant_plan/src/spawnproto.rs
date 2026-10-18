@@ -6,8 +6,8 @@
 //! capability-based)).
 //!
 //! 1. **Request.** Three words on the spawn endpoint: the program id, the integer argument, and the
-//!    memory-grant page count ([`request`], [`prog_id`], [`arg`], [`mem_pages`]).
-//! 2. **The directory grant**, if announced ([`Wiring::dir`]): [`GRANT_WORDS`] plain `SEND`s,
+//!    memory-grant page count ([`request`], [`prog_id`], [`program_argument`], [`memory_grant_pages`]).
+//! 2. **The directory grant**, if announced ([`Wiring::directory_grant`]): [`GRANT_WORDS`] plain `SEND`s,
 //!    before the capabilities, because they are data and mixing orders would put a `RECEIVE` where
 //!    a `RECEIVE_CAP` belongs.
 //! 3. **Delegation**, in a fixed order both sides read from the same [`Wiring`]: the supervised
@@ -203,8 +203,6 @@ const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
 /// A request that sets it for a program that does not run on the `std` layout has its frame taken
 /// and dropped, so both sides stay in lockstep and the child gets nothing it could not read.
 ///
-/// Name: provisional (milestone 205, 2026-09-26).
-///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
 /// **The machine statistics page follows as one `SEND_CAP`, after every other delegated
@@ -296,7 +294,7 @@ const _: () = assert!(SHELL_GPU_SLOT > crate::SHELL_CONFIG_SLOT);
 const _: () = assert!(SHELL_GPU_SLOT + 6 < RUN_UNVOUCHED_SLOT);
 
 /// **The directory grant is a set of names, and the set follows as one frame** (milestone 205 (how
-/// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with [`Wiring::dir`]: the
+/// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with [`Wiring::directory_grant`]: the
 /// progenitor builds `fs_nameset_caretaker` rather than `fs_subtree_caretaker` for the grant, and
 /// maps it the set, `filesystem_contract::nameset`'s encoding, read-only. The shell sends the frame
 /// `READ`-only after the argv's, before every other delegated capability; the progenitor copies it,
@@ -551,7 +549,7 @@ pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
 /// builds for.
 pub const IMAGE_PAGE: u64 = 4096;
 
-/// **The two messages a [`Wiring::dir`] request is followed by**, in order, each three words:
+/// **The two messages a [`Wiring::directory_grant`] request is followed by**, in order, each three words:
 ///
 /// 1. **the caretaker's `START` words**, which the progenitor passes to `fs_subtree_caretaker` verbatim: the
 ///    granted directory's name and the `filesystem_contract::dir` rights the subtree capability is to carry;
@@ -1122,7 +1120,7 @@ mod tests {
     /// **`SECOND_DIRECTORY_GRANT_BIT` follows [`DIRECTORY_GRANT_BIT`]'s own precedent**: it is a second bit, not a count, and it
     /// round-trips independent of whether `dir` itself is set (nothing here enforces the "meaningless
     /// without `dir`" rule from the wire alone; that is the emitter's obligation, stated in
-    /// [`Wiring::dir2`]'s own doc).
+    /// [`Wiring::second_directory_grant`]'s own doc).
     #[test]
     fn a_second_directory_grant_is_a_second_bit_not_a_count() {
         let (_, _, w2) = request(

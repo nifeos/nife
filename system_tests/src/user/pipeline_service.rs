@@ -444,7 +444,7 @@ pub fn counts(said: &[u8]) -> (u64, u64, u64) {
 /// it where the result rendezvous would have gone. Nothing decides what is behind it, because
 /// nothing here can find out.
 ///
-/// **What this fallback does not implement**: a directory grant (`Wiring::dir`, milestone 31 phase
+/// **What this fallback does not implement**: a directory grant (`Wiring::directory_grant`, milestone 31 (a capability shell: designation is authorization) phase
 /// 3) and a screen-narrowed tail's completion rendezvous (`Wiring::screen`, DECISIONS §106). Both
 /// need a capability this stub has nothing behind (a file service to attenuate, a fault target to
 /// install), so neither bit is drained off the wire here, and a line that set one would desync the
