@@ -546,7 +546,7 @@ elf = { version = "0.1.0", path = "../crates/elf" }
 # The fixtures that carry a manifest note (milestone 597 (a program carries its manifest in an ELF
 # note), provisional): `greeting`, and the unvouched witness whose note asks for what it will not be
 # given.
-manifest_note = { version = "0.1.0", path = "../crates/manifest_note" }
+capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }

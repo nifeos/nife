@@ -19,7 +19,7 @@ carry the evidence its prose budget has no room for.
   reason behind each limit.
 - [`resolved-bugs.md`](resolved-bugs.md): the `BUGS` entries that are resolved, kept for their
   reasons, and what used to head "Where this goes next".
-- [`narrowing-limitations.md`](narrowing-limitations.md): the two `BUGS` entries about the
+- [`narrowing-bugs.md`](narrowing-bugs.md): the two `BUGS` entries about the
   caretaker hop and a screen-narrowed child, in full.
 - [`where-next.md`](where-next.md): what is left in "Where this goes next", in full, and the prior
   art.
@@ -38,4 +38,4 @@ Each stem below is named for its content, and calef names files.
 - `search-limitations` Name: provisional.
 - `resolved-bugs` Name: provisional.
 - `where-next` Name: provisional. For the parent's "Where this goes next" and "Prior art".
-- `narrowing-limitations` Name: provisional. For two of the parent's `BUGS` entries.
+- `narrowing-bugs` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `narrowing-limitations`. For two of the parent's `BUGS` entries.

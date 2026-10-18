@@ -3,7 +3,7 @@
 The first half of milestone 326 (nobody has been assigned to turn a mutation score upward)'s
 triage of the crates that regressed at the 2026-09-14 census. It verifies the per-crate figures
 that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The second half is
-[regressions-clock-protocol-swish-filesystem-protocol](regressions-clock-protocol-swish-filesystem-protocol.md).
+[regressions-2026-09-14-clock-contract-swish-filesystem-contract](regressions-2026-09-14-clock-contract-swish-filesystem-contract.md).
 
 ## 2026-09-19: milestone 326, triaging the census's regressions
 

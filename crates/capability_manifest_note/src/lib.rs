@@ -63,9 +63,10 @@
 //!
 //! Byte 55 is the last zero, so the next field is likely version 2.
 //!
-//! Name: provisional (milestone 597 (a program carries its manifest in an ELF note)'s lane). The
-//! owner string, the type number and the encoding are ratified; the crate name, [`carry!`] and the
-//! public functions are not.
+//! Name: ratified 2026-10-18 (calef, "`capability_manifest_note`"). The descriptor is the capabilities
+//! a program requests ("manifest" in the Android sense), and "note" separates the ELF-note encoding
+//! from `grant_plan::Manifest`, the in-memory type. The owner string, the type number and the
+//! encoding are ratified separately; [`carry!`] and the public functions are provisional.
 
 #![no_std]
 
@@ -320,18 +321,18 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 ///
 /// ```
 /// let m = grant_plan::Prog::Uptime.manifest();
-/// let bytes = manifest_note::encode(&m);
-/// assert_eq!(manifest_note::decode(&bytes), Ok(m));
+/// let bytes = capability_manifest_note::encode(&m);
+/// assert_eq!(capability_manifest_note::decode(&bytes), Ok(m));
 ///
 /// let mut later = bytes;
 /// later[0] = 2;
-/// assert_eq!(manifest_note::decode(&later), Err(manifest_note::Error::UnknownVersion));
+/// assert_eq!(capability_manifest_note::decode(&later), Err(capability_manifest_note::Error::UnknownVersion));
 /// ```
 ///
 /// A program carries its note with one line at module scope:
 ///
 /// ```ignore
-/// manifest_note::carry!(grant_plan::Prog::Uptime.manifest());
+/// capability_manifest_note::carry!(grant_plan::Prog::Uptime.manifest());
 /// ```
 pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     if d.len() < 4 {
@@ -684,8 +685,8 @@ pub const fn verbs_len(count: usize) -> usize {
 ///
 /// ```
 /// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Prog::Jig.verbs();
-/// const BYTES: [u8; manifest_note::verbs_len(TABLE.len())] = manifest_note::encode_verbs(TABLE);
-/// assert_eq!(manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
+/// const BYTES: [u8; capability_manifest_note::verbs_len(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
+/// assert_eq!(capability_manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
 /// ```
 ///
 /// It panics, a compile error in a constant, on a `LEN` that is not that length, more than
@@ -860,7 +861,7 @@ mod verification {
     /// decode to one manifest, so no two readers can disagree about which bytes meant what. The
     /// unwind bound is the 56-byte comparison, plus one.
     ///
-    /// Falsification: replayable `crates/manifest_note/falsifications/verification.a_decoded_manifest_encodes_back_to_its_bytes.patch`
+    /// Falsification: replayable `crates/capability_manifest_note/falsifications/verification.a_decoded_manifest_encodes_back_to_its_bytes.patch`
     #[kani::proof]
     #[kani::unwind(57)]
     fn a_decoded_manifest_encodes_back_to_its_bytes() {
@@ -873,7 +874,7 @@ mod verification {
     /// **`decode` never panics, at any length up to one past the layout.** The bytes come from a
     /// file anyone could have written.
     ///
-    /// Falsification: replayable `crates/manifest_note/falsifications/verification.decode_never_panics.patch`
+    /// Falsification: replayable `crates/capability_manifest_note/falsifications/verification.decode_never_panics.patch`
     #[kani::proof]
     #[kani::unwind(18)]
     fn decode_never_panics() {

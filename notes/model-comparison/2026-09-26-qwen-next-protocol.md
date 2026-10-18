@@ -1,6 +1,6 @@
 # Protocol: `open-lane-qwen-next` against Opus 5.5 and Sonnet 5, one task per role
 
-*Name: provisional (2026-09-26). Committed before any run. It extends [protocol.md](protocol.md)
+*Name: provisional (2026-09-26). Committed before any run. It extends [pilot-protocol.md](pilot-protocol.md)
 and changes nothing in it; where this file is silent, that one holds. A deviation is recorded in the
 results note as a deviation.*
 
@@ -52,8 +52,8 @@ tree hands to rented models. So a reviewer is scored as a fourth role, marked as
 
 | role | task | base | box | known answer |
 |---|---|---|---|---|
-| maintainer | pilot task (a), brief verbatim | `de896fa76` | 60 min | [protocol.md](protocol.md) |
-| developer | pilot task (b), brief verbatim | `b24b2e491` | 60 min | [protocol.md](protocol.md) |
+| maintainer | pilot task (a), brief verbatim | `de896fa76` | 60 min | [pilot-protocol.md](pilot-protocol.md) |
+| developer | pilot task (b), brief verbatim | `b24b2e491` | 60 min | [pilot-protocol.md](pilot-protocol.md) |
 | steward | one interval pass over a frozen queue | `a464d72fd` | 20 min | below |
 | reviewer | three diffs from milestone 521's corpus | none; tool-less | 20 min per diff | below |
 

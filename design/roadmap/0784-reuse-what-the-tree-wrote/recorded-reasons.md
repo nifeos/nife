@@ -14,7 +14,7 @@ landed wording.
   byte for byte.
 - `network_time_protocol`: Reuse: write. Proved (7 Kani, fixed-point multiply restructured per §46);
   `sntpc` exists but would lose the proof.
-- `glob`, `timetable`, `component_plan`, `subtree_scope`, `manifest_note`: Reuse: write. Proved, and
+- `glob`, `timetable`, `component_plan`, `subtree_scope`, `capability_manifest_note`: Reuse: write. Proved, and
   each encodes a capability rule no upstream has.
 - `package_archive`: Reuse: write. Decided by §197 (a package is one archive file); `tar` refused.
 - `nifefs`: Reuse: write. Kernel; a deliberate minimal format.

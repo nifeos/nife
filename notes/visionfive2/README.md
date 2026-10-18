@@ -27,13 +27,13 @@ session each, and the parent links each one where it summarizes it.
 
 Each stem below is named for its content, and calef names files.
 
-- `jh7110-against-virt` Name: provisional.
-- `hart-roster-stops` Name: provisional.
-- `boots-7-and-8` Name: provisional.
-- `boots-9-and-10` Name: provisional.
-- `bench-boots-2026-08` Name: provisional.
-- `on-board-test-suite` Name: provisional.
-- `microsd-payload` Name: provisional.
-- `network-boot` Name: provisional.
-- `read-off-the-board-2026-09-03` Name: provisional.
-- `bench-questions` Name: provisional.
+- `jh7110-against-virt` Name: ratified 2026-10-18 (calef, "Approve all").
+- `hart-roster-stops` Name: ratified 2026-10-18 (calef, "Approve all").
+- `boots-7-and-8` Name: ratified 2026-10-18 (calef, "Approve all").
+- `boots-9-and-10` Name: ratified 2026-10-18 (calef, "Approve all").
+- `bench-boots-2026-08` Name: ratified 2026-10-18 (calef, "Approve all").
+- `on-board-test-suite` Name: ratified 2026-10-18 (calef, "Approve all").
+- `microsd-payload` Name: ratified 2026-10-18 (calef, "Approve all").
+- `network-boot` Name: ratified 2026-10-18 (calef, "Approve all").
+- `read-off-the-board-2026-09-03` Name: ratified 2026-10-18 (calef, "Approve all").
+- `bench-questions` Name: ratified 2026-10-18 (calef, "Approve all").

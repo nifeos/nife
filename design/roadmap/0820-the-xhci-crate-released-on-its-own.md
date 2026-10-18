@@ -45,7 +45,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   crate or move to the driver is the lane's call, recorded in its pull request.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken. rust-osdev's `xhci` 0.9.2 (2023-07, MIT OR Apache-2.0, 108k downloads, no proofs)
 has the right scope and has been dormant since 2024-09. The first proposal on #1806 was to ask
 rust-osdev to revive it, and calef ruled no offer, since nife does not depend on it. rcore-os's

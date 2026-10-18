@@ -3,7 +3,7 @@
 The `machine_discovery` part of milestone 326 (nobody has been assigned to turn a mutation score
 upward)'s triage, on 2026-09-19, and its re-derivation on 2026-09-20. It verifies the crate's
 figures that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The method is set out
-in [regressions-capability-to-dtb](regressions-capability-to-dtb.md).
+in [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md).
 
 ### `machine_discovery`: 77 survivors, 58 killed, 11 equivalent, 8 recorded gaps
 
@@ -156,7 +156,7 @@ Six are compile-time `const _: () = { .. }` blocks: `IMPLEMENTERS`' duplicate-co
 under `==`, `>` and `<=`. Each makes the loop body never run, so the block compiles and checks
 nothing. No `cargo test` can see this, because the checker is `rustc` and the evidence of success
 is that the build happened. It is the same object as `filesystem_contract`'s `verb::TABLE` walk in
-[regressions-clock-protocol-swish-filesystem-protocol](regressions-clock-protocol-swish-filesystem-protocol.md).
+[regressions-2026-09-14-clock-contract-swish-filesystem-contract](regressions-2026-09-14-clock-contract-swish-filesystem-contract.md).
 It is recorded for that entry's reason: an exclusion would have to be by line, and would hide
 anything else that lands there.
 
@@ -166,7 +166,7 @@ mutant there always survives. `.cargo/mutants.toml`'s `verification::` regex can
 cargo-mutants names a mutant by its path within the parsed file, and **a `const` gets no module
 path in its name at all**. So there is nothing for a module-path regex to match. This is the third
 member of a family, after `timetable`'s `proofs.rs` (a module that is its own file) and the two
-globs added beside it, both in [regressions-capability-to-dtb](regressions-capability-to-dtb.md).
+globs added beside it, both in [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md).
 The concurrent census-delta lane of the same day measured the tree-wide extent: three mutants, of
 which these are two. It filed a proposal for the general fix, whose number is minted at merge. No
 test is owed here, because it is code no host build compiles.

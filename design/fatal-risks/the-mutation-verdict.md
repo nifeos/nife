@@ -80,7 +80,7 @@ It ran at the milestone 636 branch's head, which differs from `main` only by tha
 
 The published rows disagree about what a timeout is: the baseline and the 2026-09-14 figures follow
 `notes/mutation-testing.md`'s rule that a timeout is a kill, while the 2026-09-19 figures (now in
-`notes/mutation-testing/regressions-capability-to-dtb.md`) scored that run's 205 timeouts as
+`notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md`) scored that run's 205 timeouts as
 survivors. And the crate those rows call `cred` is `credentialer`, so the join dropped it: 103 viable mutants at
 100%. Reproducing the published 37 crates and 6,472 viable requires resolving two crates by hand and
 missing that one.

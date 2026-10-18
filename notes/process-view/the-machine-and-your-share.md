@@ -63,7 +63,7 @@ so a number that moves at rebase needs no second ratification; the table holds w
 | the owner's switch | `GRANT_MACHINE_PAGE`, default `true` | |
 
 The manifest fields `machine` and `share` were not in the table and stay provisional. They also
-needed two bytes of the ELF manifest note's descriptor (`crates/manifest_note`), whose layout calef
+needed two bytes of the ELF manifest note's descriptor (`crates/capability_manifest_note`), whose layout calef
 ratified after this table was drawn; that amendment is raised on #1360.
 
 ## The table raise, measured

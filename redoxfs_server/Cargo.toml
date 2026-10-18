@@ -98,7 +98,7 @@ strip = "debuginfo"
 subtree_scope = { version = "0.1.0", path = "../crates/subtree_scope" }
 # Ruling T1 (2026-09-27): the note that tells the progenitor this server enforces subtree grants
 # itself, carried in the EL0 binary (`carry_subtree_grants!`).
-manifest_note = { version = "0.1.0", path = "../crates/manifest_note" }
+capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
 address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # The vendored engine, no default features: the pure no_std core (creation APIs stay host-side).

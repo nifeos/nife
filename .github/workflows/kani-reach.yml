@@ -24,7 +24,7 @@ on:
     inputs:
       packages:
         description: "space-separated package[:shards[:only-this-shard]] list"
-        default: "capability paging:2 memory_regions page_frames device_tree_blob inter_process_communication generational_table intrusive_fifo address_space_identifier manifest_note:4 package_archive pci non_volatile_memory_express direct_memory_access_validator:4 network_time_protocol globally_unique_identifier_partition_table:3 filesystem_contract subtree_scope:2 credential_contract component_plan timetable jh7110_entropy machine_discovery:8 nifefs elf kernel"
+        default: "capability paging:2 memory_regions page_frames device_tree_blob inter_process_communication generational_table intrusive_fifo address_space_identifier capability_manifest_note:4 package_archive pci non_volatile_memory_express direct_memory_access_validator:4 network_time_protocol globally_unique_identifier_partition_table:3 filesystem_contract subtree_scope:2 credential_contract component_plan timetable jh7110_entropy machine_discovery:8 nifefs elf kernel"
       flags:
         description: "flags for kani_reach.py run; empty means --reached-only (the pilot ran without it)"
         default: "--reached-only"

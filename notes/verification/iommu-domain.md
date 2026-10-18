@@ -1,7 +1,7 @@
 # The IOMMU domain, and what the DMA proof does not establish
 
 An appendix to [notes/verification.md](../verification.md), following
-[dma-validator.md](dma-validator.md). It holds the domain-builder proofs of milestone 35 (prove the
+[direct-memory-access-validator.md](direct-memory-access-validator.md). It holds the domain-builder proofs of milestone 35 (prove the
 DMA-confinement boundary), and the address path no descriptor proof can see.
 
 ## The IOMMU domain: proved where it can be, tested where it cannot

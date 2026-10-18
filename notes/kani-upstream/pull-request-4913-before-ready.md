@@ -46,7 +46,7 @@ Not run: `cargo-kani`, `expected`, `coverage`, `cargo-coverage`, the `kani` suit
 
 ## Still open at the head, from the September rehearsal review
 
-[pr-4913-review.md](pr-4913-review.md) listed findings before a maintainer saw the pull request.
+[pull-request-4913-review.md](pull-request-4913-review.md) listed findings before a maintainer saw the pull request.
 Should-fix 1 to 3 are done. Of the rest, checked against `2d0a623`:
 
 - Fixed in the drafted patch below: nice-to-have 5 (the `usize` assertion holds on every host, so
@@ -75,7 +75,7 @@ calef to apply to calef/kani `riscv64-target` with `git am` if he agrees. 3 file
 
 ## Edits to the posted body
 
-The body on #4913 is the one in [pull-request.md](pull-request.md) with the September fixes. Four
+The body on #4913 is the one in [pull-request-4913-body.md](pull-request-4913-body.md) with the September fixes. Four
 places are now stale or wrong. Replacement text, ready to paste:
 
 1. **Testing, first bullet.** Delete "and (as of the follow-up commit) the exit-code discipline for

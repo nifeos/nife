@@ -51,7 +51,7 @@ walk_pricing = { path = "../crates/walk_pricing" }
 # encoding and the manifest it encodes, both no_std, so a `std` program carries one the same way a
 # native program does.
 grant_plan = { path = "../crates/grant_plan" }
-manifest_note = { path = "../crates/manifest_note" }
+capability_manifest_note = { path = "../crates/capability_manifest_note" }
 
 # `std_resolve`'s names (milestone 801 (packages over the internet)): the resolver test's cases, so
 # this program and the native client of milestone 384 (in a capability system the resolver is a

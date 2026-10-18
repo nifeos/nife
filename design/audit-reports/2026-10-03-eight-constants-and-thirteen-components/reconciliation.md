@@ -63,7 +63,7 @@ it, and the sender keeps its source copy. Test:
 
 `crates/swish/src/lib.rs`, `write_preview_rows`, took `e.prog.manifest().machine` and `.share`
 where every other row reads `m`, the manifest its caller passes: the note's for an image, the row's
-for an archive program. A note can declare both (`crates/manifest_note`, fields 53 and 54). Fixed
+for an archive program. A note can declare both (`crates/capability_manifest_note`, fields 53 and 54). Fixed
 to read `m`; the host test `caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks`
 gains the case, red before the fix.
 

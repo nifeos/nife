@@ -4,14 +4,14 @@ The second half of milestone 326 (nobody has been assigned to turn a mutation sc
 triage of the crates that regressed at the 2026-09-14 census. It verifies three of the per-crate
 figures that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The first half, with
 the method and the loom exclusion, is
-[regressions-capability-to-dtb](regressions-capability-to-dtb.md).
+[regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md).
 
 ### `clock_contract`: 6 survivors, 3 were the loom model, 3 are equivalent and none is a gap
 
 Before: 54 caught, 6 missed, 7 timeouts, 5 unviable (91.0% of viable). After: 54 caught, 3 missed
 (95.3%). Nothing was killed and no test was written, and that is the correct outcome. Three
 survivors left with the `interleavings::` exclusion recorded under `memory_regions` in
-[the first half](regressions-capability-to-dtb.md). The other three cannot differ from the original
+[the first half](regressions-2026-09-14-capability-to-device-tree-blob.md). The other three cannot differ from the original
 under `cargo test`. The rate moved because the measurement stopped counting a file the suite never
 compiles. The suite did not get better.
 
@@ -159,7 +159,7 @@ Grouped so a later reader can re-check them by group rather than one at a time.
 #### Two recorded gaps
 
 These are checkers `cargo test` never runs, the same kind of object as the Kani harnesses excluded
-under `timetable` in [the first half](regressions-capability-to-dtb.md). `verb`'s second
+under `timetable` in [the first half](regressions-2026-09-14-capability-to-device-tree-blob.md). `verb`'s second
 `const _: () = { .. }` walks `TABLE` asserting each row sits at its own opcode. Its loop bound
 `i < TABLE.len()` survives under `==` and under `>`. Both make the loop body never run, so the
 block compiles and checks nothing. No `cargo test` can see this, because the checker is `rustc` and

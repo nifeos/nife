@@ -377,7 +377,7 @@ generational_table	10	the generational thread table
 intrusive_fifo	8	the scheduler's queue structure
 address_space_identifier	2	the TLB tag allocator
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
-manifest_note	120	a manifest note has one encoding, and decoding hostile bytes never panics
+capability_manifest_note	120	a manifest note has one encoding, and decoding hostile bytes never panics
 package_archive	6	a package file is refused or read entirely inside itself, on bytes the solver chose
 measured_boot	2	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	27	config-space decode on hostile-device input

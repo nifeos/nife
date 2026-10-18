@@ -60,7 +60,7 @@ const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
     ..grant_plan::Prog::Uptime.manifest()
 };
 
-manifest_note::carry!(MANIFEST);
+capability_manifest_note::carry!(MANIFEST);
 
 /// The line. The gate asserts it, so a copy of any program the image carries could not print it.
 const LINE: &[u8] = b"hello from a package this image never carried\n";

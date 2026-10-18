@@ -6,7 +6,7 @@ purpose.
 
 ## 2026-09-04: `uefi_loader`'s 15% was measuring a file nothing compiles
 
-[The 2026-09-03 sample](the-first-weekly-censuses.md) names `uefi_loader` as one of the two crates
+[The 2026-09-03 sample](first-weekly-runs.md) names `uefi_loader` as one of the two crates
 carrying the tree's fall from 92.4%, at 3 caught, 17 missed in the round-robin sample. The crate
 boots xenon, a machine where a fault has no console and no debugger, so it went first.
 

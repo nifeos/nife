@@ -42,7 +42,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `e1000e_transport.rs` and `net_stack.rs` (descriptors and tails).
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". rcore-os's `eth-intel` 0.2.4
 (MIT, 10.8k downloads, no proofs found) is a young driver inside the `tgoskits` monorepo.
 elliott10's `e1000-driver` 0.1.0 (2023-02) is GPL-2.0 and drives the older e1000. Redox's `e1000d`

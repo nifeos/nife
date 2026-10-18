@@ -24,7 +24,7 @@ the reboot object, `REBOOT` and the `reboot` field for want of anything better.
    capability-based, microkernel) and §16 (object revocation). It adds no syscall number.
 2. The kernel creates exactly one at boot and grants it to the progenitor. The progenitor endows it
    only to a program whose manifest declares the `reboot` field, the way `entropy` is endowed
-   (`crates/manifest_note`). A program that does not declare it holds none.
+   (`crates/capability_manifest_note`). A program that does not declare it holds none.
 3. The `reboot` program syncs the writable filesystem with `filesystem_protocol::fs::SYNC` and
    waits for the reply, then invokes `REBOOT`. An ordered shutdown of services is deferred to a
    later milestone, which will add its step before the `SYNC`.

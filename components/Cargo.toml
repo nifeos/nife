@@ -676,8 +676,8 @@ calendar = { version = "0.1.0", path = "../crates/calendar" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # A program's manifest carried in its own bytes (milestone 597 (a program carries its manifest in an
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
-# carries one with `manifest_note::carry!`.
-manifest_note = { version = "0.1.0", path = "../crates/manifest_note" }
+# carries one with `capability_manifest_note::carry!`.
+capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }

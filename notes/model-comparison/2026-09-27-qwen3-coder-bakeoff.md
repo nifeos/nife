@@ -1,7 +1,7 @@
 # Bake-off: open-weight qwen3-coder on six gated mechanical tasks
 
 *Name: provisional (2026-09-27, UTC). Stage 1 of a two-stage bake-off that calef approved on
-2026-09-27. It reuses [protocol.md](protocol.md) and
+2026-09-27. It reuses [pilot-protocol.md](pilot-protocol.md) and
 [2026-09-26-qwen-next-protocol.md](2026-09-26-qwen-next-protocol.md); deviations are listed below.*
 
 ## The question, and the answer

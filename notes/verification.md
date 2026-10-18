@@ -121,7 +121,7 @@ table and the reasoning.
 | `elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
-| `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/dma-validator.md) |
+| `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
 | `calendar` | 11 | the date algorithms are mutual inverses over the whole range | [calendar](verification/calendar-proofs.md) |
 | `glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
 
@@ -218,5 +218,5 @@ crate is picked up with no change.
 - **Guard against vacuity with `kani::cover!`.** Assumptions and bounds can silently empty a
   harness's input set, and a vacuous harness reports `SUCCESSFUL`. A `cover!` fails when a state is
   unreachable, so it is the one check that catches this.
-  [`verification/dma-validator.md`](verification/dma-validator.md) has where it was introduced and
+  [`verification/direct-memory-access-validator.md`](verification/direct-memory-access-validator.md) has where it was introduced and
   the rule for when a harness needs one.

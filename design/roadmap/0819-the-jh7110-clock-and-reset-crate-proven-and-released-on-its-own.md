@@ -50,7 +50,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   name is ratified; those are not, and their names become permanent with the crate.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". The only Rust JH7110 crates found,
 weathered-steel's `jh71xx-pac` 0.11.1 and `jh71xx-hal` 0.7.2 (Codeberg, 2025-03), are register maps
 under GPL-3.0-only, which nife cannot take under its license. No Rust crate for the clock and reset

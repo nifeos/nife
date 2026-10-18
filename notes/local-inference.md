@@ -131,7 +131,7 @@ specifically for Qwen3.5-122B-A10B and Qwen3.8-27B.
 
 ## The bake-off, drafted and not run
 
-Reuses `notes/model-comparison/protocol.md`'s isolation and blind-grading design: a fresh clone at
+Reuses `notes/model-comparison/pilot-protocol.md`'s isolation and blind-grading design: a fresh clone at
 the task's base commit, no remote, a wall-clock and budget cap, and a grader that never sees which
 model produced which packet. The 19 tasks are real merged pull requests from the `mechanical_gated`
 class with known-good outcomes: rebases, PR landings, gate additions, triage, six word-budget
@@ -194,7 +194,7 @@ so a write bills as ordinary input. This is the price used throughout the bake-o
 ## Sources
 
 Transcripts: `~/.claude/projects/-Users-calef-projects-nife/`, measured 2026-09-27. In-tree:
-[notes/open-model-lanes.md](open-model-lanes.md), `notes/model-comparison/protocol.md`,
+[notes/open-model-lanes.md](open-model-lanes.md), `notes/model-comparison/pilot-protocol.md`,
 `notes/model-comparison/2026-09-24-pilot.md`,
 `notes/model-comparison/2026-09-26-qwen-next-results.md`. OpenRouter model list: `GET
 https://openrouter.ai/api/v1/models`, fetched 2026-09-27. Model shortlist and hardware tiers: a

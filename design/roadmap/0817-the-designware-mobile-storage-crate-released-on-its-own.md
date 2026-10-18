@@ -48,7 +48,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `components/src/designware_mobile_storage.rs` (the EL0 driver).
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". rcore-os's `dwmmc-host` 0.4.2
 (Apache-2.0, 1.7k downloads) and `starfive-jh7110-dwmmc` 0.1.8 (911) live in the `tgoskits`
 monorepo with no proofs found. drivercraft's `sdmmc` 0.1.0 (11k) is a general SD/MMC crate with no
