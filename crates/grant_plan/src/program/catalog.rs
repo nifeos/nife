@@ -299,7 +299,7 @@ programs! {
         /// **Print the inert-configuration page** (milestone 47's environment-variable fork, DECISIONS
         /// §111; `components/src/printenv.rs`).
         ///
-        /// The reason [`Manifest::config`](crate::Manifest::config) exists, and the same asymmetry [`Prog::Date`] made for the
+        /// The reason [`Manifest::configuration`](crate::Manifest::configuration) exists, and the same asymmetry [`Prog::Date`] made for the
         /// clock: the grant is real and it is not something a person designates on the line. Before
         /// this program, the page existed and could be assembled and mapped
         /// (`crates/environment_contract`), but nothing in the shell's program table declared wanting one,

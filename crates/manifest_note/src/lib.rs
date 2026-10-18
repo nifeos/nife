@@ -210,7 +210,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[1] = v[1];
     out[2] = v[2];
     out[3] = v[3];
-    out[ARG] = match m.arg {
+    out[ARG] = match m.program_argument {
         ArgSpec::Forbidden => 0,
         ArgSpec::Required => 1,
         // A program whose line is its argv (milestone 205 (how a foreign program is told what to
@@ -220,7 +220,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         ArgSpec::Words(WordGrant::ReadWrite) => 3,
         ArgSpec::Words(WordGrant::Create) => 4,
     };
-    if let MemSpec::Required { min, max } = m.mem {
+    if let MemSpec::Required { min, max } = m.memory_grant {
         out[MEM] = 1;
         put8(&mut out, MEM_MIN, min);
         put8(&mut out, MEM_MAX, max);
@@ -231,7 +231,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         FileSpec::Required { writable: true } => 2,
     };
     let letters = m.flags.letters();
-    if let DirSpec::Required { subtree_flag } = m.dir {
+    if let DirSpec::Required { subtree_flag } = m.directory {
         out[DIR] = 1;
         if let Some(letter) = subtree_flag {
             let mut i = 0;
@@ -270,7 +270,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[INTERRUPTIBLE] = m.interruptible as u8;
     out[CLOCK] = m.clock as u8;
     out[DOMAIN] = m.domain as u8;
-    out[CONFIG] = m.config as u8;
+    out[CONFIG] = m.configuration as u8;
     out[ENTROPY] = m.entropy as u8;
     out[NETWORK] = m.network as u8;
     out[MACHINE] = m.machine as u8;
@@ -359,10 +359,10 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let runtime = decode_runtime(d)?;
     zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
     Ok(Manifest {
-        arg,
-        mem,
+        program_argument: arg,
+        memory_grant: mem,
         file,
-        dir,
+        directory: dir,
         flags,
         output,
         input,
@@ -370,7 +370,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         interruptible: flag(d, INTERRUPTIBLE)?,
         clock: flag(d, CLOCK)?,
         domain: flag(d, DOMAIN)?,
-        config: flag(d, CONFIG)?,
+        configuration: flag(d, CONFIG)?,
         entropy: flag(d, ENTROPY)?,
         network: flag(d, NETWORK)?,
         machine: flag(d, MACHINE)?,
@@ -1101,7 +1101,7 @@ mod tests {
         // Each word grant a program that hears words may declare (milestone 205).
         for g in [WordGrant::ReadOnly, WordGrant::ReadWrite, WordGrant::Create] {
             let m = Manifest {
-                arg: ArgSpec::Words(g),
+                program_argument: ArgSpec::Words(g),
                 ..grant_plan::UNVOUCHED_STD_MANIFEST
             };
             assert_eq!(decode(&encode(&m)), Ok(m), "{g:?}");
@@ -1192,7 +1192,7 @@ mod tests {
     #[test]
     fn a_memory_range_upside_down_is_refused() {
         let m = Manifest {
-            mem: MemSpec::Required { min: 4, max: 8 },
+            memory_grant: MemSpec::Required { min: 4, max: 8 },
             ..Prog::Uptime.manifest()
         };
         let mut d = encode(&m);
@@ -1231,7 +1231,10 @@ mod tests {
             ArgSpec::Words(WordGrant::Create),
         ];
         for arg in args {
-            let m = Manifest { arg, ..base() };
+            let m = Manifest {
+                program_argument: arg,
+                ..base()
+            };
             assert_eq!(decode(&encode(&m)), Ok(m), "{arg:?}");
         }
         for file in [
@@ -1243,7 +1246,10 @@ mod tests {
             assert_eq!(decode(&encode(&m)), Ok(m), "{file:?}");
         }
         for dir in [DirSpec::Forbidden, DirSpec::Required { subtree_flag: None }] {
-            let m = Manifest { dir, ..base() };
+            let m = Manifest {
+                directory: dir,
+                ..base()
+            };
             assert_eq!(decode(&encode(&m)), Ok(m), "{dir:?}");
         }
         for output in [
@@ -1287,7 +1293,7 @@ mod tests {
     fn a_subtree_option_must_be_a_declared_letter_even_the_only_one() {
         let with = |letters: &[u8], flag: u8| Manifest {
             flags: Flags::try_new(letters).unwrap(),
-            dir: DirSpec::Required {
+            directory: DirSpec::Required {
                 subtree_flag: Some(flag),
             },
             ..base()
@@ -1319,7 +1325,7 @@ mod tests {
         assert_eq!(decode(&encode(&m)), Ok(m));
 
         let m = Manifest {
-            mem: MemSpec::Required { min: 8, max: 8 },
+            memory_grant: MemSpec::Required { min: 8, max: 8 },
             ..base()
         };
         assert_eq!(decode(&encode(&m)), Ok(m));

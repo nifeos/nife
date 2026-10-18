@@ -63,7 +63,7 @@ pub extern "C" fn _start(role: u64, arg: u64, clock: u64) -> ! {
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_CONFIG.store(
-        user_mode_runtime::is_granted(grant_plan::SHELL_CONFIG_SLOT),
+        user_mode_runtime::is_granted(grant_plan::SHELL_CONFIGURATION_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     // After the probes, which must see the table as its builder left it. The two witness roles

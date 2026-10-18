@@ -318,7 +318,7 @@ fn a_missing_argument_is_reported_before_a_missing_byte_stream() {
     // `least_authority_demo` needs an integer AND has no bytes to redirect. Both are true; one is printed.
     assert_eq!(
         plan_line(b"least_authority_demo > out.txt", WITH_DIR),
-        Err((0, Refusal::ArgRequired)),
+        Err((0, Refusal::ProgramArgumentRequired)),
     );
 }
 
@@ -416,10 +416,10 @@ fn an_input_operand_survives_a_pipeline() {
 /// Planned through [`plan_against_with`] so [`check_chain`] is live, tested logic rather than a
 /// branch nothing reaches, exactly as [`READS_A_FILE`] keeps `FileSpec::Required` live.
 const RENDERS_AS_IT_READS: Manifest = Manifest {
-    arg: ArgSpec::Forbidden,
-    mem: MemSpec::Forbidden,
+    program_argument: ArgSpec::Forbidden,
+    memory_grant: MemSpec::Forbidden,
     file: FileSpec::Forbidden,
-    dir: DirSpec::Forbidden,
+    directory: DirSpec::Forbidden,
     flags: NO_FLAGS,
     output: OutputSpec::Bytes,
     input: InputSpec::Required {
@@ -429,7 +429,7 @@ const RENDERS_AS_IT_READS: Manifest = Manifest {
     interruptible: false,
     clock: false,
     domain: false,
-    config: false,
+    configuration: false,
     entropy: false,
     network: false,
     machine: false,

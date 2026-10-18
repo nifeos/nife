@@ -47,7 +47,7 @@ pub struct BootEndowment {
     /// the same shape as `boot_clock_page`, minus the service: nothing here runs, so there is no
     /// readiness handshake to wait on, only a page to assemble and write once).
     ///
-    /// The progenitor hands it on only to a child whose manifest declares [`grant_plan::Manifest::config`],
+    /// The progenitor hands it on only to a child whose manifest declares [`grant_plan::Manifest::configuration`],
     /// and hands on `READ`, so nothing spawned from this prompt can change what a shell hands its
     /// own children.
     pub config_page: u64,

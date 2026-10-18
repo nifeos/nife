@@ -455,7 +455,7 @@ fn write_stage_words(
         let Some(e) = plans[i].filter(|_| !(i == 0 && head_builtin)) else {
             continue;
         };
-        let grant_plan::ArgSpec::Words(grant) = e.prog.manifest().arg else {
+        let grant_plan::ArgSpec::Words(grant) = e.prog.manifest().program_argument else {
             continue;
         };
         let assembled = assemble_argv(l.stages()[i], i)

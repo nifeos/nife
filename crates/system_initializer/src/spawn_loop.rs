@@ -67,7 +67,7 @@ pub(super) struct Channels {
     /// READ on the wall clock, endowed to a child whose manifest declares one (DECISIONS §43).
     pub(super) clock_page: u64,
     /// READ on the inert-configuration page, endowed to a child whose manifest declares
-    /// [`grant_plan::Manifest::config`] (DECISIONS §111). [`clock_page`](Channels::clock_page)'s
+    /// [`grant_plan::Manifest::configuration`] (DECISIONS §111 (inert configuration is a read-only page)). [`clock_page`](Channels::clock_page)'s
     /// twin in every respect: unconditional, read-only, and handed on only where the manifest asks.
     pub(super) config_page: u64,
     /// WRITE-delegable: the endpoint the terminal's sink adapter serves, which is where a declared
@@ -297,8 +297,8 @@ impl Wants {
         let wants_domain = manifest.is_some_and(|m| m.domain);
         // `clock`'s twin again: the inert-configuration page is the progenitor's to endow, not something a
         // command line can designate, so there is no bit on the wire for it either
-        // (`Manifest::config`).
-        let wants_config = manifest.is_some_and(|m| m.config);
+        // (`Manifest::configuration`).
+        let wants_config = manifest.is_some_and(|m| m.configuration);
         // `clock`'s family a fourth time, and the first member of it that is an endpoint rather
         // than a page (milestone 111). Randomness is not something a command line designates, so
         // there is no bit on the wire for it either; the program's own declaration is what decides,

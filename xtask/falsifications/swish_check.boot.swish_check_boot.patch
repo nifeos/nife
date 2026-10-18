@@ -63,7 +63,7 @@ index 300561286..91b99df20 100644
 +        let wants_domain = manifest.is_some_and(|m| m.domain) || unvouched;
          // `clock`'s twin again: the inert-configuration page is the progenitor's to endow, not something a
          // command line can designate, so there is no bit on the wire for it either
-         // (`Manifest::config`).
+         // (`Manifest::configuration`).
 @@ -780,6 +781,7 @@ impl Service<'_> {
              image_elf,
              verb,

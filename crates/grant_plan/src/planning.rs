@@ -126,7 +126,7 @@ pub fn plan_against_with(
     //
     // **Not for a program that hears words** (§170): its line is its argv, a flag-shaped token is
     // one of its words, and the shell has no business refusing an option it never had to know.
-    let words = m.arg.hears_words();
+    let words = m.program_argument.hears_words();
     if run.unexpected.is_some() && !words {
         return Err(Refusal::Unexpected);
     }
@@ -259,10 +259,10 @@ fn plan_arg(
     pos: &[&[u8]],
     next: &mut usize,
 ) -> Result<u64, Refusal> {
-    let arg = match m.arg {
+    let arg = match m.program_argument {
         ArgSpec::Required => {
-            let first = pos.get(*next).ok_or(Refusal::ArgRequired)?;
-            let v = parse_u64(first).ok_or(Refusal::ArgRequired)?;
+            let first = pos.get(*next).ok_or(Refusal::ProgramArgumentRequired)?;
+            let v = parse_u64(first).ok_or(Refusal::ProgramArgumentRequired)?;
             *next += 1;
             v
         }
@@ -323,7 +323,7 @@ fn plan_dir(
     holds: &Holdings,
     expanded: Expansion,
 ) -> Result<Option<DirGrant>, Refusal> {
-    let dir = match m.dir {
+    let dir = match m.directory {
         DirSpec::Forbidden => None,
         DirSpec::Required { subtree_flag } => {
             let token = *pos.get(*next).ok_or(Refusal::PathRequired)?;
@@ -364,7 +364,7 @@ fn words_dir_grant(
     expanded: Expansion,
     dir: Option<DirGrant>,
 ) -> Result<Option<DirGrant>, Refusal> {
-    let dir = match (m.arg, expanded.designation()) {
+    let dir = match (m.program_argument, expanded.designation()) {
         (ArgSpec::Words(_), Some(d)) if !d.is_empty() => {
             if !holds.dir {
                 return Err(Refusal::NoSuchCapability(CapabilityKind::File));
@@ -422,13 +422,13 @@ fn plan_input_operand(
 
 /// [`plan_against_with`]'s memory grant: `--mem` checked against what `m` declares.
 fn plan_mem(run: &RunSpec<'_>, m: &Manifest) -> Result<u64, Refusal> {
-    let mem_pages = match (m.mem, run.mem) {
+    let mem_pages = match (m.memory_grant, run.mem) {
         (MemSpec::Forbidden, None) => 0,
-        (MemSpec::Forbidden, Some(_)) => return Err(Refusal::MemForbidden),
-        (MemSpec::Required { .. }, None) => return Err(Refusal::MemRequired),
+        (MemSpec::Forbidden, Some(_)) => return Err(Refusal::MemoryGrantForbidden),
+        (MemSpec::Required { .. }, None) => return Err(Refusal::MemoryGrantRequired),
         (MemSpec::Required { min, max }, Some(n)) => {
             if n < min || n > max {
-                return Err(Refusal::MemOutOfRange { min, max });
+                return Err(Refusal::MemoryGrantOutOfRange { min, max });
             }
             n
         }
@@ -649,11 +649,11 @@ pub(crate) fn nav_refusal(_r: nav::Refused) -> Refusal {
 /// the generic unexpected-argument line.
 fn unplaceable(tok: &[u8], m: Manifest) -> Refusal {
     let numeric = parse_u64(tok).is_some();
-    if numeric && matches!(m.arg, ArgSpec::Forbidden) {
-        Refusal::ArgForbidden
+    if numeric && matches!(m.program_argument, ArgSpec::Forbidden) {
+        Refusal::ProgramArgumentForbidden
     } else if !numeric
         && matches!(m.file, FileSpec::Forbidden)
-        && matches!(m.dir, DirSpec::Forbidden)
+        && matches!(m.directory, DirSpec::Forbidden)
     {
         // Only when the program can be handed **neither** a file nor a directory does "takes no
         // file" read true. A second name at `rm` is a name it has nowhere to put, which is the

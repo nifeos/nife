@@ -11,7 +11,7 @@ const CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
 /// `page` is the whole of its config authority, `date_tests::spawn_date`'s own shape: `Some(phys)`
 /// grants the frame with **`READ`** and maps it **read-only**, the same rung
 /// `crates/system_initializer`'s real wiring grants a child that declares
-/// [`grant_plan::Manifest::config`]. `None` grants no capability at all, which is the other
+/// [`grant_plan::Manifest::configuration`]. `None` grants no capability at all, which is the other
 /// "nothing to print" cause and a different message.
 fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
     let image = program("printenv").expect("no printenv program in the initial ramdisk");

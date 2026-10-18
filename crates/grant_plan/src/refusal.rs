@@ -42,15 +42,25 @@ pub enum Refusal {
     /// shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.
-    MemForbidden,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Approve the family").
+    MemoryGrantForbidden,
     /// The program requires a memory grant, but none was given.
-    MemRequired,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Approve the family").
+    MemoryGrantRequired,
     /// `--mem N` was outside the program's declared range.
-    MemOutOfRange { min: u64, max: u64 },
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Approve the family").
+    MemoryGrantOutOfRange { min: u64, max: u64 },
     /// The program requires an integer argument, but none was given.
-    ArgRequired,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Approve the family").
+    ProgramArgumentRequired,
     /// The program takes no argument, but one was given.
-    ArgForbidden,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Approve the family").
+    ProgramArgumentForbidden,
     /// **A pattern matched no name here** (milestone 47's globbing lane). zsh's default rather than
     /// bash's pass-the-pattern-through, and the model forces it: the expansion *is* the grant, so an
     /// empty expansion is an empty grant and running the command would be running it with an
@@ -232,11 +242,11 @@ impl Refusal {
             Refusal::AmbiguousFile => {
                 "is granted one file, and that pattern matched more than one name"
             }
-            Refusal::MemForbidden => "takes no memory grant; drop the --mem",
-            Refusal::MemRequired => "needs a memory grant; add --mem <pages>",
-            Refusal::MemOutOfRange { .. } => "memory grant is out of the range it declares",
-            Refusal::ArgRequired => "needs an integer argument",
-            Refusal::ArgForbidden => "takes no argument",
+            Refusal::MemoryGrantForbidden => "takes no memory grant; drop the --mem",
+            Refusal::MemoryGrantRequired => "needs a memory grant; add --mem <pages>",
+            Refusal::MemoryGrantOutOfRange { .. } => "memory grant is out of the range it declares",
+            Refusal::ProgramArgumentRequired => "needs an integer argument",
+            Refusal::ProgramArgumentForbidden => "takes no argument",
             Refusal::Unexpected => {
                 "unexpected argument (this shell will not grant what it cannot place)"
             }

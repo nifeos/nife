@@ -57,7 +57,7 @@ so a number that moves at rebase needs no second ratification; the table holds w
 | the page's name and layout | `machine_statistics_contract`, magic `MACHSTA1`, a 64-byte header, one line per core | |
 | where a child sees it | `0x005F_F000`, a pair page | the address-space map of milestone 206 (a program image has under 896 KiB) keeps images and stacks away from it; nothing collides with it |
 | the progenitor's boot slot | 23 | the GPU and keyboard of milestone 600 (the graphical terminal stack is built in userspace) hold 17 to 22; the table has 32 slots (calef) so a slot free on every boot exists |
-| the session's slot | 20 | `grant_plan::SHELL_CONFIG_SLOT` holds 21 (milestone 47 (navigation and naming)) |
+| the session's slot | 20 | `grant_plan::SHELL_CONFIGURATION_SLOT` holds 21 (milestone 47 (navigation and naming)) |
 | the spawn wire | `MACHINE_BIT`, bit 44 | `ARGS_BIT` is 42 (milestone 205 (how a foreign program is told what to do)) and `NAMESET_BIT` is 43 |
 | the child's slots | `MACHINE_SLOT` 11, `SHARE_SLOT` 12 | |
 | the owner's switch | `GRANT_MACHINE_PAGE`, default `true` | |

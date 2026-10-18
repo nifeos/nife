@@ -78,10 +78,10 @@ impl Prog {
 /// The manifest of `least_authority_demo`, [`Prog::LeastAuthorityDemo`].
 const fn least_authority_demo_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Required,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Required,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // A least_authority_demo answers with a number in a register, which is older than the sink
         // contract and still the right shape for one integer. It is also why `least_authority_demo 9 >
@@ -95,7 +95,7 @@ const fn least_authority_demo_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -112,13 +112,13 @@ const fn least_authority_demo_manifest() -> Manifest {
 /// The manifest of `memory_grant_depleter`, [`Prog::MemoryGrantDepleter`].
 const fn memory_grant_depleter_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
         // A budget between 1 and 64 pages. The lower bound makes "memory_grant_depleter with no --mem"
         // a refusal (it exists to spend memory); the upper bound is a sanity ceiling the
         // shell's own budget can actually back.
-        mem: MemSpec::Required { min: 1, max: 64 },
+        memory_grant: MemSpec::Required { min: 1, max: 64 },
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // The page count it managed to map, in a register. Same reason as least_authority_demo's.
         output: OutputSpec::Words,
@@ -127,7 +127,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -148,10 +148,10 @@ const fn memory_grant_depleter_manifest() -> Manifest {
 /// The manifest of `interrupt_heeder`, [`Prog::InterruptHeeder`].
 const fn interrupt_heeder_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // It reports through the shared job frame and holds no output capability at all,
         // which is a third thing a slot can be and the reason `OutputSpec` has three
@@ -162,7 +162,7 @@ const fn interrupt_heeder_manifest() -> Manifest {
         interruptible: true,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -179,10 +179,10 @@ const fn interrupt_heeder_manifest() -> Manifest {
 /// The manifest of `interrupt_ignorer`, [`Prog::InterruptIgnorer`].
 const fn interrupt_ignorer_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Silent,
         input: InputSpec::Forbidden,
@@ -190,7 +190,7 @@ const fn interrupt_ignorer_manifest() -> Manifest {
         interruptible: true,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -219,10 +219,10 @@ const fn interrupt_ignorer_manifest() -> Manifest {
 /// The manifest of `date`, [`Prog::Date`].
 const fn date_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // **`date` was speaking the sink contract before the contract existed**, because
         // its hand-rolled framing is bit for bit a `BYTES` message (notes/sink-protocol.md
@@ -247,7 +247,7 @@ const fn date_manifest() -> Manifest {
         // which children get the read-only mapping (milestone 51's wiring, notes/date.md).
         clock: true,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -272,10 +272,10 @@ const fn date_manifest() -> Manifest {
 /// The manifest of `rm`, [`Prog::Rm`].
 const fn rm_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Required {
+        directory: DirSpec::Required {
             subtree_flag: Some(b'r'),
         },
         // In `rmopt`'s bit order, which is what that module pins.
@@ -289,7 +289,7 @@ const fn rm_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -309,10 +309,10 @@ const fn rm_manifest() -> Manifest {
 /// The manifest of `wc`, [`Prog::Wc`].
 const fn wc_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         // **The barrier**, and the only one in this tree. `wc` prints nothing until end of
@@ -326,7 +326,7 @@ const fn wc_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -351,10 +351,10 @@ const fn wc_manifest() -> Manifest {
 /// The manifest of `mdr`, [`Prog::Mdr`].
 const fn mdr_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Required {
@@ -364,7 +364,7 @@ const fn mdr_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -392,10 +392,10 @@ const fn mdr_manifest() -> Manifest {
 /// The manifest of `ps`, [`Prog::Ps`].
 const fn ps_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -405,7 +405,7 @@ const fn ps_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: true,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -436,10 +436,10 @@ const fn ps_manifest() -> Manifest {
 /// The manifest of `pgrep`, [`Prog::Pgrep`].
 const fn pgrep_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -449,7 +449,7 @@ const fn pgrep_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: true,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -474,10 +474,10 @@ const fn pgrep_manifest() -> Manifest {
 /// The manifest of `top`, [`Prog::Top`].
 const fn top_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -487,7 +487,7 @@ const fn top_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: true,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: true,
@@ -507,10 +507,10 @@ const fn top_manifest() -> Manifest {
 /// The manifest of `printenv`, [`Prog::Printenv`].
 const fn printenv_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
@@ -518,7 +518,7 @@ const fn printenv_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: true,
+        configuration: true,
         entropy: false,
         network: false,
         machine: false,
@@ -541,10 +541,10 @@ const fn printenv_manifest() -> Manifest {
 /// The manifest of `uptime`, [`Prog::Uptime`].
 const fn uptime_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
@@ -552,7 +552,7 @@ const fn uptime_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -575,10 +575,10 @@ const fn uptime_manifest() -> Manifest {
 /// The manifest of `network_echo_client`, [`Prog::NetworkEchoClient`].
 const fn network_echo_client_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Required { min: 4, max: 16 },
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Required { min: 4, max: 16 },
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
@@ -586,7 +586,7 @@ const fn network_echo_client_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: true,
         machine: false,
@@ -605,10 +605,10 @@ const fn network_echo_client_manifest() -> Manifest {
 /// The manifest of `unreachable_network_witness`, [`Prog::UnreachableNetworkWitness`].
 const fn unreachable_network_witness_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
@@ -616,7 +616,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -645,10 +645,10 @@ const fn unreachable_network_witness_manifest() -> Manifest {
 /// The manifest of `uuid`, [`Prog::Uuid`].
 const fn uuid_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -658,7 +658,7 @@ const fn uuid_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: true,
         network: false,
         machine: false,
@@ -678,10 +678,10 @@ const fn uuid_manifest() -> Manifest {
 /// The manifest of `free`, [`Prog::Free`].
 const fn free_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -691,7 +691,7 @@ const fn free_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: true,
@@ -710,10 +710,10 @@ const fn free_manifest() -> Manifest {
 /// The manifest of `vmstat`, [`Prog::Vmstat`].
 const fn vmstat_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -723,7 +723,7 @@ const fn vmstat_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: true,
@@ -741,10 +741,10 @@ const fn vmstat_manifest() -> Manifest {
 /// The manifest of `slabtop`, [`Prog::Slabtop`].
 const fn slabtop_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -754,7 +754,7 @@ const fn slabtop_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -771,10 +771,10 @@ const fn slabtop_manifest() -> Manifest {
 /// The manifest of `graphical_terminal`, [`Prog::GraphicalTerminal`].
 const fn graphical_terminal_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // A session reports one word when it ends (it ran, or it was interrupted); there is
         // no byte stream to redirect, and `graphical_terminal > out.txt` is refused for the same reason
@@ -788,7 +788,7 @@ const fn graphical_terminal_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -812,10 +812,10 @@ const fn graphical_terminal_manifest() -> Manifest {
 /// The manifest of `reboot`, [`Prog::Reboot`].
 const fn reboot_manifest() -> Manifest {
     Manifest {
-        arg: ArgSpec::Forbidden,
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Forbidden,
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -825,7 +825,7 @@ const fn reboot_manifest() -> Manifest {
         interruptible: false,
         clock: false,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: false,
         network: false,
         machine: false,
@@ -845,13 +845,13 @@ const fn std_exerciser_manifest() -> Manifest {
         // **The line's words are its argv** (milestone 205, DECISIONS §170): `std_exerciser
         // one 'two words'` prints what `std::env::args()` yielded, which is the transcript
         // proving the page reaches `std`.
-        arg: ArgSpec::Words(WordGrant::ReadOnly),
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Words(WordGrant::ReadOnly),
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         // No directory. §170 ruled that a word's bytes carry no authority and that the
         // directories granted on the line bound what they reach; this program is spawned
         // holding none and runs its offline transcript, the one that asserts the most slots.
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         // std's `stdout` and `stderr` both send on `std_runtime_contract::STDOUT_SLOT` in
         // the sink framing, so the program is one byte stream and `>` and `|` work on it.
@@ -863,7 +863,7 @@ const fn std_exerciser_manifest() -> Manifest {
         // `env::var("TZ")` rather than refuse them, and the three its transcript asserts.
         clock: true,
         domain: false,
-        config: true,
+        configuration: true,
         entropy: true,
         network: false,
         machine: false,
@@ -883,10 +883,10 @@ const fn jig_manifest() -> Manifest {
         // **Its words are its verb and operands** (milestone 205, DECISIONS §170): `jig
         // install downloads/noteless.nifepkg` designates the file read-only, as `std_grep`'s
         // words do, and a word with no `/` is a package name, which designates nothing.
-        arg: ArgSpec::Words(WordGrant::ReadOnly),
-        mem: MemSpec::Forbidden,
+        program_argument: ArgSpec::Words(WordGrant::ReadOnly),
+        memory_grant: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
-        dir: DirSpec::Forbidden,
+        directory: DirSpec::Forbidden,
         flags: NO_FLAGS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
@@ -896,7 +896,7 @@ const fn jig_manifest() -> Manifest {
         // clock, and a handshake takes randomness.
         clock: true,
         domain: false,
-        config: false,
+        configuration: false,
         entropy: true,
         // `install <name>` fetches the package from the package source itself.
         network: true,

@@ -24,7 +24,7 @@ impl Grants {
     pub const NONE: Grants = Grants(0);
     /// [`Manifest::clock`].
     pub const CLOCK: Grants = Grants(1 << 0);
-    /// [`Manifest::config`].
+    /// [`Manifest::configuration`].
     pub const CONFIG: Grants = Grants(1 << 1);
     /// [`Manifest::entropy`].
     pub const ENTROPY: Grants = Grants(1 << 2);
@@ -151,7 +151,7 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
         .map_or(Grants::NONE, |v| v.grants);
     Manifest {
         clock: m.clock && g.contains(Grants::CLOCK),
-        config: m.config && g.contains(Grants::CONFIG),
+        configuration: m.configuration && g.contains(Grants::CONFIG),
         entropy: m.entropy && g.contains(Grants::ENTROPY),
         network: m.network && g.contains(Grants::NETWORK),
         domain: m.domain && g.contains(Grants::DOMAIN),
@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(nothing.indexes, IndexStore::Forbidden);
         assert_eq!(as_typed(b"jig"), nothing);
         // Everything else about the manifest is untouched.
-        assert_eq!(list.arg, jig.arg);
+        assert_eq!(list.program_argument, jig.program_argument);
         assert_eq!(list.runtime, jig.runtime);
         for &p in Prog::ALL {
             let m = p.manifest();
@@ -249,7 +249,7 @@ mod tests {
                 let narrowed = narrow_by_verb(&m, p.verbs(), Some(v.verb.as_bytes()));
                 let kept = [
                     (narrowed.clock, Grants::CLOCK),
-                    (narrowed.config, Grants::CONFIG),
+                    (narrowed.configuration, Grants::CONFIG),
                     (narrowed.entropy, Grants::ENTROPY),
                     (narrowed.network, Grants::NETWORK),
                     (narrowed.domain, Grants::DOMAIN),
@@ -283,7 +283,7 @@ mod tests {
     fn each_field_is_narrowed_by_its_own_bit() {
         let all = Manifest {
             clock: true,
-            config: true,
+            configuration: true,
             entropy: true,
             network: true,
             domain: true,
@@ -312,7 +312,7 @@ mod tests {
             let n = narrow_by_verb(&all, &table, Some(v.verb.as_bytes()));
             let held = [
                 n.clock,
-                n.config,
+                n.configuration,
                 n.entropy,
                 n.network,
                 n.domain,

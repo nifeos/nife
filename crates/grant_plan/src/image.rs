@@ -72,7 +72,7 @@ pub fn image_can_carry(m: &Manifest) -> bool {
     let std = m.runtime == Runtime::Std;
     matches!(m.output, OutputSpec::Bytes | OutputSpec::Words)
         && m.file == FileSpec::Forbidden
-        && m.dir == DirSpec::Forbidden
+        && m.directory == DirSpec::Forbidden
         && m.input == InputSpec::Forbidden
         && m.flags.letters().is_empty()
         && !m.interruptible
@@ -88,10 +88,10 @@ pub fn image_can_carry(m: &Manifest) -> bool {
         // Milestone 801 (packages over the internet): the index store is the owner's console's to
         // grant, as the installer is.
         && m.indexes == IndexStore::Forbidden
-        && std == (m.arg.hears_words())
+        && std == (m.program_argument.hears_words())
         && (!std
             || (m.output == OutputSpec::Bytes
-                && m.mem == MemSpec::Forbidden
+                && m.memory_grant == MemSpec::Forbidden
                 && !m.domain
                 && !m.network))
 }
@@ -101,7 +101,7 @@ pub fn image_can_carry(m: &Manifest) -> bool {
 /// sets `spawnproto::ARGS_BIT`; the progenitor sizes the region from that bit and then checks its
 /// own reading of the note agrees ([`image_request_fits`]). Name: provisional.
 pub const fn image_hears_words(m: &Manifest) -> bool {
-    m.arg.hears_words()
+    m.program_argument.hears_words()
 }
 
 /// **The manifest a file's bytes are bound and endowed with** (milestone 597, provisional), given
@@ -130,7 +130,7 @@ pub fn image_manifest(declared: Option<Manifest>, vouched: bool) -> Result<Manif
         return Ok(UNVOUCHED_STD_MANIFEST);
     }
     let u = UNVOUCHED_MANIFEST;
-    if declared.arg != u.arg || declared.mem != u.mem {
+    if declared.program_argument != u.program_argument || declared.memory_grant != u.memory_grant {
         return Err(ImageRefusal::ExceedsVouch);
     }
     Ok(u)
@@ -148,8 +148,8 @@ pub fn image_request_fits(m: &Manifest, arg: u64, mem_pages: u64, words: bool) -
     if words != image_hears_words(m) {
         return false;
     }
-    let arg_ok = m.arg == ArgSpec::Required || arg == 0;
-    let mem_ok = match m.mem {
+    let arg_ok = m.program_argument == ArgSpec::Required || arg == 0;
+    let mem_ok = match m.memory_grant {
         MemSpec::Forbidden => mem_pages == 0,
         MemSpec::Required { min, max } => mem_pages >= min && mem_pages <= max,
     };

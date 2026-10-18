@@ -27,13 +27,19 @@ fn least_authority_demo_needs_an_integer_argument() {
     let Command::Run(r) = parse(b"least_authority_demo") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::ArgRequired));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::ProgramArgumentRequired)
+    );
     // And a token that cannot be an integer is a missing argument, not a file: least_authority_demo's
     // manifest declares no file, so there is no other slot the word could have meant.
     let Command::Run(r) = parse(b"least_authority_demo eight") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::ArgRequired));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::ProgramArgumentRequired)
+    );
 }
 
 #[test]
@@ -51,7 +57,7 @@ fn least_authority_demo_refuses_a_memory_grant_whichever_side_the_flag_is_typed(
         assert_eq!(r.prog, b"least_authority_demo");
         assert_eq!(
             plan(&r, Holdings::default()),
-            Err(Refusal::MemForbidden),
+            Err(Refusal::MemoryGrantForbidden),
             "{}",
             core::str::from_utf8(line).unwrap(),
         );
@@ -63,7 +69,10 @@ fn memory_grant_depleter_needs_its_grant() {
     let Command::Run(r) = parse(b"memory_grant_depleter") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::MemRequired));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::MemoryGrantRequired)
+    );
 }
 
 #[test]
@@ -84,14 +93,14 @@ fn memory_grant_depleter_mem_out_of_range() {
     };
     assert_eq!(
         plan(&r, Holdings::default()),
-        Err(Refusal::MemOutOfRange { min: 1, max: 64 })
+        Err(Refusal::MemoryGrantOutOfRange { min: 1, max: 64 })
     );
     let Command::Run(r0) = parse(b"memory_grant_depleter --mem 0") else {
         panic!()
     };
     assert_eq!(
         plan(&r0, Holdings::default()),
-        Err(Refusal::MemOutOfRange { min: 1, max: 64 })
+        Err(Refusal::MemoryGrantOutOfRange { min: 1, max: 64 })
     );
 }
 
@@ -120,7 +129,10 @@ fn memory_grant_depleter_takes_no_argument() {
     let Command::Run(r) = parse(b"memory_grant_depleter --mem 8 5") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::ArgForbidden));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::ProgramArgumentForbidden)
+    );
 }
 
 #[test]
@@ -205,10 +217,10 @@ const WRITES_A_FILE: Manifest = Manifest {
 /// resolution is unambiguous while at most one bare token is a file) and the reason `ArgSpec`
 /// will have to grow position and arity later.
 const STAMPS_A_FILE: Manifest = Manifest {
-    arg: ArgSpec::Required,
-    mem: MemSpec::Forbidden,
+    program_argument: ArgSpec::Required,
+    memory_grant: MemSpec::Forbidden,
     file: FileSpec::Required { writable: true },
-    dir: DirSpec::Forbidden,
+    directory: DirSpec::Forbidden,
     flags: NO_FLAGS,
     output: OutputSpec::Words,
     input: InputSpec::Forbidden,
@@ -216,7 +228,7 @@ const STAMPS_A_FILE: Manifest = Manifest {
     interruptible: false,
     clock: false,
     domain: false,
-    config: false,
+    configuration: false,
     entropy: false,
     network: false,
     machine: false,
@@ -313,7 +325,7 @@ fn anchor_consumes_a_bound_name_and_nothing_else() {
 /// not
 /// this test's (design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
 const TAKES_ARG_AND_READS: Manifest = Manifest {
-    arg: ArgSpec::Required,
+    program_argument: ArgSpec::Required,
     file: FileSpec::Forbidden,
     input: InputSpec::Required {
         writes_while_reading: false,
@@ -377,7 +389,7 @@ fn positionals_fill_the_manifest_slots_in_the_order_typed() {
     };
     assert_eq!(
         plan_against(&swapped, Prog::LeastAuthorityDemo, STAMPS_A_FILE, WITH_DIR),
-        Err(Refusal::ArgRequired),
+        Err(Refusal::ProgramArgumentRequired),
     );
 }
 
@@ -614,7 +626,10 @@ fn date_takes_nothing_from_the_command_line() {
     let Command::Run(r) = parse(b"date 5") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::ArgForbidden));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::ProgramArgumentForbidden)
+    );
     let Command::Run(r) = parse(b"date report.txt") else {
         panic!()
     };
@@ -622,7 +637,10 @@ fn date_takes_nothing_from_the_command_line() {
     let Command::Run(r) = parse(b"date --mem 4") else {
         panic!()
     };
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::MemForbidden));
+    assert_eq!(
+        plan(&r, Holdings::default()),
+        Err(Refusal::MemoryGrantForbidden)
+    );
 }
 
 /// **What a line's words designate becomes one directory grant at the current directory**

@@ -309,7 +309,7 @@ pub fn parse_run(line: &[u8]) -> RunSpec<'_> {
         };
         if !quoted && t == b"--mem" {
             // The next token is the page count. A missing or non-numeric value leaves mem None,
-            // which the plan turns into MemRequired for a program that needs it.
+            // which the plan turns into MemoryGrantRequired for a program that needs it.
             if i + 1 < toks.len() {
                 // Unquoted first, so `--mem "16"` is the same grant as `--mem 16`. Quoting decides
                 // what a word is and this one has to be a number either way.

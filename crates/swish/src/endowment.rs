@@ -97,7 +97,7 @@ pub fn write_holdings(
     // `caps <command>` reads it, and says there what it cannot show.
     if let Some(page) = config {
         out(b"    cap ");
-        write_num(grant_plan::SHELL_CONFIG_SLOT, out);
+        write_num(grant_plan::SHELL_CONFIGURATION_SLOT, out);
         out(b" frame     config     READ only, NOT delegable: the page a child declaring\n");
         out(b"                                  config is endowed with, so 'caps' can show its values\n");
         write_config_values(&page, b"                                  ", out);

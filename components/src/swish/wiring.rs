@@ -51,7 +51,7 @@ pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
 const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
 
 /// **Whether this shell holds a read-only view of the inert-configuration page**
-/// ([`grant_plan::SHELL_CONFIG_SLOT`], mapped at [`grant_plan::SHELL_CONFIG_VA`]; milestone 47
+/// ([`grant_plan::SHELL_CONFIGURATION_SLOT`], mapped at [`grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS`]; milestone 47
 /// (navigation and naming), DECISIONS §111 (inert configuration is a validated page)). Only the
 /// progenitor places it, and it maps the page in the same build, so a capability in the slot at
 /// `_start` means the page is there to read. Probed once at `_start` for [`HOLDS_RUN_UNVOUCHED`]'s
@@ -61,7 +61,7 @@ pub(super) static HOLDS_CONFIG: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
 // The named slot sits under the run-unvouched one and so under the kernel's fault slot.
-const _: () = assert!(grant_plan::SHELL_CONFIG_SLOT < spawnproto::RUN_UNVOUCHED_SLOT);
+const _: () = assert!(grant_plan::SHELL_CONFIGURATION_SLOT < spawnproto::RUN_UNVOUCHED_SLOT);
 
 /// **Whether this session holds the machine statistics page** (milestone 126 (the `procps`
 /// package), DECISIONS §225 (`free` sees the machine and your share)), at
@@ -132,7 +132,7 @@ const _: () = {
         (LINE_VA, PAGE),
         (FS_VA, filesystem_contract::PAGE as u64),
         (SH_CLOCK_VA, PAGE),
-        (grant_plan::SHELL_CONFIG_VA, PAGE),
+        (grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS, PAGE),
         // The argv and name-set pages, and the image window above them (DECISIONS §219 option D).
         (IMAGE_WINDOW, IMAGE_WINDOW_END - IMAGE_WINDOW),
     ];

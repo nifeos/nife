@@ -2,7 +2,7 @@
 //! DECISIONS §111, notes/env-config.md).
 //!
 //! The whole program is: read a page, print what it carries. It holds two capabilities and neither
-//! can change anything, `date`'s shape one manifest field over ([`grant_plan::Manifest::config`]
+//! can change anything, `date`'s shape one manifest field over ([`grant_plan::Manifest::configuration`]
 //! rather than [`grant_plan::Manifest::clock`]). The page is mapped `READ`-only, which is why there
 //! is no `printenv -s TZ=...`: the missing authority is a page permission, not a check here.
 //!

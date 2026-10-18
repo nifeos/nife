@@ -532,7 +532,7 @@ fn the_plan_is_complete_before_the_first_tick(out: RendezvousId) {
         saw_domain_refusal |= s.contains("this timetable holds no process view to grant");
         // The prompt's own refusals, arriving unchanged. `memory_grant_depleter` with no `--mem` and `wc` with
         // nothing feeding it are wrong wherever they are typed.
-        saw_mem_refusal |= s.contains(grant_plan::Refusal::MemRequired.message());
+        saw_mem_refusal |= s.contains(grant_plan::Refusal::MemoryGrantRequired.message());
         saw_input_refusal |= s.contains(grant_plan::Refusal::InputRequired.message());
     }
     assert!(

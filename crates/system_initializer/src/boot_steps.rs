@@ -1246,12 +1246,12 @@ pub(super) fn build_shell(
     n_maps += 1;
     // **The inert-configuration page, mapped for `caps` to read** (milestone 47 (navigation and
     // naming), DECISIONS §111 (inert configuration is a validated page)'s "extend that preview to
-    // print the actual values"). The frame every child declaring `Manifest::config` is endowed
+    // print the actual values"). The frame every child declaring `Manifest::configuration` is endowed
     // with, so what the shell prints is what the child will read. Its capability is placed at a
     // named slot after the build (below), not in this list, because the list's slots move with what
     // the boot granted and the shell probes rather than being told.
     sh_maps[n_maps] = (
-        grant_plan::SHELL_CONFIG_VA,
+        grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
         g.config_page,
         abi::address_space::MAP_RO,
     );
@@ -1285,7 +1285,7 @@ pub(super) fn build_shell(
         shell.tcb,
         g.config_page,
         abi::rights::READ,
-        grant_plan::SHELL_CONFIG_SLOT,
+        grant_plan::SHELL_CONFIGURATION_SLOT,
     ));
     (shell, sh_clock_slot)
 }

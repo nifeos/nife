@@ -384,7 +384,7 @@ fn plan_image(nav: &mut Nav, spec: RunSpec) -> Option<PlannedImage> {
     // **Expanded, or designated, once the note says which** (milestone 205): bytes that hear words
     // have their words designated rather than their patterns expanded, and only the note says
     // whether these do.
-    let expanded = match m.arg {
+    let expanded = match m.program_argument {
         grant_plan::ArgSpec::Words(grant) => {
             swish::designation(spec.line(), grant, &mut |token| nav.expand(token))
         }
@@ -473,7 +473,7 @@ fn carve_image_grants(
     };
     // **And what its words designated** (milestone 205's designation half), on a page carved
     // after the argv's and still below staging.
-    let set_grant = match (e.dir, m.arg) {
+    let set_grant = match (e.dir, m.program_argument) {
         (Some(g), grant_plan::ArgSpec::Words(grant)) => match words_grant(&g, grant, 0) {
             Ok(w) => Some(w),
             Err(why) => {
@@ -993,7 +993,7 @@ fn spawn_dir_grant(
     // **A program that hears words is granted what they designated** (milestone 205), as a name
     // set or the whole directory, through `words_grant` rather than `rm`'s `dir_grant`.
     let mut set_grant = None;
-    let dir_words = match (e.dir, e.prog.manifest().arg) {
+    let dir_words = match (e.dir, e.prog.manifest().program_argument) {
         (None, _) => None,
         (Some(g), grant_plan::ArgSpec::Words(grant)) => match words_grant(&g, grant, 0) {
             Ok(w) => {
@@ -1350,11 +1350,13 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: RunSpec) {
             // **A program that hears words gets the line as its argv** (milestone 205,
             // DECISIONS §170 (how a foreign program is told what to do)). Assembled here, where a refusal can still name the program, and
             // before anything is sent, so a line that does not fit spawns nothing.
-            _ if endow.prog.manifest().arg.hears_words() => match assemble_argv(spec.line(), 0) {
-                Ok(a) => spawn(endow, Some(a)),
-                Err(Some(r)) => refuse(spec, r),
-                Err(None) => out_of_budget(),
-            },
+            _ if endow.prog.manifest().program_argument.hears_words() => {
+                match assemble_argv(spec.line(), 0) {
+                    Ok(a) => spawn(endow, Some(a)),
+                    Err(Some(r)) => refuse(spec, r),
+                    Err(None) => out_of_budget(),
+                }
+            }
             _ => spawn(endow, None),
         },
     }

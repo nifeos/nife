@@ -227,7 +227,7 @@ pub fn schedulable(m: &Manifest) -> bool {
         && !grant_plan::image_hears_words(m)
         && !m.entropy
         && !m.network
-        && !m.config
+        && !m.configuration
 }
 
 /// The first authority `e` needs that `held` does not have.
@@ -328,7 +328,10 @@ mod tests {
         assert_eq!(e.mem_pages, 0);
 
         // The manifest refuses the line, and it is the same refusal the prompt gives.
-        assert_eq!(rows[1].admission, Admission::Refused(Refusal::MemRequired));
+        assert_eq!(
+            rows[1].admission,
+            Admission::Refused(Refusal::MemoryGrantRequired)
+        );
 
         // Legal lines this scheduler holds nothing to back. All four are entries a Unix cron would
         // simply have run.
@@ -575,7 +578,7 @@ mod tests {
     fn an_upgraded_program_fires_its_new_version() {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
-            mem: Prog::MemoryGrantDepleter.manifest().mem,
+            memory_grant: Prog::MemoryGrantDepleter.manifest().memory_grant,
             ..grant_plan::NO_NOTE_MANIFEST
         };
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
@@ -607,7 +610,7 @@ mod tests {
     fn a_new_version_asking_for_more_than_its_line_grants_does_not_fire() {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
-            mem: Prog::MemoryGrantDepleter.manifest().mem,
+            memory_grant: Prog::MemoryGrantDepleter.manifest().memory_grant,
             ..grant_plan::NO_NOTE_MANIFEST
         };
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
@@ -653,7 +656,7 @@ mod tests {
             (
                 "a configuration page",
                 Manifest {
-                    config: true,
+                    configuration: true,
                     ..grant_plan::NO_NOTE_MANIFEST
                 },
             ),

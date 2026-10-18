@@ -137,11 +137,14 @@ fn write_note_asks(declared: Option<grant_plan::Manifest>, out: &mut dyn FnMut(&
         _ => b"output bytes",
     });
     let items: [(bool, &[u8]); 9] = [
-        (m.arg == ArgSpec::Required, b"an argument"),
-        (m.arg.hears_words(), b"its words"),
-        (!matches!(m.mem, grant_plan::MemSpec::Forbidden), b"memory"),
+        (m.program_argument == ArgSpec::Required, b"an argument"),
+        (m.program_argument.hears_words(), b"its words"),
+        (
+            !matches!(m.memory_grant, grant_plan::MemSpec::Forbidden),
+            b"memory",
+        ),
         (m.clock, b"the clock"),
-        (m.config, b"the configuration page"),
+        (m.configuration, b"the configuration page"),
         (m.entropy, b"entropy"),
         (m.network, b"the network"),
         (m.domain, b"the process domain"),
@@ -263,8 +266,8 @@ pub fn write_capabilities(
 /// tree even when the grant is in a mounted second tree ([`Holdings::place`]).
 ///
 /// `config` is this shell's own view of the inert-configuration page, when it holds one
-/// ([`grant_plan::SHELL_CONFIG_SLOT`]). It is the frame the progenitor endows a child declaring
-/// [`grant_plan::Manifest::config`] with, so its values are printed as what that child will read.
+/// ([`grant_plan::SHELL_CONFIGURATION_SLOT`]). It is the frame the progenitor endows a child declaring
+/// [`grant_plan::Manifest::configuration`] with, so its values are printed as what that child will read.
 /// `None` prints the row without values and says why.
 pub fn write_preview(
     e: &Endowment,
@@ -309,10 +312,10 @@ fn write_preview_rows(
     // that reading the command is reading its whole authority, and a preview that under-reports
     // authority is one a reader would trust. Found by someone adding their first program, who hit
     // it because the manifest already knew the answer.
-    if m.arg == ArgSpec::Required {
+    if m.program_argument == ArgSpec::Required {
         write_num(e.arg, out);
         out(b"\n");
-    } else if m.arg.hears_words() {
+    } else if m.program_argument.hears_words() {
         out(b"(the words on the line, at cap ");
         write_num(std_runtime_contract::ARGS_SLOT, out);
         out(b")\n");
@@ -407,7 +410,7 @@ fn write_file_and_directory_rows(
         // directory for `.`, and what it may do with them, which is its manifest's word grant (the
         // progenitor makes it read-only for bytes nobody vouched for, and says so in the manifest
         // this preview was given).
-        if let grant_plan::ArgSpec::Words(w) = m.arg {
+        if let grant_plan::ArgSpec::Words(w) = m.program_argument {
             if g.names.is_empty() {
                 out(b"  (this directory itself)\n");
             } else {
@@ -477,7 +480,7 @@ fn write_page_rows(
     // the child will be handed, never from a copy of the defaults, so the preview cannot drift from
     // what the child reads. A shell given no view (a `login` session, a test role) says so rather
     // than guessing.
-    if m.config {
+    if m.configuration {
         write_slot(
             if std {
                 std_runtime_contract::CONFIG_SLOT
@@ -503,7 +506,7 @@ fn write_page_rows(
     // **The argv, which is bytes and not authority** (milestone 205, DECISIONS §170). Printed
     // because it is a capability the child holds, and worded so nobody reads it as more: a path
     // among these words reaches only what a directory row above already granted.
-    if m.arg.hears_words() {
+    if m.program_argument.hears_words() {
         write_slot(std_runtime_contract::ARGS_SLOT, out);
         out(b"frame     args     read-only. the words on the line, as bytes; they\n");
         out(b"                              name things and grant none of them\n");

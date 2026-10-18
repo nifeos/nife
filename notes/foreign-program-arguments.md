@@ -110,7 +110,7 @@ derivable in general.
 ## Option C cannot say `rg pattern`
 
 `grant_plan::Endowment` carries `arg: u64` and `flags: u64`. The shell parses the argument with
-`parse_u64` (`crates/grant_plan/src/lib.rs:2383`) and refuses anything else as `ArgRequired`. A
+`parse_u64` (`crates/grant_plan/src/lib.rs:2383`) and refuses anything else as `ProgramArgumentRequired`. A
 regex is not a `u64`, and `ripgrep`'s 104 flags do not fit a 64-bit mask. C as written needs a
 string channel first, which is the transport above.
 

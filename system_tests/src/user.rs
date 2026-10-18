@@ -103,7 +103,7 @@ mod date_tests;
 ///
 /// `date`'s own proof, one manifest field over: the program that makes the inert-configuration
 /// page visible to a person, and the first spawnable, shell-facing program to declare
-/// [`grant_plan::Manifest::config`]. Arch-neutral like the page it reads: one portable binary over
+/// [`grant_plan::Manifest::configuration`]. Arch-neutral like the page it reads: one portable binary over
 /// one host-tested contract (`environment_contract`), so **both ISAs run literally these tests**
 /// (DECISIONS §19).
 ///

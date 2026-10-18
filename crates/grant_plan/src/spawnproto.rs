@@ -252,7 +252,7 @@ const KEYBOARD_BIT: u64 = 1 << 46;
 /// GRANT`, so it can delegate it with [`MACHINE_BIT`] and not write it. A named slot probed at
 /// `_start`, for [`RUN_UNVOUCHED_SLOT`]'s reasons.
 ///
-/// **Twenty, not the 21 calef ratified**: `crate::SHELL_CONFIG_SLOT` took 21 (milestone 47 (navigation and naming)) while
+/// **Twenty, not the 21 calef ratified**: `crate::SHELL_CONFIGURATION_SLOT` took 21 (milestone 47 (navigation and naming)) while
 /// this was in flight.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
@@ -270,7 +270,7 @@ pub const MACHINE_PAGE_SLOT: u64 = 20;
 /// here at the shell's build and keeps no copy, for [`MACHINE_PAGE_SLOT`]'s own reasons. A boot
 /// with no GPU leaves all seven empty, and the shell's `_start` probe is what tells that apart.
 ///
-/// **Twenty-two through twenty-eight**, the block between [`crate::SHELL_CONFIG_SLOT`] (21) and
+/// **Twenty-two through twenty-eight**, the block between [`crate::SHELL_CONFIGURATION_SLOT`] (21) and
 /// [`RUN_UNVOUCHED_SLOT`] (62): a named block rather than next-free numbering, because the shell
 /// probes these slots rather than being told, and a probe is sound only for a slot nothing else
 /// allocates into. One block of seven, contiguous, so the relation to the two slots that fence it
@@ -286,7 +286,7 @@ pub const SHELL_GPU_SLOT: u64 = 22;
 // reason `RUN_UNVOUCHED_SLOT`'s own doc gives). A slot outside the fence would be one a runtime
 // allocation could land in, and a probe there would be sound only in a table that is almost full.
 const _: () = assert!(SHELL_GPU_SLOT > MACHINE_PAGE_SLOT);
-const _: () = assert!(SHELL_GPU_SLOT > crate::SHELL_CONFIG_SLOT);
+const _: () = assert!(SHELL_GPU_SLOT > crate::SHELL_CONFIGURATION_SLOT);
 const _: () = assert!(SHELL_GPU_SLOT + 6 < RUN_UNVOUCHED_SLOT);
 
 /// **The directory grant is a set of names, and the set follows as one frame** (milestone 205 (how

@@ -36,7 +36,7 @@ pub(super) const LINES: &[Line] = &[
     // **And the values, before anything runs** (DECISIONS §111 (inert configuration is a validated
     // page)'s preview, milestone 47 (navigation and naming)). The shell prints them from its own
     // read-only view of the frame `printenv` was just handed, so this fails if the progenitor did
-    // not place the view at `grant_plan::SHELL_CONFIG_SLOT`, did not map it at `SHELL_CONFIG_VA`,
+    // not place the view at `grant_plan::SHELL_CONFIGURATION_SLOT`, did not map it at `SHELL_CONFIGURATION_VIRTUAL_ADDRESS`,
     // or the shell's probe missed it (it then says it "cannot show their values" and none of the
     // three appears).
     line(

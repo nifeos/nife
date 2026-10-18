@@ -66,14 +66,14 @@ atomics at all.
 ## What this does not do, and why
 
 - Corrected 2026-09-26: a shipped program does declare this page. This bullet said no
-  `Manifest` field existed; `grant_plan::Manifest::config` and `printenv` landed 2026-08-26 and
+  `Manifest` field existed; `grant_plan::Manifest::configuration` and `printenv` landed 2026-08-26 and
   the real progenitor endows the page to any child that declares it (milestone 47 (navigation and naming)'s
   `design/roadmap/0047-navigation-and-naming/environment.md`). `date` still does not read `TZ`, for the
   reason `notes/calendar.md` gives.
 - The `caps` preview extension DECISIONS §111 (inert configuration is a validated page) asks for is built (2026-09-26). The progenitor
   places the frame it endows children with in the boot shell too, `READ` without `GRANT`, at
-  `grant_plan::SHELL_CONFIG_SLOT` (21) and maps it at `grant_plan::SHELL_CONFIG_VA` (both names
-  provisional). `caps printenv` then prints the three values from that frame, so the preview is
+  `grant_plan::SHELL_CONFIGURATION_SLOT` (21) and maps it at `grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS` (both names
+  ratified, calef, 2026-10-18). `caps printenv` then prints the three values from that frame, so the preview is
   what the child will read rather than a copy of the defaults that could drift:
 
   ```text
@@ -103,7 +103,7 @@ magic both reading as "no configuration," and the layout offsets not overlapping
 ## BUGS
 
 - No wire announcement on the shell's spawn protocol, and none is needed: the progenitor
-  reads `Manifest::config` from the program's own declaration, as it reads `clock`.
+  reads `Manifest::configuration` from the program's own declaration, as it reads `clock`.
 - The shell previews the progenitor's one default; it cannot choose another. The roadmap's
   "inheritance with visibility" shape has two halves. The visible half is built: `caps` shows the
   values a child will read. The chosen half is not: a shell cannot hand a child a different set
@@ -111,7 +111,7 @@ magic both reading as "no configuration," and the layout offsets not overlapping
   child. Building it means a per-spawn page and a way for the shell to say what goes on it, a
   change to `spawnproto` that two programs agree on, and nothing needs it yet.
 - A `login` session's shell cannot see the values. `login` holds no configuration page, so the
-  shells it builds find `SHELL_CONFIG_SLOT` empty and `caps printenv` says it "cannot show their
+  shells it builds find `SHELL_CONFIGURATION_SLOT` empty and `caps printenv` says it "cannot show their
   values". Only the boot prompt's shell holds the view. Children spawned from a session are still
   endowed normally; only the preview is blind.
 - `caps <path>` for an unvouched image prints the config row without values

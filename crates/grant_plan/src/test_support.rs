@@ -29,10 +29,10 @@ pub(crate) fn plan_against(
 /// [`plan_against`] so the `FileSpec::Required` logic is live and tested rather than a branch
 /// nothing reaches, which is the same door milestone 23 will come through.
 pub(crate) const READS_A_FILE: Manifest = Manifest {
-    arg: ArgSpec::Forbidden,
-    mem: MemSpec::Forbidden,
+    program_argument: ArgSpec::Forbidden,
+    memory_grant: MemSpec::Forbidden,
     file: FileSpec::Required { writable: false },
-    dir: DirSpec::Forbidden,
+    directory: DirSpec::Forbidden,
     flags: NO_FLAGS,
     output: OutputSpec::Words,
     input: InputSpec::Forbidden,
@@ -40,7 +40,7 @@ pub(crate) const READS_A_FILE: Manifest = Manifest {
     interruptible: false,
     clock: false,
     domain: false,
-    config: false,
+    configuration: false,
     entropy: false,
     network: false,
     machine: false,

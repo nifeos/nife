@@ -82,7 +82,11 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
             InputSpec::Forbidden,
             "{name}: no std slot carries an input"
         );
-        assert_eq!(m.mem, MemSpec::Forbidden, "{name}: slot 0 is the heap");
+        assert_eq!(
+            m.memory_grant,
+            MemSpec::Forbidden,
+            "{name}: slot 0 is the heap"
+        );
         assert!(
             !m.domain,
             "{name}: DOMAIN_SLOT is the config page's in the std layout"

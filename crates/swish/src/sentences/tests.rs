@@ -57,7 +57,8 @@ fn an_unresolvable_name_is_repeated_back_and_a_flag_only_line_is_not() {
 #[test]
 fn a_refusal_about_a_real_program_uses_the_canonical_name() {
     // The name the manifest carries, not the bytes typed, because the manifest is what refused.
-    let s = shown(|o| write_refusal(&spec_of(b"least_authority_demo"), Refusal::ArgRequired, o));
+    let missing = Refusal::ProgramArgumentRequired;
+    let s = shown(|o| write_refusal(&spec_of(b"least_authority_demo"), missing, o));
     assert!(s.starts_with("  least_authority_demo: "), "{s}");
     // Nothing to prefix when the program did not resolve, whatever the refusal.
     let s = shown(|o| write_refusal(&spec_of(b"nope x"), Refusal::FileForbidden, o));

@@ -74,7 +74,7 @@ fn the_recursion_option_is_what_widens_the_grant() {
 /// agree. Through [`plan_against`], the door an external manifest (milestone 23) comes through.
 const SWEEPS_A_TREE: Manifest = Manifest {
     file: FileSpec::Forbidden,
-    dir: DirSpec::Required {
+    directory: DirSpec::Required {
         subtree_flag: Some(b'r'),
     },
     // `r` deliberately second, so the widening reads bit 1.
@@ -475,14 +475,14 @@ fn a_program_that_hears_words_places_no_positional_grant() {
     let mut hearing = 0;
     for &p in Prog::ALL {
         let m = p.manifest();
-        if !m.arg.hears_words() {
+        if !m.program_argument.hears_words() {
             continue;
         }
         hearing += 1;
         let name = p.name();
         assert_eq!(m.runtime, Runtime::Std, "{name}: only std reads an argv");
         assert_eq!(m.file, FileSpec::Forbidden, "{name}");
-        assert_eq!(m.dir, DirSpec::Forbidden, "{name}");
+        assert_eq!(m.directory, DirSpec::Forbidden, "{name}");
         assert_eq!(m.input, InputSpec::Forbidden, "{name}");
         assert!(
             m.flags.letters().is_empty(),

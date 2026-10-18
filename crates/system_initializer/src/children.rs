@@ -39,7 +39,7 @@ pub(super) fn build_grant(
     set_seen: Option<u64>,
     manifest: Option<grant_plan::Manifest>,
 ) -> Option<u64> {
-    let words = match manifest.map(|m| m.arg) {
+    let words = match manifest.map(|m| m.program_argument) {
         Some(grant_plan::ArgSpec::Words(g)) => {
             use filesystem_contract::grant as gr;
             let rights = gr::spec_rights(care_words.2) & g.rights();
@@ -51,7 +51,7 @@ pub(super) fn build_grant(
         }
         _ => care_words,
     };
-    let hears_words = manifest.is_some_and(|m| m.arg.hears_words());
+    let hears_words = manifest.is_some_and(|m| m.program_argument.hears_words());
     match set_seen {
         None => care
             .subtree

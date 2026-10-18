@@ -16,5 +16,5 @@ index a22e350ce..8e89afd9e 100644
      let runtime = decode_runtime(d)?;
 -    zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
      Ok(Manifest {
-         arg,
-         mem,
+         program_argument: arg,
+         memory_grant: mem,
