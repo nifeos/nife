@@ -70,7 +70,7 @@ pub use endowment::{BootEndowment, SecondDirGrant};
 use fault::*;
 use filesystem_contract::{dir, fs as fs_operation};
 use grant_plan::job_windows::{ReapsDue, Windows};
-use grant_plan::{Prog, spawnproto};
+use grant_plan::{Program, spawnproto};
 use image_request::*;
 use layout::*;
 pub use layout::{

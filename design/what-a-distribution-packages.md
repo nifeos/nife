@@ -46,7 +46,7 @@ In Linux a package's danger is invisible at install time. `Depends:` and `Confli
 and versions; nothing describes what the thing can reach, because on Linux a binary can reach whatever
 the invoking user can.
 
-Here a program is inert until endowed (DECISIONS §10). `Prog::manifest` already declares what a
+Here a program is inert until endowed (DECISIONS §10). `Program::manifest` already declares what a
 program may be granted, and `grant_plan::plan` checks an invocation against it before anything is
 spawned. So:
 

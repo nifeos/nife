@@ -211,7 +211,7 @@ impl<'a> Registry<'a> {
             .count()
     }
 
-    /// **The programs this timetable will ever build**, as a bitmask over `Prog::id`.
+    /// **The programs this timetable will ever build**, as a bitmask over `Program::id`.
     ///
     /// The point of it being computable at registration: reading the printed plan tells you the
     /// complete set of programs this process will ever start, and a Kani-free host test can hold
@@ -222,7 +222,7 @@ impl<'a> Registry<'a> {
         let mut set = 0u64;
         for r in self.rows() {
             if let Some(e) = r.endowment() {
-                set |= 1 << e.prog.id();
+                set |= 1 << e.program.id();
             }
         }
         set

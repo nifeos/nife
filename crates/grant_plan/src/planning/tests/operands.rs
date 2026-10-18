@@ -21,7 +21,7 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
         panic!()
     };
     let e = plan(&r, WITH_DIR).unwrap();
-    assert_eq!(e.prog, Prog::Rm);
+    assert_eq!(e.program, Program::Rm);
     let g = e.dir.expect("the operand did not become a directory grant");
     assert_eq!(g.names.only(), Some(&b"old.txt"[..]));
     assert_eq!(g.dir.depth(), 0, "resolved where the shell was standing");
@@ -89,7 +89,7 @@ fn the_recursion_letter_widens_by_its_own_bit_wherever_it_is_declared() {
     let Command::Run(r) = parse(b"sweep -r logs") else {
         panic!()
     };
-    let e = plan_against(&r, Prog::Rm, SWEEPS_A_TREE, WITH_DIR).unwrap();
+    let e = plan_against(&r, Program::Rm, SWEEPS_A_TREE, WITH_DIR).unwrap();
     assert_eq!(e.flags, 1 << 1);
     assert!(
         e.dir.unwrap().subtree,
@@ -408,7 +408,7 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     assert_eq!(
         super::plan_against(
             &r,
-            Prog::LeastAuthorityDemo,
+            Program::LeastAuthorityDemo,
             READS_A_FILE,
             WITH_DIR,
             Expansion::at(0, expanded(b"*.txt").unwrap()),
@@ -421,7 +421,7 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     };
     let g = super::plan_against(
         &r,
-        Prog::LeastAuthorityDemo,
+        Program::LeastAuthorityDemo,
         READS_A_FILE,
         WITH_DIR,
         Expansion::at(0, expanded(b"*.log").unwrap()),
@@ -473,7 +473,7 @@ fn the_set_bound_matches_the_contract_that_carries_the_set() {
 #[test]
 fn a_program_that_hears_words_places_no_positional_grant() {
     let mut hearing = 0;
-    for &p in Prog::ALL {
+    for &p in Program::ALL {
         let m = p.manifest();
         if !m.arg.hears_words() {
             continue;
@@ -502,7 +502,7 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
         WITH_DIR,
     )
     .unwrap();
-    assert_eq!(e.prog, Prog::StdExerciser);
+    assert_eq!(e.program, Program::StdExerciser);
     assert_eq!((e.arg, e.flags, e.file, e.dir), (0, 0, None, None));
     // And a line `argv` would refuse is refused here, at the prompt, before anything is sent.
     assert_eq!(

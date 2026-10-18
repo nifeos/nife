@@ -288,7 +288,7 @@ fn resolve_or_fail(reg: &Registry<'_>, programs: &Programs) -> Images {
         Err(i) => {
             if let Some(e) = reg.rows()[i].endowment() {
                 say(b"timetable: no such program in the archive: ");
-                say(e.prog.name().as_bytes());
+                say(e.program.name().as_bytes());
                 say(b"\n");
             }
             done(E_IMAGE)
@@ -378,7 +378,7 @@ impl Tally {
         // under `grant_plan::IMAGE_ROW`, so nothing may be read off its `prog`.
         let (elf, e, declared) = match images[i].as_ref() {
             None => return,
-            Some(Image::Archived(elf)) => (elf, registered, registered.prog.manifest()),
+            Some(Image::Archived(elf)) => (elf, registered, registered.program.manifest()),
             Some(Image::Installed(p)) => {
                 let Some((elf, m)) = load_current(p) else {
                     return;
@@ -468,7 +468,7 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
     };
     for (i, row) in reg.rows().iter().enumerate() {
         let Some(e) = row.endowment() else { continue };
-        let Some(bytes) = fs.read(e.prog.name()) else {
+        let Some(bytes) = fs.read(e.program.name()) else {
             return Err(i);
         };
         let Ok(elf) = elf::Elf::parse(bytes) else {

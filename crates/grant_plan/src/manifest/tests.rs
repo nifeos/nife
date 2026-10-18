@@ -64,7 +64,7 @@ fn an_image_region_is_its_pages_plus_its_runtimes() {
 /// [`STD_REGION_PAGES`], and one declaring the installer adds the largest image it may read.
 #[test]
 fn an_installer_region_holds_one_more_package() {
-    let jig = Prog::Jig.manifest();
+    let jig = Program::Jig.manifest();
     assert!(jig.installer);
     assert_eq!(
         named_std_region_pages(&jig),

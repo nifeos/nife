@@ -42,10 +42,10 @@ const RESULT: u64 = 0;
 
 // **Its manifest, carried in its own bytes** (milestone 597 (a program carries its manifest in an
 // ELF note), provisional). Run by name, the shell and the progenitor read
-// `Prog::LeastAuthorityDemo`'s compiled-in manifest and never this note. Run as a file
+// `Program::LeastAuthorityDemo`'s compiled-in manifest and never this note. Run as a file
 // (`script/swish-check` stages a copy nobody vouched for), the note is the only manifest there is,
 // and it asks for an argument: which unvouched bytes may not be given, so that line is refused.
-capability_manifest_note::carry!(grant_plan::Prog::LeastAuthorityDemo.manifest());
+capability_manifest_note::carry!(grant_plan::Program::LeastAuthorityDemo.manifest());
 
 /// The `least_authority_demo`'s entry. `START` (milestone 19e) hands it three registers: `x0` is unused here (a
 /// standalone binary needs no role selector), the input `n` arrives in `x1`, `x2` is unused.

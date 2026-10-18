@@ -1,19 +1,19 @@
 //! **The programs the shell can spawn, declared once**: the macro that turns the rows into the
-//! `Prog` enum and its lookups, the compile-time checks on the rows, and the rows themselves.
+//! `Program` enum and its lookups, the compile-time checks on the rows, and the rows themselves.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 /// **Declare the programs the shell can spawn, once** (milestone 150; name provisional).
 ///
 /// Each row is `Variant { id: N, name: "archive_name" }`, and from the rows this generates the
-/// enum and everything that used to be a hand-maintained copy of it: [`Prog::name`], [`Prog::id`],
-/// [`Prog::from_id`], [`Prog::from_name`], [`Prog::ALL`] and [`PROG_COUNT`]. Adding a program is a
-/// row here plus its [`Prog::manifest`] arm, which the compiler demands (`E0004`); removing one is
+/// enum and everything that used to be a hand-maintained copy of it: [`Program::name`], [`Program::id`],
+/// [`Program::from_id`], [`Program::from_name`], [`Program::ALL`] and [`PROGRAM_COUNT`]. Adding a program is a
+/// row here plus its [`Program::manifest`] arm, which the compiler demands (`E0004`); removing one is
 /// deleting the row, and the compiler then points at every arm that named it.
 ///
 /// **The id is written, never derived from position**, because it is a thing two programs agree
 /// on (the shell sends it, the progenitor decodes it). A position-derived id would renumber every
-/// later program the day an earlier one was removed. So removal leaves a hole, [`PROG_COUNT`] is
+/// later program the day an earlier one was removed. So removal leaves a hole, [`PROGRAM_COUNT`] is
 /// one past the highest id rather than the number of rows, and `the_wire_ids_already_shipped_never_move`
 /// pins the ids that shipped before this table existed. Two rows with one id, or one name, fail
 /// the build at the `const` assertions below rather than at a prompt.
@@ -24,7 +24,7 @@
 macro_rules! programs {
     (
         $(#[$enum_meta:meta])*
-        pub enum Prog {
+        pub enum Program {
             $(
                 $(#[$meta:meta])*
                 $variant:ident { id: $id:literal, name: $name:literal },
@@ -33,38 +33,38 @@ macro_rules! programs {
     ) => {
         $(#[$enum_meta])*
         #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-        pub enum Prog {
+        pub enum Program {
             $(
                 $(#[$meta])*
                 $variant,
             )*
         }
 
-        /// One past the highest wire id [`Prog::id`] can answer, which is the size of the table
-        /// the progenitor indexes with it (`[Option<Elf>; PROG_COUNT]`). **Not the number of
+        /// One past the highest wire id [`Program::id`] can answer, which is the size of the table
+        /// the progenitor indexes with it (`[Option<Elf>; PROGRAM_COUNT]`). **Not the number of
         /// programs**: a removed program's id stays a hole rather than being reused, so the two
-        /// differ as soon as one is removed, and [`Prog::from_id`] answers `None` for a hole.
+        /// differ as soon as one is removed, and [`Program::from_id`] answers `None` for a hole.
         /// Computed from the declarations, so it cannot be forgotten; until milestone 150 it was a
         /// literal a person widened, and forgetting to was the one edit nothing caught.
-        pub const PROG_COUNT: usize = one_past_highest(&[$($id),*]);
+        pub const PROGRAM_COUNT: usize = one_past_highest(&[$($id),*]);
 
         const _: () = assert!(all_distinct_ids(&[$($id),*]), "two programs share a wire id");
         const _: () = assert!(all_distinct_names(&[$($name),*]), "two programs share a name");
 
-        impl Prog {
-            /// Every program, in declaration order. Sweep this rather than `0..PROG_COUNT`, which
+        impl Program {
+            /// Every program, in declaration order. Sweep this rather than `0..PROGRAM_COUNT`, which
             /// has holes once a program has been removed.
-            pub const ALL: &'static [Prog] = &[$(Prog::$variant),*];
+            pub const ALL: &'static [Program] = &[$(Program::$variant),*];
 
             /// Resolve a program by the name typed on the command line.
             ///
             /// Builtins are matched first by [`parse`](crate::parse), so a program named `help`, `echo`, `caps`
             /// or `time` would be unreachable. The program namespace must not contain any of those
             /// names.
-            pub fn from_name(name: &[u8]) -> Option<Prog> {
+            pub fn from_name(name: &[u8]) -> Option<Program> {
                 $(
                     if name == $name.as_bytes() {
-                        return Some(Prog::$variant);
+                        return Some(Program::$variant);
                     }
                 )*
                 None
@@ -75,22 +75,22 @@ macro_rules! programs {
             /// checks every time it packs an archive.
             pub fn name(self) -> &'static str {
                 match self {
-                    $(Prog::$variant => $name,)*
+                    $(Program::$variant => $name,)*
                 }
             }
 
             /// The stable wire id the shell sends and the progenitor decodes ([`spawnproto`](crate::spawnproto)).
             pub fn id(self) -> u64 {
                 match self {
-                    $(Prog::$variant => $id,)*
+                    $(Program::$variant => $id,)*
                 }
             }
 
-            /// The inverse of [`id`](Prog::id): the progenitor turns the wire id back into a
+            /// The inverse of [`id`](Program::id): the progenitor turns the wire id back into a
             /// program.
-            pub fn from_id(id: u64) -> Option<Prog> {
+            pub fn from_id(id: u64) -> Option<Program> {
                 match id {
-                    $($id => Some(Prog::$variant),)*
+                    $($id => Some(Program::$variant),)*
                     _ => None,
                 }
             }
@@ -98,7 +98,7 @@ macro_rules! programs {
     };
 }
 
-/// [`PROG_COUNT`]'s arithmetic, `const` so the table size is known where the progenitor declares
+/// [`PROGRAM_COUNT`]'s arithmetic, `const` so the table size is known where the progenitor declares
 /// its array.
 pub(super) const fn one_past_highest(ids: &[u64]) -> usize {
     let mut next = 0;
@@ -167,7 +167,9 @@ programs! {
     /// a typed program once, and everything downstream (the manifest check, the wire id the progenitor decodes)
     /// speaks the type, not the name. A name that does not resolve is [`Refusal::NoSuchProgram`](crate::Refusal::NoSuchProgram), the
     /// "there is nothing there to name" shape of no-ambient-authority applied to programs themselves.
-    pub enum Prog {
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Yes"), with `PROGRAM_COUNT` and `Endowment::program`.
+    pub enum Program {
         /// Squares its integer argument and reports the answer. Needs no memory grant.
         LeastAuthorityDemo { id: 0, name: "least_authority_demo" },
         /// Spends a granted untyped budget: maps pages until the budget is exhausted and reports how
@@ -224,7 +226,7 @@ programs! {
         /// **Render markdown for a terminal** (milestone 40, `components/src/mdr.rs`,
         /// notes/documentation.md).
         ///
-        /// The same manifest as [`Prog::Wc`]: a stream in, a stream out, and nothing else. `doc
+        /// The same manifest as [`Program::Wc`]: a stream in, a stream out, and nothing else. `doc
         /// notes/glob.md` reads like Unix's `man` and is not: the name is a designation the *shell*
         /// resolves against the directory it holds, and what arrives at the program is bytes. A viewer
         /// that opened the page it renders would be a viewer that could open any page.
@@ -234,7 +236,7 @@ programs! {
         /// **List the processes in the supervision domain it was spawned into** (milestone 126 (the `procps` package),
         /// `components/src/ps.rs`, notes/process-view.md).
         ///
-        /// The reason [`Manifest::domain`](crate::Manifest::domain) exists, and the same asymmetry [`Prog::Date`] made for the
+        /// The reason [`Manifest::domain`](crate::Manifest::domain) exists, and the same asymmetry [`Program::Date`] made for the
         /// clock: the grant is real and it is not something a person designates on the line. There is
         /// no `/proc` here to name and no pid space to scan, so what `ps` can see is decided entirely
         /// by which supervision endpoint the progenitor put in its capability table, and `caps ps` prints that.
@@ -242,15 +244,15 @@ programs! {
         /// **Name the members of that same domain that match, and do nothing to them** (milestone 126,
         /// `components/src/pgrep.rs`, notes/process-view.md).
         ///
-        /// [`Prog::Ps`]'s manifest exactly, down to the field, and that is the declaration doing the
+        /// [`Program::Ps`]'s manifest exactly, down to the field, and that is the declaration doing the
         /// work rather than a coincidence. On Unix `pgrep` and `pkill` are one lookup with two endings,
         /// so a program that can find a process can end it. Here the two manifests being identical is
         /// the readable form of **a domain names its members and does not act on them** (calef,
         /// 2026-08-17): the finding program is granted no authority the listing program lacks, and there
-        /// is no `Prog::Pkill` for it to be compared against, because a tid is a name and no method
+        /// is no `Program::Pkill` for it to be compared against, because a tid is a name and no method
         /// turns one into a capability.
         ///
-        /// `ArgSpec::Forbidden` is [`Prog::Date`]'s deliberate under-declaration, for the same reason
+        /// `ArgSpec::Forbidden` is [`Program::Date`]'s deliberate under-declaration, for the same reason
         /// and with the same consequence: `pgrep` reads a state mask out of a register the shell cannot
         /// set, so at this prompt it takes the default and names every member. Nothing in this system
         /// delivers *bytes* from a command line to a program, so a pattern is not something the line can
@@ -262,7 +264,7 @@ programs! {
         // The reason it went is a test worth reusing rather than a one-off.
         //
         // **Two programs are two programs when they hold different authority.** `Watch`'s manifest was
-        // [`Prog::Ps`]'s with one field changed, and the program held the same three slots from the same
+        // [`Program::Ps`]'s with one field changed, and the program held the same three slots from the same
         // named constants (`REPORT`, [`DOMAIN_SLOT`], [`DIAGNOSTICS_SLOT`]) while being, literally,
         // `ps`'s own loop. In a capability system that settles "one program or two" without appealing to
         // taste: there was no boundary there to draw. The refresh needed no capability of its own
@@ -289,7 +291,7 @@ programs! {
         /// **Print how long the ambient monotonic counter has been running** (milestone 126,
         /// `components/src/uptime.rs`, `crates/uptime`).
         ///
-        /// [`Prog::LeastAuthorityDemo`]'s manifest, not [`Prog::Date`]'s: `user_mode_runtime::monotonic_nanos` is granted to
+        /// [`Program::LeastAuthorityDemo`]'s manifest, not [`Program::Date`]'s: `user_mode_runtime::monotonic_nanos` is granted to
         /// **every** process unconditionally (`kernel/src/arch/*/timer.rs`'s documented, deliberate
         /// exception to DECISIONS §10's no-ambient-authority rule), so this program needed no clock
         /// capability, no domain, no memory, no file, nothing beyond the report channel every spawn
@@ -299,12 +301,12 @@ programs! {
         /// **Print the inert-configuration page** (milestone 47's environment-variable fork, DECISIONS
         /// §111; `components/src/printenv.rs`).
         ///
-        /// The reason [`Manifest::config`](crate::Manifest::config) exists, and the same asymmetry [`Prog::Date`] made for the
+        /// The reason [`Manifest::config`](crate::Manifest::config) exists, and the same asymmetry [`Program::Date`] made for the
         /// clock: the grant is real and it is not something a person designates on the line. Before
         /// this program, the page existed and could be assembled and mapped
         /// (`crates/environment_contract`), but nothing in the shell's program table declared wanting one,
         /// so `caps`'s preview of it had nothing to show and no boot granted it outside a kernel test
-        /// harness standing in for a std program. `date` before `Prog::Date` existed is the position
+        /// harness standing in for a std program. `date` before `Program::Date` existed is the position
         /// this section of the roadmap named; `printenv` is this milestone's `date`.
         ///
         /// Takes no argument, no memory, no file: its whole authority is the read-only page. `TZ`,
@@ -319,11 +321,11 @@ programs! {
         Printenv { id: 11, name: "printenv" },
         /// **Print a version-4 UUID drawn from the entropy service** (milestone 111, `components/src/uuid.rs`).
         ///
-        /// The reason [`Manifest::entropy`](crate::Manifest::entropy) exists, and [`Prog::Date`]'s asymmetry a fourth time: the
+        /// The reason [`Manifest::entropy`](crate::Manifest::entropy) exists, and [`Program::Date`]'s asymmetry a fourth time: the
         /// grant is real and no token on the line designates it. Before this program the entropy
         /// service existed, answered, and was reachable only by something the *system* spawned
         /// (`credentialer` at boot, `disk_partitioner` under the kernel's own test harness), so a
-        /// program that needed randomness could not be run by a person. `date` before [`Prog::Date`]
+        /// program that needed randomness could not be run by a person. `date` before [`Program::Date`]
         /// existed is the position notes/entropy.md's `BUGS` described; this is that milestone's
         /// `date`.
         ///
@@ -337,7 +339,7 @@ programs! {
         /// can reach today.
         ///
         /// Takes no argument, no memory, no file: its whole authority is the client view of the entropy
-        /// service. `OutputSpec::BytesAndDiagnostics` for [`Prog::Ps`]'s reason, and here the second
+        /// service. `OutputSpec::BytesAndDiagnostics` for [`Program::Ps`]'s reason, and here the second
         /// stream carries the one sentence that matters: a boot with no entropy service must leave
         /// `uuid > id.txt` **empty** and say why on the terminal, because a file containing a
         /// predictable identifier is worse than a file containing nothing.
@@ -349,7 +351,7 @@ programs! {
         /// **Rank the members of that same domain by the CPU time each has been scheduled for**
         /// (milestone 282 (a thread's CPU time, and the `top` it makes possible), `components/src/top.rs`, `crates/top`).
         ///
-        /// [`Prog::Ps`]'s manifest plus one read-only page. Until milestone 126 (the `procps`
+        /// [`Program::Ps`]'s manifest plus one read-only page. Until milestone 126 (the `procps`
         /// package) built the machine statistics page it was `ps`'s field for field, and milestone
         /// 281 (`watch` holds exactly what `ps` holds)'s rule that **two programs are two programs
         /// when they hold different authority** made whether it was a program at all a live
@@ -361,7 +363,7 @@ programs! {
         /// `ArgSpec::Forbidden` rather than an optional count, because there is no such spec: a
         /// `top N` would have to make the argument `Required`, and a `top` that cannot be typed
         /// bare is not a `top`. Every row is printed, ranked. Same boundary limitation
-        /// [`Prog::Pgrep`] records for its missing pattern.
+        /// [`Program::Pgrep`] records for its missing pattern.
         ///
         /// Name: provisional.
         Top { id: 13, name: "top" },
@@ -382,7 +384,7 @@ programs! {
         /// **Try to reach the network without declaring it, and say what the kernel answered**
         /// (milestone 590 (provisional), `fixtures/src/unreachable_network_witness.rs`).
         ///
-        /// The negative control for [`Prog::NetworkEchoClient`], and the reason it is a program
+        /// The negative control for [`Program::NetworkEchoClient`], and the reason it is a program
         /// rather than a sentence: its manifest declares nothing, it `CALL`s [`NETWORK_SLOT`](crate::NETWORK_SLOT) with a
         /// real socket-contract request anyway, and prints the error. A progenitor that endowed the
         /// network to every child rather than to the declaring one would turn its line from a

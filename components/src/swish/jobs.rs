@@ -103,7 +103,7 @@ pub(super) fn spawn_interruptible(e: Endowment) {
     // progenitor maps it). We keep our own copies: the untyped to tear the job down, the frame to
     // signal it and read it.
     let (w0, w1, w2) = spawnproto::request(
-        e.prog.id(),
+        e.program.id(),
         e.arg,
         e.mem_pages,
         spawnproto::Wiring {
@@ -155,7 +155,7 @@ pub(super) fn spawn_interruptible(e: Endowment) {
         return;
     }
     print(b"  running ");
-    print(e.prog.name().as_bytes());
+    print(e.program.name().as_bytes());
     print(b" in the foreground. ^C interrupts it.\n");
 
     watch(jf, job_ut);

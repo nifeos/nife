@@ -28,7 +28,7 @@ fn the_noteless_install_line_names_the_seeded_file() {
 }
 
 /// **A job count names a program** ([`Line`]'s doc): no line may claim more jobs than it has
-/// stages whose head is something the progenitor can build, a `grant_plan::Prog` or an
+/// stages whose head is something the progenitor can build, a `grant_plan::Program` or an
 /// installed package's path, after the `time` and `xargs` prefixes. A `caps` head is a preview
 /// and builds nothing. A bound from above only; a tag that is too low is the case no host test
 /// can see, and the transcript cannot either.
@@ -118,7 +118,7 @@ fn a_job_count_names_a_program() {
             // shell's own test (`components/src/swish.rs`, `run`).
             .filter(|head| {
                 head.contains('/')
-                    || grant_plan::Prog::ALL.iter().any(|p| p.name() == *head)
+                    || grant_plan::Program::ALL.iter().any(|p| p.name() == *head)
                     || INSTALLED_BY_THE_SCRIPT.contains(head)
             })
             .count();
@@ -137,7 +137,7 @@ fn every_spawnable_program_has_a_swish_check_line() {
     // `SWISH_CHECK_INTERRUPTED` taught this gate to press `^C` and the two supervised
     // demonstrators left this list.
     const UNSCRIPTED: [&str; 0] = [];
-    for p in grant_plan::Prog::ALL {
+    for p in grant_plan::Program::ALL {
         let name = p.name();
         let scripted = SWISH_CHECK_SCRIPT
             .iter()

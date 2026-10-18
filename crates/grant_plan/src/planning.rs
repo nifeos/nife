@@ -11,7 +11,7 @@ use crate::expand::{Expansion, Name, NameSet};
 use crate::line::{Sink, Source};
 use crate::{
     ArgSpec, CapabilityKind, DirGrant, DirSpec, Endowment, FileGrant, FileSpec, Holdings,
-    InputSpec, Manifest, MemSpec, Prog, Refusal, RunSpec, check_words, expand, line, nav,
+    InputSpec, Manifest, MemSpec, Program, Refusal, RunSpec, check_words, expand, line, nav,
     parse_u64,
 };
 
@@ -63,7 +63,7 @@ pub fn plan_stage(
     if let Some(r) = run.misquoted {
         return Err(r);
     }
-    let prog = Prog::from_name(run.prog).ok_or(Refusal::NoSuchProgram)?;
+    let prog = Program::from_name(run.prog).ok_or(Refusal::NoSuchProgram)?;
     plan_against_with(run, prog, prog.manifest(), holds, expanded, streams)
 }
 
@@ -95,7 +95,7 @@ pub fn plan_stage(
 ///   designates itself.
 pub fn plan_against(
     run: &RunSpec<'_>,
-    prog: Prog,
+    prog: Program,
     m: Manifest,
     holds: Holdings,
     expanded: Expansion,
@@ -107,7 +107,7 @@ pub fn plan_against(
 /// spellings without a pipeline on the line.
 pub fn plan_against_with(
     run: &RunSpec<'_>,
-    prog: Prog,
+    prog: Program,
     m: Manifest,
     holds: Holdings,
     expanded: Expansion,
@@ -216,7 +216,7 @@ pub fn plan_against_with(
     let diagnostics = check_streams(m, streams)?;
 
     Ok(Endowment {
-        prog,
+        program: prog,
         arg,
         mem_pages,
         file,

@@ -99,7 +99,7 @@ pub(super) const LINES: &[Line] = &[
     // generation just written. The line it prints is its own; no program in the image prints it.
     // That the image lacks `greeting` is checked on the host before the boot, by reading the
     // archive (`disk::stage_installed`), because the prompt cannot tell: `greeting` is no
-    // `grant_plan::Prog`, so its bare name is refused whether or not the archive packs it.
+    // `grant_plan::Program`, so its bare name is refused whether or not the archive packs it.
     line(
         1,
         "packages/greeting/0.1.0/greeting",

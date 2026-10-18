@@ -37,7 +37,7 @@
 //!
 //! notes/packages/jig.md has what each verb holds, how an install travels, and the BUGS.
 //!
-//! Name: ratified 2026-10-06 (calef). See `grant_plan::Prog::Jig`.
+//! Name: ratified 2026-10-06 (calef). See `grant_plan::Program::Jig`.
 
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream, ToSocketAddrs};
@@ -66,7 +66,7 @@ capability_manifest_note::carry!(grant_plan::Manifest {
     installer: false,
     catalog: false,
     indexes: grant_plan::IndexStore::Forbidden,
-    ..grant_plan::Prog::Jig.manifest()
+    ..grant_plan::Program::Jig.manifest()
 });
 
 /// **Where the staging run is mapped**: one package, read here and handed on a page at a time. A

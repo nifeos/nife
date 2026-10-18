@@ -124,7 +124,7 @@ pub const BUILTINS: &[&[u8]] = &[
 /// rest of the line verbatim (so `echo   two  spaces` prints its spaces); everything else works on
 /// tokens.
 ///
-/// Builtins win over programs, which is why [`Prog::from_name`](crate::Prog::from_name) must never learn a name that is
+/// Builtins win over programs, which is why [`Program::from_name`](crate::Program::from_name) must never learn a name that is
 /// also a builtin. A handful of reserved words is the whole cost of a shell where every command is
 /// typed the same way.
 ///
@@ -208,7 +208,7 @@ pub fn parse(line: &[u8]) -> Command<'_> {
         // **`rm` is deliberately not here.** It was a builtin in the commands lane and is a program
         // now (milestone 47's rmdir lane): a builtin runs with the shell's whole endowment, and a
         // destructive loop should take an explicit attenuated grant instead. Since builtins are
-        // matched first, deleting the line is the entire change at this level; `Prog::from_name`
+        // matched first, deleting the line is the entire change at this level; `Program::from_name`
         // picks the word up.
         // Not a builtin, so it is a program invocation, and the whole line (name included) is the
         // grant expression. Whether the program exists is `plan`'s question, not the parser's.

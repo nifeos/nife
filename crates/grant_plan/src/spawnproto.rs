@@ -108,7 +108,7 @@ const DIR2_BIT: u64 = 1 << 38;
 
 /// **The executable's bytes follow, as page frames the caller owns** (DECISIONS §219 option D,
 /// ruled by calef 2026-09-26). Set when the shell runs a program the image did not name by
-/// [`Prog`](crate::Prog) id: an installed package's member, or a binary somebody just built.
+/// [`Program`](crate::Program) id: an installed package's member, or a binary somebody just built.
 ///
 /// **Word 0 changes meaning under this bit**: it carries the image's **length in bytes** instead
 /// of a program id ([`image_len`]), and [`image_pages`] of that many `SEND_CAP`s follow, one frame

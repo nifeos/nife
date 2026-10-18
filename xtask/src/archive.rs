@@ -111,7 +111,7 @@ fn declared_programs() -> Result<&'static [String], String> {
                     "`{name}` is packaged_only and no [[bin]] builds it"
                 ));
             }
-            if grant_plan::Prog::ALL.iter().any(|p| p.name() == name)
+            if grant_plan::Program::ALL.iter().any(|p| p.name() == name)
                 || boot_programs().contains(&name.as_str())
             {
                 return Err(format!(
@@ -284,11 +284,11 @@ const BUILT_ELSEWHERE: [&str; 15] = [
 ];
 
 /// **A `std` program the shell can spawn, built by its own workspace rather than a `[[bin]]`**
-/// (milestone 595 (provisional)). `grant_plan::Prog::StdExerciser` is the first: it is compiled with
+/// (milestone 595 (provisional)). `grant_plan::Program::StdExerciser` is the first: it is compiled with
 /// `-Zbuild-std` against the patched std farm (`cargo xtask std-exerciser`) and packed iff that
-/// ran, so the `[[bin]]` rule cannot apply to it. Both halves are required, so a native `Prog`
+/// ran, so the `[[bin]]` rule cannot apply to it. Both halves are required, so a native `Program`
 /// with no binary still fails, and so does a `std` one nothing here packs.
-fn is_std_built_elsewhere(p: grant_plan::Prog) -> bool {
+fn is_std_built_elsewhere(p: grant_plan::Program) -> bool {
     p.manifest().runtime == grant_plan::Runtime::Std && BUILT_ELSEWHERE.contains(&p.name())
 }
 
@@ -299,7 +299,7 @@ fn is_std_built_elsewhere(p: grant_plan::Prog) -> bool {
 ///   judges goes blind when the set empties; see
 ///   design/roadmap/proposals/a-gate-that-selects-the-set-it-judges.md).
 /// - No name is declared twice, across both packages.
-/// - Every program `grant_plan` lets the shell spawn is built. Before milestone 150 a `Prog` whose
+/// - Every program `grant_plan` lets the shell spawn is built. Before milestone 150 (adding a program should not need eight hand-maintained lists) a `Program` whose
 ///   binary was not packed compiled, passed every host test, and could not be spawned, and nothing
 ///   said so until a boot.
 /// - Every program the kernel measures at boot ([`boot_programs`]) is built.
@@ -317,7 +317,7 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
     if let Some(w) = sorted.windows(2).find(|w| w[0] == w[1]) {
         return Err(format!("`{}` is declared by two [[bin]] blocks", w[0]));
     }
-    for p in grant_plan::Prog::ALL {
+    for p in grant_plan::Program::ALL {
         if !has(p.name()) && !is_std_built_elsewhere(*p) {
             return Err(format!(
                 "grant_plan declares `{}` spawnable from the shell, and no [[bin]] in {} builds it",
@@ -857,7 +857,7 @@ mod tests {
         // A floor, not a pin: a reader that silently stopped at the first package would still
         // find `progenitor`, and would pack a third of the system.
         assert!(names.len() > 60, "only {} programs declared", names.len());
-        for p in grant_plan::Prog::ALL {
+        for p in grant_plan::Program::ALL {
             assert!(
                 names.iter().any(|n| n == p.name()) || is_std_built_elsewhere(*p),
                 "{}",

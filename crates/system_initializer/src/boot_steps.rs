@@ -89,8 +89,8 @@ pub(super) struct LoginPrograms {
 
 /// The programs the shell can spawn, and the names the measurement refused among them.
 pub(super) struct Spawnable {
-    pub(super) progs: [Option<elf::Elf<'static>>; grant_plan::PROG_COUNT],
-    pub(super) refused: [&'static str; grant_plan::PROG_COUNT],
+    pub(super) progs: [Option<elf::Elf<'static>>; grant_plan::PROGRAM_COUNT],
+    pub(super) refused: [&'static str; grant_plan::PROGRAM_COUNT],
     pub(super) refused_n: usize,
 }
 
@@ -377,18 +377,18 @@ pub(super) fn measure_spawnable(fs: &nifefs::Fs<'static>, table: &str) -> Spawna
     // after the giveaway: the announcement further down is the only thing the progenitor ever says, so the
     // verdicts have to exist before it. One `Option<elf::Elf>` is five words, so moving the whole
     // table up the frame costs a few hundred bytes and buys a person being told at boot instead of
-    // at the prompt. (It said "seven of them" while `PROG_COUNT` was nine and then ten; a count
+    // at the prompt. (It said "seven of them" while `PROGRAM_COUNT` was nine and then ten; a count
     // written beside a constant that moves is a count that goes stale, so this one is not written.)
     //
     // The refusals are collected in the same pass, because a second pass would hash every program a
     // second time. Only entries the archive **has** count as refusals: `rm` is deliberately not
     // loadable here, and a program this initial ramdisk never packed was never spawnable, so
     // neither is news.
-    let mut progs: [Option<elf::Elf>; grant_plan::PROG_COUNT] = core::array::from_fn(|_| None);
-    let mut refused = [""; grant_plan::PROG_COUNT];
+    let mut progs: [Option<elf::Elf>; grant_plan::PROGRAM_COUNT] = core::array::from_fn(|_| None);
+    let mut refused = [""; grant_plan::PROGRAM_COUNT];
     let mut refused_n = 0usize;
     for (id, slot) in progs.iter_mut().enumerate() {
-        let Some(name) = Prog::from_id(id as u64).and_then(archive_name) else {
+        let Some(name) = Program::from_id(id as u64).and_then(archive_name) else {
             continue;
         };
         let found = measured(fs, table, name);

@@ -454,7 +454,7 @@ fn init_service(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
     loop {
         let m = crate::sched::ipc_receive(spawn_ep);
         let (w0, w1, w2) = (m[0], m[1], m[2]);
-        let prog = grant_plan::Prog::from_id(grant_plan::spawnproto::prog_id(w0));
+        let prog = grant_plan::Program::from_id(grant_plan::spawnproto::prog_id(w0));
         let arg = grant_plan::spawnproto::arg(w1);
         let wiring = grant_plan::spawnproto::wiring(w2);
 

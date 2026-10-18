@@ -24,7 +24,7 @@ pub(super) struct Caretakers {
 /// the worst failure this model has, a program told to destroy something, holding nothing, saying
 /// nothing. Milestone 31 phase 3 removed the cause rather than the symptom, so the exception is gone
 /// and every spawnable program is loaded the same way.
-pub(super) fn archive_name(p: Prog) -> Option<&'static str> {
+pub(super) fn archive_name(p: Program) -> Option<&'static str> {
     Some(p.name())
 }
 
@@ -175,8 +175,8 @@ pub(super) struct Fs {
 /// **supervised** (interruptible) job: the shell leads the delegation with a job untyped and a shared
 /// job frame; we build the whole child *from that untyped* (so the shell's region owns it and can
 /// `DESTROY` it to tear it down, DECISIONS §24), map the job frame in, endow nothing else, start it,
-/// and send `SPAWN_OK` once as the shell's go-ahead. The `progs` array is indexed by [`Prog::id`], so
-/// it is [`grant_plan::PROG_COUNT`] long: a variant added to `grant_plan` without a slot here would
+/// and send `SPAWN_OK` once as the shell's go-ahead. The `progs` array is indexed by [`Program::id`], so
+/// it is [`grant_plan::PROGRAM_COUNT`] long: a variant added to `grant_plan` without a slot here would
 /// be an out-of-bounds read in the progenitor.
 ///
 /// **Only the normal shape is supervised**, and that is not an oversight. An interruptible job's
@@ -185,7 +185,7 @@ pub(super) struct Fs {
 /// second party in the teardown path for memory that is not ours, racing the shell's `DESTROY`.
 pub(super) fn spawn_service(
     c: Channels,
-    progs: &[Option<elf::Elf>; grant_plan::PROG_COUNT],
+    progs: &[Option<elf::Elf>; grant_plan::PROGRAM_COUNT],
     care: Caretakers,
     discipline: SessionDiscipline,
     fs_scoped: bool,
@@ -212,7 +212,7 @@ pub(super) fn spawn_service(
 /// authority, the boot's measured images, and the two pieces of state a request can change.
 struct Service<'a> {
     c: Channels,
-    progs: &'a [Option<elf::Elf<'a>>; grant_plan::PROG_COUNT],
+    progs: &'a [Option<elf::Elf<'a>>; grant_plan::PROGRAM_COUNT],
     care: Caretakers,
     discipline: SessionDiscipline,
     fs_scoped: bool,
@@ -232,7 +232,7 @@ struct Request {
     mem_pages: u64,
     wiring: spawnproto::Wiring,
     interruptible: bool,
-    prog: Option<Prog>,
+    prog: Option<Program>,
     grant: Option<GrantWords>,
     frames: Option<Frames>,
     args_seen: Option<u64>,
@@ -443,7 +443,7 @@ impl Service<'_> {
         let (image_region, staging) = self.carve_image(&req);
 
         // **A `graphical_terminal` spawn** (milestone 632 (provisional)): graphics is launched from the prompt,
-        // and this is the launch. The request must be the program and the bit together (`Prog::
+        // and this is the launch. The request must be the program and the bit together (`Program::
         // GraphicalTerminal` *and* [`spawnproto::Wiring::graphics`], and never
         // [`spawnproto::Wiring::keyboard`], which no capability follows since milestone 715);
         // anything else is refused rather than half-endowed. A well-formed request on a boot with
@@ -464,7 +464,7 @@ impl Service<'_> {
         // (`build_graphical_terminal_session` owns that disposal). The boot version of this builder trapped
         // because a boot that cannot come up is a dead machine; a launch that cannot is just a
         // command that failed.
-        if req.wiring.graphics || req.prog == Some(Prog::GraphicalTerminal) {
+        if req.wiring.graphics || req.prog == Some(Program::GraphicalTerminal) {
             self.launch_graphical_terminal(&req);
             return;
         }
@@ -522,7 +522,7 @@ impl Service<'_> {
         let prog = if wiring.image {
             None
         } else {
-            Prog::from_id(spawnproto::prog_id(w0))
+            Program::from_id(spawnproto::prog_id(w0))
         };
 
         // **The directory grant's two data messages, before any capability** (milestone 31 phase 3).
@@ -659,40 +659,40 @@ impl Service<'_> {
         if let Some(p) = req.delegated.machine_page {
             cap_delete(p);
         }
-        let answer = if prog != Some(Prog::GraphicalTerminal) || !wiring.graphics || wiring.keyboard
-        {
-            spawnproto::SPAWN_FAILED
-        } else if !graphical_terminal_caps.held {
-            spawnproto::SPAWN_NO_DISPLAY
-        } else {
-            let built = match (
-                self.progs[Prog::GraphicalTerminal.id() as usize].as_ref(),
-                self.spawn.split(jobs_ut, GRAPHICAL_TERMINAL_SESSION_PAGES),
-            ) {
-                (Some(elf), Some(region)) => build_graphical_terminal_session(
-                    &GraphicalTerminalLaunch {
-                        own_ut,
-                        region,
-                        deaths,
-                        boot_terminal,
-                        result_ep,
-                        gpu: &graphical_terminal_caps.gpu,
-                        kbd: graphical_terminal_caps
-                            .keyboard
-                            .then_some(&graphical_terminal_caps.kbd),
-                        program: elf,
-                    },
-                    graphical_terminal_caps,
-                    &self.discipline,
-                ),
-                _ => Err(()),
+        let answer =
+            if prog != Some(Program::GraphicalTerminal) || !wiring.graphics || wiring.keyboard {
+                spawnproto::SPAWN_FAILED
+            } else if !graphical_terminal_caps.held {
+                spawnproto::SPAWN_NO_DISPLAY
+            } else {
+                let built = match (
+                    self.progs[Program::GraphicalTerminal.id() as usize].as_ref(),
+                    self.spawn.split(jobs_ut, GRAPHICAL_TERMINAL_SESSION_PAGES),
+                ) {
+                    (Some(elf), Some(region)) => build_graphical_terminal_session(
+                        &GraphicalTerminalLaunch {
+                            own_ut,
+                            region,
+                            deaths,
+                            boot_terminal,
+                            result_ep,
+                            gpu: &graphical_terminal_caps.gpu,
+                            kbd: graphical_terminal_caps
+                                .keyboard
+                                .then_some(&graphical_terminal_caps.kbd),
+                            program: elf,
+                        },
+                        graphical_terminal_caps,
+                        &self.discipline,
+                    ),
+                    _ => Err(()),
+                };
+                // A session that came up answers for itself; only a failure is ours to say.
+                match built {
+                    Ok(()) => return,
+                    Err(()) => spawnproto::SPAWN_FAILED,
+                }
             };
-            // A session that came up answers for itself; only a failure is ours to say.
-            match built {
-                Ok(()) => return,
-                Err(()) => spawnproto::SPAWN_FAILED,
-            }
-        };
         send(result_ep, answer, 0, 0);
     }
 
@@ -743,7 +743,7 @@ impl Service<'_> {
             }
         });
         // **The one manifest everything below reads**, so an image is endowed from what
-        // `endowed_image` decided and never from a `Prog` row: `prog` stays `None` for it, and no
+        // `endowed_image` decided and never from a `Program` row: `prog` stays `None` for it, and no
         // row's authority can reach it by a path this line does not name.
         // **Narrowed by the line's verb** for a program with a verb table (milestone 809 (the
         // package client becomes a program), option V2): `jig list` is endowed with the catalog
@@ -884,7 +884,10 @@ impl Service<'_> {
         // before the child exists, since the resolver deletes a page attached to a badge it does
         // not know yet. A job that should hold one and could not is refused, `dir_failed`'s rule.
         let eligible = std_layout && wants.network && req.delegated.screen.is_none();
-        let zone = req.prog.and_then(Prog::resolver_zone).filter(|_| eligible);
+        let zone = req
+            .prog
+            .and_then(Program::resolver_zone)
+            .filter(|_| eligible);
         let (resolver, resolver_failed) = self.spawn.resolver_for(dir.label, zone);
 
         let out = self.output(req);

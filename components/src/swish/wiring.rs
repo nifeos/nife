@@ -77,7 +77,7 @@ pub(super) static HOLDS_MACHINE_PAGE: core::sync::atomic::AtomicBool =
 /// Whether a spawn of `e` sends the machine statistics page: the program declared it and this
 /// session holds it.
 pub(super) fn machine_wiring(e: &Endowment) -> bool {
-    e.prog.manifest().machine && HOLDS_MACHINE_PAGE.load(core::sync::atomic::Ordering::Relaxed)
+    e.program.manifest().machine && HOLDS_MACHINE_PAGE.load(core::sync::atomic::Ordering::Relaxed)
 }
 
 /// **Send the machine statistics page, the last delegated capability of a request that set

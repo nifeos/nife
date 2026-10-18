@@ -179,7 +179,7 @@ pub(super) fn admit(command: &[u8], held: Held) -> Admission {
     };
     match grant_plan::plan(&spec, holdings, Expansion::none()) {
         Err(r) => Admission::Refused(r),
-        Ok(e) => match unbacked(&e, &e.prog.manifest(), held) {
+        Ok(e) => match unbacked(&e, &e.program.manifest(), held) {
             Some(u) => Admission::Unbacked(u),
             None => Admission::Fires(e),
         },
@@ -269,7 +269,7 @@ fn unbacked(e: &Endowment, m: &Manifest, held: Held) -> Option<Unbacked> {
 
 #[cfg(test)]
 mod tests {
-    use grant_plan::Prog;
+    use grant_plan::Program;
 
     use super::*;
     use crate::test_support::{REFERENCE, shown, with_clock};
@@ -323,7 +323,7 @@ mod tests {
 
         // Fires, with the argument the line named and no memory it did not.
         let e = rows[0].endowment().unwrap();
-        assert_eq!(e.prog, Prog::LeastAuthorityDemo);
+        assert_eq!(e.program, Program::LeastAuthorityDemo);
         assert_eq!(e.arg, 7);
         assert_eq!(e.mem_pages, 0);
 
@@ -352,7 +352,7 @@ mod tests {
         );
 
         assert_eq!(reg.admitted(), 1);
-        assert_eq!(reg.programs(), 1 << Prog::LeastAuthorityDemo.id());
+        assert_eq!(reg.programs(), 1 << Program::LeastAuthorityDemo.id());
     }
 
     /// **Widening the scheduler changes the answer, and that is the point of [`Held`].**
@@ -384,7 +384,7 @@ mod tests {
         );
         assert!(matches!(endowed.rows()[0].admission, Admission::Fires(_)));
         let e = endowed.rows()[1].endowment().unwrap();
-        assert_eq!(e.prog, Prog::MemoryGrantDepleter);
+        assert_eq!(e.program, Program::MemoryGrantDepleter);
         assert_eq!(e.mem_pages, 4);
 
         // And the ceiling is the scheduler's, not the manifest's: `memory_grant_depleter` declares 1..=64 pages,
@@ -429,9 +429,9 @@ mod tests {
             .endowment()
             .expect("a scheduler holding a directory can back `rm -r logs`");
         assert!(e.dir.is_some(), "the plan narrowed the directory it holds");
-        assert_eq!(unbacked(&e, &e.prog.manifest(), with_dir), None);
+        assert_eq!(unbacked(&e, &e.program.manifest(), with_dir), None);
         assert_eq!(
-            unbacked(&e, &e.prog.manifest(), Held::default()),
+            unbacked(&e, &e.program.manifest(), Held::default()),
             Some(Unbacked::Directory)
         );
 
@@ -444,9 +444,9 @@ mod tests {
         };
         e.dir = None;
         e.file = Some(f);
-        assert_eq!(unbacked(&e, &e.prog.manifest(), with_dir), None);
+        assert_eq!(unbacked(&e, &e.program.manifest(), with_dir), None);
         assert_eq!(
-            unbacked(&e, &e.prog.manifest(), Held::default()),
+            unbacked(&e, &e.program.manifest(), Held::default()),
             Some(Unbacked::File)
         );
     }
@@ -543,8 +543,8 @@ mod tests {
         )
         .unwrap();
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
-        manifests[0] = Prog::LeastAuthorityDemo.manifest();
-        manifests[2] = Prog::Date.manifest();
+        manifests[0] = Program::LeastAuthorityDemo.manifest();
+        manifests[2] = Program::Date.manifest();
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
 
         let e = reg.rows()[0]
@@ -575,7 +575,7 @@ mod tests {
     fn an_upgraded_program_fires_its_new_version() {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
-            mem: Prog::MemoryGrantDepleter.manifest().mem,
+            mem: Program::MemoryGrantDepleter.manifest().mem,
             ..grant_plan::NO_NOTE_MANIFEST
         };
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
@@ -607,7 +607,7 @@ mod tests {
     fn a_new_version_asking_for_more_than_its_line_grants_does_not_fire() {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
-            mem: Prog::MemoryGrantDepleter.manifest().mem,
+            mem: Program::MemoryGrantDepleter.manifest().mem,
             ..grant_plan::NO_NOTE_MANIFEST
         };
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
@@ -634,7 +634,7 @@ mod tests {
     #[test]
     fn a_program_needing_what_no_timetable_endows_is_not_schedulable() {
         assert!(schedulable(&grant_plan::NO_NOTE_MANIFEST));
-        assert!(schedulable(&Prog::LeastAuthorityDemo.manifest()));
+        assert!(schedulable(&Program::LeastAuthorityDemo.manifest()));
         for (what, m) in [
             (
                 "entropy",
@@ -670,7 +670,7 @@ mod tests {
     fn an_installed_calendar_line_waits_for_the_clock_and_then_for_its_manifest() {
         let doc = parse("every day at 09:00 tick 7\n").unwrap();
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
-        manifests[0] = Prog::LeastAuthorityDemo.manifest();
+        manifests[0] = Program::LeastAuthorityDemo.manifest();
         let without = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert_eq!(
             without.rows()[0].admission,
@@ -694,7 +694,7 @@ mod tests {
     fn an_installed_file_operand_is_planned_against_a_directory() {
         let doc = parse("every 5s wc report.txt\n").unwrap();
         let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
-        manifests[0] = Prog::Wc.manifest();
+        manifests[0] = Program::Wc.manifest();
         let held = Held {
             dir: true,
             ..SHIPPED_HELD

@@ -228,7 +228,7 @@ impl Audit {
     /// something, and a reader would rather be told the endowment is wide than be told nothing.
     pub fn saw(&mut self, name: &str) {
         self.held += 1;
-        let planned = grant_plan::Prog::from_name(name.as_bytes())
+        let planned = grant_plan::Program::from_name(name.as_bytes())
             .is_some_and(|p| self.plan & (1 << p.id()) != 0);
         if !planned {
             self.beyond += 1;
@@ -285,7 +285,7 @@ impl Audit {
 
 #[cfg(test)]
 mod tests {
-    use grant_plan::Prog;
+    use grant_plan::Program;
 
     use super::*;
     use crate::test_support::{REFERENCE, shown};
@@ -393,7 +393,7 @@ mod tests {
         // crate carries this same set as a written list and this is what keeps it true.
         assert_eq!(
             reg.programs(),
-            1 << Prog::LeastAuthorityDemo.id() | 1 << Prog::MemoryGrantDepleter.id(),
+            1 << Program::LeastAuthorityDemo.id() | 1 << Program::MemoryGrantDepleter.id(),
             "the shipped document's plan changed; \
              system_tests/src/user/timetable_tests.rs's PLANNED_PROGRAMS must change with it",
         );

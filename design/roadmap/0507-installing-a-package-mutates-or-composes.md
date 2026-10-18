@@ -38,8 +38,8 @@ actually has.
 Reading the code rather than the phrase found that "a namespace" is two different things here:
 
 1. The program namespace: which names a shell will spawn. Today it is **sealed at boot.** The
-   shell resolves a name through the closed `grant_plan::Prog` enum (`PROG_COUNT` = 13), sends its
-   integer id over `spawnproto`, and the progenitor indexes a `[Option<Elf>; PROG_COUNT]` table it
+   shell resolves a name through the closed `grant_plan::Program` enum (`PROGRAM_COUNT` = 13), sends its
+   integer id over `spawnproto`, and the progenitor indexes a `[Option<Elf>; PROGRAM_COUNT]` table it
    filled once, at boot, from the measured archive (`crates/system_initializer/src/lib.rs`,
    `boot`). Milestone 150, in flight as PR #968, generates that table from one declaration, which
    removes the hand-maintenance and leaves the seal: the set is still fixed when the image is built.

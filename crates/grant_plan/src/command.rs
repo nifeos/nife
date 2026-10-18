@@ -9,7 +9,7 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::expand::{Name, NameSet};
-use crate::{Prog, RunSpec, line, nav};
+use crate::{Program, RunSpec, line, nav};
 
 /// A parsed command line. The shell dispatches on this; only [`Command::Run`] carries a grant
 /// expression that must be planned against a manifest.
@@ -75,7 +75,7 @@ pub enum Command<'a> {
     /// `touch <path>` or `touch -t <RFC-3339-instant> <path>`: create an empty file if the name is
     /// not there (a no-op if it already is), then bump its modification time. Bare `touch` sets it
     /// to now; `-t` asserts a caller-chosen instant (DECISIONS §112: the ability to *lie about
-    /// history*). **A builtin, in [`Mkdir`](Command::Mkdir)'s category rather than [`Prog::Rm`]'s**:
+    /// history*). **A builtin, in [`Mkdir`](Command::Mkdir)'s category rather than [`Program::Rm`]'s**:
     /// even the `-t` half takes no more than this shell's own directory capability
     /// (`filesystem_contract::dir::WRITE` for the bare form, `dir::WRITE | dir::SETTIME` for `-t`),
     /// which `mkdir` and the create half already established as the model, so there is nothing to
@@ -106,7 +106,7 @@ pub enum Command<'a> {
     /// `apropos <term>`: **name the installed pages that mention a word** (milestone 40 phase 2).
     /// The operand is one word, folded the way the host builder folded the text it indexed.
     ///
-    /// **A builtin, in [`Ls`](Command::Ls)'s category rather than [`Prog::Rm`]'s**, and the
+    /// **A builtin, in [`Ls`](Command::Ls)'s category rather than [`Program::Rm`]'s**, and the
     /// argument is the one that milestone's own note reached: search *is* enumeration, the shell
     /// already holds enumeration over what it can see, and a searching *program* would have to be
     /// handed a capability to the whole documentation store in order to read every shard in it.
@@ -167,7 +167,7 @@ pub const MAX_FLAGS: usize = 8;
 /// is planned, nothing that happens afterwards can change what it means.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
-    pub prog: Prog,
+    pub program: Program,
     /// The integer argument to start it with (0 when the program takes none).
     pub arg: u64,
     /// Pages of untyped to split from the shell's own budget and grant (0 = none).
@@ -298,7 +298,7 @@ pub struct DirGrant {
 }
 
 /// **`rm`'s options**, by the bit they occupy in [`Endowment::flags`], which is their position in
-/// [`Prog::Rm`]'s manifest. Named here so the shell, the program and the tests share one definition
+/// [`Program::Rm`]'s manifest. Named here so the shell, the program and the tests share one definition
 /// rather than three copies of an ordering; `rm_options_are_numbered_by_their_position` pins them.
 pub mod rmopt {
     /// `-r`: recurse. It is also `rm`'s `subtree_flag`, so typing it visibly widens the grant.

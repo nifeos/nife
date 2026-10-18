@@ -5,7 +5,7 @@
 //!
 //! The negative control for `network_echo_client`, and the fixture for an unvouched child of
 //! DECISIONS §219 (how the shell names an installed program to the spawner) gate D2. Its manifest
-//! (`grant_plan::Prog::UnreachableNetworkWitness`) declares nothing, so the progenitor's spawn
+//! (`grant_plan::Program::UnreachableNetworkWitness`) declares nothing, so the progenitor's spawn
 //! service must leave the process domain, entropy and network slots empty. It asks each of them
 //! anyway, with a real request, and then lists every slot it holds:
 //!
@@ -63,13 +63,13 @@ use user_mode_runtime::{call, call_receiving, exit, is_granted, send, survey};
 const OUT: u64 = 0;
 
 /// **What this program's note asks for, which is more than it is ever given.** Its compiled-in
-/// manifest (`Prog::UnreachableNetworkWitness`), plus the three authorities it probes. See the
+/// manifest (`Program::UnreachableNetworkWitness`), plus the three authorities it probes. See the
 /// module documentation for why a witness carries a note that overreaches.
 const NOTE_ASKS: grant_plan::Manifest = grant_plan::Manifest {
     network: true,
     entropy: true,
     domain: true,
-    ..grant_plan::Prog::UnreachableNetworkWitness.manifest()
+    ..grant_plan::Program::UnreachableNetworkWitness.manifest()
 };
 
 capability_manifest_note::carry!(NOTE_ASKS);

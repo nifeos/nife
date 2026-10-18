@@ -126,7 +126,7 @@ pub fn write_refusal(spec: &RunSpec, refusal: Refusal, out: &mut dyn FnMut(&[u8]
         }
         Refusal::NoSuchProgram => {}
         _ => {
-            if let Some(p) = Prog::from_name(spec.prog) {
+            if let Some(p) = Program::from_name(spec.prog) {
                 out(p.name().as_bytes());
                 out(b": ");
             }
@@ -238,8 +238,8 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
         out(FAULTED_SENTENCE);
         return;
     }
-    match e.prog {
-        Prog::LeastAuthorityDemo => {
+    match e.program {
+        Program::LeastAuthorityDemo => {
             out(b"  a process at EL0 computed ");
             write_num(e.arg, out);
             out(b"*");
@@ -248,7 +248,7 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
             write_num(answer, out);
             out(b"\n");
         }
-        Prog::MemoryGrantDepleter => {
+        Program::MemoryGrantDepleter => {
             out(b"  the process mapped ");
             write_num(answer, out);
             out(b" pages out of the ");
@@ -258,7 +258,7 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
         // Milestone 632 (graphics on demand): the session's one word says it ended. It is always 0
         // today (`components/src/graphical_terminal.rs`'s `end`), and the number is printed anyway
         // so a future status has somewhere to show rather than a sentence that lies about it.
-        Prog::GraphicalTerminal => {
+        Program::GraphicalTerminal => {
             out(b"  the graphical terminal session ended, status ");
             write_num(answer, out);
             out(b"\n");

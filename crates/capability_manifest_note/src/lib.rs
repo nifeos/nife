@@ -320,7 +320,7 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// # Examples
 ///
 /// ```
-/// let m = grant_plan::Prog::Uptime.manifest();
+/// let m = grant_plan::Program::Uptime.manifest();
 /// let bytes = capability_manifest_note::encode(&m);
 /// assert_eq!(capability_manifest_note::decode(&bytes), Ok(m));
 ///
@@ -332,7 +332,7 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// A program carries its note with one line at module scope:
 ///
 /// ```ignore
-/// capability_manifest_note::carry!(grant_plan::Prog::Uptime.manifest());
+/// capability_manifest_note::carry!(grant_plan::Program::Uptime.manifest());
 /// ```
 pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     if d.len() < 4 {
@@ -684,7 +684,7 @@ pub const fn verbs_len(count: usize) -> usize {
 /// the compiler; `LEN` is [`verbs_len`] of the table's length, named by the caller's type:
 ///
 /// ```
-/// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Prog::Jig.verbs();
+/// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Program::Jig.verbs();
 /// const BYTES: [u8; capability_manifest_note::verbs_len(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
 /// assert_eq!(capability_manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
 /// ```
@@ -889,11 +889,11 @@ mod verification {
 mod verb_tests {
     extern crate std;
 
-    use grant_plan::{Grants, Prog, VerbGrant};
+    use grant_plan::{Grants, Program, VerbGrant};
 
     use super::*;
 
-    const JIG: &[VerbGrant] = Prog::Jig.verbs();
+    const JIG: &[VerbGrant] = Program::Jig.verbs();
     const JIG_BYTES: [u8; verbs_len(JIG.len())] = encode_verbs(JIG);
 
     /// **`jig`'s verb table round-trips, and so does an empty one** (milestone 809, fork 2: a list
@@ -1055,7 +1055,7 @@ mod verb_tests {
 
 #[cfg(test)]
 mod tests {
-    use grant_plan::Prog;
+    use grant_plan::Program;
 
     use super::*;
 
@@ -1084,11 +1084,11 @@ mod tests {
     }
 
     /// Every manifest the tree compiles in has a spelling, and reads back as itself. A program
-    /// added to `Prog` with a manifest this layout cannot carry fails here rather than in a build
+    /// added to `Program` with a manifest this layout cannot carry fails here rather than in a build
     /// that tries to carry it.
     #[test]
     fn every_compiled_in_manifest_round_trips() {
-        for p in Prog::ALL {
+        for p in Program::ALL {
             let m = p.manifest();
             // The two manifests with no note, by design (milestones 805 and 809): see `encode`.
             if m.reboot || m.sync || m.installer || m.catalog || m.indexes != IndexStore::Forbidden
@@ -1111,7 +1111,7 @@ mod tests {
 
     #[test]
     fn a_later_version_is_refused_rather_than_guessed_at() {
-        let mut d = encode(&Prog::Uptime.manifest());
+        let mut d = encode(&Program::Uptime.manifest());
         d[0] = 2;
         assert_eq!(decode(&d), Err(Error::UnknownVersion));
         assert_eq!(decode(&d[..3]), Err(Error::NoVersion));
@@ -1119,7 +1119,7 @@ mod tests {
 
     #[test]
     fn a_descriptor_one_byte_long_or_short_is_refused() {
-        let d = encode(&Prog::Uptime.manifest());
+        let d = encode(&Program::Uptime.manifest());
         assert_eq!(decode(&d[..DESCRIPTOR_LEN - 1]), Err(Error::WrongLength));
         let mut long = [0u8; DESCRIPTOR_LEN + 1];
         long[..DESCRIPTOR_LEN].copy_from_slice(&d);
@@ -1128,7 +1128,7 @@ mod tests {
 
     #[test]
     fn every_field_refuses_a_value_outside_its_range() {
-        let base = encode(&Prog::Uptime.manifest());
+        let base = encode(&Program::Uptime.manifest());
         for at in [
             ARG,
             MEM,
@@ -1153,7 +1153,7 @@ mod tests {
 
     #[test]
     fn a_byte_the_layout_says_is_zero_is_refused() {
-        let base = encode(&Prog::Uptime.manifest());
+        let base = encode(&Program::Uptime.manifest());
         // Uptime declares no memory, no input, no directory and no options, so all of these are
         // absent fields, and the three trailing bytes are always zero.
         for at in [
@@ -1173,7 +1173,7 @@ mod tests {
 
     #[test]
     fn options_are_distinct_letters_and_the_subtree_option_is_one_of_them() {
-        let rm = encode(&Prog::Rm.manifest());
+        let rm = encode(&Program::Rm.manifest());
         assert_eq!(&rm[FLAG_LETTERS..FLAG_LETTERS + 3], b"rfv");
         assert_eq!(rm[SUBTREE], b'r');
 
@@ -1194,7 +1194,7 @@ mod tests {
     fn a_memory_range_upside_down_is_refused() {
         let m = Manifest {
             mem: MemSpec::Required { min: 4, max: 8 },
-            ..Prog::Uptime.manifest()
+            ..Program::Uptime.manifest()
         };
         let mut d = encode(&m);
         assert_eq!(decode(&d), Ok(m));
@@ -1204,13 +1204,13 @@ mod tests {
 
     #[test]
     fn the_note_is_what_elf_finds() {
-        let n = Note::of(&Prog::Uptime.manifest());
+        let n = Note::of(&Program::Uptime.manifest());
         assert_eq!(n.0.len(), NOTE_LEN);
         assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
         assert_eq!(&n.0[4..8], &(DESCRIPTOR_LEN as u32).to_le_bytes());
         assert_eq!(&n.0[8..12], &MANIFEST.to_le_bytes());
         assert_eq!(&n.0[12..20], b"nife\0\0\0\0");
-        assert_eq!(decode(&n.0[20..]), Ok(Prog::Uptime.manifest()));
+        assert_eq!(decode(&n.0[20..]), Ok(Program::Uptime.manifest()));
     }
 
     /// The manifest every field of which is at a non-default value except those a test sets, so a
@@ -1279,7 +1279,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "cannot carry `reboot`")]
     fn the_reboot_object_has_no_encoding() {
-        let _ = encode(&grant_plan::Prog::Reboot.manifest());
+        let _ = encode(&grant_plan::Program::Reboot.manifest());
     }
 
     /// A subtree option is accepted when it is one of the declared letters, including when it is

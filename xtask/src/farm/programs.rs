@@ -60,7 +60,7 @@ pub(crate) fn std_resolve_elf(triple: &str) -> PathBuf {
 
 /// **`jig`, the package manager** (milestone 809 (the package client becomes a program)): its own
 /// workspace, built by `cargo xtask std-exerciser`, and packed into every archive as
-/// `grant_plan::Prog::Jig`. Since milestone 801 (packages over the internet) it links the TLS
+/// `grant_plan::Program::Jig`. Since milestone 801 (packages over the internet) it links the TLS
 /// graph and builds in that graph's target directory, [`TLS_GRAPH_TARGET`].
 pub(crate) fn jig_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!("{TLS_GRAPH_TARGET}/{triple}/release/jig"))

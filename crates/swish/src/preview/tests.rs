@@ -105,7 +105,7 @@ fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     let slot = std::format!("slot {}", grant_plan::spawnproto::RUN_UNVOUCHED_SLOT);
     assert!(held.contains(&slot), "{held}");
 
-    let asks_arg = grant_plan::Prog::LeastAuthorityDemo.manifest();
+    let asks_arg = grant_plan::Program::LeastAuthorityDemo.manifest();
     let exceeds = say(None, true, Some(asks_arg), b"bin/x 5");
     assert!(exceeds.contains("would not run here"));
     assert!(exceeds.contains("more than unvouched bytes may hold"));
@@ -122,7 +122,7 @@ fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
 
 #[test]
 fn a_memory_grant_is_a_row_and_no_grant_is_no_row() {
-    let mut e = endowment(Prog::MemoryGrantDepleter);
+    let mut e = endowment(Program::MemoryGrantDepleter);
     assert!(!shown(|o| write_preview(&e, &Holdings::default(), None, o)).contains("untyped"));
     e.mem_pages = 16;
     assert!(
@@ -139,7 +139,7 @@ fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
         name: grant_plan::expand::Name::new(b"out.txt").expect("a nameable file"),
         writable: true,
     };
-    let mut e = endowment(Prog::Date);
+    let mut e = endowment(Program::Date);
     e.sink = line::Sink::File(grant, line::Mode::Truncate);
     let truncate: Vec<String> = shown(|o| write_preview(&e, &Holdings::default(), None, o))
         .lines()
@@ -166,7 +166,7 @@ fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
 
 #[test]
 fn a_directory_grant_prints_every_name_and_says_whether_r_was_typed() {
-    let mut e = endowment(Prog::Rm);
+    let mut e = endowment(Program::Rm);
     e.dir = Some(grant_plan::DirGrant {
         which: grant_plan::nav::Which::A,
         dir: Cwd::root(),
@@ -193,12 +193,12 @@ fn date_says_the_clock_is_not_on_the_line() {
     // clock is the progenitor's to endow, no token could designate it, and it is still a capability the
     // child holds. So it is printed, and it is printed as read-only, which is the whole of why
     // there is no `date -s`.
-    let s = shown(|o| write_preview(&endowment(Prog::Date), &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(&endowment(Program::Date), &Holdings::default(), None, o));
     assert!(s.contains("cap 1  frame     clock"), "{s}");
     assert!(s.contains("read the time and not set it"), "{s}");
     // And a program that declares no clock is not given a row that says it has one.
     assert!(
-        !shown(|o| write_preview(&endowment(Prog::Wc), &Holdings::default(), None, o))
+        !shown(|o| write_preview(&endowment(Program::Wc), &Holdings::default(), None, o))
             .contains("clock")
     );
 }
@@ -208,12 +208,12 @@ fn printenv_says_the_config_page_is_not_on_the_line() {
     // `clock`'s twin: the same preview claim for the same reason. `printenv`'s config page is
     // the progenitor's to endow, no token on the line could designate it, and the preview says so before
     // anything is spawned.
-    let s = shown(|o| write_preview(&endowment(Prog::Printenv), &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(&endowment(Program::Printenv), &Holdings::default(), None, o));
     assert!(s.contains("cap 1  frame     config"), "{s}");
     assert!(s.contains("read-only"), "{s}");
     // A program that declares no config page is not given a row that says it has one.
     assert!(
-        !shown(|o| write_preview(&endowment(Prog::Wc), &Holdings::default(), None, o))
+        !shown(|o| write_preview(&endowment(Program::Wc), &Holdings::default(), None, o))
             .contains("config")
     );
 }
@@ -240,7 +240,7 @@ fn caps_printenv_prints_the_values_on_the_page_the_child_will_read() {
     let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
     let s = shown(|o| {
         write_preview(
-            &endowment(Prog::Printenv),
+            &endowment(Program::Printenv),
             &Holdings::default(),
             Some(page),
             o,
@@ -253,12 +253,13 @@ fn caps_printenv_prints_the_values_on_the_page_the_child_will_read() {
     assert!(!s.contains("UTC"), "{s}");
 
     // A program that declares no configuration is shown none, whatever the shell can read.
-    let wc = shown(|o| write_preview(&endowment(Prog::Wc), &Holdings::default(), Some(page), o));
+    let wc = shown(|o| write_preview(&endowment(Program::Wc), &Holdings::default(), Some(page), o));
     assert!(!wc.contains("config") && !wc.contains("TZ="), "{wc}");
 
     // And a shell with no view says it cannot show them, rather than printing nothing and
     // letting a reader take the absence of values for the absence of configuration.
-    let blind = shown(|o| write_preview(&endowment(Prog::Printenv), &Holdings::default(), None, o));
+    let blind =
+        shown(|o| write_preview(&endowment(Program::Printenv), &Holdings::default(), None, o));
     assert!(blind.contains("cannot show their values"), "{blind}");
     assert!(!blind.contains("TZ="), "{blind}");
 }
@@ -313,7 +314,7 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
     // A process that draws a key and a process that hardcodes one look identical from outside,
     // so "does this program depend on unpredictable bytes" is a question no observation of a
     // running system answers. This row answers it before anything is spawned.
-    let s = shown(|o| write_preview(&endowment(Prog::Uuid), &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(&endowment(Program::Uuid), &Holdings::default(), None, o));
     assert!(s.contains("cap 9  endpoint  entropy"), "{s}");
     // `WRITE`, and the word is the claim rather than decoration: it is the right to `CALL` the
     // service and not the right to receive another client's request, nor to hand a random
@@ -325,11 +326,11 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
     // And a program that declares no entropy is not given a row that says it has one. This is
     // the refusal, in the one place a person meets it before anything runs.
     assert!(
-        !shown(|o| write_preview(&endowment(Prog::Date), &Holdings::default(), None, o))
+        !shown(|o| write_preview(&endowment(Program::Date), &Holdings::default(), None, o))
             .contains("entropy")
     );
     assert!(
-        !shown(|o| write_preview(&endowment(Prog::Wc), &Holdings::default(), None, o))
+        !shown(|o| write_preview(&endowment(Program::Wc), &Holdings::default(), None, o))
             .contains("entropy")
     );
 }
@@ -339,13 +340,13 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
 /// so the preview is the only place a person meets it.
 #[test]
 fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
-    let s = shown(|o| write_preview(&endowment(Prog::Reboot), &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(&endowment(Program::Reboot), &Holdings::default(), None, o));
     assert!(
         s.contains("cap 13 reboot    WRITE. restart the machine"),
         "{s}"
     );
     assert!(s.contains("cap 14 endpoint  sync   WRITE"), "{s}");
-    for p in Prog::ALL.iter().filter(|p| **p != Prog::Reboot) {
+    for p in Program::ALL.iter().filter(|p| **p != Program::Reboot) {
         let s = shown(|o| write_preview(&endowment(*p), &Holdings::default(), None, o));
         assert!(
             !s.contains("cap 13") && !s.contains("cap 14"),
@@ -372,10 +373,10 @@ fn exactly_three_programs_declare_entropy() {
     // `jig` speaks TLS to the index, and a handshake draws its key share and nonces from it. Only
     // the verbs that reach the index hold it (`update`, `install`), by `grant_plan::verbs`.
     let mut declared = 0;
-    for &p in Prog::ALL {
+    for &p in Program::ALL {
         if p.manifest().entropy {
             assert!(
-                matches!(p, Prog::Uuid | Prog::StdExerciser | Prog::Jig),
+                matches!(p, Program::Uuid | Program::StdExerciser | Program::Jig),
                 "{} declares entropy",
                 p.name()
             );
@@ -392,7 +393,7 @@ fn exactly_three_programs_declare_entropy() {
 fn a_std_program_previews_its_fixed_slots() {
     let s = shown(|o| {
         write_preview(
-            &endowment(Prog::StdExerciser),
+            &endowment(Program::StdExerciser),
             &Holdings::default(),
             None,
             o,
@@ -414,7 +415,7 @@ fn a_std_program_previews_its_fixed_slots() {
     assert!(s.contains("grant none of them"), "{s}");
     assert!(!s.contains("cap 0  endpoint"), "{s}");
     // And a native program's rows did not move.
-    let u = shown(|o| write_preview(&endowment(Prog::Uuid), &Holdings::default(), None, o));
+    let u = shown(|o| write_preview(&endowment(Program::Uuid), &Holdings::default(), None, o));
     assert!(
         u.contains("cap 0  endpoint  result   report its answer back"),
         "{u}"
@@ -430,12 +431,12 @@ fn exactly_two_programs_declare_the_network() {
     // another declaring program is a decision, and this is where it has to be made. The second
     // is `jig` (milestone 809 (the package client becomes a program)), which fetches a package
     // itself so the progenitor parses no network input.
-    let declaring: Vec<Prog> = Prog::ALL
+    let declaring: Vec<Program> = Program::ALL
         .iter()
         .copied()
         .filter(|p| p.manifest().network)
         .collect();
-    assert_eq!(declaring, [Prog::NetworkEchoClient, Prog::Jig]);
+    assert_eq!(declaring, [Program::NetworkEchoClient, Program::Jig]);
 }
 
 #[test]
@@ -443,11 +444,11 @@ fn the_preview_shows_the_network_only_where_it_is_declared() {
     // What `caps` prints is what the progenitor's spawn service reads (`Manifest::network`),
     // so the row appearing for the witness would be the preview admitting an over-grant.
     let shown_for =
-        |p: Prog| shown(|o| write_preview(&endowment(p), &Holdings::default(), None, o));
-    assert!(shown_for(Prog::NetworkEchoClient).contains("cap 10 endpoint  network  WRITE"));
+        |p: Program| shown(|o| write_preview(&endowment(p), &Holdings::default(), None, o));
+    assert!(shown_for(Program::NetworkEchoClient).contains("cap 10 endpoint  network  WRITE"));
     // A `std` program holds it at the layout's slot, with the region its sockets are made from.
     // `write_preview` is the unnarrowed manifest: what the verb table can choose from.
-    let jig = shown_for(Prog::Jig);
+    let jig = shown_for(Program::Jig);
     assert!(jig.contains("cap 2  endpoint  network  WRITE"), "{jig}");
     assert!(jig.contains("cap 3  untyped   sockets"), "{jig}");
     assert!(jig.contains("cap 15 endpoint  installer  WRITE"), "{jig}");
@@ -457,8 +458,8 @@ fn the_preview_shows_the_network_only_where_it_is_declared() {
         "{jig}"
     );
     assert!(jig.contains("cannot vouch for bytes"), "{jig}");
-    for &p in Prog::ALL {
-        if p != Prog::NetworkEchoClient && p != Prog::Jig {
+    for &p in Program::ALL {
+        if p != Program::NetworkEchoClient && p != Program::Jig {
             assert!(
                 !shown_for(p).contains("network  WRITE"),
                 "`caps {}` shows a network it does not declare",
@@ -478,7 +479,7 @@ fn every_preview_names_where_the_output_goes() {
     // The demonstration milestone 50 owed: on Unix this question has no answer at this point,
     // because fd 1 is whatever the shell's fd 1 happened to be.
     for sink in [line::Sink::Report, line::Sink::Pipe] {
-        let mut e = endowment(Prog::Date);
+        let mut e = endowment(Program::Date);
         e.sink = sink;
         assert!(
             shown(|o| write_preview(&e, &Holdings::default(), None, o)).contains("    output   "),
@@ -530,7 +531,7 @@ fn caps_previews_every_stage_of_a_pipeline() {
 /// one that happens to take an argument today.
 ///
 /// This is written as a sweep over the whole enum on purpose. The line used to read
-/// `matches!(e.prog, Prog::LeastAuthorityDemo)`, which is correct for the tree as it stands (`LeastAuthorityDemo` is the
+/// `matches!(e.prog, Program::LeastAuthorityDemo)`, which is correct for the tree as it stands (`LeastAuthorityDemo` is the
 /// only `ArgSpec::Required` program) and silently wrong for the next one added: the shell would
 /// print `arg (none)` and then hand the argument over anyway. A test naming `LeastAuthorityDemo` would have
 /// passed against the bug. A test that asks the manifest cannot.
@@ -548,7 +549,7 @@ fn the_arg_line_follows_the_manifest_for_every_program() {
         dir: true,
         ..Holdings::default()
     };
-    for &prog in Prog::ALL {
+    for &prog in Program::ALL {
         let m = prog.manifest();
         let takes_arg = m.arg == ArgSpec::Required;
         let mut line = String::from(prog.name());
@@ -685,7 +686,7 @@ fn caps_of_a_timed_command_previews_the_command_itself() {
 /// complaint does not, and a reader can see both destinations before running anything.
 #[test]
 fn a_declarer_shows_where_its_second_stream_goes() {
-    let mut e = endowment(Prog::Date);
+    let mut e = endowment(Program::Date);
     e.sink = line::Sink::File(
         grant_plan::FileGrant {
             which: grant_plan::nav::Which::A,
@@ -707,7 +708,7 @@ fn a_declarer_shows_where_its_second_stream_goes() {
 
     // And a program that declares none has no row at all: there is no second stream to hide,
     // so inventing a line about one would be the preview claiming more than the manifest does.
-    let s = shown(|o| write_preview(&endowment(Prog::Wc), &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(&endowment(Program::Wc), &Holdings::default(), None, o));
     assert!(!s.contains("diags"), "{s}");
 }
 
@@ -795,7 +796,7 @@ fn the_jig_preview_shows_the_index_store_the_verb_holds_and_yields_it_to_a_desig
         list.contains("cap 4  endpoint  dir      /activation/indexes  read-only."),
         "{list}"
     );
-    let mut designated = endowment(Prog::Jig);
+    let mut designated = endowment(Program::Jig);
     designated.dir = Some(grant_plan::DirGrant {
         which: grant_plan::nav::Which::A,
         dir: Cwd::root(),

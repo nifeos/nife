@@ -1,4 +1,4 @@
-//! **What each program is granted**: `Prog::verbs` and `Prog::manifest`, one arm per program.
+//! **What each program is granted**: `Program::verbs` and `Program::manifest`, one arm per program.
 //! A child file of `program`, not a module of its own, for the reason that module's header gives.
 //!
 //! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
@@ -9,17 +9,17 @@
 
 use crate::{
     ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, Manifest, MemSpec,
-    NO_FLAGS, OutputSpec, Prog, Runtime, VerbGrant, WordGrant, verbs,
+    NO_FLAGS, OutputSpec, Program, Runtime, VerbGrant, WordGrant, verbs,
 };
 
-impl Prog {
+impl Program {
     /// **What each verb of this program is granted, when its manifest is narrowed by the line's
     /// first word** (milestone 809 (the package client becomes a program), its option V2): empty
-    /// for every program but one, which is then endowed exactly [`manifest`](Prog::manifest) as
+    /// for every program but one, which is then endowed exactly [`manifest`](Program::manifest) as
     /// always. [`narrow_by_verb`](crate::narrow_by_verb) reads it, and the shell and the progenitor both call that.
     pub const fn verbs(self) -> &'static [VerbGrant] {
         match self {
-            Prog::Jig => verbs::JIG_VERBS,
+            Program::Jig => verbs::JIG_VERBS,
             _ => &[],
         }
     }
@@ -30,7 +30,7 @@ impl Prog {
     /// resolves nothing, which is every program but one.
     ///
     /// On this table rather than in [`Manifest`], so installed bytes can never carry one: an image
-    /// has no `Prog`, and its note has no field to ask with. Whether a zone is a manifest's word or
+    /// has no `Program`, and its note has no field to ask with. Whether a zone is a manifest's word or
     /// the owner's is milestone 892's open fork for every other program.
     ///
     /// `jig` holds the root zone, calef's ruling Q5 on #1884 (2026-10-10 UTC): it reaches whatever
@@ -40,7 +40,7 @@ impl Prog {
     /// The pull request records no other name considered.
     pub const fn resolver_zone(self) -> Option<&'static str> {
         match self {
-            Prog::Jig => Some(""),
+            Program::Jig => Some(""),
             _ => None,
         }
     }
@@ -48,34 +48,34 @@ impl Prog {
     /// The program's declared endowment: what the shell must (and must not) grant it.
     pub const fn manifest(self) -> Manifest {
         match self {
-            Prog::LeastAuthorityDemo => least_authority_demo_manifest(),
-            Prog::MemoryGrantDepleter => memory_grant_depleter_manifest(),
-            Prog::InterruptHeeder => interrupt_heeder_manifest(),
-            Prog::InterruptIgnorer => interrupt_ignorer_manifest(),
-            Prog::Date => date_manifest(),
-            Prog::Rm => rm_manifest(),
-            Prog::Wc => wc_manifest(),
-            Prog::Mdr => mdr_manifest(),
-            Prog::Ps => ps_manifest(),
-            Prog::Pgrep => pgrep_manifest(),
-            Prog::Top => top_manifest(),
-            Prog::Printenv => printenv_manifest(),
-            Prog::Uptime => uptime_manifest(),
-            Prog::NetworkEchoClient => network_echo_client_manifest(),
-            Prog::UnreachableNetworkWitness => unreachable_network_witness_manifest(),
-            Prog::Uuid => uuid_manifest(),
-            Prog::Free => free_manifest(),
-            Prog::Vmstat => vmstat_manifest(),
-            Prog::Slabtop => slabtop_manifest(),
-            Prog::GraphicalTerminal => graphical_terminal_manifest(),
-            Prog::Reboot => reboot_manifest(),
-            Prog::StdExerciser => std_exerciser_manifest(),
-            Prog::Jig => jig_manifest(),
+            Program::LeastAuthorityDemo => least_authority_demo_manifest(),
+            Program::MemoryGrantDepleter => memory_grant_depleter_manifest(),
+            Program::InterruptHeeder => interrupt_heeder_manifest(),
+            Program::InterruptIgnorer => interrupt_ignorer_manifest(),
+            Program::Date => date_manifest(),
+            Program::Rm => rm_manifest(),
+            Program::Wc => wc_manifest(),
+            Program::Mdr => mdr_manifest(),
+            Program::Ps => ps_manifest(),
+            Program::Pgrep => pgrep_manifest(),
+            Program::Top => top_manifest(),
+            Program::Printenv => printenv_manifest(),
+            Program::Uptime => uptime_manifest(),
+            Program::NetworkEchoClient => network_echo_client_manifest(),
+            Program::UnreachableNetworkWitness => unreachable_network_witness_manifest(),
+            Program::Uuid => uuid_manifest(),
+            Program::Free => free_manifest(),
+            Program::Vmstat => vmstat_manifest(),
+            Program::Slabtop => slabtop_manifest(),
+            Program::GraphicalTerminal => graphical_terminal_manifest(),
+            Program::Reboot => reboot_manifest(),
+            Program::StdExerciser => std_exerciser_manifest(),
+            Program::Jig => jig_manifest(),
         }
     }
 }
 
-/// The manifest of `least_authority_demo`, [`Prog::LeastAuthorityDemo`].
+/// The manifest of `least_authority_demo`, [`Program::LeastAuthorityDemo`].
 const fn least_authority_demo_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Required,
@@ -109,7 +109,7 @@ const fn least_authority_demo_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `memory_grant_depleter`, [`Prog::MemoryGrantDepleter`].
+/// The manifest of `memory_grant_depleter`, [`Program::MemoryGrantDepleter`].
 const fn memory_grant_depleter_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -145,7 +145,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
 // memory grant, and report through the shared job frame rather than the result endpoint
 // (so `reports` is false: they hold no result cap). `interruptible` is what makes the
 // shell wire the two-tier ^C path and hold the region for a forcible teardown.
-/// The manifest of `interrupt_heeder`, [`Prog::InterruptHeeder`].
+/// The manifest of `interrupt_heeder`, [`Program::InterruptHeeder`].
 const fn interrupt_heeder_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -176,7 +176,7 @@ const fn interrupt_heeder_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `interrupt_ignorer`, [`Prog::InterruptIgnorer`].
+/// The manifest of `interrupt_ignorer`, [`Program::InterruptIgnorer`].
 const fn interrupt_ignorer_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -216,7 +216,7 @@ const fn interrupt_ignorer_manifest() -> Manifest {
 // needs positional arity, which milestone 47 explicitly defers. So the shell spawns it
 // with the defaults (`Human`, UTC, no provenance line), which is the `date` a person
 // typing `date` wants; the selectors arrive when `ArgSpec` grows.
-/// The manifest of `date`, [`Prog::Date`].
+/// The manifest of `date`, [`Program::Date`].
 const fn date_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -269,7 +269,7 @@ const fn date_manifest() -> Manifest {
 // grant without it cannot descend or enumerate, so the recursion is not merely disabled
 // by a branch in the program: the capability to walk was never handed over, and a `rm`
 // that tried anyway would be told there is no such name.
-/// The manifest of `rm`, [`Prog::Rm`].
+/// The manifest of `rm`, [`Program::Rm`].
 const fn rm_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -306,7 +306,7 @@ const fn rm_manifest() -> Manifest {
 // **The consumer**, and the only program that declares an input. Everything else about
 // it is empty: no argument, no memory, no file, no directory, no options. What it does
 // is entirely decided by what is in its input slot, which is the point of having it.
-/// The manifest of `wc`, [`Prog::Wc`].
+/// The manifest of `wc`, [`Program::Wc`].
 const fn wc_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -348,7 +348,7 @@ const fn wc_manifest() -> Manifest {
 // pipeline where `wc` never does (notes/documentation.md's BUGS section), and the planner can
 // only account for it if the manifest declares it. No memory grant, because the renderer
 // never allocates.
-/// The manifest of `mdr`, [`Prog::Mdr`].
+/// The manifest of `mdr`, [`Program::Mdr`].
 const fn mdr_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -389,7 +389,7 @@ const fn mdr_manifest() -> Manifest {
 // the same stream: `ps > running.txt` on a domain it was not granted has to leave the
 // file empty and put the reason on the terminal, which is the whole of DECISIONS §67
 // applied to a monitor. `InputSpec::Forbidden` because a snapshot reads nothing.
-/// The manifest of `ps`, [`Prog::Ps`].
+/// The manifest of `ps`, [`Program::Ps`].
 const fn ps_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -433,7 +433,7 @@ const fn ps_manifest() -> Manifest {
 // bytes, which nothing in this system carries from a command line to a program. So the
 // prompt sends the default and `pgrep` names every member; see `crates/pgrep`'s `BUGS`
 // for why that is a property of the boundary rather than of this program.
-/// The manifest of `pgrep`, [`Prog::Pgrep`].
+/// The manifest of `pgrep`, [`Program::Pgrep`].
 const fn pgrep_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -471,7 +471,7 @@ const fn pgrep_manifest() -> Manifest {
 // `clock: false` and it is worth a line, because a `top` looks like it needs one: the
 // uptime in its summary is the ambient monotonic counter every process already holds,
 // which is the same finding `uptime` made when it turned out to need no capability.
-/// The manifest of `top`, [`Prog::Top`].
+/// The manifest of `top`, [`Program::Top`].
 const fn top_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -504,7 +504,7 @@ const fn top_manifest() -> Manifest {
 // **The one program in this table that declares the inert-configuration page.** Same
 // asymmetry as `date`'s clock: nothing on the command line designates it, so this is
 // the progenitor's to endow and this field is how the progenitor decides which children get it.
-/// The manifest of `printenv`, [`Prog::Printenv`].
+/// The manifest of `printenv`, [`Program::Printenv`].
 const fn printenv_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -538,7 +538,7 @@ const fn printenv_manifest() -> Manifest {
 // `BytesAndDiagnostics` because the program cannot fail (the counter is always there to
 // read), so there is nothing a second stream would ever carry; `wc`'s manifest makes the
 // same call for the same reason.
-/// The manifest of `uptime`, [`Prog::Uptime`].
+/// The manifest of `uptime`, [`Program::Uptime`].
 const fn uptime_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -572,7 +572,7 @@ const fn uptime_manifest() -> Manifest {
 // it from, and that is `--mem` rather than something the network grant carries. Four
 // pages is the frame and the page tables to map it; sixteen is generous for a program
 // that maps one page.
-/// The manifest of `network_echo_client`, [`Prog::NetworkEchoClient`].
+/// The manifest of `network_echo_client`, [`Program::NetworkEchoClient`].
 const fn network_echo_client_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -602,7 +602,7 @@ const fn network_echo_client_manifest() -> Manifest {
 
 // **Declares nothing, deliberately**: `uptime`'s manifest, field for field. The program
 // exists to be the child the progenitor must not hand the network to.
-/// The manifest of `unreachable_network_witness`, [`Prog::UnreachableNetworkWitness`].
+/// The manifest of `unreachable_network_witness`, [`Program::UnreachableNetworkWitness`].
 const fn unreachable_network_witness_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -642,7 +642,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
 // service has to leave the file empty and put the reason on the terminal, because a
 // predictable identifier written into a file is worse than an empty file. That is
 // DECISIONS §67 applied to a program whose whole product is unpredictability.
-/// The manifest of `uuid`, [`Prog::Uuid`].
+/// The manifest of `uuid`, [`Program::Uuid`].
 const fn uuid_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -675,7 +675,7 @@ const fn uuid_manifest() -> Manifest {
 // **`free`: the machine page and the budget view, and nothing that can act.** The
 // two grants are §225's two lines, and both are views: `READ` on a page nobody but
 // the kernel writes, and `ENUMERATE` on a budget, which cannot spend it.
-/// The manifest of `free`, [`Prog::Free`].
+/// The manifest of `free`, [`Program::Free`].
 const fn free_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -707,7 +707,7 @@ const fn free_manifest() -> Manifest {
 
 // **`vmstat`: the machine page alone.** Its rates are per second since boot, and the
 // seconds come from the ambient monotonic counter, `uptime`'s finding, so no clock.
-/// The manifest of `vmstat`, [`Prog::Vmstat`].
+/// The manifest of `vmstat`, [`Program::Vmstat`].
 const fn vmstat_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -738,7 +738,7 @@ const fn vmstat_manifest() -> Manifest {
 }
 
 // **`slabtop`: the budget view alone**, which is the difference from `free`.
-/// The manifest of `slabtop`, [`Prog::Slabtop`].
+/// The manifest of `slabtop`, [`Program::Slabtop`].
 const fn slabtop_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -768,7 +768,7 @@ const fn slabtop_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `graphical_terminal`, [`Prog::GraphicalTerminal`].
+/// The manifest of `graphical_terminal`, [`Program::GraphicalTerminal`].
 const fn graphical_terminal_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -809,7 +809,7 @@ const fn graphical_terminal_manifest() -> Manifest {
 // still puts the refusal in front of a person. Not interruptible, because the
 // supervised shape builds a child with no capabilities, and there is nothing to
 // interrupt: it either resets the machine or says why not, at once.
-/// The manifest of `reboot`, [`Prog::Reboot`].
+/// The manifest of `reboot`, [`Program::Reboot`].
 const fn reboot_manifest() -> Manifest {
     Manifest {
         arg: ArgSpec::Forbidden,
@@ -839,7 +839,7 @@ const fn reboot_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `std_exerciser`, [`Prog::StdExerciser`].
+/// The manifest of `std_exerciser`, [`Program::StdExerciser`].
 const fn std_exerciser_manifest() -> Manifest {
     Manifest {
         // **The line's words are its argv** (milestone 205, DECISIONS §170): `std_exerciser
@@ -877,7 +877,7 @@ const fn std_exerciser_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `jig`, [`Prog::Jig`].
+/// The manifest of `jig`, [`Program::Jig`].
 const fn jig_manifest() -> Manifest {
     Manifest {
         // **Its words are its verb and operands** (milestone 205, DECISIONS §170): `jig

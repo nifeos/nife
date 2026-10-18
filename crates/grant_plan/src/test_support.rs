@@ -18,7 +18,7 @@ pub(crate) fn plan(run: &RunSpec<'_>, holds: Holdings) -> Result<Endowment, Refu
 
 pub(crate) fn plan_against(
     run: &RunSpec<'_>,
-    prog: Prog,
+    prog: Program,
     m: Manifest,
     holds: Holdings,
 ) -> Result<Endowment, Refusal> {

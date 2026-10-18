@@ -7,7 +7,7 @@ use crate::*;
 /// **The wire ids already shipped, pinned** (milestone 150, written before the bookkeeping was
 /// generated so that the generation had something to be wrong against).
 ///
-/// [`Prog::id`] is a thing two programs agree on: the shell sends it and the progenitor decodes
+/// [`Program::id`] is a thing two programs agree on: the shell sends it and the progenitor decodes
 /// it, so a renumbering is a flag day rather than a refactor. Two rules, both checked per row:
 /// **a name keeps its id** while it exists, and **an id is never reused** by another name once
 /// its program is gone. Removing a program therefore leaves this table alone and its id a hole;
@@ -32,10 +32,10 @@ fn the_wire_ids_already_shipped_never_move() {
         ("uuid", 12),
     ];
     for (name, id) in SHIPPED {
-        match Prog::from_name(name.as_bytes()) {
+        match Program::from_name(name.as_bytes()) {
             Some(p) => assert_eq!(p.id(), id, "`{name}` was renumbered from {id}"),
             None => {
-                if let Some(other) = Prog::from_id(id) {
+                if let Some(other) = Program::from_id(id) {
                     panic!(
                         "wire id {id} belonged to `{name}` and is now reused by `{}`",
                         other.name()
@@ -65,7 +65,7 @@ fn the_wire_ids_already_shipped_never_move() {
 #[test]
 fn a_std_program_declares_only_what_the_std_layout_can_hold() {
     let mut std_programs = 0;
-    for &p in Prog::ALL {
+    for &p in Program::ALL {
         let m = p.manifest();
         if m.runtime != Runtime::Std {
             continue;
@@ -105,7 +105,7 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
 /// design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
 #[test]
 fn no_program_declares_both_a_file_and_an_input() {
-    for &p in Prog::ALL {
+    for &p in Program::ALL {
         let m = p.manifest();
         assert!(
             !(matches!(m.file, FileSpec::Required { .. })
@@ -118,31 +118,34 @@ fn no_program_declares_both_a_file_and_an_input() {
 
 /// **Every program round trips through its id and its name, and every other id is a hole.**
 ///
-/// Since milestone 150 the id, the name and [`PROG_COUNT`] are generated from one declaration
+/// Since milestone 150 (adding a program should not need eight hand-maintained lists) the id, the name and [`PROGRAM_COUNT`] are generated from one declaration
 /// (`programs!`), so the failures this test used to exist for (an arm missing from
-/// `from_id` or `from_name`, and [`PROG_COUNT`] not widened, which hid both) cannot be written
+/// `from_id` or `from_name`, and [`PROGRAM_COUNT`] not widened, which hid both) cannot be written
 /// any more. What is left is worth keeping as a statement of the contract the progenitor relies
-/// on: it sizes its table by [`PROG_COUNT`] and indexes it by id, so every declared id must fit,
+/// on: it sizes its table by [`PROGRAM_COUNT`] and indexes it by id, so every declared id must fit,
 /// and an id nothing declares must decode to `None` rather than to a neighbour.
 ///
 /// The history is in git and in notes/adding-a-program.md: this test's own doc comment once
-/// claimed it caught a forgotten [`PROG_COUNT`], and measurement on 2026-08-18 found it could
+/// claimed it caught a forgotten [`PROGRAM_COUNT`], and measurement on 2026-08-18 found it could
 /// not, because the sweep counted up to the constant it was meant to check.
 #[test]
 fn prog_id_round_trips() {
-    assert!(!Prog::ALL.is_empty(), "a sweep over nothing proves nothing");
-    for &p in Prog::ALL {
+    assert!(
+        !Program::ALL.is_empty(),
+        "a sweep over nothing proves nothing"
+    );
+    for &p in Program::ALL {
         assert!(
-            (p.id() as usize) < PROG_COUNT,
-            "{p:?}'s id {} does not fit the progenitor's table of {PROG_COUNT}",
+            (p.id() as usize) < PROGRAM_COUNT,
+            "{p:?}'s id {} does not fit the progenitor's table of {PROGRAM_COUNT}",
             p.id()
         );
-        assert_eq!(Prog::from_id(p.id()), Some(p));
-        assert_eq!(Prog::from_name(p.name().as_bytes()), Some(p));
+        assert_eq!(Program::from_id(p.id()), Some(p));
+        assert_eq!(Program::from_name(p.name().as_bytes()), Some(p));
     }
-    for id in 0..PROG_COUNT as u64 + 8 {
-        if let Some(p) = Prog::from_id(id) {
-            assert!(Prog::ALL.contains(&p));
+    for id in 0..PROGRAM_COUNT as u64 + 8 {
+        if let Some(p) = Program::from_id(id) {
+            assert!(Program::ALL.contains(&p));
             assert_eq!(
                 p.id(),
                 id,
@@ -150,8 +153,8 @@ fn prog_id_round_trips() {
             );
         }
     }
-    assert_eq!(Prog::from_id(PROG_COUNT as u64), None);
-    assert_eq!(Prog::from_name(b"no_such_program"), None);
+    assert_eq!(Program::from_id(PROGRAM_COUNT as u64), None);
+    assert_eq!(Program::from_name(b"no_such_program"), None);
 }
 
 // ---- survivor triage of the 2026-10-03 census ---------------------------------------------
@@ -184,8 +187,8 @@ fn same_bytes_is_equality_of_length_and_every_byte() {
 /// table is the whole of who may resolve, since an installed manifest cannot carry a zone.
 #[test]
 fn only_jig_has_a_resolver_zone_and_it_is_the_root() {
-    for &p in Prog::ALL {
-        let expected = if p == Prog::Jig { Some("") } else { None };
+    for &p in Program::ALL {
+        let expected = if p == Program::Jig { Some("") } else { None };
         assert_eq!(p.resolver_zone(), expected, "{}", p.name());
     }
 }

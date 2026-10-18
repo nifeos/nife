@@ -92,7 +92,7 @@ notes/glob.md` both are, and it is why `rm` learns nothing about the name it rem
 
 So a *pattern* is not something the prompt can hand over today, and the shipped `pgrep` is `pgrep
 '*'`. It names every member, one tid per line, which is `ps` without the columns and is what pipes.
-This is `Prog::Date`'s deliberate under-declaration verbatim: an `ArgSpec::Forbidden` over a program
+This is `Program::Date`'s deliberate under-declaration verbatim: an `ArgSpec::Forbidden` over a program
 that reads registers the shell cannot set. It lifts when `ArgSpec` grows the positional arity
 milestone 47 (navigation and naming) deferred. The filter itself is not waiting on that. The kernel test hands it real
 selectors over a real domain, which is the only place in the tree that can.

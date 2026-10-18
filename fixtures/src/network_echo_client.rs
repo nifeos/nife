@@ -12,7 +12,7 @@
 //! Every network test before this one started `net_stack` from the kernel's test harness, so none
 //! of them said anything about the system a person boots. This program is spawned by the real
 //! progenitor, through the real spawn service, holding exactly what its manifest
-//! (`grant_plan::Prog::NetworkEchoClient`) declares, and it talks to the `net_stack` the progenitor
+//! (`grant_plan::Program::NetworkEchoClient`) declares, and it talks to the `net_stack` the progenitor
 //! built at boot. A green `script/swish-check` line for it is the claim.
 //!
 //! A fixture and not a tool, because the peer it talks to exists only inside a QEMU runner. The

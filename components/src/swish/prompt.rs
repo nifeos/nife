@@ -340,7 +340,7 @@ fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Ech
                 for b in grant_plan::BUILTINS {
                     each(b, false);
                 }
-                for p in grant_plan::Prog::ALL {
+                for p in grant_plan::Program::ALL {
                     each(p.name().as_bytes(), false);
                 }
                 // And what the live installed-programs table names by bare word (§229 (how a bare
@@ -353,7 +353,7 @@ fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Ech
                         // refused when run.
                         if installed_programs::lookup(text, entry.program)
                             .is_ok_and(|found| found == Some(entry))
-                            && grant_plan::Prog::from_name(entry.program.as_bytes()).is_none()
+                            && grant_plan::Program::from_name(entry.program.as_bytes()).is_none()
                         {
                             each(entry.program.as_bytes(), false);
                         }

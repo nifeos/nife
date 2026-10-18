@@ -74,7 +74,7 @@ alone would have let the ninth `jig` of a boot be refused.
   10.0.2.3, the lease's name server`. `script/swish-check` requires that sentence on every boot
   with a network. One more resting capability slot: `CAPABILITY_TABLE_PEAK_MEASURED` is 34.
 - Item 2 was built for `jig` by milestone 809 (the package client becomes a program).
-- Item 3, for `jig`. `grant_plan::Prog::resolver_zone` (provisional) names the zone in the
+- Item 3, for `jig`. `grant_plan::Program::resolver_zone` (provisional) names the zone in the
   program table, not in `Manifest`, so installed bytes can never carry one. Each `jig` job whose
   verb holds the network gets a fresh badge granted the root zone (Q5), placed at slot 9, and
   forgotten at its reap. `caps jig install greeting@0.1.0` prints the row.

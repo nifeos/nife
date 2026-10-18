@@ -77,7 +77,7 @@ basalt can name another index without rebuilding `jig`.
 
 **Each line holds what its verb needs and no more** (option V2, milestone 281 (`watch` holds
 exactly what `ps` holds)'s test): `list` the catalog alone, `remove` and `rollback` the installer
-alone, `install` all three. `grant_plan::narrow_by_verb` decides it from `grant_plan::Prog::verbs`.
+alone, `install` all three. `grant_plan::narrow_by_verb` decides it from `grant_plan::Program::verbs`.
 The shell narrows for `caps` and the progenitor for the endowment, each reading the line's second
 word. The progenitor reads it off the argv page and refuses the spawn if the child's copy says
 otherwise.

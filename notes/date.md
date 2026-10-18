@@ -131,7 +131,7 @@ Named here rather than in a tracker, next to the feature.
   makes the *page* read consistent; the counter is read just after it. A clock stepped between the
   two is printed as the new time, which is right, but the two lines of an `a2` run can straddle a
   step and disagree. Nothing here needs better.
-- **The prompt spawns it with the defaults only.** Milestone 47 gave `date` a `Prog` entry and a
+- **The prompt spawns it with the defaults only.** Milestone 47 (navigation and naming) gave `date` a `Program` entry and a
   manifest, so typing `date` at the shell runs it (`Human`, UTC, no provenance line). The three
   register selectors are not reachable from there: `ArgSpec` is `Required`/`Forbidden` with no
   position or arity, and growing it is deferred until a program wants both an argument and a file.
@@ -141,7 +141,7 @@ Named here rather than in a tracker, next to the feature.
   notes/untracked-work-sweep.md.
 - **The clock is the progenitor's to endow, and the shell cannot hand one on.** The interactive boot starts the
   clock service and hands *the progenitor* the page read-only, so `date` at the prompt prints a real
-  time. But the grant comes from `Prog::Date`'s manifest rather than from the command line, because
+  time. But the grant comes from `Program::Date`'s manifest rather than from the command line, because
   there is no token a person could type that designates a clock. `caps date` prints the row anyway
   (a preview showing only what the line designates would be off by one capability), and that is the
   honest shape rather than a gap.

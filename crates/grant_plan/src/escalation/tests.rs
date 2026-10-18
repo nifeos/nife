@@ -6,8 +6,8 @@ use crate::*;
 #[test]
 fn least_authority_demo_and_memory_grant_depleter_are_not_interruptible() {
     // Fast jobs finish in one step; the shell just waits for them, no ^C tier.
-    assert!(!Prog::LeastAuthorityDemo.manifest().interruptible);
-    assert!(!Prog::MemoryGrantDepleter.manifest().interruptible);
+    assert!(!Program::LeastAuthorityDemo.manifest().interruptible);
+    assert!(!Program::MemoryGrantDepleter.manifest().interruptible);
     let Command::Run(r) = parse(b"least_authority_demo 9") else {
         panic!()
     };

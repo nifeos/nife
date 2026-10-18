@@ -18,7 +18,7 @@ Tab is `line_editor::Event::Tab`. The shell reads the word left of the cursor
 (`swish::complete::completing`) and finishes it:
 
 - In command position (the first word, or after `|`, `;`, `&&`, `||`, `caps`, `time` or `xargs`):
-  a builtin (`grant_plan::BUILTINS`) or a program the image carries (`grant_plan::Prog::ALL`).
+  a builtin (`grant_plan::BUILTINS`) or a program the image carries (`grant_plan::Program::ALL`).
 - Anywhere else, or for a word with a `/`: an entry of the directory the word leads into, read
   the way `ls` reads it. That needs `ENUMERATE`, the right `echo *` needs, so completion cannot
   offer a name the shell could not already list.

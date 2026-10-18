@@ -46,7 +46,7 @@ progenitor's only network-shaped input is a package's bytes, judged by digest as
 `packaged_only`, which `xtask`'s `declared_programs` reads. So it is built with every fixture and
 packed by no archive, and `packages/greeting*.recipe.toml` package it for all three architectures.
 
-The prompt cannot show its absence. It is no `grant_plan::Prog`, so before it is installed its
+The prompt cannot show its absence. It is no `grant_plan::Program`, so before it is installed its
 bare name is refused either way, and after, the live generation answers for it (DECISIONS §229 (how
 a bare name at the prompt reaches an installed program), B2). `script/swish-check` reads the archive
 on the host before the boot instead, and stops if the archive has it.

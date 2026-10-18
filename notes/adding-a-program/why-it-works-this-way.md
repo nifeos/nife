@@ -30,21 +30,21 @@ it. Considered and refused:
 
 ## The shell's program table is one `macro_rules!` declaration
 
-The seven-edit `Prog` bookkeeping
-had exactly one edit nothing caught (`PROG_COUNT`), and forgetting it also disarmed the test that
+The seven-edit `Program` bookkeeping
+had exactly one edit nothing caught (`PROGRAM_COUNT`), and forgetting it also disarmed the test that
 would have caught two more. Considered and refused:
 
 - *A derive crate that counts variants* (`strum` and the like). DECISIONS §46: a proc-macro
   dependency in a crate the kernel and the progenitor link, for one count, is the dependency that
   section exists to refuse.
-- *A `const` table of `(Prog, id, name)` beside a hand-written enum.* Still two lists: nothing
+- *A `const` table of `(Program, id, name)` beside a hand-written enum.* Still two lists: nothing
   stops a variant existing without a row, which is the original bug moved one line down.
 - *Putting `manifest()` inside the declaration too*, for one edit instead of two. It would have
   worked, and it was refused because the manifest arms are the most commented code in the crate and
   `rustfmt` does not format inside a macro invocation. The compiler already demands the arm, so
   moving it buys one fewer edit that was never silent.
 - *Deriving the id from declaration order.* Removing a program would renumber every later one,
-  which is a wire-format change dressed as a deletion. Ids are written, `PROG_COUNT` is one past the
+  which is a wire-format change dressed as a deletion. Ids are written, `PROGRAM_COUNT` is one past the
   highest, and removal leaves a hole.
 
 ## The count gate became a set of checks rather than a number
@@ -52,7 +52,7 @@ would have caught two more. Considered and refused:
 The block asked for "a gate on
 program count". A pinned total was considered and refused: it would be a hand-maintained number
 that fails on every legitimate addition, which is the shape this milestone removes. What a count was
-for is covered by construction (the archives and `PROG_COUNT` are derived, so neither can be short
+for is covered by construction (the archives and `PROGRAM_COUNT` are derived, so neither can be short
 of the declaration). It is also covered by three host tests on the relationships that can still go wrong: a
 spawnable program with no binary, a program the tree loads by name with no binary, and a spawnable
 program no swish-check line runs.

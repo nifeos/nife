@@ -69,7 +69,7 @@ endpoint object. `grant_plan` has no field that could carry it, and no program t
 ever set one, because a shell-spawned program is a client of everything it holds.
 
 The keys are different, and this is the one that decides drop-in. `grant_plan::Manifest` is
-reachable only through `Prog`, a **closed enum with a static table compiled into the shell**. Adding a
+reachable only through `Program`, a **closed enum with a static table compiled into the shell**. Adding a
 component to it would mean adding a variant and recompiling the shell, which is the exact opposite of
 what a vendor drop-in is. `Requirements` is a value the *contract crate* owns, so a build that speaks
 the contract is wired by code that never heard of that build.

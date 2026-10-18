@@ -248,9 +248,9 @@ pub fn write_capabilities(
                 // what the progenitor will endow, reading the same word off the argv.
                 let mut verb = [0u8; grant_plan::MAX_VERB];
                 let verb = grant_plan::verb_of(stage, &mut verb);
-                let m = grant_plan::narrow_by_verb(&e.prog.manifest(), e.prog.verbs(), verb);
+                let m = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
                 out(b"  ");
-                out(e.prog.name().as_bytes());
+                out(e.program.name().as_bytes());
                 out(b" would grant the new process, and nothing else:\n");
                 write_preview_rows(&e, &m, &holdings, config, out);
             }
@@ -273,9 +273,9 @@ pub fn write_preview(
     out: &mut dyn FnMut(&[u8]),
 ) {
     out(b"  ");
-    out(e.prog.name().as_bytes());
+    out(e.program.name().as_bytes());
     out(b" would grant the new process, and nothing else:\n");
-    write_preview_rows(e, &e.prog.manifest(), holdings, config, out);
+    write_preview_rows(e, &e.program.manifest(), holdings, config, out);
 }
 
 /// [`write_preview`]'s rows, for an endowment bound against `m`. Separate because a file run by its
@@ -303,7 +303,7 @@ fn write_preview_rows(
     write_stream_rows(e, out);
     out(b"    arg    ");
     // **Read the manifest, do not keep a second list of which programs take an argument.** This
-    // was `matches!(e.prog, Prog::LeastAuthorityDemo)` until 2026-08-16, so every other argument-taking program
+    // was `matches!(e.prog, Program::LeastAuthorityDemo)` until 2026-08-16, so every other argument-taking program
     // previewed `arg (none)` while the shell went on to hand it the argument anyway. That is the
     // worst possible direction for this particular line to be wrong in: the next thing it prints is
     // that reading the command is reading its whole authority, and a preview that under-reports
@@ -596,7 +596,7 @@ fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&
 }
 
 /// **The name resolver, beside the network** (milestone 892 (a std program at the prompt holds the
-/// network and a resolver)): the zone is the table's (`Prog::resolver_zone`), so a person reads
+/// network and a resolver)): the zone is the table's (`Program::resolver_zone`), so a person reads
 /// which names the program may look up before it runs, where on Unix every process may read
 /// `/etc/resolv.conf` and ask about anything.
 fn write_resolver_row(
@@ -605,7 +605,7 @@ fn write_resolver_row(
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    let (true, true, Some(zone)) = (m.network, std, e.prog.resolver_zone()) else {
+    let (true, true, Some(zone)) = (m.network, std, e.program.resolver_zone()) else {
         return;
     };
     write_slot(std_runtime_contract::RESOLVER_SLOT, out);

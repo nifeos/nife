@@ -300,7 +300,7 @@ pub(crate) const INSTALLED_MALFORMED_NOTE: &str = "installed/malformed-note";
 /// its lines otherwise, as it skips `std_exerciser`'s. Provisional.
 pub(crate) const INSTALLED_STD_ECHO: &str = "installed/std-echo";
 /// **A copy of `jig`, unvouched** (milestone 809 (the package client becomes a program)): the same
-/// bytes the image runs as `grant_plan::Prog::Jig`, run by path, so endowed from the note they
+/// bytes the image runs as `grant_plan::Program::Jig`, run by path, so endowed from the note they
 /// carry under §219's unvouched rule and holding no installer endpoint. `script/swish-check` runs
 /// it to show a program without the installer grant is refused. Written whenever `jig` was built,
 /// which the gate requires. Provisional.
@@ -644,7 +644,7 @@ fn genuine_and_tampered(root: &std::path::Path, stem: &str) -> Result<(Vec<u8>, 
 /// `greeting`, `noteless`, and `duet`'s `alto` and `tenor` (milestone 919).
 ///
 /// The claim the prompt cannot check: the image does not carry them. None is a
-/// `grant_plan::Prog`, so the progenitor's image-name refusal (§229) cannot see them either way,
+/// `grant_plan::Program`, so the progenitor's image-name refusal (§229) cannot see them either way,
 /// and only the archive can say. Read the archive this leg boots and refuse to seed if it has
 /// any of them, since every line about them after that would prove nothing. Returns the
 /// archive's path and bytes.

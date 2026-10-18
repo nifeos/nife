@@ -608,7 +608,7 @@ pub struct Manifest {
     /// page was granted **unconditionally** to a `std` program by a kernel test harness standing
     /// in for a real customer (`system_tests/src/user/std_service.rs`); this is the manifest declaration
     /// that section's own "Not yet built" line named, now with a real, `no_std`, shell-spawnable
-    /// customer ([`Prog::Printenv`](crate::Prog::Printenv)) declaring it.
+    /// customer ([`Program::Printenv`](crate::Program::Printenv)) declaring it.
     ///
     /// It is a *read-only* mapping, the same rung [`clock`](Manifest::clock) uses: a program
     /// declaring this can read the three inert values and has no object through which it could

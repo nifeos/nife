@@ -210,7 +210,7 @@ measured"](buffering.md#buffering-measured-and-the-answer-is-to-build-nothing) s
 arrive in if it earned its place, and this is the case that earns it. The measurement there says a
 buffer costs roughly double and buys decoupling, not bandwidth, and decoupling is exactly what is
 wanted: that section's own caveat is that the benchmark did not measure the case buffering is for.
-It needs a program, a name, a progenitor entry and a `Prog` id, and a document larger than the grant
+It needs a program, a name, a progenitor entry and a `Program` id, and a document larger than the grant
 deadlocks again, so the bound has to be an honest part of it.
 
 What is not a way out is an adapter process at the file end. The obvious move for `doc page.md >

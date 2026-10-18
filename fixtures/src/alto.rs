@@ -46,7 +46,7 @@ const CLOCK: u64 = 1;
 /// **What this program asks for**: `uptime`'s output and nothing else, plus the clock.
 const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
     clock: true,
-    ..grant_plan::Prog::Uptime.manifest()
+    ..grant_plan::Program::Uptime.manifest()
 };
 
 capability_manifest_note::carry!(MANIFEST);

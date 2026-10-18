@@ -261,6 +261,6 @@ The shell's own sentences, where a regression is user-visible and nothing else l
 
 Equivalent: deleting `write_refusal`'s bare `Refusal::NoSuchProgram` arm. The guarded arm above
 takes every non-empty program name. The `_` arm it falls into prints a prefix only when
-`Prog::from_name` resolves, which an empty name never does.
+`Program::from_name` resolves, which an empty name never does.
 
 The 9 timeouts are all detected hangs in `echo`'s two-cursor scan.

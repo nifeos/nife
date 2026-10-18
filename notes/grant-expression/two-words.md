@@ -12,7 +12,7 @@ builtins, and nobody would type `run ls`. Keeping the verb would mean builtins a
 programs need a prefix, so a user has to know *which class a command is in* before knowing how to
 type it. That is the gratuitous divergence the milestone exists to refuse, and milestone 50 finishes
 the argument: `run a | run b` is indefensible. What replaces it already existed, since resolving a
-name to a program is `Prog::from_name` either way. The cost is three reserved words: `help`, `echo`
+name to a program is `Program::from_name` either way. The cost is three reserved words: `help`, `echo`
 and `caps` win over a program of the same name, so the program namespace must not contain them.
 
 `file:` failed because it announced the wrong half of the grant. `wc report.txt` reads and `tee

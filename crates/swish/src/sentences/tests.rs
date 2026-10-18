@@ -69,9 +69,9 @@ fn a_spawn_that_failed_says_so_whatever_the_program_was() {
     // The sentinel is checked before the program is looked at, which matters: `least_authority_demo`'s arm
     // would otherwise report that a process computed `u64::MAX`.
     for prog in [
-        Prog::LeastAuthorityDemo,
-        Prog::MemoryGrantDepleter,
-        Prog::Date,
+        Program::LeastAuthorityDemo,
+        Program::MemoryGrantDepleter,
+        Program::Date,
     ] {
         let s = shown(|o| write_outcome(&endowment(prog), spawnproto::SPAWN_FAILED, o));
         assert!(s.contains("could not spawn"), "{prog:?}: {s}");
@@ -80,14 +80,14 @@ fn a_spawn_that_failed_says_so_whatever_the_program_was() {
 
 #[test]
 fn the_two_programs_that_answer_with_a_number_report_it_in_their_own_terms() {
-    let mut e = endowment(Prog::LeastAuthorityDemo);
+    let mut e = endowment(Program::LeastAuthorityDemo);
     e.arg = 7;
     assert_eq!(
         shown(|o| write_outcome(&e, 49, o)),
         "  a process at EL0 computed 7*7 = 49\n"
     );
 
-    let mut e = endowment(Prog::MemoryGrantDepleter);
+    let mut e = endowment(Program::MemoryGrantDepleter);
     e.mem_pages = 16;
     let s = shown(|o| write_outcome(&e, 14, o));
     // Both numbers, because the gap between them is the page tables the grant paid for, and a
@@ -101,11 +101,11 @@ fn a_program_that_reports_elsewhere_prints_nothing_here() {
     // Text-answering and supervised programs are drained by other readers. A line printed here
     // would be a second, empty report for the same run.
     for prog in [
-        Prog::Date,
-        Prog::Wc,
-        Prog::Rm,
-        Prog::InterruptHeeder,
-        Prog::InterruptIgnorer,
+        Program::Date,
+        Program::Wc,
+        Program::Rm,
+        Program::InterruptHeeder,
+        Program::InterruptIgnorer,
     ] {
         assert_eq!(shown(|o| write_outcome(&endowment(prog), 0, o)), "");
     }
@@ -119,7 +119,7 @@ fn a_program_that_reports_elsewhere_prints_nothing_here() {
 #[test]
 fn every_program_that_answers_in_words_renders_its_answer() {
     let mut checked = 0;
-    for &p in Prog::ALL {
+    for &p in Program::ALL {
         if p.manifest().output != OutputSpec::Words {
             continue;
         }

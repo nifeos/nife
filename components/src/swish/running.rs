@@ -958,7 +958,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
     // One reader, one word: a real program's answer, or the progenitor's spawn-failed sentinel. A program
     // whose manifest says it writes **bytes** is the exception: its answer is a stream, so it is
     // drained by a reader that knows the sink contract's framing.
-    if e.prog.manifest().output.is_byte_stream() {
+    if e.program.manifest().output.is_byte_stream() {
         drain_text();
     } else {
         let answer = receive(RESULT).0;
@@ -996,7 +996,7 @@ fn spawn_dir_grant(
     // **A program that hears words is granted what they designated** (milestone 205), as a name
     // set or the whole directory, through `words_grant` rather than `rm`'s `dir_grant`.
     let mut set_grant = None;
-    let dir_words = match (e.dir, e.prog.manifest().arg) {
+    let dir_words = match (e.dir, e.program.manifest().arg) {
         (None, _) => None,
         (Some(g), grant_plan::ArgSpec::Words(grant)) => match words_grant(&g, grant, 0) {
             Ok(w) => {
@@ -1037,7 +1037,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
     // declares a second stream gets the terminal's own sink, which the progenitor endows from the manifest the
     // way it endows the clock. `2>` makes a line non-plain and goes down [`pipeline`].
     spawnproto::request(
-        e.prog.id(),
+        e.program.id(),
         e.arg,
         e.mem_pages,
         spawnproto::Wiring {
@@ -1069,7 +1069,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // `graphical_terminal`'s manifest can reach this path on (`Words` output refuses `>`
             // and a pipe's left, `InputSpec::Forbidden` its right). `keyboard` is never set: the
             // spawn service decides the arm from what the boot granted.
-            graphics: e.prog == grant_plan::Prog::GraphicalTerminal,
+            graphics: e.program == grant_plan::Program::GraphicalTerminal,
             keyboard: false,
         },
     )
@@ -1353,11 +1353,13 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: RunSpec) {
             // **A program that hears words gets the line as its argv** (milestone 205,
             // DECISIONS §170 (how a foreign program is told what to do)). Assembled here, where a refusal can still name the program, and
             // before anything is sent, so a line that does not fit spawns nothing.
-            _ if endow.prog.manifest().arg.hears_words() => match assemble_argv(spec.line(), 0) {
-                Ok(a) => spawn(endow, Some(a)),
-                Err(Some(r)) => refuse(spec, r),
-                Err(None) => out_of_budget(),
-            },
+            _ if endow.program.manifest().arg.hears_words() => {
+                match assemble_argv(spec.line(), 0) {
+                    Ok(a) => spawn(endow, Some(a)),
+                    Err(Some(r)) => refuse(spec, r),
+                    Err(None) => out_of_budget(),
+                }
+            }
             _ => spawn(endow, None),
         },
     }

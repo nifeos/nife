@@ -283,7 +283,7 @@ pub(super) fn with_live_table<R>(nav: &Nav, f: impl FnOnce(&str, u32) -> Option<
 /// program), B2), from the image's programs and the live table, refined by the nearest version set
 /// when it names the program (milestone 614, ruling 4). See `swish::bare`.
 pub(super) fn bare(nav: &Nav, word: &[u8]) -> swish::bare::Bare {
-    let image = grant_plan::Prog::from_name(word).is_some();
+    let image = grant_plan::Program::from_name(word).is_some();
     with_live_table(nav, |text, _| {
         // The set is consulted only for a name the table answers at all: it selects among
         // installed versions, so for anything else it can only change nothing, and the reads are

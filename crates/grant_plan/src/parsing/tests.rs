@@ -13,7 +13,7 @@ fn every_listed_builtin_is_a_builtin_and_no_program() {
             "{:?} is not a builtin",
             b
         );
-        assert!(Prog::from_name(b).is_none(), "{:?} is also a program", b);
+        assert!(Program::from_name(b).is_none(), "{:?} is also a program", b);
     }
     assert!(
         matches!(parse(b"wc"), Command::Run(_)),
@@ -298,11 +298,11 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
     let Command::Run(r) = parse(b"jig install greeting") else {
         panic!("`jig` must parse as a program invocation");
     };
-    assert_eq!(Prog::from_name(r.prog), Some(Prog::Jig));
+    assert_eq!(Program::from_name(r.prog), Some(Program::Jig));
     let Command::Run(r) = parse(b"package install greeting") else {
         panic!("`package` is no longer a builtin");
     };
-    assert_eq!(Prog::from_name(r.prog), None);
+    assert_eq!(Program::from_name(r.prog), None);
     // **And `rm` is a program**, which is the whole of milestone 47's rmdir lane at this level.
     // A builtin would have shadowed the name, so this line is also the check that it no longer
     // does; the manifest is what decides what the operand grants.
@@ -310,7 +310,7 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
         panic!("`rm` must parse as a program invocation, not a builtin")
     };
     assert_eq!(r.prog, b"rm");
-    assert_eq!(Prog::from_name(b"rm"), Some(Prog::Rm));
+    assert_eq!(Program::from_name(b"rm"), Some(Program::Rm));
     for reserved in [
         &b"help"[..],
         b"echo",
@@ -324,7 +324,7 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
         b"bind",
     ] {
         assert!(
-            Prog::from_name(reserved).is_none(),
+            Program::from_name(reserved).is_none(),
             "`{}` is a builtin, so a program of that name could never be run",
             core::str::from_utf8(reserved).unwrap(),
         );

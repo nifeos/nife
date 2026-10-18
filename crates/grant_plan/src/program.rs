@@ -1,6 +1,6 @@
 //! **The programs the shell can spawn**: the `programs!` macro, the four `const fn` checks its
 //! expansion names, and the table, one row per program. What each program is granted is the
-//! `impl Prog` in `program/manifests.rs`: one module in two files, so adding a program stays one
+//! `impl Program` in `program/manifests.rs`: one module in two files, so adding a program stays one
 //! module's edit (notes/adding-a-program.md). calef expects the table to shrink once packages are
 //! installed through jig rather than listed here (§272, fork 2, 2026-10-11).
 //!

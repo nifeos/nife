@@ -320,7 +320,7 @@ fn say_chain_refused(plans: &[Option<Endowment>], r: Refusal) {
     // Named after the first stage that answers while it reads, which is the one a person would
     // reach for `| wc` about. The sentence itself is about the *line* and says so.
     if let Some(e) = plans.iter().flatten().find(|e| e.writes_while_reading) {
-        print(e.prog.name().as_bytes());
+        print(e.program.name().as_bytes());
         print(b": ");
     }
     print(r.message().as_bytes());
@@ -450,12 +450,12 @@ fn write_stage_words(
     head_builtin: bool,
     argvs: &mut [Option<Argv>],
     sets: &mut [Option<WordsGrant>],
-) -> Result<(), (grant_plan::Prog, Option<&'static [u8]>)> {
+) -> Result<(), (grant_plan::Program, Option<&'static [u8]>)> {
     for i in 0..plans.len() {
         let Some(e) = plans[i].filter(|_| !(i == 0 && head_builtin)) else {
             continue;
         };
-        let grant_plan::ArgSpec::Words(grant) = e.prog.manifest().arg else {
+        let grant_plan::ArgSpec::Words(grant) = e.program.manifest().arg else {
             continue;
         };
         let assembled = assemble_argv(l.stages()[i], i)
@@ -470,7 +470,7 @@ fn write_stage_words(
                 }
             });
         if let Err(why) = assembled {
-            return Err((e.prog, why));
+            return Err((e.program, why));
         }
     }
     Ok(())
@@ -478,7 +478,7 @@ fn write_stage_words(
 
 /// Say why [`write_stage_words`] could not write `prog`'s words: its sentence, or that the
 /// budget ran out.
-fn say_stage_words_failed(prog: grant_plan::Prog, why: Option<&[u8]>) {
+fn say_stage_words_failed(prog: grant_plan::Program, why: Option<&[u8]>) {
     match why {
         Some(sentence) => {
             refused();
@@ -1011,7 +1011,7 @@ fn spawn_stage(
         graphics: false,
         keyboard: false,
     };
-    let (w0, w1, w2) = spawnproto::request(e.prog.id(), e.arg, e.mem_pages, wiring);
+    let (w0, w1, w2) = spawnproto::request(e.program.id(), e.arg, e.mem_pages, wiring);
     send(SPAWN, w0, w1, w2);
     // The words grant's two data messages first, as `spawn` sends a directory grant's.
     if let Some(DirWords { caretaker, child }) = words.map(|w| w.words) {

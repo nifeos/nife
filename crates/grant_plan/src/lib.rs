@@ -34,7 +34,7 @@
 //!   positional tokens**: which token is the argument and which the file is the manifest's job.
 //! - A [`Manifest`] is a program's declared endowment: does it take an argument, does it require
 //!   (or forbid) a memory grant, may it be granted a file and in which direction, does it report
-//!   back. [`Prog::manifest`] is the static table.
+//!   back. [`Program::manifest`] is the static table.
 //! - [`plan`] checks a parsed invocation against the named program's manifest, **placing the
 //!   positional tokens into the slots the manifest declares**, and yields an [`Endowment`] or a
 //!   [`Refusal`], at the prompt, before anything is spawned.
@@ -99,7 +99,7 @@ pub(crate) use planning::nav_refusal;
 pub use planning::{
     Streams, check_chain, plan, plan_against, plan_against_with, plan_stage, redirect_target,
 };
-pub use program::{PROG_COUNT, Prog};
+pub use program::{PROGRAM_COUNT, Program};
 pub use refusal::{CapabilityKind, Refusal};
 pub use verbs::{Grants, MAX_VERB, VerbGrant, narrow_by_verb, verb_of, verb_of_page};
 

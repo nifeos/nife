@@ -547,7 +547,7 @@ fn install(
     // through the boot slot under §235 (the OS is built and updated from packages), so the
     // image refusal blocks no update. The prompt still refuses a name that is both, because a
     // later base can add a name a package already holds.
-    let image = |program: &str| Prog::from_name(program.as_bytes()).is_some();
+    let image = |program: &str| Program::from_name(program.as_bytes()).is_some();
     let n = match installed_programs::with_entries(table, rows, image, new) {
         Ok(n) => n,
         Err(refused) => return Answer::refused(&refused, &got, live),

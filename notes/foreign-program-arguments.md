@@ -114,7 +114,7 @@ derivable in general.
 regex is not a `u64`, and `ripgrep`'s 104 flags do not fit a 64-bit mask. C as written needs a
 string channel first, which is the transport above.
 
-C is per-program by construction beyond that. `Prog` is a closed enum of 16 programs with their
+C is per-program by construction beyond that. `Program` is a closed enum of 16 programs with their
 manifests compiled into `grant_plan`, so each foreign program is a new variant and a new manifest.
 None of the 16 is a std program today.
 
@@ -124,7 +124,7 @@ None of the 16 is a std program today.
 |---|---|---|---|---|
 | A: argv | about 50 lines in `std` and a layout crate, plus about 10 in the spawner | none | nothing new | yes |
 | B: token-grained | the same | a table per program and release (`rg` 104 flags and a rule, `gix` 260 fields), plus a generic binder of `lexopt`'s size | nothing new | yes, while the table matches the release |
-| C: `grant_plan` only | must be added first | a `Prog` variant and manifest per program, plus B's table | nothing new | no, until a string field exists |
+| C: `grant_plan` only | must be added first | a `Program` variant and manifest per program, plus B's table | nothing new | no, until a string field exists |
 
 There is a fourth reading of B that §170 does not list, and every system in the prior art below
 uses it. Arguments travel as inert bytes, and authority travels separately as a namespace: the
@@ -178,7 +178,7 @@ separate channel.
   architectures). `rg` still has nothing to search: a `std` program at the prompt holds no
   directory until the designation half is built
   (`design/roadmap/0665-designating-a-foreign-programs-words.md`).
-- The shell cannot spawn a std program at all. All 16 `grant_plan::Prog` entries are native, and
+- The shell cannot spawn a std program at all. All 16 `grant_plan::Program` entries are native, and
   `ripgrep` runs only from the kernel test harness (`fs_service::start_std_full`). Every option
   inherits this gap. The demonstration at the prompt that milestone 121 (`ripgrep` on nife) wants
   needs it closed. Proposed to the maintainer as a milestone of its own. *Partly closed

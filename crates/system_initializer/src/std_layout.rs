@@ -30,7 +30,7 @@
 ///   `grant_plan::INSTALLER_SLOT` has the rights). Slot 18 and a read-only page at
 ///   `INDEX_SOURCES_PAGE`: the image's index sources, beside the index store at slot 4 (milestone
 ///   801 (packages over the internet)).
-/// - slot 9: the name resolver, `WRITE`, badged with `Prog::resolver_zone`'s zone, for a job holding
+/// - slot 9: the name resolver, `WRITE`, badged with `Program::resolver_zone`'s zone, for a job holding
 ///   the network (milestone 892 (a std program at the prompt holds the network and a resolver)).
 ///
 /// Name: provisional.

@@ -6,7 +6,7 @@
 //! needs. Completion offers exactly what that authority can name, and nothing more:
 //!
 //! - In command position, a builtin ([`grant_plan::BUILTINS`]), a program the image names
-//!   ([`grant_plan::Prog::ALL`]), or an installed program's bare name (§229 B2).
+//!   ([`grant_plan::Program::ALL`]), or an installed program's bare name (§229 B2).
 //! - Anywhere else, or for a word with a `/` in it, an entry of the directory the word's lead
 //!   names, read the way `ls` reads it. That costs `ENUMERATE`, the same right `echo *` costs, so
 //!   a shell that cannot list a directory cannot complete in it either.
