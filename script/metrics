@@ -1335,6 +1335,16 @@ def decisions(tree):
     return counts
 
 
+# The merge (#1247, 2026-09-24 UTC) that made `script/names` read marked items, modules, documentation
+# directories and documents, the kinds `helpers/name_census.py` counts beside the four older ones.
+# The names series starts at the first week whose commit contains it. See `names()`.
+NAMES_SINCE = 'cde63f59b8f527981f794444bcacdca1eb15e832'
+
+
+def is_ancestor(ancestor, rev):
+    return subprocess.run(['git', 'merge-base', '--is-ancestor', ancestor, rev]).returncode == 0
+
+
 def names(tree):
     """Naming provenance by status, the ruled-and-owed subset, and the count of named things.
 
@@ -1349,16 +1359,18 @@ def names(tree):
     this series deviates from `milestones()` and `decisions()` above, and the deviation is the
     honest part. A surface with no block has said nothing, and counting that silence as
     `unrecorded` would put a claim in the record that nobody made, which is the failure
-    `script/names` refuses one directory over. So before milestone 115 (the names that were
-    ratified, and the ones that were refused) invented the convention on
-    2026-08-04 the four columns are zero and `names_total` is the whole vocabulary of the tree. A
-    block that fails `script/names`' form checks counts toward the total and toward no status.
-    `script/lint` runs `script/names --check`, so on `main` the gap is zero.
+    `script/names` refuses one directory over. A block that fails `script/names`' form checks
+    counts toward the total and toward no status. `script/lint` runs `script/names --check`, so on
+    `main` the gap is zero.
 
-    An old week is counted with TODAY's enumeration, like every row here: a kind `script/names`
-    added later (items and modules from 2026-09-24, the rules from 2026-10-17) is counted in the
-    weeks before it existed wherever the tree already carried the block it reads.
+    **A week before `NAMES_SINCE` is not measured** and returns None, which leaves its cells empty
+    and the chart marks it. Today's enumeration counts item, module, directory and document blocks,
+    and before 2026-09-24 nobody wrote them, so an older tree counted this way is a different and
+    much smaller measure: 2026W38 restated at 257 against 2026W39's 695, which read as an explosion
+    of provisional names. Nothing can be backfilled, because the blocks do not exist.
     """
+    if not is_ancestor(NAMES_SINCE, tree.rev):
+        return None
     records, _problems, missing = name_census.census(tree.paths, tree.text.get)
     counts = dict.fromkeys(NAME_STATUSES, 0)
     for record in records:
@@ -1934,11 +1946,13 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
     for status in DECISION_STATUSES:
         row[_col('decisions', status)] = dec[status]
     row['decisions_total'] = sum(dec.values())
-    nm, owed, named = names(tree)
-    for status in NAME_STATUSES:
-        row[_col('names', status)] = nm[status]
-    row['names_ruled_owed'] = owed
-    row['names_total'] = named
+    measured = names(tree)
+    if measured is not None:
+        nm, owed, named = measured
+        for status in NAME_STATUSES:
+            row[_col('names', status)] = nm[status]
+        row['names_ruled_owed'] = owed
+        row['names_total'] = named
     for part in (proposals(tree), lines(tree), bugs(tree),
                  harnesses(tree),
                  unsafe_census(tree), unsafe_trust_census(tree),
@@ -2537,7 +2551,8 @@ def model_chart(kind, with_merge):
 # Each entry is (file, title, subtitle, columns, scale, ceiling, absent_field, hues). `absent_field`
 # names a CSV column whose empty cell means "not measured" rather than "zero"; the chart then marks
 # that week instead of leaving a gap a reader will read as a zero. Only the columns that can
-# genuinely be absent carry one, which is milestone 519's cost pair and coverage. `hues` is carried
+# genuinely be absent carry one: milestone 519's cost pair, coverage, and names before
+# `NAMES_SINCE`. `hues` is carried
 # by the one chart whose series name their own colours and is None for every slot-taking chart.
 CHARTS = [
     ('milestones.svg', 'Milestones by status, and proposals waiting for a number',
@@ -2560,7 +2575,7 @@ CHARTS = [
      [('Ratified', 'names_ratified'), ('Ruled, rename owed', 'names_ruled_owed'),
       ('Recorded', 'names_recorded'), ('Provisional', 'names_provisional_unruled'),
       ('Unrecorded', 'names_unrecorded'),
-      ('No provenance block', 'names_no_block')], 1.0, None, None),
+      ('No provenance block', 'names_no_block')], 1.0, None, 'names_total'),
     ('lines.svg', 'Rust in the tree, in thousands of lines',
      'kernel/src split out, because it is commented on purpose; vendor/ excluded',
      [('kernel/src code', 'kernel_code_lines'), ('kernel/src comments', 'kernel_comment_lines'),
