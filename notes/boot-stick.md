@@ -149,7 +149,7 @@ the transcripts under EDK2, and what the two descriptions differ by.
 
 Each boot file is a loader carrying its kernel and the archive that kernel measures. The loader's
 build refuses a pair that does not match (`uefi_loader/build.rs`, `refuse_an_unsealed_pair`). It
-hashes the archive's `progenitor`, `hello` and
+hashes the archive's `progenitor`, the six ELF child builders and
 `program_measurements` and requires each digest to occur in the kernel image. Proved both ways on
 2026-09-19: the current pair builds, and this tree's kernel beside the main checkout's two-day-old
 archive fails with `NOT SEALED: the kernel ... does not vouch for the archive entry 'progenitor'`.

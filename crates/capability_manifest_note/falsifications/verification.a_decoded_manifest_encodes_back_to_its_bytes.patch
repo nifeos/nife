@@ -13,7 +13,7 @@ index a22e350ce..8e89afd9e 100644
 @@ -376,7 +376,6 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
      let output = decode_output(d)?;
      let input = decode_input(d)?;
-     let runtime = decode_runtime(d)?;
+     let startup = decode_runtime(d)?;
 -    zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
      Ok(Manifest {
          arg,

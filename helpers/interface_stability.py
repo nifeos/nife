@@ -190,6 +190,23 @@ def std_abi_crates(text):
     return sorted(set(STD_ABI_RE.findall(text)))
 
 
+def std_abi_set(texts):
+    """The std copy crates named across the farm sources; an empty set is an error.
+
+    Zero crates means the pattern or the files moved, not that nothing is copied (the W42 std
+    columns read an empty set for exactly that reason). Returning it would write a row of
+    zeros that looks like a measurement.
+    """
+    found = set()
+    for text in texts:
+        found.update(std_abi_crates(text))
+    if not found:
+        raise SystemExit('interface stability: no "crates/<name>/src/lib.rs" copy found in %s, '
+                         'so the std copy set would read empty. Update STD_ABI_GLOBS or '
+                         'STD_ABI_RE.' % ', '.join(STD_ABI_GLOBS))
+    return found
+
+
 def std_abi_source_texts():
     # The copy list lives in the farm module. farm.rs became an index of its children (2026-10-12)
     # and the list moved with the copies, so read the index and every child and a future split
@@ -880,9 +897,7 @@ def cells_for(week, prev_measure, this_measure, std_abi, cochange):
 def run(mode):
     lineage_map = lineage()
     LINEAGE_CACHE.update(lineage_map)
-    std_abi = set()
-    for text in std_abi_source_texts():
-        std_abi.update(std_abi_crates(text))
+    std_abi = std_abi_set(std_abi_source_texts())
     wanted = set(CONTRACTS) | std_abi
     weeks = week_commits()
     head = git('rev-parse', 'HEAD').strip()
@@ -1176,6 +1191,14 @@ def selftest():
                         ' root.join("crates/clock_contract/src/lib.rs")'),
          ['abi', 'clock_contract']),
     ]
+
+    def empty_set_refused():
+        try:
+            std_abi_set(['no copies named here', ''])
+        except SystemExit as e:
+            return 'would read empty' in str(e)
+        return False
+    cases.append(('an empty std copy set is refused, not measured', empty_set_refused(), True))
     failed = [(name, got, want) for name, got, want in cases if got != want]
     for name, got, want in failed:
         print('interface stability selftest: %s: got %r, want %r' % (name, got, want),

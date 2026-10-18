@@ -2,7 +2,7 @@
 //! the confinement claim, claim 23; DECISIONS §26 (the fault endpoint), §12 (call/reply IPC: a
 //! one-shot reply capability)).
 //!
-//! `authority_tests::init_drops_its_construction_authority_and_cannot_build_again` boots the real
+//! `authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again` boots the real
 //! `root_supervisor` program, which deletes its untyped and reports that a later build answered
 //! `NoSuchSlot`. That end-to-end test needs the initial ramdisk. This comes at the same claim
 //! through the dispatcher, with no program: a thread holds an untyped budget carrying `Rights::ALL`

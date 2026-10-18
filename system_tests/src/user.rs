@@ -399,15 +399,16 @@ mod package_index_tests;
 /// pass authority it holds to another process, narrowing it on the way, and only if it was trusted
 /// to (`GRANT`). This wires the smallest scenario that exercises all three: a *granter* delegates a
 /// resource capability to a *receiver* over a channel, narrowed to `WRITE` (no `GRANT`); the
-/// receiver uses it and then cannot pass it on. See fixtures/src/hello.rs `granter()/receiver()`.
+/// receiver uses it and then cannot pass it on. See `fixtures/src/delegation_granter.rs` and
+/// `fixtures/src/delegation_receiver.rs`.
 /// **`PageFrame` capabilities: shared memory a process holds, maps, and delegates.**
 ///
 /// The payoff of delegation applied to memory. A *producer* retypes a page out of its own untyped
 /// into a `PageFrame` capability, maps it, writes into it, and delegates a READ-only view to a
 /// *consumer*, which maps the same physical page and reads what the producer wrote. The kernel
 /// copies nothing and pre-arranges nothing: the two processes compose the sharing themselves, and
-/// the read-only narrowing means the consumer can look but not write. See fixtures/src/hello.rs
-/// `page_frame_producer()/page_frame_consumer()`.
+/// the read-only narrowing means the consumer can look but not write. See
+/// `fixtures/src/page_frame_producer.rs` and `fixtures/src/page_frame_consumer.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs now
 // (milestone 19's user-test port). This wiring was already portable; it was compiled out on riscv64
 // only because its consumer was.
@@ -423,7 +424,8 @@ pub mod delegation_service;
 /// **Milestone 19a: a process mints an endpoint from its own memory, at EL0.** The maker holds
 /// an untyped budget and a channel; the peer holds the channel and a report line. Everything
 /// else, the endpoint itself included, is created at runtime by the maker out of its own pages
-/// and delegated. See fixtures/src/hello.rs `ep_maker()/ep_user()`.
+/// and delegated. See `fixtures/src/rendezvous_minter.rs`
+/// and `fixtures/src/rendezvous_peer.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs now
 // (milestone 19's user-test port). This wiring was already portable; it was compiled out on riscv64
 // only because its consumer was.
@@ -443,7 +445,7 @@ pub mod process_composition_service;
 
 /// **Milestone 12: Call/Reply, at EL0.** One request endpoint, a server that answers a caller it was
 /// never wired to, and the one-shot reply capability proven across the boundary. See
-/// fixtures/src/hello.rs `call_server()/call_client()`.
+/// `fixtures/src/call_server.rs` and `fixtures/src/call_client.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs now
 // (milestone 19's user-test port). This wiring was already portable; it was compiled out on riscv64
 // only because its consumer was.
@@ -457,7 +459,7 @@ pub mod carried_capability_service;
 
 /// **Milestone 13: revoke a frame, at EL0.** One process with an untyped budget retypes a frame,
 /// maps it, revokes it, and reports whether the revoke deleted its own capability. See
-/// fixtures/src/hello.rs `revoke_demo()`.
+/// `fixtures/src/frame_revoker.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs now
 // (milestone 19's user-test port). This wiring was already portable; it was compiled out on riscv64
 // only because its consumer was.
@@ -502,9 +504,10 @@ mod network_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod block_driver_tests;
 
-/// **Userspace init**, the least-authority demo, and a process spending its own memory region.
+/// **The ELF child builders**, the least-authority demo, and a process spending its own memory
+/// region.
 #[cfg(all(test, initial_ramdisk))]
-mod init_tests;
+mod elf_child_builder_tests;
 
 /// **The cycle-counter grant**, and the CoreMark workload init runs.
 #[cfg(all(test, initial_ramdisk))]

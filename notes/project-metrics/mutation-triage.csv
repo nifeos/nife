@@ -849,7 +849,7 @@ filesystem_protocol,reply,replace | with ^,equivalent,"xattr::reply packs (kind 
 filesystem_protocol,req,replace | with ^,equivalent,"every req packs the opcode at bit 56 (OPERATION_SHIFT) beside fields below it: blk's count is at most 15 and fs's handle sits at 40..56 and its length below 40, all disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,spec,replace | with ^,equivalent,"grant::spec packs len & 0xff beside rights << 8, and xattr::spec packs kind << 32 beside value_len & 0xffff_ffff; each pair is disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 grant_plan,,replace - with +,killed,killed by all_is_nine_bits_and_a_union_keeps_shared_bits
-grant_plan,Grants::union,replace | with ^,killed,killed by all_is_nine_bits_and_a_union_keeps_shared_bits
+grant_plan,ManifestAuthorities::union,replace | with ^,killed,killed by all_is_nine_bits_and_a_union_keeps_shared_bits
 grant_plan,Windows::is_bound,replace != with ==,killed,killed by each_window_is_bound_and_unbound_on_its_own
 grant_plan,Windows::is_bound,replace & with ^,killed,killed by each_window_is_bound_and_unbound_on_its_own
 grant_plan,Windows::is_bound,replace & with |,killed,killed by each_window_is_bound_and_unbound_on_its_own

@@ -156,12 +156,10 @@ pub struct MapNeed {
 /// outgoing and the incoming instance, and a supervisor wiring two builds of one contract has to be
 /// able to find it without reading either build's code.
 ///
-/// Name: provisional, minted on 2026-09-26 by the lane for milestone 23 (a capability-routed
-/// component OS with live replacement), beside §209's own provisional `handoff` field. An
-/// architect's call.
-pub const HANDOFF_ROLE: &str = "handoff";
+/// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
+pub const STATE_HANDOFF_ROLE: &str = "handoff";
 
-/// The page size a [`Handoff`] run is counted in, for the overlap check. Every architecture this
+/// The page size a [`StateHandoff`] run is counted in, for the overlap check. Every architecture this
 /// tree runs on maps 4 KiB pages at this level.
 const HANDOFF_PAGE: u64 = 4096;
 
@@ -175,18 +173,17 @@ const HANDOFF_PAGE: u64 = 4096;
 /// instance to say it absorbed it before the outgoing one is retired), and **where** both instances
 /// read and write it (so the supervisor can route one frame to both).
 ///
-/// A run of [`pages`](Handoff::pages) pages, which the supervisor mints as one frame capability
+/// A run of [`pages`](StateHandoff::pages) pages, which the supervisor mints as one frame capability
 /// with `MemoryRegion::RETYPE`'s page count, per DECISIONS §233 (`MemoryRegion::RETYPE` takes a page count). The count is the
 /// component's to declare, because it is a fact about how much state that component keeps.
 ///
-/// Name: provisional (milestone 23's lane, 2026-09-26). §209 left the field name `handoff`
-/// provisional and did not take one for the type.
+/// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Handoff {
+pub struct StateHandoff {
     /// The virtual address both instances read and write the blob at. In the declaration for
     /// [`MapNeed::va`]'s reason: it is compiled into the component's own code.
     pub va: u64,
-    /// How many pages the blob may occupy, starting at [`va`](Handoff::va). At least one.
+    /// How many pages the blob may occupy, starting at [`va`](StateHandoff::va). At least one.
     pub pages: u64,
 }
 
@@ -255,16 +252,16 @@ pub struct Requirements {
     /// A required field with no default, for [`Direction`]'s reason: a contract **cannot be declared
     /// without saying whether it hands state off**, so "we forgot" is not a state the tree can be in.
     ///
-    /// `Some` does two things. [`plan`] routes the supervisor's [`HANDOFF_ROLE`] object to the page
-    /// at [`Handoff::va`], and refuses with [`Refusal::Unprovided`] when the supervisor routes
+    /// `Some` does two things. [`plan`] routes the supervisor's [`STATE_HANDOFF_ROLE`] object to the page
+    /// at [`StateHandoff::va`], and refuses with [`Refusal::Unprovided`] when the supervisor routes
     /// nothing there. That refusal is the point: **a supervisor that cannot carry state must not
     /// silently kill-and-replace a component that declared some**, because the loss would look
-    /// exactly like a successful swap. And [`Plan::handoff`] tells the supervisor to wait for the
+    /// exactly like a successful swap. And [`Plan::state_handoff`] tells the supervisor to wait for the
     /// incoming instance's verdict before it retires the outgoing one, since under §209 a swap
     /// whose state was not absorbed does not commit.
     ///
-    /// Name: provisional, per §209, which names it and does not ratify it.
-    pub handoff: Option<Handoff>,
+    /// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
+    pub state_handoff: Option<StateHandoff>,
 }
 
 impl Requirements {
@@ -321,21 +318,25 @@ impl Requirements {
         }
         // The handoff page is one more mapping, so it is held to the two rules every mapping is:
         // its role word may not be declared a second time, and its address may not be shared.
-        if let Some(h) = self.handoff {
+        if let Some(h) = self.state_handoff {
             if h.pages == 0 {
                 return Some(Refusal::EmptyHandoff);
             }
             let mut i = 0;
             while i < self.caps.len() {
-                if str_eq(self.caps[i].role, HANDOFF_ROLE) {
-                    return Some(Refusal::DuplicateRole { role: HANDOFF_ROLE });
+                if str_eq(self.caps[i].role, STATE_HANDOFF_ROLE) {
+                    return Some(Refusal::DuplicateRole {
+                        role: STATE_HANDOFF_ROLE,
+                    });
                 }
                 i += 1;
             }
             let mut i = 0;
             while i < self.maps.len() {
-                if str_eq(self.maps[i].role, HANDOFF_ROLE) {
-                    return Some(Refusal::DuplicateRole { role: HANDOFF_ROLE });
+                if str_eq(self.maps[i].role, STATE_HANDOFF_ROLE) {
+                    return Some(Refusal::DuplicateRole {
+                        role: STATE_HANDOFF_ROLE,
+                    });
                 }
                 // The handoff is a run, so a page anywhere inside it collides, not only at its base.
                 let end = h.va.saturating_add(h.pages.saturating_mul(HANDOFF_PAGE));
@@ -353,7 +354,7 @@ impl Requirements {
     /// How many pages a plan of this declaration maps: its declared pages, plus the handoff page if
     /// it declares one.
     const fn mapped(&self) -> usize {
-        self.maps.len() + if self.handoff.is_some() { 1 } else { 0 }
+        self.maps.len() + if self.state_handoff.is_some() { 1 } else { 0 }
     }
 }
 
@@ -402,7 +403,7 @@ impl<'a> Provisions<'a> {
 /// #     maps: &[],
 /// #     pages: 32,
 /// #     depends_on: &[],
-/// #     handoff: None,
+/// #     state_handoff: None,
 /// # };
 /// let refused = component_plan::plan(&TALKER, &Provisions { held: &[("report", 1)] });
 /// assert_eq!(refused, Err(Refusal::Unprovided { role: "service" }));
@@ -485,7 +486,7 @@ pub struct Plan {
     nmaps: usize,
     ndevices: usize,
     pages: u64,
-    handoff: Option<Handoff>,
+    state_handoff: Option<StateHandoff>,
 }
 
 impl Plan {
@@ -537,9 +538,9 @@ impl Plan {
     /// the supervisor's own capability with everyone else's. The outgoing instance is quiesced and
     /// blocked before the incoming one is started, so the two never run against the page at once.
     ///
-    /// Name: provisional (milestone 23's lane, 2026-09-26).
-    pub fn handoff(&self) -> Option<Handoff> {
-        self.handoff
+    /// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
+    pub fn state_handoff(&self) -> Option<StateHandoff> {
+        self.state_handoff
     }
 }
 
@@ -564,7 +565,7 @@ impl Plan {
 ///     maps: &[MapNeed { role: "witness", va: 0x0300_0000, kind: PageKind::Shared }],
 ///     pages: 32,
 ///     depends_on: &[],
-///     handoff: None,
+///     state_handoff: None,
 /// };
 ///
 /// const _: () = assert!(TALKER.problem().is_none());
@@ -604,7 +605,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
         nmaps: reqs.mapped(),
         ndevices: 0,
         pages: reqs.pages,
-        handoff: None,
+        state_handoff: None,
     };
 
     for (i, need) in reqs.caps.iter().enumerate() {
@@ -635,15 +636,17 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
             }
         }
         // The handoff page goes in after the shared pages and before any device, so it is part of
-        // `maps_without_devices` and a replacement is built holding it. See `Plan::handoff`.
+        // `maps_without_devices` and a replacement is built holding it. See `Plan::state_handoff`.
         if pass == PageKind::Shared
-            && let Some(h) = reqs.handoff
+            && let Some(h) = reqs.state_handoff
         {
-            let Some(slot) = provisions.slot_for(HANDOFF_ROLE) else {
-                return Err(Refusal::Unprovided { role: HANDOFF_ROLE });
+            let Some(slot) = provisions.slot_for(STATE_HANDOFF_ROLE) else {
+                return Err(Refusal::Unprovided {
+                    role: STATE_HANDOFF_ROLE,
+                });
             };
             out.maps[n] = (h.va, slot, PageKind::Shared.mode());
-            out.handoff = Some(h);
+            out.state_handoff = Some(h);
             n += 1;
         }
     }
@@ -672,7 +675,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
 ///     maps: &[],
 ///     pages: 32,
 ///     depends_on: &[],
-///     handoff: None,
+///     state_handoff: None,
 /// };
 /// // There is no `control` role, so this constant cannot be evaluated.
 /// const CONTROL: u64 = component_plan::slot_of(&R, "control");
@@ -790,7 +793,7 @@ impl Dependents {
 /// const BACKEND: Requirements = Requirements {
 ///     contract: "backend",
 ///     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
-///     maps: &[], pages: 32, depends_on: &[], handoff: None,
+///     maps: &[], pages: 32, depends_on: &[], state_handoff: None,
 /// };
 /// const BROKER: Requirements = Requirements {
 ///     contract: "broker",
@@ -798,7 +801,7 @@ impl Dependents {
 ///         CapNeed { role: "requests", direction: Direction::Serve },
 ///         CapNeed { role: "backend", direction: Direction::Use },
 ///     ],
-///     maps: &[], pages: 32, depends_on: &["backend"], handoff: None,
+///     maps: &[], pages: 32, depends_on: &["backend"], state_handoff: None,
 /// };
 ///
 /// let live = [
@@ -871,7 +874,7 @@ mod tests {
         maps: &[WITNESS, UART],
         pages: 32,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     };
 
     fn everything() -> Provisions<'static> {
@@ -957,7 +960,7 @@ mod tests {
             maps: &[UART, WITNESS],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         let p = plan(&DEVICE_FIRST, &everything()).unwrap();
         assert_eq!(p.devices(), &[(0x0310_0000, 2, abi::address_space::MAP_RO)]);
@@ -981,7 +984,7 @@ mod tests {
             ],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         let p = plan(&READER, &everything()).unwrap();
         assert_eq!(
@@ -1001,7 +1004,7 @@ mod tests {
             maps: &[WITNESS],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         let p = plan(&PLAIN, &everything()).unwrap();
         assert!(p.devices().is_empty());
@@ -1020,7 +1023,7 @@ mod tests {
         maps: &[UART, WITNESS],
         pages: 32,
         depends_on: &[],
-        handoff: Some(Handoff {
+        state_handoff: Some(StateHandoff {
             va: 0x0320_0000,
             pages: 2,
         }),
@@ -1033,7 +1036,7 @@ mod tests {
                 ("report", 1),
                 ("witness", 9),
                 ("uart", 2),
-                (HANDOFF_ROLE, 11),
+                (STATE_HANDOFF_ROLE, 11),
             ],
         }
     }
@@ -1045,8 +1048,8 @@ mod tests {
     fn the_handoff_page_is_mapped_early_and_the_device_still_sorts_last() {
         let p = plan(&STATEFUL, &with_handoff()).unwrap();
         assert_eq!(
-            p.handoff(),
-            Some(Handoff {
+            p.state_handoff(),
+            Some(StateHandoff {
                 va: 0x0320_0000,
                 pages: 2
             })
@@ -1072,7 +1075,9 @@ mod tests {
         };
         assert_eq!(
             plan(&STATEFUL, &no_state),
-            Err(Refusal::Unprovided { role: HANDOFF_ROLE })
+            Err(Refusal::Unprovided {
+                role: STATE_HANDOFF_ROLE
+            })
         );
     }
 
@@ -1081,7 +1086,7 @@ mod tests {
     #[test]
     fn a_component_with_no_handoff_ignores_a_supervisor_that_offers_one() {
         let p = plan(&CONSOLE, &with_handoff()).unwrap();
-        assert_eq!(p.handoff(), None);
+        assert_eq!(p.state_handoff(), None);
         assert_eq!(p.maps().len(), 2);
     }
 
@@ -1090,7 +1095,7 @@ mod tests {
     #[test]
     fn a_handoff_page_is_held_to_the_mapping_rules() {
         const COLLIDES: Requirements = Requirements {
-            handoff: Some(Handoff {
+            state_handoff: Some(StateHandoff {
                 va: 0x0300_0000,
                 pages: 1,
             }),
@@ -1102,7 +1107,7 @@ mod tests {
         );
         const TWICE: Requirements = Requirements {
             maps: &[MapNeed {
-                role: HANDOFF_ROLE,
+                role: STATE_HANDOFF_ROLE,
                 va: 0x0400_0000,
                 kind: PageKind::Shared,
             }],
@@ -1110,7 +1115,9 @@ mod tests {
         };
         assert_eq!(
             TWICE.problem(),
-            Some(Refusal::DuplicateRole { role: HANDOFF_ROLE })
+            Some(Refusal::DuplicateRole {
+                role: STATE_HANDOFF_ROLE
+            })
         );
     }
 
@@ -1145,7 +1152,7 @@ mod tests {
             "the page after a two-page run is free"
         );
         const EMPTY: Requirements = Requirements {
-            handoff: Some(Handoff {
+            state_handoff: Some(StateHandoff {
                 va: 0x0320_0000,
                 pages: 0,
             }),
@@ -1197,7 +1204,7 @@ mod tests {
             maps: &[],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         assert_eq!(
             TWICE.problem(),
@@ -1221,7 +1228,7 @@ mod tests {
             ],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         assert_eq!(
             COLLIDE.problem(),
@@ -1237,7 +1244,7 @@ mod tests {
             maps: &[],
             pages: 0,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         assert_eq!(FREE.problem(), Some(Refusal::NoPages));
     }
@@ -1279,7 +1286,7 @@ mod tests {
         maps: &[],
         pages: 32,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     };
     const BROKER: Requirements = Requirements {
         contract: "broker",
@@ -1296,7 +1303,7 @@ mod tests {
         maps: &[],
         pages: 32,
         depends_on: &["backend"],
-        handoff: None,
+        state_handoff: None,
     };
     const CLIENT: Requirements = Requirements {
         contract: "client",
@@ -1304,7 +1311,7 @@ mod tests {
         maps: &[],
         pages: 32,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     };
 
     /// The one case this residual exists for, in its smallest true form: a component that forwards
@@ -1408,7 +1415,7 @@ mod tests {
             maps: &[],
             pages: 32,
             depends_on: &["backend"],
-            handoff: None,
+            state_handoff: None,
         };
         let live = [
             LiveInstance {
@@ -1435,7 +1442,7 @@ mod tests {
             maps: &[],
             pages: 32,
             depends_on: &["unrelated", "backend"],
-            handoff: None,
+            state_handoff: None,
         };
         let live = [LiveInstance { id: 7, reqs: &LATE }; MAX_LIVE];
         let d = dependents("backend", &live).unwrap();
@@ -1471,7 +1478,7 @@ mod tests {
             maps: &[],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         const OVER_CAPS: Requirements = Requirements {
             caps: &NINE,
@@ -1525,7 +1532,7 @@ mod tests {
             ],
             pages: 32,
             depends_on: &[],
-            handoff: None,
+            state_handoff: None,
         };
         let pages = Provisions {
             held: &[("a", 1), ("b", 2), ("c", 3), ("d", 4)],
@@ -1542,7 +1549,7 @@ mod tests {
             caps: &[
                 SERVICE,
                 CapNeed {
-                    role: HANDOFF_ROLE,
+                    role: STATE_HANDOFF_ROLE,
                     direction: Direction::Use,
                 },
             ],
@@ -1550,7 +1557,9 @@ mod tests {
         };
         assert_eq!(
             CAP_TWICE.problem(),
-            Some(Refusal::DuplicateRole { role: HANDOFF_ROLE })
+            Some(Refusal::DuplicateRole {
+                role: STATE_HANDOFF_ROLE
+            })
         );
     }
 
@@ -1597,7 +1606,7 @@ mod tests {
         maps: &[],
         pages: 4,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     };
 
     /// **A four-role plan grants exactly each declaration's direction and nothing beside it**

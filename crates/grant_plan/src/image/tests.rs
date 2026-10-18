@@ -17,7 +17,7 @@ fn the_unvouched_manifest_allows_the_two_pages_and_nothing_of_the_progenitors() 
     assert!(!m.sync, "never a sync");
     let bound = NO_NOTE_MANIFEST;
     assert_eq!(
-        (m.arg, m.mem, m.file, m.dir, m.input, m.output, m.runtime),
+        (m.arg, m.mem, m.file, m.dir, m.input, m.output, m.startup),
         (
             bound.arg,
             bound.mem,
@@ -25,7 +25,7 @@ fn the_unvouched_manifest_allows_the_two_pages_and_nothing_of_the_progenitors() 
             bound.dir,
             bound.input,
             bound.output,
-            bound.runtime
+            bound.startup
         ),
         "an unvouched child is endowed exactly what the shell bound the line against",
     );
@@ -202,7 +202,7 @@ fn a_std_image_is_carried_when_it_hears_words_and_unvouched_gets_two_pages() {
     assert_eq!(
         Manifest {
             arg: ArgSpec::Forbidden,
-            runtime: Runtime::Native,
+            startup: StartupContract::Native,
             ..UNVOUCHED_STD_MANIFEST
         },
         UNVOUCHED_MANIFEST

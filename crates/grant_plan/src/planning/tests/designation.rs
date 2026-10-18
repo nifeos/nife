@@ -226,7 +226,7 @@ const STAMPS_A_FILE: Manifest = Manifest {
     installer: false,
     catalog: false,
     indexes: IndexStore::Forbidden,
-    runtime: Runtime::Native,
+    startup: StartupContract::Native,
 };
 
 // ---- `bind` (milestone 47 (navigation and naming): "blocked on a second grant") ----

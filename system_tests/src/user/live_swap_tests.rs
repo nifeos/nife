@@ -120,7 +120,7 @@ const MAX_REPORTS: usize = 42;
 /// **Spawn the operator the way the kernel spawns the progenitor**, and return the report rendezvous every
 /// process in the run holds a WRITE view of.
 ///
-/// Deliberately the same endowment `spawn_hello` gives (the archive read-only at
+/// Deliberately the same endowment `spawn_elf_child_builder` gives (the archive read-only at
 /// `INITIAL_RAMDISK_VA`, an untyped in slot 0, a report rendezvous in slot 1), **plus** the one
 /// thing this milestone is about: a device capability in slot 2, `WRITE|GRANT`, exactly as the progenitor gets one at boot. So
 /// what is under test is the operator's choices, not a privileged shortcut.

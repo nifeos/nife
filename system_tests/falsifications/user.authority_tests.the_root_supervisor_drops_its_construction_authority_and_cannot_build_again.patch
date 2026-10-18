@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::authority_tests::init_drops_its_construction_authority_and_cannot_build_again`.
+Falsifies `system_tests::user::authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again`.
 
 Architecture: aarch64, riscv64, x86_64
 
@@ -33,7 +33,7 @@ elsewhere: `capability::a_deleted_capability_stays_deleted` and
 `capability::delete_touches_only_its_slot` are rows 4 and 5 of notes/confinement-claims.md and
 both are `replayable` against the kernel-side defect this refused.
 
-Replayed on all three ISAs. The hunk is portable code, so one patch serves every leg. On 2026-10-03 (UTC), `cargo xtask test --arch riscv64 --test init_drops_its_construction_authority_and_cannot_build_again` and the same with `--arch x86_64` both came back red at `system_tests/src/user/authority_tests.rs:167`, the assertion this record predicts, which is where aarch64 was already red.
+Replayed on all three ISAs. The hunk is portable code, so one patch serves every leg. On 2026-10-03 (UTC), `cargo xtask test --arch riscv64 --test the_root_supervisor_drops_its_construction_authority_and_cannot_build_again` and the same with `--arch x86_64` both came back red at `system_tests/src/user/authority_tests.rs:167`, the assertion this record predicts, which is where aarch64 was already red.
 
 diff --git a/components/src/root_supervisor.rs b/components/src/root_supervisor.rs
 index e46d7d5d..b2c84cf1 100644

@@ -615,9 +615,9 @@ impl Service<'_> {
                 grant_plan::image_region_pages(
                     spawnproto::image_pages(spawnproto::image_len(w0)),
                     if wiring.args {
-                        grant_plan::Runtime::Std
+                        grant_plan::StartupContract::Std
                     } else {
-                        grant_plan::Runtime::Native
+                        grant_plan::StartupContract::Native
                     },
                     JOB_REGION_PAGES,
                 ),
@@ -850,7 +850,7 @@ impl Service<'_> {
         // two. It covers a caretaker as well, so a directory grant does not change its size.
         // An image's region was split before its frames arrived, sized by the argv bit, which
         // `endowed_image` has checked against the note (milestone 205).
-        let std_layout = manifest.is_some_and(|m| m.runtime == grant_plan::Runtime::Std);
+        let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);
         // **An installer holder is built from the image pool** (milestone 809): its region
         // carries a package's staging run beside its heap (`grant_plan::named_std_region_pages`
         // says why), and the progenitor's own copy of that package is carved beside it.

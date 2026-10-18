@@ -202,7 +202,7 @@ fn timebase_page_phys() -> Option<u64> {
 
 /// Map the timebase page into `space`, if this process needs one built directly rather
 /// than through [`load`]. Several kernel-side functions build a top-level process's own
-/// `AddressSpace` by hand instead of calling `load` (`spawn_hello`, and every
+/// `AddressSpace` by hand instead of calling `load` ([`spawn_elf_child_builder`], and every
 /// `spawn_<program>`-shaped test harness that hands a narrowed archive to a named program:
 /// `timetable_tests::spawn_timetable`, `authority_tests`' `root_supervisor` spawn,
 /// `c_seam_tests::spawn_confiner`, `login_service`, `live_swap_tests`' `swapper` spawn), because
@@ -232,11 +232,11 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
     Ok(())
 }
 
-/// Lay an ELF's loadable segments into `space`, honouring their permissions exactly (milestone
-/// 19d factored this out of `load` so `spawn_hello` shares it; the progenitor's userspace
-/// loader mirrors it).
-/// A read-only segment gets `user_rodata`, not `user_data`: a loader that widens permissions is
-/// a loader you cannot reason about. `.bss` is free because `map_new` zeroes every page.
+/// Lay an ELF's loadable segments into `space`, honouring their permissions exactly (milestone 19d
+/// factored this out of `load` so [`spawn_elf_child_builder`] shares it; the progenitor's userspace
+/// loader mirrors it). A read-only segment gets `user_rodata`, not `user_data`: a loader that
+/// widens permissions is a loader you cannot reason about. `.bss` is free because `map_new` zeroes
+/// every page.
 pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError> {
     // Every kernel path that lays out an image comes through here, so the map is enforced here as
     // well as early in [`load`] (which checks before it sizes a region, so a huge image is told it
@@ -302,9 +302,8 @@ pub fn initial_ramdisk() -> Option<&'static [u8]> {
 /// The bytes of the program named `name` inside the initial ramdisk archive (milestone 19f (run a
 /// real workload)). The initial ramdisk is a nifefs image carrying the progenitor plus the programs
 /// it loads. The milestone tour and the kernel-side service demos ask for whichever program they
-/// wire, by name; since milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one
-/// name) that is one program per demo rather than one role of [`HELLO_ENTRY`]. `spawn_hello` and
-/// `boot_progenitor` instead take the whole archive, because the progenitor parses the rest itself.
+/// wire, by name, one program per demo. [`spawn_elf_child_builder`] and [`boot_progenitor`] instead
+/// take the whole archive, because the progenitor parses the rest itself.
 /// Returns `None` if there is no initial ramdisk, it will not parse, or it holds no such program.
 // Used by the milestone tour, the kernel-wired virtio/console/shell demos, and the tests that load
 // a user program; dead only in the bench boot, which runs no user programs.

@@ -73,7 +73,7 @@ pub fn write_image_capabilities(
         // **An unvouched `std` image is previewed from its manifest too** (milestone 205): its
         // two pages sit at the `std` layout's slots, and its words at slot 8, so the native rows
         // below would name slots it does not get.
-        Some(Ok(m)) if vouched || m.runtime == grant_plan::Runtime::Std => {
+        Some(Ok(m)) if vouched || m.startup == grant_plan::StartupContract::Std => {
             out(b" would grant the new process, and nothing else:\n");
             write_preview_rows(e, &m, holdings, None, out);
         }
@@ -292,7 +292,7 @@ fn write_preview_rows(
     // (milestone 595 (provisional), `crates/std_runtime_contract`). The same grants land somewhere
     // else, and slot 0 is not even the same kind of object, so a preview that printed the native
     // positions for one would be describing a child the progenitor does not build.
-    let std = m.runtime == grant_plan::Runtime::Std;
+    let std = m.startup == grant_plan::StartupContract::Std;
     write_result_and_memory_rows(e, m, std, out);
     write_file_and_directory_rows(e, m, holdings, std, out);
     write_page_rows(m, config, std, out);

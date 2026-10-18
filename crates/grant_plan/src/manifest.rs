@@ -1,5 +1,5 @@
 //! **What a program may be granted, as types**: the output and input specs, option letters,
-//! the slots the progenitor endows at, `Manifest`, `Runtime`, and the region a `std` image is built
+//! the slots the progenitor endows at, `Manifest`, `StartupContract`, and the region a `std` image is built
 //! in.
 //!
 //! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
@@ -366,7 +366,7 @@ pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
     installer: false,
     catalog: false,
     indexes: IndexStore::Forbidden,
-    runtime: Runtime::Native,
+    startup: StartupContract::Native,
 };
 
 /// **[`UNVOUCHED_MANIFEST`] for bytes built against nife's `std`** (milestone 205 (how a foreign
@@ -375,7 +375,7 @@ pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
 /// No entropy, network or domain, whatever the note asks. Name: provisional.
 pub const UNVOUCHED_STD_MANIFEST: Manifest = Manifest {
     arg: ArgSpec::Words(WordGrant::ReadOnly),
-    runtime: Runtime::Std,
+    startup: StartupContract::Std,
     ..UNVOUCHED_MANIFEST
 };
 
@@ -394,7 +394,7 @@ pub enum ArgSpec {
     /// bytes carry no authority. What a word may reach is decided by the grants alone, so a
     /// manifest declaring this declares no positional grant (`a_program_that_hears_words_places_no_positional_grant`).
     ///
-    /// Only a program on the `std` layout can read an argv ([`Runtime::Std`]); see [`argv`](crate::argv) for how
+    /// Only a program on the `std` layout can read an argv ([`StartupContract::Std`]); see [`argv`](crate::argv) for how
     /// the page is assembled. Name: provisional (2026-09-26).
     ///
     /// **A word that names something here is granted it, as the [`WordGrant`] says** (§170 clauses
@@ -754,21 +754,21 @@ pub struct Manifest {
     /// **Provisional field name.**
     pub indexes: IndexStore,
     /// **Which runtime contract the program was built against**, and so where it expects each
-    /// capability to be (milestone 595 (provisional)). See [`Runtime`].
+    /// capability to be (milestone 595 (provisional)). See [`StartupContract`].
     ///
     /// Not an authority, and so not a row in `caps`: the same grants land in different slots. It
     /// is here because the progenitor has to know it before it builds the child, and the manifest
     /// is the one declaration that travels with a program, whether it comes from the archive or,
     /// under DECISIONS §219's option D, from a package.
     ///
-    /// **Provisional field name.**
-    pub runtime: Runtime,
+    /// Name: ratified 2026-10-18 (calef: "Yes").
+    pub startup: StartupContract,
 }
 
 /// **How much of the machine's index store a program holds** (milestone 801 (packages over the
 /// internet)); [`Manifest::indexes`] says what the store is. `jig update` writes the copy, and
 /// `jig list` and `jig install <name>` only read it, so a verb chooses between the two
-/// ([`crate::verbs::Grants::INDEXES_WRITE`]).
+/// ([`crate::verbs::ManifestAuthorities::INDEXES_WRITE`]).
 ///
 /// Name: provisional 2026-10-12 (UTC), lane `milestone/801-jig-installs-from-the-index`, as are
 /// the variants.
@@ -805,9 +805,9 @@ impl IndexStore {
 /// disagree about slot 0 (the output, or the heap's budget), so a `std` program built in the native
 /// layout would take its stdout endpoint for an allocator and fail on its first `println!`.
 ///
-/// Name: provisional, as are both variants.
+/// Name: ratified 2026-10-18 (calef: "Yes"). The variants `Native` and `Std` keep their names.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Runtime {
+pub enum StartupContract {
     /// Capabilities in order, the output first. Every program in `components/` and `fixtures/`.
     Native,
     /// `std_runtime_contract`'s eight fixed slots, its three shared pages, and a heap carved from
@@ -873,11 +873,11 @@ pub const fn named_std_region_pages(m: &Manifest) -> u64 {
 /// the same whichever way it arrived, at the price of counting a small image's pages twice.
 ///
 /// Name: provisional.
-pub const fn image_region_pages(image_pages: u64, runtime: Runtime, native: u64) -> u64 {
+pub const fn image_region_pages(image_pages: u64, startup: StartupContract, native: u64) -> u64 {
     image_pages
-        + match runtime {
-            Runtime::Std => STD_REGION_PAGES,
-            Runtime::Native => native,
+        + match startup {
+            StartupContract::Std => STD_REGION_PAGES,
+            StartupContract::Native => native,
         }
 }
 

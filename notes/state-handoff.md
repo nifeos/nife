@@ -2,7 +2,7 @@
 
 *The last residual of milestone 23 (a capability-routed component OS with live replacement), built
 2026-09-26 to the ruling in DECISIONS §209 (state handoff is an opaque blob over a granted frame,
-and it is optional). `crates/component_plan`'s `Handoff` and `Requirements::handoff`,
+and it is optional). `crates/component_plan`'s `StateHandoff` and `Requirements::state_handoff`,
 `crates/hot_swap_contract`'s `TALLY` and `serve_with_state`, `components/src/swapper.rs`'s `handoff()`,
 and the guest test
 `a_component_keeps_its_state_across_a_swap_and_a_swap_that_cannot_absorb_it_does_not_commit`. Read
@@ -13,10 +13,10 @@ notes/live-replacement.md first; this builds on its four steps.*
 §209 ruled three things. Each has one home.
 
 1. An opaque blob over a granted frame. One frame, retyped out of the operator's budget and
-   routed under the role name `component_plan::HANDOFF_ROLE` to every instance of the contract. The
+   routed under the role name `component_plan::STATE_HANDOFF_ROLE` to every instance of the contract. The
    operator never maps it and never reads it. The blob's layout is `hot_swap_contract`'s business,
    versioned there beside the only code that reads it (`LAYOUT_1`, `state_blob`, `absorb`).
-2. Optional, declared beside `depends_on`. `Requirements::handoff: Option<Handoff>`, a required
+2. Optional, declared beside `depends_on`. `Requirements::state_handoff: Option<StateHandoff>`, a required
    field with no default, so a contract cannot be declared without answering the question. Every
    declaration in the tree says `None` except `TALLY`.
 3. Failure does not commit. The operator retires the outgoing instance only after the incoming
@@ -34,7 +34,7 @@ make reclamation safe. Only a `DeviceFrame` revoke spares the invoker. So the pa
 every instance at build time, like the witness page, and exclusivity comes from sequencing rather
 than from revocation. The incumbent writes the blob inside its `OPERATION_QUIESCE` handler, before the
 reply, and then blocks on its control endpoint. The replacement is started after that reply and
-reads the blob first. `Plan::handoff`'s doc comment carries this. It is the reason `configure`
+reads the blob first. `Plan::state_handoff`'s doc comment carries this. It is the reason `configure`
 consuming the address-space capability did not matter either: nothing is installed after build.
 
 A supervisor that cannot carry state is refused a component that has some. §209 does not say
@@ -80,12 +80,12 @@ pub const TALLY: Requirements = Requirements {
     maps: BACKEND.maps,
     pages: INSTANCE_PAGES,
     depends_on: &[],
-    handoff: Some(component_plan::Handoff { va: STATE_VA }),
+    state_handoff: Some(component_plan::StateHandoff { va: STATE_VA }),
 };
 
-let to_incumbent = Provisions { held: &[/* ... */, (component_plan::HANDOFF_ROLE, state)] };
+let to_incumbent = Provisions { held: &[/* ... */, (component_plan::STATE_HANDOFF_ROLE, state)] };
 let plan = component_plan::plan(&TALLY, &to_incumbent)?;
-assert_eq!(plan.handoff(), Some(STATE_VA)); // wait for NOTE_ABSORBED before retiring anyone
+assert_eq!(plan.state_handoff(), Some(STATE_VA)); // wait for NOTE_ABSORBED before retiring anyone
 ```
 
 Run the guest test alone. The filter does not narrow the architectures, per DECISIONS §19
@@ -97,7 +97,7 @@ script/test --test a_component_keeps_its_state_across_a_swap
 
 ## BUGS
 
-A handoff is a run of pages, not one page. `Handoff` carries a page count, and the supervisor mints
+A handoff is a run of pages, not one page. `StateHandoff` carries a page count, and the supervisor mints
 the run as one frame with `MemoryRegion::RETYPE`'s count (calef, 2026-09-26 UTC), because
 `line_editor` with its history needs a little over 4 KiB. The
 stateful fixture declares two pages and writes its tally on the second, so a run that stopped at
@@ -124,8 +124,8 @@ The refusal is staged. No build in the tree writes `LAYOUT_2`; the refusing repl
 `c_swappable` started claiming to understand only that layout. The operator's behavior on refusal
 is real. The incompatibility is configured.
 
-Every new name here is provisional: `handoff` (§209's own), `Handoff`,
-`HANDOFF_ROLE`, `Plan::handoff`, `TALLY` and its contract string `tally`, `ROLE_HANDOFF`,
+`StateHandoff`, `STATE_HANDOFF_ROLE`, `Requirements::state_handoff` and `Plan::state_handoff` are
+ratified (calef, 2026-10-18). Every other new name here is provisional: `TALLY` and its contract string `tally`, `ROLE_HANDOFF`,
 `START_FRESH`, `START_ABSORB`, `STATE_VA`, `LAYOUT_1`, `LAYOUT_2`, `STATE_MAGIC`, `state_blob`,
 `absorb`, `serve_with_state`, `start`, `POKE_RESUME`, `NOTE_ABSORBED`, `NOTE_REFUSED`,
 `step::ABSORBED` and `step::ROLLED_BACK`.

@@ -13,14 +13,66 @@ version = "0.1.0"
 edition = "2024"
 license.workspace = true
 
+# The six ELF child builders (milestones 19d and 19e): each is entered by the kernel's
+# `spawn_elf_child_builder`, reads one child out of the archive by name, builds it in userspace and
+# reports. Three of the children exist only to be built and are listed beside their builders; the
+# other three are `console`, `least_authority_demo` and `coremark`.
 [[bin]]
-name = "hello"
-path = "src/hello.rs"
+name = "report_child_builder"
+path = "src/report_child_builder.rs"
 # This is a bare-metal `no_std` binary with no unit tests, and the default test/bench targets link
 # libtest (`extern crate test`), which does not exist for the aarch64-unknown-none target. Turning
 # them off is what lets `cargo clippy --all-targets` (and any --all-targets build) work here instead
 # of failing to find crate `test`. The kernel keeps its test target because it supplies its own
 # harness via `custom_test_frameworks`.
+test = false
+bench = false
+
+[[bin]]
+name = "report_child"
+path = "src/report_child.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "device_child_builder"
+path = "src/device_child_builder.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "device_child"
+path = "src/device_child.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "interrupt_child_builder"
+path = "src/interrupt_child_builder.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "interrupt_child"
+path = "src/interrupt_child.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "console_server_builder"
+path = "src/console_server_builder.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "least_authority_demo_builder"
+path = "src/least_authority_demo_builder.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "coremark_builder"
+path = "src/coremark_builder.rs"
 test = false
 bench = false
 

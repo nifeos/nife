@@ -193,7 +193,7 @@ pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION
 ///   runs, as the shell's matching staging pages are.
 pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
     spawnproto::IMAGE_MAX_PAGES,
-    grant_plan::Runtime::Std,
+    grant_plan::StartupContract::Std,
     JOB_REGION_PAGES,
 ) + spawnproto::IMAGE_MAX_PAGES;
 

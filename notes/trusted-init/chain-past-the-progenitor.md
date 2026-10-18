@@ -147,7 +147,7 @@ nife: handing the system to userspace init.
 - Both ISAs (`system_tests/src/user/measured_boot_tests.rs`):
   - `the_measurement_table_measures_to_the_compiled_in_trust_root`, the build-composition proof one
     link down from the boot program's.
-  - `every_program_init_loads_is_vouched_for_by_the_measurement_table`, which is the one that earns
+  - `every_program_the_progenitor_loads_is_vouched_for_by_the_measurement_table`, which is the one that earns
     its keep. The failure that threatens this mechanism is not a substituted program, which is loud;
     it is a program packed into the archive and left out of the table, which boots fine and is
     silently unspawnable. So the test asserts completeness, over the six boot components and over

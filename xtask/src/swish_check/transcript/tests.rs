@@ -124,7 +124,7 @@ fn a_shuffle_too_severe_to_read_is_reported_rather_than_failed() {
 /// it survives every amount of shuffling elsewhere in the transcript, because the search for it
 /// is exact and interleaving can destroy a string but never create one.
 #[test]
-fn init_reporting_the_failing_answer_is_a_failure_however_shuffled_the_rest_is() {
+fn the_progenitor_reporting_the_failing_answer_is_a_failure_however_shuffled_the_rest_is() {
     let denied = format!(
         "{}progenitor: construction budget NOT dropped; it can still build\n",
         SHREDDED_CI_TRANSCRIPT
@@ -144,7 +144,7 @@ fn init_reporting_the_failing_answer_is_a_failure_however_shuffled_the_rest_is()
 /// and this fails. Without this, "cannot read it" would be a way to pass against a check that
 /// had quietly stopped checking anything.
 #[test]
-fn a_silent_init_fails_when_nothing_else_was_writing() {
+fn a_silent_progenitor_fails_when_nothing_else_was_writing() {
     let quiet = "\
   uart irq: source 10 (machine description)
 progenitor: every program measured against the archive table

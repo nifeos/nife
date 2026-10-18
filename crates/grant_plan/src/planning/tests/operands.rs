@@ -480,7 +480,11 @@ fn a_program_that_hears_words_places_no_positional_grant() {
         }
         hearing += 1;
         let name = p.name();
-        assert_eq!(m.runtime, Runtime::Std, "{name}: only std reads an argv");
+        assert_eq!(
+            m.startup,
+            StartupContract::Std,
+            "{name}: only std reads an argv"
+        );
         assert_eq!(m.file, FileSpec::Forbidden, "{name}");
         assert_eq!(m.dir, DirSpec::Forbidden, "{name}");
         assert_eq!(m.input, InputSpec::Forbidden, "{name}");

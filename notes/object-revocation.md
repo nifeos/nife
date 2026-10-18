@@ -123,7 +123,7 @@ server parked in `RECEIVE` would be refused on every pass forever, its memory go
 stopped, and `DESTROY`'s documented contract ("the owner retries and reclaims") would be false. The
 ordinary case is a server that blocks.
 
-The aarch64 test boot shows the cost. `userspace_init_brings_up_the_console_server` builds a console
+The aarch64 test boot shows the cost. `the_console_server_builder_brings_up_a_console_that_prints_for_it` builds a console
 server out of the progenitor's 2048-frame budget, and that server blocks in its serve loop, so
 without the sweep those 2048 frames are unreclaimable. With the sweep after the refusal, six such
 tests left the boot with 216 free frames of 29307 and no free run longer than 117, failing as

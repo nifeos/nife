@@ -576,7 +576,7 @@ pub const CONSOLE: Requirements = Requirements {
     // through the stable endpoint, and DECISIONS §41's own sender-queue argument is what makes
     // that need no explicit orchestration (see `Requirements::depends_on`'s doc comment).
     depends_on: &[],
-    handoff: None,
+    state_handoff: None,
 };
 
 /// **The same programs behind a queue broker, with no device.** A different contract rather than a
@@ -593,7 +593,7 @@ pub const BACKEND: Requirements = Requirements {
     }],
     pages: INSTANCE_PAGES,
     depends_on: &[],
-    handoff: None,
+    state_handoff: None,
 };
 
 /// **The client** (`chatty`, in all three of its roles). It *uses* the service and never serves it,
@@ -623,7 +623,7 @@ pub const CLIENT: Requirements = Requirements {
     // channel it is wired to. See `Requirements::depends_on`'s doc comment for why this is empty
     // rather than naming whichever contract `service` happens to resolve to on a given wiring.
     depends_on: &[],
-    handoff: None,
+    state_handoff: None,
 };
 
 /// **The queue broker**, the latency ladder's opt-in rung. It serves the endpoint producers hold and
@@ -664,7 +664,7 @@ pub const BROKER: Requirements = Requirements {
     // signal and page, which it never waits on), and it is the edge milestone 23's dependency graph exists to
     // name so that sequencing can be derived rather than hand-coded per system.
     depends_on: &["backend"],
-    handoff: None,
+    state_handoff: None,
 };
 
 /// **The stateful component** (DECISIONS §209). The backend contract, plus a handoff page: it keeps
@@ -684,7 +684,7 @@ pub const TALLY: Requirements = Requirements {
     maps: BACKEND.maps,
     pages: INSTANCE_PAGES,
     depends_on: &[],
-    handoff: Some(component_plan::Handoff {
+    state_handoff: Some(component_plan::StateHandoff {
         va: STATE_VA,
         // Two, and the tally is written on the second: a blob that only used the first page would
         // pass whether or not the operator's run reached past it.
@@ -1240,7 +1240,7 @@ mod tests {
         assert_eq!(
             component_plan::plan(&TALLY, &without),
             Err(component_plan::Refusal::Unprovided {
-                role: component_plan::HANDOFF_ROLE
+                role: component_plan::STATE_HANDOFF_ROLE
             })
         );
         let with = component_plan::Provisions {
@@ -1250,11 +1250,11 @@ mod tests {
                 ("operator", 3),
                 ("control", 4),
                 ("witness", 5),
-                (component_plan::HANDOFF_ROLE, 6),
+                (component_plan::STATE_HANDOFF_ROLE, 6),
             ],
         };
         let p = component_plan::plan(&TALLY, &with).unwrap();
-        assert_eq!(p.handoff().map(|h| h.va), Some(STATE_VA));
+        assert_eq!(p.state_handoff().map(|h| h.va), Some(STATE_VA));
         assert!(p.devices().is_empty());
     }
 }

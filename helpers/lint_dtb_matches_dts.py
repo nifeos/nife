@@ -265,10 +265,19 @@ def selftest():
             subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit",
                             "-qm", "fixtures"], cwd=str(repo), check=True,
                            env={**os.environ, "PATH": str(bin_dir)})
+            # CI itself sets CI=true, which turns this skip into a failure; the skip case must
+            # not inherit it.
+            skip_env = {k: v for k, v in os.environ.items() if k != "CI"}
             proc = subprocess.run([sys.executable, os.path.abspath(__file__)],
                                   cwd=str(repo), capture_output=True, text=True,
-                                  env={**os.environ, "PATH": str(bin_dir)})
+                                  env={**skip_env, "PATH": str(bin_dir)})
             expect("the skip path", proc.returncode, 0, "exit code")
+            ci = subprocess.run([sys.executable, os.path.abspath(__file__)],
+                                cwd=str(repo), capture_output=True, text=True,
+                                env={**os.environ, "PATH": str(bin_dir), "CI": "true"})
+            expect("missing dtc under CI", ci.returncode, 1, "exit code")
+            expect("missing dtc under CI", "nothing was judged" in ci.stderr, True,
+                   "says nothing was judged")
             expect("the skip path", "A skip is a pass" in proc.stdout, True,
                    "says a skip is a pass")
             expect("the skip path", "CI's lint job installs dtc" in proc.stdout, True,
@@ -288,6 +297,12 @@ def main():
     root = pathlib.Path.cwd()
     dtc = shutil.which("dtc")
     if dtc is None:
+        if os.environ.get("CI") == "true":
+            # CI installs dtc; a missing one there is a broken runner image, and a skip would
+            # let every blob through unjudged.
+            print("dtb blobs: CI=true but dtc is not installed, so nothing was judged. "
+                  "Install device-tree-compiler on the runner.", file=sys.stderr)
+            sys.exit(1)
         print(SKIP_NOTE)
         return
     sys.exit(check(root, git_files(root, "*.dts"), git_files(root, "*.dtb"), dtc,

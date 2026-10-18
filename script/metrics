@@ -1355,15 +1355,19 @@ def names(tree):
     block that fails `script/names`' form checks counts toward the total and toward no status.
     `script/lint` runs `script/names --check`, so on `main` the gap is zero.
 
-    An old week is counted with TODAY's enumeration, like every row here: a kind `script/names`
-    added later (items and modules from 2026-09-24, the rules from 2026-10-17) is counted in the
-    weeks before it existed wherever the tree already carried the block it reads.
+    **A module is a file, so the total does not move when a block is written.** Every `.rs` file
+    under a `src/` directory counts, and one with no block is in no status (the "No provenance
+    block" band). An old week is counted with TODAY's enumeration, like every row here, and
+    because the modules are files the enumeration reaches every week the same way: a week before
+    module blocks existed shows its modules in that band, not missing from the total. Items are
+    the exception `helpers/name_census.py` marks: counted only where a block exists, so an item
+    block written on old code still raises the total.
     """
-    records, _problems, missing = name_census.census(tree.paths, tree.text.get)
+    records, _problems, missing, unblocked = name_census.census(tree.paths, tree.text.get)
     counts = dict.fromkeys(NAME_STATUSES, 0)
     for record in records:
         counts[record['status']] += 1
-    return counts, len(name_ruled.owed(records)), len(records) + missing
+    return counts, len(name_ruled.owed(records)), len(records) + missing + len(unblocked)
 
 
 # The line `script/names` prints its total on, which `check_names_total` reads.
@@ -2555,8 +2559,8 @@ CHARTS = [
       ('Superseded', 'decisions_superseded'), ('Proposed', 'decisions_proposed'),
       ('No status recorded', 'decisions_unrecorded')], 1.0, None, None),
     ('names.svg', 'Names by what the tree records about them',
-     'every name script/names tracks: crates, programs, packages, scripts, marked items and '
-     'modules, documentation directories and documents',
+     'every name script/names tracks: crates, programs, packages, scripts, every module and '
+     'document, documentation directories, and the items that carry a block',
      [('Ratified', 'names_ratified'), ('Ruled, rename owed', 'names_ruled_owed'),
       ('Recorded', 'names_recorded'), ('Provisional', 'names_provisional_unruled'),
       ('Unrecorded', 'names_unrecorded'),

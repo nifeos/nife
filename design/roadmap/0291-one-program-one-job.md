@@ -197,11 +197,9 @@ See the proposal below.
   seven of them added here. All of them are `if !ok { user_rt::trap() }` or a panic reaching the same
   instruction. `user_rt` is the obvious home; the decision is the public function name, which is
   calef's, so the block carries a `DECISION` gate.
-- **Recorded.** `fixtures/src/hello.rs`'s own `BUGS` carries the two limitations a reader of that
-  file meets. The name still does not describe the contents (nine roles of userspace process
-  construction, which `hello` describes no better than it described thirty-one). And a caller that
-  asks for a role it does not have now gets a trap rather than a message, which is deliberate and
-  is still a spawner waiting on its watchdog.
+- **Milestone 405.** The nine roles left here, a name that did not describe them, and a role
+  fault that left a spawner waiting on its watchdog. Milestone 405 (the nine `INIT` roles) made the nine roles programs,
+  and the kernel names the entry it enters.
 - **Done.** The Kani cost of the `DIR_BLOCKS` raise, which this lane could not measure, was
   answered by CI: both `prove` shards green on the tree that made the change. What that does not
   settle, and what `crates/nifefs/src/lib.rs`'s `DIR_BLOCKS` block now names, is the harness's own

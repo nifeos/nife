@@ -165,7 +165,7 @@ impl Supervisor<'_> {
             ("sink_page", s::SINK_PAGE),
             ("client_out", s::CLIENT_OUT),
             ("client_in", s::CLIENT_IN),
-            (component_plan::HANDOFF_ROLE, self.handoff),
+            (component_plan::STATE_HANDOFF_ROLE, self.handoff),
         ];
         let Ok(plan) = component_plan::plan(self.decl, &Provisions { held: &held }) else {
             fail()

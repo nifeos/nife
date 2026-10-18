@@ -439,7 +439,7 @@ const RENDERS_AS_IT_READS: Manifest = Manifest {
     installer: false,
     catalog: false,
     indexes: IndexStore::Forbidden,
-    runtime: Runtime::Native,
+    startup: StartupContract::Native,
 };
 
 /// Plan one stage against an explicit manifest, with the operators' answer folded in.

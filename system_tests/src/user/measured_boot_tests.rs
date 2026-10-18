@@ -98,8 +98,11 @@ fn the_measurement_table_measures_to_the_compiled_in_trust_root() {
 /// a program packed into the archive and left out of the table boots fine and is silently
 /// unloadable, because `Unmeasured` is a refusal. Nothing here is hard-coded; the expected digests
 /// come out of the archive's own table and the bytes out of the archive's own entries.
+///
+/// Falsification: unfalsified. Renamed by milestone 405 (the nine `INIT` roles), which ran it green
+/// on all three architectures but did not break the code it guards to watch it go red.
 #[test_case]
-fn every_program_init_loads_is_vouched_for_by_the_measurement_table() {
+fn every_program_the_progenitor_loads_is_vouched_for_by_the_measurement_table() {
     let table = program(measured_boot::PROGRAM_MEASUREMENTS)
         .and_then(|b| core::str::from_utf8(b).ok())
         .expect("the measurement table is missing or is not text");

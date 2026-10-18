@@ -201,7 +201,7 @@ def read(rel):
 
 files = [p for p in tracked(flags=("--cached", "--others", "--exclude-standard"))
          if os.path.isfile(os.path.join(root, p))]
-records, problems, _missing = name_census.census(files, read)
+records, problems, _missing, unblocked = name_census.census(files, read)
 
 by_kind = {}
 for r in records:
@@ -311,6 +311,8 @@ if mode == "--check":
           f"(fails past {name_ruled.MAX_AGE_DAYS} days)")
     print(f"names: {len(worklist)} still want an architect "
           f"(script/names --unratified), which is a worklist and not a failure")
+    print(f"names: {len(unblocked)} modules and documents carry no block, held to a list that only shrinks "
+          f"(helpers/module_block_ratchet.py)")
     for bad in contradictions:
         print(f"names: NOTE {bad!r} is recorded as refused and is also a live name", file=sys.stderr)
     sys.exit(0)
@@ -498,8 +500,11 @@ for kind in KINDS:
         tail = f"  refused {len(r['refused'])}" if r["refused"] else ""
         print(f"  {r['name']:<28} {when:<12}{tail}")
 
-print(f"\ntotal: {len(records)} names, {len(ratified)} ratified, {len(provisional)} provisional, "
-      f"{len(recorded)} recorded, {len(unrecorded)} unrecorded, {len(refusals)} refusals")
+# The total counts a module or document with no block, which is in no status: each is a file whether
+# or not anyone wrote its block (helpers/name_census.py), and script/metrics' `names_total` is this.
+print(f"\ntotal: {len(records) + len(unblocked)} names, {len(ratified)} ratified, "
+      f"{len(provisional)} provisional, {len(recorded)} recorded, {len(unrecorded)} unrecorded, "
+      f"{len(unblocked)} with no block, {len(refusals)} refusals")
 print(f"{len(worklist)} still want an architect: script/names --unratified")
 if contradictions:
     print(f"refused but live: {', '.join(contradictions)}")

@@ -289,7 +289,7 @@ const BUILT_ELSEWHERE: [&str; 15] = [
 /// ran, so the `[[bin]]` rule cannot apply to it. Both halves are required, so a native `Program`
 /// with no binary still fails, and so does a `std` one nothing here packs.
 fn is_std_built_elsewhere(p: grant_plan::Program) -> bool {
-    p.manifest().runtime == grant_plan::Runtime::Std && BUILT_ELSEWHERE.contains(&p.name())
+    p.manifest().startup == grant_plan::StartupContract::Std && BUILT_ELSEWHERE.contains(&p.name())
 }
 
 /// **What the declared list must agree with, checked every time an archive is packed.**

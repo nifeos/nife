@@ -229,9 +229,8 @@ needs a file of its own. What is listed here is where to read it and what happen
   is saying what is prepared. Numbered on 2026-09-19 by milestone 433's drain of the pile, by which
   time the 21 instances had been cleared and one `unrecorded` name of 222 was left, so what is
   numbered is the regression guard.
-- **Recorded.** **`fixtures/src/hello.rs` carries the `init_boot` role on aarch64 and the name does not
-  say so**, in that program's own block. Not proposed as a rename: `hello` is right for what it was
-  and the gap is that the thing grew, which is a fact to record rather than a naming error.
+- **Milestone 405.** `hello`'s name did not say what the program carried. Milestone 405 (the nine `INIT` roles) split its
+  last nine roles into programs with their own names and deleted it.
 - **Recorded.** The retired `gates` script was DECISIONS §134's one clear exception, a noun that
   acts where the family's rule gives nouns to things that report. Stated in its header rather than
   resolved, because both verb forms were worse: `check` collides with the `-check` suffix eight

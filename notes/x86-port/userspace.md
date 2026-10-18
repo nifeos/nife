@@ -101,7 +101,7 @@ the argument for doing item 4's hand-off rather than deferring it.
 1. `arch::x86_64::irq::enable` conflated two numbering schemes. An intid on x86 is either a
    legacy IRQ (0..15, which needs the MADT's override table and a redirection entry) or a local
    APIC vector (0x20..0x2f, raised by writing the ICR, with no controller input to unmask).
-   `enable` assumed the first, always. `spawn_hello` enables `user::INIT_TEST_SGI`, which on this
+   `enable` assumed the first, always. `spawn_elf_child_builder` enables `user::DELEGATED_TEST_INTERRUPT`, which on this
    architecture *is* `SELF_TEST_VECTOR` = 0x22 = 34, and the kernel panicked with
    `gsi 34 is outside the IO APIC's range`. The fix is three lines and the ranges were already
    documented as disjoint in `GSI_VECTOR_BASE`'s own doc comment. Nothing above the arch layer had

@@ -22,7 +22,7 @@ use std::process::ExitCode;
 // true: it hears words, reads what they name, and runs on `std`.
 capability_manifest_note::carry!(grant_plan::Manifest {
     arg: grant_plan::ArgSpec::Words(grant_plan::WordGrant::ReadOnly),
-    runtime: grant_plan::Runtime::Std,
+    startup: grant_plan::StartupContract::Std,
     ..grant_plan::UNVOUCHED_MANIFEST
 });
 

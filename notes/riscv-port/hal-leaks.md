@@ -107,7 +107,7 @@ The port is worth doing precisely because it finds where the abstraction leaked.
    after `finish_switch`). So the TCB path ran `enter_frame` with `sstatus.SIE` clear and could not be
    hit. The exec path could: `spawn` makes an ordinary kernel thread, `thread_entry` enables
    interrupts, and that thread later becomes a user process through `run` -> `enter_frame`. Every
-   `spawn_bare` subject and `spawn_hello` is on that path.
+   `spawn_bare` subject and `spawn_elf_child_builder` is on that path.
 
    The two paths are not distinguishable from a panic message, and an early reading of this
    investigation got it wrong by trying. A TCB child configured at `CODE_VA` 0x40_0000 with

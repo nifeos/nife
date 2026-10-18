@@ -16,7 +16,7 @@
 // installed program to the spawner)'s whatever this says, so it declares the least that is true.
 capability_manifest_note::carry!(grant_plan::Manifest {
     arg: grant_plan::ArgSpec::Words(grant_plan::WordGrant::ReadOnly),
-    runtime: grant_plan::Runtime::Std,
+    startup: grant_plan::StartupContract::Std,
     ..grant_plan::UNVOUCHED_MANIFEST
 });
 

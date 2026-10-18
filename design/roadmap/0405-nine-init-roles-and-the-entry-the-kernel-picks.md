@@ -1,123 +1,59 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-09-14
-milestone_dependencies: none
-decision_dependencies: none
-machine_requirements: none
-specific_machine: none
-needs_person: no
+built: 2026-10-18
 ---
-# 405. The nine `INIT` roles, and the archive entry `spawn_hello` picks
+# 405. The nine `INIT` roles, and the archive entry the kernel picks
 
-Filed 2026-09-14 as an unnumbered proposal by milestone 291's lane, which
-split twenty-two of `fixtures/src/hello.rs`'s thirty-one roles into programs and stopped at these
-nine on purpose; numbered 2026-09-19 by milestone 433's drain of the proposal pile. **Premise
-re-read against the tree on 2026-09-19 and still true, to the constant**: `fixtures/src/hello.rs`
-still declares exactly those nine roles (`INIT` 20, `CHILD` 21, `DEV_CHILD` 22, `INIT_DEV` 23,
-`INIT_CONSOLE` 24, `INIT_IRQ` 25, `IRQ_CHILD` 26, `INIT_LEAST_AUTHORITY_DEMO` 28, `INIT_COREMARK`
-29). `ROLES_ENTRY` is still `"hello"` and is still read by `init_build` and one other parent to
-re-enter this binary's own image. `kernel::user::spawn_hello` still takes a role and always enters
-`HELLO_ENTRY`. `crates/capability_witness_contract` is there for the agreed words. The gate was
-`MILESTONE 268` and it is cleared: milestone 268 (every architecture boots the same way) turned
-BUILT on 2026-09-19, so nothing is rebuilding the boot sequence any more and this is ready to start.
-**This block also absorbs** milestone 399 (the six `init` roles in `hello`), which proposed
-renaming six of these nine constants and is `SUPERSEDED` for the reason 399's own successor gave
-first. After the split the six parents are programs with their own names and the constants are gone,
-so the rename would be a naming decision spent on an interim.
-*(Number provisional until the merge queue lands it.)*
+Branch `milestone/405-nine-init-roles-and-the-entry-the-kernel-picks`.
 
-*(Cleared 2026-09-19 by milestone 268's own lane, because `script/roadmap` refuses
-a gate on a BUILT milestone and 268 is now one. The reason it existed is kept: that lane was
-rebuilding the boot sequence on all three architectures while 291 ran, and the change proposed here
-is in `kernel::user::spawn_hello`. Two lanes in that function is the collision this tree already
-knows how to avoid.)*
+The last nine roles of the one fixture that dispatched on `x0` are nine programs, and the fixture
+is deleted rather than renamed. calef ruled the names on 2026-10-18 (UTC), with the rule that
+nife's own names never use `init` for a process.
 
-## What is left, and why it did not come apart with the rest
+## What there is
 
-Nine roles of `hello`: `INIT` (20), `CHILD` (21), `DEV_CHILD` (22), `INIT_DEV` (23),
-`INIT_CONSOLE` (24), `INIT_IRQ` (25), `IRQ_CHILD` (26), `INIT_LEAST_AUTHORITY_DEMO` (28) and
-`INIT_COREMARK` (29). Six of them are a userspace parent that parses an ELF and builds a child.
-Three of them *are* the child that parent builds.
+Six builders, each a userspace parent that reads one child out of the archive by name, builds it
+from an ELF it parsed and reports. Three of the children exist only to be built.
 
-The other twenty-two came apart cheaply because the kernel spawns each of them directly, with
-`run(image, Spawn { .. })`. So the only change was which bytes the caller passed. These nine do not,
-for two reasons:
+| program | builds | proves |
+|---|---|---|
+| `report_child_builder` | `report_child` | a userspace build produces a running thread |
+| `device_child_builder` | `device_child` | device memory can be delegated and mapped device-typed |
+| `interrupt_child_builder` | `interrupt_child` | an interrupt reaches a driver through a delegated capability |
+| `console_server_builder` | `console` | a userspace-built console server prints for its builder |
+| `least_authority_demo_builder` | `least_authority_demo` | an argument crosses `START` intact |
+| `coremark_builder` | `coremark` | a real workload runs correctly, and reads the kernel's counter frequency |
 
-1. **`spawn_hello` always re-enters `HELLO_ENTRY`, since milestone 166 moved the boot role's own
-   entry out to `boot_progenitor`. Six parents becoming six programs makes that choice a table, or
-   makes the entry a parameter the six call sites supply. The second is the smaller surface and is
-   probably right; it is still a boot-path signature change.
-2. **The parents find their children by looking themselves up. `ROLES_ENTRY` is the string
-   `"hello"`, and `init_build` reads *this binary's own ELF* out of the archive and re-enters it at
-   a different role. Split, each parent names its child's archive entry instead, which is the
-   shape `init_console`, `init_least_authority_demo` and `init_coremark` already have (they load
-   `"console"`, `"least_authority_demo"` and `"coremark"` by name). So the target shape exists in
-   the same file; it is the three roles that re-enter their own image that have to move.
+`kernel::user::spawn_elf_child_builder(image, entry, report)` enters the builder named `entry` with
+the same five capabilities every builder gets, and `x0` is 0, since none of them dispatches on it.
+No builder looks itself up in the archive any more, so there is no role number to agree on and
+the duplicated role constants in the tests are gone with them. The words a builder's child and the
+kernel's test agree on (`REPORT_CHILD_WORD`, `INTERRUPT_CHILD_WORD`, `CONSOLE_SERVER_BUILDER_LINE`,
+`LEAST_AUTHORITY_DEMO_INPUT`) are in `crates/capability_witness_contract`.
 
-## What it would take
+**The kernel enters each builder itself, so each is in the trust root.**
+`sealed_pair::BOOT_PROGRAMS` names the progenitor and the six builders, and `xtask`'s
+`check_declared_programs` fails a build in which one of them has no `[[bin]]`. A test that names an
+entry the archive lacks panics in `spawn_elf_child_builder`, and one the trust root lacks halts in
+`trust::require`, so neither waits on a report nobody sends.
 
-- Three child programs, provisionally `reporting_child`, `device_identifying_child` and
-  `interrupt_waiting_child`, packed in all three archives. Their two agreed words (`CHILD_WORD`,
-  and the interrupt child's reported word) join `capability_witness_contract`, which milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one name)
-  created for exactly this.
-- Six parent programs, each naming its child's entry.
-- `spawn_hello` taking the entry name, or a role-to-entry table beside `PROGENITOR_ROLE`.
-- Six `spawn_hello` test call sites updated. The role numbers themselves stay.
-  [the progenitor's grant order](0301-one-grant-order-for-the-progenitor.md) recorded that those six
-  tests name them, and the grant *order* the roles share is the thing that proposal is about.
+The tests are `system_tests/src/user/elf_child_builder_tests.rs`, plus the two in
+`cycle_counter_tests` and `counter_frequency_tests` that enter `coremark_builder`. The interrupt and
+device tests are aarch64-only, for the reasons written on each.
 
-## What it would settle
+## Follow-on
 
-**The name.** calef deferred naming whatever remained of `hello` until there was something settled
-to name (2026-09-14: *"If there is anything left then we can consider a name for what remains"*).
-After 291 what remains is nine roles. After this, either six programs and three children with their
-own names, or nothing at all, and `hello` is deleted rather than renamed. That is the cleaner
-answer and it should be checked before anybody spends a naming decision on the interim.
-
-## What it would not settle
-
-The six parents would still dispatch on nothing: each would be a whole program with one `_start`.
-But three of them differ from `INIT` by a single capability in the endowment (`INIT_DEV` adds the
-UART, `INIT_IRQ` adds the interrupt), which is an argument that they are one program parameterised
-by what it was granted rather than three. **That is a design question this proposal does not
-answer**, and answering it by splitting first would be the wrong order. A program that reads its own
-capability table to decide what to do is the capability-system-native shape, and it may make three
-of these nine unnecessary rather than separate.
-
-## What it inherits from milestone 399
-
-Milestone 399 proposed renaming six of these nine constants to `PARENT_*` and is `SUPERSEDED` by
-this block, on the sequencing 399's own successor stated first. After the split the six parents are
-programs with their own names and the constants are gone, so the rename is a naming decision spent
-on an interim. Its refusals are worth reading before anybody names the six programs. They refuse
-names this work will reach for: `PROGENITOR_*` (false, the progenitor is one program
-under one archive entry), `LOADER_*` (names one of three things the roles do), `BUILDER_*` and
-`SPAWNER_*` (each already a program in this tree).
-
-**One thing 399 carried that this block does not, and it should be picked up here.** The six role
-numbers are written down twice, in `fixtures/src/hello.rs` and again in `kernel/src/user/tests.rs`
-(`INIT_ROLE = 20`, `INIT_DEV_ROLE = 23`, `INIT_CONSOLE_ROLE = 24`, `INIT_IRQ_ROLE = 25`,
-`INIT_LEAST_AUTHORITY_DEMO_ROLE = 28`, `INIT_COREMARK_ROLE = 29`), and nothing gates the two against
-each other. This work touches both files and both sets of numbers, which makes it the moment to fix
-that rather than to carry it across.
+- **Refused.** Folding `report_child_builder`, `device_child_builder` and
+  `interrupt_child_builder` into one program that reads its own capability table to decide what to
+  build. They differ by one capability each, which argued for it, but calef ruled six program names
+  on 2026-10-18 (UTC), and six programs that each do one thing is what that ruling asks for.
 
 ## Index row
 
-Milestone 291 split twenty-two of `fixtures/src/hello.rs`'s thirty-one roles into programs and
-stopped at nine on purpose. Six of the nine are a userspace parent that parses an ELF and builds a
-child, and three of them are the child that parent builds. The other twenty-two came apart cheaply
-because the kernel spawns each directly, so the only change was which bytes the caller passed. These
-nine do not, for two reasons. `spawn_hello` always re-enters `HELLO_ENTRY`, so six parents becoming
-six programs makes that a table or makes the entry a parameter the six call sites supply, which is
-the smaller surface and is still a boot-path signature change. And the parents find their children
-by looking themselves up. `ROLES_ENTRY` is `"hello"` and `init_build` reads this binary's own ELF
-out of the archive to re-enter it at a different role, where `init_console`,
-`init_least_authority_demo` and `init_coremark` already name their child's archive entry instead.
-So the target shape exists in the same file, and only the roles that re-enter their own image have to
-move. What it would settle is the name calef deferred on 2026-09-14 until there was something
-settled to name. After this there are either six programs and three children with their own names,
-or nothing at all and `hello` is deleted rather than renamed. What it would not settle is whether
-three of the six parents are one program parameterised by its endowment, since `INIT_DEV` and
-`INIT_IRQ` differ from `INIT` by a single capability. A program that reads its own capability
-table to decide what to do is the capability-native shape. Answering that by splitting first would
-be the wrong order.
+The last nine roles of `fixtures/src/hello.rs` became nine programs and `hello` was deleted. Six
+are builders: each reads one child out of the archive by name, builds it from an ELF it parsed in
+userspace, and reports. Three are children that exist only to be built. The kernel's
+`spawn_elf_child_builder` now takes the archive entry to enter rather than a role, which put the six
+builders in the trust root beside the progenitor and removed the role numbers the tests and the
+fixture had to agree on.

@@ -779,8 +779,8 @@ pub fn init_this_cpu() {
 /// The two ranges cannot collide, which is what makes one function able to take both:
 /// [`GSI_VECTOR_BASE`]'s doc reserves 0x20..0x2f for the local APIC's own sources, and a legacy IRQ
 /// number never reaches 0x20. **This was a real bug until userspace arrived** (milestone 161, item
-/// 4's hand-off): `spawn_hello` enables `user::INIT_TEST_SGI`, which on x86 *is*
-/// `SELF_TEST_VECTOR`, and routing 34 as though it were a legacy IRQ panicked with
+/// 4's hand-off): `spawn_elf_child_builder` enables `user::DELEGATED_TEST_INTERRUPT`, which on
+/// x86 *is* `SELF_TEST_VECTOR`, and routing 34 as though it were a legacy IRQ panicked with
 /// "gsi 34 is outside the IO APIC's range". Nothing had ever called `enable` with a local-APIC
 /// number before, because nothing above the arch layer had run.
 pub fn enable(intid: u32) {

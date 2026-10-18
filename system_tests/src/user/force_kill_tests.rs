@@ -231,8 +231,8 @@ fn reclaim_within_two_seconds(region: u64) -> bool {
 /// kill is *armed* by the refusal and *spent* by `schedule()`, and a thread parked in `RECEIVE` never
 /// reaches `schedule()`: before 2026-08-16 a region holding a blocked server was refused on every
 /// pass, forever, and its memory was gone until the machine stopped. That is not an exotic case. A
-/// server is a thing that blocks, and six `spawn_hello` tests each built one out of a 2048-frame
-/// budget, which is how the boot came to end with 216 free frames (notes/frames.md).
+/// server is a thing that blocks, and the `spawn_elf_child_builder` tests each built one out of a
+/// 2048-frame budget, which is how the boot came to end with 216 free frames (notes/frames.md).
 ///
 /// What makes the reclaim land is that the child's rendezvous is **in the region being reclaimed**, so
 /// the sweep that removes it aborts the child's IPC and wakes it, and the kill the same pass arms is

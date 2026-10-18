@@ -58,14 +58,14 @@ rebuild, the spawner is what can. Policy and authority, separated by an IPC boun
 
 `system_tests/src/user/authority_tests.rs`:
 
-- `init_drops_its_construction_authority_and_cannot_build_again`. After the handoff, root_supervisor tries the
+- `the_root_supervisor_drops_its_construction_authority_and_cannot_build_again`. After the handoff, root_supervisor tries the
   two primitives that build things (retype a page, retype a kernel object). It reports the result
   from *inside* the process, because what matters is what the holder can do and only the holder can
   ask.
   Both fail, and they fail with `NoSuchSlot` (there is nothing there), not `NotPermitted` (there is
   something there and you may not use it). That distinction is the whole difference between "we asked
   the progenitor not to" and "the progenitor cannot".
-- `a_dead_sub_server_is_restarted_by_its_supervisor_not_by_init`. The sub-server runs as attempt 0 and
+- `a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root`. The sub-server runs as attempt 0 and
   faults on a load from an unmapped address. The supervisor receives `FAULT`, reaps the corpse
   through the spawner, and asks for attempt 1. Attempt 1 runs and exits cleanly. The supervisor
   receives `EXIT` and does not restart it. Exactly five reports arrive and the endpoint then has no parked

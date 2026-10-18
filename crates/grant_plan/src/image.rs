@@ -8,7 +8,7 @@
 
 use crate::{
     ArgSpec, DirSpec, FileSpec, IndexStore, InputSpec, Manifest, MemSpec, OutputSpec, Program,
-    Runtime, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST,
+    StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST,
 };
 
 /// **What a file's bytes are bound and endowed with when they carry no manifest note** (milestone
@@ -63,13 +63,13 @@ pub enum ImageRefusal {
 /// needs. `spawnproto`'s BUGS carries each.
 ///
 /// **A `std` image is carried when it hears words, and only then** (milestone 205 (how a foreign
-/// program is told what to do)): `Runtime::Std` and [`ArgSpec::Words`] go together or not at all.
+/// program is told what to do)): `StartupContract::Std` and [`ArgSpec::Words`] go together or not at all.
 /// The progenitor sizes an image's region before its frames arrive, so before it can read the note,
 /// and the one thing the request tells it is whether an argv follows (`spawnproto::ARGS_BIT`). Tying
 /// the two makes that bit the region's size: [`image_hears_words`]. A `std` image also declares no
 /// memory grant, domain or network, which is what the `std` layout can hold.
 pub fn image_can_carry(m: &Manifest) -> bool {
-    let std = m.runtime == Runtime::Std;
+    let std = m.startup == StartupContract::Std;
     matches!(m.output, OutputSpec::Bytes | OutputSpec::Words)
         && m.file == FileSpec::Forbidden
         && m.dir == DirSpec::Forbidden
@@ -126,7 +126,7 @@ pub fn image_manifest(declared: Option<Manifest>, vouched: bool) -> Result<Manif
     // what to do)): the argv carries no authority, and `std` is how the bytes were built rather than
     // anything they are granted. So it gets the unvouched grants in the `std` layout, and nothing
     // more; its note's entropy or clock requests grant nothing, as §219 says.
-    if declared.runtime == Runtime::Std {
+    if declared.startup == StartupContract::Std {
         return Ok(UNVOUCHED_STD_MANIFEST);
     }
     let u = UNVOUCHED_MANIFEST;

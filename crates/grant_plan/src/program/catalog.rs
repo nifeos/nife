@@ -398,7 +398,7 @@ programs! {
         /// `components/` or `fixtures/`, which is why it is in an archive only when `cargo xtask
         /// std-exerciser` ran first (`script/test` does).
         ///
-        /// The first program this table names whose [`Manifest::runtime`](crate::Manifest::runtime) is [`Runtime::Std`](crate::Runtime::Std), and
+        /// The first program this table names whose [`Manifest::startup`](crate::Manifest::startup) is [`StartupContract::Std`](crate::StartupContract::Std), and
         /// that is its whole reason to be here: it is how the progenitor's std layout is proven at
         /// the real prompt. Its transcript asserts the heap, the wall clock, randomness and the
         /// configuration page each arrived at the slot `std_runtime_contract` fixes, so a layout

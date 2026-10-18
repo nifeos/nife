@@ -54,7 +54,7 @@
 //! | 32 | 1 | `config` | 0 or 1 |
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
-//! | 35 | 1 | `runtime` | 0 native, 1 std |
+//! | 35 | 1 | `startup` | 0 native, 1 std |
 //! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_FLAGS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
 //! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
@@ -72,7 +72,7 @@
 
 use grant_plan::{
     ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, MAX_DECLARED_FLAGS,
-    Manifest, MemSpec, OutputSpec, Runtime, WordGrant,
+    Manifest, MemSpec, OutputSpec, StartupContract, WordGrant,
 };
 
 /// **The note's owner string**, without its NUL: the project's name, lowercase as
@@ -276,9 +276,9 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[NETWORK] = m.network as u8;
     out[MACHINE] = m.machine as u8;
     out[SHARE] = m.share as u8;
-    out[RUNTIME] = match m.runtime {
-        Runtime::Native => 0,
-        Runtime::Std => 1,
+    out[RUNTIME] = match m.startup {
+        StartupContract::Native => 0,
+        StartupContract::Std => 1,
     };
     out[FLAG_COUNT] = letters.len() as u8;
     let mut i = 0;
@@ -357,7 +357,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let dir = decode_dir(d, letters)?;
     let output = decode_output(d)?;
     let input = decode_input(d)?;
-    let runtime = decode_runtime(d)?;
+    let startup = decode_runtime(d)?;
     zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
     Ok(Manifest {
         arg,
@@ -382,7 +382,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime,
+        startup,
     })
 }
 
@@ -471,11 +471,11 @@ fn decode_input(d: &[u8]) -> Result<InputSpec, Error> {
     })
 }
 
-/// The `runtime` field.
-fn decode_runtime(d: &[u8]) -> Result<Runtime, Error> {
+/// The `startup` field.
+fn decode_runtime(d: &[u8]) -> Result<StartupContract, Error> {
     Ok(match d[RUNTIME] {
-        0 => Runtime::Native,
-        1 => Runtime::Std,
+        0 => StartupContract::Native,
+        1 => StartupContract::Std,
         _ => return Err(Error::BadField(RUNTIME)),
     })
 }
@@ -731,7 +731,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
             out[at + b] = word[b];
             b += 1;
         }
-        let bits = verbs[i].grants.bits().to_le_bytes();
+        let bits = verbs[i].authorities.bits().to_le_bytes();
         out[at + grant_plan::MAX_VERB] = bits[0];
         out[at + grant_plan::MAX_VERB + 1] = bits[1];
         i += 1;
@@ -772,7 +772,7 @@ impl<'a> Verbs<'a> {
 
     /// What `verb` is granted, or `None` for a word that is no verb in the table. A binary search,
     /// since the records are sorted.
-    pub fn grants_for(&self, verb: &[u8]) -> Option<grant_plan::Grants> {
+    pub fn grants_for(&self, verb: &[u8]) -> Option<grant_plan::ManifestAuthorities> {
         let (mut lo, mut hi) = (0, self.len());
         while lo < hi {
             let mid = lo + (hi - lo) / 2;
@@ -787,19 +787,20 @@ impl<'a> Verbs<'a> {
     }
 
     /// The verbs, in their sorted order, with their grants.
-    pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], grant_plan::Grants)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], grant_plan::ManifestAuthorities)> + '_ {
         (0..self.len()).map(|i| self.record(i))
     }
 
     /// Record `i`, which [`decode_verbs`] has already checked.
-    fn record(&self, i: usize) -> (&'a [u8], grant_plan::Grants) {
+    fn record(&self, i: usize) -> (&'a [u8], grant_plan::ManifestAuthorities) {
         let r = &self.records[i * VERB_RECORD..(i + 1) * VERB_RECORD];
         let word = &r[..grant_plan::MAX_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         let bits = u16::from_le_bytes([r[grant_plan::MAX_VERB], r[grant_plan::MAX_VERB + 1]]);
         (
             &word[..len],
-            grant_plan::Grants::from_bits(bits).unwrap_or(grant_plan::Grants::NONE),
+            grant_plan::ManifestAuthorities::from_bits(bits)
+                .unwrap_or(grant_plan::ManifestAuthorities::NONE),
         )
     }
 }
@@ -838,7 +839,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
             record[grant_plan::MAX_VERB],
             record[grant_plan::MAX_VERB + 1],
         ]);
-        if grant_plan::Grants::from_bits(bits).is_none() {
+        if grant_plan::ManifestAuthorities::from_bits(bits).is_none() {
             return Err(Error::BadField(at + grant_plan::MAX_VERB));
         }
         if record[grant_plan::MAX_VERB + 2] != 0 || record[grant_plan::MAX_VERB + 3] != 0 {
@@ -889,7 +890,7 @@ mod verification {
 mod verb_tests {
     extern crate std;
 
-    use grant_plan::{Grants, Program, VerbGrant};
+    use grant_plan::{ManifestAuthorities, Program, VerbGrant};
 
     use super::*;
 
@@ -906,8 +907,8 @@ mod verb_tests {
         assert_eq!(v.len(), JIG.len());
         for (want, (word, grants)) in JIG.iter().zip(v.iter()) {
             assert_eq!(word, want.verb.as_bytes());
-            assert_eq!(grants, want.grants);
-            assert_eq!(v.grants_for(word), Some(want.grants));
+            assert_eq!(grants, want.authorities);
+            assert_eq!(v.grants_for(word), Some(want.authorities));
         }
         assert_eq!(v.grants_for(b"upgrade"), None);
         let empty: [u8; verbs_len(0)] = encode_verbs(&[]);
@@ -926,11 +927,11 @@ mod verb_tests {
         for (i, w) in words.iter().enumerate() {
             let at = 8 + i * VERB_RECORD;
             d[at..at + w.len()].copy_from_slice(w.as_bytes());
-            d[at + 16..at + 18].copy_from_slice(&Grants::CATALOG.bits().to_le_bytes());
+            d[at + 16..at + 18].copy_from_slice(&ManifestAuthorities::CATALOG.bits().to_le_bytes());
         }
         let v = decode_verbs(&d).unwrap();
         assert_eq!(v.len(), 175);
-        assert_eq!(v.grants_for(b"verb174"), Some(Grants::CATALOG));
+        assert_eq!(v.grants_for(b"verb174"), Some(ManifestAuthorities::CATALOG));
         assert_eq!(v.grants_for(b"verb175"), None);
         let mut over = d.clone();
         over[4..8].copy_from_slice(&257u32.to_le_bytes());
@@ -1016,14 +1017,14 @@ mod verb_tests {
         let table: std::vec::Vec<VerbGrant> = (0..N)
             .map(|i| VerbGrant {
                 verb: std::boxed::Box::leak(std::format!("verb{i:03}").into_boxed_str()),
-                grants: Grants::CATALOG,
+                authorities: ManifestAuthorities::CATALOG,
             })
             .collect();
         let bytes: [u8; verbs_len(N)] = encode_verbs(&table);
         let v = decode_verbs(&bytes).unwrap();
         assert_eq!(v.len(), N);
         assert!(!v.is_empty());
-        assert_eq!(v.grants_for(b"verb255"), Some(Grants::CATALOG));
+        assert_eq!(v.grants_for(b"verb255"), Some(ManifestAuthorities::CATALOG));
     }
 
     /// **A prefix sorts first**: `ab` before `abc`, never after, and neither before itself.
@@ -1042,11 +1043,11 @@ mod verb_tests {
         let unsorted = [
             VerbGrant {
                 verb: "remove",
-                grants: Grants::INSTALLER,
+                authorities: ManifestAuthorities::INSTALLER,
             },
             VerbGrant {
                 verb: "list",
-                grants: Grants::CATALOG,
+                authorities: ManifestAuthorities::CATALOG,
             },
         ];
         let _: [u8; verbs_len(2)] = encode_verbs(&unsorted);

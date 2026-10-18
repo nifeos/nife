@@ -2,7 +2,7 @@
 // their own files). Its docs stay on its `pub mod` line in `lib.rs`, where they always were.
 
 use component_plan::Direction::{Serve, Use};
-use component_plan::{CapNeed, Handoff, MapNeed, PageKind, Requirements};
+use component_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
 
 /// Where the handoff page sits. Clear of the three pages `line_editor` already maps.
 pub const HANDOFF_VA: u64 = 0x00a0_0000;
@@ -16,7 +16,7 @@ pub const INSTANCE_PAGES: u64 = 48;
 /// which is what `line_editor` has always run on.
 pub const STACK_PAGES: u64 = 12;
 
-const HANDOFF: Handoff = Handoff {
+const HANDOFF: StateHandoff = StateHandoff {
     va: HANDOFF_VA,
     pages: HANDOFF_PAGES,
 };
@@ -68,7 +68,7 @@ pub const CONSOLE: Requirements = Requirements {
     // It forwards synchronously to its sink while serving the shell, which is the one shape
     // `depends_on` exists to name.
     depends_on: &["console"],
-    handoff: Some(HANDOFF),
+    state_handoff: Some(HANDOFF),
 };
 
 /// A `line_editor` printing through `display_terminal`.
@@ -95,7 +95,7 @@ pub const DISPLAY: Requirements = Requirements {
     maps: MAPS,
     pages: INSTANCE_PAGES,
     depends_on: &["display"],
-    handoff: Some(HANDOFF),
+    state_handoff: Some(HANDOFF),
 };
 
 /// **How `terminal_supervisor` is endowed**, by `system_initializer` on a real boot and by the

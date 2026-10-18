@@ -87,7 +87,7 @@ pub use manifest::{
     ArgSpec, CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirSpec, ENTROPY_SLOT, FileSpec, Flags,
     INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT, IndexStore, InputSpec, MACHINE_SLOT,
     MAX_DECLARED_FLAGS, Manifest, MemSpec, NETWORK_SLOT, NO_FLAGS, OutputSpec, REBOOT_SLOT,
-    Runtime, SHARE_SLOT, SHELL_CONFIG_SLOT, SHELL_CONFIG_VA, STD_REGION_PAGES, SYNC_SLOT,
+    SHARE_SLOT, SHELL_CONFIG_SLOT, SHELL_CONFIG_VA, STD_REGION_PAGES, SYNC_SLOT, StartupContract,
     UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant, image_region_pages,
     named_std_region_pages,
 };
@@ -101,7 +101,7 @@ pub use planning::{
 };
 pub use program::{PROGRAM_COUNT, Program};
 pub use refusal::{CapabilityKind, Refusal};
-pub use verbs::{Grants, MAX_VERB, VerbGrant, narrow_by_verb, verb_of, verb_of_page};
+pub use verbs::{MAX_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page};
 
 mod lexing;
 
