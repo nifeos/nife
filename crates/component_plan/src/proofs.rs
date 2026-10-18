@@ -56,7 +56,7 @@ const SHAPES: [Requirements; 4] = [
         maps: &[],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -64,7 +64,7 @@ const SHAPES: [Requirements; 4] = [
         maps: &[],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -72,7 +72,7 @@ const SHAPES: [Requirements; 4] = [
         maps: &[],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -80,7 +80,7 @@ const SHAPES: [Requirements; 4] = [
         maps: &[],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
 ];
 
@@ -215,7 +215,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
         maps: &[SHARED_P, SHARED_Q],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -223,7 +223,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
         maps: &[DEVICE_P, SHARED_Q],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -231,7 +231,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
         maps: &[SHARED_P, DEVICE_Q],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
     Requirements {
         contract: "c",
@@ -239,7 +239,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
         maps: &[DEVICE_P, DEVICE_Q],
         pages: 1,
         depends_on: &[],
-        handoff: None,
+        state_handoff: None,
     },
 ];
 
@@ -296,7 +296,7 @@ const TARGET_SELF: Requirements = Requirements {
     maps: &[],
     pages: 1,
     depends_on: &[],
-    handoff: None,
+    state_handoff: None,
 };
 const OTHER_NODEP: Requirements = Requirements {
     contract: "other",
@@ -304,7 +304,7 @@ const OTHER_NODEP: Requirements = Requirements {
     maps: &[],
     pages: 1,
     depends_on: &[],
-    handoff: None,
+    state_handoff: None,
 };
 const OTHER_DEP: Requirements = Requirements {
     contract: "other",
@@ -312,7 +312,7 @@ const OTHER_DEP: Requirements = Requirements {
     maps: &[],
     pages: 1,
     depends_on: &["a"],
-    handoff: None,
+    state_handoff: None,
 };
 
 /// Every arrangement a two-instance registry can be in, with respect to one target contract

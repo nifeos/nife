@@ -178,20 +178,20 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
 /// configure, and start with the archive's length in `x1`. Returns once the program is running.
 /// A harness that spawns this way is proving the program's *choices* rather than a privileged
 /// shortcut, which is why every copy this replaces said "deliberately the same endowment
-/// `spawn_hello` gives" over its own body.
+/// `spawn_elf_child_builder` gives" over its own body.
 ///
 /// The four copies it replaced (`authority_tests::spawn_tree`, `c_seam_tests::spawn_confiner`,
 /// `live_swap_tests::spawn_swapper`, `process_composition_service::wire`) agreed line for line
 /// apart from the names inside their `.expect` messages, and every one of them carried the space
-/// budget's `log_pages_for(initial_ramdisk_pages)` term, so a change to that accounting was an
-/// edit to each. The kernel's own `spawn_hello` is still a sixth copy and is deliberately not
-/// folded here: it also measures the program and routes the boot interrupts, which no test
+/// budget's `log_pages_for(initial_ramdisk_pages)` term, so a change to that accounting was an edit
+/// to each. The kernel's own `spawn_elf_child_builder` is still a sixth copy and is deliberately
+/// not folded here: it also measures the program and routes the boot interrupts, which no test
 /// harness wants. `timetable_tests::spawn_timetable_with` is the call site that stayed whole: its
 /// slots are its own four-slot contract (output, budget, child report, deaths), its archive is a
-/// narrowed copy it builds rather than the initial ramdisk, and its stack, extra mappings and
-/// start arguments are its own. It shares [`segment_pages`] and [`lay_out_program`] with this
-/// function and nothing else; a helper parameterized to cover the rest would be
-/// `spawn_timetable_with` wearing this one's name.
+/// narrowed copy it builds rather than the initial ramdisk, and its stack, extra mappings and start
+/// arguments are its own. It shares [`segment_pages`] and [`lay_out_program`] with this function
+/// and nothing else; a helper parameterized to cover the rest would be `spawn_timetable_with`
+/// wearing this one's name.
 ///
 /// [`crate::user::run`] cannot serve these callers: its extra mapped pages arrive as a slice,
 /// and the archive is a few thousand pages the suite has no allocator to build a slice from.
@@ -239,7 +239,7 @@ pub(super) fn spawn_progenitor_shaped(
     let mut space = AddressSpace::new(content).unwrap_or_else(|| panic!("no memory for {name}"));
     lay_out_program(&mut space, &elf, INIT_STACK_PAGES, name);
     // The ramdisk is reserved RAM the frame allocator does not own, so this maps rather than
-    // allocates, one read-only page at a time, exactly as `spawn_hello` maps it.
+    // allocates, one read-only page at a time, exactly as `spawn_elf_child_builder` maps it.
     for i in 0..initial_ramdisk_pages {
         space
             .map_physical(

@@ -130,9 +130,8 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
     // Inside the direct map, so it is mapped for certain and it is the kernel's own memory.
     let kernel_va = crate::arch::mmu::KERNEL_VA_BASE + 0x8000_0000;
 
-    // Any real compiled user ELF will do here; `hello` is packed under that name on every
-    // architecture since milestone 266, so this no longer has to know which board it is on.
-    let image = program(super::HELLO_ENTRY).expect("no hello program in the initial ramdisk");
+    // Any real compiled user ELF will do here, and every architecture packs this one.
+    let image = program("report_child").expect("no report_child program in the initial ramdisk");
     let (space, _) = load(image, 0).expect("the initial ramdisk did not load");
 
     space.while_installed(|| {

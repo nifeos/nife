@@ -8,298 +8,322 @@ Sorted by breaking changes in the last four weeks (2026W39 to 2026W42), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_protocol` | 250 | 59 | 283 | 459 | 120 | 109 (91%) |
-| `grant_plan` | 104 | 344 | 151 | 976 | 173 | 141 (82%) |
-| `globally_unique_identifier_partition_table` | 64 | 5 | 91 | 281 | 41 | 32 (78%) |
-| `package_archive` | 19 | 129 | 19 | 129 | 26 | 19 (73%) |
-| `socket_protocol` | 16 | 32 | 19 | 70 | 34 | 32 (94%) |
-| `login_protocol` | 14 | 69 | 22 | 91 | 37 | 36 (97%) |
-| `abi` | 11 | 72 | 41 | 170 | 116 | 109 (94%) |
-| `line_editor` | 11 | 73 | 12 | 118 | 35 | 29 (83%) |
-| `swap_protocol` | 10 | 34 | 12 | 124 | 48 | 47 (98%) |
-| `credential_protocol` | 8 | 6 | 35 | 70 | 36 | 33 (92%) |
-| `activation_set` | 8 | 72 | 8 | 72 | 24 | 22 (92%) |
-| `byte_sink_protocol` | 4 | 10 | 6 | 48 | 31 | 31 (100%) |
-| `clock_protocol` | 4 | 4 | 5 | 54 | 30 | 28 (93%) |
+| `filesystem_contract` | 251 | 59 | 284 | 459 | 122 | 111 (91%) |
+| `grant_plan` | 104 | 344 | 151 | 976 | 179 | 146 (82%) |
+| `globally_unique_identifier_partition_table` | 64 | 5 | 91 | 281 | 42 | 33 (79%) |
+| `login_contract` | 22 | 69 | 30 | 91 | 38 | 37 (97%) |
+| `package_archive` | 19 | 129 | 19 | 129 | 27 | 20 (74%) |
+| `socket_contract` | 17 | 32 | 20 | 70 | 35 | 33 (94%) |
+| `abi` | 11 | 72 | 41 | 170 | 117 | 110 (94%) |
+| `hot_swap_contract` | 11 | 34 | 13 | 124 | 50 | 49 (98%) |
+| `line_editor` | 11 | 73 | 12 | 118 | 36 | 30 (83%) |
+| `credential_contract` | 9 | 6 | 36 | 70 | 37 | 34 (92%) |
+| `installed_programs` | 9 | 72 | 9 | 72 | 25 | 23 (92%) |
+| `byte_sink_contract` | 5 | 10 | 7 | 48 | 32 | 32 (100%) |
+| `clock_contract` | 5 | 4 | 6 | 54 | 31 | 29 (94%) |
+| `compositor` | 4 | 4 | 14 | 99 | 35 | 28 (80%) |
+| `graphics_contract` | 3 | 2 | 12 | 33 | 31 | 31 (100%) |
+| `entropy_contract` | 3 | 3 | 4 | 18 | 26 | 24 (92%) |
 | `component_plan` | 3 | 14 | 3 | 126 | 34 | 28 (82%) |
-| `graphics_protocol` | 2 | 2 | 11 | 33 | 30 | 30 (100%) |
-| `nifefs` | 2 | 0 | 9 | 41 | 43 | 31 (72%) |
-| `entropy_protocol` | 2 | 3 | 3 | 18 | 25 | 23 (92%) |
-| `current_cpu_protocol` | 2 | 17 | 2 | 17 | 14 | 8 (57%) |
-| `measured_boot` | 2 | 24 | 2 | 65 | 24 | 20 (83%) |
-| `supervision_protocol` | 1 | 10 | 22 | 70 | 54 | 49 (91%) |
-| `compositor` | 1 | 4 | 11 | 99 | 34 | 27 (79%) |
-| `std_runtime_protocol` | 1 | 24 | 1 | 24 | 13 | 12 (92%) |
+| `current_cpu_contract` | 3 | 17 | 3 | 17 | 16 | 9 (56%) |
+| `nifefs` | 2 | 0 | 9 | 41 | 44 | 32 (73%) |
+| `measured_boot` | 2 | 24 | 2 | 65 | 25 | 21 (84%) |
+| `std_runtime_contract` | 2 | 24 | 2 | 24 | 14 | 13 (93%) |
+| `supervision_protocol` | 1 | 10 | 22 | 70 | 55 | 50 (91%) |
+| `counter_frequency_contract` | 1 | 3 | 2 | 15 | 18 | 16 (89%) |
+| `environment_contract` | 1 | 0 | 2 | 44 | 13 | 13 (100%) |
+| `capability_manifest_note` | 1 | 58 | 1 | 58 | 22 | 16 (73%) |
+| `capability_witness_contract` | 1 | 7 | 1 | 10 | 19 | 16 (84%) |
+| `program_argument_contract` | 1 | 29 | 1 | 29 | 0 | 0 |
 | `elf` | 0 | 30 | 3 | 82 | 48 | 38 (79%) |
-| `counter_frequency_protocol` | 0 | 3 | 1 | 15 | 15 | 13 (87%) |
-| `environment_protocol` | 0 | 0 | 1 | 44 | 12 | 12 (100%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `address_space_map` | 0 | 42 | 0 | 42 | 0 | 0 |
 | `allocation_cache` | 0 | 18 | 0 | 18 | 0 | 0 |
-| `argument_protocol` | 0 | 29 | 0 | 29 | 0 | 0 |
-| `boot_slot` | 0 | 52 | 0 | 52 | 15 | 11 (73%) |
-| `capability_witness_protocol` | 0 | 7 | 0 | 10 | 18 | 15 (83%) |
-| `manifest_note` | 0 | 58 | 0 | 58 | 21 | 15 (71%) |
+| `boot_slot` | 0 | 52 | 0 | 52 | 16 | 12 (75%) |
 
 ## What broke in 2026W42
 
-Read at `4d52a65f3a7d` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `e35371c91204` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: syscall renamed, number kept (method or encoding), now `interrupt::ACK` `irq::ACK`
 > - `abi`: syscall renamed, number kept (method or encoding), now `interrupt::WAIT` `irq::WAIT`
 > - `abi`: syscall renamed, number kept (method or encoding), now `virtio::READ_REGISTER` `virtio::READ_REG`
 > - `abi`: syscall renamed, number kept (method or encoding), now `virtio::WRITE_REGISTER` `virtio::WRITE_REG`
-> - `activation_set`: removed `without_entry`
-> - `activation_set`: removed `without_version`
-> - `credential_protocol`: removed `fixture::CHRIS`
-> - `credential_protocol`: removed `fixture::CORINNE`
-> - `credential_protocol`: removed `fixture::GRAEME`
-> - `credential_protocol`: changed `fixture::PEOPLE`
-> - `credential_protocol`: changed `fixture::SMB_RESOURCE`
-> - `filesystem_protocol`: removed `fixture::DESCENT_REFUSED`
-> - `filesystem_protocol`: removed `fixture::MOTD`
-> - `filesystem_protocol`: removed `fixture::MOTD_NAME`
-> - `filesystem_protocol`: removed `fixture::READY`
-> - `filesystem_protocol`: removed `fixture::SCRATCH_INIT`
-> - `filesystem_protocol`: removed `fixture::SCRATCH_NAME`
-> - `filesystem_protocol`: removed `fixture::SHARED_ISOLATED`
-> - `filesystem_protocol`: removed `fixture::SHARED_SUBSTITUTED`
-> - `filesystem_protocol`: removed `fixture::SHARED_UNEXPECTED`
-> - `filesystem_protocol`: removed `fixture::SHARED_USURPER_BODY`
-> - `filesystem_protocol`: removed `fixture::SHARED_USURPER_NAME`
-> - `filesystem_protocol`: removed `fixture::SHARED_VICTIM_BODY`
-> - `filesystem_protocol`: removed `fixture::SHARED_VICTIM_NAME`
-> - `filesystem_protocol`: removed `fixture::SUCCESS`
-> - `filesystem_protocol`: removed `fixture::THROUGHPUT_NAME`
-> - `filesystem_protocol`: removed `fixture::VERDICT`
-> - `filesystem_protocol`: removed `fixture::WRITE_PATTERN`
-> - `filesystem_protocol`: removed `fixture::attrs::ATTRS_FAILED`
-> - `filesystem_protocol`: removed `fixture::attrs::EXPECTED`
-> - `filesystem_protocol`: removed `fixture::attrs::GONE_AFTER_REMOVE`
-> - `filesystem_protocol`: removed `fixture::attrs::GONE_AFTER_UNLINK`
-> - `filesystem_protocol`: removed `fixture::attrs::KIND`
-> - `filesystem_protocol`: removed `fixture::attrs::LISTED`
-> - `filesystem_protocol`: removed `fixture::attrs::NAME`
-> - `filesystem_protocol`: removed `fixture::attrs::OVERSIZE_REFUSED`
-> - `filesystem_protocol`: removed `fixture::attrs::PROBE`
-> - `filesystem_protocol`: removed `fixture::attrs::PROBE_MOVED`
-> - `filesystem_protocol`: removed `fixture::attrs::SET_AND_READ_BACK`
-> - `filesystem_protocol`: removed `fixture::attrs::STORE_UNLISTED`
-> - `filesystem_protocol`: removed `fixture::attrs::STORE_UNNAMEABLE`
-> - `filesystem_protocol`: removed `fixture::attrs::SURVIVED_RENAME`
-> - `filesystem_protocol`: removed `fixture::attrs::VALUE`
-> - `filesystem_protocol`: removed `fixture::blank::DATA`
-> - `filesystem_protocol`: removed `fixture::blank::DISK_BLOCKS`
-> - `filesystem_protocol`: removed `fixture::blank::ESP`
-> - `filesystem_protocol`: removed `fixture::blank::LBA`
-> - `filesystem_protocol`: removed `fixture::blank::LINUX`
-> - `filesystem_protocol`: removed `fixture::blank::MADE_BODY`
-> - `filesystem_protocol`: removed `fixture::blank::MADE_NAME`
-> - `filesystem_protocol`: removed `fixture::blank::NAMES`
-> - `filesystem_protocol`: removed `fixture::blank::PARTITIONS`
-> - `filesystem_protocol`: removed `fixture::crash::A`
-> - `filesystem_protocol`: removed `fixture::crash::B`
-> - `filesystem_protocol`: removed `fixture::crash::CUT`
-> - `filesystem_protocol`: removed `fixture::crash::INITIAL`
-> - `filesystem_protocol`: removed `fixture::crash::NAME`
-> - `filesystem_protocol`: removed `fixture::crash::SAW_A`
-> - `filesystem_protocol`: removed `fixture::crash::SAW_B`
-> - `filesystem_protocol`: removed `fixture::crash::SAW_NEITHER`
-> - `filesystem_protocol`: removed `fixture::dirscape::CREATED`
-> - `filesystem_protocol`: removed `fixture::dirscape::DESCENDED`
-> - `filesystem_protocol`: removed `fixture::dirscape::ENUMERATED`
-> - `filesystem_protocol`: removed `fixture::dirscape::ENUMERATED_A_STRANGER`
-> - `filesystem_protocol`: removed `fixture::dirscape::FORGED_HANDLE`
-> - `filesystem_protocol`: removed `fixture::dirscape::GRANTED_ACCESS_FAILED`
-> - `filesystem_protocol`: removed `fixture::dirscape::MADE_A_DIR`
-> - `filesystem_protocol`: removed `fixture::dirscape::OPENED_ITS_OWN`
-> - `filesystem_protocol`: removed `fixture::dirscape::REACHED_AN_UNMATCHED_NAME`
-> - `filesystem_protocol`: removed `fixture::dirscape::REACHED_PARENT`
-> - `filesystem_protocol`: removed `fixture::dirscape::REACHED_SIBLING`
-> - `filesystem_protocol`: removed `fixture::dirscape::READ_ATTRS`
-> - `filesystem_protocol`: removed `fixture::dirscape::RENAMED`
-> - `filesystem_protocol`: removed `fixture::dirscape::SET_AN_ATTR`
-> - `filesystem_protocol`: removed `fixture::dirscape::WALKED_UP`
-> - `filesystem_protocol`: removed `fixture::dirscape::WIDENED`
-> - `filesystem_protocol`: removed `fixture::dirscape::WROTE`
-> - `filesystem_protocol`: removed `fixture::durability::DURABLE`
-> - `filesystem_protocol`: removed `fixture::durability::NEVER_FLUSHED`
-> - `filesystem_protocol`: removed `fixture::durability::NOT_ADVANCING`
-> - `filesystem_protocol`: removed `fixture::durability::NO_DEVICE_FLUSH`
-> - `filesystem_protocol`: removed `fixture::durability::REFUSED`
-> - `filesystem_protocol`: removed `fixture::escape::CREATED`
-> - `filesystem_protocol`: removed `fixture::escape::FORGED_HANDLE`
-> - `filesystem_protocol`: removed `fixture::escape::GRANTED_ATTRS_FAILED`
-> - `filesystem_protocol`: removed `fixture::escape::GRANTED_READ_FAILED`
-> - `filesystem_protocol`: removed `fixture::escape::SECOND_FILE`
-> - `filesystem_protocol`: removed `fixture::escape::TRUNCATED`
-> - `filesystem_protocol`: removed `fixture::escape::WROTE`
-> - `filesystem_protocol`: removed `fixture::escape::WROTE_ATTR`
-> - `filesystem_protocol`: removed `fixture::globscape::AGREED`
-> - `filesystem_protocol`: removed `fixture::globscape::EXCLUDED_A_STRANGER`
-> - `filesystem_protocol`: removed `fixture::globscape::EXPANDED`
-> - `filesystem_protocol`: removed `fixture::globscape::GLOB_FAILED`
-> - `filesystem_protocol`: removed `fixture::globscape::NO_MATCH_REFUSED`
-> - `filesystem_protocol`: removed `fixture::globscape::PATTERN_IN_PATH_REFUSED`
-> - `filesystem_protocol`: removed `fixture::globscape::TEXT_UNTOUCHED`
-> - `filesystem_protocol`: removed `fixture::navscape::ABSOLUTE_CLAMPED_AT_ROOT`
-> - `filesystem_protocol`: removed `fixture::navscape::ABSOLUTE_IS_MY_ROOT`
-> - `filesystem_protocol`: removed `fixture::navscape::ABSOLUTE_REACHED_INNER`
-> - `filesystem_protocol`: removed `fixture::navscape::ABSOLUTE_REACHED_SECRET`
-> - `filesystem_protocol`: removed `fixture::navscape::BIND_ASCEND_REACHES_REAL_PARENT`
-> - `filesystem_protocol`: removed `fixture::navscape::BIND_REACHED_TARGET`
-> - `filesystem_protocol`: removed `fixture::navscape::BIND_STOPS_AT_TRUE_ROOT`
-> - `filesystem_protocol`: removed `fixture::navscape::CLAMPED_AT_ROOT`
-> - `filesystem_protocol`: removed `fixture::navscape::CREATED`
-> - `filesystem_protocol`: removed `fixture::navscape::DESCENDED`
-> - `filesystem_protocol`: removed `fixture::navscape::HOLDER_KEPT_READING`
-> - `filesystem_protocol`: removed `fixture::navscape::LISTED`
-> - `filesystem_protocol`: removed `fixture::navscape::MADE_DIR`
-> - `filesystem_protocol`: removed `fixture::navscape::NAME_GONE_AFTER_UNLINK`
-> - `filesystem_protocol`: removed `fixture::navscape::NAVIGATION_FAILED`
-> - `filesystem_protocol`: removed `fixture::navscape::PWD_IS_ROOT`
-> - `filesystem_protocol`: removed `fixture::navscape::REACHED_INNER`
-> - `filesystem_protocol`: removed `fixture::navscape::REACHED_SECRET`
-> - `filesystem_protocol`: removed `fixture::navscape::RETURNED`
-> - `filesystem_protocol`: removed `fixture::navscape::RMDIR_REFUSED_NON_EMPTY`
-> - `filesystem_protocol`: removed `fixture::navscape::RMDIR_REMOVED_EMPTY`
-> - `filesystem_protocol`: removed `fixture::navscape::SAW_INNER`
-> - `filesystem_protocol`: removed `fixture::navscape::SAW_SECRET`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_AT_REFUSED_WITHOUT_SETTIME`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_AT_ROUND_TRIPPED`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_CREATED`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_MTIME_ADVANCED`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_NOW_NEEDS_ONLY_WRITE`
-> - `filesystem_protocol`: removed `fixture::navscape::TOUCH_PRESERVED`
-> - `filesystem_protocol`: removed `fixture::navscape::UNLINKED`
-> - `filesystem_protocol`: removed `fixture::navscape::UNLINK_REFUSED_A_DIRECTORY`
-> - `filesystem_protocol`: removed `fixture::navscape::WALKED_UP`
-> - `filesystem_protocol`: removed `fixture::rm::OK`
-> - `filesystem_protocol`: removed `fixture::rm::status`
-> - `filesystem_protocol`: removed `fixture::throughput::BLOCKS`
-> - `filesystem_protocol`: removed `fixture::throughput::PAYLOAD_FILL`
-> - `filesystem_protocol`: removed `fixture::throughput::PHASES`
-> - `filesystem_protocol`: removed `fixture::throughput::RAND_READ`
-> - `filesystem_protocol`: removed `fixture::throughput::RAND_WRITE`
-> - `filesystem_protocol`: removed `fixture::throughput::RECORD`
-> - `filesystem_protocol`: removed `fixture::throughput::RECORD_READ`
-> - `filesystem_protocol`: removed `fixture::throughput::ROLE`
-> - `filesystem_protocol`: removed `fixture::throughput::SEQ_READ`
-> - `filesystem_protocol`: removed `fixture::throughput::SEQ_WRITE`
-> - `filesystem_protocol`: removed `fixture::throughput::TOTAL`
-> - `filesystem_protocol`: removed `fixture::throughput::UNIT`
-> - `filesystem_protocol`: removed `fixture::throughput::WARMUP`
-> - `filesystem_protocol`: removed `fixture::throughput::name`
-> - `filesystem_protocol`: removed `fixture::tree::ABS_INNER`
-> - `filesystem_protocol`: removed `fixture::tree::ABS_SECRET`
-> - `filesystem_protocol`: removed `fixture::tree::DEEPER`
-> - `filesystem_protocol`: removed `fixture::tree::GLOBMANY`
-> - `filesystem_protocol`: removed `fixture::tree::GLOBSET`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_DIR`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_INNER`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_MISS`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_NOMATCH`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_ONE`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_PATTERN`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_PLAIN`
-> - `filesystem_protocol`: removed `fixture::tree::GLOB_TWO`
-> - `filesystem_protocol`: removed `fixture::tree::INNER`
-> - `filesystem_protocol`: removed `fixture::tree::INNER_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::LEAF`
-> - `filesystem_protocol`: removed `fixture::tree::LEAF_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::MADE`
-> - `filesystem_protocol`: removed `fixture::tree::MADE_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::MADE_DIR`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_FIRST_BATCH`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_MISS`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_NAMES`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_PATTERN`
-> - `filesystem_protocol`: removed `fixture::tree::MANY_SECOND_BATCH`
-> - `filesystem_protocol`: removed `fixture::tree::MOVED`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_BIND_ALIAS`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_BIND_MARKER`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_BIND_NESTED`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_DIR`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_EMPTY`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_GONE`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_INSIDE`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_KEPT`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_TOUCH`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_TOUCH_AT_RFC3339`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_TOUCH_AT_UNIX`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_TOUCH_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::NAV_TOUCH_NO_SETTIME`
-> - `filesystem_protocol`: removed `fixture::tree::OTHER`
-> - `filesystem_protocol`: removed `fixture::tree::REDIR`
-> - `filesystem_protocol`: removed `fixture::tree::REDIR_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::REDIR_ONE`
-> - `filesystem_protocol`: removed `fixture::tree::REDIR_TWO`
-> - `filesystem_protocol`: removed `fixture::tree::RMTREE`
-> - `filesystem_protocol`: removed `fixture::tree::RM_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::RM_DOOMED`
-> - `filesystem_protocol`: removed `fixture::tree::RM_KEEP`
-> - `filesystem_protocol`: removed `fixture::tree::RM_KEEP_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::RM_LEAF`
-> - `filesystem_protocol`: removed `fixture::tree::RM_MISSING`
-> - `filesystem_protocol`: removed `fixture::tree::RM_NESTED`
-> - `filesystem_protocol`: removed `fixture::tree::RM_ONE`
-> - `filesystem_protocol`: removed `fixture::tree::RM_SOLO`
-> - `filesystem_protocol`: removed `fixture::tree::RM_TWO`
-> - `filesystem_protocol`: removed `fixture::tree::ROOT_ENTRIES`
-> - `filesystem_protocol`: removed `fixture::tree::SECRET`
-> - `filesystem_protocol`: removed `fixture::tree::SECRET_BODY`
-> - `filesystem_protocol`: removed `fixture::tree::SUB`
-> - `filesystem_protocol`: removed `fixture::twodir::DOT_DOT_CROSSED_MOUNTS`
-> - `filesystem_protocol`: removed `fixture::twodir::GRANTED_ACCESS_FAILED`
-> - `filesystem_protocol`: removed `fixture::twodir::OPENED_A`
-> - `filesystem_protocol`: removed `fixture::twodir::OPENED_B`
-> - `filesystem_protocol`: removed `fixture::twodir::REACHED_A_VIA_B`
-> - `filesystem_protocol`: removed `fixture::twodir::REACHED_B_VIA_A`
-> - `filesystem_protocol`: removed `fixture::twotrees::BOUND_INTO_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::CLIMBED_OUT`
-> - `filesystem_protocol`: removed `fixture::twotrees::HOME_IS_ROOT`
-> - `filesystem_protocol`: removed `fixture::twotrees::LISTED_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::LISTED_ROOT`
-> - `filesystem_protocol`: removed `fixture::twotrees::MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::MOVED_INTO_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::MOVED_ON_REFUSAL`
-> - `filesystem_protocol`: removed `fixture::twotrees::OPENED_RELATIVE_IN_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::OPENED_ROOT_FROM_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::PWD_STARTS_AT_ROOT`
-> - `filesystem_protocol`: removed `fixture::twotrees::REACHED_ACROSS`
-> - `filesystem_protocol`: removed `fixture::twotrees::REDIRECTED_FROM_MOUNT`
-> - `filesystem_protocol`: removed `fixture::twotrees::RM_IN_MOUNT_REFUSED`
-> - `filesystem_protocol`: removed `fixture::twotrees::ROOT_CLAMPED`
-> - `filesystem_protocol`: removed `fixture::twotrees::TWO_TREES_FAILED`
-> - `filesystem_protocol`: removed `fixture::twotrees::UP_FROM_MOUNT_IS_PARENT`
-> - `filesystem_protocol`: removed `fixture::walk::CHAIN`
-> - `filesystem_protocol`: removed `fixture::walk::DEPTH`
-> - `filesystem_protocol`: removed `fixture::walk::LEVEL`
-> - `filesystem_protocol`: removed `fixture::walk::LEVEL_FILE`
-> - `filesystem_protocol`: removed `fixture::walk::NARROW`
-> - `filesystem_protocol`: removed `fixture::walk::RG_MATCHES`
-> - `filesystem_protocol`: removed `fixture::walk::RG_NAMED`
-> - `filesystem_protocol`: removed `fixture::walk::RG_SEARCH`
-> - `filesystem_protocol`: removed `fixture::walk::ROOT`
-> - `filesystem_protocol`: removed `fixture::walk::SIZES`
-> - `filesystem_protocol`: removed `fixture::walk::SIZE_FILES`
-> - `filesystem_protocol`: removed `fixture::walk::SMALL_BODY`
-> - `filesystem_protocol`: removed `fixture::walk::WALK_BYTES`
-> - `filesystem_protocol`: removed `fixture::walk::WALK_COMPONENTS`
-> - `filesystem_protocol`: removed `fixture::walk::WALK_DIRS`
-> - `filesystem_protocol`: removed `fixture::walk::WALK_ENTRIES`
-> - `filesystem_protocol`: removed `fixture::walk::WALK_FILES`
-> - `filesystem_protocol`: removed `fixture::walk::WIDE`
-> - `filesystem_protocol`: removed `fixture::walk::WIDE_COUNT`
-> - `filesystem_protocol`: removed `fixture::walk::sized_byte`
-> - `filesystem_protocol`: removed `fixture::walk::wide_name`
-> - `filesystem_protocol`: changed `verb::file_grant::POLICY`
+> - `byte_sink_contract`: crate renamed `byte_sink_protocol -> byte_sink_contract`
+> - `capability_manifest_note`: crate renamed `manifest_note -> capability_manifest_note`
+> - `capability_witness_contract`: crate renamed `capability_witness_protocol -> capability_witness_contract`
+> - `clock_contract`: crate renamed `clock_protocol -> clock_contract`
+> - `compositor`: changed `proto::operand`
+> - `compositor`: changed `proto::operation`
+> - `compositor`: changed `proto::req`
+> - `counter_frequency_contract`: crate renamed `counter_frequency_protocol -> counter_frequency_contract`
+> - `credential_contract`: crate renamed `credential_protocol -> credential_contract`
+> - `credential_contract`: removed `fixture::CHRIS`
+> - `credential_contract`: removed `fixture::CORINNE`
+> - `credential_contract`: removed `fixture::GRAEME`
+> - `credential_contract`: changed `fixture::PEOPLE`
+> - `credential_contract`: changed `fixture::SMB_RESOURCE`
+> - `current_cpu_contract`: crate renamed `current_cpu_protocol -> current_cpu_contract`
+> - `entropy_contract`: crate renamed `entropy_protocol -> entropy_contract`
+> - `environment_contract`: crate renamed `environment_protocol -> environment_contract`
+> - `filesystem_contract`: crate renamed `filesystem_protocol -> filesystem_contract`
+> - `filesystem_contract`: removed `fixture::DESCENT_REFUSED`
+> - `filesystem_contract`: removed `fixture::MOTD`
+> - `filesystem_contract`: removed `fixture::MOTD_NAME`
+> - `filesystem_contract`: removed `fixture::READY`
+> - `filesystem_contract`: removed `fixture::SCRATCH_INIT`
+> - `filesystem_contract`: removed `fixture::SCRATCH_NAME`
+> - `filesystem_contract`: removed `fixture::SHARED_ISOLATED`
+> - `filesystem_contract`: removed `fixture::SHARED_SUBSTITUTED`
+> - `filesystem_contract`: removed `fixture::SHARED_UNEXPECTED`
+> - `filesystem_contract`: removed `fixture::SHARED_USURPER_BODY`
+> - `filesystem_contract`: removed `fixture::SHARED_USURPER_NAME`
+> - `filesystem_contract`: removed `fixture::SHARED_VICTIM_BODY`
+> - `filesystem_contract`: removed `fixture::SHARED_VICTIM_NAME`
+> - `filesystem_contract`: removed `fixture::SUCCESS`
+> - `filesystem_contract`: removed `fixture::THROUGHPUT_NAME`
+> - `filesystem_contract`: removed `fixture::VERDICT`
+> - `filesystem_contract`: removed `fixture::WRITE_PATTERN`
+> - `filesystem_contract`: removed `fixture::attrs::ATTRS_FAILED`
+> - `filesystem_contract`: removed `fixture::attrs::EXPECTED`
+> - `filesystem_contract`: removed `fixture::attrs::GONE_AFTER_REMOVE`
+> - `filesystem_contract`: removed `fixture::attrs::GONE_AFTER_UNLINK`
+> - `filesystem_contract`: removed `fixture::attrs::KIND`
+> - `filesystem_contract`: removed `fixture::attrs::LISTED`
+> - `filesystem_contract`: removed `fixture::attrs::NAME`
+> - `filesystem_contract`: removed `fixture::attrs::OVERSIZE_REFUSED`
+> - `filesystem_contract`: removed `fixture::attrs::PROBE`
+> - `filesystem_contract`: removed `fixture::attrs::PROBE_MOVED`
+> - `filesystem_contract`: removed `fixture::attrs::SET_AND_READ_BACK`
+> - `filesystem_contract`: removed `fixture::attrs::STORE_UNLISTED`
+> - `filesystem_contract`: removed `fixture::attrs::STORE_UNNAMEABLE`
+> - `filesystem_contract`: removed `fixture::attrs::SURVIVED_RENAME`
+> - `filesystem_contract`: removed `fixture::attrs::VALUE`
+> - `filesystem_contract`: removed `fixture::blank::DATA`
+> - `filesystem_contract`: removed `fixture::blank::DISK_BLOCKS`
+> - `filesystem_contract`: removed `fixture::blank::ESP`
+> - `filesystem_contract`: removed `fixture::blank::LBA`
+> - `filesystem_contract`: removed `fixture::blank::LINUX`
+> - `filesystem_contract`: removed `fixture::blank::MADE_BODY`
+> - `filesystem_contract`: removed `fixture::blank::MADE_NAME`
+> - `filesystem_contract`: removed `fixture::blank::NAMES`
+> - `filesystem_contract`: removed `fixture::blank::PARTITIONS`
+> - `filesystem_contract`: removed `fixture::crash::A`
+> - `filesystem_contract`: removed `fixture::crash::B`
+> - `filesystem_contract`: removed `fixture::crash::CUT`
+> - `filesystem_contract`: removed `fixture::crash::INITIAL`
+> - `filesystem_contract`: removed `fixture::crash::NAME`
+> - `filesystem_contract`: removed `fixture::crash::SAW_A`
+> - `filesystem_contract`: removed `fixture::crash::SAW_B`
+> - `filesystem_contract`: removed `fixture::crash::SAW_NEITHER`
+> - `filesystem_contract`: removed `fixture::dirscape::CREATED`
+> - `filesystem_contract`: removed `fixture::dirscape::DESCENDED`
+> - `filesystem_contract`: removed `fixture::dirscape::ENUMERATED`
+> - `filesystem_contract`: removed `fixture::dirscape::ENUMERATED_A_STRANGER`
+> - `filesystem_contract`: removed `fixture::dirscape::FORGED_HANDLE`
+> - `filesystem_contract`: removed `fixture::dirscape::GRANTED_ACCESS_FAILED`
+> - `filesystem_contract`: removed `fixture::dirscape::MADE_A_DIR`
+> - `filesystem_contract`: removed `fixture::dirscape::OPENED_ITS_OWN`
+> - `filesystem_contract`: removed `fixture::dirscape::REACHED_AN_UNMATCHED_NAME`
+> - `filesystem_contract`: removed `fixture::dirscape::REACHED_PARENT`
+> - `filesystem_contract`: removed `fixture::dirscape::REACHED_SIBLING`
+> - `filesystem_contract`: removed `fixture::dirscape::READ_ATTRS`
+> - `filesystem_contract`: removed `fixture::dirscape::RENAMED`
+> - `filesystem_contract`: removed `fixture::dirscape::SET_AN_ATTR`
+> - `filesystem_contract`: removed `fixture::dirscape::WALKED_UP`
+> - `filesystem_contract`: removed `fixture::dirscape::WIDENED`
+> - `filesystem_contract`: removed `fixture::dirscape::WROTE`
+> - `filesystem_contract`: removed `fixture::durability::DURABLE`
+> - `filesystem_contract`: removed `fixture::durability::NEVER_FLUSHED`
+> - `filesystem_contract`: removed `fixture::durability::NOT_ADVANCING`
+> - `filesystem_contract`: removed `fixture::durability::NO_DEVICE_FLUSH`
+> - `filesystem_contract`: removed `fixture::durability::REFUSED`
+> - `filesystem_contract`: removed `fixture::escape::CREATED`
+> - `filesystem_contract`: removed `fixture::escape::FORGED_HANDLE`
+> - `filesystem_contract`: removed `fixture::escape::GRANTED_ATTRS_FAILED`
+> - `filesystem_contract`: removed `fixture::escape::GRANTED_READ_FAILED`
+> - `filesystem_contract`: removed `fixture::escape::SECOND_FILE`
+> - `filesystem_contract`: removed `fixture::escape::TRUNCATED`
+> - `filesystem_contract`: removed `fixture::escape::WROTE`
+> - `filesystem_contract`: removed `fixture::escape::WROTE_ATTR`
+> - `filesystem_contract`: removed `fixture::globscape::AGREED`
+> - `filesystem_contract`: removed `fixture::globscape::EXCLUDED_A_STRANGER`
+> - `filesystem_contract`: removed `fixture::globscape::EXPANDED`
+> - `filesystem_contract`: removed `fixture::globscape::GLOB_FAILED`
+> - `filesystem_contract`: removed `fixture::globscape::NO_MATCH_REFUSED`
+> - `filesystem_contract`: removed `fixture::globscape::PATTERN_IN_PATH_REFUSED`
+> - `filesystem_contract`: removed `fixture::globscape::TEXT_UNTOUCHED`
+> - `filesystem_contract`: removed `fixture::navscape::ABSOLUTE_CLAMPED_AT_ROOT`
+> - `filesystem_contract`: removed `fixture::navscape::ABSOLUTE_IS_MY_ROOT`
+> - `filesystem_contract`: removed `fixture::navscape::ABSOLUTE_REACHED_INNER`
+> - `filesystem_contract`: removed `fixture::navscape::ABSOLUTE_REACHED_SECRET`
+> - `filesystem_contract`: removed `fixture::navscape::BIND_ASCEND_REACHES_REAL_PARENT`
+> - `filesystem_contract`: removed `fixture::navscape::BIND_REACHED_TARGET`
+> - `filesystem_contract`: removed `fixture::navscape::BIND_STOPS_AT_TRUE_ROOT`
+> - `filesystem_contract`: removed `fixture::navscape::CLAMPED_AT_ROOT`
+> - `filesystem_contract`: removed `fixture::navscape::CREATED`
+> - `filesystem_contract`: removed `fixture::navscape::DESCENDED`
+> - `filesystem_contract`: removed `fixture::navscape::HOLDER_KEPT_READING`
+> - `filesystem_contract`: removed `fixture::navscape::LISTED`
+> - `filesystem_contract`: removed `fixture::navscape::MADE_DIR`
+> - `filesystem_contract`: removed `fixture::navscape::NAME_GONE_AFTER_UNLINK`
+> - `filesystem_contract`: removed `fixture::navscape::NAVIGATION_FAILED`
+> - `filesystem_contract`: removed `fixture::navscape::PWD_IS_ROOT`
+> - `filesystem_contract`: removed `fixture::navscape::REACHED_INNER`
+> - `filesystem_contract`: removed `fixture::navscape::REACHED_SECRET`
+> - `filesystem_contract`: removed `fixture::navscape::RETURNED`
+> - `filesystem_contract`: removed `fixture::navscape::RMDIR_REFUSED_NON_EMPTY`
+> - `filesystem_contract`: removed `fixture::navscape::RMDIR_REMOVED_EMPTY`
+> - `filesystem_contract`: removed `fixture::navscape::SAW_INNER`
+> - `filesystem_contract`: removed `fixture::navscape::SAW_SECRET`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_AT_REFUSED_WITHOUT_SETTIME`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_AT_ROUND_TRIPPED`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_CREATED`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_MTIME_ADVANCED`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_NOW_NEEDS_ONLY_WRITE`
+> - `filesystem_contract`: removed `fixture::navscape::TOUCH_PRESERVED`
+> - `filesystem_contract`: removed `fixture::navscape::UNLINKED`
+> - `filesystem_contract`: removed `fixture::navscape::UNLINK_REFUSED_A_DIRECTORY`
+> - `filesystem_contract`: removed `fixture::navscape::WALKED_UP`
+> - `filesystem_contract`: removed `fixture::rm::OK`
+> - `filesystem_contract`: removed `fixture::rm::status`
+> - `filesystem_contract`: removed `fixture::throughput::BLOCKS`
+> - `filesystem_contract`: removed `fixture::throughput::PAYLOAD_FILL`
+> - `filesystem_contract`: removed `fixture::throughput::PHASES`
+> - `filesystem_contract`: removed `fixture::throughput::RAND_READ`
+> - `filesystem_contract`: removed `fixture::throughput::RAND_WRITE`
+> - `filesystem_contract`: removed `fixture::throughput::RECORD`
+> - `filesystem_contract`: removed `fixture::throughput::RECORD_READ`
+> - `filesystem_contract`: removed `fixture::throughput::ROLE`
+> - `filesystem_contract`: removed `fixture::throughput::SEQ_READ`
+> - `filesystem_contract`: removed `fixture::throughput::SEQ_WRITE`
+> - `filesystem_contract`: removed `fixture::throughput::TOTAL`
+> - `filesystem_contract`: removed `fixture::throughput::UNIT`
+> - `filesystem_contract`: removed `fixture::throughput::WARMUP`
+> - `filesystem_contract`: removed `fixture::throughput::name`
+> - `filesystem_contract`: removed `fixture::tree::ABS_INNER`
+> - `filesystem_contract`: removed `fixture::tree::ABS_SECRET`
+> - `filesystem_contract`: removed `fixture::tree::DEEPER`
+> - `filesystem_contract`: removed `fixture::tree::GLOBMANY`
+> - `filesystem_contract`: removed `fixture::tree::GLOBSET`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_BODY`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_DIR`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_INNER`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_MISS`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_NOMATCH`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_ONE`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_PATTERN`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_PLAIN`
+> - `filesystem_contract`: removed `fixture::tree::GLOB_TWO`
+> - `filesystem_contract`: removed `fixture::tree::INNER`
+> - `filesystem_contract`: removed `fixture::tree::INNER_BODY`
+> - `filesystem_contract`: removed `fixture::tree::LEAF`
+> - `filesystem_contract`: removed `fixture::tree::LEAF_BODY`
+> - `filesystem_contract`: removed `fixture::tree::MADE`
+> - `filesystem_contract`: removed `fixture::tree::MADE_BODY`
+> - `filesystem_contract`: removed `fixture::tree::MADE_DIR`
+> - `filesystem_contract`: removed `fixture::tree::MANY_BODY`
+> - `filesystem_contract`: removed `fixture::tree::MANY_FIRST_BATCH`
+> - `filesystem_contract`: removed `fixture::tree::MANY_MISS`
+> - `filesystem_contract`: removed `fixture::tree::MANY_NAMES`
+> - `filesystem_contract`: removed `fixture::tree::MANY_PATTERN`
+> - `filesystem_contract`: removed `fixture::tree::MANY_SECOND_BATCH`
+> - `filesystem_contract`: removed `fixture::tree::MOVED`
+> - `filesystem_contract`: removed `fixture::tree::NAV_BIND_ALIAS`
+> - `filesystem_contract`: removed `fixture::tree::NAV_BIND_MARKER`
+> - `filesystem_contract`: removed `fixture::tree::NAV_BIND_NESTED`
+> - `filesystem_contract`: removed `fixture::tree::NAV_BODY`
+> - `filesystem_contract`: removed `fixture::tree::NAV_DIR`
+> - `filesystem_contract`: removed `fixture::tree::NAV_EMPTY`
+> - `filesystem_contract`: removed `fixture::tree::NAV_GONE`
+> - `filesystem_contract`: removed `fixture::tree::NAV_INSIDE`
+> - `filesystem_contract`: removed `fixture::tree::NAV_KEPT`
+> - `filesystem_contract`: removed `fixture::tree::NAV_TOUCH`
+> - `filesystem_contract`: removed `fixture::tree::NAV_TOUCH_AT_RFC3339`
+> - `filesystem_contract`: removed `fixture::tree::NAV_TOUCH_AT_UNIX`
+> - `filesystem_contract`: removed `fixture::tree::NAV_TOUCH_BODY`
+> - `filesystem_contract`: removed `fixture::tree::NAV_TOUCH_NO_SETTIME`
+> - `filesystem_contract`: removed `fixture::tree::OTHER`
+> - `filesystem_contract`: removed `fixture::tree::REDIR`
+> - `filesystem_contract`: removed `fixture::tree::REDIR_BODY`
+> - `filesystem_contract`: removed `fixture::tree::REDIR_ONE`
+> - `filesystem_contract`: removed `fixture::tree::REDIR_TWO`
+> - `filesystem_contract`: removed `fixture::tree::RMTREE`
+> - `filesystem_contract`: removed `fixture::tree::RM_BODY`
+> - `filesystem_contract`: removed `fixture::tree::RM_DOOMED`
+> - `filesystem_contract`: removed `fixture::tree::RM_KEEP`
+> - `filesystem_contract`: removed `fixture::tree::RM_KEEP_BODY`
+> - `filesystem_contract`: removed `fixture::tree::RM_LEAF`
+> - `filesystem_contract`: removed `fixture::tree::RM_MISSING`
+> - `filesystem_contract`: removed `fixture::tree::RM_NESTED`
+> - `filesystem_contract`: removed `fixture::tree::RM_ONE`
+> - `filesystem_contract`: removed `fixture::tree::RM_SOLO`
+> - `filesystem_contract`: removed `fixture::tree::RM_TWO`
+> - `filesystem_contract`: removed `fixture::tree::ROOT_ENTRIES`
+> - `filesystem_contract`: removed `fixture::tree::SECRET`
+> - `filesystem_contract`: removed `fixture::tree::SECRET_BODY`
+> - `filesystem_contract`: removed `fixture::tree::SUB`
+> - `filesystem_contract`: removed `fixture::twodir::DOT_DOT_CROSSED_MOUNTS`
+> - `filesystem_contract`: removed `fixture::twodir::GRANTED_ACCESS_FAILED`
+> - `filesystem_contract`: removed `fixture::twodir::OPENED_A`
+> - `filesystem_contract`: removed `fixture::twodir::OPENED_B`
+> - `filesystem_contract`: removed `fixture::twodir::REACHED_A_VIA_B`
+> - `filesystem_contract`: removed `fixture::twodir::REACHED_B_VIA_A`
+> - `filesystem_contract`: removed `fixture::twotrees::BOUND_INTO_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::CLIMBED_OUT`
+> - `filesystem_contract`: removed `fixture::twotrees::HOME_IS_ROOT`
+> - `filesystem_contract`: removed `fixture::twotrees::LISTED_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::LISTED_ROOT`
+> - `filesystem_contract`: removed `fixture::twotrees::MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::MOVED_INTO_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::MOVED_ON_REFUSAL`
+> - `filesystem_contract`: removed `fixture::twotrees::OPENED_RELATIVE_IN_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::OPENED_ROOT_FROM_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::PWD_STARTS_AT_ROOT`
+> - `filesystem_contract`: removed `fixture::twotrees::REACHED_ACROSS`
+> - `filesystem_contract`: removed `fixture::twotrees::REDIRECTED_FROM_MOUNT`
+> - `filesystem_contract`: removed `fixture::twotrees::RM_IN_MOUNT_REFUSED`
+> - `filesystem_contract`: removed `fixture::twotrees::ROOT_CLAMPED`
+> - `filesystem_contract`: removed `fixture::twotrees::TWO_TREES_FAILED`
+> - `filesystem_contract`: removed `fixture::twotrees::UP_FROM_MOUNT_IS_PARENT`
+> - `filesystem_contract`: removed `fixture::walk::CHAIN`
+> - `filesystem_contract`: removed `fixture::walk::DEPTH`
+> - `filesystem_contract`: removed `fixture::walk::LEVEL`
+> - `filesystem_contract`: removed `fixture::walk::LEVEL_FILE`
+> - `filesystem_contract`: removed `fixture::walk::NARROW`
+> - `filesystem_contract`: removed `fixture::walk::RG_MATCHES`
+> - `filesystem_contract`: removed `fixture::walk::RG_NAMED`
+> - `filesystem_contract`: removed `fixture::walk::RG_SEARCH`
+> - `filesystem_contract`: removed `fixture::walk::ROOT`
+> - `filesystem_contract`: removed `fixture::walk::SIZES`
+> - `filesystem_contract`: removed `fixture::walk::SIZE_FILES`
+> - `filesystem_contract`: removed `fixture::walk::SMALL_BODY`
+> - `filesystem_contract`: removed `fixture::walk::WALK_BYTES`
+> - `filesystem_contract`: removed `fixture::walk::WALK_COMPONENTS`
+> - `filesystem_contract`: removed `fixture::walk::WALK_DIRS`
+> - `filesystem_contract`: removed `fixture::walk::WALK_ENTRIES`
+> - `filesystem_contract`: removed `fixture::walk::WALK_FILES`
+> - `filesystem_contract`: removed `fixture::walk::WIDE`
+> - `filesystem_contract`: removed `fixture::walk::WIDE_COUNT`
+> - `filesystem_contract`: removed `fixture::walk::sized_byte`
+> - `filesystem_contract`: removed `fixture::walk::wide_name`
+> - `filesystem_contract`: changed `verb::file_grant::POLICY`
 > - `grant_plan`: changed `Manifest`
 > - `grant_plan`: changed `UNVOUCHED_MANIFEST`
 > - `grant_plan`: changed `spawnproto::activation_reply`
+> - `graphics_contract`: crate renamed `graphics_protocol -> graphics_contract`
+> - `hot_swap_contract`: crate renamed `swap_protocol -> hot_swap_contract`
+> - `installed_programs`: crate renamed `activation_set -> installed_programs`
+> - `installed_programs`: removed `without_entry`
+> - `installed_programs`: removed `without_version`
+> - `login_contract`: crate renamed `login_protocol -> login_contract`
+> - `login_contract`: changed `MAX_IDENTITY`
+> - `login_contract`: changed `MAX_SECRET`
+> - `login_contract`: changed `PAGE`
+> - `login_contract`: changed `operation`
+> - `login_contract`: changed `place`
+> - `login_contract`: changed `read`
+> - `login_contract`: changed `wipe`
 > - `nifefs`: changed `DIR_BLOCKS`
 > - `nifefs`: changed `MAX_FILES`
 > - `package_archive`: changed `Installable`
@@ -307,3 +331,6 @@ Read at `4d52a65f3a7d` against the week before. Each line is one removed or chan
 > - `package_archive`: removed `Installable::digest`
 > - `package_archive`: removed `Installable::program`
 > - `package_archive`: changed `Refusal`
+> - `program_argument_contract`: crate renamed `argument_protocol -> program_argument_contract`
+> - `socket_contract`: crate renamed `socket_protocol -> socket_contract`
+> - `std_runtime_contract`: crate renamed `std_runtime_protocol -> std_runtime_contract`

@@ -97,10 +97,9 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
 
    And userspace init builds the system, from a richer initrd. The single-ELF initrd became a
    nifefs archive holding two programs: `init` (the portable `builder`) and `worker`. The kernel
-   (`riscv_initrd_demo`, a minimal `spawn_progenitor` with no GIC/PL011/IRQ baggage; that function
-   is `spawn_hello` since milestone 166) loads only `init`, maps the whole archive read-only into
-   it, and grants it two capabilities: an untyped budget and a report
-   endpoint. From those, `init` reads `worker` out of the archive by name. It builds it as a child
+   (`riscv_initrd_demo`, a minimal `spawn_progenitor` with no GIC/PL011/IRQ baggage) loads only
+   `init` and maps the whole archive read-only into it. `spawn_elf_child_builder` is that function's
+   descendant. It grants `init` two capabilities: an untyped budget and a report endpoint. From those, `init` reads `worker` out of the archive by name. It builds it as a child
    *entirely from its own budget* through the capability verbs: retype an address space, copy each
    segment into retyped frames and map them, retype a TCB, endow it, configure, start. It hands the
    child a WRITE view of the report endpoint, and starts it with an input. The child squares it and
@@ -134,7 +133,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
 
    Then `arch::irq` was extracted with two working consumers behind it (the GIC and the PLIC), and
    `drivers::gic` was gated to aarch64. Every portable caller (`sched::place_on`, `smp`,
-   `user::spawn_hello`, `main::interrupts_init`, the `Irq` ACK) now names `arch::irq`, not a
+   `user::spawn_elf_child_builder`, `main::interrupts_init`, the `Irq` ACK) now names `arch::irq`, not a
    controller. The only code still naming `drivers::gic` is aarch64 arch code (rule #1 lets arch name
    its own driver) and the `cfg(test)` aarch64 IRQ tests. That was the last HAL leak. A new ISA is
    a new `arch/` directory, not a diff across the kernel, with zero exceptions in portable non-test

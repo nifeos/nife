@@ -64,7 +64,7 @@ a field appended to Xen's `hvm_start_info`. That is cheap to change because the 
 kernel, so writer and reader ship as one file. The console is `ScreenConsole`, a cursor and a
 geometry, not `video_terminal`: the thing being reported is often why the machine is broken, so it
 wants the least state that could work. They share the font, which is what makes the gate below
-possible. [`the-handoff-design.md`](serial-less-output/the-handoff-design.md) has both arguments.
+possible. [`framebuffer-handoff-choices.md`](serial-less-output/framebuffer-handoff-choices.md) has both arguments.
 
 ## What the alternatives cost, priced rather than argued
 
@@ -90,7 +90,7 @@ the width, or if `mmu::init` stopped carrying the aperture's mapping.
 
 Measured 2026-09-04 under OVMF on QEMU 11.x with `-display none`, it read 96 non-blank rows of text
 back off the framebuffer, ending at the tour's last lines; the transcript is in
-[`the-handoff-design.md`](serial-less-output/the-handoff-design.md#the-gates-first-green-run-in-full).
+[`framebuffer-handoff-choices.md`](serial-less-output/framebuffer-handoff-choices.md#the-gates-first-green-run-in-full).
 
 `-display none` suppresses the host window, not the emulated adapter, which is why any of this
 works headlessly: OVMF finds a GOP here for the same reason a real machine's firmware finds one.

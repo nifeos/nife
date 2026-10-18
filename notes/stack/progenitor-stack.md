@@ -119,7 +119,7 @@ release rather than making room for it. The raise wins today on effort and on co
 open lanes, and this paragraph says so in those words. It is also the reversible one: one constant,
 and the gauge will say what the restructure buys when it lands.
 
-The RAM cost is four pages for the progenitor, and four each for `hello`'s init roles and the riscv64
+The RAM cost is four pages for the progenitor, and four each for the ELF child builders and the riscv64
 serial driver, which share the constant and are far shallower.
 
 ## Raised again, to fourteen (milestone 809, 2026-10-10 UTC)

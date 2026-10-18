@@ -57,9 +57,9 @@
 //! ```
 
 /// Where the kernel maps the initial ramdisk archive before any program's `_start` runs. Must match
-/// `kernel::user::INITIAL_RAMDISK_VA`, the kernel-side constant this value mirrors,
-/// which every kernel-side spawn path (`kernel::user::boot_progenitor` at boot, `spawn_hello` in
-/// the test roles) maps this many bytes at, read-only, before starting the process. Every `_start` that
+/// `kernel::user::INITIAL_RAMDISK_VA`, the kernel-side constant this value mirrors, which every
+/// kernel-side spawn path (`kernel::user::boot_progenitor` at boot, `spawn_elf_child_builder` in
+/// the tests) maps this many bytes at, read-only, before starting the process. Every `_start` that
 /// receives the archive gets it at this same VA; the seven callers this module replaces had each
 /// hard-coded it under this exact name.
 ///

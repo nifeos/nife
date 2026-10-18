@@ -67,7 +67,7 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
     let mut std_programs = 0;
     for &p in Prog::ALL {
         let m = p.manifest();
-        if m.runtime != Runtime::Std {
+        if m.startup != StartupContract::Std {
             continue;
         }
         std_programs += 1;

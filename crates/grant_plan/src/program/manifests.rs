@@ -9,7 +9,7 @@
 
 use crate::{
     ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, IndexStore, InputSpec, Manifest, MemSpec,
-    NO_SHORT_OPTIONS, OutputSpec, Prog, Runtime, ShortOptions, VerbGrant, WordGrant, verbs,
+    NO_SHORT_OPTIONS, OutputSpec, Prog, ShortOptions, StartupContract, VerbGrant, WordGrant, verbs,
 };
 
 impl Prog {
@@ -105,7 +105,7 @@ const fn least_authority_demo_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -137,7 +137,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -172,7 +172,7 @@ const fn interrupt_heeder_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -200,7 +200,7 @@ const fn interrupt_ignorer_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -257,7 +257,7 @@ const fn date_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -299,7 +299,7 @@ const fn rm_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -336,7 +336,7 @@ const fn wc_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -374,7 +374,7 @@ const fn mdr_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -415,7 +415,7 @@ const fn ps_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -459,7 +459,7 @@ const fn pgrep_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -497,7 +497,7 @@ const fn top_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -528,7 +528,7 @@ const fn printenv_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -562,7 +562,7 @@ const fn uptime_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -596,7 +596,7 @@ const fn network_echo_client_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -626,7 +626,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -668,7 +668,7 @@ const fn uuid_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -701,7 +701,7 @@ const fn free_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -733,7 +733,7 @@ const fn vmstat_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -764,7 +764,7 @@ const fn slabtop_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -798,7 +798,7 @@ const fn graphical_terminal_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -835,7 +835,7 @@ const fn reboot_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Native,
+        startup: StartupContract::Native,
     }
 }
 
@@ -873,7 +873,7 @@ const fn std_exerciser_manifest() -> Manifest {
         installer: false,
         catalog: false,
         indexes: IndexStore::Forbidden,
-        runtime: Runtime::Std,
+        startup: StartupContract::Std,
     }
 }
 
@@ -911,6 +911,6 @@ const fn jig_manifest() -> Manifest {
         // The index copy it writes at `update` and resolves a name against after that
         // (milestone 801 (packages over the internet), ruling I2).
         indexes: IndexStore::ReadWrite,
-        runtime: Runtime::Std,
+        startup: StartupContract::Std,
     }
 }

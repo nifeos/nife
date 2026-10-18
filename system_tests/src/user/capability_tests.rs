@@ -201,7 +201,7 @@ fn a_process_can_mint_an_rendezvous_and_ipc_flows_over_it() {
 /// capability minted for it by another process works when it invokes it), and the receiver
 /// *cannot pass it on* because it was handed the capability without `GRANT`. This is the
 /// operation that makes the capability model composable by processes instead of brokered by the
-/// kernel at spawn. See fixtures/src/hello.rs and `user::delegation_service`.
+/// kernel at spawn. See `fixtures/src/delegation_granter.rs` and `user::delegation_service`.
 #[test_case]
 fn a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation() {
     let endpoints = crate::memory_region::create(4).expect("no endpoint region");
@@ -340,7 +340,7 @@ fn a_process_revokes_a_frame_and_loses_the_capability() {
 /// is genuinely shared, and the kernel copied nothing), and the consumer *cannot* map that page
 /// writable, because it was handed the frame with `READ` alone. This is §10's "shared memory
 /// carries data" done by the processes rather than wired by the kernel at spawn. See
-/// fixtures/src/hello.rs and `user::page_frame_service`.
+/// `fixtures/src/page_frame_producer.rs` and `user::page_frame_service`.
 #[test_case]
 fn a_frame_capability_shares_a_page_and_a_read_only_view_cannot_write_it() {
     let endpoints = crate::memory_region::create(2).expect("no endpoint region");

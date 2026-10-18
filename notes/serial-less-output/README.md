@@ -4,7 +4,7 @@
 what was chosen, the gate, the bench procedure with its triage table, the early-boot window's table
 and BUGS. These files carry the arguments and detail its prose budget has no room for.
 
-- [`the-handoff-design.md`](the-handoff-design.md): why the screen rides PVH's command line, and why
+- [`framebuffer-handoff-choices.md`](framebuffer-handoff-choices.md): why the screen rides PVH's command line, and why
   the console is not `video_terminal`.
 - [`the-alternatives.md`](the-alternatives.md): each candidate priced against the human and the gate.
 - [`the-shell-on-the-screen.md`](the-shell-on-the-screen.md): how milestone 400 (the shell on the
@@ -21,7 +21,7 @@ beside `notes/X.md`. calef names directories.*
 
 Each stem below is named for its content, and calef names files.
 
-- `the-handoff-design` Name: provisional, for the two design choices in the handoff it holds.
+- `framebuffer-handoff-choices` Name: ratified 2026-10-18 (calef: "Approve all five").
 - `the-alternatives` Name: provisional, after the parent's "What the alternatives cost".
 - `the-shell-on-the-screen` Name: provisional, after the parent's "The shell on the screen, too".
 - `ramfb` Name: provisional, for the QEMU device it describes.

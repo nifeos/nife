@@ -94,15 +94,15 @@ missing was a handle and an ordering.
 - The region's endpoints are now swept before the refusal, not after (`sched::reap_region_objects`).
   This is the load-bearing half. A blocked thread never reaches `schedule()`, so it never spends the
   armed kill. A region holding a server parked in `RECEIVE` was therefore refused forever.
-  `userspace_init_brings_up_the_console_server` builds exactly such a server out of the progenitor's budget, and
+  `the_console_server_builder_brings_up_a_console_that_prints_for_it` builds exactly such a server out of the progenitor's budget, and
   its 2048 page frames were unreclaimable by construction. Sweeping first fixes it because the wake was
   already there: removing an endpoint drains its wait queues, aborts each waiter's IPC and wakes it,
   which is precisely the transition the doomed resident needs. A refused reclaim was already
   destructive (it arms kills; see `reclaim_region`'s BUGS), so this is the same commitment one object
   over.
 
-- `spawn_hello` carves `hello`'s building budget outside the spawned thread and hands the caller a
-  holding over it. The region is unchanged; who can name it is not, and that is the whole difference
+- `spawn_elf_child_builder` carves a builder's building budget outside the spawned thread and hands
+  the caller a holding over it. The region is unchanged; who can name it is not, and that is the whole difference
   between 8 MiB spent and 8 MiB lent.
 
 - A service's endpoints come out of a region of its own (`net_stack`'s do), because that is the

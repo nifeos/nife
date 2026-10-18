@@ -497,8 +497,8 @@ fn overlaps(a: u64, alen: u64, b: u64, blen: u64) -> bool {
 /// | `x86_64` | 58841 | **35719** | 46813 | 0 |
 ///
 /// Every low sits about 11,100 frames under its own end-of-suite figure, and the test named each
-/// time is a progenitor test (`userspace_init_parses_an_elf_and_builds_a_running_child`, or on
-/// riscv64 `init_builds_the_demo_and_passes_it_an_argument`). Both carve a 12,288-page building
+/// time is a progenitor test (`the_report_child_builder_parses_an_elf_and_builds_a_running_child`, or on
+/// riscv64 `the_least_authority_demo_builder_passes_its_demo_an_argument`). Both carve a 12,288-page building
 /// budget (`memory_region::create(12288)` in `kernel/src/user.rs`) and give it back when they
 /// finish. So the ledger at the low-water is `notes/frames.md`'s held list plus that one
 /// reservation. What moves the low from one milestone to the next is the held list growing; what

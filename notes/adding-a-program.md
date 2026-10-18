@@ -36,15 +36,14 @@ files apart rather than in the archive. The binary links everything every role n
 spawned to prove one syscall drags in an ELF parser. And the program's name has to describe all of
 them at once, which it stops doing at about the third.
 
-Milestone 291 (fixtures) is the worked example. `fixtures/src/hello.rs` reached thirty-one roles one
+Milestones 291 and 405 are the worked example. One fixture, `hello`, reached thirty-one roles one
 convenient arm at a time over two months. Seven of them were an exact duplicate of
-`components/src/block_driver.rs`, kept alive only because one archive table did not pack it; fourteen more became programs. See
-[291](../design/roadmap/0291-one-program-one-job.md).
+`components/src/block_driver.rs`, kept alive only because one archive table did not pack it; the
+other twenty-four became programs. See [291](../design/roadmap/0291-one-program-one-job.md) and
+[405](../design/roadmap/0405-nine-init-roles-and-the-entry-the-kernel-picks.md).
 
 The exception is allowed and has to say so (AGENTS.md's ladder, rung four's rule). If two
 behaviors genuinely are one program, write down in the module doc why, where a reader meets it.
-`hello`'s remaining nine do: six of them build a child and three of them *are* that child, which is
-a relationship rather than a convenience.
 
 ## The steps
 

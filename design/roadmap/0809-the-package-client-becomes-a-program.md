@@ -94,7 +94,7 @@ reversible.
 The installer endpoint is the one new grant, recorded in §270 (a package manager holds an
 installer endpoint, not the spawn endpoint). It is a copy of the spawn endpoint, badged for one job.
 It serves install, remove and rollback, never `Vouch`, and only the owner's console grants it. The field the draft called `activation` is `installer`, and `catalog` came with it. The
-program is `Runtime::Std`, because `ArgSpec::Words` requires it.
+program is `StartupContract::Std`, because `ArgSpec::Words` requires it.
 
 ## One program with verbs: ruled
 

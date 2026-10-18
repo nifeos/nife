@@ -65,6 +65,36 @@ pub const USED_WORD: u64 = 0x5A;
 /// the reasoning is on the test).
 pub const CYCLE_COUNTER_WORD: u64 = 0xC1C1E;
 
+/// The word `report_child` sends on the one capability `report_child_builder` granted it.
+///
+/// The builder parsed the child's ELF and built its process in userspace, so this word reaching
+/// the kernel's test is the evidence that the build produced a running thread.
+///
+/// Name: provisional (milestone 405 (the nine init roles and the entry the kernel picks)), after
+/// the program that sends it.
+pub const REPORT_CHILD_WORD: u64 = 0xC0FFEE;
+
+/// The word `interrupt_child` sends once the interrupt `interrupt_child_builder` delegated to it
+/// has arrived as a message. Any fixed value would do; the child sends nothing before the
+/// interrupt.
+///
+/// Name: provisional (milestone 405), after the program that sends it.
+pub const INTERRUPT_CHILD_WORD: u64 = 0x1590;
+
+/// The line `console_server_builder` writes into the page it shares with the console server it
+/// built. The server prints it and acknowledges its length, and the kernel's test asserts that
+/// length.
+///
+/// Name: provisional (milestone 405), after the program that writes it.
+pub const CONSOLE_SERVER_BUILDER_LINE: &[u8] =
+    b"nife: the console server was built and started by a userspace builder.\n";
+
+/// The input `least_authority_demo_builder` starts its child with, in `x1`. The child reports its
+/// square, so the kernel's test can tell the argument crossed `START` from a child that echoed it.
+///
+/// Name: provisional (milestone 405), after the program that passes it.
+pub const LEAST_AUTHORITY_DEMO_INPUT: u64 = 7;
+
 /// **The verdict `process_composition_witness` reports**, one bit per step, so a failure says which
 /// step stopped (milestone 404 (composing a process from two capabilities is proved for two verbs
 /// and no more), building §185 (what carries the claim that userspace composes a process from an

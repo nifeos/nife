@@ -1,5 +1,5 @@
-//! **Entering user mode**: the spawn description, the test roles' loader, and the `run` family that
-//! fakes a trap frame and returns into a program.
+//! **Entering user mode**: the spawn description, the ELF child builders' loader, and the `run`
+//! family that fakes a trap frame and returns into a program.
 //!
 //! Cut out of `user.rs` unchanged by milestone 872 (the kernel's user-mode file is split along its
 //! seams), which left the parent an index.
@@ -44,20 +44,25 @@ pub struct Spawn<'a> {
     pub maps: &'a [Mapping],
 }
 
-/// The interrupt the kernel routes to the progenitor for the IRQ-delegation test (19d.2b).
+/// The interrupt the kernel routes for the interrupt-delegation test (19d.2b), which
+/// `interrupt_child_builder` delegates to the child it builds.
 ///
 /// aarch64: SGI 3, distinct from the scheduler's RESCHED (0) and the older endpoint SGIs (1, 2).
 /// RISC-V has no software-generated interrupt a test can raise on itself at all (the SBI IPI
 /// arrives down the *software*-interrupt arm, never touching `irq_route`), so it names the console
 /// UART's own line, which is the one interrupt this ISA can assert by hand. That makes it the same
-/// number as [`UART_RX_INTID`] there, deliberately; [`spawn_hello`] binds the route once and grants
-/// two capabilities naming it. See `sched::tests`' `DELIVERY_IRQ`, which reached the same conclusion.
+/// number as [`UART_RX_INTID`] there, deliberately; [`spawn_elf_child_builder`] binds the route
+/// once and grants two capabilities naming it. See `sched::tests`' `DELIVERY_IRQ`, which reached
+/// the same conclusion.
+///
+/// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names. It is
+/// an SGI only on aarch64, which the name no longer claims.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 #[cfg(target_arch = "aarch64")]
-pub const INIT_TEST_SGI: u32 = 3;
+pub const DELEGATED_TEST_INTERRUPT: u32 = 3;
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 #[cfg(target_arch = "riscv64")]
-pub const INIT_TEST_SGI: u32 = 10;
+pub const DELEGATED_TEST_INTERRUPT: u32 = 10;
 /// `x86_64` (milestone 161, updated by roadmap item 4): **the local APIC's self-IPI test vector**,
 /// which puts this ISA on aarch64's side of the split rather than RISC-V's. The local APIC will
 /// deliver a vector to its own CPU on demand through the ICR, so x86 needs no device to raise an
@@ -69,97 +74,75 @@ pub const INIT_TEST_SGI: u32 = 10;
 /// revisit this when it landed.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(target_arch = "x86_64")]
-pub const INIT_TEST_SGI: u32 = crate::arch::irq::SELF_TEST_VECTOR as u32;
+pub const DELEGATED_TEST_INTERRUPT: u32 = crate::arch::irq::SELF_TEST_VECTOR as u32;
 
-/// The archive entry holding milestone 19d's and 19e's **init roles**: the one binary the kernel
-/// still re-enters at a chosen role, to play a userspace parent that builds a child out of an ELF
-/// it parsed.
+/// **Spawn one of milestone 19d (run a real workload)'s and 19e's ELF child builders**, the archive
+/// entry `entry` (milestone 19d.2c; the boot half of this function became [`boot_progenitor`] at
+/// milestone 166 (one boot loader, reached two inconsistent ways)).
 ///
-/// One name on all three architectures since milestone 266. aarch64 used to pack it as `init`,
-/// because there it carried the boot role as well; that role is [`PROGENITOR_ENTRY`]'s own program
-/// now, and `hello` is packed as `hello` everywhere. The kernel still enters it directly for those
-/// init roles, which is why it is in `boot_programs` and measured.
+/// A builder is a userspace parent: it reads its child out of the archive by name, builds it out of
+/// an ELF it parsed and reports. There are six (`report_child_builder`, `device_child_builder`,
+/// `interrupt_child_builder`, `console_server_builder`, `least_authority_demo_builder` and
+/// `coremark_builder`, all in `fixtures/`), and every one gets the same bare 19d world at fixed
+/// slots: the building budget (slot 0), the kernel's `report` endpoint (slot 1, `WRITE|GRANT` so a
+/// builder can report and endow a child on it), the console UART's registers (slot 2), the 19d.2b
+/// test interrupt (slot 3), and the UART receive interrupt (slot 4). Each builder takes what it
+/// uses from that and ignores the rest. `x0` is 0, since no builder dispatches on it.
 ///
-/// **It was the whole milestone 7-19 role catalogue until milestone 291**, thirty-one roles in one
-/// binary. Twenty-two of them are their own programs or `block_driver`'s roles now; nine are left,
-/// and milestone 405, `design/roadmap/0405-nine-init-roles-and-the-entry-the-kernel-picks.md`, is what would
-/// take them, since splitting them is a change to [`spawn_hello`]'s choice of entry rather
-/// than to `fixtures/`.
+/// It returns a [`holding::Holding`] over the thread and its building budget, so a test finished
+/// with it can hand **2048 frames** back: these tests reserve 8 MiB each and the measured aarch64
+/// boot spent 12289 frames on them, **42% of everything the suite never returned**
+/// (notes/frames.md).
 ///
-/// Name: provisional (milestone 266 (one progenitor, on all three architectures)): a constant
-/// rather than a program, but it is the name a reader meets at eight call sites, and
-/// `kernel::user::tests` already spelled it this way. The program's own name is overdue and is
-/// an architect's; see that file's `BUGS`.
+/// **The kernel enters `entry` itself, so `entry` must be in the trust root**, which is why the six
+/// builders are in `sealed_pair::BOOT_PROGRAMS` beside the progenitor. An `entry` the archive does
+/// not hold panics here, and one the trust root does not name halts in [`crate::trust::require`],
+/// so a test that names a program this function cannot enter fails rather than waiting on a
+/// report nobody sends.
+///
+/// **This is not the boot path.** [`boot_progenitor`] is, on all three architectures, and hands the
+/// progenitor its own slot layout; this function only ever enters a builder and grants only the
+/// five capabilities builders use.
+///
+/// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names.
+/// Refused keeping `spawn_hello`: `hello` was the one binary all six builders were roles of, and
+/// that binary is gone.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub const HELLO_ENTRY: &str = "hello";
-
-/// **Spawn a milestone-19d/19e test role of [`HELLO_ENTRY`]** (milestone 19d.2c; the boot half of
-/// this function became [`boot_progenitor`] at milestone 166).
-///
-/// The kernel re-enters the one `hello` binary at `role` to play a userspace parent, handing it the
-/// bare 19d world at fixed slots: the building budget (slot 0), the kernel's `report` endpoint (slot
-/// 1, `WRITE|GRANT` so a role can report and endow a child on it), the console UART's registers
-/// (slot 2), the 19d.2b test interrupt (slot 3), and the UART receive interrupt (slot 4). It returns
-/// a [`holding::Holding`] over the thread and its building budget, so a test finished with it can
-/// hand **2048 frames** back: six of these tests reserve 8 MiB each and the measured aarch64 boot
-/// spent 12289 frames on them, **42% of everything the suite never returned** (notes/frames.md).
-///
-/// **This is no longer the boot path.** Until milestone 166 it was both jobs at once: at
-/// [`PROGENITOR_ROLE`] it loaded [`PROGENITOR_ENTRY`] and booted the whole system, and at any other
-/// role it loaded `hello`. That sharing is exactly why aarch64's boot once carried slots 1 and 3 the
-/// interactive system never used, and DECISIONS §19's silent-divergence risk lived in the split. The
-/// boot now goes through [`boot_progenitor`] on all three architectures, which hands the progenitor
-/// the same slot layout everywhere; this function only ever plays a test role and grants only the
-/// five capabilities those roles use.
-///
-/// **`hello` still has nine roles**, and splitting them is a follow-on to milestone 291
-/// (`fixtures/src/hello.rs` was thirty-one programs wearing one name), tracked as milestone 405
-/// (`design/roadmap/0405-nine-init-roles-and-the-entry-the-kernel-picks.md`): six are separate
-/// programs waiting to happen, and each would need its own archive entry named here.
-///
-/// Name: ratified 2026-09-15 (calef, this header). Refused keeping `spawn_progenitor`, the name
-/// this function carried until milestone 166 split it in two: the boot half it was named for is
-/// [`boot_progenitor`] now, and what stayed here never spawns the progenitor at all. It only ever
-/// re-enters [`HELLO_ENTRY`] at one of milestone 19d/19e's test roles, at every call site it has
-/// (all of them in `system_tests/src/user/tests.rs`), so the old name pointed at the half that left.
-/// `spawn` is the verb this body performs and `hello` the program it performs it on, which makes
-/// the name a claim about what the function does rather than about what it used to do, and greps
-/// with [`HELLO_ENTRY`] as one family.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn spawn_hello(
+pub fn spawn_elf_child_builder(
     image: &'static [u8],
-    role: u64,
+    entry: &'static str,
     report: crate::sched::RendezvousId,
 ) -> holding::Holding {
     let (initial_ramdisk_start, initial_ramdisk_len) =
-        memory::initial_ramdisk_region().expect("no initial ramdisk to hand the progenitor");
+        memory::initial_ramdisk_region().expect("no initial ramdisk to hand the builder");
     let initial_ramdisk_pages = initial_ramdisk_len.div_ceil(FRAME_SIZE);
 
-    // Route the test interrupt (19d.2b) BEFORE spawning the progenitor: the test raises the SGI as soon as
-    // this returns, and an interrupt that fires before it is routed is dropped ("unexpected
+    // Route the test interrupt (19d.2b) BEFORE spawning the builder: the test raises the SGI as soon
+    // as this returns, and an interrupt that fires before it is routed is dropped ("unexpected
     // interrupt"), not queued. Setting up the route here means the fire is counted on the routed
-    // endpoint even though the progenitor-built child is not yet waiting; the child's WAIT drains it.
-    crate::sched::bind_irq(INIT_TEST_SGI, crate::sched::create_rendezvous());
-    crate::arch::irq::enable(INIT_TEST_SGI);
-    // And the UART receive interrupt (19d.2c): the input driver the progenitor builds waits on it. Route and
-    // enable it here, so the progenitor can delegate the Irq cap to that driver. The number is the machine's
-    // (uart_irq_and_source; on the JH7110 the QEMU constant armed the wrong PLIC source, see its
-    // doc), and the line names the source so a transcript is diagnosable. On QEMU RISC-V the
-    // discovered line and INIT_TEST_SGI are the SAME source (see INIT_TEST_SGI), and binding it
-    // twice would leave the first endpoint routed to nothing while the test waits on it, so bind
-    // once and grant twice.
+    // endpoint even though the built child is not yet waiting; the child's WAIT drains it.
+    crate::sched::bind_irq(DELEGATED_TEST_INTERRUPT, crate::sched::create_rendezvous());
+    crate::arch::irq::enable(DELEGATED_TEST_INTERRUPT);
+    // And the UART receive interrupt (19d.2c), which an input driver waits on. Route and enable it
+    // here, so a builder could delegate the Irq cap to one. The
+    // number is the machine's (uart_irq_and_source; on the JH7110 the QEMU constant armed the wrong
+    // PLIC source, see its doc), and the line names the source so a transcript is diagnosable. On
+    // QEMU RISC-V the discovered line and DELEGATED_TEST_INTERRUPT are the SAME source (see
+    // DELEGATED_TEST_INTERRUPT), and binding it twice would leave the first endpoint routed to
+    // nothing while the test waits on it, so bind once and grant twice.
     let (uart_rx_intid, uart_irq_source) = uart_irq_and_source();
     crate::println!("  uart irq  : {uart_rx_intid} ({uart_irq_source})");
-    if uart_rx_intid != INIT_TEST_SGI {
+    if uart_rx_intid != DELEGATED_TEST_INTERRUPT {
         crate::sched::bind_irq(uart_rx_intid, crate::sched::create_rendezvous());
         crate::arch::irq::enable(uart_rx_intid);
     }
 
-    // Read and MEASURE `hello` here, before the thread is created (milestone 22 phase B.1): the
-    // check has to be the thing that decides whether a thread is created at all, not something the
-    // new thread does to itself. `trust::require` halts on a mismatch, so past this line the bytes
-    // are the ones this kernel image was built against. The program-measurement table (milestone
-    // 104) is required for the same reason: the whole archive is mapped into `hello`.
+    // Read and MEASURE the builder here, before the thread is created (milestone 22 (trusted init)
+    // phase B.1): the check has to be the thing that decides whether a thread is created at all,
+    // not something the new thread does to itself. `trust::require` halts on a mismatch, so past
+    // this line the bytes are the ones this kernel image was built against. The program-measurement
+    // table (milestone 104 (the measurement continues past init)) is required for the same reason:
+    // the whole archive is mapped into the builder.
     let boot_fs = match nifefs::Fs::parse(image) {
         Ok(fs) => fs,
         Err(e) => {
@@ -167,29 +150,30 @@ pub fn spawn_hello(
             crate::sched::exit();
         }
     };
-    let Some(init_bytes) = boot_fs.read(HELLO_ENTRY) else {
-        crate::println!("  archive has no '{HELLO_ENTRY}' program");
-        crate::sched::exit();
+    let Some(builder_bytes) = boot_fs.read(entry) else {
+        panic!("the initial ramdisk has no '{entry}' program to enter");
     };
-    crate::trust::require(HELLO_ENTRY, init_bytes);
+    crate::trust::require(entry, builder_bytes);
     crate::trust::require_program_measurements(&boot_fs);
 
-    // **The building budget is carved here, not inside the thread**, so the caller has a name for it
-    // and can reclaim it: a large untyped a role retypes its child's address space, frames and TCB
-    // from. Carving it out here changes nothing about what the role gets; it changes who can name it
-    // afterwards, the whole difference between 8 MiB spent and 8 MiB lent. See notes/frames.md.
-    let build_region = crate::memory_region::create(12288).expect("no building budget for hello");
+    // **The building budget is carved here, not inside the thread**, so the caller has a name for
+    // it and can reclaim it: a large untyped a builder retypes its child's address space, frames
+    // and TCB from. Carving it out here changes nothing about what the builder gets; it changes who
+    // can name it afterwards, the whole difference between 8 MiB spent and 8 MiB lent. See
+    // notes/frames.md.
+    let build_region =
+        crate::memory_region::create(12288).expect("no building budget for the builder");
 
     let tid = crate::sched::spawn(move || {
-        let elf = match Elf::parse(init_bytes) {
+        let elf = match Elf::parse(builder_bytes) {
             Ok(e) => e,
             Err(e) => {
-                crate::println!("  the hello image is not loadable: {e:?}");
+                crate::println!("  the {entry} image is not loadable: {e:?}");
                 crate::sched::exit();
             }
         };
-        // A region big enough for hello's own segments, the initial ramdisk's page tables, and
-        // slack: a role that builds a child loads whole ELFs with deep call chains.
+        // A region big enough for the builder's own segments, the initial ramdisk's page tables,
+        // and slack: a builder loads whole ELFs with deep call chains.
         let content: u64 = elf
             .segments()
             .map(|seg| {
@@ -202,22 +186,22 @@ pub fn spawn_hello(
             + crate::revoke::log_pages_for(initial_ramdisk_pages)
             + INIT_STACK_PAGES
             + 8;
-        let mut space = AddressSpace::new(content).expect("no memory for hello");
-        map_segments(&mut space, &elf).expect("could not lay out hello");
-        // A multi-page stack: a role that parses and builds a child ELF has deep call chains (the
-        // loader loop, copy_from_slice, the elf parser), so one page overflows. Map INIT_STACK_PAGES
-        // down from USER_STACK_TOP; the entry sp is unchanged (USER_STACK_TOP).
+        let mut space = AddressSpace::new(content).expect("no memory for the builder");
+        map_segments(&mut space, &elf).expect("could not lay out the builder");
+        // A multi-page stack: a builder that parses and builds a child ELF has deep call chains
+        // (the loader loop, copy_from_slice, the elf parser), so one page overflows. Map
+        // INIT_STACK_PAGES down from USER_STACK_TOP; the entry sp is unchanged (USER_STACK_TOP).
         for k in 0..INIT_STACK_PAGES {
             space
                 .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
-                .expect("could not map hello's stack");
+                .expect("could not map the builder's stack");
         }
         #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
-        map_timebase_page(&mut space).expect("could not map hello's timebase page");
+        map_timebase_page(&mut space).expect("could not map the builder's timebase page");
 
         // Map the initial ramdisk, one page at a time, read-only. These are reserved RAM pages the
-        // frame allocator does not own, so this maps rather than allocates. A role that builds a
-        // child parses the archive here.
+        // frame allocator does not own, so this maps rather than allocates. A builder parses the
+        // archive here to find its child.
         for i in 0..initial_ramdisk_pages {
             space
                 .map_physical(
@@ -226,15 +210,15 @@ pub fn spawn_hello(
                     Flags::user_rodata(),
                     crate::revoke::PageMapSource::NoCapability,
                 )
-                .expect("could not map the initial ramdisk into hello");
+                .expect("could not map the initial ramdisk into the builder");
         }
 
         crate::sched::adopt_address_space(space);
-        // slot 0: the delegable root budget. A role narrows and hands budgets to the children it
+        // slot 0: the delegable root budget. A builder narrows and hands budgets to the children it
         // builds, so the root carries GRANT (milestone 31). Rights only narrow downward from here.
         crate::sched::grant(crate::cap::memory_region_root_cap(build_region))
             .expect("grant untyped");
-        // slot 1: the kernel's report endpoint, WRITE|GRANT so a role can report a result and endow
+        // slot 1: the kernel's report endpoint, WRITE|GRANT so a builder can report a result and endow
         // a child to send on it. This slot is the boot layout's slot 1 too, which is exactly why
         // [`boot_progenitor`] once carried a report endpoint it never used: the shared function.
         crate::sched::grant(crate::cap::rendezvous_cap(
@@ -242,13 +226,13 @@ pub fn spawn_hello(
             crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
         ))
         .expect("grant report");
-        // slot 2: the UART registers, so a console role can build a driver and hand it the registers
+        // slot 2: the UART registers, so a builder can build a driver and hand it the registers
         // (19d.2). WRITE (device access) | GRANT (delegate to the driver).
         //
         // **On x86_64 `UART_PHYS` is zero and this grants a device capability over physical page
         // zero**, which is a foot gun and is marked as one rather than designed away (AGENTS.md's
         // ladder: an exception must say it is an exception). The slot is positional, so declining to
-        // grant here would renumber the interrupts below and every role that names them. Nothing
+        // grant here would renumber the interrupts below and every builder that names them. Nothing
         // reaches it today: every fixture that would map it asks
         // `machine_has_no_device_page_for_the_console()` first and skips.
         crate::sched::grant(crate::cap::device_frame_cap(
@@ -256,15 +240,15 @@ pub fn spawn_hello(
             crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
         ))
         .expect("grant uart device");
-        // slot 3: the 19d.2b test interrupt, so the IRQ-delegation role can build an interrupt-driven
+        // slot 3: the 19d.2b test interrupt, so `interrupt_child_builder` can build an interrupt-driven
         // driver and hand it the Irq cap. The route was set up above, before the spawn; this only
         // grants the cap (a per-thread act). READ (WAIT/ACK) | GRANT (delegate).
         crate::sched::grant(crate::cap::irq_cap_rights(
-            INIT_TEST_SGI,
+            DELEGATED_TEST_INTERRUPT,
             crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
         ))
         .expect("grant test irq");
-        // slot 4: the UART receive interrupt, for the input driver a console role builds (19d.2c).
+        // slot 4: the UART receive interrupt, for an input driver a builder could build (19d.2c).
         // The same discovered number the route above was bound with, or the cap would name a source
         // no endpoint serves.
         crate::sched::grant(crate::cap::irq_cap_rights(
@@ -273,10 +257,10 @@ pub fn spawn_hello(
         ))
         .expect("grant uart rx irq");
 
-        // A test role has no filesystem, so `x2` (the file-service rights the boot path passes) is 0.
-        enter_frame(elf.entry(), USER_STACK_TOP, role, initial_ramdisk_len, 0)
+        // A builder has no filesystem, so `x2` (the file-service rights the boot path passes) is 0.
+        enter_frame(elf.entry(), USER_STACK_TOP, 0, initial_ramdisk_len, 0)
     })
-    .expect("could not spawn hello");
+    .expect("could not spawn the builder");
 
     let mut held = holding::Holding::new();
     held.add_thread(tid);

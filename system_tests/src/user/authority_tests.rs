@@ -24,9 +24,9 @@ const ROOT_BUDGET_PAGES: u64 = 1024;
 /// **Spawn the tree's root the way the kernel spawns the progenitor**, and return the report endpoint every
 /// process in the tree holds a WRITE view of.
 ///
-/// Deliberately the same endowment `spawn_hello` gives (`INITIAL_RAMDISK_VA`, an untyped in slot 0,
-/// a report endpoint in slot 1) so what is being tested is `root_supervisor`'s *choices*, not a
-/// privileged shortcut.
+/// Deliberately the same endowment `spawn_elf_child_builder` gives (`INITIAL_RAMDISK_VA`, an
+/// untyped in slot 0, a report endpoint in slot 1) so what is being tested is `root_supervisor`'s
+/// *choices*, not a privileged shortcut.
 fn spawn_tree() -> (sched::RendezvousId, u64) {
     // From a region the run owns and reclaims, as `live_swap_tests::spawn_swapper` does.
     let report_region = crate::memory_region::create(1).expect("no region for the report endpoint");
@@ -113,9 +113,9 @@ fn of_kind(msgs: &[[u64; 5]; EXPECTED_REPORTS], kind: u64) -> impl Iterator<Item
 /// It is reported from inside the process on purpose: what matters is what the *holder* can do,
 /// and only the holder can ask.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.authority_tests.init_drops_its_construction_authority_and_cannot_build_again.patch`
+/// Falsification: replayable `system_tests/falsifications/user.authority_tests.the_root_supervisor_drops_its_construction_authority_and_cannot_build_again.patch`
 #[test_case]
-fn init_drops_its_construction_authority_and_cannot_build_again() {
+fn the_root_supervisor_drops_its_construction_authority_and_cannot_build_again() {
     let msgs = run_tree();
     let dropped = of_kind(&msgs, REPORT_INIT_DROPPED)
         .next()
@@ -154,8 +154,11 @@ fn init_drops_its_construction_authority_and_cannot_build_again() {
 /// and a third would put the suite over `SUITE_PAGE_FRAME_BUDGET`, which CI measured on 2026-10-05.
 /// Dropping the label fails this in `run_tree` (stage 23), not at an assertion below, so the kernel
 /// claim's falsification lives in `supervision_tests::a_supervisor_tells_two_dead_children_apart_by_label`.
+///
+/// Falsification: unfalsified. Renamed by milestone 405 (the nine `INIT` roles), which ran it green
+/// on all three architectures but did not break the code it guards to watch it go red.
 #[test_case]
-fn a_dead_sub_server_is_restarted_by_its_supervisor_not_by_init() {
+fn a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root() {
     let msgs = run_tree();
 
     let attempts = |n: u64| {

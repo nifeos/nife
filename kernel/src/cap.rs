@@ -96,8 +96,8 @@ pub enum Object {
     /// MMIO would let the CPU cache and reorder register accesses: catastrophic for a device.
     ///
     /// Constructed by the boot (`boot_progenitor`'s console device grant on aarch64 and
-    /// riscv64) and by `spawn_hello`'s test roles and the system tests beside them, so a
-    /// build that never reaches a hand-off never mints one. The syscall path still
+    /// riscv64) and by `spawn_elf_child_builder` and the system tests beside it, so a build that
+    /// never reaches a hand-off never mints one. The syscall path still
     /// *matches* on it, and a match is not a construction.
     #[cfg_attr(all(target_arch = "riscv64", not(feature = "shell")), allow(dead_code))]
     DeviceFrame(u64),

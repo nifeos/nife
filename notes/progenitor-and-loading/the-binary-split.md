@@ -31,7 +31,7 @@ of those call sites (a role-6 spawn fell through to hello's default arm and *fau
 each to load `"least_authority_demo"` is the migration. The hello binary no longer contains a
 least_authority_demo at all. Two headless tests pin it:
 `a_spawned_least_authority_demo_computes_and_reports` (kernel spawns the least_authority_demo
-binary, gets 81) and `init_builds_the_demo_and_passes_it_an_argument` (init loads it by name, gets
+binary, gets 81) and `the_least_authority_demo_builder_passes_its_demo_an_argument` (init loads it by name, gets
 49).
 
 The tiny syscall runtime in `least_authority_demo.rs` (`invoke`/`send`/`exit`) is duplicated from
@@ -55,7 +55,7 @@ three, in two domains:
 hello lost the console entirely: the `console_server` function, `uart_put`, and the PL011 register
 constants are gone from it. hello keeps only the *printing client* that drives a console (a role,
 for the tour), because a client is agnostic to who serves it. The test
-`userspace_init_brings_up_the_console_server` still passes, now proving the `"console"` binary works
+`the_console_server_builder_brings_up_a_console_that_prints_for_it` still passes, now proving the `"console"` binary works
 end to end: init builds it, wires a channel, delegates the UART, and the line comes out.
 
 ## The input driver, its own binary (milestone 19f.4)

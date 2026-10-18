@@ -176,7 +176,7 @@ Every item is a device or a toolchain, and none is `user_mode_runtime` any more.
   `user::UART_PHYS` is zero and `console`, `input`, `keyboard_driver` and `swapper` are packed but
   cannot run. Their arms `trap()` rather than no-op, so a boot that reached one would say so on the first byte.
   That is DECISIONS §121, still PROPOSED. **One foot gun is marked rather than removed**:
-  `spawn_hello` grants slot 2 a device capability over `UART_PHYS`, which on this architecture is
+  `spawn_elf_child_builder` grants slot 2 a device capability over `UART_PHYS`, which on this architecture is
   *physical page zero*. The slot is positional, so declining to grant would renumber the interrupt
   capability and every role that names it, and there is nothing better to put there until §121 is
   answered. Nothing reaches it: every fixture that would map it asks

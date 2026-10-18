@@ -18,19 +18,18 @@ use crate::host::workspace_root;
 /// boards. Before that the entry was called `init` and meant a different binary depending on the
 /// architecture, and this table was where that showed.
 ///
-/// **`hello` is on every list too, and it is not a boot program in the ordinary sense.** It carries
-/// milestone 19d's and 19e's init roles, which are all nine it has left after milestone 291, and
-/// `spawn_hello` enters it directly for them; `trust::require`
-/// refuses any entry the trust root does not name. A kernel that could enter a program it never
-/// measured would be the hole measured boot exists to close, so the entry is here rather than the
-/// check being relaxed there.
+/// **The six ELF child builders are on every list too, and they are not boot programs in the
+/// ordinary sense.** They are milestone 19d (run a real workload)'s and 19e's userspace parents,
+/// and `spawn_elf_child_builder` enters each directly; `trust::require` refuses any entry the trust
+/// root does not name. A kernel that could enter a program it never measured would be the hole
+/// measured boot exists to close, so the entry is here rather than the check being relaxed there.
 ///
 /// **It stopped being per-architecture at milestone 295, and took its `arch` parameter with it.**
 /// riscv64 and `x86_64` used to add `builder`, milestone 20 (a portable HAL)'s richer initial
 /// ramdisk demo, because the RISC-V boot tour entered it directly to prove that userspace composes
 /// the system; calef retired that program on 2026-09-14 once milestone 268 (every architecture
 /// boots the same way) made the default riscv64 boot hand over to the progenitor, which makes the
-/// same claim at a larger scale. So the kernel now enters exactly two programs on every board, and
+/// same claim at a larger scale. So the kernel enters the same seven programs on every board, and
 /// a trust root that differed by architecture is one fewer thing for a reader to hold.
 ///
 /// The parameter went rather than being kept for a future divergence, because an argument nothing

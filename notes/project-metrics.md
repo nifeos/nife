@@ -138,10 +138,12 @@ a status existing at all, counted as having none rather than as `DECIDED`.
 ![Names by what the tree records about them](project-metrics/names.svg)
 
 What each name's own provenance block says, for every name `script/names` tracks: crates,
-programs, packages, scripts, and the items, modules, documentation directories and documents that
-carry a `Name:` block. A name a rule covers counts as ratified. `Ruled, rename owed` is a provisional
-name calef has ruled whose rename has not landed. The pale band is named things with no readable
-block, which before 2026-08-04 is every one of them. The current week's total is checked against
+programs, packages, scripts, every module (each `.rs` file under a `src/` directory), every
+documentation directory and document, and the items that carry a `Name:` block. A name a rule covers
+counts as ratified. `Ruled, rename owed` is a provisional name calef has ruled whose rename has not
+landed. `No provenance block` is named things with no readable block. Everything but items is counted from
+the files, so writing a block moves a name out of that band without changing the bar's height;
+an item is counted only where its block exists. The current week's total is checked against
 `script/names`. A week is a bar, so a day's rulings show as the current week's bar moving. A rising
 `Provisional` band is not debt; the band worth an alarm is `Unrecorded`.
 
@@ -319,11 +321,12 @@ rest.
   and perfect. Nothing here reads a name, and `script/names`' own `BUGS` is the longer version: it
   cannot check that a recorded reason is still true, that a date is right, or that a `recorded`
   citation leads anywhere.
-- Four kinds of named thing, and the tree names more than four kinds. Crates, programs,
-  `script/` entry points and Cargo packages carry provenance blocks, so those are what this counts.
-  Public function and method names have been calef's call since 2026-08-23 and nothing counts them;
-  types, `helpers/` helpers and directory names are outside `script/names`' surfaces too, and
-  design/naming.md's `BUGS` carries what that leaves uncovered.
+- Items are counted by their blocks, not by the code. Every other kind is enumerated from the
+  tree, so its count moves only when a file is added or removed. An item counts only where a
+  `/// Name:` block exists, because "item" has no definition yet that a tree can be enumerated by:
+  2026W42 has 4,798 `pub` items and 331 item blocks. An item block written on old code still
+  raises the bar. `helpers/` helpers are outside `script/names`' surfaces, and design/naming.md's
+  `BUGS` carries what that leaves uncovered.
 - `proposals_unnumbered` is a net count and cannot see the flow. Five proposals have left the
   directory and 81 remain; a flat line fits both a stalled pile and one draining as fast as it fills. The measurement that would tell them apart is the age of the oldest,
   which `script/roadmap --check` prints on every lint run and this column does not carry.

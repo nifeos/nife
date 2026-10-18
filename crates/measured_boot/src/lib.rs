@@ -220,10 +220,10 @@ pub fn sha256(bytes: &[u8]) -> Digest {
 ///
 /// The kernel's copy is generated into its image by `kernel/build.rs` from the archive the build
 /// just packed, which is what makes the check mean "this kernel runs exactly this progenitor" without any
-/// key management. Names are the nifefs archive names (`"progenitor"`, `"hello"`).
+/// key management. Names are the nifefs archive names (`"progenitor"`, `"report_child_builder"`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Measurement {
-    /// The nifefs archive name this digest was measured for (`"progenitor"`, `"hello"`).
+    /// The nifefs archive name this digest was measured for (`"progenitor"`, `"report_child_builder"`).
     pub name: &'static str,
     /// The expected SHA-256 of the program's bytes.
     pub digest: Digest,

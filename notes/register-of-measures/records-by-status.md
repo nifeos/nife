@@ -68,13 +68,18 @@ depth rather than a backlog.
 From the provenance block in each named thing's own header, for every name `script/names` tracks.
 Milestone 115 (the names that were ratified, and the ones that were refused) put the block there: a
 crate's `src/lib.rs`, a program's, a `script/` entry point's comment, a Cargo package's manifest.
-Since 2026-09-24 an item or module carrying a `Name:` paragraph is tracked too, and so is each
-documentation directory and document under `design/`, `notes/` and `briefs/`. A name a rule on
+A module's block is its `//!` header, an item's a `/// Name:` paragraph, and a documentation
+directory's and its documents' the directory's README. A name a rule on
 `design/naming/convention-rulings.md` covers counts as `ratified`.
 
-Both scripts enumerate through `helpers/name_census.py`, `script/names` over the working tree and
-this series over each week's commit, and `script/metrics` fails when the current week's totals
-disagree. At 2026W42 both say 1,793 names.
+**The total counts files, not blocks.** Every `.rs` file under a `src/` directory is a module, and
+every document under `design/`, `notes/` or `briefs/` counts, block or no block. Writing a block
+moves a name between bands; only adding or removing a file moves the total.
+`helpers/module_block_ratchet.py` holds the unblocked ones to a list that only shrinks. Items are
+the exception: one counts only where its block exists, until "item" has a definition.
+
+`script/names` and this series share `helpers/name_census.py`, and `script/metrics` fails when the
+current week's totals disagree.
 
 The four words are what a block *says*:
 
@@ -86,27 +91,22 @@ The four words are what a block *says*:
 `Ruled, rename owed` is a `provisional` block saying calef has ruled and the rename has not landed
 (`helpers/name_ruled.py`). It is no longer his question, so it is drawn apart.
 
-The total is every named thing, and the statuses do not have to add up to it. The pale band is the
+The total is every named thing, and the statuses do not have to add up to it. `No provenance block` is the
 difference: named things with no block, or a block that fails `script/names`' form checks. That
 differs from `Unrecorded`, which is a block saying the history is silent. The two are kept apart for
 the same reason the decisions chart above will not read a statusless decision as `DECIDED`.
 
-In the first three weeks the pale band is the whole bar. There were 16 named things at 2026W29 and
-119 at 2026W31, none carrying provenance, because the convention that records it did not exist
-until 2026-08-04. Read those bars as "nobody was writing this down yet", and the first blue bar as a
-convention arriving, not as 72 names being ratified in a week. Backfilling them was considered and
-refused. A ratification invented to fill a cell would put a false claim in the one record whose job
-is saying who claimed what.
+In the first three weeks that band is the whole bar: 83 named things at 2026W29 and 300 at
+2026W31, none carrying provenance, because the convention that records it did not exist until
+2026-08-04. The first blue bar is a convention arriving, not 72 names ratified in a week. Backfilling them was
+refused: an invented ratification would put a false claim in the record of who claimed what. The
+band stays large until 2026W39, when module, directory and document blocks were first written.
 
-Every week is counted with today's enumeration, so the pale band from 2026W32 to 2026W38 is names
-that week's gate did not yet ask about. In 2026W32 and 2026W33 seven of them are Cargo packages
-(`kernel`, `user`, `xtask` and four more), which milestone 115 did not cover until calef found the
-hole on 2026-08-18. The rest, and all of them from 2026W34 (7 to 13 a week), are directory
-READMEs and doc comments that mention `Name:` in prose before the 2026-09-24 kinds made such a
-paragraph a block. From 2026W39 the band is zero.
-
-The bar jumps from 257 at 2026W38 to 695 at 2026W39 because the item, module, directory and
-document kinds arrived that week, mostly `provisional`.
+The three steepest weeks are files being made. 2026W39 adds 537 names: 245 documents and 29
+directories from the §212 (a prose budget) splits, which turned long documents
+into directories of pages, and 193 item blocks. 2026W41 adds 699, 345 of them documents from more
+splits and 165 modules. 2026W42 adds 579, 415 of them modules from the §266 (a Rust source file
+stays under 2,000 lines) splits.
 
 2026W36 is one milestone doing one thing. `Unrecorded` goes from 64 to 2, `Recorded` from 9 to 37
 and `Provisional` from 26 to 66. That is milestone 264 (sixty names git history cannot justify, and

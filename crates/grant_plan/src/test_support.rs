@@ -50,7 +50,7 @@ pub(crate) const READS_A_FILE: Manifest = Manifest {
     installer: false,
     catalog: false,
     indexes: IndexStore::Forbidden,
-    runtime: Runtime::Native,
+    startup: StartupContract::Native,
 };
 
 /// A shell that WAS granted a directory to narrow, standing at its root.

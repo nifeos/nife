@@ -2648,7 +2648,10 @@ echo "==> naming conventions"
 #    `asid` was the other entry until 2026-09-18, and it left by being renamed rather than by being
 # re-argued: DECISIONS §154 made it `address_space_identifier`, which ends in `r`. An entry that
 # exists only because a name is an acronym the rule cannot read is one the expansion deletes.
-naming_allow=" uuid "
+#
+#    Allowed: `report_child`, `device_child` and `interrupt_child` end in the word "child", which
+# calef ruled for them on 2026-10-18 (UTC). Each is built by its builder, reports once and exits.
+naming_allow=" uuid report_child device_child interrupt_child "
 named_for_a_daemon=""
 for name in \
     $(ls "$(dirname "$0")/../components/src" | sed 's/\.rs$//') \
@@ -3336,6 +3339,13 @@ echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
 # outright.
 python3 helpers/file_length_ratchet.py --selftest
 python3 helpers/file_length_ratchet.py --check
+echo "==> the module-block ratchet (every module carries a Name: block; the unblocked list only shrinks)"
+# A module is a file, every .rs under a src/ directory, so script/names and script/metrics count a
+# module whether or not its block exists, and one without a block sits in no status. This holds the
+# ones without to design/module-block-baseline.txt, which may only shrink, so new code arrives with
+# its block. The rules live in helpers/module_block_ratchet.py, whose header is the manual.
+python3 helpers/module_block_ratchet.py --selftest
+python3 helpers/module_block_ratchet.py --check
 echo "==> the lint ratchet's selftest (clippy lints counted against a baseline that only falls)"
 # Milestone 888 (a ratchet on function length). The rules, the baseline format and the failure
 # messages live in helpers/lint_ratchet.py, whose header is the manual. The selftest is fixtures

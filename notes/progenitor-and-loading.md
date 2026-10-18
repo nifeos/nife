@@ -1,7 +1,7 @@
 # The progenitor, and loading a program from userspace
 
-*(Milestone 19d. `kernel/src/user/entry.rs` `spawn_hello`, and the `init`/`child` roles in
-`fixtures/src/hello.rs`. The loader described here lived in that file until milestone 96 (one init)
+*(Milestone 19d. `kernel/src/user/entry.rs` `spawn_elf_child_builder`, and the builders and children
+in `fixtures/` it enters, `report_child_builder` and `report_child` first. The loader described here lived in that file until milestone 96 (one init)
 gave the tree one of them; it is `crates/supervision_protocol`'s `build_child` now, and every caller
 reaches it there. What the loader does is unchanged, and the steps below are still the steps.)*
 
@@ -37,9 +37,9 @@ services today, by moving that wiring into the first process.)
 
 ## How the progenitor loads a child (the loader, in userspace, through the verbs)
 
-It is handed three things by `spawn_hello`: a building untyped budget (slot 0), a report
-endpoint (slot 1, with `GRANT` so it can endow a child), and the whole initrd mapped read-only
-at `INITIAL_RAMDISK_VA` so it can read the ELF. Its length arrives in `x1`.
+`spawn_elf_child_builder` hands a builder three things: a building untyped budget (slot 0), a
+report endpoint (slot 1, with `GRANT` so it can endow a child), and the whole initrd. The initrd is
+mapped read-only at `INITIAL_RAMDISK_VA` so the builder can read the ELF. Its length arrives in `x1`.
 
 `build_child` then does, entirely through the milestone-19 granular verbs, what the kernel's
 `map_segments` used to do privileged:
@@ -79,7 +79,7 @@ init's spawn service (the shell's `run <n>`) is the payoff. The shell SENDs `n`,
 least_authority_demo endowed with a result endpoint and `START`s it with `n` in `x1`. The
 least_authority_demo squares it and SENDs the answer straight to the endpoint the shell is waiting
 on. init only builds the pipe; it
-never sees the number. The kernel test `init_builds_the_demo_and_passes_it_an_argument` proves the
+never sees the number. The kernel test `the_least_authority_demo_builder_passes_its_demo_an_argument` proves the
 argument survives the crossing: the least_authority_demo reports `n*n`, not `n` and not garbage.
 
 ## Two hardware details a userspace loader must respect
@@ -112,9 +112,9 @@ Two readers changed, each in its own domain:
   now naming that program through a fixed archive index instead of assuming it sits at offset 0. The
   kernel gains a nifefs read, which is proportionate to the ELF parse it already does for init and
   is bounded (a 512-byte superblock, count capped at 15). The milestone tour and the kernel-wired
-  demos load a program the same way, through `user::program(user::HELLO_ENTRY)`.
-- **init** (`hello.rs` `program()`) parses `INITIAL_RAMDISK_VA` as a nifefs archive and looks up a program
-  by name, rather than treating the whole blob as one ELF.
+  demos load a program the same way, through `user::program(name)`.
+- **A builder** parses `INITIAL_RAMDISK_VA` as a nifefs archive and looks up its child by name,
+  rather than treating the whole blob as one ELF.
 
 Why the archive rides *beside* the kernel (handed in via the device tree) rather than baked into
 init's own image: this is the QNX-IFS / old-Linux-initrd lineage, and it keeps the "delivery, not a
@@ -167,8 +167,8 @@ feature was `shell`) deleted that feature, so read `initboot` in the record as t
 
 Each split was proved by breaking the old call sites and fixing them, and by a test that still
 passes: `a_spawned_least_authority_demo_computes_and_reports`,
-`init_builds_the_demo_and_passes_it_an_argument` and
-`userspace_init_brings_up_the_console_server`. The finished stack was proved by piping keystrokes
+`the_least_authority_demo_builder_passes_its_demo_an_argument` and
+`the_console_server_builder_brings_up_a_console_that_prints_for_it`. The finished stack was proved by piping keystrokes
 into QEMU's serial: `run 9` came back as `9*9 = 81`, from four separate programs plus init.
 
 One wrinkle surfaced and is still a limitation: a line burst-piped before the prompt appears loses

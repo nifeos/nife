@@ -14,10 +14,11 @@ use super::*;
 /// fails, and it fails on the emulator rather than on somebody's board.
 ///
 /// **What the chain under test actually is**, which is why this uses `coremark` rather than a
-/// smaller fixture. The kernel spawns `hello` directly (`spawn_hello`, which maps the timebase page
-/// on the architectures that need one), and `hello`'s `init_coremark` role then builds `coremark` as
-/// a child through `supervision_protocol::build_child_space`, the tree's one *userspace* ELF loader.
-/// So the number this asserts on travelled kernel to `hello` to `coremark`: a generation of
+/// smaller fixture. The kernel spawns `coremark_builder` directly (`spawn_elf_child_builder`, which
+/// maps the timebase page on the architectures that need one), and `coremark_builder` then builds
+/// `coremark` as a child through `supervision_protocol::build_child_space`, the tree's one
+/// *userspace* ELF loader. So the number this asserts on travelled kernel to `coremark_builder` to
+/// `coremark`: a generation of
 /// propagation, not just a mapping. That second hop is the one that used to lose the number
 /// entirely (the child got a zeroed placeholder page and `cntfrq` substituted 1 GHz on `x86_64`).
 ///
@@ -26,16 +27,14 @@ use super::*;
 /// question.
 #[test_case]
 fn a_userspace_program_reads_the_frequency_the_kernel_measured() {
-    const INIT_COREMARK_ROLE: u64 = 29;
-
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let report = crate::sched::create_rendezvous_from(endpoints).expect("no report rendezvous");
-    let mut init = spawn_hello(
+    let mut builder = spawn_elf_child_builder(
         initial_ramdisk().expect("no initial ramdisk"),
-        INIT_COREMARK_ROLE,
+        "coremark_builder",
         report,
     );
-    init.add_region(endpoints);
+    builder.add_region(endpoints);
 
     let [_crc, _ticks, freq, _, _] = crate::sched::ipc_receive(report);
     let kernel = crate::arch::timer::frequency();
@@ -44,7 +43,7 @@ fn a_userspace_program_reads_the_frequency_the_kernel_measured() {
         "a userspace program reports {freq} Hz and the kernel measured {kernel} Hz; one of them is \
          timing against a number the machine never stated",
     );
-    init.release_or_fail("the counter-frequency test's building budget");
+    builder.release_or_fail("the counter-frequency test's building budget");
 }
 
 /// **A rate the machine could not have is refused at the point it is learned**, rather than
