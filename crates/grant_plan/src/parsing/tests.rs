@@ -139,7 +139,7 @@ fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
 /// so an off-by-one here is a write past the end, not a smaller refusal.
 #[test]
 fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
-    // Nine letters in one cluster, and MAX_FLAGS is eight.
+    // Nine letters in one cluster, and MAX_SHORT_OPTIONS is eight.
     let r = parse_run(b"rm -abcdefghi x");
     assert_eq!(r.options(), b"");
     assert_eq!(r.unexpected, Some(&b"-abcdefghi"[..]));

@@ -40,7 +40,7 @@ pub(crate) fn endowment(prog: Prog) -> Endowment {
         mem_pages: 0,
         file: None,
         dir: None,
-        flags: 0,
+        short_options: 0,
         sink: line::Sink::Report,
         source: line::Source::None,
         diagnostics: match prog.manifest().output.diagnostics_slot() {

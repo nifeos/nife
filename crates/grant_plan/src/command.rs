@@ -154,7 +154,9 @@ pub struct TouchArgs<'a> {
 /// The most short-option letters one invocation may carry (`rm -rfv` is three). A ceiling rather
 /// than a limit anybody meets, and past it the line is [`Refusal::Unexpected`](crate::Refusal::Unexpected) rather than quietly
 /// short of an option the user typed.
-pub const MAX_FLAGS: usize = 8;
+///
+/// Name: ratified 2026-10-18 (calef: "Yes").
+pub const MAX_SHORT_OPTIONS: usize = 8;
 
 /// What a valid `run` resolves to: exactly the authority to hand the child, and nothing else.
 /// Reading this is reading the whole endowment, which is §14's "one literal tells you a process's
@@ -182,10 +184,12 @@ pub struct Endowment {
     /// for a set of one, `components/src/fs_nameset_caretaker.rs` for the set a pattern matched.
     pub dir: Option<DirGrant>,
     /// **The short options that were on the line**, as a bitmask: bit `i` is set when the manifest's
-    /// `flags[i]` was typed. Numbered by position in the manifest rather than by letter, so nothing
+    /// `short_options[i]` was typed. Numbered by position in the manifest rather than by letter, so nothing
     /// here has to know what any option means; the program and the manifest agree on the order, and
     /// a host test pins them (`grant_plan::rmopt`).
-    pub flags: u64,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Yes").
+    pub short_options: u64,
     /// **What goes in the child's output slot** (milestone 50): the shell's own result endpoint,
     /// the pipe to the next stage, or a file sink. Reading this line is reading everything `>` and
     /// `|` did, and it is one field because they are one mechanism.
@@ -297,11 +301,11 @@ pub struct DirGrant {
     pub subtree: bool,
 }
 
-/// **`rm`'s options**, by the bit they occupy in [`Endowment::flags`], which is their position in
+/// **`rm`'s options**, by the bit they occupy in [`Endowment::short_options`], which is their position in
 /// [`Prog::Rm`]'s manifest. Named here so the shell, the program and the tests share one definition
 /// rather than three copies of an ordering; `rm_options_are_numbered_by_their_position` pins them.
 pub mod rmopt {
-    /// `-r`: recurse. It is also `rm`'s `subtree_flag`, so typing it visibly widens the grant.
+    /// `-r`: recurse. It is also `rm`'s `subtree_option`, so typing it visibly widens the grant.
     pub const RECURSIVE: u64 = 1 << 0;
     /// `-f`: ignore a name that is not there, and do not let its absence change the exit status.
     /// It is **not** "ignore errors": a removal that fails for any other reason still reports.

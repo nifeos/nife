@@ -76,7 +76,8 @@ mod test_support;
 mod tests;
 
 pub use command::{
-    Command, DirGrant, Endowment, FileGrant, Holdings, MAX_FLAGS, SecondDir, TouchArgs, rmopt,
+    Command, DirGrant, Endowment, FileGrant, Holdings, MAX_SHORT_OPTIONS, SecondDir, TouchArgs,
+    rmopt,
 };
 pub use escalation::{Action, COOP_GRACE_TICKS, Escalation};
 pub use image::{
@@ -84,12 +85,12 @@ pub use image::{
     image_request_fits,
 };
 pub use manifest::{
-    ArgSpec, CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirSpec, ENTROPY_SLOT, FileSpec, Flags,
+    ArgSpec, CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirSpec, ENTROPY_SLOT, FileSpec,
     INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT, IndexStore, InputSpec, MACHINE_SLOT,
-    MAX_DECLARED_FLAGS, Manifest, MemSpec, NETWORK_SLOT, NO_FLAGS, OutputSpec, REBOOT_SLOT,
-    Runtime, SHARE_SLOT, SHELL_CONFIG_SLOT, SHELL_CONFIG_VA, STD_REGION_PAGES, SYNC_SLOT,
-    UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant, image_region_pages,
-    named_std_region_pages,
+    MAX_DECLARED_SHORT_OPTIONS, Manifest, MemSpec, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputSpec,
+    REBOOT_SLOT, Runtime, SHARE_SLOT, SHELL_CONFIG_SLOT, SHELL_CONFIG_VA, STD_REGION_PAGES,
+    SYNC_SLOT, ShortOptions, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant,
+    image_region_pages, named_std_region_pages,
 };
 pub use parsing::{
     BUILTINS, MAX_POSITIONALS, RunSpec, UserVerb, argv, check_words, each_word, parse, parse_run,

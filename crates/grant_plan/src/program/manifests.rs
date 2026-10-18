@@ -8,8 +8,8 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, Manifest, MemSpec,
-    NO_FLAGS, OutputSpec, Prog, Runtime, VerbGrant, WordGrant, verbs,
+    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, IndexStore, InputSpec, Manifest, MemSpec,
+    NO_SHORT_OPTIONS, OutputSpec, Prog, Runtime, ShortOptions, VerbGrant, WordGrant, verbs,
 };
 
 impl Prog {
@@ -82,7 +82,7 @@ const fn least_authority_demo_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // A least_authority_demo answers with a number in a register, which is older than the sink
         // contract and still the right shape for one integer. It is also why `least_authority_demo 9 >
         // out.txt` is refused: there are no bytes to put in the file.
@@ -119,7 +119,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
         mem: MemSpec::Required { min: 1, max: 64 },
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // The page count it managed to map, in a register. Same reason as least_authority_demo's.
         output: OutputSpec::Words,
         input: InputSpec::Forbidden,
@@ -152,7 +152,7 @@ const fn interrupt_heeder_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // It reports through the shared job frame and holds no output capability at all,
         // which is a third thing a slot can be and the reason `OutputSpec` has three
         // variants: `Silent` is not "bytes nobody reads", it is no slot.
@@ -183,7 +183,7 @@ const fn interrupt_ignorer_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Silent,
         input: InputSpec::Forbidden,
         reports: false,
@@ -223,7 +223,7 @@ const fn date_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // **`date` was speaking the sink contract before the contract existed**, because
         // its hand-rolled framing is bit for bit a `BYTES` message (notes/sink-protocol.md
         // on why `OPERATION_BYTES` is zero). So it is the first program that can be piped, and it
@@ -265,7 +265,7 @@ const fn date_manifest() -> Manifest {
 // integer and no memory: what it needs is the authority to take a name out of the
 // directory that holds it, which is a capability and not a number.
 //
-// `subtree_flag: Some(b'r')` is the whole of "`rm -r` hands over more than `rm`". A
+// `subtree_option: Some(b'r')` is the whole of "`rm -r` hands over more than `rm`". A
 // grant without it cannot descend or enumerate, so the recursion is not merely disabled
 // by a branch in the program: the capability to walk was never handed over, and a `rm`
 // that tried anyway would be told there is no such name.
@@ -276,10 +276,10 @@ const fn rm_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Required {
-            subtree_flag: Some(b'r'),
+            subtree_option: Some(b'r'),
         },
         // In `rmopt`'s bit order, which is what that module pins.
-        flags: Flags::new(b"rfv"),
+        short_options: ShortOptions::new(b"rfv"),
         // `-v` prints names, and it prints them the way `date` prints a time. Piping `rm
         // -rv logs | wc` is therefore expressible; whether it is a good idea is the user's
         // business and not the manifest's.
@@ -313,7 +313,7 @@ const fn wc_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         // **The barrier**, and the only one in this tree. `wc` prints nothing until end of
         // stream, which is what lets this shell feed it and read it back with the one wait
@@ -355,7 +355,7 @@ const fn mdr_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Required {
             writes_while_reading: true,
@@ -396,7 +396,7 @@ const fn ps_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -440,7 +440,7 @@ const fn pgrep_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -478,7 +478,7 @@ const fn top_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -511,7 +511,7 @@ const fn printenv_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
         reports: true,
@@ -545,7 +545,7 @@ const fn uptime_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
         reports: true,
@@ -579,7 +579,7 @@ const fn network_echo_client_manifest() -> Manifest {
         mem: MemSpec::Required { min: 4, max: 16 },
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
         reports: true,
@@ -609,7 +609,7 @@ const fn unreachable_network_witness_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
         reports: true,
@@ -649,7 +649,7 @@ const fn uuid_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -682,7 +682,7 @@ const fn free_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -714,7 +714,7 @@ const fn vmstat_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -745,7 +745,7 @@ const fn slabtop_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -775,7 +775,7 @@ const fn graphical_terminal_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // A session reports one word when it ends (it ran, or it was interrupted); there is
         // no byte stream to redirect, and `graphical_terminal > out.txt` is refused for the same reason
         // `least_authority_demo 9 > out.txt` is.
@@ -816,7 +816,7 @@ const fn reboot_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -852,7 +852,7 @@ const fn std_exerciser_manifest() -> Manifest {
         // directories granted on the line bound what they reach; this program is spawned
         // holding none and runs its offline transcript, the one that asserts the most slots.
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         // std's `stdout` and `stderr` both send on `std_runtime_contract::STDOUT_SLOT` in
         // the sink framing, so the program is one byte stream and `>` and `|` work on it.
         output: OutputSpec::Bytes,
@@ -887,7 +887,7 @@ const fn jig_manifest() -> Manifest {
         mem: MemSpec::Forbidden,
         file: FileSpec::Forbidden,
         dir: DirSpec::Forbidden,
-        flags: NO_FLAGS,
+        short_options: NO_SHORT_OPTIONS,
         output: OutputSpec::Bytes,
         input: InputSpec::Forbidden,
         reports: true,

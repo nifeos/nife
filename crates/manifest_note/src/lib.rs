@@ -55,7 +55,7 @@
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
 //! | 35 | 1 | `runtime` | 0 native, 1 std |
-//! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_FLAGS` (16) |
+//! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_SHORT_OPTIONS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
 //! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
 //! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
@@ -70,8 +70,8 @@
 #![no_std]
 
 use grant_plan::{
-    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, Flags, IndexStore, InputSpec, MAX_DECLARED_FLAGS,
-    Manifest, MemSpec, OutputSpec, Runtime, WordGrant,
+    ArgSpec, DIAGNOSTICS_SLOT, DirSpec, FileSpec, IndexStore, InputSpec,
+    MAX_DECLARED_SHORT_OPTIONS, Manifest, MemSpec, OutputSpec, Runtime, ShortOptions, WordGrant,
 };
 
 /// **The note's owner string**, without its NUL: the project's name, lowercase as
@@ -141,7 +141,7 @@ const NETWORK: usize = 34;
 const RUNTIME: usize = 35;
 const FLAG_COUNT: usize = 36;
 const FLAG_LETTERS: usize = 37;
-const MACHINE: usize = FLAG_LETTERS + MAX_DECLARED_FLAGS;
+const MACHINE: usize = FLAG_LETTERS + MAX_DECLARED_SHORT_OPTIONS;
 const SHARE: usize = MACHINE + 1;
 const TAIL: usize = SHARE + 1;
 
@@ -230,10 +230,10 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         FileSpec::Required { writable: false } => 1,
         FileSpec::Required { writable: true } => 2,
     };
-    let letters = m.flags.letters();
-    if let DirSpec::Required { subtree_flag } = m.dir {
+    let letters = m.short_options.letters();
+    if let DirSpec::Required { subtree_option } = m.dir {
         out[DIR] = 1;
-        if let Some(letter) = subtree_flag {
+        if let Some(letter) = subtree_option {
             let mut i = 0;
             let mut declared = false;
             while i < letters.len() {
@@ -347,12 +347,12 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let mem = decode_mem(d)?;
     let file = decode_file(d)?;
     let count = d[FLAG_COUNT] as usize;
-    if count > MAX_DECLARED_FLAGS {
+    if count > MAX_DECLARED_SHORT_OPTIONS {
         return Err(Error::BadField(FLAG_COUNT));
     }
     let letters = &d[FLAG_LETTERS..FLAG_LETTERS + count];
-    let flags = Flags::try_new(letters).ok_or(Error::BadField(FLAG_LETTERS))?;
-    zero(d, FLAG_LETTERS + count, MAX_DECLARED_FLAGS - count)?;
+    let short_options = ShortOptions::try_new(letters).ok_or(Error::BadField(FLAG_LETTERS))?;
+    zero(d, FLAG_LETTERS + count, MAX_DECLARED_SHORT_OPTIONS - count)?;
     let dir = decode_dir(d, letters)?;
     let output = decode_output(d)?;
     let input = decode_input(d)?;
@@ -363,7 +363,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         mem,
         file,
         dir,
-        flags,
+        short_options,
         output,
         input,
         reports: flag(d, REPORTS)?,
@@ -433,7 +433,7 @@ fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirSpec, Error> {
             DirSpec::Forbidden
         }
         1 => DirSpec::Required {
-            subtree_flag: match d[SUBTREE] {
+            subtree_option: match d[SUBTREE] {
                 0 => None,
                 l if letters.contains(&l) => Some(l),
                 _ => return Err(Error::BadField(SUBTREE)),
@@ -1185,7 +1185,7 @@ mod tests {
         assert_eq!(decode(&undeclared), Err(Error::BadField(SUBTREE)));
 
         let mut too_many = rm;
-        too_many[FLAG_COUNT] = MAX_DECLARED_FLAGS as u8 + 1;
+        too_many[FLAG_COUNT] = MAX_DECLARED_SHORT_OPTIONS as u8 + 1;
         assert_eq!(decode(&too_many), Err(Error::BadField(FLAG_COUNT)));
     }
 
@@ -1242,7 +1242,12 @@ mod tests {
             let m = Manifest { file, ..base() };
             assert_eq!(decode(&encode(&m)), Ok(m), "{file:?}");
         }
-        for dir in [DirSpec::Forbidden, DirSpec::Required { subtree_flag: None }] {
+        for dir in [
+            DirSpec::Forbidden,
+            DirSpec::Required {
+                subtree_option: None,
+            },
+        ] {
             let m = Manifest { dir, ..base() };
             assert_eq!(decode(&encode(&m)), Ok(m), "{dir:?}");
         }
@@ -1286,9 +1291,9 @@ mod tests {
     #[test]
     fn a_subtree_option_must_be_a_declared_letter_even_the_only_one() {
         let with = |letters: &[u8], flag: u8| Manifest {
-            flags: Flags::try_new(letters).unwrap(),
+            short_options: ShortOptions::try_new(letters).unwrap(),
             dir: DirSpec::Required {
-                subtree_flag: Some(flag),
+                subtree_option: Some(flag),
             },
             ..base()
         };
@@ -1311,9 +1316,9 @@ mod tests {
         assert_eq!(decode(&VERSION.to_le_bytes()), Err(Error::WrongLength));
         assert_eq!(decode(&2u32.to_le_bytes()), Err(Error::UnknownVersion));
 
-        let letters: [u8; MAX_DECLARED_FLAGS] = core::array::from_fn(|i| b'a' + i as u8);
+        let letters: [u8; MAX_DECLARED_SHORT_OPTIONS] = core::array::from_fn(|i| b'a' + i as u8);
         let m = Manifest {
-            flags: Flags::try_new(&letters).unwrap(),
+            short_options: ShortOptions::try_new(&letters).unwrap(),
             ..base()
         };
         assert_eq!(decode(&encode(&m)), Ok(m));

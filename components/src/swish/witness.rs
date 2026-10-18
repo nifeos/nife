@@ -767,7 +767,7 @@ fn two_tree_rm(nav: &mut Nav) -> u64 {
             grant_plan::plan(&rspec, holdings(nav), grant_plan::expand::Expansion::none())
         && let Some(g) = e.dir
         && g.which == nav::Which::B
-        && dir_grant(&g, e.flags).is_err()
+        && dir_grant(&g, e.short_options).is_err()
     {
         return tt::RM_IN_MOUNT_REFUSED;
     }

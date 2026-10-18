@@ -112,7 +112,7 @@ installer, and `update` the network and a write.
 | V2. One program, granted by verb | The manifest maps each verb to its grants, and the planner reads the first word | Recommended |
 | V3. Split by authority | A reader (`list`, `list -u`), an index keeper (`update`, `add-repository`) and an installer client (`install`, `remove`, `rollback`) | Refused by calef's ruling |
 
-V2 has a precedent: `rm -r` hands over more than `rm` through `subtree_flag`, and a verb table is
+V2 has a precedent: `rm -r` hands over more than `rm` through `subtree_option`, and a verb table is
 that idea keyed by a word. V1 was cheaper, so V2 was not about effort. The table's encoding was the
 lane's: sorted (verb, grants) pairs, a note type of its own (`manifest_note::VERBS`).
 

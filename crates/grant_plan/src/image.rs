@@ -74,7 +74,7 @@ pub fn image_can_carry(m: &Manifest) -> bool {
         && m.file == FileSpec::Forbidden
         && m.dir == DirSpec::Forbidden
         && m.input == InputSpec::Forbidden
-        && m.flags.letters().is_empty()
+        && m.short_options.letters().is_empty()
         && !m.interruptible
         // Milestone 805: the reboot object is endowed to the one program in this table that
         // declares it, never to installed bytes, whatever their note asks.

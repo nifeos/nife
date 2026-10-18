@@ -35,13 +35,13 @@ fn the_index_store_opens_with_a_word_grants_rights() {
 #[test]
 fn an_option_set_may_hold_exactly_its_maximum_and_no_repeat() {
     let sixteen = b"abcdefghijklmnop";
-    assert_eq!(sixteen.len(), MAX_DECLARED_FLAGS);
-    assert!(Flags::try_new(sixteen).is_some());
-    assert!(Flags::try_new(b"abcdefghijklmnopq").is_none());
-    assert!(Flags::try_new(b"aa").is_none());
-    assert!(Flags::try_new(b"aba").is_none());
-    assert!(Flags::try_new(b"ab").is_some());
-    assert!(Flags::try_new(b"a-").is_none());
+    assert_eq!(sixteen.len(), MAX_DECLARED_SHORT_OPTIONS);
+    assert!(ShortOptions::try_new(sixteen).is_some());
+    assert!(ShortOptions::try_new(b"abcdefghijklmnopq").is_none());
+    assert!(ShortOptions::try_new(b"aa").is_none());
+    assert!(ShortOptions::try_new(b"aba").is_none());
+    assert!(ShortOptions::try_new(b"ab").is_some());
+    assert!(ShortOptions::try_new(b"a-").is_none());
 }
 
 /// The `std` unvouched manifest is in the `std` layout, which is what makes it that manifest.

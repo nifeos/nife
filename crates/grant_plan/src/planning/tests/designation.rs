@@ -209,7 +209,7 @@ const STAMPS_A_FILE: Manifest = Manifest {
     mem: MemSpec::Forbidden,
     file: FileSpec::Required { writable: true },
     dir: DirSpec::Forbidden,
-    flags: NO_FLAGS,
+    short_options: NO_SHORT_OPTIONS,
     output: OutputSpec::Words,
     input: InputSpec::Forbidden,
     reports: true,

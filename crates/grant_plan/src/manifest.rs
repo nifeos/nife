@@ -105,40 +105,44 @@ pub enum InputSpec {
 
 /// A program that takes no short options. Spelled once so a manifest reads as a declaration rather
 /// than as an empty literal repeated six times.
-pub const NO_FLAGS: Flags = Flags::new(b"");
+///
+/// Name: ratified 2026-10-18 (calef: "Yes").
+pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 
 /// **The most short options one program may declare.** Sixteen, which is far above the three `rm`
-/// declares and well inside the 64 bits of [`Endowment::flags`](crate::Endowment::flags). Not [`MAX_FLAGS`](crate::MAX_FLAGS), which bounds
+/// declares and well inside the 64 bits of [`Endowment::short_options`](crate::Endowment::short_options). Not [`MAX_SHORT_OPTIONS`](crate::MAX_SHORT_OPTIONS), which bounds
 /// what one line may type rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
 /// provisional: a program carries its manifest in an ELF note), and a decoded manifest has to hold
 /// its letters by value rather than point at a `'static` string the program's bytes are not.
-pub const MAX_DECLARED_FLAGS: usize = 16;
+///
+/// Name: ratified 2026-10-18 (calef: "Yes").
+pub const MAX_DECLARED_SHORT_OPTIONS: usize = 16;
 
-/// **The short options a program declares, as their letters in bit order** ([`Manifest::flags`]).
+/// **The short options a program declares, as their letters in bit order** ([`Manifest::short_options`]).
 ///
 /// A value rather than a `&'static [u8]` since milestone 597 (provisional): a manifest read out
 /// of a program's own bytes has no `'static` string to point at, so the letters are held inline.
 /// Every constructor checks the same three things, so a manifest compiled in and a manifest decoded
-/// from a note cannot disagree about what a well-formed option set is: at most [`MAX_DECLARED_FLAGS`]
+/// from a note cannot disagree about what a well-formed option set is: at most [`MAX_DECLARED_SHORT_OPTIONS`]
 /// letters, each an ASCII letter or digit, and no letter twice (a repeated letter would give one
 /// option two bits, and [`plan`](crate::plan) reads the first).
 ///
-/// Name: provisional (milestone 597, 2026-09-26).
+/// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Flags {
-    letters: [u8; MAX_DECLARED_FLAGS],
+pub struct ShortOptions {
+    letters: [u8; MAX_DECLARED_SHORT_OPTIONS],
     len: u8,
 }
 
-impl Flags {
+impl ShortOptions {
     /// The option set `letters` spells, or `None` if it breaks one of the three rules above.
     pub const fn try_new(letters: &[u8]) -> Option<Self> {
-        if letters.len() > MAX_DECLARED_FLAGS {
+        if letters.len() > MAX_DECLARED_SHORT_OPTIONS {
             return None;
         }
-        let mut out = [0u8; MAX_DECLARED_FLAGS];
+        let mut out = [0u8; MAX_DECLARED_SHORT_OPTIONS];
         let mut i = 0;
         while i < letters.len() {
             let l = letters[i];
@@ -349,7 +353,7 @@ pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
     mem: MemSpec::Forbidden,
     file: FileSpec::Forbidden,
     dir: DirSpec::Forbidden,
-    flags: NO_FLAGS,
+    short_options: NO_SHORT_OPTIONS,
     output: OutputSpec::Bytes,
     input: InputSpec::Forbidden,
     reports: true,
@@ -518,12 +522,14 @@ pub enum DirSpec {
     /// The program is granted a capability to the directory that holds what the command names,
     /// carrying the authority to **take names out of it** and nothing else.
     ///
-    /// `subtree_flag`, when the option it names is on the command line, widens that to walking and
+    /// `subtree_option`, when the option it names is on the command line, widens that to walking and
     /// listing what is underneath, which is what a recursive removal needs at every level. The
     /// widening is the point rather than a convenience: **typing `-r` visibly hands over more**, and
     /// a program run without it holds a capability that cannot even see a subdirectory, let alone
     /// descend into one.
-    Required { subtree_flag: Option<u8> },
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Yes"). This covers the `subtree_option` field.
+    Required { subtree_option: Option<u8> },
 }
 
 /// A program's SHILL-style manifest: the endowment it declares it expects. The shell checks the
@@ -541,16 +547,18 @@ pub struct Manifest {
     /// name out) is an operation on a directory and not on a file.
     pub dir: DirSpec,
     /// **The short options this program accepts**, as their letters, in the order their bits are
-    /// numbered ([`Endowment::flags`](crate::Endowment::flags)). Empty for a program that takes none, which is every program
+    /// numbered ([`Endowment::short_options`](crate::Endowment::short_options)). Empty for a program that takes none, which is every program
     /// but `rm` today.
     ///
     /// The manifest owns this for the same reason it owns the file's direction: which options exist
     /// is a property of what the program does, and the shell must be able to refuse `-q` at the
     /// prompt rather than pass a letter along for the program to ignore. An option is **not**
     /// authority by itself, which is why the parser may collect letters before it knows the
-    /// program; what makes one matter here is that `subtree_flag` lets one *widen a grant*, and
+    /// program; what makes one matter here is that `subtree_option` lets one *widen a grant*, and
     /// that widening is checked and printed before anything is spawned.
-    pub flags: Flags,
+    ///
+    /// Name: ratified 2026-10-18 (calef: "Yes").
+    pub short_options: ShortOptions,
     /// **What this program's output slot carries** (milestone 50). A slot is a capability, but what
     /// travels over it is a convention, and `>` and `|` only make sense for one of them: a program
     /// that answers with a number in a register cannot have a file put behind it, because a file

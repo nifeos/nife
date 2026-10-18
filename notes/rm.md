@@ -15,7 +15,7 @@ grew `DirSpec` alongside `FileSpec`. The child receives a capability to the dire
 
 ## `-r` widens the grant, and that is the whole safety property
 
-`DirSpec::Required { subtree_flag: Some(b'r') }`. Without the flag, the capability carries the
+`DirSpec::Required { subtree_option: Some(b'r') }`. Without the flag, the capability carries the
 authority to take names out of one directory and nothing else: it cannot list what is under a
 subdirectory and cannot descend into one. With the flag, it widens to walking and listing underneath,
 which is what a recursive removal needs at every level.

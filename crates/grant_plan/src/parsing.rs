@@ -8,7 +8,9 @@
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
-use crate::{Command, MAX_FLAGS, Refusal, TouchArgs, parse_u64, split_first_word, trim, word};
+use crate::{
+    Command, MAX_SHORT_OPTIONS, Refusal, TouchArgs, parse_u64, split_first_word, trim, word,
+};
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
 /// the filled prefix. A tiny `no_std` tokenizer: no allocation, bounded by `out.len()`. Tokens
@@ -286,7 +288,7 @@ pub fn parse_run(line: &[u8]) -> RunSpec<'_> {
     let mut pos = [&b""[..]; MAX_POSITIONALS];
     let mut posq = [false; MAX_POSITIONALS];
     let mut npos = 0;
-    let mut opts = [0u8; MAX_FLAGS];
+    let mut opts = [0u8; MAX_SHORT_OPTIONS];
     let mut nopts = 0;
     let mut unexpected = None;
     let mut misquoted = None;
@@ -331,7 +333,7 @@ pub fn parse_run(line: &[u8]) -> RunSpec<'_> {
             // of that job worth keeping.
             let letters = &t[1..];
             let short = !letters.is_empty() && letters.iter().all(u8::is_ascii_alphabetic);
-            if short && nopts + letters.len() <= MAX_FLAGS {
+            if short && nopts + letters.len() <= MAX_SHORT_OPTIONS {
                 for &c in letters {
                     opts[nopts] = c;
                     nopts += 1;
@@ -398,7 +400,7 @@ pub struct RunSpec<'a> {
     /// knowing the program, because **an option letter is not authority**: what it may do is widen a
     /// grant, and that is decided in [`plan_against`] against the manifest, at the prompt, before
     /// anything is spawned. A letter no manifest declares is [`Refusal::NoSuchOption`] there.
-    opts: [u8; MAX_FLAGS],
+    opts: [u8; MAX_SHORT_OPTIONS],
     nopts: usize,
     /// Which of [`positionals`](RunSpec::positionals) were quoted, in the same order. A quoted word
     /// is **never a pattern**, whatever bytes are in it, which is the one authority-visible thing

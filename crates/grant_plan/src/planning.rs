@@ -135,7 +135,7 @@ pub fn plan_against_with(
     // at the prompt, never a letter passed along for the program to ignore. It comes first because
     // one of them may *widen the directory grant* below, so the line has to be known-good before
     // anything is decided about how much authority it moves.
-    let flags = plan_options(run, &m, words)?;
+    let short_options = plan_options(run, &m, words)?;
 
     let pos = run.positionals();
     let mut next = 0usize;
@@ -158,7 +158,7 @@ pub fn plan_against_with(
     // result is recorded as a value. The child is handed a capability to the directory the names
     // are **in**, plus the names, because taking a name away is an operation on the directory that
     // holds it and no per-file capability can express it. See [`DirSpec`].
-    let dir = plan_dir(&m, flags, pos, &mut next, &holds, expanded)?;
+    let dir = plan_dir(&m, short_options, pos, &mut next, &holds, expanded)?;
 
     // **A program that hears words is granted what its words designate** (milestone 205, §170
     // (how a foreign program is told what to do) clauses 2 to 5): one directory grant at the
@@ -221,7 +221,7 @@ pub fn plan_against_with(
         mem_pages,
         file,
         dir,
-        flags,
+        short_options,
         sink: streams.sink,
         source: streams.source,
         diagnostics,
@@ -236,20 +236,20 @@ pub fn plan_against_with(
     })
 }
 
-/// [`plan_against_with`]'s options: each letter on the line as its bit in `m`'s flags, or
+/// [`plan_against_with`]'s options: each letter on the line as its bit in `m`'s short options, or
 /// [`Refusal::NoSuchOption`]. A program that hears words has none.
 fn plan_options(run: &RunSpec<'_>, m: &Manifest, words: bool) -> Result<u64, Refusal> {
-    let mut flags = 0u64;
+    let mut short_options = 0u64;
     for &letter in run.options().iter().filter(|_| !words) {
         let bit = m
-            .flags
+            .short_options
             .letters()
             .iter()
             .position(|&d| d == letter)
             .ok_or(Refusal::NoSuchOption)?;
-        flags |= 1 << bit;
+        short_options |= 1 << bit;
     }
-    Ok(flags)
+    Ok(short_options)
 }
 
 /// [`plan_against_with`]'s integer argument, taken from the positional at `next`.
@@ -314,10 +314,10 @@ fn plan_file(
 }
 
 /// [`plan_against_with`]'s directory grant, designated by the positional at `next`, widened to the
-/// subtree when its recursion option is in `flags`.
+/// subtree when its recursion option is in the short options.
 fn plan_dir(
     m: &Manifest,
-    flags: u64,
+    short_options: u64,
     pos: &[&[u8]],
     next: &mut usize,
     holds: &Holdings,
@@ -325,7 +325,7 @@ fn plan_dir(
 ) -> Result<Option<DirGrant>, Refusal> {
     let dir = match m.dir {
         DirSpec::Forbidden => None,
-        DirSpec::Required { subtree_flag } => {
+        DirSpec::Required { subtree_option } => {
             let token = *pos.get(*next).ok_or(Refusal::PathRequired)?;
             let at = *next;
             *next += 1;
@@ -336,9 +336,9 @@ fn plan_dir(
             // Typing the recursion option is what widens the capability from "take names out of
             // this directory" to "walk what is under it". A program run without it holds no way to
             // descend, so its recursion is not disabled by a branch anybody has to get right.
-            let subtree = match subtree_flag {
-                Some(letter) => match m.flags.letters().iter().position(|&d| d == letter) {
-                    Some(bit) => flags & (1 << bit) != 0,
+            let subtree = match subtree_option {
+                Some(letter) => match m.short_options.letters().iter().position(|&d| d == letter) {
+                    Some(bit) => short_options & (1 << bit) != 0,
                     // A manifest naming an option it does not declare is a bug in the manifest, and
                     // the safe reading is the narrow one: no widening.
                     None => false,

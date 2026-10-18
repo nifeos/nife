@@ -30,7 +30,7 @@ fn redirecting_and_piping_change_one_field_and_nothing_else() {
         assert_eq!(a.mem_pages, other.mem_pages);
         assert_eq!(a.file, other.file);
         assert_eq!(a.dir, other.dir);
-        assert_eq!(a.flags, other.flags);
+        assert_eq!(a.short_options, other.short_options);
         assert_eq!(a.source, other.source);
         assert_eq!(a.reports, other.reports);
         assert_eq!(a.interruptible, other.interruptible);
@@ -420,7 +420,7 @@ const RENDERS_AS_IT_READS: Manifest = Manifest {
     mem: MemSpec::Forbidden,
     file: FileSpec::Forbidden,
     dir: DirSpec::Forbidden,
-    flags: NO_FLAGS,
+    short_options: NO_SHORT_OPTIONS,
     output: OutputSpec::Bytes,
     input: InputSpec::Required {
         writes_while_reading: true,
