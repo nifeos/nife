@@ -8,7 +8,7 @@ experiment, not a verdict. The protocol is committed before any run, so the anal
 chosen after the results are seen.
 
 - [Directory index](model-comparison/README.md).
-- [Protocol](model-comparison/protocol.md): the tasks, the briefs verbatim, the rubric, the blinding
+- [Protocol](model-comparison/pilot-protocol.md): the tasks, the briefs verbatim, the rubric, the blinding
   and the analysis, fixed before the first run.
 - [Pilot results, 2026-09-24](model-comparison/2026-09-24-pilot.md): twelve runs, blind-graded, with
   what two runs per cell can and cannot carry.

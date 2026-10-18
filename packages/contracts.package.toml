@@ -41,7 +41,7 @@ interfaces = [
     "file_allocation_table",
     "grant_plan",
     "component_plan",
-    "manifest_note",
+    "capability_manifest_note",
     "glob",
     "documentation",
     "device_tree_blob",

@@ -55,7 +55,7 @@ Measured over non-test code (the note's scope: no `#[cfg(test)]` items, no `test
 
 Of those 32 crates, 20 have no target under `fuzz/`:
 
-- Disk and image formats: `file_allocation_table`, `manifest_note`, `boot_slot`.
+- Disk and image formats: `file_allocation_table`, `capability_manifest_note`, `boot_slot`.
 - Network: `network_time_protocol`, `socket_contract`, `domain_name_resolution_contract`.
 - Device-supplied bytes: `machine_discovery` (ACPI tables), `pci`, `usb`,
   `extensible_host_controller_interface`, `e1000e`, `designware_ethernet`,

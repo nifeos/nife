@@ -49,7 +49,7 @@ const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
     ..grant_plan::Prog::Uptime.manifest()
 };
 
-manifest_note::carry!(MANIFEST);
+capability_manifest_note::carry!(MANIFEST);
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {

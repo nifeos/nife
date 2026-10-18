@@ -33,7 +33,7 @@ address_space_map = { path = "../crates/address_space_map" }
 filesystem_contract = { path = "../crates/filesystem_contract" }
 grant_plan = { path = "../crates/grant_plan" }
 http_response = { path = "../crates/http_response" }
-manifest_note = { path = "../crates/manifest_note" }
+capability_manifest_note = { path = "../crates/capability_manifest_note" }
 package_archive = { path = "../crates/package_archive" }
 socket_contract = { path = "../crates/socket_contract" }
 std_runtime_contract = { path = "../crates/std_runtime_contract" }

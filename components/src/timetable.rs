@@ -517,11 +517,14 @@ fn load_current(p: &Installed) -> Option<(elf::Elf<'static>, grant_plan::Manifes
     let elf = elf::Elf::parse(store::staged(len)).ok()?;
     // The note, or `None` for bytes that carry none; a note that cannot be read refuses.
     let declared = match elf
-        .note(manifest_note::OWNER, manifest_note::MANIFEST)
+        .note(
+            capability_manifest_note::OWNER,
+            capability_manifest_note::MANIFEST,
+        )
         .ok()?
     {
         None => None,
-        Some(d) => Some(manifest_note::decode(d).ok()?),
+        Some(d) => Some(capability_manifest_note::decode(d).ok()?),
     };
     // Vouched: the live generation named these bytes, so they get what they declare, exactly as
     // the progenitor endows an installed program run at the prompt.

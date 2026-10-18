@@ -56,7 +56,7 @@ SECTIONS
 
     /* **The program's manifest, as an ELF note** (milestone 597 (a program carries its manifest in
      * an ELF note), provisional; DECISIONS §197 (a package is one archive file) option M2, ruled
-     * 2026-09-26). `manifest_note::carry!` puts one note in `.note.nife.manifest`, and this keeps
+     * 2026-09-26). `capability_manifest_note::carry!` puts one note in `.note.nife.manifest`, and this keeps
      * it twice over: in the `rodata` PT_LOAD, so its bytes are in the file and covered by the
      * digest the progenitor vouches on, and in a PT_NOTE of its own, which is how the shell and the
      * progenitor find it (`crates/elf`'s `Elf::note`) without section headers, which `strip` may

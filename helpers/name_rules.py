@@ -33,6 +33,7 @@ import sys
 RULES_DOC = "design/naming/convention-rulings.md"
 APPENDIX_RULE = "appendix-stems"
 FIXTURE_RULE = "fixture-roles"
+LISTED_RULE = "listed-stems"
 
 # Spelled in two halves because script/lint's naming check refuses the word itself outside
 # design/ and itself, and this is the one place a script has to name what it refuses.
@@ -71,7 +72,11 @@ def parse_rules(text):
             cur["not_covered"] = re.findall(r"`([^`]+)`", line)
         section = "covered" if line.startswith("Covered:") else section
         if section == "covered" and line.startswith("- "):
-            cur["covered"] += re.findall(r"`([^`]+)`", line)
+            names = re.findall(r"`([^`]+)`", line)
+            if cur["applies"] == LISTED_RULE:
+                # `- notes/x: `a`, `b`` lists documents `notes/x/a.md` and `notes/x/b.md`.
+                names = [f"{line[2:].split(':')[0].strip()}/{n}.md" for n in names]
+            cur["covered"] += names
     return rules
 
 
@@ -170,6 +175,12 @@ def apply(records, rules, files, read, british=()):
             cov, pulled = appendix_coverage(files, read, rule, british)
             for key, why in cov.items():
                 marks[key] = (rule["date"], f"{cite}: {why}")
+        elif rule["applies"] == LISTED_RULE:
+            for path in rule["covered"]:
+                if path not in files:
+                    problems.append(f"{RULES_DOC}, {rid}: `{path}` is not a tracked document")
+                    continue
+                marks[path] = (rule["date"], f"{cite}: a stem kept as it stands, listed by calef")
         elif rule["applies"] == FIXTURE_RULE:
             for name in rule["covered"]:
                 rec = by_name.get(("program", name))
@@ -189,7 +200,9 @@ def _selftest():
         "## Rule 1: appendix stems", "Applies: appendix-stems", "Ratified: 2026-10-17 (UTC)",
         "Not covered: `notes/coes`", "",
         "## Rule 2: fixtures", "Applies: fixture-roles", "Ratified: 2026-10-17", "Covered:",
-        "- `role_one`", "- `role_two`", "- `ghost`"]))
+        "- `role_one`", "- `role_two`", "- `ghost`", "",
+        "## Rule 3: kept", "Applies: listed-stems", "Ratified: 2026-10-18", "Covered:",
+        "- notes/y: `orphan`, `gone`"]))
     assert rules["Rule 2"]["covered"] == ["role_one", "role_two", "ghost"], rules
     assert rules["Rule 1"]["not_covered"] == ["notes/coes"], rules
     tree = {"notes/x.md": "# X\n## The loader\n## The zorbspell\n## Limitations and BUGS\n",
@@ -210,14 +223,18 @@ def _selftest():
                rec("program", "role_two", "fixtures/src/role_two.rs", "ratified"),
                rec("document", "elsewhere", "notes/x/elsewhere.md"),
                rec("document", "the-loader", "notes/x/the-loader.md"),
-               rec("directory", "notes/x/", "notes/x/README.md")]
+               rec("directory", "notes/x/", "notes/x/README.md"),
+               rec("document", "orphan", "notes/y/orphan.md")]
     _, problems = apply(records, rules, sorted(tree), tree.get)
     status = {r["name"]: r["status"] for r in records}
     assert status["role_one"] == "ratified" and "Rule 2" in records[0]["rule"], status
     assert status["alto"] == "provisional", "a name no rule lists stays provisional"
-    assert status["elsewhere"] == "provisional", "a pulled-aside stem stays provisional"
     assert status["the-loader"] == "ratified" and status["notes/x/"] == "ratified", status
-    assert problems == [f"{RULES_DOC}, Rule 2: `ghost` is not a fixtures/ program"], problems
+    assert rules["Rule 3"]["covered"] == ["notes/y/orphan.md", "notes/y/gone.md"], rules
+    assert status["elsewhere"] == "provisional", "a pulled-aside stem stays provisional"
+    assert status["orphan"] == "ratified" and "Rule 3" in records[-1]["rule"], "a listed stem is ratified"
+    assert problems == [f"{RULES_DOC}, Rule 2: `ghost` is not a fixtures/ program",
+                        f"{RULES_DOC}, Rule 3: `notes/y/gone.md` is not a tracked document"], problems
     print("name_rules: selftest ok")
 
 

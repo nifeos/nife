@@ -17,7 +17,7 @@ texts calef posts under his own account. The research behind it is the proposal
   `riscv64-target`](https://github.com/calef/kani/tree/riscv64-target).
 - On 2026-10-03 (UTC) the branch was rebased onto Kani `main` at `1640445da`, and the first review
   was folded in. "Review, 2026-09-30" below has what changed.
-- The pull request body as first posted: [kani-upstream/pull-request.md](kani-upstream/pull-request.md).
+- The pull request body as first posted: [kani-upstream/pull-request-4913-body.md](kani-upstream/pull-request-4913-body.md).
 - Comment for #2402: [kani-upstream/issue-2402-comment.md](kani-upstream/issue-2402-comment.md).
 
 ## What Kani asks of a contributor

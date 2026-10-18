@@ -42,7 +42,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   fixed one wrong-accept here, a relocation bounded by `memsz` where `filesz` was meant.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". No ELF-to-PE converter crate
 exists on crates.io. systemd's `tools/elf2efi.py` (LGPL-2.1+, Python) takes the same approach and is
 the prior art. gimli-rs's `object` 0.40.0 has a PE writer but no converter. Building on it would put

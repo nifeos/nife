@@ -609,7 +609,7 @@ pub(super) fn vouched(bytes: &[u8], fs: Option<Fs>, own_ut: u64, fs_mapped: &mut
 }
 
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them** (milestone 597,
-/// provisional). Their note is read with `elf::Elf::note` and decoded by `manifest_note`; a note
+/// provisional). Their note is read with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
 /// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
@@ -621,17 +621,23 @@ pub(super) fn endowed_image(
     mem_pages: u64,
     words: bool,
 ) -> Option<grant_plan::Manifest> {
-    let declared = match elf.note(manifest_note::OWNER, manifest_note::MANIFEST) {
+    let declared = match elf.note(
+        capability_manifest_note::OWNER,
+        capability_manifest_note::MANIFEST,
+    ) {
         Ok(None) => None,
-        Ok(Some(d)) => Some(manifest_note::decode(d).ok()?),
+        Ok(Some(d)) => Some(capability_manifest_note::decode(d).ok()?),
         Err(_) => return None,
     };
     // **A verb table is not honored for installed bytes yet** (milestone 809 (the package client
-    // becomes a program), `manifest_note::VERBS`): endowing from the manifest alone would hand
+    // becomes a program), `capability_manifest_note::VERBS`): endowing from the manifest alone would hand
     // every line every verb's grants, so bytes carrying one are refused instead. The image's own
     // `jig` narrows by `grant_plan`'s table, and nothing installed carries the note.
     if !matches!(
-        elf.note(manifest_note::OWNER, manifest_note::VERBS),
+        elf.note(
+            capability_manifest_note::OWNER,
+            capability_manifest_note::VERBS
+        ),
         Ok(None)
     ) {
         return None;

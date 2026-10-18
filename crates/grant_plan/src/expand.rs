@@ -113,7 +113,11 @@ impl Name {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     names: [Name; MAX_NAMES],
-    dirs: [bool; MAX_NAMES],
+    /// Whether each name is a directory, in step with `names`.
+    ///
+    /// Name: ratified 2026-10-18 (calef), for this field and for the `is_directory` parameters
+    /// that feed it.
+    is_directory: [bool; MAX_NAMES],
     n: usize,
 }
 
@@ -138,27 +142,27 @@ impl NameSet {
                 bytes: [0; MAX_NAME],
                 len: 0,
             }; MAX_NAMES],
-            dirs: [false; MAX_NAMES],
+            is_directory: [false; MAX_NAMES],
             n: 0,
         }
     }
 
     /// The set of exactly one name: what a token with no pattern in it designates.
-    pub fn one(name: &[u8], is_dir: bool) -> Option<NameSet> {
+    pub fn one(name: &[u8], is_directory: bool) -> Option<NameSet> {
         let mut set = NameSet::empty();
-        set.push(name, is_dir).then_some(set)
+        set.push(name, is_directory).then_some(set)
     }
 
     /// Add a name. `false` if the set is full or the name cannot travel in a grant; the caller must
     /// turn that into a refusal rather than carrying on with a smaller set.
-    pub fn push(&mut self, name: &[u8], is_dir: bool) -> bool {
+    pub fn push(&mut self, name: &[u8], is_directory: bool) -> bool {
         if self.n == MAX_NAMES || self.contains(name) {
             return false;
         }
         match Name::new(name) {
             Some(n) => {
                 self.names[self.n] = n;
-                self.dirs[self.n] = is_dir;
+                self.is_directory[self.n] = is_directory;
                 self.n += 1;
                 true
             }
@@ -189,7 +193,7 @@ impl NameSet {
     ///
     /// The caller has already established that `name` can travel in a grant, which is why this takes
     /// a [`Name`] rather than bytes.
-    fn keep_smallest(&mut self, name: Name, is_dir: bool) -> bool {
+    fn keep_smallest(&mut self, name: Name, is_directory: bool) -> bool {
         // Where it belongs: the first slot holding a name that sorts after it.
         let at = (0..self.n)
             .find(|&i| self.names[i].as_bytes() > name.as_bytes())
@@ -204,11 +208,11 @@ impl NameSet {
         let mut i = self.n - 1;
         while i > at {
             self.names[i] = self.names[i - 1];
-            self.dirs[i] = self.dirs[i - 1];
+            self.is_directory[i] = self.is_directory[i - 1];
             i -= 1;
         }
         self.names[at] = name;
-        self.dirs[at] = is_dir;
+        self.is_directory[at] = is_directory;
         room
     }
 
@@ -218,14 +222,14 @@ impl NameSet {
         (self.n > 0).then(|| self.names[self.n - 1].as_bytes())
     }
 
-    /// `(name, is_dir)` per name, in the order the directory yielded them, or in **byte order** for
+    /// `(name, is_directory)` per name, in the order the directory yielded them, or in **byte order** for
     /// a set [`Expander::batch`] selected.
     ///
     /// The two differ because a batch's last name is its successor's boundary, so batching needs a
     /// total order and one expansion needs none. Sorting the unbatched case too would be a change to
     /// what `echo *.txt` prints, bought for nothing.
     pub fn iter(&self) -> impl Iterator<Item = (&[u8], bool)> {
-        (0..self.n).map(|i| (self.names[i].as_bytes(), self.dirs[i]))
+        (0..self.n).map(|i| (self.names[i].as_bytes(), self.is_directory[i]))
     }
 
     /// The one name, when the set holds exactly one. A grant that must designate a single thing (a
@@ -328,7 +332,7 @@ impl<'a> Expander<'a> {
     /// default is not a compatibility habit here: `rm *` hands a child authority over everything it
     /// matched, so the default reading is the one that **grants less**. A user who wants the
     /// dotfiles asks for them and takes the larger grant deliberately.
-    pub fn offer(&mut self, name: &[u8], is_dir: bool) {
+    pub fn offer(&mut self, name: &[u8], is_directory: bool) {
         if !glob::matches(self.pattern, name) || self.set.contains(name) {
             return;
         }
@@ -342,7 +346,7 @@ impl<'a> Expander<'a> {
             return;
         }
         let Some(resume) = self.resume else {
-            if !self.set.push(name, is_dir) {
+            if !self.set.push(name, is_directory) {
                 self.refused.get_or_insert(Refusal::TooManyNames);
             }
             return;
@@ -355,7 +359,7 @@ impl<'a> Expander<'a> {
             return;
         }
         let Some(n) = Name::new(name) else { return };
-        if !self.set.keep_smallest(n, is_dir) {
+        if !self.set.keep_smallest(n, is_directory) {
             self.more = true;
         }
     }
@@ -494,14 +498,14 @@ impl Designation {
     /// Add a name found here, or one the program may create. A full set is
     /// [`Refusal::TooManyNames`], and a name that cannot travel in a grant
     /// [`Refusal::MatchNotNameable`], rather than a smaller grant than the line said.
-    pub fn name(&mut self, name: &[u8], is_dir: bool) -> Result<(), Refusal> {
+    pub fn name(&mut self, name: &[u8], is_directory: bool) -> Result<(), Refusal> {
         if self.names.contains(name) {
             return Ok(());
         }
         if Name::new(name).is_none() {
             return Err(Refusal::MatchNotNameable);
         }
-        if self.names.push(name, is_dir) {
+        if self.names.push(name, is_directory) {
             Ok(())
         } else {
             Err(Refusal::TooManyNames)
@@ -598,8 +602,8 @@ mod tests {
     /// Drive the expander over a listing, the way both `echo` and the planner do.
     fn expand(pattern: &[u8], listing: &[(&[u8], bool)]) -> Result<NameSet, Refusal> {
         let mut e = Expander::new(pattern);
-        for &(name, is_dir) in listing {
-            e.offer(name, is_dir);
+        for &(name, is_directory) in listing {
+            e.offer(name, is_directory);
         }
         e.finish()
     }
@@ -781,8 +785,8 @@ mod tests {
     /// One batch over a listing, the way the shell's sweep drives it.
     fn batch(pattern: &[u8], resume: Resume, listing: &[(&[u8], bool)]) -> Result<Batch, Refusal> {
         let mut e = Expander::batch(pattern, resume);
-        for &(name, is_dir) in listing {
-            e.offer(name, is_dir);
+        for &(name, is_directory) in listing {
+            e.offer(name, is_directory);
         }
         e.finish_batch()
     }

@@ -145,6 +145,10 @@ Each sets a test that reaches past the word. The arguments are in
 | The casing of `nife` | lowercase everywhere, prose included |
 | `cpu` is the scheduling unit; `core` is the physical core | `cpu` is what the scheduler runs a thread on; a GPU is named `gpu`, never `cpu` (2026-10-03) |
 
+### Precedents set by example
+
+The 2026-10-18 rulings, as rules: [precedents-set-by-example.md](naming/precedents-set-by-example.md).
+
 ## Where a name's provenance lives
 
 Provenance lives at the name, per milestone 115 (the names that were ratified, and the ones that
@@ -309,8 +313,7 @@ caught it was a person not knowing the word, and that remains the test.
 ## Appendices
 
 Every former section kept its heading, so a citation by section name resolves in the file listed.
-The directory and stems are provisional, minted 2026-09-24. Which file holds which former section
-is the table in [naming/README.md](naming/README.md).
+The directory and stems are provisional. The table is in [naming/README.md](naming/README.md).
 
 ## BUGS
 

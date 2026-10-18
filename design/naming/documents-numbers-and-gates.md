@@ -128,6 +128,36 @@ It would not exist yet anyway, because a lane runs `script/lint` before it runs 
 branch name is also fixed when the lane is cut, where a label is editable at any time. For a check
 whose job is "you claimed 126, so move 126's block", the claim has to be the immutable half.
 
+## File names in an appendix directory
+
+Settled in the tier 1 review of 2026-10-18 (UTC), each a precedent and not a new gate.
+
+- An appendix is named for the heading it continues (rule 1 in
+  [convention-rulings.md](convention-rulings.md)), even when the heading is a sentence, as in
+  `lift-is-only-worth-what-its-caller-does` and `functions-that-answer-yes-or-no`. When the slug is
+  wrong, change the heading. There is no exception.
+- A dated record is named by its subject and date (calef, 2026-10-18 UTC: "Yes"). For a bench run the
+  subject is the machine: `radon-2026-09-03`, `qemu-2026-09`. Otherwise it is what was examined:
+  `census-`, `inflow-`, `baseline-`, `guard-page-faults-`, `kernel-stack-overflow-2026-08-15`. Use the
+  month when the record spans days. A word such as "measurements" claims a role, so leave it out.
+- The machine stays in the stem when the directory does not name it: `network-boot-xenon` under
+  `x86-uefi-boot/`, while `visionfive2/network-boot` needs none.
+- A file name says what the file is in the sense its directory gives it. `survey-design` fits under
+  `process-view/`; `survey-method` reads as a methodology.
+- The "stem is provisional" note comes out of a document when its stem is ratified.
+- An appendix of a `## BUGS` section is `bugs.md`. American spelling applies to stems (`-colors`).
+- When one section has several appendices, each file is named for its own title and not the shared
+  heading (calef, 2026-10-18 UTC: "Yes").
+- An appendix that continues no single section (reference tables, logs, datasets, indexes) is named
+  for its own title, cut down to the noun that says what it is (calef, 2026-10-18 UTC: "Yes").
+
+## Script names
+
+calef, 2026-10-18 (UTC): "Yes". A command that does one action takes a verb: `claim`, `bench`, `fmt`,
+`record-ruling`, `vendor-verify`, `repeat-under-load`, `toolchain-bump`. A standing tool or role
+takes a noun: `board-boot-watcher`, `merge-queue-rebaser`, `project-metrics`,
+`outsider-pass-launcher`. A gate ends in `-check`.
+
 ## What is checked, and what cannot be
 
 `script/lint`'s `naming conventions` block enforces seven things, and the first five are cheap greps

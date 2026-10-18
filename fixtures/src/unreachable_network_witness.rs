@@ -36,7 +36,7 @@
 //!
 //! **And the reboot object** (milestone 805 (`reboot` at the prompt)), probed by invoking it: a
 //! spawn service that endowed it would reset the machine mid-`script/swish-check`, and the gate
-//! fails on the lines that never come back. A note cannot spell it (`manifest_note::encode`).
+//! fails on the lines that never come back. A note cannot spell it (`capability_manifest_note::encode`).
 //!
 //! **The census asks the kernel.** Each slot below the reserved fault slot is invoked with a method
 //! no object defines (`user_mode_runtime::is_granted`): an empty slot answers `NoSuchSlot`, so a
@@ -72,7 +72,7 @@ const NOTE_ASKS: grant_plan::Manifest = grant_plan::Manifest {
     ..grant_plan::Prog::UnreachableNetworkWitness.manifest()
 };
 
-manifest_note::carry!(NOTE_ASKS);
+capability_manifest_note::carry!(NOTE_ASKS);
 
 // The lines below name the slots in prose; this keeps the prose honest if a constant moves.
 const _: () = assert!(grant_plan::NETWORK_SLOT == 10);

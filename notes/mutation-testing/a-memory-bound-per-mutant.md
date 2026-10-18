@@ -106,4 +106,4 @@ baseline does, and the next reader should not have to find the runner on their o
 - The weekly workflow has still never succeeded. This was demonstrated against a synthetic runaway
   and measured against the honest suite, both on Linux. The first green scheduled run is the
   evidence that matters, and it has not happened yet. (Corrected 2026-09-24: the 2026-09-14 census
-  was the first weekly run to finish; see [the first weekly censuses](the-first-weekly-censuses.md).)
+  was the first weekly run to finish; see [the first weekly censuses](first-weekly-runs.md).)

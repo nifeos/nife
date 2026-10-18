@@ -162,7 +162,7 @@ through SBI, so it works on both.
   2026-08-15: thread stacks are 24 KiB, and the tick path's disarmed canary check no longer bills a
   592-byte frame. The thread high-water tripwire is sized against worst-case stacking, and a
   thread-guard fault now prints the dead stack's `.text`-pointing words so the next such report
-  symbolizes itself. The full analysis is in notes/stack/overflow-2026-08-15.md; the load-legibility
+  symbolizes itself. The full analysis is in notes/stack/kernel-stack-overflow-2026-08-15.md; the load-legibility
   rule stands, but this failure was never a false one.
 
   One c906-specific residue: the c906 report's `sepc` named an `auipc`, an instruction that

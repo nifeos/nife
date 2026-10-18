@@ -34,7 +34,7 @@ format: changing it is a new version word.
 
 ## The descriptor, version 1
 
-56 bytes. `crates/manifest_note` is the only definition (AGENTS.md rule 7), with `encode` and
+56 bytes. `crates/capability_manifest_note` is the only definition (AGENTS.md rule 7), with `encode` and
 `decode`; its module documentation has the same table.
 
 Amended in place on 2026-09-27 (UTC) on calef's ruling, before anything outside the tree had acted on version 1. `arg` also takes `2`, "words", for milestone 205 (how a foreign program is told what to do). The same day, and the same ruling (on #1360), `machine` and `share` amend version 1 in place too, for milestone 126 (the `procps` package): one zero byte (55) remains, so the next field is likely version 2. The module's table is current.
@@ -86,7 +86,7 @@ version 1 before anything outside this tree has written one. See Follow-on.
    streams it into frames a page at a time), so it finds the `PT_NOTE` headers in the first page
    (`NoteSegments::from_head`) and feeds each segment to the same `NoteSearch`. A duplicate note,
    in one segment or across two, is refused on both paths.
-2. **The format** (`crates/manifest_note`), above, and `carry!`, which places a program's note in
+2. **The format** (`crates/capability_manifest_note`), above, and `carry!`, which places a program's note in
    `.note.nife.manifest` from a constant at compile time.
 3. **The linker script** (`crates/user_mode_runtime/link.ld`) keeps that section in the `rodata`
    load segment and in a `PT_NOTE` of its own. `helpers/build-ripgrep.sh` derives its copy by

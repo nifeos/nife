@@ -39,7 +39,7 @@ set in PR #1375: a helper, a CSV under `notes/project-metrics/`, a chart and a g
   renumbered or removed, no in-place format change, and at most four contract breaking changes; a
   crate is settled after four weeks with none. Co-change is reported, not thresholded.
 - PROPOSED: the `# Amendments` ledger convention, a dated list in a format crate's module
-  documentation. Provisional; `manifest_note` should carry the first entry when its in-place
+  documentation. Provisional; `capability_manifest_note` should carry the first entry when its in-place
   amendment of version 1 merges.
 
 Names provisional: the helper, the note, both CSVs, the appendix, the chart, every

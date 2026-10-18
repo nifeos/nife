@@ -19,7 +19,7 @@ other manifests during `script/lint`'s clippy passes:
 | Manifest | Dependency | Pass that warns |
 |---|---|---|
 | `crates/user_mode_runtime/Cargo.toml` | `counter_frequency_contract` | `clippy: kernel + user + user_mode_runtime (aarch64)`. Its own comment says only `cntfrq`'s x86_64 arm reads it and that it is unconditional on purpose. |
-| `redoxfs_server/Cargo.toml` | `manifest_note`, `address_space_map`, `globally_unique_identifier_partition_table`, `entropy_contract` | `clippy: redoxfs_server (its own workspace)`, which is a host build. Whether these are unused everywhere or only on the host was not checked. |
+| `redoxfs_server/Cargo.toml` | `capability_manifest_note`, `address_space_map`, `globally_unique_identifier_partition_table`, `entropy_contract` | `clippy: redoxfs_server (its own workspace)`, which is a host build. Whether these are unused everywhere or only on the host was not checked. |
 
 Nothing fails: the lint is warning-only and `-D warnings` does not promote it. The work is to
 decide each one the way milestone 631 did. Use a target table where the split is by architecture.

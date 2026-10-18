@@ -25,6 +25,7 @@ What that means concretely, so no lane has to infer it:
 | `nvme` | yes, "non-volatile memory"; "Express" is an ordinary word | `non_volatile_memory_express` |
 | `pcie` | yes, "PCI Express", and `pci` stays by the row above | `pci_express` |
 | `dma` | yes, "direct memory access" | `direct_memory_access` (already ruled 2026-09-05) |
+| `xor` | no. It is the everyday word for exclusive or | **stays**, an earned abbreviation in `kernel-write-xor-execute-check` (calef, 2026-10-18 UTC) |
 | `usb` | no. People say "USB", and the expansion adds nothing a newcomer can use | **stays** (calef, 2026-10-17, ruling `usb_keyboard_driver`) |
 | `syscall` | no. It is the everyday word for "system call", and the tree uses it everywhere | **stays**, kept tree-wide as an abbreviation (calef, 2026-10-18: "Yes") |
 | `cpu` | no. It is the scheduling unit's word | **stays**, by the rule already in design/naming.md (2026-10-03); not a new ruling |
@@ -33,6 +34,7 @@ What that means concretely, so no lane has to infer it:
 | `spec`, `arg`, `mem`, `dir` | yes: "specification", "argument", "memory", "directory" | **expand** tree-wide. calef, 2026-10-18 (UTC): "Yes: spec, arg, mem and dir are not earned. Have the drafter propose the whole family's names together, and bring it back as one table." The `grant_plan` manifest family (`ArgSpec`, `FileSpec`, `MemSpec`, `DirSpec`) waits for that table |
 | `va`, `pa` | yes, "virtual address", "physical address" | **expand** to `_VIRTUAL_ADDRESS` and `_PHYSICAL_ADDRESS` everywhere, with no split by location. calef, 2026-10-18 (UTC): "VA and PA are not earned, but use _VIRTUAL_ADDRESS / _PHYSICAL_ADDRESS everywhere, no split." |
 | `ipi`, `nmi`, `ist`, `msr` | yes: "inter-processor interrupt", "non-maskable interrupt", "interrupt stack table", "model-specific register" | **expand** to `inter_processor_interrupt`, `non_maskable_interrupt`, `interrupt_stack_table` and `model_specific_register` (calef, 2026-10-18 UTC: "Yes"). Owner spellings stay: the `rdmsr` and `wrmsr` mnemonics, Intel's `IA32_*` register names, and RISC-V SBI names such as `sbi_send_ipi` |
+| `pr` | yes, it is said as "pull request" | `pull_request` (calef, 2026-10-18, "Approve all") |
 
 **`pci_express` is the row that shows the rule is one rule and not two.** It falls out without a
 special case, and it is exactly what people write.

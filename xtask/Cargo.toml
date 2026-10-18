@@ -85,7 +85,7 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for
 # `script/swish-check`'s malformed-note line.
-manifest_note = { version = "0.1.0", path = "../crates/manifest_note" }
+capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The package format (milestone 198 (a package manager, and the trivial install that makes a second
 # customer possible), rung 3a). `cargo xtask package` writes a package with the same crate a target
 # reads one with, and reads its own output back before writing it to disk, so a producer that

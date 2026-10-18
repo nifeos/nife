@@ -44,7 +44,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   kernel has no use for them.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
-**Reuse:** the alternatives were surveyed in #1806's `survey.md` appendix (looked up 2026-10-07),
+**Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". rcore-os's `nvme-driver` 0.8.2
 (MIT, 4.9k downloads, one reverse dependency, no proofs found) lives in the `tgoskits` monorepo.
 lihanrui2913's `nvme` is a 0.0.0 from 2025-04. Redox's `nvmed` is a daemon, not a library, and its

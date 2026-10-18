@@ -149,6 +149,13 @@ name = "capability"
 version = "0.1.0"
 
 [[package]]
+name = "capability_manifest_note"
+version = "0.1.0"
+dependencies = [
+ "grant_plan",
+]
+
+[[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
 
@@ -200,6 +207,7 @@ dependencies = [
  "boot_slot",
  "byte_sink_contract",
  "calendar",
+ "capability_manifest_note",
  "clock_contract",
  "component_plan",
  "compositor",
@@ -229,7 +237,6 @@ dependencies = [
  "line_editor",
  "login_contract",
  "machine_statistics_contract",
- "manifest_note",
  "measured_boot",
  "network_time_protocol",
  "nifefs",
@@ -489,6 +496,7 @@ dependencies = [
  "address_space_map",
  "byte_sink_contract",
  "c_seam",
+ "capability_manifest_note",
  "capability_witness_contract",
  "clock_contract",
  "component_plan",
@@ -509,7 +517,6 @@ dependencies = [
  "line_editor",
  "loaded_image_check",
  "login_contract",
- "manifest_note",
  "network_time_protocol",
  "nifefs",
  "schedule_store",
@@ -814,13 +821,6 @@ name = "managed"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d"
-
-[[package]]
-name = "manifest_note"
-version = "0.1.0"
-dependencies = [
- "grant_plan",
-]
 
 [[package]]
 name = "matchers"
@@ -1204,6 +1204,7 @@ dependencies = [
  "abi",
  "address_space_map",
  "byte_sink_contract",
+ "capability_manifest_note",
  "credential_contract",
  "domain_name_resolution_contract",
  "elf",
@@ -1215,7 +1216,6 @@ dependencies = [
  "line_editor",
  "login_contract",
  "machine_statistics_contract",
- "manifest_note",
  "measured_boot",
  "nifefs",
  "package_archive",
@@ -1586,13 +1586,13 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
+ "capability_manifest_note",
  "compositor",
  "documentation",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "grant_plan",
  "graphics_contract",
- "manifest_note",
  "measured_boot",
  "nifefs",
  "package_archive",

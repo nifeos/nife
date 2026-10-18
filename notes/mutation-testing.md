@@ -116,7 +116,7 @@ Every one of its 391 missed and 96 timeouts was triaged, crate by crate, and non
 The weekly workflow then failed every scheduled run until 2026-09-14, and nobody noticed until
 milestone 238 (two scheduled checks have never once succeeded) looked. One shard of eight finished
 on 2026-09-03 and read as a fall from 92.4% to 85.3%. The first full census, on 2026-09-14, showed
-the fall was an artifact ([the-first-weekly-censuses](mutation-testing/the-first-weekly-censuses.md)).
+the fall was an artifact ([first-weekly-runs](mutation-testing/first-weekly-runs.md)).
 Three crates had been scored against suites that could not reach them, and a single mutant could
 exhaust a runner's memory:
 
@@ -131,8 +131,8 @@ exhaust a runner's memory:
 
 Milestone 326 (turn a mutation score upward) then triaged the 2026-09-14 census. Parts 1 and 2 took
 the crates that regressed from the baseline
-([capability to dtb](mutation-testing/regressions-capability-to-dtb.md),
-[clock_contract, swish, filesystem_contract](mutation-testing/regressions-clock-protocol-swish-filesystem-protocol.md),
+([capability to dtb](mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md),
+[clock_contract, swish, filesystem_contract](mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md),
 [machine_discovery](mutation-testing/machine-discovery.md)). Part 3 took the worst of the crates
 new since the baseline ([new-crate-backlog](mutation-testing/new-crate-backlog.md) and the four
 appendices after it). Most survivors were missing tests, not bugs. Of the real wrong-accepts, `gpt`'s at the baseline is the one to read first: it accepted a table whose last
@@ -254,19 +254,19 @@ architect's.
 | [baseline-survivors-abi-to-ipc](mutation-testing/baseline-survivors-abi-to-ipc.md) | that every baseline survivor was triaged | the hand-triaged crates, first half |
 | [baseline-survivors-grant-plan-to-swish](mutation-testing/baseline-survivors-grant-plan-to-swish.md) | the same | the hand-triaged crates, second half |
 | [baseline-ledger](mutation-testing/baseline-ledger.md) | 487 survivors: 225 killed, 170 equivalent, 95 hangs, none deferred | the ledger; the alarming survivors |
-| [the-first-weekly-censuses](mutation-testing/the-first-weekly-censuses.md) | that the fall to 85.3% was an artifact | 2026-09-03 (the weekly report had never run); 2026-09-14 (the first census) |
+| [first-weekly-runs](mutation-testing/first-weekly-runs.md) | that the fall to 85.3% was an artifact | 2026-09-03 (the weekly report had never run); 2026-09-14 (the first census) |
 | [measured-boot](mutation-testing/measured-boot.md) | five equivalences, proved | 2026-09-03 (`measured_boot` re-run) |
 | [uefi-loader](mutation-testing/uefi-loader.md) | a file nothing compiles scores 0% | 2026-09-04 |
 | [a-memory-bound-per-mutant](mutation-testing/a-memory-bound-per-mutant.md) | why a whole run can finish | 2026-09-12 |
 | [documentation](mutation-testing/documentation.md) | the feature-gated third of a suite | 2026-09-13 |
-| [regressions-capability-to-dtb](mutation-testing/regressions-capability-to-dtb.md) | milestone 326 parts 1 and 2 | 2026-09-19: `capability`, `memory_regions`, `elf`, `timetable`, `dtb` |
-| [regressions-clock-protocol-swish-filesystem-protocol](mutation-testing/regressions-clock-protocol-swish-filesystem-protocol.md) | the same | 2026-09-19: `clock_contract`, `swish`, `filesystem_contract` |
+| [regressions-2026-09-14-capability-to-device-tree-blob](mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md) | milestone 326 parts 1 and 2 | 2026-09-19: `capability`, `memory_regions`, `elf`, `timetable`, `dtb` |
+| [regressions-2026-09-14-clock-contract-swish-filesystem-contract](mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md) | the same | 2026-09-19: `clock_contract`, `swish`, `filesystem_contract` |
 | [machine-discovery](mutation-testing/machine-discovery.md) | 77 survivors: 58 killed, 11 equivalent, 8 gaps | 2026-09-19 `### machine_discovery`; 2026-09-20 re-derivation |
 | [new-crate-backlog](mutation-testing/new-crate-backlog.md) | milestone 326 part 3, and a loop that waits | 2026-09-20: `work_steal_slot`, `memory_corruption_canary_gate`, `soak_page`, `schedule_store` |
 | [job-mix-and-jh7110-entropy](mutation-testing/job-mix-and-jh7110-entropy.md) | the same | 2026-09-20: `job_mix`, `jh7110_entropy` |
 | [board-console](mutation-testing/board-console.md) | the same | 2026-09-20: `board_console` |
 | [video-terminal](mutation-testing/video-terminal.md) | the same | 2026-09-20: `video_terminal` |
-| [clock-and-reset-nvme-screen-console](mutation-testing/clock-and-reset-nvme-screen-console.md) | the same, and what part 3 left | 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console` |
+| [jh7110-clock-and-reset-non-volatile-memory-express-screen-console](mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md) | the same, and what part 3 left | 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console` |
 | [census-2026-09-21-triage](mutation-testing/census-2026-09-21-triage.md) | the 2026-09-21 census's 771, classified; 164 killed | 2026-09-24: `portable_executable`, `stick_maker`, `uefi_loader`, `paging` |
 | [census-2026-10-03-triage](mutation-testing/census-2026-10-03-triage.md) | the 2026-10-03 census's 1,004, crate by crate (milestone 637 (triage the crates the 2026-09-21 mutation census measured for the first time)) | 2026-10-03: `component_plan` onward |
 | [census-2026-10-03-triage-part-2](mutation-testing/census-2026-10-03-triage-part-2.md) | the same, continued | 2026-10-03: `documentation`, `filesystem_contract`, `timetable`, `video_terminal`, `machine_discovery` |

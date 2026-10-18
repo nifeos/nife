@@ -7,7 +7,7 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
 - [`core-harnesses.md`](core-harnesses.md): capabilities, untyped regions, paging, frames, the
   device-tree leaves, IPC, the generational table, the intrusive queue and ASIDs.
 - [`parser-harnesses.md`](parser-harnesses.md): ELF, nifefs and PCI.
-- [`dma-validator.md`](dma-validator.md): the DMA-confinement validator, its bounds and
+- [`direct-memory-access-validator.md`](direct-memory-access-validator.md): the DMA-confinement validator, its bounds and
   `kani::cover!`.
 - [`iommu-domain.md`](iommu-domain.md): the IOMMU domain, and what the DMA proof does not establish.
 - [`paging-blocks.md`](paging-blocks.md): 2 MiB and 1 GiB leaves.
@@ -19,3 +19,5 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
 Name: provisional, for the directory and every stem in it. The directory follows the `notes/<stem>/`
 appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named
 for its content. calef names directories and files, and `script/names --unratified` lists each stem.
+
+- `direct-memory-access-validator` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `dma-validator`.

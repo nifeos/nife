@@ -49,7 +49,8 @@ printf '%s\n' 'See [§4](../0004-fourth.md), its parent.' \
 printf '%s\n' \
     'A link: [§2](../design/decisions/0002-second.md).' \
     'A bare §3 with no filename.' \
-    'A path and a sigil: design/decisions/0003-third.md, §3.' > "$work/notes/citing.md"
+    'A path and a sigil: design/decisions/0003-third.md, §3.' \
+    'Mixed: 0003-third.md but §2 means the old one.' > "$work/notes/citing.md"
 printf '%s\n' '/* §4: design/decisions/0004-fourth.md */' > "$work/notes/code.c"
 
 git -C "$work" init -q
@@ -133,12 +134,19 @@ printf '%s' "$out" | grep -q "design/decisions/0004-third.md:[0-9]*: §3 restate
     || fail "step 5: the decision's own bare self-mention is not listed ($out)"
 printf '%s' "$out" | grep -q "notes/citing.md:[0-9]*: A bare §3 with no filename\." \
     || fail "step 5: the note's bare sigil is not listed ($out)"
-[ "$(printf '%s\n' "$out" | grep -c '^  .*:[0-9]*: ')" -eq 2 ] \
-    || fail "step 5: expected exactly two listed lines ($out)"
+# A line that names one moved file must not carry a different moved section's bare sigil along
+# with it: the filename vouches for its own number only.
+grep -q 'Mixed: 0004-third.md but §2 means the old one\.' "$work/notes/citing.md" \
+    || fail "step 4: a bare sigil of a different moved section was rewritten on a line naming another file"
+printf '%s' "$out" | grep -q "notes/citing.md:[0-9]*: Mixed: 0003-third.md but §2" \
+    || fail "step 5: the mixed line is not listed ($out)"
+[ "$(printf '%s\n' "$out" | grep -c '^  .*:[0-9]*: ')" -eq 3 ] \
+    || fail "step 5: expected exactly three listed lines ($out)"
 
 # The person's half: decide each listed line, then the existing gate holds the result.
 perl -pi -e 's/^§3 restates itself nowhere\.$/§4 restates itself nowhere./' "$d/0004-third.md"
 perl -pi -e 's/^A bare §3 with no filename\.$/A bare §4 with no filename./' "$work/notes/citing.md"
+perl -pi -e 's/but §2 means/but §3 means/' "$work/notes/citing.md"
 run --check
 [ "$got" -eq 0 ] || fail "check after the shift: exit $got, wanted 0 ($out)"
 

@@ -139,16 +139,14 @@ calef, 2026-10-06 (UTC): *"A machine may write many indexes."* So a machine hold
 an index the owner adds is the machine's. §195 clause 2 scopes trust per source, and §196 clause 4
 holds roots per source.
 
-To settle before `add-repository` is built (item 1 is ruled):
+Its four details are all ruled:
 
 1. How an added index is authenticated: ruled 2026-10-17 (UTC). calef: *"Just a URL."*
-   `jig add-repository <url>` takes only a URL. The index is checked against the roots the image
-   already pins for basalt (ISRG Root X1 today), and a server whose certificate chains elsewhere is
-   refused with a message naming the root it needed. The owner supplies no root or key, so there is
-   no system store to fall back on, by §196 clause 4's design. A separate proposal, [the web's
-   authority list as a package and a capability](https://github.com/nifeos/nife/pull/2277)
-   (proposed, unmerged), may later change what added indexes are checked against; this ruling does not
-   decide it.
+   `jig add-repository <url>` takes only a URL, and a refusal names the root the server needed.
+   He first ruled that the index is checked against the roots the image pins for basalt (ISRG Root
+   X1 today). §306 (the web's authority list is a package and a capability), decided 2026-10-18,
+   replaces that set. An added index is trusted at the channel as a website is, by the list's
+   authorities; basalt's own channel never depends on the list.
 2. The same name in two indexes: ruled 2026-10-17 (UTC). calef chose *"A"*: a bare name offered by
    two indexes is refused as `Ambiguous`, as milestone 614 (two installed versions of one program, each runnable) does for versions, and an
    index-qualified name picks one. First-index-wins is refused as the dependency-confusion shape.
@@ -156,9 +154,12 @@ To settle before `add-repository` is built (item 1 is ruled):
    spelling is provisional (`Name: provisional` in
    [design/naming/README.md](../naming/README.md), tracked by `script/names --unratified`). It is
    a flag because §219 reads a word containing `/` as a file, and `@` already means a version.
-3. The installed-programs table records `OWNER` for a vouch. It would need to record which source vouched,
-   or a rollback cannot say what it is undoing.
-4. Whether a second index may carry §250's "moved to" field, and whether the client follows it.
+3. Provenance: ruled 2026-10-17 (UTC). Asked *"Record each row's vouching index by its URL?"*, calef
+   answered *"Yes"*. Each installed-programs table row records the URL of the index that vouched
+   for it, exactly as added, in place of `OWNER` alone, so a rollback can say what it is undoing.
+4. An added index that says it moved: ruled 2026-10-17 (UTC). calef chose *"B"*: `jig` does not
+   follow an added index's "moved to" field. It reports it and names the `jig add-repository <new
+   url>` command. basalt's own index keeps following §250's field.
 
 ## Other package managers, against the same contracts
 
@@ -193,7 +194,7 @@ meets a program, not a builtin.
 5. `list`, reading the image's catalog until an index exists, and saying so.
 6. `update` and `list -u` over the LAN fixture source, plain HTTP, as rung 3a, with
    `jig` writing the index copy through `package_index`.
-7. `add-repository`, once the details of many indexes are settled.
+7. `add-repository`, with the many-indexes details above. Unblocked.
 8. Before installing, `jig` checks three things. The archive's digest matches the index (§250 (an
    image names its distribution's package index)). The index's needs match the archive's metadata
    (§197 (a package is one archive file)). The metadata matches the manifests in its ELF notes,
@@ -228,8 +229,8 @@ measured.
 
 - **Outstanding.** `list -u`, which must read `activation/`; the index store grant does
   not reach it.
-- **Outstanding.** Item 7, `add-repository`, waiting on the many-indexes details below. Checked
-  2026-10-10: none of the four is ruled.
+- **Outstanding.** Item 7, `add-repository`: unblocked lane work, since all four many-indexes
+  details are ruled. Checked 2026-10-17 against the Many indexes section.
 - **Outstanding.** Item 8's index half, the needs against metadata and manifests. Checked
   2026-10-10: the catalog carries digests only, so there is nothing to compare until item 6.
 - **Milestone 892.** Milestone 892 (a std program at the prompt holds the network):
@@ -247,7 +248,7 @@ measured.
 | The name | ratified 2026-10-06: `jig` | nothing |
 | One program or several | ruled 2026-10-06: one program; V2 kept, and built | nothing |
 | Who writes the index copy | ruled 2026-10-06: `jig` (I2); I3 the follow-on | nothing |
-| Many indexes | ruled 2026-10-06: a machine may write many; details open | item 7 |
+| Many indexes | ruled 2026-10-06: a machine may write many; all four details ruled 2026-10-17 | nothing |
 | A row records its manager (plan fork 3) | ruled 2026-10-06: yes; `jig` alone holds the endpoint by default. Built before item 1 | nothing |
 | Who fetches | ruled 2026-10-07, #1796 fork 4: `jig` | nothing |
 | Install-time checks | ruled 2026-10-07: item 8's three | nothing |

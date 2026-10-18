@@ -50,7 +50,7 @@ Kani-proved and outside the kernel, keep unless a proof is no longer worth havin
 `elf` (1,173, 8, also kernel), `network_time_protocol` (684, 7). Also `glob` (650, 6), `component_plan`
 (1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel),
 `credential_contract` (322, 3), `filesystem_contract` (2,636, 3), `package_archive` (677, 2),
-`manifest_note` (607, 2), `nifefs` (354, 2).
+`capability_manifest_note` (607, 2), `nifefs` (354, 2).
 
 The ABI, a capability, or one of the 19 `*_protocol` crates (rule 3). The crates: every `*_protocol` crate,
 `abi`, `grant_plan` (6,405), `swish` (3,404 plus the 3,690-line program), `system_initializer`

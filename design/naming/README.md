@@ -23,6 +23,7 @@ that two indexes offer (milestone 809 (the package client becomes a program)). N
 | [documents-numbers-and-gates.md](documents-numbers-and-gates.md) | Where a document goes; `§N`; Branches; What is checked |
 | [vocabulary-rulings.md](vocabulary-rulings.md) | the rulings in naming.md's table, the received abbreviation, and the casing of `nife` |
 | [convention-rulings.md](convention-rulings.md) | new, 2026-10-17: the rules calef ratified for a class of names, with his words |
+| [precedents-set-by-example.md](precedents-set-by-example.md) | new, 2026-10-18: the rules the tier 1 review's rulings imply |
 | [spelled-out-rulings.md](spelled-out-rulings.md) | new, 2026-10-04: `op` and `cap` spelled out |
 | [command-line-rulings.md](command-line-rulings.md) | `jig`'s |
 | [capability-spelling-worklist.md](capability-spelling-worklist.md) | the `cap` sweep's worklist |

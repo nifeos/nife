@@ -45,7 +45,7 @@ const RESULT: u64 = 0;
 // `Prog::LeastAuthorityDemo`'s compiled-in manifest and never this note. Run as a file
 // (`script/swish-check` stages a copy nobody vouched for), the note is the only manifest there is,
 // and it asks for an argument: which unvouched bytes may not be given, so that line is refused.
-manifest_note::carry!(grant_plan::Prog::LeastAuthorityDemo.manifest());
+capability_manifest_note::carry!(grant_plan::Prog::LeastAuthorityDemo.manifest());
 
 /// The `least_authority_demo`'s entry. `START` (milestone 19e) hands it three registers: `x0` is unused here (a
 /// standalone binary needs no role selector), the input `n` arrives in `x1`, `x2` is unused.

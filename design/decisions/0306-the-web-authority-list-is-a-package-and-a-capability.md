@@ -1,7 +1,7 @@
 ---
 status: DECIDED
 raised: 2026-10-17
-decided: 2026-10-17
+decided: 2026-10-18
 ratified_by: calef
 ---
 
@@ -9,7 +9,7 @@ ratified_by: calef
 
 Raised while milestone 809 (the package client becomes a program) was settling `jig add-repository`.
 calef ruled that verb takes just a URL, then asked why nife does not ship the usual authority list.
-He ruled on all three asks on 2026-10-17 (UTC): *"Use those four rules."*, *"Y"* and *"Yes"*.
+He ruled on all three asks on 2026-10-18 (UTC): *"Use those four rules."*, *"Y"* and *"Yes"*.
 
 ## The question
 

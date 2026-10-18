@@ -36,7 +36,7 @@ in a guard page. x86_64 has the stacks and the guard pages and never asks the qu
   recorded in `notes/ci.md` on #1472 as one chain with one cause. `is_mapped` is in
   `mmu/kernel_map.rs`, and its own doc names the shared caller `stack::print_text_words`.
 
-Why it matters: the 2026-08-14 and 2026-08-16 incidents (`notes/stack/overflows-2026-08-14.md`,
+Why it matters: the 2026-08-14 and 2026-08-16 incidents (`notes/stack/kernel-stack-overflows-2026-08-14.md`,
 `notes/stack/guard-page-faults-2026-08-16.md`) were each read as a memory fault until the kernel
 named the guard page. x86_64 would repeat that, and under DECISIONS §19 (architectural parity is a
 tenet) a capability that works on two ISAs and silently not the third is the bug.
