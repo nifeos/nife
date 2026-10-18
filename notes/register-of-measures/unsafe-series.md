@@ -169,8 +169,7 @@ entirely, per `AGENTS.md`.) That table is real work this pass chose not to rush.
 From 2026W38 (2026-09-20) the split is exact: `unsafe_trust_unclassified` reads 0. A future lane can
 close the gap by rebuilding the alias table, verified file-by-file rather than trusted from
 `--summary` alone. Until then, read the early weeks' kernel and userspace bars as undercounts of both
-sides by whatever their `unclassified` band carries. The register already asks the same caution for
-`names_no_block` in the weeks before naming provenance existed.
+sides by whatever their `unclassified` band carries.
 
 ### The two-day loss, restored 2026-09-23
 

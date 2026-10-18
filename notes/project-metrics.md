@@ -141,7 +141,8 @@ What each name's own provenance block says, for every name `script/names` tracks
 programs, packages, scripts, and the items, modules, documentation directories and documents that
 carry a `Name:` block. A name a rule covers counts as ratified. `Ruled, rename owed` is a provisional
 name calef has ruled whose rename has not landed. The pale band is named things with no readable
-block, which before 2026-08-04 is every one of them. The current week's total is checked against
+block. Weeks before 2026W39 are not measured: the item, module, directory and document blocks this
+counts were first written on 2026-09-24. The current week's total is checked against
 `script/names`. A week is a bar, so a day's rulings show as the current week's bar moving. A rising
 `Provisional` band is not debt; the band worth an alarm is `Unrecorded`.
 

@@ -74,7 +74,7 @@ documentation directory and document under `design/`, `notes/` and `briefs/`. A 
 
 Both scripts enumerate through `helpers/name_census.py`, `script/names` over the working tree and
 this series over each week's commit, and `script/metrics` fails when the current week's totals
-disagree. At 2026W42 both say 1,793 names.
+disagree.
 
 The four words are what a block *says*:
 
@@ -91,28 +91,12 @@ difference: named things with no block, or a block that fails `script/names`' fo
 differs from `Unrecorded`, which is a block saying the history is silent. The two are kept apart for
 the same reason the decisions chart above will not read a statusless decision as `DECIDED`.
 
-In the first three weeks the pale band is the whole bar. There were 16 named things at 2026W29 and
-119 at 2026W31, none carrying provenance, because the convention that records it did not exist
-until 2026-08-04. Read those bars as "nobody was writing this down yet", and the first blue bar as a
-convention arriving, not as 72 names being ratified in a week. Backfilling them was considered and
-refused. A ratification invented to fill a cell would put a false claim in the one record whose job
+The series starts at 2026W39, and the weeks before it are marked not measured. Counted with today's
+enumeration, those weeks held only crates, programs, scripts and packages, because nobody wrote an
+item, module, directory or document block before 2026-09-24. A bar of 257 beside one of 695 would
+show a measure changing, not names arriving. The blocks were never written, so there is nothing to
+backfill, and a status invented to fill a cell would put a false claim in the one record whose job
 is saying who claimed what.
-
-Every week is counted with today's enumeration, so the pale band from 2026W32 to 2026W38 is names
-that week's gate did not yet ask about. In 2026W32 and 2026W33 seven of them are Cargo packages
-(`kernel`, `user`, `xtask` and four more), which milestone 115 did not cover until calef found the
-hole on 2026-08-18. The rest, and all of them from 2026W34 (7 to 13 a week), are directory
-READMEs and doc comments that mention `Name:` in prose before the 2026-09-24 kinds made such a
-paragraph a block. From 2026W39 the band is zero.
-
-The bar jumps from 257 at 2026W38 to 695 at 2026W39 because the item, module, directory and
-document kinds arrived that week, mostly `provisional`.
-
-2026W36 is one milestone doing one thing. `Unrecorded` goes from 64 to 2, `Recorded` from 9 to 37
-and `Provisional` from 26 to 66. That is milestone 264 (sixty names git history cannot justify, and
-the research that would let calef rule on them). It gave every name nobody had written a reason for
-one that says something. The bar is the height it would have been without it. What changed is what
-the tree can say about the names in it.
 
 ### A rising `Provisional` band is not debt
 

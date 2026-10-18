@@ -332,8 +332,7 @@ def trust_bucket(path):
         # since this table was last written by hand, over a week this split cannot re-derive
         # (`script/metrics` can never run cargo against a historical revision to check). Counted
         # rather than dropped, so the gap is visible instead of a silent undercount -- the same
-        # choice `names_total` already makes for the three weeks before milestone 115 (the names
-        # that were ratified, and the ones that were refused).
+        # choice `names_total` makes for a named thing with no provenance block.
         return 'unclassified'
     return None
 

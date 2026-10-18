@@ -20,13 +20,10 @@
 # on its face that these are restatements, and this comment is the same warning where the numbers
 # are actually produced.
 #
-# **The naming columns are the sharpest instance of that hazard in this file** (milestone 276). A
-# name's provenance lives in the header of the thing it names, and that convention was invented by
-# milestone 115 on 2026-08-04. Three weeks of the series predate it, so they restate as a tree full
-# of named things and no recorded ratifications, which is a convention's birth rather than a fact
-# about the names. `names_total` counts the named things and the four status columns count the ones
-# whose block parses, so those weeks show the gap instead of hiding it. notes/project-metrics.md
-# says the same thing where the bars are.
+# **The naming columns are the sharpest instance of that hazard in this file** (milestone 276). They
+# count every kind `script/names` tracks, and four of those kinds had no blocks before 2026-09-24,
+# so an older week restated today measures something else. Those weeks are left unmeasured rather
+# than restated: see `NAMES_SINCE`. notes/project-metrics.md says the same thing where the bars are.
 #
 # What it does NOT build, and why:
 #
@@ -1423,7 +1420,8 @@ def proposals(tree):
     by leaving the directory and no exclusion is needed here.
 
     The weeks before 2026-09-04 are zero because the directory did not exist, which is the same
-    restatement artifact as the naming columns above and is rendered rather than backfilled.
+    restatement artifact milestone 276 records for the naming columns, rendered rather than
+    backfilled.
     """
     count = 0
     for path, text in tree.markdown():
