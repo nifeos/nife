@@ -89,7 +89,7 @@ What the tree already does in the analogous case.
 - A2: a new server (a union over read-only package stores), plus the spawner reading through it.
   The largest of the three by construction; no measurement possible before it exists.
 - A3: milestone 47's `PATH` lane priced the program half: a `NAME_BIT` (provisional) carrying a
-  length-prefixed name over further `SEND`s, "the same shape `DIR_BIT`'s 'expect two more SENDs'
+  length-prefixed name over further `SEND`s, "the same shape `DIRECTORY_GRANT_BIT`'s 'expect two more SENDs'
   already establishes", plus a manifest encoding crate. The file half needs `Bindings` to hold more
   than four entries, or packages to share one bound store directory. Both are changes two programs
   agree on (the shell and the progenitor), which is why this proposal gives no winner.

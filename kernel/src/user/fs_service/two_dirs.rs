@@ -26,7 +26,7 @@ use super::*;
 /// **The spawn-protocol position that says which directory is which is the capability table slot**: the
 /// confined program's slot 0 is always [`TwoDirGrant::a`], slot 1 always [`TwoDirGrant::b`].
 /// That is the whole of what this milestone decides about the wire, deliberately: a shell-to-progenitor
-/// encoding for a *second* `DIR_BIT` grant (extending `grant_plan::spawnproto`'s `GRANT_WORDS`
+/// encoding for a *second* `DIRECTORY_GRANT_BIT` grant (extending `grant_plan::spawnproto`'s `GRANT_WORDS`
 /// precedent the way a real interactive `bind` eventually will) is a design fork this milestone's
 /// own roadmap block leaves to whoever wires this into the shell.
 ///

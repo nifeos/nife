@@ -33,7 +33,7 @@ const _: () = assert!(
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
-/// (milestone 205, DECISIONS §170; `spawnproto::ARGS_BIT`). Returns the address, or `None` if the
+/// (milestone 205, DECISIONS §170; `spawnproto::PROGRAM_ARGUMENTS_BIT`). Returns the address, or `None` if the
 /// caller sent no frame or it would not map. The capability goes at once, as an image frame's does
 /// ([`take_frames`], [`stage_frames`]): the mapping outlives it, and the slot is what is scarce.
 ///

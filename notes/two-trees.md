@@ -92,7 +92,7 @@ All of it is design/roadmap/0660-a-second-filesystem-mounts-in-the-boot-shell.md
 - `rm` under a mount point is refused at delivery. The progenitor builds a directory grant's
   caretaker from the one filesystem it holds, and the spawn words do not say which tree, so sending
   them would hand the program a same-named directory in the first tree. It waits on the proposal.
-- `spawnproto::DIR2_BIT` has no emitter and no decoder in init. A second directory grant for one
+- `spawnproto::SECOND_DIRECTORY_GRANT_BIT` has no emitter and no decoder in init. A second directory grant for one
   spawned program needs a manifest declaring two directory operands, and none does. §170 (how a
   foreign program is told what to do), ruled 2026-09-26 to grant a named file or directory per the
   manifest, makes the manifest the only source of one.

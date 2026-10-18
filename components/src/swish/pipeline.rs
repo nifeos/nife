@@ -994,14 +994,14 @@ fn spawn_stage(
         // met only in `spawn`: the one program with `DirSpec::Required` writes a byte stream and
         // takes no input, so `rm x | wc` puts it at the head, and delivering it here would be a
         // second copy of `dir_grant`'s refusals. See notes/dir-capability.md's BUGS.
-        dir: words.is_some(),
-        dir2: false,
+        directory_grant: words.is_some(),
+        second_directory_grant: false,
         screen: screen.is_some(),
         // A pipeline stage is always a program the image names (§219 D's first cut runs an image
         // only on a plain line; see `run_image`).
         image: false,
         run_unvouched: false,
-        args: argv.is_some(),
+        program_arguments: argv.is_some(),
         nameset: words.is_some_and(|w| w.set.is_some()),
         machine: machine_wiring(&e),
         // **A stage never promises devices** (milestone 632 (provisional)): `graphical_terminal`'s manifest
@@ -1019,7 +1019,7 @@ fn spawn_stage(
         send(SPAWN, child.0, child.1, child.2);
     }
     // **The argv's frame, then the name set's, before every other capability**
-    // (`spawnproto::ARGS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
+    // (`spawnproto::PROGRAM_ARGUMENTS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         cap_delete(a.frame);

@@ -86,25 +86,29 @@ const SCREEN_BIT: u64 = 1 << 37;
 /// wanted to. What it can do is say what the grant *is*; the progenitor holds the endpoint and builds the rest.
 ///
 /// See [`GRANT_WORDS`] for what the two messages carry and why they are opaque to this module.
-const DIR_BIT: u64 = 1 << 36;
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family").
+const DIRECTORY_GRANT_BIT: u64 = 1 << 36;
 
 /// **A second directory grant follows, for the same confined program** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md). Set only alongside [`DIR_BIT`]: a second
+/// design/roadmap/0154-multi-directory-namespace.md). Set only alongside [`DIRECTORY_GRANT_BIT`]: a second
 /// grant is meaningless without a first, the same way the kernel's `fs_service::TwoDirGrant`
 /// (slot 0 grant A, slot 1 grant B) only exists in pairs.
 ///
-/// **Following [`DIR_BIT`]'s own precedent rather than inventing a new shape**, as milestone
+/// **Following [`DIRECTORY_GRANT_BIT`]'s own precedent rather than inventing a new shape**, as milestone
 /// 154's roadmap block names as the open question this closes: another two [`GRANT_WORDS`]
 /// messages follow the first pair, carrying the second caretaker's `START` words. Unlike
-/// [`DIR_BIT`], the confined program's own `START` words are **not** repeated a second time: one
+/// [`DIRECTORY_GRANT_BIT`], the confined program's own `START` words are **not** repeated a second time: one
 /// program is still being started, holding two narrowed endpoints (slot 0 grant A, slot 1 grant
 /// B), the same delivery `fs_service::start_granted_two_dirs` already proved.
 ///
 /// **Nothing on the shell side sets this bit yet, and the progenitor does not decode it.** No
 /// manifest declares two directory operands, so no plan constructs a two-directory `Endowment`
 /// (notes/two-trees.md's BUGS). This is the wire format alone, built ahead of an emitter the way
-/// [`DIR_BIT`] itself once stated a grant nothing could construct yet.
-const DIR2_BIT: u64 = 1 << 38;
+/// [`DIRECTORY_GRANT_BIT`] itself once stated a grant nothing could construct yet.
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family").
+const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
 
 /// **The executable's bytes follow, as page frames the caller owns** (DECISIONS §219 option D,
 /// ruled by calef 2026-09-26). Set when the shell runs a program the image did not name by
@@ -200,7 +204,9 @@ const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
 /// and dropped, so both sides stay in lockstep and the child gets nothing it could not read.
 ///
 /// Name: provisional (milestone 205, 2026-09-26).
-const ARGS_BIT: u64 = 1 << 42;
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family").
+const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
 /// **The machine statistics page follows as one `SEND_CAP`, after every other delegated
 /// capability** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and
 /// your share)). Set by a shell that holds the page at [`MACHINE_PAGE_SLOT`] when the program's
@@ -215,7 +221,7 @@ const ARGS_BIT: u64 = 1 << 42;
 /// is decided by what its session holds. That is also the shape §225's "granted to every login,
 /// withholdable by the owner" reads as: a session without the page cannot pass it on.
 ///
-/// **Bit 44, not the 42 calef ratified**: `ARGS_BIT` took 42 (milestone 205, #1394) and
+/// **Bit 44, not the 42 calef ratified**: `PROGRAM_ARGUMENTS_BIT` took 42 (milestone 205, #1394) and
 /// `NAMESET_BIT` takes 43 (#1402) while this was in flight, and numbers stay provisional until the
 /// queue lands them. Still in word 2's flag half, above the 32-bit page count.
 ///
@@ -581,13 +587,13 @@ pub struct Wiring {
     pub diagnostics: bool,
     /// **A directory grant follows as two data messages** ([`GRANT_WORDS`]), and the progenitor is to build a
     /// `fs_subtree_caretaker` for it before it builds the child. The only entry here that announces
-    /// data instead of a capability; see `DIR_BIT`.
-    pub dir: bool,
+    /// data instead of a capability; see `DIRECTORY_GRANT_BIT`.
+    pub directory_grant: bool,
     /// **A second directory grant follows, as two more data messages** (milestone 154). See
-    /// `DIR2_BIT`. Meaningless unless `dir` is also set; nothing here enforces that on its own
+    /// `SECOND_DIRECTORY_GRANT_BIT`. Meaningless unless `dir` is also set; nothing here enforces that on its own
     /// (the wire is one word, and a caller that set this without `dir` sent a request that was
     /// wrong before it left the shell).
-    pub dir2: bool,
+    pub second_directory_grant: bool,
     /// **This stage's primary output defaults to `terminal_sink_caretaker`, and a fresh completion
     /// endpoint follows** (DECISIONS §106). See `SCREEN_BIT`. Mutually exclusive with `sink` in
     /// practice (a stage the shell delegated an explicit sink for has somewhere else to write), but
@@ -599,8 +605,8 @@ pub struct Wiring {
     /// **One `SEND` on the run-unvouched capability follows the delegation** (DECISIONS §219 gate
     /// D2). See `RUN_UNVOUCHED_BIT`.
     pub run_unvouched: bool,
-    /// **The line's argv follows as one `READ` frame** (DECISIONS §170). See `ARGS_BIT`.
-    pub args: bool,
+    /// **The line's argv follows as one `READ` frame** (DECISIONS §170). See `PROGRAM_ARGUMENTS_BIT`.
+    pub program_arguments: bool,
     /// **The directory grant is a set of names, which follows as one `READ` frame** (milestone
     /// 205). See [`NAMESET_BIT`].
     pub nameset: bool,
@@ -630,11 +636,11 @@ pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, 
     if w.diagnostics {
         w2 |= DIAG_BIT;
     }
-    if w.dir {
-        w2 |= DIR_BIT;
+    if w.directory_grant {
+        w2 |= DIRECTORY_GRANT_BIT;
     }
-    if w.dir2 {
-        w2 |= DIR2_BIT;
+    if w.second_directory_grant {
+        w2 |= SECOND_DIRECTORY_GRANT_BIT;
     }
     if w.screen {
         w2 |= SCREEN_BIT;
@@ -645,8 +651,8 @@ pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, 
     if w.run_unvouched {
         w2 |= RUN_UNVOUCHED_BIT;
     }
-    if w.args {
-        w2 |= ARGS_BIT;
+    if w.program_arguments {
+        w2 |= PROGRAM_ARGUMENTS_BIT;
     }
     if w.nameset {
         w2 |= NAMESET_BIT;
@@ -671,12 +677,12 @@ pub fn wiring(w2: u64) -> Wiring {
         sink: w2 & SINK_BIT != 0,
         source: w2 & SOURCE_BIT != 0,
         diagnostics: w2 & DIAG_BIT != 0,
-        dir: w2 & DIR_BIT != 0,
-        dir2: w2 & DIR2_BIT != 0,
+        directory_grant: w2 & DIRECTORY_GRANT_BIT != 0,
+        second_directory_grant: w2 & SECOND_DIRECTORY_GRANT_BIT != 0,
         screen: w2 & SCREEN_BIT != 0,
         image: w2 & IMAGE_BIT != 0,
         run_unvouched: w2 & RUN_UNVOUCHED_BIT != 0,
-        args: w2 & ARGS_BIT != 0,
+        program_arguments: w2 & PROGRAM_ARGUMENTS_BIT != 0,
         nameset: w2 & NAMESET_BIT != 0,
         machine: w2 & MACHINE_BIT != 0,
         graphics: w2 & GRAPHICS_BIT != 0,
@@ -702,13 +708,17 @@ pub fn prog_id(w0: u64) -> u64 {
 }
 
 /// The integer argument from a received request (word 1).
-pub fn arg(w1: u64) -> u64 {
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family").
+pub fn program_argument(w1: u64) -> u64 {
     w1
 }
 
 /// The memory-grant page count from a received request (word 2). Non-zero means one delegated
 /// untyped capability follows the interrupt caps (if any) over `SEND_CAP` / `RECEIVE_CAP`.
-pub fn mem_pages(w2: u64) -> u64 {
+///
+/// Name: ratified 2026-10-18 (calef: "Approve the family").
+pub fn memory_grant_pages(w2: u64) -> u64 {
     w2 & 0xffff_ffff
 }
 
@@ -933,8 +943,8 @@ mod tests {
         // hardcoded answer.
         let (w0, w1, w2) = request(6, 9, 16, Wiring::default());
         assert_eq!(prog_id(w0), 6);
-        assert_eq!(arg(w1), 9);
-        assert_eq!(mem_pages(w2), 16);
+        assert_eq!(program_argument(w1), 9);
+        assert_eq!(memory_grant_pages(w2), 16);
         assert_eq!(wiring(w2), Wiring::default());
     }
 
@@ -950,14 +960,14 @@ mod tests {
                 ..Wiring::default()
             },
         );
-        assert_eq!(mem_pages(w2), 0);
+        assert_eq!(memory_grant_pages(w2), 0);
         assert!(is_interruptible(w2));
     }
 
     #[test]
     fn no_grant_is_zero_pages() {
         let (_, _, w2) = request(0, 5, 0, Wiring::default());
-        assert_eq!(mem_pages(w2), 0);
+        assert_eq!(memory_grant_pages(w2), 0);
     }
 
     /// **The fourteen flags are independent of each other and of the page count** (milestone 50 (pipes
@@ -978,12 +988,12 @@ mod tests {
                 sink: b(1),
                 source: b(2),
                 diagnostics: b(3),
-                dir: b(4),
-                dir2: b(5),
+                directory_grant: b(4),
+                second_directory_grant: b(5),
                 screen: b(6),
                 image: b(7),
                 run_unvouched: b(8),
-                args: b(9),
+                program_arguments: b(9),
                 nameset: b(10),
                 machine: b(11),
                 graphics: b(12),
@@ -991,7 +1001,7 @@ mod tests {
             };
             let (_, _, w2) = request(3, 0, 64, w);
             assert_eq!(wiring(w2), w, "{w:?}");
-            assert_eq!(mem_pages(w2), 64, "{w:?}");
+            assert_eq!(memory_grant_pages(w2), 64, "{w:?}");
         }
     }
 
@@ -1042,12 +1052,12 @@ mod tests {
             sink: true,
             source: true,
             diagnostics: true,
-            dir: true,
-            dir2: true,
+            directory_grant: true,
+            second_directory_grant: true,
             screen: true,
             image: true,
             run_unvouched: true,
-            args: true,
+            program_arguments: true,
             nameset: true,
             machine: true,
             graphics: true,
@@ -1109,7 +1119,7 @@ mod tests {
         assert!(!installer_serves(Activation::Vouch));
     }
 
-    /// **`DIR2_BIT` follows [`DIR_BIT`]'s own precedent**: it is a second bit, not a count, and it
+    /// **`SECOND_DIRECTORY_GRANT_BIT` follows [`DIRECTORY_GRANT_BIT`]'s own precedent**: it is a second bit, not a count, and it
     /// round-trips independent of whether `dir` itself is set (nothing here enforces the "meaningless
     /// without `dir`" rule from the wire alone; that is the emitter's obligation, stated in
     /// [`Wiring::dir2`]'s own doc).
@@ -1120,14 +1130,14 @@ mod tests {
             0,
             0,
             Wiring {
-                dir: true,
-                dir2: true,
+                directory_grant: true,
+                second_directory_grant: true,
                 ..Wiring::default()
             },
         );
         let w = wiring(w2);
-        assert!(w.dir);
-        assert!(w.dir2);
+        assert!(w.directory_grant);
+        assert!(w.second_directory_grant);
     }
 
     /// The replies a spawn can make are one family near the top of the word, each its own value,

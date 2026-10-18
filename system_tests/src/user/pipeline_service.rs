@@ -455,7 +455,7 @@ fn init_service(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         let m = crate::sched::ipc_receive(spawn_ep);
         let (w0, w1, w2) = (m[0], m[1], m[2]);
         let prog = grant_plan::Prog::from_id(grant_plan::spawnproto::prog_id(w0));
-        let arg = grant_plan::spawnproto::arg(w1);
+        let arg = grant_plan::spawnproto::program_argument(w1);
         let wiring = grant_plan::spawnproto::wiring(w2);
 
         // In the protocol's order. A capability received but never expected, or expected and
@@ -492,7 +492,7 @@ fn init_service(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // A `--mem` grant is received and dropped: no stage of the pipeline script asks for
         // one, and receiving it anyway is what keeps the two sides in lockstep if one ever
         // does. `user/src/system_initializer.rs` is where a budget actually reaches a child.
-        if grant_plan::spawnproto::mem_pages(w2) > 0 {
+        if grant_plan::spawnproto::memory_grant_pages(w2) > 0 {
             let m = crate::sched::ipc_receive_cap(spawn_ep);
             let _ = crate::sched::delete_current_cap(m[1]);
         }

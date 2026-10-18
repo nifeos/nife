@@ -513,8 +513,8 @@ impl Service<'_> {
             ..
         } = self.c;
         let spawn = &mut self.spawn;
-        let arg = spawnproto::arg(w1);
-        let mem_pages = spawnproto::mem_pages(w2);
+        let arg = spawnproto::program_argument(w1);
+        let mem_pages = spawnproto::memory_grant_pages(w2);
         let wiring = spawnproto::wiring(w2);
         let interruptible = wiring.interruptible;
         // **Under `IMAGE_BIT` word 0 is a length, not a program** (DECISIONS §219 option D), so no
@@ -529,7 +529,9 @@ impl Service<'_> {
         // They are read here rather than inside the branch that uses them because the shell has
         // already sent them: a request that announced them and a progenitor that did not drain them would
         // leave the endpoint holding words the *next* command would read as its own.
-        let grant = wiring.dir.then(|| (spawn.receive(), spawn.receive()));
+        let grant = wiring
+            .directory_grant
+            .then(|| (spawn.receive(), spawn.receive()));
 
         // **The image's frames, after the data and before every other capability** (§219 D),
         // taken and mapped here and copied once the request has been read to its end
@@ -540,9 +542,9 @@ impl Service<'_> {
             .then(|| take_frames(spawn, spawnproto::image_len(w0), own_ut));
 
         // **The argv's one frame, after the image's and before every other capability**
-        // (milestone 205 (how a foreign program is told what to do), DECISIONS §170; `spawnproto::ARGS_BIT`). Taken on every request that
+        // (milestone 205 (how a foreign program is told what to do), DECISIONS §170; `spawnproto::PROGRAM_ARGUMENTS_BIT`). Taken on every request that
         // announced it, whatever program it turns out to be for, so both sides stay in lockstep.
-        let args_seen = if wiring.args {
+        let args_seen = if wiring.program_arguments {
             receive_args(spawn, own_ut)
         } else {
             None
@@ -609,12 +611,15 @@ impl Service<'_> {
         //
         // **From the image pool, and as large as the image** (milestone 595): see
         // [`IMAGE_POOL_PAGES`] and `grant_plan::image_region_pages`.
-        let image_region = if wiring.image && !interruptible && (!wiring.dir || wiring.args) {
+        let image_region = if wiring.image
+            && !interruptible
+            && (!wiring.directory_grant || wiring.program_arguments)
+        {
             spawn.split(
                 images_ut,
                 grant_plan::image_region_pages(
                     spawnproto::image_pages(spawnproto::image_len(w0)),
-                    if wiring.args {
+                    if wiring.program_arguments {
                         grant_plan::Runtime::Std
                     } else {
                         grant_plan::Runtime::Native
@@ -731,7 +736,7 @@ impl Service<'_> {
                 None
             };
             let elf = elf?;
-            match endowed_image(&elf, vouch, arg, mem_pages, wiring.args) {
+            match endowed_image(&elf, vouch, arg, mem_pages, wiring.program_arguments) {
                 Some(m) => {
                     image_manifest = Some(m);
                     Some(elf)
@@ -864,7 +869,7 @@ impl Service<'_> {
         // what it lacks.
         let index_rights = manifest
             .and_then(|m| m.indexes.rights())
-            .filter(|_| std_layout && !req.wiring.dir && req.badge == 0);
+            .filter(|_| std_layout && !req.wiring.directory_grant && req.badge == 0);
         let dir = self.wire_directory(req, manifest, region, (wants.sync, index_rights));
         // **And its copy of the image's index sources**, beside the store and only with it.
         let sources_page = match (dir.index_store, region) {
@@ -983,7 +988,7 @@ impl Service<'_> {
         } else {
             self.spawn.split(
                 jobs_ut,
-                if req.wiring.dir {
+                if req.wiring.directory_grant {
                     DIR_JOB_REGION_PAGES
                 } else {
                     JOB_REGION_PAGES
@@ -1074,10 +1079,10 @@ impl Service<'_> {
         // `activation/indexes` with the verb's rights, on a line that named no directory. Only a
         // server that enforces bindings itself can make one, since the path is longer than a
         // caretaker's name; on any other the store is not granted and `jig` says so.
-        let index_store = !wiring.dir && self.fs_scoped && index_rights.is_some();
+        let index_store = !wiring.directory_grant && self.fs_scoped && index_rights.is_some();
         // A sync-only grant takes a window too (milestone 805): its badge is bound sync-only
         // rather than to a directory, and it is held until the reap like any other.
-        let window = if (wiring.dir || wants_sync || index_store) && fs.is_some() {
+        let window = if (wiring.directory_grant || wants_sync || index_store) && fs.is_some() {
             spawn.until_reaped(|s| s.windows.take(label))
         } else {
             None
@@ -1092,7 +1097,7 @@ impl Service<'_> {
             ),
             _ => None,
         };
-        let bound = match (wiring.dir && self.fs_scoped, fs, grant, window) {
+        let bound = match (wiring.directory_grant && self.fs_scoped, fs, grant, window) {
             _ if bound.is_some() => bound,
             (true, Some(f), Some((care_words, _)), Some(w)) => bound_channel(
                 f,
@@ -1105,7 +1110,7 @@ impl Service<'_> {
         };
         let channel = match (bound, fs, window) {
             (Some(b), ..) => Some(b),
-            (None, Some(f), Some(w)) if wiring.dir => {
+            (None, Some(f), Some(w)) if wiring.directory_grant => {
                 job_channel(f, (&mut spawn.windows, w), own_ut, &mut self.fs_mapped)
             }
             _ => None,
@@ -1113,7 +1118,7 @@ impl Service<'_> {
         let narrowed = if let Some(b) = bound {
             // The job holds the file server's own endpoint, badged and bound: no caretaker.
             Some(b.ep)
-        } else if wiring.dir {
+        } else if wiring.directory_grant {
             match (region, channel, grant) {
                 (Some(r), Some(ch), Some((care_words, _))) => {
                     build_grant(own_ut, r, ch, &self.care, care_words, set_seen, manifest)
@@ -1126,7 +1131,7 @@ impl Service<'_> {
         // A directory grant that produced no capability. The program is not built: it was told
         // to act on something and holds nothing, which is the one outcome this model must never
         // trade away.
-        let dir_failed = wiring.dir && narrowed.is_none();
+        let dir_failed = wiring.directory_grant && narrowed.is_none();
         // **The sync-only capability** (milestone 805, `fs::BIND_SYNC`): the window's badge
         // bound so the file server answers `SYNC` on it and refuses everything else, and the
         // endpoint badged with it. No page: a sync carries no bytes. Only a server that

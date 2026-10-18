@@ -30,7 +30,7 @@ without `xargs`:
 - `components/src/swish/running.rs`, `dir_grant`: `g.names.only()` is `None` for a set, and the shell answers
   "a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree one;
   name a single file".
-- `crates/grant_plan/src/spawnproto.rs`: `DIR_BIT` announces two more `SEND`s carrying the caretaker's
+- `crates/grant_plan/src/spawnproto.rs`: `DIRECTORY_GRANT_BIT` announces two more `SEND`s carrying the caretaker's
   and the child's three start words. A single name fits in two words. A set does not, and no bit
   says one follows.
 - The set caretaker exists and is proven (`components/src/fs_nameset_caretaker.rs`,
@@ -54,7 +54,7 @@ The progenitor must therefore receive up to 137 bytes of set per spawn, and buil
 | | What travels | Cost | Where it fails |
 |---|---|---|---|
 | **1. Leave it** | Nothing | Zero | A pattern at the prompt designates one name or is refused. `xargs <program>` never runs a batch |
-| **2. The set as data words** (`SET_BIT`, provisional): with `DIR_BIT`, up to six more `SEND`s of three words (24 bytes each) carry the encoded set | The progenitor decodes and checks the encoding (`nameset::count`), writes it into a frame retyped from the caretaker's region, maps it read-only at `SET_VA`. One transient slot for the frame, freed after the build, as `build_child` already does for segments | The shell cannot change the set after sending it. `DIR_BIT`'s own "the protocol carries data, not capabilities" precedent, and the one this block's environment pricing (2026-08-18) already costed |
+| **2. The set as data words** (`SET_BIT`, provisional): with `DIRECTORY_GRANT_BIT`, up to six more `SEND`s of three words (24 bytes each) carry the encoded set | The progenitor decodes and checks the encoding (`nameset::count`), writes it into a frame retyped from the caretaker's region, maps it read-only at `SET_VA`. One transient slot for the frame, freed after the build, as `build_child` already does for segments | The shell cannot change the set after sending it. `DIRECTORY_GRANT_BIT`'s own "the protocol carries data, not capabilities" precedent, and the one this block's environment pricing (2026-08-18) already costed |
 | **3. The set as a frame the shell owns** (§219 (how the shell names an installed program to the spawner) option D's shape): one `SEND_CAP` of a frame the shell wrote | One page from the shell's budget per spawn, one transient slot in the progenitor | The shell keeps write access, so the progenitor must copy before mapping or the caretaker's startup copy races the shell. That copy makes it option 2 with a page in the middle |
 | **4. Batches of one**, no wire change: `xargs` plans one name per batch, delivered by the subtree caretaker that already works | One spawn per name. Unix's `xargs -n 1` | Works today for `xargs rm`. Does nothing for a plain `rm *.txt`, and it is a stopgap: if options 2 and 4 cost the same, 2 wins. It is recommended only as effort, and says so |
 

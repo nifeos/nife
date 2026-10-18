@@ -65,7 +65,7 @@ pub enum ImageRefusal {
 /// **A `std` image is carried when it hears words, and only then** (milestone 205 (how a foreign
 /// program is told what to do)): `Runtime::Std` and [`ArgSpec::Words`] go together or not at all.
 /// The progenitor sizes an image's region before its frames arrive, so before it can read the note,
-/// and the one thing the request tells it is whether an argv follows (`spawnproto::ARGS_BIT`). Tying
+/// and the one thing the request tells it is whether an argv follows (`spawnproto::PROGRAM_ARGUMENTS_BIT`). Tying
 /// the two makes that bit the region's size: [`image_hears_words`]. A `std` image also declares no
 /// memory grant, domain or network, which is what the `std` layout can hold.
 pub fn image_can_carry(m: &Manifest) -> bool {
@@ -98,7 +98,7 @@ pub fn image_can_carry(m: &Manifest) -> bool {
 
 /// **Whether an image is sent its line as an argv**, which for an image is also whether it is built
 /// in the `std` layout ([`image_can_carry`] ties the two). The shell asks it of the note it read and
-/// sets `spawnproto::ARGS_BIT`; the progenitor sizes the region from that bit and then checks its
+/// sets `spawnproto::PROGRAM_ARGUMENTS_BIT`; the progenitor sizes the region from that bit and then checks its
 /// own reading of the note agrees ([`image_request_fits`]). Name: provisional.
 pub const fn image_hears_words(m: &Manifest) -> bool {
     m.arg.hears_words()
@@ -141,7 +141,7 @@ pub fn image_manifest(declared: Option<Manifest>, vouched: bool) -> Result<Manif
 /// file changed in between (or a shell that lies) can send an argument or a `--mem` grant the
 /// endowed manifest forbids. That is refused rather than half-honored.
 ///
-/// `words` is whether the request carried an argv (`spawnproto::ARGS_BIT`), which sized the
+/// `words` is whether the request carried an argv (`spawnproto::PROGRAM_ARGUMENTS_BIT`), which sized the
 /// region: it must agree with [`image_hears_words`] of the manifest, or a `std` program would be
 /// built in a native job's forty pages.
 pub fn image_request_fits(m: &Manifest, arg: u64, mem_pages: u64, words: bool) -> bool {

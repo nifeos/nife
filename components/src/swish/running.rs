@@ -21,7 +21,7 @@ const ARGV_VA: u64 = IMAGE_WINDOW;
 const SET_VA: u64 = ARGV_VA + line::MAX_STAGES as u64 * spawnproto::IMAGE_PAGE;
 
 /// **One line's argv, written and waiting to be sent**: the one-page region it was carved from and
-/// the frame in it. The frame travels to the progenitor narrowed to `READ` (`spawnproto::ARGS_BIT`)
+/// the frame in it. The frame travels to the progenitor narrowed to `READ` (`spawnproto::PROGRAM_ARGUMENTS_BIT`)
 /// and the progenitor copies it before the child runs, so the region goes back as soon as the
 /// child has answered.
 #[derive(Clone, Copy)]
@@ -271,8 +271,8 @@ pub(super) fn run_image(nav: &mut Nav, spec: RunSpec) {
         spawnproto::Wiring {
             image: true,
             run_unvouched: holds_run_unvouched,
-            args: argv.is_some(),
-            dir: set_grant.is_some(),
+            program_arguments: argv.is_some(),
+            directory_grant: set_grant.is_some(),
             nameset: set_grant.is_some_and(|w| w.set.is_some()),
             ..spawnproto::Wiring::default()
         },
@@ -285,7 +285,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: RunSpec) {
     }
     let read_ok = send_frames(t.slot, handle, pages, staging);
     nav.close_in(t, handle);
-    // The argv's frame follows the image's, before every other capability (`spawnproto::ARGS_BIT`).
+    // The argv's frame follows the image's, before every other capability (`spawnproto::PROGRAM_ARGUMENTS_BIT`).
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         cap_delete(a.frame);
@@ -932,7 +932,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
     }
 
     // **The argv's one frame, after the data and before every other capability**
-    // (`spawnproto::ARGS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
+    // (`spawnproto::PROGRAM_ARGUMENTS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
@@ -1045,11 +1045,11 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             sink: false,
             source: false,
             diagnostics: false,
-            dir,
+            directory_grant: dir,
             // **Always false from this shell**: no manifest declares two directory operands, so
             // nothing here constructs a two-directory grant for a spawned program; see
-            // `spawnproto::DIR2_BIT`'s own doc and notes/two-trees.md's BUGS.
-            dir2: false,
+            // `spawnproto::SECOND_DIRECTORY_GRANT_BIT`'s own doc and notes/two-trees.md's BUGS.
+            second_directory_grant: false,
             // **Also always false here** (DECISIONS §106), and for the same shape of reason as
             // `diagnostics`: a program only reaches this path (no file operand, no pipe, no
             // redirection at all) when `plan` put nothing in its source slot, and every program
@@ -1059,7 +1059,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             screen: false,
             image: false,
             run_unvouched: false,
-            args,
+            program_arguments: args,
             nameset,
             machine: machine_wiring(e),
             // **"This is a graphical terminal launch", and nothing follows it** (milestone 715

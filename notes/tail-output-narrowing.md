@@ -221,7 +221,7 @@ endpoint would have gone, so the child writes to a pipe or a file sink without k
 Nothing about what a program declares changes; no manifest is touched, because the primary output
 slot isn't something a program opts into. The actual work is shell-and-progenitor default-routing logic
 (when `sink == false`, delegate a `terminal_sink_caretaker` capability instead of the shell's own
-read endpoint), the same shape the progenitor already uses for a `DIR_BIT` grant. That is cheaper than §67
+read endpoint), the same shape the progenitor already uses for a `DIRECTORY_GRANT_BIT` grant. That is cheaper than §67
 itself, which had a real manifest-declaration axis this fork does not.
 
 **Decided 2026-08-22 (DECISIONS §106): take it.** See that decision for the full record. This note's
