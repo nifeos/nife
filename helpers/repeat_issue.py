@@ -141,9 +141,9 @@ def sync(text):
         return 0
     write = os.environ.get("GH_TOKEN") or None
     fallback = os.environ.get("WATCHER_FALLBACK_TOKEN") or None
-    # Reads go through the token that holds the issues permission. trunk-health.yml's App token
-    # does not, and GitHub's search answers it with no issues and exit 0: the closed listing came
-    # back empty and the close never reached plan(), which opened #2435 and #2448.
+    # Reads go through the fallback, whose issues permission trunk-health.yml grants in its own
+    # permissions block. GitHub's search answers a token without that permission with no issues
+    # and exit 0, so the close never reaches plan() and a duplicate opens (#2435, #2448).
     read = fallback or write
     listed = gh(["issue", "list", "--repo", REPO, "--state", "open", "--limit", "200",
                  "--json", "number,title,body"], read)
