@@ -186,7 +186,8 @@ meets a program, not a builtin.
    written only in program manifests, computed by the build into metadata and index. These checks
    keep resolution correct and records honest; they are not the security boundary, which stays at
    spawn, where a program gets only what its manifest names and the grant plan approves (§208).
-   The digest check is built. The other two wait on milestone 849's items 1 to 4 (849 is held).
+   The digest check is built. The other two wait on milestone 849's items 1 to 4, and 849 is
+   NOT-STARTED.
 9. Levels: [849's versioning rules](0849-a-package-declares-what-it-needs-at-run-time/versioning.md)
    5 to 7. Waits on 849's item 5.
 
@@ -224,7 +225,7 @@ measured.
   owner trust line, and a verb that takes only a URL has no step that supplies one.
 - **Outstanding.** Item 8's index half, the needs against metadata and manifests. Neither
   `package_index::Entry` nor a package's metadata carries needs; milestone 849 (a package declares
-  what it needs at run time)'s items 1 to 4 add them, and 849 is held. Checked 2026-10-20.
+  what it needs at run time)'s items 1 to 4 add them, and 849 is NOT-STARTED. Checked 2026-10-20.
 - **Milestone 892.** Milestone 892 (a std program at the prompt holds the network):
   `design/roadmap/0892-a-std-program-at-the-prompt-holds-the-network-and-a-resolver.md`. Item 2 is
   built here for `jig`; 1, 3 and 4 remain, and `jig` needs them to resolve `basalt.nifeos.org` for
