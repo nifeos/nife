@@ -109,9 +109,9 @@ cannot see drift on `main` that no save has captured either.
 
 ## BUGS
 
-- The tables above are against the 2026-09-26 floors. Milestone 629 made the counter cheaper and
-  591148372 re-saved all three floors after it, so the numbers here describe the drift as found,
-  not the floors in force.
+- The tables above are against the 2026-09-26 floors. Milestone 629 (the context-switch statistic
+  stops costing the switch path) made the counter cheaper and 591148372 re-saved all three floors
+  after it, so the numbers here describe the drift as found, not the floors in force.
 - The +43 fixed term from `7a90fcc59` is unexplained. It is one-off rather than per map, so it
   does not grow, but it is in the timed window of a row that is close to the tripwire on x86_64.
 - `spawn_reap`'s two causes do not add up. Stubbing the counter takes off 612 ticks and

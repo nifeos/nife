@@ -51,7 +51,8 @@ commit.
 - **Done.** Re-saving the aarch64 and x86_64 floors, in 591148372 (2026-10-03 UTC).
 - **Recorded.** The +43 fixed term from `7a90fcc59`, in the BUGS section of
   [the note](../../notes/benchmarks/drift-since-the-2026-09-26-floors.md).
-- **Milestone 415.** Drift on `main` between saves is invisible. The weekly drift report reads
+- **Milestone 415.** Sub-tripwire drift accumulates across baseline saves, and this is one more
+  way: drift on `main` between saves is invisible. The weekly drift report reads
   committed floors and the restamp measures only the compiler, so nothing compared `main` with the
   aarch64 and x86_64 floors until this block did. A weekly `--check` of `main` on all three ISAs,
   reported in the same file, would have shown it on the day #1360 merged.

@@ -10,11 +10,12 @@ needs_person: no
 ---
 # 39. Repository structure for a loosely-coupled OS, and the road to a distribution
 
-Superseded by the decisions and milestones that answered it. §151 (the goal of the repository split
-is independent release) rules the destination, this page's option C reached through option B. §247
-(the split begins with basalt holding nife, and `procps` moves first) rules the order. Milestone 175
-built the cheap first move below, and milestone 756 is the first code to leave the repository. This
-block keeps the analysis those started from.
+§151 (the goal of the repository split is independent release) rules the destination, this page's
+option C reached through option B. §247 (the split begins with basalt holding nife, and `procps`
+moves first) rules the order. Milestone 175 (split `user/` into `components/` and `fixtures/`) built
+the cheap first move below, and milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
+first code to leave this repository) is the cut itself. This block keeps the analysis those started
+from.
 
 Prior art to read before designing packaging: `design/haiku-bfs-and-packages.md`. Haiku's `packagefs`
 activates packages rather than installing them, composing the filesystem view from a set of read-only
@@ -110,7 +111,7 @@ cleanliness *before any external party needs it*.
 
 ## The packaging observation worth acting on early
 
-Most of a package format already exists and is not called one. Milestone 31's per-program **manifest**
+Most of a package format already exists and is not called one. Milestone 31's per-program manifest
 (SHILL-adapted: declared endowment, checked at spawn) is package metadata. §22's measured boot already
 hashes a component against a trust root. A distribution needs manifest, hash, version, and contract
 version; three of those four exist. Naming that as the packaging layer would make the distribution an

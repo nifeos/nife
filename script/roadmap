@@ -452,9 +452,10 @@ VOCAB = ["BUILT", "REMOVED", "SUPERSEDED", "PARTIAL", "IN-PROGRESS", "NOT-STARTE
 # inventing one would be a lie in the column whose entire job is not lying. A REMOVED milestone
 # therefore carries the date it turned BUILT if it ever did, and none if it did not.
 #
-# Minted 2026-08-30 (calef) when milestone 54 lost its code: the existing words could only lie about
-# it, since NOT-STARTED denies it was ever built, OPTIONAL reads as available to pick up, and leaving
-# it BUILT makes the column claim a network file service that no longer exists.
+# Minted 2026-08-30 (calef) when milestone 54 (a network file service a Mac can mount) lost its
+# code: the existing words could only lie about it, since NOT-STARTED denies it was ever built,
+# OPTIONAL reads as available to pick up, and leaving it BUILT makes the column claim a network file
+# service that no longer exists.
 # SUPERSEDED is "other work answered this, so it will never be built", and it is minted for the same
 # reason REMOVED was: every existing word could only lie about it. REMOVED says it once existed and
 # was taken out, when this was never built; NOT-STARTED is literally true and reads as still pending;
