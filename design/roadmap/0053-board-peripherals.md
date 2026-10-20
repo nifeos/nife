@@ -135,8 +135,8 @@ and both trees are GPL and were read for hardware facts only.
   `design/decisions/0086-el0-nvme-driver.md` is DECIDED, option 2a now with option 4 addable without
   reshaping the EL0 driver, and the choice between them settled by measurement.
 - **Outstanding.** RedoxFS crash consistency proven by actually cutting power on radon. Nothing can
-  power-cycle the board: milestone 224 is NOT-STARTED on a DECISION gate, and its own measurements
-  record zero replies from the plug on the subnet. Checked 2026-09-03.
+  power-cycle the board: milestone 224 (nothing can power-cycle radon) is REFUSED, because calef
+  chose manual power, and its own measurements record zero replies from the plug on the subnet.
 - **Outstanding.** The storage half's first run on radon: calef's three-boot bench step in
   notes/designware-mobile-storage.md, read-only first, then the scratch write, then the ordinary
   image back. Passing it lifts the block server's `PROVEN_ON_SILICON`.
