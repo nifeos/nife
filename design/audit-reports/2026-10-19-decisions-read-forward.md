@@ -139,7 +139,7 @@ every non-fault code as a clean exit. Harmless while the kernel sends two codes,
 reap of a paused child the rule exists to prevent once a third arrives. What an unknown code should
 do per consumer, and whether the rule becomes one shared dispatch a consumer cannot bypass, is a
 design choice and not a sweep's. Proposed:
-[every supervisor dispatches on the event codes it knows](../roadmap/proposals/every-supervisor-dispatches-on-known-event-codes.md).
+[every supervisor dispatches on the event codes it knows](../roadmap/0938-every-supervisor-dispatches-on-known-event-codes.md).
 
 ### 13. MINTED: six statements in the window's decisions that a later commit moved
 
@@ -149,7 +149,7 @@ inert after `START` (§309 and §300 changed both). §308 sizes against a capabi
 points at an "open question 1" that milestone 809 does not have. §304 quotes a word from a crate
 with the crate in British spelling and the quote in American. §303's and §304's frontmatter dates disagree with the blocks that cite
 them by a day. None changes a ruling. Proposed for the integrator:
-[decision text the window's own rulings overtook](../roadmap/proposals/decision-text-the-window-overtook.md).
+[decision text the window's own rulings overtook](../roadmap/0937-decision-text-the-window-overtook.md).
 
 ### 14. ACCEPTED: nano's stated reason for no `^Z`
 

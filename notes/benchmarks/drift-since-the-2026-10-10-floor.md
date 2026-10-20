@@ -101,8 +101,9 @@ already a chain of calls at opt-level 0.
 
 ## BUGS
 
-- The `ipc_rtt` family is still bimodal under the tick. Proposed:
-  [IPC rows run without a preemption tick](../../design/roadmap/proposals/ipc-rows-run-without-a-preemption-tick.md).
+- The `ipc_rtt` family is still bimodal under the tick. Milestone 939 (the icount bench runs
+  without a preemption tick in its windows):
+  [IPC rows run without a preemption tick](../../design/roadmap/0939-ipc-rows-run-without-a-preemption-tick.md).
   Until then, a step on `ipc_rtt` or `ipc_rtt_el0` is not a cost until it survives `TICK_HZ` 1.
 - `TPIDR_EL0`'s hand-over pays the same opt-level 0 toll as the read fixed here (about 48
   instructions a switch for three). It was named, not measured, as a candidate for the same fix.

@@ -102,8 +102,8 @@ rather than for job control alone. `notes/suspend-and-resume.md` has the kernel'
 - **Recorded.** `&` on anything but a supervised job is refused, in this block's BUGS and in
   `components/src/swish/jobs.rs`.
 - **Recorded.** zsh's `suspend` is not built, in this block's BUGS.
-- **Proposed.** Job control for every program:
-  `design/roadmap/proposals/every-job-is-built-the-way-a-supervised-job-is.md`.
+- **Milestone 933.** Job control for every program, in milestone 933 (every job is built the way a
+  supervised job is): `design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`.
 
 ## The open question: `disown`
 
