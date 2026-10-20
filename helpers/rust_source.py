@@ -37,6 +37,7 @@ Every function here takes `files`, an iterable of `(path, text)` pairs, with `pa
 repository root and slash-separated.
 """
 
+import pathlib
 import re
 
 # The comment and literal stripper. Rust source is not a regular language, so this is lexer-shaped
@@ -210,96 +211,70 @@ def unsafe_census(files):
 # in a userspace program is confined wherever it lives; and roughly half of `crates/` ships in BOTH,
 # which this split reports as a bucket of its own rather than guessing.
 #
-# **How the tables below were derived, 2026-09-20, on this worktree.** `cargo metadata
-# --format-version 1`, once, at the repository root: every workspace member's `resolve.nodes[*].
-# deps[*].dep_kinds` was read, and a crate is `KERNEL_ONLY`/`USERSPACE_ONLY` by whether it is
-# reachable, over edges that are NOT exclusively `dev`, from the `kernel` package versus from
-# `components` or `fixtures` (the two packages holding every EL0 program, milestone 175 (split
-# `user/`: `components/` for services, `fixtures/` for test and benchmark programs)). A crate
-# reachable from both sides is `SHARED`. This is mechanical and checkable
-# (`cargo metadata | helpers/<this file's own derivation>`, not reproduced as a script here because
-# `script/metrics` can never run cargo -- see this file's own module docstring -- so the result is
-# baked in below, the same trade `MILESTONE_STATUSES`/`NAME_STATUSES` already make in
-# `script/metrics`: today's definition, applied uniformly across history).
+# **Where a `crates/` member's side comes from.** `helpers/trust_boundary_crates.tsv`, one row per
+# member, generated from `cargo metadata` by `helpers/trust_boundary.py`, whose docstring holds the
+# rule. `script/lint` regenerates it and fails when the checked-in file differs, and the pre-push
+# hook fails when a member has no row, so a crate added since the last `--write` cannot fall through
+# unseen. `script/metrics` never runs cargo; it reads the file from the working tree and applies
+# today's table to every historical week, the restatement trade `MILESTONE_STATUSES`/`NAME_STATUSES`
+# make in that script.
 #
-# **A `SHARED` crate is not a hedge.** `environment_contract` and `clock_contract` are the clearest
+# **A `shared` crate is not a hedge.** `environment_contract` and `clock_contract` are the clearest
 # cases: the kernel builds the shared page (`PageBuilder`) and a userspace `std` program reads it
 # back through the identical `unsafe fn new`/`from_raw_parts` accessor, so the SAME unsafe source
 # genuinely executes with kernel privilege in one binary and under confinement in another. There is
 # no single number that is not either an overcount (attribute it to both) or an undercount
 # (attribute it to neither), so it is reported as its own line rather than folded into either side.
 #
-# **What is not attempted here.** Some of a `SHARED` crate's unsafe may in fact be reached only from
+# **What is not attempted here.** Some of a `shared` crate's unsafe may in fact be reached only from
 # the kernel's own `#[cfg(test)]` modules (several of the Cargo.toml comments say exactly this: "the
 # kernel does no date arithmetic of its own; its tests predict what the command printed"), which
 # would mean it never ships in the production kernel binary at all. Telling that apart from unsafe
 # the kernel's real logic calls needs a source-level, per-call-site read of each of the (currently
-# five) `SHARED` crates that carry any `unsafe`, which this pass did not do; it is recorded as
+# five) `shared` crates that carry any `unsafe`, which this pass did not do; it is recorded as
 # future work rather than guessed at.
-KERNEL_ONLY_CRATES = frozenset({
-    'address_space_identifier', 'capability', 'cpu_set', 'direct_memory_access_validator',
-    'firmware_configuration', 'generational_table', 'inter_process_communication',
-    'intrusive_fifo', 'jh7110_clock_and_reset', 'memory_corruption_canary_gate',
-    'memory_regions', 'page_frames', 'paging', 'pci', 'thread_wake_handshake',
-    'work_steal_slot',
-})
 
-# The 16 `crates/` members reachable only from `components` or `fixtures`. The five directories
-# below are NOT under `crates/`: each is its OWN cargo workspace (an empty `[workspace]` in its own
-# `Cargo.toml`), deliberately outside the main one (`std_exerciser`'s and `entropy_backend`'s own
-# headers give the reason: build-std flags and a `getrandom_backend` cfg the workspace crates must
-# never inherit), so `cargo metadata` at the repository root never sees them and they are matched by
-# path instead. Every one of them is, by its own header, a program or a library that runs on nife at
-# EL0 and never as kernel code: `redoxfs_server`'s `el0` feature is the real filesystem server
-# (`hosttest`, its other mode, never ships); `std_exerciser` and `cryptography_exerciser` are std
-# workloads built for the `*-unknown-nife` targets; `entropy_backend` is the `getrandom` backend
-# linked into every userspace `std` program; `cryptography_provider` is the `rustls` provider glue
-# those programs use.
-USERSPACE_ONLY_CRATES = frozenset({
-    'c_seam', 'component_plan', 'credentialer', 'documentation',
-    'globally_unique_identifier_partition_table', 'loaded_image_check', 'schedule_store',
-    'supervision_protocol', 'hot_swap_contract', 'swish', 'system_initializer', 'timetable',
-    'uptime', 'user_mode_heap', 'user_mode_runtime', 'virtio',
-})
+
+def _crate_buckets(path):
+    """{crate dir: bucket} from `trust_boundary_crates.tsv`, retired rows included."""
+    return {line.split('\t')[0]: line.split('\t')[1] for line in path.read_text().splitlines()
+            if line and not line.startswith(('#', 'crate\t'))}
+
+
+CRATE_BUCKETS = _crate_buckets(pathlib.Path(__file__).with_name('trust_boundary_crates.tsv'))
+# The `crates/` members no binary on nife links (`stick_maker`, `board_console` and the like). They
+# stay in `unsafe_census` (its `HOST_ONLY` is paths, and the lint ceiling keeps its meaning); this
+# split leaves them out, because kernel privilege or userspace confinement has no answer for code
+# that runs on neither.
+HOST_TOOL_CRATES = frozenset(c for c, b in CRATE_BUCKETS.items() if b == 'host')
+
+# Each of these is its OWN cargo workspace (an empty `[workspace]` in its own `Cargo.toml`), outside
+# the main one, so it is matched by path. `std_exerciser`'s and `entropy_backend`'s headers give the
+# reason they stay out: build-std flags and a `getrandom_backend` cfg the workspace crates must
+# never inherit. By its own header each runs on nife at EL0 and never as kernel code:
+# `redoxfs_server`'s `el0` feature is the filesystem server; `std_exerciser`, `cryptography_exerciser`,
+# `pinned_tls_exerciser` and `jig` are std programs for the `*-unknown-nife` targets;
+# `entropy_backend` is the `getrandom` backend in every userspace `std` program;
+# `cryptography_provider` and `pinned_tls_client` are the TLS glue those programs link; `c_library` is
+# the C library C programs link. `helpers/trust_boundary.py` reads each as a userspace root, and its
+# `--check-rows` fails on a workspace of its own that this list and its host list both miss.
 USERSPACE_ONLY_DIRS = ('redoxfs_server/', 'std_exerciser/', 'entropy_backend/',
-                       'cryptography_exerciser/', 'cryptography_provider/',
+                       'cryptography_exerciser/', 'cryptography_provider/', 'c_library/', 'jig/',
+                       'pinned_tls_client/', 'pinned_tls_exerciser/',
                        # `fs_server/` (2026-08-01 to 2026-08-25) and `fs-server/` (before that) are
                        # `redoxfs_server`'s own past names (its Cargo.toml header has the history);
                        # a historical week's tree carries whichever name was current, never both.
                        'fs_server/', 'fs-server/')
 
-# The 36 `crates/` members reachable from BOTH sides, over real (non-`dev`) edges.
-SHARED_CRATES = frozenset({
-    'abi', 'bitmap_font', 'block_roster', 'boot_ladder', 'byte_sink_contract', 'calendar',
-    'capability_witness_contract', 'clock_contract', 'compositor', 'coremark',
-    'counter_frequency_contract', 'credential_contract', 'device_tree_blob', 'elf',
-    'entropy_contract', 'environment_contract', 'filesystem_contract', 'glob', 'grant_plan',
-    'graphics_contract', 'jh7110_entropy', 'job_mix', 'line_editor', 'login_contract',
-    'machine_discovery', 'measured_boot', 'network_time_protocol', 'nifefs',
-    'non_volatile_memory_express', 'pgrep', 'pmap', 'ps', 'screen_console', 'soak_page',
-    'socket_contract', 'video_terminal',
-})
-
-# `uefi_loader` and the one crate only it reaches (`sealed_pair`) are neither: they run once, before
-# the kernel starts, with the full privilege of the pre-OS environment, to decide WHICH kernel image
-# gets control. `notes/trusted-base.md` draws the trusted base at "the kernel plus the hardware" and
-# means the isolation boundary the kernel enforces at runtime; `uefi_loader` has come and gone
-# (its memory reclaimed) before that boundary exists, so it is a boot-chain-of-trust question rather
-# than a runtime-isolation one, and folding it into either side would misstate which claim it backs.
-# Reported as its own bucket; which claim it belongs to is an architect's to decide.
+# `uefi_loader` is neither side: it runs once, before the kernel starts, with the full privilege of
+# the pre-OS environment, to decide WHICH kernel image gets control. `notes/trusted-base.md` draws
+# the trusted base at "the kernel plus the hardware" and means the isolation boundary the kernel
+# enforces at runtime; `uefi_loader` has come and gone (its memory reclaimed) before that boundary
+# exists, so it is a boot-chain-of-trust question rather than a runtime-isolation one, and folding it
+# into either side would misstate which claim it backs. Reported as its own bucket; which claim it
+# belongs to is an architect's to decide. A `crates/` member only it links is `boot_chain` in the
+# table.
 BOOT_CHAIN_DIRS = ('uefi_loader/',)
-BOOT_CHAIN_CRATES = frozenset({'sealed_pair'})
-
-# Three more `crates/` members that are host tooling and never run on nife, exactly like
-# `HOST_ONLY` above, just not under one of ITS path prefixes: each says so in its own header.
-# `board_console` and `portable_executable` are read by `xtask` only (`cargo xtask board-image`'s PE
-# conversion and the board's serial-log matcher); `stick_maker` is a USB-stick writer that "runs on
-# macOS, Linux and Windows and never on nife" (its own words) and is invoked directly rather than
-# depended on by anything. `unsafe_census` above does not know about these three (its `HOST_ONLY` is
-# unchanged, so `script/lint`'s ceiling keeps meaning exactly what it meant); this split excludes
-# them because the question this split answers -- kernel privilege or userspace confinement -- has
-# no answer for code that runs on neither.
-HOST_TOOL_CRATES = frozenset({'board_console', 'portable_executable', 'stick_maker'})
 
 
 def trust_bucket(path):
@@ -310,6 +285,11 @@ def trust_bucket(path):
     `user/src/` is milestone 175's predecessor to `components/`/`fixtures/` (renamed 2026-09-13);
     a historical week's tree carries whichever name was current then, never both, so both are
     handled here rather than only in the caller.
+
+    BUGS: `system_tests/` is in `unsafe_census` and in no bucket here (78 blocks on 2026-10-20
+    UTC). It is a test kernel image: its code runs at EL1, but no shipped kernel links it, and
+    whether test-only kernel code is trusted base is not decided. So the five buckets sum to less
+    than the census by that much plus the host-tool crates.
     """
     if path.startswith(HOST_ONLY):
         return None
@@ -322,24 +302,14 @@ def trust_bucket(path):
     if path.startswith('kernel/src/'):
         return 'kernel'
     if path.startswith('crates/'):
-        crate = path.split('/')[1]
-        if crate in HOST_TOOL_CRATES:
+        bucket = CRATE_BUCKETS.get(path.split('/')[1])
+        if bucket == 'host':
             return None
-        if crate in KERNEL_ONLY_CRATES:
-            return 'kernel'
-        if crate in USERSPACE_ONLY_CRATES:
-            return 'userspace'
-        if crate in SHARED_CRATES:
-            return 'shared'
-        if crate in BOOT_CHAIN_CRATES:
-            return 'boot_chain'
-        # A `crates/` directory this table has never seen: a crate added, renamed or removed
-        # since this table was last written by hand, over a week this split cannot re-derive
-        # (`script/metrics` can never run cargo against a historical revision to check). Counted
-        # rather than dropped, so the gap is visible instead of a silent undercount -- the same
-        # choice `names_total` already makes for the three weeks before milestone 115 (the names
-        # that were ratified, and the ones that were refused).
-        return 'unclassified'
+        # A `crates/` directory the table has no row for: on today's tree `script/lint` refuses
+        # that, so it is a crate renamed or removed since a historical week this split restates
+        # (`script/metrics` can never run cargo against a historical revision). Counted rather than
+        # dropped, so the gap is visible instead of a silent undercount.
+        return bucket or 'unclassified'
     return None
 
 
