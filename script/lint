@@ -581,6 +581,11 @@ for path in sorted(pathlib.Path('.').rglob('*.rs')):
                         j -= 1
                     elif s.startswith(('#[', '#!', '//')):
                         j -= 1
+                    elif s == ')]':
+                        # The last line of an attribute rustfmt wrapped: climb to its `#[`.
+                        while j >= 0 and not lines[j].strip().startswith('#['):
+                            j -= 1
+                        j -= 1
                     else:
                         break
                 if not any(re.search(r'#\s*Safety', d, re.I) for d in doc):

@@ -70,8 +70,9 @@ on aarch64, riscv64 and x86_64 on 2026-10-19 (UTC). The weekly sweep replays it.
 The table sweep and the variant work against the fixed escapes did not run here. With the count
 already at zero, they could no longer make this pass a clean one. calef ruled on #2432 (2026-10-19
 23:18 UTC): "New pass." They belong to the tenth outsider pass, a GLM 5.3 pass under
-`briefs/confinement-outsider-pass.md` that can count toward criterion (c), proposed as
-`design/roadmap/proposals/a-tenth-outsider-pass-attacks-the-confinement-claim.md`. Its floor
+`briefs/confinement-outsider-pass.md` that can count toward criterion (c): milestone 936 (a tenth
+outsider pass attacks the confinement claim), in
+`design/roadmap/0936-a-tenth-outsider-pass-attacks-the-confinement-claim.md`. Its floor
 includes row 35, so it covers this pass's variant ground. See
 `notes/confinement-outsider-pass-6.md` for the escape, the fix and the refusal log.
 
@@ -86,8 +87,8 @@ includes row 35, so it covers this pass's variant ground. See
 
 ## Follow-on
 
-- **Proposed.** The table sweep and the variant work go to the tenth outsider pass, by GLM 5.3,
-  in `design/roadmap/proposals/a-tenth-outsider-pass-attacks-the-confinement-claim.md`. It waits
+- **Milestone 936.** The table sweep and the variant work go to the tenth outsider pass, by GLM 5.3,
+  in `design/roadmap/0936-a-tenth-outsider-pass-attacks-the-confinement-claim.md`. It waits
   on calef's GLM token allowance.
 - **Milestone 198.** A human review, or a public bounty once a stranger can install nife, is the
   stronger form and waits on milestone 198 (a package manager, and the trivial install that makes

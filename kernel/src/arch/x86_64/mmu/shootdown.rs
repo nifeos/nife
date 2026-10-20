@@ -93,11 +93,13 @@ static SHOOTDOWN_PENDING: AtomicUsize = AtomicUsize::new(0);
 ///
 /// # BUGS
 ///
-/// **One page per round trip.** A thread reap unmaps [`crate::thread::STACK_PAGES`] pages and pays
-/// for six full shootdowns, where a batched protocol (collect the range, send once) would pay for
-/// one. Correct and unbatched was chosen over fast and first: the batched version needs `unmap_page`
-/// to hand its caller an undischarged obligation, which is the one thing `paging::TlbFlush` exists
-/// to prevent. Worth revisiting with `script/bench` numbers rather than by argument.
+/// **One page per round trip, outside two batched paths.** A thread reap unmaps
+/// [`crate::thread::STACK_PAGES`] pages and pays for six full shootdowns, where a batched protocol
+/// (collect the range, send once) would pay for one. The two paths that move whole runs batch:
+/// `revoke::revoke_region` through [`super::unmap_user_pages`] and `PageFrame::MAP` through
+/// [`super::UserMapBatch`]. Each keeps the obligation inside the arch layer (a closure, a `Drop`)
+/// rather than handing its caller an undischarged one, which is what `paging::TlbFlush` exists to
+/// prevent. The reap is worth the same move once `script/bench` says it matters.
 pub(super) fn shoot_down_others(va: u64) {
     broadcast(KIND_PAGE, va);
 }

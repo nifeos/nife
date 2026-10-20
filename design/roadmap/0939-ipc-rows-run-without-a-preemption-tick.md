@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: ipc-rows-run-without-a-preemption-tick
 raised: 2026-10-19
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The icount bench runs without a preemption tick in its windows
+# 939. The icount bench runs without a preemption tick in its windows
 
 Raised by the lane `bench/aarch64-drift-since-1010`, while attributing the aarch64 drift since the
-2026-10-10 floor ([the attribution](../../../notes/benchmarks/drift-since-the-2026-10-10-floor.md)).
+2026-10-10 floor ([the attribution](../../notes/benchmarks/drift-since-the-2026-10-10-floor.md)).
 Name: provisional.
 
 Reuse: the reasoning and tests of milestone 541 (a timed window that excludes preemption); the
@@ -65,3 +66,7 @@ a step and does not remove it, and the floor still records luck.
 All three architectures' floors move when it lands, so it is a `--save --why` on each, a person's
 act. riscv64 and x86_64 were not measured for the bimodality. The proposal assumes they share it,
 because the ping-pong does, and the lane that builds it should check that first.
+
+## Index row
+
+`ipc_rtt` and `ipc_rtt_el0` are bimodal under the periodic tick, so unrelated changes move their floors by luck. A bench-only `TICK_HZ` low enough that no window holds a tick makes those rows read their cost, and every floor is resaved by a person when it lands.

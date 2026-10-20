@@ -940,12 +940,11 @@ pub fn revoke_port_range(base: u16, count: u16) {
 /// sweep has no capability left to map with. The sweep does not consult the log, so a
 /// retyped-but-never-mapped frame in a destroyed region loses its capability too.
 ///
-/// The unmap pass is one page per iteration: find a recorded page in range under the registry lock,
-/// release it, then unmap (unmapping retakes the registry lock, so it cannot be called while it is
-/// held). Each pass tombstones every record of its page, so the scan strictly shrinks and
-/// terminates. A `MAP` that takes the registry between two iterations finds no capability (the
-/// sweep above is finished) and a claimed region refuses to retype, so the scan cannot grow
-/// ([`MappingHold`]).
+/// The unmap pass takes every recorded page in range in one scan per space, under the registry
+/// lock, and invalidates each space **once, by its tag** ([`mmu::unmap_user_pages`]): per page
+/// would be a cross-core shootdown each on riscv64 and x86_64, 683 for the scanout. Each record it
+/// unmaps it tombstones. A `MAP` cannot add a record in range meanwhile: it would need a capability
+/// (the sweep above is finished) or a retype from a claimed region, which refuses ([`MappingHold`]).
 ///
 /// **Then the tables, because page tables are not leaves.** `PageFrame::MAP` and
 /// `MemoryRegion::MAP` build a space's intermediate tables out of a region the caller names, which
@@ -955,8 +954,8 @@ pub fn revoke_port_range(base: u16, count: u16) {
 /// one in the range out of the walk that reaches it, flushes the space's tag, and tombstones the
 /// records of everything that hung beneath it, under the registry so no `MAP` is halfway through
 /// that walk. The space keeps running and loses that span, which is what already happens to a leaf
-/// the region paid for. One record per iteration, tombstoned as it is taken, so the scan strictly
-/// shrinks; a table below one already cut answers `None` and is simply dropped.
+/// the region paid for. One table per scan, tombstoned as it is taken, so the scans strictly
+/// shrink; a table below one already cut answers `None` and is simply dropped.
 ///
 /// # BUGS
 ///
@@ -975,54 +974,41 @@ pub fn revoke_region(base: u64, size: u64) {
     // kinds does not matter: a leaf beneath a table cut first is tombstoned with the cut, and an
     // unmap through a cut table finds nothing and tombstones anyway.
     loop {
-        let leaf = {
-            let spaces = &mut *SPACES.lock();
-            let mut found = None;
-            'scan: for space in spaces.live_mut() {
-                let (root, asid) = (space.root, space.asid);
-                for (_, page) in space.log.pages_mut() {
+        let spaces = &mut *SPACES.lock();
+        let mut table = None;
+        for space in spaces.live_mut() {
+            let (root, asid) = (space.root, space.asid);
+            let log = &mut space.log;
+            mmu::unmap_user_pages(root, asid, |unmap| {
+                for (_, page) in log.pages_mut() {
                     for e in page.used_mut() {
                         if e.phys < base || e.phys >= base + size {
                             continue;
                         }
-                        if e.is_table() {
-                            found = Some(Victim::Table(root, asid, e.va, e.phys));
+                        if !e.is_table() {
+                            unmap(e.va);
                             e.phys = 0;
-                        } else {
-                            found = Some(Victim::Leaf(e.phys));
+                        } else if table.is_none() {
+                            table = Some((root, asid, e.va, e.phys));
+                            e.phys = 0;
                         }
-                        break 'scan;
                     }
                 }
+            });
+            if table.is_some() {
+                break;
             }
-            match found {
-                None => break,
-                // Cut under the registry, so no `MAP` is halfway down this walk.
-                Some(Victim::Table(root, asid, va, table)) => {
-                    if let Some((cut, span)) = mmu::cut_user_table(root, va, table, asid)
-                        && let Some(space) = spaces.live_mut().find(|s| s.root == root)
-                    {
-                        space.forget_mappings_within(cut, span);
-                    }
-                    None
-                }
-                Some(Victim::Leaf(phys)) => Some(phys),
-            }
+        }
+        let Some((root, asid, va, table)) = table else {
+            break;
         };
-        // Unmap only, after the registry is released (unmapping retakes it): the capability sweep
-        // above already covered the whole range, and calling `revoke_page_frame` here would re-run
-        // an exact-match sweep per page that by construction can no longer find anything.
-        if let Some(phys) = leaf {
-            unmap_everywhere(phys, 0);
+        // Cut under the registry, so no `MAP` is halfway down this walk.
+        if let Some((cut, span)) = mmu::cut_user_table(root, va, table, asid)
+            && let Some(space) = spaces.live_mut().find(|s| s.root == root)
+        {
+            space.forget_mappings_within(cut, span);
         }
     }
-}
-
-/// What one pass of [`revoke_region`]'s scan found: a mapped page to unmap everywhere, or a table
-/// record `(root, asid, va, table)` to cut.
-enum Victim {
-    Leaf(u64),
-    Table(u64, u16, u64, u64),
 }
 
 #[cfg(test)]

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: every-supervisor-dispatches-on-known-event-codes
 raised: 2026-10-19
 milestone_dependencies: none
 decision_dependencies: 300
@@ -7,12 +8,12 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Every supervisor dispatches on the event codes it knows
+# 938. Every supervisor dispatches on the event codes it knows
 
 Raised by the 2026-10-19 documentation sweep
-([decisions read forward](../../audit-reports/2026-10-19-decisions-read-forward.md), finding 12).
+([decisions read forward](../audit-reports/2026-10-19-decisions-read-forward.md), finding 12).
 
-[§300 (the paused state, a TCB verb, silent)](../../decisions/0300-tcb-suspend-resume-the-paused-state.md)
+[§300 (the paused state, a TCB verb, silent)](../decisions/0300-tcb-suspend-resume-the-paused-state.md)
 keeps a stopped event out of the message of §26 (fault endpoint). It rests that on a rule:
 unknown event codes are never acted on, so a later `EVENT_STOPPED` is additive rather than a
 migration across every supervisor.
@@ -30,3 +31,7 @@ a review.
 The correction to §300's sentence about the tree is the integrator's.
 
 Reuse: none exists; the dispatch is on this tree's own §26 wire, and `supervision_protocol` is where the shared shape would live.
+
+## Index row
+
+§300 rests on supervisors ignoring event codes they do not know, and two of them (`job_undertaker` and `sub_server_supervisor`) act on any code. Each would reap a paused child as dead once a third code exists, so the rule needs a shared dispatch a consumer cannot bypass.

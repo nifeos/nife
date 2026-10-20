@@ -1013,6 +1013,31 @@ pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
     Some(pa)
 }
 
+/// **Unmap many user pages of one space and invalidate once, by its tag**, for a caller that takes
+/// back a whole run at a time ([`crate::revoke::revoke_region`]). `each` is handed an unmap and
+/// calls it once per address; pages not mapped are skipped. Name provisional (lane 2451, 2026-10-20
+/// UTC).
+///
+/// [`unmap_user_at`] once per page costs a by-address invalidate per page, and on this ISA that is
+/// a cross-core shootdown per page, 683 of them for the scanout. One
+/// [`flush_asid`] after the last unmap discharges every page's obligation, because each of them is
+/// a translation tagged `asid`. Until it runs another core may still hit a stale entry, so the
+/// caller must not hand any of these frames back before this returns.
+pub(crate) fn unmap_user_pages(root: u64, asid: u16, each: impl FnOnce(&mut dyn FnMut(u64))) {
+    // SAFETY: as `unmap_user_at`.
+    let mut mapper = unsafe { Mapper::<_, _, Format>::new(root, Half::Low, || None, phys_to_ptr) };
+    let mut unmapped = false;
+    each(&mut |va| {
+        if let Ok((_, flush)) = mapper.unmap(va) {
+            flush.flush(|_| {}); // owed to, and paid by, the one flush_asid below
+            unmapped = true;
+        }
+    });
+    if unmapped {
+        flush_asid(asid);
+    }
+}
+
 /// **Cut the page table at `table` out of the walk that reaches `va` in the space rooted at
 /// `root`**, and flush that space's tag. Returns the span of addresses that went with it, as
 /// `(base, size)`, or `None` if the walk to `va` no longer passes through `table`. Name
@@ -1036,6 +1061,60 @@ pub fn translate_at(root: u64, va: u64) -> Option<(u64, Flags)> {
     // SAFETY: `root` is a page table; the direct map makes `phys_to_ptr` valid; no allocation.
     let mapper = unsafe { Mapper::<_, _, Format>::new(root, Half::Low, || None, phys_to_ptr) };
     mapper.translate(va)
+}
+
+/// **Map a run of user pages into the current space and invalidate once, when the batch drops**,
+/// for `PageFrame::MAP`. Name provisional (lane 2451, 2026-10-20 UTC).
+///
+/// [`map_current_user_page_frame`] flushes after every page, and on this
+/// ISA that is a cross-core fence per page, 683 of them for the scanout. This fences each page
+/// locally and every other hart once, over the whole span. The flush is in `Drop`, so
+/// neither the end of a run nor an early return out of one can skip it.
+pub(crate) struct UserMapBatch {
+    lo: u64,
+    hi: u64,
+}
+
+impl UserMapBatch {
+    pub(crate) const fn new() -> Self {
+        Self {
+            lo: u64::MAX,
+            hi: 0,
+        }
+    }
+
+    /// Map one page as [`map_current_user_page_frame`] does, leaving its invalidate to the drop.
+    pub(crate) fn map(
+        &mut self,
+        va: u64,
+        phys: u64,
+        flags: Flags,
+        alloc: impl FnMut() -> Option<u64>,
+    ) -> Result<(), MapError> {
+        let root = current_root_pa();
+        // SAFETY: as `map_current_user_page_frame`.
+        let mut mapper =
+            unsafe { Mapper::<_, _, Format>::new(root, Half::Low, alloc, phys_to_ptr) };
+        mapper.map(va, phys, flags)?;
+        self.lo = self.lo.min(va);
+        self.hi = self.hi.max(va + PAGE_SIZE);
+        Ok(())
+    }
+}
+
+impl Drop for UserMapBatch {
+    fn drop(&mut self) {
+        if self.lo >= self.hi {
+            return;
+        }
+        for va in (self.lo..self.hi).step_by(PAGE_SIZE as usize) {
+            instructions::sfence_vma_page(va);
+        }
+        let others = crate::smp::online_harts_mask() & !(1usize << crate::cpu::id());
+        if others != 0 {
+            super::sbi_remote_sfence_vma(others, self.lo as usize, (self.hi - self.lo) as usize);
+        }
+    }
 }
 
 /// Map one user page at `va` onto the already-owned physical frame `phys` in the current address
