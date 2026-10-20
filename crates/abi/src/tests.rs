@@ -158,4 +158,7 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     assert_eq!(qemu, RegisterShape::BYTES);
     assert_eq!(qemu.offset(LSR), 0x05);
     assert!(!qemu.is_word_access());
+    // A stated 4-byte width at byte stride stays byte access: a 32-bit load at LSR's 0x05 is
+    // unaligned and traps, which is why the kernel's driver has the same guard.
+    assert!(!RegisterShape::new(0, 4).is_word_access());
 }

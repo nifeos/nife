@@ -705,17 +705,18 @@ fn start_network(
 }
 
 /// Retype the terminal plumbing and build what prints: the console, the system log service and
-/// the line discipline. Returns the terminal endpoint and the shell's two pages.
+/// the line discipline. Returns the terminal endpoint and the shell's two pages. The pair is the
+/// console's two device facts: whether the kernel wired a screen, and the UART's register shape
+/// (`abi::uart`).
 #[inline(never)]
 pub(super) fn start_terminal_stack(
     g: &BootEndowment,
     ut: u64,
-    has_screen: bool,
+    (has_screen, uart_shape): (bool, u64),
     con_elf: &elf::Elf<'static>,
     log_elf: Option<&elf::Elf<'static>>,
     ts_elf: &elf::Elf<'static>,
     td_bytes: &[u8],
-    uart_shape: u64,
 ) -> Terminal {
     // The endpoints and shared pages we own and hand out, each retyped with full rights so we can
     // delegate narrowed views. `term_ep` is the terminal contract's one endpoint: the discipline

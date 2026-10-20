@@ -84,12 +84,11 @@ pub fn boot(
     let term = start_terminal_stack(
         g,
         ut,
-        devices.has_screen,
+        (devices.has_screen, uart_shape),
         &con_elf,
         p.log_elf.as_ref(),
         &ts_elf,
         td_bytes,
-        uart_shape,
     );
 
     refuse_unvouched(ut, term, &p.in_elf, &p.sh_elf, &p.reaper_elf);

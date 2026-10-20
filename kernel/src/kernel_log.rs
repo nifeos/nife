@@ -329,7 +329,11 @@ const STALL_POLL_TICKS: u64 = 100;
 #[inline(never)]
 pub(crate) fn stall_tick() {
     static TICKS: AtomicU64 = AtomicU64::new(0);
-    if crate::cpu::id() != 0 || TICKS.fetch_add(1, Ordering::Relaxed) % STALL_POLL_TICKS != 0 {
+    if crate::cpu::id() != 0
+        || !TICKS
+            .fetch_add(1, Ordering::Relaxed)
+            .is_multiple_of(STALL_POLL_TICKS)
+    {
         return;
     }
     if crate::sync::current_rank() != crate::sync::rank::NONE {
