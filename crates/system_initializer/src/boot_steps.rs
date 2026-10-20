@@ -705,12 +705,14 @@ fn start_network(
 }
 
 /// Retype the terminal plumbing and build what prints: the console, the system log service and
-/// the line discipline. Returns the terminal endpoint and the shell's two pages.
+/// the line discipline. Returns the terminal endpoint and the shell's two pages. The pair is the
+/// console's two device facts: whether the kernel wired a screen, and the UART's register shape
+/// (`abi::uart`).
 #[inline(never)]
 pub(super) fn start_terminal_stack(
     g: &BootEndowment,
     ut: u64,
-    has_screen: bool,
+    (has_screen, uart_shape): (bool, u64),
     con_elf: &elf::Elf<'static>,
     log_elf: Option<&elf::Elf<'static>>,
     ts_elf: &elf::Elf<'static>,
@@ -737,7 +739,14 @@ pub(super) fn start_terminal_stack(
         let reply = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
         let con_shared = must(retype_page_frame(ut)); // line_editor -> console text
 
-        start_console(g, ut, con_elf, has_screen, request, reply, con_shared);
+        start_console(
+            g,
+            ut,
+            con_elf,
+            has_screen,
+            uart_shape,
+            [request, reply, con_shared],
+        );
         start_system_log(g, ut, log_elf, request);
 
         // 2. The line discipline: serves the terminal endpoint, prints through the console. It is
@@ -785,9 +794,8 @@ fn start_console(
     ut: u64,
     con_elf: &elf::Elf<'static>,
     has_screen: bool,
-    request: u64,
-    reply: u64,
-    con_shared: u64,
+    uart_shape: u64,
+    [request, reply, con_shared]: [u64; 3],
 ) {
     // 1. Console server: reads text from the shared page, writes it to the UART.
     //
@@ -875,10 +883,12 @@ fn start_console(
     if has_screen {
         must_ok(user_mode_runtime::notification_bind(con_batch.0, con.tcb) >= 0);
     }
+    // The second word is the UART's register shape (`abi::uart`), which the console needs before
+    // its first byte: with the wrong stride it waits on a status bit at the wrong address.
     must_ok(start_child(
         con,
         if has_screen { CONSOLE_MODE_SCREEN } else { 0 },
-        0,
+        uart_shape,
         0,
     ));
     // The console holds its own narrowed copies of the terminal's endpoint and page now, and
@@ -1010,6 +1020,7 @@ pub(super) fn start_keystroke_sources(
     ut: u64,
     in_elf: &elf::Elf<'static>,
     term_ep: u64,
+    uart_shape: u64,
 ) {
     // 3. The keystroke source: the input driver, waiting on the UART receive interrupt and
     // forwarding raw bytes to the terminal, in the same `OPERATION_BYTES` framing a `graphical_terminal` session's
@@ -1053,7 +1064,7 @@ pub(super) fn start_keystroke_sources(
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    must_ok(start_child(input, 0, 0, 0));
+    must_ok(start_child(input, uart_shape, 0, 0)); // the console's register shape, `abi::uart`
 
     // 3b. **A second keystroke source, a USB keyboard** (milestone 242 (USB host and HID)), when
     // the kernel started one: `WRITE` on the same terminal endpoint `input` holds, delegated

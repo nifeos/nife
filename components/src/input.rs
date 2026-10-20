@@ -135,20 +135,57 @@ mod uart {
 
 #[cfg(target_arch = "riscv64")]
 mod uart {
+    use core::sync::atomic::{AtomicU64, Ordering};
+
+    use abi::uart::RegisterShape;
+
     use super::UART_VA;
-    const RBR: u64 = 0x00; // receive buffer (read)
-    const IER: u64 = 0x01; // interrupt enable
-    const LSR: u64 = 0x05; // line status
+    // Register indices; the byte offset is the index at the kernel's stride (`abi::uart`).
+    const RBR: u64 = 0; // receive buffer (read)
+    const IER: u64 = 1; // interrupt enable
+    const LSR: u64 = 5; // line status
     const IER_ERBFI: u8 = 1 << 0; // enable received-data-available interrupt
     const LSR_DR: u8 = 1 << 0; // data ready
 
-    fn rd(off: u64) -> u8 {
-        // SAFETY: UART_VA is our device mapping of the NS16550.
-        unsafe { core::ptr::read_volatile((UART_VA + off) as *const u8) }
+    /// The first start word, set before the first register access.
+    static SHAPE: AtomicU64 = AtomicU64::new(0);
+
+    /// Adopt the register shape the progenitor passed (`abi::uart`), before the first access.
+    ///
+    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape.
+    pub fn set_shape(word: u64) {
+        SHAPE.store(word, Ordering::Relaxed);
     }
-    fn wr(off: u64, v: u8) {
+
+    fn shape() -> RegisterShape {
+        RegisterShape::from_word(SHAPE.load(Ordering::Relaxed))
+    }
+
+    fn rd(index: u64) -> u8 {
+        let shape = shape();
+        let addr = UART_VA + shape.offset(index);
+        // SAFETY: UART_VA is our device mapping of the NS16550, and the largest offset
+        // `RegisterShape` allows stays inside that page. The 32-bit arm is taken only when the
+        // stride keeps every register 4-byte aligned.
+        unsafe {
+            if shape.is_word_access() {
+                core::ptr::read_volatile(addr as *const u32) as u8
+            } else {
+                core::ptr::read_volatile(addr as *const u8)
+            }
+        }
+    }
+    fn wr(index: u64, v: u8) {
+        let shape = shape();
+        let addr = UART_VA + shape.offset(index);
         // SAFETY: as above.
-        unsafe { core::ptr::write_volatile((UART_VA + off) as *mut u8, v) }
+        unsafe {
+            if shape.is_word_access() {
+                core::ptr::write_volatile(addr as *mut u32, v as u32);
+            } else {
+                core::ptr::write_volatile(addr as *mut u8, v);
+            }
+        }
     }
 
     /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `rx_pending` and `is_rx_pending`
@@ -237,7 +274,11 @@ mod uart {
 /// wall-seconds, measured by milestone 182 (x86_64's own interactive-boot entry point)), and the
 /// capability-slot gauge the idle loop prints never moved past the hand-over.
 #[unsafe(no_mangle)]
-pub extern "C" fn _start(_x0: u64, _x1: u64, _x2: u64) -> ! {
+pub extern "C" fn _start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
+    #[cfg(target_arch = "riscv64")]
+    uart::set_shape(uart_shape);
+    #[cfg(not(target_arch = "riscv64"))]
+    let _ = uart_shape;
     // Drain anything already in the FIFO by POLLING, before arming the interrupt: input piped in at
     // boot is sitting in the FIFO already, and the first interrupt after arming can race with it.
     // This narrows the window but does NOT close it. A line burst-piped into QEMU during the few

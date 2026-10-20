@@ -154,7 +154,11 @@ const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
 const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
 #[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, _x1: u64, _x2: u64) -> ! {
+pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
+    #[cfg(target_arch = "riscv64")]
+    UART_SHAPE.store(uart_shape, core::sync::atomic::Ordering::Relaxed);
+    #[cfg(not(target_arch = "riscv64"))]
+    let _ = uart_shape;
     let screen = mode == MODE_SCREEN;
     // The screen's batching state; `batching` turns itself off the first time the timer refuses
     // (`ARM` is the whole probe: a spawner that gave no timer slot answers once, negatively, and
@@ -389,19 +393,89 @@ fn uart_put(byte: u8) {
     regs.DR.set(byte as u32);
 }
 
-/// The NS16550 twin (RISC-V): byte registers, Transmit Holding Register Empty in the LSR.
+/// The UART's register shape, the second start word (`abi::uart`), stored before the first byte.
+#[cfg(target_arch = "riscv64")]
+static UART_SHAPE: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+
+/// How many polls of LSR go by before the transmit wait starts reading the clock. A 16-byte FIFO
+/// at 115200 baud drains in under 1.5 ms, so a healthy UART almost never gets here, and on the
+/// JH7110 reading the clock from user mode costs a trap into the firmware.
+#[cfg(target_arch = "riscv64")]
+const POLLS_BEFORE_CLOCK: u32 = 1024;
+
+/// The NS16550 twin (RISC-V): Transmit Holding Register Empty in the LSR, at the stride and access
+/// width the kernel read from the device tree (`abi::uart`).
+///
+/// **The wait is bounded at one second, and running out kills this process on purpose.** A UART
+/// that never empties its holding register is almost always a wrong register shape, and a console
+/// that spins on it prints nothing and blocks every program that prints. Killed, it leaves a line
+/// on the wire: the kernel's ring stalls without its drainer, the kernel writes the UART itself
+/// again (`kernel/src/kernel_log.rs`), and its fault report names a load fault whose `stval` is the
+/// LSR offset this console polled, `0x5` for byte registers and `0x14` for the JH7110's.
 #[cfg(target_arch = "riscv64")]
 fn uart_put(byte: u8) {
-    const THR: u64 = 0x00; // transmit holding register
-    const LSR: u64 = 0x05; // line status register
+    use abi::uart::RegisterShape;
+    const THR: u64 = 0; // transmit holding register
+    const LSR: u64 = 5; // line status register
     const LSR_THRE: u8 = 1 << 5; // transmit holding register empty
-    // SAFETY: UART_VA is our device mapping of the NS16550, handed to us at spawn.
-    unsafe {
-        while core::ptr::read_volatile((UART_VA + LSR) as *const u8) & LSR_THRE == 0 {
-            core::hint::spin_loop();
+    let shape = RegisterShape::from_word(UART_SHAPE.load(core::sync::atomic::Ordering::Relaxed));
+    let mut polls = 0u32;
+    let mut deadline = None;
+    while uart_read(shape, LSR) & LSR_THRE == 0 {
+        polls = polls.saturating_add(1);
+        if polls >= POLLS_BEFORE_CLOCK {
+            let t = now();
+            match deadline {
+                None => deadline = Some(t.saturating_add(cntfrq())),
+                Some(d) if t > d => transmit_never_emptied(shape.offset(LSR)),
+                Some(_) => {}
+            }
         }
-        core::ptr::write_volatile((UART_VA + THR) as *mut u8, byte);
+        core::hint::spin_loop();
     }
+    uart_write(shape, THR, byte);
+}
+
+/// Read register `index` of the NS16550 at `UART_VA`, at the shape's stride and width.
+#[cfg(target_arch = "riscv64")]
+fn uart_read(shape: abi::uart::RegisterShape, index: u64) -> u8 {
+    let addr = UART_VA + shape.offset(index);
+    // SAFETY: UART_VA is our device mapping of the NS16550, handed to us at spawn, and the largest
+    // offset `RegisterShape` allows stays inside that one page. The 32-bit arm is taken only when
+    // the stride keeps every register 4-byte aligned.
+    unsafe {
+        if shape.is_word_access() {
+            core::ptr::read_volatile(addr as *const u32) as u8
+        } else {
+            core::ptr::read_volatile(addr as *const u8)
+        }
+    }
+}
+
+/// Write register `index` of the NS16550 at `UART_VA`; see [`uart_read`].
+#[cfg(target_arch = "riscv64")]
+fn uart_write(shape: abi::uart::RegisterShape, index: u64, value: u8) {
+    let addr = UART_VA + shape.offset(index);
+    // SAFETY: as `uart_read`.
+    unsafe {
+        if shape.is_word_access() {
+            core::ptr::write_volatile(addr as *mut u32, value as u32);
+        } else {
+            core::ptr::write_volatile(addr as *mut u8, value);
+        }
+    }
+}
+
+/// Die with the LSR offset as the faulting address, so the kernel's kill report names it. Page
+/// zero is never mapped in any process, so the load faults.
+#[cfg(target_arch = "riscv64")]
+fn transmit_never_emptied(lsr_offset: u64) -> ! {
+    // SAFETY: the address is in page zero, which no process maps, so the load faults and the
+    // kernel kills this thread before any value is produced.
+    unsafe {
+        core::ptr::read_volatile(lsr_offset as *const u8);
+    }
+    user_mode_runtime::trap()
 }
 
 /// **The x86 twin: COM1 by port I/O, not memory** (milestone 299, DECISIONS §121 reversed

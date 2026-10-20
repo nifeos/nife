@@ -75,6 +75,7 @@ pub fn on_tick() {
     // spaces)). One relaxed load when nothing is held, which is almost every tick. The print that
     // held it could not signal: it may have been printing under `IPC_TABLES`. See `kernel_log`.
     crate::kernel_log::signal_if_safe();
+    crate::kernel_log::stall_tick();
     #[cfg(feature = "console_flood")]
     crate::kernel_log::flood_tick();
 }
