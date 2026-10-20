@@ -233,7 +233,7 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 | 3 | an undeclaring program holds no reset capability; `caps reboot` names it | met: the witness fixture and the `caps reboot` line in `swish-check`, plus the host test |
 | 4 | a refusal is loud | met: the kernel prints the firmware's code and `reboot` prints the reason. **No non-zero exit**: no program here has one |
 | 5 | `script/soak-test --reboot` still passes | met: passed on aarch64, riscv64 and x86_64 on 2026-10-06 (UTC), each resetting and soaking again 127 s in |
-| 6 | radon, after milestone 592 | **not met**: see the scope note |
+| 6 | radon, after milestone 592 | **not met**: radon does not reach the prompt (2026-10-20); see the scope note |
 | 7 | §251 records the semantics | met, with a 2026-10-06 amendment for what the build found |
 
 ## What it costs
@@ -250,11 +250,16 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 ## Scope note
 
 **radon (riscv64 silicon) is not proven, and this block claims nothing about it.** The kernel half
-is the same code on radon as under QEMU `virt`, including milestone 592's I2C5 release, which runs
-before SBI SRST on any JH7110. But 592's fix has never run on the board (the 2026-09-04 hang above). Until 592's bench run passes, `reboot`
-typed at radon's prompt prints its sync report and the kernel's attempt line, and the board may
-stop there. The plan: once 592 is BUILT, calef types `reboot` at radon's prompt with nobody at
-plug 2, and the serial capture goes under `target/board/`. Exit criterion 6 is that run.
+is the same code on radon as under QEMU `virt`, including milestone 592's direct AXP15060 write,
+which runs before SBI SRST on any JH7110. That write is proven on radon from the rebooting soak
+(592, four resets on 2026-10-10). What is not proven is the prompt: on 2026-10-20 (UTC) radon
+netbooted `script/board-image --tftp` from `main` at `2d2e042d2`, passed every kernel tour line
+through `nife: handing the system to the userspace progenitor.`, and then went silent after the
+progenitor's `capability slots: 19 of 64 at peak`. A carriage return sent over the UART five
+minutes later got no echo. No `nife capability shell` banner, so nothing could type `reboot`
+(`bench/radon-2026-10-20/805-890-boot-to-prompt.log`, its second boot; the first came from the
+card). No radon boot in `bench/` has reached the prompt. Exit criterion 6 waits on that hang,
+which is milestone 890's radon half as well.
 
 ## What was blocked until the ruling
 
@@ -266,8 +271,8 @@ picked A on 2026-10-06. Only exit criterion 6 still waits, on milestone 592.
 - A background job's write between `reboot`'s `SYNC` reply and the reset can be lost. calef ruled
   option A knowing it (2026-10-06 UTC); milestone 853 (orderly shutdown closes the sync window)
   closes it.
-- radon's reset is unproven on silicon. 592 has a fix waiting on one bench run, and if that fails,
-  592's options B and C (a nife PMIC write, or new firmware) come before this.
+- radon's reset from the prompt is unproven on silicon, because radon has not reached the prompt.
+  The reset route itself, 592's direct PMIC write, is proven from the rebooting soak.
 - Who at the prompt may reboot is not decided here. Any session the progenitor endows can.
   Restricting it to some logins is a policy question for whichever milestone decides what login
   grants.
@@ -276,9 +281,9 @@ picked A on 2026-10-06. Only exit criterion 6 still waits, on milestone 592.
 
 ## Follow-on
 
-- **Outstanding.** Exit criterion 6, `reboot` at radon's prompt with nobody at plug 2. It waits on
-  milestone 592's bench reset; checked 2026-10-06 (UTC) that 592 is still PARTIAL with its
-  `**Outstanding.**` bench run unchanged. calef at the bench; see the scope note.
+- **Outstanding.** Exit criterion 6, `reboot` at radon's prompt with nobody at plug 2. 592 is
+  BUILT. It waits on radon reaching the prompt at all: the post-handoff hang in the scope note,
+  shared with milestone 890's radon boot. calef at the bench once that is fixed.
 - **Milestone 853.** Milestone 853 (orderly shutdown closes the sync window), promoted 2026-10-09.
 - **Recorded.** The program does not exit non-zero on a refusal: `components/src/reboot.rs`'s
   `BUGS`.

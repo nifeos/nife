@@ -17,23 +17,19 @@ Whoever finishes an entry moves it off this list in the same pull request.
 
 | rank | board | milestone | procedure | calef's hands |
 |---|---|---|---|---|
-| 1 | radon | milestone 168 (a multi-tasking workload benchmark), fatal risk 4 | `notes/job-mix.md`, "The next bench evening on radon, start to finish" | **one power cycle of radon's outlet per boot, at least five boots**, until the reset fix below lands |
+| 1 | radon | none ready (2026-10-20). Each radon item waits on a lane first: 805's `reboot` and 890's `echo hello` on the boot that goes silent after the userspace handoff (`bench/radon-2026-10-20/805-890-boot-to-prompt.log`); 53's storage half on its block-0 read failure; 53's network throughput (2.3 Mbit/s); 134's E3 on its step-0 check, which 796's pin fails; 225 also needs xenon and argon | the milestone's own block, once its lane lands | one power cycle of radon's outlet per boot |
 | 2 | xenon | 261, the NVMe driver leaves the kernel, and then the soak on xenon (fatal risks 6, then 5) | `notes/risk-6-bench-evening.md` (pull request #1275); if that has not landed, `design/roadmap/0261-el0-nvme-on-xenon.md`. The first thing the boot reads is xenon's DMAR table, which decides whether the earlier x86 confinement results stand | about 30 minutes at xenon: the one-time firmware **Data Wipe** of the internal NVMe (261's "What calef has to do"), which cannot be undone; a monitor and a USB keyboard (xenon halts at POST without one); the FAT32 stick, staged by the lane with `cargo xtask disk-throughput --stage-only`, copying `target/esp-disk-throughput/EFI/BOOT/BOOTX64.EFI` and **not** `target/esp`; a phone for photos of the screen; optionally a Linux live stick for the `fio` comparison |
 | 3 | argon | awaiting the board (2026-10-06: the seller shipped a TK1, which is going back; `notes/bench-runbook.md`). Then 127, first light, then 225's soak on argon | `design/roadmap/0127-the-sel4-machine.md` and `notes/bench-runbook.md`, "argon, and why it is last" | everything: argon has never booted nife, so cabling, media and power are all his |
 
 **The first step of each session is a watched reset, because a board that can reset itself turns
 every later boot from calef's hands into a command.**
 
-- radon. Today it cannot. On 2026-09-04 an SBI SRST cold reboot stopped at `cannot read pmic
-  power register` and never came back (milestone 249 (the boot lottery is sampled by a person
-  walking to the board), "The bench answered it, 2026-09-04"). Pull request #1279 re-read that log:
-  no reset happened; OpenSBI's reboot is an I2C write to the PMIC, and it hangs because U-Boot gated
-  that bus's clocks before the handoff. Nothing on patagonia can reach radon's outlet (milestone 224
-  (nothing can power-cycle radon, so a hung soak needs a person)). Once the lane re-enabling
-  those I2C clocks before the reset has landed, the first step on radon is one reset, watched
-  through to a second `U-Boot SPL` banner, `payload came from net`, and `soak-test: started`. If it
-  works, milestone 168's boots need no plug cycles, and the calef's-hands cell above shrinks to the
-  first power-on. Until it lands, do not try it: the outcome is known, and it costs a power cycle.
+- radon. The kernel's reset is proven from the rebooting soak: milestone 592 writes the AXP15060 itself,
+  and four direct-write resets came back through `U-Boot SPL` on 2026-10-10. `reboot` at the prompt
+  (milestone 805) is not proven, because no radon boot has reached the prompt. So today a watched
+  reset needs `script/board-image --soak --reboot`; any other image needs a power cycle per boot.
+  Nothing on patagonia can reach radon's outlet (milestone 224 (nothing can power-cycle radon, so a
+  hung soak needs a person)).
 - xenon. The first step is one kernel-initiated reset, the `script/soak-test --reboot` path (pull request #1279, not yet on `main` when this was written),
   watched to a full boot. The firmware is set to halt at POST on warnings, so a reset that lands on
   a warning waits for a keypress: say so rather than calling it a hang. While calef is at the
@@ -42,9 +38,9 @@ every later boot from calef's hands into a command.**
 - argon, once the TX1 arrives (2026-10-06). First light comes first. The step after it is a PSCI system reset over `smc`, watched
   the same way.
 
-The radon soak (milestone 225) is not on this list because it ran on 2026-09-25. Another radon soak
-buys a second draw of the placement lottery, which is worth something, but entry 1 answers a fatal
-risk that has no data yet.
+A radon soak (`--soak`, notes/soak.md) needs no lane first, so it is what to run when calef offers
+radon and nothing above is ready. It buys another draw of the placement lottery for milestone 225's
+curve, and with `--reboot` it resets itself between draws.
 
 ## The one rule: ask before you change hardware state, and never guess at hardware
 
@@ -159,6 +155,7 @@ same image under QEMU (step 2) before anyone writes "silicon-only".
 | `NOT SEALED` on any build | stop and report: it is real since milestone 563 merged, step 1 |
 | `soak-test: no heartbeat was seen` in 0.2 s under QEMU | a missing `nifefs.img` on a tree older than 2026-09-25; rebase |
 | `payload came from card` | stop, report the `tftp server is` line |
+| `payload came from card` after `board-netboot` logged `asked for 'nife-initrd.img': NOT FOUND` | the card's boot script predates the archive's rename. Copy `nife-initial-ramdisk.img` to `nife-initrd.img` in the served root (same bytes, so the seal still holds) and ask for one more power cycle. Rewriting the card fixes it for good, and that is a media write |
 | console exit 2 (quiet) | report the last 50 lines; calef power-cycles only after the log is saved |
 | the board needs a reboot | radon cannot reboot itself; that is a power cycle, which is calef's |
 | anything else | stop, report, keep the console running |
