@@ -128,13 +128,7 @@ the same `kilo` `rmle` is modeled on) needs `libc` termios and raw stdin, which 
 bind. GNU `nano` is the GPL-as-package path (milestone 170). `rmle` is `optional`, so either can
 replace it without touching base.
 
-9a. Adapt `mdr` to `pulldown-cmark`, as a std program. `mdr` is a userspace reader of shipped
-documentation; it holds a terminal and a directory, so it can be built against `nife-dev`. Read in
-0.13.4: no `std::thread`, no runtime, three small dependencies, and the `html` and `getopts` defaults
-can be turned off. Take the parser, keep our terminal renderer as its event consumer, and keep
-`documentation::index`, which `swish` reads and which is ours by format. Retires up to the 802-line
-renderer's parsing half; the gain is CommonMark conformance on input a package author writes. Cost:
-small to medium, most of it moving `mdr` to std.
+9a. RULED: `mdr` becomes a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
 
 10. xHCI, when milestone 242 starts: adapt rust-osdev `xhci` for register and TRB definitions.
 Write the driver logic; take the definitions. The crate is dormant (release 2023-07), so expect to
@@ -244,7 +238,12 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (f), refused. calef, 2026-10-20 (UTC): "Keep ours." `plist` would bring nine crates
   new to the tree, `serde` among them, to read trusted local `diskutil` output in a host-only
   program. `plist.rs` carries the `Reuse:` line, and so do the recorded reasons.
-- **Outstanding.** Items (b), (c), (d), (f2), (g) and (h): none started, each waits on its own §46
+- **Outstanding.** Item (f2), ruled and held. calef, 2026-10-20 (UTC): "Yes" to `pulldown-cmark`
+  0.13.4 with `html` and `getopts` off, and to `unicase` and `bitflags` 2 (§46). Held on how a std
+  `mdr` receives its input: std's stdin is the console only, and no slot carries a file or a pipe's
+  read end to a std program, the "input-slot convention" milestone 50 (pipes and redirection)
+  lists as missing. The question is on #2461.
+- **Outstanding.** Items (b), (c), (d), (g) and (h): none started, each waits on its own §46
   ruling, (b) on 705 too. Checked 2026-10-20 (UTC): none of their crates is in `Cargo.lock`.
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-20 UTC).
 
