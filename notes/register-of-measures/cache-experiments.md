@@ -23,10 +23,11 @@ notes/footprint-perturbation.md.
   code cannot make anything faster. So the experiment measures code layout summed with footprint
   and reports the total. **Do not quote an E3 number as a footprint result.** The control that
   milestone 370 (a layout control, because the perturbation experiments cannot tell footprint from
-  addresses) specifies was built on 2026-09-19, and milestone 796's pin leaves it nothing to move
-  (notes/footprint-perturbation/step-0-under-the-pin.md). calef retired E3's question on 2026-10-20
-  (UTC) in favor of E5, milestone 708, so E3 has no attributable number. The flaw was present in
-  the 2026-08-22 dev-Mac reading too; the small cache made it visible rather than causing it.
+  addresses) specifies was built on 2026-09-19, and milestone 796 (pin the hot trap path's
+  placement) leaves it nothing to move (notes/footprint-perturbation/step-0-under-the-pin.md).
+  calef retired E3's question on 2026-10-20 (UTC) in favor of E5, milestone 708 (an executed
+  footprint ladder for radon), so E3 has no attributable number. The flaw was present in the
+  2026-08-22 dev-Mac reading too; the small cache made it visible rather than causing it.
 
 ## Per-IPC kernel stack depth, 2026-09-19
 

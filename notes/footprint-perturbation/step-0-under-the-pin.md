@@ -65,5 +65,5 @@ that is a follow-on for 796 rather than E3.
 
 calef ruled on #2472, relayed and recorded by the maintainer at 19:58 UTC: *calef, 2026-10-20
 (UTC): "2". Retire E3's question.* Option 2 is in force. E3 has no attributable number, and
-milestone 134's register row for it is retired. Its bench evidence stays in
+the E3 row of milestone 134 (the register of measures) is retired. Its bench evidence stays in
 `bench/radon-2026-10-20/`.

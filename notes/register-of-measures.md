@@ -97,15 +97,16 @@ row pretending to be one.
 | `unsafe {}` blocks inside `kernel/src/arch/` | every run | `script/lint`, which prints it and asserts nothing |
 | E1: IPC round trip against thread count | 2026-09-04 (radon, 6 boots); 2026-08-22 (dev Mac) | `cargo xtask bench --real` (`ipc_scale_*` rows); on radon, `script/board-image --bench` and notes/footprint-perturbation.md |
 | E2: thread census on the customer path | 2026-08-22 | `cargo xtask test`, the "E2 thread census" line in `a_host_process_connects_to_the_guest_and_is_answered` (both ISAs) |
-| E3: IPC fastpath footprint doubled, and the latency it costs | retired by calef, 2026-10-20; last read 2026-09-04 (confounded) | none; E5 is milestone 708 |
+| E3: IPC fastpath footprint doubled, and the latency it costs | retired by calef, 2026-10-20; last read 2026-09-04 (confounded) | none; E5 is milestone 708 (an executed footprint ladder for radon) |
 | E4: application working-set displacement under IPC traffic, 8-pair and 48-pair load | 2026-09-04 (radon, 6 boots); 2026-08-23 (dev Mac) | `cargo xtask bench --real` (`appdisp_*_ipc`/`appdisp_*_ipc96` rows); on radon, `script/board-image --bench` and notes/footprint-perturbation.md |
 | per-IPC kernel stack depth, per shape and role | 2026-10-20 (riscv64 release, QEMU and radon at one commit); 2026-09-19 (QEMU, all three ISAs, debug and release) | debug: `script/test`, the `ipc-stack-depth:` lines; release: a `bench,ipc_stack_depth` kernel on one hart (notes/stack-high-water.md, "Per-IPC depth") |
 | multi-tasking throughput, jobs per minute against task count, milestone 168 (a multi-tasking workload benchmark) | 2026-10-04 (radon, 5 boots; every point within 1.7%) | `script/board-image --job-mix --tftp`, then `script/board-console`, by `notes/job-mix.md`'s bench-evening procedure; the rehearsal is `script/job-mix` |
 
 Three rows need a sentence before anyone quotes them.
 
-- **E3 is retired with no attributable number** (calef, 2026-10-20 UTC). Milestone 796's pin
-  leaves its control nothing to move, and the question milestone 188 leans on is E5's.
+- **E3 is retired with no attributable number** (calef, 2026-10-20 UTC). Milestone 796 (pin the
+  hot trap path's placement) leaves its control nothing to move, and the question milestone 188
+  (the IPC fastpath) leans on is E5's.
 - The milestone 168 row's date belongs to an instrument that changed on 2026-09-19. Risk 4 in
   `design/fatal-risks/README.md` and §96 (process kernel or event kernel) wait on the next radon evening.
 - The cross-OS row's date was recovered from git, not from a recorded run. It is the number a
