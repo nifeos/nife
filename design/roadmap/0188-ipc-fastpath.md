@@ -218,10 +218,10 @@ like every other name in the tree.
   Run 2026-09-04, six interleaved boots; notes/footprint-perturbation.md. It did not decide phase 4,
   for the reason the section above gives: the comparison cannot separate footprint from code layout,
   and the layout artifact is ten times the footprint effect.
-- **Milestone 370.** A layout control for the perturbation experiments, which is what E3 now needs
-  before any reading of it can be attributed to footprint.
-  `design/roadmap/0370-a-layout-control-for-the-perturbation-experiments.md`. Until that control is
-  built, no E3 number should be quoted as a footprint result, this block's included.
+- **Milestone 370.** A layout control for the perturbation experiments,
+  `design/roadmap/0370-a-layout-control-for-the-perturbation-experiments.md`. E5 (milestone 708)
+  reserves its region in the section 370 places. No E3 number is a footprint result, this block's
+  included: E3 cannot separate footprint from layout, and calef retired its question for E5.
 - **Milestone 380.** DECISIONS §144's 16 KiB ceiling was stated over "the sum of `ipc_fastpath` and
   `syscall_entry`", and this milestone changed both terms. The honest subject is now
   `max(ipc_send_receive, ipc_call_reply) + syscall_entry`, which is what the gate prints as `total`,
