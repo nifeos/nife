@@ -183,9 +183,9 @@ skip = [
     # deliberate re-vendor (vendor/README.md) rather than a config change. Drops when the pin does.
     { crate = "getrandom@0.2.17", reason = "redoxfs 0.9.1's direct dep; uuid pulls 0.4. Host-side only; goes away with the next redoxfs pin" },
     # smoltcp 0.14 is built on bitflags 1, and pulldown-cmark (`documentation`'s parser, ruled
-    # 2026-10-20 UTC for milestone 784 item (f2)) on bitflags 2. Both are in `components`. Neither
-    # version is ours to choose, and bitflags is macros over an integer, so two copies cost compile
-    # time and no behavior. Drops when smoltcp takes bitflags 2.
+    # 2026-10-20 UTC for milestone 784 (reuse what the tree wrote) item (f2)) on bitflags 2. Both
+    # are in `components`. Neither version is ours to choose, and bitflags is macros over an
+    # integer, so two copies cost compile time and no behavior. Drops when smoltcp takes bitflags 2.
     { crate = "bitflags@1.3.2", reason = "smoltcp 0.14's; pulldown-cmark takes 2.x. Goes away when smoltcp moves to bitflags 2" },
 ]
 
