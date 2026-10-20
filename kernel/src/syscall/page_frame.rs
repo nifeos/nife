@@ -84,12 +84,14 @@ pub(super) fn page_frame_map(
         return Err(Error::NotPermitted);
     }
     let root = mmu::current_user_root();
+    // One invalidate for the whole run, when this drops, rather than one per page.
+    let mut batch = mmu::UserMapBatch::new();
     for k in 0..count {
         let (page_phys, page_va) = (phys + k * paging::PAGE_SIZE, va + k * paging::PAGE_SIZE);
         // Each table is recorded against this space as it is retyped, because the region it comes
         // from need not be the space's own, and its `DESTROY` has to find the table to cut it out
         // of this walk before the page goes back (`revoke::revoke_region`).
-        match mmu::map_current_user_page_frame(page_va, page_phys, flags, || {
+        match batch.map(page_va, page_phys, flags, || {
             hold.retype_table(region, root, page_va)
         }) {
             Ok(()) => {

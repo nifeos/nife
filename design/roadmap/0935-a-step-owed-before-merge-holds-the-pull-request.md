@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-step-owed-before-merge-holds-the-pull-request
 raised: 2026-10-19
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A step owed before merge holds the pull request until it is done
+# 935. A step owed before merge holds the pull request until it is done
 
 *(Title, slug and every name below provisional.)*
 

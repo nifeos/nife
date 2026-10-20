@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: every-job-is-built-the-way-a-supervised-job-is
 raised: 2026-10-18
 milestone_dependencies: 48
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Every job is built the way a supervised job is
+# 933. Every job is built the way a supervised job is
 
 Raised by milestone 48 (job control)'s phase one, which could give `&`, `wait`, `kill` and `fg`
 only to supervised jobs. Name: provisional.
@@ -39,3 +40,7 @@ What it costs, and why it is an architect's call rather than a lane's:
   progenitor's pool shrinks.
 - The cooperative tier needs somewhere to live for a program that has no job frame. A `std`
   program's `SIGINT` is the obvious reading, and that is its own question.
+
+## Index row
+
+Job control reaches only supervised jobs, because every other job is built in the progenitor's pool and the shell holds nothing for it. Building every job from a region the shell holds, with its exit on a shell-held endpoint, would give `&`, `wait`, `kill` and `fg` to every program; the spawn-protocol change is calef's call.

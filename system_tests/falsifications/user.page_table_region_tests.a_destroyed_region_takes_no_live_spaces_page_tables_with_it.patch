@@ -26,24 +26,24 @@ R's own) the leaf pass still unmapped VA and tombstoned its record.
 The patch leaves `cut_user_table` and `forget_mappings_within` unused, so the build warns twice;
 it does not fail. Nothing here is architecture-specific, so one patch serves every leg.
 
-**Re-cut 2026-10-07 (UTC) by the lane for milestone 139 (drive the unsafe count down)**, when
-`forget_mappings_within` became a `SpaceLog` method and `Victim::Table` stopped carrying the log
-head. The difference from the fixed tree is unchanged. Replayed red on aarch64 the same day, at
+**Re-cut 2026-10-20 (UTC) by lane 2451 (cpu-matrix shard budget)**, when `revoke_region` began
+taking every leaf in one scan and lost `Victim`. The difference from the fixed tree is unchanged:
+the table is tombstoned and not cut. Replayed red on aarch64 the same day, at
 `page_table_region_tests.rs:236`, the headline.
 
 diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 --- a/kernel/src/revoke.rs
 +++ b/kernel/src/revoke.rs
-@@ -1012,11 +1012,7 @@
-                 None => break,
-                 // Cut under the registry, so no `MAP` is halfway down this walk.
-                 Some(Victim::Table(root, asid, va, table)) => {
--                    if let Some((cut, span)) = mmu::cut_user_table(root, va, table, asid)
--                        && let Some(space) = spaces.live_mut().find(|s| s.root == root)
--                    {
--                        space.forget_mappings_within(cut, span);
--                    }
-+                    let _ = (root, asid, va, table);
-                     None
-                 }
-                 Some(Victim::Leaf(phys)) => Some(phys),
+@@ -1003,11 +1003,7 @@ pub fn revoke_region(base: u64, size: u64) {
+             break;
+         };
+         // Cut under the registry, so no `MAP` is halfway down this walk.
+-        if let Some((cut, span)) = mmu::cut_user_table(root, va, table, asid)
+-            && let Some(space) = spaces.live_mut().find(|s| s.root == root)
+-        {
+-            space.forget_mappings_within(cut, span);
+-        }
++        let _ = (root, asid, va, table);
+     }
+ }
+ 
