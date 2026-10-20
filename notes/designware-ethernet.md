@@ -8,7 +8,9 @@ stem. An architect names things.)*
 radon's two ports are Synopsys DesignWare Ethernet QoS controllers, `snps,dwmac-5.20`, at
 `0x1603_0000` and `0x1604_0000`, each behind a Motorcomm YT8531 PHY. This driver brings up the
 first, which is the one U-Boot netboots radon over, and hands it to `net_stack` the way milestone
-494 (a driver for the network card a PC actually has) hands it an `e1000e`.
+494 (a driver for the network card a PC actually has) hands it an `e1000e`. It has leased an
+address and moved 100 MiB on radon (Results, below), and the booted system brings the port up.
+The second port is proposed in pull request #2470 (radon's second Ethernet port, `gmac1`).
 
 ## How it is split
 
@@ -29,11 +31,18 @@ adapted because its glue handles `starfive,tx-use-rgmii-clk`, radon's v1.3B tran
 arrangement, and FreeBSD's does not. Linux's stmmac and `dwmac-starfive.c`, U-Boot's `dwc_eth_qos*.c`, both JH7110 device
 trees and the vendor U-Boot's board code are GPL and were read only for facts about the hardware.
 
-## Is radon's DMA coherent? The reading says yes, and the boot measures it
+## Is radon's DMA coherent? Yes, by measurement
 
-Milestone 655 (DMA on a non-coherent RISC-V machine) records that every riscv64 machine nife has
-run on keeps DMA coherent. For radon that was an inference: nife had never done DMA there. Read
-on 2026-10-06 (UTC):
+Measured on radon, 2026-10-20 (UTC), over three boots: `Coherent` every time. The line was
+`coherence : Coherent (rx des3 0x30010084, tx des3 0x30000000, channel status 0x00000445, payload
+Matches)` in all three logs under `bench/radon-2026-10-20/`, including the two whose link never
+came up (the probe runs in MAC loopback, before the link wait). The device read descriptors and a
+payload the CPU had only cached, and the CPU read the device's writes over lines it held cached,
+byte for byte. This is what milestone 655 (DMA on a non-coherent RISC-V machine)'s claim that
+every riscv64 machine nife has run on keeps DMA coherent rests on for radon.
+
+What the sources said before the measurement, read 2026-10-06 (UTC), all of which it agrees with
+except the one practice that disagreed:
 
 - Mainline Linux's `arch/riscv/Kconfig` selects `ARCH_DMA_DEFAULT_COHERENT`, so a RISC-V device
   is coherent unless its tree node or an ancestor says `dma-noncoherent`.
@@ -77,17 +86,19 @@ right direction for each, and reads a coherent machine as `Coherent`.
 ### What that means for milestone 655, as a proposal
 
 655 waits on milestone 89 (Scaleway EM-RV1: a second RISC-V implementation, rented) because the
-TH1520 is the first non-coherent machine in reach. If radon's probe reads `Coherent`, radon
-cannot stand in for the TH1520: there is nothing to maintain. What radon can give 655 now is the
-instrument. The probe already tells the two directions of non-coherence apart. The TH1520's
+TH1520 is the first non-coherent machine in reach. radon reads `Coherent`, so radon cannot stand
+in for the TH1520: there is nothing to maintain, and 655 keeps its dependency on 89. The
+`flush64` flush in the ArceOS HAL above was not needed on this board. What radon gives 655 is the
+instrument. The probe tells the two directions of non-coherence apart, and the TH1520's
 `snps,dwmac-3.70a` is the older GMAC generation, so its descriptors differ, but the
 loopback-and-compare method carries over unchanged.
 
-The proposal, for whoever next edits 655: cite this probe as the measurement its "measured on the
-machine, not assumed" sentence asks for, and keep the dependency on 89. If radon instead reads
-anything but `Coherent`, 655 can be done on radon at once, and its dependency on 89 should go. The
-U74 has no Zicbom, so radon would need the L2 cache's `flush64` register at `0x0201_0200`, as the
-ArceOS HAL above writes it: a third implementation behind the seam 655 describes.
+The proposal, for whoever next edits 655 (a lane edits only its own milestone's block): record
+radon as coherent by this measurement, citing `bench/radon-2026-10-20/network-bench-3.log`, and
+cite this probe as the method its "measured on the machine, not assumed" sentence asks for.
+
+The same measurement unblocks the storage half's IDMAC data path (notes/designware-mobile-storage.md):
+on radon, a DMA descriptor ring needs only the `fence` this driver already uses.
 
 ## The confinement, stated plainly
 
@@ -126,7 +137,16 @@ script/board-console --for 3m --until none --log bench/radon-$(date -u +%F)/netw
 ```
 
 The Ethernet cable must be in `ethernet@16030000`'s port, the one U-Boot already netboots over.
-`nife: payload came from net` near the top says the new image was served. Then put the ordinary
+The U-Boot banner does not say which jack that is; on a boot where U-Boot reports
+`ethernet@16030000` timing out and links on `ethernet@16040000` instead, the cable is in the
+wrong jack and this boot will end `FAILED: no link`. `nife: payload came from net` near the top
+says the new image was served.
+
+radon's card carries a boot script written 2026-09-16 that asks for a server address that is not
+patagonia's, and for the archive under the name `nife-initrd.img`, where `script/board-image`
+writes `nife-initial-ramdisk.img`. Until the card is rewritten, press a key at the autoboot
+countdown, type `setenv nife_boot_server <patagonia's address>` and `boot`, and serve a copy of
+the archive under the old name beside the new one in `target/board`. Then put the ordinary
 image back for everyone else's bench work: `script/board-image --tftp` and one more power cycle.
 
 Success looks like this (values vary; the shape does not):
@@ -170,27 +190,50 @@ Each way it can end, by the last lines:
 
 | date (UTC) | commit | coherence | link | lease | bytes | rate | verdict |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| 2026-10-20 | `290d3ba8b` | `Coherent` | 1000 Mbit/s full duplex, 2830 ms | 192.168.8.200 | 104,857,600 in 362.965 s | 2.311 Mbit/s | `LEASED-AND-MEASURED` |
+
+The row is `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
+the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
+the cable in `ethernet@16040000`'s jack and ended `FAILED: no link` after 5003 ms, which is the
+cabling, not the driver. What the run settled that nothing read had predicted:
+
+- `mac core : version 0x00004152, 40-bit DMA`. The low byte is the expected `0x52`; the 40-bit
+  width is the first record of it.
+- `phy : id 0x4f51e91b, 1800 mV I/O, settings from Fallback`. The identifier is the YT8531's.
+  The tree radon hands nife carries neither the vendor nor the mainline PHY delay properties, so
+  the driver used `Settings::FALLBACK_GMAC0`, which leased. The runbook expected `VendorTree`.
+- `address : 6c:cf:39:00:47:2c from Tree`: the tree U-Boot hands over carries
+  `local-mac-address`.
+- The rate is a finding, not a pass: 2.3 Mbit/s on a gigabit link (`BUGS`).
 
 ## BUGS
 
-- **Nothing here has run on silicon.** Every test runs against the crate's simulation, which is
-  this tree's reading of OpenBSD and the register header, not the device. QEMU has no model of
-  this controller. The runbook above is the first run of any of it.
-- **The booted system leaves the port alone** (`designware_ethernet_service::PROVEN_ON_SILICON`
-  is `false`), so radon's prompt has no network until the runbook has passed. Lifting it is one
-  constant, gated on the Results row.
-- **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists.
-- **The MAC loopback is the probe's one method.** If it does not run on this controller (the
-  RGMII receive clock is the PHY's), the probe is `Inconclusive` rather than wrong; a PHY-loopback
-  fallback is the obvious second method and is not built.
+- **2.3 Mbit/s on a gigabit link, undiagnosed.** The one measured transfer moved 100 MiB
+  inbound in 363 s. During it the peer's TCP send queue sat near 131 KB and barely drained, which
+  points at radon's receive side (the advertised window, or how often `net_stack` acknowledges
+  while it polls) rather than the wire. Nothing has measured which. Milestone 53's block carries
+  it as outstanding.
+- **One silicon run.** The Results row is one boot, on one board, with one cable. Every other test
+  runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
+  header, not the device; QEMU has no model of this controller.
+- **The booted system brings the port up on every radon boot**
+  (`designware_ethernet_service::PROVEN_ON_SILICON` is `true`). With no cable in the jack that
+  costs the five-second link wait, then `network : NONE`. If a boot ever hangs in the bring-up,
+  setting the constant back to `false` leaves the port as U-Boot left it.
+- **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists; the
+  milestone proposed in pull request #2470 is that work.
+- The PHY's delays and drive strengths come from `Settings::FALLBACK_GMAC0` on radon, because
+  the tree it hands over names neither spelling of them. They leased at 1000 Mbit/s; whether they
+  are also behind the slow rate is not excluded.
+- **The MAC loopback is the probe's one method.** It ran on radon, so `Inconclusive` has not been
+  seen there; a PHY-loopback fallback for a controller where it does not run is not built.
 - **Two PHY registers are written that OpenBSD leaves alone**: the YT8531's auto-sleep and its
   receive-clock gating are both turned off, because the controller's software reset needs the
   PHY's receive clock and a board booted with no cable must still reset. The cost is the PHY's idle
   power with no cable.
 - **The station address comes from the tree's `local-mac-address`**, which U-Boot's
-  `fdt_fixup_ethernet` writes into the tree it boots with. Whether the copy radon hands nife
-  carries it is unmeasured; the fallback is the controller's address registers as U-Boot left
-  them, and the `address` line says which was used.
+  `fdt_fixup_ethernet` writes into the tree it boots with; on radon it does (`from Tree`). The
+  fallback is the controller's address registers as U-Boot left them, and the `address` line says
+  which was used.
 - **Polled, one queue each way**, no interrupt, no offloads: `e1000e`'s set of later decisions.
 - **The confinement is arithmetic** (above).
