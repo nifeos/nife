@@ -19,8 +19,8 @@ commit only), so the `Reuse:` lines below use the ruling's terms and should be c
 landed wording. Title and slug are drafts.
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a) and (e) are built, on calef's approvals of `httparse` (2026-10-18 UTC) and
-`r-efi` (2026-10-20 UTC). Item (f) is refused: `plist.rs` stays.
+under §46. Items (a), (e) and (f2) are built, on calef's approvals of `httparse` (2026-10-18 UTC),
+`r-efi` and `pulldown-cmark` (both 2026-10-20 UTC). Item (f) is refused: `plist.rs` stays.
 
 ## Method, and what the numbers mean
 
@@ -128,7 +128,7 @@ the same `kilo` `rmle` is modeled on) needs `libc` termios and raw stdin, which 
 bind. GNU `nano` is the GPL-as-package path (milestone 170). `rmle` is `optional`, so either can
 replace it without touching base.
 
-9a. RULED: `mdr` becomes a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
+9a. BUILT: `mdr` is a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
 
 10. xHCI, when milestone 242 starts: adapt rust-osdev `xhci` for register and TRB definitions.
 Write the driver logic; take the definitions. The crate is dormant (release 2023-07), so expect to
@@ -213,7 +213,7 @@ on the customer path.
 - (d) Measure `user_mode_heap` against `talc`; the ruling follows the data.
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
-- (f2) `mdr` becomes a std program and parses with `pulldown-cmark`; the renderer and index stay.
+- (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
 - Surveys: (g) `portable_executable` and `object`; (h) uutils for `coreutils`.
 
 ## Recorded reasons for what stays
@@ -238,11 +238,11 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (f), refused. calef, 2026-10-20 (UTC): "Keep ours." `plist` would bring nine crates
   new to the tree, `serde` among them, to read trusted local `diskutil` output in a host-only
   program. `plist.rs` carries the `Reuse:` line, and so do the recorded reasons.
-- **Outstanding.** Item (f2), ruled and held. calef, 2026-10-20 (UTC): "Yes" to `pulldown-cmark`
-  0.13.4 with `html` and `getopts` off, and to `unicase` and `bitflags` 2 (§46). Held on how a std
-  `mdr` receives its input: std's stdin is the console only, and no slot carries a file or a pipe's
-  read end to a std program, the "input-slot convention" milestone 50 (pipes and redirection)
-  lists as missing. The question is on #2461.
+- **Done.** Item (f2). calef, 2026-10-20 (UTC): "Yes" to `pulldown-cmark` 0.13.4 with `html` and
+  `getopts` off, and to `unicase` and `bitflags` 2 (§46). Then, 16:53 UTC on #2461, "a": a std
+  program's stdin is a byte stream when the line redirects or pipes one, at
+  `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
+  program in `mdr/`, and `crates/documentation` lays out the parser's events.
 - **Outstanding.** Items (b), (c), (d), (g) and (h): none started, each waits on its own §46
   ruling, (b) on 705 too. Checked 2026-10-20 (UTC): none of their crates is in `Cargo.lock`.
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-20 UTC).
