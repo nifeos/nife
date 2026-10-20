@@ -73,10 +73,13 @@ Two edges are kept on purpose, and the lane records why where a reader meets eac
 - Each of the four workflows runs to completion on a dispatch with the App secrets unset.
 - `fleet-metrics.yml` writes byte-identical CSV rows to `metrics.yml`'s last run for the same week.
 
-## Where it stands, 2026-10-19 (UTC)
+## Where it stands, 2026-10-20 (UTC)
 
-PARTIAL. Every cut is made, and four of the five exit checks were run and pass. The fifth needs a
-dispatch from a fork, which no lane has made. Each tie from the inventory, checked against the code
+PARTIAL. Every cut is made, and four of the five exit checks were run and pass. calef ruled on the
+fifth (below): with the App absent, a workflow completes through its push. Three workflows do or
+are measured doing so; `falsifications` cannot reach its push for two reasons the App does not
+touch. calef, 2026-10-20 15:00 (UTC): "Hold 889 until we fix both issues." Both are this
+milestone's remaining items (Follow-on). Each tie from the inventory, checked against the code
 first:
 
 | Tie | What the code did | What happened |
@@ -122,25 +125,48 @@ Exit checks, as run on 2026-10-19 (UTC) against `42836328b` plus this block's co
   `metrics.yml`'s last run before the split (2026-10-11 12:25 UTC) for every finished day.
   `fleet-metrics.yml` is now the only writer of both files and has run green daily through
   2026-10-19 (run 39241978532).
-- **Not run.** The four workflows have not been dispatched with the App absent. On nife the secrets
-  sit in the `automation` environment, whose deployment branches are `main` only, and three of the
-  four workflows name that environment on the job that pushes. A dispatch on a lane branch is
-  refused, and one on `main` mints the App's token. A fork has neither the secrets nor the
-  environment, so a dispatch there is the test.
+- **App absent, dispatched on a fork.** On nife the secrets sit in the `automation` environment,
+  whose deployment branches are `main` only, so a dispatch on a branch is refused and one on `main`
+  mints the App's token. The fork `calef/nife` has no secrets and no environments. Its `main` was
+  fast-forwarded to nife's `01be10059`, which registered its workflows, and all four were
+  dispatched there on 2026-10-20 at 03:32 UTC. Referencing `automation` created an empty
+  environment with no protection rules. On every job that has the token step, the step was skipped.
+
+| Workflow | Run on `calef/nife` | Exit, measured |
+|---|---|---|
+| `vendor-watch` | 39364813031 | Green. Upstream had moved, but the report was unchanged, so the job exited before `gh pr create`. The pull request path did not run. |
+| `verify-shard-refresh` | 39364815886 | Red at its last step. The branch `metrics/verify-shards` pushed on `github.token`, then `gh pr create` was refused: "GitHub Actions is not permitted to create or approve pull requests". |
+| `mutation` | 39364805264 | Red at its last step. All eight shards, the baseline report and the inflow check passed. The record job pushed `mutation/census` on `github.token`, then `gh pr create` was refused the same way. |
+| `falsifications` | 39364802502 | Red. The seeded syscall driver and the arm64 replay passed. The confined fuzzer failed on its own finding (BUGS). The replay job was cancelled at its two-hour limit (05:32 UTC), so the record job was skipped and never reached `gh pr create`. |
+
+calef, 2026-10-20 14:30 (UTC), on the fallback: "a". With the App absent, a workflow that has
+something to record measures, writes and pushes, ends green, and puts the compare link in its run
+summary. No repository is asked to let Actions open pull requests, and the exit is read as "the run
+completes through the push". All four workflows now call `helpers/pull-request-by-hand.sh`
+(provisional) after their push when no App token was minted. The fork's `main` was fast-forwarded
+to the branch carrying that change and two were dispatched again:
+
+| Workflow | Run on `calef/nife` | Exit, measured |
+|---|---|---|
+| `verify-shard-refresh` | 39441127380 | Green. It pushed `metrics/verify-shards`, opened no pull request, and wrote the compare link to its summary. |
+| `mutation` | 39442048323 | Dispatched 2026-10-20; its shards take about two hours. |
 
 ## BUGS
 
 - A gate split in two can lose a check in the gap. A new selftest of a class-3 file that is added
   to `script/lint` makes a stranger's lint read the fleet, and only rerunning the stranger clone
   catches it.
-- The fallback is predicted to fail at its last step. With the App absent, each workflow's
-  `gh pr create` runs on `github.token`, and GitHub refuses that unless the repository allows
-  Actions to create pull requests. That setting is off on nife and off by default on a fork. The
-  comment in each workflow says the ephemeral token "still pushes and opens the pull request".
-  Nothing has run this path yet; the fork dispatch below is what settles it.
+- Without the App, nobody is told a record is waiting. The run is green and the compare link is
+  in its summary, so a person has to look at the run to find it.
+- The confined fuzzer's long sweep fails on seed `0x2f2e76cb02` at step 34: fuzzer 0's slot 2 is
+  filled with a page frame after a syscall on a held page frame, which the fuzzer's oracle says
+  "grants nothing" (replay `NIFE_CONFINED_FUZZ_SEEDS=202643000066:1`). It fails identically on
+  nife's scheduled run of 2026-10-19 (39243857792). The oracle is wrong: the `justify_fill` of
+  milestone 779 (fuzz the surface a confined process can reach) has no `PageFrame::SLICE` arm.
+  Fixed by milestone/779-slice-oracle.
 - `falsifications` has not reached its record job on `main` since at least 2026-10-12: the replay
   job hits its two-hour limit and is cancelled (run 39243857792). A dispatch with the App absent
-  will stop at the same place until that is fixed.
+  stops at the same place.
 - The opt-in is per clone. A fleet machine that never ran `script/claim` pushes without the queued
   check until `git config nife.fleet true` is set.
 - Four current-tense statements say a fleet check runs in `script/lint`, in files a lane may not
@@ -154,10 +180,12 @@ Exit checks, as run on 2026-10-19 (UTC) against `42836328b` plus this block's co
 
 ## Follow-on
 
-- **Outstanding.** Dispatch `falsifications`, `mutation`, `vendor-watch` and
-  `verify-shard-refresh` on a fork's `main` and record each run's exit. A new fork registers no
-  workflows until something is pushed to it or Actions is enabled on its Actions tab. Each workflow
-  skips its token step when `AUTOMATION_APP_ID` is empty, as `toolchain-bump.yml` does.
+- **Outstanding.** Record `mutation`'s exit from run 39442048323.
+- **Outstanding.** `falsifications`' replay job fits inside its two-hour limit, so the workflow
+  reaches its push with the App absent (BUGS).
+- **Outstanding.** The confined fuzzer's false failure on seed `0x2f2e76cb02` (BUGS), fixed by
+  milestone/779-slice-oracle. Whichever of that branch and this block's next change merges second
+  marks it done here.
 - **Milestone 902.** Milestone 902 (nife's tooling, sorted by who needs it, before any of it moves).
   Moving class 3 as a unit, with the `Recorded.` paths and the class-3 notes that make the
   stranger clone's two record checks fail, is the inventory's next step:

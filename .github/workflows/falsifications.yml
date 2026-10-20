@@ -164,8 +164,8 @@ jobs:
     # provisional), as in toolchain-bump.yml, which has the full argument. With the App's secrets
     # absent (a fork, or a repository the App is not installed on) the token step is skipped and
     # every `steps.app-token.outputs.token || github.token` below falls through to the ephemeral
-    # token. That token still pushes and opens the pull request, but GitHub starts no CI on it,
-    # so its checks have to be kicked by hand. The secrets context is not readable in a step's
+    # token. That token pushes the branch but may not open a pull request, so the run ends green
+    # with the compare link in its summary (helpers/pull-request-by-hand.sh). The secrets context is not readable in a step's
     # `if`, so only the App ID is lifted here, and only so its presence can be tested.
     env:
       AUTOMATION_APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
@@ -197,6 +197,8 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           # Who the pull request's opening line names: the App, or the fallback above.
           PR_AUTHOR: ${{ steps.app-token.outputs.token && 'nife-smelter[bot]' || 'github-actions[bot]' }}
+          # Non-empty only when the App's token was minted; see the push-only branch below.
+          USING_APP: ${{ steps.app-token.outputs.token && 'yes' || '' }}
         run: |
           set -e
           script/falsifications --record-times sweep/sweep.txt
@@ -217,6 +219,13 @@ jobs:
           body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
 
           Per-record replay times from [run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID), the weights \`script/falsifications --plan-since\` packs verify.yml's re-falsify shards by."
+          # No App token: push only, and leave the pull request to a person (calef's ruling on
+          # #2442, 2026-10-20 UTC). `github.token` may not open one, and the repository setting
+          # that would let it stays off. The summary carries the compare link, title and body.
+          if [ -z "$USING_APP" ]; then
+            helpers/pull-request-by-hand.sh "$branch" "falsification times: record run $GITHUB_RUN_ID" "$body"
+            exit 0
+          fi
           existing="$(gh pr list --head "$branch" --state open --json number --jq '.[].number')"
           if [ -z "$existing" ]; then
             gh pr create --head "$branch" --base main --title "falsification times: record run $GITHUB_RUN_ID" --body "$body"

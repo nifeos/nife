@@ -71,16 +71,25 @@ to something a person can hold.
 
 | Kind | Milestones | Components | ABI constants | External packages | Weeks |
 |---|---|---|---|---|---|
-| security | 15 | 8 | 1 | 1 | 6 |
+| security | 15 | 8 | 1 | 10 | 6 |
 | documentation | 10 | 10 | 1 | 30 | 12 |
 
 Read a cell as "fires when this many have been added since the last audit of this kind". So `1`
-means any change at all fires, which is how the two event triggers that a script can actually count
-are expressed: a new syscall method shows up as a new ABI constant, and a new dependency (§46) shows
-up as a new external package. `15` and `8` are §74's count trigger. `6` is the calendar backstop, and
-its job is the opposite of what a reader assumes: it does not catch a busy period, because the count
-catches that sooner. It catches a **quiet** one, a tree that sits untouched while the field's threat
-model moves anyway, which no measure of this project's own change can see.
+means any change at all fires, which is how the one event trigger a script can count is expressed: a
+new syscall method shows up as a new ABI constant. `15` and `8` are the count trigger of §74 (audits
+run on change, not on the calendar). `6` is the calendar backstop, and its job is the opposite of
+what a reader assumes: it does not catch a busy period, because the count catches that sooner. It
+catches a **quiet** one, a tree that sits untouched while the field's threat model moves anyway,
+which no measure of this project's own change can see.
+
+**External packages fire at 10 for security, a count rather than an event** (calef, 2026-10-20 UTC).
+Every new package already passes an architect's §46 (thin primitives or whole subsystems) ruling
+one at a time, so an audit on each one repeats that ruling. A dependency also rarely arrives alone:
+across the merges that added packages between 2026-08-01 and 2026-10-20, the median one brought 6
+with its transitive graph. At 1, or at 5, a single ruling of median size fires the audit by itself.
+At 10 it takes about two of them, which at the measured rate of roughly 5 packages a week is about
+two weeks of dependency change. One subsystem large enough to clear 10 alone (the crypto provider
+brought 64) is the case that ought to.
 
 **The documentation row is not the security row with different numbers, and two of its cells say so
 out loud** (milestone 93, 2026-08-16). Every milestone edits prose, so the count trigger is slightly

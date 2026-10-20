@@ -16,6 +16,11 @@ quarterly proposal, and it unblocks milestones 92 and 93.
 The count trigger fires at 15 milestones built since the last audit, or 8 new crates and
 programs, whichever comes first. Both are read from the same place the tripwire already reads.
 
+External packages are a count too, not an event (calef, 2026-10-20 UTC). A new dependency is
+already gated one package at a time by its §46 (thin primitives or whole subsystems) ruling, so the
+security audit comes due on a batch of them: 10 new external packages since the last audit.
+`design/audit-reports/README.md` measures why 10.
+
 There are **four** security audits: `notes/security.md` (2026-07-15) predates the three counted
 below. The interval arithmetic uses the two audits with countable milestone history. The index in
 `design/audit-reports/README.md` is the authority for the count, and it derives its counts from the

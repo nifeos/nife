@@ -43,10 +43,10 @@
 #   ABI constants        the `pub const NAME: u64` surface of crates/abi (see BUGS)
 #   external packages    distinct registry packages across every committed Cargo.lock but vendor's
 #
-# The middle two are milestone 92's event triggers made countable. A new syscall method arrives as a
-# new ABI constant; a new dependency (§46) arrives as a new external package. Both cadence rows are
-# set to 1, so any change at all fires, which is what "event triggers are primary" means when a
-# script has to evaluate it.
+# ABI constants are milestone 92's syscall event trigger made countable: a new method arrives as a new
+# constant, and both cadence rows set it to 1, so any change at all fires. External packages are a
+# count, not an event, because §46 (thin primitives or whole subsystems) already rules on each
+# dependency; the README says why security's number is what it is.
 #
 # BUGS.
 #

@@ -32,7 +32,7 @@ frame anywhere in the user half. Blocking calls are served, never timed out, so 
 deterministically. `NIFE_CONFINED_FUZZ_SEEDS=<first>:<count>` sweeps; a finding names its seed.
 
 - **Proof condition 1, met.** The driver runs in the suite on aarch64, riscv64 and x86_64 with
-  its committed seed list of 33 seeds (`0..32` plus corpus `[52]`). Measured 2026-10-06 (UTC): 32,
+  its committed seed list of 34 seeds (`0..32` plus corpus `[52, 202643000066]`). Measured 2026-10-06 (UTC): 32,
   21 and 36 seeds/s on the three ISAs. About one second of suite time each.
 - **Proof condition 2, met with two recorded misses.** Four of the six falsifications redden the
   committed seeds on aarch64. 634's does at seed 0 (step 7, `x1` truth); revocation-in-flight at
@@ -60,6 +60,13 @@ function and so a separate lock hold; review caught the check-then-act gap and i
 walk now. The driver's own planted
 escape (a `RETYPE_OBJ` that carves from the machine's free list) is also recorded and replayed
 red at seed 0.
+
+**A wrong oracle, fixed here.** The weekly sweep's seed `0x2f2e76cb02` failed at step 34 on a
+whole-run `PageFrame::SLICE`: the new capability names the same run at the same rights, so the
+table diff saw a copy. The kernel was right (milestone 599 (a frame per filesystem client channel)'s method, `GRANT` held, range inside the
+run). The conductor's table diff had no `SLICE` arm, and now admits exactly a sub-run of a held
+frame at its rights from a source holding `GRANT`. The seed is in the corpus because no suite seed
+reaches that arm.
 
 The scaffolding's conductor channel is slot 0, and the endowment slots 1..6. Not slot 63, which
 `user::run` cannot grant to and the witness would fuzz.

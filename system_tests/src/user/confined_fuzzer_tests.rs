@@ -6,7 +6,8 @@
 //! generator never interprets an answer, so a wrong one cannot steer it.
 //!
 //! - **The table diff.** A slot may empty freely, but may fill only by `RETYPE_OBJ` (the object's
-//!   page in the fuzzer's own region), `BADGE` (the same object, restamped), or `RECEIVE_CAP` (a
+//!   page in the fuzzer's own region), `BADGE` (the same object, restamped), `SLICE` (a sub-run of
+//!   a held frame at its rights, from one holding `GRANT`), or `RECEIVE_CAP` (a
 //!   delegation this conductor watched leave a sender, no wider and same badge, or the `Reply` of a
 //!   parked caller). Any other fill, a plain `RECEIVE` included, is an escape.
 //! - **The delegation ledger** records each parked `SEND_CAP`, marks it dead on revocation, and
@@ -75,8 +76,11 @@ const SUITE_SEEDS: u64 = 32;
 /// `a_call_to_a_plain_receive_is_answered_gone`'s patch (§246 (a plain `RECEIVE` never takes a
 /// capability)'s caller half); the other patches
 /// that redden this driver first do so inside the suite range itself (seed 0 under 634's,
-/// seed 7 under revocation-in-flight, seed 16 under §246's receiver half).
-const CORPUS: &[u64] = &[52];
+/// seed 7 under revocation-in-flight, seed 16 under §246's receiver half). Seed 202643000066
+/// (`0x2f2e76cb02`) is the weekly sweep's: its step 34 is a whole-run `SLICE`, which no suite seed
+/// draws with `GRANT` held, so it is what runs [`Conductor::justify_fill`]'s `SLICE` arm on every
+/// merge.
+const CORPUS: &[u64] = &[52, 202_643_000_066];
 /// The sweep's guest-time capability (752's), so a weekly run with a large count stops between seeds
 /// inside the per-test budget.
 const SWEEP_SECS: u64 = 60;
@@ -721,6 +725,30 @@ impl Conductor {
                     strip_badge(*o) == strip_badge(obj) && *r == rights && badge_of(o) == 0
                 });
                 same && badge_of(&obj) == call.words[2] && call.words[2] != 0
+            }
+            Some(Object::PageFrame(phys, count)) if call.words[1] == abi::page_frame::SLICE => {
+                // Milestone 599 (a frame per filesystem client channel)'s sub-run: `count` pages from `first` pages in, inside the source's
+                // run, at exactly the source's rights, and only from a source holding `GRANT`. A
+                // whole-run slice is the same object at the same rights, which reads as a copy and
+                // is still legitimate.
+                let (first, len) = (call.words[2], call.words[3]);
+                let Some(src_rights) = self.fuzzers[x]
+                    .table
+                    .get(call.words[0] as usize)
+                    .copied()
+                    .flatten()
+                    .map(|(_, r)| r)
+                else {
+                    return false;
+                };
+                let inside = first
+                    .checked_add(len)
+                    .is_some_and(|end| len != 0 && end <= count.get());
+                inside
+                    && src_rights & Rights::GRANT.bits() != 0
+                    && rights == src_rights
+                    && matches!(obj, Object::PageFrame(p, n)
+                        if p == phys + first * PAGE && n.get() == len)
             }
             _ => false,
         }
