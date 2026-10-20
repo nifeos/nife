@@ -1,10 +1,10 @@
 ---
 status: PARTIAL
 raised: 2026-08-28
-milestone_dependencies: none
+milestone_dependencies: 708
 decision_dependencies: 95
 machine_requirements: none
-specific_machine: radon (E3 on radon is the measurement that decides phase 4)
+specific_machine: radon (E5 on radon, milestone 708, is the measurement that decides phase 4)
 needs_person: yes
 ---
 # 188. The IPC fastpath: the gate measures a shape userspace does not use, and three cheaper cuts come before a hand-written path
@@ -23,11 +23,12 @@ The decision is [§95 (hand-written IPC)](../decisions/0095-a-proven-ipc-fastpat
 IPC fastpath and whether it can stay proven. It is `DECIDED`, and what calef decided is *"don't
 decide yet"*, in two tiers. The eligibility predicate and its proof in `crates/ipc` are ratified as
 buildable now. The fastpath itself stays gated on the one measurement that would justify it:
-milestone 74 (cycle counters) on milestone 127 (the seL4 machine). So the field names §95 and
-nothing else, and the dependency graph resolves it: the ruling answered what it was asked, and the
-wait that remains is a person at radon running E3, which the machine and person fields carry. The
-spend is still calef's. Phase 4 is a standing verification obligation and a permanent
-maintenance cost, and this block recommends against starting it until the measurement exists.
+milestone 74 (cycle counters) on milestone 127 (the seL4 machine). So the decision field names §95
+and nothing else, and the dependency graph resolves it: the ruling answered what it was asked, and
+the wait that remains is E5, milestone 708 (an executed footprint ladder for radon). The milestone
+field names 708, and the machine and person fields carry its evening at radon. The spend is still
+calef's. Phase 4 is a standing verification obligation and a permanent maintenance cost, and this
+block recommends against starting it until the measurement exists.
 
 ## Appendices
 
@@ -217,10 +218,10 @@ like every other name in the tree.
   Run 2026-09-04, six interleaved boots; notes/footprint-perturbation.md. It did not decide phase 4,
   for the reason the section above gives: the comparison cannot separate footprint from code layout,
   and the layout artifact is ten times the footprint effect.
-- **Milestone 370.** A layout control for the perturbation experiments, which is what E3 now needs
-  before any reading of it can be attributed to footprint.
-  `design/roadmap/0370-a-layout-control-for-the-perturbation-experiments.md`. Until that control is
-  built, no E3 number should be quoted as a footprint result, this block's included.
+- **Milestone 370.** A layout control for the perturbation experiments,
+  `design/roadmap/0370-a-layout-control-for-the-perturbation-experiments.md`. E5 (milestone 708)
+  reserves its region in the section 370 places. No E3 number is a footprint result, this block's
+  included: E3 cannot separate footprint from layout, and calef retired its question for E5.
 - **Milestone 380.** DECISIONS §144's 16 KiB ceiling was stated over "the sum of `ipc_fastpath` and
   `syscall_entry`", and this milestone changed both terms. The honest subject is now
   `max(ipc_send_receive, ipc_call_reply) + syscall_entry`, which is what the gate prints as `total`,

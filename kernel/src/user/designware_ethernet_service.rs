@@ -34,7 +34,8 @@
 //!   milestone 261 (the NVMe driver leaves the kernel)'s position on a machine with no IOMMU,
 //!   stated plainly rather than implied by a page split that looks like more.
 //! - **One wiring at a time**, for `e1000e_service`'s reason.
-//! - **The booted system does not use it yet** ([`PROVEN_ON_SILICON`]).
+//! - **Proved by one bench boot** ([`PROVEN_ON_SILICON`]): radon, 2026-10-20 (UTC), at 2.3 Mbit/s
+//!   on a gigabit link. The rate is undiagnosed (notes/designware-ethernet.md's `BUGS`).
 
 use ::designware_ethernet::process::{DATA_PLANE_VA, DMA_PAGE_VA};
 
@@ -68,12 +69,13 @@ pub(crate) struct Wiring {
     pub lease: u32,
 }
 
-/// **Whether the booted system may bring this port up on its own.** Flip it to `true` only in a
-/// commit that cites a radon bench boot (notes/designware-ethernet.md's runbook) ending
-/// `verdict LEASED-AND-MEASURED` with `coherence : Coherent`. Nothing a lane can run proves it: no
-/// emulator has this controller, and the crate's simulation is this tree's reading of OpenBSD,
-/// not the device. Until then a radon boot leaves the port exactly as U-Boot left it.
-pub(crate) const PROVEN_ON_SILICON: bool = false;
+/// **Whether the booted system may bring this port up on its own.** `true` on the strength of one
+/// radon bench boot, `bench/radon-2026-10-20/network-bench-3.log` (notes/designware-ethernet.md's
+/// runbook and Results row), which ended `verdict LEASED-AND-MEASURED` with `coherence : Coherent`.
+/// Nothing a lane can run proves it: no emulator has this controller, and the crate's simulation
+/// is this tree's reading of OpenBSD, not the device. Set it back to `false` if a radon boot ever
+/// hangs in the bring-up: then the port is left exactly as U-Boot left it.
+pub(crate) const PROVEN_ON_SILICON: bool = true;
 
 /// The last server's thread, so a second wiring can refuse while it lives.
 static SERVER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(u64::MAX);

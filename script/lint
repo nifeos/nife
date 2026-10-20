@@ -21,7 +21,18 @@ set -e
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py). Only
 # the run a person or CI started takes it. Each section re-runs this preamble in a shell of its own
 # with LINT_SECTION set (helpers/lint-sections.sh), already under the slot its parent holds.
-[ -n "${LINT_SECTION:-}" ] || . "$(dirname "$0")/../helpers/heavy-slot.sh"
+#
+# **`--no-cargo` takes no slot.** It is the pre-push hook's mode, and git has already opened the
+# connection to GitHub when the hook starts, so a wait here is idle time on that connection; GitHub
+# closes it somewhere between 300 and 480 s and the push is lost after its gates pass (#2478). A
+# slot is held for a whole `script/test` or mutation run, so the wait had no bound, and the hook
+# writes lint's output to a file, so the waiter's notice was never seen. The cap is there for
+# memory: `--no-cargo` runs its sections one at a time and peaked at 561 MB resident on 2026-10-20,
+# where one cargo build takes gigabytes.
+case "${LINT_SECTION:-}:${1:-}" in
+    :--no-cargo) ;;
+    :*) . "$(dirname "$0")/../helpers/heavy-slot.sh" ;;
+esac
 cd "$(dirname "$0")/.."
 
 # This project's own QEMU, if `script/ci-qemu` has built one. This file matches its own
@@ -151,8 +162,13 @@ helpers/lint-sections-selftest.sh >/dev/null
 echo "==> the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)"
 # helpers/heavy_slot.py caps how many heavy jobs run on the machine at once, and this file is one of
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a
-# real job: helpers/heavy-slot-selftest.sh lists its four stages and what breaks each.
+# real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
 helpers/heavy-slot-selftest.sh >/dev/null
+
+echo "==> script/push believes origin's ref, not git's exit status"
+# A push that never landed has exited 141 and exited 0 alike (#2478), and no CI run pushes, so this
+# local-origin selftest is the only place the read-back is seen to refuse one.
+helpers/push-selftest.sh >/dev/null
 
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # A stub rustup, no network. The retry only runs during a CDN outage, which no green CI run
@@ -2115,28 +2131,6 @@ def _loom_hits():
     return hits
 
 
-def _longest_markdown_line():
-    """The longest line, in bytes, in this repository's own markdown.
-
-    Tracked .md files, vendor excluded, because that is the corpus `documentation`'s renderer is sized
-    against. **This one has a consumer rather than only a reader**: `documentation::render::LINE_MAX` is
-    2048, chosen as the next power of two above this measurement, and a document that exceeds
-    LINE_MAX is truncated. So the number is a safety margin, and letting it drift silently spends
-    the margin.
-
-    It is here because this gate's own author spent it. Documenting the counted-claims check in
-    notes/scripts.md's `script/lint` row (in notes/scripts/build-test-and-gate.md since 2026-09-25),
-    which IS the longest line, took it to 2108 and broke a
-    `documentation` render test whose message pointed three hundred lines away at unrelated text. Bytes
-    rather than characters, matching what LINE_MAX bounds.
-    """
-    files = subprocess.run(['git', 'ls-files', '*.md', ':!vendor'],
-                           capture_output=True, text=True, check=True).stdout.split()
-    return max(len(line.encode())
-               for f in files
-               for line in pathlib.Path(f).read_text(errors='replace').split('\n'))
-
-
 def _security_audits():
     """Security audits on the record, counted from the index every one of them is filed in.
 
@@ -2224,11 +2218,6 @@ def _notes_files():
 
 
 REGISTRY = {
-    'longest-markdown-line': (
-        "how long the repository's longest markdown line is, in bytes, which is what "
-        'documentation::render::LINE_MAX is sized against',
-        _longest_markdown_line,
-    ),
     'kani-harnesses': (
         'how many Kani proof harnesses the tree carries, which is what script/verify proves',
         lambda: sum(_harness_hits().values()),

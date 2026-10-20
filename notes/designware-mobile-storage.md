@@ -24,7 +24,9 @@ agree, read 2026-10-06 (UTC):
 
 It is not the newer DesignWare Cores Mobile Storage Host (`DWC_mshc`, `sdhci-of-dwcmshc`), which
 is SDHCI-compatible and has a different register map. Which release this one is (`VERID`) and how
-wide its FIFO is (`HCON`) are the first two things the bench step reads.
+wide its FIFO is (`HCON`) are the first two things the bench step reads. On radon both slots read
+`VERID 0x5342290a` (release 2.90a) and `HCON 0x00c43cc1`: a 32-bit FIFO, 32 words deep, the kind
+this driver moves (Results, below).
 `crates/designware_mobile_storage/src/jh7110.rs` carries the node-by-node evidence.
 
 ## What was reused, and what was not
@@ -59,16 +61,17 @@ U-Boot's driver and both device trees are GPL and were read only for facts about
 
 ## Why the CPU moves the data, for now
 
-The controller has its own DMA engine (the IDMAC). This driver does not use it yet. A DMA read on
-radon would depend on whether radon's DMA is coherent with its caches, which nobody has measured
-(milestone 655 (DMA on a non-coherent RISC-V machine); the network half's
-`designware_ethernet::coherence` probe is the instrument that will measure it). Through the FIFO,
-nothing but MMIO stands between the card and the CPU, so the first silicon read tests the
-controller and the card protocol and nothing else. The cost is throughput, and the bench step
-prints it rather than anyone guessing.
+The controller has its own DMA engine (the IDMAC). This driver does not use it yet. Through the
+FIFO, nothing but MMIO stands between the card and the CPU, so a silicon read tests the controller
+and the card protocol and nothing else. The cost is throughput, and the bench step prints it
+rather than anyone guessing.
 
-Once the coherence probe has a reading, the IDMAC path is a contained change: descriptors in one
-page, the same `Registers` trait, and a sim that models the descriptor walk.
+radon's DMA is coherent with its caches: the network half's `designware_ethernet::coherence`
+probe read `Coherent` on 2026-10-20 (UTC) (notes/designware-ethernet.md). So the IDMAC path needs
+no cache maintenance on radon, only the `fence` the Ethernet driver already uses, and it is a
+contained change: descriptors in one page, the same `Registers` trait, and a sim that models the
+descriptor walk. It waits on the polled read working first (Results, below), so that a DMA read
+that fails is not also a FIFO read that fails.
 
 ## Never break the card radon boots from
 
@@ -96,7 +99,9 @@ with `--tftp` (milestone 257 (boot radon over the network)), so each boot is a b
 cycle. Do these on patagonia, in this branch's worktree.
 
 Before you start. radon's DIP switches on QSPI (both low), the UART on patagonia, the Ethernet
-cable in the port U-Boot netboots over. In a second terminal, leave the TFTP server running:
+cable in the port U-Boot netboots over. radon's card asks for a stale server address and an old
+archive name; notes/designware-ethernet.md's bench step says what to type at U-Boot and what to
+serve until the card is rewritten. In a second terminal, leave the TFTP server running:
 
 ```sh
 script/board-netboot
@@ -163,6 +168,36 @@ script/board-image --tftp
 One more power cycle, and radon boots what everyone else's bench work expects. Then commit the two
 logs under `bench/radon-<date>/` and say which commit they came from.
 
+### Results
+
+| date (UTC) | commit | step | slot 1 (microSD) | slot 0 (eMMC) | verdict |
+|---|---|---|---|---|---|
+| 2026-10-20 | `290d3ba8b` | 1, read-only | identified; the first block read failed, `Host(Data(17, 2060))` | `NoCard(NoResponse(1))` | `FAILED: read of block 0` |
+
+The log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
+how the boot was run. The banner said `Read-only build: nothing on any card is written.` Steps 2
+and 3 were not run, as step 1 says. What it settled:
+
+- U-Boot hands both controllers over running (`already up true`). It leaves the microSD
+  controller with `CTRL 0x2000000` (its IDMAC selected), `CLKDIV 0x2`, `CLKENA 0x10001` and a
+  4-bit bus; `Host::reset` clears the DMA selection before this driver uses the FIFO.
+- **Identification works on silicon.** `bench::read_only` prints the `card` line only after the
+  whole probe returns, so the line's absence does not mean identification failed: the failure is
+  `ReadFailure::Read(0, ..)`, which `sd::identify` returning `Ok` precedes. Every command of
+  identification answered, through `ACMD6` to 4-bit, `CMD16` and the clock raised to 25 MHz.
+- **The first data phase failed.** `Host(Data(17, 2060))` is `Error::Data`: command 17
+  (`READ_SINGLE_BLOCK`, block 0) and the `RINTSTS` word at the failure, `0x080c`. That is bits 2
+  (`CD`, command done), 3 (`DTO`, data transfer over) and 11 (`FRUN`, FIFO underrun or overrun),
+  and nothing else: no CRC error (`DCRC`), no start-bit or end-bit error, no read timeout
+  (`DRTO`, `HTO`). `RXDR` is absent, but `Host::read` clears it after each batch it drains, so
+  its absence does not say whether any words moved. The card answered and sent its block; the
+  FIFO's accounting between the card and the CPU broke. `FRUN` is in `INT_DATA_ERRORS`, so the
+  driver stopped there.
+- Slot 0: no eMMC answered `CMD1`, consistent with no module fitted.
+
+The cause is not diagnosed. Two places in the code fit the bits, and nothing yet tells them
+apart (`BUGS`).
+
 ## Parity
 
 Rule 5's scope note: these controllers are the JH7110's, on one riscv64 board, so the kernel half
@@ -172,8 +207,17 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 ## BUGS
 
-- Nothing here has touched the device. Every test is against `sim`, which models the contract
-  as the databook and OpenBSD describe it. The bench step is the measurement.
+- **The first block read fails on radon** with `FRUN` (Results, above), so nothing past
+  identification has worked on the device. Two candidates, neither confirmed. First, `Host::issue`
+  programs the card read threshold (`CARDTHRCTL`) to the block size, 512 bytes, but radon's FIFO
+  holds 128 (32 words of 4 bytes): a threshold the FIFO can never meet. Linux's `dw_mmc` leaves
+  the threshold off when a block is larger than the FIFO (recalled, not re-read). Second, the
+  driver reading a word the FIFO did not hold, an underrun. The sim models neither the threshold
+  nor a card-side overrun, which is why no host test failed. The next bench boot wants the
+  threshold left off when a block exceeds the FIFO, and the failure to carry the bytes moved and
+  `STATUS`; that is milestone 53's outstanding item.
+- Every other test is against `sim`, which models the contract as the databook and OpenBSD
+  describe it.
 - **The booted system has no disk on radon yet.** The EL0 block server exists and the bench boot
   calls it. `PROVEN_ON_SILICON` keeps the booted system from starting it, and which part of the
   card nife's filesystem would live on is an architect's call (the 53 block).

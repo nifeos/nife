@@ -1,0 +1,407 @@
+U-Boot SPL 2021.10 (Feb 12 2023 - 18:15:33 +0800)
+DDR version: dc2e84f0.
+Trying to boot from SPI
+
+OpenSBI v1.2
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : StarFive VisionFive V2
+Platform Features         : medeleg
+Platform HART Count       : 5
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 4000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : jh7110-hsm
+Platform PMU Device       : ---
+Platform Reboot Device    : pm-reset
+Platform Shutdown Device  : pm-reset
+Firmware Base             : 0x40000000
+Firmware Size             : 292 KB
+Runtime SBI Version       : 1.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 1
+Domain0 HARTs             : 0*,1*,2*,3*,4*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000040000000-0x000000004007ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000040200000
+Domain0 Next Arg1         : 0x0000000042200000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 1
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdcbx
+Boot HART ISA Extensions  : none
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 4096
+Boot HART PMP Address Bits: 34
+Boot HART MHPM Count      : 2
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+
+
+U-Boot 2021.10 (Feb 12 2023 - 18:15:33 +0800), Build: jenkins-VF2_515_Branch_SDK_Release-24
+
+CPU:   rv64imacu
+Model: StarFive VisionFive V2
+DRAM:  8 GiB
+MMC:   sdio0@16010000: 0, sdio1@16020000: 1
+Loading Environment from SPIFlash... SF: Detected gd25lq128 with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+StarFive EEPROM format v2
+
+--------EEPROM INFO--------
+Vendor : StarFive Technology Co., Ltd.
+Product full SN: VF7110B1-2253-D008E000-00004584
+data version: 0x2
+PCB revision: 0xb2
+BOM revision: A
+Ethernet MAC0 address: 6c:cf:39:00:47:2c
+Ethernet MAC1 address: 6c:cf:39:00:47:2d
+--------EEPROM INFO--------
+
+In:    serial@10000000
+Out:   serial@10000000
+Err:   serial@10000000
+Model: StarFive VisionFive V2
+Net:   eth0: ethernet@16030000, eth1: ethernet@16040000
+switch to partitions #0, OK
+mmc1 is current device
+found device 1
+bootmode flash device 1
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Hit any key to stop autoboot:  2  1  0 
+StarFive # setenv nife_boot_server 192.168.8.192
+StarFive # boot
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Importing environment from mmc1 ...
+## Warning: Input data exceeds 1048576 bytes - truncated
+## Info: input data size = 1048578 = 0x100002
+** Invalid partition 2 **
+Couldn't find partition mmc 1:2
+Can't set block device
+## Warning: defaulting to text format
+## Error: "boot2" not defined
+switch to partitions #0, OK
+mmc1 is current device
+Scanning mmc 1:1...
+Found U-Boot script /boot.scr.uimg
+1595 bytes read in 8 ms (194.3 KiB/s)
+## Executing script at 43900000
+nife: boot.scr is driving this boot, milestones 218 and 257
+nife: tftp server is 192.168.8.192, setenv nife_boot_server to point somewhere else
+ethernet@16030000 Waiting for PHY auto negotiation to complete...... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+DHCP client bound to address 192.168.8.200 (257 ms)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.192; our IP address is 192.168.8.200
+Filename 'nife-vf2.img'.
+Load address: 0x40200000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 ##############################
+	 528.3 KiB/s
+done
+Bytes transferred = 3292432 (323d10 hex)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.192; our IP address is 192.168.8.200
+Filename 'nife-initrd.img'.
+Load address: 0x90000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #############################
+	 549.8 KiB/s
+done
+Bytes transferred = 16645632 (fdfe00 hex)
+nife: payload came from net
+Moving Image from 0x40200000 to 0x80200000, end=80523000
+## Flattened Device Tree blob at 86000000
+   Booting using the fdt blob at 0x86000000
+   Using Device Tree in place at 0000000086000000, end 000000008600d41a
+
+Starting kernel ...
+
+clk u5_dw_i2c_clk_core already disabled
+clk u5_dw_i2c_clk_apb already disabled
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc080216eda  (high half: Sv39 paging is on)
+  device tree : 0x0000000086000000
+  screen      : none (no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for); this console is the UART
+  smp: 5 core(s) in the device tree, 4 startable
+  smp: cpu 0's riscv,isa names user mode and not supervisor: it cannot run this kernel, whatever status and mmu-type claim; not started
+  plic: S contexts from the device tree differ from the 2h+1 formula (expected on the JH7110: the disabled S7 shifts every context down one)
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  smp: sbi hsm hart_start (the only mechanism RISC-V defines)
+  smp: cpu 0 is not startable by this kernel (disabled, no supervisor
+       mode, or an enable-method we do not speak); leaving it alone.
+  smp: 4 core(s) online
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+
+nife
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  stack top       : 0xffffffc080473000
+  firmware handoff: 0x0000000086000000  (device tree)
+  processors      : 4 online of 5 described, boot cpu hwid 0x1
+  memory          : 4096 MiB total, 4068 MiB free (28528 KiB in use)
+  console         : NS16550 at 0xffffffc010000000, interrupt line 32
+                  : no screen; this console is the UART alone
+  interrupts      : PLIC at 0x000000000c000000, this hart's S-mode context 2
+  timer           : 100 Hz tick, counter at 4 MHz, interrupts ON
+  initial ramdisk : 16645632 bytes at 0x0000000090000000, a nifefs archive of 123 program(s)
+  pcie            : none (this machine describes no host bridge)
+  iommu           : none (no riscv-iommu-pci function on this machine's bus)
+  mmu             : Sv39 on, fine-grained W^X tables installed, one satp, kernel high half at 0xffffffc000000000
+                  : kernel root 0x00000000400a0000, live satp root 0x00000000400a0000
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: riscv64, 4 processor(s), 4096 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffffffc180000000 -> 0x408ce000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x408ce000; used 7134 -> Some(7135) -> Some(7134)
+  self-test       : timer      ok      the 4MHz counter advanced 80000 and 2 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+  self-test       : preemption ok      5 never-yield threads on 4 core(s): 0 starved, 85 preemptions
+
+  self-test       : userspace  ok      a program at user level read 0xffffffc08028b530: killed, and the kernel survived
+  user thread 8589934597 killed: scause 0xd (code 13)
+    pc 0x000000006000007e   stval 0xffffffc08028b530   user sp 0x000000007ffeffb0
+    satp 0x80000000000408d1 (root 0x408d1000), leaf at stval Some(Flags(11))
+  the kernel is fine.
+  capability slots: 2 of 64 at peak
+  self-test       : budget     ok      a process mapped 22 pages of a 24-page untyped; kernel frames used 7211 -> 7211
+  self-test       : blockdev   absent  no virtio block device on this machine, over MMIO or PCIe
+  self-test       : deviceirq  absent  no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists
+  self-test       : clock      ok      JH7110 STG CRG at 0x10230000 (from the tree): clocks 0x00000000,0x00000000 -> 0x80000000,0x80000000, reset released after 1 polls
+  self-test       : trng       ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first ac290a0c.., differ true; bring-up 570 us, 64 bytes in 66 us (966037 bytes/s)
+  capability slots: 3 of 64 at peak
+  self-test       : entropy    ok      the JH7110 TRNG served 32+32 bytes to a client, first b3acadc1.., the two draws differ: true
+nife self-test: 11 of 13 passed, 2 absent: blockdev deviceirq
+nife: the capability core runs on riscv64.
+  capability slots: 6 of 64 at peak
+
+job-mix: started 32 tasks and 2 servers on 4 online core(s), cntfrq=4000000 Hz
+job-mix: one job is one of 7 kinds (16 per round, 8 rounds per task per subrun); see crates/job_mix for the mix and what it deliberately leaves out
+job-mix: this measures THIS kernel under multi-tasking load; it compares nothing against an event kernel and does not decide design/decisions/0096-process-kernel-or-event-kernel.md
+job-mix: each point is the median of 21 repeats, with the fastest and slowest beside it (since 2026-09-19); a transcript before that date printed the best of 3 as ticks= and jpm=, which is a different statistic from a different mix and is not comparable with jpm_median=
+job-mix-census: where the kernel placed each thread at spawn: S=echo server, T=task
+job-mix-census: core=1 threads=8 S1 T9 T14 T15 T19 T24 T29 T30
+job-mix-census: core=2 threads=8 S0 T0 T6 T11 T18 T23 T26 T31
+job-mix-census: core=3 threads=8 T2 T3 T5 T8 T13 T17 T21 T25
+job-mix-census: core=4 threads=10 T1 T4 T7 T10 T12 T16 T20 T22 T27 T28
+job-mix-census: placement decides throughput on real silicon by up to fifteenfold (notes/soak.md, milestone 240), so a jobs-per-minute figure from ONE boot is a draw and not a result; notes/job-mix.md's procedure asks for repeated boots
+  capability slots: 9 of 64 at peak
+job-mix-repeat: tasks=1 repeat=0 ticks=100833
+job-mix-repeat: tasks=1 repeat=1 ticks=97671
+job-mix-repeat: tasks=1 repeat=2 ticks=97663
+job-mix-repeat: tasks=1 repeat=3 ticks=97563
+job-mix-repeat: tasks=1 repeat=4 ticks=97456
+job-mix-repeat: tasks=1 repeat=5 ticks=97552
+job-mix-repeat: tasks=1 repeat=6 ticks=97712
+job-mix-repeat: tasks=1 repeat=7 ticks=97768
+job-mix-repeat: tasks=1 repeat=8 ticks=97500
+job-mix-repeat: tasks=1 repeat=9 ticks=97631
+job-mix-repeat: tasks=1 repeat=10 ticks=97602
+job-mix-repeat: tasks=1 repeat=11 ticks=97706
+job-mix-repeat: tasks=1 repeat=12 ticks=97607
+job-mix-repeat: tasks=1 repeat=13 ticks=97657
+job-mix-repeat: tasks=1 repeat=14 ticks=97897
+job-mix-repeat: tasks=1 repeat=15 ticks=97634
+job-mix-repeat: tasks=1 repeat=16 ticks=97602
+job-mix-repeat: tasks=1 repeat=17 ticks=97670
+job-mix-repeat: tasks=1 repeat=18 ticks=97484
+job-mix-repeat: tasks=1 repeat=19 ticks=97673
+job-mix-repeat: tasks=1 repeat=20 ticks=97605
+job-mix: tasks=1 jobs=128 repeats=21 ticks_min=97456 ticks_median=97634 ticks_max=100833 jpm_median=314644
+job-mix-kind: tasks=1 kind=compute jobs=336 ticks=783176 per_job=2330 region_ticks=0
+job-mix-kind: tasks=1 kind=touch jobs=336 ticks=263163 per_job=783 region_ticks=0
+job-mix-kind: tasks=1 kind=null_syscall jobs=336 ticks=40693 per_job=121 region_ticks=0
+job-mix-kind: tasks=1 kind=yield jobs=336 ticks=33568 per_job=99 region_ticks=0
+job-mix-kind: tasks=1 kind=round_trip jobs=672 ticks=368742 per_job=548 region_ticks=0
+job-mix-kind: tasks=1 kind=map jobs=336 ticks=137871 per_job=410 region_ticks=52365
+job-mix-kind: tasks=1 kind=spawn jobs=336 ticks=419654 per_job=1248 region_ticks=82305
+job-mix-repeat: tasks=2 repeat=0 ticks=107257
+job-mix-repeat: tasks=2 repeat=1 ticks=106414
+job-mix-repeat: tasks=2 repeat=2 ticks=107096
+job-mix-repeat: tasks=2 repeat=3 ticks=106109
+job-mix-repeat: tasks=2 repeat=4 ticks=107467
+job-mix-repeat: tasks=2 repeat=5 ticks=106785
+job-mix-repeat: tasks=2 repeat=6 ticks=106226
+job-mix-repeat: tasks=2 repeat=7 ticks=106996
+job-mix-repeat: tasks=2 repeat=8 ticks=107450
+job-mix-repeat: tasks=2 repeat=9 ticks=107507
+job-mix-repeat: tasks=2 repeat=10 ticks=106521
+job-mix-repeat: tasks=2 repeat=11 ticks=106583
+job-mix-repeat: tasks=2 repeat=12 ticks=106693
+job-mix-repeat: tasks=2 repeat=13 ticks=107033
+job-mix-repeat: tasks=2 repeat=14 ticks=106183
+job-mix-repeat: tasks=2 repeat=15 ticks=106665
+job-mix-repeat: tasks=2 repeat=16 ticks=106836
+job-mix-repeat: tasks=2 repeat=17 ticks=106595
+job-mix-repeat: tasks=2 repeat=18 ticks=107424
+job-mix-repeat: tasks=2 repeat=19 ticks=106935
+job-mix-repeat: tasks=2 repeat=20 ticks=106476
+job-mix: tasks=2 jobs=256 repeats=21 ticks_min=106109 ticks_median=106785 ticks_max=107507 jpm_median=575361
+job-mix-kind: tasks=2 kind=compute jobs=672 ticks=1597681 per_job=2377 region_ticks=0
+job-mix-kind: tasks=2 kind=touch jobs=672 ticks=529969 per_job=788 region_ticks=0
+job-mix-kind: tasks=2 kind=null_syscall jobs=672 ticks=82991 per_job=123 region_ticks=0
+job-mix-kind: tasks=2 kind=yield jobs=672 ticks=77953 per_job=116 region_ticks=0
+job-mix-kind: tasks=2 kind=round_trip jobs=1344 ticks=917297 per_job=682 region_ticks=0
+job-mix-kind: tasks=2 kind=map jobs=672 ticks=310858 per_job=462 region_ticks=118057
+job-mix-kind: tasks=2 kind=spawn jobs=672 ticks=939058 per_job=1397 region_ticks=190796
+job-mix-repeat: tasks=4 repeat=0 ticks=129509
+job-mix-repeat: tasks=4 repeat=1 ticks=133977
+job-mix-repeat: tasks=4 repeat=2 ticks=136050
+job-mix-repeat: tasks=4 repeat=3 ticks=134187
+job-mix-repeat: tasks=4 repeat=4 ticks=133120
+job-mix-repeat: tasks=4 repeat=5 ticks=135257
+job-mix-repeat: tasks=4 repeat=6 ticks=132675
+job-mix-repeat: tasks=4 repeat=7 ticks=136954
+job-mix-repeat: tasks=4 repeat=8 ticks=132688
+job-mix-repeat: tasks=4 repeat=9 ticks=128326
+job-mix-repeat: tasks=4 repeat=10 ticks=131624
+job-mix-repeat: tasks=4 repeat=11 ticks=136682
+job-mix-repeat: tasks=4 repeat=12 ticks=138899
+job-mix-repeat: tasks=4 repeat=13 ticks=133473
+job-mix-repeat: tasks=4 repeat=14 ticks=135809
+job-mix-repeat: tasks=4 repeat=15 ticks=131349
+job-mix-repeat: tasks=4 repeat=16 ticks=132420
+job-mix-repeat: tasks=4 repeat=17 ticks=134608
+job-mix-repeat: tasks=4 repeat=18 ticks=132104
+job-mix-repeat: tasks=4 repeat=19 ticks=134660
+job-mix-repeat: tasks=4 repeat=20 ticks=131273
+job-mix: tasks=4 jobs=512 repeats=21 ticks_min=128326 ticks_median=133473 ticks_max=138899 jpm_median=920635
+job-mix-kind: tasks=4 kind=compute jobs=1344 ticks=3291523 per_job=2449 region_ticks=0
+job-mix-kind: tasks=4 kind=touch jobs=1344 ticks=1101071 per_job=819 region_ticks=0
+job-mix-kind: tasks=4 kind=null_syscall jobs=1344 ticks=174813 per_job=130 region_ticks=0
+job-mix-kind: tasks=4 kind=yield jobs=1344 ticks=259513 per_job=193 region_ticks=0
+job-mix-kind: tasks=4 kind=round_trip jobs=2688 ticks=3032272 per_job=1128 region_ticks=0
+job-mix-kind: tasks=4 kind=map jobs=1344 ticks=704023 per_job=523 region_ticks=266412
+job-mix-kind: tasks=4 kind=spawn jobs=1344 ticks=2070683 per_job=1540 region_ticks=414975
+job-mix-repeat: tasks=8 repeat=0 ticks=254828
+job-mix-repeat: tasks=8 repeat=1 ticks=249123
+job-mix-repeat: tasks=8 repeat=2 ticks=252740
+job-mix-repeat: tasks=8 repeat=3 ticks=242608
+job-mix-repeat: tasks=8 repeat=4 ticks=249009
+job-mix-repeat: tasks=8 repeat=5 ticks=249441
+job-mix-repeat: tasks=8 repeat=6 ticks=245087
+job-mix-repeat: tasks=8 repeat=7 ticks=251278
+job-mix-repeat: tasks=8 repeat=8 ticks=242911
+job-mix-repeat: tasks=8 repeat=9 ticks=251841
+job-mix-repeat: tasks=8 repeat=10 ticks=246054
+job-mix-repeat: tasks=8 repeat=11 ticks=246059
+job-mix-repeat: tasks=8 repeat=12 ticks=244496
+job-mix-repeat: tasks=8 repeat=13 ticks=243662
+job-mix-repeat: tasks=8 repeat=14 ticks=257202
+job-mix-repeat: tasks=8 repeat=15 ticks=248377
+job-mix-repeat: tasks=8 repeat=16 ticks=252708
+job-mix-repeat: tasks=8 repeat=17 ticks=251474
+job-mix-repeat: tasks=8 repeat=18 ticks=252151
+job-mix-repeat: tasks=8 repeat=19 ticks=250046
+job-mix-repeat: tasks=8 repeat=20 ticks=252704
+job-mix: tasks=8 jobs=1024 repeats=21 ticks_min=242608 ticks_median=249441 ticks_max=257202 jpm_median=985243
+job-mix-kind: tasks=8 kind=compute jobs=2688 ticks=6982048 per_job=2597 region_ticks=0
+job-mix-kind: tasks=8 kind=touch jobs=2688 ticks=2339571 per_job=870 region_ticks=0
+job-mix-kind: tasks=8 kind=null_syscall jobs=2688 ticks=370329 per_job=137 region_ticks=0
+job-mix-kind: tasks=8 kind=yield jobs=2688 ticks=3302898 per_job=1228 region_ticks=0
+job-mix-kind: tasks=8 kind=round_trip jobs=5376 ticks=17311204 per_job=3220 region_ticks=0
+job-mix-kind: tasks=8 kind=map jobs=2688 ticks=1538498 per_job=572 region_ticks=567668
+job-mix-kind: tasks=8 kind=spawn jobs=2688 ticks=7022065 per_job=2612 region_ticks=852647
+job-mix-repeat: tasks=16 repeat=0 ticks=499250
+job-mix-repeat: tasks=16 repeat=1 ticks=487012
+job-mix-repeat: tasks=16 repeat=2 ticks=495805
+job-mix-repeat: tasks=16 repeat=3 ticks=488661
+job-mix-repeat: tasks=16 repeat=4 ticks=491025
+job-mix-repeat: tasks=16 repeat=5 ticks=486618
+job-mix-repeat: tasks=16 repeat=6 ticks=496394
+job-mix-repeat: tasks=16 repeat=7 ticks=497226
+job-mix-repeat: tasks=16 repeat=8 ticks=486368
+job-mix-repeat: tasks=16 repeat=9 ticks=495482
+job-mix-repeat: tasks=16 repeat=10 ticks=489850
+job-mix-repeat: tasks=16 repeat=11 ticks=487123
+job-mix-repeat: tasks=16 repeat=12 ticks=488495
+job-mix-repeat: tasks=16 repeat=13 ticks=489445
+job-mix-repeat: tasks=16 repeat=14 ticks=495782
+job-mix-repeat: tasks=16 repeat=15 ticks=498558
+job-mix-repeat: tasks=16 repeat=16 ticks=495079
+job-mix-repeat: tasks=16 repeat=17 ticks=494898
+job-mix-repeat: tasks=16 repeat=18 ticks=489124
+job-mix-repeat: tasks=16 repeat=19 ticks=492183
+job-mix-repeat: tasks=16 repeat=20 ticks=496344
+job-mix: tasks=16 jobs=2048 repeats=21 ticks_min=486368 ticks_median=492183 ticks_max=499250 jpm_median=998652
+job-mix-kind: tasks=16 kind=compute jobs=5376 ticks=14740592 per_job=2741 region_ticks=0
+job-mix-kind: tasks=16 kind=touch jobs=5376 ticks=4878327 per_job=907 region_ticks=0
+job-mix-kind: tasks=16 kind=null_syscall jobs=5376 ticks=757901 per_job=140 region_ticks=0
+job-mix-kind: tasks=16 kind=yield jobs=5376 ticks=16613818 per_job=3090 region_ticks=0
+job-mix-kind: tasks=16 kind=round_trip jobs=10752 ticks=96721132 per_job=8995 region_ticks=0
+job-mix-kind: tasks=16 kind=map jobs=5376 ticks=3147971 per_job=585 region_ticks=1158613
+job-mix-kind: tasks=16 kind=spawn jobs=5376 ticks=17423402 per_job=3240 region_ticks=1773611
+job-mix-repeat: tasks=32 repeat=0 ticks=976736
+job-mix-repeat: tasks=32 repeat=1 ticks=984093
+job-mix-repeat: tasks=32 repeat=2 ticks=979618
+job-mix-repeat: tasks=32 repeat=3 ticks=987705
+job-mix-repeat: tasks=32 repeat=4 ticks=975648
+job-mix-repeat: tasks=32 repeat=5 ticks=994952
+job-mix-repeat: tasks=32 repeat=6 ticks=976801
+job-mix-repeat: tasks=32 repeat=7 ticks=986301
+job-mix-repeat: tasks=32 repeat=8 ticks=982370
+job-mix-repeat: tasks=32 repeat=9 ticks=984974
+job-mix-repeat: tasks=32 repeat=10 ticks=976538
+job-mix-repeat: tasks=32 repeat=11 ticks=979077
+job-mix-repeat: tasks=32 repeat=12 ticks=977971
+job-mix-repeat: tasks=32 repeat=13 ticks=984831
+job-mix-repeat: tasks=32 repeat=14 ticks=977021
+job-mix-repeat: tasks=32 repeat=15 ticks=973878
+job-mix-repeat: tasks=32 repeat=16 ticks=977024
+job-mix-repeat: tasks=32 repeat=17 ticks=979598
+job-mix-repeat: tasks=32 repeat=18 ticks=984310
+job-mix-repeat: tasks=32 repeat=19 ticks=982410
+job-mix-repeat: tasks=32 repeat=20 ticks=983989
+job-mix: tasks=32 jobs=4096 repeats=21 ticks_min=973878 ticks_median=979618 ticks_max=994952 jpm_median=1003493
+job-mix-kind: tasks=32 kind=compute jobs=10752 ticks=30247306 per_job=2813 region_ticks=0
+job-mix-kind: tasks=32 kind=touch jobs=10752 ticks=9953171 per_job=925 region_ticks=0
+job-mix-kind: tasks=32 kind=null_syscall jobs=10752 ticks=1574122 per_job=146 region_ticks=0
+job-mix-kind: tasks=32 kind=yield jobs=10752 ticks=55825686 per_job=5192 region_ticks=0
+job-mix-kind: tasks=32 kind=round_trip jobs=21504 ticks=484368626 per_job=22524 region_ticks=0
+job-mix-kind: tasks=32 kind=map jobs=10752 ticks=6783291 per_job=630 region_ticks=2467505
+job-mix-kind: tasks=32 kind=spawn jobs=10752 ticks=41383981 per_job=3848 region_ticks=3690004
+job-mix: done

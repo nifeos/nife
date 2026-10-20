@@ -19,16 +19,18 @@ only when that feature is on, say how much of it there is:
   references. It is the layout variant: bytes that move code, and that the footprint gate does not
   count.
 
-The linker script pins the sled first in `.text`, right after the boot stub. So both numbers do the
-same thing: move the whole kernel text by that many bytes. Measured on the card build, only the 7
-boot symbols keep their address. All 1,038 others move by exactly the bytes asked for, and none
-changes size. An ordinary build has no such section, so the default link order is unchanged. That was
-checked by comparing default boot images byte for byte across the change, on both ISAs.
+The linker script places the sled right after `.text.hot`, the block milestone 796 (pin the hot
+trap path's placement) aligns to 16 KiB after the boot stub. So both numbers do the same thing: move
+all kernel text after that block by that many bytes, and `.data` and `.bss` in whole pages. The boot
+stub and every hot symbol keep their addresses, which is why E3 as specified cannot run on this tree
+([step-0-under-the-pin.md](step-0-under-the-pin.md)). An ordinary build has no such section, so the
+default link order is unchanged. That was checked by comparing default boot images byte for byte
+across the change, on both ISAs.
 
 ## Why the pin matters more than the knob does
 
 A pad and a shift of equal displacement produce identical binaries, apart from the sled's own bytes.
-`PAD=1` and `SHIFT=5088` put all 1,047 riscv64 text symbols at the same addresses. So the two ladders
+`PAD=1` and `SHIFT=5088` put every riscv64 text symbol at the same address. So the two ladders
 differ in exactly one thing: whether the bytes sit inside the footprint `script/fastpath-footprint`
 counts, which is the variable E3 claims to test.
 

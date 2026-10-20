@@ -27,5 +27,3 @@ against.
 The renderer truncated. The failure arrived as a `manual` render test asserting that no character
 is dropped, quoting text three hundred lines further down the file. Nothing connected the two.
 
-`longest-markdown-line` is in the registry because of that half hour. The number was in a doc
-comment, it was load-bearing, and nothing re-derived it.

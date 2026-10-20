@@ -18,6 +18,9 @@
 # Name: provisional, minted 2026-10-19 (UTC) by lane/heavy-job-slots, like heavy_slot.py beside it,
 # which says why the slots exist. NIFE_HEAVY_SLOTS=<n> sets how many there are.
 
-if ! python3 "$(dirname "$0")/../helpers/heavy_slot.py" --held; then
+# Under LINT_NO_CARGO (`script/lint --no-cargo`'s sections) a heavy script runs against a stub cargo
+# and takes no slot, for the reason script/lint's preamble gives for that mode taking none: a wait
+# there is idle time on the push connection git holds open.
+if [ -z "${LINT_NO_CARGO:-}" ] && ! python3 "$(dirname "$0")/../helpers/heavy_slot.py" --held; then
     exec python3 "$(dirname "$0")/../helpers/heavy_slot.py" "$(basename "$0")" -- "$0" "$@"
 fi

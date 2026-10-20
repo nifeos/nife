@@ -2,7 +2,7 @@
 
 *(Milestone 40. Markdown authored, rendered for display rather than shown raw, searchable, and
 installed by the package that owns it. The pure logic is `crates/documentation`; the program is
-`components/src/mdr.rs`; the store is built by `cargo xtask manual`.)*
+`mdr/`, a `std` program; the store is built by `cargo xtask manual`.)*
 
 The project's own argument is written in markdown: 328 files, three megabytes, `design/decisions/`
 and a hundred notes. A nife that serves them, on itself, through a viewer that can name
@@ -14,53 +14,25 @@ feature question.
 
 ## Rendered
 
-`crates/documentation` is a streaming renderer: bytes in, styled terminal bytes out, no allocator,
-no document held anywhere. That shape is not an optimization, it is what the program's capabilities
-already are. `mdr` receives its input as `byte_sink_contract` messages of sixteen bytes each and
-writes its output the same way. A renderer that needed the whole document would need somewhere to
-put it, and somewhere to put it is a memory grant the program can otherwise do without. The test
-`framing_does_not_matter` pins it: one byte at a time and the whole document at once produce
-identical output.
+`crates/documentation` renders markdown to styled terminal bytes. `pulldown-cmark` parses it, so the
+input is CommonMark with tables and strikethrough. calef ruled it in on 2026-10-20 (UTC), under
+DECISIONS §46 (thin primitives or whole subsystems), for milestone 784 (reuse what the tree wrote)'s
+item (f2). It parses on the device markdown a package author writes, and it is conformant and fuzzed
+upstream. What a page looks like on a terminal is this crate's. Body text sits at a two-column margin, and a
+level-one heading is in capitals. A list item hangs under its text, and each block-quote level gets
+a `|` rule. Code is verbatim and never wrapped, and a table is aligned to its widest cell and shrunk
+to fit.
 
-It handles ATX headings, wrapped paragraphs, fenced code, block quotes, nested lists, tables with
-computed column widths, thematic breaks, and the inline set (`**strong**`, `*emphasis*`,
-`` `code` ``, `~~strike~~`, links and images).
+The whole document is read before a byte is drawn, because CommonMark needs it: a link's
+destination can be defined at the foot of the page. That is why `mdr` is a `std` program with a
+heap. Its input arrives as a byte stream on std's standard input
+(`std_runtime_contract::STDIN_STREAM_SLOT`), in the sink contract's sixteen-byte frames, and its
+output leaves the same way.
 
 A link and an image both show their destination, because a terminal cannot follow one or draw the
-other, so the path is the only thing a reader can act on. An image once dropped its path, and
-`every_character_survives` caught it on the first page that carried one
-([documentation/corpus-test.md](documentation/corpus-test.md)).
-
-### The roadmap said take `pulldown-cmark`. Two facts overrule it.
-
-It is not `no_std`, and a std program on this system could neither read a keypress nor take an
-argument. The corpus is closed and in-tree, so the renderer needs the constructs these files use
-rather than CommonMark conformance, and `every_character_survives` checks exactly that over every
-note, decision and roadmap page. DECISIONS §46 (thin primitives or whole subsystems) rule 1 then
-settles it: this is on the verification path, so we write it. The crate is `no_std`,
-zero-dependency, allocation-free on the guest path, and reachable by Kani. The two facts and the
-three defects the corpus test found are in
-[documentation/pulldown-cmark.md](documentation/pulldown-cmark.md).
-
-### Two rendering decisions worth knowing
-
-`_` is never emphasis. CommonMark reads `__rust_alloc` as an opened strong span. This repository
-writes `snake_case` identifiers in running prose constantly (`filesystem_contract`, `line_editor`,
-`c_seam`), so honoring the spec here would misrender far more than it would style. Only `*` and ``
-open emphasis, and a closer must not be preceded by a space.
-
-A code span is consumed before anything else looks at the line. There are 11,281 of them in the
-corpus, many full of the exact characters the other rules hunt for. If that ordering were wrong,
-`*ptr` inside backticks would open emphasis and eat the rest of the paragraph.
-
-### The bug the corpus test could not see, and the honest filter that kept it findable
-
-A fenced code block opened inside a block quote must close inside it, or one quoted transcript
-misrenders every line after it. `every_character_survives` cannot see that failure, because verbatim
-output loses no characters. A unit test is the guard. The lesson generalizes: a
-subsequence check proves nothing was dropped and nothing about what was ruined, so a renderer wants
-both kinds of test. The bug, the filter that was left wrong on purpose and the measurement are in
-[documentation/corpus-test.md](documentation/corpus-test.md).
+other, so the path is the only thing a reader can act on. `every_character_survives` holds the
+layout to losing no letter or digit of any note, decision or roadmap page; what it catches and what
+it cannot see are in [documentation/corpus-test.md](documentation/corpus-test.md).
 
 ## Installed
 
@@ -77,10 +49,10 @@ its keep by there being one. A bundle that lists a page which has moved fails th
 The roadmap proposed that "the viewer holds a directory capability to the doc store". It should not,
 and does not.
 
-`mdr`'s manifest is byte-identical to `wc`'s: `InputDeclaration::Required`, `OutputDeclaration::Bytes`, and
-`Forbidden` for argument, memory, file and directory. Its capability table holds two endpoints. `mdr
-glob.md` is the shell resolving that name against the directory capability *it* holds and streaming
-the bytes in. Nothing in the program names a file, a directory or the filesystem, and there is no
+`mdr`'s manifest declares what `wc`'s does: `InputDeclaration::Required`, `OutputDeclaration::Bytes`,
+and `Forbidden` for argument, memory, file and directory. Its capability table holds its heap's
+budget, its output and its input stream. `mdr glob.md` is the shell resolving that name against the
+directory capability *it* holds and streaming the bytes in. Nothing in the program names a file, a directory or the filesystem, and there is no
 message it can send to find out what it is reading.
 
 That matters more here than it did for `wc`, because a documentation viewer is precisely the program
@@ -282,18 +254,16 @@ what it did, including the kernel's one wait point that made the first one hard,
 - The index is 1.16x the markdown it indexes, and the 16 KiB per-bundle floor is most of what moves
   that ratio. Why each search limit above is drawn where it is, entry by entry, is in
   [documentation/search-limitations.md](documentation/search-limitations.md).
-- **A source line longer than `documentation::LINE_MAX` (2048) loses its tail.** The longest line in
-  this repository is 1928 bytes <!--count:longest-markdown-line-->, so the corpus fits; a document
-  from elsewhere may not, and `Renderer::is_truncated` reports it while `mdr` does not print it. The
-  number carries a marker because it once drifted
-  ([documentation/resolved-bugs.md](documentation/resolved-bugs.md)).
+- `mdr` reads the whole page before it writes, so a page is bounded by its heap. The heap is the
+  job's region, 384 pages (`grant_plan::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
+  them on aarch64. The store's largest page, about 18 KB, renders at the prompt
+  (`script/swish-check`).
 - Table cells are truncated to their column width, so a wide table on an 80-column terminal
   loses text. This is a formatting choice, not a parsing failure, and the corpus test runs at 4000
-  columns to keep the two apart. A table too large for the renderer's buffers spills into a second
-  aligned chunk rather than losing rows; this repository's largest table is 117 rows.
-- Setext headings and reference links are not recognized, and no HTML is interpreted. There is
-  one reference link in the corpus and no setext heading; `---` on its own line is a thematic break
-  here 64 times, so reading it as a heading would misrender all of them to catch none.
+  columns to keep the two apart.
+- HTML is shown as the text it is, and a link reference definition (`[x]: url`) prints nothing of
+  its own: its destination appears beside each link that uses it. An ordered list is numbered `1.`
+  style whatever its source wrote.
 
 ## Where this goes next
 

@@ -7,4 +7,5 @@
 name = "mdr"
 kind = "base"
 home = { repo = "mdr", status = "provisional" }
+crates = ["mdr"]
 programs = ["mdr"]

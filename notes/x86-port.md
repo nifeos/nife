@@ -144,7 +144,7 @@ would.
 
 - `--features fastpath_pad` does not compile, because this port has no padding sled.
   `kernel/src/fastpath_pad.rs` calls `arch::fastpath_pad_body`. aarch64 and riscv64 each define it
-  as a `global_asm!` run of `nop`s, and their linker scripts place its section first in `.text`;
+  as a `global_asm!` run of `nop`s, and their linker scripts place its section right after `.text.hot`;
   `kernel/link-x86_64.ld` has no such line. The sled exists for E3 in milestone 134 (the register
   of measures), a footprint experiment aimed at radon's 32 KB L1i (notes/footprint-perturbation.md). x86_64 joined
   `script/fastpath-footprint` on 2026-08-27, after the sled was written, and no x86 measurement has

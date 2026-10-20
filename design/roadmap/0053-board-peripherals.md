@@ -13,8 +13,9 @@ The storage half is built for QEMU (pull request #193). It is the `non_volatile_
 crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver confined through the
 IOMMU before enable, class-code enumeration over §18 (the PCIe transport), and an end-to-end boot
 test on both ISAs. The network half is built to the bench (below, "The network half"), and so is the
-radon SD card and eMMC half (below, "The storage half on radon"). What remains of the milestone is
-three things. Both halves need their first runs on radon. The board-side PLDA XpressRICH root
+radon SD card and eMMC half (below, "The storage half on radon"). The network half has passed its
+radon bench boot; the storage half's first read on radon failed and is outstanding. What else
+remains is two things. The board-side PLDA XpressRICH root
 complex that carries the NVMe driver to the real M.2 slot is milestone 163 (the JH7110's PCIe root
 complex), NOT-STARTED. And the EL0 NVMe driver that §86 (whether an NVMe driver can leave the
 kernel) decides on is unbuilt. Scope and honest limits: notes/non-volatile-memory-express.md, BUGS
@@ -66,17 +67,18 @@ notes/designware-ethernet.md has the split, the evidence and the runbook.
 - `kernel/src/designware_ethernet.rs` and `designware_ethernet_service.rs`, and a third NIC in
   `net_stack`, in milestone 494 (a driver for the network card a PC actually has)'s shape; the
   `network_bench` boot runs on radon over it.
-- Is radon's DMA coherent? Every device tree and kernel policy read says yes (mainline's
-  RISC-V default, `dma-noncoherent` absent from both JH7110 trees where the JH7100's tree has it);
-  one Rust driver for the board flushes the L2 for its descriptors anyway, unexplained. The bring-up
-  measures it before trusting a descriptor, with a loopback probe that tells the two directions of
-  non-coherence apart. The proposal this makes to milestone 655 (DMA on a non-coherent RISC-V
-  machine) is in the note.
+- radon's DMA is coherent, by measurement: the bring-up's loopback probe, which tells the two
+  directions of non-coherence apart, read `Coherent` on all three radon boots of 2026-10-20 (UTC).
+  Every device tree and kernel policy read had said so; one Rust driver for the board flushes the
+  L2 for its descriptors anyway, which this board does not need. What it means for milestone 655
+  (DMA on a non-coherent RISC-V machine) is a proposal in the note.
 - Parity scope note (rule 5). The driver is JH7110-specific and riscv64-only by design: no
   aarch64 or x86_64 machine nife runs on has this controller. The stack above it is shared by all
   three. A second board with a DesignWare QoS controller reuses the crate and needs only its glue.
-- Not run on silicon. The booted system leaves the port alone until a bench boot passes
-  (`PROVEN_ON_SILICON`).
+- Run on radon, 2026-10-20 (UTC), from `290d3ba8b`: `verdict LEASED-AND-MEASURED`, 1000 Mbit/s
+  full duplex, 100 MiB in 363 s, 2.3 Mbit/s (`bench/radon-2026-10-20/network-bench-3.log`; the
+  note's Results row). The booted system brings the port up (`PROVEN_ON_SILICON` is `true`).
+  The rate is outstanding, below.
 
 Reuse: OpenBSD's `dwqe` and `ytphy` (ISC), adapted with the notice carried in the crate root,
 because its JH7110 glue handles radon's v1.3B transmit clock (`starfive,tx-use-rgmii-clk`).
@@ -115,7 +117,9 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
 - Parity scope note (rule 5): the controller is the JH7110's, so the kernel half and the bench
   boot are riscv64-only, and `storage_bench` is a compile error elsewhere. The crate is
   architecture-neutral.
-- Not run on silicon.
+- Step 1 run on radon, 2026-10-20 (UTC), from `290d3ba8b`, read-only: the card identified, then
+  the first block read failed, `Host(Data(17, 2060))` (`bench/radon-2026-10-20/storage-bench-read.log`;
+  the note's Results). Nothing was written.
 
 Reuse: OpenBSD's `dwmmc` (`sys/dev/fdt/dwmmc.c` 1.33, ISC), adapted with the notice carried in
 the crate root; it matches both compatibles above. `starfive-jh7110-dwmmc` 0.1.8 on crates.io
@@ -126,20 +130,31 @@ and both trees are GPL and were read for hardware facts only.
 
 ## Follow-on
 
-- **Outstanding.** The network half's first run on radon: calef's bench step in
-  notes/designware-ethernet.md, about ten minutes, nothing on the card changes. It answers the
-  coherence question by measurement, and passing it lifts `PROVEN_ON_SILICON`.
+- **Done.** The network half's first run on radon, 2026-10-20 (UTC): `LEASED-AND-MEASURED`
+  with `coherence : Coherent`, and `designware_ethernet_service::PROVEN_ON_SILICON` is `true`
+  citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
+- **Outstanding.** The network half's rate: 2.3 Mbit/s inbound on a gigabit link. The peer's TCP
+  send queue sat near 131 KB and barely drained, which points at radon's receive side (window or
+  acknowledgment pacing), undiagnosed. A lane, with a bench boot that measures it; the note's
+  `BUGS` has what is known.
+- **Outstanding.** radon's second port, `gmac1`, which this driver does not bring up. Pull request
+  #2470 proposes the milestone for it, unmerged.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
   to the real M.2 slot. NOT-STARTED on a HARDWARE gate.
 - **Decision.** Whether the NVMe driver can leave the kernel is answered:
   `design/decisions/0086-el0-nvme-driver.md` is DECIDED, option 2a now with option 4 addable without
   reshaping the EL0 driver, and the choice between them settled by measurement.
-- **Outstanding.** RedoxFS crash consistency proven by actually cutting power on radon. Nothing can
-  power-cycle the board: milestone 224 (nothing can power-cycle radon) is REFUSED, because calef
-  chose manual power, and its own measurements record zero replies from the plug on the subnet.
-- **Outstanding.** The storage half's first run on radon: calef's three-boot bench step in
-  notes/designware-mobile-storage.md, read-only first, then the scratch write, then the ordinary
-  image back. Passing it lifts the block server's `PROVEN_ON_SILICON`.
+- **Outstanding.** Waiting on calef: RedoxFS crash consistency proven by actually cutting power on
+  radon. Nothing can power-cycle the board: milestone 224 (nothing can power-cycle radon) is
+  REFUSED, because calef chose manual power, and its own measurements record zero replies from the
+  plug on the subnet. It also needs a working storage read, below.
+- **Outstanding.** The storage half's first block read on radon. Step 1 (read-only) identified the
+  card, then `READ_SINGLE_BLOCK` of block 0 ended with `RINTSTS 0x080c`: command done, data
+  transfer over, and a FIFO underrun or overrun, with no CRC error or timeout. One
+  candidate in the code is the card read threshold, programmed at 512 bytes for a 128-byte FIFO;
+  notes/designware-mobile-storage.md's Results and `BUGS` have the decode. A lane fixes or
+  instruments it, then calef reruns step 1, then steps 2 and 3. Passing them lifts the block
+  server's `PROVEN_ON_SILICON`.
 - **Done.** The architect's call on which part of radon's storage the booted system's block server
   serves: a USB drive (calef, 2026-10-07 UTC; §260 (radon's block server serves a USB drive)). It
   refused the second microSD partition, the eMMC socket and NVMe for now. It needs milestone 163 (the
@@ -149,9 +164,11 @@ and both trees are GPL and were read for hardware facts only.
   bulk-only transport and SCSI, as a confined server), which joined this block's dependencies at
   its promotion. The microSD bench
   step above still proves the MSHC driver; it is no longer the block server's target.
-- **Outstanding.** The IDMAC data path, once the network half's coherence probe has read radon's
-  DMA coherence (milestone 655 (DMA on a non-coherent RISC-V machine)); then high speed and an
-  8-bit eMMC bus, measured against the polled rate step 1 prints.
+- **Outstanding.** The IDMAC data path, unblocked. Its gate was radon's DMA coherence, which the
+  network half's probe has read as `Coherent`, so it needs no cache maintenance (milestone 655
+  (DMA on a non-coherent RISC-V machine) is not on its path). It waits on the polled read working,
+  so that a failing DMA read is not also a failing FIFO read. Then high speed and an 8-bit eMMC
+  bus, measured against the polled rate step 1 prints.
 - **Done.** The rule-5 parity note this block says it must carry is carried, in `notes/non-volatile-memory-express.md`
   under a heading naming this milestone, stating what ships on all three architectures and what is
   board-specific.
