@@ -940,6 +940,9 @@ fn a_long_destination_is_wrapped_on_character_boundaries() {
     // two-byte character asked about the wrong byte is split in half and the output stops being text.
     let out = plain("[a](éééééééééééééé)\n", 12);
     assert_eq!(out, "  a\n  ééééééééé\n  ééééé\n");
+    // Mixed widths, so a question about any byte but the cursor's gets a different length.
+    let out = plain("[a](aéaéaéaéaéaéaé)\n", 12);
+    assert_eq!(out, "  a\n  aéaéaéaéa\n  éaéaé\n");
 }
 
 #[test]
@@ -954,4 +957,33 @@ fn an_empty_one_column_table_still_ends_each_of_its_lines() {
     // A column whose every cell is empty has width zero, so only the margin moves the cursor off
     // zero, and `close_line` ends a line only past zero: each row still ends.
     assert_eq!(plain("| |\n|-|\n| |\n", 80), "  \n  \n  \n");
+}
+
+#[test]
+fn a_code_block_owes_the_next_block_a_blank_line() {
+    // A block that printed a line is separated from what follows it, like any other block; only an
+    // empty one leaves the blank line before it still owed instead of adding a second.
+    assert_eq!(
+        plain("before\n\n```\nx\n```\n\nafter\n", 40),
+        "  before\n\n    x\n\n  after\n"
+    );
+}
+
+#[test]
+fn an_autolink_is_printed_once_in_running_text_and_in_a_cell() {
+    // An autolink's text is its destination, so printing the destination beside it, as every other
+    // link gets, would say the address twice.
+    assert_eq!(plain("x <http://a.b> y\n", 40), "  x http://a.b y\n");
+    assert_eq!(
+        plain("| a |\n|---|\n| <http://a.b> |\n", 40),
+        "  a         \n  ----------\n  http://a.b\n"
+    );
+}
+
+#[test]
+fn a_space_owed_before_the_first_word_on_a_line_is_dropped() {
+    // A space separates two words on one line. Owed at the start of a line, after a list marker or
+    // at the page's first word, it would only shift the text off its margin.
+    assert_eq!(plain("&#32;x\n", 40), "  x\n");
+    assert_eq!(plain("- &#32;x\n", 40), "  - x\n");
 }
