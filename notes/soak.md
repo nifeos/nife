@@ -239,9 +239,9 @@ seconds, then reset itself through SBI SRST, so the boot-time placement lottery 
 without a person walking to the board. A byte on the console disarms the loop and leaves the soak
 running, and `script/board-console --stop` sends that byte and checks the acknowledgement.
 
-On radon OpenSBI's own I2C write to the PMIC fails and hangs (notes/board-reboot.md), so the kernel
-writes the AXP15060 directly (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), and
-that reset came back through U-Boot on 13 of 13 draws on 2026-10-20. A board that hangs instead
+On radon OpenSBI's own I2C write to the PMIC fails and hangs (notes/board-reboot.md). So the kernel
+writes the AXP15060 directly (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)).
+That reset came back through U-Boot on 13 of 13 draws on 2026-10-20. A board that hangs instead
 still needs a person, since nothing can power-cycle radon (milestone 224 (nothing can power-cycle
 radon, so a hung soak needs a person)). [`soak/rebooting-soak.md`](soak/rebooting-soak.md) has the hazard,
 its four answers and "Verifying the reset before anything is left unattended";

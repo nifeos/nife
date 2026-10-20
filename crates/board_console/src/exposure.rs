@@ -157,6 +157,8 @@ pub fn read(log: &str) -> Vec<Boot> {
 ///
 /// [`read`] forbids no absence, which is right for a capture whose machine has no profile (argon,
 /// `hvf`, QEMU) and wrong for radon or xenon: pass the profile whenever the machine has one.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/225-radon-soak-draw`.
 #[must_use]
 pub fn read_for(log: &str, board: &'static board::Profile) -> Vec<Boot> {
     let mut boots: Vec<(Boot, BootProgress)> = Vec::new();
