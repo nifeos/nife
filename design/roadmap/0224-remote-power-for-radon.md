@@ -10,7 +10,7 @@ needs_person: yes
 ---
 # 224. Nothing can power-cycle radon, so a hung soak needs a person
 
-**Refused (calef, 2026-09-04 UTC).** With the four options below in front of him and the diagnosis
+Refused by calef on 2026-09-04 (UTC). With the four options below in front of him and the diagnosis
 re-measured, calef chose manual power. Milestone 257 (boot radon over the network) is what made that the cheaper
 answer: it took away the card, which was the larger cost of a bench session, and left remote power
 buying only the hung-board case. This is the soak's remaining gap after milestone 221 (the soak
