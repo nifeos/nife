@@ -1,5 +1,5 @@
 //! **The documentation crate**: markdown in, styled terminal bytes out, and the index that says
-//! what exists. It is the pure half of the documentation service: a renderer ([`render`], behind the
+//! what exists. It is the pure half of the documentation service: a renderer (`render`, behind the
 //! `markdown` feature), the byte layout of a search index ([`index`]), and the query that reads one.
 //! No IO, syscall or endpoint is in it; `mdr/` is the program. The crate and program names differ on
 //! purpose: the crate is a superset of what the program does.
