@@ -17,7 +17,7 @@ and `layout:` line is in `bench/radon-2026-10-20/e3-step0-check.log`.
   bytes`, and `pin: .text.hot 9342 B at 0xffffffc080204000` with 16 of 16 inside, in all eight.
 
 The cause is in the linker scripts (`kernel/link-riscv64.ld`, `kernel/link-aarch64.ld`). Milestone
-796 put every hot symbol in `.text.hot`, aligned to 16 KiB right after the boot stub, and the sled
+796 (pin the hot trap path's placement) put every hot symbol in `.text.hot`, aligned to 16 KiB right after the boot stub, and the sled
 section comes after it. A pad or a shift now moves the cold text after the block, and moves `.data`
 and `.bss` in whole pages (`__data_start` sits 0 to 3 pages on across the eight). It moves no
 instruction the IPC rows execute. The eight images are one hot-path layout, so the pad ladder and the
@@ -47,8 +47,8 @@ that range.
    ([executed-footprint.md](executed-footprint.md)): does the footprint
    `script/fastpath-footprint` prints predict latency, and does moving kernel text cost time? With
    the pin, the first has no channel left: a byte nothing fetches reaches a clock only by moving
-   code that is fetched, and no pad moves a hot instruction (the data pages are option 3). The second is 796's sweep. The footprint question milestone 188 leans on is
-   the executed one, E5 (milestone 708). Cost: a rewrite of 134's Outstanding item and the
+   code that is fetched, and no pad moves a hot instruction (the data pages are option 3). The second is 796's sweep. The footprint question milestone 188 (the IPC fastpath) leans on is
+   the executed one, E5, milestone 708 (an executed footprint ladder for radon). Cost: a rewrite of 134's Outstanding item and the
    register's E3 row, and 134 closes.
 3. **Run the eight images as built.** They differ only in cold text and in where `.data` and `.bss`
    start (0 to 3 pages). So they test whether the page placement of the kernel's statics moves
