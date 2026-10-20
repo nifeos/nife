@@ -27,9 +27,9 @@
 //!
 //! # BUGS
 //!
-//! - **A line held just before the drainer dies is shown only when the next kernel line, or a
-//!   panic, finds the ring stalled.** Nothing polls for a dead drainer; the stall test runs when
-//!   the kernel next prints.
+//! - **A line held just before the drainer dies waits up to a second longer than the stall test
+//!   needs.** The timer tick runs the test once every [`STALL_POLL_TICKS`] on core 0
+//!   ([`stall_tick`]), as well as every kernel line.
 //! - **A fallback can print a line the service is forwarding at the same moment**, so the line
 //!   appears twice. The kernel flags it `DIRECT` before printing, but a service that read it just
 //!   before has no reason to look again.
@@ -312,6 +312,47 @@ pub fn flush(line: &mut Line, mut out: impl FnMut(&str)) {
         emit(&line.buf[..line.len], &mut out);
         out("\n");
         line.len = 0;
+    }
+}
+
+/// How often the tick looks for a drainer that stopped with lines unread: one second at the
+/// 100 Hz tick. Without the poll, a drainer that dies (or blocks behind a console server that
+/// stopped) holds the last lines the kernel printed until it prints again, and the line that says
+/// what went wrong is usually the last one. A console killed for a stuck transmitter is the case
+/// that needed it (milestone 890 (riscv64 and `x86_64` join the shared boot path)).
+const STALL_POLL_TICKS: u64 = 100;
+
+/// **Put a stalled drainer's unread lines on the wire, from the timer tick.** Core 0 only, once
+/// every [`STALL_POLL_TICKS`], and only from a context holding no lock, [`signal_if_safe`]'s
+/// condition. The test is the one every kernel line runs ([`draining`]), so a drainer that keeps
+/// up is never overtaken by it.
+#[inline(never)]
+pub(crate) fn stall_tick() {
+    static TICKS: AtomicU64 = AtomicU64::new(0);
+    if crate::cpu::id() != 0 || TICKS.fetch_add(1, Ordering::Relaxed) % STALL_POLL_TICKS != 0 {
+        return;
+    }
+    if crate::sync::current_rank() != crate::sync::rank::NONE {
+        return;
+    }
+    let Some(r) = ring() else {
+        return;
+    };
+    if draining(&r) || !stalled_attached() {
+        return;
+    }
+    crate::console::catch_up_stalled_ring();
+}
+
+/// [`stall_tick`]'s second half, under the console lock: what the drainer has not printed, and not
+/// the partial line, which belongs to a `print!` still in progress.
+pub(crate) fn catch_up_stalled(out: impl FnMut(&str)) {
+    let Some(r) = ring() else {
+        return;
+    };
+    let mut out = out;
+    if !draining(&r) {
+        catch_up(&r, &mut out);
     }
 }
 

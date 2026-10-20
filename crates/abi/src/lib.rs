@@ -368,6 +368,10 @@ pub mod page_frame;
 /// [`page_frame::REVOKE`]'s take-back meaning on a `DeviceFrame`.
 pub mod port_range;
 
+/// **How far apart the console UART's registers are** (milestone 890 (riscv64 and `x86_64` join the shared boot path)). Not a capability's methods:
+/// the start word the kernel passes the progenitor, and the progenitor its console and input drivers.
+pub mod uart;
+
 // Index exception (2026-10-12): the error every child module returns stays at the root, because
 // xtask's std generator inlines only `pub mod` children, and a public `error` module would be a
 // new path.

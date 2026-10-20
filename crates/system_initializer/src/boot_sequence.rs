@@ -16,9 +16,10 @@ use super::*;
 ///
 /// `initial_ramdisk_len` is the archive length the kernel passed at entry; `fs_rights` is the
 /// `filesystem_contract::dir` rights the file-service endpoint carries, and 0 means this boot
-/// attached no disk (so `fs_ep` and `fs_page` are empty). `mounted_tree`, when `Some` and its slots
-/// hold something, is the shell's second mounted tree (see [`MountedTreeGrant`]); the real
-/// progenitor passes the disk tree's pair.
+/// attached no disk (so `fs_ep` and `fs_page` are empty). `uart_shape` is the console UART's
+/// register shape as the kernel passed it (`abi::uart`), handed on to the console and input
+/// drivers. `mounted_tree`, when `Some` and its slots hold something, is the shell's second
+/// mounted tree (see [`MountedTreeGrant`]); the real progenitor passes the disk tree's pair.
 ///
 /// # Examples
 ///
@@ -31,7 +32,7 @@ use super::*;
 /// ```no_run
 /// use system_initializer::{BootEndowment, boot};
 ///
-/// fn init(initial_ramdisk_len: u64, fs_rights: u64) -> ! {
+/// fn init(uart_shape: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
 ///     let endowment = BootEndowment {
 ///         untyped: 2, uart_dev: 3, uart_irq: 4, clock_page: 5, config_page: 6,
 ///         fs_ep: 7, fs_page: 8,
@@ -47,13 +48,14 @@ use super::*;
 ///         net_stack_ep: 29, net_stack_report: 30, reboot: 31,
 ///         for_test_roles: &[],
 ///     };
-///     boot(&endowment, initial_ramdisk_len, fs_rights, None)
+///     boot(&endowment, initial_ramdisk_len, fs_rights, uart_shape, None)
 /// }
 /// ```
 pub fn boot(
     g: &BootEndowment,
     initial_ramdisk_len: u64,
     fs_rights: u64,
+    uart_shape: u64,
     mounted_tree: Option<MountedTreeGrant>,
 ) -> ! {
     // Probed before anything here allocates, because a slot the kernel left empty is one a later
@@ -87,6 +89,7 @@ pub fn boot(
         p.log_elf.as_ref(),
         &ts_elf,
         td_bytes,
+        uart_shape,
     );
 
     refuse_unvouched(ut, term, &p.in_elf, &p.sh_elf, &p.reaper_elf);
@@ -99,7 +102,7 @@ pub fn boot(
         fail()
     };
 
-    start_keystroke_sources(g, ut, &in_elf, term.ep);
+    start_keystroke_sources(g, ut, &in_elf, term.ep, uart_shape);
     let chan = retype_spawn_channel(ut);
 
     // 4. The shell: prints and reads lines through the terminal, holds the spawn channel, and holds

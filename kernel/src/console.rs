@@ -571,6 +571,21 @@ pub(crate) fn configure_from_dtb() {
     CONSOLE.lock().uart.configure(shape);
 }
 
+/// **The register shape the userspace console and input drivers must use** (milestone 890 (riscv64 and `x86_64` join the shared boot path)): they
+/// map this same UART and read no device tree, so `boot_progenitor` passes this as the
+/// progenitor's first start word and the progenitor hands it to both. See `abi::uart`.
+#[cfg(target_arch = "riscv64")]
+pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
+    let shape = CONSOLE.lock().uart.shape();
+    abi::uart::RegisterShape::new(shape.reg_shift, shape.reg_io_width)
+}
+
+/// The PL011 and COM1 have no stride; the zero word says so. See the riscv64 arm.
+#[cfg(not(target_arch = "riscv64"))]
+pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
+    abi::uart::RegisterShape::BYTES
+}
+
 /// **Has anyone typed at the console?** (Milestone 249.) True while a byte sits unread in the
 /// console UART's receive buffer; reads nothing, so the answer stays true until [`discard_rx`]
 /// takes it.
@@ -763,6 +778,16 @@ pub fn drain() {
         let _ = CountedWrites(&mut wire).write_str(s);
     });
     wire.uart.drain_transmitter();
+}
+
+/// **The ring's unread lines, written by the kernel because its drainer stopped** (milestone 890):
+/// `kernel_log::stall_tick`'s half under the console lock.
+pub(crate) fn catch_up_stalled_ring() {
+    let mut guard = CONSOLE.lock();
+    let (_line, mut wire) = guard.split();
+    crate::kernel_log::catch_up_stalled(|s| {
+        let _ = CountedWrites(&mut wire).write_str(s);
+    });
 }
 
 /// **Bytes handed to the console transmitter since boot** (first-silicon diagnostics, 2026-08-15).

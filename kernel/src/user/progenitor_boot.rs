@@ -45,20 +45,6 @@ pub const PROGENITOR_ENTRY: &str = "progenitor";
 pub const PROGENITOR_STACK_PAGES: u64 = 14;
 const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAX_STACK_PAGES);
 
-/// **The role that means "boot the system"**, as opposed to milestone 19d (run a real workload)'s
-/// test roles.
-///
-/// [`boot_progenitor`] passes it as the progenitor's `x0` when it loads [`PROGENITOR_ENTRY`] and
-/// grants the boot capability set. The progenitor has one role and ignores it; the value is passed
-/// for the symmetry the old `spawn_progenitor` established, when a single function both booted the
-/// system and re-entered `hello` at milestone 19d's test roles (milestone 166 (one boot loader,
-/// reached two inconsistent ways) split those two jobs, so this role no longer selects an entry).
-///
-/// The number is 27 because that is the role `hello`'s retired `init_boot` had, and every 19d role
-/// number around it is load-bearing to a test. **Name provisional** (milestone 266).
-#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub(crate) const PROGENITOR_ROLE: u64 = 27;
-
 /// **Boot the system: load the progenitor and start it as the first process, on every architecture**
 /// (milestone 166, which merged aarch64's `spawn_progenitor` boot half and `riscv64`/`x86_64`'s
 /// `riscv_shell_boot` into this one body).
@@ -97,7 +83,7 @@ pub(crate) const PROGENITOR_ROLE: u64 = 27;
 /// Returns the progenitor's thread, so the caller can say how it left.
 ///
 /// Name: ratified 2026-09-15 (calef, this header): `boot` the verb, `progenitor` the noun it acts
-/// on, greppable with [`PROGENITOR_ENTRY`] and [`PROGENITOR_ROLE`]. Refused `boot_via_progenitor`
+/// on, greppable with [`PROGENITOR_ENTRY`]. Refused `boot_via_progenitor`
 /// (its `via` disambiguated a separate aarch64 boot path that no longer exists).
 // One caller, `boot.rs`'s `hand_over`, which all three architectures reach. The `allow` is kept for
 // the configurations that do not: a `soak` or `job_mix` build replaces the hand-off with its own
@@ -120,6 +106,15 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     // (notes/visionfive2.md, BUGS).
     let (uart_irq, uart_irq_source) = uart_irq_and_source();
     crate::println!("  uart irq  : {uart_irq} ({uart_irq_source})");
+    // The stride is the one fact about this UART the userspace drivers cannot see for themselves,
+    // and a wrong one is a console that prints nothing at all, so the transcript states it.
+    let uart_shape = crate::console::uart_register_shape();
+    #[cfg(target_arch = "riscv64")]
+    crate::println!(
+        "  uart shape: registers {} byte(s) apart, {}-bit access (device tree), passed to the console and input drivers",
+        uart_shape.offset(1),
+        if uart_shape.is_word_access() { 32 } else { 8 },
+    );
 
     let (ramdisk_start, ramdisk_len) = memory::initial_ramdisk_region().expect("no archive");
     let ramdisk_pages = ramdisk_len.div_ceil(FRAME_SIZE);
@@ -166,9 +161,9 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     grant_disk_tree(tid, fs_pool);
     crate::sched::configure_thread_control_block(tid, elf.entry(), USER_STACK_TOP, aspace_name)
         .expect("configure");
-    // x0 = the boot role (the progenitor has one role and ignores it, but it is passed for the
-    // symmetry the old `spawn_progenitor` established); x1 = the archive length; x2 = the file-service rights.
-    crate::sched::start_thread_control_block(tid, [PROGENITOR_ROLE, ramdisk_len, fs_rights])
+    // x0 = the console UART's register shape, which the progenitor hands its console and input
+    // drivers (`abi::uart`); x1 = the archive length; x2 = the file-service rights.
+    crate::sched::start_thread_control_block(tid, [uart_shape.to_word(), ramdisk_len, fs_rights])
         .expect("start");
 
     // Arm the interrupt chain so the input driver's keystrokes flow. aarch64 already did its arming

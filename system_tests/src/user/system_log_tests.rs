@@ -413,6 +413,49 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     assert_eq!(counted, 2);
 }
 
+/// **A stalled drainer's last line reaches the wire with nothing printed after it** (milestone
+/// 890). The case is a drainer blocked behind a console that died: the line saying why is the
+/// last one the kernel prints, so no later line would find the stall. The timer tick's poll
+/// (`kernel_log::stall_tick`) must print it within its period on its own.
+///
+/// Falsification: attested 2026-10-20. On patagonia, riscv64 under QEMU (`script/test --arch riscv64
+/// --test` this name), with the `stall_tick` call removed from `sched::preemption`: red, "the held
+/// line never reached the UART without a later print". Green with it restored.
+#[test_case]
+fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
+    use system_log_contract::kernel_ring::DETACHED;
+    use system_log_contract::record::flags;
+    // As the test above: publish, end the harness's line, and play a drainer that never reads.
+    crate::kernel_log::publish();
+    crate::println!();
+    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
+    let (next, _) = crate::kernel_log::test_read(0, &mut text);
+    crate::kernel_log::test_set_cursor(next);
+    let line = "  kernel log probe: the last line before the drainer stopped\n";
+    crate::print!("{line}");
+    let held_tx = crate::console::tx_bytes();
+    // The stall test needs `STALL_NANOS` and the poll runs once a second; three seconds bounds
+    // both with room for a loaded emulator. The poll may run on another core and writes the text
+    // and its newline separately, so the loop waits for the whole line, not the first byte.
+    let hz = crate::arch::timer::frequency();
+    let until = crate::arch::timer::now() + 3 * hz;
+    while crate::console::tx_bytes() - held_tx < line.len() as u64
+        && crate::arch::timer::now() < until
+    {
+        core::hint::spin_loop();
+    }
+    let rescued_tx = crate::console::tx_bytes();
+    let rescued_flags = ring_flags(next);
+    crate::kernel_log::test_set_cursor(DETACHED);
+
+    assert_eq!(
+        rescued_tx - held_tx,
+        line.len() as u64,
+        "the held line never reached the UART without a later print"
+    );
+    assert_ne!(rescued_flags & flags::DIRECT, 0);
+}
+
 /// **A panic prints what the drainer had not, then everything directly** (§175's panic escape).
 /// `console::enter_panic` is what the panic handler calls after breaking the console lock; called
 /// here without dying, it must put the held line on the UART, and the line after it must not wait.

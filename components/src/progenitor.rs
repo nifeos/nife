@@ -134,11 +134,10 @@ const GRANTS: BootEndowment = BootEndowment {
 };
 
 #[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
-    // `_a0` is the role the kernel entered this program at. The progenitor has exactly one role, so
-    // it does not read it; `kernel::user::boot_progenitor` still passes `PROGENITOR_ROLE` for the
-    // symmetry the old `spawn_progenitor` established, when the same function also entered `hello` at
-    // milestone 19d's test roles.
+pub extern "C" fn _start(uart_shape: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
+    // `uart_shape` is the console UART's register shape as `abi::uart` encodes it, read from the
+    // device tree by the kernel, which this process cannot read. `boot` hands it to the console and
+    // input drivers, the two programs that map the UART.
     //
     // **The second mounted tree is the disk tree** (milestone 154 (a process that holds two directory capabilities)'s mechanism, milestone 834 (ioping on nife and Linux)'s
     // use): the whole NVMe namespace as one read-only file with no cache, at `/disk`. DECISIONS
@@ -150,6 +149,7 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, fs_rights: u64) -> 
         &GRANTS,
         initial_ramdisk_len,
         fs_rights,
+        uart_shape,
         Some(system_initializer::MountedTreeGrant { ep: 32, pool: 33 }),
     )
 }

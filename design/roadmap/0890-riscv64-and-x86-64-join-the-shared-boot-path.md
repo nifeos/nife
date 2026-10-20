@@ -191,48 +191,46 @@ lines, every tour line, the prompt, and `echo hello` echoing.
 
 ## The radon boot: through the hand-over, not to the prompt
 
-radon booted `main` at `2d2e042d2` (`script/board-image --tftp`, SEALED) on 2026-10-20 (UTC):
-`bench/radon-2026-10-20/805-890-boot-to-prompt.log`. Its first boot is not evidence: the card's
-boot script asked TFTP for `nife-initrd.img`, the archive's old name, and booted the card's own
-payload (`payload came from card`). The second (`payload came from net`) proved, on the JH7110:
+radon booted `main` at `2d2e042d2` on 2026-10-20 (UTC):
+`bench/radon-2026-10-20/805-890-boot-to-prompt.log`. Its second boot (`payload came from net`)
+proved, on the JH7110:
 
-- The PLIC slice reads the S contexts from the device tree (`plic: S contexts from the device tree
-  differ from the 2h+1 formula`; the disabled S7 shifts each one down), and `interrupts` names
-  `this hart's S-mode context 2`. The console is source 32.
-- The other harts come up with the boot context opened first: `smp: 4 core(s) online`.
+- The PLIC slice reads the S contexts from the device tree, and `interrupts` names `this hart's
+  S-mode context 2`. The console is source 32. `smp: 4 core(s) online`.
 - The tail runs through the hand-over: `11 of 13 passed, 2 absent: blockdev deviceirq`, with
-  `clock`, `trng` and `entropy` passing, then every line through `nife: handing the system to the
-  userspace progenitor.`
-- The progenitor prints through `capability slots: 19 of 64 at peak`, then nothing for over five
-  minutes; a carriage return got no echo. There is no prompt, so the keystroke path through PLIC
-  source 32 is unobserved. No radon log under `bench/` reaches the shell banner.
+  `clock`, `trng` and `entropy` passing.
+- The progenitor printed nothing. After `capability slots: 19 of 64 at peak` the wire was silent
+  for five minutes, so the keystroke path is unobserved. No `board_console` verdict exists.
 
-The console was `screen`, not `script/board-console`, so no `board_console` verdict exists. U-Boot
-was stopped by hand to set `nife_boot_server`, and the archive was also served under its old name.
+## Why it stopped
 
-The same tree under QEMU with no block device, no virtio-rng and no NIC reaches the prompt:
+`console` and `input` read the UART at QEMU's stride, one byte apart. The JH7110's registers are
+four bytes apart with 32-bit access (`reg-shift = <2>`, `reg-io-width = <4>`). The console polled
+LSR at `0x05`, a byte of IER there, for a THRE bit that never set, and everything that prints
+blocked behind it; the kernel's lines still reached the wire through its ring's fallback. The network path is not involved: the image printed `network : NONE`.
+QEMU's byte registers reach the prompt; forcing the JH7110's shape there reproduces radon's stop.
 
-```
-cargo xtask initial-ramdisk-riscv
-cargo build -p kernel --release --target riscv64imac-unknown-none-elf
-NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv.img helpers/qemu-bounded.sh 240 \
-    helpers/qemu-runner-riscv64.sh target/riscv64imac-unknown-none-elf/release/kernel
-```
+- The kernel passes the tree's shape as the progenitor's first start word, and the progenitor
+  passes it to `console` and `input` (`abi::uart::RegisterShape`). On riscv64 the hand-over prints
+  it, `uart shape: registers 4 byte(s) apart, 32-bit access` on the JH7110.
+- The console's wait for THRE is bounded at one second. Running out kills it with a load fault at
+  the LSR offset it polled, so a wrong shape leaves a kill report with `stval` `0x14` or `0x5`.
+- The timer tick tests for a stalled drainer once a second (`kernel_log::stall_tick`). Without it
+  the kill report stayed held in the ring, because the log service blocks behind the dead console
+  and the kernel printed nothing after it.
 
-Past `19 of 64` it prints `21 of 64`, `progenitor: construction budget dropped`, the `nife
-capability shell.` banner and a prompt. A missing disk does not hang the progenitor alone. Not apples
-to apples: QEMU's CPU is `rv64` and its kernel lacks `board` (the test exit only). Visible before the
-stop, radon's `entropy` check passes where QEMU's is absent, and radon prints a `network : NONE` line
-for its Ethernet.
+## The radon boot that closes the riscv64 half
 
-Once the hang is fixed, the boot that closes the riscv64 half:
+For calef, from `main` once this has merged: `script/board-image --tftp`, then
+`script/board-netboot`, then power-cycle radon and check for `payload came from net`.
 
-1. Run `script/board-image --tftp`, or `--card <volume>`. Check the log says `payload came from net`.
-2. Serve it with `script/board-netboot`, then power-cycle radon.
-3. Run `script/board-console --until prompt` and let it reach `Stage::Prompt`.
-4. Type `echo hello` and press Enter. The echo proves a keystroke went from the UART through PLIC
-   source 32 and a hart's S context to the userspace input driver.
-5. Record `board_console`'s verdict line, or its log if it stopped short.
+1. Run `script/board-console --until prompt` and let it reach `Stage::Prompt`.
+2. Type `echo hello` and press Enter. The echo proves the keystroke path through PLIC source 32.
+3. Record `board_console`'s verdict line, or its log if it stopped short.
+
+Look for the `uart shape` line, `progenitor:` lines and the prompt. radon's profile fails the boot
+if `clock`, `trng` or `entropy` is absent. A console killed at `stval 0x14` means the shape arrived
+and the UART still never emptied.
 
 ## Done when
 
@@ -251,8 +249,7 @@ Once the hang is fixed, the boot that closes the riscv64 half:
 
 ## BUGS
 
-- radon's progenitor hangs after `19 of 64` (the radon boot above), so the PLIC's keystroke path
-  has run under QEMU only.
+- The PLIC's keystroke path has run under QEMU only, until the radon boot above.
 - `bring_up_machine` carries six `cfg(target_arch)` sites: aarch64's frequency check, two blocks
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
@@ -264,13 +261,14 @@ Once the hang is fixed, the boot that closes the riscv64 half:
   takes a supervisor, and one before-and-after over a spawn and its teardown counts whatever else
   allocated in the window, which is why that demo ran two rounds. `system_tests` proves both.
 - `serial_driver` is shipped in the drivers package and nothing starts it: riscv64's UART-driver
-  step was its only starter. The hand-over's input driver serves riscv64's UART.
+  step was its only starter. The hand-over's input driver serves riscv64's UART. It also assumes QEMU's register
+  stride (`abi::uart`).
+- Gates run `console` and `input` at QEMU's stride; a host test pins the JH7110's.
 - `blockdev`'s driver is left running on disk 0, as the tour's was.
 
 ## Follow-on
 
-- **Outstanding.** radon's progenitor hang after `19 of 64`, which QEMU without a disk does not
-  reproduce (the radon boot above). It needs a lane of its own; the closing boot there follows.
+- **Outstanding.** The radon boot above, of the console's register shape and the riscv64 half.
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
@@ -289,4 +287,4 @@ lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarc
 at a time, until the two per-port boot files hold only what `arch/` cannot. Both ports run the
 shared bring-up and tail under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and
 the per-port tours are the self-test's checks on all three. radon runs both slices through the
-hand-over and hangs in the progenitor; its prompt and the xenon boot remain.
+hand-over, its console now uses the UART's real stride, and its prompt and the xenon boot remain.

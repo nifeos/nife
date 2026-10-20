@@ -225,6 +225,14 @@ impl<S: RegisterSpace> Ns16550<S> {
         self.init();
     }
 
+    /// The shape in force: [`Shape::QEMU_VIRT`] until [`configure`](Self::configure) replaces it.
+    ///
+    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape.
+    #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // only riscv64 hands it on
+    pub fn shape(&self) -> Shape {
+        self.shape
+    }
+
     /// The address of register `reg` under the current shape. Going through `usize` rather than
     /// pointer casts is the same move `drivers/plic.rs` makes: the 32-bit arm's alignment is a
     /// checked runtime fact (`off & 3 == 0`), not a static property a pointer cast could promise.

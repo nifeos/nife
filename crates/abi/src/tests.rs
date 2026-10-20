@@ -140,3 +140,22 @@ fn the_futex_admits_only_a_private_32_bit_word() {
         assert!(!admitted(PRIVATE | size));
     }
 }
+
+/// **The JH7110's line status register is at 0x14, read 32 bits wide** (milestone 890 (riscv64 and `x86_64` join the shared boot path)). Every
+/// QEMU machine this tree boots has byte registers, so no emulator run can tell a driver that
+/// honors the shape from one that assumes QEMU's: radon's console did the second and waited
+/// forever on LSR at 0x05. This pins the board's offsets through the word the kernel sends, and
+/// that the zero word aarch64 and `x86_64` send is byte access.
+#[test]
+fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
+    use crate::uart::RegisterShape;
+    const LSR: u64 = 5;
+    let board = RegisterShape::from_word(RegisterShape::new(2, 4).to_word());
+    assert_eq!(board, RegisterShape::new(2, 4));
+    assert_eq!(board.offset(LSR), 0x14);
+    assert!(board.is_word_access());
+    let qemu = RegisterShape::from_word(0);
+    assert_eq!(qemu, RegisterShape::BYTES);
+    assert_eq!(qemu.offset(LSR), 0x05);
+    assert!(!qemu.is_word_access());
+}
