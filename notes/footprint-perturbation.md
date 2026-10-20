@@ -42,13 +42,13 @@ of 2026-09-19: `kernel/src/fastpath_pad.rs`, sized by two build-time variables.
 only when that feature is on, say how much. `NIFE_FASTPATH_PAD=<units>` is the sled's length in
 units of the old pad (5,092 bytes on riscv64; unset is 1, and 0 is the guard and a `ret`).
 `NIFE_FASTPATH_SHIFT=<bytes>` appends uncounted zero bytes after it. The linker script places the
-sled right after `.text.hot`, the hot trap path that milestone 796 (pin the hot trap path's placement) pins on a 16 KiB boundary after
-the boot stub. So both numbers move all kernel text after that block by that many bytes, and neither
-moves the block. A pad and a shift of
-equal displacement are therefore the same binary apart from bytes nothing fetches. This is milestone
-370 (a layout control, because the perturbation experiments cannot tell footprint from addresses).
-How the pin was checked, why these are variables rather than features, and why every image must come
-from one commit are in [layout-control.md](footprint-perturbation/layout-control.md).
+sled right after `.text.hot`, the hot trap path that milestone 796 (pin the hot trap path's
+placement) pins on a 16 KiB boundary after the boot stub. So both numbers move all kernel text after
+that block by that many bytes, and neither moves the block. A pad and a shift of equal displacement
+are therefore the same binary apart from bytes nothing fetches. This is milestone 370 (a layout
+control, because the perturbation experiments cannot tell footprint from addresses). How the pin was
+checked, why these are variables rather than features, and why every image must come from one commit
+are in [layout-control.md](footprint-perturbation/layout-control.md).
 
 ### The eight images, and why these sizes
 

@@ -11,18 +11,18 @@ and `layout:` line is in `bench/radon-2026-10-20/e3-step0-check.log`.
 
 - The code hash passes: `7c518b6586efa75a` over 3,033 instructions in 16 hot symbols, in all eight.
 - The sled passes: `fastpath_pad_body` sits at `0xffffffc08020647e` in all eight. It is 4, 5,092,
-  10,180 and 15,268 bytes for pads 0 to 3, and 4 bytes in each shift image. The twins pass too, trivially:
-  every hot symbol is at one address in all eight images, not just in each pair.
+  10,180 and 15,268 bytes for pads 0 to 3, and 4 bytes in each shift image. The twins pass too,
+  trivially: every hot symbol is at one address in all eight images, not just in each pair.
 - The sled line fails. Every image reads `the sled precedes 0 of 16 hot symbols, 0% of their
   bytes`, and `pin: .text.hot 9342 B at 0xffffffc080204000` with 16 of 16 inside, in all eight.
 
-The cause is in the linker scripts (`kernel/link-riscv64.ld`, `kernel/link-aarch64.ld`). Milestone
-796 (pin the hot trap path's placement) put every hot symbol in `.text.hot`, aligned to 16 KiB right after the boot stub, and the sled
-section comes after it. A pad or a shift now moves the cold text after the block, and moves `.data`
-and `.bss` in whole pages (`__data_start` sits 0 to 3 pages on across the eight). It moves no
-instruction the IPC rows execute. The eight images are one hot-path layout, so the pad ladder and the
-layout range would measure the same thing. No board time went to boots, because step 0 is the
-check that invalidates the whole block.
+The cause is in the linker scripts (`kernel/link-riscv64.ld`, `kernel/link-aarch64.ld`).
+Milestone 796 (pin the hot trap path's placement) put every hot symbol in `.text.hot`, aligned to
+16 KiB right after the boot stub, and the sled section comes after it. A pad or a shift now moves
+the cold text after the block, and moves `.data` and `.bss` in whole pages (`__data_start` sits 0
+to 3 pages on across the eight). It moves no instruction the IPC rows execute. The eight images are
+one hot-path layout, so the pad ladder and the layout range would measure the same thing. No board
+time went to boots, because step 0 is the check that invalidates the whole block.
 
 Milestone 796's own sweep ran the same evening (recorded on #2469): one-task `null_syscall`
 `per_job` 121 at shifts 0, 16, 32 and 48, a spread of 0. Those shifts move everything except the
@@ -44,12 +44,13 @@ that range.
    block's offset within a way moves the IPC rows. That is a question about 796's pin, not about
    footprint.
 2. **Retire E3's question.** Under the control E3 answers two questions
-   ([executed-footprint.md](executed-footprint.md)): does the footprint
-   `script/fastpath-footprint` prints predict latency, and does moving kernel text cost time? With
-   the pin, the first has no channel left: a byte nothing fetches reaches a clock only by moving
-   code that is fetched, and no pad moves a hot instruction (the data pages are option 3). The second is 796's sweep. The footprint question milestone 188 (the IPC fastpath) leans on is
-   the executed one, E5, milestone 708 (an executed footprint ladder for radon). Cost: a rewrite of 134's Outstanding item and the
-   register's E3 row, and 134 closes.
+   ([executed-footprint.md](executed-footprint.md)): does the footprint `script/fastpath-footprint`
+   prints predict latency, and does moving kernel text cost time? With the pin, the first has no
+   channel left: a byte nothing fetches reaches a clock only by moving code that is fetched, and no
+   pad moves a hot instruction (the data pages are option 3). The second is 796's sweep. The
+   footprint question milestone 188 (the IPC fastpath) leans on is the executed one, E5,
+   milestone 708 (an executed footprint ladder for radon). Cost: a rewrite of 134's Outstanding
+   item and the register's E3 row, and 134 closes.
 3. **Run the eight images as built.** They differ only in cold text and in where `.data` and `.bss`
    start (0 to 3 pages). So they test whether the page placement of the kernel's statics moves
    the IPC rows on radon's 8 KiB-way L1d. No code, one evening. Nobody holds that question, and the

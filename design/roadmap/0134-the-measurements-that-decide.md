@@ -24,8 +24,8 @@ exist, and §96 (process kernel or event kernel) said the instrument "wants a ro
 its own". This is it.
 
 What 134 still owes is E3 under a layout control, and E3 as specified cannot run on this tree:
-milestone 796 (pin the hot trap path's placement) holds the hot path still, so no pad or shift moves it. Whether to rebuild E3 or
-retire its question is an open fork for calef; "Follow-on" has it.
+milestone 796 (pin the hot trap path's placement) holds the hot path still, so no pad or shift moves
+it. Whether to rebuild E3 or retire its question is an open fork for calef; "Follow-on" has it.
 
 The detail lives in two appendices, and this page is complete without them:
 
@@ -184,14 +184,14 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
 ## Follow-on
 
 - **Outstanding.** E3, the one item between this block and BUILT, waits on calef. Step 0 ran on
-  2026-10-20 (UTC) at `68647cfc5` and failed by construction: eight images, one code hash, and
-  every one reads `the sled precedes 0 of 16 hot symbols`. Milestone 796's pin holds the hot trap
-  path at one address ahead of the sled, so a pad or a shift moves no hot instruction. No boot ran.
-  The fork is in notes/footprint-perturbation/step-0-under-the-pin.md: rebuild the sled inside
-  `.text.hot`, retire E3's question in favor of E5, milestone 708 (an executed footprint ladder for radon), or run the images as built.
-  Recommended: retire it, and the reason is not effort. Retired, this block goes BUILT with the E3
-  row recorded as retired. Otherwise the evening must produce, at one commit, on
-  `board,bench,single_hart,fastpath_pad` cards:
+  2026-10-20 (UTC) at `68647cfc5` and failed by construction: eight images, one code hash, and every
+  one reads `the sled precedes 0 of 16 hot symbols`. Milestone 796's pin holds the hot trap path at
+  one address ahead of the sled, so a pad or a shift moves no hot instruction. No boot ran. The fork
+  is in notes/footprint-perturbation/step-0-under-the-pin.md: rebuild the sled inside `.text.hot`,
+  retire E3's question in favor of E5, milestone 708 (an executed footprint ladder for radon), or
+  run the images as built. Recommended: retire it, and the reason is not effort. Retired, this block
+  goes BUILT with the E3 row recorded as retired. Otherwise the evening must produce, at one commit,
+  on `board,bench,single_hart,fastpath_pad` cards:
   1. step 0 passing;
   2. `call_reply`, `ipc_rtt` and `ipc_rtt_el0` at the eight images, three boots each, interleaved,
      each ending `bench: done` with `cntfrq 4000000` and its `fastpath_pad` probe line;
