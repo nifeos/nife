@@ -1,0 +1,24 @@
+[package]
+name = "mdr"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Its own workspace, like `jig`: a `std` program built with `-Zbuild-std` against nife's patched
+# std (`cargo xtask std-src`), which the main workspace's bare-metal targets cannot build.
+[workspace]
+
+[dependencies]
+# The renderer, with its parser (milestone 784 (reuse what the tree wrote), item (f2)).
+documentation = { path = "../crates/documentation", features = ["markdown"] }
+
+[profile.release]
+overflow-checks = true
+opt-level = "s"
+debug = false
+strip = "debuginfo"
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

@@ -609,15 +609,6 @@ path = "src/reboot.rs"
 test = false
 bench = false
 
-# `mdr` (milestone 40): the markdown renderer. Markdown on its input, rendered text on its
-# output, and nothing else in its cspace; the rendering itself is `crates/documentation`, which
-# is host-tested. Name ratified 2026-09-13 by calef.
-[[bin]]
-name = "mdr"
-path = "src/mdr.rs"
-test = false
-bench = false
-
 # The least-authority demo (milestone 19f.2): the first program that is its own binary rather than
 # a role of `hello`. It shares this package's `build.rs` link.ld (linked at the address-space map's image base) but no code.
 # Same test/bench reasoning as `hello`'s block. `initial_ramdisk_aarch64` packs it into the archive
