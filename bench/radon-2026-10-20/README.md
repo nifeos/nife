@@ -3,9 +3,9 @@
 Four boots of the job mix on radon (VisionFive 2), power-cycled by calef on smart plug 2 from 19:01
 to 19:10 UTC. They repeat the 2026-10-05 layout sweep
 ([`../radon-2026-10-05/`](../radon-2026-10-05/README.md), boots 16 to 19) on a kernel whose hot
-trap path is pinned. The procedure and the reading table are in
-[milestone 796's block](../../design/roadmap/0796-pin-the-hot-trap-paths-placement.md), "The radon
-sweep, for calef", and the result is recorded there.
+trap path is pinned. The procedure and the reading table are in the block of
+[milestone 796 (pin the hot trap path's placement)](../../design/roadmap/0796-pin-the-hot-trap-paths-placement.md),
+"The radon sweep, for calef", and the result is recorded there.
 
 ## Payloads
 
