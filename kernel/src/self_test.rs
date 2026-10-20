@@ -763,7 +763,8 @@ fn userspace(tally: &mut Tally) {
                 (false, _) => "it could not be spawned",
                 (true, false) => "it was not stopped within 2s",
                 (true, true) if ok => "killed, and the kernel survived",
-                (true, true) if at != Some(kernel_addr) => "a fault was recorded at another address",
+                (true, true) if at != Some(kernel_addr) =>
+                    "a fault was recorded at another address",
                 (true, true) => "killed, but its thread was not reaped within 2s",
             }
         ),
