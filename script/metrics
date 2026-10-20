@@ -2656,10 +2656,10 @@ CHARTS = [
     ('milestones.svg', 'Milestones by status, and proposals waiting for a number',
      'the blocks in design/roadmap/ (design/roadmap.md before the one-file-per-milestone split); '
      'unnumbered proposals from design/roadmap/proposals/ stacked on top',
-     [('Built', 'milestones_built'), ('Partial', 'milestones_partial'),
+     [('Closed (removed, superseded or refused)', 'milestones_closed'),
+      ('Built', 'milestones_built'), ('Partial', 'milestones_partial'),
       ('In progress', 'milestones_in_progress'), ('Not started', 'milestones_not_started'),
       ('Optional', 'milestones_optional'), ('Recorded', 'milestones_recorded'),
-      ('Closed (removed, superseded or refused)', 'milestones_closed'),
       ('Proposal, no number yet', 'proposals_unnumbered')], 1.0, None, None),
     ('decisions.svg', 'Architecture decisions by status',
      'design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), '

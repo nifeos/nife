@@ -22,104 +22,104 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">750</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">1000</text>
-<rect class="seg s0" x="74.0" y="298.2" width="38.7" height="25.8"><title>2026W34, Built: 97</title></rect>
-<rect class="seg s1" x="74.0" y="293.7" width="38.7" height="4.5"><title>2026W34, Partial: 17</title></rect>
-<rect class="seg s2" x="74.0" y="282.2" width="38.7" height="11.4"><title>2026W34, Not started: 43</title></rect>
-<rect class="seg s3" x="74.0" y="281.7" width="38.7" height="0.5"><title>2026W34, Optional: 2</title></rect>
-<path class="seg s4" d="M74.0,281.7 V281.4 Q74.0,281.2 74.2,281.2 H112.4 Q112.6,281.2 112.6,281.4 V281.7 Z"><title>2026W34, Recorded: 2</title></path>
+<rect class="seg s1" x="74.0" y="298.2" width="38.7" height="25.8"><title>2026W34, Built: 97</title></rect>
+<rect class="seg s2" x="74.0" y="293.7" width="38.7" height="4.5"><title>2026W34, Partial: 17</title></rect>
+<rect class="seg s3" x="74.0" y="282.2" width="38.7" height="11.4"><title>2026W34, Not started: 43</title></rect>
+<rect class="seg s4" x="74.0" y="281.7" width="38.7" height="0.5"><title>2026W34, Optional: 2</title></rect>
+<path class="seg s5" d="M74.0,281.7 V281.4 Q74.0,281.2 74.2,281.2 H112.4 Q112.6,281.2 112.6,281.4 V281.7 Z"><title>2026W34, Recorded: 2</title></path>
 <text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W34</text>
 <text class="fg val" x="93.3" y="276.2" font-size="10" text-anchor="middle">161</text>
-<rect class="seg s0" x="132.6" y="296.6" width="38.7" height="27.4"><title>2026W35, Built: 103</title></rect>
-<rect class="seg s1" x="132.6" y="291.3" width="38.7" height="5.3"><title>2026W35, Partial: 20</title></rect>
-<rect class="seg s2" x="132.6" y="274.8" width="38.7" height="16.5"><title>2026W35, Not started: 62</title></rect>
-<rect class="seg s3" x="132.6" y="274.3" width="38.7" height="0.5"><title>2026W35, Optional: 2</title></rect>
-<path class="seg s4" d="M132.6,274.3 V274.0 Q132.6,273.7 132.8,273.7 H171.0 Q171.2,273.7 171.2,274.0 V274.3 Z"><title>2026W35, Recorded: 2</title></path>
+<rect class="seg s1" x="132.6" y="296.6" width="38.7" height="27.4"><title>2026W35, Built: 103</title></rect>
+<rect class="seg s2" x="132.6" y="291.3" width="38.7" height="5.3"><title>2026W35, Partial: 20</title></rect>
+<rect class="seg s3" x="132.6" y="274.8" width="38.7" height="16.5"><title>2026W35, Not started: 62</title></rect>
+<rect class="seg s4" x="132.6" y="274.3" width="38.7" height="0.5"><title>2026W35, Optional: 2</title></rect>
+<path class="seg s5" d="M132.6,274.3 V274.0 Q132.6,273.7 132.8,273.7 H171.0 Q171.2,273.7 171.2,274.0 V274.3 Z"><title>2026W35, Recorded: 2</title></path>
 <text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W35</text>
 <text class="fg val" x="151.9" y="268.7" font-size="10" text-anchor="middle">189</text>
-<rect class="seg s0" x="191.2" y="284.1" width="38.7" height="39.9"><title>2026W36, Built: 150</title></rect>
-<rect class="seg s1" x="191.2" y="276.4" width="38.7" height="7.7"><title>2026W36, Partial: 29</title></rect>
-<rect class="seg s2" x="191.2" y="256.2" width="38.7" height="20.2"><title>2026W36, Not started: 76</title></rect>
-<rect class="seg s3" x="191.2" y="255.6" width="38.7" height="0.5"><title>2026W36, Optional: 2</title></rect>
-<rect class="seg s4" x="191.2" y="254.0" width="38.7" height="1.6"><title>2026W36, Recorded: 6</title></rect>
-<rect class="seg s5" x="191.2" y="253.5" width="38.7" height="0.5"><title>2026W36, Closed (removed, superseded or refused): 2</title></rect>
+<rect class="seg s0" x="191.2" y="323.5" width="38.7" height="0.5"><title>2026W36, Closed (removed, superseded or refused): 2</title></rect>
+<rect class="seg s1" x="191.2" y="283.6" width="38.7" height="39.9"><title>2026W36, Built: 150</title></rect>
+<rect class="seg s2" x="191.2" y="275.9" width="38.7" height="7.7"><title>2026W36, Partial: 29</title></rect>
+<rect class="seg s3" x="191.2" y="255.6" width="38.7" height="20.2"><title>2026W36, Not started: 76</title></rect>
+<rect class="seg s4" x="191.2" y="255.1" width="38.7" height="0.5"><title>2026W36, Optional: 2</title></rect>
+<rect class="seg s5" x="191.2" y="253.5" width="38.7" height="1.6"><title>2026W36, Recorded: 6</title></rect>
 <path class="seg s6" d="M191.2,253.5 V237.8 Q191.2,233.8 195.2,233.8 H225.8 Q229.8,233.8 229.8,237.8 V253.5 Z"><title>2026W36, Proposal, no number yet: 74</title></path>
 <text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
 <text class="fg val" x="210.5" y="228.8" font-size="10" text-anchor="middle">339</text>
-<rect class="seg s0" x="249.8" y="281.4" width="38.7" height="42.6"><title>2026W37, Built: 160</title></rect>
-<rect class="seg s1" x="249.8" y="273.7" width="38.7" height="7.7"><title>2026W37, Partial: 29</title></rect>
-<rect class="seg s2" x="249.8" y="251.4" width="38.7" height="22.3"><title>2026W37, Not started: 84</title></rect>
-<rect class="seg s3" x="249.8" y="250.8" width="38.7" height="0.5"><title>2026W37, Optional: 2</title></rect>
-<rect class="seg s4" x="249.8" y="249.3" width="38.7" height="1.6"><title>2026W37, Recorded: 6</title></rect>
-<rect class="seg s5" x="249.8" y="248.7" width="38.7" height="0.5"><title>2026W37, Closed (removed, superseded or refused): 2</title></rect>
+<rect class="seg s0" x="249.8" y="323.5" width="38.7" height="0.5"><title>2026W37, Closed (removed, superseded or refused): 2</title></rect>
+<rect class="seg s1" x="249.8" y="280.9" width="38.7" height="42.6"><title>2026W37, Built: 160</title></rect>
+<rect class="seg s2" x="249.8" y="273.2" width="38.7" height="7.7"><title>2026W37, Partial: 29</title></rect>
+<rect class="seg s3" x="249.8" y="250.8" width="38.7" height="22.3"><title>2026W37, Not started: 84</title></rect>
+<rect class="seg s4" x="249.8" y="250.3" width="38.7" height="0.5"><title>2026W37, Optional: 2</title></rect>
+<rect class="seg s5" x="249.8" y="248.7" width="38.7" height="1.6"><title>2026W37, Recorded: 6</title></rect>
 <path class="seg s6" d="M249.8,248.7 V230.6 Q249.8,226.6 253.8,226.6 H284.4 Q288.4,226.6 288.4,230.6 V248.7 Z"><title>2026W37, Proposal, no number yet: 83</title></path>
 <text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W37</text>
 <text class="fg val" x="269.1" y="221.6" font-size="10" text-anchor="middle">366</text>
-<rect class="seg s0" x="308.4" y="263.1" width="38.7" height="60.9"><title>2026W38, Built: 229</title></rect>
-<rect class="seg s1" x="308.4" y="254.8" width="38.7" height="8.2"><title>2026W38, Partial: 31</title></rect>
-<rect class="seg s2" x="308.4" y="202.7" width="38.7" height="52.1"><title>2026W38, Not started: 196</title></rect>
-<rect class="seg s3" x="308.4" y="202.2" width="38.7" height="0.5"><title>2026W38, Optional: 2</title></rect>
-<rect class="seg s4" x="308.4" y="200.6" width="38.7" height="1.6"><title>2026W38, Recorded: 6</title></rect>
-<rect class="seg s5" x="308.4" y="186.7" width="38.7" height="13.8"><title>2026W38, Closed (removed, superseded or refused): 52</title></rect>
+<rect class="seg s0" x="308.4" y="310.2" width="38.7" height="13.8"><title>2026W38, Closed (removed, superseded or refused): 52</title></rect>
+<rect class="seg s1" x="308.4" y="249.3" width="38.7" height="60.9"><title>2026W38, Built: 229</title></rect>
+<rect class="seg s2" x="308.4" y="241.0" width="38.7" height="8.2"><title>2026W38, Partial: 31</title></rect>
+<rect class="seg s3" x="308.4" y="188.9" width="38.7" height="52.1"><title>2026W38, Not started: 196</title></rect>
+<rect class="seg s4" x="308.4" y="188.3" width="38.7" height="0.5"><title>2026W38, Optional: 2</title></rect>
+<rect class="seg s5" x="308.4" y="186.7" width="38.7" height="1.6"><title>2026W38, Recorded: 6</title></rect>
 <path class="seg s6" d="M308.4,186.7 V186.5 Q308.4,186.2 308.6,186.2 H346.8 Q347.0,186.2 347.0,186.5 V186.7 Z"><title>2026W38, Proposal, no number yet: 2</title></path>
 <text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
 <text class="fg val" x="327.7" y="181.2" font-size="10" text-anchor="middle">518</text>
-<rect class="seg s0" x="367.0" y="250.8" width="38.7" height="73.2"><title>2026W39, Built: 275</title></rect>
-<rect class="seg s1" x="367.0" y="238.3" width="38.7" height="12.5"><title>2026W39, Partial: 47</title></rect>
-<rect class="seg s2" x="367.0" y="181.4" width="38.7" height="56.9"><title>2026W39, Not started: 214</title></rect>
-<rect class="seg s3" x="367.0" y="180.9" width="38.7" height="0.5"><title>2026W39, Optional: 2</title></rect>
-<rect class="seg s4" x="367.0" y="179.3" width="38.7" height="1.6"><title>2026W39, Recorded: 6</title></rect>
-<rect class="seg s5" x="367.0" y="164.1" width="38.7" height="15.2"><title>2026W39, Closed (removed, superseded or refused): 57</title></rect>
+<rect class="seg s0" x="367.0" y="308.8" width="38.7" height="15.2"><title>2026W39, Closed (removed, superseded or refused): 57</title></rect>
+<rect class="seg s1" x="367.0" y="235.7" width="38.7" height="73.2"><title>2026W39, Built: 275</title></rect>
+<rect class="seg s2" x="367.0" y="223.2" width="38.7" height="12.5"><title>2026W39, Partial: 47</title></rect>
+<rect class="seg s3" x="367.0" y="166.3" width="38.7" height="56.9"><title>2026W39, Not started: 214</title></rect>
+<rect class="seg s4" x="367.0" y="165.7" width="38.7" height="0.5"><title>2026W39, Optional: 2</title></rect>
+<rect class="seg s5" x="367.0" y="164.1" width="38.7" height="1.6"><title>2026W39, Recorded: 6</title></rect>
 <path class="seg s6" d="M367.0,164.1 V154.6 Q367.0,150.6 371.0,150.6 H401.6 Q405.6,150.6 405.6,154.6 V164.1 Z"><title>2026W39, Proposal, no number yet: 51</title></path>
 <text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W39</text>
 <text class="fg val" x="386.3" y="145.6" font-size="10" text-anchor="middle">652</text>
-<rect class="seg s0" x="425.6" y="232.8" width="38.7" height="91.2"><title>2026W40, Built: 343</title></rect>
-<rect class="seg s1" x="425.6" y="220.8" width="38.7" height="12.0"><title>2026W40, Partial: 45</title></rect>
-<rect class="seg s2" x="425.6" y="145.8" width="38.7" height="75.0"><title>2026W40, Not started: 282</title></rect>
-<rect class="seg s3" x="425.6" y="145.2" width="38.7" height="0.5"><title>2026W40, Optional: 2</title></rect>
-<rect class="seg s4" x="425.6" y="143.4" width="38.7" height="1.9"><title>2026W40, Recorded: 7</title></rect>
-<rect class="seg s5" x="425.6" y="128.0" width="38.7" height="15.4"><title>2026W40, Closed (removed, superseded or refused): 58</title></rect>
+<rect class="seg s0" x="425.6" y="308.6" width="38.7" height="15.4"><title>2026W40, Closed (removed, superseded or refused): 58</title></rect>
+<rect class="seg s1" x="425.6" y="217.3" width="38.7" height="91.2"><title>2026W40, Built: 343</title></rect>
+<rect class="seg s2" x="425.6" y="205.4" width="38.7" height="12.0"><title>2026W40, Partial: 45</title></rect>
+<rect class="seg s3" x="425.6" y="130.4" width="38.7" height="75.0"><title>2026W40, Not started: 282</title></rect>
+<rect class="seg s4" x="425.6" y="129.8" width="38.7" height="0.5"><title>2026W40, Optional: 2</title></rect>
+<rect class="seg s5" x="425.6" y="128.0" width="38.7" height="1.9"><title>2026W40, Recorded: 7</title></rect>
 <path class="seg s6" d="M425.6,128.0 V125.3 Q425.6,122.6 428.2,122.6 H461.6 Q464.2,122.6 464.2,125.3 V128.0 Z"><title>2026W40, Proposal, no number yet: 20</title></path>
 <text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
 <text class="fg val" x="444.9" y="117.6" font-size="10" text-anchor="middle">757</text>
-<rect class="seg s0" x="484.2" y="221.6" width="38.7" height="102.4"><title>2026W41, Built: 385</title></rect>
-<rect class="seg s1" x="484.2" y="209.1" width="38.7" height="12.5"><title>2026W41, Partial: 47</title></rect>
-<rect class="seg s2" x="484.2" y="112.3" width="38.7" height="96.8"><title>2026W41, Not started: 364</title></rect>
-<rect class="seg s3" x="484.2" y="111.7" width="38.7" height="0.5"><title>2026W41, Optional: 2</title></rect>
-<rect class="seg s4" x="484.2" y="109.9" width="38.7" height="1.9"><title>2026W41, Recorded: 7</title></rect>
-<rect class="seg s5" x="484.2" y="94.2" width="38.7" height="15.7"><title>2026W41, Closed (removed, superseded or refused): 59</title></rect>
+<rect class="seg s0" x="484.2" y="308.3" width="38.7" height="15.7"><title>2026W41, Closed (removed, superseded or refused): 59</title></rect>
+<rect class="seg s1" x="484.2" y="205.9" width="38.7" height="102.4"><title>2026W41, Built: 385</title></rect>
+<rect class="seg s2" x="484.2" y="193.4" width="38.7" height="12.5"><title>2026W41, Partial: 47</title></rect>
+<rect class="seg s3" x="484.2" y="96.6" width="38.7" height="96.8"><title>2026W41, Not started: 364</title></rect>
+<rect class="seg s4" x="484.2" y="96.0" width="38.7" height="0.5"><title>2026W41, Optional: 2</title></rect>
+<rect class="seg s5" x="484.2" y="94.2" width="38.7" height="1.9"><title>2026W41, Recorded: 7</title></rect>
 <path class="seg s6" d="M484.2,94.2 V93.0 Q484.2,91.8 485.4,91.8 H521.6 Q522.8,91.8 522.8,93.0 V94.2 Z"><title>2026W41, Proposal, no number yet: 9</title></path>
 <text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
 <text class="fg val" x="503.5" y="86.8" font-size="10" text-anchor="middle">873</text>
-<rect class="seg s0" x="542.8" y="204.3" width="38.7" height="119.7"><title>2026W42, Built: 450</title></rect>
-<rect class="seg s1" x="542.8" y="189.7" width="38.7" height="14.6"><title>2026W42, Partial: 55</title></rect>
-<rect class="seg s2" x="542.8" y="101.1" width="38.7" height="88.6"><title>2026W42, Not started: 333</title></rect>
-<rect class="seg s3" x="542.8" y="100.6" width="38.7" height="0.5"><title>2026W42, Optional: 2</title></rect>
-<rect class="seg s4" x="542.8" y="98.7" width="38.7" height="1.9"><title>2026W42, Recorded: 7</title></rect>
-<rect class="seg s5" x="542.8" y="82.5" width="38.7" height="16.2"><title>2026W42, Closed (removed, superseded or refused): 61</title></rect>
+<rect class="seg s0" x="542.8" y="307.8" width="38.7" height="16.2"><title>2026W42, Closed (removed, superseded or refused): 61</title></rect>
+<rect class="seg s1" x="542.8" y="188.1" width="38.7" height="119.7"><title>2026W42, Built: 450</title></rect>
+<rect class="seg s2" x="542.8" y="173.4" width="38.7" height="14.6"><title>2026W42, Partial: 55</title></rect>
+<rect class="seg s3" x="542.8" y="84.9" width="38.7" height="88.6"><title>2026W42, Not started: 333</title></rect>
+<rect class="seg s4" x="542.8" y="84.3" width="38.7" height="0.5"><title>2026W42, Optional: 2</title></rect>
+<rect class="seg s5" x="542.8" y="82.5" width="38.7" height="1.9"><title>2026W42, Recorded: 7</title></rect>
 <path class="seg s6" d="M542.8,82.5 V82.3 Q542.8,82.2 542.9,82.2 H581.3 Q581.4,82.2 581.4,82.3 V82.5 Z"><title>2026W42, Proposal, no number yet: 1</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="77.2" font-size="10" text-anchor="middle">909</text>
-<rect class="seg s0" x="601.4" y="199.2" width="38.7" height="124.8"><title>2026W43, Built: 469</title></rect>
-<rect class="seg s1" x="601.4" y="189.4" width="38.7" height="9.8"><title>2026W43, Partial: 37</title></rect>
-<rect class="seg s2" x="601.4" y="100.8" width="38.7" height="88.6"><title>2026W43, Not started: 333</title></rect>
-<rect class="seg s3" x="601.4" y="100.3" width="38.7" height="0.5"><title>2026W43, Optional: 2</title></rect>
-<rect class="seg s4" x="601.4" y="98.4" width="38.7" height="1.9"><title>2026W43, Recorded: 7</title></rect>
-<rect class="seg s5" x="601.4" y="82.2" width="38.7" height="16.2"><title>2026W43, Closed (removed, superseded or refused): 61</title></rect>
+<rect class="seg s0" x="601.4" y="307.8" width="38.7" height="16.2"><title>2026W43, Closed (removed, superseded or refused): 61</title></rect>
+<rect class="seg s1" x="601.4" y="183.0" width="38.7" height="124.8"><title>2026W43, Built: 469</title></rect>
+<rect class="seg s2" x="601.4" y="173.2" width="38.7" height="9.8"><title>2026W43, Partial: 37</title></rect>
+<rect class="seg s3" x="601.4" y="84.6" width="38.7" height="88.6"><title>2026W43, Not started: 333</title></rect>
+<rect class="seg s4" x="601.4" y="84.1" width="38.7" height="0.5"><title>2026W43, Optional: 2</title></rect>
+<rect class="seg s5" x="601.4" y="82.2" width="38.7" height="1.9"><title>2026W43, Recorded: 7</title></rect>
 <path class="seg s6" d="M601.4,82.2 V81.1 Q601.4,80.1 602.4,80.1 H639.0 Q640.0,80.1 640.0,81.1 V82.2 Z"><title>2026W43, Proposal, no number yet: 8</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <text class="fg val" x="620.7" y="75.1" font-size="10" text-anchor="middle">917</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
-<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Built</tspan></text>
-<rect class="s1" x="672" y="83" width="11" height="11" rx="2"/>
-<text class="fg" y="93" font-size="11"><tspan x="689" dy="0">Partial</tspan></text>
-<rect class="s2" x="672" y="102" width="11" height="11" rx="2"/>
-<text class="fg" y="112" font-size="11"><tspan x="689" dy="0">Not started</tspan></text>
-<rect class="s3" x="672" y="121" width="11" height="11" rx="2"/>
-<text class="fg" y="131" font-size="11"><tspan x="689" dy="0">Optional</tspan></text>
-<rect class="s4" x="672" y="140" width="11" height="11" rx="2"/>
-<text class="fg" y="150" font-size="11"><tspan x="689" dy="0">Recorded</tspan></text>
-<rect class="s5" x="672" y="159" width="11" height="11" rx="2"/>
-<text class="fg" y="169" font-size="11"><tspan x="689" dy="0">Closed (removed,</tspan><tspan x="689" dy="13">superseded or refused)</tspan></text>
+<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Closed (removed,</tspan><tspan x="689" dy="13">superseded or refused)</tspan></text>
+<rect class="s1" x="672" y="96" width="11" height="11" rx="2"/>
+<text class="fg" y="106" font-size="11"><tspan x="689" dy="0">Built</tspan></text>
+<rect class="s2" x="672" y="115" width="11" height="11" rx="2"/>
+<text class="fg" y="125" font-size="11"><tspan x="689" dy="0">Partial</tspan></text>
+<rect class="s3" x="672" y="134" width="11" height="11" rx="2"/>
+<text class="fg" y="144" font-size="11"><tspan x="689" dy="0">Not started</tspan></text>
+<rect class="s4" x="672" y="153" width="11" height="11" rx="2"/>
+<text class="fg" y="163" font-size="11"><tspan x="689" dy="0">Optional</tspan></text>
+<rect class="s5" x="672" y="172" width="11" height="11" rx="2"/>
+<text class="fg" y="182" font-size="11"><tspan x="689" dy="0">Recorded</tspan></text>
 <rect class="s6" x="672" y="191" width="11" height="11" rx="2"/>
 <text class="fg" y="201" font-size="11"><tspan x="689" dy="0">Proposal, no number</tspan><tspan x="689" dy="13">yet</tspan></text>
 </svg>
