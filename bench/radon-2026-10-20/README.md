@@ -45,3 +45,10 @@ directory served. Every boot printed `payload came from net` and `job-mix: done`
 Neither changes what ran: the boot images are the ones hashed above. Like every radon job-mix
 number so far, these ran debug userspace under a release kernel (`script/board-image`'s `BUGS`,
 milestone 797 (release userspace in board images)).
+
+## The evening's other runs
+
+The same evening's other radon runs keep their own records in this directory:
+[`README-53.md`](README-53.md) for milestone 53 (the board's own peripherals)'s network and storage
+boots, and [`README-225.md`](README-225.md) for milestone 225 (run the soak on radon, argon and
+xenon)'s soak draws.
