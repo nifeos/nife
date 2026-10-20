@@ -99,6 +99,19 @@ recorded with workload `soak-test (not crossing)` and excluded from the curve.
 | E10 | 2026-10-10 ~18:18 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 22,116 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
 | E11 | 2026-10-10 ~18:21 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 3,493 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
 | E12 | 2026-10-10 ~18:24 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot, ended by power-off | 0.03 | 16,462 | 22 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
+| E13 | 2026-10-20 ~19:58 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 25,488 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E14 | 2026-10-20 ~20:01 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,645 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E15 | 2026-10-20 ~20:04 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 3,924 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E16 | 2026-10-20 ~20:07 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E17 | 2026-10-20 ~20:10 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 12,820 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E18 | 2026-10-20 ~20:13 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 27,502 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E19 | 2026-10-20 ~20:16 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,899 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E20 | 2026-10-20 ~20:19 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 20,549 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E21 | 2026-10-20 ~20:22 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 3,933 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E22 | 2026-10-20 ~20:25 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot (not crossing) | 0.03 | 23 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E23 | 2026-10-20 ~20:28 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 26,469 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E24 | 2026-10-20 ~20:30 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,907 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+| E25 | 2026-10-20 ~20:33 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 26,080 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
 
 E5 through E7 are one bench evening, 2026-10-09 to 2026-10-10 (milestone 225's redraw boots,
 `bef2b40dc`, tree-identical to main `237cef6bc`). E5 is the 120-second draw of the rebooting soak that milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) ended. Between its last beat and E6's `U-Boot SPL` banner, the board reset itself through OpenSBI's PMIC write and came back. That is 592's green outcome. E6 began on the self-reboot's netboot fetch and ended at its watcher's deadline. The board then soaked unwatched for about 7 hours until E7; those crossings are not recorded and are not evidence. E7's boot followed one discarded boot from the card. Its fetch failed because radon's ethernet cable was unplugged (`phy_startup() failed: -110` on both controllers). That boot never reached a heartbeat and is not a row. Zero
@@ -116,6 +129,13 @@ calef powered the board off. The crossings spread across five identical 120-seco
 sampled by a person walking to the board) had never sampled it: a 243x range on identical silicon
 and build, zero defects throughout.
 
+E13 through E25 are one capture of thirteen 120-second draws, `22c19e1d5`, one power-on and every
+later boot started by the direct AXP15060 write (13 of 13 resets clean). E16 and E22 are excluded
+from the curve: their crossings stayed at 19 and 23 from the first beat to the last, so those soaks
+never crossed cores. The other eleven add 218,216 crossings, zero defects. Their start times are
+the U-Boot countdowns in `bench/radon-2026-10-20/soak-driver.log`. The account is
+`bench/radon-2026-10-20/README-225.md`.
+
 The start times are Pacific local times from `notes/soak.md` converted to UTC; the note does not
 state its zone. The conversion is inferred from the commits that recorded them (2026-09-03 20:45 UTC
 and 2026-09-04 00:11 UTC), which only a Pacific reading fits. None of the three logs is
@@ -125,9 +145,9 @@ confidence about one architecture and one workload, not a verdict about anything
 
 E4 is the first row with a log in the tree and a build recorded, and on the crossings axis it dwarfs
 the three before it. It has 4.1 million against about 8,500 recorded in total, from one boot of 8.16
-hours that drew the fast arrangement. With E5 through E7 below, radon's curve stands at about 10.32
-million crossings over seven boots and about 26 hours with zero defects, and the boots axis is
-seven points instead of one.
+hours that drew the fast arrangement. With E5 through E25 below, radon's curve stands at about 10.60
+million crossings over 23 crossing boots and about 26.5 hours with zero defects, and the boots axis
+is 23 points instead of one.
 
 ## Defect rows
 

@@ -119,6 +119,11 @@ has the tables, "The three-hour run", the censuses and the corrections.
 
 Run table: [soak/radon-2026-10-10.md](soak/radon-2026-10-10.md).
 
+## radon, 2026-10-20
+
+Thirteen 120-second reboot draws from one power-on, every reset clean, zero defects; two draws
+never crossed. Run table: [soak/radon-2026-10-20.md](soak/radon-2026-10-20.md).
+
 ## How a hang is told from a slow run
 
 One rule, and both halves of the tree implement it rather than agreeing to:
@@ -234,10 +239,11 @@ seconds, then reset itself through SBI SRST, so the boot-time placement lottery 
 without a person walking to the board. A byte on the console disarms the loop and leaves the soak
 running, and `script/board-console --stop` sends that byte and checks the acknowledgement.
 
-On radon it does not work, and the firmware is the wall. Answered at the bench on 2026-09-04:
-OpenSBI accepts the reset, its I2C write to the PMIC fails, and it hangs (notes/board-reboot.md).
-The escape was verified the same evening. Milestone 224 (nothing can power-cycle radon, so a hung soak needs a person) is now the only
-route to an unattended series. [`soak/rebooting-soak.md`](soak/rebooting-soak.md) has the hazard,
+On radon OpenSBI's own I2C write to the PMIC fails and hangs (notes/board-reboot.md), so the kernel
+writes the AXP15060 directly (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), and
+that reset came back through U-Boot on 13 of 13 draws on 2026-10-20. A board that hangs instead
+still needs a person, since nothing can power-cycle radon (milestone 224 (nothing can power-cycle
+radon, so a hung soak needs a person)). [`soak/rebooting-soak.md`](soak/rebooting-soak.md) has the hazard,
 its four answers and "Verifying the reset before anything is left unattended";
 [`soak/rebooting-soak-procedure.md`](soak/rebooting-soak-procedure.md) has the procedure and the
 outcome table for a board whose firmware can reset.
