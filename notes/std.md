@@ -56,6 +56,7 @@ std by `cargo xtask std-src`. Each file binds one std concept to the ABI:
 |---|---|
 | `GlobalAlloc` | `untyped::MAP` from slot 0, grow-on-demand (`sys/alloc/nife`) |
 | `stdout` / `stderr` | `endpoint::SEND` on slot 1 (`sys/stdio/nife.rs`) |
+| `stdin` | `RECEIVE` on slot 30 when the line redirected or piped a stream into the program; otherwise the console's line, slot 29, for a program granted it; otherwise end of input (`sys/stdio/nife.rs`) |
 | `Instant`, `SystemTime` | the virtual counter, `CNTVCT_EL0` / `rdtime` (`sys/time/nife.rs`) |
 | `panic!` | print, then `brk`/`ebreak`: a fault the kernel attributes. No unwinding. |
 | `thread::spawn` | a TCB joined to the program's own process, slots 10 to 12 ([threads](std/threads.md)) |

@@ -33,7 +33,7 @@
 pub use super::runtimeproto::{
     ARGS_PAGE, ARGS_SLOT, CLOCK_PAGE, CLOCK_SLOT, CONFIG_PAGE, CONFIG_SLOT, ENTROPY_SLOT, FS_DIR_SLOT, FS_PAGE, HEAP_BASE,
     HEAP_MAX, MEMORY_REGION_SLOT, NET_MEMORY_REGION_SLOT, RESOLVER_PAGE, RESOLVER_SLOT, RESOLVER_SLOTS,
-    STACK_SLOT, STDIN_READ_REQUEST, STDIN_SLOT,
+    STACK_SLOT, STDIN_READ_REQUEST, STDIN_SLOT, STDIN_STREAM_SLOT,
     STDOUT_SLOT,
 };
 
@@ -114,6 +114,18 @@ pub unsafe fn invoke(cap: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
 /// SEND three words on the endpoint in `slot`. Blocks until a receiver takes them.
 pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
     unsafe { invoke(slot, abi::rendezvous::SEND, w0, w1, w2) }
+}
+
+/// `RECEIVE` on the endpoint in `slot`: block until a sender's three words arrive. A twin of
+/// `user_mode_runtime::receive`; standard input's byte stream is read with it.
+///
+/// On a syscall-level failure (an empty slot, no `READ`) the kernel returns a negative value in the
+/// first word, which a byte-stream reader tells apart from a frame because every frame's first word
+/// is a small opcode and length.
+pub fn receive(slot: u64) -> (u64, u64, u64) {
+    // SAFETY: RECEIVE returns the three message words in the first three registers.
+    let w = unsafe { trap6(abi::SYS_INVOKE, [slot, abi::rendezvous::RECEIVE, 0, 0, 0, 0]) };
+    (w[0], w[1], w[2])
 }
 
 /// `CALL` the endpoint in `slot`: send two words and block until the server replies through the
