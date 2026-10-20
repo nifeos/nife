@@ -253,14 +253,14 @@ HOST_TOOL_CRATES = frozenset(c for c, b in CRATE_BUCKETS.items() if b == 'host')
 # reason they stay out: build-std flags and a `getrandom_backend` cfg the workspace crates must
 # never inherit. By its own header each runs on nife at EL0 and never as kernel code:
 # `redoxfs_server`'s `el0` feature is the filesystem server; `std_exerciser`, `cryptography_exerciser`,
-# `pinned_tls_exerciser` and `jig` are std programs for the `*-unknown-nife` targets;
+# `pinned_tls_exerciser`, `jig` and `mdr` are std programs for the `*-unknown-nife` targets;
 # `entropy_backend` is the `getrandom` backend in every userspace `std` program;
 # `cryptography_provider` and `pinned_tls_client` are the TLS glue those programs link; `c_library` is
 # the C library C programs link. `helpers/trust_boundary.py` reads each as a userspace root, and its
 # `--check-rows` fails on a workspace of its own that this list and its host list both miss.
 USERSPACE_ONLY_DIRS = ('redoxfs_server/', 'std_exerciser/', 'entropy_backend/',
                        'cryptography_exerciser/', 'cryptography_provider/', 'c_library/', 'jig/',
-                       'pinned_tls_client/', 'pinned_tls_exerciser/',
+                       'mdr/', 'pinned_tls_client/', 'pinned_tls_exerciser/',
                        # `fs_server/` (2026-08-01 to 2026-08-25) and `fs-server/` (before that) are
                        # `redoxfs_server`'s own past names (its Cargo.toml header has the history);
                        # a historical week's tree carries whichever name was current, never both.

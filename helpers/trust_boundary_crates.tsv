@@ -57,7 +57,7 @@ device_tree_blob	shared	components,kernel,uefi_loader
 direct_memory_access_validator	kernel	kernel
 disk_tree	userspace	components
 dma_validator	kernel	retired
-documentation	userspace	components
+documentation	userspace	components,mdr
 domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 dtb	shared	retired
