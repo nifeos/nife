@@ -833,14 +833,16 @@ mod tests {
         assert!(bin_names(nameless).unwrap_err().contains("no `name`"));
     }
 
-    /// An archive without `jig` is refused with the command that builds it, rather than packed
-    /// into an image whose shell answers `jig` with a spawn failure.
+    /// An archive without `jig`, or without `mdr`, is refused with the command that builds it,
+    /// rather than packed into an image whose shell answers the name with a spawn failure.
     #[test]
     fn an_archive_without_jig_is_refused_naming_the_build() {
         let e = shipped_std_programs_present("x86_64", &[("progenitor", b"")]).unwrap_err();
         assert!(e.contains("no `jig`"), "{e}");
         assert!(e.contains("cargo xtask std-exerciser"), "{e}");
-        assert!(shipped_std_programs_present("x86_64", &[("jig", b"")]).is_ok());
+        let e = shipped_std_programs_present("x86_64", &[("jig", b"")]).unwrap_err();
+        assert!(e.contains("no `mdr`"), "{e}");
+        assert!(shipped_std_programs_present("x86_64", &[("jig", b""), ("mdr", b"")]).is_ok());
     }
 
     /// A program linked where the map says passes, and one linked at lld's default base, where
