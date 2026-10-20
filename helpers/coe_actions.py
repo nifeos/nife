@@ -24,7 +24,7 @@ resolution, and §210 named the differences:
 
 | opener | resolves to | open while |
 |---|---|---|
-| `**Milestone N.**` | `design/roadmap/N-*.md` | its status is not BUILT, REMOVED, SUPERSEDED, REFUSED or RECORDED |
+| `**Milestone N.**` | `design/roadmap/N-*.md` | its status is not BUILT, REMOVED, SUPERSEDED or REFUSED |
 | `**Proposed.**` | a file under `design/roadmap/proposals/` | it is still a proposal; once promoted (deleted, and a block says `promoted_from` its slug) it is that milestone |
 | `**Decision.**` | a file under `design/decisions/` | its status is PROPOSED |
 | `**Done.**`, `**Recorded.**`, `**Refused.**` | prose of at least 40 characters | never: these say the item is finished |
@@ -67,6 +67,8 @@ EXEMPT = ("README.md",)
 PROPOSALS = "design/roadmap/proposals/"
 DECISIONS = "design/decisions/"
 
+# RECORDED is retired (calef, 2026-10-20 UTC) and no block carries it, but `script/metrics` runs this
+# over past weeks' trees, where blocks did, and counted them closed.
 MILESTONE_CLOSED = ("BUILT", "REMOVED", "SUPERSEDED", "REFUSED", "RECORDED")
 DECISION_OPEN = ("PROPOSED",)
 FINISHED = ("Done", "Recorded", "Refused")
