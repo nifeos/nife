@@ -165,6 +165,11 @@ echo "==> the heavy-job slots (a full machine holds a job back; a killed holder 
 # real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
 helpers/heavy-slot-selftest.sh >/dev/null
 
+echo "==> script/push believes origin's ref, not git's exit status"
+# A push that never landed has exited 141 and exited 0 alike (#2478), and no CI run pushes, so this
+# local-origin selftest is the only place the read-back is seen to refuse one.
+helpers/push-selftest.sh >/dev/null
+
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # A stub rustup, no network. The retry only runs during a CDN outage, which no green CI run
 # exercises, so this is the only place its classifier and its bound are ever seen to work.
