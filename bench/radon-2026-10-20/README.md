@@ -1,4 +1,4 @@
-# radon, 2026-10-20 (UTC): milestone 53's first network and storage runs
+# radon, 2026-10-20 (UTC): milestone 53 (the board's own peripherals: network and storage on real silicon), its first runs
 
 Four boots of radon, power-cycled by calef at its own outlet. Every image was built from this
 branch at `290d3ba8b` and served by `script/board-netboot` from patagonia (192.168.8.192). The
