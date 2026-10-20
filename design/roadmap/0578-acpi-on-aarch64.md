@@ -3,16 +3,16 @@ status: PARTIAL
 raised: 2026-09-23
 milestone_dependencies: none
 decision_dependencies: none
-machine_requirements: none
+machine_requirements: aarch64 SBBR cloud firmware
 specific_machine: none
-needs_person: no
+needs_person: yes
 ---
 # 578. An ACPI discovery path for aarch64, because every server machine has one
 
-The number is provisional: the integrator mints it at merge. Promoted
+Promoted
 2026-09-23 on calef's ruling, from the proposal the rented-metal pricing lane filed on PR #1152:
 *an ACPI discovery path for aarch64, so a machine that describes itself with ACPI rather than a
-device tree can boot nife.* The file name and every name this block invents are provisional too.
+device tree can boot nife.* The file name and every name this block invents are provisional.
 
 Status: PARTIAL. Items 1 to 4 below are built. Item 5 is answered with
 option 1: `uefi_loader::device_tree_from_acpi` writes the tree, so item 6 is not needed. `NIFE_ACPI=on helpers/qemu-stick.sh aarch64 target/stick` reaches the shell
