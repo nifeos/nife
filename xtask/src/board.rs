@@ -103,9 +103,19 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
         }
     };
     meta.source = Some(path.to_string());
+    // A machine with a profile is judged against it (radon may lack `deviceirq`, xenon may
+    // not); argon, `hvf` and an unnamed machine have none, so no absence fails their boots.
+    let profile = meta
+        .machine
+        .as_deref()
+        .and_then(board_console::board::profile);
     // Lossy, not `read_to_string`: a serial capture carries whatever the wire did, and one bad
     // byte in eight hours must not cost the row.
-    let boots = exposure::read(&String::from_utf8_lossy(&bytes));
+    let text = String::from_utf8_lossy(&bytes);
+    let boots = match profile {
+        Some(p) => exposure::read_for(&text, p),
+        None => exposure::read(&text),
+    };
     let soaked: Vec<_> = boots.iter().filter(|b| b.soaked()).collect();
     println!(
         "exposure: {} boot(s) in the capture, {} reached a soak heartbeat",
