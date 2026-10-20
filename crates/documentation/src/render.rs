@@ -290,10 +290,8 @@ impl Layout {
                 self.code = true;
                 self.code_first = true;
             }
+            // The first item's `open_block` ends any open line, so the list itself writes nothing.
             Tag::List(first) => {
-                if !self.item_fresh {
-                    self.close_line(out);
-                }
                 self.item_fresh = false;
                 self.lists.push(first);
             }
