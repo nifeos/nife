@@ -1,26 +1,21 @@
 ---
-status: RECORDED
+status: SUPERSEDED
 raised: 2026-07-30
+superseded_by: 175, 756, §247
 milestone_dependencies: 23
-decision_dependencies: unwritten
+decision_dependencies: 151, 247
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 39. Repository structure for a loosely-coupled OS, and the road to a distribution
 
-The direction is now decided even though the work is not:
-DECISIONS §151 (2026-09-15) rules the goal is independent release and third-party programs, which
-is this page's option C as the destination, reached through option B. What stays open is the *order*
-(§151 keeps that as its own ruling), so this block remains RECORDED analysis rather than a scheduled
-milestone.
-
-The *goal* is no longer the open decision (§151 took it); the
-*timing* still is, and it still inherits milestone 23 (a capability-routed component OS). The
-recommendation on the page held up.
-Option B (multiple workspaces in one repo) now, the distribution as a separate manifest repo (`basalt`,
-milestone 120) later, and the split itself not before the strain justifies trading the
-single-command all-architecture gate for it.
+§151 (the goal of the repository split is independent release) rules the destination, this page's
+option C reached through option B. §247 (the split begins with basalt holding nife, and `procps`
+moves first) rules the order. Milestone 175 (split `user/` into `components/` and `fixtures/`) built
+the cheap first move below, and milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
+first code to leave this repository) is the cut itself. This block keeps the analysis those started
+from.
 
 Prior art to read before designing packaging: `design/haiku-bfs-and-packages.md`. Haiku's `packagefs`
 activates packages rather than installing them, composing the filesystem view from a set of read-only
@@ -28,7 +23,7 @@ package files instead of letting installers mutate shared directories. It reache
 47's conclusion that installing a program is granting it into a namespace, from an entirely different
 motive (atomic, rollback-able installs), which is the useful kind of convergence.
 
-In brief. Analysis recorded, no decision taken. The tree is a monorepo for a deliberately
+In brief. The tree is a monorepo for a deliberately
 loosely-coupled system, and it is straining in measurable ways. `user/` is 28 binaries and 9,324
 lines in one crate that is also a shared library. `fs_server/` has already escaped into its own
 workspace for real dependency reasons. `crates/` conflates kernel proof crates with wire contracts
@@ -42,11 +37,6 @@ plus the measured-boot hashing of §22 (Rust `std` on the native ABI) are alread
 package format
 
 Why it matters. the structure has to serve the thesis, and one constraint dominates. A single `script/test` proving the whole system on both ISAs is this project's credibility mechanism and what makes rule 5 a gate rather than an aspiration; splitting repos trades that for decoupling nothing external needs yet. Recommendation recorded (monorepo now, distribution as a separate manifest repo, executed as multiple workspaces, not before 23 forces it) so the eventual decision starts from evidence rather than from taste
-
-Status: analysis recorded, NO DECISION TAKEN (2026-07-30, calef's request). Deliberately a
-roadmap milestone rather than a `design/decisions/` entry, because nothing was decided; §-sections are
-for decisions, and recording an undecided question as one would be a lie about its status. This
-block exists so the analysis is not lost and so the eventual decision starts from evidence.
 
 The question calef raised: nife is a monorepo for a microkernel, but it is a collection of
 deliberately loosely-coupled things, and the structure may not support that long term. Plus a
@@ -121,7 +111,7 @@ cleanliness *before any external party needs it*.
 
 ## The packaging observation worth acting on early
 
-Most of a package format already exists and is not called one. Milestone 31's per-program **manifest**
+Most of a package format already exists and is not called one. Milestone 31's per-program manifest
 (SHILL-adapted: declared endowment, checked at spawn) is package metadata. §22's measured boot already
 hashes a component against a trust root. A distribution needs manifest, hash, version, and contract
 version; three of those four exist. Naming that as the packaging layer would make the distribution an

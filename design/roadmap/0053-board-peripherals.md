@@ -145,9 +145,9 @@ and both trees are GPL and were read for hardware facts only.
   `design/decisions/0086-el0-nvme-driver.md` is DECIDED, option 2a now with option 4 addable without
   reshaping the EL0 driver, and the choice between them settled by measurement.
 - **Outstanding.** Waiting on calef: RedoxFS crash consistency proven by actually cutting power on
-  radon. It needs calef's hands on the plug, since nothing can power-cycle the board. Milestone 224
-  (nothing can power-cycle radon, so a hung soak needs a person) is NOT-STARTED on a DECISION
-  gate. Its own measurements record zero replies from the plug on the subnet. Checked 2026-09-03. It also needs a working storage read, below.
+  radon. Nothing can power-cycle the board: milestone 224 (nothing can power-cycle radon) is
+  REFUSED, because calef chose manual power, and its own measurements record zero replies from the
+  plug on the subnet. It also needs a working storage read, below.
 - **Outstanding.** The storage half's first block read on radon. Step 1 (read-only) identified the
   card, then `READ_SINGLE_BLOCK` of block 0 ended with `RINTSTS 0x080c`: command done, data
   transfer over, and a FIFO underrun or overrun, with no CRC error or timeout. One

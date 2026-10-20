@@ -18,3 +18,4 @@ week,chart,note
 2026W42,ci-jobs.svg,CI job cpu-matrix-shard ran at 86% of its budget on its newest merge-group run; tracking issue #2055
 2026W42,names.svg,"the total fell from 9,111 in 2026W41 to 8,544. Pull requests #2353 (merged 2026-10-18 20:26 UTC) and #2375 (21:58 UTC) narrowed `pub` items no package reads to `pub(crate)`, taking 884 and 411 names out of the no-provenance-block band. The rest of the week added 728. No name was lost; the narrowed items are no longer counted."
 2026W43,ci-jobs.svg,CI job cpu-matrix-shard ran at 90% of its budget on its newest merge-group run; tracking issue #2451
+2026W43,milestones.svg,"the Recorded band fell from 7 to 0: calef retired the status on 2026-10-20 (#2467). 52 moved to Not started, 39 to Closed (superseded), 224, 199 and 244 to Closed (refused), and 263 and 626 to Built."

@@ -261,6 +261,8 @@ JOB_BAR_MINUTES = BUILD_LID / 3.0
 # invisible in every weekly row until milestone 448 (a refusal gets a number, a status, and a
 # condition that would change it) added both it and `REFUSED`. A backfill restates the history, so
 # the correction reaches the weeks that were already written rather than only the next one.
+# RECORDED is retired (calef, 2026-10-20 UTC) and no block carries it. It stays here, and its band
+# stays on the milestones chart, because the weeks before then counted blocks that did.
 MILESTONE_STATUSES = ['BUILT', 'PARTIAL', 'IN-PROGRESS', 'REMOVED',
                       'NOT-STARTED', 'OPTIONAL', 'RECORDED', 'SUPERSEDED', 'REFUSED']
 DECISION_STATUSES = ['DECIDED', 'AMENDED', 'SUPERSEDED', 'PROPOSED', 'UNRECORDED']
@@ -2659,7 +2661,8 @@ CHARTS = [
      [('Closed (removed, superseded or refused)', 'milestones_closed'),
       ('Built', 'milestones_built'), ('Partial', 'milestones_partial'),
       ('In progress', 'milestones_in_progress'), ('Not started', 'milestones_not_started'),
-      ('Optional', 'milestones_optional'), ('Recorded', 'milestones_recorded'),
+      ('Optional', 'milestones_optional'),
+      ('Recorded (retired 2026-10-20)', 'milestones_recorded'),
       ('Proposal, no number yet', 'proposals_unnumbered')], 1.0, None, None),
     ('decisions.svg', 'Architecture decisions by status',
      'design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), '

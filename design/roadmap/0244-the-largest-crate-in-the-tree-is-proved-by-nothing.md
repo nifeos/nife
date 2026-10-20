@@ -1,6 +1,7 @@
 ---
-status: RECORDED
+status: REFUSED
 raised: 2026-09-03
+refused_by: 238
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -9,11 +10,16 @@ needs_person: no
 ---
 # 244. The largest crate in the tree is proved by nothing a mutation can reach
 
-Measured and deliberately not built: this block's own "what would make this
-milestone wrong" clause fired. The evidence is the first published mutation report of milestone 238
-(two scheduled checks have never once succeeded).
+Refused on its own measurement: this block's "what would make this milestone wrong" clause fired.
+The question came from the first published mutation report of milestone 238 (two scheduled checks
+have never once succeeded), and the lift it asked for would move too little to be worth a crate of
+fragments.
 
 Nothing is missing; what is missing is a way for a test to reach the code.
+
+## Revisit
+
+- **Condition.** `cargo mutants --list -p system_initializer` attributes most of its mutants to pure functions rather than to the boot sequence and its syscalls, or the boot wiring becomes data (the follow-up proposed below), which would give a host test something to reach.
 
 ## What the lane was asked to do, and what it found
 

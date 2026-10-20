@@ -124,7 +124,6 @@ milestones. `script/roadmap` validates this column and fails on anything outside
 | `REMOVED` | Was built, in whole or in part, and the code was deliberately deleted. The block must record when it went and why. The row keeps its `Built` date if it ever had one. |
 | `NOT-STARTED` | Specified, nothing built. |
 | `OPTIONAL` | Deliberately off the thesis path; not a backlog item. |
-| `RECORDED` | Analysis captured and the decision deliberately *not* taken. |
 | `REFUSED` | Work considered and deliberately not taken. **The block must carry a `## Revisit` section** saying what would change it, and `script/roadmap --check` fails without one. Not a backlog item: it is excluded from `--ready`, from the gate classification and from every count that reads as outstanding work. |
 
 The `status` key is the only record of a milestone's state, and since 2026-09-21 there is no

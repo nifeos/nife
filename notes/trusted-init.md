@@ -185,7 +185,7 @@ judgment stands: the hash is the decision, the signature is the alternative, and
 would make it worth its cost is stated, so an audit may pass over it. What is owed is the promotion.
 §71 (a limitation is promoted when it becomes a plan) names this entry as the shape of its second
 trigger: a design fork an architect must rule on before any lane could start. That is the one case
-that lands as a `RECORDED` roadmap row. No such row exists yet. Minting one is the integrator's
+that lands as a `NOT-STARTED` roadmap row behind a decision dependency. No such row exists yet. Minting one is the integrator's
 act and not a lane's, so this paragraph is the flag rather than the fix. See
 notes/untracked-work-sweep.md.
 

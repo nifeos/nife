@@ -404,7 +404,7 @@ if mode == "--ready-branch":
 PROPOSED_DIR = "proposals"
 
 VOCAB = ["BUILT", "REMOVED", "SUPERSEDED", "PARTIAL", "IN-PROGRESS", "NOT-STARTED", "OPTIONAL",
-         "RECORDED", "REFUSED"]
+         "REFUSED"]
 
 # REFUSED is "this was considered and deliberately not taken", and calef ratified the word on
 # 2026-09-20. It is the status a refusal gets when the refusal names WORK: a route somebody could
@@ -426,11 +426,13 @@ VOCAB = ["BUILT", "REMOVED", "SUPERSEDED", "PARTIAL", "IN-PROGRESS", "NOT-STARTE
 # anything reads. calef reopened it by hand, in conversation, which is the medium AGENTS.md exists
 # to abolish.
 #
-# **RECORDED was the nearest existing word and it says something else.** RECORDED is "the work was
-# deliberately not taken and the fact is written down"; it carries no condition and nothing asks it
-# for one. The whole value here is the condition, so a status that does not demand one would have
-# reproduced the bullet with a bigger font. OPTIONAL reads as available to pick up, which is the
+# **The whole value of the word is the condition**, so a status that did not demand one would
+# reproduce the bullet with a bigger font. OPTIONAL reads as available to pick up, which is the
 # precise opposite. NOT-STARTED is a lie by omission: it says pending where this says declined.
+#
+# There is no status for "deliberately not taken" without a condition (calef, 2026-10-20 UTC). A
+# block that was considered and declined is REFUSED and says what would reopen it; one waiting on a
+# conversation is NOT-STARTED behind a decision dependency, which keeps it off `--ready`.
 #
 # **A REFUSED milestone is not outstanding work**, and every count in this script that reads as a
 # backlog excludes it: it is not in STARTABLE, so `--ready` cannot offer it; it never reaches the
@@ -450,14 +452,13 @@ VOCAB = ["BUILT", "REMOVED", "SUPERSEDED", "PARTIAL", "IN-PROGRESS", "NOT-STARTE
 # inventing one would be a lie in the column whose entire job is not lying. A REMOVED milestone
 # therefore carries the date it turned BUILT if it ever did, and none if it did not.
 #
-# Minted 2026-08-30 (calef) when milestone 54 lost its code: the six existing words could only lie
-# about it, since NOT-STARTED denies it was ever built, OPTIONAL reads as available to pick up,
-# RECORDED means the work was deliberately not taken, and leaving it BUILT makes the column claim a
-# network file service that no longer exists.
+# Minted 2026-08-30 (calef) when milestone 54 (a network file service a Mac can mount) lost its
+# code: the existing words could only lie about it, since NOT-STARTED denies it was ever built,
+# OPTIONAL reads as available to pick up, and leaving it BUILT makes the column claim a network file
+# service that no longer exists.
 # SUPERSEDED is "other work answered this, so it will never be built", and it is minted for the same
 # reason REMOVED was: every existing word could only lie about it. REMOVED says it once existed and
-# was taken out, when this was never built; RECORDED says the work was deliberately not taken, when
-# this was not declined but *answered*; NOT-STARTED is literally true and reads as still pending;
+# was taken out, when this was never built; NOT-STARTED is literally true and reads as still pending;
 # OPTIONAL reads as available to pick up, when there is nothing left to pick up.
 #
 # **It is deliberately NOT in DATED.** A SUPERSEDED block never turned BUILT, so it has no date to
@@ -500,8 +501,7 @@ NOGATE = DATED + ("REFUSED",)
 ANSWERS = DATED + ("PARTIAL",)
 
 # A milestone a lane may pick up: nothing gates it, and the status does not already say to leave it
-# alone (BUILT is done, IN-PROGRESS has somebody on it, OPTIONAL and RECORDED are deliberately off
-# the work list).
+# alone (BUILT is done, IN-PROGRESS has somebody on it, OPTIONAL is deliberately off the work list).
 STARTABLE = ["NOT-STARTED", "PARTIAL"]
 
 problems = []
