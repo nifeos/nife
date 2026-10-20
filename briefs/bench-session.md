@@ -24,9 +24,9 @@ Whoever finishes an entry moves it off this list in the same pull request.
 **The first step of each session is a watched reset, because a board that can reset itself turns
 every later boot from calef's hands into a command.**
 
-- radon. The kernel's reset is proven from the rebooting soak: milestone 592 writes the AXP15060 itself,
+- radon. The kernel's reset is proven from the rebooting soak: milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) writes the AXP15060 itself,
   and four direct-write resets came back through `U-Boot SPL` on 2026-10-10. `reboot` at the prompt
-  (milestone 805) is not proven, because no radon boot has reached the prompt. So today a watched
+  (milestone 805 (`reboot` at the prompt)) is not proven, because no radon boot has reached the prompt. So today a watched
   reset needs `script/board-image --soak --reboot`; any other image needs a power cycle per boot.
   Nothing on patagonia can reach radon's outlet (milestone 224 (nothing can power-cycle radon, so a
   hung soak needs a person)).
@@ -39,7 +39,7 @@ every later boot from calef's hands into a command.**
   the same way.
 
 A radon soak (`--soak`, notes/soak.md) needs no lane first, so it is what to run when calef offers
-radon and nothing above is ready. It buys another draw of the placement lottery for milestone 225's
+radon and nothing above is ready. It buys another draw of the placement lottery for milestone 225 (run the soak on radon, argon and xenon)'s
 curve, and with `--reboot` it resets itself between draws.
 
 ## The one rule: ask before you change hardware state, and never guess at hardware

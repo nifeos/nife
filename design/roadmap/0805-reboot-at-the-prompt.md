@@ -249,17 +249,13 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 
 ## Scope note
 
-**radon (riscv64 silicon) is not proven, and this block claims nothing about it.** The kernel half
-is the same code on radon as under QEMU `virt`, including milestone 592's direct AXP15060 write,
-which runs before SBI SRST on any JH7110. That write is proven on radon from the rebooting soak
-(592, four resets on 2026-10-10). What is not proven is the prompt: on 2026-10-20 (UTC) radon
-netbooted `script/board-image --tftp` from `main` at `2d2e042d2`, passed every kernel tour line
-through `nife: handing the system to the userspace progenitor.`, and then went silent after the
-progenitor's `capability slots: 19 of 64 at peak`. A carriage return sent over the UART five
-minutes later got no echo. No `nife capability shell` banner, so nothing could type `reboot`
-(`bench/radon-2026-10-20/805-890-boot-to-prompt.log`, its second boot; the first came from the
-card). No radon boot in `bench/` has reached the prompt. Exit criterion 6 waits on that hang,
-which is milestone 890's radon half as well.
+**radon (riscv64 silicon) is not proven, and this block claims nothing about it.** The reset route,
+milestone 592's direct AXP15060 write, is proven on radon from the rebooting soak. The prompt is
+not: on 2026-10-20 (UTC) radon netbooted `main` at `2d2e042d2`, passed the kernel tour through the
+handoff to the progenitor, and went silent after `capability slots: 19 of 64 at peak`, so nothing
+could type `reboot` (`bench/radon-2026-10-20/805-890-boot-to-prompt.log`, second boot). No radon
+boot in `bench/` has reached the prompt. Milestone 890 (riscv64 and x86_64 join the shared boot
+path) waits on the same hang.
 
 ## What was blocked until the ruling
 
@@ -283,7 +279,7 @@ picked A on 2026-10-06. Only exit criterion 6 still waits, on milestone 592.
 
 - **Outstanding.** Exit criterion 6, `reboot` at radon's prompt with nobody at plug 2. 592 is
   BUILT. It waits on radon reaching the prompt at all: the post-handoff hang in the scope note,
-  shared with milestone 890's radon boot. calef at the bench once that is fixed.
+  shared with 890's radon boot. calef at the bench once that is fixed.
 - **Milestone 853.** Milestone 853 (orderly shutdown closes the sync window), promoted 2026-10-09.
 - **Recorded.** The program does not exit non-zero on a refusal: `components/src/reboot.rs`'s
   `BUGS`.
