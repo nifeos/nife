@@ -65,7 +65,7 @@ Counted on `main` at 2026-09-23 across `.github/workflows/`, 14 files:
 | Construct | Count | Files |
 |---|---|---|
 | `continue-on-error: true` | 5 | `falsifications.yml`, `metrics.yml` (2), `toolchain-bump.yml` (2) |
-| `|| true` | 19 | 8 workflows, most of them in `ci.yml` (6) and `toolchain-bump.yml` (4) |
+| `\|\| true` | 19 | 8 workflows, most of them in `ci.yml` (6) and `toolchain-bump.yml` (4) |
 | `if: always()` | 6 | `mutation.yml` (5), `falsifications.yml` |
 | `tee` into the checkout | 1 | `falsifications.yml`, and it is the one this came from |
 

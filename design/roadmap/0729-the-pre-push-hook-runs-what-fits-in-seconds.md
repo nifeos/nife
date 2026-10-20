@@ -40,6 +40,10 @@ decision on #1564 (2026-10-03 UTC): "Approve the revised decision 3."
 
 - Clippy and the checks that call `cargo metadata` wait for CI. The `cargo metadata` ones are fast
   and could run here; the rule is "does not invoke cargo" because that is what calef approved.
+- The hook no longer fits in seconds. On 2026-10-20 (UTC) on patagonia, `script/lint --no-cargo`
+  took 84 to 100 s at a load average of 3 to 10 and 176 s at 29, and a fleet clone's
+  `script/lint-fleet` adds 45 to 50 s. No section dominates: the slowest took 11 s. GitHub drops an
+  idle push connection after 300 to 480 s, so `script/push` keeps it alive and confirms the push.
 
 ## Follow-on
 

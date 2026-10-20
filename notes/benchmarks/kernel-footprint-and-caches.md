@@ -210,14 +210,16 @@ function to give a section to. On aarch64 and riscv64 it also builds two `fastpa
 20,520 bytes of text shift apart and fails if any hot symbol's address or size differs. Both were
 broken on purpose before landing and both failed.
 
-**What it has not shown.** That it flattens radon's number. The leading reading was hot code
-evicting itself, and a contiguous block under one way cannot do that, but nothing counted misses.
-The sweep in the milestone's block is the test.
+**What radon shows.** The milestone's sweep, repeated on 2026-10-20 with the pin, read the one-task
+`null_syscall` at 121 ticks in all four shifted images, where the unpinned 2026-10-05 sweep read 110
+to 118 ([`bench/radon-2026-10-20/`](../../bench/radon-2026-10-20/README.md)). The number no longer
+moves with kernel text. What it has not shown is why it moved: the leading reading was hot code
+evicting itself, which a contiguous block under one way cannot do, but nothing counted misses.
 
 #### BUGS
 
 - The userspace stub is not pinned. Its sets come from `crates/user_mode_runtime/link.ld`, and it
-  shares index bits with the kernel's block. Option 2 in the milestone's block, if the sweep says so.
+  shares index bits with the kernel's block. Option 2 in the milestone's block, held until a cross-build comparison shows the stub moving the number.
 - Placement is fixed; alignment within the block is not. Five of riscv64's seventeen hot symbols
   start 8-byte aligned, which the U74's BTB wants for a zero-bubble taken branch (the U74-MC core
   manual, section 4.2.6). A hot function that grows still moves the ones sorted after it.

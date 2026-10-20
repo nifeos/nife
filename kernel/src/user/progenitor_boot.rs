@@ -803,8 +803,8 @@ fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtio_net: bool)
     // kernel builds this one.
     //
     // **Or one built on radon's Ethernet port** (milestone 53 (the board's own peripherals: network
-    // and storage on real silicon)), in the same two slots, when there is neither: today that is a
-    // line saying the port is left alone, until `designware_ethernet_service::PROVEN_ON_SILICON`.
+    // and storage on real silicon)), in the same two slots, when there is neither. Gated by
+    // `designware_ethernet_service::PROVEN_ON_SILICON`, which one bench boot has set.
     let kernel_stack = if no_virtio_net {
         let e1000e = boot_e1000e_network().map(|w| (w.stack, w.report));
         #[cfg(target_arch = "riscv64")]

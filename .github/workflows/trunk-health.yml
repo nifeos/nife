@@ -52,8 +52,8 @@ permissions:
   contents: read
   # `actions: read` lets the stopped-watcher check read workflow state with this token, and
   # `issues: write` is its fallback for opening the issue (milestone 723). repeat_issue.py also
-  # reads issues with this token, because the App token below holds no issues permission and
-  # GitHub's search returns it no issues.
+  # reads issues with this token: GitHub's search returns no issues, with exit 0, to a token
+  # without the issues permission, so the reads take the one this block grants.
   actions: read
   issues: write
 
@@ -78,10 +78,12 @@ jobs:
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
-          # Exactly the set the App held before milestone 128 (the automation gets its own identity)
-          # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; notes/session-identity.md.
+          # The set the App held before milestone 128 (the automation gets its own identity)
+          # widened it for sessions, Administration among them, plus issues, so the repeat and
+          # stopped-watcher issues are written as the App (calef, #2477, 2026-10-20 UTC). Named
+          # here so the widening reaches no workflow; notes/session-identity.md.
           permission-contents: write
+          permission-issues: write
           permission-pull-requests: write
 
       # One ref is enough: this watcher reads `main`'s tip through `git ls-remote` and reads the

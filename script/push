@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# Push the current branch to origin, then confirm origin holds it, and fail loudly when it does not.
+#
+#     script/push
+#     script/push --set-upstream
+#
+# Pushes HEAD to the branch of the same name on origin. Arguments go to `git push` as options; a
+# refspec is not accepted, because the confirmation reads back exactly one branch. The last line it
+# prints is the verdict, so `script/push | tail -n 3` still shows whether the commit landed.
+#
+# # Why this exists
+#
+# git opens the connection to the remote, reads the remote's refs, and only then runs `pre-push`.
+# The connection sits idle for as long as the hook takes. GitHub closes an idle push connection
+# somewhere between 300 and 480 s (measured 2026-10-20 UTC with a hook that only slept: 300 s
+# landed, 480 s did not). The gates pass, then git prints `Connection to github.com closed by remote
+# host.` and exits 141, killed by SIGPIPE writing the update to a closed socket, and the branch has
+# not moved. A lane piping the push through `tail` read tail's 0 and believed it (#2478).
+#
+# Two things here, each for one half of that:
+#
+# - **ssh keepalives** (`ServerAliveInterval=30`), so the connection is not idle while the hook
+#   runs. The same 480 s hook landed with them. They are added only when neither GIT_SSH_COMMAND,
+#   GIT_SSH nor core.sshCommand is set, so a person's own ssh setup is never overridden.
+# - **The read-back.** After the push, `git ls-remote` asks origin where the branch is, and anything
+#   but HEAD's commit is exit 1 with the reason. This does not trust git's exit status, so it holds
+#   for a failure that exits 0 and for a caller that loses the status in a pipe.
+#
+# BUGS
+#
+# - Nothing makes a lane use this rather than `git push`; notes/skills/worktree-commits/SKILL.md says
+#   to. The hook cannot do it: it runs before the update is sent and cannot see whether it arrived.
+#
+# Name: provisional. git's own verb for the act; considered `push-confirmed`, which says less than
+# the header does. calef has not ruled on it. See notes/scripts.md.
+
+set -u
+
+branch="$(git symbolic-ref --quiet --short HEAD)" || {
+    echo "push: HEAD is detached; check out the lane's branch first." >&2
+    exit 2
+}
+for arg in "$@"; do
+    case "$arg" in
+    -*) ;;
+    *)
+        echo "push: '$arg' is not an option; script/push always pushes HEAD to origin/$branch." >&2
+        exit 2
+        ;;
+    esac
+done
+head="$(git rev-parse HEAD)"
+short="$(git rev-parse --short=12 HEAD)"
+
+if [ -z "${GIT_SSH_COMMAND:-}${GIT_SSH:-}" ] && ! git config core.sshCommand >/dev/null 2>&1; then
+    GIT_SSH_COMMAND="ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10"
+    export GIT_SSH_COMMAND
+fi
+
+git push "$@" origin "HEAD:refs/heads/$branch"
+status=$?
+
+if ! remote="$(git ls-remote --exit-code origin "refs/heads/$branch")"; then
+    remote=
+fi
+remote="${remote%%	*}"
+
+if [ "$remote" = "$head" ]; then
+    if [ "$status" -ne 0 ]; then
+        echo "push: git push exited $status, but origin/$branch is at $short, HEAD's commit." >&2
+        exit "$status"
+    fi
+    echo "push: origin/$branch is at $short, HEAD's commit."
+    exit 0
+fi
+
+echo "" >&2
+echo "push: NOT PUSHED. origin/$branch is at ${remote:-nothing (no such branch)}, not HEAD's $head." >&2
+if [ "$status" -eq 0 ]; then
+    echo "push: git push exited 0 anyway; the read-back is what to believe." >&2
+else
+    echo "push: git push exited $status. If the hook's checks passed and git's last line was" >&2
+    echo "push: 'Connection to github.com closed by remote host', the hook outlasted the connection; run script/push again." >&2
+fi
+exit 1

@@ -1,0 +1,85 @@
+2026-10-20T19:58:20Z QUIET 30s
+2026-10-20T19:58:59Z boot 1: countdown
+2026-10-20T19:58:59Z send ''
+2026-10-20T19:59:00Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T19:59:01Z send 'boot'
+2026-10-20T19:59:43Z boot 1: payload 'net\r'
+2026-10-20T20:01:51Z boot 1: reset seen
+2026-10-20T20:01:52Z boot 2: countdown
+2026-10-20T20:01:52Z send ''
+2026-10-20T20:01:54Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:01:54Z send 'boot'
+2026-10-20T20:02:36Z boot 2: payload 'net\r'
+2026-10-20T20:04:46Z boot 2: reset seen
+2026-10-20T20:04:46Z boot 3: countdown
+2026-10-20T20:04:46Z send ''
+2026-10-20T20:04:48Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:04:49Z send 'boot'
+2026-10-20T20:05:29Z boot 3: payload 'net\r'
+2026-10-20T20:07:38Z boot 3: reset seen
+2026-10-20T20:07:39Z boot 4: countdown
+2026-10-20T20:07:39Z send ''
+2026-10-20T20:07:40Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:07:41Z send 'boot'
+2026-10-20T20:08:23Z boot 4: payload 'net\r'
+2026-10-20T20:10:31Z boot 4: reset seen
+2026-10-20T20:10:33Z boot 5: countdown
+2026-10-20T20:10:33Z send ''
+2026-10-20T20:10:34Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:10:35Z send 'boot'
+2026-10-20T20:11:18Z boot 5: payload 'net\r'
+2026-10-20T20:13:27Z boot 5: reset seen
+2026-10-20T20:13:29Z boot 6: countdown
+2026-10-20T20:13:29Z send ''
+2026-10-20T20:13:30Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:13:31Z send 'boot'
+2026-10-20T20:14:12Z boot 6: payload 'net\r'
+2026-10-20T20:16:20Z boot 6: reset seen
+2026-10-20T20:16:21Z boot 7: countdown
+2026-10-20T20:16:21Z send ''
+2026-10-20T20:16:23Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:16:23Z send 'boot'
+2026-10-20T20:17:07Z boot 7: payload 'net\r'
+2026-10-20T20:19:17Z boot 7: reset seen
+2026-10-20T20:19:17Z boot 8: countdown
+2026-10-20T20:19:17Z send ''
+2026-10-20T20:19:19Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:19:20Z send 'boot'
+2026-10-20T20:20:01Z boot 8: payload 'net\r'
+2026-10-20T20:22:10Z boot 8: reset seen
+2026-10-20T20:22:11Z boot 9: countdown
+2026-10-20T20:22:11Z send ''
+2026-10-20T20:22:12Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:22:13Z send 'boot'
+2026-10-20T20:23:00Z boot 9: payload 'net\r'
+2026-10-20T20:25:10Z boot 9: reset seen
+2026-10-20T20:25:11Z boot 10: countdown
+2026-10-20T20:25:11Z send ''
+2026-10-20T20:25:12Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:25:13Z send 'boot'
+2026-10-20T20:25:54Z boot 10: payload 'net\r'
+2026-10-20T20:28:03Z boot 10: reset seen
+2026-10-20T20:28:04Z boot 11: countdown
+2026-10-20T20:28:04Z send ''
+2026-10-20T20:28:05Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:28:06Z send 'boot'
+2026-10-20T20:28:46Z boot 11: payload 'net\r'
+2026-10-20T20:30:55Z boot 11: reset seen
+2026-10-20T20:30:56Z boot 12: countdown
+2026-10-20T20:30:56Z send ''
+2026-10-20T20:30:57Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:30:58Z send 'boot'
+2026-10-20T20:31:41Z boot 12: payload 'net\r'
+2026-10-20T20:33:50Z boot 12: reset seen
+2026-10-20T20:33:51Z boot 13: countdown
+2026-10-20T20:33:51Z send ''
+2026-10-20T20:33:53Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:33:54Z send 'boot'
+2026-10-20T20:34:33Z boot 13: payload 'net\r'
+2026-10-20T20:36:43Z boot 13: reset seen
+2026-10-20T20:36:43Z boot 14: countdown
+2026-10-20T20:36:43Z send ''
+2026-10-20T20:36:45Z send 'setenv nife_boot_server 192.168.8.192'
+2026-10-20T20:36:46Z send 'boot'
+2026-10-20T20:37:29Z boot 14: payload 'net\r'
+2026-10-20T20:37:46Z driver exit

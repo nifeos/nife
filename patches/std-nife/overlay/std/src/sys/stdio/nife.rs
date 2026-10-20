@@ -9,11 +9,16 @@
 //! putting a different capability in this slot, and *that* is what redirection is here. See
 //! notes/sink-protocol.md.
 //!
-//! stdin is the console, for a program granted it, and end of input for every other (milestone 892
-//! (a std program at the prompt holds the network and a resolver)). The terminal endpoint, badged as
-//! standard input, sits at `rt::STDIN_SLOT`; each read `CALL`s it for up to eight bytes of the line
-//! being typed, which the terminal's own discipline echoes and edits. An empty slot answers an error
-//! word rather than a count, and that is end of input at once.
+//! **stdin is a byte stream when the line gave one** (milestone 784 (reuse what the tree wrote),
+//! item (f2)): a streamed file or a pipe's read end at `rt::STDIN_STREAM_SLOT`, in the sink
+//! contract's frames up to its EOF. The first `RECEIVE` also tests the slot: the kernel's refusal
+//! is a negative word, which no frame begins with, and after it reads go to the console.
+//!
+//! Otherwise stdin is the console, for a program granted it, and end of input for every other
+//! (milestone 892 (a std program at the prompt holds the network and a resolver)). The terminal
+//! endpoint, badged as standard input, sits at `rt::STDIN_SLOT`; each read `CALL`s it for up to
+//! eight bytes of the line being typed, which the terminal's own discipline echoes and edits. An
+//! empty slot answers an error word rather than a count, and that is end of input at once.
 //!
 //! stderr shares the endpoint, so out and err interleave by 16-byte chunk. Recorded as a caveat in
 //! notes/std.md; one endpoint is what the contract grants today.
@@ -35,7 +40,8 @@
 //!   when its reader exits, and it is milestone 50's "`SIGPIPE` becomes a return code".
 
 use crate::io;
-use crate::sync::atomic::{AtomicU64, Ordering};
+use crate::sync::Mutex;
+use crate::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use crate::sys::pal::nife::{rt, sinkproto};
 
 pub struct Stdin;
@@ -89,10 +95,64 @@ impl Stdin {
 /// the count in the top byte and up to seven bytes below it, little-endian.
 static STDIN_AHEAD: AtomicU64 = AtomicU64::new(0);
 
+/// Whether standard input is the byte stream at `rt::STDIN_STREAM_SLOT`: not yet asked, held, not
+/// held (the console answers instead), or held and finished.
+static STREAM: AtomicU8 = AtomicU8::new(STREAM_UNASKED);
+const STREAM_UNASKED: u8 = 0;
+const STREAM_HELD: u8 = 1;
+const STREAM_ABSENT: u8 = 2;
+const STREAM_ENDED: u8 = 3;
+
+/// The bytes of the last frame a short read could not take: the frame, where the rest starts, and
+/// where it ends.
+static STREAM_AHEAD: Mutex<([u8; sinkproto::INLINE_MAX], usize, usize)> =
+    Mutex::new(([0; sinkproto::INLINE_MAX], 0, 0));
+
+/// One read from the byte stream, or `None` when the slot turned out to be empty and the console
+/// should answer instead.
+fn read_stream(buf: &mut [u8]) -> Option<usize> {
+    let mut ahead = STREAM_AHEAD.lock().unwrap_or_else(|e| e.into_inner());
+    loop {
+        let (frame, at, end) = &mut *ahead;
+        if *at < *end {
+            let took = (*end - *at).min(buf.len());
+            buf[..took].copy_from_slice(&frame[*at..*at + took]);
+            *at += took;
+            return Some(took);
+        }
+        if STREAM.load(Ordering::Relaxed) == STREAM_ENDED {
+            return Some(0);
+        }
+        let (w0, w1, w2) = rt::receive(rt::STDIN_STREAM_SLOT);
+        if (w0 as i64) < 0 && STREAM.load(Ordering::Relaxed) == STREAM_UNASKED {
+            STREAM.store(STREAM_ABSENT, Ordering::Relaxed);
+            return None;
+        }
+        STREAM.store(STREAM_HELD, Ordering::Relaxed);
+        match sinkproto::unpack(w0, w1, w2, frame) {
+            sinkproto::Msg::Bytes(n) => {
+                *at = 0;
+                *end = n;
+            }
+            // A malformed frame ends the input rather than being skipped, `mdr`'s and `wc`'s rule:
+            // a document silently missing a paragraph cannot be told from one that never had it.
+            sinkproto::Msg::Eof | sinkproto::Msg::Malformed => {
+                STREAM.store(STREAM_ENDED, Ordering::Relaxed);
+                return Some(0);
+            }
+        }
+    }
+}
+
 impl io::Read for Stdin {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if buf.is_empty() {
             return Ok(0);
+        }
+        if STREAM.load(Ordering::Relaxed) != STREAM_ABSENT
+            && let Some(n) = read_stream(buf)
+        {
+            return Ok(n);
         }
         let ahead = STDIN_AHEAD.swap(0, Ordering::Relaxed);
         let (n, packed) = match (ahead >> 56) as usize {

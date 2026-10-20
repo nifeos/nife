@@ -195,7 +195,7 @@ and 12 from 2026-08-18 to 2026-10-10, the last for the futex host tests.
 
 ## Mutable statics
 
-At most 27 `static mut` declarations <!--count-at-most:static-mut-declarations--> in the Rust that
+At most 26 `static mut` declarations <!--count-at-most:static-mut-declarations--> in the Rust that
 runs on nife, outside the system tests and the fixtures. The marker's name is provisional, and it is
 a ratchet ceiling (`RATCHET_CEILINGS` in `script/lint`): it fails when the count rises and when it
 falls, so a converted static is banked by lowering this number in the same commit. Milestone 891

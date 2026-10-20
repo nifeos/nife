@@ -15,7 +15,7 @@ packed into both archives as `sink`. It is three programs now, and all three sta
 |---|---|---|---|
 | `ROLE_WRITER` | **`sink_transcript_writer`** | `fixtures/` | writes a pinned transcript so a test can assert a classification by value |
 | `ROLE_FILE` | **`file_sink`** | `fixtures/` | exercises the contract's receiving end against a real image; `>` at a prompt is `fs_file_caretaker` |
-| `ROLE_VERIFY` | **`file_source`** | `fixtures/` | reads the file back so `<` and `|` can be compared |
+| `ROLE_VERIFY` | **`file_source`** | `fixtures/` | reads the file back so `<` and `\|` can be compared |
 
 This is the third application of calef's 2026-09-14 ruling, in his own words: *"I don't understand
 why we would want to write a program that does multiple things. Part of the beauty of Unix that I

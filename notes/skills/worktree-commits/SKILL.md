@@ -28,6 +28,10 @@ written, so each one has to stand on its own.
 - While working, commit whenever a piece works and push whenever a commit exists. A pushed branch
   survives a dead session, a killed process and a laptop that will not wake, and nothing else does.
   Uncommitted work in a lane worktree is the one thing no part of this system protects.
+- **Push with `script/push`, not `git push`.** git opens the connection before the pre-push hook
+  runs, and GitHub drops it after five to eight idle minutes; the gates pass and the branch does not
+  move. `script/push` keeps the connection alive, then reads origin's branch back and ends with
+  `NOT PUSHED` and exit 1 when it is not HEAD's commit. Believe that line, not `git push`'s status.
 - **A pushed commit is never rewritten** (calef, 2026-10-18 UTC). No `git reset`, `git rebase`,
   `git commit --amend` or force-push touches a commit that is on the remote. Bring main in with `git
   merge origin/main`. On a fleet clone the pre-push hook refuses a push that would rewrite one

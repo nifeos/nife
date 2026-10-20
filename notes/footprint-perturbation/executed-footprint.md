@@ -44,8 +44,8 @@ Three pieces, all built at compile time from one commit, as E3's images are.
 
 ### A fixed region, so layout cannot move
 
-Every E5 image reserves the same region, 20 KiB, in the section milestone 370 pins first in
-`.text`. The region's contents change between images and its size never does. Every symbol after
+Every E5 image reserves the same region, 20 KiB, in the section milestone 370 places right after
+`.text.hot`. The region's contents change between images and its size never does. Every symbol after
 it therefore sits at the same address in every image. `script/fastpath-footprint --layout` already
 proves this for E3, with a code hash that normalizes addresses away; E5 reuses that check.
 
