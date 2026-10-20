@@ -72,9 +72,14 @@ is about soundness.
 
 ![unsafe blocks by trust boundary](project-metrics/unsafe-trust.svg)
 
+<!-- week-notes: script/metrics writes this -->
+- 2026W41: userspace rose 466 to 531. Of those, 29 blocks are c_library and jig, which landed this week; they were in the census and in no band until pull request #2482 (2026-10-20 UTC) placed them.
+- 2026W43: every week here was restated on 2026-10-20 UTC by pull request #2482, which generates the crate table from cargo metadata. The unclassified band (60, 39 and 28 in 2026W41 to 2026W43) moved into userspace and shared, and no week's total fell.
+<!-- /week-notes -->
+
 The census split by what confines the code: kernel privilege, userspace confinement, both, and
-the pre-kernel boot chain. Before 2026W38 the `unclassified` band is crates whose names have since
-changed, so read those weeks as undercounts of both sides.
+the pre-kernel boot chain. Every week applies today's crate table, generated from `cargo metadata`,
+so a crate is counted on its current side throughout.
 
 ## Debt paydown
 

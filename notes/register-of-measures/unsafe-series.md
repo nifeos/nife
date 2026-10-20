@@ -96,11 +96,11 @@ The boundary decisions behind each bucket are in `helpers/rust_source.py`'s own 
   has to trust"). It had not checked whether it had happened to its own number. The note now
   records the 577 as short by 117, corrected the same day it was written.
 - userspace (382 blocks, 31,639 code lines, density 120 per 10,000). This is `components/`,
-  `fixtures/`, and the sixteen `crates/` members reachable only from them. It also takes five
-  packages that are each their own cargo workspace and never appear in the main one:
-  `redoxfs_server`'s `el0` build, `std_exerciser`, `entropy_backend`, `cryptography_exerciser` and
-  `cryptography_provider`. By its own header, every one of them runs on nife at EL0 and never as
-  kernel code.
+  `fixtures/`, and the sixteen `crates/` members reachable only from them. It also takes the
+  packages that are each their own cargo workspace and never appear in the main one, listed in
+  `rust_source.USERSPACE_ONLY_DIRS`: `redoxfs_server`'s `el0` build, `std_exerciser`,
+  `entropy_backend`, `cryptography_exerciser` and `cryptography_provider` among them. By its own
+  header, every one of them runs on nife at EL0 and never as kernel code.
 - shared (19 blocks, in 5 of 36 crates reachable from both sides). This code genuinely executes with
   kernel privilege in the kernel binary and, separately, under confinement in a userspace program.
   `environment_contract`'s `ConfigPage` and `clock_contract`'s `ClockPage` are built by the kernel's
@@ -111,7 +111,8 @@ The boundary decisions behind each bucket are in `helpers/rust_source.py`'s own 
   crates' `Cargo.toml` comments say their kernel-side use is exactly that: a test predicting what a
   client sent, which would never ship. Telling that apart per call site is a source-level read this
   pass did not do, recorded as future work.
-- boot chain (37 blocks): `uefi_loader` and the one crate only it reaches (`sealed_pair`). It runs
+- boot chain (37 blocks): `uefi_loader` and any `crates/` member only it links (none today;
+  `sealed_pair` is its build script's dependency, which runs on the developer's machine). It runs
   once, before the kernel starts, with the full privilege of the pre-OS environment, to decide which
   kernel image gets control. Its memory is gone by the time the kernel's isolation boundary exists.
   That is a chain-of-trust question, not a runtime-isolation one, so it is reported on its own. Which
@@ -143,34 +144,23 @@ Cinched again 2026-10-12 (UTC), 66 to 61, with no reduction behind it: the tree 
 (1,103 blocks over 180,545 lines), and the ceiling now sits at its truncated value with no
 headroom. [ceilings.md](../unsafe-obligations/ceilings.md) records why and what it costs.
 
-### The backfill, and its gap
+### How each crate is placed, and every week restated
 
-`script/metrics --backfill` restated the whole series with this split. It is the same move milestone
-448 (a refusal gets a number, a status, and a condition that would change it) made when it restated
-`SUPERSEDED`/`REFUSED` into weeks already written.
+`helpers/trust_boundary_crates.tsv` gives each `crates/` member its side, generated from `cargo
+metadata` by `helpers/trust_boundary.py` (the rule is in its docstring). `script/lint` regenerates it
+and fails when the checked-in file differs, and the pre-push hook fails when a member has no row.
+A crate that leaves the tree keeps a `retired` row with the side it last had, so the weeks that held
+it still place its unsafe.
 
-Of the ten weeks recorded before `--backfill` ran, nine (2026W29 through 2026W37; corrected 2026-09-24 from "eight", which miscounted the same range)
-carry a nonzero `unsafe_trust_unclassified`, from 57 up to 188 blocks. This tree spells its crate
-names out, and most did not always have their current spelling. `crates/ipc`, `crates/dtb`,
-`crates/asid` and around forty more were renamed to `inter_process_communication`,
-`device_tree_blob`, `address_space_identifier` and so on over the weeks this series covers. The
-classification table in `helpers/rust_source.py` is built from today's names. That is the same
-restatement trade `MILESTONE_STATUSES`/`NAME_STATUSES` already make, stated in that file's own
-header.
+`script/metrics` cannot run cargo, so it applies today's table to every historical week. That is
+the restatement trade `MILESTONE_STATUSES`/`NAME_STATUSES` make. A crate whose side changed over
+time is counted on its current side in every week. `unsafe_trust_unclassified` reads 0 in every
+week on record. It counts a `crates/` directory the table has no row for, which lint refuses on
+today's tree.
 
-The gap was not reconstructed, and a shortcut was refused. `git log --diff-filter=R --summary` finds
-candidate renames, but at least one pairing it offers is wrong. It pairs `crates/canary_gate` with
-`crates/work_steal_slot` by a `Cargo.toml`-only content match, while `canary_gate`'s own `src/lib.rs`
-correctly pairs with `memory_corruption_canary_gate`. A hand-verified alias table would have to cover around forty
-old names. Several (`mdns_proto`, `smb_proto`, `ntlm`) name protocols since removed outright, with no
-current bucket to map to at all. (SMB and Time Machine are out of this project's customer path
-entirely, per `AGENTS.md`.) That table is real work this pass chose not to rush.
-
-From 2026W38 (2026-09-20) the split is exact: `unsafe_trust_unclassified` reads 0. A future lane can
-close the gap by rebuilding the alias table, verified file-by-file rather than trusted from
-`--summary` alone. Until then, read the early weeks' kernel and userspace bars as undercounts of both
-sides by whatever their `unclassified` band carries. The register already asks the same caution for
-`names_no_block` in the weeks before naming provenance existed.
+The retired rows were seeded once from `cargo metadata` run at each charted week's own commit, all
+fifteen of which still resolve offline. A crate that was linked and then fell out of use before
+its deletion (`heap`, `slab`) keeps the side it had while linked.
 
 ### The two-day loss, restored 2026-09-23
 

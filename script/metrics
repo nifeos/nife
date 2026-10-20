@@ -142,20 +142,18 @@
 # - **Charts are checked by eye, in a browser.** QuickLook crops an SVG's right edge and made the
 #   legends look clipped on 2026-09-19 when they were not; render with a browser before believing a
 #   layout defect.
-# - **The trust-boundary split's crate table is hand-maintained, not derived at every run.** The
-#   `unsafe_trust_*` columns (added by the unsafe-census-by-trust-boundary milestone, provisional)
-#   classify each `crates/` member as kernel-only, userspace-only, shared or boot-chain, from a
-#   `cargo metadata` resolve graph read ONCE on 2026-09-20 and baked into
-#   `helpers/rust_source.py` as `KERNEL_ONLY_CRATES`/`USERSPACE_ONLY_CRATES`/`SHARED_CRATES`. It
-#   cannot be re-derived per historical week for the same reason the coverage cell cannot: this
-#   script is forbidden from running cargo or checking anything out (see the top of this file), so
-#   applying today's table to a commit whose dependency graph actually differed is the same
-#   restatement trade `MILESTONE_STATUSES`/`NAME_STATUSES` already make. A `crates/` directory the
-#   table has never seen counts as `unsafe_trust_unclassified` rather than being silently dropped
-#   into the wrong bucket or ignored; a nonzero value there for an OLD week is this bug firing, not
-#   a new population appearing. None of the ten weeks on record hit it as of 2026-09-20 (checked by
-#   running `--backfill` and reading the column back).
-# - **A `SHARED` crate's unsafe is not attributed to a call site.** Whether a particular `unsafe`
+# - **The trust-boundary split applies today's crate table to every week.** The
+#   `unsafe_trust_*` columns (milestone 522 (a boundary drawn by dependency, not by path)) classify
+#   each `crates/` member as kernel, userspace, shared, boot chain or host from
+#   `helpers/trust_boundary_crates.tsv`, which `helpers/trust_boundary.py` generates from `cargo
+#   metadata` and `script/lint` holds current. This script is forbidden from running cargo or
+#   checking anything out (see the top of this file), so it reads that file from the working tree
+#   and applies it to every historical week, the restatement trade `MILESTONE_STATUSES`/
+#   `NAME_STATUSES` already make. A `crates/` directory the table has no row for counts as
+#   `unsafe_trust_unclassified` rather than being dropped into the wrong bucket or ignored. Lint
+#   refuses one on today's tree, so a nonzero value is an OLD week holding a crate since renamed
+#   or removed, not a new population appearing.
+# - **A `shared` crate's unsafe is not attributed to a call site.** Whether a particular `unsafe`
 #   block in, say, `environment_contract` is reached by the kernel's production code, by a
 #   userspace `std` program, or only by the kernel's own `#[cfg(test)]` test-oracle modules (several
 #   of which never ship) is a per-function read this pass did not do. `unsafe_trust_shared` is

@@ -1508,6 +1508,19 @@ PYEOF
 python3 helpers/host_exclusion_wiring.py --selftest
 python3 helpers/host_exclusion_wiring.py --check
 
+echo "==> every crates/ member has a row in the trust-boundary table"
+# The no-cargo half, so the pre-push hook catches a new crate: helpers/trust_boundary_crates.tsv
+# has exactly one row per crates/ member, and every workspace of its own is a known root. A
+# member with no row is the `unclassified` band on unsafe-trust.svg, which read 60 in 2026W41.
+python3 helpers/trust_boundary.py --check-rows
+
+echo "==> the trust-boundary table matches cargo metadata"
+# The cargo half: regenerate the table (helpers/trust_boundary.py runs `cargo metadata` once per
+# workspace) and fail when the checked-in file differs, which is a crate whose binaries changed side.
+command -v cargo >/dev/null || { echo "lint: the trust-boundary check needs cargo" >&2; exit 1; }
+python3 helpers/trust_boundary.py --selftest
+python3 helpers/trust_boundary.py --check
+
 # The same failure one level down: a TARGET the host build never selects.
 #
 # The gate above derives what cannot compile for the host from the dependency graph, which is the
