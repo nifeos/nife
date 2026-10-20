@@ -5584,9 +5584,6 @@ kernel/src/user/address_space_registry.rs::user_address_space_create
 kernel/src/user/address_space_registry.rs::user_address_space_map
 kernel/src/user/address_space_registry.rs::user_address_space_root
 kernel/src/user/address_space_registry.rs::with_user_address_space
-kernel/src/user/boot_demos.rs::X86UserspaceReport
-kernel/src/user/boot_demos.rs::riscv_least_authority_demo
-kernel/src/user/boot_demos.rs::riscv_uart_driver_demo
 kernel/src/user/clock_service.rs
 kernel/src/user/clock_service.rs::CLOCK_VA
 kernel/src/user/clock_service.rs::NO_RTC
@@ -5632,7 +5629,6 @@ kernel/src/user/console_device.rs::UART_PHYS
 kernel/src/user/console_device.rs::X86_COM1_PORT_BASE
 kernel/src/user/console_device.rs::X86_COM1_PORT_COUNT
 kernel/src/user/console_device.rs::machine_has_no_device_page_for_the_console
-kernel/src/user/console_service.rs
 kernel/src/user/credential_service.rs
 kernel/src/user/credential_service.rs::F_CLEAN
 kernel/src/user/credential_service.rs::ROLE_ATTACKER

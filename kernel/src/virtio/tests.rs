@@ -596,3 +596,15 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
     );
     while crate::iommu::take_fault().is_some() {}
 }
+
+/// **A register read cannot leave the device's slot.** The mmio arm reads `slot base + off`
+/// through the direct map, so before this bound a `Virtio` capability read any physical address.
+#[test_case]
+fn a_register_read_outside_the_slot_is_refused() {
+    assert!(register_in_slot(0));
+    assert!(register_in_slot(SLOT_STRIDE - 4));
+    assert!(!register_in_slot(SLOT_STRIDE));
+    assert!(!register_in_slot(2));
+    assert!(!register_in_slot(u64::MAX - 3));
+    assert_eq!(read_register(0, SLOT_STRIDE), None);
+}

@@ -571,27 +571,6 @@ pub(crate) fn configure_from_dtb() {
     CONSOLE.lock().uart.configure(shape);
 }
 
-/// Turn on the console UART's receive interrupt (RISC-V, milestone 20). After this the NS16550 raises
-/// its line into the PLIC whenever a keystroke is waiting.
-///
-/// The kernel arms the device and then stays out of the way: the *byte* is read by the userspace
-/// input driver, which `boot_progenitor` hands the NS16550's registers as a `DeviceFrame`
-/// capability. There used to be a kernel-side `rx_read` here to drain it, from milestone 20 when
-/// the input path was still in the kernel; milestone 41 deleted it, along with `Ns16550::read_byte`
-/// and `LSR_DR`, after removing the crate-wide riscv `allow(dead_code)` showed they had no caller
-/// in *any* configuration, `--features shell` included.
-///
-/// riscv-only: the aarch64 console stays polling, and its `ConsoleUart` (a PL011) has no such method.
-///
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `enable_receive_interrupt`, because it enables an
-/// interrupt, which `rx_enable` does not say, and matches the driver method it calls.
-#[cfg(target_arch = "riscv64")]
-pub fn rx_enable() {
-    CONSOLE.lock().uart.enable_rx_interrupt();
-}
-
 /// **Has anyone typed at the console?** (Milestone 249.) True while a byte sits unread in the
 /// console UART's receive buffer; reads nothing, so the answer stays true until [`discard_rx`]
 /// takes it.

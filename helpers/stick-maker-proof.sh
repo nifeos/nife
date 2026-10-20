@@ -79,12 +79,19 @@ fi
 echo "holiday.txt survived the copy"
 detach "$dev"
 
+# A green self-test verdict: a `nife self-test: ` line with no `FAILED: ` on it. What follows the
+# count depends on the machine (a check whose device it lacks is `absent: `), so the line is not
+# matched whole.
+all_passed() {
+    awk '/nife self-test: / { seen = 1; if (index($0, "FAILED: ")) red = 1 } END { exit !(seen && !red) }' "$1"
+}
+
 for image in blank fat; do
     for arch in x86_64 aarch64 riscv64; do
         log="$WORK/$image-$arch.log"
         NIFE_STICK_TIMEOUT="${NIFE_STICK_TIMEOUT:-120}" helpers/qemu-stick.sh "$arch" "$WORK/$image.img" < /dev/null > "$log" 2>&1 || true
         if grep -q "nife: handing the system to the userspace progenitor." "$log" \
-            && grep -q "nife self-test: 5 of 5 passed" "$log" \
+            && all_passed "$log" \
             && ! grep -q "\[PANIC\]" "$log"; then
             echo "$image.img on $arch: booted to the progenitor"
         else

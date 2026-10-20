@@ -93,10 +93,7 @@ pub enum Stage {
     /// not a given: the runbook is explicit that this line is the *second* target, after the
     /// DW-8250 driver work.
     ///
-    /// **Reachable on all three architectures since milestone 268.** It was not before: aarch64
-    /// printed no opening line at all, so a healthy aarch64 board reported as never having booted,
-    /// which is the same defect [`Stage::Tour`] carries and is why that one is documented as one
-    /// architecture's rather than quietly left in the ladder.
+    /// **Reachable on all three architectures**, as every rung of the kernel's ladder is.
     Banner,
     /// The machine described itself and finished (`boot_ladder::MACHINE`), so the boot has read the
     /// device tree or the ACPI tables, counted the processors, found the console's interrupt line,
@@ -115,19 +112,13 @@ pub enum Stage {
     /// a claim. A *failed* verdict is not this stage: it is [`Failure::SelfTestFailed`], so a
     /// degraded board on the bench does not read as a good one.
     SelfTest,
-    /// The boot tour ran to its end (`nife: the capability core runs on ...`).
+    /// The boot's middle stages ran to their end (`nife: the capability core runs on ...`).
     ///
-    /// A stronger signal than the banner and a different claim: the banner is printed before the
-    /// device tree is touched, so it says the console works and nothing else, while this says
-    /// paging, traps, the timer, the frame allocator, SMP and the scheduler all came up. It is
-    /// **not** the default to wait for, because only the milestone-tour build prints it; a shell
-    /// or a test build reaches its banner and then does something else entirely.
-    ///
-    /// **It is one architecture's rung and it is kept as one** (milestone 268). The other two never
-    /// print it and are not expected to; what they print instead is [`Stage::Machine`] and
-    /// [`Stage::SelfTest`], which every architecture reaches. Waiting for this on aarch64 or
-    /// `x86_64` is waiting for something that does not happen, and that was invisible until
-    /// milestone 268's finding 3 named it.
+    /// Printed after the self-test verdict and the tour on all three architectures, just before
+    /// the hand-over, so it says the machine was described and every self-test check ran. It is
+    /// not the default to wait for: [`Stage::Prompt`] is above it, and a boot that stops here has
+    /// not handed over. Whether the checks passed is [`Failure::SelfTestFailed`]'s to say, not
+    /// this rung's.
     Tour,
     /// Userspace is up and the shell is offering a prompt (`boot_ladder::PROMPT`).
     ///
@@ -794,13 +785,28 @@ impl BootProgress {
             Some(Failure::SelfTestFailed(names.to_string()))
         } else if complete
             && let Some(at) = line.find(boot_ladder::SELF_TEST)
+            && let Some(name) = Self::verdict_absences(&line[at..])
+                .find(|name| self.board.must_not_be_absent.contains(name))
+        {
+            // **An absence this board does not allow** (calef's ruling of 2026-10-20 (UTC) on
+            // #2447). The kernel reports a check `absent` when the machine has nothing for it to
+            // test, and only the board's profile knows whether this machine should have had it.
+            Some(Failure::SelfTestFailed(format!(
+                "{name} (absent on {}, which has the device for it)",
+                self.board.name
+            )))
+        } else if complete
+            && let Some(at) = line.find(boot_ladder::SELF_TEST)
             && let Some(total) = Self::verdict_total(&line[at + boot_ladder::SELF_TEST.len()..])
             && total != boot_ladder::SELF_TEST_CHECKS.len()
+            && !boot_ladder::SELF_TEST_CHECKS_EARLIER.contains(&total)
         {
             // **A green verdict over the wrong set is not green** (milestone 268). The kernel
-            // counts against `boot_ladder::SELF_TEST_CHECKS`, so a total that differs is a
-            // kernel built against a different list: an older one, or one architecture whose
-            // set was cut and the count adjusted to hide it, which printed `4 of 4 passed`.
+            // counts against `boot_ladder::SELF_TEST_CHECKS`, so a total that is neither that
+            // list's length nor one it had before (`SELF_TEST_CHECKS_EARLIER`, for logs older
+            // kernels printed) is a kernel built against a list this tree never had, such as one
+            // architecture's set cut and the count adjusted to hide it, which printed
+            // `4 of 4 passed`.
             Some(Failure::SelfTestFailed(format!(
                 "the verdict counted {total} checks and boot_ladder lists {}",
                 boot_ladder::SELF_TEST_CHECKS.len()
@@ -808,6 +814,19 @@ impl BootProgress {
         } else {
             None
         }
+    }
+
+    /// The names a verdict lists after `boot_ladder::SELF_TEST_ABSENT`, given the verdict line
+    /// from its `boot_ladder::SELF_TEST`. The list ends at the comma before a `FAILED:` count, or
+    /// at the end of the line.
+    fn verdict_absences(verdict: &str) -> impl Iterator<Item = &str> {
+        let names = verdict
+            .find(boot_ladder::SELF_TEST_ABSENT)
+            .map_or("", |at| {
+                let rest = &verdict[at + boot_ladder::SELF_TEST_ABSENT.len()..];
+                rest.split(',').next().unwrap_or("")
+            });
+        names.split_whitespace()
     }
 
     /// The `Y` in a verdict's `X of Y passed`, given the text after `boot_ladder::SELF_TEST`.

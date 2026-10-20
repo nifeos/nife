@@ -414,8 +414,8 @@ impl AddressSpace {
     /// kernel's record of them.
     ///
     /// The safe form of `mmu::activate_user` for every caller that wants exactly this (milestone 139
-    /// (drive the unsafe count down), 2026-10-07 UTC; name provisional). Six call sites, the boot
-    /// tour and five system tests, each restated that function's contract by hand; it is a fact
+    /// (drive the unsafe count down), 2026-10-07 UTC; name provisional). Five call sites, all system
+    /// tests, each restated that function's contract by hand; it is a fact
     /// about this type, so it is asserted once, here. A closure rather than a guard whose `Drop`
     /// uninstalls, because `mem::forget` is safe: a forgotten guard would end the borrow with the
     /// space still installed, and the space could then be dropped under a live root register.
@@ -434,10 +434,7 @@ impl AddressSpace {
     /// same way. `address_space_tests::an_installed_space_stays_installed_across_a_timer_tick` is
     /// the witness. A body that has to block would need the space bound to the thread
     /// (`sched::adopt_address_space`), so the switch puts it back.
-    #[cfg_attr(
-        not(any(feature = "system_tests", target_arch = "riscv64")),
-        allow(dead_code)
-    )]
+    #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are the callers
     pub fn while_installed<R>(&self, body: impl FnOnce() -> R) -> R {
         let interrupts_were_enabled = crate::arch::interrupts::disable();
         // SAFETY: `ttbr0` composes this space's own root (built by a `Mapper` over `Half::Low`,

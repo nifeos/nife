@@ -12,7 +12,9 @@ pub const ENUMERATE: u64 = 1 << 3;
 
 /// **Add a thread to a process** (milestone 812 (`std::thread::spawn` runs real threads in one
 /// address space), §269 (how threads share a process) fork 1 as ruled on pull request #1892).
-/// `capability::Rights::BIND` carries the argument; see [`super::process`].
+/// `capability::Rights::BIND` carries the argument; see [`super::process`]. A joined thread runs
+/// at an entry its builder chose, inside the process's table and space, so `BIND` is full control
+/// of the process: delegate it as carefully as `GRANT`.
 pub const BIND: u64 = 1 << 4;
 
 /// **Every right defined above.** `capability::Rights::ALL` is the kernel's twin, and

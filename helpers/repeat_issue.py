@@ -139,8 +139,14 @@ def sync(text):
     rows = parse_rows(text)
     if not rows:
         return 0
+    write = os.environ.get("GH_TOKEN") or None
+    fallback = os.environ.get("WATCHER_FALLBACK_TOKEN") or None
+    # Reads go through the token that holds the issues permission. trunk-health.yml's App token
+    # does not, and GitHub's search answers it with no issues and exit 0: the closed listing came
+    # back empty and the close never reached plan(), which opened #2435 and #2448.
+    read = fallback or write
     listed = gh(["issue", "list", "--repo", REPO, "--state", "open", "--limit", "200",
-                 "--json", "number,title,body"])
+                 "--json", "number,title,body"], read)
     if listed.returncode:
         print("repeat_issue: could not list issues: %s" % listed.stderr.strip(), file=sys.stderr)
         return 2
@@ -148,7 +154,7 @@ def sync(text):
                    for i in (json.loads(listed.stdout) if listed.stdout.strip() else [])}
     closed_list = gh(["issue", "list", "--repo", REPO, "--state", "closed", "--limit", "200",
                       "--search", '"%s" in:title' % TITLE_PREFIX.strip(),
-                      "--json", "number,title,closedAt"])
+                      "--json", "number,title,closedAt"], read)
     if closed_list.returncode:
         print("repeat_issue: could not list closed issues: %s" % closed_list.stderr.strip(),
               file=sys.stderr)
@@ -158,8 +164,6 @@ def sync(text):
         if i["title"].startswith(TITLE_PREFIX) and i.get("closedAt"):
             closed[i["title"]] = max(closed.get(i["title"], ""), i["closedAt"])
     status = 0
-    write = os.environ.get("GH_TOKEN") or None
-    fallback = os.environ.get("WATCHER_FALLBACK_TOKEN") or None
     for action, number, title, body in plan(rows, open_issues, closed):
         if action == "open":
             args = ["issue", "create", "--repo", REPO, "--title", title, "--body", body]
@@ -238,6 +242,36 @@ def selftest():
     expect("open issue and later close: drift still edits",
            plan(rows, {title: (7, drifted)}, {title: "2026-10-14T09:00:00Z"}),
            [("edit", 7, title, body)])
+
+    # The case that opened #2435 and #2448, against a stub that answers search the way GitHub
+    # answered the App token: no issues, exit 0.
+    global gh
+    real_gh, saved_env, calls = gh, dict(os.environ), []
+
+    def stub(args, token=None):
+        calls.append(args[:2])
+        who = token or os.environ.get("GH_TOKEN")
+        found = []
+        if "--search" in args and who != "app-without-issues":
+            found = [{"number": 2258, "title": title, "closedAt": "2026-10-19T20:40:26Z"}]
+        return subprocess.CompletedProcess(args, 0, json.dumps(found), "")
+
+    gh = stub
+    os.environ.update(GH_TOKEN="app-without-issues", WATCHER_FALLBACK_TOKEN="actions-issues-write")
+    try:
+        with open(os.devnull, "w") as quiet:
+            real_stdout, sys.stdout = sys.stdout, quiet
+            try:
+                sync("audit-cadence                    5 of last 6 failed       REPEAT: the line "
+                     "(2026-09-21..2026-10-19 UTC)")
+            finally:
+                sys.stdout = real_stdout
+    finally:
+        gh = real_gh
+        os.environ.clear()
+        os.environ.update(saved_env)
+    expect("close read past an App token without issues: nothing opens",
+           ["issue", "create"] in calls, False)
 
     print("repeat_issue selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1

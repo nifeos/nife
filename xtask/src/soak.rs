@@ -67,7 +67,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // and a sweep that has printed its last point is past every such gate.
         settle: Duration::from_secs(0),
         // An emulator has no firmware prologue to climb; see `boot_check`'s note.
-        board: &board_console::board::XENON,
+        board: &board_console::board::EMULATOR,
     };
     // `--hvf` and `--release` (added 2026-09-19 for the HVF cross-check in notes/job-mix.md): the
     // two flags the tree already spells this way, `run`'s and `bench`'s, rather than new ones. HVF
@@ -418,8 +418,8 @@ pub(crate) fn soak_test() -> ExitCode {
         until: None,
         quiet_after: Some(Duration::from_secs(15)),
         settle: Duration::from_secs(0),
-        // An emulator has no firmware prologue to climb; see `boot_check`'s note above.
-        board: &board_console::board::XENON,
+        // The emulator's profile; see `boot_check_policy`'s note.
+        board: &board_console::board::EMULATOR,
     };
     // Milestone 249 (the boot lottery is sampled by a person walking to the board)'s QEMU proof:
     // `--reboot` builds the rebooting soak and passes only when a second boot starts soaking after

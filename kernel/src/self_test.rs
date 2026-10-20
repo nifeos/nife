@@ -2,8 +2,9 @@
 //!
 //! Milestone 268 (every architecture boots the same way)'s second rung: say what the machine is
 //! ([`crate::print_machine_description`]), prove the kernel works on it (here), then hand over.
-//! Every check below is portable; the one place an architecture differs is
-//! `arch::exceptions::self_test`.
+//! The checks are the claims the per-port tours made, on every port (calef's ruling of 2026-10-19
+//! (UTC) on #2434). Every check runs on every architecture; where an architecture differs is
+//! `arch::exceptions::self_test`, `arch::irq::device_line_interrupts` and the JH7110 bring-up.
 //!
 //! # It reports, it does not gate
 //!
@@ -14,15 +15,19 @@
 //! and fails on a red one in CI.
 //!
 //! ```text
-//! nife self-test: 5 of 5 passed
-//! nife self-test: 4 of 5 passed, 1 FAILED: exceptions
+//! nife self-test: 10 of 13 passed, 3 absent: blockdev clock trng
+//! nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng, 1 FAILED: exceptions
 //! ```
 //!
 //! - **The prefix is always present and identical on every architecture**: a missing marker looks
 //!   exactly like a slow board.
 //! - **The counts print on success as well as on failure**, so "ran nothing and passed" is
 //!   distinguishable from "ran the set and passed".
-//! - **`FAILED:` is spelled as `main.rs`'s preemption check spells it.**
+//! - **A check whose device this machine lacks is `absent`, with its reason**, neither a pass nor a
+//!   failure (calef's ruling of 2026-10-20 (UTC) on #2447). Which absences a board allows is
+//!   `board_console`'s board profile's to say, and an absence its profile forbids is a failure
+//!   there: radon may not be without `entropy`, `trng` or `clock`, xenon without `entropy` or
+//!   `deviceirq`.
 //!
 //! The wording is **provisional**: a line two programs agree on is an architect's.
 //! `board_console::progress` is tested against this module's own constant.
@@ -33,9 +38,15 @@
 //! - **Nothing here proves an architecture ran the right set.** The list is a compile-time fact,
 //!   and a check deleted from it takes its own evidence with it; the count is the partial defense,
 //!   and review guards the set.
-//! - **The set is cheap on purpose and therefore shallow.** Every check completes in microseconds
-//!   except [`fn@timer`], which waits about 20 ms for a tick. Nothing spawns a process, touches a
-//!   device, or exercises IPC, because this runs on every boot; the deep proofs are `script/test`'s.
+//! - **The checks cost time on every boot.** [`fn@timer`] waits about 20 ms for a tick and
+//!   [`preemption`] spends a fifth of a second; [`userspace`], [`budget`] and, where there is a
+//!   disk, [`blockdev`] each spawn a process from the archive and wait for it. The deep proofs are
+//!   still `script/test`'s.
+//! - **[`blockdev`]'s driver is left running**, as it was in the tour it came from: it holds disk 0,
+//!   which nothing after it uses, and `virtio_service::start` returns no thread to end.
+//! - **[`budget`]'s helper thread can be left parked.** A receive has no deadline, so the reports
+//!   are taken on a thread of their own; a process that never reports leaves that thread blocked,
+//!   and the check fails by its own deadline.
 //! - **A check can still hang the boot if the operation it measures never returns.** Both waits
 //!   read the counter through [`Counter`], which reports a stopped counter rather than waiting on
 //!   it, and [`fn@timer`] spins rather than sleeping. A `sched::yield_now` or `mmu::map_page` that
@@ -48,7 +59,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 // that this module and `crates/board_console` cannot hold two copies of one contract (`AGENTS.md`
 // rule 7). Each carries its own trailing space, so a matcher that finds one has found a boundary
 // rather than the start of a longer word.
-use boot_ladder::{SELF_TEST as VERDICT, SELF_TEST_FAILED as FAILED};
+use boot_ladder::{SELF_TEST as VERDICT, SELF_TEST_ABSENT as ABSENT, SELF_TEST_FAILED as FAILED};
 
 use crate::{arch, memory, println, sched};
 
@@ -92,9 +103,9 @@ const CHECKS: usize = boot_ladder::SELF_TEST_CHECKS.len();
 /// Name: provisional (milestone 268 (every architecture boots the same way)).
 const INJECT: bool = cfg!(feature = "self_test_injection");
 
-/// The running count, and the names of whatever failed.
+/// The running count, and the names of whatever failed or was absent.
 ///
-/// No allocation: the failure list is a fixed array of `&'static str`, because this runs before the
+/// No allocation: the name lists are fixed arrays of `&'static str`, because this runs before the
 /// heap is interesting and because a self-test that could fail to report a failure by running out
 /// of memory would be reporting on the wrong thing.
 struct Tally {
@@ -104,6 +115,8 @@ struct Tally {
     seen: [bool; CHECKS],
     failed: [&'static str; CHECKS],
     failures: usize,
+    absent: [&'static str; CHECKS],
+    absences: usize,
 }
 
 impl Tally {
@@ -114,6 +127,8 @@ impl Tally {
             seen: [false; CHECKS],
             failed: [""; CHECKS],
             failures: 0,
+            absent: [""; CHECKS],
+            absences: 0,
         }
     }
 
@@ -124,6 +139,26 @@ impl Tally {
         }
     }
 
+    /// Mark `name` as having recorded an outcome, and say whether it is on the shared list. A
+    /// check not on it is a failure however it went: an architecture running a check the others do
+    /// not is the same parity hole as one skipping a check they run.
+    fn see(&mut self, name: &'static str) -> bool {
+        self.ran += 1;
+        match boot_ladder::SELF_TEST_CHECKS
+            .iter()
+            .position(|&n| n == name)
+        {
+            Some(i) => {
+                self.seen[i] = true;
+                true
+            }
+            None => {
+                println!("  self-test       : {name} is not in boot_ladder::SELF_TEST_CHECKS");
+                false
+            }
+        }
+    }
+
     /// Record one check's outcome and print its line.
     ///
     /// The detail is `core::fmt::Arguments` rather than a `&str`, so a check can put the numbers it
@@ -131,17 +166,7 @@ impl Tally {
     /// diagnosis: `ok` on its own tells a reader nothing they can act on when the next boot says
     /// `FAILED`.
     fn record(&mut self, name: &'static str, ok: bool, detail: core::fmt::Arguments) {
-        self.ran += 1;
-        // A check not on the shared list is a failure however it went: an architecture running a
-        // check the others do not is the same parity hole as one skipping a check they run.
-        let listed = boot_ladder::SELF_TEST_CHECKS
-            .iter()
-            .position(|&n| n == name);
-        let ok = ok && listed.is_some();
-        match listed {
-            Some(i) => self.seen[i] = true,
-            None => println!("  self-test       : {name} is not in boot_ladder::SELF_TEST_CHECKS"),
-        }
+        let ok = self.see(name) && ok;
         if ok {
             self.passed += 1;
         } else {
@@ -153,11 +178,34 @@ impl Tally {
         );
     }
 
+    /// **Record that this machine has nothing for `name` to test**, with the reason
+    /// (`boot_ladder::SELF_TEST_ABSENT`; calef's ruling of 2026-10-20 (UTC) on #2447).
+    ///
+    /// Absent is neither a pass nor a failure, and the verdict says so by name. Whether an absence
+    /// is acceptable is a fact about the machine, which the kernel cannot know: `board_console`'s
+    /// board profiles name the checks that may not be absent on each board, and read an absence of
+    /// one of those as a failure. The reason is stated because "no device" must be distinguishable
+    /// from "no device this kernel looked for".
+    fn absent(&mut self, name: &'static str, why: core::fmt::Arguments) {
+        if !self.see(name) {
+            self.fail(name);
+            return;
+        }
+        if self.absences < CHECKS {
+            self.absent[self.absences] = name;
+            self.absences += 1;
+        }
+        println!("  self-test       : {name:<10} absent  {why}");
+    }
+
     /// The verdict line. See [`VERDICT`] for why it is shaped the way it is.
     ///
     /// **The total is the shared list's length, not how many checks ran**, and a listed check that
     /// never recorded an outcome is named as a failure here. So a kernel that ran four of the five
     /// says `4 of 5 passed, 1 FAILED: scheduler` on every architecture, rather than `4 of 4 passed`.
+    /// Absences follow the count and come before any failure, so a matcher that reads the names
+    /// after `FAILED: ` to the end of the line reads only failures:
+    /// `nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng, 1 FAILED: entropy`.
     fn verdict(&mut self) {
         for (i, &name) in boot_ladder::SELF_TEST_CHECKS.iter().enumerate() {
             if !self.seen[i] {
@@ -165,26 +213,29 @@ impl Tally {
                 self.fail(name);
             }
         }
-        if self.failures == 0 {
-            println!("{VERDICT}{} of {CHECKS} passed", self.passed);
-            return;
-        }
         // Built by printing rather than by joining, so there is no buffer to size and no allocation
         // on the path that reports a broken machine.
-        print_verdict_head(self.passed, CHECKS, self.failures);
-        for (i, name) in self.failed[..self.failures].iter().enumerate() {
-            if i > 0 {
-                crate::print!(" ");
-            }
-            crate::print!("{name}");
+        crate::print!("{VERDICT}{} of {CHECKS} passed", self.passed);
+        if self.absences > 0 {
+            crate::print!(", {} {ABSENT}", self.absences);
+            print_names(&self.absent[..self.absences]);
+        }
+        if self.failures > 0 {
+            crate::print!(", {} {FAILED}", self.failures);
+            print_names(&self.failed[..self.failures]);
         }
         println!();
     }
 }
 
-/// `nife self-test: 4 of 5 passed, 1 FAILED: ` with no newline, so the names follow on the line.
-fn print_verdict_head(passed: usize, ran: usize, failures: usize) {
-    crate::print!("{VERDICT}{passed} of {ran} passed, {failures} {FAILED}");
+/// Names separated by single spaces, with no newline.
+fn print_names(names: &[&str]) {
+    for (i, name) in names.iter().enumerate() {
+        if i > 0 {
+            crate::print!(" ");
+        }
+        crate::print!("{name}");
+    }
 }
 
 /// **Run the set and print the verdict.**
@@ -195,14 +246,40 @@ fn print_verdict_head(passed: usize, ran: usize, failures: usize) {
 pub fn run() {
     let mut tally = Tally::new();
 
-    exceptions(&mut tally);
-    mapping(&mut tally);
-    frames(&mut tally);
-    timer(&mut tally);
-    scheduler(&mut tally);
+    // Each check notes its boot stage before it runs, so a thread dump during a wedged check says
+    // which one (the breadcrumb `sched::dump_threads` repeats every couple of seconds survives a
+    // lossy serial log; notes/visionfive2.md, fifth stop). Stage 3 is the first check and the
+    // last is 2 plus the list's length; `TOUR_STAGE` follows the verdict.
+    // One run per check except `jh7110`, which records `clock` and `trng` from one bring-up; the
+    // verdict names any listed check that recorded nothing, so the list and these runs cannot
+    // drift apart unseen. `entropy` runs after `jh7110` because on a JH7110 it draws from the
+    // service that bring-up wired.
+    let runs: [fn(&mut Tally); RUNS] = [
+        exceptions, mapping, frames, timer, scheduler, preemption, userspace, budget, blockdev,
+        deviceirq, jh7110, entropy,
+    ];
+    for (stage, check) in (FIRST_STAGE..).zip(runs) {
+        sched::note_boot_stage(stage);
+        check(&mut tally);
+    }
 
     tally.verdict();
 }
+
+/// The boot stage the first check notes. Stages below it are the bring-up's, which notes none
+/// today; the number is kept from the riscv64 tour this replaced so that a board log's stage reads
+/// the same way across the change.
+const FIRST_STAGE: u32 = 3;
+
+/// How many check functions [`run`] calls: one per check, but one for `clock` and `trng` together.
+const RUNS: usize = CHECKS - 1;
+
+/// **The stage that means the self-test finished and the boot's middle stages ran to their end**,
+/// noted beside `boot_ladder::TOUR` in `kernel_main`: the stage after the last check's. Board logs
+/// from before the checks replaced the tours read 11 as finished; this reads 15.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
+pub const TOUR_STAGE: u32 = FIRST_STAGE + RUNS as u32;
 
 /// **A breakpoint is caught and stepped over.**
 ///
@@ -325,6 +402,13 @@ fn mapping(tally: &mut Tally) {
 /// in reads rather than in time for the obvious reason: time is the thing in doubt.
 const STALLED_READS: u32 = 1_000_000;
 
+/// **How many looks with a yield between them mean the counter has stopped.** A yield is a pass
+/// through the scheduler, and with [`preemption`]'s spinners runnable it can be a whole 10 ms tick
+/// before this thread runs again, so a healthy counter changes between every two looks by a wide
+/// margin. A hundred unchanged looks is a stopped counter, found within about a second even when
+/// every look waits a tick; [`STALLED_READS`]' million would be three hours.
+const STALLED_YIELDS: u32 = 100;
+
 /// **The free-running counter, read by something that notices when it stops.**
 ///
 /// The two waits below are bounded by the counter, which is right on a working machine (it makes
@@ -333,22 +417,30 @@ const STALLED_READS: u32 = 1_000_000;
 struct Counter {
     last: u64,
     unchanged: u32,
+    stalled_after: u32,
 }
 
 impl Counter {
     fn new() -> Self {
+        Self::stalled_after(STALLED_READS)
+    }
+
+    /// A counter that reports a stall after `reads` unchanged reads, for a wait that does more than
+    /// spin between them.
+    fn stalled_after(reads: u32) -> Self {
         Self {
             last: timer::now(),
             unchanged: 0,
+            stalled_after: reads,
         }
     }
 
-    /// The counter now, or `None` once it has read the same value [`STALLED_READS`] times running.
+    /// The counter now, or `None` once it has read the same value `stalled_after` times running.
     fn read(&mut self) -> Option<u64> {
         let now = timer::now();
         if now == self.last {
             self.unchanged += 1;
-            if self.unchanged >= STALLED_READS {
+            if self.unchanged >= self.stalled_after {
                 return None;
             }
         } else {
@@ -513,5 +605,700 @@ fn scheduler(tally: &mut Tally) {
             ok,
             format_args!("thread {tid:?} did not run within 2s (saw {saw:#x})"),
         );
+    }
+}
+
+/// **Wait up to `seconds` for `done`, yielding between looks**, bounded by the counter as every wait
+/// here is, so a stopped counter ends the wait rather than making the deadline unreachable. `true`
+/// once `done` held.
+fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
+    let mut counter = Counter::stalled_after(STALLED_YIELDS);
+    let deadline = counter.last + seconds * timer::frequency();
+    loop {
+        if done() {
+            return true;
+        }
+        match counter.read() {
+            Some(now) if now < deadline => sched::yield_now(),
+            _ => return done(),
+        }
+    }
+}
+
+/// **Threads that never yield are taken off the CPU anyway, and none of them starves.**
+///
+/// The property that separates a kernel from a runtime (DECISIONS §5 (preemptive threads with real stacks)): a thread whose whole body is
+/// a loop, with no yield, no syscall and not even a function call, owns its core under any
+/// cooperative scheduler. These run inside the kernel and are still preempted, which is the stronger
+/// form of the claim; `system_tests`' `a_user_program_that_never_yields_is_preempted_anyway` makes
+/// it for a program at user level.
+///
+/// **One more spinner than there are cores online**, so at least one core runs two of them and the
+/// timer has to take the CPU from one to give it to the other. Two spinners on a four-core machine
+/// can each own a core and never be preempted, which proves nothing; that was the shape of the
+/// aarch64 and riscv64 tours this check replaces. Every spinner has to advance, and the global
+/// preemption count has to move.
+fn preemption(tally: &mut Tally) {
+    use core::sync::atomic::AtomicBool;
+
+    const MAX: usize = crate::cpu::MAX_CPUS + 1;
+    static PROGRESS: [AtomicU64; MAX] = [const { AtomicU64::new(0) }; MAX];
+    static STOP: AtomicBool = AtomicBool::new(false);
+
+    let spinners = (crate::smp::online_count() + 1).min(MAX);
+    STOP.store(false, Ordering::SeqCst);
+    let mut tids = [None; MAX];
+    for (i, slot) in tids.iter_mut().enumerate().take(spinners) {
+        PROGRESS[i].store(0, Ordering::Relaxed);
+        *slot = sched::spawn(move || {
+            while !STOP.load(Ordering::Relaxed) {
+                PROGRESS[i].fetch_add(1, Ordering::Relaxed);
+            }
+        });
+    }
+    if tids[..spinners].iter().any(Option::is_none) {
+        STOP.store(true, Ordering::SeqCst);
+        tally.record(
+            "preemption",
+            false,
+            format_args!("the kernel could not spawn {spinners} threads"),
+        );
+        return;
+    }
+
+    let p0 = sched::preemptions();
+    // A fifth of a second spent yielding, so the spinners share this core as well.
+    let start = timer::now();
+    wait_until(1, || {
+        timer::now().wrapping_sub(start) >= timer::frequency() / 5
+    });
+    STOP.store(true, Ordering::SeqCst);
+    let preempted = sched::preemptions() - p0;
+    let starved = PROGRESS[..spinners]
+        .iter()
+        .filter(|p| p.load(Ordering::Relaxed) == 0)
+        .count();
+    let gone = wait_until(2, || {
+        tids[..spinners]
+            .iter()
+            .flatten()
+            .all(|&t| !sched::is_thread_present(t))
+    });
+
+    let ok = starved == 0 && preempted > 0 && gone;
+    tally.record(
+        "preemption",
+        ok,
+        format_args!(
+            "{spinners} never-yield threads on {} core(s): {} starved, {preempted} preemptions{}",
+            crate::smp::online_count(),
+            starved,
+            if gone { "" } else { ", and they did not stop" },
+        ),
+    );
+}
+
+/// **A program runs at user level, reaches for a kernel address, and is killed; the kernel is
+/// not.**
+///
+/// The privilege boundary, both halves. `outlaw` is handed the address of the kernel's own fault
+/// counter, which is certainly mapped and certainly not the program's, so the fault it takes is a
+/// permission fault on a page that exists rather than a translation fault on one that does not. The
+/// program has to run at user level to take it, and the counter it reached for is the one that
+/// records it. The kernel then executes the next line, which is the other half.
+///
+/// Needs the archive, which every boot that can hand over has. A boot without one fails this check
+/// by name rather than passing it: no user program ran.
+fn userspace(tally: &mut Tally) {
+    use crate::arch::exceptions::{USER_FAULTS, last_user_fault};
+    use crate::user;
+
+    let Some(image) = user::program("outlaw") else {
+        tally.record(
+            "userspace",
+            false,
+            format_args!("the archive has no outlaw program, so no user program could run"),
+        );
+        return;
+    };
+    let kernel_addr = &raw const USER_FAULTS as u64;
+    let before = USER_FAULTS.load(Ordering::Acquire);
+    let tid = sched::spawn(move || {
+        user::run(
+            image,
+            user::Spawn {
+                arg0: user::OUTLAW_READ_KERNEL,
+                arg1: kernel_addr,
+                arg2: 0,
+                grants: &[],
+                maps: &[],
+            },
+        )
+    });
+    let faulted = tid.is_some() && wait_until(2, || USER_FAULTS.load(Ordering::Acquire) > before);
+    let at = last_user_fault().map(|(_, addr)| addr);
+
+    let ok = faulted && at == Some(kernel_addr);
+    tally.record(
+        "userspace",
+        ok,
+        format_args!(
+            "a program at user level read {kernel_addr:#x}: {}",
+            match (tid.is_some(), faulted) {
+                (false, _) => "it could not be spawned",
+                (true, false) => "it was not stopped within 2s",
+                (true, true) if ok => "killed, and the kernel survived",
+                (true, true) => "a fault was recorded at another address",
+            }
+        ),
+    );
+}
+
+/// **A process spends a budget it was handed, and the kernel allocates nothing for it.**
+///
+/// Milestone 11 (untyped memory)'s claim, and the reason a process cannot exhaust the kernel: every page it maps
+/// comes out of the untyped region it holds, so the kernel's own used-frame count stands still
+/// while the process maps until the region is spent. `memory_region_depleter` reports once it is
+/// loaded (its ELF and stack are the kernel's, as any process's are) and again with how many pages
+/// it mapped; the count is read at both reports.
+///
+/// The process spins after its second report so the count it reports against holds still, so this
+/// ends it. The reports are received on a helper thread, because a receive has no deadline and
+/// this check's waits must all have one; a process that never reports leaves that helper parked,
+/// which is the failure path's whole cost.
+fn budget(tally: &mut Tally) {
+    use crate::user;
+
+    const PAGES: u64 = 24;
+    static READY_USED: AtomicU64 = AtomicU64::new(u64::MAX);
+    static DONE_USED: AtomicU64 = AtomicU64::new(u64::MAX);
+    static MAPPED: AtomicU64 = AtomicU64::new(u64::MAX);
+
+    let Some(image) = user::program("memory_region_depleter") else {
+        tally.record(
+            "budget",
+            false,
+            format_args!("the archive has no memory_region_depleter program"),
+        );
+        return;
+    };
+    let Some((region, report, demo)) = user::memory_region_service::start(image, PAGES) else {
+        tally.record(
+            "budget",
+            false,
+            format_args!("no {PAGES}-page untyped region could be carved"),
+        );
+        return;
+    };
+    for s in [&READY_USED, &DONE_USED, &MAPPED] {
+        s.store(u64::MAX, Ordering::SeqCst);
+    }
+    let used = || memory::stats().map_or(u64::MAX, |s| s.used as u64);
+    sched::spawn(move || {
+        sched::ipc_receive(report);
+        READY_USED.store(used(), Ordering::SeqCst);
+        let mapped = sched::ipc_receive(report)[0];
+        DONE_USED.store(used(), Ordering::SeqCst);
+        MAPPED.store(mapped, Ordering::SeqCst);
+    });
+    let reported = wait_until(2, || MAPPED.load(Ordering::SeqCst) != u64::MAX);
+    let (before, after, mapped) = (
+        READY_USED.load(Ordering::SeqCst),
+        DONE_USED.load(Ordering::SeqCst),
+        MAPPED.load(Ordering::SeqCst),
+    );
+    let ended = sched::kill_thread(demo) && wait_until(2, || !sched::is_thread_present(demo));
+    if ended {
+        crate::memory_region::destroy(region);
+    }
+
+    let ok = reported && mapped > 0 && before == after;
+    if reported {
+        tally.record(
+            "budget",
+            ok,
+            format_args!(
+                "a process mapped {mapped} pages of a {PAGES}-page untyped; kernel frames used {before} -> {after}{}",
+                if ended { "" } else { "; it outlived its kill" },
+            ),
+        );
+    } else {
+        tally.record(
+            "budget",
+            false,
+            format_args!("the process did not report within 2s"),
+        );
+    }
+}
+
+/// **A user-level driver reads a file off a virtio disk, woken by the device's interrupt.**
+///
+/// The kernel enumerates the bus, grants the driver the device's registers, a DMA page and its
+/// interrupt, and receives what the driver read. Every one of those is an authority the driver did
+/// not have until the kernel granted it, and the kernel issues no virtio command and touches no DMA
+/// itself. The driver reads `motd` through a nifefs superblock it parses, and reports its first
+/// eight bytes.
+///
+/// Disk 0, the MMIO one, or the PCIe virtio-blk when there is no MMIO disk. The hand-over's file
+/// service takes disk 1 and the installer and surveyor their own, so this driver collides with
+/// none of them. **Absent on a machine with no virtio disk**, which is every boot `boot-check`
+/// makes and every board.
+fn blockdev(tally: &mut Tally) {
+    use crate::user;
+
+    static WORD: AtomicU64 = AtomicU64::new(0);
+    static DONE: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+
+    let mmio = crate::virtio::find_block_device().is_some();
+    if !mmio && crate::pci::find_block_device().is_none() {
+        tally.absent(
+            "blockdev",
+            format_args!("no virtio block device on this machine, over MMIO or PCIe"),
+        );
+        return;
+    }
+    let transport = if mmio { "virtio-mmio" } else { "virtio-pci" };
+    let Some(image) = user::program("block_driver") else {
+        tally.record(
+            "blockdev",
+            false,
+            format_args!("a {transport} disk, but the archive has no block_driver program"),
+        );
+        return;
+    };
+    let report = if mmio {
+        user::virtio_service::start(image)
+    } else {
+        user::virtio_service::start_pci(image)
+    };
+    let Some(report) = report else {
+        tally.record(
+            "blockdev",
+            false,
+            format_args!("a {transport} disk, but its driver could not be wired"),
+        );
+        return;
+    };
+    DONE.store(false, Ordering::SeqCst);
+    sched::spawn(move || {
+        WORD.store(sched::ipc_receive(report)[0], Ordering::SeqCst);
+        DONE.store(true, Ordering::SeqCst);
+    });
+    let reported = wait_until(5, || DONE.load(Ordering::SeqCst));
+    let head = WORD.load(Ordering::SeqCst).to_le_bytes();
+    let ok = reported && &head == b"nife: re";
+    if !reported {
+        tally.record(
+            "blockdev",
+            false,
+            format_args!("a user-level driver on the {transport} disk did not report within 5s"),
+        );
+    } else {
+        tally.record(
+            "blockdev",
+            ok,
+            format_args!(
+                "a user-level driver read motd off the {transport} disk through its own nifefs parse: {head:?}"
+            ),
+        );
+    }
+}
+
+/// **A device's interrupt line reaches the CPU through the interrupt controller.**
+///
+/// Different from [`fn@timer`]'s claim, which is about an interrupt the CPU's own timer raises:
+/// this one comes from a device outside the CPU, through the controller's routing. `x86_64` proves
+/// the PIT's line through the IO APIC at bring-up (`arch::irq::init`, the only window where the
+/// scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
+/// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
+/// disk; there the line is proved by the input driver at the hand-over and by [`blockdev`].
+fn deviceirq(tally: &mut Tally) {
+    match arch::irq::device_line_interrupts() {
+        Some(n) => tally.record(
+            "deviceirq",
+            n > 0,
+            format_args!("{n} interrupts from a device line in ~0.2s at bring-up"),
+        ),
+        None if cfg!(target_arch = "x86_64") => tally.absent(
+            "deviceirq",
+            format_args!("the MADT named no IO APIC, so no device line was routed"),
+        ),
+        None => tally.absent(
+            "deviceirq",
+            format_args!(
+                "no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists"
+            ),
+        ),
+    }
+}
+
+/// **The JH7110's clock controller ungates its TRNG, and the TRNG serves a client, timed.**
+///
+/// Two checks from one wiring, because one bring-up produces both answers. `clock` is the
+/// clock-and-reset controller's own before-and-after (milestone 220 (this kernel drives no clock
+/// or reset controller, and the first real device will need one)): the TRNG's clocks running and its reset released. `trng` is the TRNG, through its
+/// confined user-level driver, drawing two device generations that differ, with the bring-up and
+/// the draw timed, which is fatal risk 6's "at real speed" (milestone 306 (time the hw entropy
+/// step)). The kernel never reads a `RAND` register.
+///
+/// **Absent on every machine but a JH7110**, and radon's board profile in `board_console` names both
+/// as checks that may not be absent there.
+fn jh7110(tally: &mut Tally) {
+    #[cfg(target_arch = "riscv64")]
+    jh7110_on_riscv64(tally);
+    #[cfg(not(target_arch = "riscv64"))]
+    for name in ["clock", "trng"] {
+        tally.absent(name, format_args!("no JH7110 on this architecture"));
+    }
+}
+
+#[cfg(target_arch = "riscv64")]
+fn jh7110_on_riscv64(tally: &mut Tally) {
+    use crate::user;
+
+    let Some(device) = user::entropy_service::jh7110_trng_device() else {
+        let why = "this machine's tree names no JH7110 TRNG (neither starfive,jh7110-trng nor the vendor U-Boot's starfive,trng)";
+        tally.absent("clock", format_args!("{why}, so no clock was ungated"));
+        tally.absent("trng", format_args!("{why}"));
+        return;
+    };
+    let Some(image) = user::program("jh7110_entropy") else {
+        for name in ["clock", "trng"] {
+            tally.record(
+                name,
+                false,
+                format_args!(
+                    "JH7110 TRNG at {:#x}, but the archive has no jh7110_entropy program",
+                    device.reg_base
+                ),
+            );
+        }
+        return;
+    };
+    let wire_start = arch::timer::now();
+    let Some(w) = user::entropy_service::ensure(image, user::entropy_service::Bus::Jh7110) else {
+        for name in ["clock", "trng"] {
+            tally.record(
+                name,
+                false,
+                format_args!(
+                    "JH7110 TRNG at {:#x}, but its service would not wire",
+                    device.reg_base
+                ),
+            );
+        }
+        return;
+    };
+    let wire_ticks = arch::timer::now().wrapping_sub(wire_start);
+    jh7110_clock(tally, w.clock);
+    let draw = draw_twice(w, 5);
+    let ok = draw.as_ref().is_some_and(Draw::is_good);
+    match draw {
+        None => tally.record(
+            "trng",
+            false,
+            format_args!("JH7110 TRNG at {:#x}: its driver did not answer within 5s", device.reg_base),
+        ),
+        Some(d) => tally.record(
+            "trng",
+            ok,
+            format_args!(
+                "JH7110 TRNG at {:#x} (tree says {}): report {:#x}, STAT {:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {} bytes in {} us ({} bytes/s)",
+                device.reg_base,
+                if device.status_okay { "okay" } else { "disabled" },
+                d.report[0],
+                (d.report[1] >> 32) as u32,
+                mode_note((d.report[1] >> 32) as u32),
+                d.na,
+                d.nb,
+                d.head[0],
+                d.head[1],
+                d.head[2],
+                d.head[3],
+                d.differ,
+                micros(wire_ticks + d.ready_ticks),
+                d.na + d.nb,
+                micros(d.draw_ticks),
+                bytes_per_second((d.na + d.nb) as u64, d.draw_ticks),
+            ),
+        ),
+    }
+}
+
+/// The clock-and-reset controller's before-and-after, as the `clock` check.
+#[cfg(target_arch = "riscv64")]
+fn jh7110_clock(tally: &mut Tally, clock: Option<jh7110_clock_and_reset::Report>) {
+    let Some(report) = clock else {
+        tally.record(
+            "clock",
+            false,
+            format_args!(
+                "this tree names a TRNG but no clock-and-reset window was mapped, so nothing was ungated"
+            ),
+        );
+        return;
+    };
+    let found = crate::user::entropy_service::jh7110_crg_window();
+    let ok = report.has_clocks_running() && report.released;
+    tally.record(
+        "clock",
+        ok,
+        format_args!(
+            "JH7110 STG CRG at {:#x} ({}): clocks {:#010x},{:#010x} -> {:#010x},{:#010x}, reset {} after {} polls{}",
+            found.map_or(0, |f| f.base),
+            if found.is_some_and(|f| f.from_tree) { "from the tree" } else { "the published constant" },
+            report.clock_before[0],
+            report.clock_before[1],
+            report.clock_after[0],
+            report.clock_after[1],
+            if report.released { "released" } else { "STILL HELD" },
+            report.polls,
+            if report.was_already_up() { "; the firmware had already done all of it" } else { "" },
+        ),
+    );
+}
+
+/// What [`draw_twice`] measured: the service's readiness report (zeros when this caller did not
+/// wire it), the two draws' byte counts and whether they differ, the first draw's head, and the
+/// readiness and draw times in counter ticks.
+struct Draw {
+    report: [u64; 5],
+    na: usize,
+    nb: usize,
+    zeros: bool,
+    differ: bool,
+    head: [u8; 4],
+    /// The two timings, which only the JH7110's `trng` check prints.
+    #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
+    ready_ticks: u64,
+    #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
+    draw_ticks: u64,
+}
+
+impl Draw {
+    /// Ready, two full 32-byte draws, not all zeros, and different from each other: one draw proves
+    /// only that something was returned, and a stuck register file, a driver serving its buffer
+    /// twice and a device that never started all present as a repeat. A report of zeros means a
+    /// second caller, whom the service already reported to, and that is not a failure.
+    fn is_good(&self) -> bool {
+        (self.report[0] == entropy_contract::READY || self.report[0] == 0)
+            && self.na == 32
+            && self.nb == 32
+            && !self.zeros
+            && self.differ
+    }
+}
+
+/// **Wait for an entropy service to be ready, then draw two 32-byte buffers from it as a client**,
+/// on a helper thread so the wait keeps a deadline. Each draw is four `entropy_contract` round
+/// trips (`MAX_BYTES` is 8), and the second empties a different device generation than the first.
+/// `None` if the service did not answer within `seconds`.
+fn draw_twice(w: crate::user::entropy_service::Wiring, seconds: u64) -> Option<Draw> {
+    use core::sync::atomic::AtomicBool;
+
+    static REPORT: [AtomicU64; 5] = [const { AtomicU64::new(0) }; 5];
+    static COUNTS: AtomicU64 = AtomicU64::new(0);
+    static HEAD: AtomicU64 = AtomicU64::new(0);
+    static FLAGS: AtomicU64 = AtomicU64::new(0);
+    static TICKS: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
+    static DONE: AtomicBool = AtomicBool::new(false);
+
+    DONE.store(false, Ordering::SeqCst);
+    sched::spawn(move || {
+        let start = arch::timer::now();
+        let report = w.wait_for_ready().unwrap_or([0; 5]);
+        let ready_at = arch::timer::now();
+        let (mut a, mut b) = ([0u8; 32], [0u8; 32]);
+        let (na, nb) = (w.fill(&mut a), w.fill(&mut b));
+        let drawn_at = arch::timer::now();
+        for (slot, word) in REPORT.iter().zip(report) {
+            slot.store(word, Ordering::Relaxed);
+        }
+        COUNTS.store(((na as u64) << 32) | nb as u64, Ordering::Relaxed);
+        HEAD.store(
+            u32::from_le_bytes([a[0], a[1], a[2], a[3]]) as u64,
+            Ordering::Relaxed,
+        );
+        let zeros = a.iter().all(|&x| x == 0);
+        FLAGS.store(
+            u64::from(zeros) | (u64::from(a != b) << 1),
+            Ordering::Relaxed,
+        );
+        TICKS[0].store(ready_at.wrapping_sub(start), Ordering::Relaxed);
+        TICKS[1].store(drawn_at.wrapping_sub(ready_at), Ordering::Relaxed);
+        DONE.store(true, Ordering::SeqCst);
+    })?;
+    if !wait_until(seconds, || DONE.load(Ordering::SeqCst)) {
+        return None;
+    }
+    let counts = COUNTS.load(Ordering::Relaxed);
+    let flags = FLAGS.load(Ordering::Relaxed);
+    Some(Draw {
+        report: core::array::from_fn(|i| REPORT[i].load(Ordering::Relaxed)),
+        na: (counts >> 32) as usize,
+        nb: (counts & 0xffff_ffff) as usize,
+        zeros: flags & 1 != 0,
+        differ: flags & 2 != 0,
+        head: (HEAD.load(Ordering::Relaxed) as u32).to_le_bytes(),
+        ready_ticks: TICKS[0].load(Ordering::Relaxed),
+        draw_ticks: TICKS[1].load(Ordering::Relaxed),
+    })
+}
+
+/// **The machine's entropy source serves a client random bytes.**
+///
+/// The source the hand-over would use: a JH7110 TRNG (already wired by [`jh7110`]), else the CPU's
+/// seed instruction (`RDSEED`, `RNDRRS`), through the same entropy service the hand-over grants the
+/// progenitor, shared through `entropy_service::ensure`. Two 32-byte draws that differ.
+///
+/// **Not virtio-rng**, which the hand-over hands to the progenitor as a raw device so that it
+/// builds its own service; a kernel-built service on the same device would fight it for the queue.
+/// A machine whose only source is virtio-rng reports this check absent and says why, and so does a
+/// machine with no source at all.
+fn entropy(tally: &mut Tally) {
+    use crate::user::{self, entropy_service};
+
+    let jh7110 = entropy_service::jh7110_trng_device().is_some();
+    let (bus, program, source) = if jh7110 {
+        (
+            entropy_service::Bus::Jh7110,
+            "jh7110_entropy",
+            "the JH7110 TRNG",
+        )
+    } else {
+        (
+            entropy_service::Bus::Instruction,
+            "entropy",
+            "the CPU's seed instruction",
+        )
+    };
+    let Some(image) = user::program(program) else {
+        tally.record(
+            "entropy",
+            false,
+            format_args!("the archive has no {program} program to serve {source}"),
+        );
+        return;
+    };
+    let Some(w) = entropy_service::ensure(image, bus) else {
+        if jh7110 {
+            tally.record(
+                "entropy",
+                false,
+                format_args!("{source} is named by the tree, but its service would not wire"),
+            );
+        } else if crate::virtio::find_entropy_device().is_some() {
+            tally.absent(
+                "entropy",
+                format_args!(
+                    "no seed instruction or TRNG; this machine's virtio-rng is the progenitor's to drive after the hand-over"
+                ),
+            );
+        } else {
+            tally.absent(
+                "entropy",
+                format_args!(
+                    "no seed instruction, no JH7110 TRNG and no virtio-rng on this machine"
+                ),
+            );
+        }
+        return;
+    };
+    match draw_twice(w, 5) {
+        None => tally.record(
+            "entropy",
+            false,
+            format_args!("{source}'s service did not answer within 5s"),
+        ),
+        Some(d) => tally.record(
+            "entropy",
+            d.is_good(),
+            format_args!(
+                "{source} served {}+{} bytes to a client, first {:02x}{:02x}{:02x}{:02x}.., the two draws differ: {}",
+                d.na, d.nb, d.head[0], d.head[1], d.head[2], d.head[3], d.differ,
+            ),
+        ),
+    }
+}
+/// **Counter ticks as microseconds** (design/roadmap/0306-time-the-hw-entropy-step.md), for
+/// the `trng` check's timings.
+///
+/// Microseconds rather than milliseconds because the interesting half of the number is an IPC round
+/// trip, and rather than raw ticks because a tick is a different amount of time on every machine
+/// this runs on: QEMU's riscv64 `virt` counts at 10 MHz and the JH7110 at 4 MHz, so a transcript
+/// quoting ticks could not be compared against another board's without the rate beside it. The rate
+/// itself came out of this machine's own device tree (`arch::timer::init_frequency`), which is why
+/// there is no constant here to go stale.
+///
+/// Truncating division, deliberately: this is an instrument, and a figure that rounded up would
+/// report a nonzero duration for work that took no measurable time at all.
+///
+/// Provisional name (an architect's call): `micros`, with `micros_between` and `bytes_per_second`
+/// beside it.
+#[cfg(target_arch = "riscv64")]
+#[allow(dead_code)]
+fn micros(ticks: u64) -> u64 {
+    // `frequency()` asserts the rate is nonzero rather than returning a poison value, and it has
+    // been read from the tree since `bring_up_machine`, long before this tour, so there is no
+    // pre-init case to guard here. `saturating_mul` bounds the scaling rather than the duration: a
+    // gap long enough to overflow is one nobody is timing.
+    ticks.saturating_mul(1_000_000) / arch::timer::frequency()
+}
+
+/// The two-timestamp form of [`micros`]. `wrapping_sub` because the `time` CSR is a free-running
+/// 64-bit counter and this is the arithmetic the rest of this file already uses on it (see the
+/// JH7110 entropy step above); at 10 MHz it wraps after about 58,000 years.
+#[cfg(target_arch = "riscv64")]
+#[allow(dead_code)]
+fn micros_between(start: u64, end: u64) -> u64 {
+    micros(end.wrapping_sub(start))
+}
+
+/// **Bytes per second over a measured span**, for the same line.
+///
+/// Computed from ticks rather than from the microsecond figure beside it, so the rate does not
+/// inherit that figure's truncation. Zero for a span too short to measure, which is the honest
+/// answer: a rate derived from a zero-length interval is not a large number, it is no number.
+///
+/// **What it counts, which has to be stated before it is quoted.** Everything between the readiness
+/// report and the last byte landing: the `entropy_contract` round trips (one per
+/// `entropy_contract::MAX_BYTES`, so four per 32-byte draw), the two context switches each one costs,
+/// the driver's own poll loop, and the device. It does **not** count the process spawn or the
+/// bring-up, which are the once-per-boot cost reported separately. It is therefore not comparable
+/// to a Linux `hwrng` throughput figure, which is a read from an already-running kernel driver with
+/// no IPC in it at all; `notes/benchmarks.md`'s rule is to say so where the number is printed.
+#[cfg(target_arch = "riscv64")]
+#[allow(dead_code)]
+fn bytes_per_second(bytes: u64, ticks: u64) -> u64 {
+    if ticks == 0 {
+        return 0;
+    }
+    bytes.saturating_mul(arch::timer::frequency()) / ticks
+}
+
+/// **Say what the TRNG's `STAT` says about its output width** (milestone 159), for the boot tour's
+/// `hw entropy` line.
+///
+/// This is the one bit that decides whether the 32 bytes that line reports are 32 bytes of device
+/// output. In 128-bit mode only `RAND0..RAND3` carry a generation's answer, so a driver that
+/// assembles all eight words is serving 16 real bytes and 16 of whatever the upper registers hold.
+/// The driver writes `MODE.R256` during bring-up precisely because the width a given JH7110 resets
+/// to is a build-time parameter of the silicon; `STAT.R256` is the read-back that says it took, and
+/// nothing has ever read it on hardware.
+///
+/// An all-zero `STAT` is called out separately because it is not a mode report at all: it is the
+/// signature of a register window that answered with nothing, which milestone 220's clock line
+/// above is what explains.
+// riscv64-only because the JH7110 is; `allow(dead_code)` because the boot tour that calls it is
+// itself compiled out of the shell and bench builds, the same way `image_for_virtio` is.
+#[cfg(target_arch = "riscv64")]
+#[allow(dead_code)]
+fn mode_note(stat: u32) -> &'static str {
+    if stat == 0 {
+        "the whole status register read zero, so this says nothing about the mode"
+    } else if stat & jh7110_entropy::STAT_R256 != 0 {
+        "256-bit: all eight RAND words are the answer"
+    } else {
+        "128-BIT: only RAND0..3 are the answer, so 16 of every 32 bytes are not device output"
     }
 }

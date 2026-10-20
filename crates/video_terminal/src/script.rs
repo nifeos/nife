@@ -42,10 +42,13 @@ pub const ROWS: u32 = 24;
 ///   terminal that rounded it to the nearest indexed colour fails too;
 /// - **a `\r\n` pair**, which is what `line_editor::expand_output` puts on the wire for a Unix `\n`, so
 ///   this is the byte stream a real program's output actually becomes;
+/// - **the faces and a styled underline** (milestone 142 increment five): a bold italic word,
+///   drawn in `glyph_atlas::BOLD_OBLIQUE`, and a curly underline in SGR 58's red, so a terminal
+///   that drew the regular face, a straight line, or the line in the text's color fails;
 /// - **descenders and an underscore** (`y`, `_`), which are the glyph rows a font table truncated to
 ///   seven rows would lose.
 pub const GREETING: &[u8] =
-    b"\x1b[38;2;181;137;0mnife\x1b[0m\r\n\x1b[32mglyphs_ok\x1b[0m\r\nby a \x1b[4mvt\x1b[24m\r\n\x1b[7mFOCUS\x1b[0m";
+    b"\x1b[38;2;181;137;0mnife\x1b[0m\r\n\x1b[32mglyphs_ok\x1b[0m\r\nby a \x1b[4mvt\x1b[24m \x1b[1;3mbold italic\x1b[22;23m \x1b[4:3;58;5;1mcurly\x1b[0m\r\n\x1b[7mFOCUS\x1b[0m";
 
 /// **What the user types.** Delivered as `OPERATION_BYTES`, the terminal contract's driver half, which is
 /// the same framing the compositor uses to route a keystroke to the focused client (DECISIONS §33).
@@ -60,7 +63,7 @@ pub const TYPED: &[u8] = b"\r\n> hi";
 /// run, including the ones where the terminal drew the wrong thing. One letter, because a wholly
 /// different screen would be rejected by a much weaker check.
 pub const GREETING_TYPO: &[u8] =
-    b"\x1b[38;2;181;137;0mnife\x1b[0m\r\n\x1b[32mglyphs_0k\x1b[0m\r\nby a \x1b[4mvt\x1b[24m\r\n\x1b[7mFOCUS\x1b[0m";
+    b"\x1b[38;2;181;137;0mnife\x1b[0m\r\n\x1b[32mglyphs_0k\x1b[0m\r\nby a \x1b[4mvt\x1b[24m \x1b[1;3mbold italic\x1b[22;23m \x1b[4:3;58;5;1mcurly\x1b[0m\r\n\x1b[7mFOCUS\x1b[0m";
 
 /// **The banner each terminal in the compositor test prints**, indexed by window.
 ///

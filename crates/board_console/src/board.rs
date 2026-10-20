@@ -209,6 +209,11 @@ pub struct Profile {
     pub refusals: &'static [Refusal],
     /// Text meaning the firmware moved the payload, which is a discriminator and not a rung.
     pub relocation: &'static [&'static str],
+    /// **The self-test checks this board has the device for**, so an `absent` on one of them is a
+    /// failure (calef's ruling of 2026-10-20 (UTC) on #2447). The kernel cannot tell a machine with
+    /// no TRNG from a board whose TRNG went missing; the profile can, because it describes one
+    /// board. Names from `boot_ladder::SELF_TEST_CHECKS`, checked by a test in this module.
+    pub must_not_be_absent: &'static [&'static str],
 }
 
 impl Profile {
@@ -278,6 +283,9 @@ pub(crate) static RADON: Profile = Profile {
         },
     ],
     relocation: &["Moving Image from"],
+    // The JH7110 has a TRNG and the clock controller that gates it, and the TRNG is this board's
+    // entropy source: an absence of any of the three is a board that lost a device.
+    must_not_be_absent: &["entropy", "trng", "clock"],
 };
 
 /// **xenon, whose firmware prologue is empty, and that is a measurement.**
@@ -294,10 +302,25 @@ pub static XENON: Profile = Profile {
     prologue: &[],
     refusals: &[],
     relocation: &[],
+    // RDSEED and an IO APIC with a PIT behind it, on any PC this port runs on.
+    must_not_be_absent: &["entropy", "deviceirq"],
+};
+
+/// **An emulator: no firmware prologue, and no device it must have.** `boot-check`'s and the soak's
+/// QEMU legs, whose machines attach a disk, a virtio-rng or neither depending on the run, so every
+/// device check may be absent there and the board profiles' lists would be wrong for them.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
+pub static EMULATOR: Profile = Profile {
+    name: "qemu",
+    prologue: &[],
+    refusals: &[],
+    relocation: &[],
+    must_not_be_absent: &[],
 };
 
 /// The boards a person may name at `--board`, in the order an error message lists them.
-pub static PROFILES: &[&Profile] = &[&RADON, &XENON];
+pub static PROFILES: &[&Profile] = &[&RADON, &XENON, &EMULATOR];
 
 /// The profile a person means by `name`, or `None`.
 #[must_use]
@@ -307,6 +330,21 @@ pub fn profile(name: &str) -> Option<&'static Profile> {
 
 #[cfg(test)]
 mod tests {
+
+    /// Every check a profile forbids to be absent is one the kernel runs: a misspelled name here
+    /// would forbid nothing, silently.
+    #[test]
+    fn every_forbidden_absence_names_a_real_check() {
+        for profile in PROFILES {
+            for name in profile.must_not_be_absent {
+                assert!(
+                    boot_ladder::SELF_TEST_CHECKS.contains(name),
+                    "{}'s must_not_be_absent names {name}, which boot_ladder does not list",
+                    profile.name
+                );
+            }
+        }
+    }
     use super::*;
 
     /// **A rung built at run time reads back what it was given, and compares by depth alone.** The

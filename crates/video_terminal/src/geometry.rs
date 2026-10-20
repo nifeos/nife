@@ -31,7 +31,7 @@ pub const CELL_H: u32 = glyph_atlas::CELL_H;
 /// 91, xenon's 1920x1080 is 137. The virtio-gpu scanout lays out 80 (`script::COLS`).
 pub const MAX_COLS: usize = 240;
 /// The tallest grid this engine can hold, in cells. See [`MAX_COLS`]. **Not every pair is
-/// reachable**: a grid also fits in [`MAX_CELLS`], so 240 columns get 76 rows and 150 rows need 122
+/// reachable**: a grid also fits in [`MAX_CELLS`], so 240 columns get 40 rows and 150 rows need 64
 /// columns or fewer.
 pub const MAX_ROWS: usize = 150;
 /// Cells in the largest possible **live** grid (the on-screen viewport; see [`SCROLLBACK_ROWS`] for
@@ -40,12 +40,15 @@ pub const MAX_ROWS: usize = 150;
 /// address-space region from its ELF segments, `.bss` included), not from any shared budget.
 ///
 /// **A budget rather than `MAX_COLS * MAX_ROWS`**: the grid is stored at its own width, so any
-/// shape up to this many cells fits. 18,432 is far more than any screen this tree drives needs at
-/// the 14x26 cell (xenon's 137x41 is 5,617). It stays this size because it also sizes the handoff
-/// blob (`handoff::HANDOFF_PAGES`) and `graphical_terminal`'s measured session budget, so a smaller
-/// one is a change to both. The live grid and the scrollback ([`SCROLLBACK_CELLS`]) sum to 44,832
-/// cells.
-pub const MAX_CELLS: usize = 18_432;
+/// shape up to this many cells fits. 9,600 holds every screen this tree drives at the 14x26 cell
+/// (xenon's 137x41 is 5,617) with room.
+///
+/// **Chosen with [`SCROLLBACK_CELLS`] to hold two numbers still.** A [`Cell`] is twenty bytes and a
+/// handoff blob four words a cell, so the 33,600 cells of both budgets make a `Vt`'s cells 672,000
+/// bytes (164 page frames, under the 717,312 of the sixteen-byte cell's larger budgets) and a blob
+/// at most 537,744 bytes: `handoff::HANDOFF_PAGES` stays 132, which the swap reserve calef sized
+/// is built on (`component::SWAP_PAGES`).
+pub const MAX_CELLS: usize = 9_600;
 
 /// **Off-screen history**, in whole rows, kept alongside the live grid (milestone 142 increment 2).
 ///
@@ -53,22 +56,15 @@ pub const MAX_CELLS: usize = 18_432;
 /// reaches no allocator, so the capacity is a constant three parties (the terminal, the kernel test,
 /// the host-side check) already agree on the same way they agree on [`MAX_COLS`]/[`MAX_ROWS`].
 ///
-/// **300, chosen as a working depth rather than derived from anything.** At 132 columns and
-/// sixteen bytes a [`Cell`] the ring was 633,600 bytes of `.bss` and a whole `Vt` 724,416 (362,208
-/// before the truecolour pass widened the cell, 2026-09-26); since 2026-10-04 it is the
-/// [`SCROLLBACK_CELLS`] budget instead, and a `Vt`'s cells are 717,312 bytes. That is
-/// 177 page frames per terminal instance, a small fraction of the free page-frame pool a terminal's
-/// own region draws from (see notes/frames.md's measurement that hundreds of page frames are "under
-/// one percent of the free pool"). The kernel's test image holds eight `Vt` statics as witnesses
-/// (`system_tests/src/user/display_tests.rs` and `compositor_tests.rs`), so the widening cost it about
-/// 2.9 MB of `.bss` against QEMU's 256 MiB. There is no principled reason it could not be larger or smaller; it is a constant a
-/// future lane can change without touching the shape of the ring around it.
+/// **300, chosen as a working depth rather than derived from anything.** The ring's memory is the
+/// [`SCROLLBACK_CELLS`] budget, priced with the live grid's in [`MAX_CELLS`]'s doc. The kernel's
+/// test image holds eight `Vt` statics as witnesses (`system_tests/src/user/display_tests.rs` and
+/// `compositor_tests.rs`), about 5.4 MB of `.bss` against QEMU's 256 MiB.
 ///
 /// **The most rows, not always the rows** (2026-10-04): the ring holds [`SCROLLBACK_CELLS`] cells
-/// at the grid's own width, so it is 300 rows deep up to 88 columns, which covers the virtio
-/// scanout's 80 and OVMF's 91 (290), and shallower past that: 192 at xenon's 137. See
-/// [`Vt::scrollback_depth`].
+/// at the grid's own width, so it is 300 rows deep up to 80 columns, the virtio scanout's, and
+/// shallower past that: 263 at OVMF's 91, 175 at xenon's 137. See [`Vt::scrollback_depth`].
 pub const SCROLLBACK_ROWS: usize = 300;
-/// Cells in the scrollback ring: 200 rows of 132 columns. See
+/// Cells in the scrollback ring: 300 rows of the virtio scanout's 80 columns. See
 /// [`SCROLLBACK_ROWS`] and [`MAX_CELLS`] for why it is a cell budget.
-pub const SCROLLBACK_CELLS: usize = 26_400;
+pub const SCROLLBACK_CELLS: usize = 24_000;

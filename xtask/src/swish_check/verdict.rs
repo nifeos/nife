@@ -38,9 +38,9 @@ pub(super) fn swish_check_omits(arch: &str, line: &str) -> Option<&'static str> 
     None
 }
 
-/// The first thing the hand-over prints (`hand_over` in `kernel/src/boot.rs`), where the `x86_64` leg
+/// The first thing the hand-over prints (`hand_over` in `kernel/src/boot.rs`), where every leg
 /// starts reading for faults; see `after_hand_over` in [`swish_check_leg`]. The same sentence
-/// `uefi_boot` requires.
+/// `uefi_boot` requires. Named for the leg that read it first.
 pub(super) const X86_HAND_OVER_START: &str =
     "nife: handing the system to the userspace progenitor.";
 

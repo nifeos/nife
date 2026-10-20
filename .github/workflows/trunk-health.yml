@@ -51,7 +51,9 @@ concurrency:
 permissions:
   contents: read
   # `actions: read` lets the stopped-watcher check read workflow state with this token, and
-  # `issues: write` is its fallback for opening the issue (milestone 723).
+  # `issues: write` is its fallback for opening the issue (milestone 723). repeat_issue.py also
+  # reads issues with this token, because the App token below holds no issues permission and
+  # GitHub's search returns it no issues.
   actions: read
   issues: write
 

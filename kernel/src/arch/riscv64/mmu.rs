@@ -936,6 +936,7 @@ pub fn permit_kernel_access_to_user_pages(allowed: bool) -> bool {
 /// # Safety
 /// `satp` must name a well-formed Sv39 root that includes the kernel high-half (else the next
 /// instruction fetch faults); the caller owns that invariant, as on aarch64.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are the callers, as on the other two
 pub unsafe fn activate_user(satp: u64) {
     // SAFETY: this function's own `# Safety` contract is exactly the one this call needs; it
     // forwards, it does not weaken.

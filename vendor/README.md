@@ -252,6 +252,9 @@ the shipped image on the record; `script/supply-chain` reads the cargo graph and
   `script/vendor-verify` speaks crates.io tarballs only. The hashes above are what was committed,
   not what upstream published. A font is data, so the worst case is a wrong picture that the
   generator's own gate would still call consistent.
+- **Nothing checks the sha256 table above against the files either.** `script/vendor-verify` reads
+  `vendor/*.pin` only, and the generator reads the fonts by path. A replaced font with regenerated
+  tables passes every gate and leaves this table stale; only review of the diff sees it.
 - **The fonts carry glyphs the atlas never draws** (3,377 in the regular face against the
   table's 96). They are kept whole rather than subset, because a subset is a modified font with its
   own provenance question, and 1.2 MB of input is cheaper than that.

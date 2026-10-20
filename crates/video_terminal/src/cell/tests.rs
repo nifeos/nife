@@ -32,15 +32,15 @@ fn each_flag_reads_back_through_its_own_predicate() {
     assert!(plain.with(BOLD, true).with(BOLD, true).is_bold());
 }
 
-/// Bold brightens the eight normal foregrounds and no other colour. Index 8 is already the
-/// bright half, and adding 8 to it would reach into the colour cube.
+/// **Bold is a face and leaves the color as it was set**, the eight normal colors included: the
+/// terminal draws `glyph_atlas::BOLD` instead of brightening, so a bold `7` is still `7`.
 #[test]
-fn bold_brightens_the_first_eight_colours_and_stops() {
+fn bold_does_not_change_the_colour() {
     let bg = Colour::Indexed(0);
-    let seven = Attr::new(Colour::Indexed(7), bg).with(BOLD, true);
-    assert_eq!(seven.colours().0, Colour::Indexed(15).resolve());
-    let eight = Attr::new(Colour::Indexed(8), bg).with(BOLD, true);
-    assert_eq!(eight.colours().0, Colour::Indexed(8).resolve());
+    for i in [1u8, 7, 8, 196] {
+        let bold = Attr::new(Colour::Indexed(i), bg).with(BOLD, true);
+        assert_eq!(bold.colours().0, Colour::Indexed(i).resolve());
+    }
 }
 
 /// Dim is the midpoint of foreground and background, channel by channel, so two unequal

@@ -37,7 +37,8 @@ slot 27 and sends `WRITE` on the terminal endpoint through it once the line disc
 ## The confinement, in one sentence
 
 The driver holds every register page of its controller except the page its interrupt message is
-programmed through, and its controller can reach nothing but its own DMA region. The first half is
+programmed through, and its controller can reach nothing but its own DMA region. VT-d also maps any
+region the firmware reserved for it (an RMRR). The first half is
 `register_window` (a Kani harness proves no withheld page is ever mapped). The second is the IOMMU.
 The kernel refuses to start the driver at all on a machine whose IOMMU does not confine the
 controller, because a process holding an xHCI register file names every physical address the
@@ -95,5 +96,9 @@ was not counted.
 - No IOMMU, no USB keyboard. radon has none; a machine whose VT-d tables give the controller to
   a unit this kernel did not bring up gets the refusal line. This is the design, and it is a cost.
 - A device refused after boot is refused silently: the report endpoint carries one message.
+- The driver is mapped the USB Legacy Support capability (`USBLEGSUP`, `USBLEGCTLSTS`) whenever it
+  sits on a page nothing else withholds. A compromised driver can then hand the controller back to
+  the firmware's SMI handler. The kernel never needs the driver to touch it. Proposed as
+  `the-xhci-driver-is-not-mapped-the-legacy-support-capability` in `design/roadmap/proposals/`.
 - Never run on silicon. Every number here is QEMU's: timeouts are the specification's limits,
   not measurements, and QEMU cannot model a low-speed device.

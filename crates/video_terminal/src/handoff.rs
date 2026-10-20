@@ -10,10 +10,11 @@
 //! the incumbent left behind.
 //!
 //! The layout is fixed little-endian words, never a memory image of `Vt`, so a build with a
-//! different field order or a different `Cell` padding reads it the same way. A cell is three words:
-//! the character with the rendition flags in its top byte (a `char` needs 21 bits), then the
-//! foreground and the background. A color word's top byte is its kind (`0` indexed, `1` 24-bit) and
-//! the low three bytes its value. Only the cells in use are written: `cols * rows` of the live grid,
+//! different field order or a different `Cell` padding reads it the same way. A cell is four words:
+//! the character (a `char` needs 21 bits) with the rendition flags at bit 21 and the underline
+//! style at bit 28, then the foreground, the background and the underline color. A color word's
+//! top byte is its kind (`0` indexed, `1` 24-bit, `2` none, for an underline that follows the
+//! foreground) and the low three bytes its value. Only the cells in use are written: `cols * rows` of the live grid,
 //! then the scrollback's rows oldest first, so a blob is as long as the screen has history.
 //!
 //! # BUGS
@@ -42,15 +43,24 @@ pub const MAGIC: u32 = 0x4d52_5456;
 /// without a fixture.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
-pub const LAYOUT: u32 = 1;
+pub const LAYOUT: u32 = 2;
 
 /// Words before the first cell: magic, layout, the twelve fields of the cursor and the
-/// scrollback ring, the rendition's three, and the parser's [`MAX_PARAMS`] parameters.
-pub(crate) const HEADER_WORDS: usize = 2 + 12 + 3 + MAX_PARAMS;
-pub(crate) const CELL_WORDS: usize = 3;
+/// scrollback ring, the rendition's five, the parser's sub-parameter mask and its [`MAX_PARAMS`]
+/// parameters.
+pub(crate) const HEADER_WORDS: usize = 2 + 12 + 5 + 1 + MAX_PARAMS;
+pub(crate) const CELL_WORDS: usize = 4;
+/// Layout 1's header: the rendition had three words (no underline color or style) and the parser
+/// no sub-parameter mask.
+pub(crate) const HEADER_WORDS_1: usize = 2 + 12 + 3 + MAX_PARAMS;
+/// Layout 1's cell: no underline color word, and underline a flag rather than a style.
+pub(crate) const CELL_WORDS_1: usize = 3;
+/// Layout 1's underline flag, which a layout-1 reader turns into a single underline.
+pub(crate) const LAYOUT1_UNDERLINE: u32 = 1 << 2;
 
-/// **The longest blob a `Vt` writes**: a full live grid and a full scrollback ring. 538,116 bytes,
-/// so [`HANDOFF_PAGES`] is 132.
+/// **The longest blob a `Vt` writes**: a full live grid and a full scrollback ring. 537,744 bytes,
+/// so [`HANDOFF_PAGES`] is 132, the figure `component::SWAP_PAGES` and the swap reserve calef
+/// sized are built on; [`MAX_CELLS`] and [`SCROLLBACK_CELLS`] are chosen to keep it there.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 pub const HANDOFF_BYTES: usize = 4 * (HEADER_WORDS + CELL_WORDS * (MAX_CELLS + SCROLLBACK_CELLS));
@@ -80,7 +90,11 @@ pub(crate) const FLAG_WRAP_PENDING: u32 = 1 << 0;
 pub(crate) const FLAG_CURSOR_VISIBLE: u32 = 1 << 1;
 pub(crate) const FLAG_IGNORE: u32 = 1 << 2;
 /// Every rendition flag `Attr` defines; a cell carrying another bit was not written by a `Vt`.
-pub(crate) const KNOWN_ATTR_FLAGS: u32 = 0x3f;
+pub(crate) const KNOWN_ATTR_FLAGS: u32 = 0x7b;
+/// Layout 1's flags, its underline bit among them.
+pub(crate) const KNOWN_ATTR_FLAGS_1: u32 = 0x3f;
+/// The most underline styles `Attr` defines: `0` none through `5` dashed.
+pub(crate) const MAX_UNDERLINE_STYLE: u32 = 5;
 
 pub(crate) const fn color_word(c: Colour) -> u32 {
     match c {
@@ -97,26 +111,70 @@ pub(crate) const fn word_color(w: u32) -> Option<Colour> {
     }
 }
 
+/// An underline color's word: [`color_word`]'s, or kind `2` for none.
+pub(crate) const fn underline_word(c: Option<Colour>) -> u32 {
+    match c {
+        Some(c) => color_word(c),
+        None => 2 << 24,
+    }
+}
+
+/// [`underline_word`] read back: `Some(None)` for kind `2`, `None` for a word no build writes.
+pub(crate) const fn word_underline(w: u32) -> Option<Option<Colour>> {
+    if w == 2 << 24 {
+        return Some(None);
+    }
+    match word_color(w) {
+        Some(c) => Some(Some(c)),
+        None => None,
+    }
+}
+
+/// The rendition from its words, checked: `None` for a flag or a style no `Attr` has.
+pub(crate) fn words_attr(fg: u32, bg: u32, flags: u32, ul: u32, style: u32) -> Option<Attr> {
+    if flags & !KNOWN_ATTR_FLAGS != 0 || style > MAX_UNDERLINE_STYLE {
+        return None;
+    }
+    Some(Attr {
+        fg: word_color(fg)?,
+        bg: word_color(bg)?,
+        ul: word_underline(ul)?,
+        flags: flags as u8,
+        underline: style as u8,
+    })
+}
+
+/// Layout 1's rendition, in this build's terms: its underline flag becomes a single underline,
+/// and it had no underline color.
+pub(crate) fn words_attr_1(fg: u32, bg: u32, flags: u32) -> Option<Attr> {
+    if flags & !KNOWN_ATTR_FLAGS_1 != 0 {
+        return None;
+    }
+    let style = if flags & LAYOUT1_UNDERLINE != 0 { 1 } else { 0 };
+    words_attr(fg, bg, flags & !LAYOUT1_UNDERLINE, 2 << 24, style)
+}
+
 pub(crate) fn cell_words(c: Cell) -> [u32; CELL_WORDS] {
     [
-        c.ch as u32 | (c.attr.flags as u32) << 24,
+        c.ch as u32 | (c.attr.flags as u32) << 21 | (c.attr.underline as u32) << 28,
         color_word(c.attr.fg),
         color_word(c.attr.bg),
+        underline_word(c.attr.ul),
     ]
 }
 
 pub(crate) fn words_cell(w: [u32; CELL_WORDS]) -> Option<Cell> {
-    let flags = w[0] >> 24;
-    if flags & !KNOWN_ATTR_FLAGS != 0 {
-        return None;
-    }
+    Some(Cell {
+        ch: char::from_u32(w[0] & 0x1f_ffff)?,
+        attr: words_attr(w[1], w[2], w[0] >> 21 & 0x7f, w[3], w[0] >> 28)?,
+    })
+}
+
+/// A layout-1 cell: the flags in the top byte, and three words.
+pub(crate) fn words_cell_1(w: [u32; CELL_WORDS_1]) -> Option<Cell> {
     Some(Cell {
         ch: char::from_u32(w[0] & 0x00ff_ffff)?,
-        attr: Attr {
-            fg: word_color(w[1])?,
-            bg: word_color(w[2])?,
-            flags: flags as u8,
-        },
+        attr: words_attr_1(w[1], w[2], w[0] >> 24)?,
     })
 }
 
@@ -132,6 +190,6 @@ pub(crate) fn put_word(out: &mut [u8], i: usize, w: u32) {
 #[cfg(test)]
 mod tests;
 
-// Written out for `component`'s reason: 33 header words and three a cell over 44,832 cells.
-const _: () = assert!(HANDOFF_BYTES == 538_116);
+// Written out for `component`'s reason: 36 header words and four a cell over 33,600 cells.
+const _: () = assert!(HANDOFF_BYTES == 537_744);
 const _: () = assert!(HANDOFF_PAGES == 132);

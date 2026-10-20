@@ -28,11 +28,10 @@ Everything above the surface is text; everything below it is rung one's contract
 ## The terminal's font: DejaVu Sans Mono, rasterised at build time
 
 `crates/glyph_atlas` is DejaVu Sans Mono (§104 (the rich-text font is DejaVu Sans Mono, and the
-palette is Solarized)) at a 14x26 cell, one byte of coverage a pixel. Its four faces are what §166
+palette is Solarized)) at a 14x26 cell. Its four faces are what §166
 (the rasteriser dependency, and whether the glyph atlas ships one face or four) ruled. `tools/glyph_atlas_generator`
-rasterises it on the host, and its test fails unless the checked-in tables are exactly what it makes
-from `vendor/dejavu`. A glyph is a lookup and a blend, so the three witnesses below need no font
-engine. The [determinism appendix](../design/roadmap/0142-a-text-display-worth-living-in/determinism.md)
+rasterises it on the host; its test fails unless the checked-in tables are exactly what it makes
+from `vendor/dejavu`. A glyph is a lookup and a blend; no witness below needs a font engine. The [determinism appendix](../design/roadmap/0142-a-text-display-worth-living-in/determinism.md)
 of milestone 142 (a text display good enough that people use it instead of a GUI) says why.
 
 ## The boot console's font: ours, drawn in the Kaypro II's style
@@ -117,9 +116,9 @@ components now fail together or not at all.
 
 On top of that: printable bytes with deferred wrap, `CR`, `LF` with scrolling, `BS`, `TAB`, `BEL`
 (ignored), `CSI A/B/C/D`, `CSI H`/`f`, `CSI J` and `CSI K` in all three modes, `CSI m`, and `ESC c`.
-Anything else is swallowed whole, including italic, blink and the colon forms (`38:2::r:g:b`).
-`CSI m` covers bold, dim, underline, reverse, concealed and crossed-out, and 16, 256 or 24-bit
-color (grown 2026-09-26, which made a cell sixteen bytes).
+Anything else is swallowed whole, blink among it. `CSI m` covers bold and italic (their own
+faces), dim, reverse, concealed, crossed-out, underline in five styles with its own color (`4:3`,
+SGR 58), and 16, 256 or 24-bit color, in the `;` and the `:` spellings. A cell is twenty bytes.
 
 Three decisions inside it worth reading:
 
@@ -127,9 +126,9 @@ Three decisions inside it worth reading:
   the *next* printable does the wrap. Without it, a line that exactly fills the width scrolls the
   screen before anything asked it to, and a `CR` arriving right after the last character finds the
   cursor a row too low. That is the difference between a grid and a terminal.
-- Bold is bright, as every terminal since the DEC VT has done, until the engine draws
-  `glyph_atlas::BOLD`. It is a flag resolved when painting, so it brightens only the eight normal
-  colors.
+- Bold is a face, not a brightness. An eight-pixel cell had to brighten instead, as every
+  terminal since the DEC VT has; at the atlas's 14x26 cell the weight shows, so SGR 1 draws
+  `glyph_atlas::BOLD` and the color stays as it was set.
 - The cursor is part of the picture, drawn by inverting its cell rather than overlaid. That keeps
   the screen a pure function of the state: a test that predicts the screen predicts the cursor too,
   and a cursor left in the wrong place is a failure rather than a cosmetic difference nobody notices.

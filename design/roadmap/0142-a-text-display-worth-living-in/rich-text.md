@@ -47,7 +47,7 @@ with italic as DejaVu's Oblique.
 §166 was then still `PROPOSED` and milestone 141 (a palette worth looking at) was NOT-STARTED, so
 increments three and six stayed blocked; 141 landed 2026-09-29. What needed neither was built.
 
-Increment five is PARTIAL, everything but the faces:
+That pass built everything in increment five but the faces:
 
 - A rendition is two `video_terminal::Colour`s (an index into xterm's 256-color table, or 24-bit)
   and a byte of flags.
@@ -60,8 +60,17 @@ Increment five is PARTIAL, everything but the faces:
 - The greeting the three-party scanout check grades now carries a 24-bit color and an underline.
   The pixel-exact proof therefore covers both on every ISA that runs the display suite.
 
-Underline styles beyond one line (SGR `4:3` and the rest of the colon forms) and the underline color
-(SGR 58) are not built: the parser swallows `:` whole, recorded in notes/glyphs.md.
+## What finished increment five
+
+- SGR 1 and 3 draw `glyph_atlas::BOLD`, `OBLIQUE` and `BOLD_OBLIQUE`, and bold no longer
+  brightens: the color is drawn as set.
+- The parser reads `:` as ECMA-48's sub-parameter separator, so `4:0` to `4:5` choose none, single,
+  double, curly, dotted or dashed, `21` is double, and `38:2::r:g:b` and `38:5:n` are the colon
+  spellings of the extended colors. Sub-parameters a parameter does not use are skipped.
+- SGR 58 colors the underline in either spelling and 59 returns it to the foreground.
+- A cell is twenty bytes. `MAX_CELLS` fell to 9,600 and `SCROLLBACK_CELLS` to 24,000 so that a
+  `Vt` is smaller than before and the handoff blob, now four words a cell (layout 2), still fits
+  its 132 pages. A layout-1 blob is still read, its underline flag becoming a single underline.
 
 The navigation cluster is BUILT: home, end, insert, delete, page up and page down, each with
 xterm's shift form, tested against the real line discipline.

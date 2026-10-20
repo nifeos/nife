@@ -517,7 +517,7 @@ fn drive_the_prompt(
         return Driven::Typed;
     }
     failed.extend(boot_claim_failures(x86, &|| {
-        after_hand_over(x86, &transcript_now(&console.seen))
+        after_hand_over(&transcript_now(&console.seen))
     }));
     let ready = !x86 || press_enter_after_hand_over(console, stdin, failed);
     // **How long each line took**, typed to prompt-back, so every run reports its own margin
@@ -575,7 +575,7 @@ fn transcript_failures(leg: &Leg, console: &Console, failed: &mut Vec<String>) -
         &console.seen.lock().expect("transcript lock"),
         &console.gauges.lock().expect("gauge lock"),
     );
-    let transcript = after_hand_over(leg.x86, &filtered);
+    let transcript = after_hand_over(&filtered);
     // The transcript is printed on failure, because that is when somebody needs it. This
     // prints it on success too, and it exists because the notes in this tree quote real prompt
     // sessions: `NIFE_SHOW_TRANSCRIPT=1 script/swish-check --arch aarch64` is where the EXAMPLES
@@ -598,10 +598,7 @@ fn transcript_failures(leg: &Leg, console: &Console, failed: &mut Vec<String>) -
     failed.extend(kernel_fault_failure(&transcript));
     failed.extend(resolver_refusal_failure(&transcript));
     let raw_transcript = console.raw.lock().expect("transcript lock").clone();
-    failed.extend(slot_gauge_failure(
-        arch,
-        &after_hand_over(leg.x86, &raw_transcript),
-    ));
+    failed.extend(slot_gauge_failure(arch, &after_hand_over(&raw_transcript)));
     failed.extend(stack_gauge_failures(arch, &console.gauges, &filtered));
     failed.extend(job_pool_failure(&filtered));
     failed.extend(flood_failure(arch, &console.raw));
@@ -923,21 +920,17 @@ impl Console {
     }
 }
 
-/// **What the checks read, which on x86_64 starts at the hand-over.** The x86_64 kernel runs its
-/// tour before handing over (milestone 268), and the tour's userspace demonstration kills two
-/// threads on purpose (`x86_userspace_demo`'s supervised deaths, reported as "died at pc ...,
-/// delivered to its supervisor"). Those are the kernel's fault path working, printed before any
-/// process this gate is about exists, so the fault check and the "was the kernel writing during
-/// the boot" test both start where the progenitor does. The other two legs boot `--features
-/// shell`, which has no tour, so for them this is the whole transcript.
-fn after_hand_over(x86: bool, t: &str) -> String {
-    if x86 {
-        t.find(X86_HAND_OVER_START)
-            .map_or(t, |at| &t[at..])
-            .to_string()
-    } else {
-        t.to_string()
-    }
+/// **What the checks read, which starts at the hand-over.** Every architecture runs its self-test
+/// before handing over, and its `userspace` check kills a program on purpose (`outlaw`, reading a
+/// kernel address); `x86_64`'s tour also kills two hand-built threads under supervision. Those are
+/// the kernel's fault path working, printed before any process this gate is about exists, so the
+/// fault check and the "was the kernel writing during the boot" test both start where the
+/// progenitor does. The cut is the same on all three, at the line `kernel/src/boot.rs`'s
+/// `hand_over` prints.
+fn after_hand_over(t: &str) -> String {
+    t.find(X86_HAND_OVER_START)
+        .map_or(t, |at| &t[at..])
+        .to_string()
 }
 
 /// **The progenitor's claims about its own boot**, each read from `now()`, the transcript after

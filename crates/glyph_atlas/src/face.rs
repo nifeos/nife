@@ -19,17 +19,16 @@ pub struct Face(pub(crate) &'static [u8]);
 ///
 /// Name: provisional.
 pub static REGULAR: Face = Face(include_bytes!("../coverage/regular.coverage"));
-/// The bold face. Drawn nowhere yet: until milestone 142 (a text display good enough that people
-/// use it instead of a GUI) increment 5 lands, bold is bright.
+/// The bold face, for SGR 1.
 ///
 /// Name: provisional.
 pub static BOLD: Face = Face(include_bytes!("../coverage/bold.coverage"));
 /// The italic face, DejaVu's Oblique (§166 (the rasteriser dependency, and whether the glyph
-/// atlas ships one face or four)). Drawn nowhere yet, for [`BOLD`]'s reason.
+/// atlas ships one face or four)), for SGR 3.
 ///
 /// Name: provisional.
 pub static OBLIQUE: Face = Face(include_bytes!("../coverage/oblique.coverage"));
-/// The bold italic face. Drawn nowhere yet, for [`BOLD`]'s reason.
+/// The bold italic face, for SGR 1 and 3 together.
 ///
 /// Name: provisional.
 pub static BOLD_OBLIQUE: Face = Face(include_bytes!("../coverage/bold_oblique.coverage"));

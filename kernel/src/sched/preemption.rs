@@ -113,6 +113,16 @@ pub(crate) fn count_preemption() {
 ///
 /// Portable, and identical on both architectures, which is the other half of why it moved: the four
 /// lines were written twice and had drifted in their comments already.
+///
+/// **`#[inline(never)]`, for [`on_tick`]'s reason.** Every trap dispatcher ends in this call, so an
+/// inlined copy lands in the dispatcher, a symbol `script/fastpath-footprint` counts flat, and
+/// charges every syscall for the `schedule()` call site no syscall fetches (milestone 368 (the
+/// entry set is flat, so an inlining flip can move 12% into it)). Left to LLVM it inlined into
+/// aarch64's `exception_dispatch` once the self-test of milestone 890 (riscv64 and `x86_64` join
+/// the shared boot path) moved the codegen units, measured 2026-10-20 (UTC): 0x98 to 0x11c bytes,
+/// and `syscall_entry` 1696 to 1828, 7.8% over a 5% band. One branch per trap keeps the bytes where
+/// they belong.
+#[inline(never)]
 pub fn preempt_if_needed() {
     if take_need_resched() && is_running() {
         count_preemption();

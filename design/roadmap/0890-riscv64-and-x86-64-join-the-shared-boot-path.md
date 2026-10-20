@@ -150,6 +150,37 @@ exactly that reason (riscv64_boot.rs, before this milestone), and the mask is go
 The order on `x86_64` changes the way riscv64's did: interrupts come on after the scheduler, the IO
 APIC after the fine map, and the PIT's window runs with the scheduler up and the tick not yet armed.
 
+## What was built: the tours are the self-test's checks
+
+calef, 2026-10-20 (UTC), on how a check reports a machine without its device: "Agreed", to a
+third outcome, `absent`. The condition: each `board_console` board profile names the checks that
+may not be absent on that board, and reads such an absence as a failure.
+
+Every claim the three tours made, and where each one is now:
+
+| Claim | Tours that made it | Now |
+|---|---|---|
+| Never-yield threads are preempted | aarch64, riscv64 | `preemption`, all three: one spinner more than cores online, none starved |
+| A user-level program reaching a kernel address is killed; the kernel survives | aarch64 (outlaw), riscv64 (outlaw, address space), `x86_64` (a hand-built child) | `userspace`, all three |
+| A process spends its untyped and the kernel allocates nothing | aarch64 (memory region) | `budget`, all three; the process is killed and its region destroyed |
+| A spawned kernel thread runs | `x86_64` (kernel task) | `scheduler` |
+| A user-level driver reads a file off a virtio disk, woken by its interrupt | aarch64 (MMIO and PCIe); riscv64 (discovery) | `blockdev`, all three; absent without a disk |
+| A device's interrupt line reaches the CPU | `x86_64` (the PIT, in `arch::irq::init`); riscv64 (the UART, given a keystroke) | `deviceirq`; absent on aarch64 and riscv64, where the hand-over's input driver proves the line |
+| The machine's entropy source serves a client | `x86_64` (RDSEED), riscv64 (JH7110 TRNG) | `entropy`, all three; absent with no TRNG or seed instruction |
+| The JH7110's clock controller ungates the TRNG | riscv64 | `clock`; absent off a JH7110 |
+| The JH7110 TRNG's draws, timed | riscv64 | `trng`; absent off a JH7110 |
+| The boot's middle stages finished (`boot_ladder::TOUR`) | riscv64 | `kernel_main`, all three, after the verdict; the checks note stages 3 to 14 and 15 is finished |
+| A faulting ring-3 thread's death reaches its supervisor; two rounds of children leak no frames | `x86_64` | Not a check (BUGS) |
+| A bare riscv64 ELF initrd runs | riscv64 | Gone: every boot carries an archive |
+| Reports: image bounds, initial ramdisk, boot file | aarch64, `x86_64` | The machine description's |
+| An idle console server | aarch64 | Gone with `console_service` |
+
+Absences board profiles forbid: radon `entropy`, `trng` and `clock`; xenon `entropy` and
+`deviceirq`. The emulator profile, which `boot-check` and the soak use, forbids none.
+`SELF_TEST_CHECKS_EARLIER` (provisional) records the five-check list's length, so a captured log
+or an older image still reads green. `milestone_tour.rs`, `riscv64_boot.rs`, `boot_demos.rs` and
+`console_service.rs` are gone; `x86_64_boot.rs` holds `watch_the_progenitor`.
+
 ## The xenon boot that remains
 
 The shared bring-up holds under QEMU on q35 and under OVMF with two cores (`cargo xtask uefi-boot`
@@ -187,7 +218,7 @@ commit reverts alone, independent of the tail.
 
 | criterion | state |
 |---|---|
-| 1 | Not yet. `riscv64_boot.rs` holds its milestone tour and the tour's timing helpers; `x86_64_boot.rs` holds its tour and `watch_the_progenitor`; `milestone_tour.rs` holds aarch64's. calef's 2026-10-19 ruling retires all three tours (below). |
+| 1 | `riscv64_boot.rs` is gone. `x86_64_boot.rs` holds `watch_the_progenitor`, which is not `arch/` code and goes with the follow-on below. |
 | 2 | Done. `kernel_main`'s `cfg(target_arch)` lines are each port's banner and riscv64's console register shape; `hand_over`'s one is `x86_64`'s install offer. |
 | 3 | Under QEMU, both ports: see each pull request's gate table. The boards are the xenon and radon boots above. |
 
@@ -200,18 +231,26 @@ commit reverts alone, independent of the tail.
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
   rather than a function every port implements.
 - `x86_64`'s new order is proven under QEMU and OVMF only, not on xenon (above).
+- `clock`, `trng` and radon's `entropy` are proven absent under QEMU only. The code that runs them
+  on a JH7110 is the riscv64 tour's, moved, and no board has run it as checks.
+- `x86_64`'s supervised death and two-round frame steady state are not checks. No portable spawn
+  takes a supervisor, and one before-and-after over a spawn and its teardown counts whatever else
+  allocated in the window, which is why that demo ran two rounds. `system_tests` proves both.
+- `serial_driver` is shipped in the drivers package and nothing starts it: riscv64's UART-driver
+  step was its only starter. The hand-over's input driver serves riscv64's UART.
+- `blockdev`'s driver is left running on disk 0, as the tour's was.
 
 ## Follow-on
 
 - **Outstanding.** The radon boot below, of the PLIC and tail slices.
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
-- **Outstanding.** The tours become self-test checks, per calef's 2026-10-19 ruling. List every
-  claim each of the three tours makes (`milestone_tour.rs`, `riscv64_boot.rs`, `x86_64_boot.rs`);
-  several are made by more than one, such as preemption, a userspace program and entropy. Make each
-  a check in `self_test::run` that fails loudly on every port where it applies, and say which are
-  port-only and why. Give `board_console` and the hang watcher a new source for the `TOUR` line and
-  boot stage 11, proven by their host tests and a swish-check pass. Then delete the tours,
-  `milestone_tour.rs` and `riscv64_boot.rs`.
+- **Outstanding.** The radon boot also runs `clock`, `trng` and `entropy` as checks for the first
+  time; `board_console` with radon's profile fails the boot if any is absent.
+- **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
+  teardown returning every frame (BUGS):
+  `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
+- **Proposed.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
+  `design/roadmap/proposals/serial-driver-has-no-starter.md`.
 - **Outstanding.** `x86_64`'s boot thread watches the progenitor after the shared hand-over
   (`watch_the_progenitor`), because `script/swish-check`'s `x86_64` leg and the install, rollback
   and confirm boots wait for the watch's report before typing. Retiring it means those wait for the
@@ -223,4 +262,4 @@ Two of the three architectures boot through code that only they run, so a fix to
 lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarch64 takes, one slice
 at a time, until the two per-port boot files hold only what `arch/` cannot. Both ports run the
 shared bring-up and tail under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end; the
-xenon and radon boots and the tours' move into the self-test remain.
+xenon and radon boots remain, and the per-port tours are the self-test's checks on all three.

@@ -16,7 +16,8 @@
 //! never touch.
 
 /// `READ_REGISTER` at `off` on the `Virtio` capability in `virtio_slot`. Reads are DMA-safe, so any
-/// register. Returns the register value, or a negative `abi::Error`.
+/// aligned register in the device's own slot. Returns the register value, or a negative
+/// `abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`write_register`], [`setup_queue`] and [`notify`]. His words: "Yes". Refused
@@ -24,7 +25,7 @@
 /// abbreviation).
 pub fn read_register(virtio_slot: u64, off: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability before it reads the
-    // register; every register is DMA-safe to read.
+    // register and refuses an offset outside the device's slot.
     unsafe { super::invoke(virtio_slot, abi::virtio::READ_REGISTER, off, 0, 0) }
 }
 

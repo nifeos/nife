@@ -55,40 +55,54 @@ impl Colour {
     }
 }
 
-/// **How a cell is painted**: two colours, and the renditions that change how they are used.
+/// **How a cell is painted**: its colors, its face, and the lines drawn through and under it.
 ///
-/// Nine bytes (two [`Colour`]s and a byte of flags), where it was one byte of palette indices
-/// before milestone 142's 2026-09-26 pass: truecolour does not fit in less, and a [`Cell`] is
-/// sixteen bytes either way once a `char` is beside it. The cost is measured where it lands, in
-/// [`SCROLLBACK_ROWS`]'s doc.
+/// Fourteen bytes: three [`Colour`]s (the underline's is optional and follows the foreground when
+/// absent), a byte of flags and a byte of underline style. A [`Cell`] is twenty bytes with a
+/// `char` beside it; the cost is priced where it lands, in [`MAX_CELLS`]'s doc.
 ///
-/// **Bold is bright, and that is a decision rather than a shortcut.** A bold weight needs a second
-/// font, and in a five-column cell a bold face is a smudge; every terminal from the DEC VT onward
-/// has answered SGR 1 by brightening instead, which is why the palette has eight bright entries.
-/// Bold is now a **flag** rather than a rewrite of the foreground index, so it is resolved at paint
-/// time: it brightens the eight normal colours and nothing else (a 256-colour or 24-bit foreground
-/// is drawn as asked, which is xterm's rule), and SGR 22 restores exactly the colour that was set,
-/// including an explicitly bright one. Keeping the flag is also what lets the atlas (increment 3)
-/// draw a real bold face later without the parser changing. Recorded in notes/glyphs.md.
+/// **Bold is a face, not a brightness.** SGR 1 draws `glyph_atlas::BOLD` and leaves the color as
+/// it was set, and SGR 3 draws `glyph_atlas::OBLIQUE`; both together draw `BOLD_OBLIQUE`. A
+/// terminal with an eight-pixel cell had to brighten instead, because a bold bitmap at that size is
+/// a smudge; at the atlas's 14x26 cell the weight shows, so the color no longer has to carry it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Attr {
     pub(super) fg: Colour,
     pub(super) bg: Colour,
+    /// SGR 58's color, or `None` for SGR 59's default: the foreground the cell paints with.
+    pub(super) ul: Option<Colour>,
     pub(super) flags: u8,
+    /// One of the `UNDERLINE_*` styles, `UNDERLINE_NONE` when not underlined.
+    pub(super) underline: u8,
 }
 
 /// SGR 1.
 pub(super) const BOLD: u8 = 1 << 0;
 /// SGR 2, faint.
 pub(super) const DIM: u8 = 1 << 1;
-/// SGR 4 (and 21, drawn the same: one underline row is all an eight-row cell has room for).
-pub(super) const UNDERLINE: u8 = 1 << 2;
+// Bit 2 was SGR 4 in handoff layout 1, before underline had styles; a layout-1 reader turns it
+// into `UNDERLINE_SINGLE` (`crate::handoff::LAYOUT1_UNDERLINE`), so it stays unused here.
 /// SGR 7.
 pub(super) const REVERSE: u8 = 1 << 3;
 /// SGR 8, concealed.
 pub(super) const INVISIBLE: u8 = 1 << 4;
 /// SGR 9, crossed out.
 pub(super) const STRIKETHROUGH: u8 = 1 << 5;
+/// SGR 3, drawn in the oblique face.
+pub(super) const ITALIC: u8 = 1 << 6;
+
+/// No underline: SGR 24, or `4:0`.
+pub(super) const UNDERLINE_NONE: u8 = 0;
+/// SGR 4, or `4:1`.
+pub(super) const UNDERLINE_SINGLE: u8 = 1;
+/// SGR 21, or `4:2`.
+pub(super) const UNDERLINE_DOUBLE: u8 = 2;
+/// `4:3`, the curly underline spell checkers use.
+pub(super) const UNDERLINE_CURLY: u8 = 3;
+/// `4:4`.
+pub(super) const UNDERLINE_DOTTED: u8 = 4;
+/// `4:5`.
+pub(super) const UNDERLINE_DASHED: u8 = 5;
 
 /// The glyph row an underline is drawn on: the font's own, one row under the baseline, so an
 /// underline runs under the letters rather than through them and joins across cells.
@@ -103,7 +117,21 @@ impl Attr {
 
     /// A plain rendition: these two colours, and no flag set.
     pub const fn new(fg: Colour, bg: Colour) -> Attr {
-        Attr { fg, bg, flags: 0 }
+        Attr {
+            fg,
+            bg,
+            ul: None,
+            flags: 0,
+            underline: UNDERLINE_NONE,
+        }
+    }
+
+    /// The same rendition underlined in `style`, one of the `UNDERLINE_*` styles.
+    pub(super) const fn with_underline(self, style: u8) -> Attr {
+        Attr {
+            underline: style,
+            ..self
+        }
     }
 
     /// The same rendition with `flag` turned on or off.
@@ -153,9 +181,26 @@ impl Attr {
         self.has(DIM)
     }
 
-    /// Whether SGR 4 is in force. Name: provisional (milestone 142's lane, 2026-09-26).
-    pub(crate) const fn is_underlined(self) -> bool {
-        self.has(UNDERLINE)
+    /// Whether SGR 3 is in force.
+    ///
+    /// Name: provisional.
+    pub const fn is_italic(self) -> bool {
+        self.has(ITALIC)
+    }
+
+    /// The underline style in force, one of the `UNDERLINE_*` values.
+    pub(crate) const fn underline(self) -> u8 {
+        self.underline
+    }
+
+    /// **The color an underline paints with**: SGR 58's, or the cell's own foreground (`fg`, as
+    /// [`colours`](Self::colours) resolved it) when none was set. A concealed cell hides its
+    /// underline with its text.
+    pub(crate) const fn underline_color(self, fg: u32) -> u32 {
+        match self.ul {
+            Some(c) if !self.has(INVISIBLE) => c.resolve(),
+            _ => fg,
+        }
     }
 
     /// Whether SGR 8 is in force. Name: provisional (milestone 142's lane, 2026-09-26).
@@ -172,7 +217,7 @@ impl Attr {
     /// `0x00RRGGBB` words. One place, so the cursor and the SGR path cannot disagree about what any
     /// flag means. In order:
     ///
-    /// 1. **Bold** brightens a foreground among the eight normal colours (see [`Attr`]).
+    /// 1. **Bold** changes nothing here: it is a face (see [`Attr`]).
     /// 2. **Dim** moves the foreground halfway to the background, channel by channel, in sRGB. The
     ///    midpoint is xterm's choice of amount. sRGB rather than linear light on purpose: dim asks
     ///    for half the *apparent* brightness, and the linear-light midpoint of white and black is
@@ -183,11 +228,7 @@ impl Attr {
     ///    there to copy and not there to see. Last, so the block cursor (which is reverse toggled on
     ///    a cell) still shows on a concealed cell rather than vanishing with its text.
     pub const fn colours(self) -> (u32, u32) {
-        let fg = match self.fg {
-            Colour::Indexed(i) if i < 8 && self.has(BOLD) => Colour::Indexed(i + 8),
-            other => other,
-        };
-        let (mut f, mut b) = (fg.resolve(), self.bg.resolve());
+        let (mut f, mut b) = (self.fg.resolve(), self.bg.resolve());
         if self.has(DIM) {
             f = midpoint(f, b);
         }
@@ -229,12 +270,11 @@ pub struct Cell {
     pub attr: Attr,
 }
 
-// **Sixteen bytes a cell, as a gate rather than a hope.** A `char` (four) beside an [`Attr`] (nine,
-// alignment one) pads to sixteen; before the truecolour pass it was eight. Every `Vt` holds
-// `MAX_CELLS + SCROLLBACK_CELLS` of these, so this number is what the memory cost in
-// [`SCROLLBACK_ROWS`]'s doc is computed from, and a change that grew the cell again (a wider flag
-// word, a third colour for SGR 58's underline colour) must fail here and be priced there.
-const _: () = assert!(core::mem::size_of::<Cell>() == 16);
+// **Twenty bytes a cell, as a gate rather than a hope.** A `char` (four) beside an [`Attr`]
+// (fourteen, alignment one) pads to twenty. Every `Vt` holds `MAX_CELLS + SCROLLBACK_CELLS` of
+// these, so this number is what the memory cost in [`MAX_CELLS`]'s doc is computed from, and a
+// change that grew the cell again must fail here and be priced there.
+const _: () = assert!(core::mem::size_of::<Cell>() == 20);
 
 impl Cell {
     /// A blank cell in `attr`. Erasing writes **spaces in the current rendition**, not zeroes, which

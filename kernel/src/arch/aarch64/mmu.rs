@@ -708,9 +708,8 @@ pub fn flush_asid(asid: u16) {
 /// The running kernel does not call this: it installs address spaces through the context switch,
 /// which goes via [`switch_user_root`] so it can skip the barriers when the process has not
 /// changed. This is the unconditional install, which is what a test wants when it is asserting
-/// about a *specific* address space rather than about scheduling. RISC-V's twin has a non-test
-/// caller (the boot tour in `main.rs` switches `satp` by hand), and parity keeps the two arch
-/// modules offering the same function.
+/// about a *specific* address space rather than about scheduling. All three architectures offer
+/// it, and on all three the system tests are its callers.
 ///
 /// # Safety
 /// `ttbr` must compose ([`ttbr0_value`]) a live L0 table built by a `Mapper` with `Half::Low`

@@ -738,8 +738,12 @@ pub fn wake_without_delivery(tid: ThreadId) {
 /// step; the number-to-step table lives beside the tour in main.rs.
 pub(super) static BOOT_STAGE: AtomicU32 = AtomicU32::new(0);
 
-/// Record that the boot tour reached `stage`. Monotonic by convention, not enforced.
-#[cfg_attr(any(target_arch = "aarch64", target_arch = "x86_64"), allow(dead_code))] // the riscv tour is the caller today
+/// Record that the boot reached `stage`: 3 to 10 as `self_test::run`'s checks start, 11 once its
+/// verdict and `boot_ladder::TOUR` have printed. Monotonic by convention, not enforced.
+#[cfg_attr(
+    any(test, feature = "system_tests", feature = "bench"),
+    allow(dead_code)
+)] // self_test is the caller
 pub(crate) fn note_boot_stage(stage: u32) {
     BOOT_STAGE.store(stage, Ordering::Relaxed);
 }

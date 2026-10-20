@@ -200,6 +200,7 @@ pub fn get() -> Isa {
 ///
 /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `draw_rdseed` (the mnemonic is a
 /// decoder, not a word).
+#[cfg_attr(not(test), allow(dead_code))] // the record-agrees test below; the entropy service draws in userspace
 pub fn draw_random_seed() -> Option<u64> {
     if !get().has_random_seed_instruction() {
         return None;

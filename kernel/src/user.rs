@@ -74,10 +74,6 @@ mod entry;
 pub use entry::*;
 mod console_device;
 pub use console_device::*;
-#[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
-mod boot_demos;
-#[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
-pub use boot_demos::*;
 mod progenitor_boot;
 pub use progenitor_boot::*;
 mod device_starters;
@@ -121,23 +117,6 @@ pub use address_space_registry::*;
 /// ramdisk is what lets the userspace demo run on a `cargo run` with no `-initrd` at all.
 #[cfg(target_arch = "x86_64")]
 pub mod x86_programs;
-
-/// Bringing the console driver up in userspace, and wiring a client to it.
-///
-/// **This is the milestone-8 payload.** It creates the shared machinery (two endpoints and a
-/// shared page), spawns the console *server* as a user process that owns the UART, and returns
-/// what a client needs to reach it. The server binary and the client binary are the *same ELF*,
-/// told apart by the argument in `x0`.
-// aarch64's milestone tour is the only consumer, so this is dead in exactly the configurations
-// that have no tour: a test build, and the two alternate boot modes. The allow sits on the module
-// because the module is one wiring, not a bag of independent items. aarch64 only: riscv64's and
-// `x86_64`'s tours are their own, and neither UART is a PL011.
-#[cfg(target_arch = "aarch64")]
-#[cfg_attr(
-    any(test, feature = "system_tests", feature = "shell", feature = "bench"),
-    allow(dead_code)
-)]
-pub mod console_service;
 
 /// Bringing the virtio block driver up in userspace.
 ///

@@ -1,6 +1,6 @@
-# toolchain: nightly-2026-10-04
-# date: 2026-10-04
-# why: revocation window (2026-10-04 UTC): SEND_CAP and CAP_INSERT no longer read their source in the syscall layer; sched::ipc_delegate_cap and thread_control_block_delegate_cap read it under the hold that files the copy, so invoke lost the inline read and checks. Only syscall_entry is re-floored (1797 -> 1669); the two IPC shapes keep 5335 and 6650 by hand, because their +0.1%/+1.5% is milestone 761 (capability lookup off the global lock)'s, not this change's, and saving it here would hide it.
+# toolchain: nightly-2026-10-20
+# date: 2026-10-20
+# why: Virtio::READ_REGISTER slot bound (security audit 2026-10-20 UTC): x86_64 only, re-floored because main already measured ipc_call_reply 6970 (+4.8%) at dd50a277b and ccbc96666, the drift of nightly-2026-10-04 -> nightly-2026-10-20 and the milestones since, which no earlier save recorded. This branch adds 16 B, all in sched::switch::finish_switch: LLVM selects a different instruction pair for the same interrupt-flag test and adds one alignment nop. No source on the path changed; every form of the bound tried (inline, a guard on the mmio arm) gives the same 6986. ipc_send_receive 5335 -> 5504 and syscall_entry 1669 -> 1699 are main's on the same two commits.
 # bench/fastpath-x86_64.txt: an upper bound on the IPC fastpath's instruction footprint.
 # Written by script/fastpath-footprint --save. Updating this file is a statement that a
 # footprint change is intended and understood; do it in the commit that causes it.
@@ -10,7 +10,7 @@
 # milestone 188 phase 1 because the system runs the second and this gate measured only the
 # first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because
 # the tree cites it; it is not checked separately. Both shapes and `syscall_entry` are.
-ipc_send_receive 5335
-ipc_call_reply 6650
-ipc_fastpath 6650
-syscall_entry 1669
+ipc_send_receive 5504
+ipc_call_reply 6986
+ipc_fastpath 6986
+syscall_entry 1699

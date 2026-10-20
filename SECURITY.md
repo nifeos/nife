@@ -63,11 +63,14 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   §20 (IOMMU-backed DMA isolation), §23 (multi-queue DMA confinement), §30 (the DMA boundary is
   proved for descriptors); `crates/direct_memory_access_validator`, notes/iommu.md).
 
-  **On the VisionFive 2 there is no IOMMU at all**, so on that board the confinement is the software
-  validator and nothing else. That is a property of the silicon rather than a defect, and it is
-  recorded in notes/dma.md and notes/framebuffer-contract.md, but it makes the validator the single
-  point of failure there rather than the first of two. A validator bypass is the highest-value
-  finding in this file.
+  **On the VisionFive 2 there is no IOMMU at all**, so on that board the confinement for virtio is
+  the software validator and nothing else. That is a property of the silicon rather than a defect,
+  and it is recorded in notes/dma.md and notes/framebuffer-contract.md, but it makes the validator
+  the single point of failure there rather than the first of two. A validator bypass is the
+  highest-value finding in this file. The board's own SD/MMC and Ethernet servers are outside the
+  validator: each holds a register page that names DMA addresses, so each is confined by its own
+  code (notes/designware-mobile-storage.md, notes/designware-ethernet.md), and the booted system
+  starts neither until a bench boot proves it.
 - **IPC.** Anything that lets a message reach an endpoint the sender cannot name, a reply
   capability be used twice or by the wrong thread, or a server be confused about which client it is
   answering (DECISIONS §12 (Call/Reply IPC), §26 (the fault endpoint);
@@ -120,8 +123,9 @@ down, which makes them roadmap items rather than reports.
   kernel or escape confinement, but the progenitor's authority over the processes it builds is by design.
 - **QEMU or HVF escapes.** Report those to QEMU or to Apple. A guest breaking out of the emulator is
   not this kernel's boundary.
-- **Board bring-up that has not happened yet.** The VisionFive 2 boots and runs the tour; it does
-  not yet have a storage or network driver (design/roadmap/0053-board-peripherals.md), the UART
+- **Board bring-up that has not happened yet.** The VisionFive 2 boots and runs the tour; its
+  storage and network drivers exist and the booted system does not start them yet
+  (design/roadmap/0053-board-peripherals.md), the UART
   interrupt number is wrong for that board and known, and the ratified-spec IOMMU has no silicon to
   run on. Missing hardware support is a roadmap item. A *driver that is present and confines
   nothing* is a report, and the distinction is the same one the line above draws.
@@ -162,7 +166,7 @@ took, its findings by disposition, and a link to the report. `script/audits` say
 is due, from the triggers `design/decisions/0074-audit-cadence.md` decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
-**Ten** <!--count:security-audits--> security audits are on the record, and reading them first will
+**Eleven** <!--count:security-audits--> security audits are on the record, and reading them first will
 save you time. Each took a lens the previous one did not, deliberately, because the value of an audit
 is the lens the last one lacked. (Documentation audits are in the same index and are not listed here;
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code

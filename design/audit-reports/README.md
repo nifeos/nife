@@ -147,6 +147,7 @@ malformed it.
 | 2026-10-15 | documentation | The staleness worklist's top six, read for what a reader would act on: a path to type, a count to trust, a tense that names the present, and a named lane that already built the thing a note still argues for | fixed 9, minted 0, accepted 0 | [The worklist's top six](2026-10-15-the-worklists-top-six.md) |
 | 2026-10-19 | documentation | Decisions read forward: the ten sections minted since the last sweep, §300 (the paused state) to §309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it), each read for what it closed, against the prose that still argued the closed side | fixed 11, minted 2, accepted 4 | [Decisions read forward](2026-10-19-decisions-read-forward.md) |
 | 2026-10-19 | security | The supply chain, read from the package inward: the nine external packages the window added and the gate that should see every graph they enter, then the path by which bytes this tree did not build become authority on the target | fixed 3, minted 0, accepted 2 | [The supply chain, read from the package inward](2026-10-19-supply-chain-read-from-the-package-inward.md) |
+| 2026-10-20 | security | The window the supply-chain audit left unread, as a confined process trying to widen: the device authority minted since 2026-10-03, the ABI names added since then followed into their handlers, and the atlas's six host packages read inward to the tables the target draws | fixed 4, minted 3, accepted 2 | [The window the supply-chain audit left unread](2026-10-20-the-window-the-supply-chain-audit-left-unread.md) |
 
 ## What the tree looked like when each ran
 
@@ -188,6 +189,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-15 | documentation | 418 | 222 | 95 | 187 |
 | 2026-10-19 | documentation | 466 | 235 | 97 | 190 |
 | 2026-10-19 | security | 455 | 234 | 97 | 190 |
+| 2026-10-20 | security | 469 | 236 | 97 | 196 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were

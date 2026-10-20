@@ -869,3 +869,48 @@ fn line_feeder_tail_reads_back_the_pending_bytes() {
     assert_eq!(feeding.tail, "a partial line, no terminator yet");
     assert_eq!(feeder.tail(), "a partial line, no terminator yet");
 }
+
+/// **An `absent` the board does not allow is a failure** (calef's ruling of 2026-10-20 (UTC) on
+/// #2447: `absent` must never hide a device that should be there). radon has a TRNG, so a radon
+/// boot that reports `trng` absent lost a device, and the verdict's green count does not save it.
+/// The same line from an emulator, which may lack every device, stays green.
+#[test]
+fn an_absence_the_board_forbids_is_a_failure() {
+    let n = boot_ladder::SELF_TEST_CHECKS.len();
+    let line = format!("nife self-test: {} of {n} passed, 1 absent: trng\n", n - 1);
+
+    let on_radon = feed(&board::RADON, &line);
+    assert_eq!(
+        on_radon.failure(),
+        Some(&Failure::SelfTestFailed(
+            "trng (absent on radon, which has the device for it)".to_string()
+        )),
+    );
+
+    let on_emulator = feed(&board::EMULATOR, &line);
+    assert_eq!(
+        on_emulator.failure(),
+        None,
+        "an emulator may lack any device"
+    );
+}
+
+/// **The absence list ends where the failures begin**, so a check that failed is reported as a
+/// failure, and one that was absent is not read as failed.
+#[test]
+fn absences_and_failures_are_read_apart() {
+    let n = boot_ladder::SELF_TEST_CHECKS.len();
+    let line = format!(
+        "nife self-test: {} of {n} passed, 2 absent: blockdev deviceirq, 1 FAILED: entropy\n",
+        n - 3
+    );
+    let progress = feed(&board::EMULATOR, &line);
+    assert_eq!(
+        progress.failure(),
+        Some(&Failure::SelfTestFailed("entropy".to_string())),
+    );
+    assert_eq!(
+        BootProgress::verdict_absences(&line).collect::<Vec<_>>(),
+        ["blockdev", "deviceirq"],
+    );
+}

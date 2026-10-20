@@ -226,6 +226,5 @@ sequence from the kernel's side. The gap was a join rather than a hole, and the 
 
 **Resolved since this was written.** The kernel's own pre-init service wiring is gone: §28 retired
 `shell_service` as a boot path and milestone 41 (dead code) deleted it and `input_service` outright,
-because they had no caller in any configuration. `console_service` remains, spawned by the milestone
-tour only. Every interactive build now reaches userspace through `boot_via_progenitor`, so the
+because they had no caller in any configuration. Every interactive build now reaches userspace through `boot_via_progenitor`, so the
 kernel has one way in rather than two.

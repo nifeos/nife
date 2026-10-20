@@ -19,8 +19,9 @@
 //!   destination this program can name;
 //! - slot 2, a **report** endpoint (WRITE): one bring-up report to the kernel;
 //! - mapped: the xHCI register file **less the MSI-X pages**, and the eleven work pages of its DMA
-//!   region. The IOMMU confines the controller to the region, so every physical address this
-//!   program writes into a ring reaches nothing outside it.
+//!   region. The IOMMU confines the controller to the region and to any firmware-reserved region
+//!   (an RMRR) VT-d requires mapped, so a physical address this program writes into a ring
+//!   reaches nothing else.
 //!
 //! `kernel/src/user/usb_keyboard_service.rs` has the matching list of what is denied.
 //!

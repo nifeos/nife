@@ -154,6 +154,19 @@ pub(crate) fn boot_s_context() -> usize {
     s_context_of(super::boot_hartid())
 }
 
+/// **How many interrupts a device line delivered at bring-up**, which on this port is none: no
+/// device here can be made to interrupt without input or an attached disk, so bring-up proves no
+/// device line through the PLIC, and `self_test`'s `deviceirq` check reports itself absent. `x86_64`
+/// proves the PIT's. A device line on this port is proved where one exists: the user-level input
+/// driver at the hand-over, and the `blockdev` check's driver when a disk is attached.
+#[cfg_attr(
+    any(test, feature = "system_tests", feature = "bench"),
+    allow(dead_code)
+)] // self_test reads it
+pub(crate) fn device_line_interrupts() -> Option<u64> {
+    None
+}
+
 /// The boot hart's half of the shared `interrupts_init`: bring the PLIC up, then unmask this hart.
 /// This is the step aarch64 fills with its GIC, and portable code names `arch::irq`, never a
 /// controller.

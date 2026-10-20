@@ -806,10 +806,22 @@ pub(crate) enum TransportError {
 }
 
 /// Read a device register the driver is allowed to see (status, features, interrupt status).
+///
+/// `off` is the caller's, and the mmio arm adds it to the slot's physical base and reads through
+/// the direct map, so an offset past the slot would read whatever RAM or device lies there. Only
+/// an aligned word inside the device's own slot is answered.
 pub(crate) fn read_register(id: usize, off: u64) -> Option<u32> {
+    if !register_in_slot(off) {
+        return None;
+    }
     let devs = DEVICES.lock();
     let dev = devs.get(id)?;
     Some(dev.transport.read_reg(off))
+}
+
+/// Whether `off` names an aligned 32-bit register inside one virtio-mmio slot.
+fn register_in_slot(off: u64) -> bool {
+    off.is_multiple_of(4) && off < SLOT_STRIDE
 }
 
 /// Write one of the DMA-*safe* registers (status, features selection, interrupt ack). Refuses the

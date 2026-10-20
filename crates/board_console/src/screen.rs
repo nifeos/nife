@@ -400,7 +400,12 @@ fn parse_pixmap(ppm: &[u8]) -> Result<(usize, usize, &[u8]), ReadError> {
     }
     // Exactly one whitespace byte separates the header from the pixels.
     at += 1;
-    let wanted = width * height * 3;
+    // The header is the dump's own claim, so its product is checked: a wrapped `wanted` would let
+    // a short buffer pass and the decoders index past it.
+    let wanted = width
+        .checked_mul(height)
+        .and_then(|n| n.checked_mul(3))
+        .ok_or(ReadError::NotAPixmap)?;
     let pixels = ppm.get(at..).unwrap_or(&[]);
     if pixels.len() < wanted {
         return Err(ReadError::Truncated {
@@ -629,6 +634,15 @@ mod tests {
     fn width_or_height_of_zero_is_rejected_even_when_the_other_is_fine() {
         assert_eq!(read(b"P6\n0 5\n255\n").unwrap_err(), ReadError::NotAPixmap);
         assert_eq!(read(b"P6\n5 0\n255\n").unwrap_err(), ReadError::NotAPixmap);
+    }
+
+    /// **A header whose size overflows is refused, not wrapped.** In a release build an unchecked
+    /// `width * height * 3` wraps to a small number, the length check passes on a short buffer,
+    /// and `decode_exact` then indexes past it.
+    #[test]
+    fn a_header_whose_size_overflows_is_refused() {
+        let huge = format!("P6\n{} 3\n255\n", usize::MAX / 2);
+        assert_eq!(read(huge.as_bytes()).unwrap_err(), ReadError::NotAPixmap);
     }
 
     /// **The display terminal's default scheme decodes through the same `decode`** (milestone

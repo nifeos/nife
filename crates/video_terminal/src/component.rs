@@ -73,10 +73,10 @@ pub const HANDOFF_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_0b00_0
 
 /// **Pages one instance is built out of.** Its image, its stack, its page tables and its
 /// revocation log. The image is most of it: the `Vt` is initialized to blank cells, which are not
-/// zero bytes, so its 177 pages of grid are in `.data` and in the file, about 220 pages in all.
+/// zero bytes, so its grid (164 pages since the twenty-byte cell, 177 when measured) is in `.data` and in the file, about 220 pages in all.
 /// Committed, measured with `MemoryRegion::USAGE` on 2026-10-19 (UTC), debug images: 208 pages on
 /// aarch64, 207 on riscv64, 212 on `x86_64`. So about a fifth over the largest, a smaller margin
-/// than `line_editor`'s half because the 177 pages of grid do not vary.
+/// than `line_editor`'s half because the grid's pages do not vary.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 pub const INSTANCE_PAGES: u64 = 256;

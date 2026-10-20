@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-08-20
+built: 2026-10-19
 milestone_dependencies: 141
 decision_dependencies: 166
 machine_requirements: none
@@ -34,13 +35,12 @@ Increments one and two are built (`milestone/142-terminal-size`). They are also 
 terminal"), and need nothing from milestone 177 (wire the graphical terminal stack into the real
 interactive boot). The scanout is 1120x624, sized to the atlas's 14x26 cell for an 80x24 grid.
 
-On 2026-09-26 lane `milestone/142-text-display` built increment five's widening and the navigation
-cluster (home, end, insert, delete, page up and down, with xterm's shift forms). Scrollback from the
-keyboard needs a new opcode, because `line_editor` sits in front of `display_terminal`;
-[milestone 668 (scrollback from the keyboard)](0668-scrollback-from-the-keyboard.md) holds it. Increment six
-is built (checked 2026-10-03, UTC). Increment three is built: the atlas, its generator and gate,
-and an 80x24 scanout at the atlas's cell. Increment four is built: the atlas blends in linear light.
-[Sequencing](#sequencing) has each increment's state.
+All six increments are built. The terminal is DejaVu Sans Mono from a checked-in atlas, blended in
+linear light, on an 80x24 scanout, in four faces with five underline styles and truecolor. The
+navigation cluster is in the keymap: home, end, insert, delete, page up and down, with xterm's shift
+forms. Scrollback from the keyboard needs a new opcode, because `line_editor` sits in front of
+`display_terminal`; [milestone 668 (scrollback from the keyboard)](0668-scrollback-from-the-keyboard.md)
+holds it. [Sequencing](#sequencing) has each increment's state.
 
 The working behind each section below is in [its appendices](0142-a-text-display-worth-living-in/README.md),
 each linked where it applies. This page is complete without them.
@@ -159,10 +159,11 @@ the larger half of "would use it outside a GUI".
 4. Blending, in linear light, with the sRGB tables. BUILT. `glyph_atlas::blend` takes each channel
    through `SRGB_TO_LINEAR`, a 256-entry `u16` table the generator writes and its gate checks, and
    back by the nearest code in that same table. Integer only at runtime.
-5. Rich attributes. PARTIAL. Widen `Attr` and `Cell` for truecolor, real weights and underline
-   styles, and ship the bold, italic and bold-italic faces. The widening is built, and the faces are
-   in the atlas (`glyph_atlas::BOLD`, `OBLIQUE`, `BOLD_OBLIQUE`) but drawn nowhere, so *bold is
-   bright* stands until the engine selects them.
+5. Rich attributes. BUILT. Truecolor and the 256-color table. Bold, italic and bold italic draw
+   their own faces, so bold no longer brightens. Underline comes in five styles (`4:0` to `4:5`,
+   `21`) with its own color (SGR 58 and 59), and every extended color has its colon form too. A cell is twenty
+   bytes, the handoff blob is layout 2 (a layout-1 reader is kept), and `MAX_CELLS` and
+   `SCROLLBACK_CELLS` are sized so both stay inside the pages they had.
 6. The palette. Built: milestone 141's gate exists and the Solarized Dark table passes it.
 
 A seventh, listed and not recommended: a glyph service, a component serving rendered glyphs so a
@@ -173,7 +174,7 @@ it as its own milestone when rung three is live.
 
 ## What is an architect's
 
-Nothing blocks increment five. The family was §104's (2026-08-20) and the face count §166's
+Nothing is left to build. The family was §104's (2026-08-20) and the face count §166's
 (2026-10-05). Still calef's, and blocking nothing:
 
 - Names. `glyph_atlas`, `glyph_atlas_generator` and any glyph service are all provisional.
@@ -230,11 +231,8 @@ Nothing blocks increment five. The family was §104's (2026-08-20) and the face 
   2026-09-26.
 - **Done.** Increment three: `crates/glyph_atlas`, `tools/glyph_atlas_generator` and its
   `tests/regenerate.rs` gate, and `vendor/dejavu`.
-- **Outstanding.** Increment five is partial: its widening is built (truecolor, the 256-color
-  table, underline, strikethrough, dim, concealed; 2026-09-26). The faces are in the atlas and the
-  engine does not select them yet, so "bold is bright" stands. Underline styles beyond one line (SGR `4:3`
-  and the rest of the colon forms) and the underline color (SGR 58) are not built: the parser
-  swallows `:` whole, recorded in notes/glyphs.md.
+- **Done.** Increment five: the faces, the underline styles and color, and the colon forms, in
+  `crates/video_terminal` (`Vt::sgr`, `Vt::pixel`, handoff layout 2).
 - **Done.** Whether the atlas ships one face or four: four, with italic as DejaVu's Oblique
   (calef, 2026-10-05 UTC, per §166). §104 chose the family and said nothing about faces.
 - **Done.** The palette increment: milestone 141 is BUILT 2026-09-29, and the one-unit nudge §104
@@ -257,10 +255,7 @@ so good that people would use it outside of a GUI."* Four axes, and the font is 
 surface, the terminal, the type and the color. The finding that makes the expensive axis cheap is
 that a monospace grid puts every glyph on an integer cell boundary. So the rasteriser belongs at
 build time and the runtime keeps a coverage table exactly as `bitfont` keeps a bit table, which is
-what preserves the three-party pixel-exact proof. Increments one and two (the scanout, grown via
-DECISIONS §102, and a real terminal: scrollback, UTF-8, arrow keys) are built. Increment five
-is partial (truecolour and the line renditions built 2026-09-26; the faces are generated and wait to
-be drawn). The navigation cluster is in the keymap, and scrollback from the keyboard is a proposal because its
-route needs a new opcode. Six, the palette, is built (the gate of milestone 141, a palette worth
-looking at). Three is built: DejaVu Sans Mono from a checked-in atlas on an 80x24 scanout. Four
-is built: the atlas blends in linear light.
+what preserves the three-party pixel-exact proof. All six increments are built. The terminal is
+DejaVu Sans Mono from a checked-in atlas on an 80x24 scanout, blended in linear light. It draws four
+faces, underline styles and truecolor, on milestone 141 (a palette worth looking at)'s palette.
+Scrollback from the keyboard is milestone 668's, because its route needs a new opcode.

@@ -405,7 +405,8 @@ struct HandoffRun {
 }
 
 impl HandoffRun {
-    /// The run, read or written whole.
+    /// The run, read or written whole: all `HANDOFF_PAGES` of it, not this build's
+    /// `HANDOFF_BYTES`, because a predecessor's layout may run longer than this build's longest.
     fn bytes(&mut self) -> &mut [u8] {
         // SAFETY: called only while `mapped`, which means a run of `HANDOFF_PAGES` frames is
         // mapped read/write at `HANDOFF_ADDRESS` in this address space, mapped by `take` below from a
@@ -414,7 +415,7 @@ impl HandoffRun {
         unsafe {
             core::slice::from_raw_parts_mut(
                 component::HANDOFF_ADDRESS as *mut u8,
-                video_terminal::handoff::HANDOFF_BYTES,
+                (video_terminal::handoff::HANDOFF_PAGES * address_space_map::PAGE) as usize,
             )
         }
     }

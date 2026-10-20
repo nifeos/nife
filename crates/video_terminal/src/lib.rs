@@ -15,10 +15,11 @@
 //! - `CR`, `LF` (scrolling into [`SCROLLBACK_ROWS`] of history), `BS`, `TAB`, `BEL` (ignored).
 //! - `CSI A/B/C/D` cursor motion, `CSI H` / `CSI f` absolute positioning.
 //! - `CSI J` erase in display, `CSI K` erase in line, both with all three modes.
-//! - `CSI m` (SGR): reset; bold, dim, underline, reverse, concealed and crossed-out, each with its
-//!   off switch; the eight colours and their bright forms; and the 256-colour and 24-bit forms, all
-//!   for foreground and background. Italic and blink are parsed and dropped: there is no italic face
-//!   and no clock.
+//! - `CSI m` (SGR): reset; bold and italic (drawn in their own faces), dim, reverse, concealed and
+//!   crossed-out, each with its off switch; underline in five styles (`4`, `21`, `4:0` to `4:5`)
+//!   and its own color (`58`, `59`); the eight colors and their bright forms; and the 256-color
+//!   and 24-bit forms, in both the `;` and the `:` spelling, for foreground and background. Blink
+//!   is parsed and dropped: there is no clock.
 //! - `ESC c` (RIS), a full reset.
 //!
 //! Anything else is **swallowed whole**, introducer and all, rather than printed as garbage.

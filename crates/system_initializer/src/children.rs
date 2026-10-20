@@ -507,11 +507,21 @@ const SCREEN_IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
 /// answered `could not spawn`, and CI's graphical leg failed. Five hundred twenty-eight is the
 /// riscv64 measurement plus about seven percent. Bisected on those two ISAs only: x86_64 has no
 /// graphical leg (milestone 192 (a keyboard on real silicon)'s x86_64 half is unbuilt), so its need
-/// is unmeasured and ungated, and that leg's arrival must re-bisect this. It comes out of the job
-/// pool ([`JOBS_BUDGET_PAGES`], six hundred seventy-two), once, for the life of the session:
-/// while a session runs, plain native jobs still spawn from the 144 left, and a `std` job or a
-/// second session is refused, which the shell reports as `could not spawn`.
-pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 528;
+/// is unmeasured and ungated, and that leg's arrival must re-bisect this.
+///
+/// **Plus sixteen for the atlas's faces** (milestone 142 (a text display good enough that people
+/// use it instead of a GUI) increment 5): `display_terminal` draws bold, italic and bold italic
+/// from `glyph_atlas`, 105 KB of tables, against a grid 45 KB smaller, so its riscv64 image loads
+/// 209 pages where it loaded 193, and every other program in the session is unchanged. At 528
+/// CI's riscv64 keyboard-arm launch answered `could not spawn` (run 39378568861). Added rather
+/// than re-bisected: this machine's riscv64 `swish-check` stops at its package boot before the
+/// graphical one, so CI's riscv64 leg is the measurement.
+///
+/// It comes out of the job pool ([`JOBS_BUDGET_PAGES`], six hundred seventy-two), once, for the
+/// life of the session: while a session runs, plain native jobs still spawn from the 128 left (two
+/// [`JOB_REGION_PAGES`] regions at once), and a `std` job or a second session is refused, which
+/// the shell reports as `could not spawn`.
+pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 544;
 
 /// Drop every capability named, freeing the slots. A builder's means, spent once the children
 /// hold their own narrowed copies: on the success path after the last build, and on every

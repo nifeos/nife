@@ -29,7 +29,7 @@ fn sgr_2_is_dim() {
 }
 
 /// An underline is drawn on the font's underline row, which is a pixel a blank cell otherwise
-/// leaves in the background colour.
+/// leaves in the background color.
 #[test]
 fn an_underline_is_drawn_on_the_underline_row() {
     let mut vt = Vt::new(10, 3);
@@ -463,18 +463,23 @@ fn erasing_keeps_the_current_background() {
 }
 
 /// SGR: the colours, the reverse flag, and the two rules a terminal actually needs. Bold is a
-/// bright foreground, and setting a colour afterwards keeps the brightness.
+/// face rather than a brighter foreground, and setting a color afterwards keeps it bold.
 #[test]
-fn sgr_sets_colour_brightness_and_reverse() {
+fn sgr_sets_colour_bold_and_reverse() {
     let mut t = vt(8, 1);
     t.feed(b"\x1b[31ma");
     assert_eq!(t.cell(0, 0).attr, attr(1, DEFAULT_BG));
     t.feed(b"\x1b[1mb");
-    assert_eq!(ink(&t, 1, 0), PALETTE[9], "bold must brighten the colour");
-    t.feed(b"\x1b[32mc");
     assert_eq!(
-        ink(&t, 2, 0),
-        PALETTE[10],
+        ink(&t, 1, 0),
+        PALETTE[1],
+        "bold must not brighten the color"
+    );
+    assert!(t.cell(1, 0).attr.is_bold());
+    t.feed(b"\x1b[32mc");
+    assert_eq!(ink(&t, 2, 0), PALETTE[2]);
+    assert!(
+        t.cell(2, 0).attr.is_bold(),
         "a new colour keeps the bold bit"
     );
     t.feed(b"\x1b[22md");
@@ -509,10 +514,10 @@ fn sgr_takes_24_bit_and_256_colour_foregrounds_and_backgrounds() {
         (Colour::Indexed(196), Colour::Rgb(0, 43, 54))
     );
     assert!(
-        c.is_underlined(),
+        c.underline() == UNDERLINE_SINGLE,
         "the rendition after two extended colours was lost"
     );
-    // Bold does not brighten a colour that was not one of the eight: xterm's rule.
+    // Bold does not change the color, here a 256-color one.
     t.feed(b"\x1b[1md");
     assert_eq!(ink(&t, 3, 0), Colour::Indexed(196).resolve());
     // The bright backgrounds, which the one-byte rendition had no room for.
@@ -859,8 +864,18 @@ fn the_demo_script_produces_a_picture_worth_checking() {
         "the script has no 24-bit colour: truecolour is untested on the machine",
     );
     assert!(
-        attrs.iter().any(|a| a.is_underlined()),
+        attrs.iter().any(|a| a.underline() != UNDERLINE_NONE),
         "the script has no underline: the line renditions are untested on the machine",
+    );
+    assert!(
+        attrs.iter().any(|a| a.is_bold() && a.is_italic()),
+        "the script has no bold italic: the faces are untested on the machine",
+    );
+    assert!(
+        attrs
+            .iter()
+            .any(|a| a.underline() == UNDERLINE_CURLY && a.ul.is_some()),
+        "the script has no styled, colored underline: increment five is untested on the machine",
     );
     assert!(
         (0..t.rows()).any(|r| (0..t.cols()).any(|c| t.cell(c, r).ch != ' ')),
@@ -869,22 +884,22 @@ fn the_demo_script_produces_a_picture_worth_checking() {
 }
 
 /// **A wide grid keeps a shallower history, and the ring still wraps correctly at its width**
-/// (2026-10-04): at OVMF's 182 columns [`SCROLLBACK_CELLS`] holds 145 rows, and 200 lines
-/// through a two-row grid must keep exactly the newest 145, oldest last.
+/// (2026-10-04): at 182 columns [`SCROLLBACK_CELLS`] holds 131 rows, and 200 lines
+/// through a two-row grid must keep exactly the newest 131, oldest last.
 #[test]
 fn a_wide_grid_keeps_the_history_its_cell_budget_holds() {
     let mut t = vt(182, 2);
-    assert_eq!(t.scrollback_depth(), 145);
+    assert_eq!(t.scrollback_depth(), 131);
     for i in 0..200u32 {
         t.feed(std::format!("L{i:03}\r\n").as_bytes());
     }
-    assert_eq!(t.scrollback_len(), 145);
+    assert_eq!(t.scrollback_len(), 131);
     t.scroll_up(u32::MAX);
-    assert_eq!(t.view_offset(), 145);
+    assert_eq!(t.view_offset(), 131);
     let row0: std::string::String = (0..4).map(|c| t.cell(c, 0).ch).collect();
     assert_eq!(
-        row0, "L054",
-        "the oldest kept line is the 145th from the newest push"
+        row0, "L068",
+        "the oldest kept line is the 131st from the newest push"
     );
     assert_eq!(
         vt(4, 2).scrollback_depth(),
@@ -921,8 +936,9 @@ fn geometry_clamps_exactly_at_the_boundary_not_one_off_it() {
         MAX_COLS as u32,
         "one column past the boundary must be clamped"
     );
-    // The two screens this was sized for fit whole.
-    for (cols, rows) in [(182, 100), (137, 67)] {
+    // The two screens this was sized for fit whole: OVMF's 1280x800 and xenon's 1920x1080 at the
+    // 14x26 cell.
+    for (cols, rows) in [(91, 30), (137, 41)] {
         assert_eq!(
             (Vt::new(cols, rows).cols(), Vt::new(cols, rows).rows()),
             (cols, rows)
@@ -1284,4 +1300,138 @@ fn a_scroll_carries_the_box_of_what_changed_up_with_it() {
         },
         "the X scrolled off; only the Y, now on row 0, is left to render"
     );
+}
+
+/// **SGR's colon forms and the renditions they carry**: `4:n` picks an underline style and `21`
+/// is double; `58` colors the underline in either form and `59` returns it to the foreground;
+/// `38:2::r:g:b` (with the empty color-space slot) and `38:5:n` are the colon spellings of the
+/// extended colors; and a parameter's sub-parameters that it does not use are skipped rather than
+/// read as the next attribute (`1:5` is bold, not bold then blink).
+#[test]
+fn sgr_reads_the_colon_forms_italic_and_underline_styles_and_color() {
+    let mut t = vt(12, 1);
+    t.feed(b"\x1b[3;4:3ma");
+    let a = t.cell(0, 0).attr;
+    assert!(a.is_italic());
+    assert_eq!(a.underline(), UNDERLINE_CURLY);
+    t.feed(b"\x1b[23;21mb");
+    let b = t.cell(1, 0).attr;
+    assert!(!b.is_italic());
+    assert_eq!(b.underline(), UNDERLINE_DOUBLE);
+    t.feed(b"\x1b[4:0;58;5;9mc");
+    let c = t.cell(2, 0).attr;
+    assert_eq!(c.underline(), UNDERLINE_NONE);
+    assert_eq!(c.ul, Some(Colour::Indexed(9)));
+    t.feed(b"\x1b[58:2::1:2:3;4:5md");
+    assert_eq!(t.cell(3, 0).attr.ul, Some(Colour::Rgb(1, 2, 3)));
+    assert_eq!(t.cell(3, 0).attr.underline(), UNDERLINE_DASHED);
+    t.feed(b"\x1b[59;38:2:4:5:6;48:5:17;4:4me");
+    let e = t.cell(4, 0).attr;
+    assert_eq!(e.ul, None);
+    assert_eq!(
+        (e.fg(), e.bg()),
+        (Colour::Rgb(4, 5, 6), Colour::Indexed(17))
+    );
+    assert_eq!(e.underline(), UNDERLINE_DOTTED);
+    t.feed(b"\x1b[0;1:5;31mf");
+    let f = t.cell(5, 0).attr;
+    assert_eq!(f, attr(1, DEFAULT_BG).with(BOLD, true));
+}
+
+/// **An empty first parameter is the first parameter's default**, not the second's value read
+/// into the first slot: `CSI ;5H` is row one, column five. The colon work made `;` and `:` share
+/// one arm, and the arm now opens the first parameter before moving to the next.
+#[test]
+fn an_empty_first_parameter_is_its_default() {
+    let mut t = vt(8, 8);
+    t.feed(b"\x1b[;5H");
+    assert_eq!(t.cursor(), (4, 0));
+}
+
+/// **Bold and italic draw their faces**, and the color stays as set: every pixel of a bold, an
+/// italic and a bold-italic `R` is that face's own blend, and the four faces differ, so a cell
+/// drawn in the wrong face shows.
+#[test]
+fn bold_and_italic_draw_the_atlas_faces() {
+    let mut t = vt(4, 1);
+    t.set_cursor_visible(false);
+    t.feed(b"R\x1b[1mR\x1b[22;3mR\x1b[1mR");
+    let (fg, bg) = Attr::DEFAULT.colours();
+    let faces = [
+        &glyph_atlas::REGULAR,
+        &glyph_atlas::BOLD,
+        &glyph_atlas::OBLIQUE,
+        &glyph_atlas::BOLD_OBLIQUE,
+    ];
+    let picture = |col: u32| -> Vec<u32> {
+        (0..crate::CELL_H)
+            .flat_map(|gy| (0..crate::CELL_W).map(move |gx| (gx, gy)))
+            .map(|(gx, gy)| t.pixel(col * crate::CELL_W + gx, gy))
+            .collect()
+    };
+    for (col, face) in faces.iter().enumerate() {
+        let want: Vec<u32> = (0..crate::CELL_H)
+            .flat_map(|gy| (0..crate::CELL_W).map(move |gx| (gx, gy)))
+            .map(|(gx, gy)| face.cell_pixel('R', gx, gy, fg, bg))
+            .collect();
+        assert_eq!(picture(col as u32), want, "column {col}");
+    }
+    for a in 0..4 {
+        for b in a + 1..4 {
+            assert_ne!(
+                picture(a),
+                picture(b),
+                "columns {a} and {b} draw the same face"
+            );
+        }
+    }
+}
+
+/// **Each underline style inks its own pixels, in the underline's color**: single and double on
+/// their rows, curly as a wave, dotted and dashed as runs that carry across the cell boundary,
+/// and SGR 58's color where it is set. Read from a blank cell, so every inked pixel is the line's.
+#[test]
+fn each_underline_style_draws_its_own_line_in_its_own_colour() {
+    let ink_rows = |seq: &[u8]| -> Vec<(u32, u32)> {
+        let mut t = vt(2, 1);
+        t.set_cursor_visible(false);
+        t.feed(seq);
+        let (_, bg) = Attr::DEFAULT.colours();
+        (0..crate::CELL_H)
+            .flat_map(|y| (0..2 * crate::CELL_W).map(move |x| (x, y)))
+            .filter(|&(x, y)| t.pixel(x, y) != bg)
+            .collect()
+    };
+    let u = UNDERLINE_ROW;
+    let single = ink_rows(b"\x1b[4m  ");
+    assert!(single.iter().all(|&(_, y)| y == u) && single.len() == 28);
+    let double = ink_rows(b"\x1b[21m  ");
+    assert_eq!(double.len(), 56);
+    assert!(double.iter().all(|&(_, y)| y == u || y == u + 2));
+    // Curly: one pixel a column, a wave eight pixels long, its depth rising and falling by rows.
+    let mut curly = ink_rows(b"\x1b[4:3m  ");
+    curly.sort();
+    let depths: Vec<u32> = curly.iter().map(|&(_, y)| y - u).collect();
+    let wave = [0, 0, 1, 1, 2, 1, 1, 0];
+    assert_eq!(depths, (0..28).map(|x| wave[x % 8]).collect::<Vec<u32>>());
+    // Dotted: two on, two off, counted from the screen's left edge.
+    let dotted: Vec<u32> = ink_rows(b"\x1b[4:4m  ").iter().map(|&(x, _)| x).collect();
+    assert_eq!(
+        dotted,
+        (0..28).filter(|x| x / 2 % 2 == 0).collect::<Vec<u32>>()
+    );
+    // Dashed: five on, three off.
+    let dashed: Vec<u32> = ink_rows(b"\x1b[4:5m  ").iter().map(|&(x, _)| x).collect();
+    assert_eq!(dashed.len(), 19);
+    assert_eq!(dashed, (0..28).filter(|x| x % 8 < 5).collect::<Vec<u32>>());
+    // The color.
+    let mut t = vt(1, 1);
+    t.set_cursor_visible(false);
+    t.feed(b"\x1b[4;58;2;250;0;0m ");
+    assert_eq!(t.pixel(0, u), 0x00fa_0000);
+    t.feed(b"\r\x1b[59m ");
+    assert_eq!(t.pixel(0, u), Attr::DEFAULT.colours().0);
+    // Concealed text hides its underline too, its own color included.
+    t.feed(b"\r\x1b[8;58;2;250;0;0m ");
+    assert_eq!(t.pixel(0, u), Attr::DEFAULT.colours().1);
 }

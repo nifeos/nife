@@ -60,19 +60,14 @@ const LSR_TEMT: u8 = 0b0100_0000;
 // write-one-to-clear latch and it does not time out. That is what makes it usable as a mailbox
 // rather than as an event, which is the whole of milestone 249's escape: the kernel polls it once
 // every five seconds and a keypress that arrived at any moment in between is still there to be
-// found. Only the rebooting soak reads it; the console is otherwise transmit-only (see
-// `enable_rx_interrupt`, whose whole point is that the kernel arms the line and reads nothing).
+// found. Only the rebooting soak reads it; the console is otherwise transmit-only, and the
+// receive interrupt is the user-level input driver's to arm.
 //
 // Milestone 445 (the screen check stops sampling and starts asking) gave it a second reader with
 // the same shape: the screen-hold handshake polls it to
 // learn that a host has finished photographing the framebuffer. That is why it is no longer behind
 // `reboot_soak_test`, and why the two methods below are not either.
 const LSR_DR: u8 = 0b0000_0001;
-// Interrupt Enable bit: Enable Received Data Available Interrupt (fires while the RX FIFO is nonempty).
-// x86_64 never arms it: the callers below are the riscv console paths (`console::rx_enable`), and
-// the x86 console adopts the default shape and stays polled.
-#[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-const IER_ERBFI: u8 = 0b0000_0001;
 // Interrupt Enable bit: Enable Transmitter Holding Register Empty Interrupt. Asserts as soon as it is
 // set if LSR.THRE is already set, which on a polling console it always is. See `enable_tx_interrupt`.
 // Test builds only, because that is where its only caller is; the crate-wide removal in
@@ -391,21 +386,6 @@ impl<S: RegisterSpace> Ns16550<S> {
             let _ = self.read(THR); // THR on write is RBR on read; this is the byte.
             bound -= 1;
         }
-    }
-
-    /// Turn on the receive-data-available interrupt. After this, the UART raises its interrupt line
-    /// (into the PLIC) whenever a byte sits unread in the RX buffer. It is **level-triggered**: the
-    /// line stays asserted until the byte is read, so *something* must read the byte to quiet it
-    /// before completing the interrupt, or it re-fires immediately. That something is the userspace
-    /// input driver, which holds this device's registers as a capability; the kernel arms the
-    /// interrupt and reads nothing. The console still polls for transmit.
-    ///
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `enable_receive_interrupt`.
-    #[cfg_attr(target_arch = "x86_64", allow(dead_code))] // riscv's `console::rx_enable` is the caller; the x86 console stays polled
-    pub fn enable_rx_interrupt(&self) {
-        self.write(IER, IER_ERBFI);
     }
 
     /// Turn on the transmit-holding-register-empty interrupt, and turn it off again.

@@ -5,13 +5,15 @@
 //! the parent becomes an index) asks; calef names things.
 
 use super::cell::{
-    BOLD, DIM, INVISIBLE, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UNDERLINE, UNDERLINE_ROW,
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UNDERLINE_CURLY,
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDERLINE_ROW,
+    UNDERLINE_SINGLE,
 };
 use super::*;
 use crate::handoff::{
-    CELL_WORDS, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDING, HEADER_WORDS,
-    KNOWN_ATTR_FLAGS, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, word_at,
-    word_color, words_cell,
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDING, HEADER_WORDS,
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, underline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
 };
 
 /// The parser's state. Deliberately few: a VT's full state machine has a dozen states, and most of
@@ -87,6 +89,9 @@ pub struct Vt {
     cursor_visible: bool,
     state: State,
     params: [u16; MAX_PARAMS],
+    /// Bit `k` set when `params[k]` followed a `:` rather than a `;`: a sub-parameter of the one
+    /// before it, as in `4:3` (a curly underline) or `58:2::255:0:0`. ECMA-48's colon form.
+    subs: u16,
     nparams: usize,
     /// A parameter list this engine will not act on (private `?` sequences, an intermediate byte, or
     /// more parameters than fit). The sequence is still swallowed whole; only its effect is dropped.
@@ -145,6 +150,7 @@ impl Vt {
             cursor_visible: true,
             state: State::Ground,
             params: [0; MAX_PARAMS],
+            subs: 0,
             nparams: 0,
             ignore: false,
             utf8_need: 0,
@@ -226,6 +232,7 @@ impl Vt {
         self.cursor_visible = true;
         self.state = State::Ground;
         self.params = [0; MAX_PARAMS];
+        self.subs = 0;
         self.nparams = 0;
         self.ignore = false;
         self.utf8_need = 0;
@@ -339,17 +346,24 @@ impl Vt {
         }
         let (fg, bg) = attr.colours();
         let (gx, gy) = (x % crate::CELL_W, y % crate::CELL_H);
-        // The two line renditions are ink across the **whole** cell width, gutters included, so an
+        // The line renditions are ink across the **whole** cell width, gutters included, so an
         // underlined or struck-out word is one unbroken line rather than a dash per letter (unlike
-        // the underscore glyph, whose ink stops at the gutters; see notes/glyphs.md).
-        let line = (attr.is_underlined() && gy == UNDERLINE_ROW)
-            || (attr.is_struck_through() && gy == STRIKETHROUGH_ROW);
-        let coverage = if line {
-            u8::MAX
-        } else {
-            glyph_atlas::REGULAR.coverage(cell.ch, gx, gy)
+        // the underscore glyph, whose ink stops at the gutters; see notes/glyphs.md). The
+        // patterned underlines read the screen's `x`, not the cell's, so a wave or a run of dots
+        // carries on across cells rather than restarting in each.
+        if underline_ink(attr.underline(), x, gy) {
+            return attr.underline_color(fg);
+        }
+        if attr.is_struck_through() && gy == STRIKETHROUGH_ROW {
+            return fg;
+        }
+        let face = match (attr.is_bold(), attr.is_italic()) {
+            (false, false) => &glyph_atlas::REGULAR,
+            (true, false) => &glyph_atlas::BOLD,
+            (false, true) => &glyph_atlas::OBLIQUE,
+            (true, true) => &glyph_atlas::BOLD_OBLIQUE,
         };
-        glyph_atlas::blend(fg, bg, coverage)
+        glyph_atlas::blend(fg, bg, face.coverage(cell.ch, gx, gy))
     }
 
     /// What has changed since the last [`Vt::take_damage`]: the scroll half as well as the box.
@@ -764,6 +778,7 @@ impl Vt {
             b'[' => {
                 self.state = State::Csi;
                 self.params = [0; MAX_PARAMS];
+                self.subs = 0;
                 self.nparams = 0;
                 self.ignore = false;
             }
@@ -789,11 +804,19 @@ impl Vt {
                     *p = p.saturating_mul(10).saturating_add((b - b'0') as u16);
                 }
             }
-            b';' => {
+            // A `:` separates a sub-parameter from the parameter it belongs to. The first
+            // parameter may be empty either way (`CSI ;5H`, `CSI :2m`), so a separator before any
+            // digit opens the first parameter as well as the next.
+            b';' | b':' => {
+                if self.nparams == 0 {
+                    self.nparams = 1;
+                }
                 self.nparams += 1;
                 if self.nparams > MAX_PARAMS {
                     self.ignore = true;
                     self.nparams = MAX_PARAMS;
+                } else if b == b':' {
+                    self.subs |= 1 << (self.nparams - 1);
                 }
             }
             // A private-use introducer (`?`, `<`, `=`, `>`) or an intermediate byte: this engine
@@ -911,28 +934,53 @@ impl Vt {
     /// `CSI ... m`: the rendition. An empty parameter list is `CSI 0 m`, a reset, which is the one
     /// place the "absent means zero" default differs from the cursor sequences' "absent means one".
     ///
-    /// The extended colors (`38`/`48` followed by `5;n` or `2;r;g;b`) consume the parameters they
-    /// name, so the loop walks an index rather than iterating. A malformed one (a missing or
-    /// out-of-range component, or a color space other than 2 or 5) ends the sequence's effect
-    /// there, which is xterm's behavior: the parameters after it cannot be told apart from the
-    /// broken color's own.
+    /// The extended colors (`38`, `48` and `58`, followed by `5;n` or `2;r;g;b`) consume the
+    /// parameters they name, so the loop walks an index rather than iterating. A malformed one (a
+    /// missing or out-of-range component, or a color space other than 2 or 5) ends the sequence's
+    /// effect there, which is xterm's behavior: the parameters after it cannot be told apart from
+    /// the broken color's own.
+    ///
+    /// **The colon form** (ECMA-48's sub-parameters) is read too: `4:3` is a curly underline, and
+    /// `38:2::r:g:b` (with its empty color-space slot) or `38:2:r:g:b` a 24-bit color. A
+    /// parameter's sub-parameters belong to it alone, so ones it does not use are skipped rather
+    /// than read as the next attribute.
     fn sgr(&mut self) {
         let n = self.nparams.max(1);
         let mut i = 0;
-        while i < n {
+        // Every pass consumes at least one parameter, so `MAX_PARAMS` passes always reach the end;
+        // a bound rather than `while i < n` so the walk ends by construction.
+        for _ in 0..MAX_PARAMS {
+            if i >= n {
+                break;
+            }
             let p = self.params[i];
             i += 1;
+            // The sub-parameters that follow `p`, at `i..i + subs`.
+            let mut subs = 0;
+            for k in i..n {
+                if self.subs & 1 << k == 0 {
+                    break;
+                }
+                subs += 1;
+            }
             let a = self.attr;
             self.attr = match p {
                 0 => Attr::DEFAULT,
                 1 => a.with(BOLD, true),
                 2 => a.with(DIM, true),
-                4 | 21 => a.with(UNDERLINE, true),
+                3 => a.with(ITALIC, true),
+                4 if subs == 0 => a.with_underline(UNDERLINE_SINGLE),
+                4 => match self.params[i] {
+                    s @ 0..=5 => a.with_underline(s as u8),
+                    _ => a,
+                },
+                21 => a.with_underline(UNDERLINE_DOUBLE),
                 7 => a.with(REVERSE, true),
                 8 => a.with(INVISIBLE, true),
                 9 => a.with(STRIKETHROUGH, true),
                 22 => a.with(BOLD, false).with(DIM, false),
-                24 => a.with(UNDERLINE, false),
+                23 => a.with(ITALIC, false),
+                24 => a.with_underline(UNDERLINE_NONE),
                 27 => a.with(REVERSE, false),
                 28 => a.with(INVISIBLE, false),
                 29 => a.with(STRIKETHROUGH, false),
@@ -952,6 +1000,7 @@ impl Vt {
                     bg: Colour::Indexed(DEFAULT_BG),
                     ..a
                 },
+                59 => Attr { ul: None, ..a },
                 90..=97 => Attr {
                     fg: Colour::Indexed(p as u8 - 90 + 8),
                     ..a
@@ -960,28 +1009,39 @@ impl Vt {
                     bg: Colour::Indexed(p as u8 - 100 + 8),
                     ..a
                 },
-                38 | 48 => {
-                    let Some((colour, used)) = self.extended_colour(i, n) else {
+                38 | 48 | 58 => {
+                    let found = if subs > 0 {
+                        self.colon_color(i, subs)
+                    } else {
+                        self.extended_colour(i, n)
+                    };
+                    let Some((color, used)) = found else {
                         return;
                     };
                     i += used;
-                    if p == 38 {
-                        Attr { fg: colour, ..a }
-                    } else {
-                        Attr { bg: colour, ..a }
+                    match p {
+                        38 => Attr { fg: color, ..a },
+                        48 => Attr { bg: color, ..a },
+                        _ => Attr {
+                            ul: Some(color),
+                            ..a
+                        },
                     }
                 }
-                // Everything else (italic, blink, overline, the underline color) is dropped. Italic
-                // needs a face this font does not have (increment 3), and blink needs a clock this
-                // engine deliberately does not read; drawing the *text* in the wrong style is better
-                // than not drawing it.
+                // Everything else (blink, overline, fonts) is dropped. Blink needs a clock this
+                // engine deliberately does not read; drawing the *text* in the wrong style is
+                // better than not drawing it.
                 _ => a,
             };
+            // Whatever sub-parameters `p` had and did not consume are its own, not attributes.
+            if !matches!(p, 38 | 48 | 58) {
+                i += subs;
+            }
         }
     }
 
-    /// The color named by the parameters from `i` onward, after a `38` or `48`, and how many
-    /// parameters it used. `None` for a malformed one; see [`Vt::sgr`].
+    /// The color named by the parameters from `i` onward, after a `38`, `48` or `58`, and how
+    /// many parameters it used. `None` for a malformed one; see [`Vt::sgr`].
     fn extended_colour(&self, i: usize, n: usize) -> Option<(Colour, usize)> {
         let component = |k: usize| -> Option<u8> {
             if i + k < n {
@@ -995,6 +1055,20 @@ impl Vt {
             2 => Some((Colour::Rgb(component(1)?, component(2)?, component(3)?), 4)),
             _ => None,
         }
+    }
+
+    /// The colon form of [`Vt::extended_colour`]: the `subs` sub-parameters at `i`, all of which
+    /// it uses. `2:r:g:b`, or `2:cs:r:g:b` with the color-space slot (usually empty) ignored, or
+    /// `5:n`.
+    fn colon_color(&self, i: usize, subs: usize) -> Option<(Colour, usize)> {
+        let at = |k: usize| u8::try_from(self.params[i + k]).ok();
+        let color = match (self.params[i], subs) {
+            (5, 2) => Colour::Indexed(at(1)?),
+            (2, 4) => Colour::Rgb(at(1)?, at(2)?, at(3)?),
+            (2, 5) => Colour::Rgb(at(2)?, at(3)?, at(4)?),
+            _ => return None,
+        };
+        Some((color, subs))
     }
 
     /// `ESC c`: back to power-on. Clears the grid in the *default* rendition rather than the current
@@ -1086,6 +1160,25 @@ const fn word_state(w: u32) -> Option<State> {
     }
 }
 
+/// **Whether an underline in `style` inks the pixel at screen column `x`, cell row `gy`.** Every
+/// style starts on the font's underline row. Double adds the row two below it, curly is a wave
+/// eight pixels long and three rows deep, dotted is two on and two off, and dashed five on and
+/// three off.
+const fn underline_ink(style: u8, x: u32, gy: u32) -> bool {
+    match style {
+        UNDERLINE_SINGLE => gy == UNDERLINE_ROW,
+        UNDERLINE_DOUBLE => gy == UNDERLINE_ROW || gy == UNDERLINE_ROW + 2,
+        UNDERLINE_CURLY => {
+            let t = x % 8;
+            let height = if t < 4 { t } else { 8 - t };
+            gy == UNDERLINE_ROW + height / 2
+        }
+        UNDERLINE_DOTTED => gy == UNDERLINE_ROW && x / 2 % 2 == 0,
+        UNDERLINE_DASHED => gy == UNDERLINE_ROW && x % 8 < 5,
+        _ => false,
+    }
+}
+
 /// **The state handoff** (`crate::handoff` has the layout and why it is one).
 impl Vt {
     /// How many bytes [`Vt::write_handoff`] writes for this terminal as it stands.
@@ -1135,6 +1228,9 @@ impl Vt {
             color_word(self.attr.fg),
             color_word(self.attr.bg),
             self.attr.flags as u32,
+            underline_word(self.attr.ul),
+            self.attr.underline as u32,
+            u32::from(self.subs),
         ];
         for (i, w) in header.iter().enumerate() {
             put_word(out, i, *w);
@@ -1175,10 +1271,13 @@ impl Vt {
         if w(0).ok() != Some(MAGIC) {
             return Err(Refusal::NoBlob);
         }
-        match w(1)? {
-            LAYOUT => {}
+        // Layout 1 (milestone 23's) is still read: a replacement reads its predecessor's blob.
+        let layout = w(1)?;
+        let (header_words, cell_words_n, params_at) = match layout {
+            1 => (HEADER_WORDS_1, CELL_WORDS_1, 17),
+            LAYOUT => (HEADER_WORDS, CELL_WORDS, 20),
             other => return Err(Refusal::Layout(other)),
-        }
+        };
         if (w(2)?, w(3)?) != (self.cols, self.rows) {
             return Err(Refusal::Geometry);
         }
@@ -1188,14 +1287,21 @@ impl Vt {
         let nparams = w(10)? as usize;
         let utf8_need = w(11)?;
         let utf8_code = w(12)?;
-        let attr = Attr {
-            fg: word_color(w(14)?).ok_or(Refusal::Malformed)?,
-            bg: word_color(w(15)?).ok_or(Refusal::Malformed)?,
-            flags: u8::try_from(w(16)?).map_err(|_| Refusal::Malformed)?,
+        let (attr, subs) = if layout == 1 {
+            (words_attr_1(w(14)?, w(15)?, w(16)?), Some(0))
+        } else {
+            (
+                words_attr(w(14)?, w(15)?, w(16)?, w(17)?, w(18)?),
+                u16::try_from(w(19)?).ok(),
+            )
         };
+        let (attr, subs) = (
+            attr.ok_or(Refusal::Malformed)?,
+            subs.ok_or(Refusal::Malformed)?,
+        );
         let mut params = [0u16; MAX_PARAMS];
         for (i, p) in params.iter_mut().enumerate() {
-            *p = u16::try_from(w(17 + i)?).map_err(|_| Refusal::Malformed)?;
+            *p = u16::try_from(w(params_at + i)?).map_err(|_| Refusal::Malformed)?;
         }
         if col >= self.cols
             || row >= self.rows
@@ -1204,15 +1310,19 @@ impl Vt {
             || flags & !(FLAG_WRAP_PENDING | FLAG_CURSOR_VISIBLE | FLAG_IGNORE) != 0
             || nparams > MAX_PARAMS
             || utf8_need > 3
-            || u32::from(attr.flags) & !KNOWN_ATTR_FLAGS != 0
         {
             return Err(Refusal::Malformed);
         }
         let live = (self.cols * self.rows) as usize;
         let history = (sb_len * self.cols) as usize;
         let cell = |k: usize| -> Result<Cell, Refusal> {
-            let at = HEADER_WORDS + CELL_WORDS * k;
-            words_cell([w(at)?, w(at + 1)?, w(at + 2)?]).ok_or(Refusal::Malformed)
+            let at = header_words + cell_words_n * k;
+            let found = if layout == 1 {
+                words_cell_1([w(at)?, w(at + 1)?, w(at + 2)?])
+            } else {
+                words_cell([w(at)?, w(at + 1)?, w(at + 2)?, w(at + 3)?])
+            };
+            found.ok_or(Refusal::Malformed)
         };
         // Every cell is checked before any is written, so a refusal leaves the terminal whole.
         for k in 0..live + history {
@@ -1235,6 +1345,7 @@ impl Vt {
         self.ignore = flags & FLAG_IGNORE != 0;
         self.state = state;
         self.params = params;
+        self.subs = subs;
         self.nparams = nparams;
         self.utf8_need = utf8_need as u8;
         self.utf8_code = utf8_code;

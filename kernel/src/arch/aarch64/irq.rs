@@ -184,6 +184,19 @@ pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
     None
 }
 
+/// **How many interrupts a device line delivered at bring-up**, which on this port is none: no
+/// device here can be made to interrupt without input or an attached disk, so bring-up proves no
+/// device line through the GIC, and `self_test`'s `deviceirq` check reports itself absent. `x86_64`
+/// proves the PIT's. A device line on this port is proved where one exists: the user-level input
+/// driver at the hand-over, and the `blockdev` check's driver when a disk is attached.
+#[cfg_attr(
+    any(test, feature = "system_tests", feature = "bench"),
+    allow(dead_code)
+)] // self_test reads it
+pub(crate) fn device_line_interrupts() -> Option<u64> {
+    None
+}
+
 /// Bring the interrupt controller up on the boot core. Called once, from the shared
 /// `interrupts_init`.
 ///

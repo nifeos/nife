@@ -259,12 +259,12 @@ fn boot_check_policy() -> board_console::watch::Policy {
         // reported as the panic rather than as a success. `watch`'s own doc records the capture
         // this defends against.
         settle: std::time::Duration::from_secs(2),
-        // **No prologue, and that is the honest profile for an emulator** (milestone 324 part 3).
-        // There is no firmware on the `virt` or `q35` machines to print `U-Boot SPL`, so xenon's
-        // empty prologue describes what this gate watches better than radon's four rungs do. It
-        // changes no behaviour, since an absent marker is never matched either way; it changes
-        // what a report says the tool was expecting.
-        board: &board_console::board::XENON,
+        // **The emulator's profile**: no firmware prologue (there is none on the `virt` or `q35`
+        // machines to print `U-Boot SPL`), and no self-test check it must have, because these
+        // machines attach no disk and, on riscv64, no entropy source. xenon's and radon's lists
+        // name devices those boards have, and would read a QEMU leg's honest `absent` as a
+        // failure.
+        board: &board_console::board::EMULATOR,
     }
 }
 

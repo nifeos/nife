@@ -806,12 +806,32 @@ fn prove_a_device_line() {
     interrupts::disable();
     mask_gsi(pit.gsi);
 
+    let delivered = exceptions::DEVICE_IRQS.load(Ordering::Relaxed);
+    DEVICE_LINE_INTERRUPTS.store(delivered as u64, Ordering::Relaxed);
     crate::println!(
-        "  device irq  : pit irq {} -> gsi {} on vector {vector:#x}: {} interrupts in ~0.2s at {hz} Hz",
+        "  device irq  : pit irq {} -> gsi {} on vector {vector:#x}: {delivered} interrupts in ~0.2s at {hz} Hz",
         timer::PIT_IRQ,
         pit.gsi,
-        exceptions::DEVICE_IRQS.load(Ordering::Relaxed),
     );
+}
+
+/// What [`prove_a_device_line`] counted, or `u64::MAX` before it ran (or on a machine whose MADT
+/// named no IO APIC, where it never does).
+static DEVICE_LINE_INTERRUPTS: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// **How many interrupts a device line delivered at bring-up**: the PIT's, routed through the IO
+/// APIC by [`init`]. `None` when no line was proved, which on this port means the MADT named no
+/// IO APIC. `self_test`'s `deviceirq` check reads it, because the window the proof needs (the
+/// scheduler up, the tick not yet armed) exists only inside `init`.
+#[cfg_attr(
+    any(test, feature = "system_tests", feature = "bench"),
+    allow(dead_code)
+)] // self_test reads it
+pub(crate) fn device_line_interrupts() -> Option<u64> {
+    match DEVICE_LINE_INTERRUPTS.load(Ordering::Relaxed) {
+        u64::MAX => None,
+        n => Some(n),
+    }
 }
 
 /// Bring up this CPU's local interrupt interface (milestone 161's SMP item): a secondary's own

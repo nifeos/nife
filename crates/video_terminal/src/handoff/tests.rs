@@ -148,7 +148,10 @@ fn fixture_terminal() -> Vt {
 /// replacement must read its predecessor's blob (calef, 2026-10-19 UTC), so a build that bumps
 /// [`LAYOUT`] keeps the reader for the old one and adds its own blob here:
 /// `cargo test -p video_terminal write_the_fixture_for_this_layout -- --ignored` writes it.
-const FIXTURES: &[(u32, &[u8])] = &[(1, include_bytes!("layout1.blob"))];
+const FIXTURES: &[(u32, &[u8])] = &[
+    (1, include_bytes!("layout1.blob")),
+    (2, include_bytes!("layout2.blob")),
+];
 
 /// **This build reads every layout that came before it.** Each fixture is absorbed and must
 /// behave exactly as a terminal fed the fixture's bytes today: every pixel at every scroll depth,
@@ -281,7 +284,9 @@ fn every_parser_state_and_every_edge_carries_across() {
 
 /// **Each field out of range is refused**, one at a time, from a blob that is otherwise good. The
 /// header words are counted from the blob's start: column 4, row 5, history 6, view 7, flags 8,
-/// parameter count 10, UTF-8 bytes owed 11, rendition flags 16, then the first cell's foreground.
+/// parameter count 10, UTF-8 bytes owed 11, rendition flags 16 (an unknown bit, and layout 1's
+/// underline bit, which layout 2 does not use), underline color 17, underline style 18, the
+/// sub-parameter mask 19, then the first cell's foreground.
 #[test]
 fn each_header_field_out_of_range_is_refused() {
     let mut t = Vt::new(12, 4);
@@ -300,7 +305,11 @@ fn each_header_field_out_of_range_is_refused() {
         (8, 1 << 3),
         (10, MAX_PARAMS as u32 + 1),
         (11, 4),
-        (16, 1 << 6),
+        (16, 1 << 7),
+        (16, 1 << 2),
+        (17, 3 << 24),
+        (18, 6),
+        (19, 1 << 16),
     ] {
         let mut bad = good.clone();
         bad[4 * word..4 * word + 4].copy_from_slice(&value.to_le_bytes());
@@ -321,4 +330,31 @@ impl Vt {
     fn clone_absorb(&self, blob: &[u8]) -> Result<(), Refusal> {
         Vt::new(self.cols(), self.rows()).absorb_handoff(blob)
     }
+}
+
+/// **Layout 2's additions carry across a swap**: italic, a curly underline in its own color, and a
+/// colon sequence cut after its `4:`, so the sub-parameter mask is the only thing that says the
+/// `3` still to come is a style and not italic.
+#[test]
+fn the_faces_the_underline_styles_and_a_cut_colon_carry_across() {
+    let mut old = Vt::new(12, 3);
+    old.feed(b"\x1b[1;3;58;2;200;10;10;4:3mab\x1b[4:5mz\x1b[0m\x1b[4:");
+    let mut new = Vt::new(12, 3);
+    new.absorb_handoff(&blob_of(&old))
+        .expect("refused its own blob");
+    for t in [&mut old, &mut new] {
+        t.feed(b"3mc");
+    }
+    assert_eq!(new.cell(0, 0), old.cell(0, 0));
+    assert_eq!(
+        new.cell(2, 0),
+        old.cell(2, 0),
+        "the dashed underline, the highest style"
+    );
+    assert_eq!(new.cell(3, 0), old.cell(3, 0));
+    assert!(
+        !new.cell(3, 0).attr.is_italic(),
+        "the cut `4:` lost its colon"
+    );
+    assert_eq!(blob_of(&new), blob_of(&old));
 }

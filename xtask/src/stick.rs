@@ -389,12 +389,23 @@ pub(super) fn stick_boot() -> bool {
     ok
 }
 
-/// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons.
+/// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons. The
+/// self-test verdict is its prefix here, because what follows the count depends on the machine
+/// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green.
 const BOOTED: [&str; 3] = [
     "nife uefi_loader: milestone 87",
-    "nife self-test: 5 of 5 passed",
+    boot_ladder::SELF_TEST,
     "nife: handing the system to the userspace progenitor.",
 ];
+
+/// The self-test verdict line's `FAILED:` list, if this transcript has a red one.
+fn verdict_failed(transcript: &str) -> Option<&str> {
+    let line = transcript
+        .lines()
+        .find(|l| l.contains(boot_ladder::SELF_TEST))?;
+    let at = line.find(boot_ladder::SELF_TEST_FAILED)?;
+    Some(line[at..].trim_end())
+}
 
 /// **The aarch64 stick, booted with ACPI and no device tree** (milestone 578 (an ACPI discovery path for aarch64)): the state every
 /// aarch64 cloud machine is in, since SBBR forbids it a tree, and the one the loader meets by
@@ -467,6 +478,10 @@ fn boot_and_check(who: &str, arch: &str, file: &str, env: &[(&str, &str)], also:
             eprintln!("{who}: {arch}: the transcript is missing {wanted:?}");
             passed = false;
         }
+    }
+    if let Some(failed) = verdict_failed(&transcript) {
+        eprintln!("{who}: {arch}: the self-test verdict is red: {failed}");
+        passed = false;
     }
     if transcript.contains("[PANIC]") {
         eprintln!("{who}: {arch}: the kernel panicked");

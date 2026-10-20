@@ -13,21 +13,23 @@ with `left: None`. Confirmed red on 2026-10-13 (UTC) on all three architectures 
 cores (PVH, 4 of 4 runs) and one core (OVMF), aarch64 and riscv64 at four cores (1 of 1 each).
 Replayed again on 2026-10-13 (UTC) after the precondition moved into the window (lane
 maintainer/installed-space-tick-flake): red with `left: None` on riscv64 under `--cpu rva23s64` and
-`--cpu thead-c906`, and on aarch64 (1 of 1 each).
+`--cpu thead-c906`, and on aarch64 (1 of 1 each). Re-cut on 2026-10-20 (UTC) when the `allow`
+above the function changed (milestone 890 (riscv64 and `x86_64` join the shared boot path)), and
+replayed red on aarch64.
 
 diff --git a/kernel/src/user/address_space.rs b/kernel/src/user/address_space.rs
-index 871577d2e..67f57dc66 100644
+index 09742fcb1..4cebf1877 100644
 --- a/kernel/src/user/address_space.rs
 +++ b/kernel/src/user/address_space.rs
-@@ -448,7 +448,6 @@ impl AddressSpace {
-         allow(dead_code)
-     )]
+@@ -436,7 +436,6 @@ impl AddressSpace {
+     /// (`sched::adopt_address_space`), so the switch puts it back.
+     #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are the callers
      pub fn while_installed<R>(&self, body: impl FnOnce() -> R) -> R {
 -        let interrupts_were_enabled = crate::arch::interrupts::disable();
          // SAFETY: `ttbr0` composes this space's own root (built by a `Mapper` over `Half::Low`,
          // with the kernel's high half shared into it by both constructors) with the ASID allocated
          // to it, which is every architecture's contract. The root lives as long as `self`, which
-@@ -457,7 +456,6 @@ impl AddressSpace {
+@@ -445,7 +444,6 @@ impl AddressSpace {
          unsafe { mmu::activate_user(self.ttbr0()) };
          let result = body();
          mmu::deactivate_user();

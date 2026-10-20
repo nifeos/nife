@@ -167,23 +167,13 @@ mod user;
 mod virtio;
 
 // The boot itself (milestone 876 (the kernel crate root is split along its seams)): `kernel_main`
-// and the steps all three boots share, the machine description, and each port's milestone tour
-// (aarch64's in `milestone_tour`, riscv64's in `riscv64_boot`, `x86_64`'s in `x86_64_boot`, all
-// reached from the same line of `kernel_main`). `helpers/lint_arch_parity.py` takes a module's architectures from
-// the `cfg` on its declaration here, so the per-architecture modules carry theirs on this line.
+// and the steps all three boots share, and the machine description. `x86_64_boot` holds the one
+// thing only that port's boot does, its watch over the progenitor after the hand-over.
+// `helpers/lint_arch_parity.py` takes a module's architectures from the `cfg` on its declaration
+// here, so the per-architecture module carries its own on this line.
 mod boot;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 mod machine_description;
-#[cfg(not(any(
-    test,
-    feature = "system_tests",
-    feature = "bench",
-    target_arch = "riscv64",
-    target_arch = "x86_64"
-)))]
-mod milestone_tour;
-#[cfg(target_arch = "riscv64")]
-mod riscv64_boot;
 #[cfg(target_arch = "x86_64")]
 mod x86_64_boot;
 
@@ -195,20 +185,6 @@ pub use boot::{DTB, device_tree, kernel_main};
 pub use console::_print;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 use machine_description::*;
-#[cfg(not(any(
-    test,
-    feature = "system_tests",
-    feature = "bench",
-    feature = "shell",
-    target_arch = "riscv64",
-    target_arch = "x86_64"
-)))]
-use milestone_tour::*;
-#[cfg(all(
-    target_arch = "riscv64",
-    not(any(test, feature = "system_tests", feature = "bench", feature = "shell"))
-))]
-use riscv64_boot::*;
 #[cfg(target_arch = "x86_64")]
 use x86_64_boot::*;
 

@@ -53,7 +53,8 @@ pub const BANNER: &str = "nife on ";
 /// the claim a ladder rung should make. A header would only have meant the block started.
 pub const MACHINE: &str = "nife machine: ";
 
-/// **The self-test verdict: `nife self-test: 5 of 5 passed`, or `... , 1 FAILED: <names>`.**
+/// **The self-test verdict: `nife self-test: 13 of 13 passed`, `... , 2 absent: <names>`, or
+/// `... , 1 FAILED: <names>`.**
 ///
 /// Printed by `kernel/src/self_test.rs` after the description and before anything is handed to
 /// userspace. The counts are there on success as well as on failure, so that "ran nothing and
@@ -62,12 +63,22 @@ pub const SELF_TEST: &str = "nife self-test: ";
 
 /// **What a red verdict says before it names the checks that failed.**
 ///
-/// Uppercase, and the same token as `FAILED: a spinner did not run, or nothing was preempted.`,
-/// which `kernel/src/milestone_tour.rs`'s preemption check has printed since milestone 267 (the
-/// milestone tour is three things wearing one name), so this is the tree's word rather than a new
-/// one. It appears *inside* a [`SELF_TEST`] line; a matcher wanting a failed verdict must find
-/// both.
+/// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears
+/// *inside* a [`SELF_TEST`] line, after any [`SELF_TEST_ABSENT`] list; a matcher wanting a failed
+/// verdict must find both.
 pub const SELF_TEST_FAILED: &str = "FAILED: ";
+
+/// **What a verdict says before it names the checks this machine had nothing for** (calef's ruling
+/// of 2026-10-20 (UTC) on #2447): `nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng`.
+///
+/// An absent check neither passed nor failed: the machine has no device for it to test, and the
+/// kernel's line for that check says which. The verdict stays green unless something says
+/// [`SELF_TEST_FAILED`], which always comes after this list when both are present. Whether an
+/// absence is acceptable is the board's fact, not the kernel's: `board_console`'s board profiles
+/// name the checks that may not be absent on each board, and read such an absence as a failure.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
+pub const SELF_TEST_ABSENT: &str = "absent: ";
 
 /// **The boot self-test's checks, by name, in the order they run** (milestone 268).
 ///
@@ -83,15 +94,42 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// Changing the set is an edit to this one list, which every architecture and the recogniser read.
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
-pub const SELF_TEST_CHECKS: &[&str] = &["exceptions", "mapping", "frames", "timer", "scheduler"];
+pub const SELF_TEST_CHECKS: &[&str] = &[
+    "exceptions",
+    "mapping",
+    "frames",
+    "timer",
+    "scheduler",
+    "preemption",
+    "userspace",
+    "budget",
+    "blockdev",
+    "deviceirq",
+    "clock",
+    "trng",
+    "entropy",
+];
 
-/// **The RISC-V demonstration tour ran to its end.**
+/// **The lengths [`SELF_TEST_CHECKS`] had before, for reading a log a kernel of that time
+/// printed.** A captured bench log and a board still running an older image say `5 of 5 passed`,
+/// and that verdict was green against the list its kernel was built with. A recognizer accepts
+/// these totals as well as the current one; the kernel itself always counts against the current
+/// list, so a kernel built from this tree cannot print one of them.
 ///
-/// Printed by the RISC-V milestone tour, `kernel/src/riscv64_boot.rs`, and by nothing else. That is finding 3
-/// of milestone 268 (every architecture boots the same way), stated as a constant rather than as a
-/// defect: this rung is **one architecture's**, and keeping it here beside the three that are not
-/// is what makes that visible. It is not a rung of the portable ladder and the other two
-/// architectures do not print it.
+/// | length | in force |
+/// |---|---|
+/// | 5 | 2026-09-14 to 2026-10-20 (UTC): `exceptions` to `scheduler` (milestone 268 (every architecture boots the same way)) |
+///
+/// Name: provisional (milestone 890 (riscv64 and `x86_64` join the shared boot path)'s lane,
+/// 2026-10-20 UTC).
+pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5];
+
+/// **The boot's middle stages ran to their end**: `nife: the capability core runs on <arch>.`
+///
+/// Printed by `kernel_main` on all three architectures after the [`SELF_TEST`] verdict and any
+/// tour, just before the hand-over, so it says the machine was described and every check in
+/// [`SELF_TEST_CHECKS`] ran. It does not say they passed; the verdict says that. The `<arch>` is
+/// the kernel's own `arch::NAME`.
 pub const TOUR: &str = "nife: the capability core runs on ";
 
 /// **Userspace is up and the shell is offering a prompt.**
