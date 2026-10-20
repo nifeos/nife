@@ -15,8 +15,8 @@ nine recorded limitations and correctly declined to invent this convention as a 
 A `BUGS` entry asserts a present-tense fact: this is how the system is, knowingly. It addresses
 a user at the moment of use, it is complete in itself, and it carries no commitment to change.
 A roadmap row, whatever its status, asserts intent: the project plans, or deliberately defers,
-some work. `RECORDED` specifically means analysis captured with the decision deliberately not
-taken (milestones 39 and 52). Promoting every substantial limitation to a row would convert
+some work. A `NOT-STARTED` row behind a decision gate holds analysis while the decision waits,
+as milestone 52 (subshells without `fork`) does. Promoting every substantial limitation to a row would convert
 documentation into commitment and erode both artifacts: the roadmap fills with rows nobody
 intends to fund, and `BUGS` starts reading as a promise queue instead of honest disclosure.
 FreeBSD man pages carry `BUGS` entries for decades, healthily, and that posture is the one this
@@ -30,8 +30,9 @@ A limitation is promoted to a roadmap row exactly when one of these fires:
    so a limitation something waits on must become a row or the dependency is invisible to
    `script/roadmap`'s classifier. The ladder argument: the gate is the mechanism, and a `BUGS`
    entry sits one rung below it.
-2. Fixing it requires a design fork calef must rule on before any lane could start. This is
-   the only case that lands as `RECORDED`; the row exists to hold the analysis while the
+2. Fixing it requires a design fork calef must rule on before any lane could start. This case
+   lands as `NOT-STARTED`, and the decision gate (`Gate: DECISION`) holds it off `--ready`; the
+   row exists to hold the analysis while the
    decision waits (§26's signature variant is the shape).
 3. Someone proposes to spend on it and the spend needs coordination: it spans lanes or
    components and cannot be a drive-by. Lands as `NOT-STARTED`.

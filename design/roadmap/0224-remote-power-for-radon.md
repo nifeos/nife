@@ -1,6 +1,7 @@
 ---
-status: RECORDED
+status: REFUSED
 raised: 2026-09-02
+refused_by: 257
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -9,23 +10,16 @@ needs_person: yes
 ---
 # 224. Nothing can power-cycle radon, so a hung soak needs a person
 
-Recorded, and what is recorded is a decision to stay manual. calef, 2026-09-04, on the four options
-below after the diagnosis was re-measured: accept manual power for now. The gate is answered
-rather than removed, so this block stays open as the place the question lives when it is revisited.
-It is the soak's remaining gap after milestone 221 (the soak never crosses cores, so build the hook
-that makes it).
+Refused by calef on 2026-09-04 (UTC). With the four options below in front of him and the diagnosis
+re-measured, calef chose manual power. Milestone 257 (boot radon over the network) is what made that the cheaper
+answer: it took away the card, which was the larger cost of a bench session, and left remote power
+buying only the hung-board case. This is the soak's remaining gap after milestone 221 (the soak
+never crosses cores, so build the hook that makes it).
 
-In the second sense `notes/roadmap.md` names, which is the one that
-never discharges by waiting: the plug is here, the board is here, and every option left below needs
-a person at the router or at the outlet. Reading the access point's configuration, moving the
-board's outlet, putting patagonia's radio on the plug's network and writing one firewall rule are
-all hands rather than decisions, and no lane can do any of them.
-
-No `design/decisions/` section is minted for it, and that is the judgment rather than an
-omission. A deferral is an answer, and filing an answered question as `**Status: PROPOSED.**` would
-put a decision calef has already made back on the queue he keeps it in. What reopens it is the soak
-hanging on radon, which is fatal risk 5's most interesting outcome and the one case manual power
-costs an evening on. A fresh choice among the four options below is his again on that day.
+Every option left below needs a person at the router or at the outlet, in the second sense of
+HARDWARE that `notes/roadmap.md` names, the one that never discharges by waiting. Reading the access
+point's configuration, moving the board's outlet, putting patagonia's radio on the plug's network
+and writing one firewall rule are all hands rather than decisions, and no lane can do any of them.
 
 In brief. **radon**'s power is on a Kasa KP303 strip. calef wired it on 2026-09-01, and outlet
 2 is the board while another outlet feeds an external drive that must never be switched off.
@@ -40,6 +34,10 @@ alike, while five other clients on the same subnet answer normally. The vendor a
 which it can do through the vendor's cloud.
 
 So the plug is deliberately isolated from other clients on the network it is joined to.
+
+## Revisit
+
+- **Condition.** The fatal risk 5 soak hangs radon, which is the case manual power costs an evening on. A fresh choice among the four options below is calef's on that day.
 
 ## Why it matters now rather than as a convenience
 

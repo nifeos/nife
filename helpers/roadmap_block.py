@@ -59,7 +59,7 @@ VALUE = {
 
 # The status vocabulary, as `script/roadmap` defines it; `PROPOSED` belongs to proposals alone.
 STATUSES = ["BUILT", "REMOVED", "SUPERSEDED", "PARTIAL", "IN-PROGRESS", "NOT-STARTED", "OPTIONAL",
-            "RECORDED", "REFUSED"]
+            "REFUSED"]
 PROPOSED = "PROPOSED"
 
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -160,6 +160,8 @@ def body(text):
 # it held down the median of every block that carried one, so removing it in milestone 596's switch
 # read as 118 blocks getting worse. The patterns are literals on purpose, so a scanner that derives
 # markers from the parsers' source (as #1311's does for bold) sees them.
+# RECORDED is retired (calef, 2026-10-20 UTC) and stays in this token and in PHRASE because
+# `script/citations` reads old revisions, whose prose-form blocks spell it.
 STATUS_TOKEN = re.compile(r"^\*\*Status: (BUILT|REMOVED|SUPERSEDED|PARTIAL|IN-PROGRESS|"
                           r"NOT-STARTED|OPTIONAL|RECORDED|REFUSED|PROPOSED)\b([^*]*)\*\*[ \t]*", re.M)
 BUILT_TOKEN = re.compile(r"^\*\*Built:\*\* \d{4}-\d{2}-\d{2}[ \t]*$", re.M)

@@ -78,7 +78,7 @@ download, and it is recorded below as identified work rather than as a gate.
 | **A. `Gate: DECISION`**, the prose naming the format, activation and trust proposals | 198 waits on calef's rulings on the forks that are actually his | One line in a roadmap block | **Recommended.** It names what really stops a lane |
 | B. Keep `DECISION, MILESTONE 23` | The status quo | Nothing to change; 198 stays unstartable by construction | Loses: `MILESTONE 23` names a milestone that cannot move until 198 exists |
 | C. `Gate: NONE` and let a lane build a first slice under provisional answers | Fastest | A lane would pick a package format, which AGENTS.md puts in the irreversible category | Loses: the format and the trust root are calef's, and a provisional wire format is a contradiction |
-| D. Gate 198 on milestone 39 instead | Honest about where the split question lives | 39 is `RECORDED`, not a milestone a lane builds, and the split is not needed (above) | Loses on the premise check |
+| D. Gate 198 on milestone 39 instead | Honest about where the split question lives | 39 is `SUPERSEDED`, not a milestone a lane builds, and the split is not needed (above) | Loses on the premise check |
 
 ## What the tree already does in the analogous case
 
