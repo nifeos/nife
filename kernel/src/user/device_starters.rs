@@ -280,9 +280,10 @@ pub(super) fn boot_e1000e_network() -> Option<e1000e_service::Wiring> {
 
 /// **The booted system's stack over radon's Ethernet port** (milestone 53 (the board's own
 /// peripherals: network and storage on real silicon)), [`boot_e1000e_network`]'s twin. Returns the
-/// `Stack` endpoint and the lease endpoint, or `None` having said why. Until
-/// `designware_ethernet_service::PROVEN_ON_SILICON` is true it touches nothing: radon's boot is the
+/// `Stack` endpoint and the lease endpoint, or `None` having said why. While
+/// `designware_ethernet_service::PROVEN_ON_SILICON` is false it touches nothing: radon's boot is the
 /// one every other bench session depends on, and a bring-up that hung would take the prompt with it.
+/// With no cable in the port it costs the five seconds the link wait allows, then says `NONE`.
 #[cfg(target_arch = "riscv64")]
 #[cfg_attr(
     any(
