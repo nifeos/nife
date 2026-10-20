@@ -12,10 +12,14 @@
 #   3. SIGKILL of the holder frees the slot: fails if the lock outlives its process (a lock file or
 #      directory with no cleanup, the shape a killed lane would otherwise leave stuck);
 #   4. a nested job, with its environment scrubbed, runs at once and in place: fails if it takes or
-#      waits for a second slot, which with one slot is a deadlock, or if it re-executes "$0".
+#      waits for a second slot, which with one slot is a deadlock, or if it re-executes "$0";
+#   5. under LINT_NO_CARGO a job runs while the slot is held: fails if `script/lint --no-cargo`'s
+#      sections can wait on a slot again, which loses a push after its gates pass (#2478).
 #
 # Name: provisional, minted 2026-10-19 (UTC) by lane/heavy-job-slots.
 set -eu
+# This runs inside `script/lint --no-cargo`, whose LINT_NO_CARGO would let every stage's job through.
+unset LINT_NO_CARGO
 
 here="$(cd "$(dirname "$0")" && pwd)"
 work="$(mktemp -d "${TMPDIR:-/tmp}/heavy-slot-selftest.XXXXXX")"
@@ -84,6 +88,10 @@ grep -q "pid=$holder job=hold" "$work/second.err" \
     || fail "the waiting job did not name the holder; it printed: $(cat "$work/second.err")"
 [ "$(grep -c 'is waiting' "$work/second.err")" -eq 1 ] \
     || fail "the waiting message was not printed exactly once: $(cat "$work/second.err")"
+
+LINT_NO_CARGO=1 "$work/script/run" "$work/no-cargo-ran" 2>"$work/no-cargo.err" &
+appears "$work/no-cargo-ran" 10 \
+    || fail "a job under LINT_NO_CARGO waited for the held slot: $(cat "$work/no-cargo.err")"
 
 kill -9 "$holder"
 wait "$holder" 2>/dev/null || true
