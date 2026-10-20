@@ -1,4 +1,4 @@
-# Step 0 under milestone 796's pin: why E3 as specified cannot run
+# Step 0 under milestone 796's pin: why E3 as specified cannot run, and why it was retired
 
 *An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md), whose "The next
 radon evening" holds the procedure this step belongs to. Name provisional.*
@@ -31,7 +31,7 @@ not say the block's own position is irrelevant. Unpinned, on 2026-10-05, placeme
 same number between 110 and 118. 121 is from another commit, so it does not compare cleanly with
 that range.
 
-## The fork this leaves, for an architect
+## The fork, and calef's ruling
 
 1. **Move the sled ahead of the hot symbols, so E3 moves the pinned block as a unit.** Literally
    ahead of `.text.hot` measures nothing. The block starts at `ALIGN(16384)`, so a sled before it
@@ -62,3 +62,8 @@ placement question that belongs to milestone 796, beside its BUGS entry that ali
 block is not controlled, and option 3 answers a question nobody asked. The recommendation is not
 about effort. If the block's offset is worth measuring, and 121 against 110 to 118 hints it may be,
 that is a follow-on for 796 rather than E3.
+
+calef ruled on #2472, relayed and recorded by the maintainer at 19:58 UTC: *calef, 2026-10-20
+(UTC): "2". Retire E3's question.* Option 2 is in force. E3 has no attributable number, and
+milestone 134's register row for it is retired. Its bench evidence stays in
+`bench/radon-2026-10-20/`.

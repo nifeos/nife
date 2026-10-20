@@ -31,10 +31,9 @@ and both are single-build sweeps, so the confound below does not touch them; the
 they stand. The per-IPC kernel stack depth, which E1's prediction used to estimate, is now measured
 (notes/stack-high-water.md, "Per-IPC depth").
 
-What is owed is E3, and only E3 under a layout control. Re-running E3 as it was built would
-reproduce the 2026-09-04 confound exactly (this page's BUGS: a second card or a second board
-changes nothing about addresses, so it would look like confirmation). The control is built, as
-of 2026-09-19: `kernel/src/fastpath_pad.rs`, sized by two build-time variables.
+Nothing E3 is owed. calef retired its question on 2026-10-20 (UTC), after step 0 failed under
+milestone 796's pin (below). The procedure stays as the record of what E3 under a layout control
+was, built in `kernel/src/fastpath_pad.rs`.
 
 ### The knob, in one paragraph
 
@@ -104,9 +103,8 @@ layout record; what it carries is in [layout-control.md](footprint-perturbation/
 Step 0 ran on 2026-10-20 (UTC) at `68647cfc5`. The code hash and the sled address matched in all
 eight images, and every image read `the sled precedes 0 of 16 hot symbols, 0% of their bytes`.
 Milestone 796 pins the hot trap path in `.text.hot`, ahead of the sled, so no pad or shift moves a
-hot instruction and the eight images are one hot-path layout. No boot ran. The evidence, the cause
-and the fork it leaves for an architect (rebuild the sled inside the hot block, retire E3's
-question, or run the images as built; retiring is recommended) are in
+hot instruction and the eight images are one hot-path layout. No E3 boot ran, and calef retired
+E3's question. The evidence, the fork and the ruling are in
 [step-0-under-the-pin.md](footprint-perturbation/step-0-under-the-pin.md).
 
 ### The boots
@@ -171,7 +169,8 @@ Optional, one boot, if there is time: a card built with `--extra-features ipc_st
 prints the per-IPC depth lines on the board itself. It should reproduce the QEMU release numbers
 to the byte (the `board` and `single_hart` features are the only differences); a disagreement would
 mean one of them changes the IPC path's codegen, which nothing currently expects. Its timing rows
-are not results, since the instrument paints on every sample.
+are not results, since the instrument paints on every sample. On 2026-10-20 every EL0 series
+read 16 bytes deeper (notes/stack-high-water/per-ipc-depth.md).
 
 ### Sharing the night with milestone 168
 
@@ -243,9 +242,9 @@ instruction-cache miss counter (M6). The full section is in
 The full list, with the reasoning for each, is in
 [limitations.md](footprint-perturbation/limitations.md). The ones that change how a number is read:
 
-- E3 has no attributable number yet. The 2026-09-04 reading summed footprint and layout, and the
-  control cannot run as specified on a tree with milestone 796's pin, since no pad or shift reaches
-  the hot path ([step-0-under-the-pin.md](footprint-perturbation/step-0-under-the-pin.md)).
+- E3 is retired with no attributable number. The 2026-09-04 reading summed footprint and layout,
+  and the control cannot run as specified on a tree with milestone 796's pin, since no pad or shift
+  reaches the hot path ([step-0-under-the-pin.md](footprint-perturbation/step-0-under-the-pin.md)).
 - The padding is never executed. Even a clean dose-response tests the counted footprint, not
   Liedtke's claim about an executed one; [E5](footprint-perturbation/executed-footprint.md) plans
   that.

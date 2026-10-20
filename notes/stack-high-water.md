@@ -215,7 +215,9 @@ stack one IPC reaches. In the release kernel a round trip reaches about 600 byte
 threads and about 1 KiB at EL0, half the 1 to 2 KiB that E1 of milestone 134 (the register of measures) estimated. The debug
 kernel reaches 2 to 2.4 KiB. At 600 bytes a thread, cache capacity does not explain E1's knee at 8
 threads. Page-aligned stacks aliasing in radon's 4-way L1 might; so might page-aligned TCBs, and a
-cheap coloring experiment would tell them apart. The instrument, the tables and the readings are in
+cheap coloring experiment would tell them apart. On radon at one commit, kernel-thread CALL/REPLY
+reproduces QEMU to the byte and every EL0 series reads 16 bytes deeper, because `single_hart` grows
+`riscv_trap_body`'s frame. The instrument, the tables and the readings are in
 [stack-high-water/per-ipc-depth.md](stack-high-water/per-ipc-depth.md).
 
 ## BUGS

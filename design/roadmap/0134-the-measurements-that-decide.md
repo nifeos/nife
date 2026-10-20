@@ -1,11 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-08-18
-milestone_dependencies: none
-decision_dependencies: none
-machine_requirements: none
-specific_machine: radon (the radon evening E3 is owed)
-needs_person: yes
+built: 2026-10-20
 ---
 # 134. The register of measures: every number this kernel owes itself
 
@@ -23,9 +19,10 @@ decisions?"* Both open kernel decisions ended in the same place, that the decidi
 exist, and §96 (process kernel or event kernel) said the instrument "wants a roadmap block of
 its own". This is it.
 
-What 134 still owes is E3 under a layout control, and E3 as specified cannot run on this tree:
-milestone 796 (pin the hot trap path's placement) holds the hot path still, so no pad or shift moves
-it. Whether to rebuild E3 or retire its question is an open fork for calef; "Follow-on" has it.
+E3's question is retired, by calef's ruling of 2026-10-20 (UTC). Milestone 796 (pin the hot trap
+path's placement) holds the hot path still, so no pad or shift moves a byte that is fetched. The
+footprint question milestone 188 (the IPC fastpath) leans on is the executed one, E5. "Follow-on"
+has the ruling.
 
 The detail lives in two appendices, and this page is complete without them:
 
@@ -74,7 +71,7 @@ through no PMU. [`measures.md`](0134-the-measurements-that-decide/measures.md) d
 |---|---|---|---|
 | E1 | IPC latency against thread count | whether per-thread stacks cost anything (§96) | knee at 16 threads on radon |
 | E2 | thread census on the customer path | whether §96 matters at all | 4 new threads |
-| E3 | footprint perturbation: pad the fastpath, time it | §95's premise, with no PMU | confounded by layout; cannot run under 796's pin, fork open |
+| E3 | footprint perturbation: pad the fastpath, time it | §95's premise, with no PMU | retired by calef, 2026-10-20; E5 (milestone 708) asks it of executed code |
 | E4 | application displacement under IPC load | Liedtke's claim, as lost throughput | 5 to 8% at 96 threads on radon |
 | M5 | cycles per IPC round trip | milestone 101 (the L4 calibration)'s ±1.5x; the seL4 comparison | instrument on all three ISAs |
 | M6 | I-cache misses per IPC | whether the footprint proxy is right | no event counter yet |
@@ -133,6 +130,11 @@ worth more standing next to its correction than quietly fixed.
 - 2026-09-19, tier B's instruments: M5 has one on all three ISAs; M9 has the counter but not the
   stamps; M6 to M8 have none. `PMCCFILTR_EL0` is provisional pending calef's decision A in
   `design/roadmap/proposals/the-aarch64-half-of-74.md`, so no aarch64 cycle figure is published yet.
+- 2026-10-20, on radon: E3's step 0 fails under milestone 796's pin
+  (notes/footprint-perturbation/step-0-under-the-pin.md), and calef retired E3's question. The
+  optional stack-depth boot ran at the same commit as a QEMU control. Kernel-thread CALL/REPLY
+  matches to the byte; every EL0 series reads 16 bytes deeper on the board, because `single_hart`
+  grows `riscv_trap_body`'s frame from 160 to 176 bytes (notes/stack-high-water/per-ipc-depth.md).
 
 ## Scope note
 
@@ -164,10 +166,11 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
   and 2 to 4 KiB in the debug build (notes/stack-high-water.md, "Per-IPC depth"). Redone with the
   measured figure, the prediction puts a pure capacity knee near 54 threads. The observed knee is
   at 8 to 16, and milestone 506 is the test of why.
-- The per-IPC depth is a QEMU number for a build radon boots with two features QEMU cannot
-  (`board`, `single_hart`). Depth is a property of the code, so TCG measures it honestly. Whether
-  those two features move the IPC path's codegen is one optional board boot, listed in the
-  evening's procedure.
+- The per-IPC depth table is QEMU's, for a build radon boots with two features QEMU cannot
+  (`board`, `single_hart`). One of them moves the trap path: `single_hart` saves three more
+  registers in `riscv_trap_body`, so every EL0 series reads 16 bytes deeper on radon than in QEMU
+  at the same commit. Kernel-thread series match to the byte
+  (notes/stack-high-water/per-ipc-depth.md).
 - None of this measures the verification argument, and nothing can. §96's claim that explicit
   continuation state suits a model checker better than an implicit stack is a design argument, and
   it will still be a design argument after every number here exists.
@@ -183,30 +186,21 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
 
 ## Follow-on
 
-- **Outstanding.** E3, the one item between this block and BUILT, waits on calef. Step 0 ran on
-  2026-10-20 (UTC) at `68647cfc5` and failed by construction: eight images, one code hash, and every
-  one reads `the sled precedes 0 of 16 hot symbols`. Milestone 796's pin holds the hot trap path at
-  one address ahead of the sled, so a pad or a shift moves no hot instruction. No boot ran. The fork
-  is in notes/footprint-perturbation/step-0-under-the-pin.md: rebuild the sled inside `.text.hot`,
-  retire E3's question in favor of E5, milestone 708 (an executed footprint ladder for radon), or
-  run the images as built. Recommended: retire it, and the reason is not effort. Retired, this block
-  goes BUILT with the E3 row recorded as retired. Otherwise the evening must produce, at one commit,
-  on `board,bench,single_hart,fastpath_pad` cards:
-  1. step 0 passing;
-  2. `call_reply`, `ipc_rtt` and `ipc_rtt_el0` at the eight images, three boots each, interleaved,
-     each ending `bench: done` with `cntfrq 4000000` and its `fastpath_pad` probe line;
-  3. the reading per row against the layout range, in notes/footprint-perturbation.md and the
-     register's E3 row;
-  4. each boot's `cycles_per_tick` line.
-
-  E1 and E4 re-date on the same boots. No outcome measures Liedtke's executed-footprint claim,
-  since a never-executed pad acts only through addresses. That is M6.
+- **Refused.** E3 under a layout control, retired by calef's ruling on #2472, recorded by the
+  maintainer as *calef, 2026-10-20 (UTC): "2". Retire E3's question* (19:58 UTC). Step 0 failed
+  by construction at `68647cfc5`: eight images, one hot-path layout, `the sled precedes 0 of 16 hot
+  symbols`. A byte nothing fetches can reach a clock only by moving code that is fetched, and
+  milestone 796's pin moves none of the hot path. Whether moving kernel text costs time is
+  796's own sweep. The footprint question milestone 188 leans on is the executed one, E5,
+  milestone 708 (an executed footprint ladder for radon). The evidence stays in
+  `bench/radon-2026-10-20/` and notes/footprint-perturbation/step-0-under-the-pin.md. Liedtke's
+  executed-footprint claim is M6 and E5, never E3.
 - **Milestone 506.** milestone 506 (color the kernel stacks and take E1),
   `design/roadmap/0506-colour-the-kernel-stacks-and-take-e1-again.md`: start each thread's stack a
   per-slot color below its top in a feature build and take E1 again on radon. A knee that moves
   right says the stacks caused it, and a process kernel buys it back with coloring. One that stays
   at 8 says the TCBs (page-aligned) did, which an event kernel would not remove either. Either is a
-  sharper input to §96 than it has. Can ride on the E3 evening.
+  sharper input to §96 than it has. Can ride on any radon bench evening.
 - **Milestone 503.** milestone 503 (an event-counter driver),
   `design/roadmap/0503-an-event-counter-driver-for-m6-to-m8.md`: one cache-refill and one
   TLB-refill event per ISA, kernel-internal, read like 74's cycle counter. Milestone 74's scope note
@@ -244,11 +238,8 @@ falsifiable prediction: stacks 28 KiB apart fill a 32 KB L1d at 16 to 32 threads
 should be in the low tens. It must not run under icount, which would report a flat line that looks
 like an answer. Tier B is cycles, I-cache, D-cache attributed to the stack region, TLB, per-phase
 attribution that could refute the fastpath premise, application working-set displacement, and
-interrupt latency as the counterweight nobody has priced. PARTIAL 2026-08-18: the register itself
-landed (notes/register-of-measures.md), with the unsafe census and the `count-at-most` ceiling
-folded in at calef's direction. Density outside `kernel/src/arch/` has fallen 22.8 to 9.3 per
-10,000 lines since 2026-07-15 and nothing was measuring it. E1 through E4 ran 2026-08-22: a real
-knee in IPC latency by 64-96 threads (8-11% over the flat region), 4 new threads at the
-customer-path topology. Fastpath footprint grew ~2x with only 2-3% measured latency effect.
-Application displacement under IPC load was 0-3%. Tier B remains gated on milestone 74's counters
-and milestone 127's silicon
+interrupt latency as the counterweight nobody has priced. BUILT 2026-10-20: the register
+(notes/register-of-measures.md) carries the unsafe census and its `count-at-most` ceiling. Tier
+A is read on radon: E1's knee at 16 threads, E4's 5 to 8% under 96-thread load, 4 new threads at
+the customer-path topology. E3's question is retired by calef in favor of E5, milestone 708. Tier
+B stays owed on milestone 74's counters and milestone 127's silicon
