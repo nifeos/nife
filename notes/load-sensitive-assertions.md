@@ -28,8 +28,7 @@ yet, so it can only make a count lower than the test expected.
 - A negative failure (more free frames than at the start, fewer threads than the baseline) is not
   a timeout. The assertion was written against something wider than the property, and state from
   outside the measured window tripped it. The usual source is a neighboring test's teardown
-  landing late. `notes/riscv-parity-scope.md` named the shape: "a wait written against something
-  wider than the property".
+  landing late.
 
 A negative failure cannot be fixed by a margin: widening the bound only hides the defect. That is
 §61 (a lint is adopted on evidence), applied to assertions.
@@ -124,7 +123,8 @@ remains) or fixed. A fixed site can still carry a residual in BUGS below.
 | assertion | file | status | what was done, or what is left | appendix |
 |---|---|---|---|---|
 | five userspace retry loops over the refusal of §16 (object revocation) | `system_initializer`, `login.rs`, `swish.rs`, `job_undertaker.rs`, `timetable.rs` | open | a yield count waiting on a timer tick; two trap on exhaustion. Milestone 185 (sweep userspace's bounded retry loops onto a clock), not started | [caretaker teardown](load-sensitive-assertions/caretaker-teardown-wait.md) |
-| `a_process_spends_memory_region_and_the_kernel_never_allocates` | `user/tests.rs` | open | a global `used()` equality across a process run. Never seen red; found by reading on 2026-09-24 | this page, BUGS |
+| boot self-test `budget` | `self_test.rs` | narrowed | the check before it waits for its own reap; the window stays global | [budget's window](load-sensitive-assertions/boot-self-test-budget.md) |
+| `a_process_spends_memory_region_and_the_kernel_never_allocates` | `system_tests/src/user/elf_child_builder_tests.rs` | open | a global `used()` equality across a process run, which the `free_page_frames()` sweep did not read. Never seen red, though its boot twin `budget` has; found by reading on 2026-09-24 | [budget's window](load-sensitive-assertions/boot-self-test-budget.md) |
 | `a_user_program_that_never_yields_is_preempted_anyway` | `user/tests.rs` | open | a wall-clock window with no wait; needs all four cores descheduled; never seen red | [known residuals](load-sensitive-assertions/known-residuals.md) |
 | `every_secondary_runs_scheduled_work` | `smp.rs` | open | indexes by the core a probe ran on. If it fails, take the placement probe's fix | [known residuals](load-sensitive-assertions/known-residuals.md) |
 | `a_finished_thread_is_reaped_and_its_memory_returned` | `sched.rs` | narrowed | per-`ThreadId` reap waits, a waited `used() <= before` (08-03); a one-thread stack-reuse probe (08-17) | [first verdicts](load-sensitive-assertions/global-baselines-and-the-drift-law.md), [stack reuse](load-sensitive-assertions/stack-reuse-and-proxy-detectors.md) |
@@ -176,10 +176,6 @@ been read against these questions.
   tests). A one-shot leak of `k` frames passes if a neighbor frees `k` in the same window; a
   persistent leak still fails. [Known residuals](load-sensitive-assertions/known-residuals.md) has
   this and the stack-reuse probe's two residuals.
-- `a_process_spends_memory_region_and_the_kernel_never_allocates` (`user/tests.rs`) brackets a
-  process run with a global `used()` equality. That is the swept shape in a function the sweep did
-  not read, because it reads `memory::stats()` rather than `free_page_frames()`. It has never been
-  seen red. Recorded here, not fixed.
 - `ticks_arrive_at_the_configured_rate` can go unmeasured on a loaded host. It did on 9 of 36 legs on
   2026-08-18 and on 0 of 90 on 2026-08-22. A shorter window would be sound, since the law fails on
   the first drifting tick. It was refused for want of a rate measured on more than one host.
@@ -230,6 +226,7 @@ of them, so the citation still resolves.
 | [free-page-frames-sweep](load-sensitive-assertions/free-page-frames-sweep.md) | 46 reads of the global counter | "The sweep, 2026-09-23" |
 | [preemption-window-tick](load-sensitive-assertions/preemption-window-tick.md) | a tick raised late, read as one dropped | "A tick not yet raised: 2026-09-24" |
 | [inbound-eintr](load-sensitive-assertions/inbound-eintr.md) | a signal read as a dead connection | "An interrupted read: 2026-09-24" |
+| [boot-self-test-budget](load-sensitive-assertions/boot-self-test-budget.md) | a neighbor's teardown in a global window | "A neighbor's teardown: 2026-10-20" |
 
 ## See also
 

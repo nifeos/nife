@@ -958,6 +958,14 @@ jobs:
       # a checkpoint that could never fire on two of three architectures, and it hid for months
       # because nothing read the channel it was supposed to appear on.
       - run: helpers/hang_evidence.py run -- script/ci-build boot-check
+      # The job log carries only the verdict line, which names a failed check but not what it
+      # measured; each check's own line is in the boot log.
+      - name: Upload the boot logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: boot-check-logs
+          path: target/boot-check-*.log
       # **And the release x86_64 UEFI image, booted under OVMF to the shell.** Every image a
       # machine gets is release (`install-boot`, `network-bench`), and a debug boot cannot stand in
       # for one: an `asm!` operand sharing a register with a live input is harmless at debug and
