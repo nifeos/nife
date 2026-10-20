@@ -47,6 +47,13 @@
 //! - **[`budget`]'s helper thread can be left parked.** A receive has no deadline, so the reports
 //!   are taken on a thread of their own; a process that never reports leaves that thread blocked,
 //!   and the check fails by its own deadline.
+//! - **[`budget`] still brackets the machine's used-frame count**, so it is sound only while
+//!   nothing on any core allocates or frees a frame in its window. That is a rung below a
+//!   mechanism, and deliberately so: the claim is that the kernel allocates nothing, which no
+//!   single object can be asked. It holds because each earlier check that spawns waits for its
+//!   threads to be reaped ([`preemption`], [`userspace`]) or ends long before ([`scheduler`]'s
+//!   thread, a fifth of a second earlier). A check added before it that returns with a teardown
+//!   in flight reopens the red `notes/load-sensitive-assertions.md` records.
 //! - **A check can still hang the boot if the operation it measures never returns.** Both waits
 //!   read the counter through [`Counter`], which reports a stopped counter rather than waiting on
 //!   it, and [`fn@timer`] spins rather than sleeping. A `sched::yield_now` or `mmu::map_page` that
@@ -709,6 +716,13 @@ fn preemption(tally: &mut Tally) {
 ///
 /// Needs the archive, which every boot that can hand over has. A boot without one fails this check
 /// by name rather than passing it: no user program ran.
+///
+/// **It waits for the killed thread to be reaped before it returns.** The fault is counted before
+/// the process is torn down, and the teardown returns about twenty frames on whichever core the
+/// thread was on. [`budget`], next, brackets a process run with the machine's used-frame count, so
+/// a teardown still in flight lands in its window and reads as the kernel allocating. Under TCG
+/// with two cores the thread was still present when this returned on 22 of 24 loaded boots
+/// (2026-10-20); `notes/load-sensitive-assertions.md` has the red it caused.
 fn userspace(tally: &mut Tally) {
     use crate::arch::exceptions::{USER_FAULTS, last_user_fault};
     use crate::user;
@@ -737,8 +751,9 @@ fn userspace(tally: &mut Tally) {
     });
     let faulted = tid.is_some() && wait_until(2, || USER_FAULTS.load(Ordering::Acquire) > before);
     let at = last_user_fault().map(|(_, addr)| addr);
+    let reaped = tid.is_some_and(|t| wait_until(2, || !sched::is_thread_present(t)));
 
-    let ok = faulted && at == Some(kernel_addr);
+    let ok = faulted && at == Some(kernel_addr) && reaped;
     tally.record(
         "userspace",
         ok,
@@ -748,7 +763,8 @@ fn userspace(tally: &mut Tally) {
                 (false, _) => "it could not be spawned",
                 (true, false) => "it was not stopped within 2s",
                 (true, true) if ok => "killed, and the kernel survived",
-                (true, true) => "a fault was recorded at another address",
+                (true, true) if at != Some(kernel_addr) => "a fault was recorded at another address",
+                (true, true) => "killed, but its thread was not reaped within 2s",
             }
         ),
     );
