@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-closed-week-is-captured-after-it-closes
 raised: 2026-10-19
 milestone_dependencies: 519
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: the host whose session records `script/effort` reads
 specific_machine: none
 needs_person: yes
 ---
-# A closed week's effort row is captured after the week closes
+# 934. A closed week's effort row is captured after the week closes
 
 Raised by the lane `maintainer/effort-w42-capture`, while repairing the 2026W42 row of
 `notes/project-metrics/effort.csv`. Name: provisional.
@@ -16,7 +17,7 @@ Reuse: the existing `script/effort --update`, `script/metrics --backfill-measure
 and the snapshot job already on the host. Nothing new is written except a wrapper.
 
 Held: calef ruled on 2026-10-19 (UTC) that no job is installed while development moves to another
-host ("no for now"). Promote this once development has settled on the new host.
+host ("no for now"). Nobody builds this until development has settled on the new host.
 
 ## The failure
 
@@ -78,3 +79,7 @@ kept off-tree by the maintainers.
 
 The job runs on one host. A week the host is away for longer than the transcripts survive is still
 lost, and the six-hourly snapshot remains what makes that a delay rather than a loss.
+
+## Index row
+
+A closed week's row in `notes/project-metrics/effort.csv` is right only if someone runs `script/effort --update` after the week ends. A Monday job on the host with the session records would capture it and open the pull request, so no person has to remember.

@@ -47,8 +47,8 @@
 # What is left for a person is one command, `script/effort --update`, and a commit, at least once
 # after each week closes. That is rung four, it is said to be rung four, and the two mechanisms
 # above exist so that missing it is a delay rather than a loss. A scheduled job that runs it and
-# opens the pull request is proposed in
-# design/roadmap/proposals/a-closed-week-is-captured-after-it-closes.md and not built.
+# opens the pull request is
+# milestone 934 (design/roadmap/0934-a-closed-week-is-captured-after-it-closes.md) and not built.
 #
 # # What is counted
 #

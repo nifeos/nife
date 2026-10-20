@@ -141,14 +141,43 @@ impl MappedWindow {
         self.write(off, v);
     }
     /// Read a `u64` at `off`. The caller keeps the offset 8-aligned: this is a volatile read of a
-    /// pointer whose alignment the type does not check, and the bulk-copy callers (the terminal's
-    /// scroll, the framebuffer's flush) arrange alignment by construction instead.
+    /// pointer whose alignment the type does not check, and the bulk-copy caller (the framebuffer's
+    /// flush) arranges alignment by construction instead.
     pub fn r64(&self, off: u64) -> u64 {
         self.read(off)
     }
     /// Write a `u64` at `off`. See [`r64`](Self::r64) for the alignment the caller owes.
     pub fn w64(&self, off: u64, v: u64) {
         self.write(off, v);
+    }
+
+    /// **Move `len` bytes from offset `src` to offset `dst` inside the window**, the ranges allowed
+    /// to overlap, as [`slice::copy_within`] does. Both ranges are bounds-checked once, not per
+    /// word.
+    ///
+    /// For a caller moving a block of its own pixels (the terminal's scroll), where a word-at-a-time
+    /// loop of [`r64`](Self::r64)/[`w64`](Self::w64) at opt-level 0 costs a call, a bounds check and
+    /// a volatile access per word: 349,440 of them for one scroll of the 1120x624 scanout. **Not
+    /// volatile**, and safe anyway: no reference is formed, so the compiler assumes nothing about
+    /// who else sees the bytes, and what a peer or device reads afterwards is ordered by the fence
+    /// and the call the caller makes to publish them, exactly as for its volatile writes. A peer
+    /// writing the same bytes meanwhile would make the result a mix of both, as it would for any
+    /// copy.
+    ///
+    /// Name: provisional, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
+    /// [`slice::copy_within`], whose argument order it keeps.
+    pub fn copy_within(&self, src: u64, dst: u64, len: u64) {
+        self.check(src, len);
+        self.check(dst, len);
+        // SAFETY: both ranges are inside the window (checked above), which `new`'s caller promised
+        // is mapped read/write; `ptr::copy` is the overlap-safe move.
+        unsafe {
+            core::ptr::copy(
+                (self.base + src) as *const u8,
+                (self.base + dst) as *mut u8,
+                len as usize,
+            );
+        }
     }
 
     /// The whole window as an ordinary byte slice, for a caller that hands it wholesale to a

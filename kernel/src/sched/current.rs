@@ -62,9 +62,15 @@ pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAX_CPUS] =
 /// with its caller. Which codegen unit this module falls in decides whether LLVM inlines it on
 /// its own, and that moves with unrelated code and with the build host: riscv64's CI build left it
 /// out of line once the arch roots were split, and x86_64 then did the same at one commit that CI
-/// had inlined (`script/fastpath-footprint`, 2026-10-14 and 2026-10-18 UTC). aarch64 still inlines
-/// it unforced, and forcing it there grows its `syscall_entry` past its band.
+/// had inlined (`script/fastpath-footprint`, 2026-10-14 and 2026-10-18 UTC). On aarch64 forcing it
+/// grows `syscall_entry` past its band, and whether LLVM inlines it there moves with unrelated
+/// commits too, so it carries a `.text.hot` section instead: inlined, the section is never used;
+/// out of line, the copy lands beside its caller.
 #[cfg_attr(any(target_arch = "riscv64", target_arch = "x86_64"), inline(always))]
+#[cfg_attr(
+    all(target_os = "none", target_arch = "aarch64"),
+    unsafe(link_section = ".text.hot.sched.set_current")
+)]
 pub(super) unsafe fn set_current(tid: ThreadId, tcb: *mut Thread) {
     cpu::current().current.store(tid, Ordering::Relaxed);
     // SAFETY: the caller's contract; an address computation, nothing is read.

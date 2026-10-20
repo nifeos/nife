@@ -206,40 +206,28 @@ fn paint(
 }
 
 /// **Move the picture up `px` pixel rows without rendering anything**: the pixel half of a scroll
-/// (`video_terminal::Damage`'s invariant; the paint lane, 2026-09-30).
+/// (`video_terminal::Damage`'s invariant).
 ///
 /// Every unchanged row of a scrolled screen is pixels this process already holds, so re-rendering
 /// them through `Vt::pixel` (a divide, a cell fetch, a glyph lookup and a blend per pixel, times
-/// 698,880 pixels on the 1120x624 scanout) bought nothing, and under TCG, where the `x86_64` swish leg paid
-/// ~3.5x per store, it was most of that leg's 321 s (`notes/benchmarks/icount-tick-scales.md`).
-/// A row-to-row move of words the surface already contains is the whole work.
-///
-/// **Qwords when the stride allows, words when it does not.** A `u64` store halves the store
-/// count, and both sides of every copy stay 8-aligned exactly when the stride is a multiple of
-/// eight (both offsets are whole rows down); a stride that is merely 4-aligned would ask for
-/// unaligned volatile `u64`s, so that case keeps `u32`s. The scanout's stride (4480) takes the
-/// wide path; an odd-cell window in [`MODE_WINDOW`] can land on the narrow one.
+/// 698,880 pixels on the 1120x624 scanout) buys nothing, and under TCG, where the `x86_64` swish leg
+/// pays ~3.5x per store, it would be most of that leg's time (`notes/benchmarks/icount-tick-scales.md`).
+/// A move of bytes the surface already contains is the whole work, and
+/// [`MappedWindow::copy_within`] does it as one bounds-checked move rather than a checked volatile
+/// access per word, which at opt-level 0 under TCG costs about 250 ms a scroll on riscv64. When rows are
+/// packed (`w * 4 == stride`, the full scanout) the moved rows are one block; a window narrower
+/// than its stride moves row by row.
 fn scroll_surface(surface: &MappedWindow, stride: u32, w: u32, h: u32, px: u32) {
+    let (stride, row, moved) = (stride as u64, w as u64 * 4, (h - px) as u64);
+    let from = px as u64 * stride;
+    if row == stride {
+        surface.copy_within(from, 0, moved * stride);
+        return;
+    }
     // Destination rows run top-down and are always above their sources, so nothing is overwritten
-    // before it is read: the same order `copy_within` uses for the cells this mirrors.
-    for y in 0..h - px {
-        let (dst, src) = (y as u64 * stride as u64, (y + px) as u64 * stride as u64);
-        if stride.is_multiple_of(8) {
-            let qwords = w as u64 * 4 / 8;
-            for q in 0..qwords {
-                surface.w64(dst + q * 8, surface.r64(src + q * 8));
-            }
-            // A width that is not a whole number of qwords (an odd number of pixels) leaves one
-            // word on the end.
-            let tail = dst + qwords * 8;
-            if w % 2 == 1 {
-                surface.w32(tail, surface.r32(src + qwords * 8));
-            }
-        } else {
-            for x in 0..w as u64 {
-                surface.w32(dst + x * 4, surface.r32(src + x * 4));
-            }
-        }
+    // before it is read.
+    for y in 0..moved {
+        surface.copy_within(from + y * stride, y * stride, row);
     }
 }
 
