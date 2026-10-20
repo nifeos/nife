@@ -121,7 +121,7 @@ pub(crate) fn std_exerciser() -> bool {
     // **And `jig`**, for every target, because this is the step every gate already runs before it
     // packs an archive. Each archive also builds it for its own target ([`build_jig`]).
     for triple in STD_TARGETS {
-        if let Err(e) = build_jig(triple) {
+        if let Err(e) = build_jig(triple).and_then(|()| build_mdr(triple)) {
             eprintln!("std-exerciser: {e}");
             return false;
         }
@@ -145,9 +145,24 @@ pub(crate) fn std_exerciser() -> bool {
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/image-needs-jig.
 pub(crate) fn build_jig(triple: &str) -> Result<(), String> {
+    build_shipped_std_program("jig", triple)
+}
+
+/// **Build `mdr` for `triple`, farm first** (milestone 784 (reuse what the tree wrote), item (f2)):
+/// the markdown renderer, a `std` program every image ships, on `jig`'s terms and into the same
+/// target directory, so the standard library is built once for both.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/784-mdr-pulldown.
+pub(crate) fn build_mdr(triple: &str) -> Result<(), String> {
+    build_shipped_std_program("mdr", triple)
+}
+
+/// Build the shipped `std` program whose workspace is the directory `program` for `triple`, with the
+/// TLS graph's flags and target directory. Name: provisional, 2026-10-20 (UTC).
+fn build_shipped_std_program(program: &str, triple: &str) -> Result<(), String> {
     if !std_src() {
         return Err(format!(
-            "building jig for {triple}: the std farm did not build"
+            "building {program} for {triple}: the std farm did not build"
         ));
     }
     let spec = s(workspace_root().join(format!("targets/{triple}.json")));
@@ -159,7 +174,7 @@ pub(crate) fn build_jig(triple: &str) -> Result<(), String> {
             "--release",
             "--locked",
             "--manifest-path",
-            &s(workspace_root().join("jig/Cargo.toml")),
+            &s(workspace_root().join(format!("{program}/Cargo.toml"))),
             "--config",
             &s(workspace_root().join("cryptography_exerciser/.cargo/config.toml")),
             "-Zjson-target-spec",
@@ -174,6 +189,6 @@ pub(crate) fn build_jig(triple: &str) -> Result<(), String> {
     if ok {
         Ok(())
     } else {
-        Err(format!("building jig for {triple} failed"))
+        Err(format!("building {program} for {triple} failed"))
     }
 }

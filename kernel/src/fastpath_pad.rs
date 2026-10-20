@@ -27,9 +27,11 @@
 //!   under their own unreferenced symbol (`fastpath_layout_shift`). Zeros because both ISAs decode
 //!   zero as an illegal instruction, so a block ever executed would trap.
 //!
-//! **The linker script places this module's section first in `.text`** (kernel/link-riscv64.ld,
-//! kernel/link-aarch64.ld, right after the boot stub), so a sled of N bytes and a block of N bytes
-//! both move the whole kernel text by N and nothing else. A pad and a shift of the same
+//! **The linker script places this module's section right after `.text.hot`** (kernel/link-riscv64.ld,
+//! kernel/link-aarch64.ld), so a sled of N bytes and a block of N bytes both move all kernel text
+//! after the pinned hot block by N and nothing else. Neither moves the hot block (milestone 796),
+//! which is why E3 as specified cannot run on this tree
+//! (notes/footprint-perturbation/step-0-under-the-pin.md). A pad and a shift of the same
 //! displacement produce identical binaries apart from the sled's own bytes, so the two ladders
 //! differ only in whether the bytes are inside the counted footprint. An ordinary build has no such
 //! section, so its link order is unchanged. `script/fastpath-footprint --layout` proves every image

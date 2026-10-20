@@ -12,6 +12,7 @@ is calef's.*
 | `script/setup` | First run after a clone: `bootstrap`, then build. |
 | `script/update` | After pulling new code: `bootstrap` (the pinned toolchain can change), then rebuild. |
 | `script/claim <branch-name> (--debt-paydown \| --new-work) [--worktree <dir>] [--title <text>] [--no-claim]` | Cut a lane's branch and worktree, refusing a name that would fail `script/lint`'s check 4 (a near-miss on `milestone/N-slug`) before either exists, instead of after the worktree is built and the work is written. Shares the shape rule with that check through `helpers/branch-name-check.sh` rather than a second copy. `--worktree` overrides the default `<worktree root>/<slug>` (`nife-worktrees` beside the main checkout); `--title` sets the draft pull request's title and the empty commit's message (default: the branch name). Also makes AGENTS.md §90 (the claim is a draft pull request; the status flip is a gate)'s claim (an empty commit, a push, a draft pull request) unless `--no-claim` stops it at the branch and worktree. Refuses to run without exactly one of `--debt-paydown` (the draft gets that label) or `--new-work` (calef's ruling R1 on #1894, 2026-10-10 UTC; [debt-paydown.md](../debt-paydown.md)), and `helpers/claim-selftest.sh` holds it to that. **Name provisional.** |
+| `script/push [--set-upstream]` | Push HEAD to origin's branch of the same name, with ssh keepalives unless the caller set its own ssh command, then read the branch back with `git ls-remote`. Ends with `NOT PUSHED` and exit 1 when origin does not hold HEAD's commit, whatever `git push` exited; its header has the measurement behind both halves. `helpers/push-selftest.sh` holds the read-back to that. **Name provisional.** |
 | `script/test` | Host-logic crates, then the kernel under QEMU on **both** ISAs. The gate. |
 | `script/verify` | The machine-checked proofs (Kani) over the pure-logic crates. Not in `bootstrap`: Kani pulls its own toolchain and a CBMC backend, so it is installed only where it is used. |
 | `script/bench` | icount microbenchmarks; `--check` fails on >10% drift from `bench/baseline-aarch64.txt`, `--save` rewrites it, `--real` runs under HVF for magnitudes, `--extra-features <name>` (with `--real` only) builds an extra kernel feature alongside `bench` (E3's padded-fastpath latency comparison, milestone 134). |
@@ -46,16 +47,6 @@ every build, and `script/lint` fails on a mismatch, naming both values and the l
 entries so far (`kani-harnesses`, `harness-crates`, `sh-scripts`); an unmarked number stays
 unchecked, which is the ratchet working as designed. See [counted-claims.md](../counted-claims.md) for
 how to add one, and for the honest limits.
-
-This section is prose and not a row in that table on purpose, and the reason is worth knowing before
-you edit either. The longest line in the repository's markdown is
-1928 bytes <!--count:longest-markdown-line-->, and `manual`'s renderer sizes `LINE_MAX` at 2048
-against exactly that measurement. The rows in the table above are the next three longest and sit within about a
-hundred bytes of it. (This sentence named `script/lint`'s row as the longest. That stopped being
-true without anything noticing, because the marker vouches for the NUMBER and nothing vouches for
-which line carries it.) Extending one of those rows by a sentence overflows the buffer, and the way
-you find out is a `manual` render test failing while pointing at text three hundred lines further
-down the file.
 
 ## What this file's numbers cite
 

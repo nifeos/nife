@@ -87,7 +87,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `jig` | base | crates: `jig`; programs: `jig` | `contracts`, `runtime`, `network` | `jig` (provisional) |
 | `kernel` | base | crates: `address_space_identifier`, `capability`, `cpu_set`, `direct_memory_access_validator`, `firmware_configuration`, `generational_table`, `inter_process_communication`, `intrusive_fifo`, `jh7110_clock_and_reset`, `kernel`, `memory_corruption_canary_gate`, `memory_regions`, `page_frames`, `paging`, `pci`, `thread_wake_handshake`, `work_steal_slot`; programs: `kernel` | interfaces only; 6 dated exception(s) | `kernel` (provisional) |
 | `login` | base | crates: `credentialer`; programs: `credentialer`, `identity_provisioner`, `login`, `login_audit_receiver`, `user_timetable_keeper` | `timetable` | `login` (provisional) |
-| `mdr` | base | programs: `mdr` | interfaces only | `mdr` (provisional) |
+| `mdr` | base | crates: `mdr`; programs: `mdr` | interfaces only | `mdr` (provisional) |
 | `network` | base | crates: `domain_name_resolution_contract*`, `domain_name_system`, `http_response`; programs: `domain_name_resolver`, `net_stack`; paths: `components/src/virtio_net_transport.rs`, `components/src/socket_test_client.rs` | interfaces only | `network` (provisional) |
 | `process-tools` | base | crates: `free`, `number_writer`, `pgrep`, `pmap`, `ps`, `slabtop`, `top`, `uptime`, `vmstat`; programs: `free`, `pgrep`, `pmap`, `ps`, `slabtop`, `top`, `uptime`, `vmstat`; paths: `packages/uptime.recipe.toml`, `packages/uptime-riscv64.recipe.toml`, `packages/uptime-x86_64.recipe.toml` | interfaces only | `process-tools` (provisional) |
 | `swish` | base | crates: `swish`; programs: `swish` | interfaces only | `swish` (provisional) |

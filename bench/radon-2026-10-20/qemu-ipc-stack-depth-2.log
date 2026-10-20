@@ -1,0 +1,119 @@
+
+OpenSBI v1.8.1
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name               : riscv-virtio,qemu
+Platform Features           : medeleg
+Platform HART Count         : 1
+Platform HART Protection    : pmp
+Platform IPI Device         : aclint-mswi
+Platform Timer Device       : aclint-mtimer @ 10000000Hz
+Platform Console Device     : uart8250
+Platform HSM Device         : ---
+Platform PMU Device         : ---
+Platform Reboot Device      : syscon-reboot
+Platform Shutdown Device    : syscon-poweroff
+Platform Suspend Device     : ---
+Platform CPPC Device        : ---
+Firmware Base               : 0x80000000
+Firmware Size               : 321 KB
+Firmware RW Offset          : 0x40000
+Firmware RW Size            : 65 KB
+Firmware Heap Offset        : 0x47000
+Firmware Heap Size          : 37 KB (total), 0 KB (reserved), 12 KB (used), 23 KB (free)
+Firmware Scratch Size       : 4096 B (total), 1464 B (used), 2632 B (free)
+Runtime SBI Version         : 3.0
+Standard SBI Extensions     : time,rfnc,ipi,base,hsm,srst,pmu,dbcn,fwft,legacy,dbtr,sse
+Experimental SBI Extensions : none
+
+Domain0 Name                : root
+Domain0 Boot HART           : 0
+Domain0 HARTs               : 0*
+Domain0 Region00            : 0x0000000080040000-0x000000008005ffff M: (F,R,W) S/U: ()
+Domain0 Region01            : 0x0000000080000000-0x000000008003ffff M: (F,R,X) S/U: ()
+Domain0 Region02            : 0x0000000000100000-0x0000000000100fff M: (I,R,W) S/U: (R,W)
+Domain0 Region03            : 0x0000000010000000-0x0000000010000fff M: (I,R,W) S/U: (R,W)
+Domain0 Region04            : 0x0000000002000000-0x000000000200ffff M: (I,R,W) S/U: ()
+Domain0 Region05            : 0x000000000c400000-0x000000000c5fffff M: (I,R,W) S/U: (R,W)
+Domain0 Region06            : 0x000000000c000000-0x000000000c3fffff M: (I,R,W) S/U: (R,W)
+Domain0 Region07            : 0x0000000000000000-0xffffffffffffffff M: () S/U: (R,W,X)
+Domain0 Next Address        : 0x0000000080200000
+Domain0 Next Arg1           : 0x000000008fe00000
+Domain0 Next Mode           : S-mode
+Domain0 SysReset            : yes
+Domain0 SysSuspend          : yes
+
+Boot HART ID                : 0
+Boot HART Domain            : root
+Boot HART Priv Version      : v1.12
+Boot HART Base ISA          : rv64imafdch
+Boot HART ISA Extensions    : sstc,zicntr,zihpm,zicboz,zicbom,sdtrig,svadu
+Boot HART PMP Count         : 16
+Boot HART PMP Granularity   : 2 bits
+Boot HART PMP Address Bits  : 54
+Boot HART MHPM Info         : 16 (0x0007fff8)
+Boot HART Debug Triggers    : 2 triggers
+Boot HART MIDELEG           : 0x0000000000001666
+Boot HART MEDELEG           : 0x0000000000f4b509
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc080232906  (high half: Sv39 paging is on)
+  device tree : 0x000000008fe00000
+  screen      : none (this qemu was started without -device ramfb); this console is the UART
+  smp: 1 core(s) in the device tree
+  isa         : rv64i m a c f d h zicsr zifencei sstc zicbom
+              : 1 hart(s), mmu sv57 declared and sv39 in use, satp.ASID 16 bits measured
+  firmware    : OpenSBI 0x10008, SBI 3.0, TIME IPI RFENCE HSM PMU
+  smp: sbi hsm hart_start (the only mechanism RISC-V defines)
+  smp: 1 core(s) online
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+
+bench: cntfrq 10000000
+ipc-stack-depth: kernel null (the instrument alone) floor 240 median 240 max 240 margin 64 clean
+ipc-stack-depth: kernel send_receive client SEND AT FLOOR: at most 336, shallower than the instrument can see (max 784, samples 256)
+ipc-stack-depth: kernel send_receive client RECEIVE median 576 min 352 max 576 below-caller 320 floor 320 samples 256
+ipc-stack-depth: kernel send_receive server RECEIVE median 544 min 320 max 544 below-caller 320 floor 288 samples 256
+ipc-stack-depth: kernel send_receive server SEND AT FLOOR: at most 320, shallower than the instrument can see (max 480, samples 256)
+ipc-stack-depth: kernel call_reply client CALL median 624 min 624 max 624 below-caller 384 floor 304 samples 256
+ipc-stack-depth: kernel call_reply server RECEIVE_CAP median 576 min 576 max 600 below-caller 368 floor 272 samples 256
+ipc-stack-depth: kernel call_reply server REPLY AT FLOOR: at most 304, shallower than the instrument can see (max 304, samples 256)
+ipc-stack-depth: el0 send_receive client SEND median 848 min 752 max 848 below-caller 848 floor 752 samples 256
+ipc-stack-depth: el0 send_receive client RECEIVE AT FLOOR: at most 752, shallower than the instrument can see (max 944, samples 256)
+ipc-stack-depth: el0 send_receive server RECEIVE AT FLOOR: at most 752, shallower than the instrument can see (max 944, samples 256)
+ipc-stack-depth: el0 send_receive server SEND median 848 min 752 max 848 below-caller 848 floor 752 samples 256
+ipc-stack-depth: el0 call_reply client CALL median 1008 min 1008 max 1008 below-caller 1008 floor 752 samples 256
+ipc-stack-depth: el0 call_reply server RECEIVE_CAP median 992 min 992 max 992 below-caller 992 floor 752 samples 256
+ipc-stack-depth: el0 call_reply server REPLY AT FLOOR: at most 752, shallower than the instrument can see (max 752, samples 256)
+ipc-stack-depth: done (6 series were not measurements)
+bench: yield_switch 22480 2000
+bench: ipc_rtt 18700 1000
+bench: relay_rtt 39920 1000
+bench: call_reply 23800 1000
+bench: broker_rtt 47600 1000
+bench: spawn_reap 26440 64
+bench: map_new 3810 64
+bench-probe: map_new_preemptions 0 over 64 iters
+bench-probe: map_new_remote_fences 0 over 64 iters
+bench-probe: online_harts_mask 0x1 (1 online, this hart 0)
+bench: rfence_self 37210 512
+bench-probe: cycles_per_tick 100.17 (10031000 cycles over 100130 ticks at cntfrq 10000000)
+bench-probe: cycles_per_tick_means core cycles (SBI PMU CPU_CYCLES) per tick of the `time` CSR, a fixed-rate timebase the device tree states
+bench: coremark 118730 256
+bench: null_syscall 217730 20000
+bench: ctx_switch 809290 5000
+bench: ipc_rtt_el0 1942180 5000
+bench: ipc_thread_scaling skipped (QEMU virt detected via counter frequency 10000000 Hz; TCG models no cache, see design/roadmap/0134-the-measurements-that-decide.md)
+bench: app_displacement skipped (QEMU virt detected via counter frequency 10000000 Hz; TCG models no cache, see design/roadmap/0134-the-measurements-that-decide.md)
+bench: sink_throughput 709370 80000
+bench: map_el0 11890 500
+bench: spawn_el0 133580 100
+bench: done
+qemu-system-riscv64: terminating on signal 15 from pid 5483 (<unknown process>)

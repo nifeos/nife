@@ -51,7 +51,7 @@ fn the_wire_ids_already_shipped_never_move() {
 /// std spawn fills the heap, the output, the clock, the configuration page, entropy and a
 /// directory. Everything else a manifest can ask for has no slot there or is not wired yet:
 ///
-/// - a file or an input stream: the contract has no slot for either (std's stdin is unbuilt);
+/// - a file: the contract has no slot for one;
 /// - `--mem`: slot 0 is already the heap, and the progenitor's, not the shell's;
 /// - a process domain: native `DOMAIN_SLOT` is 7, which in the std layout is the config page;
 /// - a second output stream: native `DIAGNOSTICS_SLOT` is 8, past the fixed eight.
@@ -59,6 +59,9 @@ fn the_wire_ids_already_shipped_never_move() {
 /// The network is held since milestone 809 (the package client becomes a program): the
 /// progenitor places the stack at slot 2 and the job's own region at slot 3, which is the
 /// budget the net PAL retypes each socket's frame from.
+///
+/// An input stream is held since milestone 784 (reuse what the tree wrote), item (f2): the
+/// progenitor places it at `std_runtime_contract::STDIN_STREAM_SLOT`, which std's stdin reads.
 ///
 /// The shell would plan any of these and the progenitor would silently not deliver it, so
 /// this is the gate: a manifest cannot declare one without failing here first.
@@ -76,11 +79,6 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
             m.file,
             FileGrantDeclaration::Forbidden,
             "{name}: no std slot carries a file"
-        );
-        assert_eq!(
-            m.input,
-            InputDeclaration::Forbidden,
-            "{name}: no std slot carries an input"
         );
         assert_eq!(
             m.memory_grant,

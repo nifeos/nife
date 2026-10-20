@@ -149,13 +149,25 @@ pub struct Meta {
 /// assert!(boots[0].row(&meta).contains("| argon | aarch64 | 4 | ? | soak-test | 2.00 | 1,234,567 | 1,440 | clean |"));
 /// ```
 pub fn read(log: &str) -> Vec<Boot> {
+    read_for(log, &board::EMULATOR)
+}
+
+/// [`read`], judging each boot's self-test against `board`'s profile, so a device that board has
+/// (`board::Profile::must_not_be_absent`) reported `absent` makes the boot not clean.
+///
+/// [`read`] forbids no absence, which is right for a capture whose machine has no profile (argon,
+/// `hvf`, QEMU) and wrong for radon or xenon: pass the profile whenever the machine has one.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/225-radon-soak-draw`.
+#[must_use]
+pub fn read_for(log: &str, board: &'static board::Profile) -> Vec<Boot> {
     let mut boots: Vec<(Boot, BootProgress)> = Vec::new();
     for raw in log.lines() {
         let line = raw.trim_end_matches(['\r', '\n']);
         if line.starts_with(boot_ladder::BANNER) {
-            // XENON's prologue is empty, which is what a recogniser fed from the banner onward
-            // needs: everything from the banner up is shared by every board (calef, 2026-09-19).
-            boots.push((Boot::default(), BootProgress::new(&board::XENON)));
+            // The recogniser starts at the banner, so a board's prologue rungs are never reached
+            // here; what the profile decides is which self-test absences fail the boot.
+            boots.push((Boot::default(), BootProgress::new(board)));
         }
         let Some((boot, progress)) = boots.last_mut() else {
             continue;
@@ -433,6 +445,20 @@ mod tests {
         let boot = &read(failed)[0];
         assert!(!boot.is_clean());
         assert!(boot.row(&Meta::default()).contains("NOT CLEAN"));
+    }
+
+    /// radon has no device that interrupts on its own, so `deviceirq` absent is its normal
+    /// verdict, and only xenon's profile makes that absence a failure. A reader that judged every
+    /// capture by one board's list would call each radon soak NOT CLEAN.
+    #[test]
+    fn an_absence_fails_the_boot_only_on_the_board_that_has_the_device() {
+        let log = format!(
+            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: blockdev deviceirq\n\
+             soak-test: started\n{}",
+            beat(5, 400, 9, 2000, (0, 0, 0))
+        );
+        assert!(read_for(&log, &board::RADON)[0].is_clean());
+        assert!(!read_for(&log, &board::XENON)[0].is_clean());
     }
 
     #[test]

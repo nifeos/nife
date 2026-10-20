@@ -9,9 +9,9 @@ needs_person: yes
 ---
 # 225. Run the soak on radon, argon and xenon, which is the only place its answer means anything
 
-Partial as of (2026-10-10). radon has met §259's standard, 10.29 million crossings over 3 plain
-boots, clean (2026-10-09 to 10, opened by 592's proven self-reset); argon and xenon have
-not run it.
+Partial as of (2026-10-20). radon has met §259's standard, 10.29 million crossings over 3 plain
+boots, clean (2026-10-09 to 10, opened by 592's proven self-reset), and has added 13 reboot draws
+since; argon and xenon have not run it.
 
 Correction, 2026-10-06: argon is not in hand. The board delivered as argon is a Jetson TK1
 (32-bit Armv7), shipped against a TX1 order; it is going back and calef is getting the TX1 from the
@@ -120,6 +120,23 @@ standard (at least 10 million over at least 3); E5's reboot draw adds 20,474 on 
 account, including the 592 transcript's one gap and the discarded card boot before E7, is
 `notes/soak.md`, "radon, 2026-10-09 to 10"; the logs are `bench/radon-2026-10-10/`.
 
+## radon, 2026-10-20: 13 reboot draws, zero defects
+
+Lane `milestone/225-radon-soak-draw`, image built at `22c19e1d5` with `script/board-image --soak
+--reboot` (SEALED, features `board,soak_test,reboot_soak_test`). The QEMU rehearsal
+(`script/soak-test --arch riscv64 --for 45s`) was clean: 787,279 round trips in 40 s, 3,743
+crossings. On radon, one power-on, then thirteen 120-second draws, each ended by milestone 592's
+direct AXP15060 write and each back through `U-Boot SPL` and `payload came from net`: the reset
+was clean on 13 of 13. Every last beat reads `refused=0 mismatch=0 stalled=0`, wakerate 401 to
+404/s.
+
+These are rows E13 to E25 in `notes/multicore-defect-curve.md`. E16 and E22 never crossed cores
+(19 and 23 crossings, frozen from the first beat) and are excluded; the other eleven add 218,216
+crossings. `script/board-console --tally` drew one clean core on all thirteen, 182,096 to
+197,384/s, so this evening sampled one placement class. The run table is
+`notes/soak/radon-2026-10-20.md`; the capture, the mechanics and how the soak ended are
+`bench/radon-2026-10-20/README-225.md`.
+
 ## argon, 2026-10-05: not yet a one-command run, and exactly why
 
 *(Awaiting the board, 2026-10-06: what is on the desk is a TK1 going back, not argon. The tegra210
@@ -202,7 +219,8 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   soaked for long with this build. Checked 2026-09-25: E4 is the only radon row with a log.
   Updated 2026-10-10: §259's count is met (E4, E6, E7), so further radon boots are draws for the
   placement distribution rather than owed to the standard, and since milestone 592's reset is
-  proven they cost no plug cycle; unowned.
+  proven they cost no plug cycle; unowned. Updated 2026-10-20: E13 to E25 are thirteen more, all on
+  one clean core, so they sampled one placement class.
 - **Done.** The false `NOT SEALED` on a soak build that cost this run half an hour. Milestone 563
   (a seal check that reads bytes cannot see a check that was dropped) carried it, merged
   2026-09-26: soak builds now seal, and `script/board-image --soak` printed `SEALED` on a rebuild.

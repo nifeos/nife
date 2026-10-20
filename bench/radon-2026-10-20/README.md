@@ -1,36 +1,54 @@
-# radon, 2026-10-20 (UTC): milestone 53 (the board's own peripherals: network and storage on real silicon), its first runs
+# radon, 2026-10-20 (UTC): milestone 796's sweep with the hot section pinned
 
-Four boots of radon, power-cycled by calef at its own outlet. Every image was built from this
-branch at `290d3ba8b` and served by `script/board-netboot` from patagonia (192.168.8.192). The
-logs are console transcripts with non-printing bytes dropped; the raw captures are not committed.
-Read with notes/designware-ethernet.md and notes/designware-mobile-storage.md, whose Results
-sections these logs fill.
+Four boots of the job mix on radon (VisionFive 2), power-cycled by calef on smart plug 2 from 19:01
+to 19:10 UTC. They repeat the 2026-10-05 layout sweep
+([`../radon-2026-10-05/`](../radon-2026-10-05/README.md), boots 16 to 19) on a kernel whose hot
+trap path is pinned. The procedure and the reading table are in the block of
+[milestone 796 (pin the hot trap path's placement)](../../design/roadmap/0796-pin-the-hot-trap-paths-placement.md),
+"The radon sweep, for calef", and the result is recorded there.
 
-| log | built with | cable in | last line before `done` |
+## Payloads
+
+All four were built from `b43f19e3c` with the block's build loop: `NIFE_FASTPATH_PAD=0
+NIFE_FASTPATH_SHIFT=<S> script/board-image --job-mix --tftp --extra-features fastpath_pad`, then
+`target/board` moved to `target/board-shift<S>`. Each printed SEALED. Each image's
+`script/fastpath-footprint --layout` line read `pin: .text.hot 9082 B at 0xffffffc080204000, 0 B
+into a 16 KiB way; 18 of 18 hot symbols inside`, with `trap_entry` at `0xffffffc080206270`, set
+137. `nife-vf2.img` hashes are in [`796-payloads.sha256`](796-payloads.sha256).
+
+## Boots
+
+`bootN-shiftS.log` is the console, cleaned by the block's `tr` (non-printing bytes dropped); the raw
+captures are not committed. `bootN-shiftS.netboot.log` is the TFTP server's log, which names the
+directory served. Every boot printed `payload came from net` and `job-mix: done`.
+
+| Boot | Shift | `nife-vf2.img` | 1 task `null_syscall` `per_job` (ticks over 336 jobs) |
 |---|---|---|---|
-| `network-bench-1.log` | `NIFE_NETWORK_BENCH_PEER=192.168.8.192:9494 script/board-image --tftp --extra-features network_bench` | `ethernet@16040000`'s jack | `verdict FAILED: no link` |
-| `network-bench-2.log` | the same image | `ethernet@16040000`'s jack | `verdict FAILED: no link` |
-| `network-bench-3.log` | the same image | `ethernet@16030000`'s jack | `verdict LEASED-AND-MEASURED` |
-| `storage-bench-read.log` | `script/board-image --tftp --extra-features storage_bench` | `ethernet@16030000`'s jack | `verdict FAILED: read of block 0: Host(Data(17, 2060))` |
+| 1 | 16 | `c9e4ffd9943b` | 121 (40736) |
+| 2 | 0 | `3edd43817fa8` | 121 (40707) |
+| 3 | 48 | `fdc135205cfe` | 121 (40686) |
+| 4 | 32 | `fc7b450b6a7f` | 121 (40693) |
 
-`script/board-image` reported every image `SEALED` when it built it (its own output, not in these logs). The network peer was the runbook's `nc` loop on patagonia,
-serving 100 MiB per connection on port 9494.
+## Where the mechanics differed from the procedure
 
-## How the boots were run
+- **Console capture.** The console was logged with GNU `screen`'s logging on the CH343 serial port,
+  not with `script/board-console`, because the lane had to type at U-Boot and
+  `script/board-console` has no mode that does. `screen` logs what the board sends, so the typed
+  commands appear only as U-Boot echoed them, and the key that stopped the countdown does not.
+- **Server address and archive name.** The card's boot script dates from 2026-09-16. It asks for an
+  older server address than patagonia's and fetches the archive under its old name,
+  `nife-initrd.img`. At each boot's autoboot countdown the lane sent a key, then `setenv
+  nife_boot_server 192.168.8.192` and `boot`. A copy of the archive was served as `nife-initrd.img`
+  beside `nife-initial-ramdisk.img`, which is why each netboot log lists both at the same size.
+  The console shows the board fetching `nife-initrd.img` from 192.168.8.192.
 
-- **The console was GNU `screen` logging on the CH343 serial port, not `script/board-console`.**
-  Each boot needed typing at U-Boot's prompt, and `board-console` only reads.
-- **At each autoboot countdown the lane sent a key, then `setenv nife_boot_server 192.168.8.192`,
-  then `boot`.** radon's card carries a boot script written 2026-09-16, which asks for a server
-  address that is not patagonia's and for the archive as `nife-initrd.img`. `script/board-image`
-  writes it as `nife-initial-ramdisk.img`, so a copy under the old name was served beside it.
-  Each log shows both `Filename` lines and `nife: payload came from net`.
-- **Boots 1 and 2 had the cable in the wrong jack.** U-Boot timed out on `ethernet@16030000` and
-  linked on `ethernet@16040000`, and nife drives only `0x16030000`, so `link : NONE after 5003
-  ms` is the cabling, not the driver. Both still ran the coherence probe, which needs no link.
-  The cable was moved for boot 3.
-- **Storage stopped at step 1**, as its runbook says for a `FAILED` verdict. The banner said
-  `Read-only build: nothing on any card is written.` Steps 2 and 3 were not run.
+Neither changes what ran: the boot images are the ones hashed above. Like every radon job-mix
+number so far, these ran debug userspace under a release kernel (`script/board-image`'s `BUGS`,
+milestone 797 (release userspace in board images)).
 
-During boot 3's transfer, patagonia's TCP send queue for the connection stayed near 131 KB and
-barely drained. That observation was made by hand on patagonia and is not in the log.
+## The evening's other runs
+
+The same evening's other radon runs keep their own records in this directory:
+[`README-53.md`](README-53.md) for milestone 53 (the board's own peripherals)'s network and storage
+boots, and [`README-225.md`](README-225.md) for milestone 225 (run the soak on radon, argon and
+xenon)'s soak draws.

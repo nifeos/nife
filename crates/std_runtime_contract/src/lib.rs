@@ -27,6 +27,7 @@
 //!   slot 12 space       its own address space, READ  for futex waits; without it locks yield
 //!   slots 22-28 endpoints  further resolver badges     one per further zone granted, in order
 //!   slot 29 endpoint    standard input, badged       only for a program the owner's console types to
+//!   slot 30 endpoint    standard input, a byte stream, READ   only if the line redirected or piped its input
 //! ```
 //!
 //! Slots 13 to 21 are not this contract's: `grant_plan` places the installer, its reply, the
@@ -115,6 +116,20 @@ pub const STDIN_SLOT: u64 = 29;
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const STDIN_READ_REQUEST: u64 = 10 << 56;
 
+/// **Standard input as a byte stream, with `READ`** (milestone 784 (reuse what the tree wrote),
+/// item (f2)'s prerequisite; calef, 2026-10-20 16:53 UTC, on #2461: "a"). Placed when the line gave
+/// the program an input: a file the shell streams (`prog file`, `prog < file`) or a pipe's read
+/// end (`a | prog`). It carries `byte_sink_contract` frames, the framing a native program's input
+/// carries, ending in that contract's EOF message. std's `Stdin::read` receives from it when it is
+/// held, and falls back to [`STDIN_SLOT`] when it is not: an input the line named wins over the
+/// console.
+///
+/// Thirty because this contract's numbers are 0 to 12 and 22 upward, and 13 to 21 are
+/// `grant_plan`'s; the next of this contract's own is the one past [`STDIN_SLOT`].
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/784-mdr-pulldown.
+pub const STDIN_STREAM_SLOT: u64 = 30;
+
 /// **This program's own process, with `BIND`** (milestone 812 (`std::thread::spawn` runs real
 /// threads in one address space)): what `std::thread::spawn` joins a new thread to. Only if the
 /// program may have threads; without it, a spawn answers `Unsupported`.
@@ -133,7 +148,7 @@ pub const SPACE_SLOT: u64 = 12;
 /// capabilities (threads, keys) at or above it (`RETYPE_OBJ`'s floor). A loader places a std
 /// program's capabilities at the fixed slot numbers and nowhere else; the reserved fault slot is
 /// last in the table and far above them.
-pub const SLOTS: u64 = 30;
+pub const SLOTS: u64 = 31;
 
 /// Where the loader maps the page a std program shares with its file service: one file block,
 /// carrying a name out on `OPEN` and file bytes both ways on `READ` and `WRITE`.
@@ -228,6 +243,7 @@ mod tests {
             RESOLVER_SLOTS[6],
             RESOLVER_SLOTS[7],
             STDIN_SLOT,
+            STDIN_STREAM_SLOT,
         ];
         for (i, a) in slots.iter().enumerate() {
             assert!(
@@ -239,7 +255,11 @@ mod tests {
             }
         }
         assert_eq!(RESOLVER_SLOTS[0], RESOLVER_SLOT);
-        assert_eq!(STDIN_SLOT + 1, SLOTS, "standard input ends the fixed range");
+        assert_eq!(
+            STDIN_STREAM_SLOT + 1,
+            SLOTS,
+            "standard input's byte stream ends the fixed range"
+        );
     }
 
     /// The shared pages must not land on each other, on the heap, or inside the window the

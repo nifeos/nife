@@ -357,13 +357,12 @@ const fn wc_manifest() -> Manifest {
 }
 
 // **The viewer**, whose manifest is "a stream in, a stream out" like `wc`'s, and handed
-// bytes like every other stage. The one place it parts from `wc` is the field milestone
-// 50 added: `wc` absorbs the whole stream before it emits (`writes_while_reading:
-// false`), while `mdr` renders as it reads and so writes while it is still reading. That
-// difference is not decoration. It is exactly why `mdr` can deadlock a rendezvous
-// pipeline where `wc` never does (notes/documentation.md's BUGS section), and the planner can
-// only account for it if the manifest declares it. No memory grant, because the renderer
-// never allocates.
+// bytes like every other stage. Like `wc` it absorbs the whole stream before it emits
+// (`writes_while_reading: false`): CommonMark's grammar needs the whole document, so `mdr`
+// reads to the end before it renders, and cannot deadlock a rendezvous pipeline by writing
+// while its writer is still waiting to be read. A `std` program (milestone 784 (reuse what
+// the tree wrote), item (f2)): its input arrives at `std_runtime_contract::STDIN_STREAM_SLOT`
+// and its heap is the job's region. No memory grant beyond that.
 /// The manifest of `mdr`, [`Program::Mdr`].
 const fn mdr_manifest() -> Manifest {
     Manifest {
@@ -374,7 +373,7 @@ const fn mdr_manifest() -> Manifest {
         short_options: NO_SHORT_OPTIONS,
         output: OutputDeclaration::Bytes,
         input: InputDeclaration::Required {
-            writes_while_reading: true,
+            writes_while_reading: false,
         },
         reports: true,
         interruptible: false,
@@ -392,7 +391,7 @@ const fn mdr_manifest() -> Manifest {
         indexes: IndexStoreDeclaration::Forbidden,
         activation_directory: false,
         console_input: false,
-        startup: StartupContract::Native,
+        startup: StartupContract::Std,
     }
 }
 

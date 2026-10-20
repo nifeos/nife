@@ -1,12 +1,11 @@
-//! What the renderer must get right, and the two properties that make it usable at all.
+//! What the renderer must get right: the layout each construct takes on a terminal, and that no
+//! page of this repository loses a character on the way (`every_character_survives`).
 //!
-//! The interesting tests here are the last two. `framing_does_not_matter` is what lets `doc` render
-//! straight off sixteen-byte sink messages with no reassembly buffer, and `every_word_survives`
-//! is the closed-corpus argument in executable form: this renderer was written instead of taking
-//! `pulldown-cmark`, and the justification for that is that the input set is *this repository*, so
-//! the conformance claim is checkable directly against it rather than against a spec suite.
+//! The grammar is `pulldown-cmark`'s, so these tests do not hold CommonMark itself. Where a test
+//! here gives markdown, it is either a layout claim or a pin on how the parser reads a shape this
+//! repository's own pages write, which is what a reader of those pages meets.
 
-use documentation::{Renderer, Sink, Style};
+use documentation::{Sink, Style};
 
 struct Buf(Vec<u8>);
 
@@ -28,9 +27,7 @@ fn plain(src: &str, width: u16) -> String {
 
 fn render(src: &str, style: Style) -> String {
     let mut out = Buf(Vec::new());
-    let mut r = Renderer::new(style);
-    r.feed(src.as_bytes(), &mut out);
-    r.finish(&mut out);
+    documentation::render(src, style, &mut out);
     String::from_utf8(out.0).unwrap()
 }
 
@@ -83,9 +80,8 @@ fn a_code_span_protects_its_contents() {
 
 #[test]
 fn underscores_are_never_emphasis() {
-    // The corpus writes `snake_case` identifiers in running prose constantly. CommonMark would read
-    // `__rust_alloc` as an opened strong span; here it is text, and that is a deliberate narrowing
-    // recorded in the renderer's BUGS.
+    // The corpus writes `snake_case` identifiers in running prose constantly. CommonMark reads an
+    // underscore inside a word as text, and an unclosed `__` as text too, so none of these styles.
     let out = render(
         "the __rust_alloc symbol and filesystem_contract\n",
         Style {
@@ -121,8 +117,14 @@ fn emphasis_needs_a_closer_that_is_not_a_space() {
 fn list_markers_are_normalised_and_hang() {
     // Three spellings of a bullet on one screen read as three different things, so they are one
     // spelling on output. The continuation aligns under the text, not under the bullet.
-    let out = plain("* one two three\n+ four\n- five\n", 14);
+    let out = plain("* one two three\n* four\n* five\n", 14);
     assert_eq!(out, "  - one two\n    three\n  - four\n  - five\n");
+    // A different bullet character starts a new list in CommonMark, so these are three lists, and
+    // a blank line separates each from the next.
+    assert_eq!(
+        plain("* one\n+ two\n- three\n", 40),
+        "  - one\n\n  - two\n\n  - three\n"
+    );
 }
 
 #[test]
@@ -179,13 +181,8 @@ fn an_attribute_never_survives_a_newline() {
 
 #[test]
 fn a_fence_inside_a_block_quote_closes() {
-    // The defect this replaces: `is_closing` was matched against the raw line, so a quoted closing
-    // fence never matched its own opener and the renderer stayed in code mode to the end of the
-    // document. A page with one quoted transcript in it rendered its next three hundred lines as
-    // quoted code, and the corpus test could not see it, because verbatim output loses no
-    // characters. What that test *did* see was the opening fence's info string, which is why the
-    // filter below strips quote markers now: the renderer is right about that line, and it was the
-    // filter that was wrong to keep it as evidence.
+    // A quoted closing fence closes the quoted block, and what follows renders as what it is. A
+    // page with a quoted transcript in it must not render its next three hundred lines as code.
     let src = "> intro\n>\n> ```text\n>   code here\n> ```\n\nAfter.\n\n## A heading\n";
     let out = plain(src, 80);
     assert_eq!(
@@ -196,52 +193,14 @@ fn a_fence_inside_a_block_quote_closes() {
 
 #[test]
 fn a_code_line_that_starts_with_a_quote_marker_keeps_it() {
-    // The other side of the same rule. Outside a block quote the depth is zero, so nothing is
-    // stripped and a mail quote, a diff or a shell transcript inside a fence survives intact.
+    // Outside a block quote, a `>` inside a fence is code: a mail quote, a diff or a shell
+    // transcript survives intact.
     assert_eq!(plain("```text\n> quoted\n```\n", 80), "    > quoted\n");
-}
-
-#[test]
-fn framing_does_not_matter() {
-    // The property `doc` depends on: input arrives as sixteen-byte sink messages, and a renderer
-    // that produced different output for different chunkings would need a reassembly buffer, which
-    // is a memory grant the program can otherwise do without.
-    let src = "# T\n\ntext with **bold** and `code`\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n> q\n\n- item\n";
-    let whole = plain(src, 40);
-    for chunk in [1usize, 3, 16, 17, 4096] {
-        let mut out = Buf(Vec::new());
-        let mut r = Renderer::new(Style {
-            width: 40,
-            color: false,
-        });
-        for piece in src.as_bytes().chunks(chunk) {
-            r.feed(piece, &mut out);
-        }
-        r.finish(&mut out);
-        assert_eq!(
-            String::from_utf8(out.0).unwrap(),
-            whole,
-            "chunk size {chunk}"
-        );
-    }
 }
 
 #[test]
 fn a_document_with_no_trailing_newline_still_ends() {
     assert_eq!(plain("# T", 80), "T\n");
-}
-
-#[test]
-fn an_overlong_line_is_reported_rather_than_hidden() {
-    let long = "x".repeat(documentation::LINE_MAX + 10);
-    let mut out = Buf(Vec::new());
-    let mut r = Renderer::new(Style {
-        width: 80,
-        color: false,
-    });
-    r.feed(long.as_bytes(), &mut out);
-    r.finish(&mut out);
-    assert!(r.is_truncated());
 }
 
 /// Is this source line a fence opener or closer, quoted or not?
@@ -256,12 +215,58 @@ fn is_fence(line: &str) -> bool {
     s.starts_with("```")
 }
 
+/// `line` with each character reference (`&nbsp;`, `&#160;`, `&#xA0;`) taken out.
+fn without_entities(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line;
+    while let Some(at) = rest.find('&') {
+        out.push_str(&rest[..at]);
+        let tail = &rest[at + 1..];
+        let end = tail.find(';').filter(|&e| {
+            e > 0
+                && e <= 32
+                && tail[..e]
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '#')
+        });
+        match end {
+            Some(e) => rest = &tail[e + 1..],
+            None => {
+                out.push('&');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// `line` without an ordered list item's leading number, past any block-quote markers.
+fn without_list_number(line: &str) -> String {
+    let mut s = line.trim_start();
+    let mut prefix = String::new();
+    while let Some(rest) = s.strip_prefix('>') {
+        prefix.push('>');
+        s = rest.trim_start();
+    }
+    let digits = s.chars().take_while(char::is_ascii_digit).count();
+    let marked = digits > 0
+        && digits <= 9
+        && matches!(s[digits..].chars().next(), Some('.' | ')'))
+        && s[digits + 1..].starts_with(' ');
+    if marked {
+        prefix + &s[digits + 1..]
+    } else {
+        line.to_string()
+    }
+}
+
 /// Every letter and digit in the repository's own markdown reaches the rendered output, in order.
 ///
-/// This is the claim that replaces a `CommonMark` conformance suite. A renderer that silently ate a
-/// construct (an HTML block, a reference link, an indented continuation, a table row) would drop
-/// the characters inside it, and a subsequence check finds that on real files rather than on
-/// invented ones. Subsequence rather than equality because the renderer legitimately *adds*
+/// The parser is CommonMark-conformant on its own account; this is the claim that the layout on top
+/// of it loses nothing on this repository's pages. A layout that silently ate a construct (an HTML
+/// block, a link destination, a table cell) would drop the characters inside it, and a subsequence
+/// check finds that on real files rather than on invented ones. Subsequence rather than equality because the renderer legitimately *adds*
 /// characters (an image's `image:` marker) and legitimately *joins* what markup split
 /// (`**L**inkable` is two runs in the source and one word on screen).
 ///
@@ -279,9 +284,9 @@ fn is_fence(line: &str) -> bool {
 /// for this one test. The measurement that settled it: **0.74 seconds natively, and still running
 /// after 12 minutes under Miri when it was killed** (2026-09-03).
 ///
-/// What that would buy is nothing. `crates/documentation` has **no dependencies and no `unsafe`**, so the
-/// rules Miri enforces (aliasing, provenance, uninitialized reads) cannot be broken by any line in
-/// its call graph. The nineteen tests above it in this file exercise the same renderer on in-memory
+/// What that would buy is little. `crates/documentation` has **no `unsafe`** of its own, so the
+/// rules Miri enforces (aliasing, provenance, uninitialized reads) cannot be broken by a line it
+/// wrote; its parser is `pulldown-cmark`, which is fuzzed upstream. The nineteen tests above it in this file exercise the same renderer on in-memory
 /// input, cover every construct it parses, and do run under Miri; what this one adds is corpus
 /// breadth, which is a documentation claim rather than a soundness one.
 ///
@@ -337,47 +342,27 @@ fn every_character_survives() {
                 continue;
             };
             // A fence's info string (the `bash` in a ```bash line) is a language tag rather than
-            // content, so it is not offered as evidence. Nothing else is excluded: a table longer
-            // than the buffer spills into another chunk rather than losing rows, which is exactly
-            // the behaviour this test exists to hold in place.
-            //
-            // **Block-quote markers come off first**, and the order that happened in matters. This
-            // filter used to miss a quoted fence, so a page containing one failed a test it had
-            // rendered fine for; the entry that recorded that refused to widen the filter until
-            // somebody answered whether the renderer keeps its quote state across a nested fence.
-            // It did not: the fence never closed, and the rest of the page rendered as quoted code
-            // (2026-08-18, `crates/documentation`'s BUGS). Widening the filter first would have hidden
-            // that, which is exactly what the refusal was protecting.
+            // content, so it is not offered as evidence, quoted or not.
+            // Two things in the source are markup under CommonMark rather than text, so they are
+            // not offered as evidence either: a character reference (`&nbsp;` is one character,
+            // and its letters are not content) and an ordered list item's number, because a list
+            // counts up from its first item whatever the later items say.
             let want: Vec<char> = src
                 .lines()
                 .filter(|l| !is_fence(l))
-                .flat_map(|l| l.chars().chain(core::iter::once('\n')))
+                .map(|l| without_list_number(&without_entities(l)))
+                .flat_map(|l| l.chars().chain(core::iter::once('\n')).collect::<Vec<_>>())
                 .filter(char::is_ascii_alphanumeric)
                 .map(|c| c.to_ascii_lowercase())
                 .collect();
-            // **No page ends inside a fence.** Every page in this repository closes the fences it
-            // opens, so a renderer that thinks otherwise at the end of one is wrong about the
-            // renderer rather than about the page.
-            //
-            // It is a **partial** guard and the limit is worth knowing, because it was measured
-            // rather than assumed. A renderer stuck in code mode still emits every character
-            // verbatim, so the subsequence check below cannot see it at all; this one sees it only
-            // if nothing later in the page happens to close the stuck fence. Reverting the
-            // quoted-fence fix leaves notes/documentation.md ruined from its own worked example onward and
-            // **this assertion still passes**, because a bare closing fence three sections later
-            // matches. `a_fence_inside_a_block_quote_closes` is the guard; this is a cheap
-            // invariant that catches the case where the stuck fence is the last one.
             let mut out = Buf(Vec::new());
-            let mut r = Renderer::new(Style {
-                width: 4000,
-                color: false,
-            });
-            r.feed(src.as_bytes(), &mut out);
-            r.finish(&mut out);
-            assert!(
-                !r.has_unclosed_fence(),
-                "{}: the renderer ended inside a code fence",
-                path.display()
+            documentation::render(
+                &src,
+                Style {
+                    width: 4000,
+                    color: false,
+                },
+                &mut out,
             );
 
             let have: Vec<char> = String::from_utf8(out.0)
@@ -406,21 +391,11 @@ fn every_character_survives() {
     assert!(checked > 100, "only checked {checked} files");
 }
 
-// ---- milestone 280: what the mutation sweep found nothing asserting -------------------------
-//
-// Every test below was written against a surviving mutant. The sweep scored this crate at 52% in
-// the first published report, and the first half of that was a measurement bug (see
-// notes/mutation-testing.md); this is the other half, which was a real gap. Two of them are not
-// tests for behaviour that already worked: `read_align` filled a per-column alignment nothing read,
-// and `indent_of` returned a column count nothing read, so the mutants there could not be killed
-// until the values had a consumer.
+// ---- tables ---------------------------------------------------------------------------------
 
 #[test]
 fn table_columns_align_the_way_the_delimiter_row_says() {
-    // `|:---|---:|:-:|` is left, right and centre, and until milestone 280 all three rendered
-    // identically because `flush_table` padded every cell on the right. Sixteen mutants in
-    // `read_align` survived the sweep for that reason, including replacing the whole function with
-    // `()`: a value nothing reads cannot be computed wrongly in a way anything notices.
+    // `|:---|---:|:-:|` is left, right and centre, and each pads its cell on the side it names.
     let out = plain("| aaa | bbb | ccc |\n|:---|---:|:-:|\n| x | y | z |\n", 80);
     assert_eq!(
         out, "  aaa | bbb | ccc\n  ----+-----+----\n  x   |   y |  z \n",
@@ -430,14 +405,13 @@ fn table_columns_align_the_way_the_delimiter_row_says() {
 
 #[test]
 fn alignment_does_not_outlive_its_table() {
-    // Alignment is a property of one delimiter row, so it is reset with `delimited` rather than
-    // carried. A paragraph that happens to begin with a pipe follows a right-aligned table here,
-    // and takes the default: if the array were not reset its cells would sit on the right.
+    // Alignment is a property of one table's delimiter row. A left-aligned table follows a
+    // right-aligned one here, and its cells sit on the left.
     let out = plain(
-        "| a | b |\n|---:|---|\n| x | y |\n\n| pp | q |\n| r | s |\n",
+        "| a | b |\n|---:|---|\n| x | y |\n\n| pp | q |\n|---|---|\n| r | s |\n",
         80,
     );
-    assert!(out.ends_with("  pp | q\n  r  | s\n"), "{out:?}");
+    assert!(out.ends_with("  pp | q\n  ---+--\n  r  | s\n"), "{out:?}");
 }
 
 #[test]
@@ -482,13 +456,12 @@ fn a_table_wider_than_the_terminal_shrinks_its_widest_column() {
 }
 
 #[test]
-fn a_table_longer_than_the_buffer_spills_rather_than_losing_rows() {
-    // Losing text is the one failure mode a documentation service cannot have, so a table past
-    // `TABLE_ROWS` is emitted in chunks, each aligned to its own widths, with no blank line between
-    // them because they are one table. `notes/releasable-crates-2026-10-07/inventory.md` is about
-    // 100 rows, so this is real.
+fn a_long_table_keeps_every_row_in_one_block() {
+    // Losing text is the one failure a documentation service cannot have, and a long table is one
+    // block: no row is lost and no blank line splits it. `notes/releasable-crates-2026-10-07/inventory.md`
+    // is about 100 rows, so this is real.
     let mut src = String::from("| n | v |\n|---|---|\n");
-    let rows = documentation::TABLE_ROWS + 10;
+    let rows = 120;
     for i in 0..rows {
         src.push_str(&format!("| r{i} | v{i} |\n"));
     }
@@ -499,17 +472,14 @@ fn a_table_longer_than_the_buffer_spills_rather_than_losing_rows() {
             "row {i} lost"
         );
     }
-    assert!(
-        !out.contains("\n\n"),
-        "a spilled chunk is not a new block: {out:?}"
-    );
+    assert!(!out.contains("\n\n"), "a table is one block: {out:?}");
 }
 
 #[test]
 fn a_header_row_is_emphasised_only_when_a_delimiter_row_says_it_is_one() {
-    // The delimiter row is what promotes a run of pipe-led lines to a table; without one the first
-    // row is ordinary text that happens to contain pipes, and emphasising it would claim a
-    // structure the author did not write.
+    // The delimiter row is what makes a run of pipe-led lines a table; without one the lines are a
+    // paragraph that happens to contain pipes, and emphasising the first would claim a structure the
+    // author did not write.
     let table = render(
         "| h |\n|---|\n| c |\n",
         Style {
@@ -530,9 +500,8 @@ fn a_header_row_is_emphasised_only_when_a_delimiter_row_says_it_is_one() {
 
 #[test]
 fn thematic_breaks_are_three_or_more_of_one_mark() {
-    // Three of `-`, `*` or `_` with only spaces between them, and nothing else. The corpus writes
-    // `---` far more often as a break than as a setext underline, which is why this renderer has no
-    // setext headings at all; that trade is only honest if the break itself is right.
+    // Three of `-`, `*` or `_` with only spaces between them, and nothing else, after a blank line
+    // (directly under a paragraph, `---` is a setext underline instead).
     let rule = "  ------------------\n";
     for src in ["---", "***", "___", "- - -", "----------"] {
         let out = plain(&format!("a\n\n{src}\n\nb\n"), 20);
@@ -551,36 +520,6 @@ fn thematic_breaks_are_three_or_more_of_one_mark() {
 }
 
 #[test]
-fn a_document_that_lost_nothing_says_so() {
-    // The other side of `an_overlong_line_is_reported_rather_than_hidden`, and it is the side a
-    // caller acts on: `doc` prints a warning when this is true, so a renderer that always answered
-    // true would warn about every page in the store. Asserting only the positive left a mutant that
-    // hard-codes it alive.
-    let mut out = Buf(Vec::new());
-    let mut r = Renderer::new(Style {
-        width: 80,
-        color: false,
-    });
-    r.feed(b"# Title\n\nA line well inside the limit.\n", &mut out);
-    r.finish(&mut out);
-    assert!(!r.is_truncated());
-}
-
-#[test]
-fn a_page_that_never_closes_its_fence_says_so() {
-    // `every_character_survives` asserts this is false for all 547 pages, which a renderer that
-    // always answered false would pass. The guard is only worth having if it can answer true.
-    let mut out = Buf(Vec::new());
-    let mut r = Renderer::new(Style {
-        width: 80,
-        color: false,
-    });
-    r.feed(b"```text\nstill inside\n", &mut out);
-    r.finish(&mut out);
-    assert!(r.has_unclosed_fence());
-}
-
-#[test]
 fn a_seventh_hash_is_not_a_heading() {
     // Markdown stops at six, and past that the line is text. The rule sits beside the one that
     // keeps `#!/bin/sh` out of the heading path, and neither had a test on its upper edge.
@@ -590,10 +529,8 @@ fn a_seventh_hash_is_not_a_heading() {
 
 #[test]
 fn a_tab_indents_as_four_columns() {
-    // `indent_of` counts a tab as four columns and a space as one, and until milestone 280 every
-    // caller took its byte offset instead, so a tab indented by one. Nothing in this repository
-    // indents with a tab outside a fence, where this does not run, so the sweep was the only thing
-    // that could have found it.
+    // A tab counts as four columns, so a tab-indented line after a blank one is indented code,
+    // exactly as four spaces are.
     assert_eq!(
         plain("para\n\n\tmore text\n", 40),
         plain("para\n\n    more text\n", 40)
@@ -602,9 +539,13 @@ fn a_tab_indents_as_four_columns() {
 
 #[test]
 fn an_ordered_marker_may_be_a_parenthesis_or_two_digits() {
-    // `1.`, `1)` and `10.` are all list markers and keep the number the author wrote, because a
-    // renumbered list is a different document.
-    assert_eq!(plain("1) one\n10. ten\n", 80), "  1) one\n  10. ten\n");
+    // `1.`, `1)` and `10.` are all list markers. A list counts up from its first number, and is
+    // written with a dot whatever its source used: the parser does not say which it was.
+    assert_eq!(plain("1) one\n2) two\n", 80), "  1. one\n  2. two\n");
+    assert_eq!(
+        plain("10. ten\n11. eleven\n", 80),
+        "  10. ten\n  11. eleven\n"
+    );
 }
 
 #[test]
@@ -624,25 +565,17 @@ fn a_destination_too_long_for_the_line_is_broken_rather_than_overrun() {
 #[test]
 fn a_quoted_code_line_keeps_its_own_indentation() {
     // Inside a fence the quote markers come off and nothing else does: a code line's own leading
-    // spaces are its meaning. The classifier's stripping loop eats indentation after a marker,
-    // which is right for a quoted paragraph and would be wrong here.
+    // spaces are its meaning.
     assert_eq!(
         plain("> ```text\n>     indented\n> ```\n", 40),
         "    |     indented\n"
     );
 }
 
-// ---- milestone 280, second pass ------------------------------------------------------------
-//
-// The first pass closed the block constructs. These are the inline scanner and the four helpers
-// under it, which is where the survivors concentrated once the tables and the rules had tests:
-// three inline forms with no test at all, and a set of bounds that only an input at the edge tells
-// apart from the bound next to it.
+// ---- inline forms --------------------------------------------------------------------------
 
 #[test]
-fn strikethrough_is_rendered_and_needs_both_of_its_tildes() {
-    // `~~` had no test of any kind, so the whole arm was unasserted: nine mutants lived in it,
-    // including one that made every character *not* a tilde open a strike run.
+fn strikethrough_is_rendered_and_a_lone_tilde_is_text() {
     let out = render(
         "a ~~gone~~ b\n",
         Style {
@@ -652,9 +585,10 @@ fn strikethrough_is_rendered_and_needs_both_of_its_tildes() {
     );
     assert!(out.contains("\x1b[9mgone"), "{out:?}");
     assert_eq!(plain("a ~~gone~~ b\n", 40), "  a gone b\n");
-    // One tilde is a tilde. The corpus writes `~~` struck-through prose and `~` in paths and
-    // regular expressions, and the difference has to be the count.
-    assert_eq!(plain("a ~gone~ b\n", 40), "  a ~gone~ b\n");
+    // GitHub's strikethrough takes one tilde as well as two, so a pair of single tildes strikes.
+    // The corpus writes `~` in paths, and an unpaired one is text.
+    assert_eq!(plain("a ~gone~ b\n", 40), "  a gone b\n");
+    assert_eq!(plain("see ~/notes now\n", 40), "  see ~/notes now\n");
 }
 
 #[test]
@@ -675,34 +609,20 @@ fn an_image_shows_what_it_is_and_where_it_points() {
 }
 
 #[test]
-fn inline_markup_stops_descending_at_the_depth_bound() {
-    // `MAX_DEPTH` is a bound rather than a guess: this renders in a process with one 4 KiB stack
-    // page, so unbounded recursion on adversarial input is a fault and not a slow render. Past the
-    // bound the markup is emitted literally, which is the visible half of that promise and had no
-    // test. Four levels here: strong, emphasis, strike, and one more that is not taken.
-    assert_eq!(
-        plain("**a *b ~~c *d* e~~ f* g**\n", 60),
-        "  a b ~~c *d e~~ f* g\n"
-    );
-}
-
-#[test]
 fn a_closer_preceded_by_a_space_is_not_one() {
-    // The rule that stops a stray `*` mid-sentence swallowing the rest of a paragraph, tested on
-    // both delimiter lengths because they are separate code paths, and on the case where a run
-    // begins with its own delimiter and has no closer at all.
+    // CommonMark's flanking rule: a `*` with a space before it does not close, which is what stops a
+    // stray `*` mid-sentence from swallowing the rest of a paragraph.
     assert_eq!(plain("*a * b*\n", 40), "  a * b\n");
     assert_eq!(plain("a **b ** c**\n", 40), "  a b ** c\n");
     assert_eq!(plain("a ****b\n", 40), "  a ****b\n");
 }
 
 #[test]
-fn a_line_of_marks_alone_is_not_a_heading_or_a_list() {
-    // Three classifiers index one byte past a run they have just counted, and each is guarded by a
-    // length test that only a line consisting of nothing but that run can tell from the test beside
-    // it. All three are ordinary lines in this repository's fenced blocks.
-    assert_eq!(plain("###\n", 40), "  ###\n");
-    assert_eq!(plain("#\n", 40), "  #\n");
+fn a_line_of_marks_alone_is_an_empty_heading_or_text() {
+    // `#` to `######` alone is an empty heading in CommonMark, which prints nothing; digits alone
+    // are text.
+    assert_eq!(plain("###\n", 40), "");
+    assert_eq!(plain("#\n", 40), "");
     assert_eq!(plain("123\n", 40), "  123\n");
 }
 
@@ -719,35 +639,33 @@ fn an_ordered_marker_is_digits_then_a_dot_or_a_bracket_then_a_space() {
 }
 
 #[test]
-fn an_indent_is_kept_outside_a_block_quote_and_dropped_inside_one() {
-    // Two facts in one `if`, and the earlier tab test could not separate them because it compared
-    // two indented renderings against each other: both sides move together when the indent is lost
-    // altogether. These are absolute.
+fn four_columns_of_indent_make_code_inside_a_block_quote_or_out() {
+    // CommonMark reads a line indented four columns past its container, after a blank line, as
+    // indented code, so it takes the code margin and keeps its own text verbatim. Inside a quote the
+    // marker's space is the container's, and the four after it are code.
     assert_eq!(
         plain("para\n\n    more text\n", 40),
-        "  para\n\n      more text\n"
+        "  para\n\n    more text\n"
     );
-    // A quoted paragraph's own indentation means nothing: the rule is its structure, and indenting
-    // past it would claim a nesting the author did not write.
     assert_eq!(
         plain(">     quoted indented\n", 40),
-        "  | quoted indented\n"
+        "    | quoted indented\n"
     );
 }
 
 #[test]
-fn a_quoted_fence_takes_the_markers_it_was_opened_with_and_no_more() {
-    // `past_quote` steps over at most the depth the fence opened at. A line inside the fence with
-    // FEWER markers is a lazy continuation and is taken as it stands, marker and all, which is this
-    // crate's recorded limitation rather than a guess at which reading the author meant.
+fn a_line_with_fewer_quote_markers_ends_the_quoted_fence() {
+    // A fence opened inside a quote ends with its quote. A line with fewer markers closes the inner
+    // quote, and the fence with it, rather than continuing the code lazily; an unpaired opener later
+    // is an empty block and prints nothing.
     assert_eq!(
         plain(">> ```text\n>>   deep\n>> ```\n", 40),
         "    | |   deep\n"
     );
-    assert_eq!(plain(">> ```text\n> one\n>> ```\n", 40), "    | | one\n");
+    assert_eq!(plain(">> ```text\n> one\n>> ```\n", 40), "  | one\n");
     assert_eq!(
         plain("> ```text\n>   two\nlazy\n> ```\n", 40),
-        "    |   two\n    | lazy\n"
+        "    |   two\n\n  lazy\n"
     );
 }
 
@@ -803,11 +721,9 @@ fn a_table_inside_a_block_quote_fits_inside_the_rule() {
 }
 
 #[test]
-fn a_table_is_one_chunk_until_its_text_will_not_fit() {
-    // The spill test above fills the ROW counter; this fills the TEXT arena, which is the other
-    // half of the same `if` and the half that decides widths. Two rows, well inside `TABLE_ROWS`,
-    // whose cells are long: they are one chunk, so the short row is padded to the long one's width
-    // and every output line is the same length. A flush between them would align each to itself.
+fn a_table_is_one_block_however_long_its_cells() {
+    // Two rows whose cells are long: they are laid out together, so the short row is padded to the
+    // long one's width and every output line is the same length.
     let src = format!(
         "| {} | b |\n|---|---|\n| {} | c |\n",
         "w".repeat(100),
@@ -818,23 +734,20 @@ fn a_table_is_one_chunk_until_its_text_will_not_fit() {
     assert_eq!(widths.len(), 3);
     assert!(
         widths.iter().all(|&w| w == widths[0]),
-        "not one chunk: {widths:?}"
+        "not one block: {widths:?}"
     );
 }
 
-// ---- milestone 280, third pass: the output cursor ------------------------------------------
+// ---- the output cursor ---------------------------------------------------------------------
 //
-// `col` is the renderer's only piece of arithmetic with two consumers, and almost every survivor
-// left in it is a mutant of one accumulator. Where the cursor feeds nothing but `close_line`'s
-// "is a line open" test, a wrong value is genuinely invisible and the mutant is equivalent; where
-// it feeds a wrap decision, or where it can reach zero, the output moves. These are the inputs that
-// tell those two cases apart, and each one is an ordinary page rather than a contrivance.
+// `col` is the layout's only piece of arithmetic with two consumers: `close_line`'s "is a line
+// open" test, and the wrap decision. These are the inputs where a wrong cursor moves the output,
+// and each one is an ordinary page rather than a contrivance.
 
 #[test]
 fn a_blank_line_inside_a_fence_is_a_blank_line() {
-    // The one code line whose visible width is zero, which is what separates "add nothing to the
-    // cursor" from "multiply the cursor by nothing": the second closes the line without a newline
-    // and joins the code to whatever follows. Most fenced blocks in this repository have one.
+    // The one code line whose visible width is zero. It is still a line of the code, so it ends
+    // with a newline of its own. Most fenced blocks in this repository have one.
     assert_eq!(
         plain("```text\none\n\ntwo\n```\n", 40),
         "    one\n    \n    two\n"
@@ -843,9 +756,8 @@ fn a_blank_line_inside_a_fence_is_a_blank_line() {
 
 #[test]
 fn an_image_leaves_the_cursor_where_its_text_ended() {
-    // `[image:` and `]` are the only runs this renderer emits that are not in the line buffer, and
-    // the cursor has to move by their width like any other word, or the wrap that follows lands in
-    // the wrong place. Nothing after an image had ever wrapped in a test.
+    // `[image:` and `]` are runs this renderer adds, and the cursor has to move by their width like
+    // any other word's, or the wrap that follows lands in the wrong place.
     assert_eq!(
         plain("![pic](d.png) then some more words here\n", 24),
         "  [image: pic] d.png\n  then some more words\n  here\n"
@@ -870,18 +782,14 @@ fn a_quoted_paragraph_wraps_inside_its_rule() {
 #[test]
 fn a_carriage_return_at_end_of_line_is_not_content() {
     // A markdown file that has been through an editor on another system arrives with CRLF, and the
-    // `\r` is framing rather than text. Nothing in this repository has one, so only an explicit
-    // test can hold it: a renderer that kept it would print a stray control character, and one that
-    // trimmed the wrong byte would eat the last character of every line.
+    // `\r` is framing rather than text: kept, it would print a stray control character.
     assert_eq!(plain("a\r\nb\r\n", 40), "  a b\n");
     assert_eq!(plain("# Title\r\n", 40), "TITLE\n");
 }
 
 #[test]
 fn an_indented_block_quote_indents_by_its_rule_and_not_by_its_spaces() {
-    // A quoted line's own indentation is not structure, so the rule replaces it. The earlier
-    // indent tests both start at column zero, where the indent being dropped and the indent being
-    // zero look the same.
+    // A quoted line's own indentation before its marker is not structure, so the rule replaces it.
     assert_eq!(
         plain("  >   quoted indented\n", 40),
         "  | quoted indented\n"
@@ -890,10 +798,7 @@ fn an_indented_block_quote_indents_by_its_rule_and_not_by_its_spaces() {
 
 #[test]
 fn a_table_of_twelve_columns_keeps_every_character() {
-    // The minimal reproduction of the 2026-09-23 red `main`, reduced from `notes/rented-metal.md`:
-    // twelve columns against a `TABLE_COLS` of 8. The last four used to be dropped in silence and
-    // `every_character_survives` found it an hour after the page landed. They are folded into the
-    // last column now, which is ugly and lossless, and lossless is the property that matters.
+    // Reduced from `notes/rented-metal.md`, a twelve-column table: every column is its own.
     let src = "| a | b | c | d | e | f | g | h | i | j | k | l |\n\
                |---|---|---|---|---|---|---|---|---|---|---|---|\n\
                | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | y | z |\n";
@@ -904,9 +809,8 @@ fn a_table_of_twelve_columns_keeps_every_character() {
 }
 
 #[test]
-fn the_fold_leaves_no_trailing_pipe_of_its_own() {
-    // The fold takes the rest of the line verbatim, so the row's own closing pipe would otherwise
-    // become part of the last cell's text and every folded table would end in a stray bar.
+fn a_row_has_no_trailing_pipe_of_its_own() {
+    // The row's closing pipe ends it and is not cell text, so no row ends in a stray bar.
     let src = "| a | b | c | d | e | f | g | h | i |\n\
                |---|---|---|---|---|---|---|---|---|\n\
                | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |\n";
@@ -914,7 +818,7 @@ fn the_fold_leaves_no_trailing_pipe_of_its_own() {
     for line in out.lines() {
         assert!(
             !line.trim_end().ends_with('|'),
-            "the row's closing pipe survived the fold: {line:?}"
+            "the row's closing pipe was printed: {line:?}"
         );
     }
 }
@@ -929,17 +833,15 @@ fn a_row_with_fewer_cells_than_the_table_is_padded_rather_than_ragged() {
     );
 }
 
-// ---- milestone 280, fourth pass: the cases where a wrong answer looks right on one line --------
+// ---- shapes that look right on one line ------------------------------------------------------
 //
-// Three classifiers can be wrong about what a line IS and still emit the same bytes for it, because
-// the marker they invent is made of the same characters they would otherwise have printed as text.
-// The difference is the margin a continuation aligns to, so it takes two lines to see.
+// A line read as a list item it is not would print the same bytes on its first line; the margin
+// its continuation aligns to is the difference, so it takes two lines to see.
 
 #[test]
 fn a_line_that_is_not_a_list_does_not_hang_like_one() {
     // `. text` has no digits before its dot and `1a text` has no dot after its digits: neither is an
-    // ordered marker, and a classifier that accepted either would print the same first line and then
-    // indent everything after it under a bullet nobody wrote.
+    // ordered marker, so nothing after them hangs under a bullet nobody wrote.
     assert_eq!(
         plain(". one two three four five six\n", 20),
         "  . one two three\n  four five six\n"
@@ -952,10 +854,8 @@ fn a_line_that_is_not_a_list_does_not_hang_like_one() {
 
 #[test]
 fn a_blank_line_inside_a_quoted_fence_is_not_read_past_its_marker() {
-    // The commonest line in a quoted transcript: a `>` with nothing after it. The marker walk has
-    // three length tests and each one indexes the byte after what it just consumed, so this is the
-    // line that separates them from the line buffer behind them. Both depths, because one level
-    // cannot tell a bound from the loop that stops at it.
+    // The commonest line in a quoted transcript: a `>` with nothing after it, which is an empty line
+    // of the code, at both depths.
     assert_eq!(
         plain("> ```text\n>\n> after\n> ```\n", 40),
         "    | \n    | after\n"
@@ -968,24 +868,20 @@ fn a_blank_line_inside_a_quoted_fence_is_not_read_past_its_marker() {
 
 #[test]
 fn a_code_span_hands_back_the_line_past_its_closing_backtick() {
-    // The existing code-span test asks what is inside the span; this asks where the scanner resumes.
-    // One byte early and the closing backtick is emitted as the first character of the next word,
-    // which a `contains` check cannot see.
+    // The text after a code span is ordinary text again, and the backticks are not printed.
     assert_eq!(plain("a `code` b\n", 40), "  a code b\n");
 }
 
-// ---- survivor triage of the 2026-10-03 census: the last column's fold, and the table arena's edges -----------------------
+// ---- a row's last cell ---------------------------------------------------------------------
 //
-// The fold that keeps a ninth cell from being dropped (see `a_table_of_twelve_columns_keeps_every_
-// character`) strips trailing blanks, then one closing pipe unless a backslash escapes it. Each of
-// those three steps was tested only on a clean row.
+// A row's end strips trailing blanks, then one closing pipe unless a backslash escapes it.
 
 const NINE: &str = "|-|-|-|-|-|-|-|-|-|\n";
 
 #[test]
-fn a_folded_row_with_trailing_blanks_still_loses_its_closing_pipe() {
-    // Blanks after the closing pipe are part of the line, so the pipe is not the last byte. A fold
-    // that stops looking at the end of the line prints it, and a tab is blank too.
+fn a_row_with_trailing_blanks_still_loses_its_closing_pipe() {
+    // Blanks after the closing pipe are part of the line, so the pipe is not its last byte; a tab
+    // is blank too.
     let src = format!(
         "| a | b | c | d | e | f | g | h | i |\n{NINE}| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | \t \n"
     );
@@ -997,9 +893,9 @@ fn a_folded_row_with_trailing_blanks_still_loses_its_closing_pipe() {
 }
 
 #[test]
-fn a_folded_row_keeps_an_escaped_closing_pipe_as_text() {
+fn a_row_keeps_an_escaped_closing_pipe_as_text() {
     // `\|` is a pipe in the cell, not the row's end, and the backslash is not text. The last cell
-    // here is `i |`, so the pipe stays and the row has no closing pipe of its own.
+    // here is `9 |`, so the pipe stays and the row has no closing pipe of its own.
     let src = format!(
         "| a | b | c | d | e | f | g | h | i |\n{NINE}| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 \\|\n"
     );
@@ -1012,95 +908,24 @@ fn a_folded_row_keeps_an_escaped_closing_pipe_as_text() {
 
 #[test]
 fn a_cell_that_ends_in_a_backslash_is_not_read_past_its_end() {
-    // The escape check looks one byte ahead of the backslash. At the end of a cell there is nothing
-    // there, and the lookahead has to say so rather than read the next cell's pipe or the buffer.
+    // A backslash that ends a cell escapes nothing and is cell text.
     assert_eq!(
         plain("| a\\ | b |\n|---|---|\n| x\\ | y\\ |\n", 40),
         "  a\\ | b \n  ---+---\n  x\\ | y\\\n"
     );
 }
 
-#[test]
-fn a_row_that_exactly_fills_the_text_arena_is_still_one_chunk() {
-    // The arena holds `TABLE_TEXT` bytes of cell text and a row is admitted while `used + row <=
-    // TABLE_TEXT`; the row that lands on the limit exactly belongs to the chunk, and the one after
-    // it does not. Four rows of 2,046 bytes (a 2,048-byte line is the longest the renderer keeps)
-    // leave 8 bytes, which is what the indented last row measures to. One byte more and it is a
-    // chunk of its own, so the two cases differ by whether every line is one width.
-    let long = format!("|{}|\n", "a".repeat(2046));
-    let delim = "|-|\n";
-    let head = format!("{long}{delim}{long}{long}{long}");
-    let exact = plain(&format!("{head}  |bbbbbb|\n"), 10_000);
-    let widths: Vec<usize> = exact.lines().map(str::len).collect();
-    assert_eq!(widths.len(), 6, "four rows, a rule and the last row");
-    assert!(
-        widths.iter().all(|&w| w == widths[0]),
-        "the exact fit was split: {widths:?}"
-    );
-    let over = plain(&format!("{head}  |bbbbbbb|\n"), 10_000);
-    let widths: Vec<usize> = over.lines().map(str::len).collect();
-    assert_ne!(
-        widths.last(),
-        widths.first(),
-        "a row one byte over the arena stayed in the chunk"
-    );
-}
-
-// ---- survivor triage of the 2026-10-03 census: the inline scanner's depth bound and its last-byte reads --------------------
-//
-// The scanner reads one byte ahead of a marker, and the line buffer behind the live line holds the
-// previous, longer line. A read one byte too far therefore does not fail on its own; it fails when
-// the leftover byte happens to be the one being looked for. These put the right leftovers there.
-
-fn stale(first: &str, second: &str, width: u16) -> String {
-    plain(&format!("{first}\n\n{second}\n"), width)
-}
-
-#[test]
-fn nesting_stops_at_the_depth_bound_whichever_marker_opens_each_level() {
-    // Three levels deep, each opened by a different marker (strong, strike, link), so every site
-    // that deepens the scan is on the path. The fourth level is literal: markup there is text.
-    let emph = plain("**a ~~b [c *z* d](u) b~~ a**\n", 80);
-    assert_eq!(emph, "  a b c *z* d u b a\n");
-    let strike = plain("**a *b [c ~~z~~ d](u) b* a**\n", 80);
-    assert_eq!(strike, "  a b c ~~z~~ d u b a\n");
-    let link = plain("**a ~~b *c [x](u) c* b~~ a**\n", 80);
-    assert_eq!(link, "  a b c [x](u) c b a\n");
-}
-
-#[test]
-fn a_single_tilde_does_not_open_a_strike() {
-    // Two tildes open one. The second is read at `i + 1`, and a scanner that read it at `i` would
-    // see the first tilde twice and strike through everything up to the next pair.
-    assert_eq!(plain("~a ~~b~~\n", 40), "  ~a b\n");
-}
-
-#[test]
-fn a_strike_closer_is_looked_for_after_the_opener() {
-    // The search starts two bytes past the opening pair. Started anywhere else it misses the
-    // closer, or finds one that belongs to a later span, so the opener is placed away from byte 0
-    // and byte 2 where the wrong starting points coincide with it.
-    assert_eq!(plain("xxxxx~~ab~~ y\n", 40), "  xxxxxab y\n");
-}
-
-#[test]
-fn a_link_label_at_the_end_of_a_line_does_not_borrow_a_paren_from_the_last_one() {
-    // `[x]` ends the line, and the byte after it is the `(` the previous line left behind. Taking
-    // it as the start of a destination looks for a `)` before the line's start and cannot find
-    // the slice it asks for.
-    assert_eq!(stale("[x](yy)", "[x]", 40), "  x yy\n\n  [x]\n");
-}
+// ---- the cursor at the edges of a line ------------------------------------------------------
 
 #[test]
 fn a_heading_with_two_spaces_after_its_hashes_has_no_leading_blank() {
-    // The blank is skipped as whitespace and leaves the "a space is owed" flag set. A margin of zero
-    // is where that flag and the cursor agree, so the first word must not pay it.
+    // A heading's first word starts at the margin, owing no space. A margin of zero is where a
+    // space owed and the cursor's position agree, so it is the edge.
     assert_eq!(plain("#  Title\n", 40), "TITLE\n");
 }
 
 #[test]
 fn an_image_marker_moves_the_cursor_by_its_own_width() {
-    // `[image:` is written from outside the line buffer, so the cursor has to be advanced by hand.
     // `[image: pic]` is 12 columns from a margin of 2 and `d.png` brings the line to 20. Any other
     // width puts that word on one side of the wrap or the other, so a width of 21 is the edge.
     assert_eq!(
@@ -1115,28 +940,50 @@ fn a_long_destination_is_wrapped_on_character_boundaries() {
     // two-byte character asked about the wrong byte is split in half and the output stops being text.
     let out = plain("[a](éééééééééééééé)\n", 12);
     assert_eq!(out, "  a\n  ééééééééé\n  ééééé\n");
+    // Mixed widths, so a question about any byte but the cursor's gets a different length.
+    let out = plain("[a](aéaéaéaéaéaéaé)\n", 12);
+    assert_eq!(out, "  a\n  aéaéaéaéa\n  éaéaé\n");
 }
 
 #[test]
 fn a_quoted_fence_keeps_a_marker_of_its_own() {
-    // A fence opened one quote deep strips one marker from each line. A second `>` on a line is
-    // the code's, as in a quoted mail inside a quoted block.
+    // A fence opened one quote deep takes one marker from each line. A second `>` on a line is the
+    // code's, as in a quoted mail inside a quoted block.
     assert_eq!(plain("> ```text\n> > keep\n> ```\n", 40), "    | > keep\n");
 }
 
 #[test]
-fn a_line_with_fewer_markers_than_the_fence_was_opened_at_is_not_over_read() {
-    // The fence opened two deep and this line has one marker. The walk past the markers has to stop
-    // at the end of the line, not index it.
-    let out = plain(">> ```text\n>\n>> x\n>> ```\n", 40);
-    assert!(out.contains('x'), "{out:?}");
+fn an_empty_one_column_table_still_ends_each_of_its_lines() {
+    // A column whose every cell is empty has width zero, so only the margin moves the cursor off
+    // zero, and `close_line` ends a line only past zero: each row still ends.
+    assert_eq!(plain("| |\n|-|\n| |\n", 80), "  \n  \n  \n");
 }
 
 #[test]
-fn an_empty_one_column_table_still_ends_each_of_its_lines() {
-    // A column whose every cell is empty has width zero, so only the margin moves the output
-    // column off zero. `close_line` ends a line only when the column is past zero, so a cell or
-    // rule that scaled the column by its width, rather than adding the width, would run the rows
-    // together.
-    assert_eq!(plain("| |\n|-|\n| |\n", 80), "  \n  \n  \n");
+fn a_code_block_owes_the_next_block_a_blank_line() {
+    // A block that printed a line is separated from what follows it, like any other block; only an
+    // empty one leaves the blank line before it still owed instead of adding a second.
+    assert_eq!(
+        plain("before\n\n```\nx\n```\n\nafter\n", 40),
+        "  before\n\n    x\n\n  after\n"
+    );
+}
+
+#[test]
+fn an_autolink_is_printed_once_in_running_text_and_in_a_cell() {
+    // An autolink's text is its destination, so printing the destination beside it, as every other
+    // link gets, would say the address twice.
+    assert_eq!(plain("x <http://a.b> y\n", 40), "  x http://a.b y\n");
+    assert_eq!(
+        plain("| a |\n|---|\n| <http://a.b> |\n", 40),
+        "  a         \n  ----------\n  http://a.b\n"
+    );
+}
+
+#[test]
+fn a_space_owed_before_the_first_word_on_a_line_is_dropped() {
+    // A space separates two words on one line. Owed at the start of a line, after a list marker or
+    // at the page's first word, it would only shift the text off its margin.
+    assert_eq!(plain("&#32;x\n", 40), "  x\n");
+    assert_eq!(plain("- &#32;x\n", 40), "  - x\n");
 }

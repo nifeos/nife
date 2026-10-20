@@ -1,49 +1,42 @@
 //! **The documentation crate**: markdown in, styled terminal bytes out, and the index that says
-//! what exists. It is the pure half of the documentation service: a streaming
-//! renderer ([`Renderer`]), the byte layout of a search index ([`index`]), and the query that reads
-//! one. No IO, syscall, endpoint or allocator is on a confined program's path;
-//! `components/src/mdr.rs` is the program. The crate and program names differ on purpose: the
-//! crate is a superset of what the program does.
+//! what exists. It is the pure half of the documentation service: a renderer (`render`, behind the
+//! `markdown` feature), the byte layout of a search index ([`index`]), and the query that reads one.
+//! No IO, syscall or endpoint is in it; `mdr/` is the program. The crate and program names differ on
+//! purpose: the crate is a superset of what the program does.
 //!
-//! It renders ATX headings, wrapped paragraphs, fenced code, block quotes, nested bullet and
-//! ordered lists, aligned tables, thematic breaks, and the inline set `**strong**`, `*emphasis*`,
-//! `` `code` ``, `~~strike~~`, `[text](dest)` and `![alt](dest)`: every construct this
-//! repository's own markdown uses, which is the corpus the viewer serves. Losing text is the one
-//! failure a documentation service cannot have, so oversized tables degrade their layout instead
-//! ([`TABLE_ROWS`], [`TABLE_COLS`]).
+//! The parser is `pulldown-cmark`, so the input is CommonMark with tables and strikethrough. What a
+//! page looks like on a terminal is this crate's: wrapped paragraphs at a two-column margin,
+//! capitalised level-one headings, hanging list items, block quotes ruled with `|`, verbatim code
+//! blocks, link and image destinations shown beside their text, and aligned tables.
 //!
 //! # BUGS
 //!
-//! - A source line longer than [`LINE_MAX`] is truncated silently in the output; the repository's
-//!   longest is 1928 bytes <!--count:longest-markdown-line-->. [`Renderer::is_truncated`] reports it.
-//! - A lazy continuation inside a quoted fence keeps its quote marker and stays code, where
-//!   `CommonMark` would end the fence. `a_fence_inside_a_block_quote_closes` holds the quoted
-//!   fence itself, which only a unit test can see.
-//! - Setext headings are not recognised: `---` alone is far more often a thematic break here.
-//! - Reference links render as literal text, and HTML passes through as text.
-//! - A table spilling past [`TABLE_ROWS`] loses header emphasis and alignment in its second chunk,
-//!   since the delimiter row is not carried across the flush. No rows are lost.
 //! - Width counts characters, not columns, so a wide CJK character counts as one.
-//! - The mutation residue is listed in notes/mutation-testing.md. One is a hang: `j /= 1` in
-//!   `take_table_row`'s trim loop never terminates; replacing the loop with a slice trim removes it
-//!   (`notes/project-metrics/mutation-triage.csv`).
+//! - A table wider than the terminal shrinks its widest column, and a shrunk cell loses its tail on
+//!   screen. Nothing wraps a cell.
+//! - HTML is shown as the text it is, and a link reference definition (`[x]: url`) prints nothing of
+//!   its own: its destination appears beside each link that uses it.
+//! - An ordered list is numbered `1.` style whatever its source used, since the parser does not
+//!   report whether the author wrote `1)`.
 //!
 //! Name: ratified 2026-09-13 (calef). Refused `manual`, `doc`, `documentation_system`, `markdown`.
 
 #![no_std]
 
-#[cfg(feature = "builder")]
+#[cfg(any(feature = "builder", feature = "markdown"))]
 extern crate alloc;
 
 pub mod index;
+#[cfg(feature = "markdown")]
 mod render;
 
-pub use render::{Attr, LINE_MAX, MAX_DEPTH, Renderer, Style, TABLE_COLS, TABLE_ROWS, TABLE_TEXT};
+#[cfg(feature = "markdown")]
+pub use render::{Attr, Style, render};
 
 /// Somewhere rendered bytes go.
 ///
 /// The same shape as [`line_editor::Sink`](../line_editor/trait.Sink.html), and deliberately not
-/// that trait: this crate has no dependencies, and a renderer that needed the line discipline crate
+/// that trait: this crate does not depend on `line_editor`, and a renderer that needed the line discipline crate
 /// to describe "bytes leave here" would have taken one for a four-line definition. A caller that
 /// holds both can implement this over that in one line.
 ///

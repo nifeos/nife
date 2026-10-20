@@ -110,7 +110,6 @@ components/src/least_authority_demo.rs::_start
 components/src/line_editor.rs::_start
 components/src/login.rs::_start
 components/src/login_audit_receiver.rs::_start
-components/src/mdr.rs::_start
 components/src/network_time_client.rs::ATTEMPTS
 components/src/network_time_client.rs::_start
 components/src/non_volatile_memory_express.rs::_start
@@ -1301,17 +1300,7 @@ crates/documentation/src/lib.rs::Sink
 crates/documentation/src/render.rs
 crates/documentation/src/render.rs::Attr
 crates/documentation/src/render.rs::DEFAULT
-crates/documentation/src/render.rs::LINE_MAX
-crates/documentation/src/render.rs::MAX_DEPTH
-crates/documentation/src/render.rs::Renderer
 crates/documentation/src/render.rs::Style
-crates/documentation/src/render.rs::TABLE_COLS
-crates/documentation/src/render.rs::TABLE_ROWS
-crates/documentation/src/render.rs::TABLE_TEXT
-crates/documentation/src/render.rs::feed
-crates/documentation/src/render.rs::finish
-crates/documentation/src/render.rs::is_truncated
-crates/documentation/src/render.rs::new
 crates/domain_name_resolution_contract/src/endowment.rs
 crates/domain_name_resolution_contract/src/endowment.rs::TRANSPORT_TCP
 crates/domain_name_resolution_contract/src/endowment.rs::TRANSPORT_UDP

@@ -23,9 +23,11 @@ notes/footprint-perturbation.md.
   code cannot make anything faster. So the experiment measures code layout summed with footprint
   and reports the total. **Do not quote an E3 number as a footprint result.** The control that
   milestone 370 (a layout control, because the perturbation experiments cannot tell footprint from
-  addresses) specifies was built on 2026-09-19. The evening that uses it has not been run, so E3
-  has no attributable number at either date. The flaw was present in the 2026-08-22 dev-Mac
-  reading too; the small cache made it visible rather than causing it.
+  addresses) specifies was built on 2026-09-19, and milestone 796 (pin the hot trap path's
+  placement) leaves it nothing to move (notes/footprint-perturbation/step-0-under-the-pin.md).
+  calef retired E3's question on 2026-10-20 (UTC) in favor of E5, milestone 708 (an executed
+  footprint ladder for radon), so E3 has no attributable number. The flaw was present in the
+  2026-08-22 dev-Mac reading too; the small cache made it visible rather than causing it.
 
 ## Per-IPC kernel stack depth, 2026-09-19
 
@@ -34,6 +36,11 @@ kernel stack per IPC. It was measured by painting each thread's own stack around
 In the release kernel radon boots, one round trip reaches about 600 bytes of each kernel thread's
 stack (riscv64: 608 client, 576 server, E1's SEND/RECEIVE shape). EL0 threads reach 0.5 to 1 KiB,
 trap frame included. The debug build reaches 2 to 4 KiB.
+
+On 2026-10-20 the riscv64 release figures were re-taken at one commit, in QEMU and on radon. The
+kernel-thread CALL/REPLY series match to the byte; every EL0 series reads 16 bytes deeper on the
+board, where `single_hart` grows the trap path's frame. notes/stack-high-water/per-ipc-depth.md
+has the comparison.
 
 The row is `dated` rather than gated: the number never existed before, and nothing depends on it
 yet.
@@ -161,9 +168,9 @@ table carried them before the split.
 |---|---|---|
 | E1: IPC round trip against thread count | 2026-09-04 (radon, 6 boots); 2026-08-22 (dev Mac) | `cargo xtask bench --real` (`ipc_scale_*` rows); on radon, `script/board-image --bench` and notes/footprint-perturbation.md |
 | E2: thread census on the customer path | 2026-08-22 | `cargo xtask test`, the "E2 thread census" line in `a_host_process_connects_to_the_guest_and_is_answered` (both ISAs) |
-| E3: IPC fastpath footprint doubled, and the latency it costs | 2026-09-04 (radon, 6 boots); confounded, see the radon section; 2026-08-22 (dev Mac) | `script/fastpath-footprint --features fastpath_pad [--layout]` (both ISAs); `cargo xtask bench --real --extra-features fastpath_pad` against `cargo xtask bench --real`; on radon, eight images over `NIFE_FASTPATH_PAD`/`NIFE_FASTPATH_SHIFT` (the layout control, 2026-09-19) built by `script/board-image --bench --extra-features fastpath_pad`, procedure in notes/footprint-perturbation.md |
+| E3: IPC fastpath footprint doubled, and the latency it costs | retired by calef, 2026-10-20; last read 2026-09-04 (radon, 6 boots), confounded, see the radon section; 2026-08-22 (dev Mac) | `script/fastpath-footprint --features fastpath_pad [--layout]` (both ISAs); `cargo xtask bench --real --extra-features fastpath_pad` against `cargo xtask bench --real`; on radon, eight images over `NIFE_FASTPATH_PAD`/`NIFE_FASTPATH_SHIFT` (the layout control, 2026-09-19) built by `script/board-image --bench --extra-features fastpath_pad`, procedure in notes/footprint-perturbation.md |
 | E4: application working-set displacement under IPC traffic, at typical (8-pair) and high (48-pair, E1's-knee) background load | 2026-09-04 (radon, 6 boots); 2026-08-23 (dev Mac) | `cargo xtask bench --real` (`appdisp_*_ipc`/`appdisp_*_ipc96` rows); on radon, `script/board-image --bench` and notes/footprint-perturbation.md |
-| per-IPC kernel stack depth, per shape and role (milestone 134) | 2026-09-19 (QEMU, all three ISAs, debug and release) | debug: `script/test`, the `ipc-stack-depth:` lines of `one_ipc_reaches_a_measured_depth_into_its_kernel_stack`; release: a `bench,ipc_stack_depth` kernel booted on one hart (notes/stack-high-water.md, "Per-IPC depth") |
+| per-IPC kernel stack depth, per shape and role (milestone 134) | 2026-10-20 (riscv64 release, QEMU and radon at one commit); 2026-09-19 (QEMU, all three ISAs, debug and release) | debug: `script/test`, the `ipc-stack-depth:` lines of `one_ipc_reaches_a_measured_depth_into_its_kernel_stack`; release: a `bench,ipc_stack_depth` kernel booted on one hart (notes/stack-high-water.md, "Per-IPC depth") |
 
 ## BUGS
 

@@ -1,0 +1,245 @@
+U-Boot SPL 2021.10 (Feb 12 2023 - 18:15:33 +0800)
+DDR version: dc2e84f0.
+Trying to boot from SPI
+
+OpenSBI v1.2
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : StarFive VisionFive V2
+Platform Features         : medeleg
+Platform HART Count       : 5
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 4000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : jh7110-hsm
+Platform PMU Device       : ---
+Platform Reboot Device    : pm-reset
+Platform Shutdown Device  : pm-reset
+Firmware Base             : 0x40000000
+Firmware Size             : 292 KB
+Runtime SBI Version       : 1.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 1
+Domain0 HARTs             : 0*,1*,2*,3*,4*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000040000000-0x000000004007ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000040200000
+Domain0 Next Arg1         : 0x0000000042200000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 1
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdcbx
+Boot HART ISA Extensions  : none
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 4096
+Boot HART PMP Address Bits: 34
+Boot HART MHPM Count      : 2
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+
+
+U-Boot 2021.10 (Feb 12 2023 - 18:15:33 +0800), Build: jenkins-VF2_515_Branch_SDK_Release-24
+
+CPU:   rv64imacu
+Model: StarFive VisionFive V2
+DRAM:  8 GiB
+MMC:   sdio0@16010000: 0, sdio1@16020000: 1
+Loading Environment from SPIFlash... SF: Detected gd25lq128 with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+StarFive EEPROM format v2
+
+--------EEPROM INFO--------
+Vendor : StarFive Technology Co., Ltd.
+Product full SN: VF7110B1-2253-D008E000-00004584
+data version: 0x2
+PCB revision: 0xb2
+BOM revision: A
+Ethernet MAC0 address: 6c:cf:39:00:47:2c
+Ethernet MAC1 address: 6c:cf:39:00:47:2d
+--------EEPROM INFO--------
+
+In:    serial@10000000
+Out:   serial@10000000
+Err:   serial@10000000
+Model: StarFive VisionFive V2
+Net:   eth0: ethernet@16030000, eth1: ethernet@16040000
+switch to partitions #0, OK
+mmc1 is current device
+found device 1
+bootmode flash device 1
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Hit any key to stop autoboot:  2  0 
+StarFive # setenv nife_boot_server 192.168.8.192
+StarFive # boot
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Importing environment from mmc1 ...
+## Warning: Input data exceeds 1048576 bytes - truncated
+## Info: input data size = 1048578 = 0x100002
+** Invalid partition 2 **
+Couldn't find partition mmc 1:2
+Can't set block device
+## Warning: defaulting to text format
+## Error: "boot2" not defined
+switch to partitions #0, OK
+mmc1 is current device
+Scanning mmc 1:1...
+Found U-Boot script /boot.scr.uimg
+1595 bytes read in 8 ms (194.3 KiB/s)
+## Executing script at 43900000
+nife: boot.scr is driving this boot, milestones 218 and 257
+nife: tftp server is 192.168.8.192, setenv nife_boot_server to point somewhere else
+ethernet@16030000 Waiting for PHY auto negotiation to complete...... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+DHCP client bound to address 192.168.8.200 (257 ms)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.192; our IP address is 192.168.8.200
+Filename 'nife-vf2.img'.
+Load address: 0x40200000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 ############################################
+	 515.6 KiB/s
+done
+Bytes transferred = 3501540 (356de4 hex)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.192; our IP address is 192.168.8.200
+Filename 'nife-initrd.img'.
+Load address: 0x90000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 ##############################
+	 502 KiB/s
+done
+Bytes transferred = 16650240 (fe1000 hex)
+nife: payload came from net
+Moving Image from 0x40200000 to 0x80200000, end=80556000
+## Flattened Device Tree blob at 86000000
+   Booting using the fdt blob at 0x86000000
+   Using Device Tree in place at 0000000086000000, end 000000008600d41a
+
+Starting kernel ...
+
+clk u5_dw_i2c_clk_core already disabled
+clk u5_dw_i2c_clk_apb already disabled
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc080228e9c  (high half: Sv39 paging is on)
+  device tree : 0x0000000086000000
+  screen      : none (no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for); this console is the UART
+  smp: 5 core(s) in the device tree, 4 startable
+  smp: cpu 0's riscv,isa names user mode and not supervisor: it cannot run this kernel, whatever status and mmu-type claim; not started
+  plic: S contexts from the device tree differ from the 2h+1 formula (expected on the JH7110: the disabled S7 shifts every context down one)
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  smp: 1 core(s) online (single_hart: secondaries left parked)
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+
+bench: cntfrq 4000000
+ipc-stack-depth: kernel null (the instrument alone) floor 240 median 240 max 240 margin 64 clean
+ipc-stack-depth: kernel send_receive client SEND median 496 min 336 max 496 below-caller 224 floor 336 samples 256
+ipc-stack-depth: kernel send_receive client RECEIVE median 352 min 352 max 768 below-caller 96 floor 320 samples 256
+ipc-stack-depth: kernel send_receive server RECEIVE median 320 min 320 max 544 below-caller 96 floor 288 samples 256
+ipc-stack-depth: kernel send_receive server SEND median 480 min 320 max 768 below-caller 224 floor 320 samples 256
+ipc-stack-depth: kernel call_reply client CALL median 624 min 624 max 632 below-caller 384 floor 304 samples 256
+ipc-stack-depth: kernel call_reply server RECEIVE_CAP median 576 min 576 max 600 below-caller 368 floor 272 samples 256
+ipc-stack-depth: kernel call_reply server REPLY AT FLOOR: at most 304, shallower than the instrument can see (max 304, samples 256)
+ipc-stack-depth: el0 send_receive client SEND AT FLOOR: at most 768, shallower than the instrument can see (max 768, samples 256)
+ipc-stack-depth: el0 send_receive client RECEIVE median 960 min 960 max 960 below-caller 960 floor 768 samples 256
+ipc-stack-depth: el0 send_receive server RECEIVE median 960 min 960 max 960 below-caller 960 floor 768 samples 256
+ipc-stack-depth: el0 send_receive server SEND AT FLOOR: at most 768, shallower than the instrument can see (max 768, samples 256)
+ipc-stack-depth: el0 call_reply client CALL median 1024 min 1024 max 1024 below-caller 1024 floor 768 samples 256
+ipc-stack-depth: el0 call_reply server RECEIVE_CAP median 1008 min 1008 max 1008 below-caller 1008 floor 768 samples 256
+ipc-stack-depth: el0 call_reply server REPLY AT FLOOR: at most 768, shallower than the instrument can see (max 768, samples 256)
+ipc-stack-depth: done (4 series were not measurements)
+bench: yield_switch 4897 2000
+bench: ipc_rtt 4492 1000
+bench: relay_rtt 10167 1000
+bench: call_reply 5450 1000
+bench: broker_rtt 10938 1000
+bench: spawn_reap 5075 64
+bench: map_new 1138 64
+bench-probe: map_new_preemptions 0 over 64 iters
+bench-probe: map_new_remote_fences 0 over 64 iters
+bench-probe: online_harts_mask 0x2 (1 online, this hart 1)
+bench: rfence_self 1512 512
+bench-probe: cycles_per_tick 250.00 (25000808 cycles over 100001 ticks at cntfrq 4000000)
+bench-probe: cycles_per_tick_means core cycles (SBI PMU CPU_CYCLES) per tick of the `time` CSR, a fixed-rate timebase the device tree states
+bench: coremark 109016 256
+bench: null_syscall 28517 20000
+bench: ctx_switch 43011 5000
+bench: ipc_rtt_el0 141273 5000
+bench: ipc_scale_2 9897 2000
+bench: ipc_scale_4 19838 4000
+bench: ipc_scale_8 45363 8000
+bench: ipc_scale_16 133387 16000
+bench: ipc_scale_32 268588 32000
+bench: ipc_scale_64 537978 64000
+bench: ipc_scale_96 808061 96000
+bench: appdisp_4k_solo 192875 15625
+bench: appdisp_4k_ipc 195389 15625
+bench: appdisp_4k_ipc96 207120 15625
+bench-probe: appdisp_4k_throughput_lost_pct 1
+bench-probe: appdisp_4k_highload_throughput_lost_pct 7
+bench: appdisp_16k_solo 192254 3906
+bench: appdisp_16k_ipc 195100 3906
+bench: appdisp_16k_ipc96 206907 3906
+bench-probe: appdisp_16k_throughput_lost_pct 1
+bench-probe: appdisp_16k_highload_throughput_lost_pct 7
+bench: appdisp_32k_solo 193295 1953
+bench: appdisp_32k_ipc 196851 1953
+bench: appdisp_32k_ipc96 209613 1953
+bench-probe: appdisp_32k_throughput_lost_pct 1
+bench-probe: appdisp_32k_highload_throughput_lost_pct 8
+bench: appdisp_64k_solo 280116 976
+bench: appdisp_64k_ipc 282848 976
+bench: appdisp_64k_ipc96 295271 976
+bench-probe: appdisp_64k_throughput_lost_pct 0
+bench-probe: appdisp_64k_highload_throughput_lost_pct 5
+bench: appdisp_128k_solo 280073 488
+bench: appdisp_128k_ipc 283014 488
+bench: appdisp_128k_ipc96 296422 488
+bench-probe: appdisp_128k_throughput_lost_pct 1
+bench-probe: appdisp_128k_highload_throughput_lost_pct 5
+bench: sink_throughput 72477 80000
+bench: map_el0 3175 500
+bench: spawn_el0 32287 100
+bench: done

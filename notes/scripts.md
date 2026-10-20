@@ -132,7 +132,7 @@ Full rows: the appendices above.
 | script | what it does |
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
-| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
+| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
 | `script/preflight-queue` | Replay the merge queue locally before a group build does. |
 | `script/architect-queue`, `script/record-ruling` | calef's queue; rulings. |
 | `script/nanny` | Work the merge queue by delegating the rebases. |
