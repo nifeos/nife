@@ -621,8 +621,8 @@ def short(n):
 # runs one 128-byte slot); anything else is a stale attribute worth removing.
 pin_bad = False
 pin_dump = []
-# An experiment's build (--features) reports an escape as a reading rather than a failure: E3's own
-# `maybe_pad` is on its path and deliberately not pinned.
+# An experiment's build (--features) reports an escape as a reading rather than a failure. E3's own
+# `maybe_pad` is on its path and carries a `.text.hot` section like the rest.
 pin_out = sys.stdout if os.environ.get("NOCHECK") else sys.stderr
 lo, hi = marks.get("__text_hot_start"), marks.get("__text_hot_end")
 if lo is None or hi is None:
@@ -779,12 +779,10 @@ if os.environ.get("LAYOUT"):
     if pad:
         print(f"    layout: fastpath_pad_body at {start[pad[0]]:#x}, {size[pad[0]]} bytes"
               + (f"; fastpath_layout_shift at {start[blk[0]]:#x}" if blk else ""))
-        # **How much of the hot path this pad actually moves, which is not a constant.** Nothing
-        # pins where the linker puts the sled among the kernel's `.text.*` inputs, and it has moved
-        # across commits: on 2026-09-04 the whole trap path was linked after it, and on 2026-09-19
-        # the roots and the trap path were before it while the capability-table insert and the
-        # paging mapper were after. Only the symbols after it move when the pad grows, so this line
-        # is what says whether an E3 image perturbs the path at all.
+        # **How much of the hot path this pad actually moves.** Only the symbols after the sled
+        # move when it grows. The linker scripts place it after `.text.hot`, so with milestone 796's
+        # pin this reads 0 of N, and an E3 image perturbs no hot instruction
+        # (notes/footprint-perturbation/step-0-under-the-pin.md).
         moved = [s for s in hot if start[s] > start[pad[0]]]
         share = 100 * sum(size[s] for s in moved) / max(1, sum(size[s] for s in hot))
         print(f"    layout: the sled precedes {len(moved)} of {len(hot)} hot symbols, "

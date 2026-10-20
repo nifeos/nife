@@ -1,0 +1,208 @@
+=== pad0
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad0-shift0.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=0
+    layout: __text_end 0xffffffc08024b000  __data_start 0xffffffc08025d000  __bss_start 0xffffffc080292000  __image_end 0xffffffc08054b000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 4 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== pad1
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad1-shift0.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=1 NIFE_FASTPATH_SHIFT=0
+    layout: __text_end 0xffffffc08024c000  __data_start 0xffffffc08025e000  __bss_start 0xffffffc080293000  __image_end 0xffffffc08054c000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 5092 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== pad2
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad2-shift0.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=2 NIFE_FASTPATH_SHIFT=0
+    layout: __text_end 0xffffffc08024d000  __data_start 0xffffffc08025f000  __bss_start 0xffffffc080294000  __image_end 0xffffffc08054d000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 10180 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== pad3
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad3-shift0.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=3 NIFE_FASTPATH_SHIFT=0
+    layout: __text_end 0xffffffc08024e000  __data_start 0xffffffc080260000  __bss_start 0xffffffc080295000  __image_end 0xffffffc08054e000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 15268 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== shift820
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad0-shift820.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=820
+    layout: __text_end 0xffffffc08024b000  __data_start 0xffffffc08025d000  __bss_start 0xffffffc080292000  __image_end 0xffffffc08054b000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 4 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== shift2460
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad0-shift2460.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=2460
+    layout: __text_end 0xffffffc08024b000  __data_start 0xffffffc08025d000  __bss_start 0xffffffc080292000  __image_end 0xffffffc08054b000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 4 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== shift5088
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad0-shift5088.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=5088
+    layout: __text_end 0xffffffc08024c000  __data_start 0xffffffc08025e000  __bss_start 0xffffffc080293000  __image_end 0xffffffc08054c000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 4 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)
+=== shift10176
+    pin: .text.hot 9342 B at 0xffffffc080204000, 0 B into a 16 KiB way; 16 of 16 hot symbols inside
+    pin: also in .text.hot, off the measured path: waking::wake
+    layout: normalised text in target/fastpath-layout-riscv64-board+bench+single_hart+fastpath_pad-pad0-shift10176.txt
+    layout: code hash 7c518b6586efa75a over 3033 instructions in 16 hot symbols (sled excluded; normalised 490 targets, 216 upper, 229 low-12)
+    layout: NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=10176
+    layout: __text_end 0xffffffc08024d000  __data_start 0xffffffc08025f000  __bss_start 0xffffffc080294000  __image_end 0xffffffc08054d000
+    layout: fastpath_pad_body at 0xffffffc08020647e, 4 bytes
+    layout: the sled precedes 0 of 16 hot symbols, 0% of their bytes; only those move when it grows
+    layout: 0xffffffc080204000  set   0  line+ 0  mod8 0  fastpath_pad::maybe_pad
+    layout: 0xffffffc080204020  set   0  line+32  mod8 0  riscv_trap_body
+    layout: 0xffffffc08020424c  set   9  line+12  mod8 4  riscv_trap_dispatch
+    layout: 0xffffffc0802042de  set  11  line+30  mod8 6  capabilities::current_cap
+    layout: 0xffffffc0802043f6  set  15  line+54  mod8 6  rendezvous::deliver_capability
+    layout: 0xffffffc080204506  set  20  line+ 6  mod8 6  switch::finish_switch
+    layout: 0xffffffc080204652  set  25  line+18  mod8 2  rendezvous::ipc_call_badged
+    layout: 0xffffffc080204b22  set  44  line+34  mod8 2  rendezvous::ipc_receive
+    layout: 0xffffffc080204ffe  set  63  line+62  mod8 6  rendezvous::ipc_receive_cap
+    layout: 0xffffffc08020554c  set  85  line+12  mod8 4  rendezvous::ipc_reply
+    layout: 0xffffffc0802056e4  set  91  line+36  mod8 4  rendezvous::ipc_send_badged
+    layout: 0xffffffc080205a36  set 104  line+54  mod8 6  switch::schedule
+    layout: 0xffffffc080205f20  set 124  line+32  mod8 0  switch_to
+    layout: 0xffffffc080205f60  set 125  line+32  mod8 0  syscall::dispatch
+    layout: 0xffffffc080206374  set 141  line+52  mod8 4  trap_entry
+    layout: 0xffffffc08020640e  set 144  line+14  mod8 6  trap_return
+    layout: 145 lines over 3 pages; 4 of 16 hot symbols start 8-byte aligned; 145 of 256 L1i sets hold hot lines, 0 hold more than 2 (0 lines past the ways)

@@ -31,22 +31,23 @@ and both are single-build sweeps, so the confound below does not touch them; the
 they stand. The per-IPC kernel stack depth, which E1's prediction used to estimate, is now measured
 (notes/stack-high-water.md, "Per-IPC depth").
 
-What is owed is E3, and only E3 under a layout control. Re-running E3 as it was built would
-reproduce the 2026-09-04 confound exactly (this page's BUGS: a second card or a second board
-changes nothing about addresses, so it would look like confirmation). The control is built, as
-of 2026-09-19: `kernel/src/fastpath_pad.rs`, sized by two build-time variables.
+Nothing E3 is owed. calef retired its question on 2026-10-20 (UTC), after step 0 failed under
+milestone 796's pin (below). The procedure stays as the record of what E3 under a layout control
+was, built in `kernel/src/fastpath_pad.rs`.
 
 ### The knob, in one paragraph
 
 `fastpath_pad` still turns E3's padding on. Two environment variables, read by `kernel/build.rs`
 only when that feature is on, say how much. `NIFE_FASTPATH_PAD=<units>` is the sled's length in
 units of the old pad (5,092 bytes on riscv64; unset is 1, and 0 is the guard and a `ret`).
-`NIFE_FASTPATH_SHIFT=<bytes>` appends uncounted zero bytes after it. The linker script pins the sled
-first in `.text`, so both numbers move the whole kernel text by that many bytes. A pad and a shift of
-equal displacement are therefore the same binary apart from bytes nothing fetches. This is milestone
-370 (a layout control, because the perturbation experiments cannot tell footprint from addresses).
-How the pin was checked, why these are variables rather than features, and why every image must come
-from one commit are in [layout-control.md](footprint-perturbation/layout-control.md).
+`NIFE_FASTPATH_SHIFT=<bytes>` appends uncounted zero bytes after it. The linker script places the
+sled right after `.text.hot`, the hot trap path that milestone 796 (pin the hot trap path's
+placement) pins on a 16 KiB boundary after the boot stub. So both numbers move all kernel text after
+that block by that many bytes, and neither moves the block. A pad and a shift of equal displacement
+are therefore the same binary apart from bytes nothing fetches. This is milestone 370 (a layout
+control, because the perturbation experiments cannot tell footprint from addresses). How the pin was
+checked, why these are variables rather than features, and why every image must come from one commit
+are in [layout-control.md](footprint-perturbation/layout-control.md).
 
 ### The eight images, and why these sizes
 
@@ -86,15 +87,25 @@ Two lines out of each run are the check, and they are the reason this step exist
   images execute the same code and differ only in where it sits. A different hash means something
   changed the fastpath itself and the evening is measuring two things again.
 - `layout: fastpath_pad_body at <addr>, <n> bytes` must show the sled at the same address in
-  all eight, with the requested length, and the line under it must read `the sled precedes 17 of
-  17 hot symbols, 100% of their bytes`. That is the pin working. Anything less means the section
-  is no longer first in `.text` and the pad is perturbing only part of the path.
+  all eight, with the requested length, and the line under it must read `the sled precedes 16 of
+  16 hot symbols, 100% of their bytes`. That is the pad reaching the hot path. Anything less means
+  the pad perturbs only part of the path, or none of it, and on a tree with milestone 796's pin it
+  reads 0 of 16 (the next section).
 - The two matched images must place the hot path exactly where their pads do. Compare the
   `layout: 0x...` lines of `PAD=1` against `SHIFT=5088`, and `PAD=2` against `SHIFT=10176`: every
   address should be equal.
 
 The rest of each readout (every hot symbol's L1i set, line phase and alignment) is the pre-registered
 layout record; what it carries is in [layout-control.md](footprint-perturbation/layout-control.md).
+
+### Step 0 fails on a tree with milestone 796's pin, so E3 as specified cannot run
+
+Step 0 ran on 2026-10-20 (UTC) at `68647cfc5`. The code hash and the sled address matched in all
+eight images, and every image read `the sled precedes 0 of 16 hot symbols, 0% of their bytes`.
+Milestone 796 pins the hot trap path in `.text.hot`, ahead of the sled, so no pad or shift moves a
+hot instruction and the eight images are one hot-path layout. No E3 boot ran, and calef retired
+E3's question. The evidence, the fork and the ruling are in
+[step-0-under-the-pin.md](footprint-perturbation/step-0-under-the-pin.md).
 
 ### The boots
 
@@ -158,7 +169,8 @@ Optional, one boot, if there is time: a card built with `--extra-features ipc_st
 prints the per-IPC depth lines on the board itself. It should reproduce the QEMU release numbers
 to the byte (the `board` and `single_hart` features are the only differences); a disagreement would
 mean one of them changes the IPC path's codegen, which nothing currently expects. Its timing rows
-are not results, since the instrument paints on every sample.
+are not results, since the instrument paints on every sample. On 2026-10-20 every EL0 series
+read 16 bytes deeper (notes/stack-high-water/per-ipc-depth.md).
 
 ### Sharing the night with milestone 168
 
@@ -230,8 +242,9 @@ instruction-cache miss counter (M6). The full section is in
 The full list, with the reasoning for each, is in
 [limitations.md](footprint-perturbation/limitations.md). The ones that change how a number is read:
 
-- E3 has no attributable number yet. The 2026-09-04 reading summed footprint and layout, and the
-  control has not been run on the board.
+- E3 is retired with no attributable number. The 2026-09-04 reading summed footprint and layout,
+  and the control cannot run as specified on a tree with milestone 796's pin, since no pad or shift
+  reaches the hot path ([step-0-under-the-pin.md](footprint-perturbation/step-0-under-the-pin.md)).
 - The padding is never executed. Even a clean dose-response tests the counted footprint, not
   Liedtke's claim about an executed one; [E5](footprint-perturbation/executed-footprint.md) plans
   that.

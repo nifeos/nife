@@ -67,12 +67,16 @@ paint and are never counted; the null line is the proof.
   it, and TCG is fine: nothing here is a time. The build is what matters, which is why both are
   measured. One is `script/test`'s debug kernel. The other is the release kernel with `bench` that
   radon boots, built exactly as `script/board-image` builds it minus `board` and `single_hart`,
-  which the board needs and QEMU cannot boot. Whether those two features move the IPC path is one
-  optional board boot away (notes/footprint-perturbation.md, "The next radon evening").
+  which the board needs and QEMU cannot boot. One of them does move the trap path, by 16 bytes
+  of frame; "radon against QEMU at one commit" below has it.
 - Which bytes are hot. A depth is how far the path *can* reach on this stack; it is not a count of
   lines touched, and it is not a miss count. That is milestone 134's M7.
 
 ## The numbers
+
+The tables below are from 2026-09-19, at the commit that added the instrument. The riscv64 path has
+changed since, so they no longer reproduce to the byte: "radon against QEMU at one commit" has the
+2026-10-20 figures.
 
 Release kernel, `bench,ipc_stack_depth`, single hart (the bench runner's `NIFE_SMP=1`), QEMU TCG,
 two boots per architecture, 2026-09-19. Bytes from the stack's top. Each role's figure is the median
@@ -136,3 +140,50 @@ and re-run E1. If the knee moves right, the stacks were the cause, and a process
 back with coloring without becoming an event kernel. If it stays at 8, the TCBs (or something else
 page-aligned) are, and an event kernel's shared stack would not remove it either. Recorded as a
 proposed milestone in design/roadmap/0134-the-measurements-that-decide.md's Follow-on.
+
+## Radon against QEMU at one commit (riscv64, 2026-10-20)
+
+The question: do `board` and `single_hart`, the two features radon's card adds, move the IPC path's
+codegen? One board boot answers it if a QEMU boot of the same commit is beside it. radon booted
+`script/board-image --bench --tftp --extra-features ipc_stack_depth` at `849313eea`, SEALED,
+features `board,bench,single_hart,ipc_stack_depth`, and printed `bench: cntfrq 4000000` and
+`bench: done` (`bench/radon-2026-10-20/bench-ipc-stack-depth.log`). QEMU booted the release kernel
+built with `bench,ipc_stack_depth` at `8b4431fdd`, whose kernel sources are identical to
+`849313eea`'s. It booted twice, on one hart, under `helpers/qemu-bounded.sh`
+(`bench/radon-2026-10-20/qemu-ipc-stack-depth-1.log` and
+`bench/radon-2026-10-20/qemu-ipc-stack-depth-2.log`). Medians in bytes from the stack's
+top; "floor" is where the paint stopped.
+
+| series | QEMU (2 boots) | radon | reading |
+|---|---|---|---|
+| kernel null, the instrument alone | floor 240, median 240 | floor 240, median 240 | match |
+| kernel CALL/REPLY, client CALL | 624, below caller 384 | 624, below caller 384 | match to the byte |
+| kernel CALL/REPLY, server RECEIVE_CAP | 576, below caller 368 | 576, below caller 368 | match to the byte |
+| kernel CALL/REPLY, server REPLY | at floor, at most 304 | at floor, at most 304 | match |
+| kernel SEND/RECEIVE, client | RECEIVE blocks, 576; SEND at floor 336 | SEND blocks, 496; RECEIVE 352 | floors match; a different operation blocked |
+| kernel SEND/RECEIVE, server | RECEIVE blocks, 544; SEND at floor 320 | SEND blocks, 480; RECEIVE 320 | floors match; a different operation blocked |
+| EL0, floor of every series | 752 | 768 | 16 bytes deeper on radon |
+| EL0 SEND/RECEIVE, deeper op | RECEIVE 944, or SEND 848 | RECEIVE 960 | 16 deeper (boot 1's assignment) |
+| EL0 CALL/REPLY, client CALL | 1,008 | 1,024 | 16 deeper |
+| EL0 CALL/REPLY, server RECEIVE_CAP | 992 | 1,008 | 16 deeper |
+
+Two readings.
+
+1. Kernel-thread series agree. CALL/REPLY, which has no freedom over which operation blocks,
+   reproduced to the byte. SEND/RECEIVE did what the section above says it does: radon's boot
+   took the blocking path on SEND, which neither QEMU boot did, so its medians are a different
+   path rather than a different depth. The values recur across the two: radon's RECEIVE medians,
+   352 and 320, are QEMU boot 2's minimums, QEMU's server RECEIVE median of 544 is radon's max,
+   and QEMU boot 2's server SEND max is radon's median of 480.
+2. Every EL0 series is 16 bytes deeper on radon, floor included, so the difference sits above
+   `syscall::dispatch`. It is `riscv_trap_body`: its frame is 176 bytes in the board build and 160
+   in QEMU's, with `s5` to `s7` saved as well. Building each feature alone settles which one:
+   `bench,single_hart,ipc_stack_depth` gives the 176-byte frame, `bench,board,ipc_stack_depth`
+   the 160-byte one. `single_hart` adds no code to the trap path; its one `cfg` returns early from
+   `smp::bring_up_secondaries`. So the likeliest cause is the compiler inlining and allocating
+   registers differently once the secondaries' code is gone. That is not checked. Either way it is
+   a codegen change on the hot trap path that nothing expected. The QEMU bench runner and a radon card do not run the same trap prologue: the board
+   does three more stores and three more loads per trap.
+
+The timing rows of this boot are not results, since the instrument paints on every sample. Its
+`cycles_per_tick` line read `250.00` (25,000,808 cycles over 100,001 ticks).
