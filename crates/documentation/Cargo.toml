@@ -5,21 +5,22 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# Milestone 40's pure logic, and only the logic: markdown bytes in, styled terminal bytes out, plus
-# the search index both the host builder and the guest reader must agree on. No syscalls, no
-# endpoints, no filesystem, no allocator. The program that does the IO is
-# `components/src/mdr.rs`; this is the half that runs on the host in milliseconds and is
-# reachable by Kani.
-#
-# **Zero dependencies, and no `alloc` on the guest path.** DECISIONS §46 rule 1: this is on the
-# verification path, so we write it. The roadmap's plan was `pulldown-cmark`; it is not `no_std`
-# (0.13's lib.rs has no `#![no_std]` and `parse.rs` uses `std::collections::HashMap`), and the std
-# PAL a std program would run on has no stdin and no argv, so the viewer could neither page nor take
-# a page name. See notes/documentation.md for the whole reversal.
+# Milestone 40 (documentation as a system service)'s pure logic, and only the logic: markdown in, styled terminal bytes out, plus the
+# search index both the host builder and the guest reader must agree on. No syscalls, no
+# endpoints, no filesystem. The program that does the IO is `mdr/`; this is the half that runs on
+# the host in milliseconds.
 #
 # See notes/documentation.md.
 
 [dependencies]
+# **The markdown parser** (milestone 784 (reuse what the tree wrote), item (f2)). A §46 (thin
+# primitives or whole subsystems) decision, ruled by calef on 2026-10-20 (UTC): "Yes" to
+# `pulldown-cmark` 0.13.4 with `html` and `getopts` off, and to the two crates it brings that this
+# tree did not have, `unicase` and `bitflags` 2 (`memchr` was already here). CommonMark-conformant
+# and fuzzed upstream, on input a package author writes. It needs `std`, so it is behind
+# `markdown`, which only `mdr` (a `std` program) and this crate's tests turn on: `swish` reads the
+# index and links neither the parser nor an allocator.
+pulldown-cmark = { version = "0.13.4", default-features = false, optional = true }
 
 [features]
 # The index **writer**, which runs only on the host inside `xtask` and is the one part of this crate
@@ -37,6 +38,9 @@ license.workspace = true
 # first published mutation report. See notes/mutation-testing.md.
 builder = []
 
+# The renderer and its parser. Name provisional (milestone 784, item (f2), 2026-10-20 UTC).
+markdown = ["dep:pulldown-cmark"]
+
 # **A dev-dependency on ourselves, which is the mechanism that closes the hole above.** Cargo allows
 # a package to depend on itself for tests only, and resolver 2 unifies the feature across the test
 # build, so `cargo test -p documentation` now compiles the builder and runs all twelve index tests
@@ -46,7 +50,7 @@ builder = []
 # This is AGENTS.md's rung one rather than a note asking the next person to remember `--workspace`:
 # the configuration that skips a third of the crate is no longer reachable by running its tests.
 [dev-dependencies]
-documentation = { version = "0.1.0", path = ".", features = ["builder"] }
+documentation = { version = "0.1.0", path = ".", features = ["builder", "markdown"] }
 
 [lints]
 workspace = true

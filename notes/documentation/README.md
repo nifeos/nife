@@ -4,10 +4,9 @@
 installed, how search works, the examples, every live limitation and what comes next. These files
 carry the evidence its prose budget has no room for.
 
-- [`pulldown-cmark.md`](pulldown-cmark.md): the two facts that overruled the roadmap's parser, and
-  the third that made writing one cheap.
-- [`corpus-test.md`](corpus-test.md): what `every_character_survives` caught (a dropped image
-  path) and what it could not see (a fence inside a block quote).
+- [`corpus-test.md`](corpus-test.md): what `every_character_survives` catches (a dropped image
+  path, a table cell lost to an unescaped pipe) and what it cannot see (a page rendered wrongly
+  but completely).
 - [`underscore-terms.md`](underscore-terms.md): the index writer and reader disagreeing on what a
   word is, and why the fix joins only the underscore.
 - [`apropos-builtin.md`](apropos-builtin.md): why search is a shell builtin, the worked example,
@@ -29,7 +28,6 @@ carry the evidence its prose budget has no room for.
 
 Each stem below is named for its content, and calef names files.
 
-- `pulldown-cmark` Name: provisional. Named after the crate it is about.
 - `corpus-test` Name: provisional.
 - `underscore-terms` Name: provisional.
 - `apropos-builtin` Name: provisional.

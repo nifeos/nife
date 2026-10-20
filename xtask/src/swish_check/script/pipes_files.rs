@@ -74,11 +74,24 @@ pub(super) const LINES: &[Line] = &[
     // become the one line, four words, twenty-six bytes that count asserted, and this line checks
     // the words themselves arrived rather than merely being countable.
     line(1, "mdr gate.txt", &["hello world hello world"]),
+    // **A pipe's read end reaches a `std` program's stdin** (milestone 784 (reuse what the tree
+    // wrote), item (f2)): `mdr` is a `std` program, and here its input is neither a file the shell
+    // streams nor the console but the far end of a pipe, written by another program that sends its
+    // own end of stream. `wc`'s three numbers come back as a rendered paragraph. Then a builtin
+    // upstream, which the shell feeds itself: a `#` line renders as a level-one heading, in capitals,
+    // which nothing but the renderer would produce.
+    line(2, "wc gate.txt | mdr", &["2 4 24"]),
+    line(1, "echo # piped title | mdr", &["PIPED TITLE"]),
+    // **A whole page fits**: the store's largest, about eighteen kilobytes, read into `mdr`'s heap
+    // before a byte is drawn. A heap too small is an allocation failure, which faults the job, and
+    // a faulted job fails this line by its job count. Counted rather than shown, because eighteen
+    // kilobytes on `x86_64`'s console outruns the per-line bound; the render itself is host-tested.
+    line(2, "mdr doc/swish/pipes.md | wc", &[]),
     // **The negative control on the viewer itself**, and it is the whole milestone in one screen: a
     // documentation viewer is exactly the program a reader expects to go and fetch things, and this
     // one is handed a stream. `caps` prints what would be granted before anything is spawned, and
-    // there is no file capability, no directory and no filesystem endpoint in it. The manifest is
-    // byte-identical to `wc`'s, which is why the assertion is the same string.
+    // there is no file capability, no directory and no filesystem endpoint in it. The manifest
+    // declares the input and output `wc`'s does, which is why the assertion is the same string.
     line(0, "caps mdr gate.txt", &["input    gate.txt"]),
     // **Milestone 40 phase 2, at the same interface**: the documentation store is installed, and a
     // search of it answers with pages a person can then open.

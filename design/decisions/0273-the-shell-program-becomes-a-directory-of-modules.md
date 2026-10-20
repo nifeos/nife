@@ -51,7 +51,7 @@ The program moved to `components/src/swish/main.rs`, with child modules beside i
 | `prompt.rs` | `apropos`, `read_line`, the shell editing its own line, Tab completion | 406 |
 | `running.rs` | argv pages, the words grant, `run_image`, the manifest note, `dir_grant`, `spawn`, draining, `outcome` | 1,172 |
 | `capabilities.rs` | `caps`, `caps_image`, the live generation table, `bare` | 319 |
-| `pipeline.rs` | the operators `>`, `<` and `|`, and the files the shell serves behind them | 995 |
+| `pipeline.rs` | the operators `>`, `<` and `\|`, and the files the shell serves behind them | 995 |
 | `jobs.rs` | `spawn_interruptible`, `watch`, `forcible`, `reclaim` | 328 |
 | `witness.rs` | every witness role and its helpers, and the three witness-only `Nav` constructors and methods (`rooted`, `rooted_twice`, `name_call`) as a second `impl Nav` | 1,130 |
 

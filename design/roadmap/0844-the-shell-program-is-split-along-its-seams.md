@@ -46,7 +46,7 @@ Measured on `0435a9aeb` from the file's own top-level items. Ranges are approxim
 | 2206 to 3039 | 834 | argv pages, the words grant, `run_image`, the manifest note, `package`, `dir_grant` |
 | 3040 to 3424 | 385 | `spawn`, draining, the second stream, the screen signal, `outcome` |
 | 3425 to 3726 | 302 | `caps`, `caps_image`, the live generation table, `bare` |
-| 3727 to 4713 | 987 | the operators `>`, `<` and `|`, and the files this shell serves behind them |
+| 3727 to 4713 | 987 | the operators `>`, `<` and `\|`, and the files this shell serves behind them |
 | 4714 to 5075 | 362 | interruptible jobs: `spawn_interruptible`, `watch`, `forcible`, `reclaim` |
 | 5076 to 5980 | 905 | the navigating, two-tree and globbing witnesses |
 

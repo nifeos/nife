@@ -66,6 +66,12 @@ pub(crate) fn jig_elf(triple: &str) -> PathBuf {
     workspace_root().join(format!("{TLS_GRAPH_TARGET}/{triple}/release/jig"))
 }
 
+/// **`mdr`** (milestone 784 (reuse what the tree wrote), item (f2)), built by
+/// [`crate::farm::build_mdr`] beside `jig`. Name: provisional, 2026-10-20 (UTC).
+pub(crate) fn mdr_elf(triple: &str) -> PathBuf {
+    workspace_root().join(format!("{TLS_GRAPH_TARGET}/{triple}/release/mdr"))
+}
+
 /// **Where the TLS graph builds**: `helpers/build-cryptography-exerciser.sh` and
 /// `helpers/build-pinned-tls-exerciser.sh` share it, with `cryptography_exerciser/.cargo/config.toml`'s
 /// flags, and `jig` joins them (milestone 801), so the standard library is built once for all

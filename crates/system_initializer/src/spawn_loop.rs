@@ -357,12 +357,13 @@ impl Wants {
 type PackageParts = (Option<(u64, u64)>, Option<u64>, bool, bool);
 
 /// What a `std` child is placed beyond [`Wants`]: its argv page, installer endpoints, catalog page,
-/// resolver badges, index sources page and standard input.
+/// resolver badges, index sources page, standard input and the line's input stream.
 type StdParts = (
     Option<u64>,
     Option<(u64, u64)>,
     Option<u64>,
     Resolvers,
+    Option<u64>,
     Option<u64>,
     Option<u64>,
 );
@@ -982,6 +983,7 @@ impl Service<'_> {
                     resolvers,
                     sources_page,
                     stdin,
+                    req.delegated.source,
                 );
                 Some(self.std_layout(r, out, &wants, &dir, parts))
             }
@@ -1623,7 +1625,7 @@ impl Service<'_> {
         out: (u64, u64),
         wants: &Wants,
         dir: &DirWiring,
-        (args_page, installer, catalog_page, resolvers, index_sources, stdin): StdParts,
+        (args_page, installer, catalog_page, resolvers, index_sources, stdin, source): StdParts,
     ) -> StdLayout {
         let Channels {
             clock_page,
@@ -1649,6 +1651,7 @@ impl Service<'_> {
                 resolvers,
                 index_sources,
                 stdin,
+                source,
             },
         )
     }

@@ -5,9 +5,9 @@
 
 use crate::disk::{mkfs_elf, redoxfs_server_elf};
 use crate::farm::{
-    C_PROGRAMS, c_program_elf, cryptography_exerciser_elf, jig_elf, package_fetch_exerciser_elf,
-    pinned_tls_exerciser_elf, std_exerciser_elf, std_heap_contention_elf, std_rayon_elf,
-    std_resolve_elf, std_threads_elf,
+    C_PROGRAMS, c_program_elf, cryptography_exerciser_elf, jig_elf, mdr_elf,
+    package_fetch_exerciser_elf, pinned_tls_exerciser_elf, std_exerciser_elf,
+    std_heap_contention_elf, std_rayon_elf, std_resolve_elf, std_threads_elf,
 };
 use crate::host::{bin_elf, workspace_root};
 use crate::inspect::read_stripped;
@@ -263,7 +263,7 @@ fn bin_names(manifest: &str) -> Result<Vec<String>, String> {
 /// own build ran (see the `initial_ramdisk_*` functions). Hoisted out of the one test that used to
 /// hold it (milestone 595 (provisional)), because [`check_declared_programs`] now needs the same
 /// list.
-const BUILT_ELSEWHERE: [&str; 15] = [
+const BUILT_ELSEWHERE: [&str; 16] = [
     "redoxfs_server",
     "mkfs",
     "std_exerciser",
@@ -281,6 +281,9 @@ const BUILT_ELSEWHERE: [&str; 15] = [
     // Milestone 809 (the package client becomes a program): the package manager, a `std` program
     // in the image, built by every archive for its own target (`farm::build_jig`).
     "jig",
+    // Milestone 784 (reuse what the tree wrote), item (f2): the markdown renderer, a `std`
+    // program on `jig`'s terms (`farm::build_mdr`).
+    "mdr",
 ];
 
 /// **A `std` program the shell can spawn, built by its own workspace rather than a `[[bin]]`**
@@ -558,10 +561,15 @@ pub(crate) fn initial_ramdisk_aarch64() -> bool {
 /// them there. Every archive packs them in this order.
 fn std_program_blobs(triple: &str) -> Vec<(&'static str, Vec<u8>)> {
     // Said here and refused by `write_archive`, which names the fix.
-    if let Err(e) = crate::farm::build_jig(triple) {
-        eprintln!("{e}");
+    for built in [
+        crate::farm::build_jig(triple),
+        crate::farm::build_mdr(triple),
+    ] {
+        if let Err(e) = built {
+            eprintln!("{e}");
+        }
     }
-    let programs: [FarmProgram; 6] = [
+    let programs: [FarmProgram; 7] = [
         // The std demo (milestone 27 (Rust `std` on the native ABI)), built by `cargo xtask
         // std-exerciser`, which `test` runs, through a separate toolchain and target.
         ("std_exerciser", std_exerciser_elf),
@@ -569,6 +577,8 @@ fn std_program_blobs(triple: &str) -> Vec<(&'static str, Vec<u8>)> {
         ("std_resolve", std_resolve_elf),
         // `jig` (milestone 809 (the package client becomes a program)), built above.
         ("jig", jig_elf),
+        // `mdr` (milestone 784 (reuse what the tree wrote), item (f2)), built above.
+        ("mdr", mdr_elf),
         // Milestone 812 (`std::thread::spawn` runs real threads in one address space)'s exit test,
         // on the same terms, and its two companions.
         ("std_threads", std_threads_elf),
@@ -660,7 +670,7 @@ fn file_server_blobs(target: &str) -> Vec<(&'static str, Vec<u8>)> {
 /// the shell answers `jig` with a spawn failure, so the archive is refused instead.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/image-needs-jig.
-const SHIPPED_STD_PROGRAMS: [&str; 1] = ["jig"];
+const SHIPPED_STD_PROGRAMS: [&str; 2] = ["jig", "mdr"];
 
 /// Refuse `files` if one of [`SHIPPED_STD_PROGRAMS`] is not among them, naming the command that
 /// builds it.
@@ -823,14 +833,16 @@ mod tests {
         assert!(bin_names(nameless).unwrap_err().contains("no `name`"));
     }
 
-    /// An archive without `jig` is refused with the command that builds it, rather than packed
-    /// into an image whose shell answers `jig` with a spawn failure.
+    /// An archive without `jig`, or without `mdr`, is refused with the command that builds it,
+    /// rather than packed into an image whose shell answers the name with a spawn failure.
     #[test]
     fn an_archive_without_jig_is_refused_naming_the_build() {
         let e = shipped_std_programs_present("x86_64", &[("progenitor", b"")]).unwrap_err();
         assert!(e.contains("no `jig`"), "{e}");
         assert!(e.contains("cargo xtask std-exerciser"), "{e}");
-        assert!(shipped_std_programs_present("x86_64", &[("jig", b"")]).is_ok());
+        let e = shipped_std_programs_present("x86_64", &[("jig", b"")]).unwrap_err();
+        assert!(e.contains("no `mdr`"), "{e}");
+        assert!(shipped_std_programs_present("x86_64", &[("jig", b""), ("mdr", b"")]).is_ok());
     }
 
     /// A program linked where the map says passes, and one linked at lld's default base, where

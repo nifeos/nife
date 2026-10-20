@@ -47,7 +47,7 @@ mod toolchain;
 
 pub(crate) use aborts::std_aborts;
 use exerciser::STD_TARGETS;
-pub(crate) use exerciser::{build_jig, std_exerciser};
+pub(crate) use exerciser::{build_jig, build_mdr, std_exerciser};
 use generate::*;
 use patch::*;
 pub(crate) use programs::*;
