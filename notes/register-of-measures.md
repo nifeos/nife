@@ -1,7 +1,7 @@
 # The register of measures: every number this kernel owes itself
 
 *(Milestone 134 (the register of measures). The name `register-of-measures.md` is provisional;
-naming is an architect's, and a lane ships a provisional one and says so.)*
+naming is an architect's.)*
 
 This tree measures a great deal and remembers almost none of it. A number gets taken once, written
 beside the reasoning that needed it, and stays true only on the day it was written. `notes/counted-claims.md` found three such numbers on 2026-08-14 and all three were wrong.
@@ -105,8 +105,8 @@ row pretending to be one.
 Three rows need a sentence before anyone quotes them.
 
 - **E3 has no attributable number at either date.** On radon the padded build ran faster on one
-  benchmark, which resident dead code cannot cause. The control, milestone 370 (a layout control),
-  has not been run.
+  benchmark, which dead code cannot cause. The control, milestone 370 (a layout control),
+  cannot run as built; milestone 134's block says why.
 - The milestone 168 row's date belongs to an instrument that changed on 2026-09-19. Risk 4 in
   `design/fatal-risks/README.md` and §96 (process kernel or event kernel) wait on the next radon evening.
 - The cross-OS row's date was recovered from git, not from a recorded run. It is the number a

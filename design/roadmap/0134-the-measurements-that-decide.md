@@ -23,8 +23,9 @@ decisions?"* Both open kernel decisions ended in the same place, that the decidi
 exist, and §96 (process kernel or event kernel) said the instrument "wants a roadmap block of
 its own". This is it.
 
-What 134 still owes is one radon evening for E3 under a layout control. The control is built
-(milestone 370), so what is left needs the board; "Follow-on" says what the evening must produce.
+What 134 still owes is E3 under a layout control, and E3 as specified cannot run on this tree:
+milestone 796's pin holds the hot path still, so no pad or shift moves it. Whether to rebuild E3 or
+retire its question is an open fork for calef; "Follow-on" has it.
 
 The detail lives in two appendices, and this page is complete without them:
 
@@ -73,7 +74,7 @@ through no PMU. [`measures.md`](0134-the-measurements-that-decide/measures.md) d
 |---|---|---|---|
 | E1 | IPC latency against thread count | whether per-thread stacks cost anything (§96) | knee at 16 threads on radon |
 | E2 | thread census on the customer path | whether §96 matters at all | 4 new threads |
-| E3 | footprint perturbation: pad the fastpath, time it | §95's premise, with no PMU | confounded by layout; owes the radon evening |
+| E3 | footprint perturbation: pad the fastpath, time it | §95's premise, with no PMU | confounded by layout; cannot run under 796's pin, fork open |
 | E4 | application displacement under IPC load | Liedtke's claim, as lost throughput | 5 to 8% at 96 threads on radon |
 | M5 | cycles per IPC round trip | milestone 101 (the L4 calibration)'s ±1.5x; the seL4 comparison | instrument on all three ISAs |
 | M6 | I-cache misses per IPC | whether the footprint proxy is right | no event counter yet |
@@ -182,23 +183,24 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
 
 ## Follow-on
 
-- **Outstanding.** The one item between this block and BUILT: the radon evening. Its prerequisite
-  is met, so what is left needs the board. It must produce, at one commit, on
+- **Outstanding.** E3, the one item between this block and BUILT, waits on calef. Step 0 ran on
+  2026-10-20 (UTC) at `68647cfc5` and failed by construction: eight images, one code hash, and
+  every one reads `the sled precedes 0 of 16 hot symbols`. Milestone 796's pin holds the hot trap
+  path at one address ahead of the sled, so a pad or a shift moves no hot instruction. No boot ran.
+  The fork is in notes/footprint-perturbation/step-0-under-the-pin.md: rebuild the sled inside
+  `.text.hot`, retire E3's question in favor of E5 (milestone 708), or run the images as built.
+  Recommended: retire it, and the reason is not effort. Retired, this block goes BUILT with the E3
+  row recorded as retired. Otherwise the evening must produce, at one commit, on
   `board,bench,single_hart,fastpath_pad` cards:
-  1. the step-0 static check, eight images with one shared code hash;
-  2. `call_reply`, `ipc_rtt` and `ipc_rtt_el0` at pad 0, 1, 2 and 3 and at the four layout images,
-     three boots each, interleaved. Each boot ends `bench: done` with `cntfrq 4000000` and names
-     itself in its `fastpath_pad` probe line;
-  3. the reading per row against the layout range rather than a single un-padded point, written into
-     notes/footprint-perturbation.md and the register's E3 row;
+  1. step 0 passing;
+  2. `call_reply`, `ipc_rtt` and `ipc_rtt_el0` at the eight images, three boots each, interleaved,
+     each ending `bench: done` with `cntfrq 4000000` and its `fastpath_pad` probe line;
+  3. the reading per row against the layout range, in notes/footprint-perturbation.md and the
+     register's E3 row;
   4. each boot's `cycles_per_tick` line.
 
-  That is sufficient for BUILT; E1 and E4 re-date for free on the same boots. It combines with
-  milestone 168 (a multi-tasking workload benchmark)'s job-mix evening over `--tftp`, E3 first
-  because it is the interleaved block. notes/footprint-perturbation.md, "The next radon evening",
-  has the order and the log names. What it still cannot settle, stated so no one expects it to: a
-  never-executed pad can only act through addresses. So a monotone result says this tree's footprint
-  number predicts latency, not that Liedtke's executed-footprint claim is measured. That is M6.
+  E1 and E4 re-date on the same boots. No outcome measures Liedtke's executed-footprint claim,
+  since a never-executed pad acts only through addresses. That is M6.
 - **Milestone 506.** milestone 506 (color the kernel stacks and take E1),
   `design/roadmap/0506-colour-the-kernel-stacks-and-take-e1-again.md`: start each thread's stack a
   per-slot color below its top in a feature build and take E1 again on radon. A knee that moves
