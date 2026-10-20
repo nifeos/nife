@@ -1,11 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-08-18
-milestone_dependencies: none
-decision_dependencies: none
-machine_requirements: none
-specific_machine: none
-needs_person: no
+built: 2026-10-20
 ---
 # 139. Drive the unsafe count down, and cinch the ratchet behind it
 
@@ -40,9 +36,11 @@ The shared primitives this milestone's reductions rest on, each holding one inva
 
 The scheduler's queue handoff (calef, #1842): an ownership token, `Unqueued<T>`, which is not
 `Clone`, replaces `NonNull<T>` in `intrusive_fifo` and `inter_process_communication`. Only a pop,
-a removal or thread creation mints one. The ruling placed the running thread's token in its core's
-current slot. It lives on `Thread::own_token` instead. A slot written by one core and read by
-another would need a new `unsafe impl Sync`, or about 5% of the fastpath's band.
+a removal or thread creation mints one. The running thread's token lives on `Thread::own_token`,
+not in its core's current slot, because a slot written by one core and read by another would need
+a new `unsafe impl Sync`, or about 5% of the fastpath's band. Asked "confirm the running thread's
+queue token stays on Thread::own_token, not the per-core slot your #1842 ruling named", calef
+answered "a" (2026-10-20 UTC).
 
 Names (calef, #1842): the foreign spelling stops at the boundary. `initrd` survives only as the
 device tree's `linux,initrd-start` and QEMU's `-initrd`, and the program side says
@@ -53,14 +51,11 @@ spoken). Each ratified name carries its `Name: ratified` line at its definition,
 `MappedWindow::as_slice` and `as_mut_slice` stay, though they cost raw blocks. calef: "Keep. We
 don't want to penalize reuse." One invariant at six declarations beats eighteen call sites.
 
-## What is still open
+## Exit criterion
 
-Exit criterion (calef, #1842): this block is BUILT when every item under this heading and every
-Follow-on entry marked Outstanding is done, split out with a recorded owner, or refused with a
-reason. Items are built under this milestone rather than as new ones.
-
-- calef's confirmation that the running thread's token lives on `Thread::own_token`, not in a
-  per-core current slot, and his ruling on the name `Unqueued` (#1852).
+calef, #1842: this block is BUILT when every open item and every Follow-on entry marked
+Outstanding is done, split out with a recorded owner, or refused with a reason. No item is open
+and no Follow-on entry is Outstanding.
 
 `kernel/src/arch/` is not a target and this block will not accept a reduction there. Rule 1 says
 architecture-specific code lives under `arch/`, and unsafe is what architecture is made of. Driving
@@ -149,8 +144,8 @@ proofs and the type system are standing aside and a person's comment is the whol
   `unsafe fn` gets no ceiling, for the reason under "Where it stands".
 - **Done.** The renames calef ruled on #1842 and #1998 are applied, each with `Name: ratified` at
   its definition.
-- **Done.** The scheduler's ownership token, `Unqueued<T>`, is in `crates/intrusive_fifo`; its
-  placement awaits calef's confirmation under "What is still open".
+- **Done.** The scheduler's ownership token, `Unqueued<T>`, is in `crates/intrusive_fifo`, and the
+  running thread's token lives on `Thread::own_token`, as calef confirmed on 2026-10-20 (UTC).
 - **Done.** Outside `user_mode_runtime`, a shipping crate calls `invoke` raw only where no wrapper
   covers the method or its arguments. `supervision_protocol`, `virtio`, `system_initializer`,
   `printenv`, `socket_test_client`, `free`, `slabtop` and `swapper` use the runtime's wrappers, and
@@ -181,5 +176,4 @@ proofs and the type system are standing aside and a person's comment is the whol
 ## Index row
 
 Collapse hand-written `unsafe` outside `kernel/src/arch/` into one declaration per invariant, and
-hold the `unsafe-density-outside-arch` ceiling at the tree's own value. Open: calef's confirmation
-of the scheduler token's placement.
+hold the `unsafe-density-outside-arch` ceiling at the tree's own value.
