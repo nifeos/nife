@@ -1,6 +1,7 @@
 ---
-status: RECORDED
+status: BUILT
 raised: 2026-10-02
+built: 2026-10-03
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -13,8 +14,7 @@ needs_person: no
 re-save, which recorded `map_new` +7.89%, `spawn_reap` +3.30% and `yield_switch` +2.98% that the
 compiler did not cause, and asked why riscv64 alone. The measurement, the tables and the caveats are
 in [notes/benchmarks/drift-since-the-2026-09-26-floors.md](../../notes/benchmarks/drift-since-the-2026-09-26-floors.md).
-This block holds what was found and the decision it leaves open. It is `RECORDED` because the
-attribution is done and the remedy is deliberately not taken here.
+This block holds what was found. The attribution is built; the remedy is milestone 629's.
 
 ## What was found
 
@@ -37,52 +37,28 @@ attribution is done and the remedy is deliberately not taken here.
 `script/bench --riscv` no longer inherits `NIFE_DISK`. It failed on a fresh checkout and attached
 five disks it never reads; without them rows move by at most 0.05%.
 
-## The open question: what the per-switch counter should cost
+## The remedy, which milestone 629 built
 
-This is a cost a wanted feature pays, so it is calef's call rather than a lane's. Three options:
+What the per-switch counter should cost was calef's call, because it is a cost a wanted feature pays.
+He ruled on #1486 and then on #1489 (2026-10-03 UTC): keep the count exact and make it as cheap as it
+can be. Milestone 629 (the context-switch statistic stops costing the switch path) built that, and
+591148372 re-saved the floors on all three ISAs with the drift this block attributes named in the
+commit.
 
-1. Accept it and re-save the aarch64 and x86_64 floors with a `# why:` naming #1360, #1373 and
-   #1352, as #1474 did for riscv64. Cheapest, and reversible. Costs 10 instructions a switch in
-   release for as long as the counter exists.
-2. Make the increment cheaper, then re-save. The release sequence spends 7 of its 10
-   instructions finding this core's word (`tp`, `PAGE`, subtract, shift, index). A pointer cached
-   per core would cut it to about 3. The obvious home, `cpu::PerCpu`, is the wrong one: it must stay
-   128 bytes, and growing it to 136 cost riscv64's IPC fastpath 5.4% once (`kernel/src/sched.rs`,
-   `CPU_TICKS`'s doc). Not prototyped, so the saving is arithmetic, not a measurement.
-3. Count switches somewhere already paid for. `schedule()` already writes per-core state, so
-   a count could live beside it and be copied to the page on the tick, as `machine_statistics::tick`
-   already does for four other words. That moves the cost from the switch to the tick, and the page
-   would be up to one tick stale. Not prototyped.
+## Follow-on
 
-What the tree does in the analogous case: milestone 300 (decompose the icount baseline drift)
-recovered +35.7 ticks a switch from a feature-gated grant by removing it from the shipping switch.
-The counter is shipping, so that fix does not apply as it stands; options 2 and 3 are the shipping
-analogue.
-
-**Recommendation: option 1 now, with option 3 as a measured follow-up.** The counter answers
-`vmstat`'s `cs` column, which is what it was built for, and 10 instructions is the release price of
-answering it from the switch. Would we still choose this if both options cost the same? No. Option
-3 would then win, because it takes the cost off the hottest path in the kernel. So this
-recommendation is about effort, said in those words, and option 3 is the one to measure before
-anyone calls the price settled.
-
-What is blocked until it is answered: re-saving the aarch64 and x86_64 floors, which carry this
-drift unrecorded, with x86_64 `map_new` 1.04% from tripping.
-
-## Identified work, and its home
-
-- Re-save the aarch64 and x86_64 floors, with this block as the `# why:`. Home: this block's
-  open question; it waits on the answer.
-- The +43 fixed term from `7a90fcc59`. Home: the note's BUGS section.
-- Drift on `main` between saves is invisible. The weekly drift report reads committed floors, and
-  the restamp measures only the compiler, so nothing compared `main` with the aarch64 and x86_64
-  floors until this lane did. Home: a proposal to milestone 415 (sub-tripwire drift accumulates
-  across baseline saves)'s owner, recorded here. A weekly `--check` of `main` on all three ISAs,
+- **Done.** The remedy for the per-switch counter, as milestone 629.
+- **Done.** Re-saving the aarch64 and x86_64 floors, in 591148372 (2026-10-03 UTC).
+- **Recorded.** The +43 fixed term from `7a90fcc59`, in the BUGS section of
+  [the note](../../notes/benchmarks/drift-since-the-2026-09-26-floors.md).
+- **Milestone 415.** Drift on `main` between saves is invisible. The weekly drift report reads
+  committed floors and the restamp measures only the compiler, so nothing compared `main` with the
+  aarch64 and x86_64 floors until this block did. A weekly `--check` of `main` on all three ISAs,
   reported in the same file, would have shown it on the day #1360 merged.
 
 ## Index row
 
 The riscv64 drift #1474 recorded is on all three ISAs. Milestone 126's per-switch counter costs
 `yield_switch` about 3% at -O0 and 4.5% in release; milestone 23's run `RETYPE` costs `map_new`
-about 5.6% at -O0 and 0.7% in release; milestone 206 adds a fixed 43 ticks. The remedy is calef's
-call: accept and re-save, or move the counter off the switch.
+about 5.6% at -O0 and 0.7% in release; milestone 206 adds a fixed 43 ticks. Milestone 629 built the
+remedy calef ruled for: an exact count made as cheap as it can be.

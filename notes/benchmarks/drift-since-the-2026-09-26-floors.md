@@ -109,9 +109,9 @@ cannot see drift on `main` that no save has captured either.
 
 ## BUGS
 
-- **x86_64 `map_new` sits 1.04% under the 10% tripwire**, and aarch64 and x86_64 carry this drift
-  unrecorded. Whether to re-save them or to make the counter cheaper first is milestone 626's open
-  question.
+- The tables above are against the 2026-09-26 floors. Milestone 629 made the counter cheaper and
+  591148372 re-saved all three floors after it, so the numbers here describe the drift as found,
+  not the floors in force.
 - The +43 fixed term from `7a90fcc59` is unexplained. It is one-off rather than per map, so it
   does not grow, but it is in the timed window of a row that is close to the tripwire on x86_64.
 - `spawn_reap`'s two causes do not add up. Stubbing the counter takes off 612 ticks and
