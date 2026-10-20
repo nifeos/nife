@@ -1,3 +1,11 @@
+# `mdr`, the markdown renderer (milestone 40 (documentation as a system service)): a `std` program
+# built for the `*-unknown-nife` targets with `-Zbuild-std` against the patched rust-src, as `jig`
+# is, and for `jig`'s reason its own workspace: it builds under the farm's toolchain with flags the
+# main workspace's crates must never inherit. It builds beside `jig` in `target/tls-graph`, so the
+# standard library is compiled once for both (`farm::build_mdr`).
+#
+# Name: ratified 2026-09-13 (calef). The record is `mdr/src/main.rs`'s header.
+
 [package]
 name = "mdr"
 version = "0.1.0"
@@ -5,8 +13,6 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
-# Its own workspace, like `jig`: a `std` program built with `-Zbuild-std` against nife's patched
-# std (`cargo xtask std-src`), which the main workspace's bare-metal targets cannot build.
 [workspace]
 
 [dependencies]

@@ -9,18 +9,16 @@
 //! putting a different capability in this slot, and *that* is what redirection is here. See
 //! notes/sink-protocol.md.
 //!
-//! **stdin is a byte stream when the line gave the program one** (milestone 784 (reuse what the tree
-//! wrote), item (f2)'s prerequisite; calef, 2026-10-20 UTC, "a"): a file the shell streams or a
-//! pipe's read end, at `rt::STDIN_STREAM_SLOT` with `READ`, carrying the sink contract's frames and
-//! ending in its EOF message. Each read takes what is left of the last frame, then `RECEIVE`s
-//! another. The first `RECEIVE` is also the test for whether the slot is held: the kernel's refusal
-//! is a negative word, which no frame begins with, and after it every read goes to the console.
+//! **stdin is a byte stream when the line gave one** (milestone 784 (reuse what the tree wrote),
+//! item (f2)): a streamed file or a pipe's read end at `rt::STDIN_STREAM_SLOT`, in the sink
+//! contract's frames up to its EOF. The first `RECEIVE` also tests the slot: the kernel's refusal
+//! is a negative word, which no frame begins with, and after it reads go to the console.
 //!
-//! Otherwise stdin is the console, for a program granted it, and end of input for every other (milestone 892
-//! (a std program at the prompt holds the network and a resolver)). The terminal endpoint, badged as
-//! standard input, sits at `rt::STDIN_SLOT`; each read `CALL`s it for up to eight bytes of the line
-//! being typed, which the terminal's own discipline echoes and edits. An empty slot answers an error
-//! word rather than a count, and that is end of input at once.
+//! Otherwise stdin is the console, for a program granted it, and end of input for every other
+//! (milestone 892 (a std program at the prompt holds the network and a resolver)). The terminal
+//! endpoint, badged as standard input, sits at `rt::STDIN_SLOT`; each read `CALL`s it for up to
+//! eight bytes of the line being typed, which the terminal's own discipline echoes and edits. An
+//! empty slot answers an error word rather than a count, and that is end of input at once.
 //!
 //! stderr shares the endpoint, so out and err interleave by 16-byte chunk. Recorded as a caveat in
 //! notes/std.md; one endpoint is what the contract grants today.

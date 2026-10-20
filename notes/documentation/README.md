@@ -28,7 +28,6 @@ carry the evidence its prose budget has no room for.
 
 Each stem below is named for its content, and calef names files.
 
-- `pulldown-cmark` Name: provisional. Named after the crate it is about.
 - `corpus-test` Name: provisional.
 - `underscore-terms` Name: provisional.
 - `apropos-builtin` Name: provisional.

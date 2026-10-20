@@ -32,8 +32,7 @@
 ///   801 (packages over the internet)).
 /// - slots 9 and 22 to 28: one resolver badge per granted zone, for a job holding the network; slot
 ///   29: the boot terminal as stdin, for `console_input` (milestone 892 (a std program at the
-///   prompt holds the network and a resolver)); slot 30: the line's input as a byte stream, `READ`,
-///   when it redirected or piped one (milestone 784 (reuse what the tree wrote), item (f2)).
+///   prompt holds the network and a resolver)); slot 30, the line's input (`StdGrants::source`).
 ///
 /// Name: provisional.
 ///
@@ -78,7 +77,8 @@ pub(super) struct StdGrants {
     pub(super) index_sources: Option<u64>,
     /// The boot terminal, badged as standard input (milestone 892).
     pub(super) stdin: Option<u64>,
-    /// The line's input, a file the shell streams or a pipe's read end (milestone 784, item (f2)).
+    /// The line's input, a file the shell streams or a pipe's read end (milestone 784 (reuse
+    /// what the tree wrote), item (f2)).
     pub(super) source: Option<u64>,
 }
 

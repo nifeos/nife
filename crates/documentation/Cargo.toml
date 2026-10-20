@@ -5,7 +5,7 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# Milestone 40's pure logic, and only the logic: markdown in, styled terminal bytes out, plus the
+# Milestone 40 (documentation as a system service)'s pure logic, and only the logic: markdown in, styled terminal bytes out, plus the
 # search index both the host builder and the guest reader must agree on. No syscalls, no
 # endpoints, no filesystem. The program that does the IO is `mdr/`; this is the half that runs on
 # the host in milliseconds.
