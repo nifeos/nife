@@ -19,9 +19,9 @@ commit only), so the `Reuse:` lines below use the ruling's terms and should be c
 landed wording. Title and slug are drafts.
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a), (e) and (f2) are built, on calef's approvals of `httparse` (2026-10-18 UTC),
-`r-efi` and `pulldown-cmark` (both 2026-10-20 UTC). Items (d) and (g) are ruled to take `talc` and
-`object` (2026-10-21 UTC). Items (f) and (h) are refused.
+under §46. Items (a), (e), (f2) and (g) are built, on calef's approvals of `httparse` (2026-10-18
+UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `object` (2026-10-21 UTC). Item (d) is
+ruled to take `talc` (2026-10-21 UTC). Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -113,8 +113,8 @@ validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiser
 
 6. REFUSED: `stick_maker`'s `plist.rs` stays, item (f); see Follow-on.
 
-7. RULED: `portable_executable` reads the ELF and writes the PE through `object` 0.40.0, item
-(g); see Follow-on.
+7. BUILT: `cargo xtask stick` reads the ELF and writes the PE through `object` 0.40.0, item (g); see
+Follow-on.
 
 8. REFUSED for base: the `coreutils` programs stay ours, and uutils is a basalt package candidate,
 item (h); see Follow-on.
@@ -211,7 +211,7 @@ on the customer path.
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
-- (g) RULED: `portable_executable` takes `object` for the ELF and the PE; the conversion stays ours.
+- (g) BUILT: `xtask` takes `object` for the ELF and the PE; the conversion stays ours.
 - (h) REFUSED for base: the four `coreutils` programs stay ours.
 
 ## Recorded reasons for what stays
@@ -243,9 +243,12 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
 - **Outstanding.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
   everywhere, std included; not yet in `Cargo.lock` (checked that day).
-- **Outstanding.** Item (g). calef, 2026-10-21 (UTC), on #2490: "B". `object` does the ELF and PE
-  work; not yet in `Cargo.lock` (checked that day). Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released
-  on its own) is refused: its proofs would protect no known user.
+- **Done.** Item (g), 2026-10-21 (UTC), nifeos/nife#2497. calef, 2026-10-21 (UTC), on #2490: "B".
+  `object` 0.40.0, with only `read_core`, `elf`, `write_core` and `pe`, reads the ELF and writes the
+  PE in `xtask/src/stick/portable_executable.rs`, which keeps the conversion policy and its tests.
+  Gate: `cargo xtask stick-boot` reaches the progenitor on all three firmwares. Milestone 821
+  (`portable_executable`: an ELF-to-PE converter, proven, then released on its own) is refused: its
+  proofs would protect no known user.
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).

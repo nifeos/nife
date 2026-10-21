@@ -52,9 +52,13 @@ measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # crate, so a card checker and a build gate cannot come to different conclusions. Ours, in this
 # workspace; its dependencies are `nifefs` and `measured_boot`, already here.
 sealed_pair = { version = "0.1.0", path = "../crates/sealed_pair" }
-# The riscv64 boot file's ELF-to-PE conversion (`cargo xtask stick`), since rustc has no riscv64
-# UEFI target. Ours, no dependencies.
-portable_executable = { version = "0.1.0", path = "../crates/portable_executable" }
+# **The ELF reader and PE writer under the riscv64 boot file's conversion** (`cargo xtask stick`,
+# since rustc has no riscv64 UEFI target; `src/stick/portable_executable.rs`). A §46 (thin
+# primitives or whole subsystems) decision: milestone 784 (reuse what the tree wrote), item (g),
+# ruled by calef on 2026-10-21 (UTC): "B". MIT OR Apache-2.0. Default features off and only the
+# four the conversion reads and writes, which brings `crc32fast` and `foldhash` new to the tree;
+# `memchr`, `hashbrown` and `indexmap` were already here.
+object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "write_core", "pe"] }
 # The framebuffer contract (milestone 29): the host-side scanout check compares QEMU's screendump
 # against the same pattern the guest painted, from the same definition, so the two cannot drift.
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }

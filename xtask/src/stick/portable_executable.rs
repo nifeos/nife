@@ -4,42 +4,30 @@
 //! UEFI targets it has (`aarch64-`, `i686-`, `x86_64-unknown-uefi`) and has **no riscv64 UEFI
 //! target**. So the riscv64 boot file is built as an ordinary static-PIE ELF for
 //! `riscv64imac-unknown-none-elf` and converted here, as systemd's `elf2efi` does, rather than
-//! hand-writing a PE header in assembly (U-Boot, gnu-efi): pure data transformation, host-tested.
+//! hand-writing a PE header in assembly (U-Boot, gnu-efi).
+//!
+//! **`object` reads the ELF and writes the PE; the conversion is ours** (milestone 784 (reuse what
+//! the tree wrote), item (g), ruled by calef on 2026-10-21 (UTC): "B"). `object::read::elf` parses
+//! the file header, program headers, dynamic section and `Elf64_Rela` with every offset checked, and
+//! `object::write::pe::Writer` lays out the headers, the section table and `.reloc`. What this file
+//! decides is what no library knows: which ELFs it will convert, where each segment goes, and what a
+//! relocation becomes.
 //!
 //! # What goes in and what comes out
 //!
 //! In: a 64-bit little-endian ELF of type `ET_DYN` (a PIE), linked with its segments page-aligned
 //! (`-z separate-loadable-segments`) and its first segment at or above `0x1000`, whose only dynamic
-//! relocations are the architecture's `RELATIVE` kind. That is what `cargo xtask`'s riscv64 build
-//! produces, and anything else is refused by name rather than converted wrongly.
+//! relocations are the architecture's `RELATIVE` kind. That is what this file's caller links, and
+//! anything else is refused by name rather than converted wrongly.
 //!
 //! Out: a PE32+ image whose section RVAs **are** the ELF's virtual addresses (image base 0), one
 //! section per `PT_LOAD`, and a `.reloc` section holding one `IMAGE_REL_BASED_DIR64` fixup per ELF
 //! relocation. The firmware loads the image at some base `B` and adds `B` to each fixed-up word;
-//! this converter has already written each relocation's addend into its word, so the result is
-//! `B + addend`, which is exactly what `R_*_RELATIVE` means.
-//!
-
-//! # Why the ELF is read here and not with `crates/elf`
-//!
-//! `crates/elf`'s `Elf::parse` refuses any machine but `NATIVE_MACHINE` and refuses `ET_DYN`
-//! (`NeedsRelocation`), correctly for a loader. This reads a different architecture's PIE on the
-//! build host, so it reads the four structures it needs (the file header, program headers, the
-//! dynamic section and `Elf64_Rela`) itself, and every read is checked.
+//! this has already written each relocation's addend into its word, so the result is `B + addend`,
+//! which is exactly what `R_*_RELATIVE` means.
 //!
 //! # BUGS
 //!
-//! - **It reads its own build product and is not hardened against a hostile ELF** (2026-09-24
-//!   security audit). The one caller is `xtask/src/stick.rs`, on the ELF `xtask` linked seconds
-//!   earlier, so the trust boundary is the build host and an attacker who can rewrite that file
-//!   already runs code there. "Every read is checked" above is true of reads and not of the
-//!   arithmetic around them: `phoff` near `u64::MAX` overflows before `u32_at` can refuse it, a
-//!   `PT_DYNAMIC` offset is never bounds-checked the way `PT_LOAD`s are, a `memsz` of 2^44 with
-//!   `filesz` 0 passes every check and sizes the image `Vec` from it, and `DT_RELAENT = 0` with a
-//!   large `DT_RELASZ` loops at one address pushing fixups until memory runs out. xtask builds in
-//!   the dev profile, so the overflows are panics rather than wraps. Hardening is about twenty lines
-//!   of `checked_*` and a cap on `image_end`; it is not done because nothing hostile reaches this
-//!   crate, and this entry is what has to change first if that stops being true.
 //! - **Only `RELATIVE` relocations are converted.** A static PIE with no dynamic symbols produces
 //!   nothing else, and anything else is refused with its type number.
 //! - **The image carries no debug directory and no symbols**, so a firmware debugger sees addresses
@@ -48,54 +36,42 @@
 //!   one ELF are byte-identical.
 //!
 //! Name: ratified 2026-10-07 (calef, pull request #1806's publish-ours review: "Yes, one per
-//! crate"), the format's own name spelled out under §154 (the acronym test is whether the phrase is
-//! spoken): "portable executable" is the specification title's phrase. Set aside `elf_to_efi` (a
-//! verb phrase, and systemd's tool name) and `pe_image` (the acronym). It is not published:
-//! calef refused that on 2026-10-21 (UTC), ruling milestone 784 (reuse what the tree wrote)'s
-//! item (g).
+//! crate"), the format's own name spelled out under §154 (the acronym test is whether the phrase
+//! is spoken): "portable executable" is the specification title's phrase. It is not published:
+//! calef refused that on 2026-10-21 (UTC), ruling item (g).
 
-#![cfg_attr(not(test), no_std)]
+use object::elf::{self, FileHeader64, ProgramHeader64};
+use object::pe;
+use object::read::elf::{Dyn as _, FileHeader as _, ProgramHeader as _, Rela as _};
+use object::write::pe::{NtHeaders, Writer};
+use object::{LittleEndian as LE, pod};
 
-// `no_std` with `alloc`, like the tree's other pure crates: nothing here needs an operating system,
-// so it builds and documents for the bare-metal targets alongside them rather than joining the
-// host-only set `script/lint` has to name.
-extern crate alloc;
-
-use alloc::vec;
-use alloc::vec::Vec;
-
-/// `IMAGE_FILE_MACHINE_*` for the machines this converts, by ELF `e_machine`.
-fn pe_machine(elf_machine: u16) -> Option<u16> {
+/// `IMAGE_FILE_MACHINE_*` and the `R_*_RELATIVE` type, for each machine this converts.
+fn machine(elf_machine: elf::Machine) -> Option<(pe::Machine, elf::RelocationType)> {
     match elf_machine {
-        62 => Some(0x8664),  // EM_X86_64 -> IMAGE_FILE_MACHINE_AMD64
-        183 => Some(0xaa64), // EM_AARCH64 -> IMAGE_FILE_MACHINE_ARM64
-        243 => Some(0x5064), // EM_RISCV -> IMAGE_FILE_MACHINE_RISCV64
+        elf::EM_X86_64 => Some((pe::IMAGE_FILE_MACHINE_AMD64, elf::R_X86_64_RELATIVE)),
+        elf::EM_AARCH64 => Some((pe::IMAGE_FILE_MACHINE_ARM64, elf::R_AARCH64_RELATIVE)),
+        elf::EM_RISCV => Some((pe::IMAGE_FILE_MACHINE_RISCV64, elf::R_RISCV_RELATIVE)),
         _ => None,
-    }
-}
-
-/// The `R_*_RELATIVE` relocation type for each machine.
-fn relative_type(elf_machine: u16) -> u32 {
-    match elf_machine {
-        62 => 8,     // R_X86_64_RELATIVE
-        183 => 1027, // R_AARCH64_RELATIVE
-        _ => 3,      // R_RISCV_RELATIVE
     }
 }
 
 /// Why an ELF could not be converted.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Error {
-    /// Not a 64-bit little-endian ELF.
-    NotElf64,
+pub(super) enum Error {
+    /// `object` could not read it: not a 64-bit little-endian ELF, or a header or table that runs
+    /// past the end of the file.
+    Elf(object::read::Error),
+    /// A `PT_LOAD` past the end of the file, or a `DT_RELA` table past the end of the image.
+    Truncated,
+    /// `object` could not write the PE.
+    Write(object::write::Error),
     /// Not `ET_DYN`: a position-dependent image cannot be loaded where the firmware chooses.
     NotPositionIndependent,
     /// An `e_machine` this does not know a PE machine number for.
     UnknownMachine(u16),
-    /// A header, table or segment runs past the end of the file.
-    Truncated,
-    /// A `PT_LOAD` whose address is not a multiple of 4 KiB, or that starts below `0x1000`, where
-    /// the PE headers go.
+    /// A `PT_LOAD` whose address is not a multiple of 4 KiB, that starts below `0x1000` where the
+    /// PE headers go, or that overlaps another; or an image past what PE's 32-bit fields hold.
     SegmentLayout,
     /// A dynamic relocation other than `RELATIVE`, by type number.
     UnsupportedRelocation(u32),
@@ -105,129 +81,95 @@ pub enum Error {
     RelocationOutsideImage(u64),
 }
 
-const PAGE: u64 = 0x1000;
-const FILE_ALIGNMENT: u64 = 0x200;
+impl From<object::read::Error> for Error {
+    fn from(e: object::read::Error) -> Self {
+        Error::Elf(e)
+    }
+}
 
-fn u16_at(b: &[u8], at: usize) -> Result<u16, Error> {
-    let s = b.get(at..at + 2).ok_or(Error::Truncated)?;
-    Ok(u16::from_le_bytes([s[0], s[1]]))
-}
-fn u32_at(b: &[u8], at: usize) -> Result<u32, Error> {
-    let s = b.get(at..at + 4).ok_or(Error::Truncated)?;
-    Ok(u32::from_le_bytes(s.try_into().unwrap_or([0; 4])))
-}
-fn u64_at(b: &[u8], at: usize) -> Result<u64, Error> {
-    let s = b.get(at..at + 8).ok_or(Error::Truncated)?;
-    Ok(u64::from_le_bytes(s.try_into().unwrap_or([0; 8])))
-}
+const PAGE: u64 = 0x1000;
+const FILE_ALIGNMENT: u32 = 0x200;
+
 fn align(value: u64, to: u64) -> u64 {
     value.div_ceil(to) * to
 }
-fn usize_of(v: u64) -> Result<usize, Error> {
-    usize::try_from(v).map_err(|_| Error::Truncated)
+fn narrow(v: u64) -> Result<u32, Error> {
+    u32::try_from(v).map_err(|_| Error::SegmentLayout)
 }
 
-/// One `PT_LOAD`.
+/// One `PT_LOAD`, with its file bytes.
 #[derive(Debug, Clone, Copy)]
-struct Load {
-    offset: u64,
+struct Load<'a> {
     vaddr: u64,
-    filesz: u64,
     memsz: u64,
-    flags: u32,
+    bytes: &'a [u8],
+    flags: elf::ProgramFlags,
+}
+
+/// What [`from_elf`] reads from the ELF.
+struct Header<'a> {
+    pe_machine: pe::Machine,
+    relative: elf::RelocationType,
+    entry: u64,
+    /// The `PT_LOAD`s, sorted by address.
+    loads: Vec<Load<'a>>,
+    /// `PT_DYNAMIC`'s entries, if there is one.
+    dynamic: &'a [elf::Dyn64<LE>],
 }
 
 /// **Convert** (see the module documentation).
-pub fn from_elf(elf: &[u8]) -> Result<Vec<u8>, Error> {
+pub(super) fn from_elf(elf: &[u8]) -> Result<Vec<u8>, Error> {
     let header = read_header(elf)?;
-    let image_end = check_layout(elf, &header.loads)?;
-    let mut image = memory_image(elf, &header.loads, image_end)?;
-    let mut fixups = match header.dynamic {
-        Some(dynamic) => apply_relocations(elf, &mut image, &header, dynamic)?,
-        None => Vec::new(),
-    };
+    let image_end = check_layout(&header.loads)?;
+    let mut image = memory_image(&header.loads, image_end);
+    let mut fixups = apply_relocations(&mut image, &header)?;
     fixups.sort_unstable();
     fixups.dedup();
-    let relocations = base_relocations(&fixups);
-    let reloc_va = align(image_end, PAGE);
-    let sections = sections_of(&header.loads, &image, &relocations, reloc_va);
-    write_pe(&header, &sections, &relocations, reloc_va)
-}
-
-/// What [`from_elf`] reads from the ELF header and the program headers.
-struct Header {
-    machine: u16,
-    pe_machine: u16,
-    entry: u64,
-    /// The `PT_LOAD`s, sorted by address.
-    loads: Vec<Load>,
-    /// `PT_DYNAMIC`'s file offset and size, if there is one.
-    dynamic: Option<(u64, u64)>,
+    write_pe(&header, &image, &fixups)
 }
 
 /// The ELF identification, type and machine, then every program header this converts.
-fn read_header(elf: &[u8]) -> Result<Header, Error> {
-    if elf.get(0..4) != Some(b"\x7fELF".as_slice())
-        || elf.get(4) != Some(&2)
-        || elf.get(5) != Some(&1)
-    {
-        return Err(Error::NotElf64);
-    }
-    if u16_at(elf, 16)? != 3 {
+fn read_header(elf: &[u8]) -> Result<Header<'_>, Error> {
+    let file = FileHeader64::<LE>::parse(elf)?;
+    let endian = file.endian()?;
+    if file.e_type(endian) != elf::ET_DYN {
         return Err(Error::NotPositionIndependent);
     }
-    let machine = u16_at(elf, 18)?;
-    let pe_machine = pe_machine(machine).ok_or(Error::UnknownMachine(machine))?;
-    let entry = u64_at(elf, 24)?;
-    let phoff = usize_of(u64_at(elf, 32)?)?;
-    let phentsize = usize::from(u16_at(elf, 54)?);
-    let phnum = usize::from(u16_at(elf, 56)?);
-
+    let e_machine = file.e_machine(endian);
+    let (pe_machine, relative) = machine(e_machine).ok_or(Error::UnknownMachine(e_machine.0))?;
     let mut loads = Vec::new();
-    let mut dynamic: Option<(u64, u64)> = None;
-    for i in 0..phnum {
-        let at = phoff + i * phentsize;
-        let kind = u32_at(elf, at)?;
-        let flags = u32_at(elf, at + 4)?;
-        let offset = u64_at(elf, at + 8)?;
-        let vaddr = u64_at(elf, at + 16)?;
-        let filesz = u64_at(elf, at + 32)?;
-        let memsz = u64_at(elf, at + 40)?;
-        match kind {
-            1 => loads.push(Load {
-                offset,
-                vaddr,
-                filesz,
-                memsz,
-                flags,
+    let mut dynamic: &[elf::Dyn64<LE>] = &[];
+    for segment in file.program_headers(endian, elf)? {
+        let segment: &ProgramHeader64<LE> = segment;
+        match segment.p_type(endian) {
+            elf::PT_LOAD => loads.push(Load {
+                vaddr: segment.p_vaddr(endian),
+                memsz: segment.p_memsz(endian),
+                bytes: segment
+                    .data(endian, elf)
+                    .map_err(|()| Error::Truncated)?,
+                flags: segment.p_flags(endian),
             }),
-            2 => dynamic = Some((offset, filesz)),
+            elf::PT_DYNAMIC => dynamic = segment.dynamic(endian, elf)?.unwrap_or(&[]),
             _ => {}
         }
     }
     loads.sort_by_key(|l| l.vaddr);
     Ok(Header {
-        machine,
         pe_machine,
-        entry,
+        relative,
+        entry: file.e_entry(endian),
         loads,
         dynamic,
     })
 }
 
-/// Refuse segments that are unaligned, below the headers, past the file's end or overlapping, and
-/// return the address where the last one ends.
-fn check_layout(elf: &[u8], loads: &[Load]) -> Result<u64, Error> {
+/// Refuse segments that are unaligned, below the headers or overlapping, and return the address
+/// where the last one ends.
+fn check_layout(loads: &[Load]) -> Result<u64, Error> {
     for load in loads {
-        if load.vaddr % PAGE != 0 || load.vaddr < PAGE || load.filesz > load.memsz {
+        if load.vaddr % PAGE != 0 || load.vaddr < PAGE || load.bytes.len() as u64 > load.memsz {
             return Err(Error::SegmentLayout);
-        }
-        let end = load
-            .offset
-            .checked_add(load.filesz)
-            .ok_or(Error::Truncated)?;
-        if usize_of(end)? > elf.len() {
-            return Err(Error::Truncated);
         }
     }
     for pair in loads.windows(2) {
@@ -235,284 +177,165 @@ fn check_layout(elf: &[u8], loads: &[Load]) -> Result<u64, Error> {
             return Err(Error::SegmentLayout);
         }
     }
-    loads
+    let end = loads
         .last()
         .map(|l| l.vaddr + l.memsz)
-        .ok_or(Error::SegmentLayout)
+        .ok_or(Error::SegmentLayout)?;
+    // SizeOfImage is 32 bits, and `.reloc` takes the page after the last segment.
+    narrow(align(end, PAGE) + PAGE)?;
+    Ok(end)
 }
 
 /// The memory image, from address 0, holding every segment's file bytes where it will run.
-fn memory_image(elf: &[u8], loads: &[Load], image_end: u64) -> Result<Vec<u8>, Error> {
-    let mut image = vec![0u8; usize_of(image_end)?];
+fn memory_image(loads: &[Load], image_end: u64) -> Vec<u8> {
+    let mut image = vec![0u8; image_end as usize];
     for load in loads {
-        let (from, to) = (usize_of(load.offset)?, usize_of(load.vaddr)?);
-        let len = usize_of(load.filesz)?;
-        image[to..to + len].copy_from_slice(&elf[from..from + len]);
+        let at = load.vaddr as usize;
+        image[at..at + load.bytes.len()].copy_from_slice(load.bytes);
     }
-    Ok(image)
+    image
 }
 
-/// The dynamic relocations: read `PT_DYNAMIC` for the `DT_RELA` table, write each `RELATIVE`
+/// The dynamic relocations: walk `PT_DYNAMIC` for the `DT_RELA` table, write each `RELATIVE`
 /// addend into `image`, and return the addresses of the words written, unsorted.
-fn apply_relocations(
-    elf: &[u8],
-    image: &mut [u8],
-    header: &Header,
-    (offset, size): (u64, u64),
-) -> Result<Vec<u64>, Error> {
-    let mut fixups: Vec<u64> = Vec::new();
+fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Error> {
     let (mut rela, mut relasz, mut relaent) = (None, 0u64, 24u64);
-    let mut at = usize_of(offset)?;
-    let end = at + usize_of(size)?;
-    while at + 16 <= end {
-        let tag = u64_at(elf, at)?;
-        let value = u64_at(elf, at + 8)?;
-        at += 16;
-        match tag {
-            0 => break,
-            7 => rela = Some(value),
-            8 => relasz = value,
-            9 => relaent = value,
-            17 | 36 => return Err(Error::UnsupportedRelocationTable),
-            2 | 23 if value != 0 => return Err(Error::UnsupportedRelocationTable),
+    for entry in header.dynamic {
+        let value = entry.d_val(LE);
+        match entry.d_tag(LE) {
+            elf::DT_NULL => break,
+            elf::DT_RELA => rela = Some(value),
+            elf::DT_RELASZ => relasz = value,
+            elf::DT_RELAENT => relaent = value,
+            elf::DT_REL | elf::DT_RELR => return Err(Error::UnsupportedRelocationTable),
+            elf::DT_PLTRELSZ | elf::DT_JMPREL if value != 0 => {
+                return Err(Error::UnsupportedRelocationTable);
+            }
             _ => {}
         }
     }
+    let mut fixups = Vec::new();
     let Some(rela) = rela else {
         return Ok(fixups);
     };
     // `DT_RELA` is a virtual address; its bytes are in the image built above.
-    let base = usize_of(rela)?;
-    let count = usize_of(relasz / relaent.max(1))?;
-    for i in 0..count {
-        let at = base + i * usize_of(relaent)?;
-        let r_offset = u64_at(image, at)?;
-        let r_info = u64_at(image, at + 8)?;
-        let r_addend = u64_at(image, at + 16)?;
-        let kind = (r_info & 0xffff_ffff) as u32;
-        if kind == 0 {
-            continue; // R_*_NONE
+    let stride = relaent.max(1);
+    for i in 0..relasz / stride {
+        let at = rela
+            .checked_add(i * stride)
+            .and_then(|at| usize::try_from(at).ok())
+            .and_then(|at| image.get(at..))
+            .ok_or(Error::Truncated)?;
+        let (entry, _) =
+            pod::from_bytes::<elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
+        let (r_offset, r_addend) = (entry.r_offset(LE), entry.r_addend(LE) as u64);
+        let kind = entry.r_type(LE, false);
+        if kind == elf::R_RISCV_NONE {
+            continue; // R_*_NONE is 0 on every machine
         }
-        if kind != relative_type(header.machine) || r_info >> 32 != 0 {
-            return Err(Error::UnsupportedRelocation(kind));
+        if kind != header.relative || entry.r_sym(LE, false) != 0 {
+            return Err(Error::UnsupportedRelocation(kind.0));
         }
         // Inside the segment's FILE bytes, not its memory size: the word is written into
         // `image` here, but each section's raw data is only its first `filesz` bytes, so a
         // word in `.bss` would lose its addend while its fixup stayed in `.reloc`, and the
-        // firmware would add the load base to zero. This read `memsz` until milestone 326's
-        // mutation triage (2026-09-24) wrote the boundary test and it accepted such a word.
-        let inside = header
-            .loads
-            .iter()
-            .any(|l| r_offset >= l.vaddr && r_offset + 8 <= l.vaddr + l.filesz);
+        // firmware would add the load base to zero.
+        let inside = header.loads.iter().any(|l| {
+            r_offset >= l.vaddr && r_offset.saturating_add(8) <= l.vaddr + l.bytes.len() as u64
+        });
         if !inside {
             return Err(Error::RelocationOutsideImage(r_offset));
         }
-        let word = usize_of(r_offset)?;
+        let word = r_offset as usize;
         image[word..word + 8].copy_from_slice(&r_addend.to_le_bytes());
         fixups.push(r_offset);
     }
     Ok(fixups)
 }
 
-/// One PE section: a segment's file bytes, or the `.reloc` table.
-struct Section {
-    name: [u8; 8],
-    virtual_address: u64,
-    virtual_size: u64,
-    data: Vec<u8>,
-    characteristics: u32,
-}
-
-/// A section per segment, named and flagged by its permissions, then `.reloc` if any fixups.
-fn sections_of(loads: &[Load], image: &[u8], relocations: &[u8], reloc_va: u64) -> Vec<Section> {
-    let mut sections: Vec<Section> = loads
-        .iter()
-        .map(|l| {
-            let (name, characteristics) = if l.flags & 1 != 0 {
-                (*b".text\0\0\0", 0x6000_0020) // CODE | EXECUTE | READ
-            } else if l.flags & 2 != 0 {
-                (*b".data\0\0\0", 0xc000_0040) // INITIALIZED_DATA | READ | WRITE
-            } else {
-                (*b".rdata\0\0", 0x4000_0040) // INITIALIZED_DATA | READ
-            };
-            let from = l.vaddr as usize;
-            Section {
-                name,
-                virtual_address: l.vaddr,
-                virtual_size: l.memsz,
-                data: image[from..from + l.filesz as usize].to_vec(),
-                characteristics,
-            }
-        })
-        .collect();
-    if !relocations.is_empty() {
-        sections.push(Section {
-            name: *b".reloc\0\0",
-            virtual_address: reloc_va,
-            virtual_size: relocations.len() as u64,
-            data: relocations.to_vec(),
-            characteristics: 0x4200_0040, // INITIALIZED_DATA | DISCARDABLE | READ
-        });
+/// A section's name and flags, from its segment's permissions.
+fn section_kind(flags: elf::ProgramFlags) -> ([u8; 8], pe::SectionFlags) {
+    if flags.contains(elf::PF_X) {
+        let code = pe::IMAGE_SCN_CNT_CODE | pe::IMAGE_SCN_MEM_EXECUTE | pe::IMAGE_SCN_MEM_READ;
+        (*b".text\0\0\0", code)
+    } else if flags.contains(elf::PF_W) {
+        let data =
+            pe::IMAGE_SCN_CNT_INITIALIZED_DATA | pe::IMAGE_SCN_MEM_READ | pe::IMAGE_SCN_MEM_WRITE;
+        (*b".data\0\0\0", data)
+    } else {
+        let rdata = pe::IMAGE_SCN_CNT_INITIALIZED_DATA | pe::IMAGE_SCN_MEM_READ;
+        (*b".rdata\0\0", rdata)
     }
-    sections
 }
 
-const DOS_LEN: usize = 0x40;
-const COFF_LEN: usize = 20;
-const OPTIONAL_LEN: usize = 240;
-
-fn put16(out: &mut [u8], at: usize, v: u16) {
-    out[at..at + 2].copy_from_slice(&v.to_le_bytes());
-}
-fn put32(out: &mut [u8], at: usize, v: u32) {
-    out[at..at + 4].copy_from_slice(&v.to_le_bytes());
-}
-fn put64(out: &mut [u8], at: usize, v: u64) {
-    out[at..at + 8].copy_from_slice(&v.to_le_bytes());
-}
-fn narrow(v: u64) -> Result<u32, Error> {
-    u32::try_from(v).map_err(|_| Error::SegmentLayout)
-}
-
-/// **Lay out the PE file**: headers in the first page, then each section's raw data at file
-/// alignment.
-fn write_pe(
-    header: &Header,
-    sections: &[Section],
-    relocations: &[u8],
-    reloc_va: u64,
-) -> Result<Vec<u8>, Error> {
-    let headers = DOS_LEN + 4 + COFF_LEN + OPTIONAL_LEN + 40 * sections.len();
-    let size_of_headers = align(headers as u64, FILE_ALIGNMENT);
-    if size_of_headers > PAGE {
+/// **Lay out the PE file** with `object`'s writer: headers in the first page, a section per
+/// segment at the segment's own address, then `.reloc` on the page after the last.
+fn write_pe(header: &Header, image: &[u8], fixups: &[u64]) -> Result<Vec<u8>, Error> {
+    let mut out = Vec::new();
+    let mut writer = Writer::new(true, PAGE as u32, FILE_ALIGNMENT, &mut out);
+    writer.reserve_dos_header();
+    writer.reserve_nt_headers(pe::IMAGE_NUMBEROF_DIRECTORY_ENTRIES);
+    let sections = header.loads.len() + usize::from(!fixups.is_empty());
+    writer.reserve_section_headers(u16::try_from(sections).map_err(|_| Error::SegmentLayout)?);
+    // The first segment is at 0x1000 or above, so headers past a page would be overwritten once
+    // the image is loaded.
+    if writer.reserved_len() > PAGE {
         return Err(Error::SegmentLayout);
     }
-    let size_of_image = align(
-        sections
-            .iter()
-            .map(|s| s.virtual_address + s.virtual_size)
-            .max()
-            .unwrap_or(PAGE),
-        PAGE,
-    );
-
-    let mut raw_at = size_of_headers;
-    let mut placements = Vec::new();
-    for s in sections {
-        let raw_size = align(s.data.len() as u64, FILE_ALIGNMENT);
-        placements.push((raw_at, raw_size));
-        raw_at += raw_size;
+    let mut ranges = Vec::new();
+    for load in &header.loads {
+        let (name, flags) = section_kind(load.flags);
+        writer.reserve_virtual_until(narrow(load.vaddr)?);
+        let range = writer.reserve_section(
+            name,
+            flags,
+            narrow(load.memsz)?,
+            narrow(load.bytes.len() as u64)?,
+        );
+        let at = load.vaddr as usize;
+        ranges.push((range.file_offset, &image[at..at + load.bytes.len()]));
     }
-    let mut out = vec![0u8; usize_of(raw_at)?];
-
-    // DOS header: the magic and the offset of the PE signature, nothing else.
-    out[0..2].copy_from_slice(b"MZ");
-    put32(&mut out, 0x3c, DOS_LEN as u32);
-    out[DOS_LEN..DOS_LEN + 4].copy_from_slice(b"PE\0\0");
-
-    let coff = DOS_LEN + 4;
-    put16(&mut out, coff, header.pe_machine);
-    put16(&mut out, coff + 2, sections.len() as u16);
-    // TimeDateStamp, PointerToSymbolTable, NumberOfSymbols: zero.
-    put16(&mut out, coff + 16, OPTIONAL_LEN as u16);
-    // EXECUTABLE_IMAGE | LARGE_ADDRESS_AWARE | DEBUG_STRIPPED.
-    put16(&mut out, coff + 18, 0x0002 | 0x0020 | 0x0200);
-
-    let opt = coff + COFF_LEN;
-    write_optional_header(
-        &mut out[opt..opt + OPTIONAL_LEN],
-        header.entry,
-        sections,
-        [size_of_image, size_of_headers],
-        (reloc_va, relocations.len()),
-    )?;
-
-    let table = opt + OPTIONAL_LEN;
-    for (i, (s, (raw_at, raw_size))) in sections.iter().zip(&placements).enumerate() {
-        let h = table + i * 40;
-        out[h..h + 8].copy_from_slice(&s.name);
-        put32(&mut out, h + 8, narrow(s.virtual_size)?);
-        put32(&mut out, h + 12, narrow(s.virtual_address)?);
-        put32(&mut out, h + 16, narrow(*raw_size)?);
-        put32(&mut out, h + 20, narrow(*raw_at)?);
-        put32(&mut out, h + 36, s.characteristics);
-        let at = usize_of(*raw_at)?;
-        out[at..at + s.data.len()].copy_from_slice(&s.data);
+    for &fixup in fixups {
+        writer.add_reloc(narrow(fixup)?, pe::IMAGE_REL_BASED_DIR64);
     }
+    if writer.has_relocs() {
+        writer.reserve_reloc_section();
+    }
+
+    writer.write_empty_dos_header().map_err(Error::Write)?;
+    writer.write_nt_headers(NtHeaders {
+        machine: header.pe_machine,
+        time_date_stamp: 0,
+        characteristics: pe::IMAGE_FILE_EXECUTABLE_IMAGE
+            | pe::IMAGE_FILE_LARGE_ADDRESS_AWARE
+            | pe::IMAGE_FILE_DEBUG_STRIPPED,
+        major_linker_version: 0,
+        minor_linker_version: 0,
+        address_of_entry_point: narrow(header.entry)?,
+        // The RVAs are the ELF's addresses from zero.
+        image_base: 0,
+        major_operating_system_version: 0,
+        minor_operating_system_version: 0,
+        major_image_version: 0,
+        minor_image_version: 0,
+        major_subsystem_version: 0,
+        minor_subsystem_version: 0,
+        subsystem: pe::IMAGE_SUBSYSTEM_EFI_APPLICATION,
+        // What the image is: relocatable anywhere, and nothing executes from a data page.
+        dll_characteristics: pe::IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA
+            | pe::IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
+            | pe::IMAGE_DLLCHARACTERISTICS_NX_COMPAT,
+        size_of_stack_reserve: 0,
+        size_of_stack_commit: 0,
+        size_of_heap_reserve: 0,
+        size_of_heap_commit: 0,
+    });
+    writer.write_section_headers();
+    for (offset, bytes) in ranges {
+        writer.write_section(offset, bytes);
+    }
+    writer.write_reloc_section();
     Ok(out)
-}
-
-/// The PE32+ optional header, written into its own `OPTIONAL_LEN` bytes. `sizes` is
-/// `[SizeOfImage, SizeOfHeaders]`; `reloc` is the `.reloc` section's address and length, a zero
-/// length leaving data directory 5 empty.
-fn write_optional_header(
-    opt: &mut [u8],
-    entry: u64,
-    sections: &[Section],
-    [size_of_image, size_of_headers]: [u64; 2],
-    (reloc_va, reloc_len): (u64, usize),
-) -> Result<(), Error> {
-    let code: u64 = sections
-        .iter()
-        .filter(|s| s.characteristics & 0x20 != 0)
-        .map(|s| align(s.data.len() as u64, FILE_ALIGNMENT))
-        .sum();
-    let data: u64 = sections
-        .iter()
-        .filter(|s| s.characteristics & 0x20 == 0)
-        .map(|s| align(s.data.len() as u64, FILE_ALIGNMENT))
-        .sum();
-    let base_of_code = sections
-        .iter()
-        .find(|s| s.characteristics & 0x20 != 0)
-        .map_or(0, |s| s.virtual_address);
-    put16(opt, 0, 0x20b); // PE32+
-    put32(opt, 4, narrow(code)?);
-    put32(opt, 8, narrow(data)?);
-    put32(opt, 16, narrow(entry)?);
-    put32(opt, 20, narrow(base_of_code)?);
-    put64(opt, 24, 0); // ImageBase: the RVAs are the ELF's addresses from zero
-    put32(opt, 32, PAGE as u32); // SectionAlignment
-    put32(opt, 36, FILE_ALIGNMENT as u32);
-    put32(opt, 56, narrow(size_of_image)?);
-    put32(opt, 60, narrow(size_of_headers)?);
-    put16(opt, 68, 10); // IMAGE_SUBSYSTEM_EFI_APPLICATION
-    // DllCharacteristics: HIGH_ENTROPY_VA | DYNAMIC_BASE | NX_COMPAT, which is what the image is.
-    put16(opt, 70, 0x0020 | 0x0040 | 0x0100);
-    put32(opt, 108, 16); // NumberOfRvaAndSizes
-    if reloc_len != 0 {
-        // Data directory 5: the base relocation table.
-        put32(opt, 112 + 5 * 8, narrow(reloc_va)?);
-        put32(opt, 112 + 5 * 8 + 4, reloc_len as u32);
-    }
-    Ok(())
-}
-
-/// **The `.reloc` section**: fixups grouped into one block per 4 KiB page, each block a page RVA,
-/// a block size, and a 16-bit entry per fixup (type in the top four bits, offset in the low
-/// twelve), padded to four bytes with an `IMAGE_REL_BASED_ABSOLUTE` entry, which is a no-op.
-fn base_relocations(sorted: &[u64]) -> Vec<u8> {
-    const DIR64: u16 = 10;
-    let mut out = Vec::new();
-    let mut i = 0;
-    while i < sorted.len() {
-        let page = sorted[i] & !(PAGE - 1);
-        let mut entries: Vec<u16> = Vec::new();
-        while i < sorted.len() && sorted[i] & !(PAGE - 1) == page {
-            entries.push((DIR64 << 12) | (sorted[i] & (PAGE - 1)) as u16);
-            i += 1;
-        }
-        if entries.len() % 2 == 1 {
-            entries.push(0);
-        }
-        out.extend_from_slice(&(page as u32).to_le_bytes());
-        out.extend_from_slice(&((8 + 2 * entries.len()) as u32).to_le_bytes());
-        for e in entries {
-            out.extend_from_slice(&e.to_le_bytes());
-        }
-    }
-    out
 }
 
 #[cfg(test)]
@@ -647,25 +470,11 @@ mod tests {
         let mut exec = tiny_pie(3);
         exec[16] = 2;
         assert_eq!(from_elf(&exec), Err(Error::NotPositionIndependent));
-        assert_eq!(from_elf(b"MZ not an elf"), Err(Error::NotElf64));
+        assert!(matches!(from_elf(b"MZ not an elf"), Err(Error::Elf(_))));
         let mut odd = tiny_pie(3);
         odd[64 + 16..64 + 24].copy_from_slice(&0x1234u64.to_le_bytes());
         assert_eq!(from_elf(&odd), Err(Error::SegmentLayout));
     }
-
-    #[test]
-    fn relocation_blocks_split_by_page_and_pad_to_four_bytes() {
-        let r = base_relocations(&[0x2000, 0x2008, 0x3ff8]);
-        assert_eq!(u32le(&r, 0), 0x2000);
-        assert_eq!(u32le(&r, 4), 12);
-        assert_eq!(u32le(&r, 12), 0x3000);
-        assert_eq!(u32le(&r, 16), 12, "one entry padded to two");
-        assert_eq!(r.len(), 24);
-    }
-
-    // --- The tests below are from milestone 326 (turn a mutation score upward), 2026-09-24. Each
-    // --- names the property it pins; notes/mutation-testing/portable-executable.md has the
-    // --- mutants each one was seen to kill.
 
     fn put(e: &mut [u8], at: usize, bytes: &[u8]) {
         e[at..at + bytes.len()].copy_from_slice(bytes);
@@ -745,14 +554,12 @@ mod tests {
             "EXECUTABLE_IMAGE | LARGE_ADDRESS_AWARE | DEBUG_STRIPPED"
         );
         let opt = coff + 20;
-        assert_eq!(
-            u32le(&pe, opt + 4),
-            0x200,
-            "SizeOfCode: .text's raw size only"
-        );
+        // `object` sums each section's virtual size at file alignment, so `.data` counts its
+        // `.bss` too. Firmware does not read either field to load the image.
+        assert_eq!(u32le(&pe, opt + 4), 0x200, "SizeOfCode: .text only");
         assert_eq!(
             u32le(&pe, opt + 8),
-            0x400 + 0x200 + 0x200,
+            0x400 + 0x1200 + 0x200,
             "SizeOfInitializedData: .rdata, .data and .reloc"
         );
         assert_eq!(u32le(&pe, opt + 16), 0x2000, "AddressOfEntryPoint");
@@ -994,10 +801,10 @@ mod tests {
     fn only_elfclass64_little_endian_is_read() {
         let mut e = three_kinds();
         e[4] = 1;
-        assert_eq!(from_elf(&e), Err(Error::NotElf64), "ELFCLASS32");
+        assert!(matches!(from_elf(&e), Err(Error::Elf(_))), "ELFCLASS32");
         let mut e = three_kinds();
         e[5] = 2;
-        assert_eq!(from_elf(&e), Err(Error::NotElf64), "big-endian");
+        assert!(matches!(from_elf(&e), Err(Error::Elf(_))), "big-endian");
     }
 
     /// **The section table must fit in the first page, and 94 sections exactly fill it.** The
@@ -1039,23 +846,5 @@ mod tests {
             "the first section's raw data"
         );
         assert_eq!(from_elf(&loads(95)), Err(Error::SegmentLayout));
-    }
-
-    /// **A header field is read from exactly its own bytes.** An ELF cut off right after
-    /// `e_phnum` has every field this reads, so it reaches the layout check rather than being
-    /// called truncated.
-    #[test]
-    fn a_header_field_needs_exactly_its_own_bytes() {
-        let e = header(243, 0, 58);
-        assert_eq!(from_elf(&e), Err(Error::SegmentLayout), "no PT_LOAD at all");
-    }
-
-    /// **A block's size counts its header and two bytes per entry.** Four entries in one page is
-    /// the case that tells `8 + 2 * n` from `8 + 2 + n`, which agree at two.
-    #[test]
-    fn a_relocation_block_is_eight_bytes_plus_two_per_entry() {
-        let r = base_relocations(&[0x2000, 0x2008, 0x2010, 0x2018]);
-        assert_eq!(u32le(&r, 4), 16);
-        assert_eq!(r.len(), 16);
     }
 }

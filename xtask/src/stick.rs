@@ -25,6 +25,8 @@ use crate::archive::{initial_ramdisk_path, initial_ramdisk_riscv, riscv_initial_
 use crate::host::workspace_root;
 use crate::uefi::uefi_image;
 
+mod portable_executable;
+
 /// Where the stick is staged: the layout the program writes, as a directory QEMU can boot.
 pub(super) fn stick_dir() -> PathBuf {
     workspace_root().join("target/stick")
