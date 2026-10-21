@@ -55,7 +55,7 @@ So every missing piece of `std` is something we earn back by implementing the th
 |---|---|---|
 | `println!` | somewhere for bytes to go | milestone 1, and again at 8 when the console driver left the kernel |
 | `thread::spawn` | a scheduler | the scheduler is milestone 6; `thread::spawn` itself is **still `Unsupported`**, and the reason is a design fork rather than a missing service ([thread-spawn-fork.md](thread-spawn-fork.md)) |
-| `Vec`, `String`, `Box` | a heap allocator | milestone 4 in the kernel, then **taken back out**: milestone 14 made the kernel allocate nothing after boot, and the heap moved to userspace as `crates/user_mode_heap` |
+| `Vec`, `String`, `Box` | a heap allocator | milestone 4 (MMU on: page tables, the kernel heap, the high half) in the kernel, then **taken back out**: milestone 14 (kernel objects from untyped: remove the kernel heap) made the kernel allocate nothing after boot, and the heap moved to userspace as `memory_region_heap`, on `talc` |
 | `File::open` | a filesystem | milestone 32 (RedoxFS behind a capability FS server), bound into `std::fs` by milestone 27 phase two |
 
 The heap row is the one worth reading twice, and this table said the opposite until

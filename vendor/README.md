@@ -158,6 +158,31 @@ and priced it is notes/redoxfs-audit.md).
   `script/vendor-verify` asks the different question those cannot: not "does it still build" but
   "is this tree what we say it is".
 
+## talc 5.1.1
+
+The heap algorithm under every nife program (milestone 784 (reuse what the tree wrote), item d):
+`memory_region_heap` builds against this tree through `[patch.crates-io]` in each workspace whose
+graph holds talc, and `cargo xtask std-src` generates std's heap from it.
+
+- **Source:** the published crates.io package `talc-5.1.1.crate`, sha256
+  `53f8ad14fa1c1b8635114abf9721076fe1e869572a5f26a52690f407292c80dc`, upstream git sha
+  `15b2758a45388f8a5c9efd4dd7f7493d09284e19` (`.cargo_vcs_info.json`; the crate is the repository's
+  `talc/` directory).
+- **Divergence from the published package, exhaustively:** one, SFBdragon/talc#57 ("Fix fit check
+  overflows"), applied exactly as upstream wrote it. Two fit checks compared addresses where they
+  meant sizes: `full_search_bin` stepped a pointer past the gap with `add` before comparing it, and
+  the in-place grow compared a wrapping end. The first is undefined behavior Miri reports through
+  `allocation_cache`'s host test; both can hand out overlapping memory where addresses wrap at
+  2^32, which nife's 64-bit targets never reach. The pull request's new test,
+  `tests/wasm_top_of_memory.rs`, comes with it and builds only for `wasm32`.
+- **Drops when** a talc release carries #57. Then the pin goes: `memory_region_heap` and
+  `allocation_cache` take that release from crates.io, the `[patch.crates-io]` tables go, and
+  `std_generate_talc` reads the crate cargo unpacks for the `Cargo.lock` pin instead. The pin's
+  `upstream_fix` makes `script/vendor-watch` report the pull request's state each month.
+- **Not a workspace member:** the root `Cargo.toml` excludes it, as it does `vendor/redoxfs`, so our
+  clippy and rustfmt gates stay off upstream code. calef ruled to carry it, 2026-10-21 (UTC), on
+  nifeos/nife#2498.
+
 ## relibc, seeded at 893a3b9133ac (not a pin)
 
 The C library's relibc half, for milestone 835 (a C library, stage 1: files, clock and memory) and
@@ -273,7 +298,7 @@ it is mechanical**, which is why nothing automates past the first step:
 
 1. Raise `version`, `url` and `sha256` in the pin. (`script/vendor-watch --write` does this much,
    and stops there.)
-2. Re-apply the divergences. Numbers 1, 2 and 6 above drop the day upstream ships them; 3, 4 and 5 are
+2. Re-apply the divergences. talc's one drops when a release carries it. RedoxFS's numbers 1, 2 and 6 above drop the day upstream ships them; 3, 4 and 5 are
    re-applied forever and are where the work is.
 3. Regenerate the patch: `script/vendor-verify --write-patch`.
 4. Extend this file's divergence list, which claims to be exhaustive and has been wrong once.

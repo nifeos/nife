@@ -162,16 +162,17 @@ def commits_since(pin):
     """Upstream commits on `vcs_branch` that the pinned sha does not have, oldest first, with merge
     commits dropped.
 
-    **GitLab only, deliberately.** RedoxFS is the only vendored engine, so a general forge
-    abstraction here would be machinery ahead of a second consumer; a second forge gets support the
-    day a second pin needs it, and an unrecognised host says so rather than guessing.
+    **GitLab and GitHub, the two forges a pin names.** RedoxFS is on GitLab and talc on GitHub; an
+    unrecognised host says so rather than guessing.
     """
     url = pin.get("vcs_url", "")
+    if GITHUB_URL.match(url):
+        return github_commits_since(pin)
     match = re.match(rf"https://{re.escape(GITLAB_HOST)}/(.+?)/?$", url)
     if not match:
         raise Unreachable(
             f"{pin['name']} vcs_url", PERMANENT,
-            f"{url!r} is not a {GITLAB_HOST} project URL, and this script speaks no other forge")
+            f"{url!r} is neither a {GITLAB_HOST} nor a github.com project URL")
     project = urllib.parse.quote(match.group(1).removesuffix(".git"), safe="")
     branch = pin.get("vcs_branch", "master")
     api = f"https://{GITLAB_HOST}/api/v4/projects/{project}/repository/compare"
@@ -197,6 +198,65 @@ def commits_since(pin):
     }
 
 
+GITHUB_URL = re.compile(r"https://github\.com/([^/]+/[^/]+?)(?:\.git)?/?$")
+
+
+def github_commits_since(pin):
+    """`commits_since` for a GitHub repository. A pin whose crate sits in a subdirectory names it
+    as `vcs_path`, and file paths are reported relative to it, as the divergence patch's are."""
+    repo = GITHUB_URL.match(pin["vcs_url"]).group(1)
+    branch = pin.get("vcs_branch", "master")
+    data = get_json(f"https://api.github.com/repos/{repo}/compare/{pin['vcs']}...{branch}",
+                    f"github.com/{repo}")
+    commits = data.get("commits", [])
+    prefix = pin.get("vcs_path", "").strip("/")
+    files = set()
+    for f in data.get("files", []):
+        name = f.get("filename", "")
+        if prefix:
+            if not name.startswith(prefix + "/"):
+                continue
+            name = name[len(prefix) + 1:]
+        files.add(name)
+    merges = [c for c in commits if len(c.get("parents", [])) > 1]
+    real = [c for c in commits if len(c.get("parents", [])) <= 1]
+    return {
+        "head": commits[-1]["sha"] if commits else pin["vcs"],
+        # GitHub lists at most 250 commits on a compare; `total_commits` says how many there are.
+        "truncated": data.get("total_commits", len(commits)) > len(commits),
+        "merges": len(merges),
+        "commits": [{"id": c["sha"][:11],
+                     "date": ((c.get("commit") or {}).get("committer") or {}).get("date", "")[:10],
+                     "title": ((c.get("commit") or {}).get("message") or "").split("\n", 1)[0].strip()}
+                    for c in real],
+        "files": sorted(files),
+        "web_url": data.get("html_url", ""),
+    }
+
+
+def upstream_fix(pin):
+    """The state of the upstream pull request a pin's divergence is (`upstream_fix`), or None when
+    the pin names none. The divergence drops once a release carries it, so the report says whether
+    it has merged and when; the releases section above it says whether one has been published
+    since."""
+    url = pin.get("upstream_fix", "")
+    if not url:
+        return None
+    match = re.match(r"https://github\.com/([^/]+/[^/]+)/pull/(\d+)/?$", url)
+    if not match:
+        raise Unreachable(f"{pin['name']} upstream_fix", PERMANENT,
+                          f"{url!r} is not a github.com pull request URL")
+    data = get_json(f"https://api.github.com/repos/{match.group(1)}/pulls/{match.group(2)}",
+                    f"github.com/{match.group(1)}#{match.group(2)}")
+    return {
+        "url": url,
+        "title": data.get("title", ""),
+        "state": "merged" if data.get("merged_at") else data.get("state", "unknown"),
+        "merged": (data.get("merged_at") or "")[:10],
+        "sha": (data.get("merge_commit_sha") or "")[:12],
+    }
+
+
 def patched_files(pin):
     """The files our divergence patch touches, so the report can say which of them upstream has also
     been editing. That overlap is the cheapest available predictor of how much a bump will hurt, and
@@ -211,7 +271,7 @@ def patched_files(pin):
 # --- the report -----------------------------------------------------------------------------------
 
 
-def render(pin, releases, git, overlap):
+def render(pin, releases, git, overlap, fix=None):
     """One pin's section of the status file, in markdown.
 
     **Nothing in here is a timestamp, and that is load-bearing.** The file is regenerated on every
@@ -269,6 +329,20 @@ def render(pin, releases, git, overlap):
                 out.append("")
             else:
                 out.append("Upstream has not touched any file our divergence patch touches.\n")
+
+    if fix is not None:
+        if fix == "unchecked":
+            out.append("**Upstream fix: could not be checked.** See the run log.\n")
+        elif fix["state"] == "merged":
+            out.append(f"**Upstream fix: merged {fix['merged']}** as `{fix['sha']}`: {fix['url']} "
+                       f"({fix['title']}). The divergence drops once a release after that date "
+                       "carries it; vendor/README.md says how.\n")
+        elif fix["state"] == "closed":
+            out.append(f"**Upstream fix: closed without merging**: {fix['url']} ({fix['title']}). "
+                       "The divergence has no upstream home now; vendor/README.md's drop condition "
+                       "needs a decision.\n")
+        else:
+            out.append(f"**Upstream fix: still open**: {fix['url']} ({fix['title']}).\n")
 
     return "\n".join(out).rstrip() + "\n"
 
@@ -332,7 +406,17 @@ for pin_path in pins:
         behind = True
         print(f"  behind: {len(git['commits'])} non-merge commit(s) upstream", file=sys.stderr)
 
-    sections.append(render(pin, releases, git, patched_files(pin)))
+    try:
+        fix = upstream_fix(pin)
+    except Unreachable as e:
+        print(f"  {e.kind}: {e}", file=sys.stderr)
+        failures.append(e)
+        fix = "unchecked"
+    if isinstance(fix, dict) and fix["state"] != "open":
+        behind = True
+        print(f"  behind: the upstream fix is {fix['state']}", file=sys.stderr)
+
+    sections.append(render(pin, releases, git, patched_files(pin), fix))
 
 report = HEADER + "\n" + "\n".join(sections)
 

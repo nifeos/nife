@@ -97,6 +97,7 @@ pub(crate) fn std_src() -> bool {
 
     if !std_apply_overlay()
         || !std_generate_modules()
+        || !std_generate_talc()
         || !std_patch_dispatch()
         || !std_patch_size_hint()
     {

@@ -2,8 +2,8 @@
 //! files, clock and memory)).
 //!
 //! relibc's own allocator (dlmalloc over `mmap`) is not seeded. §31 (the foreign-language seam)
-//! rule 4 already tied a C program's heap to `crates/user_mode_heap`, and on nife that is
-//! what `std`'s `GlobalAlloc` is (notes/std.md), so C and Rust in one process share one heap and
+//! rule 4 already tied a C program's heap to the one heap algorithm `std`'s `GlobalAlloc` runs
+//! (`talc`, notes/std.md), so C and Rust in one process share one heap and
 //! one budget.
 //!
 //! C's `free` is given a pointer and nothing else, and `std::alloc::dealloc` needs the layout back.

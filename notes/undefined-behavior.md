@@ -17,7 +17,7 @@ The rest of the tree's analysis surface cannot see that class, and Miri is its t
 proofs and the fuzzers ([interleaving.md](interleaving.md) is the fourth). Kani proves the properties it is
 asked about; the fuzzers see crashes and hangs; clippy sees shapes; the type system stops at every
 `unsafe` block. There are 224 `unsafe` occurrences under `crates/`, concentrated in `ipc`,
-`user_mode_heap`, `intrusive_fifo`, `virtio`, and `paging`, and an aliasing bug in one of them passes every
+`intrusive_fifo`, `virtio`, and `paging`, and an aliasing bug in one of them passes every
 existing gate while being real UB on every target. Miri is the one tool here whose whole job is
 that class, and the first full run proved the point: it found two genuine UB defects in
 `user_mode_heap`, both invisible to 60 passing native tests.
@@ -190,9 +190,7 @@ adds it itself on a machine bootstrapped before milestone 79.
 
 - Miri judges only executed paths. An `unsafe` block without a test is not "Miri-clean", it is
   unvisited. The coverage floor is the guard on that gap, and it is a floor, not totality.
-- `-Zmiri-strict-provenance` is not on, and for `user_mode_heap` it never can be: the allocator's
-  cross-donation coalescing is inherently expose-and-reclaim (finding 2 above). The roadmap block
-  named strict provenance as a later ratchet; if it is ever tried, it needs a per-crate carve-out.
+- `-Zmiri-strict-provenance` is not on. The roadmap block named it as a later ratchet.
 - The weekly cadence means a regression can live on `main` for up to a week before CI sees it.
   `script/undefined-behavior-check -p <crate>` before pushing `unsafe` changes is a habit, not a gate; nothing
   enforces it.

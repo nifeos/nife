@@ -1,10 +1,11 @@
 //! The System allocator for nife: the untyped-backed heap, inside std.
 //!
-//! The algorithm is `crates/user_mode_heap`, generated verbatim into `user_mode_heap.rs` next door by
-//! `cargo xtask std-src` (so the host-tested source is the only source). This file is the same
-//! policy layer as `user_mode_runtime::heap::MemoryRegionHeap`, re-stated for std because std cannot depend on
-//! the out-of-tree crate: a spinlock, lazy wiring to the untyped in slot 0, and grow-on-demand
-//! by `memory_region::MAP` at the top of the committed range.
+//! The algorithm is `talc`'s core, generated into `talc/` next door by `cargo xtask std-src` from
+//! the version `Cargo.lock` pins (milestone 784 (reuse what the tree wrote), item d), so std runs
+//! the same allocator `user_mode_runtime` takes from crates.io. This file is the same policy layer as
+//! `memory_region_heap::MemoryRegionHeap`, re-stated for std because std cannot depend on the
+//! out-of-tree crate: a spinlock, lazy wiring to the untyped in slot 0, and grow-on-demand by
+//! `memory_region::MAP` at the top of the committed range.
 //!
 //! Lazy, because std has no moment where a program says "init the heap": the first allocation
 //! (often std's own rt setup) simply finds committed == 0 and grows. A program whose slot 0 is
@@ -28,9 +29,12 @@ use crate::sys::thread_local::key::nife as tls;
 // Generated whole from the crate; its counters and bound are the host tests', hence the allow.
 #[allow(dead_code)]
 pub(crate) mod allocation_cache;
-mod user_mode_heap;
+// Upstream code, written to talc's edition and lints rather than std's: std denies an unsafe
+// operation outside an `unsafe` block, and talc's `unsafe fn` bodies are written without them.
+#[allow(unsafe_op_in_unsafe_fn, dead_code)]
+mod talc;
 
-use allocation_cache::{Cache, GRID, class, class_bytes};
+use allocation_cache::{Cache, class, class_layout, heap_layout};
 
 mod heap;
 mod thread_cache;

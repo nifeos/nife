@@ -52,6 +52,12 @@ import tomllib
 # Every entry is a finding: a file nothing declares, kept so the check can land green. One reason per
 # line. An entry that stops being an orphan fails the check, so this list can only shrink honestly.
 ALLOWLIST = {
+    'vendor/talc/src/ext.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); no `mod ext` anywhere upstream",
+    'vendor/talc/src/source/vheaps.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); upstream comments out its `mod` (`// pub mod vheaps;`)",
+    'vendor/talc/src/source/vheaps/unix.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); upstream comments out its `mod`, as its parent's is",
+    'vendor/talc/src/source/vheaps/win.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); upstream comments out its `mod`, as its parent's is",
+    'vendor/talc/src/sync/unix.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); upstream comments out its `mod` (`// pub mod unix;`)",
+    'vendor/talc/src/sync/win.rs': "upstream talc 5.1.1's own, vendored unchanged (vendor/README.md); upstream comments out its `mod` (`// pub mod win;`)",
 }
 
 

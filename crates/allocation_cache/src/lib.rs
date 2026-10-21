@@ -1,15 +1,17 @@
 //! **`allocation_cache`**: a bounded stash of freed blocks in front of the shared heap, so most
-//! allocations never take the heap's lock. The algorithm only, like `user_mode_heap`: it never locks,
-//! maps or reads a CPU id, and its owner decides who touches it. `std` gives each thread one, and
+//! allocations never take the heap's lock. The algorithm only: it never locks, maps or reads a CPU
+//! id, and its owner decides who touches it. `std` gives each thread one, and
 //! `cargo xtask std-src` generates this file into `std` as `sys/alloc/nife/allocation_cache.rs`.
 //!
 //! **One thread owns a cache, never a CPU.** Without `rseq`, a thread preempted mid-pop hands its
 //! core, and a per-CPU list, to another thread, so a per-CPU list needs an atomic on every operation.
 //! A per-thread cache needs none. `notes/std/allocation.md` has the argument and the measurement.
 //!
-//! A class is an effective size on `user_mode_heap`'s grid ([`GRID`]), up to [`LARGEST`]. Only
-//! requests aligned to at most the grid are cached. The heap knows a block's size from the size
-//! alone, so blocks of a class are fungible: any one serves, and is freed under, any such request.
+//! A class is a block size on a 16-byte grid ([`GRID`]), up to [`LARGEST`]. Only requests aligned
+//! to at most the grid are cached. Every block of a class comes from the heap, and goes back to it,
+//! under one layout, [`class_layout`], so blocks of a class are fungible: any one serves any request
+//! of its class. That holds only if the owner never hands the heap a cached-size request under its
+//! own layout, cache or no cache, which is what [`heap_layout`] is for.
 //!
 //! # Examples
 //!
@@ -39,10 +41,10 @@
 
 #![no_std]
 
+use core::alloc::Layout;
 use core::ptr::NonNull;
 
-/// The allocation grid, restated from `user_mode_heap::MIN_ALIGN` because the two files become
-/// sibling modules inside `std` and may not depend on each other. A host test holds them equal.
+/// The size step between classes, and the most alignment a cached request may ask for.
 pub const GRID: usize = 16;
 
 /// The largest effective size a cache holds.
@@ -67,7 +69,6 @@ pub const fn class(size: usize, align: usize) -> Option<usize> {
     if align > GRID {
         return None;
     }
-    // Rounded exactly as `user_mode_heap::effective_size` rounds, zero included.
     let effective = if size == 0 {
         GRID
     } else {
@@ -82,6 +83,38 @@ pub const fn class(size: usize, align: usize) -> Option<usize> {
 /// The effective size of a class's blocks.
 pub const fn class_bytes(class: usize) -> usize {
     (class + 1) * GRID
+}
+
+/// The layout every block of `class` is allocated from, and freed to, the heap under.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc, the name std's thread cache gave it.
+pub const fn class_layout(class: usize) -> Layout {
+    // SAFETY: a nonzero multiple of `GRID`, a power of two, aligned to `GRID`.
+    unsafe { Layout::from_size_align_unchecked(class_bytes(class), GRID) }
+}
+
+/// **The layout to give the heap for `layout`**, at both ends of an allocation: its class's when it
+/// has one, whether or not a cache is there to serve it, and otherwise `layout` itself, made at
+/// least one byte, since a heap may refuse an empty layout.
+///
+/// A block can be allocated before its thread has a cache and freed into one afterward, and the
+/// cache then treats it as [`class_bytes`] long. A heap that rounds sizes its own way (`talc` adds a
+/// tag and a 32-byte chunk) would have given a 17-byte request fewer bytes than its class's 32, so
+/// the uncached path has to ask for the class's layout too.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc.
+pub const fn heap_layout(layout: Layout) -> Layout {
+    match class(layout.size(), layout.align()) {
+        Some(c) => class_layout(c),
+        // SAFETY: `layout`'s own alignment, and a size of at least one byte that cannot overflow
+        // it (`layout.size()` was valid and one is the least valid size).
+        None => unsafe {
+            Layout::from_size_align_unchecked(
+                if layout.size() == 0 { 1 } else { layout.size() },
+                layout.align(),
+            )
+        },
+    }
 }
 
 /// A cached block's first word, linking it to the next block of its class.
@@ -215,20 +248,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_grid_is_the_heaps() {
-        assert_eq!(GRID, user_mode_heap::MIN_ALIGN);
-        for size in 0..=LARGEST + GRID {
-            for align in [1, 2, 4, 8, 16] {
-                let l = Layout::from_size_align(size, align).unwrap();
-                match class(size, align) {
-                    Some(c) => assert_eq!(class_bytes(c), user_mode_heap::effective_size(l)),
-                    None => assert!(user_mode_heap::effective_size(l) > LARGEST),
-                }
-            }
-        }
-    }
-
-    #[test]
     fn the_bound_is_what_a_full_cache_holds() {
         let mut arena: Vec<u128> = std::vec![0; MOST_CACHED_BYTES / GRID];
         let base = arena.as_mut_ptr().cast::<u8>();
@@ -252,6 +271,22 @@ mod tests {
         cache.drain(|_, _| n += 1);
         assert_eq!(n, CLASSES * DEPTH);
         assert_eq!(cache.cached_bytes(), 0);
+    }
+
+    /// A request with no class reaches the heap exactly as asked, because the heap frees it under
+    /// the same layout and only a class's blocks are fungible. The one change is an empty layout,
+    /// over-aligned past the grid, which becomes one byte, since talc refuses an empty one.
+    #[test]
+    fn an_uncached_request_reaches_the_heap_as_asked_unless_empty() {
+        for (size, align) in [(LARGEST + 1, 8), (4096, 4096), (1, 2 * GRID)] {
+            let l = Layout::from_size_align(size, align).unwrap();
+            assert_eq!(heap_layout(l), l);
+        }
+        let empty = Layout::from_size_align(0, 2 * GRID).unwrap();
+        assert_eq!(
+            heap_layout(empty),
+            Layout::from_size_align(1, 2 * GRID).unwrap()
+        );
     }
 
     /// The classes stop exactly at [`LARGEST`]: its class is the last one, so no class is sized
@@ -293,16 +328,29 @@ mod tests {
         assert_eq!(empty.count(0), DEPTH / 2);
     }
 
-    /// The test that matters: a cache in front of a real `user_mode_heap`, driven by a random
-    /// mix of allocations and frees with refills and spills, never hands out a block twice and gives
-    /// every byte back, coalesced, at the end.
+    /// The test that matters: a cache in front of the heap std really uses, `talc`, driven by a
+    /// random mix of allocations and frees with refills and spills, never hands out a block twice,
+    /// never hands one out shorter than its class, and gives every byte back, coalesced, at the end.
+    ///
+    /// One allocation in four goes to the heap directly under [`heap_layout`], as a thread without
+    /// a cache does, and every free goes through the cache. That is the case a heap that rounds its
+    /// own way breaks: a block allocated under its own layout, then cached as its class's size.
+    /// The heap is claimed in two runs, as the runtime grows it, so `extend` is walked too.
     #[test]
     fn a_cache_in_front_of_the_heap_never_hands_out_a_block_twice() {
+        use talc::base::Talc;
+        use talc::base::binning::DefaultBinning;
+        use talc::source::Manual;
+
         const ARENA: usize = 64 * 1024;
         let mut arena: Vec<u128> = std::vec![0; ARENA / GRID];
-        let mut heap = user_mode_heap::Heap::new();
-        // SAFETY: `arena` is ours, grid-aligned, and outlives `heap`.
-        unsafe { heap.add_region(arena.as_mut_ptr().cast(), ARENA) };
+        let base = arena.as_mut_ptr().cast::<u8>();
+        let mut heap = Talc::<Manual, DefaultBinning>::new(Manual);
+        // SAFETY: `arena` is ours and outlives `heap`, and the second run continues the first.
+        unsafe {
+            let end = heap.claim(base, ARENA / 2).unwrap();
+            heap.extend(end, base.wrapping_add(ARENA));
+        }
         let mut cache = Cache::new();
         let mut live: Vec<(NonNull<u8>, Layout)> = Vec::new();
         let mut seen = HashSet::new();
@@ -322,25 +370,32 @@ mod tests {
                 let size = (r >> 8) as usize % (LARGEST + 1);
                 let l = Layout::from_size_align(size, 8).unwrap();
                 let c = class(size, 8).unwrap();
-                let p = match cache.take(c) {
-                    Some(p) => p,
-                    None => {
-                        // SAFETY: the heap's blocks are its class's size and grid-aligned.
-                        unsafe {
-                            cache.refill(c, || {
-                                heap.alloc(Layout::from_size_align(class_bytes(c), 8).unwrap())
-                            })
-                        };
-                        match cache.take(c) {
-                            Some(p) => p,
-                            None => continue, // the arena is full; fine
+                let p = if r % 4 == 1 {
+                    // SAFETY: `heap_layout` is never empty.
+                    match unsafe { heap.try_allocate(heap_layout(l)) } {
+                        Some(p) => p,
+                        None => continue, // the arena is full; fine
+                    }
+                } else {
+                    match cache.take(c) {
+                        Some(p) => p,
+                        None => {
+                            // SAFETY: each block is the heap's, allocated under its class's layout.
+                            unsafe {
+                                cache.refill(c, || heap.try_allocate(class_layout(c)));
+                            }
+                            match cache.take(c) {
+                                Some(p) => p,
+                                None => continue,
+                            }
                         }
                     }
                 };
                 assert!(seen.insert(p), "a block was handed out while live");
-                // SAFETY: a live block of at least `size` bytes; writing all of it would trip Miri
-                // on any overlap with another live block or with a cache link.
-                unsafe { core::ptr::write_bytes(p.as_ptr(), 0xa5, size) };
+                // SAFETY: a live block of `class_bytes(c)` bytes, which is what the cache will
+                // hand it out as once it is freed; writing all of it would overwrite the heap's
+                // tag above a block that was short, which the heap's debug checks then catch.
+                unsafe { core::ptr::write_bytes(p.as_ptr(), 0xa5, class_bytes(c)) };
                 live.push((p, l));
             } else {
                 let (p, l) = live.swap_remove((r >> 8) as usize % live.len());
@@ -348,10 +403,9 @@ mod tests {
                 let c = class(l.size(), l.align()).unwrap();
                 // SAFETY: `p` is live, ours, of class `c`.
                 if let Err(p) = unsafe { cache.put(c, p) } {
-                    // SAFETY: each spilled block was cached as class `c`, so `class_bytes(c)` is
-                    // what it owns in the heap.
+                    // SAFETY: each spilled block came from the heap under `class_layout(c)`.
                     cache.spill(c, |b| unsafe {
-                        heap.dealloc(b, Layout::from_size_align(class_bytes(c), 8).unwrap());
+                        heap.deallocate(b.as_ptr(), class_layout(c));
                     });
                     // SAFETY: as the first `put`; the spill made room.
                     assert!(unsafe { cache.put(c, p) }.is_ok());
@@ -359,14 +413,16 @@ mod tests {
             }
         }
         for (p, l) in live.drain(..) {
-            // SAFETY: live blocks from this heap, freed once, under their own layouts.
-            unsafe { heap.dealloc(p, l) };
+            // SAFETY: live blocks from this heap, freed once, under the layout the heap gave them.
+            unsafe { heap.deallocate(p.as_ptr(), heap_layout(l)) };
         }
-        // SAFETY: as above, with the class size every cached block was given back under.
-        cache.drain(|c, b| unsafe {
-            heap.dealloc(b, Layout::from_size_align(class_bytes(c), 8).unwrap());
-        });
-        assert_eq!(heap.free_bytes(), ARENA);
-        assert_eq!(heap.block_count(), 1, "everything given back coalesces");
+        // SAFETY: as above, with the class layout every cached block was allocated under.
+        cache.drain(|c, b| unsafe { heap.deallocate(b.as_ptr(), class_layout(c)) });
+        let counters = heap.counters();
+        assert_eq!(counters.allocation_count, 0);
+        assert_eq!(
+            counters.fragment_count, 1,
+            "everything given back coalesces"
+        );
     }
 }

@@ -19,9 +19,9 @@ commit only), so the `Reuse:` lines below use the ruling's terms and should be c
 landed wording. Title and slug are drafts.
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a), (e), (f2) and (g) are built, on calef's approvals of `httparse` (2026-10-18
-UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `object` (2026-10-21 UTC). Item (d) is
-ruled to take `talc` (2026-10-21 UTC). Items (f) and (h) are refused.
+under §46. Items (a), (d), (e), (f2) and (g) are built, on calef's approvals of `httparse`
+(2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `talc` and `object` (both
+2026-10-21 UTC). Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -107,7 +107,7 @@ input drivers accept because they sit behind the IOMMU. rcore-os/virtio-drivers#
 validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiserror`, `enumn`,
 `log`, `bitflags`.
 
-4. RULED: `talc` replaces `user_mode_heap`, item (d); see Follow-on.
+4. BUILT: `talc` replaces `user_mode_heap`, item (d); see Follow-on.
 
 5. BUILT: `uefi_loader` binds UEFI through `r-efi` 7.1.0, item (e); see Follow-on.
 
@@ -205,7 +205,7 @@ on the customer path.
   *"a′ but no releases since March isn't promising as a dependency"*; *"Treat the wait as part of
   the gate."*). Only then (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone,
   each with a `script/bench` number before and after on all three architectures.
-- (d) RULED: `talc` replaces `user_mode_heap`, in `user_mode_runtime` and generated into std.
+- (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
@@ -240,8 +240,8 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program's stdin is a byte stream when the line redirects or pipes one, at
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
-- **Outstanding.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
-  everywhere, std included; not yet in `Cargo.lock` (checked that day).
+- **Done.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1 is the heap
+  everywhere, carrying SFBdragon/talc#57 until a release does (#2498).
 - **Done.** Item (g), 2026-10-21 (UTC), nifeos/nife#2497, on calef's "B" on #2490. `object`
   0.40.0 does the ELF and PE work in `xtask/src/portable_executable.rs`; our policy stays. Gate:
   `cargo xtask stick-boot`, all three firmwares. Milestone 821 (`portable_executable`: an

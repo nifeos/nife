@@ -78,7 +78,7 @@ hosttest = ["redoxfs/std", "redox_syscall/std"]
 # The EL0 binary's world: the userspace runtime and the ABI constants. Enabled only for the target
 # build, which also drops the default (`--no-default-features --features el0`), so the pure no_std
 # core is what links into the kernel image.
-el0 = ["dep:user_mode_runtime"]
+el0 = ["dep:user_mode_runtime", "dep:memory_region_heap"]
 
 # The initial ramdisk carries this binary's ELF, so keep it small and deterministic (the same knobs
 # std_exerciser uses). Only the target build uses the release profile; host tests use dev and unwind.
@@ -103,10 +103,10 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # The vendored engine, no default features: the pure no_std core (creation APIs stay host-side).
 redoxfs = { path = "../vendor/redoxfs", default-features = false }
-# The untyped heap's ALGORITHM (the EL0 binary uses it through user_mode_runtime::heap). Depended on directly so
+# The untyped heap's ALGORITHM (the EL0 binary uses it through memory_region_heap). Depended on directly so
 # the `second_mount` host repro can run the engine under the same allocator, capped the same way, with
-# no syscalls and no emulator. Tiny and no_std, so it is harmless in the el0 build too.
-user_mode_heap = { version = "0.1.0", path = "../crates/user_mode_heap" }
+# no syscalls and no emulator. no_std, and already in the el0 build through memory_region_heap.
+talc = { version = "5.1.1", default-features = false }
 # The same redox_syscall (lib name `syscall`) RedoxFS uses, so our Server's `syscall::error::Result`
 # is byte-for-byte the trait's. Cargo unifies the two at one version.
 redox_syscall = { version = "0.9.0", default-features = false }
@@ -128,6 +128,8 @@ globally_unique_identifier_partition_table = { version = "0.1.0", path = "../cra
 # absent from the host test build. (`abi` went with milestone 706 (a `CALL` server can tell a Reply
 # from a delegation): the server's one raw `REPLY` became `user_mode_runtime::reply`.)
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime", optional = true }
+# The heap the EL0 binaries allocate from, beside the runtime for the same reason.
+memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap", optional = true }
 
 # cargo-machete (script/lint) reports `redox_syscall` unused here and is wrong: the crate's LIB name
 # is `syscall`, so every real use reads `use syscall::error::...` and a name-based scan cannot see
@@ -135,3 +137,9 @@ user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime", o
 # time and the alternative is a gate somebody learns to skip.
 [package.metadata.cargo-machete]
 ignored = ["redox_syscall"]
+
+# talc 5.1.1 with upstream's fit-check fix, SFBdragon/talc#57, vendored until a release carries it
+# (calef, 2026-10-21 UTC, on #2498). Every workspace whose graph holds talc patches it the same way,
+# so no build links the unpatched crate. vendor/README.md has the drop condition.
+[patch.crates-io]
+talc = { path = "../vendor/talc" }

@@ -36,8 +36,14 @@ dependencies = [
 name = "allocation_cache"
 version = "0.1.0"
 dependencies = [
- "user_mode_heap",
+ "talc",
 ]
+
+[[package]]
+name = "allocator-api2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c880a97d28a3681c0267bd29cff89621202715b065127cd445fa0f0fe0aa2880"
 
 [[package]]
 name = "argon2"
@@ -245,6 +251,7 @@ dependencies = [
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "non_volatile_memory_express",
@@ -541,6 +548,7 @@ dependencies = [
  "line_editor",
  "loaded_image_check",
  "login_contract",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "schedule_store",
@@ -821,6 +829,15 @@ name = "loaded_image_check"
 version = "0.1.0"
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -895,6 +912,16 @@ name = "memory_corruption_canary_gate"
 version = "0.1.0"
 dependencies = [
  "loom",
+]
+
+[[package]]
+name = "memory_region_heap"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "talc",
+ "user_mode_runtime",
 ]
 
 [[package]]
@@ -1081,6 +1108,12 @@ name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
+
+[[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "screen_console"
@@ -1363,6 +1396,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "talc"
+version = "5.1.1"
+dependencies = [
+ "allocator-api2",
+ "lock_api",
+]
+
+[[package]]
 name = "test_times"
 version = "0.1.0"
 
@@ -1561,20 +1602,14 @@ name = "usb"
 version = "0.1.0"
 
 [[package]]
-name = "user_mode_heap"
-version = "0.1.0"
-
-[[package]]
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "user_mode_heap",
 ]
 
 [[package]]

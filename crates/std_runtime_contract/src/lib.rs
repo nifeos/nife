@@ -182,7 +182,7 @@ pub const CATALOG_PAGE: u64 = 0x1600_0000;
 pub const INDEX_SOURCES_PAGE: u64 = 0x1700_0000;
 
 /// Where the heap starts: the start of the address-space map's heap band, and the same value as
-/// `user_mode_runtime::heap::DEFAULT_BASE`.
+/// `memory_region_heap::DEFAULT_BASE`.
 pub const HEAP_BASE: u64 = 0x4000_0000;
 /// The heap's growth cap: the heap band's whole width. Only a bound on the address range: the
 /// budget in [`MEMORY_REGION_SLOT`] is the real, per-program limit.

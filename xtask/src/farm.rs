@@ -30,7 +30,7 @@ use crate::host::{capture, run, workspace_root};
 const TOOLCHAIN_PREFIX: &str = "nife-dev-";
 
 /// Bump to force every farm to rebuild after a change to the patch logic itself (not the inputs).
-const STD_SRC_PATCH_VERSION: u32 = 14;
+const STD_SRC_PATCH_VERSION: u32 = 15;
 
 // **The verbs and their helpers, one child each** (2026-10-12 UTC, for §266 (a Rust source file
 // stays under 2,000 lines) and §282 (when a file is split, the parent becomes an index)). Each
