@@ -39,7 +39,7 @@
 //!   fact this boot reports rather than assumes, and nothing here writes to one.
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
-use designware_mobile_storage::host::{Error, Host, Identity};
+use designware_mobile_storage::host::{Error, Host, Identity, Registers};
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::regs;
 use designware_mobile_storage::sd::{BLOCK, InitError, IoError, Kind};
@@ -237,6 +237,19 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         }
         Err(ReadFailure::Read(lba, e)) => {
             say!(slot, "read of block {lba} failed: {e:?}");
+            // TCBCNT counts bytes card to FIFO and TBBCNT FIFO to CPU: the CPU ahead of the card
+            // is an underrun, the card ahead with a full FIFO is an overrun.
+            let r = host.registers();
+            let (status, tcb, tbb) = (
+                r.read(regs::STATUS),
+                r.read(regs::TCBCNT),
+                r.read(regs::TBBCNT),
+            );
+            say!(
+                slot,
+                "at the failure: STATUS {status:#x} (FIFO holds {} words) TCBCNT {tcb} TBBCNT {tbb}",
+                (status >> 17) & 0x1fff
+            );
             return Outcome::ReadFailed(lba, e);
         }
         Ok(r) => r,
