@@ -127,6 +127,11 @@ ND = "ND"
 RTO = "RTO"
 synopsys = "synopsys"
 
+# `-DFAULT=TRUE`: CMake's `-D` on sel4bench's `FAULT` option, in the seL4 Foundation's published
+# build command, which bench/xenon-sel4bench/build.sh and its note quote verbatim (milestone 127
+# (the seL4 machine)).
+DFAULT = "DFAULT"
+
 [default.extend-identifiers]
 # Deliberate capitalisation inside prose, where the case is the emphasis: "Address Space
 # IDentifier". Same list as clippy.toml's doc-valid-idents, for the same reason.
