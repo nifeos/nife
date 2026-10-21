@@ -162,6 +162,10 @@ Mean prompt per request, from session records that are not in git. A turn costs 
 
 ![Milestones by status, and proposals waiting for a number](project-metrics/milestones.svg)
 
+<!-- week-notes: script/metrics writes this -->
+- 2026W43: the Recorded band fell from 7 to 0: calef retired the status on 2026-10-20 (#2467). 52 moved to Not started, 39 to Closed (replaced by a later milestone), 224, 199 and 244 to Closed (refused), and 263 and 626 to Built.
+<!-- /week-notes -->
+
 From the milestone blocks in `design/roadmap/`, with unnumbered proposals stacked on top as the
 eighth series: work identified and not yet entered into the roadmap, which unlike a provisional name
 is closer to debt. `REMOVED`, `SUPERSEDED` and `REFUSED` share one band; `milestones.csv` keeps
@@ -233,7 +237,7 @@ and wire-format value changes. [definitions](interface-stability.md),
 [per crate](project-metrics/interface-stability.md).
 
 <!-- interface-stability: script/metrics writes this -->
-interface, 2026W40 to 2026W43: 10 breaking changes (40 additions); 5 syscall numbers changed, 0 format bumps; 71% co-change.
+interface, 2026W40 to 2026W43: 11 breaking changes (40 additions); 5 syscall numbers changed, 1 format bumps; 71% co-change.
 <!-- /interface-stability -->
 
 ## The crates 857 releases

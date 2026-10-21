@@ -9,25 +9,25 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
 | `filesystem_contract` | 247 | 12 | 284 | 459 | 122 | 111 (91%) |
-| `grant_plan` | 202 | 343 | 277 | 1107 | 190 | 156 (82%) |
+| `grant_plan` | 202 | 343 | 277 | 1107 | 192 | 158 (82%) |
 | `installed_programs` | 77 | 59 | 77 | 94 | 35 | 30 (86%) |
 | `globally_unique_identifier_partition_table` | 63 | 3 | 91 | 281 | 42 | 33 (79%) |
 | `login_contract` | 22 | 66 | 30 | 91 | 38 | 37 (97%) |
 | `package_archive` | 19 | 38 | 19 | 129 | 27 | 20 (74%) |
-| `socket_contract` | 17 | 27 | 20 | 70 | 35 | 33 (94%) |
+| `socket_contract` | 17 | 37 | 20 | 80 | 38 | 35 (92%) |
 | `line_editor` | 14 | 37 | 15 | 140 | 47 | 39 (83%) |
 | `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
-| `abi` | 11 | 54 | 41 | 170 | 117 | 110 (94%) |
+| `abi` | 11 | 67 | 41 | 183 | 123 | 115 (93%) |
 | `hot_swap_contract` | 11 | 13 | 19 | 126 | 53 | 52 (98%) |
 | `graphics_contract` | 10 | 2 | 19 | 33 | 33 | 33 (100%) |
 | `compositor` | 9 | 4 | 19 | 99 | 38 | 31 (82%) |
 | `credential_contract` | 8 | 5 | 36 | 70 | 37 | 34 (92%) |
+| `current_cpu_contract` | 7 | 6 | 7 | 19 | 19 | 10 (53%) |
 | `byte_sink_contract` | 5 | 10 | 7 | 48 | 32 | 32 (100%) |
 | `capability_manifest_note` | 4 | 56 | 4 | 78 | 30 | 22 (73%) |
 | `clock_contract` | 3 | 2 | 6 | 54 | 32 | 29 (91%) |
 | `entropy_contract` | 3 | 3 | 4 | 18 | 26 | 24 (92%) |
-| `current_cpu_contract` | 3 | 4 | 3 | 17 | 17 | 9 (53%) |
-| `std_runtime_contract` | 3 | 10 | 3 | 27 | 17 | 16 (94%) |
+| `std_runtime_contract` | 3 | 11 | 3 | 28 | 19 | 18 (95%) |
 | `nifefs` | 2 | 0 | 9 | 41 | 44 | 32 (73%) |
 | `measured_boot` | 2 | 24 | 2 | 65 | 26 | 21 (81%) |
 | `counter_frequency_contract` | 1 | 0 | 2 | 15 | 19 | 16 (84%) |
@@ -38,12 +38,12 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 | `elf` | 0 | 0 | 3 | 82 | 48 | 38 (79%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `address_space_map` | 0 | 0 | 0 | 42 | 0 | 0 |
-| `allocation_cache` | 0 | 18 | 0 | 18 | 0 | 0 |
+| `allocation_cache` | 0 | 20 | 0 | 20 | 0 | 0 |
 | `boot_slot` | 0 | 4 | 0 | 52 | 16 | 12 (75%) |
 
 ## What broke in 2026W43
 
-Read at `f202d8b01ef6` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `f87c9b5c442c` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
 > - `compositor`: changed `MAX_SURFACE_BYTES`
@@ -51,6 +51,10 @@ Read at `f202d8b01ef6` against the week before. Each line is one removed or chan
 > - `compositor`: changed `SCREEN_H`
 > - `compositor`: changed `SCREEN_PIXELS`
 > - `compositor`: changed `SCREEN_W`
+> - `current_cpu_contract`: format bump `MAGIC`
+> - `current_cpu_contract`: changed `PAGE_BYTES`
+> - `current_cpu_contract`: changed `build_page`
+> - `current_cpu_contract`: changed `build_page_allowing`
 > - `grant_plan`: changed `ImageRefusal`
 > - `grant_plan`: changed `Manifest`
 > - `grant_plan`: changed `UNVOUCHED_MANIFEST`
