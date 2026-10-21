@@ -6,7 +6,7 @@ measurement behind these numbers is in [census.md](census.md). Both are the work
 
 ## The density outside `arch/`
 
-At most 51 <!--count-at-most:unsafe-density-outside-arch--> unsafe blocks per 10,000 lines
+At most 52 <!--count-at-most:unsafe-density-outside-arch--> unsafe blocks per 10,000 lines
 outside `kernel/src/arch/`. The direction is down, because unsafe outside `arch/` is not paying
 for hardware access. It is a raw syscall, a shared page, or a hand-rolled data structure, and each
 of those has a safe wrapper somebody could write. The ceiling was first written at a threshold the
@@ -30,6 +30,7 @@ Every move of this ceiling came behind a measured reduction. The rule each move 
 | 891 | 2026-10-12 | 61 to 60 | 60.83 | `static mut` buffers into atomics and a firmware allocation |
 | 11 | 2026-10-19 | 60 to 52 | 52.74 | raw `invoke` calls onto the runtime's wrappers; four test suites' repeated contracts into one type or helper each |
 | 12 | 2026-10-19 | 52 to 51 | 51.48 | six more test suites' repeated contracts into one helper, token or fixture method each |
+| 784(g) | 2026-10-21 | 51 to 52 | 52.17 | nothing; 818 safe lines left the denominator and no unsafe was added (calef, on #2497) |
 
 ## Round 1 chose the headroom
 
