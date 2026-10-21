@@ -56,11 +56,52 @@ mean and what they leave out.*
 | E48 | 2026-10-21 ~02:19 | radon | riscv64 | 4 | `cda4ceb55` | soak-test-reboot | 0.03 | 14,652 | 24 | clean | `bench/radon-2026-10-21/soak-reboot-draws.log` |
 | E49 | 2026-10-21 ~02:21 | radon | riscv64 | 4 | `cda4ceb55` | soak-test-reboot | 0.03 | 25,728 | 24 | clean | `bench/radon-2026-10-21/soak-reboot-draws.log` |
 | E50 | 2026-10-21 ~02:24 | radon | riscv64 | 4 | `cda4ceb55` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-21/soak-reboot-draws.log` and `soak-stop.log` |
+| E51 | 2026-10-21 ~17:55 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 10,223 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E52 | 2026-10-21 ~17:57 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 10,116 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E53 | 2026-10-21 ~17:59 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 65 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E54 | 2026-10-21 ~18:02 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 24,169 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E55 | 2026-10-21 ~18:04 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 23,988 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E56 | 2026-10-21 ~18:06 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 11,545 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E57 | 2026-10-21 ~18:09 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 25,733 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E58 | 2026-10-21 ~18:11 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 9,666 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E59 | 2026-10-21 ~18:13 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E60 | 2026-10-21 ~18:16 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 3,782 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E61 | 2026-10-21 ~18:18 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 20,344 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E62 | 2026-10-21 ~18:20 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 22 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E63 | 2026-10-21 ~18:23 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 21 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E64 | 2026-10-21 ~18:25 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 10,400 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E65 | 2026-10-21 ~18:27 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E66 | 2026-10-21 ~18:30 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 23,738 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E67 | 2026-10-21 ~18:32 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 9,681 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E68 | 2026-10-21 ~18:34 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 27,003 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E69 | 2026-10-21 ~18:37 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 10,100 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E70 | 2026-10-21 ~18:39 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 26,207 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E71 | 2026-10-21 ~18:41 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 3,863 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E72 | 2026-10-21 ~18:44 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 26,019 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E73 | 2026-10-21 ~18:46 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 24,180 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E74 | 2026-10-21 ~18:48 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 6,998 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E75 | 2026-10-21 ~18:51 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 23,655 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E76 | 2026-10-21 ~18:53 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 25,517 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E77 | 2026-10-21 ~18:55 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 17 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E78 | 2026-10-21 ~18:58 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 24,044 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E79 | 2026-10-21 ~19:00 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 23,833 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E80 | 2026-10-21 ~19:02 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 24,506 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E81 | 2026-10-21 ~19:05 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 25 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E82 | 2026-10-21 ~19:07 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 10,441 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E83 | 2026-10-21 ~19:09 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E84 | 2026-10-21 ~19:12 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 24,167 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E85 | 2026-10-21 ~19:14 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot | 0.03 | 27,358 | 24 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
+| E86 | 2026-10-21 ~19:16 | radon | riscv64 | 4 | `0e0866d93` | soak-test-reboot (not crossing) | 0.01 | 54 | 7 | clean | `bench/radon-2026-10-21/225-pmic-report-draws.log` |
 
 E26 through E50 are 2026-10-21's twenty-five reboot draws, one capture
 ([`../soak/radon-2026-10-21.md`](../soak/radon-2026-10-21.md)). E27's draw reset itself at about
 t=105 s without printing the kernel's reset sequence. It is `clean` by the rule above, which reads
 only the last beat; milestone 225 (run the soak on radon, argon and xenon)'s `BUGS` carries the reset.
+
+E51 through E86 are the same evening's later series, built at `0e0866d93`, each draw printing
+what the AXP15060 recorded (one capture, [`../soak/radon-2026-10-21-pmic.md`](../soak/radon-2026-10-21-pmic.md)).
+Twenty-eight crossed cores and add 491,341 crossings; eight never crossed and are excluded. Every
+reset was the kernel's, and E86 is cut at t=35 s when the console was unplugged.
 
 E5 through E7 are one bench evening, 2026-10-09 to 2026-10-10 (milestone 225's redraw boots,
 `bef2b40dc`, tree-identical to main `237cef6bc`). E5 is the 120-second draw of the rebooting soak that milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) ended. Between its last beat and E6's `U-Boot SPL` banner, the board reset itself through OpenSBI's PMIC write and came back. That is 592's green outcome. E6 began on the self-reboot's netboot fetch and ended at its watcher's deadline. The board then soaked unwatched for about 7 hours until E7; those crossings are not recorded and are not evidence. E7's boot followed one discarded boot from the card. Its fetch failed because radon's ethernet cable was unplugged (`phy_startup() failed: -110` on both controllers). That boot never reached a heartbeat and is not a row. Zero
