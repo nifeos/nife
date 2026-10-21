@@ -29,6 +29,6 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/proof-retrospective.md | Nothing mutates the subject code to see which harness goes red | Mutate subject code, not harnesses: does a proof harness fail when its subject breaks | M  |
 |  notes/user-proofs.md | editor editing ops (`insert_char`, `insert_newline`, `backspace`, `delete_at_cursor`) are the richest untrusted-input surface and out of Kani's reach | Make the editor's editing operations provable | L  |
 |  notes/walk-cost.md | `fs_walk` waits forever on a program that aborts (no end-of-stream marker); kernel `drain_sink` has the same gap | Make a walk and a drain end when the program aborts | S  |
-|  redoxfs_server/src/bin/redoxfs_server.rs | window 0 is shared by the shell, login, provisioner and progenitor, kept apart only by being blocked (milestone 599 BUILT covers jobs only) | Give the boot's long-lived filesystem clients their own windows | M  |
+|  redoxfs_server/src/bin/redoxfs_server.rs | window 0 is shared by the shell, login, provisioner and progenitor, kept apart only by being blocked (milestone 599 (A frame per filesystem client channel) BUILT covers jobs only) | Give the boot's long-lived filesystem clients their own windows | M  |
 |  roadmap 0606 | an aborting program never sends end-of-stream, so `fs_walk` and `drain_sink` wait forever | An aborting program sends its end marker | M  |
 |  roadmap 0790 | `VIRTIO_BLK_WRITE_ABANDON` may also be test-only; not checked for the feature gate | Gate the second blk attacker role | S  |

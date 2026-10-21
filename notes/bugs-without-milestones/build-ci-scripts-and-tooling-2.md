@@ -4,15 +4,15 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
-|  notes/cryptography-provider.md | `script/crate-probes` may use the wrong toolchain (in-repo build, RUSTUP_TOOLCHAIN only); the fifty probes and the 43/7 split of milestone 64 were never re-run | Re-run the fifty crate probes under the right toolchain | S  |
+|  notes/cryptography-provider.md | `script/crate-probes` may use the wrong toolchain (in-repo build, RUSTUP_TOOLCHAIN only); the fifty probes and the 43/7 split of milestone 64 (Enough `std` to run somebody else's crate) were never re-run | Re-run the fifty crate probes under the right toolchain | S  |
 |  notes/delegated-review.md | Cost of the 55 delegated reviews was not measured, so the adopt case has no price | Record what a delegated review costs | S  |
-|  notes/denominators.md | "// true" that swallows an outcome passes lint; selectors inside run: blocks are ungated (milestone 401, BUILT, called an unclosed convention) | Gate "// true" and run:-block selectors | M  |
+|  notes/denominators.md | "// true" that swallows an outcome passes lint; selectors inside run: blocks are ungated (milestone 401 (A gate that selects the set it judges can pass by checking nothing), BUILT, called an unclosed convention) | Gate "// true" and run:-block selectors | M  |
 |  notes/doc-coverage.md | A crate can drop `#![warn(missing_docs)]` by deleting a line; new crates not required to adopt it. Cost is a second clippy pass | Lint requires `missing_docs` on clean and new crates | M  |
 |  notes/empty-selectors.md | `--exclude` and `.cargo/mutants.toml` exclusion globs that match nothing are silently accepted | Fail on stale exclusion globs | M  |
 |  notes/falsification.md | A harness's model of its caller is never re-read; stays green after the kernel drops the guard | Expire or re-check harness caller models | M  |
 |  notes/falsification.md | `falsifications.yml` concurrency group has no ref, so a hand dispatch cancels another branch's sweep | Per-ref concurrency for falsification dispatch | S  |
 |  notes/falsification.md | No lint requiring `kani::cover!`; 23 sites in 4 of 24 harness crates ("wants a lane") | Vacuity guard for Kani harnesses | M  |
-|  notes/falsification.md | Kernel `#[test_case]` falsifications are recorded but unswept; milestone 210 landed, "a lane rather than a limitation now" | Weekly sweep replays kernel test_case falsifications | M  |
+|  notes/falsification.md | Kernel `#[test_case]` falsifications are recorded but unswept; milestone 210 (No kernel test can be run by name, so one falsification costs a whole suite) landed, "a lane rather than a limitation now" | Weekly sweep replays kernel test_case falsifications | M  |
 |  notes/framebuffer-contract.md | Referee's red report says "the compositor test passed" for every unmatched picture even when the guest panicked first | Scanout referee stops asserting the compositor test passed | S  |
 |  notes/host-recovery/devices-and-partitions.md | Backup GPT is not consulted when the primary header is damaged | Fall back to the backup GPT | S  |
 |  notes/host-recovery/devices-and-partitions.md | Recovery tool never run against a real raw device (`/dev/rdiskN`, zero metadata length) | Run the recovery tool against a real raw device | S  |
@@ -51,7 +51,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/system-tests-and-the-kernel-crate.md (check 13, dead-code bullets) | Check 13 counts a cfg(test)-only use as production and ignores names in strings; x86_64 test build not dead-code gated | Tighten lint check 13; gate dead code on the x86_64 test build | S  |
 |  notes/system-tests-and-the-kernel-crate.md (first bullet) | Five service crates remain kernel dependencies pending #1389's division | Divide the five service crates out of kernel dependencies | M  |
 |  notes/trusted-base.md (six-category audit bullet) | "No allocator in kernel" and "no pointer crosses the boundary" are read, not gated; a new syscall could reintroduce either | Gate the trusted-base categories (allocator, pointers at the syscall edge) | M  |
-|  notes/tsc-under-tcg.md (qemu-bounded bullet) | `helpers/qemu-bounded.sh` leaves `qemu-system-x86_64` orphaned when the output consumer exits early (milestone 226 is BUILT) | Reproduce and fix the early-consumer orphan in `qemu-bounded.sh` | S  |
+|  notes/tsc-under-tcg.md (qemu-bounded bullet) | `helpers/qemu-bounded.sh` leaves `qemu-system-x86_64` orphaned when the output consumer exits early (milestone 226 (`qemu-bounded.sh` leaves an emulator behind, and the next run blames the wro) is BUILT) | Reproduce and fix the early-consumer orphan in `qemu-bounded.sh` | S  |
 |  notes/uefi-boot-two-core-rate.md (+ notes/x86-uefi-boot.md "suite runs one core") | `uefi-test` leg still boots one core under OVMF; two-core suite is unmeasured | Flip the uefi-test leg to two cores, measure, keep what the number earns | S  |
 |  notes/undefined-behavior.md | `cfg(miri)` sample domains have no completeness pin except `glob`, so they can shrink silently | Pin the size of every Miri sample domain | S  |
 |  notes/undefined-behavior.md | Miri is weekly only; running it on a PR that touches `unsafe` is a habit, not a gate | Run Miri per pull request on crates whose unsafe changed | M  |
@@ -60,7 +60,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/working-from-a-cloud-session.md | no cloud session has run `script/test` on the pinned QEMU; whether it can push outside `claude/` is unrecorded (two entries merged) | Record a cloud session's `script/test` run and push limits | S  |
 |  notes/working-from-a-cloud-session.md | nothing reports a cloud container that died with unpushed work (no launchd-watcher equivalent) | Report a dead cloud session's unpushed work | M  |
 |  notes/x86-uefi-boot.md | a hand-made stick can carry a stale `.efi` and nothing says so | Check a boot stick's `.efi` against the build | S  |
-|  roadmap 0583 | gloss key ignores the letter, so milestone 19d rides on 19's gloss | The citation gloss key is letter-aware | S  |
+|  roadmap 0583 | gloss key ignores the letter, so milestone 19d (Run a real workload) rides on 19's gloss | The citation gloss key is letter-aware | S  |
 |  roadmap 0587 | weak-host argument for the QEMU legs is recalled, never measured (needs a deliberately broken ordering) | A weak-host QEMU leg is proven by a seeded ordering bug | M  |
 |  roadmap 0597 | nothing writes the note.o a foreign build must link to carry a note | A tool emits the manifest-note object | M  |
 |  roadmap 0611 | dev-dependencies unchecked and per-program check reads source text (note's BUGS) | Package-boundary check covers dev-dependencies | S  |
