@@ -266,7 +266,7 @@ impl<S: RegisterSpace> Ns16550<S> {
         }
     }
 
-    /// IER, IIR, LSR and the DesignWare USR (index 31), for milestone 890's probe.
+    /// IER, IIR, LSR and the DesignWare USR (index 31), for milestone 890 (riscv64 and x86_64 join the shared boot path)'s probe.
     #[cfg(feature = "plic_completion_probe")]
     pub(crate) fn probe_registers(&self) -> [u8; 4] {
         // USR exists only on the DesignWare part; QEMU's block is eight bytes long.

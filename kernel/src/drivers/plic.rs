@@ -85,7 +85,7 @@ fn write(off: usize, val: u32) {
     unsafe { core::ptr::write_volatile((base() + off) as *mut u32, val) }
 }
 
-/// A raw PLIC register read, for milestone 890's probe.
+/// A raw PLIC register read, for milestone 890 (riscv64 and x86_64 join the shared boot path)'s probe.
 #[cfg(feature = "plic_completion_probe")]
 pub(crate) fn probe_read(off: usize) -> u32 {
     read(off)

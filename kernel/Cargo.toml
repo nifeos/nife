@@ -250,7 +250,7 @@ system_tests = [
 # sifive_test finisher, so the test exit prints a UART marker and calls SBI SRST shutdown
 # instead of storing to a nonexistent MMIO word. See notes/visionfive2.md.
 board = []
-# Milestone 890's bench probe (temporary, reverted before merge): every 5 s, print the
+# Milestone 890 (riscv64 and x86_64 join the shared boot path)'s bench probe (temporary, reverted before merge): every 5 s, print the
 # console UART's IER/IIR/LSR/USR and the PLIC's pending and enable bits for its source, then write a
 # completion for that source on every context that enables it. riscv64 only.
 plic_completion_probe = []

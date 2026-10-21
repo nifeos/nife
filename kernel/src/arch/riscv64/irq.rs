@@ -300,7 +300,7 @@ mod tests {
     }
 }
 
-/// **Milestone 890's probe**: is the console's PLIC gateway stuck after one interrupt? Every 5 s on
+/// **Milestone 890 (riscv64 and x86_64 join the shared boot path)'s probe**: is the console's PLIC gateway stuck after one interrupt? Every 5 s on
 /// any hart, print the UART's registers and the PLIC's view of the console source, then complete
 /// that source on each context that enables it. The handler completes after it has disabled the
 /// source, and the PLIC specification ignores a completion for a source the target does not
