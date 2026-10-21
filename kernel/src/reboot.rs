@@ -54,5 +54,7 @@ mod designware_i2c;
 mod pmic;
 mod reset;
 
+#[cfg(all(target_arch = "riscv64", feature = "reboot_soak_test"))]
+pub(crate) use pmic::pmic_report;
 use pmic::*;
 pub use reset::*;
