@@ -263,6 +263,7 @@ Each ships independently and none needs hardware. The QEMU A/B above tests all o
   gates it; riscv64 has no ACPI path, which is milestone 526 (a riscv64 host that hands
   this kernel ACPI).
 - **Outstanding.** Item 7, the Oracle Always Free boot, which needs calef's account.
+  [notes/rented-metal/oracle-a1.md](../../notes/rented-metal/oracle-a1.md) is its runbook.
 - **Milestone 127.** The `0x4008_0000` link address, as the section on it says.
 
 ## Index row

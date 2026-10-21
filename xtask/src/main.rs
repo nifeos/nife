@@ -31,6 +31,7 @@ mod bench;
 mod board;
 mod boot_check;
 mod card_check;
+mod cloud_image;
 /// **The rollback gate** (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)): a doomed upgrade is tried and the machine comes back on its own.
 mod confirm;
 mod disk;
