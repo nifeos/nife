@@ -3,8 +3,10 @@
 //!
 //! A [`GlobalAlloc`] that grows by mapping pages out of the untyped capability the process was
 //! granted, via `memory_region::MAP` (one page per invoke, zeroed by the kernel, writable). The
-//! algorithm itself lives in `crates/user_mode_heap` and is host-tested; this module is the policy and the
-//! syscall glue: a spinlock, a committed-range cursor, and grow-on-demand.
+//! algorithm is `talc` 5.1.1's core, [`talc::base::Talc`] (milestone 784 (reuse what the tree wrote),
+//! item d); this module is the policy and the syscall glue: a spinlock, a committed-range cursor,
+//! and grow-on-demand. Its own [`Source`](talc::source::Source) is `Manual`, because growing is a
+//! syscall that can fail on a budget, and the retry belongs here, next to the cap.
 //!
 //! # The contract a program signs
 //!
@@ -40,7 +42,12 @@
 //! contention; that is a problem worth having, and notes/heap.md carries the caveat.
 
 use core::alloc::{GlobalAlloc, Layout};
+use core::ptr::NonNull;
 use core::sync::atomic::{AtomicBool, Ordering};
+
+use talc::base::Talc;
+use talc::base::binning::DefaultBinning;
+use talc::source::Manual;
 
 /// The suggested heap base: 1 GiB, the start of the address-space map's heap band (milestone 206 (a program image has under 896 KiB)).
 /// A convention, not a law; a program with its own layout passes its own base to [`init`], and one
@@ -56,7 +63,10 @@ const PAGE: u64 = 4096;
 const MIN_GROW_PAGES: u64 = 8;
 
 struct Inner {
-    heap: user_mode_heap::Heap,
+    heap: Talc<Manual, DefaultBinning>,
+    /// The end `talc` reports for the one heap it holds, which the next grow extends; `None`
+    /// until the first grow claims the first run.
+    heap_end: Option<NonNull<u8>>,
     /// Which capability table slot holds the untyped that pays for pages. `u64::MAX` until `init`.
     memory_region_slot: u64,
     /// The heap's virtual range: `[base, base + max)`, of which `[base, base + committed)` is
@@ -98,7 +108,8 @@ impl MemoryRegionHeap {
         MemoryRegionHeap {
             locked: AtomicBool::new(false),
             inner: core::cell::UnsafeCell::new(Inner {
-                heap: user_mode_heap::Heap::new(),
+                heap: Talc::new(Manual),
+                heap_end: None,
                 memory_region_slot: u64::MAX,
                 base: 0,
                 committed: 0,
@@ -186,12 +197,16 @@ impl MemoryRegionHeap {
         }
         if got > 0 {
             inner.committed += got * PAGE;
-            // SAFETY: `[start, start + got * PAGE)` was just mapped writable for us alone, and
-            // is adjacent to (or the start of) the range already donated.
-            unsafe {
-                inner
-                    .heap
-                    .add_region(start as *mut u8, (got * PAGE) as usize);
+            let run = core::ptr::with_exposed_provenance_mut::<u8>(start as usize);
+            let bytes = (got * PAGE) as usize;
+            // SAFETY: `[start, start + bytes)` was just mapped writable for us alone, and is
+            // adjacent to the heap `heap_end` ends, or the first run of all. The first claim
+            // fits: a grow is at least `MIN_GROW_PAGES`, far above talc's first-heap size.
+            inner.heap_end = unsafe {
+                match inner.heap_end {
+                    Some(end) => Some(inner.heap.extend(end, run.wrapping_add(bytes))),
+                    None => inner.heap.claim(run, bytes),
+                }
             };
         }
         // Only a fresh contiguous run at least as big as the request guarantees the retry
@@ -206,20 +221,32 @@ impl Default for MemoryRegionHeap {
     }
 }
 
-// SAFETY: alloc/dealloc uphold the GlobalAlloc contract: unique live pointers, layout round-trip
-// (user_mode_heap recomputes sizes from the same Layout), and no unwinding (there is none on this target).
+/// `layout` as `talc` is given it: at least one byte, because `talc` takes no empty layout and
+/// `alloc` and `dealloc` must agree on the size.
+fn nonempty(layout: Layout) -> Layout {
+    // SAFETY: the alignment is `layout`'s own, and one byte cannot overflow it.
+    unsafe { Layout::from_size_align_unchecked(layout.size().max(1), layout.align()) }
+}
+
+// SAFETY: alloc/dealloc uphold the GlobalAlloc contract: unique live pointers, the same layout to
+// `talc` at both ends (`nonempty`), and no unwinding (there is none on this target).
 unsafe impl GlobalAlloc for MemoryRegionHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let layout = nonempty(layout);
         let mut g = self.lock();
         let inner = g.inner();
         loop {
-            if let Some(p) = inner.heap.alloc(layout) {
+            // SAFETY: `layout` is nonempty.
+            if let Some(p) = unsafe { inner.heap.try_allocate(layout) } {
                 return p.as_ptr();
             }
-            // Worst case the fresh run must hold the request plus alignment slack (a fresh run
-            // starts page-aligned, so only over-page alignments need the slack).
-            let slack = layout.align().saturating_sub(PAGE as usize) as u64;
-            let need = user_mode_heap::effective_size(layout) as u64 + slack;
+            // Generous on purpose: the request, its alignment, a chunk's rounding and tag, and
+            // talc's bins when this is the first run. A grow that still falls short is followed by
+            // another, which doubles, until the cap refuses.
+            let mut need = (layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT) as u64;
+            if inner.heap_end.is_none() {
+                need += talc::min_first_heap_size::<DefaultBinning>() as u64;
+            }
             if !Self::grow(inner, need) {
                 return core::ptr::null_mut();
             }
@@ -227,11 +254,35 @@ unsafe impl GlobalAlloc for MemoryRegionHeap {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let Some(p) = core::ptr::NonNull::new(ptr) else {
+        if ptr.is_null() {
             return;
-        };
+        }
         let mut g = self.lock();
-        // SAFETY: forwarded GlobalAlloc contract: `ptr` came from `alloc(layout)` on this heap.
-        unsafe { g.inner().heap.dealloc(p, layout) };
+        // SAFETY: forwarded GlobalAlloc contract: `ptr` came from `alloc(layout)` on this heap,
+        // which gave talc the same `nonempty(layout)`.
+        unsafe { g.inner().heap.deallocate(ptr, nonempty(layout)) };
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        let old = nonempty(layout);
+        {
+            let mut g = self.lock();
+            // SAFETY: forwarded GlobalAlloc contract: `ptr` is live under `layout`, and
+            // `new_size` is nonzero. In place, the pointer and its tag stay talc's.
+            if new_size != 0 && unsafe { g.inner().heap.try_realloc_in_place(ptr, old, new_size) } {
+                return ptr;
+            }
+        }
+        // SAFETY: the GlobalAlloc realloc contract makes `new_size` valid for this alignment.
+        let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, layout.align()) };
+        // SAFETY: as `GlobalAlloc::realloc`'s default body: allocate, copy, free.
+        unsafe {
+            let new_ptr = self.alloc(new_layout);
+            if !new_ptr.is_null() {
+                core::ptr::copy_nonoverlapping(ptr, new_ptr, layout.size().min(new_size));
+                self.dealloc(ptr, layout);
+            }
+            new_ptr
+        }
     }
 }

@@ -60,8 +60,8 @@ pub(super) fn strip_doc_examples(body: &str) -> String {
     out.join("\n")
 }
 
-/// Generate `abi.rs` and `user_mode_heap.rs` verbatim from the host-tested crates, so the ABI numbers and
-/// the heap algorithm have exactly one definition. The transform strips crate-level inner
+/// Generate `abi.rs` and the other contracts verbatim from the host-tested crates, so each has
+/// exactly one definition. The heap is [`std_generate_talc`]'s. The transform strips crate-level inner
 /// attributes (`#![no_std]`, illegal in a non-root module), any trailing `#[cfg(test)]` module, and
 /// any `# Examples` section (see [`strip_doc_examples`] for why that last one).
 pub(super) fn std_generate_modules() -> bool {
@@ -71,11 +71,7 @@ pub(super) fn std_generate_modules() -> bool {
             root.join("crates/abi/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/abi.rs"),
         ),
-        (
-            root.join("crates/user_mode_heap/src/lib.rs"),
-            farm_std_src().join("sys/alloc/nife/user_mode_heap.rs"),
-        ),
-        // Each thread's cache in front of that heap (milestone 561 (a per-CPU allocator is what
+        // Each thread's cache in front of the heap (milestone 561 (a per-CPU allocator is what
         // the current-CPU page was for)), a sibling of it, so the two stay one grid.
         (
             root.join("crates/allocation_cache/src/lib.rs"),
@@ -255,4 +251,145 @@ pub(super) fn inline_modules(
         out.push("}".to_string());
     }
     Ok(out.join("\n"))
+}
+
+/// The heap algorithm's crate, `talc`, at the version `Cargo.lock` pins (milestone 784 (reuse what
+/// the tree wrote), item d). std cannot depend on a crates.io crate that lacks a
+/// `rustc-dep-of-std` feature, so its core is generated in as `sys/alloc/nife/talc/`.
+pub(super) const TALC: &str = "talc";
+
+/// What `Cargo.lock` says of [`TALC`]: its `version` and `checksum` lines, which is everything that
+/// decides the source copied. The farm's stamp hashes this rather than the files, so a warm farm
+/// costs no `cargo metadata`.
+pub(super) fn talc_lock_entry() -> Option<(String, String)> {
+    let lock = std::fs::read_to_string(workspace_root().join("Cargo.lock")).ok()?;
+    let block = lock
+        .split("[[package]]")
+        .find(|b| b.lines().any(|l| l == format!("name = \"{TALC}\"")))?;
+    let field = |key: &str| {
+        block.lines().find_map(|l| {
+            l.strip_prefix(key)?
+                .strip_prefix(" = \"")?
+                .strip_suffix('"')
+                .map(str::to_string)
+        })
+    };
+    Some((field("version")?, field("checksum")?))
+}
+
+/// The directory cargo unpacked the pinned `talc` into. Asked of `cargo metadata`, which fetches
+/// it if it is missing and has checked it against the lockfile's checksum.
+fn talc_source_dir(version: &str) -> Option<PathBuf> {
+    let manifest = workspace_root().join("Cargo.toml");
+    let out = capture(
+        "cargo",
+        &[
+            "metadata",
+            "--format-version",
+            "1",
+            "--locked",
+            "--manifest-path",
+            &s(manifest),
+        ],
+    )?;
+    let tail = format!("/{TALC}-{version}/Cargo.toml\"");
+    let at = out.find(&tail)?;
+    let start = out[..at].rfind('"')? + 1;
+    Some(PathBuf::from(&out[start..at]).join(format!("{TALC}-{version}")))
+}
+
+/// The module paths `talc` names as `crate::`, which inside std are this one's.
+const TALC_IN_STD: &str = "crate::sys::alloc::nife::talc::";
+
+/// The submodules of `talc`'s `source` that std leaves out: each implements a `Source` on
+/// `allocator_api2` or `GlobalAlloc`, and std's heap uses `Manual`, which `source/mod.rs` itself
+/// defines. Each line must be found exactly once, so an upstream change to that module stops the
+/// generation instead of passing through unread.
+const TALC_SOURCE_DROPPED: [&str; 6] = [
+    "mod allocator;",
+    "mod claim;",
+    "mod global_alloc;",
+    "pub use allocator::AllocatorSource;",
+    "pub use claim::Claim;",
+    "pub use global_alloc::GlobalAllocSource;",
+];
+
+/// One `talc` file as std builds it: `crate::` becomes [`TALC_IN_STD`], every `feature = "x"`
+/// becomes `any()` (std has none of talc's features, and each is off in `user_mode_runtime`
+/// too), and `# Example` sections go as they do for every generated file.
+pub(super) fn talc_for_std(text: &str) -> String {
+    let mut out = text.replace("crate::", TALC_IN_STD);
+    while let Some(at) = out.find("feature = \"") {
+        let close = at + "feature = \"".len() + out[at + "feature = \"".len()..].find('"').unwrap_or(0);
+        out.replace_range(at..=close, "any()");
+    }
+    format!("{}\n", strip_doc_examples(&out).trim_end())
+}
+
+/// **Generate `talc`'s core into std** as `sys/alloc/nife/talc/`: `base/` whole, `node.rs`,
+/// `ptr_utils.rs` and `source/mod.rs` without [`TALC_SOURCE_DROPPED`], file for file, so a reader
+/// can diff each against the published crate. The module root is written here: it declares those
+/// four and copies `min_first_heap_size` from `lib.rs`, the one item of the root the heap uses.
+/// `lib.rs`'s other items are `lock_api`'s and `allocator_api2`'s wrappers, which std has no use for.
+pub(super) fn std_generate_talc() -> bool {
+    let Some((version, _)) = talc_lock_entry() else {
+        eprintln!("std-src: Cargo.lock has no `{TALC}` package");
+        return false;
+    };
+    let Some(src) = talc_source_dir(&version).map(|d| d.join("src")) else {
+        eprintln!("std-src: `cargo metadata` did not find {TALC} {version}");
+        return false;
+    };
+    let dst = farm_std_src().join("sys/alloc/nife/talc");
+    let mut files = Vec::new();
+    collect_files(&src.join("base"), &mut files);
+    files.retain(|f| f.extension().is_some_and(|e| e == "rs")); // `base/INTERNALS.md` is prose
+    files.extend(["node.rs", "ptr_utils.rs", "source/mod.rs"].map(|f| src.join(f)));
+    for file in files {
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            eprintln!("std-src: cannot read {}", file.display());
+            return false;
+        };
+        let rel = file.strip_prefix(&src).unwrap_or(&file);
+        let mut text = text;
+        if rel == Path::new("source/mod.rs") {
+            for line in TALC_SOURCE_DROPPED {
+                if text.lines().filter(|l| *l == line).count() != 1 {
+                    eprintln!("std-src: {TALC} {version}'s source/mod.rs no longer has `{line}` once");
+                    return false;
+                }
+            }
+            text = text
+                .lines()
+                .filter(|l| !TALC_SOURCE_DROPPED.contains(l))
+                .collect::<Vec<_>>()
+                .join("\n");
+        }
+        if !write_generated(&dst.join(rel), &talc_for_std(&text)) {
+            return false;
+        }
+    }
+    let lib = std::fs::read_to_string(src.join("lib.rs")).unwrap_or_default();
+    let Some(start) = lib.find("pub const fn min_first_heap_size") else {
+        eprintln!("std-src: {TALC} {version}'s lib.rs has no `min_first_heap_size`");
+        return false;
+    };
+    let len = lib[start..].find("\n}\n").map_or(0, |n| n + 2);
+    let root = format!(
+        "//! `{TALC}` {version}'s core, generated by `cargo xtask std-src` from the crate `Cargo.lock`\n\
+         //! pins. Do not edit: change the pin, and read the regenerated diff.\n\n\
+         pub(crate) mod base;\nmod node;\nmod ptr_utils;\npub(crate) mod source;\n\n{}",
+        &lib[start..start + len]
+    );
+    len > 0 && write_generated(&dst.join("mod.rs"), &talc_for_std(&root))
+}
+
+/// Write one generated file, making its directory.
+fn write_generated(path: &Path, body: &str) -> bool {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    std::fs::write(path, body)
+        .map_err(|e| eprintln!("std-src: cannot write {}: {e}", path.display()))
+        .is_ok()
 }

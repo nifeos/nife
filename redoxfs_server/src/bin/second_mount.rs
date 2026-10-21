@@ -3,7 +3,7 @@
 //! A second mount of a *used* RedoxFS image fails its write on device. The open question is why, and
 //! the recorded hypothesis is accumulated mount state driving the FS server past its 8 MiB heap cap.
 //! This binary settles it without an emulator: it runs the real engine under the **same allocator the
-//! FS server uses** (`user_mode_heap`, the algorithm behind `user_mode_runtime::heap::MemoryRegionHeap`), grown incrementally
+//! FS server uses** (`talc`, the algorithm behind `user_mode_runtime::heap::MemoryRegionHeap`), grown incrementally
 //! and capped exactly the way `redoxfs_server.rs` caps it, and it does the two mounts in one process:
 //!
 //! 1. create the fixture image, then mount it and write (this is what makes the image *used*),
@@ -30,6 +30,9 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use redoxfs::{FileSystem, Node, TreePtr};
+use talc::base::Talc;
+use talc::base::binning::DefaultBinning;
+use talc::source::Manual;
 use redoxfs_server::{BLOCK, BlockDisk, BlockIo, Server};
 
 /// The pool the capped allocator draws from. Large enough to serve any cap we dial in; the *cap*,
@@ -60,7 +63,8 @@ static COMMITTED: AtomicUsize = AtomicUsize::new(0);
 static HIT_CAP: AtomicBool = AtomicBool::new(false);
 
 struct Inner {
-    heap: user_mode_heap::Heap,
+    heap: Talc<Manual, DefaultBinning>,
+    heap_end: Option<std::ptr::NonNull<u8>>,
     base: usize,
     committed: usize,
     cap: usize,
@@ -71,8 +75,8 @@ impl Inner {
     /// `user_mode_runtime::heap::MemoryRegionHeap::grow`, so exhaustion happens here for the same reasons.
     fn grow(&mut self, need: usize) -> bool {
         if self.base == 0 {
-            // Page-aligned, which covers user_mode_heap's 16-byte rule for donations. `System`, not
-            // this binary's global allocator: this IS the global allocator, growing.
+            // Page-aligned, as the device's heap band is. `System`, not this binary's global
+            // allocator: this IS the global allocator, growing.
             let Ok(layout) = Layout::from_size_align(POOL_SIZE, PAGE) else {
                 return false;
             };
@@ -97,8 +101,15 @@ impl Inner {
         let start = self.base + self.committed;
         self.committed += want_pages * PAGE;
         COMMITTED.store(self.committed, Ordering::Relaxed);
-        // SAFETY: this slice of the pool is donated once, never freed, 16-aligned and page-sized.
-        unsafe { self.heap.add_region(start as *mut u8, want_pages * PAGE) };
+        let run = std::ptr::with_exposed_provenance_mut::<u8>(start);
+        // SAFETY: this slice of the pool is donated once, never freed, and continues the heap
+        // `heap_end` ends, or is the first run, at least `MIN_GROW_PAGES`, ample for talc's bins.
+        self.heap_end = unsafe {
+            match self.heap_end {
+                Some(end) => Some(self.heap.extend(end, run.wrapping_add(want_pages * PAGE))),
+                None => self.heap.claim(run, want_pages * PAGE),
+            }
+        };
         true
     }
 }
@@ -115,7 +126,8 @@ impl CappedHeap {
         CappedHeap {
             locked: AtomicBool::new(false),
             inner: UnsafeCell::new(Inner {
-                heap: user_mode_heap::Heap::new(),
+                heap: Talc::new(Manual),
+                heap_end: None,
                 base: 0,
                 committed: 0,
                 cap: 0,
@@ -136,18 +148,20 @@ impl CappedHeap {
     }
 }
 
-// SAFETY: forwards the GlobalAlloc contract to user_mode_heap under the lock; the pool never moves.
+// SAFETY: forwards the GlobalAlloc contract to talc under the lock, with the layout made nonempty
+// the same way at both ends; the pool never moves.
 unsafe impl GlobalAlloc for CappedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.lock();
         // SAFETY: exclusive under the lock.
         let inner = unsafe { &mut *self.inner.get() };
         let p = loop {
-            if let Some(p) = inner.heap.alloc(layout) {
+            // SAFETY: `nonempty` never is.
+            if let Some(p) = unsafe { inner.heap.try_allocate(nonempty(layout)) } {
                 break p.as_ptr();
             }
-            let slack = layout.align().saturating_sub(PAGE);
-            let need = user_mode_heap::effective_size(layout) + slack;
+            // As `MemoryRegionHeap::alloc` sizes it.
+            let need = layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT;
             if !inner.grow(need) {
                 break std::ptr::null_mut(); // OOM: std's handler aborts, as on device
             }
@@ -156,14 +170,19 @@ unsafe impl GlobalAlloc for CappedHeap {
         p
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let Some(p) = std::ptr::NonNull::new(ptr) else {
+        if ptr.is_null() {
             return;
-        };
+        }
         self.lock();
         // SAFETY: exclusive under the lock; forwarded GlobalAlloc contract.
-        unsafe { (*self.inner.get()).heap.dealloc(p, layout) };
+        unsafe { (*self.inner.get()).heap.deallocate(ptr, nonempty(layout)) };
         self.unlock();
     }
+}
+
+/// `layout` with at least one byte, as `user_mode_runtime::heap` gives it to talc.
+fn nonempty(layout: Layout) -> Layout {
+    Layout::from_size_align(layout.size().max(1), layout.align()).unwrap_or(layout)
 }
 
 #[global_allocator]

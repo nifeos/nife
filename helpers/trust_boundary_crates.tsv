@@ -174,7 +174,7 @@ universally_unique_identifier	shared	components,kernel,redoxfs_server,uefi_loade
 uptime	userspace	components
 usb	userspace	components
 user_heap	userspace	retired
-user_mode_heap	userspace	components,fixtures,jig,redoxfs_server,std
+user_mode_heap	userspace	retired
 user_mode_runtime	userspace	components,fixtures,jig,redoxfs_server
 user_rt	userspace	retired
 video_terminal	shared	components,fixtures,kernel

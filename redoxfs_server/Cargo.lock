@@ -31,6 +31,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c880a97d28a3681c0267bd29cff89621202715b065127cd445fa0f0fe0aa2880"
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,6 +431,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -578,7 +593,7 @@ dependencies = [
  "redox_syscall",
  "redoxfs",
  "subtree_scope",
- "user_mode_heap",
+ "talc",
  "user_mode_runtime",
 ]
 
@@ -610,6 +625,12 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+
+[[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "seahash"
@@ -677,6 +698,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "talc"
+version = "5.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53f8ad14fa1c1b8635114abf9721076fe1e869572a5f26a52690f407292c80dc"
+dependencies = [
+ "allocator-api2",
+ "lock_api",
+]
+
+[[package]]
 name = "termion"
 version = "4.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -723,10 +754,6 @@ name = "universally_unique_identifier"
 version = "0.1.0"
 
 [[package]]
-name = "user_mode_heap"
-version = "0.1.0"
-
-[[package]]
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
@@ -736,7 +763,7 @@ dependencies = [
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "user_mode_heap",
+ "talc",
 ]
 
 [[package]]

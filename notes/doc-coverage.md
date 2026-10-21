@@ -104,7 +104,7 @@ a hard gate, so those crates cannot regress:
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,
 `paging`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
 `socket_contract`, `work_steal_slot`, `supervision_protocol`,
-`hot_swap_contract`, `swish`, `system_initializer`, `timetable`, `user_mode_heap`, `user_mode_runtime`, `video_terminal`,
+`hot_swap_contract`, `swish`, `system_initializer`, `timetable`, `user_mode_runtime`, `video_terminal`,
 `virtio`, `thread_wake_handshake`.
 
 The worklist, largest first, so the next person can take one crate and turn its line on:

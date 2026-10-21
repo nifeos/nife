@@ -5,12 +5,6 @@
 
 use super::*;
 
-/// The layout a cached block of `class` has in the heap: its whole effective size, on the grid.
-pub(super) fn class_layout(class: usize) -> Layout {
-    // SAFETY: a nonzero multiple of a power of two, aligned to that power of two.
-    unsafe { Layout::from_size_align_unchecked(class_bytes(class), GRID) }
-}
-
 /// The calling thread's cache, when a request of this shape may use it.
 #[inline]
 pub(super) fn cache_for(layout: Layout) -> Option<(&'static mut Cache, usize)> {
@@ -40,5 +34,5 @@ pub(crate) fn spill_thread_cache(cache: &mut Cache) {
     let mut g = lock();
     let inner = g.inner();
     // SAFETY: every cached block of class `c` is the heap's and was cached under `class_layout(c)`.
-    cache.drain(|c, b| unsafe { inner.heap.dealloc(b, class_layout(c)) });
+    cache.drain(|c, b| unsafe { inner.heap.deallocate(b.as_ptr(), class_layout(c)) });
 }

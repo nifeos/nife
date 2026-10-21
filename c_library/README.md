@@ -36,7 +36,7 @@ what was taken, what was left behind and why.
 | file | what it is |
 |---|---|
 | `src/platform/nife.rs` | the platform layer: `Pal` and `PalSignal` implemented on nife's Rust `std` |
-| `src/platform/allocator.rs` | `malloc` and its family on `std`'s allocator, which is `crates/user_mode_heap` |
+| `src/platform/allocator.rs` | `malloc` and its family on `std`'s allocator, which is `talc` over the process's untyped budget |
 | `src/start.rs` | how a `std` program becomes a C program: `argv`, `environ`, `main`, `exit` |
 | `src/pthread.rs` | POSIX threads on `std`'s threads: create, join, detach, exit, self |
 | `src/platform/futex.rs` | relibc's wait-on-address pair, on `std`'s thread parking |

@@ -71,7 +71,7 @@ CONTRACTS = (
 
 # The std ABI is every crate `cargo xtask std-src` copies into the standard library's platform
 # layer: read from xtask/src/farm.rs at HEAD, so the list cannot drift from the copy that makes it
-# true. All are contracts but one (`user_mode_heap`, the runtime division), which is why the
+# true. All are contracts but one (`allocation_cache`, the runtime division), which is why the
 # interface is the union of the two and not the contracts alone.
 STD_ABI_SOURCE = 'xtask/src/farm.rs'
 STD_ABI_GLOBS = ('xtask/src/farm.rs', 'xtask/src/farm/*.rs')
@@ -1038,8 +1038,8 @@ def selftest():
         {'nifefs': {'dir': 'nifefs',
                     'items': {'DISK_VERSION': _fp(_clean(const('DISK_VERSION', '2')['inner']))}}},
         set())
-    std_add, _pc, _e = compare({'n': {'dir': 'user_mode_heap', 'items': {}}},
-                               {'n': {'dir': 'user_mode_heap', 'items': {'a': '1'}}}, {'n'})
+    std_add, _pc, _e = compare({'n': {'dir': 'allocation_cache', 'items': {}}},
+                               {'n': {'dir': 'allocation_cache', 'items': {'a': '1'}}}, {'n'})
     def variant(value):
         return _fp({'fields': [], 'discriminant': {'expr': str(value), 'value': str(value)}})
 

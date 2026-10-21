@@ -156,7 +156,7 @@ it is the bar that was missing.
 ## The same defect outside `kernel/`, which is somebody else's lane
 
 The milestone scoped to the four sites in `kernel/`. The survey pattern, run over the whole tree,
-finds 14 more of the same shape, and they are listed here so the finding lives somewhere a person
+finds 13 more of the same shape, and they are listed here so the finding lives somewhere a person
 reads rather than in a report:
 
 | Site | The comment's claim |
@@ -169,9 +169,8 @@ reads rather than in a report:
 | `components/src/swish/main.rs:430` `put_page` | "every caller is behind a `dir.is_some()` check" |
 | `components/src/line_editor.rs:217` `copy_in` | "offset+len is bounded by PAGE by every caller" |
 | `patches/std-nife/overlay/std/src/sys/fs/nife.rs:161` `put` | "callers clamp to it" |
-| `crates/user_mode_heap/src/lib.rs:100` `effective_size` | "the caller provides the locking" (a data-race obligation, not an addressing one) |
 
-Eight of the nine rows are the same clamp-to-a-page obligation, which suggests the answer there is
-one shared page-slice type rather than nine conversions. That is a design question and wants its own
-lane. `crates/user_mode_heap`'s is a different flavor and should be judged separately. The `patches/`
+All eight rows are the same clamp-to-a-page obligation, which suggests the answer there is one
+shared page-slice type rather than eight conversions. That is a design question and wants its own
+lane. The `patches/`
 one is in the vendored std overlay, which most gates exclude on purpose.

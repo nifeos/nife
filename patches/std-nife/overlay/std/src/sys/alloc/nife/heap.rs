@@ -9,8 +9,12 @@ pub(super) const PAGE: u64 = 4096;
 
 pub(super) const MIN_GROW_PAGES: u64 = 8;
 
+pub(super) type Talc = talc::base::Talc<talc::source::Manual, talc::base::binning::DefaultBinning>;
+
 pub(super) struct Inner {
-    pub(super) heap: user_mode_heap::Heap,
+    pub(super) heap: Talc,
+    /// Where talc's one heap ends, which the next grow extends; `None` before the first claim.
+    heap_end: Option<NonNull<u8>>,
     committed: u64,
 }
 
@@ -24,7 +28,11 @@ unsafe impl Sync for SpinHeap {}
 
 pub(super) static HEAP: SpinHeap = SpinHeap {
     locked: crate::sync::atomic::AtomicBool::new(false),
-    inner: crate::cell::UnsafeCell::new(Inner { heap: user_mode_heap::Heap::new(), committed: 0 }),
+    inner: crate::cell::UnsafeCell::new(Inner {
+        heap: Talc::new(talc::source::Manual),
+        heap_end: None,
+        committed: 0,
+    }),
 };
 
 pub(super) struct Guard;
@@ -79,21 +87,34 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     }
     if got > 0 {
         inner.committed += got * PAGE;
-        // SAFETY: the range was just mapped writable for this process alone, adjacent to (or
-        // the start of) the range already donated.
-        unsafe { inner.heap.add_region(start as *mut u8, (got * PAGE) as usize) };
+        let run = crate::ptr::with_exposed_provenance_mut::<u8>(start as usize);
+        let bytes = (got * PAGE) as usize;
+        // SAFETY: the range was just mapped writable for this process alone, adjacent to the heap
+        // `heap_end` ends, or the first run of all, which `heap_alloc`'s `need` sizes for talc's bins.
+        inner.heap_end = unsafe {
+            match inner.heap_end {
+                Some(end) => Some(inner.heap.extend(end, run.wrapping_add(bytes))),
+                None => inner.heap.claim(run, bytes),
+            }
+        };
     }
     got >= need_pages
 }
 
-/// A block from the heap itself, growing it as needed; `None` when the region is spent.
+/// A block from the heap itself, growing it as needed; `None` when the region is spent. `layout` is
+/// what [`heap_layout`] made of the request, so it is never empty.
 pub(super) fn heap_alloc(inner: &mut Inner, layout: Layout) -> Option<NonNull<u8>> {
     loop {
-        if let Some(p) = inner.heap.alloc(layout) {
+        // SAFETY: `layout` is nonempty (`heap_layout`).
+        if let Some(p) = unsafe { inner.heap.try_allocate(layout) } {
             return Some(p);
         }
-        let slack = layout.align().saturating_sub(PAGE as usize) as u64;
-        let need = user_mode_heap::effective_size(layout) as u64 + slack;
+        // Generous, as `user_mode_runtime::heap` is: the request, its alignment, a chunk's
+        // rounding and tag, and talc's bins on the first run. A short grow is followed by another.
+        let mut need = (layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT) as u64;
+        if inner.heap_end.is_none() {
+            need += talc::min_first_heap_size::<talc::base::binning::DefaultBinning>() as u64;
+        }
         if !grow(inner, need) {
             return None;
         }

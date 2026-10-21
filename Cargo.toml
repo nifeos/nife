@@ -101,7 +101,6 @@ members = [
     "crates/generational_table",
     "crates/work_steal_slot",
     "crates/allocation_cache",
-    "crates/user_mode_heap",
     "crates/user_mode_runtime",
     "crates/thread_wake_handshake",
     "crates/coremark",

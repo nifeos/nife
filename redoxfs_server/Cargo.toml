@@ -105,8 +105,8 @@ address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 redoxfs = { path = "../vendor/redoxfs", default-features = false }
 # The untyped heap's ALGORITHM (the EL0 binary uses it through user_mode_runtime::heap). Depended on directly so
 # the `second_mount` host repro can run the engine under the same allocator, capped the same way, with
-# no syscalls and no emulator. Tiny and no_std, so it is harmless in the el0 build too.
-user_mode_heap = { version = "0.1.0", path = "../crates/user_mode_heap" }
+# no syscalls and no emulator. no_std, and already in the el0 build through user_mode_runtime.
+talc = { version = "5.1.1", default-features = false }
 # The same redox_syscall (lib name `syscall`) RedoxFS uses, so our Server's `syscall::error::Result`
 # is byte-for-byte the trait's. Cargo unifies the two at one version.
 redox_syscall = { version = "0.9.0", default-features = false }

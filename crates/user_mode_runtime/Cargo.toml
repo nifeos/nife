@@ -18,7 +18,10 @@ workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-user_mode_heap = { version = "0.1.0", path = "../user_mode_heap" }
+# The heap algorithm (milestone 784 (reuse what the tree wrote), item d), ruled by calef on
+# 2026-10-21 (UTC) under §46 (thin primitives or whole subsystems): "A sounds right." Its core is
+# also generated into std (`cargo xtask std-src`). No features: `counters` and the rest stay off.
+talc = { version = "5.1.1", default-features = false }
 # The x86_64 timebase page (milestone 161's `cntfrq` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
 # `cntfrq`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and

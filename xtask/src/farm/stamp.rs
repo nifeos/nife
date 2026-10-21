@@ -33,8 +33,7 @@ pub(crate) fn std_inputs_stamp() -> u64 {
     let root = workspace_root();
     let mut files: Vec<PathBuf> = vec![
         root.join("crates/abi/src/lib.rs"),
-        root.join("crates/user_mode_heap/src/lib.rs"),
-        // Each thread's cache in front of that heap (milestone 561), generated beside it.
+        // Each thread's cache in front of the heap (milestone 561), generated beside it.
         root.join("crates/allocation_cache/src/lib.rs"),
         // The net PAL generates its wire constants verbatim from the net_stack contract; a change to it
         // must rebuild the farm just like a change to the ABI crate.
@@ -89,6 +88,10 @@ pub(crate) fn std_inputs_stamp() -> u64 {
         }
     }
     collect_files(&root.join("patches/std-nife/overlay"), &mut files);
+    // The heap's crate, by its lockfile entry: a version and checksum name its source exactly.
+    if let Some((version, checksum)) = talc_lock_entry() {
+        h = fnv(h, format!("{TALC} {version} {checksum}").as_bytes());
+    }
     files.sort();
     for f in files {
         // **Hash the path RELATIVE to the workspace root, never the absolute path.** An absolute path

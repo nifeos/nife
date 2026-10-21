@@ -20,8 +20,8 @@ out-of-band convention (notes/abi.md §4) grants them at fixed slots:
 
 - slot 0: an untyped budget. The global allocator draws heap pages from it lazily via
   `untyped::MAP`, one page per invoke, at `0x4000_0000`: the untyped-backed heap the
-  `allocator_exerciser` workload proved (`crates/user_mode_heap` algorithm, host-tested), restated
-  because std cannot depend on an out-of-tree crate.
+  `allocator_exerciser` workload proved, `talc`'s core generated in (below), with the policy
+  restated because std cannot depend on an out-of-tree crate.
 - slot 1: an endpoint with WRITE. `stdout` and `stderr` SEND here, 16 bytes per message (w0 =
   byte count, w1|w2 = the bytes, little-endian). std's own `LineWriter` batches user writes; the
   receiver reassembles.
@@ -72,8 +72,9 @@ std by `cargo xtask std-src`. Each file binds one std concept to the ABI:
 
 The syscall glue (`sys/pal/nife/rt.rs`) deliberately twins `crates/user_mode_runtime`'s
 `svc`/`ecall` wrappers, because std cannot depend on the crate. The ABI constants are not restated: `abi.rs` is generated verbatim from `crates/abi` by `std-src`, so the numbers cannot
-drift. Likewise `user_mode_heap.rs` from `crates/user_mode_heap`: the host-tested heap algorithm is
-the only heap algorithm. So too `netproto.rs` from `crates/socket_contract/src/lib.rs`, and `fsproto.rs` from
+drift. The heap algorithm comes the same way from outside the tree: `talc/`, the core of the `talc`
+crate at the version `Cargo.lock` pins, read from cargo's own unpacked copy, with its `crate::`
+paths pointed into std and its features off. So `user_mode_runtime` and std run one allocator. So too `netproto.rs` from `crates/socket_contract/src/lib.rs`, and `fsproto.rs` from
 `crates/filesystem_contract`. Every wire format the PAL speaks has exactly one definition, and it
 lives with the server that answers it.
 A crate root may keep a module in its own file (`pub mod fs;`), as `filesystem_contract` has since
@@ -95,7 +96,7 @@ builds one:
    toolchain, as measured).
 2. Replace the `src` subtree with a real copy (independent inodes), so patching it never
    touches the shared rustup toolchain.
-3. Patch that copy: drop in the overlay PAL files, generate `abi.rs`/`user_mode_heap.rs`, and insert a
+3. Patch that copy: drop in the overlay PAL files, generate `abi.rs`, the other contracts and `talc/`, and insert a
    `target_os = "nife"` arm into std's `cfg_select!` dispatchers (pal, alloc, stdio, random,
    thread, time, io/error, thread_local storage and guard) plus `env_consts` and the
    `restricted_std` chain in std's `build.rs`.
