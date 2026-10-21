@@ -114,14 +114,13 @@ On one core, under the same QEMU-HVF machine, seL4's `Call` plus `ReplyRecv` bet
 spaces costs a median of 96 ns and nife's `ipc_rtt_el0` 442 ns: about 4.6 times (2026-10-21, eight
 boots each). [How much of the ARM plan runs under HVF](arm-plan-under-hvf.md) has the method and its
 caveats. seL4 needed one patched line for the guest's 8-bit ASIDs. The instrument is a loop
-averaged against the generic timer, because the guest's PMU is synthesized. The shapes differ: two
-syscalls with a fastpath against four.
+averaged against the generic timer, because the guest's PMU is synthesized.
 
 seL4 publishes, for the same-core different-address-space path, 413 cycles for the IPC call and 426
 for the IPC reply, one-way each. The machine is a Jetson TX1 (Cortex-A57, 1.9 GHz). Converting 350 ns at an
 assumed 2.75 to 4.05 GHz gave ~960 to ~1,420 cycles. So the corrected figure is roughly 1.1x to 1.7x
-an L4-lineage round trip, not 4 to 7 times. That arithmetic crosses a decade of silicon, and the
-same-silicon ratio above is the one to quote. sel4bench's own PMU method needs a real PMU, which
+an L4-lineage round trip, not 4 to 7 times. The same-silicon ratio
+above is the one to quote. sel4bench's own PMU method needs a real PMU, which
 [xenon](benchmarks/sel4bench-on-xenon.md) and argon (milestone 127 (the seL4 machine)) have.
 [Calibration against seL4](benchmarks/calibration-against-sel4.md) has the build recipe.
 
