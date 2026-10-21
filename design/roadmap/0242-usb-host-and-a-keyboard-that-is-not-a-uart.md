@@ -113,6 +113,10 @@ the source's round-robin hart, and no key after the first arrived; enabling thro
 
 ## The bench step, which is calef's
 
+This is the next action on milestone 192, ahead of option A's board run (calef, 2026-10-21:
+*"Yes"*). One evening. Steps 1 to 3 are all 192 needs; steps 4 and 5 are this milestone's and
+milestone 198's and do not hold it up.
+
 Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear port directly
 (not through a hub, and not a keyboard with a hub built in), and the serial cable for the log.
 
@@ -129,9 +133,13 @@ Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear
    | `REFUSED. A register the driver needs shares a page with the controller's MSI-X table` | Photograph it: the register window refusal, with the offset. |
    | no `usb` line | No function with the xHCI class code was found: look for the controller in the boot's PCI survey. |
 
-3. At the `$` prompt, on the USB keyboard, type `echo hello` and press Enter. `hello` on the
-   monitor is this milestone and milestone 192 (a keyboard on real silicon) closed: a keyboard
-   plugged into the machine and the OS on a monitor plugged into it. Photograph it.
+3. At the `$` prompt, on the USB keyboard, type `echo hello` and press Enter. The output that
+   closes milestone 192's exit criterion (a keyboard plugged into the machine and the OS on a
+   monitor plugged into it) is both of these in one photograph of the monitor: the step 2 line
+   `a keyboard on port N (full speed, vvvv:pppp); its keys reach the shell`, and `hello` printed
+   under the typed `echo hello`. With the serial cable still attached, the same `hello` in the log
+   is supporting evidence, not the criterion. Keep the photograph and the log with the bench
+   record off-tree, then flip this milestone and 192 to BUILT.
 4. Unplug the keyboard, plug it into another port, and type again: it should be found again with no
    line printed (hot-plug is silent by design; see the driver's BUGS).
 5. Then pull the serial cable and repeat step 3, which is rung 1c's literal exit criterion
@@ -187,4 +195,4 @@ cannot be read until this milestone's xHCI driver runs on radon too, after miles
 Milestone 192's option B. Built under QEMU 2026-10-04 on all three architectures: a confined EL0
 xHCI driver, denied its MSI-X page and refused without IOMMU confinement, enumerates a boot keyboard
 and feeds the line discipline; `script/swish-check` types `echo hello` on it. What is left is
-calef's bench step on xenon, which also closes 192.
+calef's bench step on xenon, which also closes 192 and is 192's next action (calef, 2026-10-21).
