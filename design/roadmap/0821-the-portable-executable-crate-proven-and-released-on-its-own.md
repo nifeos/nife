@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: REFUSED
 raised: 2026-10-07
+refused_by: 784
 milestone_dependencies: 887
 decision_dependencies: none
 machine_requirements: none
@@ -8,6 +9,11 @@ specific_machine: none
 needs_person: yes
 ---
 # 821. `portable_executable`: an ELF-to-PE converter, proven, then released on its own
+
+Status REFUSED: calef ruled on 2026-10-21 (UTC), answering milestone 784 (reuse what the tree
+wrote)'s item (g) on #2490 with "B". `portable_executable` is to read the ELF and write the PE
+through `object` 0.40.0, keep its conversion policy, and stay unpublished. Its input is nife's own
+build product, so the proofs below would protect no known user. The text below is the proposal's.
 
 *(From calef's rulings on pull request #1806; the title and slug are drafts. The FAT crate's block,
 milestone 813 (a proven FAT crate released on its own), is the shape this follows.)*
@@ -163,6 +169,11 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 - The five properties are this lane's proposal, read from the code and its audit, not a ruling.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
+
+## Revisit
+
+- **Condition.** `portable_executable` gets an input nife did not link: a second consumer, or a
+  reason to publish it. The hardening and the five proofs above are owed again then.
 
 ## Index row
 

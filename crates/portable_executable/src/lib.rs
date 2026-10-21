@@ -50,8 +50,9 @@
 //! Name: ratified 2026-10-07 (calef, pull request #1806's publish-ours review: "Yes, one per
 //! crate"), the format's own name spelled out under §154 (the acronym test is whether the phrase is
 //! spoken): "portable executable" is the specification title's phrase. Set aside `elf_to_efi` (a
-//! verb phrase, and systemd's tool name) and `pe_image` (the acronym). Milestone 821 (an ELF-to-PE
-//! converter, proven, then released on its own) publishes it.
+//! verb phrase, and systemd's tool name) and `pe_image` (the acronym). It is not published:
+//! calef refused that on 2026-10-21 (UTC), ruling milestone 784 (reuse what the tree wrote)'s
+//! item (g).
 
 #![cfg_attr(not(test), no_std)]
 
