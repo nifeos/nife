@@ -26,8 +26,6 @@ use super::*;
 /// demonstration. Milestone 267 split the two for that reason; before it, one
 /// `#[cfg(not(any(feature = "shell", feature = "initboot")))]` sat in the middle of a single block
 /// and the boundary between the two audiences was a reader's inference rather than a name.
-/// (That cfg is quoted as it stood: milestone 296 deleted `initboot`, and the live gate on the
-/// block below it now reads `not(feature = "shell")`.)
 ///
 /// The `test` and `bench` exclusions on the signature are not that switch and are deliberately
 /// kept. A `bench` boot diverges into `bench::run` before this point and never returns, and a
