@@ -22,15 +22,9 @@ fn pmic_bus(
         SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_div, standard_mode_100k,
     };
 
-    let Some((sys, bus)) = crate::memory::jh7110_pmic_bus() else {
-        return None;
-    };
-    let Some((controller, _size)) = bus.controller else {
-        return None;
-    };
-    let Some(address) = bus.pmic_address else {
-        return None;
-    };
+    let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
+    let (controller, _size) = bus.controller?;
+    let address = bus.pmic_address?;
 
     // The input-clock chain, from the two windows the plan's guard mapped: the CRG words at their
     // ids' offsets, the PLL2 words in the syscon at the offsets the vendor's pll.c masks name.
