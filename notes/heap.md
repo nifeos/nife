@@ -235,7 +235,7 @@ the process's own untyped budget. The pair that landed:
   measurements that chose it are in
   `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
-- `user_mode_runtime::heap::UntypedHeap`: the policy and the syscall glue. A `#[global_allocator]`
+- `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
   static the program wires with one call, `HEAP.init(untyped_slot, base_va, max_bytes)`, first
   thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via `untyped::MAP`
   (one page per invoke, zeroed by the kernel, paid from the budget). It grows geometrically (double,

@@ -64,7 +64,7 @@ impl Guard {
 }
 
 /// Map at least `need` more contiguous bytes at the top of the committed range, from the
-/// untyped in slot 0. Same growth policy as `user_mode_runtime::heap`: geometric, floor of 8 pages,
+/// untyped in slot 0. Same growth policy as `memory_region_heap`: geometric, floor of 8 pages,
 /// capped by `rt::HEAP_MAX`; only a fresh run big enough for the request counts as success.
 pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     let need_pages = need.div_ceil(PAGE);
@@ -109,7 +109,7 @@ pub(super) fn heap_alloc(inner: &mut Inner, layout: Layout) -> Option<NonNull<u8
         if let Some(p) = unsafe { inner.heap.try_allocate(layout) } {
             return Some(p);
         }
-        // Generous, as `user_mode_runtime::heap` is: the request, its alignment, a chunk's
+        // Generous, as `memory_region_heap` is: the request, its alignment, a chunk's
         // rounding and tag, and talc's bins on the first run. A short grow is followed by another.
         let mut need = (layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT) as u64;
         if inner.heap_end.is_none() {

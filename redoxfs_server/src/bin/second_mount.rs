@@ -3,7 +3,7 @@
 //! A second mount of a *used* RedoxFS image fails its write on device. The open question is why, and
 //! the recorded hypothesis is accumulated mount state driving the FS server past its 8 MiB heap cap.
 //! This binary settles it without an emulator: it runs the real engine under the **same allocator the
-//! FS server uses** (`talc`, the algorithm behind `user_mode_runtime::heap::MemoryRegionHeap`), grown incrementally
+//! FS server uses** (`talc`, the algorithm behind `memory_region_heap::MemoryRegionHeap`), grown incrementally
 //! and capped exactly the way `redoxfs_server.rs` caps it, and it does the two mounts in one process:
 //!
 //! 1. create the fixture image, then mount it and write (this is what makes the image *used*),
@@ -42,7 +42,7 @@ use redoxfs_server::{BLOCK, BlockDisk, BlockIo, Server};
 const POOL_SIZE: usize = 512 * 1024 * 1024;
 
 const PAGE: usize = 4096;
-/// The FS server's growth floor (`user_mode_runtime::heap::MIN_GROW_PAGES`).
+/// The FS server's growth floor (`memory_region_heap::MIN_GROW_PAGES`).
 const MIN_GROW_PAGES: usize = 8;
 
 /// The heap cap in bytes, from `NIFE_HEAP_MIB`, defaulting to the FS server's 8 MiB
@@ -72,7 +72,7 @@ struct Inner {
 
 impl Inner {
     /// Grow by at least `need` bytes, geometrically, bounded by the cap. A faithful copy of
-    /// `user_mode_runtime::heap::MemoryRegionHeap::grow`, so exhaustion happens here for the same reasons.
+    /// `memory_region_heap::MemoryRegionHeap::grow`, so exhaustion happens here for the same reasons.
     fn grow(&mut self, need: usize) -> bool {
         if self.base == 0 {
             // Page-aligned, as the device's heap band is. `System`, not this binary's global
@@ -180,7 +180,7 @@ unsafe impl GlobalAlloc for CappedHeap {
     }
 }
 
-/// `layout` with at least one byte, as `user_mode_runtime::heap` gives it to talc.
+/// `layout` with at least one byte, as `memory_region_heap` gives it to talc.
 fn nonempty(layout: Layout) -> Layout {
     Layout::from_size_align(layout.size().max(1), layout.align()).unwrap_or(layout)
 }

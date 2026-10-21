@@ -94,8 +94,8 @@ const HEAP_MAX: u64 = 8 * 1024 * 1024;
 const CACHE_SLOTS: usize = redoxfs_server::CACHE_SLOTS;
 
 #[global_allocator]
-static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap =
+    memory_region_heap::MemoryRegionHeap::new();
 
 /// Read every written block straight back and compare (a `fix/redoxfs-repeat-write` diagnostic). Off
 /// by default: it doubles the write cost, and its scratch block is 4 KiB of stack inside a call
@@ -466,7 +466,7 @@ pub extern "C" fn _start(crash_at_write: u64, crash_after_blocks: u64, crash_tea
     }
     HEAP.init(
         MEMORY_REGION,
-        user_mode_runtime::heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE,
         HEAP_MAX,
     );
 

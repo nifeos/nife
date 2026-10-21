@@ -1,7 +1,7 @@
 //! The allocator workload (milestone 27): `alloc` collections on the untyped-backed heap.
 //!
 //! The first program in the tree that links `extern crate alloc`. It wires
-//! `user_mode_runtime::heap::MemoryRegionHeap` as its global allocator, then does the things a heap exists for
+//! `memory_region_heap::MemoryRegionHeap` as its global allocator, then does the things a heap exists for
 //! and a bump pointer cannot do: interleaved allocation and free in arbitrary order (`Vec`,
 //! `String`, `BTreeMap`), drop-and-reuse, and a final large allocation that must fit in the pages
 //! already committed (proving freed memory is actually reusable, not leaked).
@@ -47,14 +47,14 @@ const MAGIC: u64 = 0xA110_C0DE;
 const HEAP_MAX: u64 = 64 * 4096;
 
 #[global_allocator]
-static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap =
+    memory_region_heap::MemoryRegionHeap::new();
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     HEAP.init(
         MEMORY_REGION,
-        user_mode_runtime::heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE,
         HEAP_MAX,
     );
 

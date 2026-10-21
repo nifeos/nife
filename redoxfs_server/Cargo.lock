@@ -458,6 +458,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "memory_region_heap"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "talc",
+ "user_mode_runtime",
+]
+
+[[package]]
 name = "numtoa"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -590,6 +600,7 @@ dependencies = [
  "filesystem_contract",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
+ "memory_region_heap",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",
@@ -758,12 +769,10 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "talc",
 ]
 
 [[package]]

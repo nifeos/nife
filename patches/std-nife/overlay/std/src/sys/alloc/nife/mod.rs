@@ -3,7 +3,7 @@
 //! The algorithm is `talc`'s core, generated into `talc/` next door by `cargo xtask std-src` from
 //! the version `Cargo.lock` pins (milestone 784 (reuse what the tree wrote), item d), so std runs
 //! the same allocator `user_mode_runtime` takes from crates.io. This file is the same policy layer as
-//! `user_mode_runtime::heap::MemoryRegionHeap`, re-stated for std because std cannot depend on the
+//! `memory_region_heap::MemoryRegionHeap`, re-stated for std because std cannot depend on the
 //! out-of-tree crate: a spinlock, lazy wiring to the untyped in slot 0, and grow-on-demand by
 //! `memory_region::MAP` at the top of the committed range.
 //!

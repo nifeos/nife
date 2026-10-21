@@ -50,20 +50,22 @@
 
 use core::alloc::{GlobalAlloc, Layout};
 
-use user_mode_runtime::heap::MemoryRegionHeap;
+use memory_region_heap::MemoryRegionHeap;
 use user_mode_runtime::send;
 
 /// What the confiner endowed us with, in order.
 const REPORT: u64 = 0; // WRITE: say what happened
 const HEAP_UT: u64 = 1; // WRITE: the region we were built in, which also pays for malloc
 
-/// The heap's ceiling. Eight pages is one growth step (`user_mode_runtime::heap::MIN_GROW_PAGES`) and far more
+/// The heap's ceiling. Eight pages is one growth step (`memory_region_heap::MIN_GROW_PAGES`) and far more
 /// than the component's single scratch allocation needs; small on purpose, so a runaway C `malloc`
 /// loop hits a bounded wall inside its own budget.
 const HEAP_MAX: u64 = 8 * c_seam::PAGE;
 
-/// The heap behind `malloc` and `free`. Not registered as `#[global_allocator]`: nothing in this
-/// program uses Rust's `alloc`, and the two C entry points below are the only callers.
+/// The heap behind `malloc` and `free`, which the two C entry points below call. Nothing in this
+/// program uses Rust's `alloc`, but `talc`, inside the heap, brings `alloc` into the crate graph,
+/// and a graph with `alloc` in it must name a global allocator.
+#[global_allocator]
 static HEAP: MemoryRegionHeap = MemoryRegionHeap::new();
 
 // The C component. Three functions, one ABI: a pointer, a length, and an integer result. No
@@ -77,7 +79,7 @@ unsafe extern "C" {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(_a0: u64, attempt: u64, _a2: u64) -> ! {
-    HEAP.init(HEAP_UT, user_mode_runtime::heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.init(HEAP_UT, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // Report *before* the call, because two of the three attempts never return from it. This is how
     // the test knows a restarted instance reached its work at all.

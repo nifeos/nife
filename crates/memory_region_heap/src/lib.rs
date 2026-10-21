@@ -1,45 +1,40 @@
-//! **The untyped-backed heap: `alloc` for userspace, paid from the process's own budget**
-//! (milestone 27).
+//! **`memory_region_heap`: the untyped-backed heap, `alloc` for userspace, paid from the
+//! process's own budget** (milestone 27).
 //!
 //! A [`GlobalAlloc`] that grows by mapping pages out of the untyped capability the process was
-//! granted, via `memory_region::MAP` (one page per invoke, zeroed by the kernel, writable). The
-//! algorithm is `talc` 5.1.1's core, [`talc::base::Talc`] (milestone 784 (reuse what the tree wrote),
-//! item d); this module is the policy and the syscall glue: a spinlock, a committed-range cursor,
-//! and grow-on-demand. Its own [`Source`](talc::source::Source) is `Manual`, because growing is a
-//! syscall that can fail on a budget, and the retry belongs here, next to the cap.
+//! granted (`memory_region::MAP`, one zeroed page per invoke). The algorithm is `talc`'s core,
+//! [`talc::base::Talc`] (milestone 784 (reuse what the tree wrote), item d), with the `Manual`
+//! source: growing is a syscall that can fail on a budget, so the retry lives here, by the cap.
+//! This crate is the policy: a spinlock, a committed-range cursor and grow-on-demand.
 //!
-//! # The contract a program signs
-//!
-//! Declaring the allocator is two lines and one call, all in the program's own source, because
-//! the heap's inputs are part of that program's capability contract (notes/abi.md §4):
+//! A program declares it in its own source, because the heap's inputs are part of its capability
+//! contract (notes/abi.md §4):
 //!
 //! ```ignore
 //! #[global_allocator]
-//! static HEAP: user_mode_runtime::heap::MemoryRegionHeap = user_mode_runtime::heap::MemoryRegionHeap::new();
+//! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 //! // first thing in _start:
-//! HEAP.init(MEMORY_REGION_SLOT, user_mode_runtime::heap::DEFAULT_BASE, 4 * 1024 * 1024);
+//! HEAP.init(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
 //! ```
 //!
-//! - **Which untyped slot** feeds the heap is the program's convention with its parent, like
-//!   every other slot. There is no ambient memory to fall back on: no untyped granted, no heap.
-//! - **Where the heap lives** is a virtual range the program promises not to use for anything
-//!   else. [`DEFAULT_BASE`] (1 GiB) is the start of `address_space_map::HEAP`, the band the
-//!   address-space map keeps for a heap and nothing else.
-//! - **`max_bytes`** caps growth so a leak exhausts the heap, visibly, before it silently eats
-//!   the budget the program also builds children from. The untyped itself is the hard ceiling
-//!   either way: `MAP` returns `OutOfMemory` when the region is spent, and the allocator reports
-//!   that as an allocation failure (which `alloc`'s default OOM handler turns into a panic).
+//! - **Which untyped slot** pays is the program's convention with its parent. No untyped, no heap.
+//! - **Where the heap lives**: [`DEFAULT_BASE`] (1 GiB) starts `address_space_map::HEAP`, the band
+//!   the address-space map keeps for a heap and nothing else.
+//! - **`max_bytes`** caps growth, so a leak exhausts the heap visibly before it eats the budget the
+//!   program builds children from. `MAP`'s `OutOfMemory` is the hard ceiling either way, reported
+//!   as an allocation failure. Allocating before `init` fails the same way.
 //!
-//! Allocating before `init` fails cleanly (null, then the OOM panic): there is nothing to grow
-//! from until the program says which capability pays.
+//! A spinlock is enough: the holder is always scheduled again to release it under this kernel's
+//! preemptive scheduler. It is not efficient under real contention (notes/heap.md).
 //!
-//! # Why a spinlock is enough
+//! **A crate of its own** because `talc` brings `alloc` into a program's crate graph (through
+//! `allocator-api2`), and a graph with `alloc` in it must name a global allocator. Only a program
+//! that names this crate links it, so a program with no heap needs none.
 //!
-//! `GlobalAlloc` must be `Sync`. Today a process is one thread (std's `thread::spawn` is
-//! `Unsupported` in milestone 27 phase one), so the lock is never contended; when threads within
-//! one process arrive, a spinlock stays correct under this kernel's preemptive scheduler because
-//! the holder always gets scheduled again to release it. What it is *not* is efficient under real
-//! contention; that is a problem worth having, and notes/heap.md carries the caveat.
+//! Name: provisional (lane/784-talc, 2026-10-21 UTC), for the type it holds; calef has not ruled
+//! on it.
+
+#![no_std]
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
@@ -188,7 +183,7 @@ impl MemoryRegionHeap {
         while got < want_pages {
             let va = start + got * PAGE;
             // SAFETY: plain syscall; the kernel validates the slot, the va, and the budget.
-            if unsafe { crate::invoke(inner.memory_region_slot, abi::memory_region::MAP, va, 0, 0) }
+            if unsafe { user_mode_runtime::invoke(inner.memory_region_slot, abi::memory_region::MAP, va, 0, 0) }
                 != 0
             {
                 break; // budget spent (OutOfMemory); keep what we got.

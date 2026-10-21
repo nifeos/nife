@@ -18,18 +18,12 @@ workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-# The heap algorithm (milestone 784 (reuse what the tree wrote), item d), ruled by calef on
-# 2026-10-21 (UTC) under §46 (thin primitives or whole subsystems): "A sounds right." Its core is
-# also generated into std (`cargo xtask std-src`). No features: `counters` and the rest stay off.
-talc = { version = "5.1.1", default-features = false }
 # The x86_64 timebase page (milestone 161's `cntfrq` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
 # `cntfrq`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
 # environment_contract's kernel-side deps are, since it is tiny, no_std, and dependency-free.
 counter_frequency_contract = { version = "0.1.0", path = "../counter_frequency_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
-# The address-space map (milestone 206 (a program image has under 896 KiB)): the heap's default base is its heap band.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # The entropy contract, for `entropy::fill` (lane/uuid-crate, 2026-10-06): the client loop four
 # programs had copied. Dependency-free and no_std, like the other two protocol crates above.
 entropy_contract = { version = "0.1.0", path = "../entropy_contract" }

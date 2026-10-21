@@ -33,7 +33,8 @@ pub(crate) fn std_inputs_stamp() -> u64 {
     let root = workspace_root();
     let mut files: Vec<PathBuf> = vec![
         root.join("crates/abi/src/lib.rs"),
-        // Each thread's cache in front of the heap (milestone 561), generated beside it.
+        // Each thread's cache in front of the heap (milestone 561 (a per-CPU allocator is what the
+        // current-CPU page was for)), generated beside it.
         root.join("crates/allocation_cache/src/lib.rs"),
         // The net PAL generates its wire constants verbatim from the net_stack contract; a change to it
         // must rebuild the farm just like a change to the ABI crate.

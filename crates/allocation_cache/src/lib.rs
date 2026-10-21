@@ -86,6 +86,8 @@ pub const fn class_bytes(class: usize) -> usize {
 }
 
 /// The layout every block of `class` is allocated from, and freed to, the heap under.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc, the name std's thread cache gave it.
 pub const fn class_layout(class: usize) -> Layout {
     // SAFETY: a nonzero multiple of `GRID`, a power of two, aligned to `GRID`.
     unsafe { Layout::from_size_align_unchecked(class_bytes(class), GRID) }
@@ -99,6 +101,8 @@ pub const fn class_layout(class: usize) -> Layout {
 /// cache then treats it as [`class_bytes`] long. A heap that rounds sizes its own way (`talc` adds a
 /// tag and a 32-byte chunk) would have given a 17-byte request fewer bytes than its class's 32, so
 /// the uncached path has to ask for the class's layout too.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc.
 pub const fn heap_layout(layout: Layout) -> Layout {
     match class(layout.size(), layout.align()) {
         Some(c) => class_layout(c),

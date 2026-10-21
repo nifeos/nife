@@ -1,0 +1,26 @@
+[package]
+name = "memory_region_heap"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# Bare-metal only, through user_mode_runtime's syscalls, so no host test, bench or doctest targets
+# (the same reasoning as user_mode_runtime's).
+[lib]
+test = false
+bench = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+abi = { version = "0.1.0", path = "../abi" }
+# The heap's default base is the address-space map's heap band.
+address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# The heap algorithm (milestone 784 (reuse what the tree wrote), item d), ruled by calef on
+# 2026-10-21 (UTC) under §46 (thin primitives or whole subsystems): "A sounds right." Its core is
+# also generated into std (`cargo xtask std-src`). No features: `counters` and the rest stay off.
+talc = { version = "5.1.1", default-features = false }
+user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }

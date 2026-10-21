@@ -102,6 +102,7 @@ members = [
     "crates/work_steal_slot",
     "crates/allocation_cache",
     "crates/user_mode_runtime",
+    "crates/memory_region_heap",
     "crates/thread_wake_handshake",
     "crates/coremark",
     "crates/video_terminal",

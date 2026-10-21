@@ -251,6 +251,7 @@ dependencies = [
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "non_volatile_memory_express",
@@ -538,6 +539,7 @@ dependencies = [
  "line_editor",
  "loaded_image_check",
  "login_contract",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "schedule_store",
@@ -892,6 +894,16 @@ name = "memory_corruption_canary_gate"
 version = "0.1.0"
 dependencies = [
  "loom",
+]
+
+[[package]]
+name = "memory_region_heap"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "talc",
+ "user_mode_runtime",
 ]
 
 [[package]]
@@ -1570,12 +1582,10 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "talc",
 ]
 
 [[package]]

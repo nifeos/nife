@@ -80,7 +80,7 @@ const BLK_PAGE_FRAME: u64 = 4;
 
 /// Where this program puts the page it shares with the block server. **Its choice**: it holds the
 /// frame and maps it (milestone 108). Clear of the heap, which runs from
-/// `user_mode_runtime::heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAX`].
+/// `memory_region_heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAX`].
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
@@ -99,8 +99,8 @@ const LBA: u64 = blank::LBA;
 const HEAP_MAX: u64 = 8 * 1024 * 1024;
 
 #[global_allocator]
-static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap =
+    memory_region_heap::MemoryRegionHeap::new();
 
 // The roles, in `a0`. Must match kernel/src/user/disk_service.rs.
 /// Create a filesystem in the nife data partition.
@@ -137,7 +137,7 @@ pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
     HEAP.init(
         MEMORY_REGION,
-        user_mode_runtime::heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE,
         HEAP_MAX,
     );
 

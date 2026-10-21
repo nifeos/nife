@@ -13,7 +13,7 @@ use super::*;
 pub(super) fn heap_and_interface(dev: &mut Nic) -> Interface {
     HEAP.init(
         MEMORY_REGION,
-        user_mode_runtime::heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE,
         HEAP_MAX,
     );
 
