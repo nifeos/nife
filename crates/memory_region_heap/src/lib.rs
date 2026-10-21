@@ -184,8 +184,15 @@ impl MemoryRegionHeap {
         while got < want_pages {
             let va = start + got * PAGE;
             // SAFETY: plain syscall; the kernel validates the slot, the va, and the budget.
-            if unsafe { user_mode_runtime::invoke(inner.memory_region_slot, abi::memory_region::MAP, va, 0, 0) }
-                != 0
+            if unsafe {
+                user_mode_runtime::invoke(
+                    inner.memory_region_slot,
+                    abi::memory_region::MAP,
+                    va,
+                    0,
+                    0,
+                )
+            } != 0
             {
                 break; // budget spent (OutOfMemory); keep what we got.
             }
@@ -226,10 +233,17 @@ impl Default for MemoryRegionHeap {
 fn shortfall(inner: &Inner, layout: Layout) -> u64 {
     let unit = talc::base::CHUNK_UNIT;
     let chunk = (layout.size() + core::mem::size_of::<usize>()).next_multiple_of(unit);
-    let over_aligned = if layout.align() > unit { layout.align() } else { 0 };
+    let over_aligned = if layout.align() > unit {
+        layout.align()
+    } else {
+        0
+    };
     let (first, free_top) = match inner.heap_end {
         // SAFETY: `end` is the heap end talc last returned, and the heap has not changed since.
-        Some(end) => (0, end.as_ptr() as usize - unsafe { inner.heap.reserved(end) }.up_to.as_ptr() as usize),
+        Some(end) => (
+            0,
+            end.as_ptr() as usize - unsafe { inner.heap.reserved(end) }.up_to.as_ptr() as usize,
+        ),
         None => (talc::min_first_heap_size::<DefaultBinning>(), 0),
     };
     (chunk + over_aligned + first).saturating_sub(free_top) as u64

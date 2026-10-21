@@ -388,7 +388,9 @@ mod tests {
                 // SAFETY: `p` is live, ours, of class `c`.
                 if let Err(p) = unsafe { cache.put(c, p) } {
                     // SAFETY: each spilled block came from the heap under `class_layout(c)`.
-                    cache.spill(c, |b| unsafe { heap.deallocate(b.as_ptr(), class_layout(c)) });
+                    cache.spill(c, |b| unsafe {
+                        heap.deallocate(b.as_ptr(), class_layout(c))
+                    });
                     // SAFETY: as the first `put`; the spill made room.
                     assert!(unsafe { cache.put(c, p) }.is_ok());
                 }
@@ -402,6 +404,9 @@ mod tests {
         cache.drain(|c, b| unsafe { heap.deallocate(b.as_ptr(), class_layout(c)) });
         let counters = heap.counters();
         assert_eq!(counters.allocation_count, 0);
-        assert_eq!(counters.fragment_count, 1, "everything given back coalesces");
+        assert_eq!(
+            counters.fragment_count, 1,
+            "everything given back coalesces"
+        );
     }
 }

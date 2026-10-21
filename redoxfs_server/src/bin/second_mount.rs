@@ -30,10 +30,10 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use redoxfs::{FileSystem, Node, TreePtr};
+use redoxfs_server::{BLOCK, BlockDisk, BlockIo, Server};
 use talc::base::Talc;
 use talc::base::binning::DefaultBinning;
 use talc::source::Manual;
-use redoxfs_server::{BLOCK, BlockDisk, BlockIo, Server};
 
 /// The pool the capped allocator draws from. Large enough to serve any cap we dial in; the *cap*,
 /// not the pool, is what limits the heap. Asked of the host's own allocator on the first growth and

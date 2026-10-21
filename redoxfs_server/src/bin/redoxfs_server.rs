@@ -94,8 +94,7 @@ const HEAP_MAX: u64 = 8 * 1024 * 1024;
 const CACHE_SLOTS: usize = redoxfs_server::CACHE_SLOTS;
 
 #[global_allocator]
-static HEAP: memory_region_heap::MemoryRegionHeap =
-    memory_region_heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 
 /// Read every written block straight back and compare (a `fix/redoxfs-repeat-write` diagnostic). Off
 /// by default: it doubles the write cost, and its scratch block is 4 KiB of stack inside a call
@@ -464,11 +463,7 @@ pub extern "C" fn _start(crash_at_write: u64, crash_after_blocks: u64, crash_tea
         inject::AFTER_BLOCKS.store(crash_after_blocks, Ordering::Relaxed);
         inject::TEAR_BYTES.store(crash_tear_bytes, Ordering::Relaxed);
     }
-    HEAP.init(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
-        HEAP_MAX,
-    );
+    HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // Open the image over blk IPC and bind to its root. A bad image (or a block server that never
     // answers correctly) faults here, which the kernel reports; the server never creates.

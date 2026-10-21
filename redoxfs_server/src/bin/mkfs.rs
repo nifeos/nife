@@ -99,8 +99,7 @@ const LBA: u64 = blank::LBA;
 const HEAP_MAX: u64 = 8 * 1024 * 1024;
 
 #[global_allocator]
-static HEAP: memory_region_heap::MemoryRegionHeap =
-    memory_region_heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 
 // The roles, in `a0`. Must match kernel/src/user/disk_service.rs.
 /// Create a filesystem in the nife data partition.
@@ -135,11 +134,7 @@ pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.init(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
-        HEAP_MAX,
-    );
+    HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // The shared page, mapped out of the same budget the heap draws on (milestone 108). It is
     // granted in all three wirings, so a failure here is a broken kernel rather than a control.

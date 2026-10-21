@@ -320,7 +320,8 @@ const TALC_SOURCE_DROPPED: [&str; 6] = [
 pub(super) fn talc_for_std(text: &str) -> String {
     let mut out = text.replace("crate::", TALC_IN_STD);
     while let Some(at) = out.find("feature = \"") {
-        let close = at + "feature = \"".len() + out[at + "feature = \"".len()..].find('"').unwrap_or(0);
+        let close =
+            at + "feature = \"".len() + out[at + "feature = \"".len()..].find('"').unwrap_or(0);
         out.replace_range(at..=close, "any()");
     }
     format!("{}\n", strip_doc_examples(&out).trim_end())
@@ -355,7 +356,9 @@ pub(super) fn std_generate_talc() -> bool {
         if rel == Path::new("source/mod.rs") {
             for line in TALC_SOURCE_DROPPED {
                 if text.lines().filter(|l| *l == line).count() != 1 {
-                    eprintln!("std-src: {TALC} {version}'s source/mod.rs no longer has `{line}` once");
+                    eprintln!(
+                        "std-src: {TALC} {version}'s source/mod.rs no longer has `{line}` once"
+                    );
                     return false;
                 }
             }
