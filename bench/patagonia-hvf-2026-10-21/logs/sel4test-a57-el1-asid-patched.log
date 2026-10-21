@@ -1,0 +1,245 @@
+
+ELF-loader started on CPU: <Reserved> Part: 0x0 r0p0
+  paddr=[40665000..4096f08f]
+No DTB passed in from boot loader.
+Looking for DTB in CPIO archive...found at 406a34e0.
+Loaded DTB from 406a34e0.
+   paddr=[4023d000..4023efff]
+ELF-loading image 'kernel' to 40000000
+  paddr=[40000000..4023cfff]
+  vaddr=[ffffffffc0000000..ffffffffc023cfff]
+  virt_entry=ffffffffc0000000
+ELF-loading image 'rootserver' to 4023f000
+  paddr=[4023f000..40644fff]
+  vaddr=[400000..805fff]
+  virt_entry=40ea98
+Enabling MMU and jumping to entry point...
+
+Warning:  gpt_cntfrq 24000000, expected 62500000
+Bootstrapping kernel
+Available phys memory regions: 1
+  [40000000..80000000)
+Reserved virt address space regions: 3
+  [ffffff8040000000..ffffff804023d000)
+  [ffffff804023d000..ffffff804023ef70)
+  [ffffff804023f000..ffffff8040645000)
+Booting all finished, dropped to user space
+Node 0 of 1
+IOPT levels:     0
+IPC buffer:      0x806000
+Empty slots:     [1111 --> 8192)
+sharedFrames:    [0 --> 0)
+userImageFrames: [23 --> 1053)
+userImagePaging: [16 --> 21)
+untypeds:        [1053 --> 1111)
+Initial thread domain: 0
+Initial thread cnode size: 13
+List of untypeds
+------------------
+Paddr    | Size   | Device
+0 | 27 | 1
+0x8010000 | 16 | 1
+0x8020000 | 17 | 1
+0x8040000 | 18 | 1
+0x8080000 | 17 | 1
+0x81a0000 | 17 | 1
+0x81c0000 | 18 | 1
+0x8200000 | 21 | 1
+0x8400000 | 22 | 1
+0x8800000 | 23 | 1
+0x9000000 | 24 | 1
+0xa000000 | 25 | 1
+0xc000000 | 26 | 1
+0x10000000 | 28 | 1
+0x20000000 | 29 | 1
+0x80000000 | 31 | 1
+0x100000000 | 32 | 1
+0x200000000 | 33 | 1
+0x400000000 | 34 | 1
+0x800000000 | 35 | 1
+0x1000000000 | 36 | 1
+0x2000000000 | 37 | 1
+0x4000000000 | 38 | 1
+0x8000000000 | 43 | 1
+0x88000000000 | 42 | 1
+0xc8000000000 | 41 | 1
+0xe8000000000 | 40 | 1
+0xf8000000000 | 39 | 1
+0x40000000 | 16 | 0
+0x4023ef70 | 4 | 0
+0x4023ef80 | 7 | 0
+0x40645000 | 12 | 0
+0x40646000 | 13 | 0
+0x40648000 | 15 | 0
+0x40650000 | 16 | 0
+0x40660000 | 17 | 0
+0x40680000 | 19 | 0
+0x40700000 | 20 | 0
+0x40800000 | 23 | 0
+0x41000000 | 24 | 0
+0x42000000 | 25 | 0
+0x44000000 | 26 | 0
+0x48000000 | 27 | 0
+0x50000000 | 28 | 0
+0x60000000 | 28 | 0
+0x70000000 | 27 | 0
+0x78000000 | 26 | 0
+0x7c000000 | 25 | 0
+0x7e000000 | 24 | 0
+0x7f000000 | 23 | 0
+0x7f800000 | 22 | 0
+0x7fc00000 | 21 | 0
+0x7fe00000 | 20 | 0
+0x7ff00000 | 19 | 0
+0x7ffcb800 | 11 | 0
+0x7ffcc000 | 14 | 0
+0x7ffd0000 | 16 | 0
+0x7ffe0000 | 17 | 0
+Untyped summary
+1 untypeds of size 4
+1 untypeds of size 7
+1 untypeds of size 11
+1 untypeds of size 12
+1 untypeds of size 13
+1 untypeds of size 14
+1 untypeds of size 15
+4 untypeds of size 16
+5 untypeds of size 17
+2 untypeds of size 18
+2 untypeds of size 19
+2 untypeds of size 20
+2 untypeds of size 21
+2 untypeds of size 22
+3 untypeds of size 23
+3 untypeds of size 24
+3 untypeds of size 25
+3 untypeds of size 26
+3 untypeds of size 27
+3 untypeds of size 28
+1 untypeds of size 29
+1 untypeds of size 31
+1 untypeds of size 32
+1 untypeds of size 33
+1 untypeds of size 34
+1 untypeds of size 35
+1 untypeds of size 36
+1 untypeds of size 37
+1 untypeds of size 38
+1 untypeds of size 39
+1 untypeds of size 40
+1 untypeds of size 41
+1 untypeds of size 42
+1 untypeds of size 43
+Switching to a safer, bigger stack... 
+seL4 Test
+=========
+
+Starting test suite sel4test
+Starting test 0: Test that there are tests
+Starting test 1: SYSCALL0000
+Starting test 2: SYSCALL0001
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+Starting test 3: SYSCALL0002
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+Starting test 4: SYSCALL0003
+Starting test 5: SYSCALL0004
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404c2c]: CNodeCap: Illegal Operation attempted.>>
+Starting test 6: SYSCALL0005
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+Starting test 7: SYSCALL0006
+          Starting test 8: SYSCALL0010
+Starting test 9: SYSCALL0011
+Starting test 10: SYSCALL0012
+Starting test 11: SYSCALL0013
+Starting test 12: SYSCALL0014
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+Starting test 13: SYSCALL0015
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404bbc]: CNodeCap: Illegal Operation attempted.>>
+Starting test 14: SYSCALL0016
+Starting test 15: SYSCALL0017
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+<<seL4(CPU 0) [decodeCNodeInvocation/54 T0xffffff807ffcb400 "sel4test-driver" @404d0c]: CNodeCap: Illegal Operation attempted.>>
+Starting test 16: BIND0001
+Running test BIND0001 (Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and notification notifications.)
+Test BIND0001 passed
+Starting test 17: BIND0002
+Running test BIND0002 (Test that a bound tcb waiting on its bound notification recieves notifications)
+Test BIND0002 passed
+Starting test 18: BIND0003
+Running test BIND0003 (Test IPC ordering 1) bound tcb waits on bound notification 2, true) another tcb sends a message)
+Test BIND0003 passed
+Starting test 19: BIND0004
+Running test BIND0004 (Test IPC ordering 2) bound tcb waits on bound notification 1, true) another tcb sends a message)
+Test BIND0004 passed
+Starting test 20: CACHEFLUSH0005
+Running test CACHEFLUSH0005 (Test that cache maintenance outside the kernel window is disallowed)
+
+
+KERNEL DATA ABORT!
+Faulting instruction: 0xffffffffc00145b0
+FAR: 0x10fb3000 ESR (DFSR): 0x96000143
+halting...
+Kernel entry via Syscall, number: 1, Call
+Cap type: 1, Invocation tag: 42

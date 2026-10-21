@@ -1,0 +1,20 @@
+
+ELF-loader started on CPU: <Reserved> Part: 0x0 r0p0
+  paddr=[6066a000..6097c08f]
+No DTB passed in from boot loader.
+Looking for DTB in CPIO archive...found at 606ab510.
+Loaded DTB from 606ab510.
+   paddr=[60241000..60243fff]
+ELF-loading image 'kernel' to 60000000
+  paddr=[60000000..60240fff]
+  vaddr=[ffc0000000..ffc0240fff]
+  virt_entry=ffc0000000
+ELF-loading image 'rootserver' to 60244000
+  paddr=[60244000..60649fff]
+  vaddr=[400000..805fff]
+  virt_entry=40ea98
+Enabling hypervisor MMU and jumping to entry point...
+
+seL4 called fail at /w/th/kernel/include/arch/arm/armv/armv8-a/64/armv/vcpu.h:641 in function vcpu_init_vtcr, saying "Processor does not support a 44 bit PA"
+halting...
+Kernel entry via Unknown (0)

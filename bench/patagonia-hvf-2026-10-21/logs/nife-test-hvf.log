@@ -1,0 +1,10 @@
+# script/test --hvf on main at f87c9b5c4: the result lines and every test whose name says iommu or dma
+test kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain ... ok
+test kernel::virtio::tests::the_validator_refuses_a_descriptor_that_escapes_the_dma_region ... ok
+test result: ok. 140 passed
+test system_tests::user::block_driver_tests::the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region ... ok
+test system_tests::user::display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu ... ok
+test system_tests::user::e1000e_tests::net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu ... ok
+test system_tests::user::entropy_tests::a_client_obtains_unpredictable_bytes_from_rndrrs_with_no_device_at_all ... skipped: no instruction-mode entropy source on this build (aarch64: ID_AA64ISAR0_EL1.RNDR is clear, so no FEAT_RNG. riscv64: the ISA has neither instruction, refused on purpose in design/roadmap/0162-cpu-instruction-entropy.md). --cpu neoverse-n2 reaches the passing path under TCG only, no CI leg takes it, and the HVF leg cannot boot this kernel at all today (milestone 227). Read this test's doc comment first
+test system_tests::user::non_volatile_memory_express_tests::a_confined_el0_server_cannot_dma_outside_its_region ... ok
+test result: ok. 387 passed, 14 skipped

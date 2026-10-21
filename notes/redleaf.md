@@ -138,17 +138,18 @@ RedLeaf's Table 1, on a CloudLab c220g2 with frequency scaling and seL4's meltdo
 gives 124 cycles for a cross-domain invocation against seL4's 834. The quotable number is the ratio
 on one machine, roughly 6.7x, not the absolute: the absolute should never be set beside a nife
 figure. A RedLeaf crossing does not change address space or privilege level and does not schedule,
-so seL4's row is a different guarantee. nife's `ipc_rtt_el0` is ~960 to ~1,420 cycles under HVF,
-which `notes/benchmarks.md` puts at roughly 1.1x to 1.7x an L4-lineage round trip. The matched
-comparison is not measured at all until milestone 188 (the IPC fastpath) closes it. Atmosphere's
+so seL4's row is a different guarantee. On one core under HVF, nife's `ipc_rtt_el0` costs about
+4.6 times seL4's `Call` plus `ReplyRecv` ([arm-plan-under-hvf.md](arm-plan-under-hvf.md)), with
+four syscalls to seL4's two. No EL0 bench times nife's `CALL`/`REPLY` path, so the matched
+comparison is still unmeasured. Atmosphere's
 Table 3, from RedLeaf's own authors, puts a hardware-isolated Rust kernel's call/reply at 1,058
 cycles against seL4's 1,026. [`crossing-costs.md`](redleaf/crossing-costs.md) has both tables,
 their conditions and the caveats.
 
 A verified Rust microkernel with hardware isolation, built by the RedLeaf team five years later,
-pays about a thousand cycles for call/reply and lands within 3% of seL4. That is the same shape as
-nife's *"1.1x to 1.7x"* against seL4, arrived at independently, on x86_64, on silicon. The ~6-8x
-that language isolation buys is therefore not a RedLeaf-specific artifact and not a tuning failure on
+pays about a thousand cycles for call/reply and lands within 3% of seL4, on x86_64, on silicon.
+nife's general path does not land there yet: on one core it is about 4.6 times seL4's fastpath. The
+~6-8x that language isolation buys is therefore not a RedLeaf-specific artifact and not a tuning failure on
 anyone's part. It is what a privilege and address-space crossing costs, and both halves of that
 sentence have now been measured twice by the same group. Risk 4 says the per-crossing cost *"cannot
 be engineered away."* On this evidence, that is not a fear. It is measured, and the question a

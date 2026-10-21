@@ -53,12 +53,14 @@ set -e
 # PSCI starts every secondary at EL2 too, whichever level called `CPU_ON`, so `secondary_boot`
 # takes the same drop.
 #
-# TCG only. HVF has no nested virtualization to offer, so asking for both is a mistake worth
-# failing on rather than silently ignoring, the same posture as NIFE_CPU under HVF below.
+# TCG only. HVF does start a guest at EL2 with `virtualization=on`, but that EL2 ignores
+# `HCR_EL2.TGE` and has no VHE (notes/arm-plan-under-hvf.md), and this path has never been run on
+# it. So asking for both is refused rather than silently ignored, the same posture as NIFE_CPU
+# under HVF below.
 VIRT_EL2=""
 if [ -n "$NIFE_EL2" ]; then
     if [ "$NIFE_ACCEL" = "hvf" ]; then
-        echo "qemu-runner-aarch64: NIFE_EL2 cannot apply under HVF (no nested virtualization; drop NIFE_ACCEL=hvf)" >&2
+        echo "qemu-runner-aarch64: NIFE_EL2 is TCG only (HVF's guest EL2 ignores HCR_EL2.TGE; drop NIFE_ACCEL=hvf)" >&2
         exit 1
     fi
     VIRT_EL2=",virtualization=on"
