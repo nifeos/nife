@@ -40,8 +40,29 @@ pub(crate) enum Kind {
     Listener,
 }
 
-/// The largest datagram/segment buffered per socket.
+/// A UDP socket's buffer each way, and a TCP socket's send buffer.
 pub(crate) const SOCK_BUF: usize = 2048;
+
+/// **A TCP socket's receive buffer, which is the window it advertises.** A window below two
+/// segments lets a peer send one segment per round trip (the sender's silly-window avoidance holds
+/// back the remainder), and every round trip then pays the stack's wait for the next frame.
+/// 16 KiB lets eleven 1460-byte segments fly at once. Measured on `cargo xtask network-bench`'s
+/// `e1000e` with added wire delay, 8 MiB in: 2 KiB moved 8.6 Mbit/s, 8 KiB 34, 16 KiB 67
+/// (notes/designware-ethernet/the-receive-rate.md has the method). Two bounds hold it, checked
+/// below.
+pub(crate) const TCP_RECEIVE_BUF: usize = 16 * 1024;
+
+/// A full window must fit in a polled NIC's receive ring, which holds one slot back and drops a
+/// frame that finds no free slot. A window larger than the ring would turn a burst into loss.
+const _: () = {
+    let segment = 1460;
+    assert!(TCP_RECEIVE_BUF <= (designware_ethernet::RX_ENTRIES as usize - 1) * segment);
+    assert!(TCP_RECEIVE_BUF <= (e1000e::RX_ENTRIES as usize - 1) * segment);
+};
+
+/// Every socket open at once, each a TCP connection, must leave a quarter of the heap for smoltcp's
+/// own state and the frames in flight; allocation failure panics the whole stack.
+const _: () = assert!(SOCKETS * (TCP_RECEIVE_BUF + SOCK_BUF) <= HEAP_MAX as usize / 4 * 3);
 
 /// **The open sockets of every client, keyed by the badge on each one's capability** (§255 (each
 /// socket is its own capability)). An entry is a place in this table and a window VA, never a
@@ -233,7 +254,7 @@ pub(crate) fn open_tcp(
 ) -> Result<(usize, u64), u64> {
     let entry = table.free().ok_or(REP_ERR)?;
     let handle = sockets.add(tcp::Socket::new(
-        tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
+        tcp::SocketBuffer::new(vec![0u8; TCP_RECEIVE_BUF]),
         tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
     ));
     let local_port = ports.next(instant().total_millis() as u64, |p| table.port_held(p));
