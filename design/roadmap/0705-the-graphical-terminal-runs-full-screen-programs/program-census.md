@@ -42,7 +42,8 @@ truth, and `vt100` agrees with it at 80 of the 97 checkpoints below.
 | Midnight Commander | 4.8.33, `-u` | S-Lang | move, switch panel, quit (it did not exit; the harness ended it) |
 | tmux | 3.8, empty config | ncursesw 6.6 | split both ways, run commands and vim inside, close |
 
-`nano` is milestone 170's port and builds on ncurses through basalt. Milestone 169's `kilo` was not
+`nano` is the port of milestone 170 (`nano`: a real, full-featured screen editor) and builds on
+ncurses through basalt. The `kilo` of milestone 169 (`kilo`: the smallest real text editor) was not
 run; from memory it sends `CSI ? 25 l/h`, `CSI H`, `CSI K`, `CSI 2 J`, SGR 7 and `CSI 6 n`, all of
 which steps 1 and 6 cover.
 
@@ -121,7 +122,8 @@ compared, so these numbers flatter every engine equally.
 
 Midnight Commander matches because it draws with `cup`, `el`, SGR and UTF-8 box characters, all of
 which ours handles. Its boxes draw as missing-glyph boxes, since the glyph atlas is ASCII
-(milestone 142's repertoire, not this engine's).
+(the repertoire of milestone 142, a text display good enough that people use it instead of a GUI,
+not this engine's).
 
 The plan's predictions come from the same recordings. A checkpoint is predicted to match once every
 screen-changing sequence sent before it is implemented. That is an upper bound: it assumes each

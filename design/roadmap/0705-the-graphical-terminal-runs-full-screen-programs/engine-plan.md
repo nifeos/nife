@@ -13,9 +13,10 @@ engine's feature list is not the target, because it records what that engine's u
 the order of work is: measure the programs, choose the entry, list its capabilities, then read the
 reference engines for behavior and for anything the programs need that the census missed.
 
-Ten programs were recorded: vim, Neovim, `less`, `top`, `htop`, `nano` (milestone 170's port), an
-ncurses test, Emacs, Midnight Commander and tmux. Replayed through today's engine, 13 of 97
-checkpoints match the reference screen; `vt100` matches 80. vttest passes 7 of 24 screens.
+Ten programs were recorded: vim, Neovim, `less`, `top`, `htop`, `nano`, an ncurses test, Emacs,
+Midnight Commander and tmux. `nano` is the port of milestone 170 (`nano`: a real, full-featured
+screen editor). Replayed through today's engine, 13 of 97 checkpoints match the reference screen;
+`vt100` matches 80. vttest passes 7 of 24 screens.
 
 Four findings shape the plan.
 

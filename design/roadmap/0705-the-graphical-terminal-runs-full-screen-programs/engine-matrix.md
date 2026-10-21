@@ -22,9 +22,12 @@ alacritty paths are under `src/` (`term` is `src/term/mod.rs`), libghostty-vt's 
 `src/terminal/`. Each location names a function or a dispatch case; §277 (cite a heading or a symbol) keeps line numbers out. `vte` is a parser, not an engine: its Y means it
 recognizes the sequence and calls a `Handler` method, and the state is the implementer's.
 
-"ours" is `video_terminal` at `main` 810666a39. "step" is the [engine plan](engine-plan.md)'s
-increment that adds it. "out" is out of scope, with the reason in the plan. "consume" means the
-sequence is parsed and dropped on purpose, like a window title on a screen with no title bar.
+Two columns are this tree's own:
+
+- ours: `video_terminal` at `main` 810666a39.
+- step: the [engine plan](engine-plan.md)'s increment that adds it. A step of "out" is out of
+  scope, with the reason in the plan. A step of "consume" parses the sequence and drops it on
+  purpose, like a window title on a screen with no title bar.
 
 ## Size and tests
 
