@@ -1702,6 +1702,7 @@ dependencies = [
  "capability_manifest_note",
  "compositor",
  "documentation",
+ "file_allocation_table",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "glyph_atlas",

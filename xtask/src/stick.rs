@@ -385,7 +385,7 @@ pub(super) fn stick_boot() -> bool {
             eprintln!("stick-boot: {file} is not staged; run `cargo xtask stick` first");
             return false;
         }
-        ok &= boot_and_check("stick-boot", arch, file, &[], &[]);
+        ok &= boot_and_check("stick-boot", arch, &stick_dir(), file, &[], &[]);
     }
     ok
 }
@@ -423,6 +423,11 @@ fn verdict_failed(transcript: &str) -> Option<&str> {
 /// TCG, where it asserts the loader's GICv3 and ITS lines (the MADT's types 0x0E and 0x0F read
 /// out of the tables QEMU wrote).
 ///
+/// **The second boot is from the cloud boot disk** ([`crate::cloud_image`]), not the stick
+/// directory: the same file on a GPT disk this tree wrote, which is what a person imports into
+/// Oracle. So the disk is booted by every run of this gate rather than only by the person who
+/// uploads it.
+///
 /// Name: provisional (milestone 578's lane, 2026-10-19 UTC), in the family of `stick-boot` and
 /// `uefi-boot`, naming the description it boots from.
 pub(super) fn acpi_boot() -> bool {
@@ -431,35 +436,57 @@ pub(super) fn acpi_boot() -> bool {
         eprintln!("acpi-boot: cannot create {}: {e}", boot_dir().display());
         return false;
     }
+    if !payload_aarch64() {
+        return false;
+    }
+    let disk = match crate::cloud_image::write(&boot_dir().join("BOOTAA64.EFI")) {
+        Ok(disk) => {
+            eprintln!("acpi-boot: wrote {}", disk.display());
+            disk
+        }
+        Err(e) => {
+            eprintln!("acpi-boot: the cloud boot disk: {e}");
+            return false;
+        }
+    };
     // `&` rather than `&&` between the boots, so one GIC's failure does not hide the other's.
-    payload_aarch64()
-        && boot_and_check(
-            "acpi-boot",
-            "aarch64",
-            "BOOTAA64.EFI",
-            &[("NIFE_ACPI", "on")],
-            &[ACPI_LINE],
-        ) & boot_and_check(
-            "acpi-boot",
-            "aarch64",
-            "BOOTAA64.EFI",
-            &[("NIFE_ACPI", "on"), ("NIFE_GIC", "3")],
-            &[
-                ACPI_LINE,
-                " core(s), GICv3 at 0x0000000008000000",
-                "uefi_loader:   GIC ITS at 0x0000000008080000;",
-            ],
-        )
+    boot_and_check(
+        "acpi-boot",
+        "aarch64",
+        &stick_dir(),
+        "BOOTAA64.EFI",
+        &[("NIFE_ACPI", "on")],
+        &[ACPI_LINE],
+    ) & boot_and_check(
+        "acpi-boot",
+        "aarch64",
+        &disk,
+        "BOOTAA64.EFI",
+        &[("NIFE_ACPI", "on"), ("NIFE_GIC", "3")],
+        &[
+            ACPI_LINE,
+            " core(s), GICv3 at 0x0000000008000000",
+            "uefi_loader:   GIC ITS at 0x0000000008080000;",
+        ],
+    )
 }
 
 /// The loader's line for a machine it describes from ACPI, which an `acpi=off` boot never prints.
 const ACPI_LINE: &str = "uefi_loader: no device tree; describing this machine from ACPI";
 
-/// Boot the staged stick for `arch` and check the transcript holds [`BOOTED`] and `also`, with no
-/// panic. `who` prefixes every line, so a failure names the gate that saw it.
-fn boot_and_check(who: &str, arch: &str, file: &str, env: &[(&str, &str)], also: &[&str]) -> bool {
+/// Boot `medium` (the stick directory or a raw disk) for `arch` and check the transcript holds
+/// [`BOOTED`] and `also`, with no panic. `who` prefixes every line, so a failure names the gate
+/// that saw it.
+fn boot_and_check(
+    who: &str,
+    arch: &str,
+    medium: &Path,
+    file: &str,
+    env: &[(&str, &str)],
+    also: &[&str],
+) -> bool {
     let output = Command::new("helpers/qemu-stick.sh")
-        .args([arch, &stick_dir().display().to_string()])
+        .args([arch, &medium.display().to_string()])
         .current_dir(workspace_root())
         .env(
             "NIFE_STICK_TIMEOUT",
@@ -489,7 +516,10 @@ fn boot_and_check(who: &str, arch: &str, file: &str, env: &[(&str, &str)], also:
         passed = false;
     }
     if passed {
-        eprintln!("{who}: {arch}: booted from {file} to the progenitor");
+        eprintln!(
+            "{who}: {arch}: booted from {file} on {} to the progenitor",
+            medium.display()
+        );
     } else {
         let tail: Vec<&str> = transcript.lines().rev().take(25).collect();
         for line in tail.iter().rev() {

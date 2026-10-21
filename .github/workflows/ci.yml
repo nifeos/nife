@@ -1011,6 +1011,14 @@ jobs:
       # reaches the aarch64 kernel as a device tree the loader writes)), and nothing else on a pull
       # request boots that path.
       - run: helpers/hang_evidence.py run -- script/ci-build acpi-boot
+      # The disk that boot just booted, for a person importing it into a cloud
+      # (notes/rented-metal/oracle-a1.md). Sparse 302 MiB; about 2.5 MB compressed.
+      - name: Upload the cloud boot disk
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: nife-aarch64-cloud-image
+          path: target/cloud-image/nife-aarch64.img
+          retention-days: 14
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
