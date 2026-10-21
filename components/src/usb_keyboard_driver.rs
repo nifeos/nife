@@ -108,6 +108,11 @@ const CONTROL_BUFFER: MappedWindow =
 /// One millisecond, in the units [`monotonic_nanos`] counts.
 const MS: u64 = 1_000_000;
 
+/// **How long the root ports get to show their devices** after the controller starts, before the
+/// scan reads them: USB 2.0's `TSIGATT` (section 7.1.7.3), the 100 ms a device has to attach after
+/// its port is powered, which is also the least Linux's hub driver waits after powering a root hub.
+const SETTLE_MS: u64 = 100;
+
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
 /// The NVMe server's barrier and for its reason (`components/src/non_volatile_memory_express.rs`
 /// says why it is local rather than shared): the doorbell is a direct store to a device page.
@@ -658,21 +663,21 @@ impl Host {
     }
 
     /// Power every port that is not powered (only on a controller with port power control),
-    /// and give a device the specification's 20 ms to come up on it.
+    /// then wait [`SETTLE_MS`] before anything reads a port.
+    ///
+    /// The wait is unconditional because the controller reset disconnects every device, powered
+    /// or not: a root port reads not connected until the device it already had is detected again.
+    /// QEMU reports the connection the moment the controller runs, so only silicon shows this.
     fn power_ports(&self) {
-        let mut powered = false;
         for n in 1..=self.caps.max_ports {
             let sc = self.reg(self.caps.portsc(n));
             if sc & port::POWER == 0 {
                 self.set_reg(self.caps.portsc(n), port::write_value(sc, port::POWER));
-                powered = true;
             }
         }
-        if powered {
-            let end = deadline(20);
-            while !past(end) {
-                core::hint::spin_loop();
-            }
+        let end = deadline(SETTLE_MS);
+        while !past(end) {
+            core::hint::spin_loop();
         }
     }
 
