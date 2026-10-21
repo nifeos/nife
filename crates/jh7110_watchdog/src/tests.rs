@@ -147,3 +147,39 @@ fn a_counter_on_the_oscillator_agrees_and_one_on_half_of_it_does_not() {
     assert!(rate_agrees(at(2_350_000), CORE_CLOCK_HZ));
     assert!(!rate_agrees(at(1_200_000), CORE_CLOCK_HZ));
 }
+
+#[test]
+fn relocking_writes_something_other_than_the_key() {
+    // Comparing a sequence against `RELOCK` cannot catch a `RELOCK` that writes the key itself,
+    // which would leave the watchdog unlocked after every sequence.
+    let Access::Write { offset, value } = disarm_sequence()[2] else {
+        panic!("the last access is not a store");
+    };
+    assert_eq!(offset, LOCK);
+    assert_ne!(value, UNLOCK_KEY);
+}
+
+#[test]
+fn the_control_bits_are_linuxs_enable_at_bit_0_and_reset_at_bit_1() {
+    // `STARFIVE_WDT_EN_SHIFT 0` and `STARFIVE_WDT_JH7110_RST_EN_SHIFT 1`. With the reset bit
+    // wrong, the arm sequence sets nothing that resets and the wedge is never recovered.
+    assert_eq!((CONTROL_ENABLE, CONTROL_RESET_ENABLE), (0b01, 0b10));
+}
+
+#[test]
+fn the_largest_count_the_register_holds_is_accepted() {
+    // At a 1 Hz clock, `2 * u32::MAX` seconds is exactly a full register.
+    let full = 2 * u64::from(u32::MAX);
+    assert_eq!(load_for(full, 1), Some(u32::MAX));
+    assert_eq!(load_for(full + 2, 1), None);
+}
+
+#[test]
+fn a_counter_running_fast_is_refused_too() {
+    // A counter on a faster clock than the count assumes resets early, before the soak has stalled.
+    assert!(!rate_agrees(2 * CORE_CLOCK_HZ, CORE_CLOCK_HZ));
+    assert!(!rate_agrees(
+        CORE_CLOCK_HZ + CORE_CLOCK_HZ / 10,
+        CORE_CLOCK_HZ
+    ));
+}

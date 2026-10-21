@@ -70,7 +70,7 @@ pub const UNLOCK_KEY: u32 = 0x1acc_e551;
 /// Bit 0 of [`CONTROL`]: the counter runs and its interrupt is live.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
-pub const CONTROL_ENABLE: u32 = 1 << 0;
+pub const CONTROL_ENABLE: u32 = 0b01;
 /// Bit 1 of [`CONTROL`]: the second expiry asserts reset. Linux's `STARFIVE_WDT_JH7110_RST_EN_SHIFT`.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
