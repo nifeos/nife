@@ -44,12 +44,6 @@ pub(super) fn swish_check_omits(arch: &str, line: &str) -> Option<&'static str> 
 pub(super) const X86_HAND_OVER_START: &str =
     "nife: handing the system to the userspace progenitor.";
 
-/// The last thing `watch_the_progenitor` prints (`kernel/src/x86_64_boot.rs`) once the progenitor has
-/// outlived its ten-second watch, which is the ordinary interactive outcome. The `x86_64` leg waits
-/// for it before typing; see [`swish_check_leg`]'s doc. The milestone it names is milestone 299
-/// (the x86 port-range capability: the serial console becomes a userspace driver).
-pub(super) const X86_HAND_OVER_REPORT: &str = "as a port capability (milestone 299).";
-
 /// How long to wait for the banner, for one line's echo, and for the whole transcript. Generous:
 /// under TCG on a loaded machine a cold boot to the prompt is seconds, and a gate that flakes on a
 /// busy laptop is a gate people learn to ignore.

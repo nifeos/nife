@@ -94,6 +94,11 @@ pub(crate) fn vars_path() -> PathBuf {
     workspace_root().join("target/ovmf-vars-install.fd")
 }
 
+/// **`ls`, typed at the shell's first prompt**: the banner, then the `$ ` after it. The banner comes
+/// first so that `$ ` is read only once the shell exists; a send's marker is looked for after the
+/// previous one's, and an empty send types nothing.
+pub(crate) const LS_AT_THE_PROMPT: [(&str, &str); 2] = [(boot_ladder::PROMPT, ""), ("$ ", "ls\r")];
+
 /// **The gate.** `true` only if both boots did what they were supposed to.
 pub(crate) fn install_boot() -> bool {
     if !prepare() {
@@ -109,8 +114,8 @@ pub(crate) fn install_boot() -> bool {
         &empty_esp_dir(),
         true,
         &[
-            // The progenitor's own last line, which is printed after the prompt exists.
-            ("the progenitor is running at ring 3", "ls\r"),
+            LS_AT_THE_PROMPT[0],
+            LS_AT_THE_PROMPT[1],
             // And then read the file back, which is what makes this an install rather than a boot.
             ("made-on-target", "wc made-on-target\r"),
             // **The disk tree, beside the filesystem on the same disk** (milestone 834 (ioping on nife and Linux)): the
@@ -196,7 +201,7 @@ fn stick_on_the_installed_machine() -> bool {
         &install_esp_dir(),
         false,
         // `ls` asks for the filesystem, which is what a person at a live stick does first.
-        &[("the progenitor is running at ring 3", "ls\r")],
+        &LS_AT_THE_PROMPT,
         "nife capability shell.",
         300,
         // A few seconds after the prompt, so a write the mount or `ls` started has landed.
@@ -518,20 +523,26 @@ fn boot_lingering(
         transcript.push_str(&chunk);
         since_send.push_str(&chunk);
 
-        if let Some((marker, text)) = next
-            && since_send.contains(marker)
+        let mut stuck = false;
+        while let Some((marker, text)) = next
+            && let Some(at) = since_send.find(marker)
         {
             // The machine has just printed a prompt; the byte after it is the one being waited for.
             // A short settle keeps the answer out of the same read the firmware is still draining.
             std::thread::sleep(std::time::Duration::from_millis(500));
             if serial.write_all(text.as_bytes()).is_err() || serial.flush().is_err() {
                 eprintln!("install-boot: could not type {text:?} at the machine");
+                stuck = true;
                 break;
             }
-            // Cleared rather than kept, so two sends that share a marker substring cannot both
-            // fire on one appearance of it.
-            since_send.clear();
+            // Cut through the marker, so two sends that share a marker substring cannot both fire
+            // on one appearance of it. What follows it is kept, because the next marker can arrive
+            // in the same read: the shell's banner and the `$ ` after it usually do.
+            since_send.drain(..at + marker.len());
             next = pending.next();
+        }
+        if stuck {
+            break;
         }
 
         if next.is_none() && transcript.contains(until) {

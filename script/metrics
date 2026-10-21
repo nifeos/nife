@@ -2814,9 +2814,9 @@ CHARTS = [
      [(arch, 'baseline_drift_rows_over_5pct_' + arch) for arch in baseline_drift.ARCHES],
      1.0, None, 'baseline_drift_rows_over_5pct_aarch64'),
     # Milestone 857's two (provisional, lane/crate-release-gates). A pipeline that starts flat is
-    # correct: all nine crates sit in the tree, and a band moves only when one clears a stage.
+    # correct: all eight crates sit in the tree, and a band moves only when one clears a stage.
     ('crate-release.svg', 'The crates 857 releases, by how far each has got',
-     'milestones 813 to 821; each crate at the furthest stage it has cleared, every earlier one '
+     'milestones 813 to 820; each crate at the furthest stage it has cleared, every earlier one '
      'included; "standalone" is the static half of script/crate-standalone',
      [('in the tree', 'crates_in_tree'), ('standalone (static)', 'crates_standalone_static'),
       ('proven', 'crates_proven'), ('allowlisted', 'crates_allowlisted'),

@@ -124,6 +124,12 @@ Run table: [soak/radon-2026-10-10.md](soak/radon-2026-10-10.md).
 Thirteen 120-second reboot draws from one power-on, every reset clean, zero defects; two draws
 never crossed. Run table: [soak/radon-2026-10-20.md](soak/radon-2026-10-20.md).
 
+## radon, 2026-10-21
+
+Twenty-five 120-second reboot draws from one power-on, zero defects; seven draws never crossed.
+One draw reset without the kernel's reset sequence, the only such reset in thirty-eight draws. Run
+table: [soak/radon-2026-10-21.md](soak/radon-2026-10-21.md).
+
 ## How a hang is told from a slow run
 
 One rule, and both halves of the tree implement it rather than agreeing to:
@@ -230,6 +236,9 @@ xenon takes this procedure (its stick: `cargo xtask uefi-image --features soak_t
 build arms the Intel TCO watchdog, as every x86_64 soak does, so a wedged xenon is reset 60 s after
 its last beat (milestone 593 (a wedged kernel resets itself)). `--features unwatched_soak_test` in
 place of `soak_test` is the opt-out.
+radon's soak arms the JH7110's watchdog only when built with
+`script/board-image --soak --extra-features watchdog_soak_test`, until the bench step in milestone
+593's block shows it resets.
 argon cannot yet boot nife; milestone 225's block says why.
 
 ## The rebooting soak on radon, which is milestone 249's experiment

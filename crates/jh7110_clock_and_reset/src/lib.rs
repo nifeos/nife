@@ -516,27 +516,10 @@ pub fn pmic_bus(
         }
         let mut bus = PmicBus::fallback(Some(pmic), 0);
         fill_pmic_address_and_bus(tree, pmic, &mut bus);
-        bus.len = 0;
-        for (list, is_clock) in [(clocks, true), (resets, false)] {
-            let Some(list) = list else { continue };
-            let specs = list.chunks(8);
-            let total = specs.len();
-            for (i, spec) in specs.enumerate() {
-                match sys_step(tree, spec, is_clock)? {
-                    Spec::Step(step) if bus.len < MAX_PMIC_BUS_STEPS => {
-                        bus.steps[bus.len] = step;
-                        bus.len += 1;
-                    }
-                    Spec::Step(_) => bus.truncated = true,
-                    Spec::Foreign => bus.skipped += 1,
-                    // The stride is wrong from here on, so nothing after this is a specifier.
-                    Spec::Unreadable => {
-                        bus.skipped += total - i;
-                        break;
-                    }
-                }
-            }
-        }
+        let collected = collect_sys_steps(tree, clocks, resets, &mut bus.steps)?;
+        bus.len = collected.len;
+        bus.skipped = collected.skipped;
+        bus.truncated = collected.truncated;
         if bus.len == 0 {
             return Ok(PmicBus::fallback(Some(pmic), bus.skipped));
         }
@@ -544,6 +527,109 @@ pub fn pmic_bus(
         return Ok(bus);
     }
     Ok(PmicBus::fallback(None, 0))
+}
+
+/// What [`collect_sys_steps`] filled in and what it left out.
+struct Collected {
+    len: usize,
+    skipped: usize,
+    truncated: bool,
+}
+
+/// **Turn a node's `clocks` and `resets` into SYS-domain steps**, clocks first, into `steps`.
+/// The one walk [`pmic_bus`] and [`device_plan`] share, so a specifier is classified the same way
+/// whichever device named it: see [`Spec`] for what is kept, counted or abandoned.
+fn collect_sys_steps(
+    tree: &device_tree_blob::DeviceTreeBlob<'_>,
+    clocks: Option<&[u8]>,
+    resets: Option<&[u8]>,
+    steps: &mut [Step],
+) -> Result<Collected, device_tree_blob::Error> {
+    let mut out = Collected {
+        len: 0,
+        skipped: 0,
+        truncated: false,
+    };
+    for (list, is_clock) in [(clocks, true), (resets, false)] {
+        let Some(list) = list else { continue };
+        let specs = list.chunks(8);
+        let total = specs.len();
+        for (i, spec) in specs.enumerate() {
+            match sys_step(tree, spec, is_clock)? {
+                Spec::Step(step) if out.len < steps.len() => {
+                    steps[out.len] = step;
+                    out.len += 1;
+                }
+                Spec::Step(_) => out.truncated = true,
+                Spec::Foreign => out.skipped += 1,
+                // The stride is wrong from here on, so nothing after this is a specifier.
+                Spec::Unreadable => {
+                    out.skipped += total - i;
+                    break;
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// How many steps a [`DevicePlan`] holds. The watchdog names two clocks and two resets.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
+pub const MAX_DEVICE_STEPS: usize = 4;
+
+/// **A device's own SYS-domain clocks and resets, as its node names them** (milestone 593 (a
+/// wedged kernel resets itself), provisional). Unlike [`PmicBus`] there is no constant fallback:
+/// an empty plan means the tree named nothing usable, and the caller decides what that costs.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DevicePlan {
+    steps: [Step; MAX_DEVICE_STEPS],
+    len: usize,
+    /// Specifiers that are not a SYS-domain gate or line, counted and never written.
+    pub skipped: usize,
+    /// True when the node named more usable steps than [`MAX_DEVICE_STEPS`].
+    pub truncated: bool,
+}
+
+impl DevicePlan {
+    /// The steps to walk, clocks before resets.
+    ///
+    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
+    #[must_use]
+    pub fn plan(&self) -> &[Step] {
+        &self.steps[..self.len]
+    }
+}
+
+/// **Read the `clocks` and `resets` of the first node whose `compatible` names `compatible`**, as
+/// SYS-domain steps (milestone 593, provisional). A node that is absent, or names neither
+/// property, gives an empty plan. Specifiers are classified exactly as [`pmic_bus`] classifies its
+/// bus's, so a vendor `clkgen`/`rstgen` pair and mainline's `syscrg` both answer.
+///
+/// Name: provisional (milestone 593's lane, 2026-10-20 UTC). calef names public functions.
+///
+/// # Errors
+///
+/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
+pub fn device_plan(
+    tree: &device_tree_blob::DeviceTreeBlob<'_>,
+    compatible: &[u8],
+) -> Result<DevicePlan, device_tree_blob::Error> {
+    let mut plan = DevicePlan {
+        steps: [Step::EnableClock(0); MAX_DEVICE_STEPS],
+        len: 0,
+        skipped: 0,
+        truncated: false,
+    };
+    let clocks = tree.node_prop_compatible(compatible, b"clocks")?;
+    let resets = tree.node_prop_compatible(compatible, b"resets")?;
+    let collected = collect_sys_steps(tree, clocks, resets, &mut plan.steps)?;
+    plan.len = collected.len;
+    plan.skipped = collected.skipped;
+    plan.truncated = collected.truncated;
+    Ok(plan)
 }
 
 // ===== Option B: the direct reset write, and the numbers it needs (milestone 592, 2026-10-10) =====

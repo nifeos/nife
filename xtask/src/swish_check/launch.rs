@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use super::*;
 
 /// **The graphical launch, folded into the plain legs' boots** (milestone 632 (graphics on
-/// demand)). The `--features shell` boot is the **normal UART system on every boot**, and graphics
+/// demand)). The boot is the **normal UART system on every boot**, and graphics
 /// is *launched*: this leg types `graphical_terminal` at the swish prompt and verifies what the
 /// launched session puts on the screen, read back with a `screendump`.
 ///
@@ -204,8 +204,7 @@ impl RebootPhase<'_> {
     }
 
     /// **From the kernel's restart line to a bare prompt on the second boot**: the firmware's line
-    /// where there is firmware, no refusal, a second banner, and on `x86_64` the hand-over report
-    /// and an Enter.
+    /// where there is firmware, no refusal, a second banner, and its prompt.
     fn come_back(&mut self, arch: &str, asked: usize) -> Result<(), String> {
         let resumed = match firmware_marker(arch) {
             Some(fw) => match self.wait_after(asked, fw, Self::BOOT_SECS) {
@@ -224,23 +223,14 @@ impl RebootPhase<'_> {
         if self.text()[asked..].contains(Self::KERNEL_REFUSED) {
             return Err(Self::failure("the firmware refused every reset route"));
         }
-        let Some(second) = self.wait_after(resumed, "nife capability shell", Self::BOOT_SECS)
-        else {
+        if self
+            .wait_after(resumed, "nife capability shell", Self::BOOT_SECS)
+            .is_none()
+        {
             return Err(Self::failure(&format!(
                 "no second prompt banner within {}s of the reset",
                 Self::BOOT_SECS
             )));
-        };
-        if arch == "x86_64" {
-            if self
-                .wait_after(second, X86_HAND_OVER_REPORT, Self::BOOT_SECS)
-                .is_none()
-            {
-                return Err(Self::failure(
-                    "the second x86_64 boot never finished its hand-over report",
-                ));
-            }
-            self.type_line("")?;
         }
         if !self.wait_prompt(Self::LINE_SECS) {
             return Err(Self::failure("the second boot never reached a bare prompt"));

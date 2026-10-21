@@ -204,7 +204,7 @@ which kind. `xargs` now reads it the same way `&&` does.
 ## EXAMPLES
 
 At a real prompt on the RedoxFS fixture. The transcript below is `NIFE_SHOW_TRANSCRIPT=1
-script/swish-check --arch aarch64`, which boots `--features shell` and types at the prompt through
+script/swish-check --arch aarch64`, which boots the kernel and types at the prompt through
 the real `components/src/progenitor.rs`.
 
 ```text

@@ -138,12 +138,12 @@ exactly that reason (riscv64_boot.rs, before this milestone), and the mask is go
 - `arch::irq::init` brings up the IO APIC and proves the PIT's line through it before the tick is
   armed, so the `device irq` line `uefi-boot` reads is unchanged. `discovery::bring_up_iommus`
   brings up VT-d or AMD-Vi beside the SMMUv3.
-- `kernel_main` runs `x86_64`'s tail on the same lines as the other two. `x86_64_boot` is gone;
-  `x86_64_banner` is in `boot.rs` beside riscv64's. `x86_64_boot.rs` holds the port's tour (the
-  image bounds, `RDSEED`, a kernel thread, two ring-3 processes built from untyped, the loader's
-  modules) and `watch_the_progenitor`.
-- One hand-over, `boot.rs`'s `hand_over`, serves all three. `x86_64` adds its install offer before
-  it and its boot thread's ten-second watch after it, whose report the `x86_64` gates wait for.
+- `kernel_main` runs `x86_64`'s tail on the same lines as the other two. `x86_64_boot.rs` is gone;
+  `x86_64_banner` is in `boot.rs` beside riscv64's.
+- One hand-over, `boot.rs`'s `hand_over`, serves all three, and `x86_64` adds its install offer
+  before it. After it the boot thread leaves the scheduler on every port. Every gate that types at
+  the shell waits for its `$ `: `script/swish-check`'s three legs and `x86_64`'s install, rollback
+  and confirm boots.
 - The bring-up's `traps` and `timer` lines retire, as riscv64's did: `self_test::run` makes both
   claims on all three. The `frames` line no longer allocates a frame it never frees.
 
@@ -179,7 +179,7 @@ Absences board profiles forbid: radon `entropy`, `trng` and `clock`; xenon `entr
 `deviceirq`. The emulator profile, which `boot-check` and the soak use, forbids none.
 `SELF_TEST_CHECKS_EARLIER` (provisional) records the five-check list's length, so a captured log
 or an older image still reads green. `milestone_tour.rs`, `riscv64_boot.rs`, `boot_demos.rs` and
-`console_service.rs` are gone; `x86_64_boot.rs` holds `watch_the_progenitor`.
+`console_service.rs` are gone.
 
 ## The xenon boot that remains
 
@@ -189,48 +189,37 @@ BAR window for real, so one netboot of `main` closes the `x86_64` half: notes/x8
 bench: booting xenon over the network". What to look for: the `io apic`, `device irq` and `smp`
 lines, every tour line, the prompt, and `echo hello` echoing.
 
-## The radon boot: through the hand-over, not to the prompt
+## The radon boot: to the prompt, and one keystroke
 
-radon booted `main` at `2d2e042d2` on 2026-10-20 (UTC):
-`bench/radon-2026-10-20/805-890-boot-to-prompt.log`. Its second boot (`payload came from net`)
-proved, on the JH7110:
+radon netbooted `main` at `cda4ceb55` (`script/board-image --tftp`, SEALED) twice on 2026-10-21
+(UTC): `bench/radon-2026-10-21/890-boot-to-prompt.log`, whose README lists the bytes typed. Both
+boots proved, on the JH7110:
 
-- The PLIC slice reads the S contexts from the device tree, and `interrupts` names `this hart's
-  S-mode context 2`. The console is source 32. `smp: 4 core(s) online`.
-- The tail runs through the hand-over: `11 of 13 passed, 2 absent: blockdev deviceirq`, with
+- The PLIC slice reads the S contexts from the device tree. The console is source 32. `smp: 4
+  core(s) online`. The self-test reads `11 of 13 passed, 2 absent: blockdev deviceirq`, with
   `clock`, `trng` and `entropy` passing.
-- The progenitor printed nothing. After `capability slots: 19 of 64 at peak` the wire was silent
-  for five minutes, so the keystroke path is unobserved. No `board_console` verdict exists.
+- The hand-over prints `uart shape: registers 4 byte(s) apart, 32-bit access (device tree)`, the
+  progenitor's lines follow, and `script/board-console --replay ... --until prompt` reports
+  `reached shell prompt`.
+- The keystroke path delivers one byte per boot, the first, whether typed in a burst or one byte
+  at a time (`BUGS`).
 
-## Why it stopped
+## How userspace learns the UART's shape
 
-`console` and `input` read the UART at QEMU's stride, one byte apart. The JH7110's registers are
-four bytes apart with 32-bit access (`reg-shift = <2>`, `reg-io-width = <4>`). The console polled
-LSR at `0x05`, a byte of IER there, for a THRE bit that never set, and everything that prints
-blocked behind it; the kernel's lines still reached the wire through its ring's fallback. The network path is not involved: the image printed `network : NONE`.
-QEMU's byte registers reach the prompt; forcing the JH7110's shape there reproduces radon's stop.
-
-- The kernel passes the tree's shape as the progenitor's first start word, and the progenitor
-  passes it to `console` and `input` (`abi::uart::RegisterShape`). On riscv64 the hand-over prints
-  it, `uart shape: registers 4 byte(s) apart, 32-bit access` on the JH7110.
-- The console's wait for THRE is bounded at one second. Running out kills it with a load fault at
-  the LSR offset it polled, so a wrong shape leaves a kill report with `stval` `0x14` or `0x5`.
-- The timer tick tests for a stalled drainer once a second (`kernel_log::stall_tick`). Without it
-  the kill report stayed held in the ring, because the log service blocks behind the dead console
-  and the kernel printed nothing after it.
+The JH7110's UART registers are four bytes apart with 32-bit access (`reg-shift = <2>`,
+`reg-io-width = <4>`); QEMU's are one byte apart. The kernel passes the tree's shape as the
+progenitor's first start word, and the progenitor passes it to `console` and `input`
+(`abi::uart::RegisterShape`). The console's wait for THRE is bounded at one second, so a wrong shape
+kills it with a load fault at the LSR offset it polled (`stval` `0x14` or `0x5`). The timer tick
+tests for a stalled log drainer once a second (`kernel_log::stall_tick`), so that kill report
+reaches the wire.
 
 ## The radon boot that closes the riscv64 half
 
-For calef, from `main` once this has merged: `script/board-image --tftp`, then
-`script/board-netboot`, then power-cycle radon and check for `payload came from net`.
-
-1. Run `script/board-console --until prompt` and let it reach `Stage::Prompt`.
-2. Type `echo hello` and press Enter. The echo proves the keystroke path through PLIC source 32.
-3. Record `board_console`'s verdict line, or its log if it stopped short.
-
-Look for the `uart shape` line, `progenitor:` lines and the prompt. radon's profile fails the boot
-if `clock`, `trng` or `entropy` is absent. A console killed at `stval 0x14` means the shape arrived
-and the UART still never emptied.
+From `main` with the keystroke fix: `script/board-image --tftp`, `script/board-netboot`, a power
+cycle, then `script/board-console --until prompt` to `Stage::Prompt`. Type `echo hello` and Enter;
+the echo proves the keystroke path through PLIC source 32. Record `board_console`'s verdict line, or
+its log if it stopped short.
 
 ## Done when
 
@@ -243,13 +232,20 @@ and the UART still never emptied.
 
 | criterion | state |
 |---|---|
-| 1 | `riscv64_boot.rs` is gone. `x86_64_boot.rs` holds `watch_the_progenitor`, which is not `arch/` code and goes with the follow-on below. |
+| 1 | Done. `riscv64_boot.rs` and `x86_64_boot.rs` are gone. |
 | 2 | Done. `kernel_main`'s `cfg(target_arch)` lines are each port's banner and riscv64's console register shape; `hand_over`'s one is `x86_64`'s install offer. |
 | 3 | Under QEMU, both ports: see each pull request's gate table. The boards are the xenon and radon boots above. |
 
 ## BUGS
 
-- The PLIC's keystroke path has run under QEMU only, until the radon boot above.
+- On radon the keystroke path delivers only the first byte of a boot (the radon boot above). QEMU
+  delivers every byte, so the gates pass. Not a PLIC context mismatch: the trap handler claims,
+  disables and completes source 32 in the claiming hart's own context
+  (`arch/riscv64/exceptions.rs`), and the `Irq` ACK re-enables it at the source's fixed target
+  context (`arch::irq::target_context`). Undiagnosed between the DesignWare APB UART's receive
+  interrupt, `input`'s drain and ACK, and the shell after its first character. The UART does
+  receive later bytes: the soak's escape, a poll of LSR's data-ready bit, saw the byte
+  `script/board-console --stop` sent on the same evening (`bench/radon-2026-10-21/soak-stop.log`).
 - `bring_up_machine` carries six `cfg(target_arch)` sites: aarch64's frequency check, two blocks
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
@@ -268,23 +264,23 @@ and the UART still never emptied.
 
 ## Follow-on
 
-- **Outstanding.** The radon boot above, of the console's register shape and the riscv64 half.
+- **Done.** radon's console register shape: the boot above reaches the prompt with the tree's
+  shape (2026-10-21).
+- **Outstanding.** radon's keystroke path, which delivers one byte per boot (`BUGS`). A lane
+  instruments it (does the UART raise a second receive interrupt, does the PLIC see it, does
+  `input` ACK) and fixes it; then calef reruns the radon boot below for `echo hello`.
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
 - **Proposed.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
   `design/roadmap/proposals/serial-driver-has-no-starter.md`.
-- **Outstanding.** `x86_64`'s boot thread watches the progenitor after the shared hand-over
-  (`watch_the_progenitor`), because `script/swish-check`'s `x86_64` leg and the install, rollback
-  and confirm boots wait for the watch's report before typing. Retiring it means those wait for the
-  prompt, as the other legs do.
 
 ## Index row
 
 Two of the three architectures boot through code that only they run, so a fix to the boot's middle
 lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarch64 takes, one slice
-at a time, until the two per-port boot files hold only what `arch/` cannot. Both ports run the
-shared bring-up and tail under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and
-the per-port tours are the self-test's checks on all three. radon runs both slices through the
-hand-over, its console now uses the UART's real stride, and its prompt and the xenon boot remain.
+at a time, until neither per-port boot file is left. Both ports run the shared bring-up and tail
+under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and the per-port tours are the
+self-test's checks on all three. radon runs both slices through the hand-over, its console now uses
+the UART's real stride, and its prompt and the xenon boot remain.

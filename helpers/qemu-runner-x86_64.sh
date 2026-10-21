@@ -140,9 +140,9 @@ DEBUG_EXIT="-device isa-debug-exit,iobase=0xf4,iosize=0x04"
 # nothing attaches. `intel-iommu` is a q35-only device (it attaches to the host bridge, not to a PCI
 # slot), which is one more reason this runner and the aarch64/riscv ones cannot share a code path.
 # What proves the driver against real (emulated) hardware rather than only its own host-side unit
-# tests is `arch::x86_64::machine::read_acpi` finding a DMAR with one DRHD, so `x86_64_boot`'s tour
-# (kernel/src/x86_64_boot.rs) brings VT-d up and prints so; the NVMe attachment below (§86's data
-# point) is the first PCI device this runner confines behind it.
+# tests is `arch::x86_64::machine::read_acpi` finding a DMAR with one DRHD, so
+# `arch::x86_64::discovery::bring_up_iommus` brings VT-d up and prints so; the NVMe attachment below
+# (§86's data point) is the first PCI device this runner confines behind it.
 #
 # **NIFE_INTREMAP passes `intremap=` through to the unit** (milestone 317; the name is PROVISIONAL,
 # a lane's to propose and an architect's to ratify). `on` and `off` are the only values; unset

@@ -651,6 +651,16 @@ where
         )?;
     }
 
+    // 6e. The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional),
+    // device memory: the first page, which holds every register the driver touches. Present only in
+    // a build whose soak arms it, on a machine whose tree names it. Its clocks and resets are in the
+    // SYS window 6c maps.
+    #[cfg(soak_watchdog)]
+    if let Some((w, _sys)) = memory::jh7110_watchdog() {
+        let used = jh7110_watchdog::WINDOW_USED.min(w.size);
+        direct_map(m, w.base, w.base + used, Flags::device())?;
+    }
+
     // 7. The `sifive_test` finisher (0x10_0000), device memory: the MMIO word the test harness writes
     // to exit QEMU (arch::semihosting::exit). One page. Only QEMU `virt` has this device; the
     // VisionFive 2 has nothing at 0x10_0000, so mapping it there is a mapping to a nonexistent

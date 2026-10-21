@@ -32,3 +32,6 @@ landed wording.
 - `stick_maker`'s `plist.rs`: Reuse: write. calef ruled "Keep ours." on 2026-10-20 (UTC). `plist`
   1.10.1 would bring nine crates new to the tree (`serde`, `quick-xml`, `time` and its five helpers
   and `base64`) to read trusted local `diskutil` output, in a host-only program.
+- `wc`, `rm`, `printenv` and `date`: Reuse: write. calef ruled "A" on 2026-10-21 (UTC), item (h).
+  uutils `uu_wc` and `uu_rm` do not build for nife (`rustix` needs a `libc` it lacks), and
+  `uu_wc` would need a filesystem grant ours refuses. uutils is a basalt package candidate.

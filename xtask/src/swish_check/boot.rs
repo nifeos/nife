@@ -24,16 +24,8 @@ use super::*;
 /// (milestone 400) are all on the path, and the PVH boot has none of them. What it costs over PVH
 /// is recorded in milestone 182's block, measured rather than asserted.
 ///
-/// Three `x86_64` differences, each forced by the machine rather than chosen:
+/// One `x86_64` difference, forced by the machine rather than chosen:
 ///
-/// - **The default kernel, not `--features shell`.** `x86_64` has no early hand-over: every boot
-///   runs the tour and then hands over (milestone 268 (every architecture boots the same way)),
-///   and `uefi_image` builds exactly that.
-/// - **The kernel's hand-over report lands after the prompt.** `watch_the_progenitor`
-///   (`kernel/src/x86_64_boot.rs`) watches the progenitor for ten seconds and then prints two
-///   lines, so the transcript does not end in `$ ` until something is typed. The leg waits for that
-///   report and then presses Enter once, so the report cannot splice into a typed line's echo and
-///   the first line meets a fresh prompt.
 /// - **No virtio-rng, so `RDSEED`.** Every entropy device the kernel can find is virtio-mmio and
 ///   `q35` has no mmio bus, so the kernel builds the progenitor's entropy service on the CPU's seed
 ///   instruction instead (milestone 595 (provisional)), which the runner's `-cpu max` implements.
@@ -398,7 +390,7 @@ pub(super) fn swish_check_boot(
         } else if x86 {
             "the UEFI image under OVMF"
         } else {
-            "`--features shell`"
+            "the default kernel"
         }
     );
     if !build_leg(arch, fresh) {
@@ -511,15 +503,14 @@ fn drive_the_prompt(
     // of that prints nothing, which is the symptom all three of this milestone's bugs shared.
     if !console.wait_after(0, "nife capability shell", SWISH_CHECK_BOOT_SECS) {
         failed.push(format!(
-            "no prompt banner within {SWISH_CHECK_BOOT_SECS}s: the `--features shell` boot never \
-             reached a shell"
+            "no prompt banner within {SWISH_CHECK_BOOT_SECS}s: the boot never reached a \
+             shell"
         ));
         return Driven::Typed;
     }
     failed.extend(boot_claim_failures(x86, &|| {
         after_hand_over(&transcript_now(&console.seen))
     }));
-    let ready = !x86 || press_enter_after_hand_over(console, stdin, failed);
     // **How long each line took**, typed to prompt-back, so every run reports its own margin
     // against the per-line bound rather than leaving it to be guessed after a red one.
     let line_secs = if x86 && !leg.kvm {
@@ -534,7 +525,7 @@ fn drive_the_prompt(
         panic_probe_verdict(arch, console, failed);
         return Driven::PanicProbe;
     }
-    let took = type_script(leg, ready, line_secs, console, stdin, failed);
+    let took = type_script(leg, line_secs, console, stdin, failed);
     // Each line's time into the job's record too (milestone 808 (every gate accounts for its
     // time)), so the daily record can read `swish-check` by line without a log scrape.
     crate::time_record::items(
@@ -723,19 +714,19 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
     // lines in the script (milestone 198 rung 3a).
     && crate::disk::seed_installed(arch)
     && (x86
-        || crate::cargo_profiled(&[
-            "build",
-            "-p",
-            "kernel",
-            "--features",
-            &if probe_features().is_empty() {
-                "shell".to_string()
-            } else {
-                format!("shell,{}", probe_features())
-            },
-            "--target",
-            target,
-        ]))
+        || if probe_features().is_empty() {
+            crate::cargo_profiled(&["build", "-p", "kernel", "--target", target])
+        } else {
+            crate::cargo_profiled(&[
+                "build",
+                "-p",
+                "kernel",
+                "--features",
+                probe_features(),
+                "--target",
+                target,
+            ])
+        })
 }
 
 /// **The runner [`swish_check_boot`] starts**: [`leg_runner`], bounded on x86_64 by every wait
@@ -1023,29 +1014,6 @@ fn boot_claim_failures(x86: bool, now: &dyn Fn() -> String) -> Vec<String> {
     failed
 }
 
-/// **x86_64: let the kernel finish its hand-over report first**, then press Enter for a fresh
-/// prompt ([`swish_check_leg`]'s doc says why). The report is the boot thread's last output, so
-/// after it the shell is the UART's only writer until something faults. Whether the leg is ready
-/// to type; a failure says why it is not.
-fn press_enter_after_hand_over(
-    console: &Console,
-    stdin: &mut std::process::ChildStdin,
-    failed: &mut Vec<String>,
-) -> bool {
-    if !console.wait_after(0, X86_HAND_OVER_REPORT, SWISH_CHECK_BOOT_SECS) {
-        failed.push(format!(
-            "the kernel never printed its hand-over report ({X86_HAND_OVER_REPORT:?}), so \
-             the progenitor did not outlive the kernel's watch"
-        ));
-        false
-    } else if writeln!(stdin).is_err() || stdin.flush().is_err() {
-        failed.push("could not press Enter at the prompt".to_string());
-        false
-    } else {
-        true
-    }
-}
-
 /// **The panic probe's verdict**: the probe's message reached the UART, and the panic handler's
 /// with it, counting the flood lines before it.
 fn panic_probe_verdict(arch: &str, console: &Console, failed: &mut Vec<String>) {
@@ -1069,7 +1037,6 @@ fn panic_probe_verdict(arch: &str, console: &Console, failed: &mut Vec<String>) 
 /// typed to prompt-back. Stops at the first line that fails, recording why.
 fn type_script<'s>(
     leg: &Leg<'s>,
-    ready: bool,
     line_secs: u64,
     console: &Console,
     stdin: &mut std::process::ChildStdin,
@@ -1084,9 +1051,6 @@ fn type_script<'s>(
         ..
     } in leg.script
     {
-        if !ready {
-            break;
-        }
         if leg.skips(line) {
             continue;
         }

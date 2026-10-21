@@ -12,6 +12,7 @@ behind each section of the main page.
 - [`radon-2026-09-03.md`](radon-2026-09-03.md): the first runs off a board, and the three-hour run.
 - [`radon-2026-10-10.md`](radon-2026-10-10.md): the run table of 2026-10-09 to 10.
 - [`radon-2026-10-20.md`](radon-2026-10-20.md): the thirteen reboot draws of 2026-10-20.
+- [`radon-2026-10-21.md`](radon-2026-10-21.md): the twenty-five reboot draws of 2026-10-21.
 - [`rebooting-soak.md`](rebooting-soak.md): why a rebooting soak, its hazard, and the reset radon
   cannot do.
 - [`rebooting-soak-procedure.md`](rebooting-soak-procedure.md): the procedure and the outcome table.
@@ -30,6 +31,7 @@ Each stem below is named for its content, and calef names files.
 - `placement-census` Name: provisional.
 - `radon-2026-09-03` Name: provisional. Dated like `radon-2026-10-10`.
 - `radon-2026-10-20` Name: provisional. Dated like `radon-2026-10-10`.
+- `radon-2026-10-21` Name: provisional. Dated like `radon-2026-10-10`.
 - `rebooting-soak` Name: provisional.
 - `rebooting-soak-procedure` Name: provisional.
 - `how-long-to-run-it` Name: provisional.

@@ -34,7 +34,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   that find the controllers.
 - **No Kani harnesses and no falsification patches.** #1806's note counts it with the JH7110 pair as
   publish ours, but fork 4 refuses a release without green proofs. So this block starts by writing
-  them, like milestone 821 (an ELF-to-PE converter, proven, then released on its own). The note's
+  them. The note's
   "publish with the DesignWare pair" also predates the one-milestone-per-crate ruling.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is codebase rule 2
   (a driver gets what it needs passed in). `discover`, `discover_aon`, `discover_sys` and

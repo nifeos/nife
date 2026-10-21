@@ -357,30 +357,27 @@ storage_bench = []
 reboot_soak_test = ["soak_test"]
 # The watchdog soak (milestone 593 (a wedged kernel resets itself), provisional number): the soak
 # arms the chipset's watchdog when it starts and pets it from its beat, so a kernel that wedges is
-# reset by the hardware instead of waiting for a person. x86_64 only, the Intel TCO, and
-# `kernel/src/soak.rs` says so with a `compile_error!`. **On x86_64 every `soak_test` build has it
-# without naming this feature**, on calef's ruling of 2026-09-26 (UTC), "A soak should reset itself
-# when it freezes": `build.rs` sets the `soak_watchdog` cfg the code reads, and cargo features
-# cannot differ by target. Naming it is still how a build insists on it. Name provisional, and it
+# reset by the hardware instead of waiting for a person. The Intel TCO on x86_64 and the JH7110's
+# watchdog on riscv64; aarch64 has none, and `kernel/src/soak.rs` says so with a `compile_error!`.
+# **On x86_64 every `soak_test` build has it without naming this feature**, on calef's ruling of
+# 2026-09-26 (UTC), "A soak should reset itself when it freezes": `build.rs` sets the
+# `soak_watchdog` cfg the code reads, and cargo features cannot differ by target. A riscv64 soak
+# arms the JH7110's only when this is named, until radon's bench step in
+# design/roadmap/0593-a-wedged-kernel-resets-itself.md has shown it resets. Name provisional, and it
 # follows `reboot_soak_test`'s shape on purpose: the hazard word first.
-watchdog_soak_test = ["soak_test"]
+watchdog_soak_test = ["soak_test", "dep:jh7110_watchdog"]
 # **The opt-out**: an x86_64 soak that does not arm the watchdog, so a wedge stays a wedge on the
 # console instead of becoming a reset. `script/soak-test --no-watchdog` builds it. On aarch64 and
-# riscv64 it changes nothing, since no soak there arms a watchdog. It refuses to combine with
+# riscv64 it changes nothing, since no soak there arms a watchdog unasked. It refuses to combine with
 # `watchdog_soak_test` (`kernel/src/soak.rs`). Name provisional: the hazard word first, like its
 # siblings, and the hazard is that nothing recovers the machine.
 unwatched_soak_test = ["soak_test"]
 # **Test only**: the watchdog soak with a deliberate wedge. Thirty seconds in, the supervisor masks
 # interrupts on its core and spins, so the beat stops and nothing pets the watchdog. Its only use is
-# `script/soak-test --wedge`, the QEMU proof that the watchdog resets a wedged kernel. Never put it
-# on a board's card. Name provisional.
+# `script/soak-test --wedge`, the QEMU proof that the watchdog resets a wedged kernel, and the
+# bench step that proves a board's watchdog with a person watching (radon's, in milestone 593's
+# block). Never put it on a card left unattended. Name provisional.
 wedge_soak_test = ["watchdog_soak_test"]
-# Boot straight to the interactive shell, skipping the milestone tour. Used by cargo xtask shell.
-# The userspace progenitor is the boot path here: it brings up the console, the line discipline, the
-# input driver and the shell out of its own budget, and the kernel wires none of it. That was
-# milestone 19d.2c's `initboot`, a second feature naming the same six cfg sites; milestone 296
-# deleted it, because a build of each produced the same 3,109 symbols at the same total size.
-shell = []
 # Milestone 342's proofs (names provisional). `console_flood`: once a drainer attaches, the kernel
 # prints a line every ten ticks, for `script/swish-check --flood`. `kernel_log_detached`: the kernel
 # never treats its drainer as keeping up, the negative control (every line direct, as before 342).
@@ -509,6 +506,12 @@ single_hart = []
 # riscv64 and x86_64 never took an equivalent crate. They use `core::arch::asm!` and `crates/paging`
 # directly, so the asymmetry was history rather than a decision: aarch64 was the first architecture
 # and §3 chose typed registers for it before the in-tree pattern existed.
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+# The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional): its sequences,
+# arithmetic and discovery, for `drivers::jh7110_watchdog` and `memory::init`. Pure logic; only a
+# riscv64 build whose soak arms the watchdog reaches it, so `watchdog_soak_test` brings it in.
+jh7110_watchdog = { version = "0.1.0", path = "../crates/jh7110_watchdog", optional = true }
+
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "11"
 # Typed, compile-time-checked MMIO register blocks for aarch64's devices (`pl011`, `gic`, `gicv3`)

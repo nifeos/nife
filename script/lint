@@ -6,7 +6,7 @@
 # Both use --all-targets so test code is linted too; the kernel supplies its own test harness
 # (custom_test_frameworks) and the user bin opts its libtest target out (user/Cargo.toml), which is
 # what lets --all-targets work on the bare-metal target. Not one of the canonical scripts, but it
-# keeps the CI job a one-liner. It also lints each kernel boot-mode feature (shell/bench/icount/...)
+# keeps the CI job a one-liner. It also lints each kernel boot-mode feature (bench/icount/...)
 # separately, because each compiles different code and a warning can hide in a configuration the
 # default build never compiles. See notes/scripts.md.
 #
@@ -311,7 +311,7 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 #   `bench` is one of the two exceptions (DECISIONS §121's amendment, the TSS I/O-bitmap switch
 #   cost); `cycle_counter_grant` is the other, and its own line below says why it is a different
 #   case rather than the same one. Of `bench`: milestone
-#   161 item 4 brought the scheduler up on this ISA, and `x86_64_boot` now diverges into
+#   161 item 4 brought the scheduler up on this ISA, and `kernel_main` now diverges into
 #   `bench::run()` the same way the other two do, and it passes this same clippy line clean. Linted
 #   on its own line below rather than folded into the two-ISA loop above, because that loop's
 #   `--target` list is aarch64/riscv64 only and widening it would also run every OTHER feature in the
@@ -347,7 +347,7 @@ cargo clippy -p kernel --target x86_64-unknown-none -- \
 # `bench` on x86_64, same flags, same reasoning: see the note above this block.
 #
 # **Four more build-mode features are checked below, and two are still held out** (measured
-# 2026-09-15, calef's call). `shell`, `soak_test`, `job_mix` and `board` compile clean on x86_64
+# 2026-09-15, calef's call). `soak_test`, `job_mix` and `board` compile clean on x86_64
 # under these flags: what each gates is either arch-neutral or dead on this ISA, and the shared
 # `-A dead_code` already covers the partial port. `icount` and `fastpath_pad` genuinely fail to
 # COMPILE, not merely warn: `icount` calls `arch::timer::calibration_loop`, `missed_ticks` and
@@ -372,7 +372,7 @@ cargo clippy -p kernel --features cycle_counter_grant --target x86_64-unknown-no
 # The five build-mode features that compile clean on x86_64 (see the note above the `bench` line).
 # Each on its own line rather than in the two-ISA loop above, because that loop's `--target` list is
 # aarch64/riscv64 and widening it would also drag `icount` and `fastpath_pad` in, which do not build.
-for feat in shell soak_test unwatched_soak_test job_mix lock_wait board; do
+for feat in soak_test unwatched_soak_test job_mix lock_wait board; do
     echo "==> clippy: kernel --features $feat (x86_64, the binary only; see the note above)"
     cargo clippy -p kernel --features "$feat" --target x86_64-unknown-none -- \
         -D warnings -A dead_code -A clippy::reversed_empty_ranges
@@ -397,9 +397,9 @@ cargo clippy -p kernel --features network_bench --target x86_64-unknown-none -- 
 echo "==> clippy: user + user_mode_runtime (x86_64)"
 cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unknown-none --all-targets -- -D warnings
 
-# The kernel's build-mode features (shell, bench, soak_test, cycle_counter_grant) each compile
+# The kernel's build-mode features (bench, soak_test, cycle_counter_grant) each compile
 # DIFFERENT code in and out:
-# `shell` drops the milestone tour, `bench` diverges before the boot entirely, and
+# `bench` diverges before the boot entirely, and
 # `icount` (milestone 78) parks before `bench` does, which is the one configuration where
 # `bench::run` and everything after it is unreachable, and `soak_test` (milestone 219) takes the place of
 # the progenitor handoff and is the ONLY configuration in which the scheduler's event counters and
@@ -418,17 +418,17 @@ cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unkn
 # empties, which is how milestone 265's crate check passed by checking zero crates. This loop cannot
 # do that -- an empty `for` list is visible in the diff and in the output, since every iteration
 # echoes its own `==>` line -- so removing a feature here is a deletion a reader can see rather than
-# a silence. Count: 8 features x 2 targets = 16 `==>` lines. `lock_wait` joined on 2026-10-04: it
+# a silence. Count: 7 features x 2 targets = 14 `==>` lines. `lock_wait` joined on 2026-10-04: it
 # is a measurement build no gate otherwise compiles, and it is the only build that compiles the
 # counting arm of `IrqSafeMutex::lock` and the reaper's timing (kernel/src/lock_wait.rs).
 #
 # On BOTH ISAs since milestone 41. riscv64 was linted only under `watchdog_probe` before, so the
-# whole riscv `shell` boot path (`user::riscv_shell_boot` then; `boot_progenitor` since milestone
-# 166) and the console it builds were compiled by `cargo xtask` and checked by nobody.
+# whole riscv hand-over path (`boot_progenitor`) and the console it builds were compiled by
+# `cargo xtask` and checked by nobody.
 # Architectural parity is a gate, not an aspiration (DECISIONS §19 (architectural parity is a
 # tenet)), and that applies to the gate itself.
 for tgt in aarch64-unknown-none-softfloat riscv64imac-unknown-none-elf; do
-    for feat in shell bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait; do
+    for feat in bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait; do
         echo "==> clippy: kernel --features $feat ($tgt)"
         cargo clippy -p kernel --features "$feat" --target "$tgt" -- -D warnings
     done
@@ -757,8 +757,7 @@ python3 "$(dirname "$0")/../helpers/lint_dtb_matches_dts.py" || exit 1
 # RAM.
 #
 # Before milestone 267 they shared one block with the milestone tour, under a single
-# `#[cfg(not(any(feature = "shell", feature = "initboot")))]` sitting in the middle of it (quoted as
-# it stood; milestone 296 deleted `initboot` and the live gate reads `not(feature = "shell")`), so the
+# `#[cfg(not(any(feature = "shell", feature = "initboot")))]` sitting in the middle of it, so the
 # boundary between a diagnostic and a demonstration was a reader's inference. A line moved a few
 # rows up or down changed which audience it served and nothing said so. This is the mechanism that
 # replaces the inference: the split is a function name, and no boot-mode feature may appear inside
