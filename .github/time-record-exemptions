@@ -9,7 +9,8 @@
 # from the jobs API, so "one command" below means that record is already the whole breakdown.
 gate one shell step that classifies the diff; seconds
 main-caches builds caches for other jobs and runs no gate; its per-step record covers it
-rg-threads one command per matrix leg, a single threaded rg run; nothing inside it is an item
+rg-threads one command, a single threaded rg run per architecture; nothing inside it is an item
+rg-threads-x86_64 one command, a single threaded rg run; nothing inside it is an item
 boot-check two boots, each its own step, so the per-step record is the breakdown
 watchdog one boot that must hang and be killed; its time is the bound by construction
 fmt one rustfmt command

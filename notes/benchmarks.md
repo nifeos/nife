@@ -110,18 +110,19 @@ methods and the debug-build history.
 
 ### Against seL4's published cycles
 
-seL4 publishes, for the same-core different-address-space path, 413 cycles for the IPC call and 426
-for the IPC reply, one-way each. The machine is a Jetson TX1 (Cortex-A57, 1.9 GHz), and a round trip
-in our sense is ~839 cycles. Ours is 350 ns. HVF passes through no PMU, so a cycle count here is
-nanoseconds times an assumed clock. The M3 runs 2.75 GHz on an E-core and 4.05 GHz on a P-core, which
-puts us at ~960 to ~1,420 cycles. So the corrected figure is roughly 1.1x to 1.7x an L4-lineage round
-trip, not 4 to 7 times.
+On one core, under the same QEMU-HVF machine, seL4's `Call` plus `ReplyRecv` between two address
+spaces costs a median of 96 ns and nife's `ipc_rtt_el0` 442 ns: about 4.6 times (2026-10-21, eight
+boots each). [How much of the ARM plan runs under HVF](arm-plan-under-hvf.md) has the method and its
+caveats. seL4 needed one patched line for the guest's 8-bit ASIDs. The instrument is a loop
+averaged against the generic timer, because the guest's PMU is synthesized.
 
-Read that as "same order", never tighter; the caveats are under
-[what is not apples to apples](#what-is-not-apples-to-apples). The same-silicon comparison waits on
-argon, the TX1 (milestone 127 (the seL4 machine)), because sel4bench needs a real PMU and this host has
-none. [Calibration against seL4](benchmarks/calibration-against-sel4.md) has the three errors a first
-version of this comparison made, and the build recipe.
+seL4 publishes, for the same-core different-address-space path, 413 cycles for the IPC call and 426
+for the IPC reply, one-way each. The machine is a Jetson TX1 (Cortex-A57, 1.9 GHz). Converting 350 ns at an
+assumed 2.75 to 4.05 GHz gave ~960 to ~1,420 cycles. So the corrected figure is roughly 1.1x to 1.7x
+an L4-lineage round trip, not 4 to 7 times. The same-silicon ratio
+above is the one to quote. sel4bench's own PMU method needs a real PMU, which
+[xenon](benchmarks/sel4bench-on-xenon.md) and argon (milestone 127 (the seL4 machine)) have.
+[Calibration against seL4](benchmarks/calibration-against-sel4.md) has the build recipe.
 
 ### The regression floors (icount, `nightly-2026-09-23`, QEMU 11.1.1)
 
@@ -232,10 +233,8 @@ underneath, an L1 large enough to hide any footprint effect. argon's PMU is wher
   a pipe pass on theirs. Read the gap as a direction.
 - Our IPC is a synchronous five-word rendezvous; `lat_pipe` is a buffered byte stream. A Mach port
   would likely beat the pipe. XNU is a hybrid whose syscalls are mostly in-kernel BSD calls.
-- Against seL4: 2015 silicon against 2023, so part of the gap is the machine. Their fastpath is on and
-  we have none. Their round trip is two syscalls; a service here issues three and `ipc_rtt_el0` four,
-  and no EL0 twin of `call_reply` exists. They time one operation by PMU; we average a loop. We run
-  under a hypervisor. Both sides use a benchmarking build (`cycle_counter_grant` ships off).
+- Against seL4 on one core: their round trip is two syscalls with a fastpath; a service here issues
+  three and `ipc_rtt_el0` four, and no EL0 twin of `call_reply` exists. Both run as HVF guests.
 - Filesystem: the other side has a page cache and in-kernel metadata caching. Our write commits a
   transaction per request but issues no device flush unless asked, which sits between ext4's
   `O_DIRECT` and `O_DIRECT`+`O_DSYNC`. macOS APFS runs natively on NVMe, a different tier.
@@ -257,6 +256,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 | appendix | what it verifies | holds |
 |---|---|---|
 | [calibration-against-sel4](benchmarks/calibration-against-sel4.md) | the seL4 comparison | first numbers (2026-07-23); calibration (2026-08-04); the PMU wall |
+| [sel4bench-on-xenon](benchmarks/sel4bench-on-xenon.md) | the method | 2026-10-21 |
 | [cross-os-primitives](benchmarks/cross-os-primitives.md) | the cross-OS table and its caveats | milestone 19e (run a real workload); first EL0 and cross-OS numbers |
 | [icount-drift-and-provenance](benchmarks/icount-drift-and-provenance.md) | the tripwire, the stamps, one-hart pinning | drift across builds; 2026-07-28; stamps (2026-09-21) |
 | [per-core-and-multi-hart](benchmarks/per-core-and-multi-hart.md) | the `smp_*` numbers, single-hart `--real` | §28 (SMP placement); 2026-07-29 refresh |
@@ -287,7 +287,8 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 - The HVF numbers are old. The newest is 2026-08-04, the cross-OS host columns are from 2026-07-25,
   and `spawn_el0`'s path has moved since. notes/register-of-measures.md flags the cross-OS row as due
   for re-taking, and it wants a quiet machine.
-- No seL4 number from the same silicon exists. It waits on argon (milestone 127).
+- The same-silicon seL4 number comes from a patched kernel and a loop, not sel4bench's PMU method,
+  which waits on xenon or argon (milestone 127).
 - The tripwire compares against the last floor, so steps under 10% accumulate. The 2026-09-15 audit
   found riscv64 `ctx_switch` 10.78% up across saves that never fired. Milestone 415 (sub-tripwire
   drift accumulates across baseline saves) now reports it weekly rather than gating it:

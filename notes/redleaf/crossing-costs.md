@@ -42,8 +42,10 @@ space, does not change privilege level, and does not schedule.
 is EL0 to EL0, two rendezvous, two address spaces and four `svc`s, at 350 ns. That note converts it
 to ~960 to ~1,420 cycles across the M3's E-core and P-core clocks, because *"cycles here are
 arithmetic, not a reading."* The same note anchors
-against seL4's published Jetson TX1 figures, 413 + 426 = ~839 cycles for a round trip, and concludes
-*"roughly 1.1x to 1.7x an L4-lineage round trip."*
+against seL4's published Jetson TX1 figures, 413 + 426 = ~839 cycles for a round trip. That
+conversion needs an assumed clock. Measured on one core instead, with seL4 booted under the same
+HVF machine, nife's round trip is about 4.6 times seL4's `Call` plus `ReplyRecv`
+([arm-plan-under-hvf.md](../arm-plan-under-hvf.md)).
 
 So the honest statement of the gap is a chain of ratios rather than a subtraction. The chain has a
 missing link this tree already knows about. `notes/benchmarks/calibration-against-sel4.md` says

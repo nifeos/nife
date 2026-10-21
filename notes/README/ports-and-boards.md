@@ -13,6 +13,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Where nife could actually run, and what the three bench machines are named](../target-hardware.md).
 - [The aarch64 board for the seL4 comparison](../aarch64-board-survey.md): choosing a board sel4bench really runs on.
 - [A modern aarch64 board for nife's first ARM machine](../aarch64-modern-board-survey.md): boards scored on Armv9 features, SMMUv3 coverage and standard boot. Name provisional.
+- [How much of the ARM plan runs under HVF](../arm-plan-under-hvf.md): seL4 against nife on one Apple core, the guest's CPU features, and the SMMUv3. Name provisional.
 - [The VisionFive 2: first silicon](../visionfive2.md): radon's board facts, boot paths and bench runbook.
 - [Programming a clock and a reset line, for the first time](../jh7110-clock-and-reset.md).
 - [Reading a board, without a person watching it](../board-console.md): how `script/board-console` reads a board's serial boot unattended.

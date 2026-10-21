@@ -14,7 +14,7 @@ crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver c
 IOMMU before enable, class-code enumeration over §18 (the PCIe transport), and an end-to-end boot
 test on both ISAs. The network half is built to the bench (below, "The network half"), and so is the
 radon SD card and eMMC half (below, "The storage half on radon"). The network half has passed its
-radon bench boot; the storage half's first read on radon failed and is outstanding. What else
+radon bench boot, and the storage half its read-only one; its write test is outstanding. What else
 remains is two things. The board-side PLDA XpressRICH root
 complex that carries the NVMe driver to the real M.2 slot is milestone 163 (the JH7110's PCIe root
 complex), NOT-STARTED. And the EL0 NVMe driver that §86 (whether an NVMe driver can leave the
@@ -120,10 +120,13 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
 - Step 1 run on radon, 2026-10-20 (UTC), from `290d3ba8b`, read-only: the card identified, then
   the first block read failed, `Host(Data(17, 2060))` (`bench/radon-2026-10-20/storage-bench-read.log`;
   the note's Results). Nothing was written.
-- Step 1 rerun on radon, 2026-10-21 (UTC), from `54c8e773b` (the read threshold left off),
-  read-only: single-block reads of block 0 and block 2048 passed, and the timed multi-block read
-  from block 2048 failed, `Host(Data(18, 164))` (`bench/radon-2026-10-21/storage-bench-read.log`).
-  Nothing was written.
+- Step 1 passes on radon, 2026-10-21 (UTC), read-only: the 8 MiB read at 10,959 KiB/s and
+  `EL0 block server: Served` (`bench/radon-2026-10-21/53-card-clock.log`). Nothing was written.
+- The card clock runs at the tree's `assigned-clock-rates`, which the storage bench programs:
+  radon's firmware leaves the divider at a quarter of it, and at that rate every multi-block read
+  failed with a data CRC error. `kernel/src/drivers/jh7110_clock_and_reset.rs`'s `set_card_clock`
+  sets the divider and computes the rate the driver divides. The read matrix that found it is
+  `storage_read_matrix`; the note's Results has its numbers.
 
 Reuse: OpenBSD's `dwmmc` (`sys/dev/fdt/dwmmc.c` 1.33, ISC), adapted with the notice carried in
 the crate root; it matches both compatibles above. `starfive-jh7110-dwmmc` 0.1.8 on crates.io
@@ -141,8 +144,8 @@ and both trees are GPL and were read for hardware facts only.
   receive window times a scheduler tick per round trip, both in `net_stack`, reproduced under QEMU
   and fixed (notes/designware-ethernet/the-receive-rate.md). That page's bench step measures the
   fix on radon, which has not run.
-- **Outstanding.** radon's second port, `gmac1`, which this driver does not bring up. Pull request
-  #2470 proposes the milestone for it, unmerged.
+- **Milestone 940.** radon's second port, `gmac1`, which this driver does not bring up, is
+  milestone 940 (radon's second Ethernet port): `design/roadmap/0940-second-jh7110-ethernet-port.md`.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
   to the real M.2 slot. NOT-STARTED on a HARDWARE gate.
 - **Decision.** Whether the NVMe driver can leave the kernel is answered:
@@ -154,13 +157,9 @@ and both trees are GPL and were read for hardware facts only.
   plug on the subnet. It also needs a working storage read, below. And it needs a bench boot that
   puts RedoxFS on radon's card and writes through it, which nothing builds yet: `storage_bench`
   and the EL0 block server never mount a filesystem.
-- **Outstanding.** The storage half's multi-block read on radon. With the card read threshold
-  left off, single-block reads (CMD17) pass, and `READ_MULTIPLE_BLOCK` (CMD18) from block 2048
-  ends with `RINTSTS 0xa4`: command done, receive data request and a data CRC error. At the failure
-  `TBBCNT` (4580) is above `TCBCNT` (1100), the CPU having read more than the card delivered, and
-  `STATUS` reports a 128-word fill on a 32-word FIFO, which suggests its count field is decoded at
-  the wrong width. A lane fixes or instruments it; then calef reruns step 1, then steps 2 and 3.
-  Passing them lifts the block server's `PROVEN_ON_SILICON`.
+- **Done.** The storage half's multi-block read on radon: step 1 passes, above.
+- **Outstanding.** Steps 2 and 3 of the note's bench step, the scratch write test and the ordinary
+  image back. Passing them lifts the block server's `PROVEN_ON_SILICON`.
 - **Done.** The architect's call on which part of radon's storage the booted system's block server
   serves: a USB drive (calef, 2026-10-07 UTC; §260 (radon's block server serves a USB drive)). It
   refused the second microSD partition, the eMMC socket and NVMe for now. It needs milestone 163 (the
@@ -172,9 +171,8 @@ and both trees are GPL and were read for hardware facts only.
   step above still proves the MSHC driver; it is no longer the block server's target.
 - **Outstanding.** The IDMAC data path, unblocked. Its gate was radon's DMA coherence, which the
   network half's probe has read as `Coherent`, so it needs no cache maintenance (milestone 655
-  (DMA on a non-coherent RISC-V machine) is not on its path). It waits on the polled read working,
-  so that a failing DMA read is not also a failing FIFO read. Then high speed and an 8-bit eMMC
-  bus, measured against the polled rate step 1 prints.
+  (DMA on a non-coherent RISC-V machine) is not on its path). The polled read it was waiting on
+  works, at 10,959 KiB/s. Then high speed and an 8-bit eMMC bus, measured against that rate.
 - **Done.** The rule-5 parity note this block says it must carry is carried, in `notes/non-volatile-memory-express.md`
   under a heading naming this milestone, stating what ships on all three architectures and what is
   board-specific.

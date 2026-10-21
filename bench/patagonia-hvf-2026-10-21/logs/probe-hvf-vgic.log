@@ -1,0 +1,17 @@
+# qemu-system-aarch64 -machine virt,accel=hvf,gic-version=3,iommu=smmuv3 -cpu host -m 128M -nographic -kernel probe.elf
+CurrentEL 1
+now at EL 1
+ID_AA64DFR0_EL1 0x0000000010305106
+PMCR_EL0 before 0x0000000000000040
+PMCCNTR delta over 100 ms 307211904
+CNTVCT delta 2400102
+ticks for 10000 PMCCNTR reads 209860
+ticks for 10000 CNTVCT reads 2113
+back-to-back PMCCNTR min 2560
+back-to-back PMCCNTR max 73344
+GICD_TYPER 0x000000000478001f
+GICD_PIDR2 0x0000000000000030
+GITS_TYPER 0x0000000000000000
+GITS_PIDR2 0x0000000000000000
+GICR_TYPER 0x0000000000000010
+done

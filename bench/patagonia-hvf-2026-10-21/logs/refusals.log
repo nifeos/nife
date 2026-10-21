@@ -1,0 +1,6 @@
+# -machine virt,accel=hvf,gic-version=3,its=on
+qemu-system-aarch64: ITS not supported on HVF when using the hardware vGIC.
+# -machine virt,accel=hvf,gic-version=3,mte=on
+qemu-system-aarch64: mach-virt: HVF does not support providing MTE to the guest CPU
+# -machine virt,gic-version=3,virtualization=on -accel hvf,kernel-irqchip=off
+qemu-system-aarch64: HVF does not support GICv3 emulation

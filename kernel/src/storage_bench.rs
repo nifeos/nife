@@ -95,6 +95,18 @@ pub fn run() -> ! {
         }
     };
     print_verdict(&verdict);
+    #[cfg(feature = "storage_read_matrix")]
+    if let Some(slots) = crate::memory::jh7110_storage()
+        && let Some(sd) = slots[1]
+    {
+        read_matrix(&sd);
+        println!(
+            "storage-matrix: THIS BUILD RESETS THE BOARD when the matrix is done, so a netbooted \
+             bench can fetch its next image."
+        );
+        let refused = crate::reboot::cold_reset("storage-matrix:");
+        println!("storage-matrix: every reset route was refused ({refused:?})");
+    }
     println!("storage-bench: done, halting.");
     arch::halt(arch::HaltReason::measurement_boot());
 }
@@ -164,6 +176,41 @@ macro_rules! say {
     };
 }
 
+/// **Bring the slot's card clock to the tree's rate, and answer the rate it really runs at**, the
+/// number the driver divides for the card. Without the SYS syscon (the PLL2 words, mapped only
+/// where the tree names the PMIC's bus) the rate cannot be computed, and the tree's is used and
+/// said to be unchecked.
+fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
+    if crate::memory::jh7110_pmic_bus().is_none() {
+        say!(
+            slot,
+            "card clock: no SYS syscon mapped, so its rate is the tree's {} Hz, unchecked",
+            slot.ciu_hz
+        );
+        return slot.ciu_hz;
+    }
+    // SAFETY: `mmu::init` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
+    // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
+    let c = unsafe {
+        crate::drivers::jh7110_clock_and_reset::set_card_clock(
+            crate::arch::mmu::phys_to_virt(crg_phys) as usize,
+            crate::arch::mmu::phys_to_virt(jh7110_clock_and_reset::SYS_SYSCON_BASE) as usize,
+            usize::from(slot.index),
+            slot.ciu_hz,
+        )
+    };
+    say!(
+        slot,
+        "card clock: {:#010x} -> {:#010x}, {} Hz from a {} Hz parent (the tree asks {} Hz)",
+        c.before,
+        c.after,
+        c.hz,
+        c.parent_hz,
+        slot.ciu_hz
+    );
+    c.hz
+}
+
 fn probe(slot: &Slot, write: bool) -> Outcome {
     say!(
         slot,
@@ -215,10 +262,12 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::ClocksDown;
     }
 
+    let ciu_hz = card_clock(slot, sys.base);
+
     // SAFETY: step 10 of `mmu::init` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match Host::new(window, slot.ciu_hz, slot.fifo_depth) {
+    let (mut host, id) = match Host::new(window, ciu_hz, slot.fifo_depth) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
@@ -545,4 +594,54 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
     // SAFETY: the allocator handed out `count` contiguous pages that nothing else owns, and the
     // direct map covers all of RAM; nothing frees them, because the boot ends in a halt.
     Some(unsafe { core::slice::from_raw_parts_mut(va, count * 4096) })
+}
+
+/// **Milestone 53 (the board's own peripherals)'s multi-block read diagnosis**: the same `CMD18`
+/// at each card clock and length (`bench::read_matrix`), once with the tree's FIFO depth and once
+/// trusting `STATUS` up to 128 words, the fill radon's controller reported at the failure. Each
+/// row says how full the FIFO got, which is the question: does the polled CPU fall behind the
+/// card, and is a full FIFO what ends in a data CRC error? Read-only. Runs after the probe, whose
+/// clock bring-up it relies on.
+#[cfg(feature = "storage_read_matrix")]
+fn read_matrix(slot: &Slot) {
+    use designware_mobile_storage::bench::Watch;
+    let Some(buf) = pages(READ_PAGES) else {
+        println!("storage-matrix: no pages for a buffer");
+        return;
+    };
+    let Some(sys) = crate::memory::jh7110_sys_window() else {
+        return;
+    };
+    let ciu_hz = card_clock(slot, sys.base);
+    let first = 2048;
+    for depth in [slot.fifo_depth, Some(128)] {
+        // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
+        let window = unsafe { Window::new(slot.base) };
+        let Ok((mut host, _)) = Host::new(Watch::new(window), ciu_hz, depth) else {
+            println!("storage-matrix: controller refused");
+            return;
+        };
+        let used = host.fifo_depth();
+        let done = bench::read_matrix(&mut host, slot.bus_width, first, buf, |r| {
+            println!(
+                "storage-matrix: depth {used} card {} Hz (asked {}) blocks {}: {:?} in {} us, \
+                 FIFO peak {} words, full on {} STATUS reads; after: STATUS {:#x} RINTSTS {:#x} \
+                 TCBCNT {} TBBCNT {}",
+                r.card_hz,
+                r.asked_hz,
+                r.blocks,
+                r.result,
+                r.us,
+                r.max_fill,
+                r.full_reads,
+                r.after[0],
+                r.after[1],
+                r.after[2],
+                r.after[3],
+            );
+        });
+        if let Err(e) = done {
+            println!("storage-matrix: depth {used}: identification stopped: {e:?}");
+        }
+    }
 }
