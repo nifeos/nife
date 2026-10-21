@@ -40,8 +40,8 @@
 //! The tests and the bench boot, through [`start_net_server`], and the booted system, through
 //! [`start_for_boot`] (milestone 198 (a package manager)): `kernel::user::boot_progenitor` calls it
 //! when there is no virtio-net NIC, and grants the progenitor the `Stack` endpoint and the report.
-//! The booted system refuses two cases a test does not, each recorded at [`NotAtBoot`]: a PCH part
-//! no gate has driven, and a link that is down.
+//! The booted system refuses one case a test does not, recorded at [`NotAtBoot`]: a PCH part no
+//! gate has driven. Every caller is refused a link that is down ([`Absent::NoLink`]).
 //!
 //! # BUGS
 //!
@@ -76,6 +76,15 @@ pub enum Absent {
     },
     /// The previous server is still alive, and a bring-up would reset the device under it.
     Busy,
+    /// Bring-up finished and `STATUS.LU` never rose within `e1000e::LINK_WAIT_MS`, so no server
+    /// was started. `net_stack`'s DHCP loop has no bound, and every caller blocks on its lease, so
+    /// a server over a dead link is a wait with no end: a boot that never reaches its prompt, or a
+    /// system test the harness watchdog stops, and the suite with it. Whether no link is a skip or
+    /// a failure is the caller's, since only it knows whether a link was promised.
+    NoLink {
+        /// The PCI device id.
+        device: u16,
+    },
 }
 
 /// What a wiring started, from the outside.
@@ -91,8 +100,6 @@ pub struct Wiring {
     pub confined_by_iommu: bool,
     /// The MAC address the kernel read and handed over.
     pub mac: [u8; 6],
-    /// Whether the link was up when bring-up finished waiting.
-    pub link_up: bool,
     /// The PCI device id.
     pub device: u16,
     /// The PHY's identifier as the kernel read it over MDIO, revision masked off.
@@ -110,7 +117,13 @@ static SERVER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::ne
 /// inbound ports this stack may bind.
 pub fn start_net_server(image: &'static [u8], listen_grant: u64) -> Result<Wiring, Absent> {
     refuse_if_busy()?;
-    Ok(spawn_server(image, listen_grant, bring_up()?))
+    let found = bring_up()?;
+    if !found.link_up {
+        return Err(Absent::NoLink {
+            device: found.device,
+        });
+    }
+    Ok(spawn_server(image, listen_grant, found))
 }
 
 /// Why the booted system has no stack over this NIC, when one is on the bus.
@@ -127,33 +140,19 @@ pub(crate) enum NotAtBoot {
         /// The PCI device id.
         device: u16,
     },
-    /// The link was down when bring-up finished waiting. `net_stack`'s DHCP loop has no bound and
-    /// the progenitor waits for its lease before the prompt, so a stack with no cable behind it
-    /// would be a boot that never reaches `$`.
-    NoLink {
-        /// The PCI device id.
-        device: u16,
-    },
 }
 
 /// **The booted system's stack over this NIC** (milestone 198 (a package manager): rung 3a on the
 /// third architecture). [`start_net_server`] with no listen grant, the virtio stack's inbound
-/// authority at the prompt, and two refusals of its own ([`NotAtBoot`]) that a test does not want
-/// and a boot does: a test that hangs is stopped by its runner, a boot that hangs has no prompt to
-/// say why.
+/// authority at the prompt, and one refusal of its own ([`NotAtBoot::Unproven`]) that a test does
+/// not want and a boot does. The progenitor waits for the lease before the prompt, so the
+/// [`Absent::NoLink`] refusal is what keeps a boot with no link from never reaching `$`.
 pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> {
     let dev = crate::pci::find_e1000e_device().ok_or(NotAtBoot::Absent(Absent::NoController))?;
     if ::e1000e::pch::is_pch(dev.device) && !PCH_PROVEN_ON_SILICON {
         return Err(NotAtBoot::Unproven { device: dev.device });
     }
-    refuse_if_busy().map_err(NotAtBoot::Absent)?;
-    let found = bring_up().map_err(NotAtBoot::Absent)?;
-    if !found.link_up {
-        return Err(NotAtBoot::NoLink {
-            device: found.device,
-        });
-    }
-    Ok(spawn_server(image, socket_contract::NO_LISTEN_GRANT, found))
+    start_net_server(image, socket_contract::NO_LISTEN_GRANT).map_err(NotAtBoot::Absent)
 }
 
 /// **Whether the booted system may bring up an I219 on its own.** The lift of the refusal above is
@@ -275,7 +274,6 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         held,
         confined_by_iommu,
         mac: found.handoff.mac,
-        link_up: found.link_up,
         device: found.device,
         phy_id: found.phy_id,
         lease: 0,

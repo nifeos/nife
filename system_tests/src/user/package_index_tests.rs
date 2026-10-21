@@ -70,16 +70,10 @@ fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_dig
         crate::testing::skip!("no entropy source on this machine, and the resolver needs one");
     };
     let image = |name: &str| program(name).unwrap_or_else(|| panic!("no {name} in the archive"));
-    let mut w = match e1000e_service::start_net_server(
+    let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            crate::testing::skip!("no e1000e NIC attached");
-        }
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    };
+    ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, GRANTED, package_index::fixture::ZONE);
