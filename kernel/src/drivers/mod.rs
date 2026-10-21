@@ -39,6 +39,12 @@ pub mod plic;
 #[cfg(target_arch = "riscv64")]
 pub mod jh7110_clock_and_reset;
 
+// The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional), only in a
+// build whose soak arms it: the soak's supervisor is its one caller. Pure MMIO over
+// `crates/jh7110_watchdog`'s sequences; takes its base from the caller.
+#[cfg(all(target_arch = "riscv64", soak_watchdog))]
+pub mod jh7110_watchdog;
+
 // **QEMU's `ramfb`**, milestone 243 (a machine with no serial port): the guest supplies the pixels
 // and `fw_cfg` tells the emulator where they are. Not gated by architecture, because the question
 // it answers is "does this machine have a display the kernel can write to", and the two `virt`

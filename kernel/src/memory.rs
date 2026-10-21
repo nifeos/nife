@@ -195,6 +195,10 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // established that this is a JH7110, because the vendor tree's `snps,dw-mshc` is a generic
     // binding that says nothing about which board it is on.
     record_jh7110_storage(dtb);
+    // The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional), only in
+    // a build whose soak arms it. Its own node is the guard, as the Ethernet port's is.
+    #[cfg(all(target_arch = "riscv64", soak_watchdog))]
+    record_jh7110_watchdog(dtb);
 
     // The SMMUv3 (milestone 16b), present only when the machine was started with
     // `iommu=smmuv3`. Absent, the kernel runs exactly as before; present, iommu::init drives it.
@@ -334,6 +338,22 @@ fn record_jh7110_ethernet(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
             sys,
             syscon,
         });
+    }
+}
+
+/// **Record the JH7110's watchdog and the SYS window its clocks and resets live in** (milestone
+/// 593, provisional). The guard is the watchdog's own node: a tree naming `starfive,jh7110-wdt` or
+/// the vendor's `starfive,dskit-wdt` is a JH7110 by its own statement, so the SYS discovery's
+/// constant fallback is only read once that is established. QEMU's `virt` names neither. Its own
+/// frame for `record_jh7110`'s reason.
+#[inline(never)]
+#[cfg(all(target_arch = "riscv64", soak_watchdog))]
+fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
+    if let (Ok(Some(watchdog)), Ok(sys)) = (
+        jh7110_watchdog::discover(dtb),
+        jh7110_clock_and_reset::discover_sys(dtb),
+    ) {
+        *JH7110_WATCHDOG.lock() = Some((watchdog, sys));
     }
 }
 
@@ -775,14 +795,26 @@ pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
 }
 
 /// **The SYS clock-and-reset window, if anything on this machine needs it**: the PMIC bus's
-/// (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)) or the Ethernet port's
-/// (milestone 53). Both come from the same `discover_sys`, so they are the same window, and
-/// `mmu::init` maps it once through this rather than twice through each.
+/// (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), the Ethernet port's
+/// (milestone 53) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
+/// they are the same window, and `mmu::init` maps it once through this rather than once per user.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::Found> {
-    jh7110_pmic_bus()
+    let sys = jh7110_pmic_bus()
         .map(|(sys, _)| sys)
-        .or_else(|| jh7110_ethernet().map(|e| e.sys))
+        .or_else(|| jh7110_ethernet().map(|e| e.sys));
+    #[cfg(all(target_arch = "riscv64", soak_watchdog))]
+    let sys = sys.or_else(|| jh7110_watchdog().map(|(_, sys)| sys));
+    sys
+}
+
+/// **The JH7110's watchdog and the SYS window that holds its clocks and resets** (milestone 593,
+/// provisional), or `None` on every machine whose tree names no such watchdog, which is every
+/// machine CI boots. RISC-V's `mmu::init` maps both device-typed.
+#[cfg(all(target_arch = "riscv64", soak_watchdog))]
+pub(crate) fn jh7110_watchdog() -> Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)>
+{
+    *JH7110_WATCHDOG.lock()
 }
 
 /// What [`jh7110_ethernet`] answers: the port as the tree describes it, and the three windows
@@ -1149,6 +1181,13 @@ static JH7110_PMIC_BUS: IrqSafeMutex<
         jh7110_clock_and_reset::Found,
         jh7110_clock_and_reset::PmicBus,
     )>,
+> = IrqSafeMutex::new(rank::RAM, None);
+
+/// The JH7110's watchdog and its SYS window (milestone 593). `None` until `init`, and on every
+/// machine whose tree names no such watchdog.
+#[cfg(all(target_arch = "riscv64", soak_watchdog))]
+static JH7110_WATCHDOG: IrqSafeMutex<
+    Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)>,
 > = IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until `init`,

@@ -752,6 +752,7 @@ dependencies = [
  "intrusive_fifo",
  "jh7110_clock_and_reset",
  "jh7110_entropy",
+ "jh7110_watchdog",
  "job_mix",
  "line_editor",
  "login_contract",

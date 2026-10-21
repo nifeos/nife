@@ -48,15 +48,15 @@
 // (the NS16550's and PL011's sticky data-ready bits), and `script/soak-test --reboot` proves under
 // QEMU, per architecture, that the machine came back rather than that the call returned.
 
-// **The watchdog soak is x86_64's alone, and the compiler says so** (milestone 593 (a wedged kernel
-// resets itself), provisional number). It drives the Intel TCO, which only a PC has. The failure
-// this prevents is milestone 249's worst one turned around: a build that compiled and quietly never
-// armed would look exactly like a board that never wedged.
-#[cfg(all(feature = "watchdog_soak_test", not(target_arch = "x86_64")))]
+// **The watchdog soak has no aarch64 watchdog to arm, and the compiler says so** (milestone 593
+// (a wedged kernel resets itself), provisional number). x86_64 drives the Intel TCO and riscv64
+// the JH7110's watchdog. The failure this prevents is milestone 249's worst one turned around: a
+// build that compiled and quietly never armed would look exactly like a board that never wedged.
+#[cfg(all(feature = "watchdog_soak_test", target_arch = "aarch64"))]
 compile_error!(
-    "--features watchdog_soak_test is x86_64-only: the watchdog it arms is the Intel TCO \
-     (kernel/src/arch/x86_64/tco.rs). radon's JH7110 watchdog and argon's Tegra WDT are later steps \
-     of design/roadmap/0593-a-wedged-kernel-resets-itself.md."
+    "--features watchdog_soak_test arms the Intel TCO on x86_64 (kernel/src/arch/x86_64/tco.rs) \
+     and the JH7110 watchdog on riscv64 (kernel/src/drivers/jh7110_watchdog.rs); aarch64 has none \
+     yet. argon's Tegra WDT is a later step of design/roadmap/0593-a-wedged-kernel-resets-itself.md."
 );
 
 // **Every x86_64 soak arms the watchdog unless it opts out**, calef's ruling of 2026-09-26 (UTC):
@@ -591,8 +591,8 @@ const WATCHDOG_MARKER: &str = "soak-test-watchdog:";
 ///
 /// Sixty, as the proposal this milestone came from priced it: twelve beats of margin, so a beat
 /// delayed by a loaded machine cannot trip it, and short enough that a wedged board is back before a
-/// person would have walked to it. The TCO counts twice before it resets, so this is two counts of
-/// 30 s, 50 ticks each.
+/// person would have walked to it. Both watchdogs count twice before they reset, so this is two
+/// counts of 30 s: 50 TCO ticks each, or 720,000,000 ticks of the JH7110's 24 MHz core clock.
 #[cfg(soak_watchdog)]
 const WATCHDOG_RESET_AFTER_SECONDS: u64 = 60;
 
@@ -613,8 +613,8 @@ const WEDGE_AFTER_SECONDS: u64 = 30;
 ///
 /// The banner is milestone 249's rule applied again: a build that will reset the machine it runs on
 /// says so on the only channel it has, with how to stop it, before it can happen.
-#[cfg(soak_watchdog)]
-fn arm_watchdog() -> Option<arch::tco::Tco> {
+#[cfg(all(soak_watchdog, target_arch = "x86_64"))]
+fn arm_watchdog() -> Option<Watchdog> {
     // A stale byte must not halt the watchdog at the first beat; see `arm_reboot`.
     crate::console::discard_rx();
     let tco = match arch::tco::find() {
@@ -655,12 +655,7 @@ fn arm_watchdog() -> Option<arch::tco::Tco> {
                 armed.reset_after_tenths / 10,
                 armed.reset_after_tenths % 10,
             );
-            println!(
-                "{WATCHDOG_MARKER} a soak that FAILS prints its verdict and dump and then stops \
-                 petting, so the reset follows the evidence and never replaces it. To stop the \
-                 watchdog: press any key on this console. It is halted at the next beat and the soak \
-                 keeps running."
-            );
+            print_watchdog_escape();
             Some(tco)
         }
         Err(why) => {
@@ -668,6 +663,171 @@ fn arm_watchdog() -> Option<arch::tco::Tco> {
             None
         }
     }
+}
+
+/// The watchdog each architecture's soak arms (milestone 593).
+#[cfg(all(soak_watchdog, target_arch = "x86_64"))]
+type Watchdog = arch::tco::Tco;
+#[cfg(all(soak_watchdog, target_arch = "riscv64"))]
+type Watchdog = crate::drivers::jh7110_watchdog::Jh7110Watchdog;
+
+/// What the reset waits for and how to stop it, the second half of every `ARMED` banner.
+#[cfg(soak_watchdog)]
+fn print_watchdog_escape() {
+    println!(
+        "{WATCHDOG_MARKER} a soak that FAILS prints its verdict and dump and then stops \
+         petting, so the reset follows the evidence and never replaces it. To stop the \
+         watchdog: press any key on this console. It is halted at the next beat and the soak \
+         keeps running."
+    );
+}
+
+/// **Find the JH7110's watchdog, start its clocks, arm it and see it count** (milestone 593).
+///
+/// The x86_64 twin's banner rule holds: the hazard and its escape are on the console before the
+/// reset can happen. Two refusals it does not need: the tree must name the watchdog and its
+/// clocks (there is no constant to fall back on), and the counter must run at the rate its count
+/// was computed for, measured against this kernel's own timer. A counter on a gated clock reads a
+/// frozen count, and arming it would print `ARMED` over a timer that never fires.
+#[cfg(all(soak_watchdog, target_arch = "riscv64"))]
+fn arm_watchdog() -> Option<Watchdog> {
+    use jh7110_watchdog::CORE_CLOCK_HZ;
+    crate::console::discard_rx();
+    let Some((found, sys)) = crate::memory::jh7110_watchdog() else {
+        println!(
+            "{WATCHDOG_MARKER} NOT ARMED: this machine's device tree names no JH7110 watchdog \
+             (starfive,jh7110-wdt or starfive,dskit-wdt). The soak runs without a watchdog, and a \
+             wedge on this machine waits for a person."
+        );
+        return None;
+    };
+    println!(
+        "{WATCHDOG_MARKER} found the JH7110 watchdog: {} at {:#x}, its clocks and resets in the \
+         SYS CRG at {:#x} ({})",
+        core::str::from_utf8(found.compatible).unwrap_or("?"),
+        found.base,
+        sys.base,
+        if sys.from_tree {
+            "named by this machine's tree"
+        } else {
+            "NOT named by this tree: the constant both published trees agree on"
+        },
+    );
+    if !start_watchdog_clocks(&found, &sys) {
+        return None;
+    }
+    let load = jh7110_watchdog::load_for(WATCHDOG_RESET_AFTER_SECONDS, CORE_CLOCK_HZ)?;
+    // SAFETY: `memory::init` recorded this window only for a tree that names the watchdog, and
+    // `mmu::map_everything` mapped its first page device-typed in the direct map.
+    // `start_watchdog_clocks` has just read both clocks running and both resets released.
+    let mut dog = unsafe { Watchdog::new(arch::mmu::phys_to_virt(found.base) as usize) };
+    dog.arm(load);
+    let hz = measure_watchdog_rate(&dog);
+    if !jh7110_watchdog::rate_agrees(hz, CORE_CLOCK_HZ) {
+        let halted = dog.disarm();
+        println!(
+            "{WATCHDOG_MARKER} NOT ARMED: the counter ran at {hz} Hz against this kernel's timer, \
+             not the {CORE_CLOCK_HZ} Hz its count was computed for, so it would reset at the wrong \
+             time or never. It is {}.",
+            if halted {
+                "halted"
+            } else {
+                "STILL COUNTING (the enable bit did not clear)"
+            }
+        );
+        return None;
+    }
+    let tenths = jh7110_watchdog::reset_after_tenths(load, CORE_CLOCK_HZ);
+    println!(
+        "{WATCHDOG_MARKER} the counter runs at {hz} Hz, measured against this kernel's timer. The \
+         JH7110 keeps no record this kernel knows of how its previous boot ended, so a watchdog \
+         reset shows only as this kernel starting again."
+    );
+    println!(
+        "{WATCHDOG_MARKER} ARMED. THIS BUILD RESETS THE MACHINE IF THE SOAK STOPS BEATING: \
+         {load} ticks of the {CORE_CLOCK_HZ} Hz core clock counted twice, so a reset {}.{}s after \
+         the last pet, which comes every {BEAT_SECONDS}s from the beat.",
+        tenths / 10,
+        tenths % 10,
+    );
+    print_watchdog_escape();
+    Some(dog)
+}
+
+/// Walk the watchdog node's own clocks and resets, print what each word said, and answer whether
+/// the block can now count.
+#[cfg(all(soak_watchdog, target_arch = "riscv64"))]
+fn start_watchdog_clocks(
+    found: &jh7110_watchdog::Discovered,
+    sys: &jh7110_clock_and_reset::Found,
+) -> bool {
+    use jh7110_clock_and_reset::Step;
+    let plan = found.clocks_and_resets;
+    if !plan.plan().iter().any(|s| matches!(s, Step::EnableClock(_))) {
+        println!(
+            "{WATCHDOG_MARKER} NOT ARMED: the watchdog's node names no SYS-domain clock this \
+             kernel can turn on ({} specifier(s) skipped).",
+            plan.skipped
+        );
+        return false;
+    }
+    // SAFETY: `memory::init` recorded this window only for a tree that names the watchdog, and
+    // `mmu::map_everything` mapped it device-typed in the direct map. The plan's identifiers were
+    // bounded by `SYS` when it was built, and `bring_up` bounds them again.
+    let report = unsafe {
+        crate::drivers::jh7110_clock_and_reset::bring_up(
+            arch::mmu::phys_to_virt(sys.base) as usize,
+            &jh7110_clock_and_reset::SYS,
+            plan.plan(),
+        )
+    };
+    let clocks = plan.plan().iter().filter_map(|s| match s {
+        Step::EnableClock(i) => Some(*i),
+        Step::DeassertReset(_) | Step::SelectParent { .. } => None,
+    });
+    for (n, index) in clocks.enumerate().take(report.clocks) {
+        println!(
+            "{WATCHDOG_MARKER} clock {index} {:#010x} -> {:#010x}",
+            report.clock_before[n], report.clock_after[n]
+        );
+    }
+    println!(
+        "{WATCHDOG_MARKER} {} of {} reset(s) released, {} step(s) rejected, {} specifier(s) \
+         skipped{}",
+        report.resets_released,
+        report.resets,
+        report.rejected,
+        plan.skipped,
+        if report.was_already_up() {
+            "; firmware had already started it"
+        } else {
+            ""
+        },
+    );
+    let ready =
+        report.rejected == 0 && report.has_clocks_running() && report.every_reset_released();
+    if !ready {
+        println!(
+            "{WATCHDOG_MARKER} NOT ARMED: a clock did not read back running or a reset did not \
+             release, so the watchdog's registers may not answer."
+        );
+    }
+    ready
+}
+
+/// The watchdog counter's rate over a tenth of a second of this kernel's timer. Spun rather than
+/// yielded, so the window is the timer's and not the scheduler's.
+#[cfg(all(soak_watchdog, target_arch = "riscv64"))]
+fn measure_watchdog_rate(dog: &Watchdog) -> u64 {
+    let hz = arch::timer::frequency();
+    let start = arch::timer::now();
+    let before = dog.ticks_left();
+    while arch::timer::now().wrapping_sub(start) < hz / 10 {
+        core::hint::spin_loop();
+    }
+    let after = dog.ticks_left();
+    let elapsed = arch::timer::now().wrapping_sub(start);
+    jh7110_watchdog::measured_hz(before, after, elapsed, hz)
 }
 
 /// **Stop beating, on purpose** (milestone 593's test-only wedge).
@@ -1100,7 +1260,7 @@ fn ask_reboot_questions(armed: &mut bool, elapsed: u64) {
 
 /// Pet the watchdog for this beat, or halt it if a byte arrived on the console.
 #[cfg(soak_watchdog)]
-fn tend_watchdog(watchdog: &mut Option<arch::tco::Tco>, elapsed: u64, beat: u64) {
+fn tend_watchdog(watchdog: &mut Option<Watchdog>, elapsed: u64, beat: u64) {
     if let Some(tco) = watchdog.take() {
         if crate::console::is_byte_waiting() {
             let halted = tco.disarm();
