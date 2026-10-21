@@ -24,3 +24,11 @@ Tegra210 (P2371-2180) # bootefi ${kernel_addr_r} ${fdtcontroladdr}
 | `Unknown command 'bootefi'` | argon takes U2 until its U-Boot is newer |
 
 (The prompt text is Tegra's recalled default, not read off argon.)
+
+## BUGS
+
+- Which port the stick goes in is unknown. Mainline U-Boot's `p2371-2180_defconfig` builds the
+  Tegra EHCI driver and no xHCI, and its device tree enables only `usb@7d000000`, in OTG mode,
+  which is the micro-USB port. So `usb start` may not see a stick in the Type-A port at all.
+  L4T's U-Boot was not read. Try the Type-A port first, then the micro-USB port through an OTG
+  adapter, and record which one listed the stick.

@@ -126,6 +126,8 @@ Two appendices hold what the page has no room for:
   procedure for option A on radon, and why it cannot run yet.
 - [`the-fork.md`](0192-keyboard-on-real-silicon/the-fork.md): options A, B and C, with why option C
   is closed and what would start option B.
+- [`pricing.md`](0192-keyboard-on-real-silicon/pricing.md): what each option costs on argon, radon
+  and xenon, with the controllers each board wires to its ports and the basis of every estimate.
 
 ## What option B will still need
 
@@ -170,8 +172,8 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 
 ## BUGS
 
-- This block prices neither option. The xHCI estimate is an adjective, not a measurement, and
-  nobody has looked at what the JH7110, the Jetson TX1 and the OptiPlex each expose.
+- The pricing is line ranges scaled from Linux by a ratio two drivers set, never hours, and the
+  JH7110 and Tegra210 reference manuals were not read (`pricing.md`'s BUGS).
 - It says nothing about a mouse, which milestone 33 (a compositor: one screen, mutually distrusting clients)'s compositor will eventually want and which
   the same stack would carry.
 - The decision is a sequencing call, not a claim that option B is wrong. A demonstration
@@ -192,9 +194,10 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 - **Outstanding.** No keystroke has reached a screen on real silicon; that waits on milestone 157.
 - **Milestone 179.** A mouse is milestone 179 (pointer input: a mouse in text mode), rather than an unnamed gap
   this block has to carry.
-- **Outstanding.** Neither option is priced. Nobody has looked at what the JH7110, the Jetson TX1
-  and the OptiPlex each expose for USB, and milestone 242 declines to price xHCI in hours as well,
-  so the adjective is still an adjective.
+- **Done.** Both options are priced per board in `pricing.md`. On xenon option B needs no known
+  new code, only milestone 242's bench step. On radon it needs milestone 163 and a way to confine
+  an xHCI with no IOMMU. On argon it needs milestone 127, Tegra's XUSB glue and firmware, and a
+  Tegra SMMU driver.
 - **Recorded.** The order is a sequencing call rather than a claim that option B is wrong. A system
   that cannot accept a keyboard is limited in a way no scope note repairs, and calef's completion
   bar for this block stays literal.
