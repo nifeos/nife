@@ -128,14 +128,15 @@ What to look for, all lines prefixed `storage-bench:`:
 |---|---|
 | `clocks before ... already up true` | whether U-Boot handed the controller over running |
 | `VERID ... HCON ... (FIFO at 0x200, Some(4) bytes wide, 32 words deep ...)` | the release, and that the FIFO is the 32-bit kind this driver moves |
-| `card SdHighCapacity, ... blocks (... MiB), block-addressed, 4-bit at 25000000 Hz` | identification worked |
+| `card clock: ... -> ..., 49500000 Hz from a 396000000 Hz parent (the tree asks 50000000 Hz)` | the card clock's divider was set from the tree's rate, and the rate the driver divides |
+| `card SdHighCapacity, ... blocks (... MiB), block-addressed, 4-bit at 24750000 Hz` | identification worked |
 | `partition 1: type 0x0b, sectors N..` and `boot sector: signature 55aa, type field "FAT32   "` | reads return the card's real bytes |
 | `scratch range a write test would use: Some((N-8, 8))` | where step 2 would write, before it does |
 | `timed read: 16384 blocks in ... us, ... KiB/s` | the polled read rate |
 | `EL0 block server: Served` | the same card through the EL0 server, as the FS server would call it: block 0 of partition 1 is the boot sector, a write is refused `EROFS`, a block past the window `EINVAL` |
 | `slot 0 (eMMC socket): ...` | whether an eMMC module is fitted (`NO-CARD` if not) |
 | `verdict READ-OK ... KiB/s, EL0 block server served` | the step passed |
-| `at the failure: STATUS ... TCBCNT n TBBCNT m` | printed only after a failed read: `TCBCNT` is bytes card to FIFO, `TBBCNT` FIFO to CPU; `m` above `n` is the CPU reading what the FIFO did not hold (an underrun), `n` ahead with a full FIFO is an overrun |
+| `at the failure: STATUS ... TCBCNT n TBBCNT m` | printed only after a failed read: `STATUS`'s FIFO count, and `TCBCNT`, the bytes the card sent. `TBBCNT` does not restart at each command on radon (a clean 1024-byte read leaves it near 5000), so `m` against `n` says nothing |
 
 `NO-CARD` on slot 1 or any `FAILED` verdict: stop, keep the log, and send it. Nothing was written.
 
@@ -175,8 +176,23 @@ logs under `bench/radon-<date>/` and say which commit they came from.
 |---|---|---|---|---|---|
 | 2026-10-20 | `290d3ba8b` | 1, read-only | identified; the first block read failed, `Host(Data(17, 2060))` | `NoCard(NoResponse(1))` | `FAILED: read of block 0` |
 | 2026-10-21 | `54c8e773b` | 1, read-only | identified; blocks 0 and 2048 read by CMD17; the CMD18 read from 2048 failed, `Host(Data(18, 164))`, `TCBCNT 1100 TBBCNT 4580` | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
+| 2026-10-21 | `f7ae6ee29` | 1 and the read matrix | as above; the matrix (below) fails every read at the nominal 25 MHz and passes every one at 12.5 and 6.25 | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
+| 2026-10-21 | `ffac21104` | 1 and the read matrix | card clock set to 49.5 MHz; the 8 MiB read, 16,384 blocks in 0.75 s; every matrix row passes | `NoCard(NoResponse(1))` | `READ-OK 10959 KiB/s, EL0 block server served` |
 
-The 2026-10-21 row's log and how it ran are in `bench/radon-2026-10-21/`. For the 2026-10-20 row:
+**The card clock ran four times faster than the driver thought.** The tree gives the `ciu` clock
+`assigned-clock-rates = <50000000>`, a rate the OS is asked to program, and radon's firmware leaves
+`SDIO1_SDCARD`'s divider at 2 under `axi_cfg0`'s 396 MHz: 198 MHz. The driver's 25 MHz was 99 MHz,
+past SD default speed. The read matrix (`storage_read_matrix`) showed it: the same `CMD18` at three
+clocks, four lengths and two FIFO depths, each row printing the FIFO's peak fill. At nominal
+12.5 MHz, 64 KiB read in 3,147 µs, 20.8 MB/s, three times what a 4-bit bus at 12.5 MHz can carry;
+at nominal 25 MHz every read failed with a data CRC error once the FIFO first filled
+(`bench/radon-2026-10-21/53-read-matrix.log`). The storage bench now sets the divider from the
+tree's rate (8, 49.5 MHz) and hands `Host::new` the rate computed from PLL2's and the dividers'
+words. Every row then passes, the FIFO never fills (peak 27 of its words at 24.75 MHz), and the
+8 MiB read runs at 10,959 KiB/s (`bench/radon-2026-10-21/53-card-clock.log`). `STATUS` counted 128
+words with its full flag set, so radon's FIFO holds at least 128 words, not the tree's 32.
+
+The 2026-10-21 rows' logs and how they ran are in `bench/radon-2026-10-21/`. For the 2026-10-20 row:
 the log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
 how the boot was run. The banner said `Read-only build: nothing on any card is written.` Steps 2
 and 3 were not run, as step 1 says. What it settled:
@@ -198,8 +214,7 @@ and 3 were not run, as step 1 says. What it settled:
   driver stopped there.
 - Slot 0: no eMMC answered `CMD1`, consistent with no module fitted.
 
-The card read threshold fits those bits, and the driver leaves it off (`BUGS`). A rerun of
-step 1 confirms it or prints the byte counts that tell the next candidate apart.
+That boot ran its card at the same 99 MHz, so the threshold is not established as its cause.
 
 ## Parity
 
@@ -210,17 +225,12 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 ## BUGS
 
-- **No block read has yet succeeded on radon.** The one run ended with `FRUN` (Results, above).
-  The likely cause is the card read threshold (`CARDTHRCTL`), enabled at one block, 512 bytes,
-  against radon's 128-byte FIFO. The driver leaves it off, and `Host::reset` writes it off in
-  case firmware set it. Linux's `dw_mci_ctrl_thld` (read for hardware facts) enables it only in
-  HS200, SDR104 and HS400, and never for a block larger than the FIFO. U-Boot, which reads this
-  card on radon every boot with the same `FIFOTH`, never writes it. `sim` ends a read with
-  `FRUN | DTO` while the threshold exceeds the FIFO, the word radon gave, so a driver that sets it
-  fails every host read test. That sim behavior is the databook's limit as Linux encodes it, not a
-  measurement of radon. The second candidate, the driver reading a word the FIFO did not hold, has
-  no evidence for it; a failed read prints `STATUS`, `TCBCNT` and `TBBCNT`, which tell the two
-  apart. Step 1's rerun settles it.
+- **Steps 2 and 3 have not run.** Step 1 passes read-only; the scratch write test waits for calef.
+- The card clock is set by the storage bench alone. `PROVEN_ON_SILICON` keeps the booted system
+  from starting the block server, so nothing else drives this controller yet, and whatever does
+  must set the clock the same way first.
+- The card read threshold stays off. With the FIFO at least 128 words, one block now fits, but no
+  bus mode this driver runs needs it.
 - Every other test is against `sim`, which models the contract as the databook and OpenBSD
   describe it.
 - **The booted system has no disk on radon yet.** The EL0 block server exists and the bench boot
@@ -229,7 +239,7 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 - The EL0 server holds the controller's DMA registers, which share its one page. The JH7110 has
   no IOMMU, so the server is as confined as its own code. That is milestone 261 (the NVMe driver
   leaves the kernel)'s position for a machine with no IOMMU. The server does no DMA.
-- Polled, default speed, no DMA. 25 MHz, 4-bit on SD and 1-bit on eMMC, the CPU moving every
+- Polled, default speed, no DMA. 24.75 MHz, 4-bit on SD and 1-bit on eMMC, the CPU moving every
   word. No high-speed switch, no UHS-I, no HS200 tuning, no 8-bit eMMC bus.
 - A 64-bit FIFO is refused rather than handled; `HCON` says which radon has.
 - A read's tail may raise no FIFO request. Linux's `fifo-watermark-aligned` property, which
