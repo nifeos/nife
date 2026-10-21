@@ -158,8 +158,13 @@ ruled so the change can be read against it.
    `nifeos.org` is at Name.com, so one registrar account's compromise or lapsed payment cannot take
    both. Its address is `basalt.crickertech.com`. Name: provisional. calef chose the domain; the
    `basalt.` label follows the first address and is not ruled.
-   One failure is still shared: both domains are served by NS1's name servers (measured 2026-10-21
-   UTC), so an NS1 outage takes both addresses. The second address does not cover it.
+   It is served by a second GitHub Pages site in the `nifeos` organization, `nifeos/basalt-backup`
+   (Name: provisional), which basalt's publish fills with the same files as the first (calef,
+   2026-10-21 UTC: *"P1: a second Pages site in nifeos for basalt.crickertech.com."*). Pages
+   serves one custom domain per site, so the second address needs a site of its own.
+   Shared failures remain, and the second address covers none of them: GitHub Pages serves both
+   sites, the `nifeos` organization owns both repositories, one publish workflow fills both, and
+   NS1's name servers answer for both domains (measured 2026-10-21 UTC).
 7. The index's path, pending under clause 1, is ruled (Q4, *"Channel prefix, no architecture"*):
    the index lives at `/<channel>/metadata/` and packages at `/<channel>/targets/`, each channel its
    own TUF repository, one index for all three architectures. The channel's name is calef's;

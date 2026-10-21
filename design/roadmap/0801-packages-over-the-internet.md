@@ -106,8 +106,8 @@ options):
 - A. The second index address against §250 clause 1's one fixed name, and clause 3's pin. Ruled
   A1, *"two domains"*: §250 clause 6, one index at up to two addresses on different registrable
   domains. The second domain is `crickertech.com`, chosen 2026-10-21 (UTC), so the image's second
-  address is `basalt.crickertech.com` (clause 6 also records that NS1 serves both domains).
-  Serving it, and its DNS record, are calef's hands.
+  address is `basalt.crickertech.com`, a second Pages site (clause 6, which also lists the
+  failures both addresses share). Its DNS record and Pages settings are calef's hands.
 - B. Which root a listed HTTPS location must chain to. Ruled *"X1 only"*: §250 clause 10. Clauses
   11 to 13 (question C, below) let the signed index name another root the image carries.
 - The channel's name. `rolling` is provisional, and naming it is calef's (§250 clause 7).
