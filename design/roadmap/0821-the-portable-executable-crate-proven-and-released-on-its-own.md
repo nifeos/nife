@@ -170,6 +170,11 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 
+## Revisit
+
+- **Condition.** `portable_executable` gets an input nife did not link: a second consumer, or a
+  reason to publish it. The hardening and the five proofs above are owed again then.
+
 ## Index row
 
 nife's ELF-to-PE/COFF converter, the only one on crates.io, hardened against a hostile ELF and given

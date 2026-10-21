@@ -241,15 +241,15 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program's stdin is a byte stream when the line redirects or pipes one, at
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
-- **Ruled, to build.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
-  everywhere, generated into std as `user_mode_heap` is today, which is accepted vendoring.
-- **Ruled, to build.** Item (g). calef, 2026-10-21 (UTC), on #2490: "B". `xtask`'s converter
-  takes `object` with minimal features. Milestone 821 is refused: its input is nife's own build
-  product, so its proofs would protect no known user.
+- **Decision.** Item (d), to build. calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc`
+  5.1.1 everywhere, std included.
+- **Decision.** Item (g), to build. calef, 2026-10-21 (UTC), on #2490: "B". `object` does the ELF
+  and PE work. Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released
+  on its own) is refused: its proofs would protect no known user.
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
-  candidate: `printenv` and `date` once program ports are unblocked (§297), `wc` and `rm` once
-  `rustix` builds for nife.
-- **Outstanding.** (b) waits on 705.
+  candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
+  index).
+- **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 
 ## Index row
