@@ -165,37 +165,6 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> Report {
     report
 }
 
-/// **The words the SYS clock chain's rates are computed from**: the CRG's `bus_root`, `axi_cfg0`,
-/// `stg_axiahb` and `apb_bus_func`, and PLL2's three syscon words (`jh7110_clock_and_reset`'s
-/// [`IcClkWords`](jh7110_clock_and_reset::IcClkWords) says which bits). Read-only status words.
-///
-/// # Safety
-///
-/// `crg` must be the SYS CRG's mapped device window and `syscon` the SYS syscon's.
-#[cfg(feature = "storage_bench")] // the storage bench is the one boot that drives the SD/MMC controllers
-pub(crate) unsafe fn read_clock_words(
-    crg: usize,
-    syscon: usize,
-) -> jh7110_clock_and_reset::IcClkWords {
-    use jh7110_clock_and_reset::{
-        SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT, SYSCLK_STG_AXIAHB,
-    };
-    // SAFETY: every call passes one of the two windows the caller vouched for and an aligned
-    // offset inside it, and these are read-only status words, so the read has no side effect.
-    let word = |base: usize, offset: usize| unsafe {
-        core::ptr::read_volatile((base + offset) as *const u32)
-    };
-    jh7110_clock_and_reset::IcClkWords {
-        bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
-        axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
-        stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
-        apb_bus_func: word(crg, SYSCLK_APB_BUS_FUNC as usize * 4),
-        pll2_dacpd_dsmpd_fbdiv: word(syscon, 0x2c),
-        pll2_postdiv1: word(syscon, 0x30),
-        pll2_prediv: word(syscon, 0x34),
-    }
-}
-
 /// What [`set_card_clock`] did: the clock's word before and after, its parent's rate, and the rate
 /// it now runs at, which is the number a driver dividing it for the card must be given.
 #[cfg(feature = "storage_bench")] // the storage bench is the one boot that drives the SD/MMC controllers
@@ -216,7 +185,8 @@ pub(crate) struct CardClock {
 ///
 /// # Safety
 ///
-/// As [`read_clock_words`], and `controller` must be 0 or 1.
+/// `crg` must be the SYS CRG's mapped device window and `syscon` the SYS syscon's, and
+/// `controller` must be 0 or 1.
 #[cfg(feature = "storage_bench")] // the storage bench is the one boot that drives the SD/MMC controllers
 pub(crate) unsafe fn set_card_clock(
     crg: usize,
@@ -225,21 +195,31 @@ pub(crate) unsafe fn set_card_clock(
     want_hz: u32,
 ) -> CardClock {
     use jh7110_clock_and_reset::{
-        SYSCLK_SDIO_SDCARD, axi_cfg0_hz, clock_divider, sdcard_divider_for, with_divider,
+        SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT, SYSCLK_SDIO_SDCARD,
+        SYSCLK_STG_AXIAHB, axi_cfg0_hz, clock_divider, sdcard_divider_for, with_divider,
     };
-    // SAFETY: as this function's contract.
-    let words = unsafe { read_clock_words(crg, syscon) };
-    let parent_hz = axi_cfg0_hz(&words);
     let reg = (crg + SYSCLK_SDIO_SDCARD[controller] as usize * 4) as *mut u32;
-    // SAFETY: the card clock's own word in the mapped CRG window: a read, two stores that keep
-    // every field but the enable and the divider, and a read back.
-    let (before, after) = unsafe {
+    // SAFETY: the two windows are this function's contract. The clock chain's words are read-only
+    // status words at aligned offsets inside them; then the card clock's own word in the CRG: a
+    // read, two stores that keep every field but the enable and the divider, and a read back.
+    let (parent_hz, before, after) = unsafe {
+        let word =
+            |base: usize, offset: usize| core::ptr::read_volatile((base + offset) as *const u32);
+        let parent_hz = axi_cfg0_hz(&jh7110_clock_and_reset::IcClkWords {
+            bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
+            axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
+            stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
+            apb_bus_func: word(crg, SYSCLK_APB_BUS_FUNC as usize * 4),
+            pll2_dacpd_dsmpd_fbdiv: word(syscon, 0x2c),
+            pll2_postdiv1: word(syscon, 0x30),
+            pll2_prediv: word(syscon, 0x34),
+        });
         let before = core::ptr::read_volatile(reg);
         let div = sdcard_divider_for(parent_hz, u64::from(want_hz));
         let gated = with_divider(before & !CLOCK_ENABLE, div);
         core::ptr::write_volatile(reg, gated);
         core::ptr::write_volatile(reg, gated | (before & CLOCK_ENABLE));
-        (before, core::ptr::read_volatile(reg))
+        (parent_hz, before, core::ptr::read_volatile(reg))
     };
     let div = u64::from(clock_divider(after).max(1));
     CardClock {
