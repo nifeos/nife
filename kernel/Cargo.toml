@@ -328,6 +328,11 @@ network_bench = []
 # card's first partition and restores what it found there. Off by default and in no gate. See
 # kernel/src/storage_bench.rs and notes/designware-mobile-storage.md. Name provisional.
 storage_bench = []
+# Milestone 53 (the board's own peripherals)'s multi-block read diagnosis: after the storage bench,
+# read the same blocks at three card clocks, four lengths and two FIFO depths, print how full the
+# FIFO got on each, then cold-reset the board so a netbooted bench can fetch its next image.
+# Read-only. Name provisional.
+storage_read_matrix = ["storage_bench"]
 # The rebooting soak (milestone 249 (the boot lottery is sampled by a person walking to the board)): after a fixed window the soak asks the firmware for a **cold
 # reboot** instead of beating forever, so the boot-time thread-placement lottery can be drawn fifty
 # times unattended rather than nine times by a person walking to the board. All three

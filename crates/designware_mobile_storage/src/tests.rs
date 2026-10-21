@@ -177,6 +177,26 @@ fn the_read_only_probe_reads_and_never_writes() {
     );
 }
 
+/// The read matrix is radon's diagnosis for its failing `CMD18`, and a bench boot that wedged on
+/// its second row would waste a power cycle: every row must read the right bytes, write nothing,
+/// and see the FIFO fill.
+#[test]
+fn the_read_matrix_reads_every_row_and_never_writes() {
+    let sim = mbr_card(8192, 2048);
+    let want = sim.storage[2048..2048 + 128].concat();
+    let (mut h, _) = Host::new(bench::Watch::new(sim), 50_000_000, Some(32)).unwrap();
+    let mut buf = vec![0u8; 128 * BLOCK];
+    let mut rows = 0;
+    bench::read_matrix(&mut h, 4, 2048, &mut buf, |r| {
+        rows += 1;
+        assert_eq!(r.result, Ok(()), "{r:?}");
+        assert!(r.max_fill > 0, "{r:?}");
+    })
+    .unwrap();
+    assert_eq!(rows, bench::MATRIX_HZ.len() * bench::MATRIX_BLOCKS.len());
+    assert_eq!(buf, want);
+}
+
 #[test]
 fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
     let mut sim = mbr_card(8192, 2048);
