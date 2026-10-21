@@ -122,8 +122,8 @@ compared, so these numbers flatter every engine equally.
 
 Midnight Commander matches because it draws with `cup`, `el`, SGR and UTF-8 box characters, all of
 which ours handles. Its boxes draw as missing-glyph boxes, since the glyph atlas is ASCII
-(the repertoire of milestone 142, a text display good enough that people use it instead of a GUI,
-not this engine's).
+(widening the repertoire belongs to milestone 142 (a text display good enough that people use it
+instead of a GUI), not to this engine).
 
 The plan's predictions come from the same recordings. A checkpoint is predicted to match once every
 screen-changing sequence sent before it is implemented. That is an upper bound: it assumes each
