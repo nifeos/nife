@@ -355,6 +355,24 @@ pub fn grant_at(slot: u64, capability: crate::cap::Cap) -> Result<u64, crate::ca
     })
 }
 
+/// **How many pages every `PageFrame` run the current thread already holds names**, summed
+/// ([`crate::cap::Object::mappable_pages`]). Name provisional (the surface map budget lane,
+/// 2026-10-21 UTC).
+///
+/// For `user::entry`'s spawn, which sizes the new address space's mapping log before the program
+/// runs. A kernel spawn closure places capabilities at fixed slots with [`grant_at`] before it
+/// calls `run`, and a run placed that way never appears in `Spawn::grants`. Counting the table
+/// itself, rather than a list the caller wrote, is what keeps a caller from leaving its largest run
+/// out of the budget. A linear scan of every slot, paid once per spawn and never on a syscall.
+pub(crate) fn current_mappable_pages() -> u64 {
+    current_capabilities().map_or(0, |t| {
+        (0..t.len() as u64)
+            .filter_map(|slot| t.get(slot).ok())
+            .map(|c| c.object.mappable_pages())
+            .sum()
+    })
+}
+
 /// [`grant`], into the first free slot at or above `floor` (milestone 812): `RETYPE_OBJ`'s third
 /// word, so a `std` program can make objects without filling a fixed slot it was not given.
 pub(crate) fn grant_from(
