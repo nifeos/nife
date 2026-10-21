@@ -266,18 +266,6 @@ impl<S: RegisterSpace> Ns16550<S> {
         }
     }
 
-    /// IER, IIR, LSR and the DesignWare USR (index 31), for milestone 890 (riscv64 and x86_64 join the shared boot path)'s probe.
-    #[cfg(feature = "plic_completion_probe")]
-    pub(crate) fn probe_registers(&self) -> [u8; 4] {
-        // USR exists only on the DesignWare part; QEMU's block is eight bytes long.
-        let usr = if self.shape.dw_busy_quirk {
-            self.read(31)
-        } else {
-            0
-        };
-        [self.read(IER), self.read(FCR), self.read(5), usr]
-    }
-
     /// Configure the UART: FIFOs on, interrupts off (this is a polling console), and, when the
     /// divisor is known, 8N1 at [`BAUD`].
     ///
