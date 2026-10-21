@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use super::*;
 
 /// **The graphical launch, folded into the plain legs' boots** (milestone 632 (graphics on
-/// demand)). The `--features shell` boot is the **normal UART system on every boot**, and graphics
+/// demand)). The boot is the **normal UART system on every boot**, and graphics
 /// is *launched*: this leg types `graphical_terminal` at the swish prompt and verifies what the
 /// launched session puts on the screen, read back with a `screendump`.
 ///

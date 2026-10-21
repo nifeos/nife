@@ -179,8 +179,8 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
         // wiring services itself. It hands off to the progenitor, which brings up the console server, the line
         // discipline (`line_editor`, milestone 28), the input driver, and the shell out of its own budget
         // through the granular verbs. This is the line that retires the kernel as the system's
-        // builder. Every interactive build on aarch64 and riscv64 reaches it: `--features shell`
-        // hands off straight away and the milestone tour after running its demos. On a board the
+        // builder. Every interactive boot on aarch64 and riscv64 reaches it, after the milestone
+        // tour. On a board the
         // prompt that follows is the signal that the boot finished (milestone 268 (every architecture boots the same way)), and a machine
         // that reaches one can be logged into and diagnosed rather than only power-cycled. The
         // legacy kernel-wired `user::shell_service` is retired as a boot path (it cannot host the

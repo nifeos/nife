@@ -375,12 +375,6 @@ unwatched_soak_test = ["soak_test"]
 # `script/soak-test --wedge`, the QEMU proof that the watchdog resets a wedged kernel. Never put it
 # on a board's card. Name provisional.
 wedge_soak_test = ["watchdog_soak_test"]
-# Boot straight to the interactive shell, skipping the milestone tour. Used by cargo xtask shell.
-# The userspace progenitor is the boot path here: it brings up the console, the line discipline, the
-# input driver and the shell out of its own budget, and the kernel wires none of it. That was
-# milestone 19d.2c's `initboot`, a second feature naming the same six cfg sites; milestone 296
-# deleted it, because a build of each produced the same 3,109 symbols at the same total size.
-shell = []
 # Milestone 342's proofs (names provisional). `console_flood`: once a drainer attaches, the kernel
 # prints a line every ten ticks, for `script/swish-check --flood`. `kernel_log_detached`: the kernel
 # never treats its drainer as keeping up, the negative control (every line direct, as before 342).

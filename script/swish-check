@@ -1,5 +1,5 @@
 #!/bin/sh
-# script/swish-check: boot the interactive system (`--features shell`) and type at the prompt.
+# script/swish-check: boot the interactive system and type at the prompt.
 #
 #   script/swish-check                     all three architectures
 #   script/swish-check --arch aarch64      one leg (aarch64, riscv64 or x86_64)
@@ -17,8 +17,7 @@
 # notes/stack/progenitor-stack.md has the numbers and the frames.
 #
 # **The x86_64 leg (milestone 182) boots the UEFI image under OVMF**, the `BOOTX64.EFI` a customer
-# copies to a USB stick, rather than a `--features shell` kernel under QEMU's PVH loader. x86_64 has
-# no early hand-over, so the kernel it boots is the default one, tour first. It types the same
+# copies to a USB stick, rather than a kernel under QEMU's PVH loader. It types the same
 # script over COM1, the network lines included since 2026-10-05, when the kernel began building a
 # stack on the `e1000e` the x86_64 runner attaches; `swish_check_omits` in
 # `xtask/src/swish_check/verdict.rs` is where a leg-specific gap would say why. The four `uuid` lines run since milestone 595
@@ -70,7 +69,7 @@
 # runs the real one, and until this existed nothing ran the interactive boot. Milestone 50 hit three
 # bugs that way and all three printed nothing at all. See notes/pipes.md.
 #
-# It is not part of script/test, because it builds a second kernel (`--features shell`) and boots it
+# It is not part of script/test, because it builds the boot kernel beside the test one and boots it
 # three times per ISA. It IS a `local` row in `script/ci-build`'s table (since milestone 230 (`script/shell-check` is red on `main`); that table was two
 # lists until milestone 286), and the reason is what happened while nothing ran it: it went red on
 # `main` on both architectures on 2026-08-28 and stayed red for five days, through every green
@@ -131,7 +130,7 @@
 # how the capability-slot record turned out to be two short (`kernel/src/cap.rs`).
 #
 # Name: ratified 2026-09-23 (calef, replacing `shell-check`, which was provisional and introduced
-# 2026-08-02). It boots the kernel's `--features shell` configuration and types at the prompt, so it
+# 2026-08-02). It boots the kernel and types at the prompt, so it
 # is named for the program actually driven, the way `coremark` and `compositor` are. The old name had
 # two problems and the first is the one that bit. **It was one hyphen from `shellcheck`**, the shell
 # linter `script/lint` itself runs, so two names differed by punctuation while naming unrelated

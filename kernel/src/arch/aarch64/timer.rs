@@ -649,11 +649,9 @@ pub fn is_tick_pending() -> bool {
 /// Busy-wait. Uses the counter, so it works with interrupts masked, which is exactly when a
 /// tick-based delay would hang forever.
 ///
-/// The callers are the milestone tour and the tests. Both alternate boot modes compile the tour
-/// out and run no tests (`bench` diverges before it; `shell` skips it), so in those two
-/// configurations this has no caller. There were three until milestone 296 deleted `initboot`,
-/// which selected nothing `shell` did not.
-#[cfg_attr(any(feature = "shell", feature = "bench"), allow(dead_code))]
+/// The callers are the milestone tour and the tests. A `bench` boot diverges before the tour and
+/// runs no tests, so in that configuration this has no caller.
+#[cfg_attr(feature = "bench", allow(dead_code))]
 pub fn spin_for(counter_ticks: u64) {
     let start = now();
     while now().wrapping_sub(start) < counter_ticks {

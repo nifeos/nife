@@ -164,7 +164,7 @@ script/console                                   # aarch64
 
 cargo xtask initial-ramdisk-riscv                         # riscv64
 NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv.img NIFE_DISK=target/nifefs.img \
-  cargo run -p kernel --features shell --target riscv64imac-unknown-none-elf
+  cargo run -p kernel --target riscv64imac-unknown-none-elf
 ```
 
 ```text
