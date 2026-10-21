@@ -187,14 +187,60 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     let (mut h, _) = Host::new(bench::Watch::new(sim), 50_000_000, Some(32)).unwrap();
     let mut buf = vec![0u8; 128 * BLOCK];
     let mut rows = 0;
+    let mut asked = Vec::new();
     bench::read_matrix(&mut h, 4, 2048, &mut buf, |r| {
         rows += 1;
         assert_eq!(r.result, Ok(()), "{r:?}");
         assert!(r.max_fill > 0, "{r:?}");
+        assert!(
+            r.us > 0,
+            "the read took no time on a clock that advances: {r:?}"
+        );
+        asked.push(r.asked_hz);
     })
     .unwrap();
     assert_eq!(rows, bench::MATRIX_HZ.len() * bench::MATRIX_BLOCKS.len());
+    asked.dedup();
+    assert_eq!(asked, [25_000_000, 12_500_000, 6_250_000]);
     assert_eq!(buf, want);
+}
+
+/// `Watch` is what says whether radon's FIFO filled: its peak and full count must come from
+/// `STATUS` alone, count every full read, and start again at `clear`.
+#[test]
+fn the_watch_counts_status_fill_and_nothing_else() {
+    use crate::host::Registers;
+    /// `STATUS` reads `status`; every other register reads all ones.
+    struct Fixed {
+        status: u32,
+    }
+    impl Registers for Fixed {
+        fn read(&mut self, o: u32) -> u32 {
+            if o == crate::regs::STATUS {
+                self.status
+            } else {
+                u32::MAX
+            }
+        }
+        fn write(&mut self, _: u32, _: u32) {}
+        fn now_us(&mut self) -> u64 {
+            0
+        }
+    }
+    // FIFO count in bits 29:17, the full flag in bit 3.
+    let mut w = bench::Watch::new(Fixed { status: 5 << 17 });
+    w.read(crate::regs::RINTSTS);
+    assert_eq!((w.max_fill, w.full_reads), (0, 0));
+    w.read(crate::regs::STATUS);
+    assert_eq!((w.max_fill, w.full_reads), (5, 0));
+    let mut w = bench::Watch::new(Fixed {
+        status: (128 << 17) | (1 << 3),
+    });
+    w.read(crate::regs::STATUS);
+    w.read(crate::regs::STATUS);
+    assert_eq!((w.max_fill, w.full_reads), (128, 2));
+    w.clear();
+    assert_eq!((w.max_fill, w.full_reads), (0, 0));
 }
 
 #[test]

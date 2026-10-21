@@ -1475,3 +1475,6 @@ documentation,Layout::unit_wrapped,replace < with >,gap,"a timeout in the mutati
 documentation,Layout::unit_wrapped,replace += with *=,gap,"a timeout in the mutation gate: take and k both start at 0 and stay there under *=, so every pass places an empty unit at the same place; no test fails faster than the harness's timeout"
 abi,RegisterShape::to_word,replace | with ^,equivalent,"reg_shift fills bits 0..8 and reg_io_width << 8 starts at bit 8, so the operands are disjoint and | and ^ give the same word"
 socket_contract,polled_wait::next,replace < with <=,equivalent,"at due == poll_micros both arms return Sleep(poll_micros), so the boundary chooses nothing"
+jh7110_clock_and_reset,sdcard_divider_for,replace < with <=,equivalent,"the branch returns 1, and at div == 1 the value returned below is also 1"
+jh7110_clock_and_reset,sdcard_divider_for,replace > with >=,equivalent,"the branch returns SDCARD_DIVIDER_MAX, and at div == SDCARD_DIVIDER_MAX the value returned below is the same"
+jh7110_clock_and_reset,with_divider,replace | with ^,equivalent,"the two operands are masked to disjoint bits (& !0x00ff_ffff and & 0x00ff_ffff), and | equals ^ on disjoint bits"

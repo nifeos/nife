@@ -777,5 +777,7 @@ fn radon_card_clock_comes_to_the_trees_rate_from_below() {
     assert!(parent / u64::from(div) <= 50_000_000);
     assert_eq!(sdcard_divider_for(parent, 1), SDCARD_DIVIDER_MAX);
     assert_eq!(sdcard_divider_for(parent, 1_000_000_000), 1);
+    // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
+    assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
     assert_eq!(with_divider(0x8000_0002, 8), 0x8000_0008);
 }
