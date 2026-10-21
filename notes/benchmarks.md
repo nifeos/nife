@@ -118,9 +118,9 @@ puts us at ~960 to ~1,420 cycles. So the corrected figure is roughly 1.1x to 1.7
 trip, not 4 to 7 times.
 
 Read that as "same order", never tighter; the caveats are under
-[what is not apples to apples](#what-is-not-apples-to-apples). The same-silicon comparison waits on
-argon, the TX1 (milestone 127 (the seL4 machine)), because sel4bench needs a real PMU and this host has
-none. [Calibration against seL4](benchmarks/calibration-against-sel4.md) has the three errors a first
+[what is not apples to apples](#what-is-not-apples-to-apples). sel4bench needs a real PMU, which this
+host lacks and [xenon](benchmarks/sel4bench-on-xenon.md) and argon (milestone 127 (the seL4 machine))
+have. [Calibration against seL4](benchmarks/calibration-against-sel4.md) has the three errors a first
 version of this comparison made, and the build recipe.
 
 ### The regression floors (icount, `nightly-2026-09-23`, QEMU 11.1.1)
@@ -257,6 +257,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 | appendix | what it verifies | holds |
 |---|---|---|
 | [calibration-against-sel4](benchmarks/calibration-against-sel4.md) | the seL4 comparison | first numbers (2026-07-23); calibration (2026-08-04); the PMU wall |
+| [sel4bench-on-xenon](benchmarks/sel4bench-on-xenon.md) | the method | 2026-10-21 |
 | [cross-os-primitives](benchmarks/cross-os-primitives.md) | the cross-OS table and its caveats | milestone 19e (run a real workload); first EL0 and cross-OS numbers |
 | [icount-drift-and-provenance](benchmarks/icount-drift-and-provenance.md) | the tripwire, the stamps, one-hart pinning | drift across builds; 2026-07-28; stamps (2026-09-21) |
 | [per-core-and-multi-hart](benchmarks/per-core-and-multi-hart.md) | the `smp_*` numbers, single-hart `--real` | §28 (SMP placement); 2026-07-29 refresh |
@@ -287,7 +288,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 - The HVF numbers are old. The newest is 2026-08-04, the cross-OS host columns are from 2026-07-25,
   and `spawn_el0`'s path has moved since. notes/register-of-measures.md flags the cross-OS row as due
   for re-taking, and it wants a quiet machine.
-- No seL4 number from the same silicon exists. It waits on argon (milestone 127).
+- No seL4 number from the same silicon exists. It waits on xenon or argon (milestone 127).
 - The tripwire compares against the last floor, so steps under 10% accumulate. The 2026-09-15 audit
   found riscv64 `ctx_switch` 10.78% up across saves that never fired. Milestone 415 (sub-tripwire
   drift accumulates across baseline saves) now reports it weekly rather than gating it:

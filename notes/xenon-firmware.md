@@ -148,8 +148,9 @@ session:
 - `HT Capable: No` (IMG_4025). The i5-7500T has four cores and no hyperthreading, so the four
   logical CPUs the boot tour enumerates are four physical ones.
 - SpeedStep, C-states and TurboBoost are all on (IMG_4063, IMG_4064, IMG_4066). The clock is free
-  to move between 0.800 and 2.700 GHz and the cores are free to sleep, which matters before anybody
-  quotes a benchmark number off this machine.
+  to move between 0.800 GHz and Intel's 3.3 GHz turbo ceiling for the i5-7500T, and the cores are
+  free to sleep, which matters before anybody quotes a benchmark number off this machine. The
+  firmware's "Maximum Clock Speed" of 2.700 GHz is the nominal clock, which is also the TSC's rate.
 - Neither the admin nor the system password is set (IMG_4043, IMG_4044).
 - Maintenance, Data Wipe, `Wipe on Next Boot` is unticked (IMG_4091). Leave it that way: the
   operation is not recoverable, cannot be stopped once started, and covers the M.2 PCIe SSD.

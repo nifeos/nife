@@ -204,6 +204,23 @@ Run with a 3.3 V USB-TTL cable on the J21 header at 115200, per the survey's cos
      last line printed says how far it got. The kernel makes the first PMU access at init, so the
      order is not the procedure's to choose, and the procedure says where to look instead.
 
+## xenon can referee the method on x86_64, with the TX1 still awaited
+
+The referee role this block gives the TX1, reproducing the Foundation's published figures before
+trusting our own sel4bench run, does not need aarch64. The same page publishes x86_64 figures for
+an i7-6700, a Skylake, and xenon's i5-7500T is the same core. sel4bench for that row is built at
+the page's manifest with the page's command, byte-identical to the Foundation's toolchain, and
+packed into one UEFI file per configuration that GRUB boots on xenon by network or stick
+(`bench/xenon-sel4bench/`). It has not run on xenon: it needs calef at the power button, up to five
+boots. [notes/benchmarks/sel4bench-on-xenon.md](../../notes/benchmarks/sel4bench-on-xenon.md) has
+the runbook, what is not apples-to-apples (the x86 "cycle" is a TSC tick, xenon's microcode may make
+seL4 refuse the published configuration, the Foundation's clock settings are unpublished), and the
+verdict criteria, fixed before the run.
+
+What stays the TX1's whatever xenon shows: the `PMCCFILTR_EL0` question milestone 25 records, and
+nife's own aarch64 cycle counts. This milestone's completion criterion, a byte over serial from
+argon, is unchanged.
+
 ## Scope note
 
 This is the machine and its serial byte, nothing else; milestones 25 (the comparison) and 74 (the
