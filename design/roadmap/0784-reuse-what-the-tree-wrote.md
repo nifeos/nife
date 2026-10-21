@@ -113,8 +113,7 @@ validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiser
 
 6. REFUSED: `stick_maker`'s `plist.rs` stays, item (f); see Follow-on.
 
-7. BUILT: `cargo xtask stick` reads the ELF and writes the PE through `object` 0.40.0, item (g); see
-Follow-on.
+7. BUILT: `xtask` reads ELF and writes PE through `object` 0.40.0, item (g); see Follow-on.
 
 8. REFUSED for base: the `coreutils` programs stay ours, and uutils is a basalt package candidate,
 item (h); see Follow-on.
@@ -244,8 +243,9 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Outstanding.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
   everywhere, std included; not yet in `Cargo.lock` (checked that day).
 - **Done.** Item (g), 2026-10-21 (UTC), nifeos/nife#2497, on calef's "B" on #2490. `object`
-  0.40.0 reads the ELF and writes the PE in `xtask/src/portable_executable.rs`, which keeps the
-  policy. Gate: `cargo xtask stick-boot` on all three firmwares. Milestone 821 is refused.
+  0.40.0 does the ELF and PE work in `xtask/src/portable_executable.rs`; our policy stays. Gate:
+  `cargo xtask stick-boot`, all three firmwares. Milestone 821 (`portable_executable`: an
+  ELF-to-PE converter, proven, then released on its own) is refused.
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).
