@@ -4,8 +4,8 @@ This appendix belongs to [milestone 705 (the graphical terminal runs full-screen
 It holds the build plan for option A, extending `crates/video_terminal`: what the engine must do,
 in which order, and how each step is proved. Its measurements are in [the programs'
 census](program-census.md), [the reference engines](engine-matrix.md) and [Redox's
-experience](prior-art-redox.md). Four decisions are calef's and are marked where they arise. This
-file's name is provisional.
+experience](prior-art-redox.md). calef's rulings on it are quoted where they apply. This file's
+name is provisional.
 
 ## The target
 
@@ -53,29 +53,23 @@ The entry read is ncurses 6.6's `xterm-256color`.
 | 14 | `BE BD PS PE` |
 | accepted | `XT` (titles; there is no title bar), `Cs Cr` (cursor color) |
 
-## Decision 1: how the engine names itself
+## How the engine names itself
 
-Every reply is a format programs read, so it is calef's.
+calef, 2026-10-21 03:32 UTC, ruling the reply identity: "A". The engine answers as itself. DA1 is
+`CSI ? 62 ; 22 c` (VT220 class with ANSI color) and DA2 `CSI > 1 ; 0 ; 0 c`, the defaults
+libghostty-vt's engine uses too. XTVERSION names nife and its version, and DECRQM answers each mode
+by what the engine implements at that commit. Programs adopt each negotiated feature the day its
+step lands, and never before.
 
-- **A. An honest identity** (recommended). DA1 `CSI ? 62 ; 22 c` (VT220 class with ANSI color), DA2
-  `CSI > 1 ; 0 ; 0 c`, XTVERSION naming nife and its version, and DECRQM answering each mode by what
-  the engine implements at that commit. libghostty-vt's engine uses the same DA1 and DA2 by default.
-  Programs then adopt each negotiated feature the day its step lands, and never before.
-- **B. Claim xterm.** Programs then assume xterm's whole set at once, including vim's 37
-  capability queries, which step 6 would have to answer for real.
+vim's and Emacs's version heuristics see an unknown terminal, an effect inferred and not measured.
+Step 6 runs vim, Neovim, Emacs and tmux against the exact strings before it merges.
 
-Under A, vim's and Emacs's version heuristics see an unknown terminal. Step 6 runs vim, Neovim,
-Emacs and tmux against the exact strings before it merges, since that effect was inferred.
+## When TERM changes
 
-## Decision 2: when TERM changes
-
-Today `system_initializer` gives every program `TERM=dumb`. The ruling's rule is that the engine
-honors what it advertises, yet steps 11 and 12 wait on other milestones (below).
-
-- **A. After step 10** (recommended), with `XM`, `kmous` and `Ms` recorded in `BUGS` until
-  milestones 179 (pointer input) and 180 (a clipboard) land. Every program in the census works by
-  keyboard, and none used the clipboard.
-- **B. After step 12**, which waits on both milestones.
+calef, 2026-10-21 03:35 UTC: "A". `system_initializer` gives every program `TERM=dumb` until step 10
+lands, then `TERM=xterm-256color` and `COLORTERM=truecolor`. `XM`, `kmous` and `Ms` are recorded in
+`BUGS` until milestones 179 (pointer input) and 180 (a clipboard) land, since steps 11 and 12 wait
+on them. Every program in the census works by keyboard, and none used the clipboard.
 
 ## The steps
 
@@ -92,7 +86,7 @@ included. The predicted counts are upper bounds from the census replay.
 | 4 | alternate screen, saved cursor, soft reset | `nano`, Emacs, tmux; census 33, or 96 if ASCII | 260 / 250 |
 | 5 | tab stops and line drawing | vttest 24 of 24 | 200 / 180 |
 | 6 | the reply path | vttest's reports; Neovim's exit | 250 / 200 |
-| 7 | wide and combining characters | census 96 of 97 with the CJK file | 180 and a generated table / 200 |
+| 7 | wide and combining characters | census 96 of 97 with the CJK file | 180 / 200 |
 | 8 | palette, reverse screen, scrollback clear | the ncurses test; 97 of 97 | 120 / 120 |
 | 9 | left and right margins | margin-aware programs, once DECRQM says so | 250 / 300 |
 | 10 | printer controller mode, memory lock | the entry, complete but for 11 and 12 | 80 / 80 |
@@ -106,7 +100,7 @@ included. The predicted counts are upper bounds from the census replay.
 | 18 | OSC 8 hyperlinks | links kept with their cells | 120 / 100 |
 
 Step 0a, the replay harness. A host command in `xtask` (name provisional) replays committed
-recordings through `Vt` and compares each checkpoint's grid with the oracle's (decision 3). A
+recordings through `Vt` and compares each checkpoint's grid with the oracle's (below). A
 recording is the bytes a program wrote plus the offsets of its keystrokes, so grading needs no pty
 and no installed program and runs in CI in milliseconds. The recordings are the ten census sessions
 and vttest's menus 1, 2 and 8, about 240 KB. A capture helper records new sessions. The harness
@@ -142,10 +136,10 @@ that people use it instead of a GUI); the grid is right after this step.
 Step 6. Part 3's design: `Vt::take_reply` hands back a bounded buffer and clears it, as
 `take_damage` does, and `display_terminal` forwards it where a keystroke goes. A flood drops the
 newest reply and says so in `BUGS`. DA1, DA2, DSR 5 and 6, DECXCPR, DECRQM, XTVERSION, `CSI 18 t`,
-OSC 10 and 11 queries, and DECRQSS and XTGETTCAP, all under decision 1. Replies do not change the
+OSC 10 and 11 queries, and DECRQSS and XTGETTCAP, answered as above. Replies do not change the
 grid, so the witness is untouched.
 
-Step 7. Widths from a table (decision 4). A wide character takes two cells and wraps whole, and
+Step 7. Widths come from `unicode-width` (below). A wide character takes two cells and wraps whole, and
 erasing either half clears both. A combining mark joins the previous cell; a cell holds one `char`,
 so the mark is dropped and the columns stay right until a cell can hold more.
 
@@ -197,27 +191,27 @@ Kani proves:
   exhaustively, on extracted pure functions;
 - that leaving the alternate screen restores the primary grid and cursor exactly.
 
-## Decision 3: an oracle in the tests
+## The test oracle
 
-§46 (thin primitives or whole subsystems; we write everything in between) counts a dev-dependency.
+calef, 2026-10-21 03:37 UTC: "A". `alacritty_terminal` 0.26.0 is the replay harness's oracle, a
+host-only dev-dependency under §46 (thin primitives or whole subsystems; we write everything in
+between). Its two failing vttest screens, 2.7 and 2.9, are allowlisted with reasons. calef's
+2026-10-19 hold on its §46 take stands, so step 0a grades against committed expected screens until
+the hold lifts.
 
-- **A. `alacritty_terminal` 0.26.0, host-only, in the replay harness** (recommended). It passes 22
-  of 24 vttest screens; its two failures go on an allowlist with reasons. It shares calef's
-  2026-10-19 hold on its §46 take; until that lifts, step 0a uses C.
-- **B. `vt100` 0.17.0.** Weaker: 17 of 24 screens, and it disagrees with the reference at 17 of 97
-  checkpoints.
-- **C. Committed expected screens, no oracle.** It costs the same, but regenerating them needs an
-  engine outside the tree, which fails the third principle. That, not effort, is the reason for A.
+## Character widths
 
-## Decision 4: where character widths come from
+calef, 2026-10-21 03:53 UTC: widths come from the `unicode-width` crate, pinned to the version
+`alacritty_terminal` 0.26.0 resolves to, so the engine and the oracle agree. A width table
+maintained in the tree is refused: "We are not going to maintain A. I don't even know how we would
+know to change it."
 
-`video_terminal` is in the kernel's dependency graph, through the witness.
-
-- **A. A table generated in the tree** (recommended) from Unicode's `EastAsianWidth.txt` and the
-  combining classes, with the generator committed and the version pinned. No dependency reaches the
-  kernel.
-- **B. The `unicode-width` crate**, which `alacritty_terminal` and `vt100` use. It enters the
-  kernel's graph. The two cost about the same; the kernel's graph is the reason.
+`alacritty_terminal` 0.26.0 asks for `unicode-width` 0.2.0 or later within 0.2, which resolves to
+0.2.2 today. `video_terminal` pins `=0.2.2`. The engine and the harness share the workspace's
+`Cargo.lock`, so the oracle resolves to the same copy, and a bump of either moves both in one
+change. Step 7 adds a harness test that the two report the same width for every Unicode scalar
+value, which fails loudly if they ever part. The crate reaches the kernel's graph through the
+witness; the ruling is the §46 take.
 
 ## What keeps A from stalling
 
@@ -243,19 +237,11 @@ pty cut, because `polling` does not know nife's target.
 
 [Engine options](engine-options.md) estimates 500 to 900 lines of engine code. Counted here: about
 2,900 engine lines in all. Steps 1 to 12, the faithful xterm, are about 2,300 of them; steps 13 to 18,
-the negotiated features, about 600. Around them sit about 3,000 lines of tests, 450 of harness, 250
-of fuzz and proofs, and a generated width table of about 500.
+the negotiated features, about 600. Around them sit about 3,000 lines of tests, 450 of harness and 250
+of fuzz and proofs.
 
 The figure scales the same functions in `alacritty_terminal` 0.26.0 by 1.5 for this tree's comment
 density (`vt.rs` is 1,361 lines, 883 of code). `alacritty_terminal` lacks step 9; libvterm's
 `state.c` names the left and right margins on 53 lines, which sized it. Read it as 2,200 to 3,600. It covers `xterm-256color` whole, 24 of 24
 vttest screens, the reply path and every census program's screens. [The
 census](program-census.md#where-this-census-is-thin) says what it did not reach.
-
-## Open decisions
-
-1. The reply identity: honest VT220 class naming nife (recommended), or claim xterm.
-2. When TERM changes: after step 10 with mouse and clipboard in `BUGS` (recommended), or after 12.
-3. The test oracle: `alacritty_terminal` as a host dev-dependency (recommended, under its hold),
-   `vt100`, or none.
-4. Character widths: a table generated in the tree (recommended), or `unicode-width`.

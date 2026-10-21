@@ -9,8 +9,9 @@ has no room for.
 - [`conformance.md`](conformance.md): vttest against the candidate engines.
 - [`engine-options.md`](engine-options.md): options A to E in full.
 - [`option-f.md`](option-f.md) and [`option-g.md`](option-g.md): options F and G, measured.
-- [`engine-plan.md`](engine-plan.md): the build plan for option A, step by step, with its open
-  decisions.
+- [`option-g-upkeep.md`](option-g-upkeep.md): what option G would cost to keep up.
+- [`engine-plan.md`](engine-plan.md): the build plan for option A, step by step, with calef's
+  rulings on it.
 - [`program-census.md`](program-census.md): ten programs measured for the plan, and vttest screen
   by screen.
 - [`engine-matrix.md`](engine-matrix.md): six reference engines read against the plan's feature

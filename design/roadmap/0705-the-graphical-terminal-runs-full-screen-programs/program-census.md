@@ -49,8 +49,8 @@ which steps 1 and 6 cover.
 
 ## What each program sends that ours does not act on
 
-From the no-reply runs, which set the plan's order, because the plan recommends answering as itself
-and not as xterm (the plan's decision 1). Each sequence is followed by the step that adds it. "No effect" lists what
+From the no-reply runs, which set the plan's order, because the engine answers as itself and not as
+xterm ([the plan](engine-plan.md#how-the-engine-names-itself)). Each sequence is followed by the step that adds it. "No effect" lists what
 ours swallows harmlessly: input-side modes, queries, cursor shape and the like.
 
 | program | changes the screen | no effect when swallowed |
@@ -169,7 +169,7 @@ subset fits an engine that does not implement rectangle checksums.
 - No session over ssh into Linux. No Linux host was available to this lane. A program there emits
   what its own terminfo says for the TERM sent, so the ncurses 6.6 programs above are the closest
   proxy, not a measurement.
-- The reply identity the plan recommends was not tried. The no-reply runs stand in for it, on the
+- The reply identity calef ruled was not tried. The no-reply runs stand in for it, on the
   argument that a program not told "xterm" behaves as if told nothing. That is an inference.
 - Input was not graded. Whether arrow keys reach `htop` and `nano` correctly in application cursor
   mode is read from terminfo (`kcuu1=\EOA`), not measured.
