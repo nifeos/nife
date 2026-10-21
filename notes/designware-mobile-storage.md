@@ -174,8 +174,10 @@ logs under `bench/radon-<date>/` and say which commit they came from.
 | date (UTC) | commit | step | slot 1 (microSD) | slot 0 (eMMC) | verdict |
 |---|---|---|---|---|---|
 | 2026-10-20 | `290d3ba8b` | 1, read-only | identified; the first block read failed, `Host(Data(17, 2060))` | `NoCard(NoResponse(1))` | `FAILED: read of block 0` |
+| 2026-10-21 | `54c8e773b` | 1, read-only | identified; blocks 0 and 2048 read by CMD17; the CMD18 read from 2048 failed, `Host(Data(18, 164))`, `TCBCNT 1100 TBBCNT 4580` | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
 
-The log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
+The 2026-10-21 row's log and how it ran are in `bench/radon-2026-10-21/`. For the 2026-10-20 row:
+the log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
 how the boot was run. The banner said `Read-only build: nothing on any card is written.` Steps 2
 and 3 were not run, as step 1 says. What it settled:
 
