@@ -195,9 +195,9 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 - **Milestone 179.** A mouse is milestone 179 (pointer input: a mouse in text mode), rather than an unnamed gap
   this block has to carry.
 - **Done.** Both options are priced per board in `pricing.md`. On xenon option B needs no known
-  new code, only milestone 242's bench step. On radon it needs milestone 163 and a way to confine
-  an xHCI with no IOMMU. On argon it needs milestone 127, Tegra's XUSB glue and firmware, and a
-  Tegra SMMU driver.
+  new code, only the bench step of milestone 242 (USB host and HID). On radon it needs milestone
+  163 (the JH7110's PCIe root complex) and a way to confine an xHCI with no IOMMU. On argon it
+  needs milestone 127 (the seL4 machine), Tegra's XUSB glue and firmware, and a Tegra SMMU driver.
 - **Recorded.** The order is a sequencing call rather than a claim that option B is wrong. A system
   that cannot accept a keyboard is limited in a way no scope note repairs, and calef's completion
   bar for this block stays literal.

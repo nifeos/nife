@@ -52,7 +52,8 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
   594, BUILT on xenon 2026-10-04, whose bench boot records the screen intact), and the xHCI driver.
 - Option A: the serial half is built (COM1, milestones 299 and 505), and the boot reaches xenon's
   monitor (594's bench boot). A `graphical_terminal` session on x86_64 is unproven even under QEMU,
-  because the runners have no virtio-gpu (milestone 270), so A on xenon is a QEMU leg and a bench
+  because the runners have no virtio-gpu (milestone 270 (wire `virtio-gpu-pci` and
+  `virtio-input` into the x86_64 test runner)), so A on xenon is a QEMU leg and a bench
   run away.
 - Option B: no new code is known to be needed. What is left is 242's bench step, one evening of
   calef's.
@@ -72,15 +73,15 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
   overread must still land inside the driver's region. Upstream Linux loads no VL805 firmware on
   this board, so it is taken to run from its own flash (inferred from absence, not read).
 - What it lacks, in order:
-  1. Milestone 163, the PLDA XpressRICH root complex. Linux's is 1,190 lines
+  1. Milestone 163 (the JH7110's PCIe root complex), the PLDA XpressRICH controller. Linux's is 1,190 lines
      (`pcie-starfive.c` 505, `pcie-plda-host.c` 685), so 800 to 5,600 here, plus the bench work
      163 says a lane cannot do. Medium confidence on size; the hardware risk is unpriced.
   2. Confinement. The JH7110 has no IOMMU, and the kernel refuses to start the xHCI driver without
-     one, by design. The way out that keeps the design is a validator at the doorbell (§86's
-     option 4). For NVMe that is two range checks per entry. For xHCI it is not: the controller
+     one, by design. The way out that keeps the design is a validator at the doorbell (§86 (whether an
+     NVMe driver can leave the kernel)'s option 4). For NVMe that is two range checks per entry. For xHCI it is not. The controller
      follows pointers in the device context array, every input context, the command ring, each
-     transfer ring and its link TRBs, the event ring segment table and the scratchpad array, and
-     it reads rings on its own schedule rather than once per doorbell. The validator would have
+     transfer ring and its link TRBs, the event ring segment table and the scratchpad array. It
+     also reads rings on its own schedule rather than once per doorbell. The validator would have
      to own the rings the controller reads, which moves most of the ring code into the kernel's
      trust. Its nearest size reference is `crates/direct_memory_access_validator`, 1,340 lines,
      for one virtqueue shape. One to three times that, 1,300 to 4,000. Low confidence, and the
@@ -88,7 +89,8 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
 - Option A: waits on milestone 157 (U-Boot's `simple-framebuffer` handoff), NOT-STARTED. 192's
   bench procedure is written for radon.
 - Option B: 163, then a confinement answer that does not exist yet, then the bench. This is the
-  board where B is genuinely large, and its storage (§260) waits on the same two items.
+  board where B is genuinely large, and its storage (§260 (radon's block server serves a
+  USB drive)) waits on the same two items.
 
 ## argon (Jetson TX1, Tegra210, aarch64)
 
@@ -99,11 +101,11 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
 - What nife has: the xHCI ring logic, and nothing else on this path. The kernel finds xHCI only by
   PCI class code (`find_xhci_device`), and XUSB is a device-tree node with no config space. nife's
   aarch64 IOMMU is SMMUv3, and Tegra's SMMU is NVIDIA's own design (notes/aarch64-board-survey.md).
-  nife does not boot on argon at all yet: milestone 127 is NOT-STARTED and the kernel is linked
+  nife does not boot on argon at all yet: milestone 127 (the seL4 machine) is NOT-STARTED and the kernel is linked
   for QEMU's memory map (notes/boot-stick/argon.md).
 - What XUSB needs before its xHCI registers answer, from Linux:
   - The Falcon microcontroller loaded with NVIDIA's `nvidia/tegra210/xusb.bin` (linux-firmware,
-    redistributable under NVIDIA's licence), by DMA, through the `fpci` and `ipfs` windows.
+    redistributable under NVIDIA's license), by DMA, through the `fpci` and `ipfs` windows.
     `xhci-tegra.c` is 2,877 lines for four SoCs, its power management included.
   - The pad controller and its PLLs: `xusb.c` 1,551 and `xusb-tegra210.c` 3,299, much of it the
     PCIe and SATA lanes a keyboard does not need.
@@ -126,8 +128,8 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
   controller was not read. Medium-low confidence; it is a cheaper path to one keystroke and a dead
   end for USB 3, and it is not an option 192 records.
 - Estimate for the glue alone, taking a third of the Linux Tegra lines as the keyboard's share:
-  roughly 2,600 Linux lines, so 1,800 to 12,000 here, plus an SMMU driver of 600 to 1,500 (scaled
-  from nife's SMMUv3 rather than Linux). Low confidence. All of it sits after 127.
+  roughly 2,600 Linux lines, so 1,800 to 12,000 here. The SMMU driver adds 600 to 1,500, scaled
+  from nife's SMMUv3 rather than Linux. Low confidence. All of it sits after 127.
 - Option A: needs 127 first, then a framebuffer handoff on argon. 157 is written for radon's
   display path, and whether argon's U-Boot hands over a framebuffer was not read.
 - Option B: the largest of the three, and the one whose firmware nife does not write.
