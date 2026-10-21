@@ -270,7 +270,11 @@ impl<S: RegisterSpace> Ns16550<S> {
     #[cfg(feature = "plic_completion_probe")]
     pub(crate) fn probe_registers(&self) -> [u8; 4] {
         // USR exists only on the DesignWare part; QEMU's block is eight bytes long.
-        let usr = if self.shape.dw_busy_quirk { self.read(31) } else { 0 };
+        let usr = if self.shape.dw_busy_quirk {
+            self.read(31)
+        } else {
+            0
+        };
         [self.read(IER), self.read(FCR), self.read(5), usr]
     }
 

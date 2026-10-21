@@ -123,7 +123,8 @@ fn target_context(source: u32) -> usize {
 /// which must complete against the context that claimed: a source may be enabled on more than one
 /// (the hand-over pins the console's to the boot hart, and an ACK with no claim targets
 /// [`target_context`]), and only a context that enables it may complete it.
-static CLAIM_CTX: [AtomicU16; MAX_SOURCES] = [const { AtomicU16::new(CTX_UNASSIGNED) }; MAX_SOURCES];
+static CLAIM_CTX: [AtomicU16; MAX_SOURCES] =
+    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAX_SOURCES];
 
 /// Record that `context` claimed `source` and that its driver's ACK owes the completion.
 pub(crate) fn hold_claim(source: u32, context: usize) {
@@ -316,7 +317,12 @@ pub(crate) fn completion_probe_tick() {
     }
     let every = super::timer::frequency().wrapping_mul(5);
     if NEXT
-        .compare_exchange(next, now.wrapping_add(every), Ordering::Relaxed, Ordering::Relaxed)
+        .compare_exchange(
+            next,
+            now.wrapping_add(every),
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        )
         .is_err()
     {
         return;
