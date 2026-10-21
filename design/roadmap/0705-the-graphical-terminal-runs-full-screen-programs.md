@@ -107,7 +107,8 @@ Answers to questions 2 and 4 of the seven are the same for A to E, so they are h
 
 The full entries for A to E are in [the engine options appendix](0705-the-graphical-terminal-runs-full-screen-programs/engine-options.md).
 F and G have their own ([F](0705-the-graphical-terminal-runs-full-screen-programs/option-f.md),
-[G](0705-the-graphical-terminal-runs-full-screen-programs/option-g.md)), and vttest's results are in
+[G](0705-the-graphical-terminal-runs-full-screen-programs/option-g.md), with
+[G's upkeep](0705-the-graphical-terminal-runs-full-screen-programs/option-g-upkeep.md)), and vttest's results are in
 [the conformance appendix](0705-the-graphical-terminal-runs-full-screen-programs/conformance.md).
 
 - A. Extend `video_terminal`. The Part 2 list, an estimated 500 to 900 lines of engine code and as

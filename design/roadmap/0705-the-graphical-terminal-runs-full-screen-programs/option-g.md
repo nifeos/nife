@@ -46,8 +46,8 @@ none.
 Both put a C-ABI engine behind the seam. B needs Zig 0.16 in the build, a `std.Io`, an entropy
 callback and an allocator, and its API is declared unstable. G needs the clang the C library
 already uses, allocator callbacks (`vterm_new_with_allocator`) and nothing else. Its header checks a
-version at runtime. B buys more (mouse and key encoders, reflow); G's conformance on the measured
-screens is already the best of the four engines.
+version at runtime. Both have key and mouse encoders and reflow ([the upkeep appendix](option-g-upkeep.md));
+G's conformance on the measured screens is already the best of the four engines.
 
 ## The cost of C here
 
@@ -55,8 +55,8 @@ Every program's output is this engine's input, and it is C. A memory bug in it i
 process that holds the scanout and its terminal endpoint, and no more, because that is all
 `display_terminal` is granted. A compromised terminal could draw anything on its screen and forge
 keystrokes into its own terminal. It could not reach another process. The CVE record above is
-short; whether libvterm is fuzzed upstream was searched for and not found, which is not proof that it
-is not. A fuzz target over `vterm_input_write` would be part of the lane.
+short. No upstream fuzzing was found. nife's own fuzz pass over `vterm_input_write` found crashes,
+which are being reported privately ([the upkeep appendix](option-g-upkeep.md)).
 
 ## The seven questions
 
