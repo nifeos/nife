@@ -187,6 +187,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, 'helpers')
 import baseline_drift                                                       # noqa: E402
 import coe_actions                                                          # noqa: E402
+import history_ratchet                                                      # noqa: E402
 import comment_block_ratchet                                                # noqa: E402
 import counted_claims                                                       # noqa: E402
 import crate_release                                                        # noqa: E402
@@ -2873,6 +2874,12 @@ def read_week_notes(path=WEEK_NOTES_PATH):
         for week, chart, note in csv.reader([line]):
             if week in ('', WEEK) or not note.strip():
                 continue
+            hits = history_ratchet.line_hits('- %s: %s' % (week, note))
+            if hits:
+                # The page draws this note as prose, and script/lint holds the page to the history
+                # ratchet, so the weekly pull request would fail lint on a note nobody re-reads.
+                sys.exit('metrics: %s note for %s uses history wording %s; rephrase it in '
+                         'notes/project-metrics/week-notes.csv' % (chart, week, hits))
             notes.setdefault(week, []).append((chart, note.strip()))
     return notes
 
@@ -3524,6 +3531,12 @@ def selftest():
         kept_before = notes_file.read_text().split('\n')
         dropped = prune_week_notes('2026W31', notes_file)
         kept_after = notes_file.read_text().split('\n')
+        notes_file.write_text('week,chart,note\n2026W40,lines.svg,"39 moved to Closed (superseded)"\n')
+        try:
+            read_week_notes(notes_file)
+            history_note_refused = False
+        except SystemExit:
+            history_note_refused = True
 
         page_file = pathlib.Path(tmp) / 'page.md'
         original_page = (
@@ -3668,6 +3681,7 @@ def selftest():
         ('further movers are counted, not listed', by_week['2026W10'],
          '2026W10 bugs_rust 3->0 (+1 more series); no week note'),
         ('the prune drops only the aged row', dropped, 1),
+        ('a note in history wording is refused, not drawn', history_note_refused, True),
         ('the prune keeps every other line byte for byte',
          kept_after, [l for l in kept_before if l != '2026W30,lines.svg,"aged out"']),
         ('a bullet renders under the chart it names, in week order',
