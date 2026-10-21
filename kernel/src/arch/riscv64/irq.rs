@@ -118,15 +118,31 @@ fn target_context(source: u32) -> usize {
     }
 }
 
-/// Re-enable (unmask) an interrupt source at the PLIC.
+/// The context holding each source's claim, or [`CTX_UNASSIGNED`] when none is outstanding. Set by
+/// the external-interrupt handler ([`hold_claim`]) and taken by the driver's ACK ([`enable`]),
+/// which must complete against the context that claimed: a source may be enabled on more than one
+/// (the hand-over pins the console's to the boot hart, and an ACK with no claim targets
+/// [`target_context`]), and only a context that enables it may complete it.
+static CLAIM_CTX: [AtomicU16; MAX_SOURCES] =
+    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAX_SOURCES];
+
+/// Record that `context` claimed `source` and that its driver's ACK owes the completion.
+pub(crate) fn hold_claim(source: u32, context: usize) {
+    CLAIM_CTX[source as usize % MAX_SOURCES].store(context as u16, Ordering::Release);
+}
+
+/// **An `Irq` capability's ACK, and the arming at setup.**
 ///
-/// Called by the `Irq` capability's ACK, after a userspace driver has serviced its device, and once
-/// at setup. The external-interrupt handler `disable`d the source at the PLIC when it fired
-/// (drivers/plic.rs), so a level-triggered device would not re-fire before the driver read it; this
-/// brings the source back. The source is routed to its stable target hart (see [`target_context`]),
-/// so device interrupts spread across harts instead of all landing on the boot hart.
+/// With a claim outstanding, the ACK is the completion, written to the context that claimed: the
+/// PLIC held the source from the claim until now, and completing it lets the gateway forward the
+/// next interrupt, at once if the driver left the line asserted. Without one (setup, or an ACK with
+/// nothing claimed), it enables the source at its stable target hart (see [`target_context`]), so
+/// device interrupts spread across harts instead of all landing on the boot hart.
 pub fn enable(intid: u32) {
-    crate::drivers::plic::enable(intid, target_context(intid));
+    match CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
+        CTX_UNASSIGNED => crate::drivers::plic::enable(intid, target_context(intid)),
+        claimed => crate::drivers::plic::complete(intid, claimed as usize),
+    }
 }
 
 /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's
