@@ -37,11 +37,16 @@ impl Nic {
         }
     }
     fn rx_take(&mut self) -> Option<alloc::vec::Vec<u8>> {
-        match self {
-            Nic::Virtio(v) => v.rx_take(),
+        let frame = match self {
+            // virtio's wait is its interrupt; only a polled NIC's wait reads the stamp below.
+            Nic::Virtio(v) => return v.rx_take(),
             Nic::Gigabit(n) => n.rx_take(),
             Nic::DesignWare(n) => n.rx_take(),
+        };
+        if frame.is_some() {
+            nic_wait::frame_taken();
         }
+        frame
     }
     fn tx_send(&mut self, frame: &[u8]) {
         match self {

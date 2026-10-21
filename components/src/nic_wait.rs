@@ -4,7 +4,10 @@
 //! when the wait learned its caller's deadline, because §282 (when a file is split, the parent
 //! becomes an index) lets `net_stack.rs` only shrink. Named for what it does.
 
+use core::sync::atomic::{AtomicU64, Ordering};
+
 use smoltcp::time::Duration;
+use socket_contract::polled_wait;
 
 use super::*;
 
@@ -31,6 +34,16 @@ use super::*;
 /// matrix's 2026-10-12 red was a 60 s "lost-wakeup" watchdog rather than a failed accept. A
 /// filtered run of the hand-written listener test, which starts no prober, hung the same way every
 /// time. `an_accept_nobody_answers_ends_at_the_stacks_bound` (riscv and aarch64) holds it.
+/// When a polled NIC last handed `net_stack` a frame, on the counter. One server thread reads and
+/// writes it; an atomic only because a `static` must be `Sync`.
+static LAST_FRAME: AtomicU64 = AtomicU64::new(0);
+
+/// Note that a polled NIC just handed over a frame, which starts [`poll_without_interrupt`]'s
+/// tick of looking instead of sleeping.
+pub(super) fn frame_taken() {
+    LAST_FRAME.store(now(), Ordering::Relaxed);
+}
+
 pub(super) fn wait_for_nic(
     iface: &mut Interface,
     dev: &mut Nic,
@@ -82,24 +95,42 @@ pub(super) fn wait_for_nic(
     dev.ack_irq();
 }
 
-/// **A polled NIC's wait, which is a sleep** (milestone 494 (a driver for the network card a PC
-/// actually has)): the `e1000e` server's, and since milestone 53 (the board's own peripherals:
-/// network and storage on real silicon) radon's Ethernet port's, both 1 ms. Neither holds an
-/// interrupt (`kernel/src/user/e1000e_service.rs` says why), so the wait ends at smoltcp's own
-/// deadline or after `e1000e_transport::POLL_MS`, whichever is sooner, and the caller looks at the
-/// ring again. A frame already waiting skips the sleep. The timer and notification are the same
-/// pair the virtio server's retransmit wait uses (slots 5 and 6).
+/// **A polled NIC's wait** (milestone 494 (a driver for the network card a PC actually has)): the
+/// `e1000e` server's, and since milestone 53 (the board's own peripherals: network and storage on
+/// real silicon) radon's Ethernet port's. Neither holds an interrupt
+/// (`kernel/src/user/e1000e_service.rs` says why). A frame already waiting returns at once. Within
+/// a scheduler tick of the last frame taken, the wait is a yield, because a sleep could not end
+/// before that tick and a stream's next segment comes sooner (`socket_contract::polled_wait` has
+/// the argument and its measurements). After that it sleeps until smoltcp's own deadline or
+/// `e1000e_transport::POLL_MS`, whichever is sooner, and the timer rounds that up to a tick. The
+/// timer and notification are the same pair the virtio server's retransmit wait uses (slots 5
+/// and 6).
 fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &mut SocketSet) {
     if frame_waiting {
         return;
     }
-    let poll_micros = e1000e_transport::POLL_MS * 1000;
-    let micros = iface
+    // `cntfrq`'s discipline: a process that cannot know the tick dies saying so, rather than
+    // guessing one and silently paying a tick per round trip again.
+    let tick_hz = user_mode_runtime::tick_hz()
+        .expect("the scheduler tick is unknown: this thread's current-CPU page carries none");
+    let tick = cntfrq() / tick_hz;
+    let due = iface
         .poll_delay(instant(), sockets)
-        .map_or(poll_micros, |d| d.total_micros().min(poll_micros));
-    if micros == 0 {
-        return;
-    }
+        .map(|d| d.total_micros());
+    let micros = match polled_wait::next(
+        now(),
+        LAST_FRAME.load(Ordering::Relaxed),
+        tick,
+        due,
+        e1000e_transport::POLL_MS * 1000,
+    ) {
+        polled_wait::Next::Look => {
+            user_mode_runtime::yield_now();
+            return;
+        }
+        polled_wait::Next::Sleep(0) => return,
+        polled_wait::Next::Sleep(micros) => micros,
+    };
     let ticks = abi::timer::counter_ticks_for(0, (micros * 1000) as u32, cntfrq());
     if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
