@@ -1,0 +1,49 @@
+
+ELF-loader started on CPU: <Reserved> Part: 0x0 r0p0
+  paddr=[404f1000..4075008f]
+No DTB passed in from boot loader.
+Looking for DTB in CPIO archive...found at 405187e0.
+Loaded DTB from 405187e0.
+   paddr=[40226000..40227fff]
+ELF-loading image 'kernel' to 40000000
+  paddr=[40000000..40225fff]
+  vaddr=[ffffffffc0000000..ffffffffc0225fff]
+  virt_entry=ffffffffc0000000
+ELF-loading image 'rootserver' to 40228000
+  paddr=[40228000..404d0fff]
+  vaddr=[400000..6a8fff]
+  virt_entry=4237d8
+Enabling MMU and jumping to entry point...
+
+Range for vaddr 0x10001000 with 1 4k pages not reserved!
+Mapping new pages to extend brk region failed
+
+
+seL4 Benchmark
+==============
+
+Switching to a safer, bigger stack... 
+Setting up global fault handler...
+
+ipc Benchmarks (iteration 0)
+============================
+
+Benchmarking overhead of a call is not stable! Cannot continue
+	2688
+	2816
+	2688
+	2688
+	2944
+	2688
+	2688
+	2688
+	2816
+	2816
+	2688
+	2688
+	2816
+	2688
+	2688
+	2688
+[Cond failed: result == NULL]
+	Failed to run benchmark ipc

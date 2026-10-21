@@ -58,3 +58,5 @@ area directories), ruled B). Appendices under
 `lint-cost-2026-10-18.md`: Name: provisional, minted 2026-10-18 (UTC) by lane maintainer/lint-cost.
 
 `aarch64-modern-board-survey.md`: Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.
+
+`arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.

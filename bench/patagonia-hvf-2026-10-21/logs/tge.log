@@ -1,0 +1,9 @@
+# HVF, virtualization=on
+eret to EL0 with HCR_EL2.TGE=1, then svc
+svc from EL0 taken to EL1 (TGE NOT honored)
+# HVF, virtualization=on, HCR_EL2.E2H also set (tge-e2h)
+eret to EL0 with HCR_EL2.TGE=1, then svc
+svc from EL0 taken to EL1 (TGE NOT honored)
+# TCG control: -machine virt,gic-version=3,virtualization=on -cpu max
+eret to EL0 with HCR_EL2.TGE=1, then svc
+svc from EL0 taken to EL2 (TGE honored)

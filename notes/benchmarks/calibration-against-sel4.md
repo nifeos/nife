@@ -72,7 +72,10 @@ up front. It is the Jetson TX1, a Cortex-A57 at 1.9 GHz, in seL4's default confi
 only aarch64 platform the page carries ([notes/aarch64-board-survey.md](../aarch64-board-survey.md),
 read 2026-08-13). A round trip in our sense is their call plus their reply, ~839 cycles.
 
-So the corrected figure is roughly 1.1x to 1.7x an L4-lineage round trip, not 4 to 7 times.
+So the corrected figure is roughly 1.1x to 1.7x an L4-lineage round trip, not 4 to 7 times. That
+arithmetic crosses silicon. On one core, with seL4 itself booted under the same HVF machine, the
+ratio is about 4.6 ([arm-plan-under-hvf.md](../arm-plan-under-hvf.md)), and that measurement is the
+one in force.
 Converting the debug EL0 number instead (~2272 ns) gives ~6,200 to ~9,200 cycles and ~7x to ~11x.
 That is the same class of mistake in the other direction: a debug number in a release comparison.
 

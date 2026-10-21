@@ -56,6 +56,10 @@ NIFE = "NIFE"
 # writes the legacy format; Linux's `defines.h` spells it `E1000_RFCTL_EXTEN` (milestone 494 (a
 # driver for the network card a PC actually has)).
 EXTEN = "EXTEN"
+# `HCR_EL2.TGE`, Trap General Exceptions (Arm ARM), the bit notes/arm-plan-under-hvf.md measures
+# HVF ignoring; `tge` names the probe that does it.
+TGE = "TGE"
+tge = "tge"
 # RISC-V supervisor registers (the privileged spec). `sie` is Supervisor Interrupt Enable, and at 76
 # occurrences it is the single loudest false positive in the tree.
 sie = "sie"

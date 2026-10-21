@@ -1,0 +1,22 @@
+
+ELF-loader started on CPU: <Reserved> Part: 0x0 r0p0
+  paddr=[40665000..4096f08f]
+No DTB passed in from boot loader.
+Looking for DTB in CPIO archive...found at 406a34e0.
+Loaded DTB from 406a34e0.
+   paddr=[4023d000..4023efff]
+ELF-loading image 'kernel' to 40000000
+  paddr=[40000000..4023cfff]
+  vaddr=[ffffffffc0000000..ffffffffc023cfff]
+  virt_entry=ffffffffc0000000
+ELF-loading image 'rootserver' to 4023f000
+  paddr=[4023f000..40644fff]
+  vaddr=[400000..805fff]
+  virt_entry=40ea98
+Enabling MMU and jumping to entry point...
+
+ERROR: kernel requires 16-bit ASIDs
+ERROR: CPU init failed
+seL4 called fail at /w/t/kernel/src/arch/arm/kernel/boot.c:670 in function init_kernel, saying "ERROR: kernel init failed"
+halting...
+Kernel entry via Unknown (0)

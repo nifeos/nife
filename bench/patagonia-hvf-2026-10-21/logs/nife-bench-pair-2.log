@@ -1,0 +1,5 @@
+  probe: cycles_per_tick 128.01 (30723456 cycles over 240000 ticks at cntfrq 24000000)
+benchmark             ticks    iters   ticks/iter    ns/iter
+ipc_rtt                1611     1000            1         67
+null_syscall          16060    20000            0         33
+ipc_rtt_el0           53125     5000           10        442

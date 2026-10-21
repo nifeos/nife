@@ -1,0 +1,47 @@
+
+ELF-loader started on CPU: <Reserved> Part: 0x0 r0p0
+  paddr=[6066d000..6097f08f]
+No DTB passed in from boot loader.
+Looking for DTB in CPIO archive...found at 606ae510.
+Loaded DTB from 606ae510.
+   paddr=[60244000..60246fff]
+ELF-loading image 'kernel' to 60000000
+  paddr=[60000000..60243fff]
+  vaddr=[ffc0000000..ffc0243fff]
+  virt_entry=ffc0000000
+ELF-loading image 'rootserver' to 60247000
+  paddr=[60247000..6064cfff]
+  vaddr=[400000..805fff]
+  virt_entry=40ea98
+Enabling hypervisor MMU and jumping to entry point...
+
+Warning:  gpt_cntfrq 24000000, expected 62500000
+Bootstrapping kernel
+Available phys memory regions: 1
+  [60000000..80000000)
+Reserved virt address space regions: 3
+  [8060000000..8060244000)
+  [8060244000..8060246017)
+  [8060247000..806064d000)
+Booting all finished, dropped to user space
+Caught cap fault in send phase at address 0
+while trying to handle:
+vm fault on code at address 0x400 with status 0x82000006
+in thread 0x807ffcd400 "rootserver" at address 0x400
+With stack:
+0x6f3d90: 0x6f3e08
+0x6f3d98: 0x6f3e10
+0x6f3da0: 0x6f3e18
+0x6f3da8: 0x6f3e20
+0x6f3db0: 0x0
+0x6f3db8: 0x6f3e28
+0x6f3dc0: 0x1
+0x6f3dc8: 0xfffffffffffffff2
+0x6f3dd0: 0x6f3e00
+0x6f3dd8: 0x0
+0x6f3de0: 0x6f3e30
+0x6f3de8: 0x40f094
+0x6f3df0: 0x46a538
+0x6f3df8: 0x1
+0x6f3e00: 0x0
+0x6f3e08: 0x0
