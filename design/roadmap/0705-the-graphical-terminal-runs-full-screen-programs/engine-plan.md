@@ -105,64 +105,64 @@ included. The predicted counts are upper bounds from the census replay.
 | 17 | modifyOtherKeys | vim's and Emacs's modified keys | 80 / 80 |
 | 18 | OSC 8 hyperlinks | links kept with their cells | 120 / 100 |
 
-**0a. The replay harness.** A host command in `xtask` (name provisional) replays committed
+Step 0a, the replay harness. A host command in `xtask` (name provisional) replays committed
 recordings through `Vt` and compares each checkpoint's grid with the oracle's (decision 3). A
 recording is the bytes a program wrote plus the offsets of its keystrokes, so grading needs no pty
 and no installed program and runs in CI in milliseconds. The recordings are the ten census sessions
 and vttest's menus 1, 2 and 8, about 240 KB. A capture helper records new sessions. The harness
 fails when any count drops.
 
-**0b. The fuzz target and the first proofs** over today's engine. Kani on a 672 KB value is untried;
+Step 0b adds the fuzz target and the first proofs over today's engine. Kani on a 672 KB value is untried;
 this step finds out whether it holds the whole `Vt` or only extracted pieces.
 
-**1.** The parser consumes an `ESC` sequence with intermediates whole, executes C0 codes inside a
+Step 1. The parser consumes an `ESC` sequence with intermediates whole, executes C0 codes inside a
 CSI, treats VT and FF as line feed, and dispatches private markers. Then CHA, HPA, VPA, HPR, VPR,
 CNL, CPL, ECH, IND, NEL, DECALN, DECTCEM, DECAWM, DECSCUSR accepted, and DECCKM and DECKPAM in
 `Vt`. `keymap` reads them: with `smkx` the entry promises `kcuu1=\EOA`, and ours sends `CSI A` in
 every mode.
 
-**2.** DECSTBM, RI, SU, SD, IL and DL in the region, region-aware line feed and DECOM. This is where
+Step 2. DECSTBM, RI, SU, SD, IL and DL in the region, region-aware line feed and DECOM. This is where
 [engine options](engine-options.md) put the risk: `line_feed`, the damage record and the scrollback
 ring. Only a whole-screen scroll pushes a row to scrollback.
 
-**3.** ICH, DCH, IRM and REP, with erasure filling with the current background only (BCE). Today an
+Step 3. ICH, DCH, IRM and REP, with erasure filling with the current background only (BCE). Today an
 erase fills with the whole rendition.
 
-**4.** Modes 47, 1047, 1048 and 1049; DECSC, DECRC, SCOSC and SCORC with position, rendition,
+Step 4. Modes 47, 1047, 1048 and 1049; DECSC, DECRC, SCOSC and SCORC with position, rendition,
 origin mode, the wrap flag and character sets; DECSTR. The second grid is 192,000 bytes more in
 every holder of a `Vt`: `display_terminal`'s `.data` (717 KB today), the kernel's witness and
 `xtask`. Each step that adds state bumps the handoff `LAYOUT` and keeps a reader for the previous
 one. calef's 2026-10-19 ruling on §209 (state handoff is an opaque blob over a granted frame, and it
 is optional) requires that.
 
-**5.** HTS, TBC, CBT, CHT; G0 and G1, SO and SI, and DEC Special Graphics mapped to Unicode box
-drawing. The atlas is ASCII, so the glyphs are milestone 142's (a text display good enough that
-people use it instead of a GUI); the grid is right after this step.
+Step 5. HTS, TBC, CBT, CHT; G0 and G1, SO and SI, and DEC Special Graphics mapped to Unicode box
+drawing. The atlas is ASCII, so the glyphs belong to milestone 142 (a text display good enough
+that people use it instead of a GUI); the grid is right after this step.
 
-**6.** Part 3's design: `Vt::take_reply` hands back a bounded buffer and clears it, as
+Step 6. Part 3's design: `Vt::take_reply` hands back a bounded buffer and clears it, as
 `take_damage` does, and `display_terminal` forwards it where a keystroke goes. A flood drops the
 newest reply and says so in `BUGS`. DA1, DA2, DSR 5 and 6, DECXCPR, DECRQM, XTVERSION, `CSI 18 t`,
 OSC 10 and 11 queries, and DECRQSS and XTGETTCAP, all under decision 1. Replies do not change the
 grid, so the witness is untouched.
 
-**7.** Widths from a table (decision 4). A wide character takes two cells and wraps whole, and
+Step 7. Widths from a table (decision 4). A wide character takes two cells and wraps whole, and
 erasing either half clears both. A combining mark joins the previous cell; a cell holds one `char`,
 so the mark is dropped and the columns stay right until a cell can hold more.
 
-**8.** OSC 4 and 104, DECSCNM, ED 3, and DECCOLM as clear and home with no change of width.
+Step 8. OSC 4 and 104, DECSCNM, ED 3, and DECCOLM as clear and home with no change of width.
 
-**9.** DECLRMM and DECSLRM. Every operation from steps 2 and 3 learns the left and right margins,
+Step 9. DECLRMM and DECSLRM. Every operation from steps 2 and 3 learns the left and right margins,
 which is why it is large; libvterm and libghostty-vt have it, neither Rust engine does.
 
-**10.** Printer controller mode swallows text until `CSI 4 i`, `mc0` prints nothing (there is no
+Step 10. Printer controller mode swallows text until `CSI 4 i`, `mc0` prints nothing (there is no
 printer), and HP memory lock (`ESC l`, `ESC m`) keeps the rows above the cursor from scrolling.
 
-**11.** Modes 9, 1000, 1002 and 1003 with encodings 1005, 1006 and 1015. It waits on milestone 179
+Step 11. Modes 9, 1000, 1002 and 1003 with encodings 1005, 1006 and 1015. It waits on milestone 179
 (pointer input) to route clicks and motion to `display_terminal`.
 
-**12.** OSC 52 sets a selection. It waits on milestone 180 (a clipboard) for somewhere to put it.
+Step 12. OSC 52 sets a selection. It waits on milestone 180 (a clipboard) for somewhere to put it.
 
-**13 to 18** each add one negotiated feature with its DECRQM or query answer, so a program uses it
+Steps 13 to 18 each add one negotiated feature with its DECRQM or query answer, so a program uses it
 only after asking. Bracketed paste waits on milestone 180; focus events need a window to lose focus,
 which milestone 632 (graphics on demand) provides.
 
@@ -182,14 +182,20 @@ There is one engine, so the three witnesses (the component draws, the kernel pre
 grades the scanout) agree by construction. Each step adds its sequences to `script.rs`, so the
 kernel suite proves them on all three architectures, and reports what that costs.
 
-The fuzz target feeds arbitrary bytes into `Vt::feed` and checks after every call: no panic; cursor,
-region and damage inside the grid; the wrap flag only at the last column; the same grid whatever
-the bytes' split; and the same grid after a handoff written mid-stream and absorbed.
+The fuzz target feeds arbitrary bytes into `Vt::feed` and checks after every call:
 
-Kani proves no panic and no out-of-bounds index for every input up to a length step 0b measures;
-the grid invariants after any step; the arithmetic of region clamps, region scrolls, tab stops,
-margins and width lookup, exhaustively on extracted pure functions; and that leaving the alternate
-screen restores the primary grid and cursor exactly.
+- no panic;
+- cursor, region and damage inside the grid, and the wrap flag only at the last column;
+- the same grid however the bytes are split between calls;
+- the same grid after a handoff written mid-stream and absorbed.
+
+Kani proves:
+
+- no panic and no out-of-bounds index for every input up to a length step 0b measures;
+- the grid invariants after any step;
+- the arithmetic of region clamps, region scrolls, tab stops, margins and width lookup,
+  exhaustively, on extracted pure functions;
+- that leaving the alternate screen restores the primary grid and cursor exactly.
 
 ## Decision 3: an oracle in the tests
 
