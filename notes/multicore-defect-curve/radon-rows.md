@@ -60,7 +60,7 @@ mean and what they leave out.*
 E26 through E50 are 2026-10-21's twenty-five reboot draws, one capture
 ([`../soak/radon-2026-10-21.md`](../soak/radon-2026-10-21.md)). E27's draw reset itself at about
 t=105 s without printing the kernel's reset sequence. It is `clean` by the rule above, which reads
-only the last beat; milestone 225's `BUGS` carries the reset.
+only the last beat; milestone 225 (run the soak on radon, argon and xenon)'s `BUGS` carries the reset.
 
 E5 through E7 are one bench evening, 2026-10-09 to 2026-10-10 (milestone 225's redraw boots,
 `bef2b40dc`, tree-identical to main `237cef6bc`). E5 is the 120-second draw of the rebooting soak that milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) ended. Between its last beat and E6's `U-Boot SPL` banner, the board reset itself through OpenSBI's PMIC write and came back. That is 592's green outcome. E6 began on the self-reboot's netboot fetch and ended at its watcher's deadline. The board then soaked unwatched for about 7 hours until E7; those crossings are not recorded and are not evidence. E7's boot followed one discarded boot from the card. Its fetch failed because radon's ethernet cable was unplugged (`phy_startup() failed: -110` on both controllers). That boot never reached a heartbeat and is not a row. Zero

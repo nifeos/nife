@@ -23,5 +23,5 @@ whole run. Handing the port from the watcher to `--stop` at 02:26:13 UTC lost un
 draw 25, between beat 20 and the next line. `--stop` sent its one byte, `0x0d`, during draw 26, and
 the board acknowledged it and disarmed its reboot loop. Draw 26 was left soaking on radon.
 
-24 of the 25 resets went through milestone 592's direct AXP15060 write. Draw 2's did not; the run
+24 of the 25 resets went through milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)'s direct AXP15060 write. Draw 2's did not; the run
 table's "The unexplained reset" has it.

@@ -9,7 +9,7 @@ with `briefs/bench-session.md` step 6's `tr`; the raw captures are not committed
 | `890-card-fallback.log` | 1 | none fetched: `nothing came over the network, falling back to the card` |
 | `890-boot-to-prompt.log` | 2 and 3 | `main` at `cda4ceb55`, `script/board-image --tftp`, SEALED |
 | `storage-bench-read.log` | 4 | pull request #2486's head `54c8e773b`, `script/board-image --tftp --extra-features storage_bench`, SEALED |
-| `README-225.md` | 5 on | milestone 225's reboot draws |
+| `README-225.md` | 5 on | milestone 225 (run the soak on radon, argon and xenon)'s reboot draws |
 
 Before the first boot the same tree's QEMU rehearsal, `script/soak-test --arch riscv64 --for 45s`,
 was clean: 760,115 round trips in 40 s, 4,206 crossings, `refused=0 mismatch=0 stalled=0`.
@@ -41,15 +41,16 @@ write-only open of the port while it read. The capture holds the board's echo, n
 | 01:24:16 | 3 | `c` | nothing |
 
 So the first receive interrupt of a boot is delivered and no later one is, in a burst or one byte
-at a time. Milestone 890's `BUGS` has what is ruled out. Milestone 805's `reboot` cannot be typed
-until it is fixed.
+at a time. Milestone 890 (riscv64 and x86_64 join the shared boot path)'s `BUGS` has what is ruled out.
+Milestone 805 (`reboot` at the prompt) cannot be tried until it is fixed.
 
 ## Boot 4: milestone 53, the storage read
 
-Step 1 of `notes/designware-mobile-storage.md`, read-only, from pull request #2486 (the card read
-threshold left off). Nothing was written. The card identified, and `bench::read_only`'s two
-single-block reads (CMD17) of block 0 and of the first partition's block 2048 passed; it reports
-them only once the whole read succeeds. Its timed multi-block read from block 2048 failed:
+Step 1 of milestone 53 (the board's own peripherals) in `notes/designware-mobile-storage.md`,
+read-only, from pull request #2486 (the card read threshold left off). Nothing was written. The
+card identified, and `bench::read_only`'s two single-block reads (CMD17) of block 0 and of the
+first partition's block 2048 passed; it reports them only once the whole read succeeds. Its timed
+multi-block read from block 2048 failed:
 
     storage-bench: slot 1 (microSD slot): read of block 2048 failed: Host(Data(18, 164))
     storage-bench: slot 1 (microSD slot): at the failure: STATUS 0x1009409 (FIFO holds 128 words) TCBCNT 1100 TBBCNT 4580
@@ -64,4 +65,4 @@ it holds no part. Step 2, the scratch write, waits on step 1 passing.
 The RedoxFS power cut did not run. No boot puts RedoxFS on radon's storage, so there is nothing to
 cut power under; milestone 53's outstanding item records the boot it needs.
 
-Milestone 593's radon watchdog did not run: the tree has no JH7110 watchdog driver.
+Milestone 593 (a wedged kernel resets itself)'s radon watchdog did not run: the tree has no JH7110 watchdog driver.
