@@ -147,14 +147,16 @@ and both trees are GPL and were read for hardware facts only.
 - **Outstanding.** Waiting on calef: RedoxFS crash consistency proven by actually cutting power on
   radon. Nothing can power-cycle the board: milestone 224 (nothing can power-cycle radon) is
   REFUSED, because calef chose manual power, and its own measurements record zero replies from the
-  plug on the subnet. It also needs a working storage read, below.
+  plug on the subnet. It also needs a working storage read, below. And it needs a bench boot that
+  puts RedoxFS on radon's card and writes through it, which nothing builds yet: `storage_bench`
+  and the EL0 block server never mount a filesystem.
 - **Outstanding.** The storage half's first block read on radon. Step 1 (read-only) identified the
   card, then `READ_SINGLE_BLOCK` of block 0 ended with `RINTSTS 0x080c`: command done, data
-  transfer over, and a FIFO underrun or overrun, with no CRC error or timeout. One
-  candidate in the code is the card read threshold, programmed at 512 bytes for a 128-byte FIFO;
-  notes/designware-mobile-storage.md's Results and `BUGS` have the decode. A lane fixes or
-  instruments it, then calef reruns step 1, then steps 2 and 3. Passing them lifts the block
-  server's `PROVEN_ON_SILICON`.
+  transfer over, and a FIFO underrun or overrun, with no CRC error or timeout. The likely cause,
+  the card read threshold enabled at 512 bytes for a 128-byte FIFO, is left off. A failed read
+  prints the byte counts that tell an overrun from an underrun.
+  notes/designware-mobile-storage.md's Results and `BUGS` have the decode and the evidence. calef
+  reruns step 1, then steps 2 and 3. Passing them lifts the block server's `PROVEN_ON_SILICON`.
 - **Done.** The architect's call on which part of radon's storage the booted system's block server
   serves: a USB drive (calef, 2026-10-07 UTC; §260 (radon's block server serves a USB drive)). It
   refused the second microSD partition, the eMMC socket and NVMe for now. It needs milestone 163 (the

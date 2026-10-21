@@ -101,7 +101,7 @@ for i in range(n):
         d[struct.unpack_from('<I', d, o+32)[0]*512 + 0x40] ^= 1
 open('target/initial-ramdisk.img','wb').write(d)
 EOF
-$ cargo build -p kernel --features shell --target aarch64-unknown-none-softfloat
+$ cargo build -p kernel --target aarch64-unknown-none-softfloat
 $ NIFE_INITIAL_RAMDISK=target/initial-ramdisk.img NIFE_DISK=target/nifefs.img \
       helpers/qemu-bounded.sh 20 helpers/qemu-runner-aarch64.sh \
       target/aarch64-unknown-none-softfloat/debug/kernel

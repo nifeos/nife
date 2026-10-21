@@ -75,7 +75,7 @@ the shell.
 The guest tests above wire the shell from the kernel: it serves the terminal contract and, on a
 second thread, `grant_plan::spawnproto` in place of the progenitor. The shell cannot tell the
 difference, and that is the problem. `components/src/progenitor.rs` is not the same code, so a
-change that broke the real spawn path failed nothing, and the `--features shell` boot is the only
+change that broke the real spawn path failed nothing, and the interactive boot is the only
 thing that runs it.
 
 That cost this milestone three manual bisects. All three presented as a boot that printed nothing at

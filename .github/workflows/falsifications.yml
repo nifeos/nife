@@ -31,11 +31,13 @@ name: falsification sweep
 # GitHub notifies on. It is still a report and not a gate, because nothing requires it and no pull
 # request waits on it.
 #
-# **Unsharded, and that is a measurement rather than an oversight.** A falsification runs ONE
-# harness, so the sweep costs one harness-run per record and not one `script/verify` per record.
-# Today's six take under three seconds of solving on top of the builds. Shard this when the record
-# count makes it worth the machinery, not before, and re-measure rather than guessing: the cost is
-# dominated by the rebuild each patch forces, so it scales with patches touching distinct crates.
+# **Sharded by measured replay time** (milestone 889 (the tree's gates stop depending on the fleet
+# tooling), provisional). Replayed one record at a time, the whole set took about two hours of the
+# job's 120 minutes on 2026-10-20 (UTC) and grew by half an hour or more a week, so the job was
+# cancelled before `record-times` could run. The `plan` job packs every replayable record into
+# shards of at most 40 minutes (`script/falsifications --plan-sweep`, SWEEP_TARGET there), by the
+# times `record-times` writes back, and each shard replays its share. A new record grows a shard,
+# then adds one, up to the packer's eight, without this file changing.
 
 on:
   schedule:
@@ -55,13 +57,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sweep:
-    name: replay every recorded falsification
+  # The shard list, computed once so every shard reads the same plan. arm64 because the sweep is.
+  plan:
+    name: plan the replay shards
     runs-on: ubuntu-24.04-arm
-    # Generous enough that growth in the record count does not need this touched every month, and
-    # low enough that a hang fails loudly. (This said Kani's install was the long pole. It takes 11
-    # to 17 s here, runs 37368707083 and 37311742614; verify.yml's `prove` job has the measurement.)
+    timeout-minutes: 10
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Plan
+        id: plan
+        run: |
+          plan="$(script/falsifications --plan-sweep)"
+          echo "$plan"
+          echo "shards=$(echo "$plan" | tail -1)" >> "$GITHUB_OUTPUT"
+
+  sweep:
+    name: replay the recorded falsifications (shard ${{ matrix.shard }})
+    needs: plan
+    runs-on: ubuntu-24.04-arm
+    # Three times the 40-minute shard target, so a shard that outgrows its weights by a lot still
+    # finishes and writes the times that fix them, and a hang still fails loudly.
     timeout-minutes: 120
+    strategy:
+      # One shard's finding says nothing about the others' records; let them finish.
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    env:
+      # verify.yml's re-falsify worker count, for its reason (VERIFY_JOBS in script/verify). A
+      # shard of QEMU records replays one at a time whatever this says; the plan keeps those apart.
+      FALSIFICATIONS_JOBS: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -93,6 +124,12 @@ jobs:
       - name: Install Kani
         run: script/kani-install
 
+      # A swish-check record boots what `script/ci-build swish-check-*` boots, so it needs that
+      # row's two inputs: the std exerciser and basalt's packages (`rg` among them). Without them
+      # swish-check refuses in CI rather than skip lines, and the record reports `ERROR` in 0.2 s.
+      - name: Build the std exerciser and fetch basalt's packages
+        run: cargo xtask std-exerciser && cargo xtask basalt-fetch
+
       # Not `continue-on-error` any more (milestone 742, provisional): the step fails when the
       # sweep has a survivor, a stale record or no verdict, the report below still publishes
       # (`if: always()`), and the run goes red so the finding reaches someone. It used to be
@@ -112,16 +149,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          script/falsifications --sweep 2>&1 | tee "$RUNNER_TEMP/sweep.txt"
+          script/falsifications --sweep --shard "${{ matrix.shard }}/${{ strategy.job-total }}" 2>&1 \
+            | tee "$RUNNER_TEMP/sweep-${{ matrix.shard }}.txt"
 
       - name: Publish the report
         if: always()
         run: |
           {
-            echo '### Falsification sweep'
+            echo '### Falsification sweep, shard ${{ matrix.shard }}'
             echo
             echo '```'
-            cat "$RUNNER_TEMP/sweep.txt" || echo '(the sweep produced no output)'
+            cat "$RUNNER_TEMP/sweep-${{ matrix.shard }}.txt" || echo '(the sweep produced no output)'
             echo '```'
             echo
             echo '```'
@@ -140,8 +178,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: falsification-sweep
-          path: ${{ runner.temp }}/sweep.txt
+          name: falsification-sweep-${{ matrix.shard }}
+          path: ${{ runner.temp }}/sweep-${{ matrix.shard }}.txt
           if-no-files-found: warn
 
   # **The measured times verify.yml packs its re-falsify shards by** (calef, 2026-10-06 UTC, a
@@ -152,8 +190,10 @@ jobs:
   # and never drops a record from them. `main` only, through the `automation` environment.
   record-times:
     name: record the replay times
-    needs: sweep
-    if: always() && needs.sweep.result != 'cancelled' && github.ref == 'refs/heads/main'
+    needs: [sweep, sweep-swish-x86_64]
+    if: >-
+      always() && needs.sweep.result != 'cancelled' && needs.sweep-swish-x86_64.result != 'cancelled'
+      && github.ref == 'refs/heads/main'
     environment: automation
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -189,7 +229,8 @@ jobs:
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: falsification-sweep
+          pattern: falsification-sweep-*
+          merge-multiple: true
           path: sweep
 
       - name: Open or update the pull request
@@ -201,7 +242,7 @@ jobs:
           USING_APP: ${{ steps.app-token.outputs.token && 'yes' || '' }}
         run: |
           set -e
-          script/falsifications --record-times sweep/sweep.txt
+          script/falsifications --record-times sweep/*.txt
           if git diff --quiet -- notes/project-metrics/falsification-times.tsv; then
             echo "Nothing to record."
             exit 0
@@ -240,6 +281,73 @@ jobs:
   # Such a record is `attested`, names its patch in backticks, and is replayed here. This job runs
   # on `ubuntu-24.04` (x86_64) and goes red on a survivor, a stale patch or an empty selection.
   # Dispatchable on its own, so a lane can get a record replayed without waiting for the cron.
+  # **The swish-check records with an x86_64 leg, under KVM**, where ci.yml's swish-check-x86_64
+  # job runs that leg and whose per-line bound they were written against. Under TCG on arm64 the
+  # leg costs seconds a line, and a defect that fails slowly fails on the line after the one it
+  # names, which the sweep rightly calls an error; `wants_kvm` in script/falsifications has the
+  # case. `--plan-sweep` leaves these out of the shards, and this job replays them.
+  sweep-swish-x86_64:
+    name: replay the swish-check records with an x86_64 leg, under KVM
+    runs-on: ubuntu-24.04
+    # ci.yml's swish-check-x86_64 bound, for its reason: setup and build are about ten minutes, a
+    # cold QEMU build adds 10 to 20, and each record is one boot.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+
+      # GitHub's documented recipe, as ci.yml's swish-check-x86_64 job takes it.
+      - name: Open /dev/kvm to the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Build the std exerciser and fetch basalt's packages
+        run: cargo xtask std-exerciser && cargo xtask basalt-fetch
+
+      - name: Sweep
+        shell: bash
+        run: |
+          set -o pipefail
+          script/falsifications --sweep-swish-x86_64 2>&1 | tee "$RUNNER_TEMP/sweep-swish-x86_64.txt"
+
+      - name: Publish the report
+        if: always()
+        run: |
+          {
+            echo '### Swish-check records with an x86_64 leg, under KVM'
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/sweep-swish-x86_64.txt" || echo '(the sweep produced no output)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Named into the `falsification-sweep-*` set that record-times reads.
+      - name: Keep the transcript for the times file
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: falsification-sweep-swish-x86_64
+          path: ${{ runner.temp }}/sweep-swish-x86_64.txt
+          if-no-files-found: warn
+
   sweep-x86_64:
     name: replay the attested records an arm64 host cannot
     runs-on: ubuntu-24.04

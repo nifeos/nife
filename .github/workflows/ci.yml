@@ -951,12 +951,12 @@ jobs:
 
       # `boot-check` (milestone 268 (every architecture boots the same way)), its own job since
       # the 2026-09-30 split (#1468) and before that a rider on the suite job. It is the only
-      # thing on a pull request that boots the DEFAULT riscv64 or `x86_64` kernel at all: `test`
-      # boots a `cfg(test)` build that exits through semihosting before the tour, and `swish-check`
-      # boots `--features shell` on two architectures. The boot a person gets by typing `cargo
-      # xtask run` was once unasserted, and that was not theoretical: milestone 268's finding 3 is
-      # a checkpoint that could never fire on two of three architectures, and it hid for months
-      # because nothing read the channel it was supposed to appear on.
+      # thing on a pull request that reads a boot's self-test verdict: `test` boots a `cfg(test)`
+      # build that exits through semihosting before the tour, and `swish-check` reads the prompt.
+      # The boot a person gets by typing `cargo xtask run` was once unasserted, and that was not
+      # theoretical: milestone 268's finding 3 is a checkpoint that could never fire on two of
+      # three architectures, and it hid for months because nothing read the channel it was
+      # supposed to appear on.
       - run: helpers/hang_evidence.py run -- script/ci-build boot-check
       # The job log carries only the verdict line, which names a failed check but not what it
       # measured; each check's own line is in the boot log.
