@@ -273,6 +273,19 @@ mod tests {
         assert_eq!(cache.cached_bytes(), 0);
     }
 
+    /// A request with no class reaches the heap exactly as asked, because the heap frees it under
+    /// the same layout and only a class's blocks are fungible. The one change is an empty layout,
+    /// over-aligned past the grid, which becomes one byte, since talc refuses an empty one.
+    #[test]
+    fn an_uncached_request_reaches_the_heap_as_asked_unless_empty() {
+        for (size, align) in [(LARGEST + 1, 8), (4096, 4096), (1, 2 * GRID)] {
+            let l = Layout::from_size_align(size, align).unwrap();
+            assert_eq!(heap_layout(l), l);
+        }
+        let empty = Layout::from_size_align(0, 2 * GRID).unwrap();
+        assert_eq!(heap_layout(empty), Layout::from_size_align(1, 2 * GRID).unwrap());
+    }
+
     /// The classes stop exactly at [`LARGEST`]: its class is the last one, so no class is sized
     /// past what [`class`] can ever answer.
     #[test]
