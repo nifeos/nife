@@ -9,6 +9,8 @@
 //! Kernel-resident for the reason that module gives and one more: the only thing that pets it is
 //! the soak's supervisor, and a watchdog a user program pets resets the machine when that program
 //! is starved, which is a different experiment.
+//!
+//! Name: provisional (milestone 593's lane, 2026-10-20 UTC), for the module and [`Jh7110Watchdog`].
 
 use jh7110_watchdog::{Access, CONTROL, CONTROL_ENABLE, VALUE};
 
