@@ -273,9 +273,9 @@ reaches the wire.
 
 - **Done.** radon's console register shape: the boot above reaches the prompt with the tree's
   shape (2026-10-21).
-- **Outstanding.** radon's keystroke path, which delivers one byte per boot (`BUGS`). A lane
-  instruments it (does the UART raise a second receive interrupt, does the PLIC see it, does
-  `input` ACK) and fixes it; then calef reruns the radon boot below for `echo hello`.
+- **Done.** radon's keystroke path: the prompt takes every keystroke, and `echo hello` echoes and
+  runs (above, "Why radon took one keystroke per boot";
+  `bench/radon-2026-10-21/890-keystroke-fix.log`).
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
@@ -290,4 +290,4 @@ lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarc
 at a time, until neither per-port boot file is left. Both ports run the shared bring-up and tail
 under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and the per-port tours are the
 self-test's checks on all three. radon runs both slices through the hand-over, its console now uses
-the UART's real stride, and its prompt and the xenon boot remain.
+the UART's real stride, its prompt takes every keystroke, and the xenon boot remains.
