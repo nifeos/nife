@@ -99,7 +99,6 @@ pub enum Object {
     /// riscv64) and by `spawn_elf_child_builder` and the system tests beside it, so a build that
     /// never reaches a hand-off never mints one. The syscall path still
     /// *matches* on it, and a match is not a construction.
-    #[cfg_attr(all(target_arch = "riscv64", not(feature = "shell")), allow(dead_code))]
     DeviceFrame(u64),
 
     /// **A one-shot reply channel to a blocked caller** (milestone 12), named by the caller's
@@ -690,8 +689,7 @@ pub(crate) fn reply_cap(tid: crate::thread::ThreadId) -> Cap {
 
 /// A capability naming a device's MMIO page (milestone 19d.2). `WRITE` lets the holder map it
 /// (device access is read/write by nature); minted by the kernel for a known device. Same
-/// disposition as [`Object::DeviceFrame`]: riscv mints one only in the `shell` boot mode.
-#[cfg_attr(all(target_arch = "riscv64", not(feature = "shell")), allow(dead_code))]
+/// callers as [`Object::DeviceFrame`].
 pub fn device_frame_cap(phys: u64, rights: Rights) -> Cap {
     Cap {
         object: Object::DeviceFrame(phys),

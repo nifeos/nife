@@ -16,7 +16,7 @@ pub(crate) fn main() -> ExitCode {
             mkdisk() && user() && cargo(&["run", "-p", "kernel", "--target", TARGET])
         }
         "shell" => {
-            // Boot straight to the interactive shell (the milestone tour compiled out).
+            // The default kernel, with the devices and fixture a person at the prompt wants.
             maybe_hvf();
             eprintln!("--- booting nife to an interactive shell (type `help`, Ctrl-C to quit) ---");
             // A virtio-rng device (DECISIONS §120's 2026-08-26 amendment: "grant the QEMU-only
@@ -37,15 +37,7 @@ pub(crate) fn main() -> ExitCode {
                 && mkredoxfs()
                 && mkdisk()
                 && user()
-                && cargo(&[
-                    "run",
-                    "-p",
-                    "kernel",
-                    "--features",
-                    "shell",
-                    "--target",
-                    TARGET,
-                ])
+                && cargo(&["run", "-p", "kernel", "--target", TARGET])
         }
         // The aarch64 archive, standalone (2026-08-27): every other caller reaches
         // `initial_ramdisk_aarch64` through `user()` as part of a boot (`build`, `run`, `shell`,

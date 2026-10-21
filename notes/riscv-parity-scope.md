@@ -118,10 +118,8 @@ wires them. The kernel parks. The three shell programs became arch-neutral -- th
 layout is gated per arch
 (PL011 vs NS16550, including that the NS16550 clears its RX interrupt on read, with no ICR). The
 wiring is arch-neutral: `system_initializer` maps whatever device cap the kernel grants and delegates whatever
-Irq cap it is handed, so the same binary would drive a PL011. `--features shell` selects it (the
-riscv counterpart of the aarch64 handoff, which this note called `initboot` when it was written;
-milestone 296 deleted that feature as a duplicate of `shell`). aarch64 keeps hello's init_boot; its
-shell still works.
+Irq cap it is handed, so the same binary would drive a PL011. Every boot reaches it after the
+tour, as on aarch64.
 
 ### E. Benchmarks: DONE.
 

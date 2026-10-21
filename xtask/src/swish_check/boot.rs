@@ -24,11 +24,8 @@ use super::*;
 /// (milestone 400) are all on the path, and the PVH boot has none of them. What it costs over PVH
 /// is recorded in milestone 182's block, measured rather than asserted.
 ///
-/// Three `x86_64` differences, each forced by the machine rather than chosen:
+/// Two `x86_64` differences, each forced by the machine rather than chosen:
 ///
-/// - **The default kernel, not `--features shell`.** `x86_64` has no early hand-over: every boot
-///   runs the tour and then hands over (milestone 268 (every architecture boots the same way)),
-///   and `uefi_image` builds exactly that.
 /// - **The kernel's hand-over report lands after the prompt.** `watch_the_progenitor`
 ///   (`kernel/src/x86_64_boot.rs`) watches the progenitor for ten seconds and then prints two
 ///   lines, so the transcript does not end in `$ ` until something is typed. The leg waits for that
@@ -398,7 +395,7 @@ pub(super) fn swish_check_boot(
         } else if x86 {
             "the UEFI image under OVMF"
         } else {
-            "`--features shell`"
+            "the default kernel"
         }
     );
     if !build_leg(arch, fresh) {
@@ -511,8 +508,8 @@ fn drive_the_prompt(
     // of that prints nothing, which is the symptom all three of this milestone's bugs shared.
     if !console.wait_after(0, "nife capability shell", SWISH_CHECK_BOOT_SECS) {
         failed.push(format!(
-            "no prompt banner within {SWISH_CHECK_BOOT_SECS}s: the `--features shell` boot never \
-             reached a shell"
+            "no prompt banner within {SWISH_CHECK_BOOT_SECS}s: the boot never reached a \
+             shell"
         ));
         return Driven::Typed;
     }
@@ -723,19 +720,19 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
     // lines in the script (milestone 198 rung 3a).
     && crate::disk::seed_installed(arch)
     && (x86
-        || crate::cargo_profiled(&[
-            "build",
-            "-p",
-            "kernel",
-            "--features",
-            &if probe_features().is_empty() {
-                "shell".to_string()
-            } else {
-                format!("shell,{}", probe_features())
-            },
-            "--target",
-            target,
-        ]))
+        || if probe_features().is_empty() {
+            crate::cargo_profiled(&["build", "-p", "kernel", "--target", target])
+        } else {
+            crate::cargo_profiled(&[
+                "build",
+                "-p",
+                "kernel",
+                "--features",
+                probe_features(),
+                "--target",
+                target,
+            ])
+        })
 }
 
 /// **The runner [`swish_check_boot`] starts**: [`leg_runner`], bounded on x86_64 by every wait
