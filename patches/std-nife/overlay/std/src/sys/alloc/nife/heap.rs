@@ -90,7 +90,7 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
         let run = crate::ptr::with_exposed_provenance_mut::<u8>(start as usize);
         let bytes = (got * PAGE) as usize;
         // SAFETY: the range was just mapped writable for this process alone, adjacent to the heap
-        // `heap_end` ends, or the first run of all, which `heap_alloc`'s `need` sizes for talc's bins.
+        // `heap_end` ends, or the first run of all, which `shortfall` sizes for talc's bins.
         inner.heap_end = unsafe {
             match inner.heap_end {
                 Some(end) => Some(inner.heap.extend(end, run.wrapping_add(bytes))),
@@ -101,6 +101,20 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     got >= need_pages
 }
 
+/// What a fresh run must add for `layout` to fit, as `memory_region_heap`'s `shortfall` reckons it:
+/// the chunk, alignment past talc's grid, and the bins on the first run, less what is free at the top.
+fn shortfall(inner: &Inner, layout: Layout) -> u64 {
+    let unit = talc::base::CHUNK_UNIT;
+    let chunk = (layout.size() + crate::mem::size_of::<usize>()).next_multiple_of(unit);
+    let over_aligned = if layout.align() > unit { layout.align() } else { 0 };
+    let (first, free_top) = match inner.heap_end {
+        // SAFETY: `end` is the heap end talc last returned, and the heap has not changed since.
+        Some(end) => (0, end.addr().get() - unsafe { inner.heap.reserved(end) }.up_to.addr().get()),
+        None => (talc::min_first_heap_size::<talc::base::binning::DefaultBinning>(), 0),
+    };
+    (chunk + over_aligned + first).saturating_sub(free_top) as u64
+}
+
 /// A block from the heap itself, growing it as needed; `None` when the region is spent. `layout` is
 /// what [`heap_layout`] made of the request, so it is never empty.
 pub(super) fn heap_alloc(inner: &mut Inner, layout: Layout) -> Option<NonNull<u8>> {
@@ -109,13 +123,7 @@ pub(super) fn heap_alloc(inner: &mut Inner, layout: Layout) -> Option<NonNull<u8
         if let Some(p) = unsafe { inner.heap.try_allocate(layout) } {
             return Some(p);
         }
-        // Generous, as `memory_region_heap` is: the request, its alignment, a chunk's
-        // rounding and tag, and talc's bins on the first run. A short grow is followed by another.
-        let mut need = (layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT) as u64;
-        if inner.heap_end.is_none() {
-            need += talc::min_first_heap_size::<talc::base::binning::DefaultBinning>() as u64;
-        }
-        if !grow(inner, need) {
+        if !grow(inner, shortfall(inner, layout)) {
             return None;
         }
     }

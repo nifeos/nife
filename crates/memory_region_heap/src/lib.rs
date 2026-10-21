@@ -217,6 +217,24 @@ impl Default for MemoryRegionHeap {
     }
 }
 
+/// The bytes a fresh run at the top must add for `layout` to fit: its chunk (the size and talc's
+/// one-word tag, on talc's 32-byte grid), any alignment past that grid, and talc's bins on the
+/// first run, less what is already free at the top, which the run merges with. Exact, not
+/// generous, because a cap set at a power of two must still hold an allocation of that size.
+/// The chunk arithmetic restates talc's `required_chunk_size`; were talc to round otherwise, a
+/// short grow is followed by another, which doubles, until the cap refuses.
+fn shortfall(inner: &Inner, layout: Layout) -> u64 {
+    let unit = talc::base::CHUNK_UNIT;
+    let chunk = (layout.size() + core::mem::size_of::<usize>()).next_multiple_of(unit);
+    let over_aligned = if layout.align() > unit { layout.align() } else { 0 };
+    let (first, free_top) = match inner.heap_end {
+        // SAFETY: `end` is the heap end talc last returned, and the heap has not changed since.
+        Some(end) => (0, end.as_ptr() as usize - unsafe { inner.heap.reserved(end) }.up_to.as_ptr() as usize),
+        None => (talc::min_first_heap_size::<DefaultBinning>(), 0),
+    };
+    (chunk + over_aligned + first).saturating_sub(free_top) as u64
+}
+
 /// `layout` as `talc` is given it: at least one byte, because `talc` takes no empty layout and
 /// `alloc` and `dealloc` must agree on the size.
 fn nonempty(layout: Layout) -> Layout {
@@ -236,14 +254,7 @@ unsafe impl GlobalAlloc for MemoryRegionHeap {
             if let Some(p) = unsafe { inner.heap.try_allocate(layout) } {
                 return p.as_ptr();
             }
-            // Generous on purpose: the request, its alignment, a chunk's rounding and tag, and
-            // talc's bins when this is the first run. A grow that still falls short is followed by
-            // another, which doubles, until the cap refuses.
-            let mut need = (layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT) as u64;
-            if inner.heap_end.is_none() {
-                need += talc::min_first_heap_size::<DefaultBinning>() as u64;
-            }
-            if !Self::grow(inner, need) {
+            if !Self::grow(inner, shortfall(inner, layout)) {
                 return core::ptr::null_mut();
             }
         }
