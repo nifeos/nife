@@ -124,6 +124,12 @@ Run table: [soak/radon-2026-10-10.md](soak/radon-2026-10-10.md).
 Thirteen 120-second reboot draws from one power-on, every reset clean, zero defects; two draws
 never crossed. Run table: [soak/radon-2026-10-20.md](soak/radon-2026-10-20.md).
 
+## radon, 2026-10-21
+
+Twenty-five 120-second reboot draws from one power-on, zero defects; seven draws never crossed.
+One draw reset without the kernel's reset sequence, the only such reset in thirty-eight draws. Run
+table: [soak/radon-2026-10-21.md](soak/radon-2026-10-21.md).
+
 ## How a hang is told from a slow run
 
 One rule, and both halves of the tree implement it rather than agreeing to:

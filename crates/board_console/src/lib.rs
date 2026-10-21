@@ -8,7 +8,8 @@
 //!   judges a monitor exactly as it judges a cable (six target machines have no serial port).
 //! - [`board`] declares each board's firmware prologue, the one board-specific thing here.
 //! - [`lottery`] reports what the thread-placement lottery drew in each boot of a many-boot log.
-//! - [`exposure`] reads a soak capture into `notes/multicore-defect-curve.md`'s exposure row.
+//! - [`exposure`] reads a soak capture into an exposure row, in the columns
+//!   `notes/multicore-defect-curve.md` defines.
 //! - [`stop`] is the only part that writes: one byte that ends a self-rebooting soak, sent only
 //!   after the board announces an armed reboot loop, and logged in hex.
 //!

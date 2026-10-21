@@ -189,48 +189,37 @@ BAR window for real, so one netboot of `main` closes the `x86_64` half: notes/x8
 bench: booting xenon over the network". What to look for: the `io apic`, `device irq` and `smp`
 lines, every tour line, the prompt, and `echo hello` echoing.
 
-## The radon boot: through the hand-over, not to the prompt
+## The radon boot: to the prompt, and one keystroke
 
-radon booted `main` at `2d2e042d2` on 2026-10-20 (UTC):
-`bench/radon-2026-10-20/805-890-boot-to-prompt.log`. Its second boot (`payload came from net`)
-proved, on the JH7110:
+radon netbooted `main` at `cda4ceb55` (`script/board-image --tftp`, SEALED) twice on 2026-10-21
+(UTC): `bench/radon-2026-10-21/890-boot-to-prompt.log`, whose README lists the bytes typed. Both
+boots proved, on the JH7110:
 
-- The PLIC slice reads the S contexts from the device tree, and `interrupts` names `this hart's
-  S-mode context 2`. The console is source 32. `smp: 4 core(s) online`.
-- The tail runs through the hand-over: `11 of 13 passed, 2 absent: blockdev deviceirq`, with
+- The PLIC slice reads the S contexts from the device tree. The console is source 32. `smp: 4
+  core(s) online`. The self-test reads `11 of 13 passed, 2 absent: blockdev deviceirq`, with
   `clock`, `trng` and `entropy` passing.
-- The progenitor printed nothing. After `capability slots: 19 of 64 at peak` the wire was silent
-  for five minutes, so the keystroke path is unobserved. No `board_console` verdict exists.
+- The hand-over prints `uart shape: registers 4 byte(s) apart, 32-bit access (device tree)`, the
+  progenitor's lines follow, and `script/board-console --replay ... --until prompt` reports
+  `reached shell prompt`.
+- The keystroke path delivers one byte per boot, the first, whether typed in a burst or one byte
+  at a time (`BUGS`).
 
-## Why it stopped
+## How userspace learns the UART's shape
 
-`console` and `input` read the UART at QEMU's stride, one byte apart. The JH7110's registers are
-four bytes apart with 32-bit access (`reg-shift = <2>`, `reg-io-width = <4>`). The console polled
-LSR at `0x05`, a byte of IER there, for a THRE bit that never set, and everything that prints
-blocked behind it; the kernel's lines still reached the wire through its ring's fallback. The network path is not involved: the image printed `network : NONE`.
-QEMU's byte registers reach the prompt; forcing the JH7110's shape there reproduces radon's stop.
-
-- The kernel passes the tree's shape as the progenitor's first start word, and the progenitor
-  passes it to `console` and `input` (`abi::uart::RegisterShape`). On riscv64 the hand-over prints
-  it, `uart shape: registers 4 byte(s) apart, 32-bit access` on the JH7110.
-- The console's wait for THRE is bounded at one second. Running out kills it with a load fault at
-  the LSR offset it polled, so a wrong shape leaves a kill report with `stval` `0x14` or `0x5`.
-- The timer tick tests for a stalled drainer once a second (`kernel_log::stall_tick`). Without it
-  the kill report stayed held in the ring, because the log service blocks behind the dead console
-  and the kernel printed nothing after it.
+The JH7110's UART registers are four bytes apart with 32-bit access (`reg-shift = <2>`,
+`reg-io-width = <4>`); QEMU's are one byte apart. The kernel passes the tree's shape as the
+progenitor's first start word, and the progenitor passes it to `console` and `input`
+(`abi::uart::RegisterShape`). The console's wait for THRE is bounded at one second, so a wrong shape
+kills it with a load fault at the LSR offset it polled (`stval` `0x14` or `0x5`). The timer tick
+tests for a stalled log drainer once a second (`kernel_log::stall_tick`), so that kill report
+reaches the wire.
 
 ## The radon boot that closes the riscv64 half
 
-For calef, from `main` once this has merged: `script/board-image --tftp`, then
-`script/board-netboot`, then power-cycle radon and check for `payload came from net`.
-
-1. Run `script/board-console --until prompt` and let it reach `Stage::Prompt`.
-2. Type `echo hello` and press Enter. The echo proves the keystroke path through PLIC source 32.
-3. Record `board_console`'s verdict line, or its log if it stopped short.
-
-Look for the `uart shape` line, `progenitor:` lines and the prompt. radon's profile fails the boot
-if `clock`, `trng` or `entropy` is absent. A console killed at `stval 0x14` means the shape arrived
-and the UART still never emptied.
+From `main` with the keystroke fix: `script/board-image --tftp`, `script/board-netboot`, a power
+cycle, then `script/board-console --until prompt` to `Stage::Prompt`. Type `echo hello` and Enter;
+the echo proves the keystroke path through PLIC source 32. Record `board_console`'s verdict line, or
+its log if it stopped short.
 
 ## Done when
 
@@ -249,7 +238,14 @@ and the UART still never emptied.
 
 ## BUGS
 
-- The PLIC's keystroke path has run under QEMU only, until the radon boot above.
+- On radon the keystroke path delivers only the first byte of a boot (the radon boot above). QEMU
+  delivers every byte, so the gates pass. Not a PLIC context mismatch: the trap handler claims,
+  disables and completes source 32 in the claiming hart's own context
+  (`arch/riscv64/exceptions.rs`), and the `Irq` ACK re-enables it at the source's fixed target
+  context (`arch::irq::target_context`). Undiagnosed between the DesignWare APB UART's receive
+  interrupt, `input`'s drain and ACK, and the shell after its first character. The UART does
+  receive later bytes: the soak's escape, a poll of LSR's data-ready bit, saw the byte
+  `script/board-console --stop` sent on the same evening (`bench/radon-2026-10-21/soak-stop.log`).
 - `bring_up_machine` carries six `cfg(target_arch)` sites: aarch64's frequency check, two blocks
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
@@ -268,7 +264,11 @@ and the UART still never emptied.
 
 ## Follow-on
 
-- **Outstanding.** The radon boot above, of the console's register shape and the riscv64 half.
+- **Done.** radon's console register shape: the boot above reaches the prompt with the tree's
+  shape (2026-10-21).
+- **Outstanding.** radon's keystroke path, which delivers one byte per boot (`BUGS`). A lane
+  instruments it (does the UART raise a second receive interrupt, does the PLIC see it, does
+  `input` ACK) and fixes it; then calef reruns the radon boot below for `echo hello`.
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
