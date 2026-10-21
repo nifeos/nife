@@ -21,8 +21,8 @@
 # since nife cannot be told to power off. All three need this workstation awake; the budget alarm
 # is the backstop, hours late.
 #
-# Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC). A verb, after the script/
-# family's split (DECISIONS §134).
+# Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC). A verb, as an action takes in
+# the script/ family.
 
 set -eu
 

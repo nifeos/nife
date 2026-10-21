@@ -282,4 +282,4 @@ watchdog's 180 minutes, and more if the workstation sleeps.
 - instances.vantage.sh, [c7g.metal](https://instances.vantage.sh/aws/ec2/c7g.metal) (secondary): $2.32 an hour.
 
 *Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC), after the machine family it
-probes. The directory `aws-graviton/` follows §212's siting default.*
+probes. The directory `aws-graviton/` follows §212 (a prose budget)'s siting default.*
