@@ -16,9 +16,11 @@
 //!
 //! # BUGS
 //!
-//! - **Polled.** No interrupt is granted (the service's header says why), so a wait for a frame is
-//!   a sleep of [`POLL_MS`] between looks at the ring. Latency is up to that much worse than the
-//!   virtio server's on an idle link; nothing polls while no request is being served.
+//! - **Polled.** No interrupt is granted (the service's header says why). While frames flow the
+//!   stack looks at the ring continuously, yielding between looks, which keeps a core busy; once a
+//!   scheduler tick passes with none it sleeps between looks, and a sleep lasts until the next tick
+//!   (up to 10 ms), so the first frame after an idle spell waits that long. Nothing polls while no
+//!   request is being served. `socket_contract::polled_wait` has the argument.
 //! - **A full transmit ring drops the frame** after a bounded wait, and the stack above retransmits.
 //!   The virtio transport makes the same trade.
 //!
@@ -35,7 +37,9 @@ use e1000e::process::{DATA_PLANE_VA, RX_QUEUE_VA, TX_QUEUE_VA};
 use e1000e::{DataPlane, Handoff, MAX_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
-/// How long the poll loop sleeps between looks at the receive ring when smoltcp has nothing sooner.
+/// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
+/// nothing sooner. The kernel rounds every timed wait up to the next scheduler tick
+/// (`user_mode_runtime::tick_hz`), so the sleep lasts up to 10 ms whatever this says.
 pub(crate) const POLL_MS: u64 = 1;
 
 // SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VA,

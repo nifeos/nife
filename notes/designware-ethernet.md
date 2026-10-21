@@ -204,15 +204,16 @@ cabling, not the driver. What the run settled that nothing read had predicted:
   the driver used `Settings::FALLBACK_GMAC0`, which leased. The runbook expected `VendorTree`.
 - `address : 6c:cf:39:00:47:2c from Tree`: the tree U-Boot hands over carries
   `local-mac-address`.
-- The rate is a finding, not a pass: 2.3 Mbit/s on a gigabit link (`BUGS`).
+- The rate is a finding, not a pass: 2.3 Mbit/s on a gigabit link (below).
+
+[`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has why the row is 2.3 Mbit/s,
+how QEMU reproduces it, the fix, and the bench step that measures the fix on radon.
 
 ## BUGS
 
-- **2.3 Mbit/s on a gigabit link, undiagnosed.** The one measured transfer moved 100 MiB
-  inbound in 363 s. During it the peer's TCP send queue sat near 131 KB and barely drained, which
-  points at radon's receive side (the advertised window, or how often `net_stack` acknowledges
-  while it polls) rather than the wire. Nothing has measured which. Milestone 53's block carries
-  it as outstanding.
+- **The rate after the receive-path fix is unmeasured on radon.** The Results row is 2.3 Mbit/s;
+  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the cause, the fix and the
+  bench step that measures it.
 - **One silicon run.** The Results row is one boot, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
