@@ -812,8 +812,8 @@ pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::Found> {
 /// provisional), or `None` on every machine whose tree names no such watchdog, which is every
 /// machine CI boots. RISC-V's `mmu::init` maps both device-typed.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
-pub(crate) fn jh7110_watchdog() -> Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)>
-{
+pub(crate) fn jh7110_watchdog()
+-> Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)> {
     *JH7110_WATCHDOG.lock()
 }
 

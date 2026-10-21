@@ -1,7 +1,8 @@
 //! The crate's host tests.
 
-use super::*;
 use jh7110_clock_and_reset::Step;
+
+use super::*;
 
 const RADON: &[u8] = include_bytes!("../tests/fixtures/jh7110-watchdog-radon.dtb");
 const MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-watchdog-mainline.dtb");
@@ -64,10 +65,11 @@ fn every_sequence_unlocks_first_and_locks_last() {
     ] {
         assert_eq!(seq[0], UNLOCK);
         assert_eq!(seq[seq.len() - 1], RELOCK);
-        assert!(!seq[1..seq.len() - 1].iter().any(|a| matches!(
-            a,
-            Access::Write { offset: LOCK, .. }
-        )));
+        assert!(
+            !seq[1..seq.len() - 1]
+                .iter()
+                .any(|a| matches!(a, Access::Write { offset: LOCK, .. }))
+        );
     }
 }
 
@@ -101,7 +103,13 @@ fn arming_stops_the_timer_before_loading_and_starts_it_last_with_reset_already_o
 fn a_pet_clears_the_interrupt_so_a_first_expiry_does_not_carry_into_a_reset() {
     let seq = pet_sequence(9);
     assert_eq!(seq[1], CLEAR_INTERRUPT);
-    assert_eq!(seq[2], Access::Write { offset: LOAD, value: 9 });
+    assert_eq!(
+        seq[2],
+        Access::Write {
+            offset: LOAD,
+            value: 9
+        }
+    );
 }
 
 #[test]

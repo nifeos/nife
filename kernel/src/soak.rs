@@ -763,7 +763,11 @@ fn start_watchdog_clocks(
 ) -> bool {
     use jh7110_clock_and_reset::Step;
     let plan = found.clocks_and_resets;
-    if !plan.plan().iter().any(|s| matches!(s, Step::EnableClock(_))) {
+    if !plan
+        .plan()
+        .iter()
+        .any(|s| matches!(s, Step::EnableClock(_)))
+    {
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: the watchdog's node names no SYS-domain clock this \
              kernel can turn on ({} specifier(s) skipped).",
