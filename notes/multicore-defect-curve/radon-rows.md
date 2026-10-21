@@ -98,10 +98,8 @@ E26 through E50 are 2026-10-21's twenty-five reboot draws, one capture
 t=105 s without printing the kernel's reset sequence. It is `clean` by the rule above, which reads
 only the last beat; milestone 225 (run the soak on radon, argon and xenon)'s `BUGS` carries the reset.
 
-E51 through E86 are the same evening's later series, built at `0e0866d93`, each draw printing
-what the AXP15060 recorded (one capture, [`../soak/radon-2026-10-21-pmic.md`](../soak/radon-2026-10-21-pmic.md)).
-Twenty-eight crossed cores and add 491,341 crossings; eight never crossed and are excluded. Every
-reset was the kernel's, and E86 is cut at t=35 s when the console was unplugged.
+E51 through E86 are one capture, with what the PMIC recorded at each draw:
+[`../soak/radon-2026-10-21-pmic.md`](../soak/radon-2026-10-21-pmic.md).
 
 E5 through E7 are one bench evening, 2026-10-09 to 2026-10-10 (milestone 225's redraw boots,
 `bef2b40dc`, tree-identical to main `237cef6bc`). E5 is the 120-second draw of the rebooting soak that milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) ended. Between its last beat and E6's `U-Boot SPL` banner, the board reset itself through OpenSBI's PMIC write and came back. That is 592's green outcome. E6 began on the self-reboot's netboot fetch and ended at its watcher's deadline. The board then soaked unwatched for about 7 hours until E7; those crossings are not recorded and are not evidence. E7's boot followed one discarded boot from the card. Its fetch failed because radon's ethernet cable was unplugged (`phy_startup() failed: -110` on both controllers). That boot never reached a heartbeat and is not a row. Zero
@@ -135,6 +133,4 @@ confidence about one architecture and one workload, not a verdict about anything
 
 E4 is the first row with a log in the tree and a build recorded, and on the crossings axis it dwarfs
 the three before it. It has 4.1 million against about 8,500 recorded in total, from one boot of 8.16
-hours that drew the fast arrangement. With E5 through E25, radon's curve stands at about 10.60
-million crossings over 23 crossing boots and about 26.5 hours with zero defects, and the boots axis
-is 23 points instead of one.
+hours that drew the fast arrangement. radon's running total is in the curve note.

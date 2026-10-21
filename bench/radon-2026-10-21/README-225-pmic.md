@@ -14,7 +14,8 @@ E51 to E86 in `notes/multicore-defect-curve/radon-rows.md`, and the run table is
 
 ## How the draws ran
 
-radon reached this image without a power cycle. Milestone 53's storage bench reset itself, and the
+radon reached this image without a power cycle. Milestone 53 (the board's own peripherals: network and storage on real silicon)'s storage bench
+reset itself, and the
 board netbooted the soak from a TFTP directory whose files were swapped only after a fetch completed.
 Every draw after that was the soak's own reset. The capture starts mid-series; the draws before it
 on the same image were watched but their log was not kept. It ends when the console cable moved to
