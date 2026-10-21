@@ -101,7 +101,7 @@ and both had been false for longer than the block was.
 | the claim | the tree |
 |---|---|
 | a true EL0-to-EL0 benchmark is "the right follow-up" | `ipc_rtt_el0` in `kernel/src/bench/el0.rs`: two EL0 processes, two endpoints, a client self-timing `SEND`-then-`RECEIVE` against a server process, reported by the same function's `bench: ipc_rtt_el0` line |
-| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `init` in `kernel/src/arch/aarch64/timer.rs` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` set in `init` in `kernel/src/arch/riscv64/timer.rs`; the RISC-V write is now a whole-register write (milestone 228 (the cycle counters are closed by assumption)), not a bit set |
+| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `init` in `kernel/src/arch/aarch64/timer.rs` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` set in `init` in `kernel/src/arch/riscv64/timer.rs`. The RISC-V write is now a whole-register write (milestone 228 (the cycle counters are closed by assumption)), not a bit set |
 
 Citations here name a symbol, not a line (§277 (cite a heading or a symbol, never a line number)),
 because the four line numbers this table first carried drifted until they landed on unrelated code.
@@ -138,8 +138,8 @@ and it did not.
 ## Follow-on
 
 - **Milestone 74.** The one remaining step, reading cycles from a PMU rather than deriving them
-  from nanoseconds and an assumed clock, is that block, PARTIAL (both ISA halves built, neither run on its board); no bench row in
-  `kernel/src/bench/` reads a cycle counter today; only the `cycles_per_tick` probe in
+  from nanoseconds and an assumed clock, is that block, PARTIAL (both ISA halves built, neither run on its board). No bench row in
+  `kernel/src/bench/` reads a cycle counter today. Only the `cycles_per_tick` probe in
   `bench/cycle_probe.rs` does, and it converts ticks rather than timing a path.
 - **Milestone 16.** The silicon that makes a PMU readable at all is 16a, which has booted the full
   tour on three harts and has not yet run the benches. HVF on the development machine passes
