@@ -180,12 +180,12 @@ logs under `bench/radon-<date>/` and say which commit they came from.
 | 2026-10-21 | `ffac21104` | 1 and the read matrix | card clock set to 49.5 MHz; the 8 MiB read, 16,384 blocks in 0.75 s; every matrix row passes | `NoCard(NoResponse(1))` | `READ-OK 10959 KiB/s, EL0 block server served` |
 
 **The card clock ran four times faster than the driver thought.** The tree gives the `ciu` clock
-`assigned-clock-rates = <50000000>`, a rate the OS is asked to program, and radon's firmware leaves
+`assigned-clock-rates = <50000000>`, a rate the OS is asked to program. radon's firmware leaves
 `SDIO1_SDCARD`'s divider at 2 under `axi_cfg0`'s 396 MHz: 198 MHz. The driver's 25 MHz was 99 MHz,
 past SD default speed. The read matrix (`storage_read_matrix`) showed it: the same `CMD18` at three
 clocks, four lengths and two FIFO depths, each row printing the FIFO's peak fill. At nominal
-12.5 MHz, 64 KiB read in 3,147 µs, 20.8 MB/s, three times what a 4-bit bus at 12.5 MHz can carry;
-at nominal 25 MHz every read failed with a data CRC error once the FIFO first filled
+12.5 MHz, 64 KiB read in 3,147 µs, 20.8 MB/s, three times what a 4-bit bus at 12.5 MHz can carry.
+At nominal 25 MHz every read failed with a data CRC error once the FIFO first filled
 (`bench/radon-2026-10-21/53-read-matrix.log`). The storage bench now sets the divider from the
 tree's rate (8, 49.5 MHz) and hands `Host::new` the rate computed from PLL2's and the dividers'
 words. Every row then passes, the FIFO never fills (peak 27 of its words at 24.75 MHz), and the
