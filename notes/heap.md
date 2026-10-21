@@ -227,8 +227,8 @@ The kernel stayed heapless (milestone 14 earned that and nothing since has neede
 but Rust `std` needs a `GlobalAlloc`, and a capability system has an obvious place to get one:
 the process's own untyped budget. The pair that landed:
 
-- The algorithm is `talc` 5.1.1's core (milestone 784 (reuse what the tree wrote), item d), taken
-  from crates.io and generated into std. Boundary tags and size-class bins, so allocation costs the
+- The algorithm is `talc` 5.1.1's core (milestone 784 (reuse what the tree wrote), item d), carried
+  in `vendor/talc` with one upstream fix (vendor/README.md) and generated into std. Boundary tags and size-class bins, so allocation costs the
   same at any number of free blocks; each allocated chunk carries one word above it, on a 32-byte
   chunk grid. `dealloc` finds that word from the `Layout`, so a block must be freed under the
   layout it was allocated under, which `allocation_cache::heap_layout` keeps true in std. The

@@ -89,10 +89,8 @@ pub(crate) fn std_inputs_stamp() -> u64 {
         }
     }
     collect_files(&root.join("patches/std-nife/overlay"), &mut files);
-    // The heap's crate, by its lockfile entry: a version and checksum name its source exactly.
-    if let Some((version, checksum)) = talc_lock_entry() {
-        h = fnv(h, format!("{TALC} {version} {checksum}").as_bytes());
-    }
+    // The heap's crate, vendored, which `std_generate_talc` copies from.
+    collect_files(&talc_source_dir().join("src"), &mut files);
     files.sort();
     for f in files {
         // **Hash the path RELATIVE to the workspace root, never the absolute path.** An absolute path

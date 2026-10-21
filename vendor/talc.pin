@@ -1,0 +1,26 @@
+# Pin metadata for vendor/talc, read by script/vendor-verify and script/vendor-watch.
+#
+# The tree in vendor/talc is the published crates.io package below plus exactly the changes in the
+# divergence patch, which is SFBdragon/talc#57 ("Fix fit check overflows") as upstream wrote it.
+# vendor/README.md says why it is carried and when it drops. Format as vendor/redoxfs.pin.
+
+name = talc
+version = 5.1.1
+
+url = https://static.crates.io/crates/talc/talc-5.1.1.crate
+sha256 = 53f8ad14fa1c1b8635114abf9721076fe1e869572a5f26a52690f407292c80dc
+
+# Upstream's own record of the commit that produced the package (vendor/talc/.cargo_vcs_info.json).
+vcs = 15b2758a45388f8a5c9efd4dd7f7493d09284e19
+
+divergence = vendor/talc.divergence.patch
+
+# Where script/vendor-watch asks what has landed since `vcs`. The crate lives in the repository's
+# `talc/` directory.
+vcs_url = https://github.com/SFBdragon/talc
+vcs_branch = master
+vcs_path = talc
+
+# The upstream pull request the divergence is. script/vendor-watch reports its state, so the day
+# it merges, and the day a release carries it, is a line in vendor/upstream-status.md.
+upstream_fix = https://github.com/SFBdragon/talc/pull/57

@@ -71,7 +71,7 @@ std by `cargo xtask std-src`. Each file binds one std concept to the ABI:
 
 The syscall glue (`sys/pal/nife/rt.rs`) deliberately twins `crates/user_mode_runtime`'s
 `svc`/`ecall` wrappers, because std cannot depend on the crate. The ABI constants are not restated: `abi.rs` is generated verbatim from `crates/abi` by `std-src`, so the numbers cannot
-drift. The heap is `talc/`, `talc`'s core at its `Cargo.lock` pin. So too `netproto.rs` from `crates/socket_contract/src/lib.rs`, and `fsproto.rs` from
+drift. The heap is `talc/`, the core of `vendor/talc`. So too `netproto.rs` from `crates/socket_contract/src/lib.rs`, and `fsproto.rs` from
 `crates/filesystem_contract`. Every wire format the PAL speaks has exactly one definition, and it
 lives with the server that answers it.
 A crate root may keep a module in its own file (`pub mod fs;`), as `filesystem_contract` has since

@@ -137,3 +137,9 @@ memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap",
 # time and the alternative is a gate somebody learns to skip.
 [package.metadata.cargo-machete]
 ignored = ["redox_syscall"]
+
+# talc 5.1.1 with upstream's fit-check fix, SFBdragon/talc#57, vendored until a release carries it
+# (calef, 2026-10-21 UTC, on #2498). Every workspace whose graph holds talc patches it the same way,
+# so no build links the unpatched crate. vendor/README.md has the drop condition.
+[patch.crates-io]
+talc = { path = "../vendor/talc" }

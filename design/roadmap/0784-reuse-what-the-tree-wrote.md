@@ -21,7 +21,7 @@ landed wording. Title and slug are drafts.
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
 under §46. Items (a), (d), (e) and (f2) are built, on calef's approvals of `httparse` (2026-10-18 UTC),
 `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `talc` (2026-10-21 UTC). Item (g) is ruled
-to take `object` the same day. Items (f) and (h) are refused.
+to take `object`. Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -206,7 +206,7 @@ on the customer path.
   *"a′ but no releases since March isn't promising as a dependency"*; *"Treat the wait as part of
   the gate."*). Only then (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone,
   each with a `script/bench` number before and after on all three architectures.
-- (d) BUILT: `talc` replaces `user_mode_heap`, in `user_mode_runtime` and generated into std.
+- (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
@@ -242,7 +242,7 @@ It records that two rules of §46 disagree here and only an architect can say wh
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
 - **Done.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1 is the heap
-  in `memory_region_heap` and std.
+  everywhere, carrying SFBdragon/talc#57 until a release does (#2498).
 - **Outstanding.** Item (g). calef, 2026-10-21 (UTC), on #2490: "B". `object` does the ELF and PE
   work; not yet in `Cargo.lock` (checked that day). Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released
   on its own) is refused: its proofs would protect no known user.
