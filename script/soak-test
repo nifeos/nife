@@ -23,7 +23,8 @@
 # should reset itself when it freezes"); kernel/build.rs decides it, so `cargo xtask uefi-image
 # --features soak_test` gets it too. `--no-watchdog` builds `--features unwatched_soak_test`, the
 # opt-out, for a run where a wedge must stay a wedge on the console instead of becoming a reset.
-# The aarch64 and riscv64 soaks arm no watchdog.
+# The aarch64 and riscv64 soaks arm none unasked; on riscv64 `--features watchdog_soak_test` arms
+# the JH7110's, which no QEMU board models (milestone 593's radon bench step).
 #
 # All three are x86_64 only, because the watchdog is the Intel TCO that q35's ICH9 emulates. `--wedge`
 # builds `--features wedge_soak_test`, which stops beating 30s in, and passes when the start line

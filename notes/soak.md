@@ -230,6 +230,9 @@ xenon takes this procedure (its stick: `cargo xtask uefi-image --features soak_t
 build arms the Intel TCO watchdog, as every x86_64 soak does, so a wedged xenon is reset 60 s after
 its last beat (milestone 593 (a wedged kernel resets itself)). `--features unwatched_soak_test` in
 place of `soak_test` is the opt-out.
+radon's soak arms the JH7110's watchdog only when built with
+`script/board-image --soak --extra-features watchdog_soak_test`, until the bench step in milestone
+593's block shows it resets.
 argon cannot yet boot nife; milestone 225's block says why.
 
 ## The rebooting soak on radon, which is milestone 249's experiment

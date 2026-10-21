@@ -556,9 +556,10 @@ impl SoakKind {
         }
         if (watchdog || wedge || unwatched) && run.arch != "x86_64" {
             eprintln!(
-                "soak-test: --watchdog, --wedge and --no-watchdog are x86_64-only: the watchdog is \
-                 the Intel TCO, which QEMU's q35 emulates and neither virt board has (milestone \
-                 593's block), so no other architecture's soak arms one"
+                "soak-test: --watchdog, --wedge and --no-watchdog are x86_64-only: they need the \
+                 Intel TCO that QEMU's q35 emulates. Neither virt board models a watchdog, and \
+                 riscv64's (the JH7110's) is proven by a boot on radon instead (milestone 593's \
+                 block)"
             );
             return None;
         }

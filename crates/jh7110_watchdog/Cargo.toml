@@ -1,0 +1,22 @@
+[package]
+name = "jh7110_watchdog"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# Name: PROVISIONAL (milestone 593 (a wedged kernel resets itself)'s lane, 2026-10-20 UTC). Chip-qualified for the reason
+# `jh7110_entropy` and `jh7110_clock_and_reset` are: a bare `watchdog` would name every board's.
+# no architect has ratified it; see src/lib.rs and script/names.
+#
+# no_std for the kernel, std for host tests, the rule-7 pure-logic split `jh7110_clock_and_reset`
+# uses: this crate owns the register offsets, the arm, pet and disarm sequences, the timing
+# arithmetic and the device-tree query. No unsafe code and no raw pointer in here; the volatile
+# MMIO is kernel/src/drivers/jh7110_watchdog.rs.
+
+[dependencies]
+device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
+jh7110_clock_and_reset = { version = "0.1.0", path = "../jh7110_clock_and_reset" }
+
+[lints]
+workspace = true

@@ -110,7 +110,8 @@ fn declare_initial_ramdisk_cfg(arch: &str) {
     // **Whether this soak arms the chipset's watchdog** (milestone 593 (a wedged kernel resets
     // itself), provisional number). Every x86_64 `soak_test` build does, on calef's ruling of
     // 2026-09-26 (UTC), unless it names `unwatched_soak_test`; naming `watchdog_soak_test` insists
-    // on it anywhere, and off x86_64 that is `kernel/src/soak.rs`'s `compile_error!`. A cfg rather
+    // on it, which on riscv64 arms the JH7110's and on aarch64 is `kernel/src/soak.rs`'s
+    // `compile_error!`. A cfg rather
     // than a feature because cargo features cannot differ by target, and `cargo xtask uefi-image
     // --features soak_test` (xenon's stick) has to get the default too. `kernel/src/soak.rs`
     // restates the rule as a `compile_error!`, so an edit here that drops it fails the x86_64
