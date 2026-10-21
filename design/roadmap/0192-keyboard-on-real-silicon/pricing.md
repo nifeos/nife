@@ -73,19 +73,19 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
   overread must still land inside the driver's region. Upstream Linux loads no VL805 firmware on
   this board, so it is taken to run from its own flash (inferred from absence, not read).
 - What it lacks, in order:
-  1. Milestone 163 (the JH7110's PCIe root complex), the PLDA XpressRICH controller. Linux's is 1,190 lines
-     (`pcie-starfive.c` 505, `pcie-plda-host.c` 685), so 800 to 5,600 here, plus the bench work
-     163 says a lane cannot do. Medium confidence on size; the hardware risk is unpriced.
+  1. Milestone 163 (the JH7110's PCIe root complex), the PLDA XpressRICH controller. Linux's is
+     1,190 lines (`pcie-starfive.c` 505, `pcie-plda-host.c` 685), so 800 to 5,600 here, plus the
+     bench work 163 says a lane cannot do. Medium confidence on size; the hardware risk is unpriced.
   2. Confinement. The JH7110 has no IOMMU, and the kernel refuses to start the xHCI driver without
-     one, by design. The way out that keeps the design is a validator at the doorbell (§86 (whether an
-     NVMe driver can leave the kernel)'s option 4). For NVMe that is two range checks per entry. For xHCI it is not. The controller
-     follows pointers in the device context array, every input context, the command ring, each
-     transfer ring and its link TRBs, the event ring segment table and the scratchpad array. It
-     also reads rings on its own schedule rather than once per doorbell. The validator would have
-     to own the rings the controller reads, which moves most of the ring code into the kernel's
-     trust. Its nearest size reference is `crates/direct_memory_access_validator`, 1,340 lines,
-     for one virtqueue shape. One to three times that, 1,300 to 4,000. Low confidence, and the
-     larger cost is a design call, not lines.
+     one, by design. The way out that keeps the design is a validator at the doorbell (§86 (whether
+     an NVMe driver can leave the kernel)'s option 4). For NVMe that is two range checks per entry.
+     For xHCI it is not. The controller follows pointers in the device context array, every input
+     context, the command ring, each transfer ring and its link TRBs, the event ring segment table
+     and the scratchpad array. It also reads rings on its own schedule rather than once per
+     doorbell. The validator would have to own the rings the controller reads, which moves most of
+     the ring code into the kernel's trust. Its nearest size reference is
+     `crates/direct_memory_access_validator`, 1,340 lines, for one virtqueue shape. One to three
+     times that, 1,300 to 4,000. Low confidence, and the larger cost is a design call, not lines.
 - Option A: waits on milestone 157 (U-Boot's `simple-framebuffer` handoff), NOT-STARTED. 192's
   bench procedure is written for radon.
 - Option B: 163, then a confinement answer that does not exist yet, then the bench. This is the
@@ -94,15 +94,16 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
 
 ## argon (Jetson TX1, Tegra210, aarch64)
 
-- Controllers: one Tegra XUSB host at `0x70090000`, an xHCI behind NVIDIA glue, which also owns
-  the micro-USB port as OTG beside a device-only controller (`tegra210-p2597.dtsi`). The pad
-  controller gives the Type-A port the pair usb2-2 and usb3-1. The board's gigabit Ethernet is a USB device on usb2-1 and
-  usb3-0, so a keyboard driver and the network share one controller. No hub, no PCIe in the path.
+- Controllers: one Tegra XUSB host at `0x70090000`, an xHCI behind NVIDIA glue, which also owns the
+  micro-USB port as OTG beside a device-only controller (`tegra210-p2597.dtsi`). The pad controller
+  gives the Type-A port the pair usb2-2 and usb3-1. The board's gigabit Ethernet is a USB device on
+  usb2-1 and usb3-0, so a keyboard driver and the network share one controller. No hub, no PCIe in
+  the path.
 - What nife has: the xHCI ring logic, and nothing else on this path. The kernel finds xHCI only by
   PCI class code (`find_xhci_device`), and XUSB is a device-tree node with no config space. nife's
   aarch64 IOMMU is SMMUv3, and Tegra's SMMU is NVIDIA's own design (notes/aarch64-board-survey.md).
-  nife does not boot on argon at all yet: milestone 127 (the seL4 machine) is NOT-STARTED and the kernel is linked
-  for QEMU's memory map (notes/boot-stick/argon.md).
+  nife does not boot on argon at all yet: milestone 127 (the seL4 machine) is NOT-STARTED and the
+  kernel is linked for QEMU's memory map (notes/boot-stick/argon.md).
 - What XUSB needs before its xHCI registers answer, from Linux:
   - The Falcon microcontroller loaded with NVIDIA's `nvidia/tegra210/xusb.bin` (linux-firmware,
     redistributable under NVIDIA's license), by DMA, through the `fpci` and `ipfs` windows.
