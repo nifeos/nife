@@ -1,0 +1,74 @@
+# Kernel, ABI and component plumbing (part 1 of 2)
+
+Entries from the [survey](README.md) of `BUGS` sections that are real future work with no milestone. Where is the file whose `BUGS` section holds the entry. Size is the reader's guess: S under a day, M a lane, L more than one lane.
+
+| Where | Gap | Proposed milestone | Size |
+|---|---|---|---|
+|  components/src/job_undertaker.rs, swish/main.rs | a fault report can park and wedge the undertaker loop; reports arrive one command late; needs non-blocking send or two-endpoint receive | Undertaker never blocks on a fault report | M  |
+|  crates/abi/src/lib.rs | notification and timer pages counted by the kernel but reported by no usage record, so object rows under-count | Usage records for notification and timer objects | S  |
+|  crates/abi/src/rendezvous.rs | sender's own w0 reads as an Error to a receiver; needs a register convention for RECEIVE status | RECEIVE status convention that a sender cannot forge | L  |
+|  crates/abi/src/rendezvous.rs | delegated cap passes NO_CAP guard for a server reading x1 raw; endpoint that refuses SEND_CAP is "recorded follow-on" of 0706 (BUILT) with no milestone | Endpoints that refuse SEND_CAP outright | M  |
+|  crates/component_plan/src/lib.rs | plan() does not refuse two roles routed to one supervisor slot (near miss from outsider pass 8) | component_plan refuses a doubly routed slot | S  |
+|  crates/current_cpu_contract/src/lib.rs | reader forms &AtomicU64 over read-only memory; Miri rejects it, soundness unsettled; raw atomic load is the fallback | current_cpu reader uses a raw atomic load | S  |
+|  crates/environment_contract/src/lib.rs | no Manifest field declares wanting the environment page, so no shell-facing grant or caps preview | Manifest field for the environment page | M  |
+|  crates/grant_plan/src/line.rs | `<<` is refused with the wrong message (NoRedirectTarget) | grant_plan: a refusal that says `<<` is unsupported | S  |
+|  crates/grant_plan/src/spawnproto.rs | any promised message a caller withholds hangs the progenitor; no way to abandon a half-sent request | Spawn protocol: abandon a half-sent request | M  |
+|  crates/memory_regions/src/table.rs (+557 second bullet) | A split refused for a full table leaves a phantom child, so the parent can never be destroyed. Milestone 601 only recorded it; its PROPOSED block waits on calef's ruling (notes/region-split-on-a-full-table.md, option B recommended). | A refused region split must not raise the parent's child count | S  |
+|  crates/pmap/src/lib.rs (resumed cursor bullet) | A resumed LIST cursor can land on a recycled log slot because entries carry no generation. | Give revocation-log entries a generation so pmap's cursor cannot resume wrongly | M  |
+|  crates/system_initializer/src/std_layout.rs | A std child holds WRITE (which is SPLIT) on its heap region; a program that splits pins its job region for good. Needs a MAP-not-SPLIT right (architect's call). | A region right that allows MAP and not SPLIT | M  |
+|  crates/thread_wake_handshake/src/lib.rs (2nd bullet) | `park` does not clear a stale `ipc_aborted`; every caller collects it today, nothing enforces it. Not clearly inside 366. | Make park refuse or clear a stale ipc_aborted | S  |
+|  crates/user_mode_runtime/src/process.rs | The fault line prints only `pc`, which is the same trap address for every call site; printing x30/ra/stack return address in the three exceptions.rs printers would identify it. | Fault printers show the return address beside pc | S  |
+|  design/roadmap/0089-scaleway-em-rv1.md | PLIC source table is `source % 128` (`MAX_SOURCES = 128` in `arch/riscv64/irq.rs`); the RV1 PLIC has 240 sources, a source above 127 aliases silently | Refuse or size the riscv64 IRQ route table for 240 sources | S  |
+|  design/roadmap/0139-drive-down-unsafe.md | Method numbers overlap across object types, so a safe wrapper on the wrong slot type is an `UNMAP` from safe code; fix is a typed slot per object type, "proposed as its own milestone" but none exists | Typed slots per object type in the safe syscall wrappers | L  |
+|  design/roadmap/0206-user-image-ceiling.md | Loader refusals are all `Err(())`, so an oversized image reads "could not spawn" | Supervision loader names why it refused | S  |
+|  design/roadmap/0230-shell-check-is-red.md | fault line prints the pc of the trap breakpoint, not the return address (x30/ra/stack), in all three exceptions.rs printers | Fault reports name the caller, not the trap | M  |
+|  design/roadmap/0235-a-faulted-job-should-reach-the-prompt.md | a fault report arrives one command late when the shell watches a screen-narrowed tail; needs a non-blocking send or two-endpoint receive (calef's under §10) | A fault report reaches a screen-narrowed prompt at once | L  |
+|  design/roadmap/0254-a-caller-stranded-by-a-dead-server.md | hung component's region is still never reclaimed (cited as 133's, but 133 is BUILT and says it stays unreclaimable) | Reclaim a hung component's region | L  |
+|  design/roadmap/0290-one-ntp-binary-is-three-programs.md | a test that drops an `entropy_service::Wiring` parks the service; `ensure` should drain an unasked report, and nothing gates test isolation | `ensure` drains a report nobody asked for | S  |
+|  design/roadmap/0416-the-two-loader-names-the-tree-still-carries.md | `#[cfg_attr(... allow(dead_code))]` on `DeviceFrame` in `kernel/src/cap.rs` covers more builds than the fact it was written for | Narrow the `DeviceFrame` dead-code allowance | S  |
+|  design/roadmap/0447-vector-registers-are-a-thread-s-own.md | `CPACR_EL1.ZEN`/`SMEN` left at reset; a part that resets open would leak SVE/SME state; check belongs in `arch::isa` | Disable SVE and SME explicitly at boot | S  |
+|  design/roadmap/0447-vector-registers-are-a-thread-s-own.md | nothing enforces that setting `XCR0` forces an `xsave` path in `arch/x86_64/fp.rs` (ymm uppers would leak between threads) | Fail loudly if `XCR0` is set without an xsave path | S  |
+|  fixtures/src/login_test_client.rs | wall-clock bound; a delivered-tick reading for processes is an ABI add | Process-visible delivered tick count | M  |
+|  kernel/src/arch/mod.rs | Nothing checks the arch surface list against the tree; an item added without a line, or a line left after its last caller, is caught by nobody (186 is BUILT yet the entry stands) | A gate that the arch surface list matches the items the portable kernel calls | S  |
+|  kernel/src/arch/riscv64/iommu.rs | Claim that msiptp MODE=Off still bounds an MSI-shaped write by iosatp is a reading of the spec; no boot forges an MSI to test it (317 is BUILT) | Forge an MSI from an attached device on QEMU riscv-iommu and measure what MODE=Off does | M  |
+|  kernel/src/arch/x86_64/fp.rs | Enabling XCR0 needs an xsave path in this file and nothing enforces that coupling (447 only recorded it) | A check that fails when OSXSAVE/XCR0 is enabled without an xsave save path | S  |
+|  kernel/src/arch/x86_64/irq.rs | Revoking a driver's Irq does not call mask_gsi, so a dead driver's line stays armed | Revoking an Irq masks its routed GSI | S  |
+|  kernel/src/arch/x86_64/semihosting.rs | Real x86 hardware has no isa-debug-exit; no fixed marker line plus ACPI S5 power-down, so a test build on xenon falls through to a halt loop (87 is BUILT) | Test builds end cleanly on real x86 hardware: marker line then S5 | M  |
+|  kernel/src/arch/x86_64/timer.rs | Nothing measures or corrects TSC skew between cores; cross-migration wait_for deadlines trust it; no test can see it | Measure inter-core TSC skew at boot and refuse or correct it | M  |
+|  kernel/src/arch/x86_64/timer.rs | Per-CPU tick read ignores its argument and returns the global count, so dump_threads shows the same ticks on every core and hides a wedged one | Per-CPU tick counts on x86_64 like the other two architectures | S  |
+|  kernel/src/memory.rs | `Region` is still `device_tree_blob::Region`, so the machine seam names a device-tree type | Move `Region` out of the device-tree crate | S  |
+|  kernel/src/revoke.rs | nothing stops a caller reading `sched::current_cap` outside a hold and mapping with it; only the MAP handlers' signature stands in the way | A gate (or type) that refuses the old read-then-map shape | S  |
+|  kernel/src/sched/capabilities.rs | deleting one of two copies of a `PortRange` removes `in`/`out` for the other (false against §12 row 5); fix is a count or table scan | A port-range grant survives deleting one of two copies | S  |
+|  kernel/src/sched/region_reaping.rs (also user/holding.rs second bullet) | no non-destructive "is this region busy" call; `reclaim_region(r).is_err()` and `Holding::release` kill what they ask about | A busy query that does not end what it asks about | M  |
+|  kernel/src/smp.rs | the migration test loses coverage quietly under host load instead of going red | The SMP migration test says when it ran under-driven | S  |
+|  notes/address-space-map.md (first bullet) | band functions check membership only; two pair pages one program maps can collide unseen | A collision check for pair pages in the address-space map | S  |
+|  notes/dependency-orchestration.md | `Requirements::problem()` ignores `depends_on`; a two-contract cycle compiles | Reject `depends_on` cycles at declaration | S  |
+|  notes/frames.md | A failed multi-page `MAP` undoes the mapping but does not return the page tables it spent | Return page tables on a failed multi-page MAP | S  |
+|  notes/futex.md | No futex timeout (blocks `park_timeout`, `Condvar::wait_timeout`, `pthread_cond_timedwait`); milestone 106 timers exist | Futex wait with a deadline | M  |
+|  notes/hung-component.md | Nothing watches a component between swaps | Liveness watch between swaps | M  |
+|  notes/hung-component.md | `SURVEY` does not say what a thread is blocked on, so no wait-for graph; a decision, not a task | Report what a thread is blocked on | L  |
+|  notes/interactive-stack-swap.md | Terminal contract does not say which requests are repeatable; `swish`/`rmle` handle `FLAG_RETRY` but not `Gone`, so a swap reads as a failed read (architect question) | Terminal contract: repeatable requests and `Gone` | M  |
+|  notes/interrupts.md | GICv2 SGI store has no barrier before SGIR, the GICv3 path has one; left to keep counts still | Add the missing barrier to the GICv2 SGI path and re-baseline | S  |
+|  notes/live-replacement.md | `a_client_of_the_stable_rendezvous_cannot_become_its_server` failed once on riscv64 under load, cause unknown | Find the cause of the live-replacement riscv64 flake | M  |
+|  notes/load-sensitive-assertions.md | migration drain loses coverage quietly under load because worker life is counter time (same in migration-drain-tick-budget.md:102; wants measuring first) | Denominate drain worker life in delivered ticks | M  |
+|  notes/load-sensitive-assertions.md | `testing::RegionRun` works only for a root region and nothing stops use on a child (same in free-page-frames-sweep.md:94; wants a `memory_region` root accessor, kernel surface) | Make RegionRun refuse a child region | S  |
+|  notes/load-sensitive-assertions.md | `ROUTED_IRQS` is a global count; a per-intid delivery count needs the three arch handlers to route through one portable call (same in x86-pci-express-interrupt-counter.md:161) | Per-intid IRQ delivery count through one portable call | M  |
+|  notes/load-sensitive-assertions/known-residuals.md | 34 of 39 wall-clock/frame-count sites never audited; the frame-count-infers-mechanism question is unasked elsewhere | Audit the remaining load-sensitive assertion sites | M  |
+|  notes/memory-ordering.md | whole rendezvous argument rests on `spin::Mutex` and nothing pins its orderings | Pin the spin::Mutex ordering assumption with a check | S  |
+|  notes/mmu.md | unexplained: a user thread runs under the reserved root with no space in its record (three sightings, riscv64 and x86_64) | Find the space-less kill | M  |
+|  notes/mmu.md | aarch64 kill report prints neither the live root nor a walk, and should before the next sighting | Print root and walk in the aarch64 kill report | S  |
+|  notes/overflow-checks.md | `rendezvous_of` and riscv64/x86_64 `phys_to_virt` callers carry an add check where a range check is what matters | Range-check phys_to_virt callers | S  |
+|  notes/page-frame-slice.md | progenitor is not told when a job dies, so a window is reused after seven grants regardless of holders | Tell the progenitor when a job exits | M  |
+|  notes/processes.md | exit codes not carried; `SYS_EXIT` code discarded | Carry exit codes | M  |
+|  notes/processes.md | TCB page of an ended thread is never reused (one heap page per thread ever spawned) | Reuse the ended thread's TCB page | M  |
+|  notes/riscv-tlb-shootdown.md (share_kernel_half bullet) | `share_kernel_half` copies top-level entries once; a later new top-level kernel mapping would be invisible to older spaces, and nothing asserts it cannot happen | Assert (or propagate) late kernel top-level entries across address spaces | S  |
+|  notes/stack/progenitor-stack.md (cap-slot gauge, incident-table bullets) | Capability-slot gauge lacks the x86_64 yield trigger; the appendix is not a row in `notes/stack.md`'s table | Give the cap-slot gauge x86_64 parity; add the incident row | S  |
+|  notes/supervision.md | Rights on the placed fault capability do nothing (presence authorizes at `START`), and three comments credit rights with the confinement the slot deletion provides | Decide what right a supervision placement demands; correct the comments | S  |
+|  notes/unmap.md | the multicore unmap test is falsified on aarch64 only; riscv64 and x86_64 shootdowns have no recorded patch | Falsification records for the riscv64 and x86_64 unmap shootdowns | M  |
+|  notes/x86-tlb-shootdown.md | `exceptions::NMIS_UNCLAIMED` is written and never read; no test asserts it stays zero | Assert the unclaimed-NMI count is zero in the x86_64 suite | S  |
+|  roadmap 0593 | reboot soak and watchdog soak in one build are not guarded against | A build refuses both soaks at once | S  |
+|  roadmap 0595 | std child holds WRITE on its heap region so SPLIT pins it and the undertaker cannot reclaim it | A right that allows MAP and not SPLIT | M  |
+|  roadmap 0597 | `Endowment` for an image names stand-in row `IMAGE_ROW`; reading it reads the wrong manifest | An endowment holds its own manifest | S  |
+|  roadmap 0597 | image request carries only argument and `--mem`; notes declaring file, dir, input, option, job, stream, std are refused | An image request carries what a line designates | L  |
+|  roadmap 0597 | version 1 note lacks "may create the named path" (Manifest does not carry it) | The manifest carries may-create | S  |
+|  roadmap 0629 | no test proves every switch is counted | A test that every switch is counted | M  |
