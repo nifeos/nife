@@ -241,10 +241,10 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program's stdin is a byte stream when the line redirects or pipes one, at
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
-- **Decision.** Item (d), to build. calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc`
-  5.1.1 everywhere, std included.
-- **Decision.** Item (g), to build. calef, 2026-10-21 (UTC), on #2490: "B". `object` does the ELF
-  and PE work. Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released
+- **Outstanding.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
+  everywhere, std included; not yet in `Cargo.lock` (checked that day).
+- **Outstanding.** Item (g). calef, 2026-10-21 (UTC), on #2490: "B". `object` does the ELF and PE
+  work; not yet in `Cargo.lock` (checked that day). Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released
   on its own) is refused: its proofs would protect no known user.
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
