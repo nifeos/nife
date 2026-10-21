@@ -195,7 +195,7 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 - **Milestone 242.** Option B, the xHCI driver, USB core and HID keyboard, plus the scoping pass
   this block asks for, is `design/roadmap/0242-usb-host-and-a-keyboard-that-is-not-a-uart.md`, so
   option B is not priced as a line item here.
-- **Outstanding, next.** Milestone 242's xenon bench step, ahead of option A's board run (calef,
+- **Outstanding.** Next: milestone 242's xenon bench step, ahead of option A's board run (calef,
   2026-10-21: *"Yes"*). It closes this milestone when its step 3 prints `hello` on the monitor.
 - **Outstanding.** Option A has still never been run on a board and cannot be until milestone 157
   puts a pixel on a board's framebuffer. The six-step bench procedure is written and unexecuted.

@@ -133,12 +133,12 @@ Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear
    | `REFUSED. A register the driver needs shares a page with the controller's MSI-X table` | Photograph it: the register window refusal, with the offset. |
    | no `usb` line | No function with the xHCI class code was found: look for the controller in the boot's PCI survey. |
 
-3. At the `$` prompt, on the USB keyboard, type `echo hello` and press Enter. The output that
-   closes milestone 192's exit criterion (a keyboard plugged into the machine and the OS on a
-   monitor plugged into it) is both of these in one photograph of the monitor: the step 2 line
+3. At the `$` prompt, on the USB keyboard, type `echo hello` and press Enter. One photograph of
+   the monitor closes milestone 192's exit criterion (a keyboard plugged into the machine and the
+   OS on a monitor plugged into it). It shows two things: the step 2 line
    `a keyboard on port N (full speed, vvvv:pppp); its keys reach the shell`, and `hello` printed
-   under the typed `echo hello`. With the serial cable still attached, the same `hello` in the log
-   is supporting evidence, not the criterion. Keep the photograph and the log with the bench
+   under the typed `echo hello`. With the serial cable still attached, the same `hello` in the
+   log is supporting evidence, not the criterion. Keep the photograph and the log with the bench
    record off-tree, then flip this milestone and 192 to BUILT.
 4. Unplug the keyboard, plug it into another port, and type again: it should be found again with no
    line printed (hot-plug is silent by design; see the driver's BUGS).
