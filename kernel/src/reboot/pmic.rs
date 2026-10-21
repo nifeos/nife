@@ -128,6 +128,9 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
 pub(crate) fn pmic_report(marker: &str) {
     const SHOWN: [u8; 8] = [0x00, 0x1f, 0x31, 0x32, 0x40, 0x41, 0x48, 0x49];
     const STATUS: [u8; 2] = [0x48, 0x49];
+    // The PMIC's I2C controller comes out of the firmware gated and held in reset; the reset route
+    // ungates it the same way before it speaks to the PMIC.
+    super::prepare_reset_route(marker);
     let Some((i2c, mode, address)) = pmic_bus(marker) else {
         println!("{marker} AXP15060 report: this tree names no PMIC bus");
         return;
