@@ -1141,12 +1141,10 @@ fn an_interrupt_that_arrives_before_the_wait_is_not_lost() {
 /// raises while the driver is busy arrives during the mask, and the ACK is the only thing that
 /// can deliver it. Nothing else will: the driver goes straight back to `Irq::WAIT`.
 ///
-/// The RISC-V leg is the reason this test exists. QEMU's PLIC does not re-evaluate delivery when
-/// an enable bit is written, so a source that went pending while disabled sat pending, enabled
-/// and undelivered after the ACK, until some *other* PLIC event happened to re-evaluate it. The
-/// USB keyboard stalled mid-line that way about one boot in thirty, and a byte typed on the UART
-/// released it (`drivers::plic::enable`'s doc has the mechanism; notes/usb.md has the
-/// history). This test raises nothing else in between, which is what makes it deterministic.
+/// The RISC-V leg is the reason this test exists. On the PLIC the claim is the mask and the ACK
+/// is the completion (`drivers::plic`), so an ACK that failed to complete, or completed where the
+/// PLIC ignores it, would leave the source claimed and the second raise undelivered for good. This
+/// test raises nothing else in between, which is what makes it deterministic.
 ///
 /// The line is lowered and raised again while masked, rather than held, because QEMU's PLIC
 /// latches a source's pending bit only when its line rises: a line held high across the
@@ -1167,7 +1165,7 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     super::bind_irq(pending_irq(), ep);
     arm_test_irq(pending_irq());
 
-    // The first raise: the handler routes it and masks the line, exactly as for a driver.
+    // The first raise: the handler claims and routes it, and the claim holds the line until an ACK.
     let routed = ROUTED_IRQS.load(Ordering::Relaxed);
     raise_test_irq(pending_irq());
     let first = spin_until(|| ROUTED_IRQS.load(Ordering::Relaxed) > routed);
@@ -1176,11 +1174,11 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
         first,
         "the first interrupt was never routed, so this test could not reach its question",
     );
-    // **Let the first handler finish.** `ROUTED_IRQS` moves before the handler's `complete`,
-    // and on RISC-V a completion re-evaluates the PLIC. If that hart's completion landed after
-    // the ACK below, it would deliver the second interrupt itself and the test would pass for
-    // a reason that is not the ACK, which is how the first falsification run came back green.
-    // The completion is a few instructions behind the count; 20 ms is margin, not a guess at it.
+    // **Let the first handler finish.** `ROUTED_IRQS` moves before the handler is done with the
+    // interrupt (the GIC's end-of-interrupt, for one). If that hart's last write landed after the
+    // ACK below, it could deliver the second interrupt itself and the test would pass for a reason
+    // that is not the ACK. The handler is a few instructions behind the count; 20 ms is margin,
+    // not a guess at it.
     let settle = crate::arch::timer::now() + crate::arch::timer::frequency() / 50;
     while crate::arch::timer::now() < settle {
         super::yield_now();

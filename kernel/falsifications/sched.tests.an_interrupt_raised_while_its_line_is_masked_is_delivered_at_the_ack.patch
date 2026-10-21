@@ -2,40 +2,33 @@ Falsifies `kernel::sched::tests::an_interrupt_raised_while_its_line_is_masked_is
 
 Architecture: riscv64
 
-The defect is the code the USB keyboard lost-wakeup lane replaced, put back: `plic::enable`
-writes the source's priority first and its enable bit second. QEMU's PLIC re-evaluates delivery
-on the priority write and not on the enable write, so a source that went pending while the
-handler had it masked stays pending, enabled and undelivered after the ACK. Nothing else changes:
-the same two writes, in the old order.
+The defect is an ACK that forgets its claim: `arch::irq::enable` drops the claimed context and
+enables the source instead of completing it. The PLIC's gateway then waits for a completion that
+never comes, so the source stays claimed and nothing it raises again is delivered. It is the same
+outcome as a completion written where the PLIC ignores it, which QEMU cannot show directly because
+its PLIC accepts any completion.
 
 Expected to fail: the second assertion, "an interrupt raised while its line was masked was never
 delivered after the ACK unmasked it", because the second raise of the console UART's
-transmit-empty line is never routed. Measured on patagonia, 2026-10-05 UTC, `cargo xtask test
---arch riscv64 --test an_interrupt_raised_while_its_line_is_masked`: RED with exactly that panic
-six runs in six with this patch applied, and once more on the tree before the fix. An earlier draft
-of the test was red one run in three: the first interrupt's `complete`, on another hart, landed
-after the test's ACK and re-evaluated the PLIC itself. The settle after the first routing is what
-closed that, and it is why this record was replayed six times rather than once.
+transmit-empty line is never routed.
 
-riscv64 only. aarch64's GIC and x86_64's self-IPI never had the defect, and this file is the
-PLIC's, which neither of their kernels compiles.
+riscv64 only. aarch64's GIC and x86_64's self-IPI have no claim to forget, and this file is
+riscv64's, which neither of their kernels compiles.
 
-diff --git a/kernel/src/drivers/plic.rs b/kernel/src/drivers/plic.rs
-index 792f135b1..9559a5fcb 100644
---- a/kernel/src/drivers/plic.rs
-+++ b/kernel/src/drivers/plic.rs
-@@ -186,13 +186,13 @@ fn set_enable_bit(source: u32, context: usize, on: bool) {
- /// specification, where the order does not matter. Proved by
- /// `sched::tests::an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack`.
- pub fn enable(source: u32, context: usize) {
--    set_enable_bit(source, context, true);
-     // Priority 1 (the lowest that still interrupts; we do not prioritize among sources yet). Outside
-     // the lock deliberately: this is a whole-word write to a register private to `source`, so it
-     // shares nothing, and keeping it out keeps the critical section to the two accesses that need it
-     // (§9 (locking: IrqSafeMutex, plus a discipline): keep them short, interrupts are off for the
-     // whole of it). After the enable bit, for the reason above.
-     write(PRIORITY_BASE + source as usize * 4, 1);
-+    set_enable_bit(source, context, true);
+diff --git a/kernel/src/arch/riscv64/irq.rs b/kernel/src/arch/riscv64/irq.rs
+index 46e1e2cd1..3c5583b62 100644
+--- a/kernel/src/arch/riscv64/irq.rs
++++ b/kernel/src/arch/riscv64/irq.rs
+@@ -138,10 +138,8 @@ pub(crate) fn hold_claim(source: u32, context: usize) {
+ /// nothing claimed), it enables the source at its stable target hart (see [`target_context`]), so
+ /// device interrupts spread across harts instead of all landing on the boot hart.
+ pub fn enable(intid: u32) {
+-    match CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
+-        CTX_UNASSIGNED => crate::drivers::plic::enable(intid, target_context(intid)),
+-        claimed => crate::drivers::plic::complete(intid, claimed as usize),
+-    }
++    let _ = CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire);
++    crate::drivers::plic::enable(intid, target_context(intid));
  }
  
- /// Disable `source` for `context` (clear its enable bit). The complement of [`enable`]. Called from
+ /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's

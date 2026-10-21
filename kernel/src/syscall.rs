@@ -85,7 +85,7 @@ use thread_control_block::thread_control_block_invoke;
 /// was identical. Re-recording the baseline there would have locked in an under-measurement.
 ///
 /// It also stands on its own, which is the test the tree asks of every `#[inline(never)]` it
-/// carries (`timer::tick`, `plic::disable`, `sched::grant_cycle_counter`, milestone 156's spawn
+/// carries (`timer::tick`, `sched::grant_cycle_counter`, milestone 156's spawn
 /// bodies): this is a large match executed once per syscall, and one `bl` is not a cost worth
 /// duplicating a kilobyte of dispatcher into a handler that also serves faults and interrupts.
 #[inline(never)]
