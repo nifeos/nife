@@ -389,7 +389,7 @@ mod tests {
                 if let Err(p) = unsafe { cache.put(c, p) } {
                     // SAFETY: each spilled block came from the heap under `class_layout(c)`.
                     cache.spill(c, |b| unsafe {
-                        heap.deallocate(b.as_ptr(), class_layout(c))
+                        heap.deallocate(b.as_ptr(), class_layout(c));
                     });
                     // SAFETY: as the first `put`; the spill made room.
                     assert!(unsafe { cache.put(c, p) }.is_ok());
