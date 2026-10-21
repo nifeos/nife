@@ -77,6 +77,26 @@ fn write(off: usize, val: u32) {
     unsafe { core::ptr::write_volatile((base() + off) as *mut u32, val) }
 }
 
+/// A raw PLIC register read, for milestone 890's probe.
+#[cfg(feature = "plic_completion_probe")]
+pub(crate) fn probe_read(off: usize) -> u32 {
+    read(off)
+}
+
+/// `source`'s pending bit and its enable bit in `context`, for milestone 890's probe.
+#[cfg(feature = "plic_completion_probe")]
+pub(crate) fn probe_bits(source: u32, context: usize) -> (bool, bool) {
+    if base() == 0 {
+        return (false, false);
+    }
+    let bit = 1u32 << (source % 32);
+    let word = (source as usize / 32) * 4;
+    (
+        read(0x1000 + word) & bit != 0,
+        read(ENABLE_BASE + context * ENABLE_STRIDE + word) & bit != 0,
+    )
+}
+
 /// Bring the PLIC up for one context: record the base and context, and set the threshold to 0 so
 /// every source with a nonzero priority can interrupt. Sources are still individually disabled
 /// until [`enable`]; this only opens the gate.

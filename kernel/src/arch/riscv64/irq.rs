@@ -283,3 +283,51 @@ mod tests {
         }
     }
 }
+
+/// **Milestone 890's probe**: is the console's PLIC gateway stuck after one interrupt? Every 5 s on
+/// any hart, print the UART's registers and the PLIC's view of the console source, then complete
+/// that source on each context that enables it. The handler completes after it has disabled the
+/// source, and the PLIC specification ignores a completion for a source the target does not
+/// enable, so if that is the bug each completion here lets exactly one more interrupt through.
+#[cfg(feature = "plic_completion_probe")]
+pub(crate) fn completion_probe_tick() {
+    use core::sync::atomic::AtomicU64;
+    // Any hart may print: whichever tick first passes the deadline claims the next one.
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let now = super::timer::now();
+    let next = NEXT.load(Ordering::Relaxed);
+    if now < next || crate::sync::current_rank() != crate::sync::rank::NONE {
+        return;
+    }
+    let every = super::timer::frequency().wrapping_mul(5);
+    if NEXT
+        .compare_exchange(next, now.wrapping_add(every), Ordering::Relaxed, Ordering::Relaxed)
+        .is_err()
+    {
+        return;
+    }
+    let source = crate::memory::uart_irq().unwrap_or(10);
+    let [ier, iir, lsr, usr] = crate::console::probe_uart();
+    let routed = super::exceptions::ROUTED_IRQS.load(Ordering::Relaxed);
+    let spurious = super::exceptions::SPURIOUS_IRQS.load(Ordering::Relaxed);
+    let target = SOURCE_CTX[source as usize % MAX_SOURCES].load(Ordering::Relaxed);
+    let mut pending = false;
+    let mut enabled = [false; 5];
+    for (hart, e) in enabled.iter_mut().enumerate() {
+        let (p, en) = crate::drivers::plic::probe_bits(source, s_context_of(hart));
+        pending |= p;
+        *e = en;
+    }
+    let priority = crate::drivers::plic::probe_read(source as usize * 4);
+    crate::println!(
+        "plic-probe: source={source} routed={routed} spurious={spurious} pending={pending} \
+         enabled(by hart)={enabled:?} target_ctx={target} boot_ctx={} prio={priority} \
+         ier={ier:#x} iir={iir:#x} lsr={lsr:#x} usr={usr:#x}",
+        boot_s_context()
+    );
+    for (hart, &en) in enabled.iter().enumerate() {
+        if en {
+            crate::drivers::plic::complete(source, s_context_of(hart));
+        }
+    }
+}

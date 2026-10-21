@@ -76,6 +76,8 @@ pub fn on_tick() {
     // held it could not signal: it may have been printing under `IPC_TABLES`. See `kernel_log`.
     crate::kernel_log::signal_if_safe();
     crate::kernel_log::stall_tick();
+    #[cfg(all(feature = "plic_completion_probe", target_arch = "riscv64"))]
+    crate::arch::irq::completion_probe_tick();
     #[cfg(feature = "console_flood")]
     crate::kernel_log::flood_tick();
 }

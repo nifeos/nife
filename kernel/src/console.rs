@@ -571,6 +571,12 @@ pub(crate) fn configure_from_dtb() {
     CONSOLE.lock().uart.configure(shape);
 }
 
+/// The console UART's IER, IIR, LSR and USR, for milestone 890's probe.
+#[cfg(all(feature = "plic_completion_probe", target_arch = "riscv64"))]
+pub(crate) fn probe_uart() -> [u8; 4] {
+    CONSOLE.lock().uart.probe_registers()
+}
+
 /// **The register shape the userspace console and input drivers must use** (milestone 890 (riscv64 and `x86_64` join the shared boot path)): they
 /// map this same UART and read no device tree, so `boot_progenitor` passes this as the
 /// progenitor's first start word and the progenitor hands it to both. See `abi::uart`.
