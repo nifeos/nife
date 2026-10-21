@@ -138,12 +138,12 @@ exactly that reason (riscv64_boot.rs, before this milestone), and the mask is go
 - `arch::irq::init` brings up the IO APIC and proves the PIT's line through it before the tick is
   armed, so the `device irq` line `uefi-boot` reads is unchanged. `discovery::bring_up_iommus`
   brings up VT-d or AMD-Vi beside the SMMUv3.
-- `kernel_main` runs `x86_64`'s tail on the same lines as the other two. `x86_64_boot` is gone;
-  `x86_64_banner` is in `boot.rs` beside riscv64's. `x86_64_boot.rs` holds the port's tour (the
-  image bounds, `RDSEED`, a kernel thread, two ring-3 processes built from untyped, the loader's
-  modules) and `watch_the_progenitor`.
-- One hand-over, `boot.rs`'s `hand_over`, serves all three. `x86_64` adds its install offer before
-  it and its boot thread's ten-second watch after it, whose report the `x86_64` gates wait for.
+- `kernel_main` runs `x86_64`'s tail on the same lines as the other two. `x86_64_boot.rs` is gone;
+  `x86_64_banner` is in `boot.rs` beside riscv64's.
+- One hand-over, `boot.rs`'s `hand_over`, serves all three, and `x86_64` adds its install offer
+  before it. After it the boot thread leaves the scheduler on every port. Every gate that types at
+  the shell waits for its `$ `: `script/swish-check`'s three legs and `x86_64`'s install, rollback
+  and confirm boots.
 - The bring-up's `traps` and `timer` lines retire, as riscv64's did: `self_test::run` makes both
   claims on all three. The `frames` line no longer allocates a frame it never frees.
 
@@ -179,7 +179,7 @@ Absences board profiles forbid: radon `entropy`, `trng` and `clock`; xenon `entr
 `deviceirq`. The emulator profile, which `boot-check` and the soak use, forbids none.
 `SELF_TEST_CHECKS_EARLIER` (provisional) records the five-check list's length, so a captured log
 or an older image still reads green. `milestone_tour.rs`, `riscv64_boot.rs`, `boot_demos.rs` and
-`console_service.rs` are gone; `x86_64_boot.rs` holds `watch_the_progenitor`.
+`console_service.rs` are gone.
 
 ## The xenon boot that remains
 
@@ -243,7 +243,7 @@ and the UART still never emptied.
 
 | criterion | state |
 |---|---|
-| 1 | `riscv64_boot.rs` is gone. `x86_64_boot.rs` holds `watch_the_progenitor`, which is not `arch/` code and goes with the follow-on below. |
+| 1 | Done. `riscv64_boot.rs` and `x86_64_boot.rs` are gone. |
 | 2 | Done. `kernel_main`'s `cfg(target_arch)` lines are each port's banner and riscv64's console register shape; `hand_over`'s one is `x86_64`'s install offer. |
 | 3 | Under QEMU, both ports: see each pull request's gate table. The boards are the xenon and radon boots above. |
 
@@ -275,16 +275,12 @@ and the UART still never emptied.
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
 - **Proposed.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
   `design/roadmap/proposals/serial-driver-has-no-starter.md`.
-- **Outstanding.** `x86_64`'s boot thread watches the progenitor after the shared hand-over
-  (`watch_the_progenitor`), because `script/swish-check`'s `x86_64` leg and the install, rollback
-  and confirm boots wait for the watch's report before typing. Retiring it means those wait for the
-  prompt, as the other legs do.
 
 ## Index row
 
 Two of the three architectures boot through code that only they run, so a fix to the boot's middle
 lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarch64 takes, one slice
-at a time, until the two per-port boot files hold only what `arch/` cannot. Both ports run the
-shared bring-up and tail under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and
-the per-port tours are the self-test's checks on all three. radon runs both slices through the
-hand-over, its console now uses the UART's real stride, and its prompt and the xenon boot remain.
+at a time, until neither per-port boot file is left. Both ports run the shared bring-up and tail
+under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and the per-port tours are the
+self-test's checks on all three. radon runs both slices through the hand-over, its console now uses
+the UART's real stride, and its prompt and the xenon boot remain.
