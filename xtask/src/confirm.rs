@@ -60,8 +60,9 @@ const BOOT_THREE_WANTS: [&str; 3] = [
 /// What a shell is asked to do on a boot that is allowed to come all the way up, and the marker
 /// each answer is keyed on. `rollback`'s boot 3 does the same thing for the same reason: reaching a
 /// prompt is the claim, and reading a file `mkfs` wrote is what makes it one.
-const AT_THE_PROMPT: [(&str, &str); 2] = [
-    ("the progenitor is running at ring 3", "ls\r"),
+const AT_THE_PROMPT: [(&str, &str); 3] = [
+    install::LS_AT_THE_PROMPT[0],
+    install::LS_AT_THE_PROMPT[1],
     ("made-on-target", "wc made-on-target\r"),
 ];
 

@@ -311,7 +311,7 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 #   `bench` is one of the two exceptions (DECISIONS §121's amendment, the TSS I/O-bitmap switch
 #   cost); `cycle_counter_grant` is the other, and its own line below says why it is a different
 #   case rather than the same one. Of `bench`: milestone
-#   161 item 4 brought the scheduler up on this ISA, and `x86_64_boot` now diverges into
+#   161 item 4 brought the scheduler up on this ISA, and `kernel_main` now diverges into
 #   `bench::run()` the same way the other two do, and it passes this same clippy line clean. Linted
 #   on its own line below rather than folded into the two-ISA loop above, because that loop's
 #   `--target` list is aarch64/riscv64 only and widening it would also run every OTHER feature in the

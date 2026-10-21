@@ -167,15 +167,10 @@ mod user;
 mod virtio;
 
 // The boot itself (milestone 876 (the kernel crate root is split along its seams)): `kernel_main`
-// and the steps all three boots share, and the machine description. `x86_64_boot` holds the one
-// thing only that port's boot does, its watch over the progenitor after the hand-over.
-// `helpers/lint_arch_parity.py` takes a module's architectures from the `cfg` on its declaration
-// here, so the per-architecture module carries its own on this line.
+// and the steps all three boots share, and the machine description.
 mod boot;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 mod machine_description;
-#[cfg(target_arch = "x86_64")]
-mod x86_64_boot;
 
 pub use boot::{DTB, device_tree, kernel_main};
 // `print!` expands to `$crate::_print`, and a macro another crate expands can only name what that
@@ -185,8 +180,6 @@ pub use boot::{DTB, device_tree, kernel_main};
 pub use console::_print;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 use machine_description::*;
-#[cfg(target_arch = "x86_64")]
-use x86_64_boot::*;
 
 #[cfg(any(test, feature = "system_tests"))]
 mod testing;
