@@ -2,6 +2,7 @@
 
 This appendix belongs to [milestone 705 (the graphical terminal runs full-screen programs)](../0705-the-graphical-terminal-runs-full-screen-programs.md).
 It holds option G's measurements and its seven-question entry.
+calef refused G on 2026-10-21 (UTC) ([the ruling](../0705-the-graphical-terminal-runs-full-screen-programs.md#ruling)).
 
 Measured on 2026-10-18 (UTC) on patagonia, against `main` at `948806b32`, unless marked *from
 memory*. The probes were throwaway and are not kept.
