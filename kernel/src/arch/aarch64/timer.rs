@@ -95,13 +95,13 @@ use crate::cpu::{self, MAX_CPUS};
 /// per-environment branching. See notes/virtualization.md.
 pub(crate) const TIMER_INTID: u32 = 27;
 
-/// 100 Hz. Ten milliseconds per tick.
+/// 100 Hz, `abi::timer::TICK_HZ`, which every architecture takes. Ten milliseconds per tick.
 ///
 /// The classic tradeoff, and it is a real one. Faster ticks mean finer-grained preemption (a
 /// thread cannot hog the CPU for longer than one tick) but more time spent in the handler
 /// doing nothing useful. Linux ships 250 Hz and can be built tickless; 100 Hz is the old Unix
 /// default and it is plenty for a kernel with no threads yet.
-pub const TICK_HZ: u64 = 100;
+pub const TICK_HZ: u64 = abi::timer::TICK_HZ;
 
 /// Every tick, forever. The heartbeat.
 /// Per-CPU, because each core has its own timer (a banked PPI). A single global counter would be

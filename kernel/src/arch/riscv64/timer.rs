@@ -28,8 +28,9 @@ use crate::cpu::{self, MAX_CPUS};
 /// analog of aarch64's per-CPU timer INTID.
 pub(crate) const TIMER_INTID: u32 = 5;
 
-/// Ticks per second, the preemption rate. Same 100 Hz as aarch64.
-pub const TICK_HZ: u64 = 100;
+/// Ticks per second, the preemption rate: `abi::timer::TICK_HZ`, which every architecture takes
+/// so that user space can know a timed wait's resolution.
+pub const TICK_HZ: u64 = abi::timer::TICK_HZ;
 
 /// **The `time` CSR frequency, read from the machine** (`/cpus/timebase-frequency`, milestone 100).
 ///
