@@ -60,9 +60,6 @@ EXTEN = "EXTEN"
 # HVF ignoring; `tge` names the probe that does it.
 TGE = "TGE"
 tge = "tge"
-# `-DFAULT=OFF`, the cmake define that turns sel4bench's fault app off; the checker reads the
-# `-D` prefix into the word (bench/patagonia-hvf-2026-10-21/sel4/).
-DFAULT = "DFAULT"
 # RISC-V supervisor registers (the privileged spec). `sie` is Supervisor Interrupt Enable, and at 76
 # occurrences it is the single loudest false positive in the tree.
 sie = "sie"
