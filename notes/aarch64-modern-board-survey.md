@@ -25,7 +25,7 @@ carries the scoring and the recommendation. It records no choice: the board is c
   So the question per board is which DMA masters sit behind an SMMUv3, read from the Linux device
   tree's `iommus` and `iommu-map` properties or the ACPI IORT. An MMU-500 (SMMUv2) or a vendor IOMMU
   is a new driver, not a proving run.
-- The GIC. The kernel speaks GICv2 and GICv3 (milestone 227, a GICv3 driver). An ITS is what turns PCIe MSIs into
+- The GIC. The kernel speaks GICv2 and GICv3 (milestone 227 (a GICv3 driver)). An ITS is what turns PCIe MSIs into
   LPIs, so a board with PCIe devices and no ITS keeps nife on wired or vendor-bridged interrupts.
 - Architecture level. Armv8.1 brings VHE and LSE atomics, and v8.1 to v8.2 bring PAN. PAC and BTI
   (v8.3 and v8.5) harden control flow, MTE (v8.5) tags memory, and SVE2 is Armv9's vector set.
@@ -34,7 +34,7 @@ carries the scoring and the recommendation. It records no choice: the board is c
   less board-specific code. Upstream TF-A and mainline U-Boot or EDK2 decide whether the firmware
   can be rebuilt and read.
 - Debug and measurement. A serial console a person or `script/board-console` can read, and a PMUv3
-  cycle counter that firmware leaves to EL1 (milestone 74, cycle counters, reads `PMCCNTR_EL0`).
+  cycle counter that firmware leaves to EL1 (milestone 74 (cycle counters) reads `PMCCNTR_EL0`).
 - Peripherals. PCIe, NVMe, xHCI and Ethernet are what make the board a computer rather than a
   console.
 
@@ -104,7 +104,7 @@ Ampere Altra. It is the most complete isolation story on the list and the most s
 (SystemReady SR, open EDK2 in tianocore's tree, a BMC and a PL011). It gives up every architecture
 feature after v8.2, and it costs $4,099 or more, roughly fifteen to twenty times an O6. It is a
 server platform that happens to come in a tower, so "a second board within an architecture is
-cheap" (the first claim of milestone 241, what a fourth board would have to be for) is not what it would test.
+cheap" (the first claim of milestone 241 (what a fourth board would have to be for)) is not what it would test.
 
 RK3588 (Rock 5B+, Orange Pi 5 Plus). It is the cheapest board with an SMMUv3 and an ITS, and the
 only one with upstream TF-A and mainline U-Boot both building it. The SMMU covers the PCIe-attached
