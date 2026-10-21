@@ -131,7 +131,8 @@ pub(crate) fn rollback_boot() -> bool {
         &install::empty_esp_dir(),
         true,
         &[
-            ("the progenitor is running at ring 3", "ls\r"),
+            install::LS_AT_THE_PROMPT[0],
+            install::LS_AT_THE_PROMPT[1],
             ("made-on-target", "wc made-on-target\r"),
         ],
         "1 10 57",
