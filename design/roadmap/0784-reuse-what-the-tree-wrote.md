@@ -106,22 +106,23 @@ input drivers accept because they sit behind the IOMMU. rcore-os/virtio-drivers#
 validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiserror`, `enumn`,
 `log`, `bitflags`.
 
-4. Measure `user_mode_heap` against `talc`, then decide. 272 lines of first-fit free list in every
+4. `user_mode_heap` against `talc`, measured for (d). 272 lines of first-fit free list in every
 process. `talc` is maintained (2026-09) and `no_std`. The prior art cuts both ways:
 `linked_list_allocator`, the same algorithm as ours, had out-of-bounds writes (RUSTSEC-2022-0063),
-which is the class of bug a hand-written heap carries. Measure allocation latency and
-fragmentation on `job_mix` first, then rule. Retires little code; the case is exposure.
+which is the class of bug a hand-written heap carries. Retires little code; the case is exposure
+and, measured, throughput.
 
 5. BUILT: `uefi_loader` binds UEFI through `r-efi` 7.1.0, item (e); see Follow-on.
 
 6. REFUSED: `stick_maker`'s `plist.rs` stays, item (f); see Follow-on.
 
-7. Survey `portable_executable` against `object` 0.40.0's `write::pe::Writer`. Host-only, no
-untrusted input; up to 778 lines retire, unless the ELF-to-PE logic is ours by necessity.
+7. Surveyed for (g): `portable_executable` against `object` 0.40.0's `write::pe::Writer`. Host-only,
+no untrusted input. About 250 of its 386 code lines would retire, and milestone 821 (an ELF-to-PE
+converter, proven, then released on its own) already rules it ours.
 
-8. Survey uutils for the `coreutils` package. MIT, so base-eligible. `ripgrep` already runs
-unmodified (milestone 121 (`ripgrep` on nife)), which shows the `std` path works. Open: which `uu_*` build against the
-PAL, and what `uucore`'s weight does to the base image. Few lines retire; the value is the demo.
+8. Surveyed for (h): uutils for the `coreutils` package. MIT, so base-eligible. `uu_printenv` and
+`uu_date` build for nife unmodified, at 20 to 62 times our size; `uu_wc` and `uu_rm` stop at
+`rustix`. Few lines retire; the value is the demo.
 
 9. Editor: `rmle` stays until one of two takes it. `kibi` (MIT/Apache, a Rust editor inspired by
 the same `kilo` `rmle` is modeled on) needs `libc` termios and raw stdin, which the PAL does not
@@ -194,8 +195,8 @@ on the customer path.
    too, once a release carries #232.
 3. Prior art. In the tables above.
 4. Is the premise true? Mostly; the kernel's exemption does not cover the two engines (above).
-5. Cost. Lines retired are measured above; lane time is estimated. Throughput and heap numbers are
-   owed by candidates 3 and 4 before any ruling.
+5. Cost. Lines retired are measured above; lane time is estimated. Candidate 3 owes throughput numbers
+   before its ruling; candidate 4's heap numbers are in the appendix.
 6. Reversibility. Each replacement is reversible code; adding a crate to the base graph is §46's
    expensive category, and nobody has acted yet.
 7. Same cost? Yes for 1, 2, 3, 5 and 6: at equal effort the exposed library wins on trust. Nothing
@@ -210,11 +211,11 @@ on the customer path.
   *"a′ but no releases since March isn't promising as a dependency"*; *"Treat the wait as part of
   the gate."*). Only then (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone,
   each with a `script/bench` number before and after on all three architectures.
-- (d) Measure `user_mode_heap` against `talc`; the ruling follows the data.
+- (d) `user_mode_heap` against `talc`, measured in [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md); the ruling follows.
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
-- Surveys: (g) `portable_executable` and `object`; (h) uutils for `coreutils`.
+- Surveys, in that appendix: (g) `portable_executable` and `object`; (h) uutils for `coreutils`.
 
 ## Recorded reasons for what stays
 
@@ -243,9 +244,9 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program's stdin is a byte stream when the line redirects or pipes one, at
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
-- **Outstanding.** Items (b), (c), (d), (g) and (h): none started, each waits on its own §46
-  ruling, (b) on 705 too. Checked 2026-10-20 (UTC): none of their crates is in `Cargo.lock`.
-- **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-20 UTC).
+- **Outstanding.** Items (d), (g) and (h) are measured, each waiting on its §46 ruling. (b) waits
+  on 705. Checked 2026-10-21 (UTC): none of their crates is in `Cargo.lock`.
+- **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 
 ## Index row
 
