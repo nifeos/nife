@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-10-12
+built: 2026-10-21
 promoted_from: the-trees-gates-stop-depending-on-the-fleet-tooling
 milestone_dependencies: none
 decision_dependencies: none
@@ -73,14 +74,11 @@ Two edges are kept on purpose, and the lane records why where a reader meets eac
 - Each of the four workflows runs to completion on a dispatch with the App secrets unset.
 - `fleet-metrics.yml` writes byte-identical CSV rows to `metrics.yml`'s last run for the same week.
 
-## Where it stands, 2026-10-20 (UTC)
+## Where it stands, 2026-10-21 (UTC)
 
-PARTIAL. Every cut is made, and four of the five exit checks were run and pass. calef ruled on the
-fifth (below): with the App absent, a workflow completes through its push. Three workflows do or
-are measured doing so; `falsifications` cannot reach its push for two reasons the App does not
-touch. calef, 2026-10-20 15:00 (UTC): "Hold 889 until we fix both issues." Both are this
-milestone's remaining items (Follow-on). Each tie from the inventory, checked against the code
-first:
+BUILT. Every cut is made and all five exit checks were run and pass. calef ruled on the fifth
+(below): with the App absent, a workflow completes through its push, and all four do. Each tie from
+the inventory, checked against the code first:
 
 | Tie | What the code did | What happened |
 |---|---|---|
@@ -144,12 +142,19 @@ something to record measures, writes and pushes, ends green, and puts the compar
 summary. No repository is asked to let Actions open pull requests, and the exit is read as "the run
 completes through the push". All four workflows now call `helpers/pull-request-by-hand.sh`
 (provisional) after their push when no App token was minted. The fork's `main` was fast-forwarded
-to the branch carrying that change and two were dispatched again:
+to the branch carrying that change and the other three were dispatched again:
 
 | Workflow | Run on `calef/nife` | Exit, measured |
 |---|---|---|
 | `verify-shard-refresh` | 39441127380 | Green. It pushed `metrics/verify-shards`, opened no pull request, and wrote the compare link to its summary. |
-| `mutation` | 39442048323 | Dispatched 2026-10-20; its shards take about two hours. |
+| `mutation` | 39442048323 | Green. All eight shards passed; it pushed `mutation/census`, opened no pull request, and wrote the compare link to its summary. |
+| `falsifications` | 39515487551 | Green. Five shards, the KVM job and the three other replays passed; the record job read 355 record times, pushed `falsification/times`, opened no pull request, and wrote the compare link to its summary. |
+
+`falsifications` reaches its push because its replay is sharded. `script/falsifications
+--plan-sweep` packs every replayable record into shards of at most 40 minutes by measured replay
+time, which run as a matrix on arm64. The swish-check records with an x86_64 leg replay in their
+own job under KVM, as ci.yml runs that leg. On the same commit in nife (run 39501631197) the five
+shards took 12.6 to 53.6 minutes and the KVM job 8.5.
 
 ## BUGS
 
@@ -158,15 +163,10 @@ to the branch carrying that change and two were dispatched again:
   catches it.
 - Without the App, nobody is told a record is waiting. The run is green and the compare link is
   in its summary, so a person has to look at the run to find it.
-- The confined fuzzer's long sweep fails on seed `0x2f2e76cb02` at step 34: fuzzer 0's slot 2 is
-  filled with a page frame after a syscall on a held page frame, which the fuzzer's oracle says
-  "grants nothing" (replay `NIFE_CONFINED_FUZZ_SEEDS=202643000066:1`). It fails identically on
-  nife's scheduled run of 2026-10-19 (39243857792). The oracle is wrong: the `justify_fill` of
-  milestone 779 (fuzz the surface a confined process can reach) has no `PageFrame::SLICE` arm.
-  Fixed by milestone/779-slice-oracle.
-- `falsifications` has not reached its record job on `main` since at least 2026-10-12: the replay
-  job hits its two-hour limit and is cancelled (run 39243857792). A dispatch with the App absent
-  stops at the same place.
+- The sweep packs by the times its own transcripts write back, so a record that grows a lot
+  between sweeps lands in a shard planned too light. Each shard's 120-minute limit is three times
+  its 40-minute target; a shard that outgrows that is cancelled, and its records go unswept that
+  week.
 - The opt-in is per clone. A fleet machine that never ran `script/claim` pushes without the queued
   check until `git config nife.fleet true` is set.
 - Four current-tense statements say a fleet check runs in `script/lint`, in files a lane may not
@@ -180,12 +180,10 @@ to the branch carrying that change and two were dispatched again:
 
 ## Follow-on
 
-- **Outstanding.** Record `mutation`'s exit from run 39442048323.
-- **Outstanding.** `falsifications`' replay job fits inside its two-hour limit, so the workflow
-  reaches its push with the App absent (BUGS).
-- **Outstanding.** The confined fuzzer's false failure on seed `0x2f2e76cb02` (BUGS), fixed by
-  milestone/779-slice-oracle. Whichever of that branch and this block's next change merges second
-  marks it done here.
+- **Done.** `falsifications`' replay is sharded so the workflow reaches its push with the App
+  absent: pull request #2462 (milestone/889-replay-limit).
+- **Done.** The confined fuzzer's false failure on seed `0x2f2e76cb02`: pull request #2457
+  (milestone/779-slice-oracle).
 - **Milestone 902.** Milestone 902 (nife's tooling, sorted by who needs it, before any of it moves).
   Moving class 3 as a unit, with the `Recorded.` paths and the class-3 notes that make the
   stranger clone's two record checks fail, is the inventory's next step:
