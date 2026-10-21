@@ -38,8 +38,7 @@ pub fn filled<T: Copy>(n: usize, x: T) -> Result<Room<T>, swish::Say> {
 /// Capped at [`swish::HEAP_MAX_BYTES`] and mapped from [`BUDGET`] before any other carve, so a
 /// leak exhausts the heap and never the budget children are built from.
 #[global_allocator]
-static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 
 /// Wire the allocator to [`BUDGET`] and map the whole capped heap at once. First thing at `_start`,
 /// for the roles whose slot 3 is a budget: the heap's pages and their page tables are then the
@@ -49,7 +48,7 @@ static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
 pub(super) fn heap_init() {
     HEAP.init(
         BUDGET,
-        user_mode_runtime::heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE,
         swish::HEAP_MAX_BYTES,
     );
     HEAP.commit_all();

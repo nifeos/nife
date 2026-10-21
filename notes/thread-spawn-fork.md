@@ -172,7 +172,7 @@ demands once you look past the first allocation:
   VAs) is genuinely cheap and needs nothing new. It is the exact client/server
   shared-frame pattern `net_stack` and the compositor already use, aimed at a sibling instead of
   a server.
-- A general, growing heap is not that. Rust's global allocator (`crates/user_mode_heap`) grows by
+- A general, growing heap is not that. Rust's global allocator (`memory_region_heap`, on `talc`) grows by
   minting and mapping new frames on demand, from whichever thread happens to allocate. For two
   "threads" to keep seeing the same heap, every growth by either side has to be mapped into the
   other's address space, at the same VA, before either side may safely dereference a pointer that

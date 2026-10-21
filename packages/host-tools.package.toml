@@ -7,5 +7,5 @@
 name = "host-tools"
 kind = "sdk"
 home = { repo = "host-tools", status = "provisional" }
-crates = ["xtask", "portable_executable", "stick_maker", "walk_pricing"]
+crates = ["xtask", "stick_maker", "walk_pricing"]
 depends = ["boot", "display"]

@@ -747,6 +747,8 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # `timetable` nor `filesystem_contract` already owns.
 schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+# The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
+memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 # The register-block idiom milestone 139 round 5 brought to `user` (calef, 2026-08-24, "take the
 # dependency for user"): compile-time-checked device register layouts for the fixed-layout blocks

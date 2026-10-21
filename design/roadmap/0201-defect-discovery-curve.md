@@ -109,6 +109,44 @@ on physical cores and not under TCG is the HVF listener hang, and its evidence p
 harness. It stays `unclassified` because an unexplained row is a candidate for exactly the class
 this risk names.
 
+## radon's slope, read 2026-10-21
+
+Read from milestone 225's rows E1 to E50 in `notes/multicore-defect-curve/radon-rows.md`, as they
+stand, by the note's own rule: a running total of crossings against a running count of `race` or
+`multicore` defects.
+
+| what | value |
+|---|---|
+| boots on the curve | 39 (E2, E4 to E15, E17 to E21, E23 to E26, E29 to E34, E37 to E40, E42 to E44, E46 to E49) |
+| crossings | 10,930,204 |
+| hours | 26.3 |
+| defects with a radon exposure row | 0 |
+| slope | 0 defects per million crossings, from the first point to the last |
+
+Left out: E1 and E3, which have no final crossing count, and the nine rows marked as not crossing
+(E16, E22, E27, E28, E35, E36, E41, E45, E50). E32 holds 24 crossings at its last beat and is not
+marked, so it is on the curve; it moves no total.
+
+What the number means. It is a curve with no points above zero, which is not the flattening this
+milestone looks for: a curve can only flatten after it has risen. What zero in 10.9 million
+crossings gives is a bound. Read as independent trials, the 95% upper bound is about 3 in
+10.9 million, or 0.27 per million crossings. Crossings within one boot share a placement and are
+not independent, so that bound is optimistic. Per boot, it is zero in 39, an upper bound near 3 in
+39.
+
+Where it is not one experiment:
+
+- Two boots carry most of it. E4 and E6 are 9,677,908 crossings, 89% of the total; 35 of the 39
+  boots are two-minute reboot draws adding 635,892 between them.
+- Five recorded builds and two workloads (`soak-test` and `soak-test-reboot`) are pooled, which the
+  note allows within one architecture and which 201's `BUGS` warns can flatten a curve for free.
+- E27 reset itself with no kernel reset lines. It reads `clean` by the row rule and is unclassified
+  in milestone 225's `BUGS`; classified as `multicore`, it would be radon's first point.
+
+**argon (aarch64) and xenon (x86_64) have no rows, so their slopes do not exist yet.** riscv64 meets
+§259's bar (E4 + E6 + E7, 10,288,805 crossings over three plain boots); the other two architectures
+have zero crossings toward it. Risk 5 is three per-architecture curves and this is one of them.
+
 ## What the run needs
 
 - The load-sensitive assertions live (`notes/load-sensitive-assertions.md`), plus
@@ -139,8 +177,8 @@ this risk names.
 
 - **Outstanding.** The run: milestone 225 (run the soak on radon, argon and xenon) appends one
   exposure row per boot to `notes/multicore-defect-curve.md`, and this milestone reads the slope per
-  architecture. Checked 2026-09-24: the note has three radon rows, all riscv64, and none for argon or
-  xenon.
+  architecture. Checked 2026-10-21: radon's slope is read above from E1 to E50; argon and xenon
+  have no rows.
 - **Done.** The stated duration `design/fatal-risks/multicore-reliability.md` asks for: calef ruled
   on 2026-10-07 (UTC), recorded in §259 (a multicore soak counts toward risk 5 at ten million
   crossings over three boots). At least 10 million crossings per architecture across at least

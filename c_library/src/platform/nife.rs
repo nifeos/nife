@@ -793,7 +793,7 @@ impl Pal for Sys {
         _off: off_t,
     ) -> Result<*mut c_void> {
         // Anonymous memory only, from the same heap `malloc` uses, which is `std`'s allocator and
-        // so `crates/user_mode_heap` over this process's untyped budget (§31 (the foreign-language
+        // so `talc` over this process's untyped budget (§31 (the foreign-language
         // seam) rule 4). A file mapping needs a shared page from the file
         // server, which the contract does not offer; `ENODEV` is POSIX's answer for "this file
         // cannot be mapped" (BUGS).

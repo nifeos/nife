@@ -67,7 +67,7 @@ STIP = "STIP"
 THR = "THR"
 THRE = "THRE"
 # ELF's relocation-with-addend record (`Elf64_Rela`) and its dynamic tags `DT_RELA`, `DT_RELASZ`,
-# which `crates/portable_executable` reads to convert the riscv64 loader to PE/COFF.
+# which `xtask/src/portable_executable.rs` reads to convert the riscv64 loader to PE/COFF.
 rela = "rela"
 Rela = "Rela"
 RELA = "RELA"
@@ -126,6 +126,11 @@ ND = "ND"
 # Linux binding files spell it (`synopsys-dw-mshc-common.yaml`).
 RTO = "RTO"
 synopsys = "synopsys"
+
+# `-DFAULT=TRUE`: CMake's `-D` on sel4bench's `FAULT` option, in the seL4 Foundation's published
+# build command, which bench/xenon-sel4bench/build.sh and its note quote verbatim (milestone 127
+# (the seL4 machine)).
+DFAULT = "DFAULT"
 
 [default.extend-identifiers]
 # Deliberate capitalisation inside prose, where the case is the emphasis: "Address Space

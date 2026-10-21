@@ -4,6 +4,10 @@
 selection block in milestone 87's shape; the milestone file itself is the integrator's to mint, and
 this note's name is provisional.)*
 
+This note chooses a board for the seL4 comparison alone. The board for nife's first general aarch64
+machine, chosen for modern features, is surveyed in [the modern aarch64 board
+survey](aarch64-modern-board-survey.md).
+
 Milestone 25 is done except for `sel4bench`, which times single operations through the PMU cycle
 counter that neither QEMU-TCG nor Apple HVF provides (notes/benchmarks.md, notes/pmu.md). Milestone
 74 is the driver that will read that counter; this survey picks the board it reads it on. The
@@ -21,8 +25,8 @@ from seL4's own trees, not from the marketing page:
   Source: <https://sel4.systems/performance.html>.
 - CI-run on hardware. Every push to sel4bench master builds and runs on the Foundation's
   machine queue. The aarch64 platforms in the run matrix: tx1, tx2, odroid_c2, imx8mm_evk
-  (the rest are armv7a, x86, riscv). Results land in seL4/sel4bench-results (private); only TX1's
-  reach the public page.
+  (the rest are armv7a, x86, riscv). Every run's results land in seL4/sel4bench-results, which is
+  public; the page carries one aarch64 row, TX1's.
   Source: `.github/workflows/sel4bench.yml` `hw-run` matrix in <https://github.com/seL4/sel4bench>,
   and `sel4bench-hw/builds.yml` in <https://github.com/seL4/ci-actions>.
 - Builds only. sel4bench CI builds images for essentially every armv8a platform in

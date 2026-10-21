@@ -56,3 +56,5 @@ area directories), ruled B). Appendices under
 `turning-secure-boot-off.md`: Name: provisional, minted 2026-10-18 (UTC) by maintainer/500-secure-boot-ruled.
 
 `lint-cost-2026-10-18.md`: Name: provisional, minted 2026-10-18 (UTC) by lane maintainer/lint-cost.
+
+`aarch64-modern-board-survey.md`: Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.

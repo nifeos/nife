@@ -618,6 +618,8 @@ byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" 
 # `login_test_client.rs` writes and `login.rs` reads back.
 schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+# The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
+memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }
 # The current-CPU page's layout and its `CPU_ID_BOUND`, which `current_cpu_reader` reports back so
 # the kernel's test can check that the two binaries still agree on it.
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }

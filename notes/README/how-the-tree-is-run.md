@@ -48,6 +48,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Handing a session over](../session-handoff.md): the 2026-07-29 restart point, a record of that session.
 - [Corrections of error](../coes/README.md): the register of recorded errors and the mechanisms
   that replaced them, one dated file each.
+- [BUGS entries with no milestone](../bugs-without-milestones/README.md): the survey of limitations that are real future work, by area, and the question of a gate.
 - [Cobble, the mascot](../mascot.md): the project's mascot, drawn by calef's kid.
 - [The system tests and the kernel crate](../system-tests-and-the-kernel-crate.md): what the kernel linked for its tests, the gate that keeps them out, and where the tests go. Name provisional.
 - [The suite's frame budget](../frame-budget.md): what the system tests may leave unreturned, what they legitimately keep, the conventions, and every number the ceiling has been. Name provisional.

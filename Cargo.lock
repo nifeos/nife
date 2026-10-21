@@ -36,8 +36,14 @@ dependencies = [
 name = "allocation_cache"
 version = "0.1.0"
 dependencies = [
- "user_mode_heap",
+ "talc",
 ]
+
+[[package]]
+name = "allocator-api2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c880a97d28a3681c0267bd29cff89621202715b065127cd445fa0f0fe0aa2880"
 
 [[package]]
 name = "argon2"
@@ -245,6 +251,7 @@ dependencies = [
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "non_volatile_memory_express",
@@ -310,6 +317,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "crc32fast"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ba106e844045ddc02c20768ac4b0b7cb45f2cc2ecbd833ac9f5dacb183c2055"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
@@ -532,6 +548,7 @@ dependencies = [
  "line_editor",
  "loaded_image_check",
  "login_contract",
+ "memory_region_heap",
  "network_time_protocol",
  "nifefs",
  "schedule_store",
@@ -542,6 +559,12 @@ dependencies = [
  "timetable",
  "user_mode_runtime",
 ]
+
+[[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "free"
@@ -613,6 +636,9 @@ name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "foldhash",
+]
 
 [[package]]
 name = "heapless"
@@ -803,6 +829,15 @@ name = "loaded_image_check"
 version = "0.1.0"
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -880,6 +915,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "memory_region_heap"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "talc",
+ "user_mode_runtime",
+]
+
+[[package]]
 name = "memory_regions"
 version = "0.1.0"
 dependencies = [
@@ -914,6 +959,18 @@ dependencies = [
 [[package]]
 name = "number_writer"
 version = "0.1.0"
+
+[[package]]
+name = "object"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
+dependencies = [
+ "crc32fast",
+ "hashbrown",
+ "indexmap",
+ "memchr",
+]
 
 [[package]]
 name = "once_cell"
@@ -972,10 +1029,6 @@ version = "0.1.0"
 dependencies = [
  "abi",
 ]
-
-[[package]]
-name = "portable_executable"
-version = "0.1.0"
 
 [[package]]
 name = "proc-macro2"
@@ -1055,6 +1108,12 @@ name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
+
+[[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "screen_console"
@@ -1337,6 +1396,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "talc"
+version = "5.1.1"
+dependencies = [
+ "allocator-api2",
+ "lock_api",
+]
+
+[[package]]
 name = "test_times"
 version = "0.1.0"
 
@@ -1535,20 +1602,14 @@ name = "usb"
 version = "0.1.0"
 
 [[package]]
-name = "user_mode_heap"
-version = "0.1.0"
-
-[[package]]
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "user_mode_heap",
 ]
 
 [[package]]
@@ -1648,9 +1709,9 @@ dependencies = [
  "graphics_contract",
  "measured_boot",
  "nifefs",
+ "object",
  "package_archive",
  "package_index",
- "portable_executable",
  "screen_console",
  "sealed_pair",
  "test_times",

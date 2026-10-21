@@ -960,20 +960,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
-name = "user_mode_heap"
-version = "0.1.0"
-
-[[package]]
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "user_mode_heap",
 ]
 
 [[package]]
@@ -1096,3 +1090,7 @@ name = "zeroize"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
+
+[[patch.unused]]
+name = "talc"
+version = "5.1.1"

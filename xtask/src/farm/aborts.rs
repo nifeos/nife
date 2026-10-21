@@ -177,6 +177,25 @@ pub(super) fn abort_shaped(line: &str) -> Option<&'static str> {
 ///   - *ours, and deliberate*: the PAL's own, where ending the process is the honest report.
 pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
     // ---- unreachable on nife ------------------------------------------------------------------
+    // The heap's generated `talc` core (milestone 784 (reuse what the tree wrote), item d): each is
+    // a misconfiguration check, and std's one configuration, `DefaultBinning` on a 64-bit target,
+    // passes all three.
+    (
+        "sys/alloc/nife/talc/base/binning.rs",
+        "only 64-bit and 32-bit architectures are currently supported",
+        "the arm after `cfg!(target_pointer_width = \"64\")`, and every nife target is 64-bit",
+    ),
+    (
+        "sys/alloc/nife/talc/base/binning.rs",
+        "expects at least 29 bins to be available",
+        "a check on `B::BIN_COUNT`, a constant; `DefaultBinning` has 191",
+    ),
+    (
+        "sys/alloc/nife/talc/base/bitfield.rs",
+        "panic!(",
+        "in `TwoLevelBitField`, which `DefaultBinning` does not use: its bit field is `[usize; 3]`. \
+         The site's line is a bare `panic!(`, so this entry would also pass a second one in the file",
+    ),
     (
         "sys/alloc/mod.rs",
         "add a value for MIN_ALIGN",

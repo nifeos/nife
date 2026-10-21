@@ -16,6 +16,7 @@ behind each section of the main page.
 - [`rebooting-soak.md`](rebooting-soak.md): why a rebooting soak, its hazard, and the reset radon
   cannot do.
 - [`rebooting-soak-procedure.md`](rebooting-soak-procedure.md): the procedure and the outcome table.
+- [`boot-lottery.md`](boot-lottery.md): the rebooting soak's draws so far, and how many remain.
 - [`how-long-to-run-it.md`](how-long-to-run-it.md): the survey behind "no duration is prescribed".
 - [`limitations.md`](limitations.md): the BUGS list in full.
 
@@ -34,5 +35,6 @@ Each stem below is named for its content, and calef names files.
 - `radon-2026-10-21` Name: provisional. Dated like `radon-2026-10-10`.
 - `rebooting-soak` Name: provisional.
 - `rebooting-soak-procedure` Name: provisional.
+- `boot-lottery` Name: provisional.
 - `how-long-to-run-it` Name: provisional.
 - `limitations` Name: provisional.

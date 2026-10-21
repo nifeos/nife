@@ -144,8 +144,8 @@ and both trees are GPL and were read for hardware facts only.
   receive window times a scheduler tick per round trip, both in `net_stack`, reproduced under QEMU
   and fixed (notes/designware-ethernet/the-receive-rate.md). That page's bench step measures the
   fix on radon, which has not run.
-- **Outstanding.** radon's second port, `gmac1`, which this driver does not bring up. Pull request
-  #2470 proposes the milestone for it, unmerged.
+- **Milestone 940.** radon's second port, `gmac1`, which this driver does not bring up, is
+  milestone 940 (radon's second Ethernet port): `design/roadmap/0940-second-jh7110-ethernet-port.md`.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
   to the real M.2 slot. NOT-STARTED on a HARDWARE gate.
 - **Decision.** Whether the NVMe driver can leave the kernel is answered:

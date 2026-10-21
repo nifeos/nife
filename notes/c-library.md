@@ -72,7 +72,7 @@ Each row is a place nife's constraints differ from Redox's, and which way it arg
 | Spawning | `Pal::spawn` exists beside fork | spawn is the supported primitive, milestone 172 (a capability-native subprocess primitive) | `posix_spawn` calls `Sys::spawn` directly, not fork plus exec | adapting: the seam is already where nife needs it |
 | Signals | full POSIX signals, emulated in redox-rt (1,162 lines plus per-arch assembly) | none; a fault is an event to the supervisor | `PalSignal`, and `header/signal/redox.rs` outside the layer | owning: nife's answer is a narrow `raise`/`abort` and refusing the rest, a different design rather than a port |
 | Process and user identity | pids, uids, process groups, sessions | no process identifier (`std::process::id` is 0); identity is attribution, not authority, per milestone 49 (users, login, and attribution) | about twenty `get*id`/`set*id` methods | adapting: fixed answers in the layer, each in its `BUGS` |
-| Memory | `mmap` and `brk` | `untyped::MAP` from the process's own budget, per §22 (Rust `std` on the native ABI) and §31 rule 4 | dlmalloc over `Pal::mmap` | owning the allocator: notes/std.md says `crates/user_mode_heap` is the only heap algorithm, and §31 rule 4 already ties C's heap to it |
+| Memory | `mmap` and `brk` | `untyped::MAP` from the process's own budget, per §22 (Rust `std` on the native ABI) and §31 rule 4 | dlmalloc over `Pal::mmap` | owning the allocator: notes/std.md says `std`'s allocator is the only heap algorithm, and §31 rule 4 already ties C's heap to it |
 | Thread-local storage | static TLS set up by `ld_so/tcb.rs`, with a Redox-specific `OsSpecific` block in the TCB | userspace targets are `singlethread: true`; nothing context-switches `TPIDR_EL0` | TLS and the TCB live in the dynamic linker | owning: a static-only TLS block is a few hundred lines, and the linker it lives in is not wanted |
 | Threads | relibc's own pthreads on `rlct_clone` and a futex | milestone 812 (`std::thread::spawn` runs real threads in one address space) built them (2026-10-10 UTC), with a private futex: `AddressSpace::WAIT` and `WAKE` ([futex](futex.md)) | `Pal::futex_wait`/`futex_wake` underneath everything in `src/sync/` | adapting, onto 812's wait-on-address primitive |
 | Dynamic linking | `ld.so` and `dlopen` | static ELF only (notes/abi.md, section 3) | `src/ld_so/`, 4,016 lines, entangled with startup and TLS | owning: dropped, and startup rewritten without it |
@@ -115,8 +115,8 @@ Neither "adapt" (track upstream with a platform layer added) nor a clean-room re
 2. Leave behind `redox-rt`, `platform/redox`, `platform/linux`, `ld_so`, dlmalloc and every
    dependency a stage does not use.
 3. Write the nife platform layer in Rust against the protocol crates `std` already speaks
-   (`filesystem_contract`, `socket_contract`, `clock_contract`, `std_runtime_contract`,
-   `user_mode_heap`), so the C library and `std` cannot disagree about a wire format.
+   (`filesystem_contract`, `socket_contract`, `clock_contract`, `std_runtime_contract`), and on
+   `std`'s allocator, so the C library and `std` cannot disagree about a wire format.
 4. Rewrite `popen`, `system` and `forkpty` on `posix_spawn`, or refuse them; `fork`
    returns `ENOSYS` and says why in `BUGS`.
 5. Watch upstream's generic code by reading, the way `script/vendor-watch` reads redoxfs, and port
@@ -143,7 +143,7 @@ Files, clock and memory, for ioping (834), SQLite's speedtest1 (831) and STREAM
 - **Clock**: `clock_gettime` and `gettimeofday` from the clock page on slot 5 and the counter,
   `nanosleep` on the kernel's sleep. `clock_getres` answers the counter's frequency.
 - **Memory**: `mmap` of anonymous memory and `munmap` from slot 0's untyped budget; `brk` refused.
-  `malloc` is `user_mode_heap`, as §31 rule 4 already has it.
+  `malloc` is `std`'s allocator, as §31 rule 4 already has it.
 - Process: `exit`, `getpid` (a fixed answer), `getrandom` from slot 6, `uname`, `stdout` and
   `stderr` on slot 1.
 

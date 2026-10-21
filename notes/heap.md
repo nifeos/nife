@@ -227,31 +227,28 @@ The kernel stayed heapless (milestone 14 earned that and nothing since has neede
 but Rust `std` needs a `GlobalAlloc`, and a capability system has an obvious place to get one:
 the process's own untyped budget. The pair that landed:
 
-- `crates/user_mode_heap`: the algorithm, host-tested. First-fit, address-sorted free list with
-  coalescing, the same design as the milestone-4 kernel heap and for the same reason: zero
-  overhead on allocated memory. The trick that makes it headerless is stated as an invariant this
-  time. Every block is 16-aligned with a size that is a multiple of 16, and `alloc`/`dealloc` both
-  recompute a block's cost from the `Layout` Rust hands them (`effective_size`), so nothing
-  needs storing. Front padding for over-aligned requests lands on the same grid, so every remainder
-  is a legal free block and nothing is silently leaked. The host tests prove that, plus
-  coalescing back to one block under churn (`thrashing_does_not_fragment_the_heap_to_death`,
-  re-proven from the kernel-heap days).
+- The algorithm is `talc` 5.1.1's core (milestone 784 (reuse what the tree wrote), item d), carried
+  in `vendor/talc` with one upstream fix (vendor/README.md) and generated into std. Boundary tags and size-class bins, so allocation costs the
+  same at any number of free blocks; each allocated chunk carries one word above it, on a 32-byte
+  chunk grid. `dealloc` finds that word from the `Layout`, so a block must be freed under the
+  layout it was allocated under, which `allocation_cache::heap_layout` keeps true in std. The
+  measurements that chose it are in
+  `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
-- `user_mode_runtime::heap::UntypedHeap`: the policy and the syscall glue. A `#[global_allocator]`
+- `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
   static the program wires with one call, `HEAP.init(untyped_slot, base_va, max_bytes)`, first
   thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via `untyped::MAP`
   (one page per invoke, zeroed by the kernel, paid from the budget). It grows geometrically (double,
-  at least 8 pages, never past `max_bytes`), and donates the fresh run to the free list, where it
-  coalesces with the old top block. Which slot pays, and where the heap lives, are part of the
+  at least 8 pages, never past `max_bytes`). The first run is talc's `claim`, holding its bins;
+  each later run is `extend`, so the heap stays one contiguous range. Which slot pays, and where the heap lives, are part of the
   program's capability contract like every other slot number (notes/abi.md §4);
   `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of every convention in the tree.
 
 What this is *not*: a kernel service. The kernel's only involvement is the `untyped::MAP` it
 already had; a process that leaks just exhausts its own budget (`OutOfMemory` is the process's
-problem, and the `alloc` OOM handler turns it into a fault the kernel reports). Honest caveats: the
-lock is a spinlock, fine while processes are single-threaded (std `thread::spawn` is phase
-two-or-later), wasteful under real contention. And first-fit is O(n) over free blocks, the same
-price the kernel heap paid, acceptable until a workload proves otherwise. Proven by `allocator_exerciser`
+problem, and the `alloc` OOM handler turns it into a fault the kernel reports). Honest caveat: the
+lock is a spinlock, fine while processes are single-threaded, wasteful under real contention; std
+puts a per-thread cache in front of it (notes/std/allocation.md). Proven by `allocator_exerciser`
 (`fixtures/src/allocator_exerciser.rs`), the first program in the tree linking `extern crate alloc`,
 spawned by the test suite on both ISAs with a 96-page budget. It runs Vec/String/BTreeMap churn and
 frees in arbitrary order, then a 128 KiB allocation that must fit in already-committed pages,

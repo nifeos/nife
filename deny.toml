@@ -98,6 +98,16 @@ allow = [
     # **Approved by calef on 2026-09-20**, with the reasoning above put to him: permissive,
     # no copyleft, and strictly easier than the Apache half of the pair this tree publishes under.
     "ISC",
+    # **Zlib, arriving with `object`.** That is milestone 784 (reuse what the tree wrote), item (g):
+    # `object`'s `write_core` feature, which its PE writer sits behind, takes `hashbrown` with its
+    # default hasher, and that hasher is `foldhash`, licensed Zlib only. Today it reaches `xtask`
+    # alone, but this list is what the tree accepts in code it distributes, and Zlib qualifies on
+    # its own terms: permissive, no copyleft, no attribution required in a binary, and no harder to
+    # meet than BSD-3-Clause above.
+    #
+    # **Approved by calef on 2026-10-21**, on #2497: a row here rather than a per-crate exception,
+    # because those are for licenses tolerated only in build tools.
+    "Zlib",
 ]
 
 # **NCSA, for `libfuzzer-sys` and nothing else** (milestone 42's fuzzing leg). An exception rather

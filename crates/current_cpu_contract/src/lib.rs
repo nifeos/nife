@@ -45,9 +45,13 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 /// The page's first eight bytes: what tells a prepared page from a frame nobody has written. ASCII,
 /// unpadded, the same shape `counter_frequency_contract::MAGIC` and `clock_contract::MAGIC` use.
-/// The last byte is the layout's version: `2` added the scheduler tick
-/// ([`CurrentCpuPage::tick_hz`]).
-pub const MAGIC: [u8; 8] = *b"CURRCPU2";
+///
+/// The layout grows only by appending a word that reads zero where a kernel never wrote it, so a
+/// new field never changes the magic. Every published program's `std` carries its own copy of this
+/// value and compares it before reading the CPU or the allowance: basalt's `rg` built against
+/// `CURRCPU1` reads a page under any other magic as having no allowance and walks on one thread.
+/// The test `the_magic_is_the_one_published_programs_compare` holds it.
+pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 
 /// **What the CPU word holds before the kernel has ever switched this thread in.** Not zero,
 /// because zero is a valid CPU id on every machine this tree runs on except the VisionFive 2, and
@@ -488,6 +492,14 @@ mod tests {
     /// The layout constants do not overlap and the page fits in one frame and one cache line,
     /// pinned so a mutant swapping an offset is caught here rather than by a wrong core id on real
     /// hardware. The shape `counter_frequency_contract::the_layout_offsets_do_not_overlap` uses.
+    /// **The magic is the one every `std` already published in basalt compares**: no nife-built
+    /// reader would notice a change, since each takes its copy from this crate, and only the
+    /// non-required `rg-threads` job runs a published one.
+    #[test]
+    fn the_magic_is_the_one_published_programs_compare() {
+        assert_eq!(&MAGIC, b"CURRCPU1");
+    }
+
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {

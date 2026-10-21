@@ -10,14 +10,14 @@ works because we supplied a `#[global_allocator]`.
 BTreeMap ─┐
 String ───┤
 Vec ──────┼──▶ #[global_allocator] ──▶ our heap ──▶ a MemoryRegion the ──▶ RAM
-Box ──────┘                        (crates/user_mode_heap)   program was granted
+Box ──────┘                        (talc)                    program was granted
 ```
 
 Where that diagram was drawn matters, and it moved. It was written when the *kernel* had a
 heap, `crates/heap` and `crates/frames` under it. Milestone 14's thesis retired that: the kernel
 allocates nothing after boot, `crates/heap` and `crates/slab` were deleted once nothing referenced
 them ([heap.md](heap.md)'s banner), and `kernel/src/` has no `#[global_allocator]` at all today. So
-the chain above is a userspace one. The allocator algorithm is `crates/user_mode_heap`, the memory
+the chain above is a userspace one. The allocator algorithm is `talc`'s, the memory
 under it is a `MemoryRegion` capability the program's parent granted, and a program nobody granted
 one to has no heap rather than a smaller one. The frame allocator still exists, as
 `crates/page_frames`, one level below anything a program can name.

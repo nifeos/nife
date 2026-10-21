@@ -75,7 +75,7 @@ time-of-use. All of that is about where the device may touch. Nothing anywhere s
 device may say on the way back, and the driver believes it.
 
 (c) The corrupted state. `id = 4` is already past the one-page region. `id` near 1.5 million puts
-`base` at this process's heap (`user_mode_runtime::heap`'s `DEFAULT_BASE`), which is an ordinary `u32`, so the
+`base` at this process's heap (`memory_region_heap`'s `DEFAULT_BASE`), which is an ordinary `u32`, so the
 network driver copies its own heap into a frame and hands it to smoltcp, which may put it on the
 wire. `total` unbounded reads past the buffer and asks a 96-page heap for up to 4 GiB. In `kbd.rs`
 the same index leaves the region at `id = 462` and returns process memory as a keystroke.

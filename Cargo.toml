@@ -67,7 +67,6 @@ members = [
     "crates/sealed_pair",
     "crates/screen_console",
     "crates/pgrep",
-    "crates/portable_executable",
     "crates/pmap",
     "crates/ps",
     "crates/memory_regions",
@@ -101,8 +100,8 @@ members = [
     "crates/generational_table",
     "crates/work_steal_slot",
     "crates/allocation_cache",
-    "crates/user_mode_heap",
     "crates/user_mode_runtime",
+    "crates/memory_region_heap",
     "crates/thread_wake_handshake",
     "crates/coremark",
     "crates/video_terminal",
@@ -127,12 +126,16 @@ members = [
 # their own: script/lint, script/fmt, and cargo xtask test each drive them by --manifest-path. See
 # vendor/README.md. Nothing in the kernel depends on redoxfs yet; that is milestone 32 phase 2.
 #
+# `vendor/talc`, the heap algorithm carried with an upstream fix, is excluded for the same first
+# reason. It is no workspace root of its own: it builds only as the `[patch.crates-io]` below.
+#
 # `fuzz` is excluded for a different reason (milestone 42): its targets link libFuzzer's `main`, are
 # built with a sanitizer and `-Zbuild-std`, and are meaningless to `cargo build`. It is its own
 # workspace root as well, so this entry is belt and braces; it is here so a reader of this list sees
 # every directory in the tree that is a package and is not ours to build in the ordinary way.
 exclude = [
     "vendor/redoxfs",
+    "vendor/talc",
     "tools/redoxfs_host",
     "fuzz",
 ]
@@ -345,3 +348,9 @@ overflow-checks = true
 # Note: we deliberately do NOT set `panic = "abort"` here. The bare-metal target
 # has abort baked in already, and setting it workspace-wide would break `cargo test`
 # for the host-side crates we plan to add (DECISIONS §7).
+
+# talc 5.1.1 with upstream's fit-check fix, SFBdragon/talc#57, vendored until a release carries it
+# (calef, 2026-10-21 UTC, on #2498). Every workspace whose graph holds talc patches it the same way,
+# so no build links the unpatched crate. vendor/README.md has the drop condition.
+[patch.crates-io]
+talc = { path = "vendor/talc" }
