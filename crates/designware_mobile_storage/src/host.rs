@@ -248,6 +248,14 @@ impl<R: Registers> Host<R> {
         self.regs.write(regs::CTYPE, 0);
         self.regs
             .write(regs::FIFOTH, regs::fifoth_for_pio(self.depth));
+        // The card read threshold stays off. It is for bus modes that cannot stop the card clock
+        // (HS200, SDR104, HS400), which this driver does not run, and it may not exceed the FIFO:
+        // OpenBSD's one block, 512 bytes, against radon's 128-byte FIFO overran the first read.
+        // Written rather than assumed, since firmware may have set it. Before release 2.40a the
+        // offset is the data FIFO, and a write there would be a word of data.
+        if self.fifo != regs::CARDTHRCTL {
+            self.regs.write(regs::CARDTHRCTL, 0);
+        }
         Ok(())
     }
 
@@ -318,15 +326,6 @@ impl<R: Registers> Host<R> {
         if let Some(d) = cmd.data {
             self.regs.write(regs::BYTCNT, d.bytes());
             self.regs.write(regs::BLKSIZ, d.block_size);
-            // Before release 2.40a there is no card threshold register, and its offset, 0x100,
-            // is the data FIFO: writing it there would put a word into the transfer.
-            if !d.write && self.fifo != 0x100 {
-                // Hold the read until a whole block fits in the FIFO (OpenBSD).
-                self.regs.write(
-                    regs::CARDTHRCTL,
-                    (d.block_size << 16) | regs::CARDTHRCTL_READ_ENABLE,
-                );
-            }
             let ctrl = self.regs.read(regs::CTRL);
             self.regs.write(regs::CTRL, ctrl | regs::CTRL_FIFO_RESET);
             if !self.wait(COMMAND_DEADLINE_US, |r| {
@@ -564,10 +563,13 @@ mod tests {
     #[test]
     fn reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets() {
         let mut h = take(Sim::new(CardKind::Empty, 1, 32));
-        // Firmware left the DMA and interrupt enables on, and bit 8, which is not the driver's.
+        // Firmware left the DMA and interrupt enables on, bit 8, which is not the driver's, and a
+        // card read threshold.
         let firmware =
             regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE | regs::CTRL_INT_ENABLE | 1 << 8;
         h.registers().write(regs::CTRL, firmware);
+        h.registers()
+            .write(regs::CARDTHRCTL, 512 << 16 | regs::CARDTHRCTL_READ_ENABLE);
         h.registers().writes.clear();
         h.reset().unwrap();
         assert_eq!(
@@ -580,6 +582,7 @@ mod tests {
                 (regs::TMOUT, 0xffff_ffff),
                 (regs::CTYPE, 0),
                 (regs::FIFOTH, regs::fifoth_for_pio(32)),
+                (regs::CARDTHRCTL, 0),
             ]
         );
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
@@ -665,11 +668,12 @@ mod tests {
         ));
     }
 
-    /// Before a data command: the FIFO is reset and the reset waited for, and a read (only a read)
-    /// gets the card read threshold of one whole block. Bit 8 of `CTRL`, left by firmware, makes a
-    /// wait that tested anything but the reset bits never finish.
+    /// Before a data command the FIFO is reset and the reset waited for, and the card read
+    /// threshold is left off: a 512-byte one in radon's 32-word FIFO is what overran its first
+    /// read. Bit 8 of `CTRL`, left by firmware, makes a wait that tested anything but the reset
+    /// bits never finish.
     #[test]
-    fn a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold() {
+    fn a_data_command_resets_the_fifo_and_leaves_the_threshold_off() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         h.registers().write(regs::CTRL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
@@ -677,7 +681,7 @@ mod tests {
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = core::mem::take(&mut h.registers().writes);
-        assert!(read.contains(&(regs::CARDTHRCTL, 512 << 16 | regs::CARDTHRCTL_READ_ENABLE)));
+        assert!(!read.iter().any(|&(o, _)| o == regs::CARDTHRCTL));
         assert!(read.contains(&(regs::CTRL, 1 << 8 | regs::CTRL_FIFO_RESET)));
         sd::write_blocks(&mut h, &card, 1, &block).unwrap();
         let write = &h.registers().writes;

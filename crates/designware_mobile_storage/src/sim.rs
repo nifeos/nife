@@ -14,6 +14,8 @@
 //!   `RXDR`, writes drain it to the card and raise `TXDR`, and the end raises `DTO` (and `ACD`
 //!   after a multi-block transfer, the automatic CMD12);
 //! - `STATUS` reports the FIFO's fill and, for a few reads after a write, data busy.
+//! - a read with the card read threshold (`CARDTHRCTL`) enabled above the FIFO's size ends at
+//!   once with `FRUN` and `DTO`, the word radon's controller gave for it.
 //!
 //! Time is one microsecond per call to `now_us`, so every deadline is reached in a bounded number
 //! of polls and a test that would hang on silicon fails here instead.
@@ -485,6 +487,11 @@ impl Sim {
             }
             *self.reg(regs::RINTSTS) |= regs::INT_TXDR;
         } else {
+            if self.threshold_beyond_fifo() {
+                // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
+                *self.reg(regs::RINTSTS) |= regs::INT_FRUN | regs::INT_DTO;
+                return;
+            }
             if self.fail_next_read_crc && !t.ext_csd {
                 self.fail_next_read_crc = false;
                 *self.reg(regs::RINTSTS) |= regs::INT_DCRC | regs::INT_DTO;
@@ -511,6 +518,16 @@ impl Sim {
             }
         }
         self.transfer = Some(t);
+    }
+
+    /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
+    /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
+    fn threshold_beyond_fifo(&self) -> bool {
+        if regs::fifo_offset(self.verid) == regs::CARDTHRCTL {
+            return false;
+        }
+        let t = self.peek(regs::CARDTHRCTL);
+        t & regs::CARDTHRCTL_READ_ENABLE != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
     }
 
     fn end(&mut self, t: &Transfer) {

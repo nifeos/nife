@@ -180,7 +180,8 @@ pub const RST_N: u32 = 0x078;
 pub const BMOD: u32 = 0x080;
 /// Card read threshold control: hold a read until a block fits in the FIFO.
 pub(crate) const CARDTHRCTL: u32 = 0x100;
-/// Enable the card read threshold.
+/// Enable the card read threshold, which the driver never does; the sim and tests name it.
+#[cfg(test)]
 pub(crate) const CARDTHRCTL_READ_ENABLE: u32 = 1 << 0;
 
 /// The release `VERID` is compared at, Linux's `DW_MMC_240A`. Controllers before it put the data
