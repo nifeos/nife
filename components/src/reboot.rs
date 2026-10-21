@@ -34,9 +34,10 @@
 //! # BUGS
 //!
 //! - **A firmware that accepts the reset and hangs cannot be told from a slow one**, from inside
-//!   the machine. radon did exactly that on 2026-09-04, and milestone 592 (radon's cold reboot dies
-//!   in OpenSBI's PMIC write) holds the fix, which has not run on the board. On radon today this
-//!   program prints its report and the board stops.
+//!   the machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in
+//!   reset. The kernel releases the bus before the reset (milestone 592 (radon's cold reboot dies
+//!   in OpenSBI's PMIC write)), and `reboot` typed at radon's prompt resets the board through the
+//!   AXP15060 (`bench/radon-2026-10-21/README-890.md`, #2516).
 //! - **A refusal does not exit non-zero**, because no program in this system reports an exit
 //!   status (`crates/swish`'s `Status` says so). The refusal is a sentence on the second stream,
 //!   naming which of the kernel's four reasons it was.
