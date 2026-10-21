@@ -27,5 +27,6 @@ that the 7050 Micro has no PS/2 port and that he owns neither a PS/2 keyboard no
 there is no cheap native shortcut on any of the three machines, and the fork is genuinely binary.
 Recorded rather than deleted, because the next person will have the same idea.
 
-When B starts is not decided here, only that it is coming. The trigger is the fatal-risk list
+On xenon B has started: it is built, and its bench step is the next 192 action (calef, 2026-10-21).
+On radon and argon, when B starts is not decided here, only that it is coming. The trigger is the fatal-risk list
 thinning out enough that months of bus-driver work is a reasonable thing to spend.
