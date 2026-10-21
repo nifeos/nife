@@ -243,12 +243,9 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
 - **Outstanding.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
   everywhere, std included; not yet in `Cargo.lock` (checked that day).
-- **Done.** Item (g), 2026-10-21 (UTC), nifeos/nife#2497. calef, 2026-10-21 (UTC), on #2490: "B".
-  `object` 0.40.0, with only `read_core`, `elf`, `write_core` and `pe`, reads the ELF and writes the
-  PE in `xtask/src/stick/portable_executable.rs`, which keeps the conversion policy and its tests.
-  Gate: `cargo xtask stick-boot` reaches the progenitor on all three firmwares. Milestone 821
-  (`portable_executable`: an ELF-to-PE converter, proven, then released on its own) is refused: its
-  proofs would protect no known user.
+- **Done.** Item (g), 2026-10-21 (UTC), nifeos/nife#2497, on calef's "B" on #2490. `object`
+  0.40.0 reads the ELF and writes the PE in `xtask/src/portable_executable.rs`, which keeps the
+  policy. Gate: `cargo xtask stick-boot` on all three firmwares. Milestone 821 is refused.
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).

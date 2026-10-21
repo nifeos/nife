@@ -23,9 +23,8 @@ use std::process::Command;
 use super::{RISCV_TARGET, TARGET, cargo_profiled, profile_dir, user};
 use crate::archive::{initial_ramdisk_path, initial_ramdisk_riscv, riscv_initial_ramdisk_path};
 use crate::host::workspace_root;
+use crate::portable_executable;
 use crate::uefi::uefi_image;
-
-mod portable_executable;
 
 /// Where the stick is staged: the layout the program writes, as a directory QEMU can boot.
 pub(super) fn stick_dir() -> PathBuf {

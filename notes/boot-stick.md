@@ -122,8 +122,7 @@ recorded in `crates/stick_maker/src/windows.rs`'s BUGS with what would promote i
 The tiers are from `rustc --print target-list` on the pinned nightly, which lists `aarch64-`,
 `i686-` and `x86_64-unknown-uefi` and nothing for RISC-V, and from the platform-support page. So the
 riscv64 loader is linked as a static position-independent ELF and `cargo xtask stick` turns it into
-PE/COFF (`xtask/src/stick/portable_executable.rs`, reading and writing through `object`): one
-section per segment, the ELF's 241 `R_RISCV_RELATIVE`
+PE/COFF through `object`: one section per segment, the ELF's 241 `R_RISCV_RELATIVE`
 relocations turned into `IMAGE_REL_BASED_DIR64` fixups. It booted on its first run under EDK2.
 
 All three are one loader source, `uefi_loader`, with the architecture-specific arms under

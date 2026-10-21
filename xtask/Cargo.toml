@@ -53,7 +53,7 @@ measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # workspace; its dependencies are `nifefs` and `measured_boot`, already here.
 sealed_pair = { version = "0.1.0", path = "../crates/sealed_pair" }
 # **The ELF reader and PE writer under the riscv64 boot file's conversion** (`cargo xtask stick`,
-# since rustc has no riscv64 UEFI target; `src/stick/portable_executable.rs`). A §46 (thin
+# since rustc has no riscv64 UEFI target; `src/portable_executable.rs`). A §46 (thin
 # primitives or whole subsystems) decision: milestone 784 (reuse what the tree wrote), item (g),
 # ruled by calef on 2026-10-21 (UTC): "B". MIT OR Apache-2.0. Default features off and only the
 # four the conversion reads and writes, which brings `crc32fast` and `foldhash` new to the tree;

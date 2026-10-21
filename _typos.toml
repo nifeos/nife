@@ -67,7 +67,7 @@ STIP = "STIP"
 THR = "THR"
 THRE = "THRE"
 # ELF's relocation-with-addend record (`Elf64_Rela`) and its dynamic tags `DT_RELA`, `DT_RELASZ`,
-# which `xtask/src/stick/portable_executable.rs` reads to convert the riscv64 loader to PE/COFF.
+# which `xtask/src/portable_executable.rs` reads to convert the riscv64 loader to PE/COFF.
 rela = "rela"
 Rela = "Rela"
 RELA = "RELA"

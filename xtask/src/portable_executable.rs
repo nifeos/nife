@@ -37,8 +37,7 @@
 //!
 //! Name: ratified 2026-10-07 (calef, pull request #1806's publish-ours review: "Yes, one per
 //! crate"), the format's own name spelled out under §154 (the acronym test is whether the phrase
-//! is spoken): "portable executable" is the specification title's phrase. It is not published:
-//! calef refused that on 2026-10-21 (UTC), ruling item (g).
+//! is spoken): "portable executable" is the specification title's phrase.
 
 use object::elf::{self, FileHeader64, ProgramHeader64};
 use object::pe;
@@ -58,7 +57,7 @@ fn machine(elf_machine: elf::Machine) -> Option<(pe::Machine, elf::RelocationTyp
 
 /// Why an ELF could not be converted.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum Error {
+pub(crate) enum Error {
     /// `object` could not read it: not a 64-bit little-endian ELF, or a header or table that runs
     /// past the end of the file.
     Elf(object::read::Error),
@@ -118,7 +117,7 @@ struct Header<'a> {
 }
 
 /// **Convert** (see the module documentation).
-pub(super) fn from_elf(elf: &[u8]) -> Result<Vec<u8>, Error> {
+pub(crate) fn from_elf(elf: &[u8]) -> Result<Vec<u8>, Error> {
     let header = read_header(elf)?;
     let image_end = check_layout(&header.loads)?;
     let mut image = memory_image(&header.loads, image_end);
