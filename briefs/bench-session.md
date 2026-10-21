@@ -17,7 +17,7 @@ Whoever finishes an entry moves it off this list in the same pull request.
 
 | rank | board | milestone | procedure | calef's hands |
 |---|---|---|---|---|
-| 1 | radon | none ready (2026-10-20). Each radon item waits on a lane first: 805's `reboot` and 890's `echo hello` on the boot that goes silent after the userspace handoff (`bench/radon-2026-10-20/805-890-boot-to-prompt.log`); 53's storage half on its block-0 read failure; 53's network throughput (2.3 Mbit/s); 134's E3 on its step-0 check, which 796's pin fails; 225 also needs xenon and argon | the milestone's own block, once its lane lands | one power cycle of radon's outlet per boot |
+| 1 | radon | none ready (2026-10-21). Each radon item waits on a lane first: 805's `reboot` and 890's `echo hello` on radon's keystroke path, which takes one byte per boot (`bench/radon-2026-10-21/890-boot-to-prompt.log`); 53's storage half on its first multi-block read (CMD18 from block 2048; single-block reads pass) (`bench/radon-2026-10-21/storage-bench-read.log`); 53's network throughput (2.3 Mbit/s); 134's E3 on its step-0 check, which 796's pin fails; 225 also needs xenon and argon | the milestone's own block, once its lane lands | one power cycle of radon's outlet per boot |
 | 2 | xenon | 261, the NVMe driver leaves the kernel, and then the soak on xenon (fatal risks 6, then 5) | `notes/risk-6-bench-evening.md` (pull request #1275); if that has not landed, `design/roadmap/0261-el0-nvme-on-xenon.md`. The first thing the boot reads is xenon's DMAR table, which decides whether the earlier x86 confinement results stand | about 30 minutes at xenon: the one-time firmware **Data Wipe** of the internal NVMe (261's "What calef has to do"), which cannot be undone; a monitor and a USB keyboard (xenon halts at POST without one); the FAT32 stick, staged by the lane with `cargo xtask disk-throughput --stage-only`, copying `target/esp-disk-throughput/EFI/BOOT/BOOTX64.EFI` and **not** `target/esp`; a phone for photos of the screen; optionally a Linux live stick for the `fio` comparison |
 | 3 | argon | awaiting the board (2026-10-06: the seller shipped a TK1, which is going back; `notes/bench-runbook.md`). Then 127, first light, then 225's soak on argon | `design/roadmap/0127-the-sel4-machine.md` and `notes/bench-runbook.md`, "argon, and why it is last" | everything: argon has never booted nife, so cabling, media and power are all his |
 
@@ -169,4 +169,6 @@ same image under QEMU (step 2) before anyone writes "silicon-only".
   log cannot tell a board that is off from one that died before its UART came up.
 - The TFTP address is read off patagonia at card-write time. The card written on 2026-09-16
   asks for the address patagonia's USB ethernet adapter had then. Its Wi-Fi address has moved
-  since, and the boot survived only because the adapter's address did not move.
+  since, and the boot survives only while the adapter has a link and its address. When the adapter
+  has no link the board prints `nothing came over the network, falling back to the card`, and the
+  ways back are the adapter's link, a `setenv` typed at U-Boot, or a rewritten card.

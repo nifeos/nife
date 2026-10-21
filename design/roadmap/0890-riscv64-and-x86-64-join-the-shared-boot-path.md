@@ -189,20 +189,27 @@ BAR window for real, so one netboot of `main` closes the `x86_64` half: notes/x8
 bench: booting xenon over the network". What to look for: the `io apic`, `device irq` and `smp`
 lines, every tour line, the prompt, and `echo hello` echoing.
 
-## The radon boot: through the hand-over, not to the prompt
+## The radon boot: to the prompt, and one keystroke
 
-radon booted `main` at `2d2e042d2` on 2026-10-20 (UTC):
-`bench/radon-2026-10-20/805-890-boot-to-prompt.log`. Its second boot (`payload came from net`)
-proved, on the JH7110:
+radon netbooted `main` at `cda4ceb55` twice on 2026-10-21 (UTC), `script/board-image --tftp`
+(SEALED): `bench/radon-2026-10-21/890-boot-to-prompt.log`. Both boots proved, on the JH7110:
 
-- The PLIC slice reads the S contexts from the device tree, and `interrupts` names `this hart's
-  S-mode context 2`. The console is source 32. `smp: 4 core(s) online`.
+- The PLIC slice reads the S contexts from the device tree. The console is source 32. `smp: 4
+  core(s) online`.
 - The tail runs through the hand-over: `11 of 13 passed, 2 absent: blockdev deviceirq`, with
   `clock`, `trng` and `entropy` passing.
-- The progenitor printed nothing. After `capability slots: 19 of 64 at peak` the wire was silent
-  for five minutes, so the keystroke path is unobserved. No `board_console` verdict exists.
+- The hand-over prints `uart shape: registers 4 byte(s) apart, 32-bit access (device tree)`. The
+  progenitor prints, `net_stack` leases `192.168.8.200` by DHCP, and the shell prints its prompt.
+  `script/board-console --replay ... --until prompt` reports `reached shell prompt`.
+- The keystroke path delivers one byte per boot. On the first boot `echo hello` sent at once echoed
+  `e`, and nothing typed after it echoed, at once or one byte per 300 ms. On the second, a single
+  `e` echoed and a single `c` 3 s later did not. So the first receive interrupt arrives and no
+  later one does, whether the bytes come in a burst or one at a time (`BUGS`).
 
-## Why it stopped
+The bytes were sent by a second, write-only open of the port while `board-console` read it, so the
+capture holds the board's echo and not the sent bytes; the bench directory's README lists them.
+
+## Why it stopped before the prompt
 
 `console` and `input` read the UART at QEMU's stride, one byte apart. The JH7110's registers are
 four bytes apart with 32-bit access (`reg-shift = <2>`, `reg-io-width = <4>`). The console polled
@@ -249,7 +256,12 @@ and the UART still never emptied.
 
 ## BUGS
 
-- The PLIC's keystroke path has run under QEMU only, until the radon boot above.
+- On radon the keystroke path delivers only the first byte of a boot (the radon boot above). QEMU
+  delivers every byte, so the gates pass. Not a PLIC context mismatch: the trap handler claims,
+  disables and completes source 32 in the claiming hart's own context
+  (`arch/riscv64/exceptions.rs`), and the `Irq` ACK re-enables it at the source's fixed target
+  context (`arch::irq::target_context`). Undiagnosed between the DesignWare APB UART's receive
+  interrupt, `input`'s drain and ACK, and the shell after its first character.
 - `bring_up_machine` carries six `cfg(target_arch)` sites: aarch64's frequency check, two blocks
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
@@ -268,7 +280,11 @@ and the UART still never emptied.
 
 ## Follow-on
 
-- **Outstanding.** The radon boot above, of the console's register shape and the riscv64 half.
+- **Done.** radon's console register shape: the boot above reaches the prompt with the tree's
+  shape (2026-10-21).
+- **Outstanding.** radon's keystroke path, which delivers one byte per boot (`BUGS`). A lane
+  instruments it (does the UART raise a second receive interrupt, does the PLIC see it, does
+  `input` ACK) and fixes it; then calef reruns the radon boot below for `echo hello`.
 - **Outstanding.** The xenon boot above, of the `x86_64` slice.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
