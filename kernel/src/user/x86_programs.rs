@@ -225,14 +225,13 @@ pub const fn port_out_then_exit(port: u16, val: u8) -> [u32; 4] {
     ])
 }
 
-/// The address of the current-CPU word a ring-3 thread reads its own core from: the second
-/// eight bytes of `current_cpu_contract`'s page (the magic is the first eight, and the crate's own
-/// tests pin `OFF_CPU` at 8 and `PAGE_BYTES` at `OFF_CPU + 8`, which is the subtraction below). It
-/// is under 2 GiB (`address_space_map::CODE_MODEL_CEILING`), so the 32-bit absolute form of `mov`
-/// below addresses it with no sign-extension surprise.
+/// The address of the current-CPU word a ring-3 thread reads its own core from:
+/// `current_cpu_contract::CPU_WORD_OFFSET` into that crate's page. It is under 2 GiB
+/// (`address_space_map::CODE_MODEL_CEILING`), so the 32-bit absolute form of `mov` below
+/// addresses it with no sign-extension surprise.
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 const CURRENT_CPU_WORD: u32 =
-    (current_cpu_contract::PAGE_VA + current_cpu_contract::PAGE_BYTES as u64 - 8) as u32;
+    (current_cpu_contract::PAGE_VA + current_cpu_contract::CPU_WORD_OFFSET) as u32;
 
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 packer!(pack_12, 48, 12);

@@ -100,8 +100,12 @@ and both had been false for longer than the block was.
 
 | the claim | the tree |
 |---|---|
-| a true EL0-to-EL0 benchmark is "the right follow-up" | `ipc_rtt_el0` is in `bench/el0.rs`: two EL0 processes, two endpoints, a client self-timing `SEND`-then-`RECEIVE` against a server process, reported by the same function's `bench: ipc_rtt_el0` line |
-| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `kernel/src/arch/aarch64/timer.rs:134` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` at `kernel/src/arch/riscv64/timer.rs:181` |
+| a true EL0-to-EL0 benchmark is "the right follow-up" | `ipc_rtt_el0` in `kernel/src/bench/el0.rs`: two EL0 processes, two endpoints, a client self-timing `SEND`-then-`RECEIVE` against a server process, reported by the same function's `bench: ipc_rtt_el0` line |
+| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `init` in `kernel/src/arch/aarch64/timer.rs` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` set in `init` in `kernel/src/arch/riscv64/timer.rs`. The RISC-V write is now a whole-register write (milestone 228 (the cycle counters are closed by assumption)), not a bit set |
+
+Citations here name a symbol, not a line (§277 (cite a heading or a symbol, never a line number)),
+because the four line numbers this table first carried drifted until they landed on unrelated code.
+Re-verified against `main` on 2026-10-20 (UTC): both claims still hold as stated above.
 
 **The sentence those halves came from no longer exists**, and that is the correction this block was
 still describing as pending. Commit `b4178513` deleted it from notes/benchmarks.md in the same
@@ -134,8 +138,9 @@ and it did not.
 ## Follow-on
 
 - **Milestone 74.** The one remaining step, reading cycles from a PMU rather than deriving them
-  from nanoseconds and an assumed clock, is that block, still NOT-STARTED; no bench in
-  `kernel/src/bench.rs` reads a cycle counter today.
+  from nanoseconds and an assumed clock, is that block, PARTIAL (both ISA halves built, neither run on its board). No bench row in
+  `kernel/src/bench/` reads a cycle counter today. Only the `cycles_per_tick` probe in
+  `bench/cycle_probe.rs` does, and it converts ticks rather than timing a path.
 - **Milestone 16.** The silicon that makes a PMU readable at all is 16a, which has booted the full
   tour on three harts and has not yet run the benches. HVF on the development machine passes
   through no PMU.
@@ -154,14 +159,18 @@ and it did not.
 - **Refused.** Folding the remaining step into milestone 25 was considered and declined: the
   paragraph correction is what should not have waited for a board, and keeping this separate is
   what let it not wait.
-- **Outstanding.** The authority half of the gate is narrower than the gate line reads. §139 is
-  decided, milestone 229 is BUILT and milestone 237 is BUILT, so a per-thread counter grant already
-  rides the context switch and a thread reads the counter at EL0 in
-  `kernel/src/user/tests.rs`. What remains is pointing the benches at it on hardware. Checked
-  2026-09-03.
-- **Outstanding.** Every line number in this block's verified-against-the-code table has drifted,
-  which is the well-formed-but-wrong failure this block itself names: the four citations now land
-  on unrelated code. Checked 2026-09-03.
+- **Recorded.** The authority half of milestone 74 (cycle counters: SBI PMU on RISC-V,
+  `PMCCNTR_EL0` on aarch64)'s gate is narrower than its dependency line (`75`) reads. §139 (who may
+  read the cycle counter, and by what authority) is decided. Milestone 229 (build the cycle-counter
+  grant DECISIONS 139 decided) and milestone 237 (the cycle-counter grant costs 136 bytes of IPC
+  fastpath) are BUILT. A per-thread grant therefore rides the context switch, in
+  `install_cycle_counter_grant` behind the `cycle_counter_grant` feature.
+  A granted thread reads the counter at EL0 in
+  `system_tests::user::cycle_counter_tests::a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults`.
+  This block's own gate names only milestone 74, so it does not overstate the authority half.
+  What remains is pointing the benches at the grant on hardware.
+  Correcting milestone 75 (who may read the cycle counter, and by what authority)'s `NOT-STARTED`
+  row and milestone 74's dependency line is the architect's, and this block touches neither.
 
 ## Index row
 

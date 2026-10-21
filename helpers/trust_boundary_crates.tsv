@@ -136,7 +136,7 @@ paging	kernel	kernel
 pci	kernel	kernel
 pgrep	userspace	components
 pmap	userspace	components
-portable_executable	host	-
+portable_executable	host	retired
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 ps	userspace	components
 regions	kernel	retired

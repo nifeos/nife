@@ -67,7 +67,6 @@ members = [
     "crates/sealed_pair",
     "crates/screen_console",
     "crates/pgrep",
-    "crates/portable_executable",
     "crates/pmap",
     "crates/ps",
     "crates/memory_regions",

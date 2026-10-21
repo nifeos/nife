@@ -320,6 +320,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crc32fast"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ba106e844045ddc02c20768ac4b0b7cb45f2cc2ecbd833ac9f5dacb183c2055"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "credential_contract"
 version = "0.1.0"
 
@@ -552,6 +561,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
 name = "free"
 version = "0.1.0"
 dependencies = [
@@ -621,6 +636,9 @@ name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "foldhash",
+]
 
 [[package]]
 name = "heapless"
@@ -943,6 +961,18 @@ name = "number_writer"
 version = "0.1.0"
 
 [[package]]
+name = "object"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
+dependencies = [
+ "crc32fast",
+ "hashbrown",
+ "indexmap",
+ "memchr",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -999,10 +1029,6 @@ version = "0.1.0"
 dependencies = [
  "abi",
 ]
-
-[[package]]
-name = "portable_executable"
-version = "0.1.0"
 
 [[package]]
 name = "proc-macro2"
@@ -1683,9 +1709,9 @@ dependencies = [
  "graphics_contract",
  "measured_boot",
  "nifefs",
+ "object",
  "package_archive",
  "package_index",
- "portable_executable",
  "screen_console",
  "sealed_pair",
  "test_times",

@@ -216,12 +216,13 @@ impl AddressSpace {
         // into the process too, and whatever the last owner left in it would go with it.
         // The allowance (milestone 812, §269 fork 7): the cores this process may use, which is the
         // online count until something grants fewer.
-        let bytes = current_cpu_contract::build_page_allowing(u64::from(
-            crate::smp::online_harts_mask().count_ones(),
-        ));
+        let bytes = current_cpu_contract::build_page_allowing(
+            u64::from(crate::smp::online_harts_mask().count_ones()),
+            crate::arch::timer::TICK_HZ,
+        );
         let kernel_va = mmu::phys_to_virt(frame.addr());
         // SAFETY: `frame` is freshly allocated and owned by nobody else yet, the direct map is
-        // valid for it, and `PAGE_BYTES` (24) is far under `FRAME_SIZE`, so the copy stays inside
+        // valid for it, and `PAGE_BYTES` (32) is far under `FRAME_SIZE`, so the copy stays inside
         // the frame.
         unsafe {
             core::ptr::copy_nonoverlapping(bytes.as_ptr(), kernel_va as *mut u8, bytes.len());

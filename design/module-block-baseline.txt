@@ -3852,8 +3852,6 @@ crates/pmap/src/lib.rs::refusal
 crates/pmap/src/lib.rs::rows
 crates/pmap/src/lib.rs::write_diagnostics
 crates/pmap/src/lib.rs::write_report
-crates/portable_executable/src/lib.rs::Error
-crates/portable_executable/src/lib.rs::from_elf
 crates/program_argument_contract/src/lib.rs::ArgPage
 crates/program_argument_contract/src/lib.rs::CAPACITY
 crates/program_argument_contract/src/lib.rs::EMPTY

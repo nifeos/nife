@@ -168,7 +168,7 @@ pub(crate) fn tcp_connect(
 /// `Closed` socket nothing owns.
 pub(crate) fn arm_listener(sockets: &mut SocketSet, port: u16) -> Option<SocketHandle> {
     let s = tcp::Socket::new(
-        tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
+        tcp::SocketBuffer::new(vec![0u8; TCP_RECEIVE_BUF]),
         tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
     );
     let handle = sockets.add(s);
