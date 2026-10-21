@@ -6,8 +6,7 @@
 //! [`call`] and [`exit`], plus the thin wrappers in `objects.rs` and `inter_process_communication.rs`, each discharging
 //! [`invoke`]'s own safety obligation once instead of at every call site. [`require`] is the one
 //! way a program says no: a failed check dies where the mistake was. Opt-in modules carry what
-//! only some programs need: [`heap`] (a program that never allocates links no allocator),
-//! [`mapped_window`], [`initial_ramdisk`] and [`virtio`]. Each is the §94 (what may live in a
+//! only some programs need: [`mapped_window`], [`initial_ramdisk`] and [`virtio`]. Each is the §94 (what may live in a
 //! userspace library, and what must be per-binary) shape: one invariant that had been copied
 //! verbatim into several programs.
 //!

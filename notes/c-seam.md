@@ -160,7 +160,7 @@ The fix is also the smaller answer: shim `malloc` and `free`, and let the runtim
 
 ### Where `malloc` comes from
 
-Milestone 27's untyped-backed `GlobalAlloc` (`memory_region_heap::MemoryRegionHeap`, DECISIONS §22), wired to the
+Milestone 27's (Rust `std` on the native ABI) untyped-backed `GlobalAlloc` (`memory_region_heap::MemoryRegionHeap`, DECISIONS §22 (Rust `std` on the native ABI, the Hermit way)), wired to the
 untyped region the instance was built in. Three consequences, all of them the point:
 
 - The C heap is the process's own memory budget. There is no ambient allocator to leak into.

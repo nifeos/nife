@@ -7,5 +7,5 @@
 name = "runtime"
 kind = "sdk"
 home = { repo = "runtime", status = "provisional" }
-interfaces = ["user_mode_runtime", "allocation_cache", "calendar", "entropy_backend"]
+interfaces = ["user_mode_runtime", "memory_region_heap", "allocation_cache", "calendar", "entropy_backend"]
 paths = ["patches/", "targets/"]

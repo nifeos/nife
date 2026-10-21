@@ -86,6 +86,7 @@ crates/machine_discovery/src/acpi/ivrs.rs::device_may_write question-shape
 crates/machine_discovery/src/riscv64.rs::EID_IPI spelled-out
 crates/machine_discovery/src/riscv64.rs::SBI_IPI spelled-out
 crates/machine_statistics_contract/src/lib.rs::PAGE_VA spelled-out
+crates/memory_region_heap/src/lib.rs::commit_all question-shape
 crates/nifefs/src/lib.rs::DIR_BLOCKS spelled-out
 crates/nifefs/src/lib.rs::name_eq question-shape
 crates/paging/src/domain.rs::DmaRegion spelled-out
@@ -117,7 +118,6 @@ crates/timetable/src/contract.rs::ARG_REGISTRATION_PAGE spelled-out
 crates/timetable/src/contract.rs::CLOCK_VA spelled-out
 crates/timetable/src/contract.rs::E_CONFIG spelled-out
 crates/timetable/src/contract.rs::STORE_PAGE_VA spelled-out
-crates/user_mode_runtime/src/heap.rs::commit_all question-shape
 crates/user_mode_runtime/src/objects.rs::map_page_frame question-shape
 crates/video_terminal/src/cell.rs::reverse question-shape
 crates/video_terminal/src/keymap.rs::shift question-shape

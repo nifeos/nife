@@ -1,5 +1,6 @@
 //! **`memory_region_heap`: the untyped-backed heap, `alloc` for userspace, paid from the
-//! process's own budget** (milestone 27).
+//! process's own budget** (milestone 27 (Rust `std` on the native ABI)). Its own crate, so a program
+//! with no heap links no allocator.
 //!
 //! A [`GlobalAlloc`] that grows by mapping pages out of the untyped capability the process was
 //! granted (`memory_region::MAP`, one zeroed page per invoke). The algorithm is `talc`'s core,
@@ -8,7 +9,7 @@
 //! This crate is the policy: a spinlock, a committed-range cursor and grow-on-demand.
 //!
 //! A program declares it in its own source, because the heap's inputs are part of its capability
-//! contract (notes/abi.md §4):
+//! contract (notes/abi.md, the out-of-band slot convention):
 //!
 //! ```ignore
 //! #[global_allocator]
