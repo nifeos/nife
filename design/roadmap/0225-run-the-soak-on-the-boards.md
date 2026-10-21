@@ -137,6 +137,21 @@ crossings. `script/board-console --tally` drew one clean core on all thirteen, 1
 `notes/soak/radon-2026-10-20.md`; the capture, the mechanics and how the soak ended are
 `bench/radon-2026-10-20/README-225.md`.
 
+## radon, 2026-10-21: 25 reboot draws, zero defects, one unexplained reset
+
+Lane `milestone/890-radon-bench-to-prompt`, image built on `cda4ceb55` with `script/board-image
+--soak --reboot` (SEALED). The QEMU rehearsal was clean: 760,115 round trips in 40 s, 4,206
+crossings. On radon, one power-on, then 25 draws of about 120 seconds, watched by
+`script/board-console` and stopped with `--stop`. Every last beat reads `refused=0 mismatch=0
+stalled=0`, wakerate 401 to 402/s.
+
+These are rows E26 to E50 in `notes/multicore-defect-curve.md`. Seven never crossed cores and are
+excluded; the other eighteen add 329,804 crossings. The tally drew one clean core on all
+twenty-six boots, the same single placement class as 2026-10-20. Draw 2 (E27) reset itself at
+about t=105 s without printing the kernel's reset sequence (`BUGS`). The run table is
+`notes/soak/radon-2026-10-21.md`; the capture and the mechanics are
+`bench/radon-2026-10-21/README-225.md`.
+
 ## argon, 2026-10-05: not yet a one-command run, and exactly why
 
 *(Awaiting the board, 2026-10-06: what is on the desk is a TK1 going back, not argon. The tegra210
@@ -198,6 +213,10 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   crosses about 275 times less often, so the clean result says little about slow arrangements.
 - A hung board needs a person, since nothing can power-cycle radon remotely (milestone 224) and
   `script/board-console` reads without writing.
+- **radon reset once with no reset sequence printed**: E27, 2026-10-21, between t=105 s and t=110 s
+  of a 120 s draw. The kernel's `window reached` and AXP15060 lines are absent, nobody touched the
+  board or its outlet, and no watchdog is armed. Firmware, power and a kernel path that resets
+  without printing are all open (`notes/soak/radon-2026-10-21.md`).
 - **The crossing count varies by more than 2x between identical runs**, recorded in milestone 221's
   BUGS, so it is not a figure to compare machines on without more care than a single run affords.
 - **argon has never booted nife at all**, so its soak sits behind milestone 127 (the seL4 machine)
@@ -219,8 +238,11 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   soaked for long with this build. Checked 2026-09-25: E4 is the only radon row with a log.
   Updated 2026-10-10: §259's count is met (E4, E6, E7), so further radon boots are draws for the
   placement distribution rather than owed to the standard, and since milestone 592's reset is
-  proven they cost no plug cycle; unowned. Updated 2026-10-20: E13 to E25 are thirteen more, all on
-  one clean core, so they sampled one placement class.
+  proven they cost no plug cycle; unowned. E13 to E50 are thirty-eight more, all on one clean core,
+  so they sampled one placement class.
+- **Outstanding.** The reset on E27 that printed no reset sequence (`BUGS`). A lane runs it down:
+  what can reset a JH7110 with no line from the kernel, and whether a longer series of draws
+  repeats it.
 - **Done.** The false `NOT SEALED` on a soak build that cost this run half an hour. Milestone 563
   (a seal check that reads bytes cannot see a check that was dropped) carried it, merged
   2026-09-26: soak builds now seal, and `script/board-image --soak` printed `SEALED` on a rebuild.

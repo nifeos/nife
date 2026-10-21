@@ -85,39 +85,14 @@ recorded with workload `soak-test (not crossing)` and excluded from the curve.
 
 ### The rows
 
-| id | start (UTC) | machine | arch | cores | build | workload | hours | crossings | beats | result | source |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| E1 | 2026-09-03 ~20:04 | radon | riscv64 | 4 | not recorded | soak-test | ~0.33 | ~3,000 at beat 12, final not recorded | not recorded | clean as far as recorded | [`soak.md`](soak.md), "radon, on real silicon" |
-| E2 | 2026-09-03 ~20:24 | radon | riscv64 | 4 | not recorded | soak-test | 2.97 | 5,507 | 2,137 | clean | [`soak.md`](soak.md), "The three-hour run" |
-| E3 | 2026-09-04 ~00:06 | radon | riscv64 | 4 | not recorded | soak-test, census build | ~0.4, end not recorded | not recorded | not recorded | clean as far as recorded | [`soak.md`](soak.md), "The three-hour run" |
-| E4 | 2026-09-25 ~01:02 | radon | riscv64 | 4 | `9e879f1e7` | soak-test | 8.16 | 4,108,581 | 5,818 | clean | `bench/radon-2026-09-25/soak-8h.log`; [`visionfive2.md`](visionfive2.md), "The eight-hour soak, 2026-09-25" |
-| E5 | 2026-10-09 ~18:34 | radon | riscv64 | 4 | `bef2b40dc` | soak-test-reboot | 0.03 | 20,474 | 23 | clean | `bench/radon-2026-10-10/soak-boot2.log` |
-| E6 | 2026-10-09 ~18:37 | radon | riscv64 | 4 | `bef2b40dc` | soak-test | 10.28 | 5,569,327 | 7,344 | clean | `bench/radon-2026-10-10/soak-boot2.log` |
-| E7 | 2026-10-10 ~12:11 | radon | riscv64 | 4 | `bef2b40dc` | soak-test | 3.88 | 610,897 | 2,763 | clean | `bench/radon-2026-10-10/soak-boot3.log` |
-| E8 | 2026-10-10 ~18:12 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 104 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
-| E9 | 2026-10-10 ~18:15 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 25,223 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
-| E10 | 2026-10-10 ~18:18 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 22,116 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
-| E11 | 2026-10-10 ~18:21 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot | 0.03 | 3,493 | 24 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
-| E12 | 2026-10-10 ~18:24 | radon | riscv64 | 4 | `23f0c8d87` | soak-test-reboot, ended by power-off | 0.03 | 16,462 | 22 | clean | `bench/radon-2026-10-10/592-optionb-four-cycles.log` |
-| E13 | 2026-10-20 ~19:58 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 25,488 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E14 | 2026-10-20 ~20:01 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,645 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E15 | 2026-10-20 ~20:04 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 3,924 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E16 | 2026-10-20 ~20:07 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E17 | 2026-10-20 ~20:10 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 12,820 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E18 | 2026-10-20 ~20:13 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 27,502 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E19 | 2026-10-20 ~20:16 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,899 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E20 | 2026-10-20 ~20:19 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 20,549 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E21 | 2026-10-20 ~20:22 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 3,933 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E22 | 2026-10-20 ~20:25 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot (not crossing) | 0.03 | 23 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E23 | 2026-10-20 ~20:28 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 26,469 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E24 | 2026-10-20 ~20:30 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 23,907 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
-| E25 | 2026-10-20 ~20:33 | radon | riscv64 | 4 | `22c19e1d5` | soak-test-reboot | 0.03 | 26,080 | 24 | clean | `bench/radon-2026-10-20/soak-reboot-draws.log` |
+Every exposure row so far is radon's, so the table is in
+[`multicore-defect-curve/radon-rows.md`](multicore-defect-curve/radon-rows.md), beside the notes on
+what each bench evening's rows record. A first row from another machine starts its own appendix.
 
-radon's curve stands at about 10.60 million crossings over 23 crossing boots and about 26.5 hours,
+radon's curve stands at about 10.93 million crossings over 41 crossing boots and about 27.1 hours,
 with zero defects. The §259 (a multicore soak counts toward risk 5 at ten million crossings over
 three boots) ledger counts plain boots only: E4 + E6 + E7 = 10,288,805 crossings over 3 boots,
-which meets it. What each bench evening's rows record, and the caveats on E1 to E3, are in
-[`multicore-defect-curve/radon-rows.md`](multicore-defect-curve/radon-rows.md).
+which meets it. What each bench evening's rows record, and the caveats on E1 to E3, are with the rows.
 
 ## Defect rows
 

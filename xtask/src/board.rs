@@ -135,8 +135,8 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
     }
     println!();
     println!(
-        "Paste each row into notes/multicore-defect-curve.md with the next free E id; `?` is a \
-         column the log cannot supply."
+        "Paste each row into the machine's table under notes/multicore-defect-curve/ (radon's is \
+         radon-rows.md) with the next free E id; `?` is a column the log cannot supply."
     );
     if soaked.iter().all(|b| b.is_clean()) {
         ExitCode::SUCCESS
