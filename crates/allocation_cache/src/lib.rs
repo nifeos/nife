@@ -283,7 +283,10 @@ mod tests {
             assert_eq!(heap_layout(l), l);
         }
         let empty = Layout::from_size_align(0, 2 * GRID).unwrap();
-        assert_eq!(heap_layout(empty), Layout::from_size_align(1, 2 * GRID).unwrap());
+        assert_eq!(
+            heap_layout(empty),
+            Layout::from_size_align(1, 2 * GRID).unwrap()
+        );
     }
 
     /// The classes stop exactly at [`LARGEST`]: its class is the last one, so no class is sized
