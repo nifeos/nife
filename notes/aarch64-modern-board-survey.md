@@ -8,7 +8,7 @@ rather than for the seL4 comparison. [The seL4-comparison survey](aarch64-board-
 the other question, and its deciding criterion (silicon under seL4's published numbers) is not used
 here. seL4's support tier is still scored, so the cost of separating the two questions is visible.
 
-The evidence is in four appendices, each with a URL and a read date on every claim. This page
+The evidence is in appendices, each with a URL and a read date on every claim. This page
 carries the scoring and the recommendation. It records no choice: the board is calef's call.
 
 - [Arm cores and seL4 support](aarch64-modern-board-survey/cores-and-sel4.md): per-core features
@@ -16,6 +16,8 @@ carries the scoring and the recommendation. It records no choice: the board is c
 - [Raspberry Pi 5 and RK3588 boards](aarch64-modern-board-survey/pi5-and-rk3588.md).
 - [CIX P1, MediaTek Genio, NXP i.MX 95, TI and Qualcomm](aarch64-modern-board-survey/cix-genio-nxp-qualcomm.md).
 - [Jetson, DGX Spark and Ampere](aarch64-modern-board-survey/jetson-and-ampere.md).
+- [ARM servers and cloud bare metal](aarch64-modern-board-survey/server-and-cloud.md): Graviton,
+  Oracle, Google, Azure, Grace rentals, and buyable Ampere servers.
 
 ## What the criteria are for, traced to the tree
 
@@ -112,6 +114,42 @@ NVMe and 2.5GbE NICs; USB, eMMC and the on-die MACs are uncovered. It is Armv8.2
 MTE or SVE. Its ITS needs non-shareable, non-coherent tables (erratum RK3588001), a quirk nife would
 carry. Most RK3588 boards were sold out at list price on the survey date.
 
+## Server hardware and cloud bare metal
+
+Server Arm parts are the most standardized platforms (UEFI, ACPI, SBSA). They were scored on the
+same criteria. A rented machine adds four more: how a custom OS boots, the serial console, cost per
+bench hour, and how to reset a hung instance. The evidence is in
+[the server appendix](aarch64-modern-board-survey/server-and-cloud.md).
+
+- Whether an SMMUv3 is visible in front of the devices is unknown for every rentable machine. The
+  best evidence is AWS's own DPDK text saying arm64 metal has the IOMMU on by default (written for
+  Graviton1). On Altra, Ampere's reference firmware builds one SMMUv3 per PCIe root complex in the
+  IORT. All of these are described by ACPI, never a device tree.
+- AWS Graviton metal is the one rentable path that fits nife's needs on paper. It has UEFI with
+  ACPI, Secure Boot off by default, an EC2 serial console an agent can drive from the CLI,
+  per-second billing and an API reset. Its cores run from Armv8.4 (Graviton3) to Armv9.2 (Graviton5). Cost is $2.32
+  per hour (`c7g.metal`) to $8.35 (`c9g.metal-48xl`) (secondary). AWS says a metal instance can
+  take twenty minutes to become reachable, so it is a gate, not an inner loop.
+- Oracle's Always Free tier is VMs only. Its bare metal (Altra, AmpereOne-M) exists but does not
+  support bringing your own image. Azure Cobalt has no bare metal found. Google's C4A metal is real
+  (Neoverse V2) and its serial console is scriptable, but Google documents nothing about its GIC,
+  SMMU or custom-image boot. Grace rentals are priced per GPU-hour with no boot path found.
+- A bought Altra board with a BMC (ASRock Rack ALTRAD8UD-1L2T, about $1.5k to $2.5k built, partly
+  inferred) is the cheaper way to the Altra isolation story than a Thelio. It is still Armv8.2 with
+  no PAC or BTI, and Serial over LAN is documented for none of the boards.
+- seL4 has no platform for any of them, so no server machine gives a seL4 comparison either.
+
+What each machine would carry beside the others:
+
+| machine | carries |
+|---|---|
+| patagonia (HVF) | the inner loop and the test suite. It is virtual, so it shows no real SMMU, ITS or PMU behavior. What HVF does expose is being checked by another lane. |
+| Orion O6, owned | the daily hardware bench: UART on the desk, a power switch, Armv9.2 features, and the O6's ACPI IORT as the first real SMMU description. |
+| rented Graviton metal | a hardware gate with a real PCIe fabric and a core from a different vendor than the O6's. It also lets the IORT parser and SMMUv3 code run on silicon before the O6 can be bought. It does not replace an owned board: boots are slow and a bench run costs money. |
+
+The milestones that wait on argon (74, 101, 25, 225 and 201) and whether a rented machine could carry
+each are in [their own appendix](aarch64-modern-board-survey/rented-machines-and-waiting-milestones.md).
+
 ## Recommendation
 
 Ranked, with the criteria that decided each place:
@@ -127,6 +165,21 @@ Ranked, with the criteria that decided each place:
    architecture feature.
 3. Orange Pi 5 Plus or Radxa Rock 5B+. Decided by open firmware and cost. Choose it if rebuilding
    every firmware stage from upstream matters more than PAC, BTI and MTE.
+
+Rented server hardware does not change that ranking. It adds a step, and it is not a board:
+
+- Keep the O6 first for an owned machine.
+- Rent AWS Graviton metal as a gate, not a replacement. Start with `c7g.metal` for one short run
+  that records the IORT, `dmesg | grep -i smmu` and the IOMMU groups; the run costs about a dollar
+  or two (inferred). It turns the survey's central unknown into a measurement. Then
+  `c8g.metal-24xl` ($3.83 per hour) if Armv9.0's BTI and SVE2 matter. Opening an AWS account is
+  calef's call.
+- Probe Google C4A metal second, and phoenixNAP's Altra ($0.99 per hour) only after asking about
+  console and custom boot.
+- Skip Oracle (no custom image on bare metal), Azure (no bare metal), and Grace rentals (price,
+  and no boot path found).
+- A bought ALTRAD8UD-1L2T replaces the Thelio as the Altra option if Altra is wanted, and only
+  after SOL is confirmed with ASRock Rack.
 
 Not recommended, with the criterion that excluded each:
 
@@ -159,3 +212,5 @@ Not recommended, with the criterion that excluded each:
 - The NVIDIA Orin and Thor TRMs need a developer login and were not read; their IOMMU facts come
   from the upstream device tree.
 - GICv4 on the O6 and RK3588 is inferred from redistributor stride, not read from a GIC TRM.
+- The server appendix's own BUGS list applies: no IORT from any rentable machine, and prices from
+  aggregators.
