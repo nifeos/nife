@@ -51,5 +51,5 @@ We dodged it by picking aarch64 and QEMU's `-kernel`, which takes ELF directly.
 *Corrected 2026-10-11 (UTC), verified against the tree:* the dodge did not last. Milestone 87 (the
 x86_64 bare-metal machine) built `uefi_loader`, so the tree does ask Rust for exactly that:
 `BOOTX64.EFI` from the `x86_64-unknown-uefi` target, beside `BOOTAA64.EFI`. riscv64 has no UEFI
-target in rustc, so `crates/portable_executable` turns its loader's ELF into PE/COFF.
+target in rustc, so `cargo xtask stick` turns its loader's ELF into PE/COFF.
 `notes/boot-stick.md` has all three boot files.

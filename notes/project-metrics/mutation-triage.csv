@@ -629,8 +629,6 @@ non_volatile_memory_express,Handoff::pack,replace | with ^,equivalent,argued in 
 page_frames,PageFrameAllocator<'a>::alloc,replace + with *,equivalent,"hint = i rather than i + 1: slot i was just taken, so the next scan steps over it and finds the same first free frame"
 page_frames,PageFrameAllocator<'a>::alloc_contiguous,replace || with &&,equivalent,argued in notes/mutation-testing/baseline-survivors-abi-to-ipc.md; the 2026-10-07 per-crate re-run still reports it
 page_frames,PageFrameAllocator<'a>::largest_free_run,replace > with >=,equivalent,a tie in a running maximum assigns the same value
-portable_executable,from_elf,replace | with ^,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
-portable_executable,base_relocations,replace | with ^,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
 screen_console,Aperture::to_words,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
 stick_maker,Reader<'a>::close_tag,replace - with /,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
 stick_maker,Reader<'a>::close_tag,replace - with +,equivalent,argued in notes/mutation-testing/census-2026-09-21-triage.md; the 2026-10-07 per-crate re-run still reports it
@@ -1440,9 +1438,6 @@ package_index,repository,replace > with ==,killed,"port.len() > 5; killed by one
 package_index,repository,replace > with >=,killed,port.len() > 5; killed by a_five_digit_port_is_read (65535); re-run with cargo mutants at base 571da1a2e
 package_index,repository,replace || with &&,killed,"the survivor makes the digit check apply only past five characters; killed by one_unreadable_line_refuses_the_whole's new +443 line, a sign u16 parses; re-run with cargo mutants at base 571da1a2e"
 package_index,root_word,replace && with ||,killed,the survivor makes any even hex word a certificate; killed by one_unreadable_line_refuses_the_whole's new root abcd line; re-run with cargo mutants at base 571da1a2e
-portable_executable,put64,replace put64 with (),equivalent,"its only call writes ImageBase 0 into write_pe's vec![0u8; ..], so skipping the write leaves the same zero; a re-run with cargo mutants at base 571da1a2e still reports it"
-portable_executable,write_optional_header,replace | with ^,equivalent,"DllCharacteristics 0x0020 | 0x0040 | 0x0100 shares no bit, so | and ^ agree; a re-run with cargo mutants at base 571da1a2e still reports it"
-portable_executable,write_pe,replace | with ^,equivalent,"unattributed in the 2026-10-14 census; COFF Characteristics 0x0002 | 0x0020 | 0x0200 shares no bit, so | and ^ agree; a re-run with cargo mutants at base 571da1a2e still reports it"
 socket_protocol,,replace + with *,killed,ephemeral::SPAN = (HI - LO) as u64 + 1; killed by the_cursor_walks_49152_to_65535_and_wraps; re-run with cargo mutants at base 571da1a2e
 socket_protocol,,replace + with -,killed,ephemeral::SPAN = (HI - LO) as u64 + 1; killed by the_cursor_walks_49152_to_65535_and_wraps; re-run with cargo mutants at base 571da1a2e
 socket_protocol,ephemeral::port_at,replace + with -,killed,LO - offset hands out ports below the private range; killed by the_cursor_walks_49152_to_65535_and_wraps; re-run with cargo mutants at base 571da1a2e

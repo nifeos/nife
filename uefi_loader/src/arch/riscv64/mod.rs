@@ -11,7 +11,7 @@
 //! **There is no `riscv64` UEFI target in rustc** (`rustc --print target-list`, 2026-09-19, lists
 //! `aarch64-`, `i686-` and `x86_64-unknown-uefi` only). This module is therefore compiled for
 //! `riscv64imac-unknown-none-elf` as a position-independent executable, and `cargo xtask` turns
-//! the ELF into a PE/COFF image (`crates/portable_executable`); see notes/boot-stick.md.
+//! the ELF into a PE/COFF image (`xtask/src/portable_executable.rs`); see notes/boot-stick.md.
 //!
 //! # BUGS
 //!
