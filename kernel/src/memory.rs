@@ -914,10 +914,6 @@ pub(crate) fn record_framebuffer(base: u64, size: u64) {
 /// what the machine said, not from `target_arch`, because the VisionFive 2 is riscv64 and has
 /// neither of these devices; an ISA-keyed driver would compile clean and read garbage on the first
 /// real board (DECISIONS §43).
-#[cfg_attr(
-    not(any(test, feature = "system_tests", feature = "shell")),
-    allow(dead_code)
-)]
 pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
     *RTC_REGION.lock()
 }

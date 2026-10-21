@@ -30,7 +30,7 @@ swish-check run actually hits:
   a few scheduler passes. Its own doc comment calls this out directly, naming milestone 230
   (`script/shell-check` is red on `main`): *"That is the same two-writers-one-stream confusion
   milestone 230 spent a whole lane on."* This is gated off under `cfg(test)`/`system_tests`. It is
-  on under the interactive `--features shell` boot swish-check uses.
+  on under the interactive boot swish-check uses.
 - `kernel/src/progenitor_stack.rs:166-177`, `announce`: prints `progenitor stack: N of M bytes at
   peak, K spare` on the same new-peak-and-hold pattern. It triggers from the idle loop on aarch64
   and riscv64, on every reschedule with nothing to run. On x86_64 it triggers from `on_yield`,

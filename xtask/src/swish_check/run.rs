@@ -71,7 +71,7 @@ pub(super) fn flood_counts(raw: &str) -> (usize, usize) {
     (whole, all - whole)
 }
 
-/// **Boot the `--features shell` system and type at it** (milestone 50, notes/pipes.md).
+/// **Boot the system and type at it** (milestone 50 (pipes and redirection), notes/pipes.md).
 ///
 /// Everything else that exercises the shell wires it from **the kernel**, which serves the spawn
 /// protocol in place of `components/src/progenitor.rs`, so a change that broke the real
