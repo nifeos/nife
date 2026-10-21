@@ -1,0 +1,68 @@
+/dts-v1/;
+
+/*
+ * The watchdog **as radon's own U-Boot describes it** (milestone 593 (a wedged kernel resets
+ * itself), provisional). NOT a dump from the board: transcribed 2026-10-20 (UTC) from StarFive's
+ * U-Boot `JH7110_VisionFive2_devel` arch/riscv/dts/jh7110.dtsi, the tree family radon's boot.scr
+ * hands the kernel (crates/jh7110_clock_and_reset/tests/fixtures/jh7110-pmic-bus-radon.dts says
+ * how). Numbers are written out because the vendor headers are not vendored here:
+ * JH7110_DSKIT_WDT_CLK_WDT 123, JH7110_DSKIT_WDT_CLK_APB 122, RSTN_U0_DSKIT_WDT_APB 109,
+ * RSTN_U0_DSKIT_WDT_CORE 110.
+ *
+ * What this fixture holds: the vendor binding `starfive,dskit-wdt`, not mainline's; the core clock
+ * named before the bus clock; clocks from `clkgen` and resets from the separate `rstgen`.
+ *
+ * Regenerate with:
+ *
+ *     dtc -I dts -O dtb -o crates/jh7110_watchdog/tests/fixtures/jh7110-watchdog-radon.dtb \
+ *                          crates/jh7110_watchdog/tests/fixtures/jh7110-watchdog-radon.dts
+ */
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "starfive,visionfive-v2", "starfive,jh7110";
+	model = "StarFive VisionFive V2";
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		wdog: wdog@13070000 {
+			compatible = "starfive,dskit-wdt";
+			reg = <0x0 0x13070000 0x0 0x10000>;
+			interrupts = <68>;
+			clocks = <&clkgen 123>, <&clkgen 122>;
+			clock-names = "core_clk", "apb_clk";
+			resets = <&rstgen 109>, <&rstgen 110>;
+			reset-names = "rst_apb", "rst_core";
+			interrupt-names = "wdog";
+			timeout-sec = <15>;
+			status = "okay";
+		};
+
+		clkgen: clock-controller {
+			compatible = "starfive,jh7110-clkgen";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x10230000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>;
+			reg-names = "sys", "stg", "aon";
+			#clock-cells = <1>;
+			status = "okay";
+		};
+
+		rstgen: reset-controller {
+			compatible = "starfive,jh7110-reset";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x10230000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>,
+			      <0x0 0x19810000 0x0 0x10000>,
+			      <0x0 0x295C0000 0x0 0x10000>;
+			reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg", "voutcrg";
+			#reset-cells = <1>;
+			status = "okay";
+		};
+	};
+};
