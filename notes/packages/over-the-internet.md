@@ -106,9 +106,9 @@ greeting-0.1.0-aarch64 sha256:<64 hex> https://packages.basalt.test:8443/rolling
 
 | Production | Under QEMU | Whose |
 |---|---|---|
-| `basalt.nifeos.org` and a backup address | `gone.basalt.test` (refused by the name server), then `basalt.test`, `helpers/tls-peer` at 10.0.2.9:8443 | DNS and hosting: calef's hands; the backup's wording is question A in the-index-format.md |
+| `basalt.nifeos.org` and a backup address | `gone.basalt.test` (refused by the name server), then `basalt.test`, `helpers/tls-peer` at 10.0.2.9:8443 | DNS and hosting: calef's hands; the backup is on a second registrable domain (§250 clause 6), and choosing and registering it is calef's |
 | The channel's name | `package_index::PROVISIONAL_CHANNEL`, `rolling` | calef's |
-| ISRG Root X1, for the index and (if question B is ruled so) listed locations | the test authority in `pinned_tls_client/fixtures/` | ruled for the index; X1 meets a real chain only in 501's ignored host test |
+| ISRG Root X1, for the index and listed locations (§250 clause 10), or a root the index names (clauses 11 to 13) | the test authority in `pinned_tls_client/fixtures/` | ruled for the index; X1 meets a real chain only in 501's ignored host test |
 | The index's format | the stand-in encoding | the TUF client, milestone 858 |
 | The resolver started from the lease | the test harness starts it, pointed at `helpers/name-server-peer` | identified work (milestone 801's block) |
 | Where the image says its index is | `package_index::SOURCES_ENTRY` names `basalt.test` at 10.0.2.9 and the test root | milestone 909 (basalt composes the bootable image from its packages) writes basalt's |
@@ -123,8 +123,6 @@ greeting-0.1.0-aarch64 sha256:<64 hex> https://packages.basalt.test:8443/rolling
   version, expiry or signature. Each is the TUF client's.
 - No producer in this tree. The test host composes the stand-in from the build's catalog, in
   Python, apart from the reader on purpose.
-- A listed location is pinned to the index's root. Which root it must chain to is question B in
-  the-index-format.md, since §196 (nife carries TLS) holds one root per source.
 - An address literal in a location is checked when the index is read, a host name only after it
   resolves. A name that resolves to a public address and later to a private one is checked again
   on every fetch, never cached.
