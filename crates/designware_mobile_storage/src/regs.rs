@@ -129,6 +129,8 @@ pub(crate) const INT_ALL: u32 = 0xffff;
 
 /// Status: FIFO count, busy, command state.
 pub const STATUS: u32 = 0x048;
+/// The FIFO is full.
+pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 /// The card is holding DAT0 low (busy after a write or an R1b command).
 pub(crate) const STATUS_DATA_BUSY: u32 = 1 << 9;
 

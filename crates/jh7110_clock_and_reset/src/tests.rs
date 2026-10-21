@@ -754,3 +754,30 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
     );
     assert_eq!(clock_divider(CLOCK_ENABLE | 8), 8);
 }
+
+/// radon's 2026-10-21 words (PLL2 `fbdiv 99 prediv 2 postdiv1 1`, `axi_cfg0` divider 3): 396 MHz
+/// into the card clock, so the tree's 50 MHz needs a divider of 8 (49.5 MHz), where the firmware's
+/// 2 gives 198 MHz. The storage bench's measured transfer rates matched 198, not 50.
+#[test]
+fn radon_card_clock_comes_to_the_trees_rate_from_below() {
+    let words = IcClkWords {
+        bus_root: 1 << 24,
+        axi_cfg0: 3,
+        stg_axiahb: 2,
+        apb_bus_func: 4,
+        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16) | (99 << 17),
+        pll2_postdiv1: 0,
+        pll2_prediv: 2,
+    };
+    let parent = axi_cfg0_hz(&words);
+    assert_eq!(parent, 396_000_000);
+    assert_eq!(i2c5_ic_clk(&words), 49_500_000);
+    let div = sdcard_divider_for(parent, 50_000_000);
+    assert_eq!(div, 8);
+    assert!(parent / u64::from(div) <= 50_000_000);
+    assert_eq!(sdcard_divider_for(parent, 1), SDCARD_DIVIDER_MAX);
+    assert_eq!(sdcard_divider_for(parent, 1_000_000_000), 1);
+    // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
+    assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
+    assert_eq!(with_divider(0x8000_0002, 8), 0x8000_0008);
+}

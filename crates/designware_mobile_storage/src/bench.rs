@@ -181,3 +181,138 @@ pub fn scratch_write<R: Registers>(
     }
     verdict.unwrap_or(WriteVerdict::Verified(first, count, blank))
 }
+
+/// **A register window that remembers how full the FIFO got**: every `STATUS` read updates the
+/// highest fill seen and counts the reads that found the FIFO full. Milestone 53 (the board's own
+/// peripherals)'s multi-block read diagnosis: whether the polled CPU falls behind the card.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub struct Watch<R: Registers> {
+    inner: R,
+    /// The highest `STATUS` FIFO count seen since the last [`Watch::clear`].
+    pub max_fill: u32,
+    /// `STATUS` reads that found the FIFO-full flag set since the last [`Watch::clear`].
+    pub full_reads: u32,
+}
+
+impl<R: Registers> Watch<R> {
+    /// Watch `inner`.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+    pub const fn new(inner: R) -> Self {
+        Self {
+            inner,
+            max_fill: 0,
+            full_reads: 0,
+        }
+    }
+
+    /// Start counting again.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+    pub fn clear(&mut self) {
+        self.max_fill = 0;
+        self.full_reads = 0;
+    }
+}
+
+impl<R: Registers> Registers for Watch<R> {
+    fn read(&mut self, offset: u32) -> u32 {
+        let v = self.inner.read(offset);
+        if offset == crate::regs::STATUS {
+            self.max_fill = self.max_fill.max(crate::regs::fifo_count(v));
+            if v & crate::regs::STATUS_FIFO_FULL != 0 {
+                self.full_reads += 1;
+            }
+        }
+        v
+    }
+    fn write(&mut self, offset: u32, value: u32) {
+        self.inner.write(offset, value);
+    }
+    fn now_us(&mut self) -> u64 {
+        self.inner.now_us()
+    }
+}
+
+/// One multi-block read of the matrix: its card clock, length, outcome and what the FIFO did.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MatrixRow {
+    /// The card clock asked for, in Hz.
+    pub asked_hz: u32,
+    /// The card clock the divider gave.
+    pub card_hz: u32,
+    /// Blocks in the one `CMD18`.
+    pub blocks: u32,
+    /// What the read returned.
+    pub result: Result<(), IoError>,
+    /// Microseconds the read took.
+    pub us: u64,
+    /// The highest FIFO fill seen during it, in words.
+    pub max_fill: u32,
+    /// `STATUS` reads that found the FIFO full.
+    pub full_reads: u32,
+    /// `STATUS`, `RINTSTS`, `TCBCNT` and `TBBCNT` read straight after it.
+    pub after: [u32; 4],
+}
+
+/// The card clocks the matrix reads at: the transfer rate and two halvings of it.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub const MATRIX_HZ: [u32; 3] = [sd::TRANSFER_HZ, sd::TRANSFER_HZ / 2, sd::TRANSFER_HZ / 4];
+/// The `CMD18` lengths the matrix reads, in blocks.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
+
+/// **Read the same blocks at each clock and length, re-identifying the card before every read**,
+/// so a read that leaves the card mid-transfer cannot fail the next one. Read-only: `CMD18` from
+/// `lba` and identification, nothing else. `buf` holds at least the longest read.
+///
+/// # Errors
+///
+/// Identification failing, which ends the matrix; a failed read is a row, not an error.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub fn read_matrix<R: Registers>(
+    host: &mut Host<Watch<R>>,
+    bus_width: u8,
+    lba: u64,
+    buf: &mut [u8],
+    mut row: impl FnMut(MatrixRow),
+) -> Result<(), InitError> {
+    for &hz in &MATRIX_HZ {
+        for &blocks in &MATRIX_BLOCKS {
+            let card = sd::identify(host, bus_width)?;
+            let card_hz = host.set_clock(hz).map_err(InitError::Controller)?;
+            let len = blocks as usize * BLOCK;
+            let Some(dst) = buf.get_mut(..len) else {
+                continue;
+            };
+            host.registers().clear();
+            let start = host.registers().now_us();
+            let result = sd::read_blocks(host, &card, lba, dst);
+            let us = host.registers().now_us().wrapping_sub(start);
+            let r = host.registers();
+            let after = [
+                r.inner.read(crate::regs::STATUS),
+                r.inner.read(crate::regs::RINTSTS),
+                r.inner.read(crate::regs::TCBCNT),
+                r.inner.read(crate::regs::TBBCNT),
+            ];
+            row(MatrixRow {
+                asked_hz: hz,
+                card_hz,
+                blocks,
+                result,
+                us,
+                max_fill: r.max_fill,
+                full_reads: r.full_reads,
+                after,
+            });
+        }
+    }
+    Ok(())
+}

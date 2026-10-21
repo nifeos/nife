@@ -164,3 +164,68 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> Report {
 
     report
 }
+
+/// What [`set_card_clock`] did: the clock's word before and after, its parent's rate, and the rate
+/// it now runs at, which is the number a driver dividing it for the card must be given.
+#[cfg(feature = "storage_bench")] // the storage bench is the one boot that drives the SD/MMC controllers
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct CardClock {
+    pub before: u32,
+    pub after: u32,
+    pub parent_hz: u64,
+    pub hz: u32,
+}
+
+/// **Run an SD/MMC controller's card clock at no more than `want_hz`** (the tree's
+/// `assigned-clock-rates`), and say what rate it runs at, computed from the silicon's own words.
+/// radon's firmware leaves the divider at 2, so the clock the tree calls 50 MHz runs at 198 MHz and
+/// every card clock the driver derives from 50 is four times what it thinks (milestone 53 (the
+/// board's own peripherals: network and storage on real silicon)). Gated while the divider moves,
+/// then ungated, so the controller never sees a half-switched clock.
+///
+/// # Safety
+///
+/// `crg` must be the SYS CRG's mapped device window and `syscon` the SYS syscon's, and
+/// `controller` must be 0 or 1.
+#[cfg(feature = "storage_bench")] // the storage bench is the one boot that drives the SD/MMC controllers
+pub(crate) unsafe fn set_card_clock(
+    crg: usize,
+    syscon: usize,
+    controller: usize,
+    want_hz: u32,
+) -> CardClock {
+    use jh7110_clock_and_reset::{
+        SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT, SYSCLK_SDIO_SDCARD,
+        SYSCLK_STG_AXIAHB, axi_cfg0_hz, clock_divider, sdcard_divider_for, with_divider,
+    };
+    let reg = (crg + SYSCLK_SDIO_SDCARD[controller] as usize * 4) as *mut u32;
+    // SAFETY: the two windows are this function's contract. The clock chain's words are read-only
+    // status words at aligned offsets inside them; then the card clock's own word in the CRG: a
+    // read, two stores that keep every field but the enable and the divider, and a read back.
+    let (parent_hz, before, after) = unsafe {
+        let word =
+            |base: usize, offset: usize| core::ptr::read_volatile((base + offset) as *const u32);
+        let parent_hz = axi_cfg0_hz(&jh7110_clock_and_reset::IcClkWords {
+            bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
+            axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
+            stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
+            apb_bus_func: word(crg, SYSCLK_APB_BUS_FUNC as usize * 4),
+            pll2_dacpd_dsmpd_fbdiv: word(syscon, 0x2c),
+            pll2_postdiv1: word(syscon, 0x30),
+            pll2_prediv: word(syscon, 0x34),
+        });
+        let before = core::ptr::read_volatile(reg);
+        let div = sdcard_divider_for(parent_hz, u64::from(want_hz));
+        let gated = with_divider(before & !CLOCK_ENABLE, div);
+        core::ptr::write_volatile(reg, gated);
+        core::ptr::write_volatile(reg, gated | (before & CLOCK_ENABLE));
+        (parent_hz, before, core::ptr::read_volatile(reg))
+    };
+    let div = u64::from(clock_divider(after).max(1));
+    CardClock {
+        before,
+        after,
+        parent_hz,
+        hz: (parent_hz / div) as u32,
+    }
+}

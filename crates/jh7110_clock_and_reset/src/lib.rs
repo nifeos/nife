@@ -718,6 +718,16 @@ pub const fn one_based_div(word: u32, width: u32) -> u64 {
 /// guess. The u64 divisions truncate, as the vendor's do.
 #[must_use]
 pub const fn i2c5_ic_clk(w: &IcClkWords) -> u64 {
+    axi_cfg0_hz(w) / one_based_div(w.stg_axiahb, 2) / one_based_div(w.apb_bus_func, 4)
+}
+
+/// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
+/// divider. The parent of both the PMIC bus's clock chain ([`i2c5_ic_clk`]) and the SD/MMC
+/// controllers' card clocks ([`SYSCLK_SDIO_SDCARD`]), each a registration in the vendor clock driver.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+#[must_use]
+pub const fn axi_cfg0_hz(w: &IcClkWords) -> u64 {
     let parent = if (w.bus_root >> 24) & 1 == 1 {
         let dacpd = (w.pll2_dacpd_dsmpd_fbdiv >> 15) & 1;
         let dsmpd = (w.pll2_dacpd_dsmpd_fbdiv >> 16) & 1;
@@ -733,10 +743,48 @@ pub const fn i2c5_ic_clk(w: &IcClkWords) -> u64 {
     } else {
         OSC_HZ
     };
-    parent
-        / one_based_div(w.axi_cfg0, 2)
-        / one_based_div(w.stg_axiahb, 2)
-        / one_based_div(w.apb_bus_func, 4)
+    parent / one_based_div(w.axi_cfg0, 2)
+}
+
+/// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
+/// socket's, then the microSD slot's. Each divides [`axi_cfg0_hz`] by its own one-based divider.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub const SYSCLK_SDIO_SDCARD: [u32; 2] = [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
+
+/// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+pub const SDCARD_DIVIDER_MAX: u32 = 15;
+
+/// **The divider that brings a card clock to at most `want_hz`** from `parent_hz`: the smallest
+/// that does, so the rate is as close below the ask as the divider allows, clamped to
+/// `1..=`[`SDCARD_DIVIDER_MAX`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
+/// program, and radon's firmware leaves this divider at 2, four times the tree's 50 MHz.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+#[must_use]
+pub const fn sdcard_divider_for(parent_hz: u64, want_hz: u64) -> u32 {
+    if want_hz == 0 {
+        return SDCARD_DIVIDER_MAX;
+    }
+    let div = parent_hz.div_ceil(want_hz);
+    if div < 1 {
+        1
+    } else if div > SDCARD_DIVIDER_MAX as u64 {
+        SDCARD_DIVIDER_MAX
+    } else {
+        div as u32
+    }
+}
+
+/// `word` with its divider field ([`clock_divider`]'s bits) replaced by `divider`, every other bit
+/// (the enable, the mux) as found.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+#[must_use]
+pub const fn with_divider(word: u32, divider: u32) -> u32 {
+    (word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
 }
 
 /// **The 100 kHz standard-mode programming for a `DesignWare` I2C controller**, from the timing
