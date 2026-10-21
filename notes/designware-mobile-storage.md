@@ -135,6 +135,7 @@ What to look for, all lines prefixed `storage-bench:`:
 | `EL0 block server: Served` | the same card through the EL0 server, as the FS server would call it: block 0 of partition 1 is the boot sector, a write is refused `EROFS`, a block past the window `EINVAL` |
 | `slot 0 (eMMC socket): ...` | whether an eMMC module is fitted (`NO-CARD` if not) |
 | `verdict READ-OK ... KiB/s, EL0 block server served` | the step passed |
+| `at the failure: STATUS ... TCBCNT n TBBCNT m` | printed only after a failed read: `TCBCNT` is bytes card to FIFO, `TBBCNT` FIFO to CPU; `m` above `n` is the CPU reading what the FIFO did not hold (an underrun), `n` ahead with a full FIFO is an overrun |
 
 `NO-CARD` on slot 1 or any `FAILED` verdict: stop, keep the log, and send it. Nothing was written.
 
@@ -195,8 +196,8 @@ and 3 were not run, as step 1 says. What it settled:
   driver stopped there.
 - Slot 0: no eMMC answered `CMD1`, consistent with no module fitted.
 
-The cause is not diagnosed. Two places in the code fit the bits, and nothing yet tells them
-apart (`BUGS`).
+The card read threshold fits those bits, and the driver leaves it off (`BUGS`). A rerun of
+step 1 confirms it or prints the byte counts that tell the next candidate apart.
 
 ## Parity
 
@@ -207,15 +208,17 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 ## BUGS
 
-- **The first block read fails on radon** with `FRUN` (Results, above), so nothing past
-  identification has worked on the device. Two candidates, neither confirmed. First, `Host::issue`
-  programs the card read threshold (`CARDTHRCTL`) to the block size, 512 bytes, but radon's FIFO
-  holds 128 (32 words of 4 bytes): a threshold the FIFO can never meet. Linux's `dw_mmc` leaves
-  the threshold off when a block is larger than the FIFO (recalled, not re-read). Second, the
-  driver reading a word the FIFO did not hold, an underrun. The sim models neither the threshold
-  nor a card-side overrun, which is why no host test failed. The next bench boot wants the
-  threshold left off when a block exceeds the FIFO, and the failure to carry the bytes moved and
-  `STATUS`; that is milestone 53's outstanding item.
+- **No block read has yet succeeded on radon.** The one run ended with `FRUN` (Results, above).
+  The likely cause is the card read threshold (`CARDTHRCTL`), enabled at one block, 512 bytes,
+  against radon's 128-byte FIFO. The driver leaves it off, and `Host::reset` writes it off in
+  case firmware set it. Linux's `dw_mci_ctrl_thld` (read for hardware facts) enables it only in
+  HS200, SDR104 and HS400, and never for a block larger than the FIFO. U-Boot, which reads this
+  card on radon every boot with the same `FIFOTH`, never writes it. `sim` ends a read with
+  `FRUN | DTO` while the threshold exceeds the FIFO, the word radon gave, so a driver that sets it
+  fails every host read test. That sim behavior is the databook's limit as Linux encodes it, not a
+  measurement of radon. The second candidate, the driver reading a word the FIFO did not hold, has
+  no evidence for it; a failed read prints `STATUS`, `TCBCNT` and `TBBCNT`, which tell the two
+  apart. Step 1's rerun settles it.
 - Every other test is against `sim`, which models the contract as the databook and OpenBSD
   describe it.
 - **The booted system has no disk on radon yet.** The EL0 block server exists and the bench boot
