@@ -276,18 +276,29 @@ impl CurrentCpuPage {
         }
     }
 
-    /// **How many cores this thread's process may use**, `std::thread::available_parallelism`'s
-    /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
-    /// an allowance. One load, never written after the page is built, so it needs no ordering.
-    pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
+    /// The little-endian word at `off`, or `None` if this page is unrecognized (a frame nobody
+    /// prepared). The magic is checked on every call rather than once at startup because the page
+    /// is one cache line, so the check is in the line the answer is in and costs a compare rather
+    /// than a miss.
+    fn word(&self, off: usize) -> Option<u64> {
         // SAFETY: `new`'s contract: `base` names at least `PAGE_BYTES` mapped, stable bytes.
         let magic = unsafe { core::slice::from_raw_parts(self.base, 8) };
         if magic != MAGIC {
             return None;
         }
-        // SAFETY: as `cpu`'s word read; the allowance is 8-aligned at its offset.
-        let word = unsafe { &*((self.base as usize + OFF_ALLOWANCE) as *const AtomicU64) };
-        core::num::NonZeroUsize::new(word.load(Ordering::Relaxed) as usize)
+        // SAFETY: `new`'s contract again, plus its alignment clause: every word is 8-aligned
+        // because `base` is and every offset is a multiple of 8. Reached through an integer rather
+        // than by offsetting the `*const u8` so the cast is not one clippy has to take on trust,
+        // which is the same shape `publish` uses on the writing side.
+        let word = unsafe { &*((self.base as u64 + off as u64) as *const AtomicU64) };
+        Some(word.load(Ordering::Relaxed))
+    }
+
+    /// **How many cores this thread's process may use**, `std::thread::available_parallelism`'s
+    /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
+    /// an allowance. One load, never written after the page is built, so it needs no ordering.
+    pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
+        core::num::NonZeroUsize::new(self.word(OFF_ALLOWANCE)? as usize)
     }
 
     /// **The scheduler tick's rate in hertz, and so the resolution of every timed wait**, or
@@ -301,34 +312,15 @@ impl CurrentCpuPage {
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
     /// receive-rate lane.
     pub fn tick_hz(&self) -> Option<core::num::NonZeroU64> {
-        // SAFETY: `new`'s contract: `base` names at least `PAGE_BYTES` mapped, stable bytes.
-        let magic = unsafe { core::slice::from_raw_parts(self.base, 8) };
-        if magic != MAGIC {
-            return None;
-        }
-        // SAFETY: as `allowance`'s word read; the tick is 8-aligned at its offset.
-        let word = unsafe { &*((self.base as usize + OFF_TICK_HZ) as *const AtomicU64) };
-        core::num::NonZeroU64::new(word.load(Ordering::Relaxed))
+        core::num::NonZeroU64::new(self.word(OFF_TICK_HZ)?)
     }
 
     /// **Which CPU this thread is running on**, or `None` if this page is unrecognized (a frame
     /// nobody prepared) or its thread has never been switched in. Never a fabricated 0.
     ///
-    /// Two aligned loads and two comparisons, no syscall. The magic is checked on every call rather
-    /// than once at startup because the page is one cache line, so the check is in the line the
-    /// answer is in and costs a compare rather than a miss.
+    /// Two aligned loads and two comparisons, no syscall.
     pub fn cpu(&self) -> Option<usize> {
-        // SAFETY: `new`'s contract: `base` names at least `PAGE_BYTES` mapped, stable bytes.
-        let magic = unsafe { core::slice::from_raw_parts(self.base, 8) };
-        if magic != MAGIC {
-            return None;
-        }
-        // SAFETY: `new`'s contract again, plus its alignment clause: the word is 8-aligned
-        // because `base` is. Reached through an integer rather than by offsetting the `*const u8`
-        // so the cast is not one clippy has to take on trust, which is the same shape `publish`
-        // uses on the writing side.
-        let word = unsafe { &*((self.base as u64 + OFF_CPU as u64) as *const AtomicU64) };
-        match word.load(Ordering::Relaxed) {
+        match self.word(OFF_CPU)? {
             UNSCHEDULED => None,
             cpu => Some(cpu as usize),
         }
