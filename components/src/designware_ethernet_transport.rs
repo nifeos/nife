@@ -11,8 +11,9 @@
 //!
 //! # BUGS
 //!
-//! - **Polled**, every `e1000e_transport::POLL_MS` (`net_stack`'s `poll_without_interrupt` serves
-//!   both), for `e1000e_transport`'s reason: no interrupt is granted.
+//! - **Polled**, for `e1000e_transport`'s reason, with its costs: no interrupt is granted, so
+//!   `net_stack`'s `poll_without_interrupt` (which serves both) keeps a core busy while frames
+//!   flow and sleeps to the next scheduler tick once they stop.
 //! - **A full transmit ring drops the frame** after a bounded wait; the stack above retransmits.
 //!
 //! Name: provisional (milestone 53's lane, 2026-10-06 UTC), `<device>_transport` after

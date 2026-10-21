@@ -206,6 +206,103 @@ pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
     lo != 0 && port >= lo && port <= hi
 }
 
+pub mod polled_wait {
+    //! **Whether `net_stack` may sleep while it waits on a NIC that raises no interrupt** (the
+    //! `e1000e` and radon's `DesignWare` port; `components/src/nic_wait.rs`).
+    //!
+    //! Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane. It is here
+    //! rather than in `components/src/nic_wait.rs` so its claim is a host test; only `net_stack`
+    //! uses it.
+    //!
+    //! # Why a sleep is the wrong wait while frames are flowing
+    //!
+    //! A timed wait ends at the first scheduler tick at or after its deadline
+    //! (`abi::timer::TICK_HZ`, 100 Hz), so the 1 ms poll sleep the polled NICs ask for lasts up to
+    //! 10 ms. On a stream, the next segment arrives one round trip after the stack's
+    //! acknowledgment, which on a LAN is well under a tick. A stack that sleeps once nothing is
+    //! waiting therefore adds up to a tick to every round trip, and a window's worth of data per
+    //! tick is then the rate (notes/designware-ethernet/the-receive-rate.md has the
+    //! measurements).
+    //!
+    //! So for one tick after the last frame the stack keeps looking at the ring, yielding the core
+    //! between looks, and sleeps only once a whole tick has passed with nothing. A tick is the
+    //! bound because it is what a sleep costs: looking for longer than that can never deliver a
+    //! frame sooner than sleeping would.
+    //!
+    //! # BUGS
+    //!
+    //! - **A core is busy while a stream flows**, and for a tick after it ends. Each look yields,
+    //!   so another thread on that core still runs, but an idle core does not idle. An interrupt
+    //!   for the NIC, or a timed wait finer than the tick, would remove it; neither exists for
+    //!   these NICs.
+
+    /// What a polled NIC's wait does next.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Next {
+        /// Yield, then look at the ring again: a frame came within the last tick, so another is
+        /// likely sooner than a sleep could end.
+        Look,
+        /// Sleep this many microseconds (the stack's own next timer or the poll interval, whichever
+        /// is sooner), then look. Zero means look now.
+        Sleep(u64),
+    }
+
+    /// The wait at counter time `now`, when the last frame was taken at `last_frame` and a
+    /// scheduler tick is `tick` counter ticks. `stack_due_micros` is when the stack next needs
+    /// polling for its own timers, if ever; `poll_micros` is the longest a polled NIC goes
+    /// unlooked-at.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
+    pub const fn next(
+        now: u64,
+        last_frame: u64,
+        tick: u64,
+        stack_due_micros: Option<u64>,
+        poll_micros: u64,
+    ) -> Next {
+        if now.wrapping_sub(last_frame) < tick {
+            return Next::Look;
+        }
+        match stack_due_micros {
+            Some(due) if due < poll_micros => Next::Sleep(due),
+            _ => Next::Sleep(poll_micros),
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        const TICK: u64 = 40_000; // radon: a 4 MHz counter at 100 Hz
+
+        /// The regression: any wait inside a tick of the last frame sleeps through a tick instead.
+        #[test]
+        fn within_a_tick_of_a_frame_the_stack_never_sleeps() {
+            let last = 1_000_000;
+            for since in [0, 1, TICK / 2, TICK - 1] {
+                assert_eq!(next(last + since, last, TICK, None, 1000), Next::Look);
+            }
+        }
+
+        /// The cost side: an idle link must reach a sleep, or the stack spins a core forever while
+        /// a client waits on a listener nobody connects to.
+        #[test]
+        fn a_tick_after_the_last_frame_the_stack_sleeps_no_longer_than_its_timers_allow() {
+            let last = 1_000_000;
+            assert_eq!(next(last + TICK, last, TICK, None, 1000), Next::Sleep(1000));
+            assert_eq!(
+                next(last + TICK, last, TICK, Some(300), 1000),
+                Next::Sleep(300)
+            );
+            assert_eq!(next(last + TICK, last, TICK, Some(0), 1000), Next::Sleep(0));
+            // Before any frame at all, a stack that has been up a tick sleeps too.
+            assert_eq!(next(5 * TICK, 0, TICK, Some(5000), 1000), Next::Sleep(1000));
+        }
+    }
+}
+
 pub mod ephemeral {
     //! **Which local port `net_stack` gives an outbound socket**: the private ephemeral range,
     //! walked by a cursor that never falls behind the boot clock.
