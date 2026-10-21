@@ -1,8 +1,8 @@
 # Booting nife on an Oracle Always Free Ampere A1 instance
 
-The runbook for milestone 578 (an ACPI discovery path for aarch64)'s item 7: put the aarch64 boot
-file on a disk Oracle Cloud Infrastructure (OCI) will import, boot it on a `VM.Standard.A1.Flex`
-instance, and read what the firmware handed the loader off the serial console. It is an appendix
+The runbook for milestone 578 (an ACPI discovery path for aarch64)'s item 7. It puts the aarch64
+boot file on a disk Oracle Cloud Infrastructure (OCI) will import and boots it on a
+`VM.Standard.A1.Flex` instance. The serial console then shows what the firmware handed the loader. It is an appendix
 to [`notes/rented-metal/aarch64.md`](aarch64.md), whose last section says why the experiment is
 worth an evening.
 
@@ -99,7 +99,7 @@ What the text means:
   has no seed instruction. Those are known, not findings.
 - A `uefi_loader:` refusal to place the kernel with the firmware's memory map printed, or silence
   after `exiting boot services`: most likely RAM does not start at `virt`'s `0x4000_0000`, which is
-  milestone 127's link-address limit. A1 guests are QEMU/KVM (NetBSD reads `QEMU` and
+  milestone 127 (the seL4 machine: a Jetson TX1)'s link-address limit. A1 guests are QEMU/KVM (NetBSD reads `QEMU` and
   `KVM Virtual Machine` from the DMI tables), so `virt`'s map is likely but unproven.
 - The firmware's `Shell>` prompt, or no `nife uefi_loader` banner: the firmware did not find the
   file. Recheck step 3, then try the VMDK. If the shell is up, the interactive console (below) can
