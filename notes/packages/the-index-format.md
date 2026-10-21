@@ -64,7 +64,7 @@ lives:
 | Question | Ruling | Built in `crates/package_index` | Not 801's, and where it goes |
 |---|---|---|---|
 | Q1. Where a package's bytes are named | "L1, with the safeguards": a signed, ordered `custom.locations` list per target as additional sources; basalt always keeps a copy in its own `targets/`, the fallback; HTTPS only; no private or link-local addresses; an owner may pin one mirror | `Entry::locations` (HTTPS only), `Index::sources` (listed, then the repository; a pinned mirror alone), `public_address` | Who signs location changes: decided with the signing setup (milestone 858) |
-| Q2. What "moved to" means | "M1 plus a backup address": only a signed root names a new location, followed once the new place serves a root chaining to the trusted one; each image carries a second index address | The client tries the image's addresses in order (`package_fetch_exerciser`) | Following a root's move is the TUF client's (milestone 858); §250's wording is question A below |
+| Q2. What "moved to" means | "M1 plus a backup address": only a signed root names a new location, followed once the new place serves a root chaining to the trusted one; each image carries a second index address | The client tries the image's addresses in order (`package_fetch_exerciser`) | Following a root's move is the TUF client's (milestone 858); §250's wording is clause 6 (question A below) |
 | Q3. basalt's root in an image | "K4, a default owner trust line": the root's SHA-256 in the form of §220 (signed builds: a vendor signs, a developer self-signs, and trusting a key is scoped), removable by the owner; §220 clause 1 and §195 (a reviewed recipe vouches for a package) clause 4 amended | nothing | The amendments are the integrator's text; the trust line is proposed as a milestone (`design/roadmap/0894-an-image-carries-its-distributions-root-as-a-default-trust-line.md`) |
 | Q4. The path on the host | "Channel prefix, no architecture": `/<channel>/metadata/`, `/<channel>/targets/`, each channel its own TUF repository, all three architectures in one index | `Repository` and its paths; `PROVISIONAL_CHANNEL` is `rolling`, a name calef has not given | Naming the channel is calef's |
 | Q5. `jig`'s resolver grant | "Yes, root zone, any repository": `jig` holds the root zone, recorded where granted, with Q1's safeguards; any repository whose root is an owner trust line with a §220 ceiling | The test grants the root zone, and `public_address` is what bounds listed locations | Granting it at the prompt is the proposed std-at-the-prompt milestone; installing from any repository is milestone 809 (the package client becomes a program)'s `add-index` |
@@ -88,6 +88,12 @@ label of `0x` and hex digits, WHATWG's other "ends in a number" form, which the 
 not name.
 
 ## Two questions the rulings raise
+
+**Ruled.** calef ruled both on #1884 on 2026-10-10 (UTC), and §250's amendment of that date
+records them: A as clause 6 (A1, *"two domains"*), B as clause 10 (*"X1 only"*). Clauses 11 to 13
+(C, below) let the signed index name a listed location's root among those the image carries.
+The second domain is `crickertech.com` (clause 6). The channel's name is calef's, and it is
+provisional.
 
 **A. Does the backup address touch §250's wording?** Yes, in two places. Clause 1 says "An image
 carries one fixed name", and Q2 gives it two. Clause 3 pins ISRG Root X1 "to the index host only".

@@ -44,7 +44,7 @@ calef ruled item 2's five questions on #1884 on 2026-10-10 (UTC), and they add t
    `targets/`; a listed location never reaches a private or link-local address; an owner may pin
    one mirror instead. Built in `package_index` and the client.
 6. Q2: the image carries a second index address, tried when the first stops answering. Built in
-   the client; whether §250's wording changes is question A below.
+   the client; §250 clause 6 is its wording (question A below).
 7. Q4: the index at `/<channel>/metadata/`, packages at `/<channel>/targets/`, one channel per TUF
    repository, all three architectures in one index. Built; the channel name is provisional.
 8. Q5: the client holds the root zone. Built in the test's grant. Q3, a default owner trust line,
@@ -99,16 +99,18 @@ has not run it. The TUF client is 858's.
 
 ## What is calef's
 
-Five questions were ruled on #1884 on 2026-10-10 (UTC). Two that the rulings raise are asked
-there, with options, under `needs-architect` (`notes/packages/the-index-format.md`):
+Item 2's five questions and the two they raise, A and B, are ruled on #1884, and §250's
+amendment of 2026-10-10 (UTC) records A and B (`notes/packages/the-index-format.md` has the
+options):
 
-- A. The second index address against §250 clause 1's one fixed name, and clause 3's pin
-  (recommended: one index at up to two addresses on different registrable domains, one pin).
-- B. Which root a listed HTTPS location must chain to (recommended: the index's own pin).
-- The channel's name. `rolling` is provisional.
-- The second index address's domain: `crickertech.com`, chosen 2026-10-21 (UTC), so the image's
-  second address is `basalt.crickertech.com` (§250 clause 6, which also records that NS1 serves
-  both domains). Serving it, and its DNS record, are calef's hands.
+- A. The second index address against §250 clause 1's one fixed name, and clause 3's pin. Ruled
+  A1, *"two domains"*: §250 clause 6, one index at up to two addresses on different registrable
+  domains. The second domain is `crickertech.com`, chosen 2026-10-21 (UTC), so the image's second
+  address is `basalt.crickertech.com` (clause 6 also records that NS1 serves both domains).
+  Serving it, and its DNS record, are calef's hands.
+- B. Which root a listed HTTPS location must chain to. Ruled *"X1 only"*: §250 clause 10. Clauses
+  11 to 13 (question C, below) let the signed index name another root the image carries.
+- The channel's name. `rolling` is provisional, and naming it is calef's (§250 clause 7).
 - C. How `jig` reaches a GitHub Release asset, whose download starts at `github.com` (Sectigo, not
   X1) and redirects. Ruled 2026-10-12 (UTC) on #2048, below.
 
@@ -174,7 +176,7 @@ location's root fetched from the off-root host, and two redirects allowed fetche
   ruled, and its path was ruled on #1884 (Q4). The `unwritten` decision dependency is now the
   amendments those rulings make. Q3 amends §220 (signed builds: a vendor signs, a developer
   self-signs, and trusting a key is scoped) and §195 (a reviewed recipe vouches for a package).
-  The backup address may amend §250's own wording (question A).
+  The backup address amends §250 clause 1, as clause 6 (question A).
 - Not a ruling but calef's hands: the run on xenon. That is `needs_person`. It waits on xenon's
   I219, which the kernel refuses until milestone 494's bench boot proves it.
 

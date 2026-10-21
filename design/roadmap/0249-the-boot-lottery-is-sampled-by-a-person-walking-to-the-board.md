@@ -172,10 +172,8 @@ waiting on the expensive one.
 A distribution over at least fifty unattended boots, recorded in notes/soak.md beside the nine
 hand-drawn ones: how often each clean-core count comes up, and whether three or four ever does.
 
-Not a kernel that reboots, which is the mechanism rather than the result. Nothing here has run on
-radon, so by this milestone's own test it is not finished, and the status says `HARDWARE` rather
-than `PARTIAL` for that reason. What remains is not a phase somebody could build, it is a bench
-session. `script/board-console --tally` is what turns that session's log into the row this section
+Not a kernel that reboots, which is the mechanism rather than the result. By this test the
+milestone is not finished, and what remains is a bench session, not a phase somebody could build. `script/board-console --tally` is what turns that session's log into the row this section
 asks for, and it prints the caveats beside it so a count of draws is not quoted as a probability.
 
 ## The bench answered it, 2026-09-04, and closed the route
@@ -205,6 +203,14 @@ cannot write, so the byte had to be sent by detaching it, which is exactly the p
 filed (`design/roadmap/proposals/board-console-cannot-speak-to-the-board.md`). Sending it at the
 wrong moment also stopped U-Boot's autoboot countdown and cost a power cycle, which is the fallback
 this block names working as an obstacle.
+
+## The draws so far, read 2026-10-21
+
+`script/board-console --tally` over the five radon captures in `bench/` counts **41 unattended
+draws of the rebooting soak: 38 at one clean core, 3 at two, none at zero, three or four.** Nine
+more reach the fifty. Four builds disagree (the two later ones drew one clean core 39 times in 39),
+so the pooled count is not one distribution. notes/soak/boot-lottery.md has the table, what was
+left out, and why these do not compare with the nine hand-drawn power cycles.
 
 ## All three architectures, 2026-09-24
 
@@ -259,11 +265,6 @@ notes/board-reboot.md.
   is the weaker half and is unchanged.
 - Nothing here explains the lottery, only measures it. Why placement lands where it does is
   DECISIONS 138's territory and is not answered by more samples.
-- **The tally has never read a real multi-boot capture.** Its clean-core count is asserted against a
-  real one-boot capture carrying a census (`qemu-2026-09-03-riscv64-soak-census.log`, taken for this
-  milestone), but every case with more than one boot in it is text this project wrote, because no
-  multi-boot capture exists anywhere yet. That is the same gap `crates/board_console`'s `BUGS`
-  records for its recognizer, and the first bench log closes it.
 - A rebooting series and a long run are different experiments. Fifty two-minute draws measure the
   distribution over placements; the three-hour run in notes/soak.md measures what one placement does
   over time and is the only evidence that a slow draw is stable rather than a warm-up. Neither
