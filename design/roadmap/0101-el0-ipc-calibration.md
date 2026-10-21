@@ -32,14 +32,14 @@ both IPC benchmarks on one machine, both planes from the same boot, five boots b
 | `ipc_rtt` | kernel-side | 46 | two rendezvous, one address space, no trap |
 | `ipc_rtt_el0` | EL0 to EL0 | 350 | two rendezvous, two address spaces, four `svc`s |
 
-On one core, against seL4 itself, nife's EL0 round trip costs about 4.6 times seL4's: seL4's
-`Call` plus `ReplyRecv` between two address spaces 96 ns, `ipc_rtt_el0` 442 ns, both guests of the
-same HVF machine (2026-10-21, eight boots each, nife at `f87c9b5c4`;
+On one core, against seL4 itself, nife's EL0 round trip costs about 4.6 times seL4's. seL4's
+`Call` plus `ReplyRecv` between two address spaces takes 96 ns and `ipc_rtt_el0` 442 ns, both
+guests of the same HVF machine (2026-10-21, eight boots each, nife at `f87c9b5c4`;
 [arm-plan-under-hvf.md](../../notes/arm-plan-under-hvf.md)). That is the ratio in force. Where it is
-not apples to apples: both kernels pay stage-2 switches seL4's published figures do not; both are
+not apples to apples: both kernels pay stage-2 switches seL4's published figures do not. Both are
 loop averages against the generic timer, not sel4bench's per-call PMU reads, because the guest's PMU
-is synthesized; seL4 carries one patched line for the guest's 8-bit ASIDs; and seL4 takes two
-fastpath syscalls where `ipc_rtt_el0` takes four. The table above is an earlier build: the same
+is synthesized. seL4 carries one patched line for the guest's 8-bit ASIDs, and takes two fastpath
+syscalls where `ipc_rtt_el0` takes four. The table above is an earlier build: the same
 bench read 395 to 444 ns on 2026-10-21, a rise nothing has explained.
 
 Against seL4's published pair, 413 cycles for the call and 426 for the reply, one-way each, ~839

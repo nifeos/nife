@@ -80,9 +80,9 @@ attribution line a gate can check. Both wrong versions, and why no gate caught e
 That ratio is not a measurement of the two kernels. It sets seL4's PMU cycles, read on bare metal
 on a 2015 Cortex-A57 (the Jetson TX1), against nife's nanoseconds under HVF on an Apple M3,
 multiplied by a clock rate nothing pinned. The ratio in force is the same-silicon one in
-[arm-plan-under-hvf.md](../../notes/arm-plan-under-hvf.md): seL4 booted as a guest on the same Apple
-core, `Call` plus `ReplyRecv` between two address spaces, 96 ns, against nife's `ipc_rtt_el0`,
-442 ns, about 4.6 times (2026-10-21, eight boots each, nife at `f87c9b5c4`). Both are guests, both
+[arm-plan-under-hvf.md](../../notes/arm-plan-under-hvf.md), with seL4 booted as a guest on the same
+Apple core. Its `Call` plus `ReplyRecv` between two address spaces takes 96 ns and nife's
+`ipc_rtt_el0` 442 ns, about 4.6 times (2026-10-21, eight boots each, nife at `f87c9b5c4`). Both are guests, both
 averaged over 10,000-pass loops against the generic timer rather than read per call through a PMU,
 and seL4 carries one patched line for the guest's 8-bit ASIDs. The operation still differs: seL4's
 two fastpath syscalls against `ipc_rtt_el0`'s four.
