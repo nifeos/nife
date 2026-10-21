@@ -38,6 +38,8 @@ pub(super) fn boot_usb_keyboard() -> Option<usb_keyboard_service::Wiring> {
     match usb_keyboard_service::start(image) {
         Ok(w) => {
             usb_keyboard_service::describe(&w.report);
+            #[cfg(feature = "xhci_port_probe")]
+            crate::xhci_port_probe::after_report();
             (w.report[0] != extensible_host_controller_interface::report::FAILED).then_some(w)
         }
         Err(why) => {

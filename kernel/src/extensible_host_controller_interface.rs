@@ -96,6 +96,8 @@ pub fn bring_up() -> Result<Found, Absent> {
         read(regs::DBOFF),
         read(regs::RTSOFF),
     );
+    #[cfg(feature = "xhci_port_probe")]
+    crate::xhci_port_probe::before_handoff(regs_va, dev.bar_bytes);
     take_from_firmware(regs_va, &caps, dev.bar_bytes);
 
     let registers =
