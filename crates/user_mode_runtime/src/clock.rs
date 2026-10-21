@@ -333,11 +333,15 @@ fn read_cycle_counter() -> u64 {
 ///   that faults is a space with no thread in it, which has nothing to ask. Stated because the
 ///   failure is a fault rather than a value, which is the one thing a caller cannot handle.
 pub fn current_cpu() -> Option<usize> {
+    own_current_cpu_page().cpu()
+}
+
+/// This thread's first current-CPU page, which [`current_cpu`] and [`tick_hz`] read.
+fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
     // SAFETY: the kernel maps a page it owns, read-only, at `current_cpu_contract::PAGE_VA` into
-    // every address space that a TCB binds, before that thread's first instruction runs. See this
-    // function's own BUGS section for the one shape that has no page.
-    let page = unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VA) };
-    page.cpu()
+    // every address space that a TCB binds, before that thread's first instruction runs. See
+    // `current_cpu`'s BUGS section for the one shape that has no page.
+    unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VA) }
 }
 
 /// **The scheduler tick's rate in Hz**, the resolution of every timed wait, from this thread's
@@ -349,10 +353,7 @@ pub fn current_cpu() -> Option<usize> {
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
 pub fn tick_hz() -> Option<core::num::NonZeroU64> {
-    // SAFETY: as `current_cpu`: the kernel maps the page read-only at `PAGE_VA` into every address
-    // space a TCB binds, before that thread's first instruction runs.
-    let page = unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VA) };
-    page.tick_hz()
+    own_current_cpu_page().tick_hz()
 }
 
 /// **Monotonic nanoseconds since boot**, from [`now`] and [`cntfrq`].
