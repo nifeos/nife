@@ -216,13 +216,13 @@ pub mod polled_wait {
     //!
     //! # Why a sleep is the wrong wait while frames are flowing
     //!
-    //! A timed wait ends at the first scheduler tick at or after its deadline
-    //! (`abi::timer::TICK_HZ`, 100 Hz), so the 1 ms poll sleep the polled NICs ask for lasts up to
-    //! 10 ms. On a stream, the next segment arrives one round trip after the stack's
-    //! acknowledgment, which on a LAN is well under a tick. A stack that sleeps once nothing is
-    //! waiting therefore adds up to a tick to every round trip, and a window's worth of data per
-    //! tick is then the rate (notes/designware-ethernet/the-receive-rate.md has the
-    //! measurements).
+    //! A timed wait ends at the first scheduler tick at or after its deadline, 100 Hz as the
+    //! kernel publishes it on the current-CPU page (`user_mode_runtime::tick_hz`), so the 1 ms poll
+    //! sleep the polled NICs ask for lasts up to 10 ms. On a stream, the next segment arrives one
+    //! round trip after the stack's acknowledgment, which on a LAN is well under a tick. A stack
+    //! that sleeps once nothing is waiting therefore adds up to a tick to every round trip, and a
+    //! window's worth of data per tick is then the rate
+    //! (notes/designware-ethernet/the-receive-rate.md has the measurements).
     //!
     //! So for one tick after the last frame the stack keeps looking at the ring, yielding the core
     //! between looks, and sleeps only once a whole tick has passed with nothing. A tick is the

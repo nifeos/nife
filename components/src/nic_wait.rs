@@ -109,7 +109,11 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
     if frame_waiting {
         return;
     }
-    let tick = cntfrq() / abi::timer::TICK_HZ;
+    // `cntfrq`'s discipline: a process that cannot know the tick dies saying so, rather than
+    // guessing one and silently paying a tick per round trip again.
+    let tick_hz = user_mode_runtime::tick_hz()
+        .expect("the scheduler tick is unknown: this thread's current-CPU page carries none");
+    let tick = cntfrq() / tick_hz.get();
     let due = iface
         .poll_delay(instant(), sockets)
         .map(|d| d.total_micros());
