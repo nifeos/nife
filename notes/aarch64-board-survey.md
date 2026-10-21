@@ -4,6 +4,10 @@
 selection block in milestone 87's shape; the milestone file itself is the integrator's to mint, and
 this note's name is provisional.)*
 
+This note chooses a board for the seL4 comparison alone. The board for nife's first general aarch64
+machine, chosen for modern features, is surveyed in [the modern aarch64 board
+survey](aarch64-modern-board-survey.md).
+
 Milestone 25 is done except for `sel4bench`, which times single operations through the PMU cycle
 counter that neither QEMU-TCG nor Apple HVF provides (notes/benchmarks.md, notes/pmu.md). Milestone
 74 is the driver that will read that counter; this survey picks the board it reads it on. The
