@@ -189,20 +189,39 @@ BAR window for real, so one netboot of `main` closes the `x86_64` half: notes/x8
 bench: booting xenon over the network". What to look for: the `io apic`, `device irq` and `smp`
 lines, every tour line, the prompt, and `echo hello` echoing.
 
-## The radon boot: to the prompt, and one keystroke
+## The radon boot: to the prompt, and every keystroke
 
-radon netbooted `main` at `cda4ceb55` (`script/board-image --tftp`, SEALED) twice on 2026-10-21
-(UTC): `bench/radon-2026-10-21/890-boot-to-prompt.log`, whose README lists the bytes typed. Both
-boots proved, on the JH7110:
+radon netbooted twice on 2026-10-21 (UTC) from this milestone's branch, and both boots proved, on
+the JH7110:
 
 - The PLIC slice reads the S contexts from the device tree. The console is source 32. `smp: 4
   core(s) online`. The self-test reads `11 of 13 passed, 2 absent: blockdev deviceirq`, with
   `clock`, `trng` and `entropy` passing.
-- The hand-over prints `uart shape: registers 4 byte(s) apart, 32-bit access (device tree)`, the
-  progenitor's lines follow, and `script/board-console --replay ... --until prompt` reports
-  `reached shell prompt`.
-- The keystroke path delivers one byte per boot, the first, whether typed in a burst or one byte
-  at a time (`BUGS`).
+- The hand-over prints `uart shape: registers 4 byte(s) apart, 32-bit access (device tree)`, and
+  the shell's prompt follows.
+- With the fix, `echo hello` and a 50-byte line, each typed in one write, and `ls` typed a byte at
+  a time, all echo and run (`bench/radon-2026-10-21/890-keystroke-fix.log`). `reboot` at the
+  prompt reset the board through the AXP15060 and it netbooted the next image.
+
+`bench/radon-2026-10-21/README-890.md` lists every byte typed and what each boot ran.
+
+## Why radon took one keystroke per boot
+
+The trap handler claimed source 32, cleared its enable bit on the claiming context, then wrote the
+completion. The PLIC specification ignores a completion for a source its target does not enable,
+and the JH7110's PLIC does, so its gateway waited for a completion it had already been sent and
+forwarded nothing more. QEMU's PLIC completes whatever it is given, so every gate passed.
+
+The bench probe that showed it printed the UART's and the PLIC's state every 5 s, then completed
+source 32 on each context that enabled it (`bench/radon-2026-10-21/890-plic-probe.log`). After one
+keystroke a second sat in the UART, `lsr=0x61` (data ready) and `iir=0xc4` (receive data
+available), with the source enabled at priority 1 and `pending=false`. Each probe completion let
+exactly one more byte through.
+
+The fix makes the claim the mask: the gateway holds a claimed source until its completion, so the
+handler leaves the source enabled, records the claiming context (`arch::irq::hold_claim`), and the
+driver's `Irq` ACK completes it there. `drivers/plic.rs` has no `disable`. The masked-line test's
+replayable falsification is an ACK that forgets its claim.
 
 ## How userspace learns the UART's shape
 
@@ -213,13 +232,6 @@ progenitor's first start word, and the progenitor passes it to `console` and `in
 kills it with a load fault at the LSR offset it polled (`stval` `0x14` or `0x5`). The timer tick
 tests for a stalled log drainer once a second (`kernel_log::stall_tick`), so that kill report
 reaches the wire.
-
-## The radon boot that closes the riscv64 half
-
-From `main` with the keystroke fix: `script/board-image --tftp`, `script/board-netboot`, a power
-cycle, then `script/board-console --until prompt` to `Stage::Prompt`. Type `echo hello` and Enter;
-the echo proves the keystroke path through PLIC source 32. Record `board_console`'s verdict line, or
-its log if it stopped short.
 
 ## Done when
 
@@ -234,18 +246,13 @@ its log if it stopped short.
 |---|---|
 | 1 | Done. `riscv64_boot.rs` and `x86_64_boot.rs` are gone. |
 | 2 | Done. `kernel_main`'s `cfg(target_arch)` lines are each port's banner and riscv64's console register shape; `hand_over`'s one is `x86_64`'s install offer. |
-| 3 | Under QEMU, both ports: see each pull request's gate table. The boards are the xenon and radon boots above. |
+| 3 | Under QEMU, both ports: see each pull request's gate table. radon's half is the boot above; xenon's is outstanding. |
 
 ## BUGS
 
-- On radon the keystroke path delivers only the first byte of a boot (the radon boot above). QEMU
-  delivers every byte, so the gates pass. Not a PLIC context mismatch: the trap handler claims,
-  disables and completes source 32 in the claiming hart's own context
-  (`arch/riscv64/exceptions.rs`), and the `Irq` ACK re-enables it at the source's fixed target
-  context (`arch::irq::target_context`). Undiagnosed between the DesignWare APB UART's receive
-  interrupt, `input`'s drain and ACK, and the shell after its first character. The UART does
-  receive later bytes: the soak's escape, a poll of LSR's data-ready bit, saw the byte
-  `script/board-console --stop` sent on the same evening (`bench/radon-2026-10-21/soak-stop.log`).
+- QEMU cannot show a dropped PLIC completion: its PLIC accepts a completion for a disabled source.
+  A handler that disables before it completes passes every gate, and only radon's console shows
+  it.
 - `bring_up_machine` carries six `cfg(target_arch)` sites: aarch64's frequency check, two blocks
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here

@@ -1,0 +1,255 @@
+U-Boot SPL 2021.10 (Feb 12 2023 - 18:15:33 +0800)
+DDR version: dc2e84f0.
+Trying to boot from SPI
+
+OpenSBI v1.2
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : StarFive VisionFive V2
+Platform Features         : medeleg
+Platform HART Count       : 5
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 4000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : jh7110-hsm
+Platform PMU Device       : ---
+Platform Reboot Device    : pm-reset
+Platform Shutdown Device  : pm-reset
+Firmware Base             : 0x40000000
+Firmware Size             : 292 KB
+Runtime SBI Version       : 1.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 1
+Domain0 HARTs             : 0*,1*,2*,3*,4*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000040000000-0x000000004007ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000040200000
+Domain0 Next Arg1         : 0x0000000042200000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 1
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdcbx
+Boot HART ISA Extensions  : none
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 4096
+Boot HART PMP Address Bits: 34
+Boot HART MHPM Count      : 2
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+
+
+U-Boot 2021.10 (Feb 12 2023 - 18:15:33 +0800), Build: jenkins-VF2_515_Branch_SDK_Release-24
+
+CPU:   rv64imacu
+Model: StarFive VisionFive V2
+DRAM:  8 GiB
+MMC:   sdio0@16010000: 0, sdio1@16020000: 1
+Loading Environment from SPIFlash... SF: Detected gd25lq128 with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+StarFive EEPROM format v2
+
+--------EEPROM INFO--------
+Vendor : StarFive Technology Co., Ltd.
+Product full SN: VF7110B1-2253-D008E000-00004584
+data version: 0x2
+PCB revision: 0xb2
+BOM revision: A
+Ethernet MAC0 address: 6c:cf:39:00:47:2c
+Ethernet MAC1 address: 6c:cf:39:00:47:2d
+--------EEPROM INFO--------
+
+In:    serial@10000000
+Out:   serial@10000000
+Err:   serial@10000000
+Model: StarFive VisionFive V2
+Net:   eth0: ethernet@16030000, eth1: ethernet@16040000
+switch to partitions #0, OK
+mmc1 is current device
+found device 1
+bootmode flash device 1
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Hit any key to stop autoboot:  2  1  0 
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Importing environment from mmc1 ...
+## Warning: Input data exceeds 1048576 bytes - truncated
+## Info: input data size = 1048578 = 0x100002
+** Invalid partition 2 **
+Couldn't find partition mmc 1:2
+Can't set block device
+## Warning: defaulting to text format
+## Error: "boot2" not defined
+switch to partitions #0, OK
+mmc1 is current device
+Scanning mmc 1:1...
+Found U-Boot script /boot.scr.uimg
+1595 bytes read in 8 ms (194.3 KiB/s)
+## Executing script at 43900000
+nife: boot.scr is driving this boot, milestones 218 and 257
+nife: tftp server is 192.168.8.206, setenv nife_boot_server to point somewhere else
+ethernet@16030000 Waiting for PHY auto negotiation to complete....... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+DHCP client bound to address 192.168.8.200 (257 ms)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-vf2.img'.
+Load address: 0x40200000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 ######################################
+	 6.9 MiB/s
+done
+Bytes transferred = 3415432 (341d88 hex)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-initrd.img'.
+Load address: 0x90000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #####################
+	 6.9 MiB/s
+done
+Bytes transferred = 17482240 (10ac200 hex)
+nife: payload came from net
+Moving Image from 0x40200000 to 0x80200000, end=80541000
+## Flattened Device Tree blob at 86000000
+   Booting using the fdt blob at 0x86000000
+   Using Device Tree in place at 0000000086000000, end 000000008600d41a
+
+Starting kernel ...
+
+clk u5_dw_i2c_clk_core already disabled
+clk u5_dw_i2c_clk_apb already disabled
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc080242c96  (high half: Sv39 paging is on)
+  device tree : 0x0000000086000000
+  screen      : none (no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for); this console is the UART
+  smp: 5 core(s) in the device tree, 4 startable
+  smp: cpu 0's riscv,isa names user mode and not supervisor: it cannot run this kernel, whatever status and mmu-type claim; not started
+  plic: S contexts from the device tree differ from the 2h+1 formula (expected on the JH7110: the disabled S7 shifts every context down one)
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  smp: sbi hsm hart_start (the only mechanism RISC-V defines)
+  smp: cpu 0 is not startable by this kernel (disabled, no supervisor
+       mode, or an enable-method we do not speak); leaving it alone.
+  smp: 4 core(s) online
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+
+nife
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  stack top       : 0xffffffc080491000
+  firmware handoff: 0x0000000086000000  (device tree)
+  processors      : 4 online of 5 described, boot cpu hwid 0x1
+  memory          : 4096 MiB total, 4067 MiB free (29468 KiB in use)
+  console         : NS16550 at 0xffffffc010000000, interrupt line 32
+                  : no screen; this console is the UART alone
+  interrupts      : PLIC at 0x000000000c000000, this hart's S-mode context 2
+  timer           : 100 Hz tick, counter at 4 MHz, interrupts ON
+  initial ramdisk : 17482240 bytes at 0x0000000090000000, a nifefs archive of 123 program(s)
+  pcie            : none (this machine describes no host bridge)
+  iommu           : none (no riscv-iommu-pci function on this machine's bus)
+  mmu             : Sv39 on, fine-grained W^X tables installed, one satp, kernel high half at 0xffffffc000000000
+                  : kernel root 0x00000000400a0000, live satp root 0x00000000400a0000
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: riscv64, 4 processor(s), 4096 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffffffc180000000 -> 0x408ce000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x408ce000; used 7369 -> Some(7370) -> Some(7369)
+  self-test       : timer      ok      the 4MHz counter advanced 80001 and 2 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+  self-test       : preemption ok      5 never-yield threads on 4 core(s): 0 starved, 85 preemptions
+
+  user thread 8589934597 killed: scause 0xd (code 13)
+    pc 0x000000006000007e   stval 0xffffffc0802a8da0   user sp 0x000000007ffeffb0
+    satp 0x80000000000408d1 (root 0x408d1000), leaf at stval Some(Flags(11))
+  the kernel is fine.
+  self-test       : userspace  ok      a program at user level read 0xffffffc0802a8da0: killed, and the kernel survived
+  capability slots: 2 of 64 at peak
+  self-test       : budget     ok      a process mapped 22 pages of a 24-page untyped; kernel frames used 7446 -> 7446
+  self-test       : blockdev   absent  no virtio block device on this machine, over MMIO or PCIe
+  self-test       : deviceirq  absent  no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists
+  self-test       : clock      ok      JH7110 STG CRG at 0x10230000 (from the tree): clocks 0x00000000,0x00000000 -> 0x80000000,0x80000000, reset released after 1 polls
+  self-test       : trng       ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first f9690215.., differ true; bring-up 556 us, 64 bytes in 65 us (980842 bytes/s)
+  capability slots: 3 of 64 at peak
+  self-test       : entropy    ok      the JH7110 TRNG served 32+32 bytes to a client, first 0fda89dc.., the two draws differ: true
+nife self-test: 11 of 13 passed, 2 absent: blockdev deviceirq
+nife: the capability core runs on riscv64.
+
+nife: handing the system to the userspace progenitor.
+  uart irq  : 32 (machine description)
+  uart shape: registers 4 byte(s) apart, 32-bit access (device tree), passed to the console and input drivers
+  entropy     : NONE. No virtio-rng device, and this CPU has no seed instruction (RDSEED, RNDRRS), so nothing at the prompt can draw random bytes and there is no login.
+  capability slots: 11 of 64 at peak
+  network     : the JH7110's Ethernet port, link up; the kernel started net_stack on it, confined by its own arithmetic alone (no IOMMU on this SoC)
+  capability slots: 13 of 64 at peak
+  progenitor stack: 10720 of 57344 bytes at peak, 46624 spare
+  progenitor stack: 14280 of 57344 bytes at peak, 43064 spare
+  capability slots: 20 of 64 at peak
+  capability slots: 22 of 64 at peak
+progenitor: construction budget dropped; retype answers NoSuchSlot
+progenitor: every program measured against the archive table
+progenitor: network stack up; DHCP leased 192.168.8.200
+progenitor: no name resolver (no lease name server, no entropy, or not vouched); programs here resolve no names
+nife capability shell. naming a resource in a command IS granting it.
+commands: help, echo <text>, caps [command], time <command>, xargs <command>,
+          cd, pwd, ls, mkdir, touch, apropos <word>, rm, wc, mdr, <prog> [--mem N] [arg]
+          and the operators  >  >>  <  |
+          'quote a whole word'   and   ;  &&  ||   with  echo $?  for the status
+$ echo hello
+hello
+$ echo the quick brown fox jumps over the lazy dog
+the quick brown fox jumps over the lazy dog
+$ ls
+  this shell holds no directory capability; there is nothing here to name
+$ reboot
+  reboot: no writable filesystem is attached, so nothing to sync; restarting
+reboot: the kernel was asked to restart the machine
+  progenitor stack: 20320 of 57344 bytes at peak, 37024 spare
+reboot: JH7110: bringing the PMIC's I2C bus back up first, because OpenSBI resets this board with an I2C write to the AXP15060 (milestone 592). SYS CRG at 0x13020000 (named by this machine's device tree); plan from the tree's own clocks and resets of the PMIC's bus (1 specifier(s) skipped).
+reboot: JH7110: clock 143 0x80000000 -> 0x80000000 (running)
+reboot: JH7110: reset 81 assert 0xffe7efcc -> 0xffe5efcc, status 0x001a1033 (released, 1 polls)
+reboot: AXP15060: direct route, controller 0x12050000, PMIC 0x36, IC clock 49500000 Hz (bus_root 1, divs 3/2/4, pll2 fbdiv 99 prediv 2 postdiv1 1), standard mode hcnt 208 lcnt 229 sda_hold 15
+reboot: AXP15060: reg 0x32 read 0x24, writing 0x64 (bit 6 set, every other bit as found); this line is the last if the PMIC honors it
+reboot: AXP15060: write completed without a reset; the 
