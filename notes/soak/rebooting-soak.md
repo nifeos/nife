@@ -19,7 +19,8 @@ The census of milestone 240 (the soak reports what happened and not where, so an
 thread and no grinder. Counting the nine boots of 2026-09-03 that way, six landed on two clean cores,
 two on one, and one on none. Three and four clean cores have never been drawn. Nothing says whether
 that is rare or structurally impossible. The distribution is the missing thing, and it is missing
-because every draw cost a person a walk to the board.
+because every draw cost a person a walk to the board. The unattended draws so far, and how many the
+fifty still needs, are in [boot-lottery.md](boot-lottery.md).
 
 ## The hazard, and the four things that answer it
 
