@@ -201,17 +201,13 @@ the hold lifts.
 
 ## Character widths
 
-calef, 2026-10-21 03:53 UTC: widths come from the `unicode-width` crate, pinned to the version
-`alacritty_terminal` 0.26.0 resolves to, so the engine and the oracle agree. A width table
-maintained in the tree is refused: "We are not going to maintain A. I don't even know how we would
-know to change it."
+calef, 2026-10-21 UTC: widths come from the `unicode-width` crate, which takes ordinary dependency
+updates like any other ("yes", 03:56 UTC). A width table maintained in the tree is refused: "We are
+not going to maintain A. I don't even know how we would know to change it."
 
-`alacritty_terminal` 0.26.0 asks for `unicode-width` 0.2.0 or later within 0.2, which resolves to
-0.2.2 today. `video_terminal` pins `=0.2.2`. The engine and the harness share the workspace's
-`Cargo.lock`, so the oracle resolves to the same copy, and a bump of either moves both in one
-change. Step 7 adds a harness test that the two report the same width for every Unicode scalar
-value, which fails loudly if they ever part. The crate reaches the kernel's graph through the
-witness; the ruling is the §46 take.
+The engine and `alacritty_terminal` 0.26.0 both ask for 0.2, so the workspace's one `Cargo.lock`
+gives them the same copy. The crate reaches the kernel's graph through the witness; the ruling is
+the §46 take.
 
 ## What keeps A from stalling
 
