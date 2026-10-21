@@ -32,12 +32,21 @@ both IPC benchmarks on one machine, both planes from the same boot, five boots b
 | `ipc_rtt` | kernel-side | 46 | two rendezvous, one address space, no trap |
 | `ipc_rtt_el0` | EL0 to EL0 | 350 | two rendezvous, two address spaces, four `svc`s |
 
-Against seL4's published pair for the same-core cross-address-space path, 413 cycles for the call
-and 426 for the reply, one-way each. So ~839 cycles for a round trip in our sense. The corrected
-figure is roughly 1.1x to 1.7x an L4-lineage round trip. The range is the clock, not the
-measurement. HVF passes through no PMU, so a cycle count here is nanoseconds times an *assumed*
-clock, and the host M3 runs 2.75 GHz on an E-core and 4.05 GHz on a P-core with nothing pinning the
-vCPU thread to either.
+On one core, against seL4 itself, nife's EL0 round trip costs about 4.6 times seL4's. seL4's
+`Call` plus `ReplyRecv` between two address spaces takes 96 ns and `ipc_rtt_el0` 442 ns, both
+guests of the same HVF machine (2026-10-21, eight boots each, nife at `f87c9b5c4`;
+[arm-plan-under-hvf.md](../../notes/arm-plan-under-hvf.md)). That is the ratio in force. Where it is
+not apples to apples: both kernels pay stage-2 switches seL4's published figures do not. Both are
+loop averages against the generic timer, not sel4bench's per-call PMU reads, because the guest's PMU
+is synthesized. seL4 carries one patched line for the guest's 8-bit ASIDs, and takes two fastpath
+syscalls where `ipc_rtt_el0` takes four. The table above is an earlier build: the same
+bench read 395 to 444 ns on 2026-10-21, a rise nothing has explained.
+
+Against seL4's published pair, 413 cycles for the call and 426 for the reply, one-way each, ~839
+for a round trip, the 350 ns above converts to roughly 1.1x to 1.7x. That is not a measurement of
+the two kernels. It sets bare-metal PMU cycles on a Jetson TX1 (Cortex-A57, 2015) against
+nanoseconds under HVF on an Apple M3, times a clock nothing pinned (2.75 GHz E-core to 4.05 GHz
+P-core). The range is that clock.
 
 Three errors were found where one was expected, and they are the reason the original "4 to 7
 times heavier" read as sober: wrong plane (kernel-side, no trap), wrong build (debug against their
@@ -55,9 +64,8 @@ plausible first reading of the RISC-V `map_new` movement for the same reason. Th
 been confidently wrong is the useful artifact. A page that only ever shows corrected
 numbers teaches a reader nothing about how much to trust the next one.
 
-It forecast 12-24x. The measured answer is ~1.1x to ~1.7x, an error the same size as the one it
-was written to correct, in the other direction. It was written to catch an overstatement and
-produced a larger one.
+It forecast 12-24x. Measured on one core against seL4 itself, the answer is about 4.6x. It was
+written to catch an overstatement and produced a larger one.
 
 <!-- line-citation: exception. Reason: the block as raised, kept wrong on purpose (above). -->
 > What the source actually says. notes/benchmarks.md:66 names a true EL0-to-EL0 benchmark as
@@ -127,7 +135,7 @@ regression tripwires run against them, and notes/benchmarks.md explains why a ke
 length is the right thing for a gate and the wrong thing for a comparison. Both planes stay; only
 the comparison moved.
 
-**Cycles are still arithmetic here, and no ratio in this file should be quoted tighter than "same
+**Cycles are still arithmetic here, and no cycle ratio in this file should be quoted tighter than "same
 order".** Every cycle figure inherits a ~1.5x uncertainty from not knowing which core type the vCPU
 thread ran on. That is milestone 74's job, and it is why this milestone is not BUILT.
 
@@ -147,7 +155,7 @@ and it did not.
 - **Recorded.** The kernel-side numbers stay. The IPC round trip is the gating instrument the
   icount tripwires run against, and `notes/benchmarks.md` explains why a kernel-internal path
   length is right for a gate and wrong for a comparison.
-- **Recorded.** No ratio in this block may be quoted tighter than "same order": every cycle figure
+- **Recorded.** No cycle ratio in this block may be quoted tighter than "same order": every cycle figure
   inherits roughly 1.5x uncertainty from not knowing whether the vCPU thread ran on an M3 E-core or
   P-core.
 - **Recorded.** The four caveats that outweigh the ratio still hold, including that seL4's fastpath
@@ -174,8 +182,9 @@ and it did not.
 
 ## Index row
 
-Re-measured on five release boots: `ipc_rtt_el0` 350 ns, about 1.1x to 1.7x an L4-lineage
-round trip, not the 4-7x the note claimed nor the 12-24x this block predicted. Three errors found
+On one Apple core under HVF, `ipc_rtt_el0` costs 442 ns against seL4's 96 ns for `Call` plus
+`ReplyRecv`, about 4.6x (2026-10-21), not the 12-24x this block predicted. The 1.1x to 1.7x
+from seL4's published cycles crosses silicon on an assumed clock. Three errors found
 where one was expected, and the prediction is left standing as the record rather than quietly
 fixed. Cycles are still arithmetic on an assumed clock; the PMU reading waits on milestone 16's
 silicon
