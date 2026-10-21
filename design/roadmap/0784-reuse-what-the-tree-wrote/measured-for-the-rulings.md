@@ -2,10 +2,10 @@
 
 Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.md).
 
-Items (d), (g) and (h) each wait on a §46 (thin primitives or whole subsystems) ruling, and each
-ruling follows data. This page is that data, measured on 2026-10-21 (UTC) at base `810666a39` on
-patagonia (Apple M3) with the pinned nightly of 2026-10-20. Each section ends with options and a
-recommendation. No dependency was added: every probe is generated outside the tree by
+Items (d), (g) and (h) each took a §46 (thin primitives or whole subsystems) ruling that followed
+data. This page is that data, measured on 2026-10-21 (UTC) at base `810666a39` on
+patagonia (Apple M3) with the pinned nightly of 2026-10-20. Each section ends with the options, the
+lane's recommendation and calef's ruling. No dependency was added: every probe is generated outside the tree by
 [probe.sh](probe.sh), and none of the crates below is in `Cargo.lock`.
 
 Item (c) is not measured here. Its row is a wait on a release (c0), and crates.io still lists
@@ -117,6 +117,9 @@ for a server, and `talc` is maintained, Miri-checked and fuzzed. The memory and 
 measured and small. B would be choosing to write what exists, and I would not choose it at equal
 effort. The vendoring is a real cost, and the ruling should say whether it is acceptable here.
 
+Ruled: A. calef, 2026-10-21 (UTC), on #2490: "A sounds right." Vendoring `talc`'s core into std is
+accepted as part of A.
+
 ## (g) `portable_executable` against `object` 0.40.0
 
 ### What `object` would replace
@@ -141,12 +144,12 @@ besides `object` itself. The rest (`memchr`, `indexmap`, `hashbrown`, `equivalen
 already there at the same versions. `object` is 68,616 lines; `write/pe.rs` is 858 of them. It is
 MIT or Apache-2.0, released 2026-08, with no advisory.
 
-### Why the earlier survey is answered already
+### Milestone 821, which the options turn on
 
-Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released on its own) holds calef's 2026-10-07
-ruling on #1806: this crate is "publish ours", proven by Kani and then published. A crate a model
-checker must reach in full cannot have `object` inside it. 821's own `Reuse:` line says so. No
-ELF-to-PE converter exists on crates.io; `object` writes PE but converts nothing.
+Milestone 821 (`portable_executable`: an ELF-to-PE converter, proven, then released on its own)
+would have proven the crate with Kani and published it. A crate a model checker must reach in full
+cannot have `object` inside it. No ELF-to-PE converter exists on crates.io; `object` writes PE
+but converts nothing.
 
 ### Decision (g), and the options
 
@@ -156,6 +159,10 @@ ELF-to-PE converter exists on crates.io; `object` writes PE but converts nothing
 
 Recommendation: A. The only consumer is `xtask` on its own build product, so B buys little
 exposure, and it reverses a ruling that has a milestone behind it. I would choose A at equal effort.
+
+Ruled: B. calef, 2026-10-21 (UTC), on #2490: "B". `object`, with minimal features, does the ELF
+reading and the PE writing, and the conversion policy stays ours. Milestone 821 is refused: its
+input is nife's own build product, so its proofs would protect no known user.
 
 ## (h) uutils for the `coreutils` programs
 
@@ -207,6 +214,8 @@ segments included, so x86_64 is the fairer column. Building is not running: noth
 Recommendation: A. The demo value is real, so the candidate stays recorded with these numbers. The
 capability shape decides it for base: a `wc` that needs a filesystem grant is worse than ours on
 the property nife exists to show. At equal effort I would still choose A.
+
+Ruled: A. calef, 2026-10-21 (UTC), on #2490: "A".
 
 ## Rerunning
 

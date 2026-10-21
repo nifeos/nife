@@ -20,7 +20,8 @@ landed wording. Title and slug are drafts.
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
 under §46. Items (a), (e) and (f2) are built, on calef's approvals of `httparse` (2026-10-18 UTC),
-`r-efi` and `pulldown-cmark` (both 2026-10-20 UTC). Item (f) is refused: `plist.rs` stays.
+`r-efi` and `pulldown-cmark` (both 2026-10-20 UTC). Items (d) and (g) are ruled to take `talc` and
+`object` (2026-10-21 UTC). Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -106,23 +107,17 @@ input drivers accept because they sit behind the IOMMU. rcore-os/virtio-drivers#
 validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiserror`, `enumn`,
 `log`, `bitflags`.
 
-4. `user_mode_heap` against `talc`, measured for (d). 272 lines of first-fit free list in every
-process. `talc` is maintained (2026-09) and `no_std`. The prior art cuts both ways:
-`linked_list_allocator`, the same algorithm as ours, had out-of-bounds writes (RUSTSEC-2022-0063),
-which is the class of bug a hand-written heap carries. Retires little code; the case is exposure
-and, measured, throughput.
+4. RULED: `talc` replaces `user_mode_heap`, item (d); see Follow-on.
 
 5. BUILT: `uefi_loader` binds UEFI through `r-efi` 7.1.0, item (e); see Follow-on.
 
 6. REFUSED: `stick_maker`'s `plist.rs` stays, item (f); see Follow-on.
 
-7. Surveyed for (g): `portable_executable` against `object` 0.40.0's `write::pe::Writer`. Host-only,
-no untrusted input. About 250 of its 386 code lines would retire, and milestone 821 (an ELF-to-PE
-converter, proven, then released on its own) already rules it ours.
+7. RULED: `portable_executable` reads the ELF and writes the PE through `object` 0.40.0, item
+(g); see Follow-on.
 
-8. Surveyed for (h): uutils for the `coreutils` package. MIT, so base-eligible. `uu_printenv` and
-`uu_date` build for nife unmodified, at 20 to 62 times our size; `uu_wc` and `uu_rm` stop at
-`rustix`. Few lines retire; the value is the demo.
+8. REFUSED for base: the `coreutils` programs stay ours, and uutils is a basalt package candidate,
+item (h); see Follow-on.
 
 9. Editor: `rmle` stays until one of two takes it. `kibi` (MIT/Apache, a Rust editor inspired by
 the same `kilo` `rmle` is modeled on) needs `libc` termios and raw stdin, which the PAL does not
@@ -196,9 +191,9 @@ on the customer path.
 3. Prior art. In the tables above.
 4. Is the premise true? Mostly; the kernel's exemption does not cover the two engines (above).
 5. Cost. Lines retired are measured above; lane time is estimated. Candidate 3 owes throughput numbers
-   before its ruling; candidate 4's heap numbers are in the appendix.
+   before its ruling; candidate 4's heap numbers are in [the appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 6. Reversibility. Each replacement is reversible code; adding a crate to the base graph is §46's
-   expensive category, and nobody has acted yet.
+   expensive category, and each was ruled before it was built.
 7. Same cost? Yes for 1, 2, 3, 5 and 6: at equal effort the exposed library wins on trust. Nothing
    here is recommended because it is less work.
 
@@ -211,11 +206,13 @@ on the customer path.
   *"a′ but no releases since March isn't promising as a dependency"*; *"Treat the wait as part of
   the gate."*). Only then (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone,
   each with a `script/bench` number before and after on all three architectures.
-- (d) `user_mode_heap` against `talc`, measured in [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md); the ruling follows.
+- (d) RULED: `talc` replaces `user_mode_heap`, in `user_mode_runtime` and generated into std.
+  Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
 - (f) REFUSED: `stick_maker` reads `diskutil` with its own `plist.rs`, which stays.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
-- Surveys, in that appendix: (g) `portable_executable` and `object`; (h) uutils for `coreutils`.
+- (g) RULED: `portable_executable` takes `object` for the ELF and the PE; the conversion stays ours.
+- (h) REFUSED for base: the four `coreutils` programs stay ours.
 
 ## Recorded reasons for what stays
 
@@ -244,8 +241,15 @@ It records that two rules of §46 disagree here and only an architect can say wh
   program's stdin is a byte stream when the line redirects or pipes one, at
   `std_runtime_contract::STDIN_STREAM_SLOT`, built here as (f2)'s prerequisite. `mdr` is a std
   program in `mdr/`, and `crates/documentation` lays out the parser's events.
-- **Outstanding.** Items (d), (g) and (h) are measured, each waiting on its §46 ruling. (b) waits
-  on 705. Checked 2026-10-21 (UTC): none of their crates is in `Cargo.lock`.
+- **Ruled, to build.** Item (d). calef, 2026-10-21 (UTC), on #2490: "A sounds right." `talc` 5.1.1
+  everywhere, generated into std as `user_mode_heap` is today, which is accepted vendoring.
+- **Ruled, to build.** Item (g). calef, 2026-10-21 (UTC), on #2490: "B". `xtask`'s converter
+  takes `object` with minimal features. Milestone 821 is refused: its input is nife's own build
+  product, so its proofs would protect no known user.
+- **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
+  candidate: `printenv` and `date` once program ports are unblocked (§297), `wc` and `rm` once
+  `rustix` builds for nife.
+- **Outstanding.** (b) waits on 705.
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 
 ## Index row

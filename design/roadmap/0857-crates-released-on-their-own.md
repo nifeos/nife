@@ -91,7 +91,7 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
 - Standalone. `script/crate-standalone <crate>` (provisional name) copies the crate alone and
   builds and tests it on stable for the host and its targets. It refuses this tree's citations and
   provenance, requires a README, both license files and a `rust-version`, and replays the
-  falsifications. It runs while the crate is still here; all nine fail it today.
+  falsifications. It runs while the crate is still here; all eight fail it today.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual
   license our crates as well."*
@@ -118,8 +118,7 @@ close the list as one sitting, since each needs only a line.
 5. `calendar`, revisited under fork 8, since `time` wants a person's words.
 6. `non_volatile_memory_express`, `extensible_host_controller_interface` (rust-osdev asked first).
 7. `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
-8. `portable_executable`, once it carries proofs.
-9. The internal set, `redoxfs`'s bug report question among them.
+8. The internal set, `redoxfs`'s bug report question among them.
 
 ## What is already on the record
 
@@ -142,9 +141,10 @@ by what releases together) was amended to size a home by what changes together. 
 moves to a new repository before milestone 610 (the interface's stability is measured weekly)
 carries its per-package co-change column. Fork 1 has to respect that.
 
-The survey shrank the question. Of the 31 candidates, nine are "publish ours": the FAT crate, six
-device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), xHCI if
-rust-osdev declines, and `portable_executable`. Eleven outside projects are
+The survey shrank the question. Of the 31 candidates, eight are "publish ours": the FAT crate, six
+device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI if
+rust-osdev declines. `portable_executable` is not published: milestone 821 (`portable_executable`:
+an ELF-to-PE converter, proven, then released on its own) is refused. Eleven outside projects are
 candidates for our proofs. The rest stay internal.
 
 ## Fork 1. Where a released crate lives (ruled: one repository per crate)

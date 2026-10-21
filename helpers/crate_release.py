@@ -32,10 +32,11 @@ expect this to change.
 import re
 import tomllib
 
-# The nine per-crate milestones of 857, by number. A crate milestone minted later is added here; a
+# The eight per-crate milestones of 857, by number. A crate milestone minted later is added here; a
 # block that is not listed is not counted, which is a foot gun, and this comment is where it is
-# written down. Derived from the blocks' titles rather than a second list of crate names.
-MILESTONES = (813, 814, 815, 816, 817, 818, 819, 820, 821)
+# written down. Derived from the blocks' titles rather than a second list of crate names. 821
+# (`portable_executable`) is refused (784's item (g)), so its crate is not counted.
+MILESTONES = (813, 814, 815, 816, 817, 818, 819, 820)
 
 # Provisional path, read by milestone 887's allowlist lint once it is built.
 ALLOWLIST = 'crates/publish-allowlist.txt'
