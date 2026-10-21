@@ -21,11 +21,11 @@
 //!
 //! # What the number counts
 //!
-//! One TCP stream into `net_stack` through a 2 KiB socket buffer, received by a client process one
-//! `RECEIVE` call per chunk, with the NIC polled every millisecond. **That is a measurement of this
-//! stack as built, not of the I219**: the window is 2 KiB, so the rate is bounded by round trips
-//! rather than by the wire, and the poll interval sits inside every round trip. It is the number
-//! a package download gets today, which is what rung 3 needs to know.
+//! One TCP stream into `net_stack` through a 16 KiB window, received by a client one `RECEIVE`
+//! per chunk, a polled NIC watched while frames flow (`socket_contract::polled_wait`). **That
+//! measures this stack as built, not the I219 or radon's port**: the window bounds the rate to
+//! 16 KiB per round trip. It is the number a package download gets today, which is what rung 3
+//! needs to know.
 //!
 //! # On radon
 //!

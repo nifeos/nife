@@ -133,10 +133,10 @@ and both trees are GPL and were read for hardware facts only.
 - **Done.** The network half's first run on radon, 2026-10-20 (UTC): `LEASED-AND-MEASURED`
   with `coherence : Coherent`, and `designware_ethernet_service::PROVEN_ON_SILICON` is `true`
   citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
-- **Outstanding.** The network half's rate: 2.3 Mbit/s inbound on a gigabit link. The peer's TCP
-  send queue sat near 131 KB and barely drained, which points at radon's receive side (window or
-  acknowledgment pacing), undiagnosed. A lane, with a bench boot that measures it; the note's
-  `BUGS` has what is known.
+- **Outstanding.** The network half's rate on radon. The 2.3 Mbit/s row was a one-segment
+  receive window times a scheduler tick per round trip, both in `net_stack`, reproduced under QEMU
+  and fixed (notes/designware-ethernet/the-receive-rate.md). That page's bench step measures the
+  fix on radon, which has not run.
 - **Outstanding.** radon's second port, `gmac1`, which this driver does not bring up. Pull request
   #2470 proposes the milestone for it, unmerged.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
