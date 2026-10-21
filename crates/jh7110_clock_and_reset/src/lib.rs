@@ -574,11 +574,15 @@ fn collect_sys_steps(
 }
 
 /// How many steps a [`DevicePlan`] holds. The watchdog names two clocks and two resets.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const MAX_DEVICE_STEPS: usize = 4;
 
 /// **A device's own SYS-domain clocks and resets, as its node names them** (milestone 593 (a
 /// wedged kernel resets itself), provisional). Unlike [`PmicBus`] there is no constant fallback:
 /// an empty plan means the tree named nothing usable, and the caller decides what that costs.
+///
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DevicePlan {
     steps: [Step; MAX_DEVICE_STEPS],
@@ -591,6 +595,8 @@ pub struct DevicePlan {
 
 impl DevicePlan {
     /// The steps to walk, clocks before resets.
+    ///
+    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
     #[must_use]
     pub fn plan(&self) -> &[Step] {
         &self.steps[..self.len]

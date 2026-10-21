@@ -5,7 +5,7 @@ promoted_from: a-wedged-kernel-resets-itself
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: riscv64 and aarch64 silicon with a hardware watchdog
-specific_machine: xenon and radon (each has a built step waiting on its first bench boot)
+specific_machine: xenon (its Intel TCO watchdog step is the first bench step)
 needs_person: yes
 ---
 # 593. A wedged kernel resets itself, through a watchdog that does not need asking
@@ -121,7 +121,7 @@ Name: provisional. `jh7110_watchdog`, `Jh7110Watchdog`, `device_plan` and `Devic
 
 Its reset does not go through OpenSBI's `pm-reset`, so it may come back where SRST does not. This
 boot is the test. It needs a person in reach of radon's power, because nothing can power-cycle radon
-(milestone 224) and a reset that never comes leaves a wedged board. It assumes the procedure in
+(milestone 224 (nothing can power-cycle radon, so a hung soak needs a person)) and a reset that never comes leaves a wedged board. It assumes the procedure in
 `notes/soak/rebooting-soak-procedure.md` for the card, the boot script and the console.
 
 1. A healthy soak, armed. Build and write the card, start the watcher, and power the board:

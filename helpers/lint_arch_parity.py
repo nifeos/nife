@@ -56,12 +56,6 @@ ARCH = "kernel/src/arch"
 # port provides the name. Keep the reason honest enough that a reader can tell when it stops
 # being true, and delete the entry when the gap closes (an entry that matches nothing fails).
 ALLOWED = {
-    # Intended. The watchdog soak drives the Intel TCO, which only a PC has, and kernel/src/soak.rs
-    # refuses the feature off x86_64 with a compile_error!, so no aarch64 or riscv64 build reaches it.
-    ("tco::Tco", "aarch64"): "watchdog_soak_test is x86_64-only (Intel TCO); soak.rs compile_error!s elsewhere",
-    ("tco::Tco", "riscv64"): "watchdog_soak_test is x86_64-only (Intel TCO); soak.rs compile_error!s elsewhere",
-    ("tco::find", "aarch64"): "watchdog_soak_test is x86_64-only (Intel TCO); soak.rs compile_error!s elsewhere",
-    ("tco::find", "riscv64"): "watchdog_soak_test is x86_64-only (Intel TCO); soak.rs compile_error!s elsewhere",
     # A real gap, not a design. The padding sled of milestone 134 (the register of measures) exists
     # for aarch64 and riscv64 only, so `--features fastpath_pad` does not compile for x86_64
     # (script/lint's x86_64 clippy note). Its scope note, with why and the plan, is in

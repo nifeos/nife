@@ -724,7 +724,8 @@ fn arm_watchdog() -> Option<Watchdog> {
     dog.arm(load);
     let hz = measure_watchdog_rate(&dog);
     if !jh7110_watchdog::rate_agrees(hz, CORE_CLOCK_HZ) {
-        let halted = dog.disarm();
+        dog.disarm();
+        let halted = !dog.is_counting();
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: the counter ran at {hz} Hz against this kernel's timer, \
              not the {CORE_CLOCK_HZ} Hz its count was computed for, so it would reset at the wrong \
@@ -1267,7 +1268,14 @@ fn ask_reboot_questions(armed: &mut bool, elapsed: u64) {
 fn tend_watchdog(watchdog: &mut Option<Watchdog>, elapsed: u64, beat: u64) {
     if let Some(tco) = watchdog.take() {
         if crate::console::is_byte_waiting() {
+            // The TCO answers from its halt bit; the JH7110's enable bit is read back after.
+            #[cfg(target_arch = "x86_64")]
             let halted = tco.disarm();
+            #[cfg(target_arch = "riscv64")]
+            let halted = {
+                tco.disarm();
+                !tco.is_counting()
+            };
             println!(
                 "{WATCHDOG_MARKER} DISARMED at t={elapsed}s: a byte arrived on this console. The \
                  watchdog is {} and will not reset this machine. The soak keeps running.",

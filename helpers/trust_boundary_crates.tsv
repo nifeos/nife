@@ -103,6 +103,7 @@ jh7110_crg	kernel	retired
 jh7110_entropy	shared	components,kernel
 jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
+jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
 line_editor	shared	components,fixtures,kernel
 loaded_image_check	userspace	fixtures

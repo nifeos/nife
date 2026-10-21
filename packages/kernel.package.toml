@@ -25,6 +25,7 @@ crates = [
     "direct_memory_access_validator",
     "firmware_configuration",
     "jh7110_clock_and_reset",
+    "jh7110_watchdog",
 ]
 
 [[exception]]

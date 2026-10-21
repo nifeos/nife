@@ -5,7 +5,7 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# Name: PROVISIONAL (milestone 593's lane, 2026-10-20 UTC). Chip-qualified for the reason
+# Name: PROVISIONAL (milestone 593 (a wedged kernel resets itself)'s lane, 2026-10-20 UTC). Chip-qualified for the reason
 # `jh7110_entropy` and `jh7110_clock_and_reset` are: a bare `watchdog` would name every board's.
 # no architect has ratified it; see src/lib.rs and script/names.
 #

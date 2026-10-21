@@ -1,4 +1,6 @@
 //! The crate's host tests.
+//!
+//! Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 
 use jh7110_clock_and_reset::Step;
 
