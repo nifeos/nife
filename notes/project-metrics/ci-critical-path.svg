@@ -43,7 +43,7 @@
 <rect class="s6" x="236.2" y="208" width="177.5" height="12" rx="2"><title>lint: starts at 0.2, takes 7.1</title></rect>
 <text class="mut val" x="417.8" y="218" font-size="10">7.1</text>
 <text class="fg" x="222" y="238" font-size="11" text-anchor="end">swish-check-x86_64</text>
-<rect class="s7" x="236.2" y="228" width="164.4" height="12" rx="2"><title>swish-check-x86_64: starts at 0.2, takes 6.6</title></rect>
+<rect class="other" x="236.2" y="228" width="164.4" height="12" rx="2"><title>swish-check-x86_64: starts at 0.2, takes 6.6</title></rect>
 <text class="mut val" x="404.6" y="238" font-size="10">6.6 (302 of 389)</text>
 <text class="fg" x="222" y="258" font-size="11" text-anchor="end">rg-threads</text>
 <rect class="other" x="237.1" y="248" width="163.8" height="12" rx="2"><title>rg-threads: starts at 0.3, takes 6.5</title></rect>
@@ -58,7 +58,7 @@
 <rect class="other" x="236.2" y="308" width="40.0" height="12" rx="2"><title>coverage: starts at 0.2, takes 1.6</title></rect>
 <text class="mut val" x="280.2" y="318" font-size="10">1.6 (302 of 389)</text>
 <text class="fg" x="222" y="338" font-size="11" text-anchor="end">boot-check</text>
-<rect class="other" x="237.1" y="328" width="37.5" height="12" rx="2"><title>boot-check: starts at 0.3, takes 1.5</title></rect>
+<rect class="s7" x="237.1" y="328" width="37.5" height="12" rx="2"><title>boot-check: starts at 0.3, takes 1.5</title></rect>
 <text class="mut val" x="278.6" y="338" font-size="10">1.5 (302 of 389)</text>
 <text class="fg" x="222" y="358" font-size="11" text-anchor="end">prove-kernel-aarch64 (verify)</text>
 <rect class="other" x="250.8" y="348" width="17.9" height="12" rx="2"><title>prove-kernel-aarch64 (verify): starts at 0.8, takes 0.7</title></rect>

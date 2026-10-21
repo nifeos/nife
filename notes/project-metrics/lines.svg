@@ -77,8 +77,8 @@
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="68.7" font-size="10" text-anchor="middle">376.4</text>
 <rect class="seg s0" x="601.4" y="295.6" width="38.7" height="28.4"><title>2026W43, kernel/src code: 42.7</title></rect>
-<rect class="seg s1" x="601.4" y="270.3" width="38.7" height="25.4"><title>2026W43, kernel/src comments: 38.1</title></rect>
-<rect class="seg s2" x="601.4" y="141.0" width="38.7" height="129.3"><title>2026W43, other code: 194.4</title></rect>
+<rect class="seg s1" x="601.4" y="270.5" width="38.7" height="25.1"><title>2026W43, kernel/src comments: 37.8</title></rect>
+<rect class="seg s2" x="601.4" y="141.0" width="38.7" height="129.4"><title>2026W43, other code: 194.7</title></rect>
 <path class="seg s3" d="M601.4,141.0 V73.1 Q601.4,69.1 605.4,69.1 H636.0 Q640.0,69.1 640.0,73.1 V141.0 Z"><title>2026W43, other comments: 108.1</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <text class="fg val" x="620.7" y="64.1" font-size="10" text-anchor="middle">383.3</text>
