@@ -14,8 +14,9 @@ Two things in `net_stack`, each measured, and they multiply.
   it waits for the acknowledgment. One segment per round trip.
 - **Every round trip waited for a scheduler tick.** Neither polled NIC raises an interrupt, so
   when the ring was empty `net_stack` slept 1 ms. The kernel ends a timed wait only at a tick
-  (DECISIONS §147), 100 Hz on every architecture, so the sleep lasted up to 10 ms. On a LAN the
-  next segment comes back well within a tick, and found the stack asleep.
+  (DECISIONS §147 (a timer a userspace service cannot hold)), 100 Hz on every architecture, so
+  the sleep lasted up to 10 ms. On a LAN the next segment comes back well within a tick, and found
+  the stack asleep.
 
 One 1460-byte segment per half tick on average is 2.34 Mbit/s, and the row is 104,857,600 bytes
 in 71,820 segments over 362.965 s, 5.05 ms each.
@@ -33,9 +34,9 @@ side of it shows the window and the guest's turnaround:
 | look for a tick after a frame | 2 KiB | 81 Mbit/s | 8.6 Mbit/s | |
 | look for a tick after a frame | 16 KiB | 235 Mbit/s | 67.7 Mbit/s | |
 
-The tree is the last row: a 16 KiB receive window (`socket_table::TCP_RECEIVE_BUF`, bounded at
-compile time by the polled rings and the heap), and a polled wait that keeps looking, yielding
-between looks, for one tick after the last frame and sleeps only after that
+The tree is the last row. The receive window is 16 KiB (`socket_table::TCP_RECEIVE_BUF`), bounded
+at compile time by the polled rings and the heap. The polled wait keeps looking, yielding between
+looks, for one tick after the last frame and sleeps only after that
 (`socket_contract::polled_wait`, host-tested). A tick is the bound because it is what a sleep
 costs. The price is a busy core while a stream flows.
 

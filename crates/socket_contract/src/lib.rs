@@ -210,9 +210,9 @@ pub mod polled_wait {
     //! **Whether `net_stack` may sleep while it waits on a NIC that raises no interrupt** (the
     //! `e1000e` and radon's `DesignWare` port; `components/src/nic_wait.rs`).
     //!
-    //! Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane. It is here
-    //! rather than in `components/src/nic_wait.rs` so its claim is a host test; only `net_stack`
-    //! uses it.
+    //! The module's name is provisional (milestone 53 (the board's own peripherals)'s receive-rate
+    //! lane, 2026-10-21 UTC). It is here rather than in `components/src/nic_wait.rs` so its claim
+    //! is a host test; only `net_stack` uses it.
     //!
     //! # Why a sleep is the wrong wait while frames are flowing
     //!
