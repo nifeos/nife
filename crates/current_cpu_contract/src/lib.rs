@@ -45,7 +45,9 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 /// The page's first eight bytes: what tells a prepared page from a frame nobody has written. ASCII,
 /// unpadded, the same shape `counter_frequency_contract::MAGIC` and `clock_contract::MAGIC` use.
-pub const MAGIC: [u8; 8] = *b"CURRCPU1";
+/// The last byte is the layout's version: `2` added the scheduler tick
+/// ([`CurrentCpuPage::tick_hz`]).
+pub const MAGIC: [u8; 8] = *b"CURRCPU2";
 
 /// **What the CPU word holds before the kernel has ever switched this thread in.** Not zero,
 /// because zero is a valid CPU id on every machine this tree runs on except the VisionFive 2, and
@@ -101,12 +103,20 @@ pub const CPU_ID_BOUND: usize = 8;
 const OFF_MAGIC: usize = 0;
 const OFF_CPU: usize = OFF_MAGIC + 8;
 const OFF_ALLOWANCE: usize = OFF_CPU + 8;
+const OFF_TICK_HZ: usize = OFF_ALLOWANCE + 8;
 
-/// The whole page's size in bytes: the magic, then two little-endian `u64`s, the CPU and the
-/// allowance. Far under one frame (4096 bytes), which is the unit this is mapped as, and inside one
-/// cache line, which is what makes the reader a single load with no line shared with anybody
-/// else's writes.
-pub const PAGE_BYTES: usize = OFF_ALLOWANCE + 8;
+/// The whole page's size in bytes: the magic, then three little-endian `u64`s, the CPU, the
+/// allowance and the scheduler tick. Far under one frame (4096 bytes), which is the unit this is
+/// mapped as, and inside one cache line, which is what makes the reader a single load with no line
+/// shared with anybody else's writes.
+pub const PAGE_BYTES: usize = OFF_TICK_HZ + 8;
+
+/// **The CPU word's offset in the page**, for a reader that cannot call [`CurrentCpuPage::cpu`]:
+/// hand-assembled machine code loading the word by absolute address.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
+/// receive-rate lane.
+pub const CPU_WORD_OFFSET: u64 = OFF_CPU as u64;
 
 /// **How many threads of one process can each have a page**: the slots below [`PAGE_VA`] in
 /// `address_space_map::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
@@ -174,19 +184,21 @@ pub const PAGE_VA: u64 = address_space_map::CURRENT_CPU_PAGE;
 /// There is no `build_page(cpu)`: the CPU is not known at build time and is not the kind of thing
 /// a builder should be able to assert. [`publish`] is the only way the word ever changes.
 pub fn build_page() -> [u8; PAGE_BYTES] {
-    build_page_allowing(0)
+    build_page_allowing(0, 0)
 }
 
 /// [`build_page`], carrying the thread's **allowance**: how many cores its process may use
 /// (milestone 812 (`std::thread::spawn` runs real threads in one address space), §269 (how threads
 /// share a process) fork 7). Not how many the machine has: it holds the online count today, and a
-/// later spawner grant or affinity budget lowers it without changing what it means. Zero reads as
-/// unknown, which is what [`build_page`] writes.
-pub fn build_page_allowing(allowance: u64) -> [u8; PAGE_BYTES] {
+/// later spawner grant or affinity budget lowers it without changing what it means. `tick_hz` is
+/// the scheduler tick ([`CurrentCpuPage::tick_hz`]). Zero reads as unknown for either, which is
+/// what [`build_page`] writes.
+pub fn build_page_allowing(allowance: u64, tick_hz: u64) -> [u8; PAGE_BYTES] {
     let mut page = [0u8; PAGE_BYTES];
     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
     page[OFF_CPU..OFF_CPU + 8].copy_from_slice(&UNSCHEDULED.to_le_bytes());
     page[OFF_ALLOWANCE..OFF_ALLOWANCE + 8].copy_from_slice(&allowance.to_le_bytes());
+    page[OFF_TICK_HZ..OFF_TICK_HZ + 8].copy_from_slice(&tick_hz.to_le_bytes());
     page
 }
 
@@ -207,7 +219,7 @@ pub fn build_page_allowing(allowance: u64) -> [u8; PAGE_BYTES] {
 #[inline]
 pub unsafe fn publish(page_va: u64, cpu: u64) {
     // SAFETY: the caller's contract gives us a live, aligned, exclusively written buffer of at
-    // least `PAGE_BYTES`, and `OFF_CPU + 8` is exactly `PAGE_BYTES`.
+    // least `PAGE_BYTES`, and `OFF_CPU + 8` is inside it.
     // `wrapping_add` because the wrap cannot happen and this runs on every context switch (release
     // builds check overflow, notes/overflow-checks.md): the contract says `page_va` starts a live
     // buffer of `PAGE_BYTES`, and no live buffer runs past the top of the address space.
@@ -278,6 +290,27 @@ impl CurrentCpuPage {
         core::num::NonZeroUsize::new(word.load(Ordering::Relaxed) as usize)
     }
 
+    /// **The scheduler tick's rate in hertz, and so the resolution of every timed wait**, or
+    /// `None` for an unrecognized page or one built without it. The kernel checks deadlines only
+    /// from the tick (DECISIONS §147 (a timer a userspace service cannot hold)), so a `Timer::ARM`
+    /// fires at the first tick at or after its deadline: a wait asked for 1 ms lasts up to
+    /// `1 / tick_hz` s. The rate is the kernel's to choose and it publishes it here, the one page
+    /// every process on every architecture has (calef, 2026-10-21 UTC, ruling C on #2489). One
+    /// load, never written after the page is built.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
+    /// receive-rate lane.
+    pub fn tick_hz(&self) -> Option<core::num::NonZeroU64> {
+        // SAFETY: `new`'s contract: `base` names at least `PAGE_BYTES` mapped, stable bytes.
+        let magic = unsafe { core::slice::from_raw_parts(self.base, 8) };
+        if magic != MAGIC {
+            return None;
+        }
+        // SAFETY: as `allowance`'s word read; the tick is 8-aligned at its offset.
+        let word = unsafe { &*((self.base as usize + OFF_TICK_HZ) as *const AtomicU64) };
+        core::num::NonZeroU64::new(word.load(Ordering::Relaxed))
+    }
+
     /// **Which CPU this thread is running on**, or `None` if this page is unrecognized (a frame
     /// nobody prepared) or its thread has never been switched in. Never a fabricated 0.
     ///
@@ -342,6 +375,12 @@ mod tests {
         fn allowance(&mut self) -> Option<core::num::NonZeroUsize> {
             // SAFETY: as `cpu`.
             unsafe { CurrentCpuPage::new(self.va()) }.allowance()
+        }
+
+        /// [`CurrentCpuPage::tick_hz`] over this buffer, under `cpu`'s argument.
+        fn tick_hz(&mut self) -> Option<core::num::NonZeroU64> {
+            // SAFETY: as `cpu`.
+            unsafe { CurrentCpuPage::new(self.va()) }.tick_hz()
         }
     }
 
@@ -420,11 +459,23 @@ mod tests {
     /// `available_parallelism` from fabricating a count on a page nobody gave one.
     #[test]
     fn the_allowance_reads_back_and_none_is_unknown() {
-        let mut with = Aligned(build_page_allowing(4));
+        let mut with = Aligned(build_page_allowing(4, 100));
         let mut without = aligned_page();
         assert_eq!(with.allowance().map(|n| n.get()), Some(4));
         assert_eq!(without.allowance(), None);
         assert_eq!(with.cpu(), None, "an allowance is not a CPU");
+    }
+
+    /// **The tick reads back from its own word, and a page built without one has no answer**, so
+    /// a reader never divides a counter by a fabricated zero, and never takes the allowance for it.
+    #[test]
+    fn the_tick_reads_back_and_none_is_unknown() {
+        let mut with = Aligned(build_page_allowing(4, 100));
+        let mut without = Aligned(build_page_allowing(4, 0));
+        assert_eq!(with.tick_hz().map(|n| n.get()), Some(100));
+        assert_eq!(without.tick_hz(), None);
+        let mut zeroed = aligned_page();
+        assert_eq!(zeroed.tick_hz(), None);
     }
 
     /// Every thread page slot is inside `PROCESS_PAGES`, slot 0 is the page every thread read
@@ -450,7 +501,9 @@ mod tests {
     fn the_layout_offsets_do_not_overlap() {
         assert_eq!(OFF_CPU, 8);
         assert_eq!(OFF_ALLOWANCE, 16);
-        assert_eq!(PAGE_BYTES, 24);
+        assert_eq!(OFF_TICK_HZ, 24);
+        assert_eq!(CPU_WORD_OFFSET, 8);
+        assert_eq!(PAGE_BYTES, 32);
         assert!(PAGE_BYTES <= 64, "the page must fit in one cache line");
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
     }

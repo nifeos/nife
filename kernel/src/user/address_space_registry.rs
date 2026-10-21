@@ -337,9 +337,10 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
     let space = &mut spaces.get_mut(name)?.space;
     let k = (!space.thread_pages_in_use).trailing_zeros() as usize;
     let va = current_cpu_contract::thread_page_va(k)?;
-    let bytes = current_cpu_contract::build_page_allowing(u64::from(
-        crate::smp::online_harts_mask().count_ones(),
-    ));
+    let bytes = current_cpu_contract::build_page_allowing(
+        u64::from(crate::smp::online_harts_mask().count_ones()),
+        crate::arch::timer::TICK_HZ,
+    );
     let kernel_va = if k == 0 {
         space.attach_current_cpu_page();
         space.current_cpu_page?.1

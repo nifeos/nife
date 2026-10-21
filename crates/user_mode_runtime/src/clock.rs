@@ -340,6 +340,21 @@ pub fn current_cpu() -> Option<usize> {
     page.cpu()
 }
 
+/// **The scheduler tick's rate in Hz**, the resolution of every timed wait, from this thread's
+/// current-CPU page, or `None` if the page carries none. A [`timer_arm`](crate::timer_arm)
+/// deadline fires at the first tick at or after it, so a program that must not lose a tick to a
+/// sleep reads this rather than assuming the kernel's rate
+/// (`current_cpu_contract::CurrentCpuPage::tick_hz`).
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
+/// receive-rate lane.
+pub fn tick_hz() -> Option<core::num::NonZeroU64> {
+    // SAFETY: as `current_cpu`: the kernel maps the page read-only at `PAGE_VA` into every address
+    // space a TCB binds, before that thread's first instruction runs.
+    let page = unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VA) };
+    page.tick_hz()
+}
+
 /// **Monotonic nanoseconds since boot**, from [`now`] and [`cntfrq`].
 ///
 /// Here rather than in each program because two of them need it and the naive form is wrong:

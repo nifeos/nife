@@ -35,9 +35,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use super::irq;
 use super::port::{in8, out8};
 
-/// Ticks per second, the preemption rate: `abi::timer::TICK_HZ`, which every architecture takes
-/// so that user space can know a timed wait's resolution.
-pub const TICK_HZ: u64 = abi::timer::TICK_HZ;
+/// Ticks per second the scheduler asks for. The same 100 Hz both other architectures use.
+pub const TICK_HZ: u64 = 100;
 
 /// **The 8254 PIT's input frequency**, 1193182 Hz, and the one rate on a PC that is a fixed number
 /// rather than something to measure. It is 315/22 MHz divided by 12, which is to say it descends

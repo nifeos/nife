@@ -16,17 +16,6 @@ pub const ARM: u64 = 0;
 /// one.
 pub const CANCEL: u64 = 1;
 
-/// **The scheduler tick, in hertz, on every architecture, and so the resolution of every timed
-/// wait.** The kernel checks for due deadlines only from the tick (DECISIONS §147 (a timer a
-/// userspace service cannot hold)), so an [`ARM`] fires at the first tick at or after its
-/// deadline: a wait asked for 1 ms lasts up to `1 / TICK_HZ` s. A caller that cannot afford that
-/// latency must not sleep through it.
-///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
-/// receive-rate lane, after the kernel's own `arch::timer::TICK_HZ`, which takes its value from
-/// here.
-pub const TICK_HZ: u64 = 100;
-
 /// **Counter ticks in a duration, rounded up**, for a counter running at `hz`: the `n` that
 /// makes `now() + n` a deadline that is never early. Saturates at `u64::MAX` rather than
 /// wrapping, and a saturated deadline is one that never fires, which is the right reading of a
