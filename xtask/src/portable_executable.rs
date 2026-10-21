@@ -40,10 +40,9 @@
 //! is spoken): "portable executable" is the specification title's phrase.
 
 use object::elf::{self, FileHeader64, ProgramHeader64};
-use object::pe;
 use object::read::elf::{Dyn as _, FileHeader as _, ProgramHeader as _, Rela as _};
 use object::write::pe::{NtHeaders, Writer};
-use object::{LittleEndian as LE, pod};
+use object::{LittleEndian as LE, pe, pod};
 
 /// `IMAGE_FILE_MACHINE_*` and the `R_*_RELATIVE` type, for each machine this converts.
 fn machine(elf_machine: elf::Machine) -> Option<(pe::Machine, elf::RelocationType)> {
@@ -144,9 +143,7 @@ fn read_header(elf: &[u8]) -> Result<Header<'_>, Error> {
             elf::PT_LOAD => loads.push(Load {
                 vaddr: segment.p_vaddr(endian),
                 memsz: segment.p_memsz(endian),
-                bytes: segment
-                    .data(endian, elf)
-                    .map_err(|()| Error::Truncated)?,
+                bytes: segment.data(endian, elf).map_err(|()| Error::Truncated)?,
                 flags: segment.p_flags(endian),
             }),
             elf::PT_DYNAMIC => dynamic = segment.dynamic(endian, elf)?.unwrap_or(&[]),
@@ -225,8 +222,7 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
             .and_then(|at| usize::try_from(at).ok())
             .and_then(|at| image.get(at..))
             .ok_or(Error::Truncated)?;
-        let (entry, _) =
-            pod::from_bytes::<elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
+        let (entry, _) = pod::from_bytes::<elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
         let (r_offset, r_addend) = (entry.r_offset(LE), entry.r_addend(LE) as u64);
         let kind = entry.r_type(LE, false);
         if kind == elf::R_RISCV_NONE {
