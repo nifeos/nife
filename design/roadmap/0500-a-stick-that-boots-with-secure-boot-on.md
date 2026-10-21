@@ -47,11 +47,14 @@ existing page covers several vendors from a primary source.
 ## Done when
 
 1. A note holds the steps a stranger follows, BitLocker recovery key first, with each vendor step
-   cited to the vendor's own page. **Met.**
+   cited to the vendor's own page. Met.
 2. Each vendor row has been followed on a PC of that vendor with Secure Boot on, or the vendor's
-   page has been read in full. **Not met**: only a Dell (xenon) has been checked at a machine, and
-   the Acer and Lenovo consumer rows rest on search excerpts of the vendor's page. One non-Dell PC
-   followed through the note, which milestone 802's rung 1d supplies, closes the largest part.
+   page has been read in full. Not met: only a Dell (xenon) has been checked at a machine, and
+   the Acer row rests on a search excerpt, because Acer's page sits behind a bot check. Every
+   other row is read in full, but several vendor pages give no step for turning Secure Boot off
+   (Lenovo IdeaPad, the Surface consumer pages, MSI and Gigabyte desktop boards), and the note marks
+   each. One non-Dell PC followed through the note, which milestone 802's rung 1d supplies, closes
+   the largest part.
 
 ## Refused, and what would reopen each
 
@@ -82,20 +85,25 @@ note carries the plan for those architectures.
 
 ## BUGS
 
-- **No stranger has followed the note**, and every vendor row but Dell's is the vendor's page, not
+- No stranger has followed the note, and every vendor row but Dell's is the vendor's page, not
   a machine. The note's own `BUGS` lists which pages were read in full.
-- **That turning Secure Boot off triggers BitLocker recovery is an inference** from Microsoft's
+- That turning Secure Boot off triggers BitLocker recovery is an inference from Microsoft's
   pages and a general statement by ASUS; the note gives the sentences it rests on.
-- Microsoft Surface, MSI and Gigabyte have no row.
+- Acer's page is unread. It returned a bot check on 2026-10-21 (UTC), and Acer publishes no
+  other page on the subject that was found.
+- No Lenovo-owned page names the IdeaPad Secure Boot setting, and the Surface, MSI and Gigabyte
+  desktop-board rows have no off step on the vendor's pages. The note marks each.
 
 ## Follow-on
 
 - **Outstanding.** Follow the note on one PC that is not a Dell, with Secure Boot and BitLocker
   on, and correct the note by what the machine shows. Checked 2026-10-18 (UTC): the note's `BUGS`
   names xenon as the only machine it has been held against.
-- **Outstanding.** Read in full the Acer and Lenovo consumer pages the note cites as excerpts, and
-  add Surface, MSI and Gigabyte rows from their own pages. Checked the same day: Acer's page
-  returned a bot check, and the other three were not looked up.
+- **Done.** Checked 2026-10-21 (UTC): the Lenovo IdeaPad page was read in full; it says how to
+  enter setup and nothing about Secure Boot, so the note's row now says so. Surface, MSI and
+  Gigabyte rows were added from the vendors' own pages.
+- **Outstanding.** Read Acer's page in full. It returned a bot check on 2026-10-21 (UTC) and was
+  left unread; a person reading it in a browser closes this.
 - **Milestone 802.** Carrying the note onto the published page, ahead of every other instruction.
 
 ## Index row

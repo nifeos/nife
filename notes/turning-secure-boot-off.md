@@ -63,7 +63,8 @@ Either way works:
 
 Find your PC's maker below. "Read" means the vendor's page was read in full; "excerpt" means only
 a search engine's excerpt of the vendor's page was read, because the page itself could not be
-fetched.
+fetched. A row marked "Read" says what the page says, and a step the page does not give is marked
+*not confirmed* in the row.
 
 | Maker | Setup key | Where the setting is, and what to choose | Boot menu key | Source |
 |---|---|---|---|---|
@@ -72,10 +73,34 @@ fetched.
 | HP business laptop or workstation | Esc, then F10 | Security → Secure Boot Configuration: clear Secure Boot, then Main → Save Changes and Exit | Esc | Read [hp] |
 | HP desktop | F10 | Security → Secure Boot Configuration, press F10 at the message, set Secure Boot to Disable | Esc | Read [hp] |
 | Lenovo ThinkPad, ThinkCentre, ThinkStation | F1 at the logo | Security → Secure Boot → Secure Boot: Disabled, then F10 | not read | Read [lenovo-think] |
-| Lenovo IdeaPad and other consumer models | F2 or Fn+F2, or the Novo button and BIOS Setup | not confirmed | F12 | Excerpt [lenovo-idea] |
+| Lenovo IdeaPad and other consumer models | F2 or Fn+F2, pressed repeatedly; or F12, then choose to enter setup from the Boot menu; or the Novo button, then BIOS Setup | *Not confirmed*: Lenovo's page says how to enter setup and nothing about Secure Boot, and no Lenovo-owned IdeaPad page naming the setting was found | F12 | Read [lenovo-idea] |
 | ASUS laptop | hold F2, then press power | F7 for Advanced Mode, then Security → Secure Boot → Secure Boot Control: Disabled, then F10 | not read | Read [asus-nb] |
-| Acer laptop | F2 at the logo | Security: set a supervisor password; then Boot → Secure Boot: Disabled, then F10. Acer advises removing the supervisor password afterward | not read | Excerpt [acer] |
+| Acer laptop | F2 at the logo | Security: set a supervisor password; then Boot → Secure Boot: Disabled, then F10. Acer advises removing the supervisor password afterward. *Not confirmed*: the page sits behind a bot check and could not be read | not read | Excerpt [acer] |
+| Microsoft Surface | Hold volume-up, press and release power, keep holding until the setup screen appears | Security → Secure Boot → Change Configuration. Microsoft says Secure Boot can be disabled there [ms-surface-mgmt], but its consumer pages show only the keyset "Microsoft only", the *on* setting [ms-surface-red], so the name of the *off* choice is *not confirmed* | not read | Read [ms-surface-red], [ms-surface-uefi], [ms-surface-cert], [ms-surface-mgmt] |
+| MSI laptop | Delete at the MSI logo | Security → Secure Boot → Disable, then F10 | F11 at the MSI logo | Read [msi-nb] |
+| MSI desktop motherboard | not read | Security → Secure Boot (or Settings → Security → Secure Boot). *Not confirmed*: MSI's pages give no steps for turning it off | not read | Read [msi-statement], [msi-z370] |
+| Gigabyte laptop | F2 | Security → the default Secure Boot setting: Disabled; Save & Exit → Save Changes → Yes; then Security → Delete All Secure Boot Variables → Yes, then OK to restart | not read | Read [gigabyte-nb] |
+| Gigabyte desktop motherboard | Delete | Advanced Mode → Boot → Secure Boot. *Not confirmed*: Gigabyte's page gives steps for turning it on only | not read | Read [gigabyte-mb] |
 | Anything else | often F1, F2, F12 or Esc | "usually in either the Security tab, the Boot tab, or the Authentication tab" | varies | Read [ms-sb] |
+
+Notes on the rows added from the vendor pages:
+
+- **Surface.** Microsoft says that changing Secure Boot's certificate keyset on a Surface "will
+  trigger a BitLocker recovery scenario" [ms-surface-cert]. That is the one Microsoft sentence read
+  that ties a Secure Boot change to BitLocker recovery, for the keyset change it describes. A
+  Surface also shows a red bar and an unlocked padlock at start when Secure Boot is off, which is
+  the expected result [ms-surface-red]. A UEFI password, if one was set, is asked for before any of this and
+  Microsoft cannot reset it [ms-surface-uefi].
+- **Gigabyte laptop.** The last step, *Delete All Secure Boot Variables*, erases the stored keys.
+  The page lists it as part of turning Secure Boot off; its effect on turning Secure Boot back on
+  is *not confirmed*. The page's related-models list shows two laptops, the P34G and P34G v2, so
+  the steps are not confirmed for other Gigabyte laptops.
+- **Desktop motherboards (MSI, Gigabyte).** The Gigabyte page says Secure Boot is shown only after
+  CSM Support is set to Disabled [gigabyte-mb]. MSI says its boards have shipped since 2023 with
+  Secure Boot Enabled and the image execution policy set to "Always Execute", and that it will
+  move new BIOS releases to "Deny Execute" [msi-statement]. *Not confirmed*: whether a board set to
+  "Always Execute" boots nife's unsigned file with Secure Boot on. If so, the stranger would not
+  need this step on such a board, and a later BIOS release can take that away.
 
 Two warnings that hold on every PC:
 
@@ -110,16 +135,27 @@ Then put the stick in, restart, press the boot menu key from the table, and choo
 - Dell's page describes turning Secure Boot on, not off; the off steps are that page's steps
   reversed. Dell's page names two forms, a checkbox on OptiPlex, Precision, Wyse and XPS and an
   Enabled setting on Alienware, Inspiron and Vostro [dell-sb].
-- Four sources were excerpts, not read: Acer's knowledge base sits behind a bot check, and
-  Lenovo's IdeaPad page, ASUS's motherboard page and HP's Esc menu outside its Secure Boot page
-  were not opened. Microsoft Surface, MSI and Gigabyte were not looked up at all.
+- **Acer is still an excerpt.** On 2026-10-21 (UTC) Acer's knowledge base page returned a bot
+  check ("performing security verification") to the browser, and a plain fetch returned HTTP 403.
+  The page was not read and no way around the check was tried. A search of `acer.com` found no
+  Acer-owned page on the subject, only Acer Community forum posts, which are the same site and are
+  user answers; none is cited.
+- **No Lenovo-owned page names the IdeaPad Secure Boot setting.** The one cited says how to enter
+  setup. A search of `lenovo.com` for the setting returned Lenovo Community forum threads only.
+- Two further pages were not opened: ASUS's motherboard page and HP's Esc menu outside its Secure
+  Boot page.
+- Several vendor pages, such as Gigabyte's motherboard page and MSI's, say how to turn Secure Boot
+  on or give only the state it ships in. Those rows carry no off step, and say so.
 - That turning Secure Boot off triggers BitLocker recovery is an inference from Microsoft's
   `PCR[7]` and "changes to the BIOS or UEFI configuration" sentences [ms-cm], and ASUS's general
-  statement [asus-nb]. No Microsoft page read says it of Secure Boot in those words.
+  statement [asus-nb]. The only Microsoft page read that says it of a Secure Boot change is the
+  Surface one, and it says it of the certificate keyset change [ms-surface-cert]. None says it of
+  turning Secure Boot off in those words.
 
 ## Sources
 
-Each was read on 2026-10-18 (UTC), in full unless the table above says excerpt.
+Each was read on 2026-10-18 (UTC), in full unless the table above says excerpt, except the entries
+marked 2026-10-21 (UTC) (the Lenovo IdeaPad page and every Surface, MSI and Gigabyte entry).
 
 - [ms-key] Microsoft Support, "Find your BitLocker recovery key",
   `support.microsoft.com/en-us/windows/find-your-bitlocker-recovery-key-6b71ad27-0b89-ea08-f143-056f5ab347d6`.
@@ -138,9 +174,31 @@ Each was read on 2026-10-18 (UTC), in full unless the table above says excerpt.
 - [hp] HP, "HP PCs - Secure Boot (Windows 11)", `support.hp.com/us-en/document/ish_6930187-6931079-16`.
 - [lenovo-think] Lenovo, "How to enable Secure Boot on Think branded systems", HT509044,
   `support.lenovo.com/us/en/solutions/ht509044`.
-- [lenovo-idea] Lenovo, "Recommended way to enter BIOS - ideapad", HT500216 (excerpt),
-  `support.lenovo.com/us/en/solutions/ht500216`.
+- [lenovo-idea] Lenovo, "Recommended way to enter BIOS - ideapad", HT500216, last modified
+  2026-07-27, read in full 2026-10-21 (UTC), `support.lenovo.com/us/en/solutions/ht500216`.
 - [asus-nb] ASUS, "How to Enable/Disable Secure Boot", FAQ 1050047,
   `asus.com/us/support/FAQ/1050047/`.
 - [acer] Acer Community knowledge base, "Enable or disable Secure Boot on an Acer notebook",
-  article 88 (excerpt), `community.acer.com/en/kb/articles/88-enable-or-disable-secure-boot-on-an-acer-notebook`.
+  article 88 (excerpt read 2026-10-18; not readable 2026-10-21, see BUGS),
+  `community.acer.com/en/kb/articles/88-enable-or-disable-secure-boot-on-an-acer-notebook`.
+- [ms-surface-red] Microsoft Support, "Surface turns on but shows a red bar and an unlocked lock
+  icon", read 2026-10-21 (UTC),
+  `support.microsoft.com/en-us/surface/startup/surface-turns-on-but-shows-a-red-bar-and-an-unlocked-lock-icon`.
+- [ms-surface-uefi] Microsoft Support, "How to use Surface UEFI", read 2026-10-21 (UTC),
+  `support.microsoft.com/en-us/surface/drivers-firmware/how-to-use-surface-uefi`.
+- [ms-surface-cert] Microsoft Support, "Surface Secure Boot Certificates", read 2026-10-21 (UTC),
+  `support.microsoft.com/en-us/surface/drivers-firmware/surface-secure-boot-certificates`.
+- [ms-surface-mgmt] Microsoft Learn, "Manage Surface UEFI settings", last updated 2026-07-07, read
+  2026-10-21 (UTC) (the Secure Boot paragraph; its figures show menus and were not read),
+  `learn.microsoft.com/en-us/surface/manage-surface-uefi-settings`.
+- [msi-nb] MSI, "[Troubleshooting] Secure Boot Violation Error at Startup", FAQ 11370, updated
+  2026-08-25, applies to all MSI notebooks, read 2026-10-21 (UTC), `msi.com/faq/faq-11370`.
+- [msi-statement] MSI, "MSI Statement on Secure Boot", 2023-01-19, read 2026-10-21 (UTC),
+  `us.msi.com/blog/statement-on-secure-boot`.
+- [msi-z370] MSI, "Is secure boot enabled or disabled by default on this motherboard?", FAQ 3115,
+  2018-08-28, Z370 boards only, read 2026-10-21 (UTC), `us.msi.com/faq/3115`.
+- [gigabyte-nb] Gigabyte, "How to disable Secure Boot in BIOS?", FAQ 3001, read 2026-10-21 (UTC),
+  `gigabyte.com/us/Support/Consumer/FAQ/3001`.
+- [gigabyte-mb] Gigabyte, "How to Enable Secure Boot and TPM 2.0 on GIGABYTE AM4 300/400/500series
+  & sTRX4 TRX40series Motherboards", FAQ 4395, 2025-10-01, read 2026-10-21 (UTC),
+  `gigabyte.com/Support/Consumer/Faq/4395`.
