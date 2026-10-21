@@ -176,6 +176,41 @@ macro_rules! say {
     };
 }
 
+/// **Bring the slot's card clock to the tree's rate, and answer the rate it really runs at**, the
+/// number the driver divides for the card. Without the SYS syscon (the PLL2 words, mapped only
+/// where the tree names the PMIC's bus) the rate cannot be computed, and the tree's is used and
+/// said to be unchecked.
+fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
+    if crate::memory::jh7110_pmic_bus().is_none() {
+        say!(
+            slot,
+            "card clock: no SYS syscon mapped, so its rate is the tree's {} Hz, unchecked",
+            slot.ciu_hz
+        );
+        return slot.ciu_hz;
+    }
+    // SAFETY: `mmu::init` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
+    // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
+    let c = unsafe {
+        crate::drivers::jh7110_clock_and_reset::set_card_clock(
+            crate::arch::mmu::phys_to_virt(crg_phys) as usize,
+            crate::arch::mmu::phys_to_virt(jh7110_clock_and_reset::SYS_SYSCON_BASE) as usize,
+            usize::from(slot.index),
+            slot.ciu_hz,
+        )
+    };
+    say!(
+        slot,
+        "card clock: {:#010x} -> {:#010x}, {} Hz from a {} Hz parent (the tree asks {} Hz)",
+        c.before,
+        c.after,
+        c.hz,
+        c.parent_hz,
+        slot.ciu_hz
+    );
+    c.hz
+}
+
 fn probe(slot: &Slot, write: bool) -> Outcome {
     say!(
         slot,
@@ -227,10 +262,12 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::ClocksDown;
     }
 
+    let ciu_hz = card_clock(slot, sys.base);
+
     // SAFETY: step 10 of `mmu::init` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match Host::new(window, slot.ciu_hz, slot.fifo_depth) {
+    let (mut host, id) = match Host::new(window, ciu_hz, slot.fifo_depth) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
@@ -572,11 +609,15 @@ fn read_matrix(slot: &Slot) {
         println!("storage-matrix: no pages for a buffer");
         return;
     };
+    let Some(sys) = crate::memory::jh7110_sys_window() else {
+        return;
+    };
+    let ciu_hz = card_clock(slot, sys.base);
     let first = 2048;
     for depth in [slot.fifo_depth, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.base) };
-        let Ok((mut host, _)) = Host::new(Watch::new(window), slot.ciu_hz, depth) else {
+        let Ok((mut host, _)) = Host::new(Watch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };
