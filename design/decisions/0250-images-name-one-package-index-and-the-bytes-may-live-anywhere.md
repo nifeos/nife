@@ -153,8 +153,18 @@ ruled so the change can be read against it.
 6. Clause 1 now reads: an image carries one index at up to two addresses. The first is
    `basalt.nifeos.org`. The second is on a different registrable domain, so losing one domain
    cannot take both, and the client tries it when the first stops answering. calef chose this as
-   A1, *"two domains"*, after his Q2 ruling, *"M1 plus a backup address."* The second domain is not
-   chosen yet; choosing and registering it is calef's.
+   A1, *"two domains"*, after his Q2 ruling, *"M1 plus a backup address."* The second domain is
+   `crickertech.com` (calef, 2026-10-21 UTC: *"crickertech.com"*), registered at GoDaddy where
+   `nifeos.org` is at Name.com, so one registrar account's compromise or lapsed payment cannot take
+   both. Its address is `basalt.crickertech.com`. Name: provisional. calef chose the domain; the
+   `basalt.` label follows the first address and is not ruled.
+   It is served by a second GitHub Pages site in the `nifeos` organization, `nifeos/basalt-backup`
+   (Name: provisional), which basalt's publish fills with the same files as the first (calef,
+   2026-10-21 UTC: *"P1: a second Pages site in nifeos for basalt.crickertech.com."*). Pages
+   serves one custom domain per site, so the second address needs a site of its own.
+   Shared failures remain, and the second address covers none of them: GitHub Pages serves both
+   sites, the `nifeos` organization owns both repositories, one publish workflow fills both, and
+   NS1's name servers answer for both domains (measured 2026-10-21 UTC).
 7. The index's path, pending under clause 1, is ruled (Q4, *"Channel prefix, no architecture"*):
    the index lives at `/<channel>/metadata/` and packages at `/<channel>/targets/`, each channel its
    own TUF repository, one index for all three architectures. The channel's name is calef's;

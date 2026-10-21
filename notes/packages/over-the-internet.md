@@ -106,7 +106,7 @@ greeting-0.1.0-aarch64 sha256:<64 hex> https://packages.basalt.test:8443/rolling
 
 | Production | Under QEMU | Whose |
 |---|---|---|
-| `basalt.nifeos.org` and a backup address | `gone.basalt.test` (refused by the name server), then `basalt.test`, `helpers/tls-peer` at 10.0.2.9:8443 | DNS and hosting: calef's hands; the backup is on a second registrable domain (§250 clause 6), and choosing and registering it is calef's |
+| `basalt.nifeos.org`, then `basalt.crickertech.com` | `gone.basalt.test` (refused by the name server), then `basalt.test`, `helpers/tls-peer` at 10.0.2.9:8443 | DNS and hosting: calef's hands; the backup is on a second registrable domain (§250 clause 6) |
 | The channel's name | `package_index::PROVISIONAL_CHANNEL`, `rolling` | calef's |
 | ISRG Root X1, for the index and listed locations (§250 clause 10), or a root the index names (clauses 11 to 13) | the test authority in `pinned_tls_client/fixtures/` | ruled for the index; X1 meets a real chain only in 501's ignored host test |
 | The index's format | the stand-in encoding | the TUF client, milestone 858 |

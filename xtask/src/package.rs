@@ -328,9 +328,9 @@ pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
 /// **Two texts, chosen by `NIFE_INDEX_SOURCES`.** Unset or `test`, the image names the test peer:
 /// `helpers/tls-peer`, which every runner forwards at 10.0.2.9:8443 and which presents a chain for
 /// `basalt.test` from the committed test authority. Every check boots that one, because no check
-/// may depend on a host outside the runner. `basalt` names the production host instead,
-/// `package_index::BASALT_SOURCES`: `basalt.nifeos.org`, served by GitHub Pages and pinned to ISRG
-/// Root X1 (§250 (an image names its distribution's package index); calef's 2026-10-12 (UTC)
+/// may depend on a host outside the runner. `basalt` names the production hosts instead,
+/// `package_index::BASALT_SOURCES`: `basalt.nifeos.org`, served by GitHub Pages, then
+/// `basalt.crickertech.com`, both pinned to ISRG Root X1 (§250 (an image names its distribution's package index); calef's 2026-10-12 (UTC)
 /// ruling on where it is served). One text, not both: `package_index::Sources` holds one root, and
 /// the two hosts chain to different ones. Milestone 909 (basalt composes the bootable image from
 /// its packages) is where basalt asks for `basalt` on the images it publishes. Anything else is

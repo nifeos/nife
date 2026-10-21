@@ -92,7 +92,7 @@ not name.
 **Ruled.** calef ruled both on #1884 on 2026-10-10 (UTC), and §250's amendment of that date
 records them: A as clause 6 (A1, *"two domains"*), B as clause 10 (*"X1 only"*). Clauses 11 to 13
 (C, below) let the signed index name a listed location's root among those the image carries.
-Choosing and registering the second domain is calef's, and so is the channel's name, which is
+The second domain is `crickertech.com` (clause 6). The channel's name is calef's, and it is
 provisional.
 
 **A. Does the backup address touch §250's wording?** Yes, in two places. Clause 1 says "An image
