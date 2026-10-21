@@ -233,7 +233,7 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 | 3 | an undeclaring program holds no reset capability; `caps reboot` names it | met: the witness fixture and the `caps reboot` line in `swish-check`, plus the host test |
 | 4 | a refusal is loud | met: the kernel prints the firmware's code and `reboot` prints the reason. **No non-zero exit**: no program here has one |
 | 5 | `script/soak-test --reboot` still passes | met: passed on aarch64, riscv64 and x86_64 on 2026-10-06 (UTC), each resetting and soaking again 127 s in |
-| 6 | radon, after milestone 592 | **not met**: radon reaches the prompt but takes one keystroke per boot (2026-10-21); see the scope note |
+| 6 | radon, after milestone 592 | met: `reboot` typed at radon's prompt reset the board through the AXP15060 into the next netbooted image, twice, with nobody at plug 2; see the scope note |
 | 7 | §251 records the semantics | met, with a 2026-10-06 amendment for what the build found |
 
 ## What it costs
@@ -249,26 +249,36 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 
 ## Scope note
 
-**radon (riscv64 silicon) is not proven, and this block claims nothing about it.** The reset route,
-milestone 592's direct AXP15060 write, is proven on radon from the rebooting soak. The prompt is
-reached: on 2026-10-21 (UTC) radon netbooted `main` at `cda4ceb55` to the `swish` prompt twice
-(`bench/radon-2026-10-21/890-boot-to-prompt.log`). But its keystroke path delivers only the first
-byte typed on a boot, so `reboot` cannot be typed. That defect is milestone 890 (riscv64 and x86_64
-join the shared boot path)'s, in its `BUGS`.
+**radon (riscv64 silicon) is proven.** On 2026-10-21 (UTC) `reboot` was typed at radon's `swish`
+prompt twice, with nobody at plug 2, and each time the board reset through the AXP15060 and came up
+as the next netbooted image (`bench/radon-2026-10-21/890-plic-probe.log`,
+`bench/radon-2026-10-21/890-keystroke-fix.log`, with `README-890.md`). Both logs show the command,
+the restart request and milestone 592's direct PMIC write, then end mid-line where the power is cut:
+
+```
+$ reboot
+  reboot: no writable filesystem is attached, so nothing to sync; restarting
+reboot: the kernel was asked to restart the machine
+reboot: AXP15060: reg 0x32 read 0x24, writing 0x64 (bit 6 set, every other bit as found); this line is the last if the PMIC honors it
+reboot: AXP15060: write completed without a reset; the
+```
+
+The first reset (15:28 UTC) took the probe image to the fix image, whose log opens with a fresh
+U-Boot SPL banner; the second (15:29 UTC) ended the fix image's run. The keystroke path delivers
+every byte (milestone 890 (riscv64 and x86_64 join the shared boot path)), so `reboot` is typed at
+full speed. The log ends at the cut line, so the second reset's evidence is that line and
+`README-890.md`'s record, not a following banner.
 
 ## What was blocked until the ruling
 
 The kernel object, the endowment, the program and the gate waited on the first question until calef
-picked A on 2026-10-06. Only exit criterion 6 still waits, on milestone 592.
+picked A on 2026-10-06.
 
 ## BUGS
 
 - A background job's write between `reboot`'s `SYNC` reply and the reset can be lost. calef ruled
   option A knowing it (2026-10-06 UTC); milestone 853 (orderly shutdown closes the sync window)
   closes it.
-- radon's reset from the prompt is unproven on silicon, because radon's prompt takes one keystroke
-  per boot (milestone 890's `BUGS`).
-  The reset route itself, 592's direct PMIC write, is proven from the rebooting soak.
 - Who at the prompt may reboot is not decided here. Any session the progenitor endows can.
   Restricting it to some logins is a policy question for whichever milestone decides what login
   grants.
@@ -277,9 +287,6 @@ picked A on 2026-10-06. Only exit criterion 6 still waits, on milestone 592.
 
 ## Follow-on
 
-- **Outstanding.** Exit criterion 6, `reboot` at radon's prompt with nobody at plug 2. 592 is
-  BUILT, and radon reaches the prompt. It waits on radon's keystroke path, which delivers one byte
-  per boot (milestone 890's outstanding item). calef at the bench once that is fixed.
 - **Milestone 853.** Milestone 853 (orderly shutdown closes the sync window), promoted 2026-10-09.
 - **Recorded.** The program does not exit non-zero on a refusal: `components/src/reboot.rs`'s
   `BUGS`.
