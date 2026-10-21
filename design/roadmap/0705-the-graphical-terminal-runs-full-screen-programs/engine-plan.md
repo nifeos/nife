@@ -3,22 +3,24 @@
 This appendix belongs to [milestone 705 (the graphical terminal runs full-screen programs)](../0705-the-graphical-terminal-runs-full-screen-programs.md).
 It holds the build plan for option A, extending `crates/video_terminal`: what the engine must do,
 in which order, and how each step is proved. Its measurements are in [the programs'
-census](program-census.md) and [the reference engines](engine-matrix.md). Five decisions are
-calef's and are marked where they arise. This file's name is provisional.
+census](program-census.md), [the reference engines](engine-matrix.md) and [Redox's
+experience](prior-art-redox.md). Four decisions are calef's and are marked where they arise. This
+file's name is provisional.
 
-## Where the target comes from
+## The target
 
-The target is what the programs send and what the advertised terminfo entry promises. Another
-engine's feature list is not the target, because it records what that engine's users asked for. So
-the order of work is: measure the programs, choose the entry, list its capabilities, then read the
-reference engines for behavior and for anything the programs need that the census missed.
+calef, 2026-10-21 02:24 UTC: "Advertise xterm-256color plus COLORTERM=truecolor is the decision."
+So the engine is a faithful xterm. It honors every capability the `xterm-256color` terminfo entry
+promises, and 24-bit color, which it already draws. Features a program negotiates by query or mode
+whatever TERM says (synchronized output, bracketed paste, focus events, the kitty keyboard protocol,
+hyperlinks) are planned as their own steps.
 
-Ten programs were recorded: vim, Neovim, `less`, `top`, `htop`, `nano`, an ncurses test, Emacs,
-Midnight Commander and tmux. `nano` is the port of milestone 170 (`nano`: a real, full-featured
-screen editor). Replayed through today's engine, 13 of 97 checkpoints match the reference screen;
-`vt100` matches 80. vttest passes 7 of 24 screens.
+The programs set the order. Ten were recorded: vim, Neovim, `less`, `top`, `htop`, `nano`, an
+ncurses test, Emacs, Midnight Commander and tmux. `nano` is the port of milestone 170 (`nano`: a
+real, full-featured screen editor). Replayed through today's engine, 13 of 97 checkpoints match the
+reference screen; `vt100` matches 80. vttest passes 7 of 24 screens.
 
-Four findings shape the plan.
+Four findings shape the order.
 
 - `ESC ( B` prints a stray `B` today. It is in every ncurses program's `sgr0`, so `htop`'s first
   screen carries 404 of them. It is a three-byte sequence the parser ends after two.
@@ -30,255 +32,224 @@ Four findings shape the plan.
 - No program hung without replies. Neovim waits one second at exit for DA1, and Emacs waits 0.21 s
   at startup for DA2.
 
-## Decision 1: the TERM nife advertises
+## The entry's capabilities, by step
 
-Today `system_initializer` sets `TERM=dumb`. The engine must honor every capability of the entry it
-advertises, so this choice is the list.
+The entry read is ncurses 6.6's `xterm-256color`.
 
-- **A. `xterm-256color`** (recommended). Every system that runs a program over ssh has it, and the
-  programs measured sent the same sequences under it as under `xterm`, so 256 colors cost nothing
-  the engine does not already do. Its cost is a short list of capabilities the plan does not
-  implement (below), which must be accepted as exceptions or implemented.
-- **B. A nife entry**, `xterm-256color` minus those exceptions. Exact, but it exists only where
-  nife installs it. An ssh session into Linux sends the name, the remote host has no entry, and
-  ncurses refuses to start. Users then set `TERM` by hand, which is the failure B exists to avoid.
-  Its name would be calef's.
-- **C. `xterm`.** The same capabilities with 8 colors. No reason to prefer it: the engine already
-  draws 256 and 24-bit color.
-
-The entry read is ncurses 6.6's `xterm-256color`. Its output capabilities, by the step that
-honors them:
-
-| step | capabilities |
+| step | output capabilities |
 |---|---|
-| today | `bel bold dim rev invis sitm ritm smso rmso smul rmul blink` (parsed, not drawn), `setaf setab op` and `AX`, `clear ed el el1 cup home cub cuf cuu cud` and their one-step forms, `cr ht xenl msgr npc` |
-| 1 | `am smam rmam`, `civis cnorm cvvis`, `hpa vpa ech ind nel`, `smkx rmkx`, `Ss Se`, and `sgr0`'s `ESC ( B` |
+| today | `bel bold dim rev invis sitm ritm smso rmso smul rmul blink` (parsed, not drawn), `setaf setab op AX`, `clear ed el el1 cup home cub cuf cuu cud` and their one-step forms, `cr ht xenl msgr npc` |
+| 1 | `am smam rmam`, `civis cnorm cvvis`, `hpa vpa ech ind nel`, `smkx rmkx`, `km smm rmm`, `Ss Se`, and `sgr0`'s `ESC ( B` |
 | 2 | `csr ri indn il il1 dl dl1`, and `indn`'s reverse (SD by a count) |
 | 3 | `ich dch dch1 smir rmir mir rep bce` |
 | 4 | `smcup rmcup sc rc`, and the soft reset in `is2 rs2` |
 | 5 | `hts tbc cbt`, `acsc smacs rmacs` |
 | 6 | `u6 u7 u8 u9 RV XR` |
 | 8 | `ccc initc oc`, `flash`, `E3`, `rs1` |
-| accepted and ignored | `XT` (titles; there is no title bar), `Cs Cr` (cursor color), `km smm rmm` (meta), `BE BD PS PE` (bracketed paste; nife has no paste to bracket) |
-| exceptions | `mc0 mc4 mc5 mc5i` (a printer), `meml memu` (xterm's memory lock), `smglp smglr smgrp mgc` (left and right margins), `XM kmous` (mouse, decision 5), `Ms` (clipboard) |
+| 9 | `smglp smglr smgrp mgc` |
+| 10 | `mc0 mc4 mc5 mc5i`, `meml memu` |
+| 11 | `XM kmous` |
+| 12 | `Ms` |
+| 14 | `BE BD PS PE` |
+| accepted | `XT` (titles; there is no title bar), `Cs Cr` (cursor color) |
 
-The exceptions are safe only together with decision 2. No program measured used margins or the
-clipboard unless told it was talking to xterm, and ncurses does not use the printer or margin
-capabilities to draw.
-
-## Decision 2: how the engine names itself
+## Decision 1: how the engine names itself
 
 Every reply is a format programs read, so it is calef's.
 
 - **A. An honest identity** (recommended). DA1 `CSI ? 62 ; 22 c` (VT220 class with ANSI color), DA2
-  `CSI > 1 ; 0 ; 0 c`, XTVERSION naming nife and its version, and DECRQM answering 0 for every
-  mode the engine does not implement. libghostty-vt's engine uses the same DA1 and DA2 by default.
-  Measured effect: the programs send the no-reply set, which is the plan's target.
-- **B. Claim xterm**, as the census's xterm-reply runs did. Programs then send DECSLRM,
-  synchronized output and capability queries, which the plan would have to implement or the
-  screen is wrong.
+  `CSI > 1 ; 0 ; 0 c`, XTVERSION naming nife and its version, and DECRQM answering each mode by what
+  the engine implements at that commit. libghostty-vt's engine uses the same DA1 and DA2 by default.
+  Programs then adopt each negotiated feature the day its step lands, and never before.
+- **B. Claim xterm.** Programs then assume xterm's whole set at once, including vim's 37
+  capability queries, which step 6 would have to answer for real.
 
 Under A, vim's and Emacs's version heuristics see an unknown terminal. Step 6 runs vim, Neovim,
-Emacs and tmux against the exact strings before it merges, since that effect was inferred and not
-measured.
+Emacs and tmux against the exact strings before it merges, since that effect was inferred.
+
+## Decision 2: when TERM changes
+
+Today `system_initializer` gives every program `TERM=dumb`. The ruling's rule is that the engine
+honors what it advertises, yet steps 11 and 12 wait on other milestones (below).
+
+- **A. After step 10** (recommended), with `XM`, `kmous` and `Ms` recorded in `BUGS` until
+  milestones 179 (pointer input) and 180 (a clipboard) land. Every program in the census works by
+  keyboard, and none used the clipboard.
+- **B. After step 12**, which waits on both milestones.
 
 ## The steps
 
 Each step is one pull request. "Lines" are engine and test lines as this tree writes them, comments
-included; how they were estimated is under "The estimate, revised". The predicted counts are upper
-bounds from the census replay.
+included. The predicted counts are upper bounds from the census replay.
 
 | step | adds | turns green | lines (engine / tests) |
 |---|---|---|---|
-| 0a | host replay harness and committed recordings | measures; nothing changes | 450 of tooling |
+| 0a | replay harness and committed recordings | measures; nothing changes | 450 of tooling |
 | 0b | fuzz target; first Kani harnesses | nothing | 160 |
-| 1 | parser repairs, cursor addressing, small modes | vttest 1.5, 2.1 (9 of 24); census 13, or 17 if ASCII | 270 / 300 |
-| 2 | scrolling regions and origin mode | vttest 17 of 24; census 25, or 79 if ASCII | 300 / 350 |
-| 3 | insert and delete in place | vttest 22 of 24; `top` | 120 / 150 |
+| 1 | parser repairs, cursor addressing, small modes | vttest 9 of 24; census 13, or 17 if ASCII | 270 / 300 |
+| 2 | scrolling regions and origin mode | vttest 17; census 25, or 79 if ASCII | 300 / 350 |
+| 3 | insert and delete in place | vttest 22; `top` | 120 / 150 |
 | 4 | alternate screen, saved cursor, soft reset | `nano`, Emacs, tmux; census 33, or 96 if ASCII | 260 / 250 |
 | 5 | tab stops and line drawing | vttest 24 of 24 | 200 / 180 |
 | 6 | the reply path | vttest's reports; Neovim's exit | 250 / 200 |
-| 7 | wide and combining characters | census 96 of 97 with the CJK file | 180, plus a generated table / 200 |
+| 7 | wide and combining characters | census 96 of 97 with the CJK file | 180 and a generated table / 200 |
 | 8 | palette, reverse screen, scrollback clear | the ncurses test; 97 of 97 | 120 / 120 |
+| 9 | left and right margins | margin-aware programs, once DECRQM says so | 250 / 300 |
+| 10 | printer controller mode, memory lock | the entry, complete but for 11 and 12 | 80 / 80 |
+| 11 | mouse reporting, SGR encoding included | `htop`, Midnight Commander, tmux, Neovim by mouse | 200 / 200 |
+| 12 | OSC 52 | clipboard writes from vim and tmux | 60 / 60 |
+| 13 | synchronized output | Neovim and tmux without tearing | 60 / 80 |
+| 14 | bracketed paste | pastes arrive bracketed | 40 / 40 |
+| 15 | focus events | Neovim, vim and tmux see focus | 30 / 40 |
+| 16 | kitty keyboard protocol | Neovim's unambiguous keys | 250 / 250 |
+| 17 | modifyOtherKeys | vim's and Emacs's modified keys | 80 / 80 |
+| 18 | OSC 8 hyperlinks | links kept with their cells | 120 / 100 |
 
-### 0a. The replay harness
+**0a. The replay harness.** A host command in `xtask` (name provisional) replays committed
+recordings through `Vt` and compares each checkpoint's grid with the oracle's (decision 3). A
+recording is the bytes a program wrote plus the offsets of its keystrokes, so grading needs no pty
+and no installed program and runs in CI in milliseconds. The recordings are the ten census sessions
+and vttest's menus 1, 2 and 8, about 240 KB. A capture helper records new sessions. The harness
+fails when any count drops.
 
-A host command in `xtask` (name provisional) that replays committed recordings through `Vt` and
-compares each checkpoint's grid with the oracle's (decision 3). A recording is the bytes a program
-wrote plus the byte offsets of its keystrokes. Grading needs no pty and no installed program, so
-it runs in CI in milliseconds. A capture helper records new sessions on a developer's machine.
+**0b. The fuzz target and the first proofs** over today's engine. Kani on a 672 KB value is untried;
+this step finds out whether it holds the whole `Vt` or only extracted pieces.
 
-The recordings are the ten census sessions and vttest's menus 1, 2 and 8, about 240 KB. They are
-recorded under the reply identity of decision 2, and re-recorded once step 6 can answer.
+**1.** The parser consumes an `ESC` sequence with intermediates whole, executes C0 codes inside a
+CSI, treats VT and FF as line feed, and dispatches private markers. Then CHA, HPA, VPA, HPR, VPR,
+CNL, CPL, ECH, IND, NEL, DECALN, DECTCEM, DECAWM, DECSCUSR accepted, and DECCKM and DECKPAM in
+`Vt`. `keymap` reads them: with `smkx` the entry promises `kcuu1=\EOA`, and ours sends `CSI A` in
+every mode.
 
-Tests: the harness reports today's 13 of 97 and 7 of 24, and fails when a count drops.
+**2.** DECSTBM, RI, SU, SD, IL and DL in the region, region-aware line feed and DECOM. This is where
+[engine options](engine-options.md) put the risk: `line_feed`, the damage record and the scrollback
+ring. Only a whole-screen scroll pushes a row to scrollback.
 
-### 0b. The fuzz target and the first proofs
+**3.** ICH, DCH, IRM and REP, with erasure filling with the current background only (BCE). Today an
+erase fills with the whole rendition.
 
-A `fuzz/` target over `Vt::feed` (below), seeded with the recordings, and the first Kani harnesses
-over today's engine. Kani on a 672 KB value is untried; this step finds out whether it holds the
-whole `Vt` or only the extracted pieces, before any step depends on it.
+**4.** Modes 47, 1047, 1048 and 1049; DECSC, DECRC, SCOSC and SCORC with position, rendition,
+origin mode, the wrap flag and character sets; DECSTR. The second grid is 192,000 bytes more in
+every holder of a `Vt`: `display_terminal`'s `.data` (717 KB today), the kernel's witness and
+`xtask`. Each step that adds state bumps the handoff `LAYOUT` and keeps a reader for the previous
+one. calef's 2026-10-19 ruling on §209 (state handoff is an opaque blob over a granted frame, and it
+is optional) requires that.
 
-### 1. Parser repairs, cursor addressing, small modes
+**5.** HTS, TBC, CBT, CHT; G0 and G1, SO and SI, and DEC Special Graphics mapped to Unicode box
+drawing. The atlas is ASCII, so the glyphs are milestone 142's (a text display good enough that
+people use it instead of a GUI); the grid is right after this step.
 
-- The parser: an `ESC` sequence with intermediates (`ESC ( B`, `ESC # 8`) consumed whole; C0 codes
-  inside a CSI executed and the sequence continued; VT and FF as line feed; private markers parsed
-  and dispatched, which every later mode needs.
-- CHA, HPA, VPA, HPR, VPR, CNL, CPL, ECH, IND, NEL, DECALN.
-- DECTCEM drives the existing `set_cursor_visible`; DECAWM; cursor blink and DECSCUSR accepted.
-- DECCKM and DECKPAM in `Vt`, read by `keymap` to send `ESC O A` in application cursor mode. With
-  `smkx` the entry promises `kcuu1=\EOA`, and ours sends `CSI A` in every mode.
-
-Tests: one per sequence in `vt/tests.rs`, plus `keymap` tests for both cursor modes.
-
-### 2. Scrolling regions and origin mode
-
-DECSTBM, RI, SU, SD, IL and DL inside the region, region-aware line feed and DECOM. The risk named
-in [engine options](engine-options.md) lives here: `line_feed`, the damage record and the
-scrollback ring. Only a scroll of the whole screen pushes a row to scrollback, as in every reference
-engine. The damage rectangle of a region scroll covers the region, not the screen.
-
-Tests: region edge cases taken from vttest 2.7 to 2.10 (where `alacritty_terminal` is wrong and
-`vt100` right), damage bounds, scrollback untouched by a region scroll.
-
-### 3. Insert and delete in place
-
-ICH, DCH, IRM and REP, with erasure filling with the current background (BCE). Today an erase fills
-with the whole current rendition; xterm and `alacritty_terminal` take only the background.
-
-### 4. Alternate screen, saved cursor, soft reset
-
-Modes 47, 1047, 1048 and 1049; DECSC and DECRC (and SCOSC and SCORC), saving position, rendition,
-origin mode, the wrap flag and character sets; DECSTR; `CSI 22 t` and `23 t` consumed. The second
-grid is 9,600 cells of 20 bytes, 192,000 bytes more in every holder of a `Vt`: `display_terminal`'s
-`.data` (717 KB today), the kernel's witness and `xtask`. The alternate screen keeps no scrollback.
-
-Each step that adds state (1, 2, 4, 5, 7) bumps the handoff `LAYOUT` and keeps a reader for the
-previous layout. calef's 2026-10-19 ruling on §209 (state handoff is an opaque blob over a granted
-frame, and it is optional) requires it.
-
-### 5. Tab stops and line drawing
-
-HTS, TBC, CBT, CHT; G0 and G1 designation, SO and SI, and DEC Special Graphics mapped to their
-Unicode box-drawing characters. Drawing those needs glyphs the atlas does not have: its repertoire
-is ASCII, and widening it is milestone 142 (a text display good enough that people use it instead
-of a GUI). The grid is right after this step; the pixels follow 142.
-
-### 6. The reply path
-
-Part 3's design as written: `Vt::take_reply` hands back a bounded buffer and clears it, as
+**6.** Part 3's design: `Vt::take_reply` hands back a bounded buffer and clears it, as
 `take_damage` does, and `display_terminal` forwards it where a keystroke goes. A flood drops the
-newest reply and says so in `BUGS`. Replies: DA1, DA2, DSR 5 and 6, DECXCPR, DECRQM, XTVERSION,
-`CSI 18 t`, OSC 10 and 11 queries answered from the palette, and DECRQSS and XTGETTCAP answered
-"invalid", all under decision 2. Replies do not change the grid, so the witness is untouched.
+newest reply and says so in `BUGS`. DA1, DA2, DSR 5 and 6, DECXCPR, DECRQM, XTVERSION, `CSI 18 t`,
+OSC 10 and 11 queries, and DECRQSS and XTGETTCAP, all under decision 1. Replies do not change the
+grid, so the witness is untouched.
 
-Tests: each reply's bytes; the drop on overflow; the component's forwarding in the QEMU suite.
+**7.** Widths from a table (decision 4). A wide character takes two cells and wraps whole, and
+erasing either half clears both. A combining mark joins the previous cell; a cell holds one `char`,
+so the mark is dropped and the columns stay right until a cell can hold more.
 
-### 7. Wide and combining characters
+**8.** OSC 4 and 104, DECSCNM, ED 3, and DECCOLM as clear and home with no change of width.
 
-Width from a table (decision 4); a wide character takes two cells, wraps whole at the margin, and
-overwriting or erasing either half clears the other. A combining mark joins the previous cell. A
-cell holds one `char`, so a mark is kept only if a later step widens the cell; until then it is
-dropped and the columns stay right, which is what programs depend on.
+**9.** DECLRMM and DECSLRM. Every operation from steps 2 and 3 learns the left and right margins,
+which is why it is large; libvterm and libghostty-vt have it, neither Rust engine does.
 
-### 8. Palette, reverse screen, scrollback clear
+**10.** Printer controller mode swallows text until `CSI 4 i`, `mc0` prints nothing (there is no
+printer), and HP memory lock (`ESC l`, `ESC m`) keeps the rows above the cursor from scrolling.
 
-OSC 4 and 104 (`initc`, `oc`), DECSCNM (`flash`), ED 3, and DECCOLM as clear and home with no
-change of width.
+**11.** Modes 9, 1000, 1002 and 1003 with encodings 1005, 1006 and 1015. It waits on milestone 179
+(pointer input) to route clicks and motion to `display_terminal`.
 
-## The kernel's witness stays predictive
+**12.** OSC 52 sets a selection. It waits on milestone 180 (a clipboard) for somewhere to put it.
 
-Under A there is one engine, so the three witnesses (the component draws, the kernel predicts,
-`xtask` grades the scanout) keep agreeing by construction. What keeps them meaningful is that
-`script.rs`, the shared script, exercises the new features. Each step adds its sequences to the
-script, so the kernel suite proves them on all three architectures. The suite's cost grows with
-the script; each step reports it.
+**13 to 18** each add one negotiated feature with its DECRQM or query answer, so a program uses it
+only after asking. Bracketed paste waits on milestone 180; focus events need a window to lose focus,
+which milestone 632 (graphics on demand) provides.
 
-## Fuzzing
+## What the C programs need from the terminal layer
 
-One target, `video_terminal_feed`. It feeds arbitrary bytes and checks, after every call:
+Measured on `main` at d123bc55d: the C library maps neither onto the terminal contract today.
+`vendor/relibc/header` has no `termios` module, so `tcgetattr` and `tcsetattr` do not exist.
+`ioctl` answers every request, `TIOCGWINSZ` included, with `ENOTTY`, and `isatty` is always false.
+Milestone 170 owns all three: its stage 1 adds `termios.h` over the line editor's raw mode and maps
+`TIOCGWINSZ` onto a new window-size operation (calef's rulings of 2026-10-18). On the display
+terminal that size comes from the surface, so it needs nothing from this engine. This plan does not
+duplicate that work.
 
-- no panic;
-- the cursor inside the grid, the region inside the screen, the wrap flag only at the last column;
-- the damage rectangle inside the grid;
-- splitting the same bytes at any point gives the same grid (the parser carries its state);
-- a handoff written mid-stream and absorbed into a fresh `Vt` gives the same grid.
+## The witness, fuzzing and Kani
 
-## What Kani proves
+There is one engine, so the three witnesses (the component draws, the kernel predicts, `xtask`
+grades the scanout) agree by construction. Each step adds its sequences to `script.rs`, so the
+kernel suite proves them on all three architectures, and reports what that costs.
 
-- No panic and no out-of-bounds index for any input of up to N bytes from the reset state, N
-  chosen by what step 0b measures Kani can hold.
-- The grid invariants after any step: cursor column below `cols` and row below `rows`; region top
-  below bottom, bottom at most `rows`; wrap flag only at the last column; `sb_len` at most capacity.
-- The arithmetic, exhaustively on extracted pure functions: region clamps, the rows a region scroll
-  moves, tab-stop operations, cursor clamps under origin mode, width lookup.
-- Entering and leaving the alternate screen restores the primary grid and cursor exactly.
+The fuzz target feeds arbitrary bytes into `Vt::feed` and checks after every call: no panic; cursor,
+region and damage inside the grid; the wrap flag only at the last column; the same grid whatever
+the bytes' split; and the same grid after a handoff written mid-stream and absorbed.
+
+Kani proves no panic and no out-of-bounds index for every input up to a length step 0b measures;
+the grid invariants after any step; the arithmetic of region clamps, region scrolls, tab stops,
+margins and width lookup, exhaustively on extracted pure functions; and that leaving the alternate
+screen restores the primary grid and cursor exactly.
 
 ## Decision 3: an oracle in the tests
 
-Grading needs an expected screen for every checkpoint. §46 (thin primitives or whole subsystems; we
-write everything in between) counts a dev-dependency, so this is calef's.
+§46 (thin primitives or whole subsystems; we write everything in between) counts a dev-dependency.
 
-- **A. `alacritty_terminal` 0.26.0 as a host-only dev-dependency of the replay harness**
-  (recommended). It passes 22 of 24 vttest screens; its two failures go on an allowlist with
-  reasons. It shares the hold calef put on its §46 take on 2026-10-19. Until that lifts, step 0a
-  uses C.
-- **B. `vt100` 0.17.0.** Five crates and no patch, but a weaker oracle: 17 of 24 vttest screens,
-  and it disagrees with `alacritty_terminal` at 17 of the 97 census checkpoints.
-- **C. No oracle in the graph.** Committed expected screens, reviewed by a person. It costs the
-  same, but regenerating them needs an engine outside the tree, which a stranger with only this
-  repository cannot run. That fails the third principle, which is why A is recommended, not effort.
+- **A. `alacritty_terminal` 0.26.0, host-only, in the replay harness** (recommended). It passes 22
+  of 24 vttest screens; its two failures go on an allowlist with reasons. It shares calef's
+  2026-10-19 hold on its §46 take; until that lifts, step 0a uses C.
+- **B. `vt100` 0.17.0.** Weaker: 17 of 24 screens, and it disagrees with the reference at 17 of 97
+  checkpoints.
+- **C. Committed expected screens, no oracle.** It costs the same, but regenerating them needs an
+  engine outside the tree, which fails the third principle. That, not effort, is the reason for A.
 
 ## Decision 4: where character widths come from
 
-`video_terminal` is in the kernel's dependency graph (`kernel/Cargo.toml`), through the witness.
+`video_terminal` is in the kernel's dependency graph, through the witness.
 
 - **A. A table generated in the tree** (recommended) from Unicode's `EastAsianWidth.txt` and the
-  combining classes, with the generator committed and the Unicode version pinned. About 80 lines of
-  generator and 500 of table, and no dependency reaches the kernel.
-- **B. The `unicode-width` crate**, which `alacritty_terminal` and `vt100` both use. The tree's rule
-  is to take existing code first, but this one enters the kernel's graph, and the crates Kani proves
-  are the ones the rule says to write.
+  combining classes, with the generator committed and the version pinned. No dependency reaches the
+  kernel.
+- **B. The `unicode-width` crate**, which `alacritty_terminal` and `vt100` use. It enters the
+  kernel's graph. The two cost about the same; the kernel's graph is the reason.
 
-The recommendation is about the kernel's graph, not effort; the two cost about the same.
+## What keeps A from stalling
 
-## Decision 5: what is out of 705
+Redox's own engine, `ransid`, is option A's shape, and it stalled: 61 of its 76 commits were in its
+first two years, no sequence was added after 2017, and it never had a test. Redox replaced it with
+`alacritty_terminal` in its console and with COSMIC Terminal on its desktop. Each of its causes has
+an answer here.
 
-Recommended out, each with its reason:
+- No tests and no conformance run, so nothing said what was missing. Step 0a puts vttest and the
+  census into CI before any engine change, and its counts cannot drop.
+- It emitted drawing events, so its output could never be compared as a value. `Vt` is a value,
+  checked by three witnesses, a differential oracle, a fuzz target and Kani.
+- Its target was its author's own programs. This one is a terminfo entry calef ruled on, every
+  capability assigned to a step above.
+- One author. These steps are lanes, each a pull request that a stranger can run the harness on.
 
-- Mouse reporting. `htop`, Midnight Commander, tmux and Neovim turn it on, and all work by keyboard
-  without it. It needs pointer input routed into `display_terminal`, which is its own milestone;
-  this lane would propose it.
-- Left and right margins, synchronized output, the kitty keyboard protocol, OSC 8 and 52. Asked
-  for only after a terminal claims them (decision 2).
-- 132 columns, double-size lines and VT52 (vttest menus 3, 4, 7), and resizing. The grid size is
-  negotiated with the screen, and that contract is outside this engine.
-- Glyphs beyond ASCII, which belong to milestone 142.
+What would make A the wrong call is the same thing that ended `ransid`: the steps stop landing. The
+exit is written here so nobody has to rediscover it. It is Redox's, `alacritty_terminal` behind
+`display_terminal`, which is option F with its held take. Unlike Redox, nife would have to carry the
+pty cut, because `polling` does not know nife's target.
 
 ## The estimate, revised
 
-[Engine options](engine-options.md) estimates 500 to 900 lines of engine code by analogy. Counted
-here, the engine is about 1,700 lines: steps 1 to 8, with `keymap`, the handoff layouts and the
-component's reply forwarding. Around it sit about 1,750 lines of tests and 450 of harness tooling.
-The fuzz target and first proofs are 160 lines, growing to about 250, and the generated width
-table is about 500.
+[Engine options](engine-options.md) estimates 500 to 900 lines of engine code. Counted here: about
+2,900 engine lines in all. Steps 1 to 12, the faithful xterm, are about 2,300 of them; steps 13 to 18,
+the negotiated features, about 600. Around them sit about 3,000 lines of tests, 450 of harness, 250
+of fuzz and proofs, and a generated width table of about 500.
 
-The engine figure comes from the sizes of the same functions in `alacritty_terminal` 0.26.0,
-scaled by 1.5 for this tree's comment density (`vt.rs` is 1,361 lines, 883 of code). On top is
-what `alacritty_terminal`'s grid provides and ours must write: region-aware scrolling and damage. Read it as
-1,300 to 2,100.
-
-It covers `xterm-256color` less decision 1's exceptions, all 24 graded vttest screens, the reply
-path, and every census program's screens with ASCII or wide text. It does not cover mouse, margins,
-glyphs beyond ASCII, or anything the census did not reach; [the census](program-census.md) says
-where it is thin.
+The figure scales the same functions in `alacritty_terminal` 0.26.0 by 1.5 for this tree's comment
+density (`vt.rs` is 1,361 lines, 883 of code). `alacritty_terminal` lacks step 9; libvterm's
+`state.c` names the left and right margins on 53 lines, which sized it. Read it as 2,200 to 3,600. It covers `xterm-256color` whole, 24 of 24
+vttest screens, the reply path and every census program's screens. [The
+census](program-census.md#where-this-census-is-thin) says what it did not reach.
 
 ## Open decisions
 
-1. The TERM nife advertises: `xterm-256color` with the listed exceptions (recommended), a nife
-   entry, or `xterm`.
-2. The reply identity: honest VT220 class naming nife (recommended), or claim xterm.
+1. The reply identity: honest VT220 class naming nife (recommended), or claim xterm.
+2. When TERM changes: after step 10 with mouse and clipboard in `BUGS` (recommended), or after 12.
 3. The test oracle: `alacritty_terminal` as a host dev-dependency (recommended, under its hold),
    `vt100`, or none.
-4. Character widths: a generated table in the tree (recommended), or `unicode-width`.
-5. Scope: mouse, margins, synchronized output, 132 columns and glyphs out of 705 (recommended).
+4. Character widths: a table generated in the tree (recommended), or `unicode-width`.

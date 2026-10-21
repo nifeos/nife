@@ -49,8 +49,8 @@ which steps 1 and 6 cover.
 
 ## What each program sends that ours does not act on
 
-From the no-reply runs, which are the plan's target because the plan answers as itself and not as
-xterm (decision 2). Each sequence is followed by the step that adds it. "No effect" lists what
+From the no-reply runs, which set the plan's order, because the plan recommends answering as itself
+and not as xterm (the plan's decision 1). Each sequence is followed by the step that adds it. "No effect" lists what
 ours swallows harmlessly: input-side modes, queries, cursor shape and the like.
 
 | program | changes the screen | no effect when swallowed |
@@ -106,19 +106,19 @@ Checkpoints are the screen just before each keystroke; the screen after the prog
 left out. "Match" means all 24 rows of text equal the reference's. Attributes and colors are not
 compared, so these numbers flatter every engine equally.
 
-| program | checkpoints | ours matches | `vt100` matches |
-|---|---|---|---|
-| vim | 21 | 1 | 15 |
-| Neovim | 21 | 0 | 15 |
-| `less` | 12 | 6 | 10 |
-| `top` | 3 | 0 | 3 |
-| `htop` | 6 | 0 | 6 |
-| `nano` | 7 | 0 | 6 |
-| ncurses test | 1 | 0 | 0 |
-| Emacs | 9 | 1 | 9 |
-| Midnight Commander | 5 | 5 | 5 |
-| tmux | 12 | 0 | 11 |
-| total | 97 | 13 | 80 |
+| program | checkpoints | ours matches | `vt100` matches | `ransid` matches |
+|---|---|---|---|---|
+| vim | 21 | 1 | 15 | 5 |
+| Neovim | 21 | 0 | 15 | 0 |
+| `less` | 12 | 6 | 10 | 10 |
+| `top` | 3 | 0 | 3 | 3 |
+| `htop` | 6 | 0 | 6 | 6 |
+| `nano` | 7 | 0 | 6 | 6 |
+| ncurses test | 1 | 0 | 0 | 0 |
+| Emacs | 9 | 1 | 9 | 2 |
+| Midnight Commander | 5 | 5 | 5 | 5 |
+| tmux | 12 | 0 | 11 | 3 |
+| total | 97 | 13 | 80 | 40 |
 
 Midnight Commander matches because it draws with `cup`, `el`, SGR and UTF-8 box characters, all of
 which ours handles. Its boxes draw as missing-glyph boxes, since the glyph atlas is ASCII
@@ -138,7 +138,7 @@ step is exact and ignores that a later repaint can hide an earlier mistake.
 
 vttest 2.7 under `TERM=xterm`, menus 1, 2 and 8, the 132-column screens excluded, 24 screens.
 Screens are numbered by their place in the menu, 132-column ones included, as in
-[conformance](conformance.md). Ours passes 7: 1.6, 2.4, 2.6, 2.12, 2.13, 2.14 and 8.1. 2.14 is
+[conformance](conformance.md). Ours passes 7: 1.6, 2.4, 2.6, 2.12, 2.13, 2.14 and 8.1. Redox's `ransid` passes 14 ([prior art](prior-art-redox.md)). 2.14 is
 DECSCNM's light background; it passes on text alone and would fail a pixel comparison until step 8.
 
 | screen | what it tests | what ours lacks, from the bytes on that screen | passes after step |

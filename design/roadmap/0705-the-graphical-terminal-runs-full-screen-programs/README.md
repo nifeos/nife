@@ -13,11 +13,13 @@ has no room for.
   decisions.
 - [`program-census.md`](program-census.md): ten programs measured for the plan, and vttest screen
   by screen.
-- [`engine-matrix.md`](engine-matrix.md): five reference engines read against the plan's feature
+- [`engine-matrix.md`](engine-matrix.md): six reference engines read against the plan's feature
   list.
+- [`prior-art-redox.md`](prior-art-redox.md): Redox's own engine, `ransid`, why it stalled, and
+  what replaced it.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default,
 `design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
-- `engine-plan`, `program-census`, `engine-matrix` Name: provisional, minted 2026-10-21 (UTC) by
+- `engine-plan`, `program-census`, `engine-matrix`, `prior-art-redox` Name: provisional, minted 2026-10-21 (UTC) by
   the lane that wrote them. calef names files.
