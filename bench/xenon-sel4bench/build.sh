@@ -1,6 +1,7 @@
 #!/bin/sh
 # Build seL4's sel4bench for x86_64 exactly as the seL4 Foundation builds its published Skylake row,
-# and pack it into one UEFI file xenon can boot from a stick or over the network (milestone 127).
+# and pack it into UEFI files xenon can boot from a stick or over the network (milestone 127 (the
+# seL4 machine)).
 #
 #     sh bench/xenon-sel4bench/build.sh OUTDIR
 #

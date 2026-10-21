@@ -1,5 +1,5 @@
 """Make a skim-window-off seL4 kernel boot on a CPU whose microcode reports Meltdown, changing
-one instruction (milestone 127, bench/xenon-sel4bench/build.sh).
+one instruction (milestone 127 (the seL4 machine), bench/xenon-sel4bench/build.sh).
 
     python3 -I noksw-boots-anyway.py KERNEL_IN KERNEL_OUT
 

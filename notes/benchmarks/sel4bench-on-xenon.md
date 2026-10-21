@@ -1,9 +1,9 @@
 # sel4bench on xenon: refereeing the method against seL4's published Skylake row
 
 *An appendix to [`notes/benchmarks.md`](../benchmarks.md). It holds whether xenon can do for the
-seL4 comparison what milestone 127 bought the Jetson TX1 to do, the build and boot that would
-answer it, and what calef does at the bench. Name: provisional, minted 2026-10-21 (UTC) by lane
-milestone/127-xenon-sel4bench-calibration; calef has not ratified it, nor
+seL4 comparison what milestone 127 (the seL4 machine) bought the Jetson TX1 to do, the build and
+boot that would answer it, and what calef does at the bench. Name: provisional, minted 2026-10-21
+(UTC) by lane milestone/127-xenon-sel4bench-calibration; calef has not ratified it, nor
 `bench/xenon-sel4bench/`.*
 
 ## The question, and the short answer
@@ -16,8 +16,9 @@ Skylake core on a refined process: same pipeline, same caches per core, differen
 
 So xenon can referee the method, on hardware in hand, with three caveats this note works through.
 The x86 "cycle" is a TSC tick rather than a core cycle. xenon's microcode may be new enough that
-seL4 refuses the published configuration. The Foundation's clock settings are not published. Everything up to the bench is built and rehearsed. The run needs
-calef at xenon, for the power button and the POST keyboard halt.
+seL4 refuses the published configuration. The Foundation's clock settings are not published.
+Everything up to the bench is built and rehearsed. The run needs calef at xenon, for the power
+button and the POST keyboard halt.
 
 ## What the Foundation runs, read from its trees
 
@@ -152,8 +153,9 @@ There is one file per configuration, `OUTDIR/esp/<configuration>/EFI/BOOT/BOOTX6
 booting its own entry after a five-second timeout. The configuration is chosen on patagonia, by
 which directory `script/board-netboot` serves or which file goes on the stick, because
 `script/board-console` sends nothing to a board and nobody needs to type at GRUB. Network boot uses
-the path milestone 260 built (`bench/xenon-netboot/dnsmasq.conf` names `EFI/BOOT/BOOTX64.EFI`); the
-stick is the path milestone 87 proved.
+the path milestone 260 (boot xenon over the network) built (`bench/xenon-netboot/dnsmasq.conf`
+names `EFI/BOOT/BOOTX64.EFI`); the stick is the path milestone 87 (the x86_64 bare-metal machine)
+proved.
 
 ### What UEFI changes for sel4bench itself, found in rehearsal
 
@@ -172,11 +174,31 @@ answers it. If it does not, the `-noirq` configurations are the same command wit
 the IPC one included, are byte-identical to the full build's, so they time exactly the published
 code and lose only the IRQ invoke column.
 
-REHEARSAL
+### The rehearsal under OVMF, and what it cannot reach
+
+On patagonia, on 2026-10-21:
+
+- `script/netboot-rehearsal --esp OUTDIR/esp/noksw` served the published Default image to OVMF
+  over the house-network offer in `bench/xenon-netboot/dnsmasq.conf`, through the real
+  `script/board-netboot`. The firmware fetched the 8.4 MB file, GRUB 2.12 came up on the serial
+  line, the probe skipped the MSRs on QEMU's CPU as designed, and multiboot2 handed over.
+- seL4 then stopped with `PCIDs not supported by the processor`. The published configuration has
+  `KernelSupportPCID` on, QEMU's TCG cannot provide PCID, and xenon's Kaby Lake has it. Nothing
+  past this point of the published images can run under emulation.
+- So the rest was rehearsed on images built from the same command plus `-DKernelSupportPCID=OFF`,
+  which serve no other purpose. Booted the same way, seL4 started, sel4bench ran all five IPC
+  iterations, and the IRQ benchmark failed as described above. With `-DIRQUSER=OFF` and the slow
+  apps off as well, the run printed its `JSON OUTPUT` block and `All is well in the universe.`, and
+  the Foundation's `print_results.py` read that serial log against their `PC99_64_noksw_skylake`
+  series.
+
+The numbers from those runs are meaningless (TCG's TSC moves in steps of 1,000) and are not
+recorded. What the rehearsal proves is the path: network, firmware, GRUB, multiboot2, seL4's boot,
+sel4bench's output and its reading.
 
 ## The bench: what calef does
 
-Build on patagonia first, about fifteen minutes (`podman` and the Foundation's image):
+Build on patagonia first, about four minutes once the Foundation's image is pulled (`podman`):
 
 ```console
 $ sh bench/xenon-sel4bench/build.sh /path/to/sel4bench-xenon
@@ -215,10 +237,14 @@ other).
 ## Reading the result
 
 ```console
-$ git clone https://github.com/seL4/sel4bench-results && cd sel4bench-results
-$ python3 print_results.py --full --abs /path/to/board-console-noksw.log \
-    --base 2026/pc99-skylake/PC99_64_noksw_skylake.jsonl
+$ git clone https://github.com/seL4/sel4bench-results /path/to/sel4bench-results
+$ podman run --rm -v /path/to/sel4bench-results:/r:ro -v "$PWD/target":/log:ro \
+    docker.io/trustworthysystems/sel4 bash -c 'cd /r && python3 print_results.py --full --abs \
+    /log/board-console-<stamp>.log --base 2026/pc99-skylake/PC99_64_noksw_skylake.jsonl'
 ```
+
+`print_results.py` needs PyYAML, which the Foundation's image carries. For the MCS boot the base is
+`PC99_MCS_64_noksw_skylake.jsonl`, and for `ksw` it is `PC99_64_skylake.jsonl`.
 
 The verdict is fixed here, before the run, so the run cannot choose it. With the probe showing
 xenon at the nominal ratio, take the means of IPC call and IPC reply, Default and MCS:
@@ -243,16 +269,22 @@ published figures on the same core. The TX1 keeps what only aarch64 silicon can 
 `PMCCFILTR_EL0` and whether seL4's published 413 and 426 counted their kernel, and nife's own
 aarch64 cycle counts. Neither is method validation.
 
-For [milestone 25](../../design/roadmap/0025-cross-os-comparison.md) it opens an x86_64 seL4
-comparison on xenon. nife on x86_64 counts unhalted core cycles (`IA32_PERF_FIXED_CTR1`,
-milestone 309), not TSC ticks, so a nife-against-seL4 table on xenon must put both in one unit:
+For [milestone 25 (cross-OS performance
+comparison)](../../design/roadmap/0025-cross-os-comparison.md) it opens an x86_64 seL4 comparison
+on xenon. nife on x86_64 counts unhalted core cycles (`IA32_PERF_FIXED_CTR1`,
+milestone 309 (unhalted core cycles on x86_64)), not TSC ticks, so a nife-against-seL4 table on
+xenon must put both in one unit:
 nife's `bench-probe: cycles_per_tick` line gives the ratio on the same machine. That comparison is
 milestone 25's, not this note's.
 
 ## BUGS
 
-- Nothing here has run on xenon. The rehearsal is QEMU and OVMF, which proves GRUB, the multiboot2
-  handover and sel4bench's start, not Dell's firmware or the clock.
+- Nothing here has run on xenon. The rehearsal is QEMU and OVMF, which proves the boot path and
+  the reading of the log, not Dell's firmware, the clock, or the published images past seL4's PCID
+  check.
+- The scheduler benchmark did not finish in 25 minutes under TCG, so no rehearsal ran the full
+  suite. It completes in every one of the Foundation's Skylake runs, so a board run that stalls
+  there is a finding, not the emulator.
 - The Foundation's clock settings are not published, so a match proves the method only under the
   assumption that their core also ran at its nominal clock. A mismatch near 4.0 / 3.4 (18%) on
   every row is what their turbo would look like.

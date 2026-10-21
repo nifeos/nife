@@ -217,7 +217,8 @@ the runbook, what is not apples-to-apples (the x86 "cycle" is a TSC tick, xenon'
 seL4 refuse the published configuration, the Foundation's clock settings are unpublished), and the
 verdict criteria, fixed before the run.
 
-What stays the TX1's whatever xenon shows: the `PMCCFILTR_EL0` question milestone 25 records, and
+What stays the TX1's whatever xenon shows: the `PMCCFILTR_EL0` question milestone 25 (cross-OS
+performance comparison) records, and
 nife's own aarch64 cycle counts. This milestone's completion criterion, a byte over serial from
 argon, is unchanged.
 
