@@ -101,7 +101,7 @@ and both had been false for longer than the block was.
 | the claim | the tree |
 |---|---|
 | a true EL0-to-EL0 benchmark is "the right follow-up" | `ipc_rtt_el0` in `kernel/src/bench/el0.rs`: two EL0 processes, two endpoints, a client self-timing `SEND`-then-`RECEIVE` against a server process, reported by the same function's `bench: ipc_rtt_el0` line |
-| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `init` in `kernel/src/arch/aarch64/timer.rs` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` set in `init` in `kernel/src/arch/riscv64/timer.rs`; the RISC-V write is now a whole-register write (milestone 228), not a bit set |
+| it "needs one `CNTKCTL_EL1` bit so EL0 can read the counter" | the bit is set in `init` in `kernel/src/arch/aarch64/timer.rs` (`EL0VCTEN`, bit 1), with the RISC-V twin `scounteren.TM` set in `init` in `kernel/src/arch/riscv64/timer.rs`; the RISC-V write is now a whole-register write (milestone 228 (the cycle counters are closed by assumption)), not a bit set |
 
 Citations here name a symbol, not a line (§277 (cite a heading or a symbol, never a line number)),
 because the four line numbers this table first carried drifted until they landed on unrelated code.
@@ -159,14 +159,18 @@ and it did not.
 - **Refused.** Folding the remaining step into milestone 25 was considered and declined: the
   paragraph correction is what should not have waited for a board, and keeping this separate is
   what let it not wait.
-- **Recorded.** The authority half of milestone 74's gate is narrower than milestone 74's own
-  dependency line reads (`75`). §139 is decided, milestone 229 is BUILT and milestone 237 is BUILT, so
-  a per-thread counter grant already rides the context switch (`install_cycle_counter_grant`, behind
-  the `cycle_counter_grant` feature) and a granted thread reads the counter at EL0 in
+- **Recorded.** The authority half of milestone 74 (cycle counters: SBI PMU on RISC-V,
+  `PMCCNTR_EL0` on aarch64)'s gate is narrower than its dependency line (`75`) reads. §139 (who may
+  read the cycle counter, and by what authority) is decided. Milestone 229 (build the cycle-counter
+  grant DECISIONS 139 decided) and milestone 237 (the cycle-counter grant costs 136 bytes of IPC
+  fastpath) are BUILT. A per-thread grant therefore rides the context switch, in
+  `install_cycle_counter_grant` behind the `cycle_counter_grant` feature.
+  A granted thread reads the counter at EL0 in
   `system_tests::user::cycle_counter_tests::a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults`.
-  This block's own gate names only milestone 74 and so does not overstate it. What remains is pointing
-  the benches at the grant on hardware. Whether milestone 75's `NOT-STARTED` row and milestone 74's
-  dependency line are corrected is the architect's, and this block does not touch either.
+  This block's own gate names only milestone 74, so it does not overstate the authority half.
+  What remains is pointing the benches at the grant on hardware.
+  Correcting milestone 75 (who may read the cycle counter, and by what authority)'s `NOT-STARTED`
+  row and milestone 74's dependency line is the architect's, and this block touches neither.
 
 ## Index row
 
