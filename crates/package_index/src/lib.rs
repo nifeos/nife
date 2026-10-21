@@ -909,13 +909,18 @@ pub const SOURCES_ENTRY: &str = "package_index_sources";
 /// `basalt.nifeos.org` on 443, the provisional channel, pinned to ISRG Root X1, as §250 (an image
 /// names its distribution's package index) rules. calef ruled on 2026-10-12 (UTC) that the host
 /// is GitHub Pages under that custom domain; `nifeos.github.io` chains to X1 (measured 2026-10-13
-/// UTC), so the pin holds there. §250's second address (its 2026-10-10 amendment, clause 6) is
-/// missing because its domain is not chosen yet.
+/// UTC), so the pin holds there. The second address is `basalt.crickertech.com`, tried when the
+/// first stops answering: §250 clause 6 puts it on another registrable domain, and calef chose
+/// `crickertech.com` on 2026-10-21 (UTC). One root covers both (clause 10).
 ///
-/// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
+/// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`. The
+/// host label `basalt.crickertech.com` is provisional too: calef chose the domain, and `basalt.`
+/// follows `basalt.nifeos.org` without his ruling on it.
 pub const BASALT_SOURCES: &str = "\
 # basalt's index (§250): GitHub Pages under basalt.nifeos.org, pinned to ISRG Root X1.
 repository basalt.nifeos.org 443 rolling
+# The second address, on another registrable domain (§250 clause 6), tried when the first fails.
+repository basalt.crickertech.com 443 rolling
 root isrg-root-x1
 # GitHub Release assets: github.com chains to Sectigo E46 (calef's C2 on #2048, 2026-10-12 UTC).
 location-root sectigo-root-e46
@@ -1173,13 +1178,16 @@ mod sources_tests {
         assert_eq!(s.root, Root::Named("isrg-root-x1"));
         assert_eq!(s.root.der(&mut [0u8; 8]), None);
         let r: Vec<_> = s.repositories().collect();
-        assert_eq!(r.len(), 1);
-        assert_eq!(
-            r[0].repository,
-            Repository::new("basalt.nifeos.org", 443, PROVISIONAL_CHANNEL).unwrap()
-        );
-        // Resolved by name, never by an address the image fixes.
-        assert_eq!(r[0].address, None);
+        let hosts = ["basalt.nifeos.org", "basalt.crickertech.com"];
+        assert_eq!(r.len(), hosts.len());
+        for (configured, host) in r.iter().zip(hosts) {
+            assert_eq!(
+                configured.repository,
+                Repository::new(host, 443, PROVISIONAL_CHANNEL).unwrap()
+            );
+            // Resolved by name, never by an address the image fixes.
+            assert_eq!(configured.address, None);
+        }
     }
 
     #[test]

@@ -106,6 +106,9 @@ there, with options, under `needs-architect` (`notes/packages/the-index-format.m
   (recommended: one index at up to two addresses on different registrable domains, one pin).
 - B. Which root a listed HTTPS location must chain to (recommended: the index's own pin).
 - The channel's name. `rolling` is provisional.
+- The second index address's domain: `crickertech.com`, chosen 2026-10-21 (UTC), so the image's
+  second address is `basalt.crickertech.com` (§250 clause 6, which also records that NS1 serves
+  both domains). Serving it, and its DNS record, are calef's hands.
 - C. How `jig` reaches a GitHub Release asset, whose download starts at `github.com` (Sectigo, not
   X1) and redirects. Ruled 2026-10-12 (UTC) on #2048, below.
 
