@@ -17,7 +17,7 @@ with it. Parts 1 to 3 were checked in the tree or upstream on 2026-10-02 (UTC). 
 measured on 2026-10-18 (UTC). A claim from memory is marked as such.
 
 The engine choice is a dependency decision (§46 (thin primitives or whole subsystems; we write
-everything in between)). Part 4 gives options A to G, and calef chose G ([Ruling](#ruling)).
+everything in between)). Part 4 gives options A to G, and calef chose A ([Ruling](#ruling)).
 
 ## Part 1: The gap, and the goal
 
@@ -107,7 +107,8 @@ Answers to questions 2 and 4 of the seven are the same for A to E, so they are h
 
 The full entries for A to E are in [the engine options appendix](0705-the-graphical-terminal-runs-full-screen-programs/engine-options.md).
 F and G have their own ([F](0705-the-graphical-terminal-runs-full-screen-programs/option-f.md),
-[G](0705-the-graphical-terminal-runs-full-screen-programs/option-g.md)), and vttest's results are in
+[G](0705-the-graphical-terminal-runs-full-screen-programs/option-g.md), with
+[G's upkeep](0705-the-graphical-terminal-runs-full-screen-programs/option-g-upkeep.md)), and vttest's results are in
 [the conformance appendix](0705-the-graphical-terminal-runs-full-screen-programs/conformance.md).
 
 - A. Extend `video_terminal`. The Part 2 list, an estimated 500 to 900 lines of engine code and as
@@ -148,24 +149,22 @@ graded by Part 1's host harness instead.
 
 ## Ruling
 
-calef, 2026-10-19 UTC: "G seems right." The display path's engine is libvterm (option G), linked
-through nife's C library, with `video_terminal` kept as the kernel's oracle. The §46 take of
-`alacritty_terminal` 0.26.0 is held for the dependency census (calef, 2026-10-19 UTC: "Hold it"),
-with `r-efi`, `plist` and `pulldown-cmark`. He reopened 705 on 2026-10-18 UTC: "Full screen program
-support seems like a priority."
+calef, 2026-10-21 UTC: the engine is A, extending `video_terminal`. "A sounds good. However we
+should flush it out more fully." G is refused. On the §46 take of libvterm 0.3.3: "It seems like a
+poor dependency to build on." The §46 take of `alacritty_terminal` 0.26.0 stays held for the
+dependency census (calef, 2026-10-19 UTC: "Hold it"), with `r-efi`, `plist` and `pulldown-cmark`.
+705 is a priority (calef, 2026-10-18 UTC: "Full screen program support seems like a priority.").
 
-## Why G
+## Why A
 
-Conformance is a tie with `alacritty_terminal` (23 and 22 of 24 vttest screens). On the rest G is
-ahead: a fifteenth of the heap or less, a quarter of the engine code, no crate added, and no patch
-to carry. Its real cost is that every program's output is parsed in C. A memory bug there is
-bounded by what `display_terminal` holds, the scanout and its own terminal endpoint, and the build
-adds a fuzz target. The choice was not about effort.
+A takes no dependency, and the kernel's witness keeps predicting every feature. G's upstream has one
+committer and six commits in the 39 months after 0.3.3. Neovim, its heaviest embedder, carries ten
+fixes upstream does not have ([G's upkeep](0705-the-graphical-terminal-runs-full-screen-programs/option-g-upkeep.md)).
+F waits on the held `alacritty_terminal` take, and its pty cut would be carried for good.
 
 ## What is needed from calef
 
-1. Under §46, do we take libvterm 0.3.3 (MIT) as a vendored C tree? Blocking: nothing on the display
-   path can be built until this is answered. If no, the engine question reopens between F and A.
+Nothing. A's gap plan is lane work.
 
 ## Part 5: Priority, and whether the serial console has the same gap
 
@@ -204,27 +203,15 @@ through the firmware-screen console, until a session can run one.
 - Milestone 29 (the display terminal) and milestone 142 (a text display good enough that people use
   it instead of a GUI) are the blocks this touches. 142's remaining increments are about glyph
   quality and do not collide with the engine's state work.
-- Milestone 784 (reuse what the tree wrote)'s item (b), `vte` alone, was held on this choice. Under
-  G, `video_terminal` stays as the oracle, so whether it parses with `vte` is 784's to settle.
-- Blocked until libvterm's §46 take is answered: building G.
+- Milestone 784 (reuse what the tree wrote)'s item (b) is `vte` alone. Under A, `video_terminal` is
+  the engine, so whether it parses with `vte` is 784's to settle.
 - A program to measure against (a port of `less`, `vim` or procps `top`) is milestone 198's road and
   not this one's. The host-harness measure does not need one.
 
-## What would be built, if the answer is G
+## What would be built
 
-1. The host harness in `xtask` (name provisional): a program in a pty, its output into the engine, a
-   screen dump compared with a committed golden.
-2. The renderer split: `Vt::pixel`'s cell-to-pixel half as a function both engines' cells draw through.
-3. `display_terminal` as a `std` program on vendored libvterm through the C library, its slots moved
-   past the `std` runtime's, `vterm_output_read` forwarded into its keystroke path, and its scrollback
-   kept from `sb_pushline`.
-4. A fuzz target over `vterm_input_write`.
-5. The kernel's witness kept on `video_terminal`, now a differential check, with the script limited to
-   what both engines implement.
-6. `notes/glyphs.md` and `notes/terminal-contract.md` updated.
-
-What A would build is in [the engine options appendix](0705-the-graphical-terminal-runs-full-screen-programs/engine-options.md).
+What A builds is in [the engine options appendix](0705-the-graphical-terminal-runs-full-screen-programs/engine-options.md).
 
 ## Index row
 
-`crates/video_terminal` implements printable text and a handful of CSI sequences, which is not enough for `vim`, `less` or `top`. Options A to G are measured, vttest included. calef chose G: `display_terminal` as a `std` program on libvterm through the C library, with `video_terminal` kept as the kernel's oracle. libvterm's §46 take is open.
+`crates/video_terminal` implements printable text and a handful of CSI sequences, which is not enough for `vim`, `less` or `top`. Options A to G are measured, vttest included. calef chose A, extending `video_terminal`, and refused G (libvterm).
