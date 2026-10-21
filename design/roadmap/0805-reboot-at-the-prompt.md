@@ -1,11 +1,12 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-10-06
+built: 2026-10-21
 promoted_from: reboot-at-the-prompt
 milestone_dependencies: 592
 decision_dependencies: 251
 machine_requirements: none
-specific_machine: radon (calef's preferred lab machine, and the one whose reset is unproven)
+specific_machine: radon (calef's preferred lab machine)
 needs_person: yes
 ---
 # 805. `reboot` at the prompt: a person restarts the machine without touching its power

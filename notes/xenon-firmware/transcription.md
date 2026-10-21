@@ -185,8 +185,9 @@ IMG_4065, Limit CPUID Value. `Enable CPUID Limit` unticked.
 IMG_4066, Intel® TurboBoost™. `Enable Intel® TurboBoost™` ticked.
 
 SpeedStep, C-states and TurboBoost are all on, which is worth knowing before anybody quotes a
-benchmark number off this machine: the clock is free to move between 0.800 and 2.700 GHz and the
-cores are free to sleep.
+benchmark number off this machine. The clock is free to move between 0.800 GHz and Intel's 3.3 GHz
+turbo ceiling for the i5-7500T, and the cores are free to sleep. The 2.700 GHz "Maximum Clock
+Speed" above is the nominal clock, not the turbo ceiling.
 
 ### Power Management
 

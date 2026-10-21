@@ -119,3 +119,4 @@ place the kernel, and the device-tree lookup either finds `DEVICE_TREE_GUID` in 
 table or does not. That is a free experiment on Oracle Always Free, it costs an evening, and it
 produces a real answer instead of a reading of a documentation page. It should be run, and it should
 be run expecting it to fail, because a failure here names the assumption precisely.
+[`oracle-a1.md`](oracle-a1.md) is the procedure.
