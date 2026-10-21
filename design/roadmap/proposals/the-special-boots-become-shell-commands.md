@@ -84,7 +84,7 @@ What it loses:
 
 Changes: `cargo xtask network-bench` rehearses the command under OVMF on the production image;
 `script/lint`'s `--features network_bench` clippy row goes; `notes/e1000e.md` and
-`notes/designware-ethernet.md` give the command. Milestone 494's remaining items run as commands.
+`notes/designware-ethernet.md` give the command. Milestone 494 (a driver for the network card a PC actually has) runs its remaining items as commands.
 
 ### `disk_throughput`
 
@@ -108,7 +108,7 @@ Most of this one is kernel code by necessity today. The card is identified and t
 through the EL0 server. That server is started by `storage_bench` and by nothing else. The booted
 system has no block device on radon (the module's own `BUGS`).
 
-So the move is milestone 53's work, not this plan's. Once the production boot starts the EL0
+So the move is the work of milestone 53 (the board's own peripherals: network and storage on real silicon), not this plan's. Once the production boot starts the EL0
 microSD server, the timed read is a client of it under the same grant as D2. The register snapshot
 and the clock and reset lines belong in the server's own bring-up log. The radon bench session of
 2026-10-21 (pull request #2485) shows why they matter: the timed CMD18 read fails with a CRC error.
@@ -116,7 +116,7 @@ Until 53 lands, `storage_bench` is the instrument debugging that read, and it st
 
 ### `job_mix`
 
-Milestone 523 is this move, investigated end to end. Its five blockers are this plan's, and they
+Milestone 523 (moving the job-mix supervisor into userspace) is this move, investigated end to end. Its five blockers are this plan's, and they
 are not restated here. One is narrower than 523 says: blocker 5, the riscv64 counter frequency. A
 riscv64 process reads the real rate from the timebase page `counter_frequency_contract` defines.
 `kernel::user::timebase_page_phys` publishes it and `build_child_space` maps it. A child the
@@ -129,8 +129,8 @@ must not carry them.
 ### `tsc_probe`
 
 It reads the CMOS second edge at ports `0x70` and `0x71`. A `PortRange` capability exists
-(milestone 299) and is minted at boot for COM1's ports only. `clock_service.rs` records why the CMOS
-is different: DECISIONS §121 keeps that port range kernel-resident, and the kernel's own RTC reader
+(milestone 299 (the x86 port-range capability)) and is minted at boot for COM1's ports only. `clock_service.rs` records why the CMOS
+is different: DECISIONS §121 (what a device capability is when the device has no page) keeps that port range kernel-resident, and the kernel's own RTC reader
 uses it. The CMOS is an index register followed by a data register. Two parties driving it race
 each other. The x86 TSC is ambient at ring 3, so the TSC half is free. The CMOS half is D4.
 
@@ -154,11 +154,11 @@ prefix so nobody compares them with the baseline (D6).
 ## What stays, and why
 
 - `soak_test` and its variants. The detection reads `sched::wake_refusals()`, and the tick route
-  is `signal_waiters()` called from `sched::on_tick`. §138 approved option D on the condition that
+  is `signal_waiters()` called from `sched::on_tick`. §138 (how a saturated workload is made to hand threads across cores) approved option D on the condition that
   "nothing of it exists in a production build". A shell command would need that hook in the shipping
   kernel. There is a second reason. In the production boot, the services the progenitor starts
   already occupy cores, so a draw there comes from a different placement distribution than the
-  225 draws so far. One radon boot is one draw (milestone 225), and those draws are only comparable
+  225 draws so far. One radon boot is one draw (milestone 225 (run the soak on radon, argon and xenon)), and those draws are only comparable
   with each other. D5 puts the choice to calef.
 - `icount` and the kernel `bench` rows. What they time is the kernel path. A program can time a
   syscall, but not `sched::yield_now` between kernel threads.
@@ -169,8 +169,8 @@ prefix so nobody compares them with the baseline (D6).
 
 ## Order
 
-Cheapest and most useful first. Each step is a milestone of its own, and none starts before
-milestone 890's radon input works. Today radon's prompt echoes the first keystroke and no later one
+Cheapest and most useful first. Each step is a milestone of its own, and none starts on radon before its input works under
+milestone 890 (riscv64 and x86_64 join the shared boot path). Today radon's prompt echoes the first keystroke and no later one
 (pull request #2485), so nothing can be typed there yet. QEMU and xenon can start sooner.
 
 1. The `bench` EL0 rows as a command. The program exists; it needs a catalog entry or a jig
@@ -189,8 +189,8 @@ milestone 890's radon input works. Today radon's prompt echoes the first keystro
 The kernel's measurement features are the ones that measure the kernel: `bench`'s kernel rows,
 `icount`, the soak family, `lock_wait`, `ipc_stack_depth`, `cycle_counter_grant`, `fastpath_pad`
 and `single_hart`, plus the test probes. Everything that measures a device or a userspace workload
-is a program, shipped as a jig package from basalt like every other program (§297), and typed at the
-prompt of the kernel that ships. `run_measurement_boot` holds `soak::run` alone. `script/board-image`
+is a program, typed at the prompt of the kernel that ships. It ships as a jig package from basalt like
+every other program (§297 (software reaches a nife system as a package `jig` installs)). `run_measurement_boot` holds `soak::run` alone. `script/board-image`
 keeps `--bench` and `--soak`, and `--job-mix` goes.
 
 ## How a retired feature is deleted
@@ -210,11 +210,11 @@ was proven on:
 
 These need homes of their own and are not this plan's.
 
-- `kernel/Cargo.toml` says `script/bench`, `script/icount` and milestone 25's comparison turn on
+- `kernel/Cargo.toml` says `script/bench`, `script/icount` and milestone 25 (cross-OS performance comparison) turn on
   `cycle_counter_grant`. Nothing in `xtask/` or `script/` does. Only `--extra-features` can.
 - `kernel/src/arch/x86_64/port.rs` says no user program has been given a port. COM1's `PortRange`
   has been one since milestone 299.
-- Milestone 268 says `self_test_injection` fails CI. `script/ci-build` runs `script/boot-check`
+- Milestone 268 (every architecture boots the same way) says `self_test_injection` fails CI. `script/ci-build` runs `script/boot-check`
   without `--inject`, and nothing in `.github/` passes it.
 
 ## Open decisions
@@ -258,7 +258,7 @@ ceiling, placement visibility and the riscv64 frequency. This plan adds none.
 - A. Promote 523 as step 6 and answer its forks there.
 - B. `job_mix` stays a special boot, and the end state names it among the kept features.
 
-Recommendation: A. The number exists to decide the event-kernel question (§96) for programs on the
+Recommendation: A. The number exists to decide the event-kernel question (§96 (process kernel or event kernel)) for programs on the
 shipping kernel. Placement visibility (523's blocker 4) decides whether the moved number is
 quotable, so it is the fork to answer first.
 
@@ -269,7 +269,7 @@ quotable, so it is the fork to answer first.
 - B. Keep `tsc_probe` as a kernel feature. It measures the kernel's own boot calibration, at the
   moment that calibration runs.
 - C. Delete it. It is in no gate. `notes/tsc-under-tcg.md` answered its question (the rate is
-  sound; the calibration is the defect) and milestone 571 is built on that.
+  sound; the calibration is the defect) and milestone 571 (the x86 boot calibrates the TSC once) is built on that.
 
 Recommendation: B, unless calef reads `notes/tsc-under-tcg.md` as closed, and then C. A is the most
 work and the most authority, to move an instrument whose subject is a kernel step.
