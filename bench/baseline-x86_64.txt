@@ -1,4 +1,4 @@
-# toolchain: nightly-2026-10-20
+# toolchain: nightly-2026-10-21
 # qemu: 11.1.2
 # date: 2026-10-10
 # why: 2026-10-10: QEMU 11.1.1 to 11.1.2, the emulator term alone. Homebrew upgraded patagonia's QEMU on 2026-10-10 and can install only the newest, so calef ruled (option Q1) to move .qemu-version to 11.1.2 in its own pull request, before and apart from any nightly bump. Same tree (main 3c861eadd), same nightly (nightly-2026-10-09), run under both emulators on one machine (11.1.1 built from source for the comparison): every x86_64 row read the same count to the instruction on both. Rows that moved over 0.5% against the old floor, all main's drift since the 2026-10-03 save and reproduced on 11.1.1: yield_switch -5.2%, tss_iomap_switch -4.0%, tss_iomap_lazy_switch -4.5% and tss_iomap_lazy_nop -5.4%, from #1852 (milestone 139 (drive the unsafe count down) round 10, the scheduler queue ownership token; main's tip reads exactly what that merge reads); ipc_rtt +0.9%, call_reply +1.2% and broker_rtt +1.2%, of which about +0.9% on call_reply and broker_rtt was already on main before #1852. Nothing moved 10%.
@@ -13,6 +13,7 @@
 # why: 2026-10-18: restamped from nightly-2026-10-17 to nightly-2026-10-18 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-10-19: restamped from nightly-2026-10-18 to nightly-2026-10-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-10-20: restamped from nightly-2026-10-19 to nightly-2026-10-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
+# why: 2026-10-21: restamped from nightly-2026-10-20 to nightly-2026-10-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on

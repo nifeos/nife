@@ -42,8 +42,8 @@ pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_SPACE;
 pub(crate) const HEAP_MAX: u64 = 96 * 4096;
 
 #[global_allocator]
-pub(crate) static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =
+    memory_region_heap::MemoryRegionHeap::new();
 
 /// Entry role 0 is the net server; any other role runs the socket-contract client (the same
 /// binary, so the initial ramdisk stays under its 15-file directory limit).

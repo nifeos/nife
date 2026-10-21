@@ -43,7 +43,7 @@ targets. `redox_syscall` contributes only its error type here, which is the crat
 ## The real costs, priced
 
 1. A `GlobalAlloc` in the FS-server process. *(Resolved: milestone 27 landed first and built
-   it, exactly as this costing predicted. `crates/user_mode_heap` is the algorithm, drawing from a
+   it, exactly as this costing predicted. `memory_region_heap` is that allocator, drawing from a
    `MemoryRegion` the program was granted.)* The core is alloc-heavy and our userspace had
    no allocator when this was audited. This is the untyped-backed allocator milestone 27's PAL needs
    anyway; whichever milestone lands first builds it, the other inherits it. This is the largest cost,

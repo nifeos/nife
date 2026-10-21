@@ -846,20 +846,15 @@ jobs:
   # filtered to `unmodified_` at one core, which runs basalt's ioping, hackbench and SQLite
   # packages (milestones 906 (ioping is packaged in basalt), 907 (hackbench is packaged in basalt)
   # and 897 (SQLite is packaged in basalt)).
-  # Both rows run on arm64, x86_64 under TCG as in `test-shard`. Not yet a required check: the merge queue's ruleset is an admin act.
+  # Both rows run on arm64, x86_64 under TCG as in `test-shard`. They are two jobs rather than a
+  # matrix because a skipped matrix job posts its name unexpanded, `rg-threads (${{ matrix.legs }})`,
+  # so a required context naming a leg would never report on a pull request the gate scopes out.
+  # A fixed `name:` posts the same context whether the job ran or skipped, as `swish-check` does.
   rg-threads:
-    name: rg-threads (${{ matrix.legs }})
+    name: rg-threads (aarch64 and riscv64)
     runs-on: ubuntu-24.04-arm
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - check: rg-threads-aarch64-riscv64
-            legs: aarch64 and riscv64
-          - check: rg-threads-x86_64
-            legs: x86_64
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -881,13 +876,51 @@ jobs:
       - run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
+      - run: helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: hang-evidence-${{ github.job }}-${{ strategy.job-index }}
+          name: hang-evidence-${{ github.job }}
+          path: target/hang-evidence/
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
+  rg-threads-x86_64:
+    name: rg-threads-x86_64 (x86_64 under TCG)
+    runs-on: ubuntu-24.04-arm
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
+    # UTC). Any derivation above that argues for a longer bound predates it and describes a job
+    # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # QEMU, built from source and cached, for the `swish-check` job's reasons above.
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+      - run: helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64
+      # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
+      - name: Upload the hang evidence
+        if: always() && hashFiles('target/hang-evidence/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hang-evidence-${{ github.job }}
           path: target/hang-evidence/
       - name: Check the job's wall time against its budget
         if: always()

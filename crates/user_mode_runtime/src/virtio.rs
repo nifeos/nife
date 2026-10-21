@@ -11,7 +11,7 @@
 //!
 //! Scoped to a module, not lifted into the crate root, because unlike [`super::send`] or
 //! [`super::reply`] these four methods are meaningful to exactly the programs that own a `Virtio`
-//! capability: the same "opt in by importing the module" shape [`super::heap`],
+//! capability: the same "opt in by importing the module" shape
 //! [`super::initial_ramdisk`] and [`super::mapped_window`] already use for functionality most programs
 //! never touch.
 

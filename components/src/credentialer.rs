@@ -114,12 +114,11 @@ const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
 // implementation that was its only consumer (notes/smb.md).
 
 #[global_allocator]
-static HEAP: user_mode_runtime::heap::MemoryRegionHeap =
-    user_mode_runtime::heap::MemoryRegionHeap::new();
+static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.init(BUDGET, user_mode_runtime::heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.init(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     let cost = Cost::DEFAULT;
 

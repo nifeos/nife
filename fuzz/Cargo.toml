@@ -173,3 +173,9 @@ bench = false
 # Empty, which makes this directory a workspace root of its own rather than a member of the tree's.
 # The root Cargo.toml excludes it as well, belt and braces, the same as vendor/redoxfs.
 [workspace]
+
+# talc 5.1.1 with upstream's fit-check fix, SFBdragon/talc#57, vendored until a release carries it
+# (calef, 2026-10-21 UTC, on #2498). Every workspace whose graph holds talc patches it the same way,
+# so no build links the unpatched crate. vendor/README.md has the drop condition.
+[patch.crates-io]
+talc = { path = "../vendor/talc" }

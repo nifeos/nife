@@ -264,10 +264,12 @@ the `Irq` capability's ACK re-enables the line on every completion. The GIC driv
 core and does not decide (rule #2). The PLIC does the same per hart (`SOURCE_CTX`), with each hart
 claiming and completing against its own context.
 
-The PLIC's enable bits share one 32-bit word per 32 sources, so its `enable` and `disable` are a
-read-modify-write that two harts can interleave. A lost update either masks a device forever or
-leaves a level-triggered source storming. Both go through one `IrqSafeMutex` at
-`rank::IRQ_CONTROLLER`, found by the assembly audit ([arch-audit.md](arch-audit.md), finding 3).
+The PLIC's enable bits share one word per 32 sources, so setting one is a read-modify-write two
+harts can interleave, losing an enable. One `IrqSafeMutex` at `rank::IRQ_CONTROLLER` serializes it
+([arch-audit.md](arch-audit.md), finding 3).
+
+The PLIC's claim is the mask and the ACK is the completion (`drivers/plic.rs`, milestone 890
+(riscv64 and x86_64 join the shared boot path)).
 
 Spreading interrupts moves a wake; it does not parallelize a chain of IPC rendezvous. The `std_net`
 hang under SMP was fixed by a bounded wait and §28 (SMP placement)'s wake split, not by affinity. The

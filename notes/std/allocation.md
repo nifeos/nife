@@ -8,7 +8,7 @@ milestone's lane; the wiring and the measurement were added 2026-10-11 (UTC).
 ## The problem, measured by milestone 812
 
 `std`'s allocator (`patches/std-nife/overlay/std/src/sys/alloc/nife/mod.rs`) is
-`crates/user_mode_heap` behind one spinlock. Milestone 812 (`std::thread::spawn` runs real threads
+one heap behind one spinlock. Milestone 812 (`std::thread::spawn` runs real threads
 in one address space) made `std::thread::spawn` real and measured it with `std_heap_contention`: the
 same 200,000 small allocations take 2.1 to 3.2 times longer split across four threads than done by
 one (`notes/std/threads.md` on #1892). A thread preempted holding the lock makes the others spin out
@@ -58,7 +58,7 @@ below tests it rather than trusting it.
 ## What ships
 
 The cache is `crates/allocation_cache` (name provisional), generated into `std` as
-`sys/alloc/nife/allocation_cache.rs` beside `user_mode_heap.rs`. Each thread's block
+`sys/alloc/nife/allocation_cache.rs` beside the heap, `talc/`. Each thread's block
 (`sys/thread_local/key/nife.rs`, milestone 812's thread-pointer block) holds one, zeroed and so
 empty. A request of at most 256 bytes and alignment at most 16 pops from it; a miss takes the heap's
 lock once and refills eight; a free into a full class spills eight under one acquisition. Before the
@@ -188,9 +188,9 @@ Read from crates.io's API and each crate's source or README. The question for ea
 | candidate | license, latest release | what it is | why not |
 |---|---|---|---|
 | `talc` 5.1.1 | MIT, 2026-09-09 | `no_std` heap, `TalcLock` over `lock_api` | one heap, one lock; its README sends concurrent users to jemalloc or mimalloc |
-| `linked_list_allocator` 0.10.6 | MIT/Apache-2.0, 2026-04-14 | first-fit list, spinlocked `LockedHeap` | `user_mode_heap`'s shape, same lock |
+| `linked_list_allocator` 0.10.6 | MIT/Apache-2.0, 2026-04-14 | first-fit list, spinlocked `LockedHeap` | same lock |
 | `buddy_system_allocator` 0.13.0 | MIT, 2026-03-30 | buddy heap, spinlocked `LockedHeap` | same lock |
-| `dlmalloc` 0.2.14 | MIT/Apache-2.0, 2026-05-16 | already in `std`'s own `Cargo.lock` (xous, wasm, SGX); an `Allocator` trait for system memory | one global lock (`std`'s `sys/alloc/xous.rs` wraps it in one); would replace `user_mode_heap`, which [§31 (the foreign-language seam)](../../design/decisions/0031-foreign-language-seam.md) rule 4 and `notes/std.md` keep as the one heap algorithm |
+| `dlmalloc` 0.2.14 | MIT/Apache-2.0, 2026-05-16 | already in `std`'s own `Cargo.lock` (xous, wasm, SGX); an `Allocator` trait for system memory | one global lock (`std`'s `sys/alloc/xous.rs` wraps it in one); would replace the one heap algorithm [§31 (the foreign-language seam)](../../design/decisions/0031-foreign-language-seam.md) rule 4 and `notes/std.md` keep |
 | `rlsf` 0.2.3 | MIT/Apache-2.0, 2026-07-27 | TLSF | "does not support concurrent access"; its README recommends a thread-caching allocator |
 | `frusa` 0.1.3 (Motor OS) | MIT/Apache-2.0, 2025-11-22 | size-class allocator over a back end | its own benchmark falls from 16.8 to 8.6 operations per microsecond going from one thread to four; needs nightly `feature(test)`; tested on x86_64 only |
 | `rsbmalloc` | (not checked further) | thread-cached in its `std` build | its `no_std` build drops the caches for spinlocks, and it needs `mmap` |

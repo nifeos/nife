@@ -16,6 +16,12 @@ and why the status stops at PARTIAL rather than BUILT.
 **Decided 2026-08-30 by calef:** *"we will do Option A first and follow with Option B
 later."* Both options are in scope; the decision is their order, not a choice between them.
 
+**Decided 2026-10-21 by calef**, asked whether milestone 242's xenon bench step should be the next
+192 action, ahead of option A's board run: *"Yes"*. So the next action on this milestone is
+[milestone 242](0242-usb-host-and-a-keyboard-that-is-not-a-uart.md)'s bench step on xenon, where
+option B is already built and needs only a bench evening. The order above stands for radon and
+argon, where B is large and A goes first.
+
 ## What done looks like, and option A does not meet it
 
 **calef, 2026-08-30:** *"192 isn't done until
@@ -189,6 +195,8 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
 - **Milestone 242.** Option B, the xHCI driver, USB core and HID keyboard, plus the scoping pass
   this block asks for, is `design/roadmap/0242-usb-host-and-a-keyboard-that-is-not-a-uart.md`, so
   option B is not priced as a line item here.
+- **Outstanding.** Next: milestone 242's xenon bench step, ahead of option A's board run (calef,
+  2026-10-21: *"Yes"*). It closes this milestone when its step 3 prints `hello` on the monitor.
 - **Outstanding.** Option A has still never been run on a board and cannot be until milestone 157
   puts a pixel on a board's framebuffer. The six-step bench procedure is written and unexecuted.
 - **Outstanding.** No keystroke has reached a screen on real silicon; that waits on milestone 157.
@@ -215,4 +223,6 @@ means a keyboard plugged into the machine and the OS on its own monitor, so A re
 cannot close this. The one cheap shortcut is closed: the OptiPlex has no PS/2 port. Option A's
 wiring is built. The keystroke source is one choice made when a `graphical_terminal` session
 launches (milestone 632): a virtio keyboard when the boot has one, and the boot's UART read raw when
-it does not. Option B is a third arm of that choice. The board half waits on milestone 157 (real display output on the board).
+it does not. Option B is a third arm of that choice. The next action is milestone 242's bench step on xenon,
+where B is built (calef, 2026-10-21); option A's board half waits on milestone 157 (real display
+output on the board).

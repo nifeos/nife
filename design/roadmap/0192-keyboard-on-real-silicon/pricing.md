@@ -144,7 +144,9 @@ and U-Boot counts are `master` as fetched on 2026-10-21 (UTC).
 | argon | 127, then a framebuffer path nothing owns | 127, then XUSB glue (1,800 to 12,000, low), a Tegra SMMU (600 to 1,500, low) and NVIDIA's firmware; or an EHCI driver on the micro-USB port (1,600 to 2,000 plus glue, medium-low) |
 
 calef's bar for 192 is one machine with a keyboard and a monitor plugged into it. On that bar the
-cheapest finished story is option B on xenon, which costs a bench evening and no new code.
+cheapest finished story is option B on xenon, which costs a bench evening and no new code. That
+bench step is the next 192 action, ahead of option A's board run (calef, 2026-10-21: *"Yes"*).
+Option A's order stands for radon and argon.
 
 ## BUGS
 

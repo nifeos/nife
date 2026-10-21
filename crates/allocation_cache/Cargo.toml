@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 
 [dev-dependencies]
-# Only to hold this crate's grid to the heap's (see `GRID`); the std overlay generates both files as
-# sibling modules, so neither may depend on the other at build time.
-user_mode_heap = { path = "../user_mode_heap" }
+# The heap std puts this cache in front of (milestone 784 (reuse what the tree wrote), item d), so the
+# host test walks the cache over the real thing. `counters` only here, for the coalescing check; the
+# std copy and `user_mode_runtime` build without it.
+talc = { version = "5.1.1", default-features = false, features = ["counters"] }

@@ -433,28 +433,32 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
                 super::timer::tick();
                 crate::sched::on_tick();
             }
-            // A device interrupt, arrived through the PLIC. Claim it (which acknowledges and masks
-            // that source), and if it is routed to a userspace driver, deliver it as a message. The
-            // shape is exactly aarch64's handle_irq: mask the source, then notify. A level-triggered
-            // device holds its line asserted until the driver quiets it, so leaving the source live
-            // would re-fire in a storm; we `disable` it at the PLIC and the driver's ACK (or, in the
-            // kernel-side demo, an explicit re-enable) brings it back. `complete` ends the PLIC's
-            // claim so it will arbitrate the next interrupt. See notes/interrupts.md, drivers/plic.rs.
+            // A device interrupt, arrived through the PLIC. Claim it and, if it is routed to a
+            // userspace driver, deliver it as a message; the completion is the driver's ACK.
+            //
+            // **The claim is the mask.** From a claim until its completion the PLIC's gateway
+            // forwards nothing more from that source, so a level-triggered device that holds its
+            // line until its driver quiets it cannot storm. The source stays enabled, and that is
+            // load-bearing rather than a saving: the specification ignores a completion for a
+            // source its target does not enable. QEMU's PLIC accepts such a completion and the
+            // JH7110's drops it, so a disable here passes every gate and shows only on radon, as
+            // one keystroke per boot (milestone 890). See drivers/plic.rs.
             S_EXTERNAL => {
-                // Claim, mask, and complete against THIS hart's own context. IRQ affinity may have
-                // routed the source to a secondary hart's context, and that hart claims from its own
-                // context, not the boot hart's (drivers/plic.rs, arch::irq::this_s_context).
+                // Claim against THIS hart's own context. IRQ affinity may have routed the source to
+                // a secondary hart's context, and that hart claims from its own context, not the
+                // boot hart's (drivers/plic.rs, arch::irq::this_s_context).
                 let ctx = super::irq::this_s_context();
                 let source = crate::drivers::plic::claim(ctx);
                 if source != 0 {
                     if let Some(ep) = crate::sched::irq_route(source) {
                         ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                        crate::drivers::plic::disable(source, ctx);
+                        super::irq::hold_claim(source, ctx);
                         crate::sched::irq_notify(ep);
                     } else {
+                        // Nobody will ACK an unrouted source, so it is completed here.
                         SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+                        crate::drivers::plic::complete(source, ctx);
                     }
-                    crate::drivers::plic::complete(source, ctx);
                 }
             }
             // A reschedule IPI from another hart (SBI set our sip.SSIP). Clear the pending bit, then

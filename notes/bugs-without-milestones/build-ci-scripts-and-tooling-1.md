@@ -1,0 +1,78 @@
+# Build, CI, scripts and tooling (part 1 of 3)
+
+Entries from the [survey](README.md) of `BUGS` sections that are real future work with no milestone. Where is the file whose `BUGS` section holds the entry. Size is the reader's guess: S under a day, M a lane, L more than one lane.
+
+| Where | Gap | Proposed milestone | Size |
+|---|---|---|---|
+|  .github/workflows/ready-status.yml | check matches branch by name only; a wrong-but-well-formed branch name passes and fails later in the group | ready-status compares the block's branch to the one actually pushed | S  |
+|  briefs/gate-in-ci.md | nothing measures what a CI round costs against a local one | Price a CI round against a local one | S  |
+|  briefs/merge-and-cleanup.md | no check on disk headroom; failure shows as an unrelated "No space left" | A disk-headroom check in session-start or pre-push | S  |
+|  crates/capability_manifest_note/src/lib.rs | nothing writes the object that carries a note into a foreign build | Tool that emits the manifest-note object for foreign builds | S  |
+|  crates/number_writer/src/lib.rs | swish's `write_num` and pgrep's unpadded writers still duplicate the digit loop; "no one's milestone yet". | Move the unpadded decimal writers onto number_writer | S  |
+|  crates/ps/src/lib.rs (last bullet) | Nothing automated spawns `ps` or `pgrep`; only host tests and a static stack measure cover them. | A swish-check line that runs ps and pgrep at the prompt | S  |
+|  crates/sealed_pair/src/lib.rs (4th bullet) | The seal check asks if a digest is present, not whether the kernel checks it; option C is only "Recorded" in 563 (BUILT), not planned. | A build that states it checks the seal, read by sealed_pair | M  |
+|  crates/std_runtime_contract/src/lib.rs | Heap and runtime-window numbers are restated, so drift fails a host test instead of the compile. | Derive std_runtime_contract's numbers so drift fails to compile | S  |
+|  crates/stick_maker/src/linux.rs | The Linux path has never run on Linux (discovery, mount, erase). | Run stick_maker on a Linux host and record the transcript | S  |
+|  crates/stick_maker/src/macos.rs | Flash-stick fixture is synthesized, and `diskutil eraseDisk` was never run on a physical stick. | Run stick_maker against a real macOS USB stick and capture the fixture | S  |
+|  crates/stick_maker/src/windows.rs | Never run on Windows; erase not automated; promote once a VHD run exists. | Run stick_maker on Windows against a VHD | S  |
+|  design/audit-reports/README.md (baseline bullet) | Nothing checks the baseline numbers were taken at the commit they claim; `--check` validates only the cell format. | Audit baseline table re-derived and compared by the gate | S  |
+|  design/decisions/0058-wider-archive-name.md (2nd bullet) | Nothing checks a name fits the archive limit before a rename lands (hit twice). | A lint that checks program names against the archive name width | S  |
+|  design/decisions/0061-lints-on-evidence.md | `script/decisions --check` tests for number gaps but not heading order. No order check found in the script. | script/decisions checks section order | S  |
+|  design/decisions/0081-dependency-upgrades.md | The gate sees only dependabot.yml; frozen caret pins, vendored copies and dead upstreams are watched by nobody. | A stale-pin check beyond dependabot's file | M  |
+|  design/decisions/0082-ambient-authority-and-the-rewrite.md (last bullet) | Nothing measures grant width, the number the first falsification condition names. Possibly the same as 852 or 123; not found there verbatim. | Measure grant width per running program | M  |
+|  design/decisions/0094-what-may-live-in-a-library.md | Nothing gates a hand-rolled trap outside `user_rt`; "a grep ... is plausible and is not built". | Lint hand-rolled trap instructions outside user_rt | S  |
+|  design/decisions/0136-foreign-implementation-as-oracle.md | Nothing stops an oracle (libext2fs) becoming a dev-dependency of a nife target. | cargo-deny style check keeping oracles host-only | S  |
+|  design/decisions/0205-the-subscription-stays-and-renting-fills-the-tail.md (redo rate) | The redo rate of offloaded lanes is unmeasured and is the number that could invert the ruling. | Count offloaded-lane redos | S  |
+|  design/decisions/0267-a-comment-states-the-constraint-as-it-is-now.md (row pairing bullet) | Rows pair with comment blocks by line order, so a block leaving the middle shifts pairing and reports a larger block as grown; fix is pairing by content. | Pair comment-budget rows by content | S  |
+|  design/decisions/0297-software-reaches-nife-as-a-package-jig-installs-from-basalt.md (first bullet) | Nothing checks a milestone's `Done when` names a `jig install` or depends on 809. | script/roadmap checks the jig dependency | S  |
+|  design/decisions/0305-git-dependencies-on-the-nifeos-organization-only.md | cargo-deny cannot check a `rev` is an ancestor of main. | Check git rev pins against the landed commit | S  |
+|  design/naming/provenance-limits.md (script/metrics bullet) | script/metrics counts only the original four name kinds, so the provenance series misses markers. | Teach script/metrics the item parse | M  |
+|  design/roadmap/0062-time-sensitive-tests.md | Nothing checks that the wall-clock re-arm bound (`script/test`) and the instruction bound (`script/icount`) stay in step | One source for the timer re-arm bound, checked by both graders | S  |
+|  design/roadmap/0126-who-else-is-running.md | `pmap` cannot view any real process because only the address-space builder holds the capability (needs a spawn-protocol retention) | A spawner-retained address-space view for `pmap` | M  |
+|  design/roadmap/0126-who-else-is-running.md | `pmap` has no range coalescing and cannot tell device mappings (no device bit in `paging::Flags` visible to the handler) | pmap coalescing and device flag | S  |
+|  design/roadmap/0128-automation-identity.md | Nothing checks the GitHub App's installed permissions after install | Gate on the automation App's permissions | S  |
+|  design/roadmap/0136-one-decision-path.md | Nothing checks that a newly pinned region item is searched by loom (failure message only asks in words) | Gate: every pinned region item has a loom model | S  |
+|  design/roadmap/0136-one-decision-path.md | `steal_request`, `clock_proto`, `wake_handshake`, `canary_gate` loom crates are not gated against callers drifting | Pin gates for the other four loom crates | M  |
+|  design/roadmap/0150-program-declaration-data.md | A stale `SWISH_CHECK_SCRIPT` line is caught only by a boot; reuse of a removed program's wire id after 2026-09-19 is not gated (merged two) | Host-side checks for swish-check lines and wire-id reuse | S  |
+|  design/roadmap/0202-confinement-claims-falsified.md (with design/roadmap/0210-run-one-kernel-test.md) | Six kernel confinement tests cannot be falsified by machine; the runner filter now exists but the sweep (annotation on `#[test_case]`, second replay verb, patch path) is not built | Sweep kernel falsifications with `--test` | M  |
+|  design/roadmap/0208-boot-section-wx.md | `.boot_data` is RW though its contents are read-only | Make `.boot_data` genuinely read-only | S  |
+|  design/roadmap/0226-qemu-bounded-orphans.md | emulators left behind by a killed harness (11 QEMUs in a day, one with 8 h CPU) still only handled by a manual pgrep rule in AGENTS.md | Killed harnesses leave no emulator behind | M  |
+|  design/roadmap/0236-lift-the-copied-derivations.md | nobody swept script/ for other derivations copied between scripts | Sweep script/ for copied derivations | S  |
+|  design/roadmap/0268-the-boot-ladder.md | orphaned x86_64 emulator after ~15 boot-check boots, mechanism unknown (same family as 0226:93) | Find what orphans the boot-check emulator | S  |
+|  design/roadmap/0280-unexplained-mutation-scores.md | feature-compiled gate passes with no test behind the feature and exempts required-features wholesale | Tighten the feature-is-tested gate | S  |
+|  design/roadmap/0303-x86-64-fs-disk.md (also 0420:110) | `helpers/qemu-uefi-x86_64.sh` attaches no RedoxFS disk, so `uefi-test` runs 208/69 against PVH 237/40 | Attach the RedoxFS disk under OVMF | S  |
+|  design/roadmap/0307-which-assertion-fires.md (and 0305:190) | falsification sweep checks a red's shape, not the assertion; 25 of 26 verdicts are reasoned not measured and will rot silently | Falsification records name the assertion that must fire, and the sweep checks it | M  |
+|  design/roadmap/0310-miri-leak-free.md | nothing stops another crate's fixture from leaking host memory; only the weekly Miri run (5-week latency) sees it | A leak check on host test fixtures outside the weekly Miri run | M  |
+|  design/roadmap/0312-drift-bare-metal-list.md | `std` overlay rebuild (the step most likely to find drift) lives only in YAML, not in `script/drift` | Move the std-overlay rebuild into `script/drift` | S  |
+|  design/roadmap/0317-interrupt-remapping-flags.md | the `kernel-irqchip`/intremap finding is QEMU TCG on one Mac; nobody checked what CI Linux runners (KVM) or xenon resolve to | Record intremap behavior on the CI runners and xenon | S  |
+|  design/roadmap/0365-xtask-in-modules.md | `xtask/src/shell_check.rs` is still 1,866 lines (table 390, two legs 500); split along table/legs/claims | Split `shell_check.rs` along its seams | M  |
+|  design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md | `--exclude` lists and `.cargo/mutants.toml` globs are accepted silently when stale; no non-empty-match check | Exclusions must match something, or the gate fails | S  |
+|  design/roadmap/0441-the-program-that-makes-the-stick.md | the flash-stick fixture is synthesized; a real one should be captured | Capture a real flash-stick fixture | S  |
+|  design/roadmap/0501-a-tls-client-that-speaks-to-one-pinned-peer.md | host test that reaches the internet is `#[ignore]`d, so nothing checks the production pin against a live Let's Encrypt chain | A scheduled live-chain check of the TLS pin | S  |
+|  design/roadmap/0508-lint-does-not-build-the-uefi-binary.md | no riscv64 userspace clippy pass in lint; it fails today on two doc warnings in `child_stub.rs` (`SEND_THEN_EXIT`); `redoxfs_server` bare-metal, std farm, test target off aarch64 same class | Lint compiles riscv64 userspace and the other holes | S  |
+|  design/roadmap/0542-gates-that-mean-what-they-measure.md | `bench/fastpath-*.txt` has no toolchain stamp, so the footprint gate's 5% band still erodes under a bump | Toolchain stamp for the fastpath footprint baselines | S  |
+|  design/roadmap/0581-one-metrics-file-per-measure.md | `read_csv` ignores a stray column from a hand edit and `--update` drops it with no warning | `script/metrics --check` flags columns outside `MEASURES` | S  |
+|  entropy_backend/src/lib.rs | nothing in the gate builds this crate | Gate builds entropy_backend | S  |
+|  fuzz/seeds/README.md | nothing checks the committed seed bytes match the generator | Seed bytes checked against generator | S  |
+|  helpers/baseline_drift.py | restamp ledger read by string shape; nothing compares to `restamp.rs` | Compare restamp marker with Rust constant | S  |
+|  helpers/coe_actions.py | The "Recorded/Done/Refused" 40-character floor is copied from script/roadmap's Follow-on loop; a change in one must be made in the other, and nothing checks they agree | One shared resolver for the prose floor, used by script/roadmap and coe_actions | S  |
+|  helpers/lane-claim-check.sh | It only detects a branch with no claim, not two lanes claiming the same milestone (the case section 90 fears); needs the milestone number parsed from branch names, a convention nothing enforces (703 is a different shape) | Detect two live claims on one milestone | M  |
+|  helpers/merge-drain.sh | lane-claim-check.sh still prints the same orphan branches to the drain log on its own clocks; folding it into the drain's orphan cause or dropping it is undecided (#1787) | Retire the duplicate orphan report (lane-claim-check vs drain cause) | S  |
+|  helpers/merge-drain.sh (unmergeable cause) | Unmeasured whether GitHub shows UNMERGEABLE briefly then clears; no grace period, so the label may fire on noise | Measure UNMERGEABLE flaps in the drain log, then add a grace keyed on enqueuedAt | S  |
+|  helpers/open-lane.sh | Whether an open-weight model behind the gateway emits well-formed tool calls turn after turn is unmeasured ("benchmark before trusting"); no benchmark exists | Benchmark tool-call fidelity of the cheap-lane models | M  |
+|  helpers/queue-hold.sh | Nothing expires or announces a hold; a dead session leaves labeled PRs that nothing releases | A queue hold that expires or announces itself when its session is gone | S  |
+|  helpers/queue-hold.sh | A PR opened or marked ready during a hold is not labeled and can be armed into a red trunk; only a manual re-run sweeps it | The queue hold sweeps PRs that arrive after it started | S  |
+|  helpers/roadmap_migrate.py | Provisional one-shot migrator "goes away once no branch in flight predates the switch"; no retirement trigger or check | Retire roadmap_migrate once no branch predates frontmatter (low confidence, may be a plain cleanup) | S  |
+|  helpers/trunk-health.sh | Reads a run's conclusion, so a docs-only merge with every job skipped reads GREEN; no check that any job did work | trunk-health tells a green that ran from a green that skipped | M  |
+|  kernel/src/arch/x86_64/ist.rs | script/stack-depth-check does not measure the NMI, double fault and machine check stacks | stack-depth-check measures the IST stacks | S  |
+|  notes/adding-a-program.md (wire-id bullet) | reuse of a wire id added after 2026-09-19 is not gated; only a duplicate check guards it | Pin every shipped wire id, not the first thirteen | S  |
+|  notes/automation-identity.md (2nd bullet) | nothing checks the GitHub App's installed permission set after install | A probe that fails if the App's permissions drift | S  |
+|  notes/benchmarks/record-level-sweep.md (3rd bullet) | record-aligned phase is aligned by luck; nothing checks it if the sweep goes above level 5 | Assert `RECORD` divides every swept record size | S  |
+|  notes/boot-stick.md (flash-stick fixture) | the flash-stick fixture is synthesized; no real `diskutil info -plist` captured | Capture a real flash-stick fixture | S  |
+|  notes/boot-stick.md (last bullet) | each QEMU proof boot runs to its time bound (6 and 12 minutes) instead of stopping at the progenitor line | Stick proof boots stop at the progenitor line | S  |
+|  notes/cfi-unwind.md (.eh_frame bullet) | riscv64 board image keeps `.eh_frame` (no `--remove-section`); cost to the board image never measured | Measure or strip CFI in the riscv64 board image | S  |
+|  notes/cfi-unwind.md (last bullet) | `cargo xtask gdb` is aarch64-only; x86_64 and riscv64 CFI never exercised against live GDB; entry says "worth a lane" | `cargo xtask gdb --arch` for riscv64 and x86_64 | S  |
+|  notes/check-inventory.md (last bullet) | `script/toolchain-bump`'s status is unknown and was never run | Run and record `script/toolchain-bump` | S  |
+|  notes/ci-failing.md (label bullet) | label name `ci-failing` is spelled in three places and a rename must change all | Derive the `ci-failing` label from one definition | S  |
+|  notes/ci.md (2nd bullet) | x86_64 dead-code count is 39 in CI, 40 locally (`timer::spin_for`); cause not chased | Explain the CI vs local dead-code difference on x86_64 | S  |
+|  notes/counted-claims.md (last bullet) | `AGENTS.md`'s method figures (including a Kani harness count) are unmarked; named "the obvious next tranche" | Mark `AGENTS.md`'s method figures as counted claims | S  |

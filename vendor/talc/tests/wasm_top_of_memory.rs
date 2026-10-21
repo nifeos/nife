@@ -1,0 +1,75 @@
+//! Regression tests for fit checks at the top of a 32-bit address space. Run with:
+//! `CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner WASM_BINDGEN_TEST_ONLY_NODE=1 cargo test --target wasm32-unknown-unknown --test wasm_top_of_memory`
+#![cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
+
+use core::alloc::Layout;
+use core::arch::wasm32::{memory_grow, memory_size};
+use core::hint::black_box;
+
+use talc::base::Talc;
+use talc::source::Manual;
+use talc::wasm::WasmBinning;
+use wasm_bindgen_test::wasm_bindgen_test;
+
+const PAGE: usize = 65536;
+
+/// Grows linear memory to 4 GiB if it isn't there yet.
+fn grow_to_4_gib() {
+    // The global allocator gets some free memory first since the test harness
+    // still needs it afterwards and memory can't grow any further.
+    drop(black_box(Vec::<u8>::with_capacity(4 << 20)));
+    let pages = memory_size::<0>();
+    if pages < 65536 {
+        let grown = memory_grow::<0>(65536 - pages);
+        assert_ne!(grown, usize::MAX, "linear memory could not grow to 4 GiB");
+    }
+}
+
+/// A heap over `[base, base + size)`.
+unsafe fn heap_at(base: usize, size: usize) -> Talc<Manual, WasmBinning> {
+    let mut talc = Talc::new(Manual);
+    unsafe { talc.claim(base as *mut u8, size) }.expect("claim failed");
+    talc
+}
+
+#[wasm_bindgen_test]
+fn allocation_at_the_top_of_memory_fails_rather_than_wraps() {
+    grow_to_4_gib();
+    let mut talc = unsafe { heap_at(0usize.wrapping_sub(PAGE), PAGE) };
+    let small = Layout::from_size_align(8, 8).unwrap();
+    let mut chunks = Vec::with_capacity(PAGE / 16);
+    while let Some(ptr) = unsafe { talc.allocate(small) } {
+        chunks.push(ptr.as_ptr());
+    }
+    chunks.sort();
+    let top_two = &chunks[chunks.len() - 2..];
+    for &ptr in top_two {
+        unsafe { talc.deallocate(ptr, small) };
+    }
+
+    let larger = Layout::from_size_align(32, 8).unwrap();
+    assert!(unsafe { talc.allocate(larger) }.is_none(), "a 32-byte request fit a 32-byte gap");
+
+    // the gap is intact; the two chunks come back
+    for &ptr in top_two {
+        assert_eq!(unsafe { talc.allocate(small) }.map(|p| p.as_ptr()), Some(ptr));
+    }
+}
+
+#[wasm_bindgen_test]
+fn growth_in_place_past_the_top_of_memory_is_refused() {
+    grow_to_4_gib();
+    let mut talc = unsafe { heap_at(0xC000_0000, 16 * PAGE) };
+    let layout = Layout::from_size_align(64, 8).unwrap();
+    let ptr = unsafe { talc.allocate(layout) }.unwrap().as_ptr();
+    // free a chunk above so the gap above reaches the heap's end
+    let above = unsafe { talc.allocate(layout) }.unwrap().as_ptr();
+    unsafe { talc.deallocate(above, layout) };
+
+    // ends 64 bytes past 2^32 and far below `isize::MAX`
+    let new_size = 0usize.wrapping_sub(ptr as usize) + 64;
+    assert!(!unsafe { talc.try_grow_in_place(ptr, layout, new_size) }, "grew in place past 2^32");
+
+    // the gap is intact; the chunk above comes back
+    assert_eq!(unsafe { talc.allocate(layout) }.map(|p| p.as_ptr()), Some(above));
+}

@@ -26,7 +26,7 @@ PAL's socket ids are its own registry's indices and never reach net_stack. This 
 
 The wire constants are not restated: `netproto.rs` is generated verbatim from
 `crates/socket_contract/src/lib.rs` into `sys/pal/nife/netproto.rs` by `std-src`, the same
-anti-drift discipline as `abi.rs` and `user_mode_heap.rs`. If the contract changes, the PAL's
+anti-drift discipline as `abi.rs`. If the contract changes, the PAL's
 numbers change with it, because there is one source.
 
 What binds, and how it maps to the contract:

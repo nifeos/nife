@@ -471,7 +471,7 @@ cargo clippy -p kernel --features watchdog_probe --target x86_64-unknown-none --
 #   target                        boot file         how it is made
 #   x86_64-unknown-uefi           BOOTX64.EFI       PE/COFF from rustc
 #   aarch64-unknown-uefi          BOOTAA64.EFI      PE/COFF from rustc
-#   riscv64imac-unknown-none-elf  BOOTRISCV64.EFI   a static PIE, converted by crates/portable_executable
+#   riscv64imac-unknown-none-elf  BOOTRISCV64.EFI   a static PIE, converted by cargo xtask stick
 #
 # riscv64 has no UEFI target in rustc at all (the comment beside rust-toolchain.toml's target
 # list says so), so its boot file compiles for the plain none-elf target and the stick turns the

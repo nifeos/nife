@@ -285,7 +285,7 @@ mod ntp_tests;
 
 /// **The untyped-backed userspace heap** (milestone 27): spawn the `allocator_exerciser` workload, the
 /// first program that links `extern crate alloc`, with an untyped budget (slot 0) and a report
-/// endpoint (slot 1). The program wires `user_mode_runtime::heap` as its global allocator, churns
+/// endpoint (slot 1). The program wires `memory_region_heap` as its global allocator, churns
 /// `Vec`/`String`/`BTreeMap` with frees in arbitrary order, asserts every intermediate result
 /// itself (a wrong value faults), and reports a magic word plus how many bytes of heap it
 /// committed. Portable: the same test runs the riscv64 ELF on riscv and the aarch64 ELF on

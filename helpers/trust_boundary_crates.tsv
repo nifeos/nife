@@ -119,6 +119,7 @@ mdns_config	userspace	retired
 mdns_proto	userspace	retired
 measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser
 memory_corruption_canary_gate	kernel	kernel
+memory_region_heap	userspace	components,fixtures,redoxfs_server
 memory_regions	kernel	kernel
 name_resolution_protocol	userspace	retired
 network_time_protocol	userspace	components,fixtures
@@ -135,7 +136,7 @@ paging	kernel	kernel
 pci	kernel	kernel
 pgrep	userspace	components
 pmap	userspace	components
-portable_executable	host	-
+portable_executable	host	retired
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 ps	userspace	components
 regions	kernel	retired
@@ -174,7 +175,7 @@ universally_unique_identifier	shared	components,kernel,redoxfs_server,uefi_loade
 uptime	userspace	components
 usb	userspace	components
 user_heap	userspace	retired
-user_mode_heap	userspace	components,fixtures,jig,redoxfs_server,std
+user_mode_heap	userspace	retired
 user_mode_runtime	userspace	components,fixtures,jig,redoxfs_server
 user_rt	userspace	retired
 video_terminal	shared	components,fixtures,kernel
