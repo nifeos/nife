@@ -11,7 +11,7 @@ Two changes to one tool, plus the hoist that both of them turned out to need.
 
 ## Part 2, the sweep recognizer
 
-`crates/board_console::progress` gained two rungs, `Stage::Sweep` (`job_mix::STARTED`) and
+`crates/serial_console::progress` gained two rungs, `Stage::Sweep` (`job_mix::STARTED`) and
 `Stage::SweepDone` (`job_mix::DONE`). It gained one failure (`Failure::SweepFailed`, carrying the
 reason the kernel gave) and the sweep's numbers (`SweepPoint`, `SweepSubrun`). So
 `script/board-console --until sweep-done` now answers the question the part named. It needed no new
@@ -35,7 +35,7 @@ and the statuses did not.
 
 ## Part 3, the prologue as data
 
-`crates/board_console/src/board.rs` declares a `Profile`: ordered `Rung`s, the firmware's own
+`crates/serial_console/src/board.rs` declares a `Profile`: ordered `Rung`s, the firmware's own
 `Refusal`s, and the relocation discriminator. `Stage`'s four firmware variants became one,
 `Stage::Firmware(&'static Rung)`, ordered below `Banner` because firmware runs before the kernel
 whatever the board. `Failure::BadImageMagic` and `Failure::UBootRefused` became one
@@ -76,7 +76,7 @@ This is a choice calef may want to overrule, recorded where a reader meets it ra
 here. A sweep has no wall-clock heartbeat, so its quiet timer cannot be three missed beats the way a
 soak's is. It is sized against the slowest subrun instead: 4.0 seconds measured (249,234,771 ticks
 on a 62.5 MHz counter) in the capture at
-`crates/board_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`.
+`crates/serial_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`.
 `script/job-mix` defaults `--quiet-after` to sixty seconds, fifteen times that. A board outside that
 margin reads as wedged when it is merely slow; `--quiet-after 0` is the escape and it costs the
 detection.
@@ -112,7 +112,7 @@ markers, because 168's lane added a seventh printed line (`job-mix-kind:`) in th
 had just retired.
 
 The limitation this leaves is recorded rather than fixed, in
-`crates/board_console/src/progress.rs`'s `BUGS` where the next reader of the parser meets it. The
+`crates/serial_console/src/progress.rs`'s `BUGS` where the next reader of the parser meets it. The
 markers are shared through `crates/job_mix`; the field names inside the line are not. A kernel that
 renames or adds a field still prints a line this recognizer matches and still parses to nothing,
 silently. Sharing the field names the way the heads are shared is the fix and is not taken here. It

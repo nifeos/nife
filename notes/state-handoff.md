@@ -53,10 +53,10 @@ refuses a page with no marker on it, and a host test pins that.
 
 The stateful component answers each request with its tally, the count of requests the *component*
 has served across instances, in the reply word the other channels use to echo the sequence number.
-The client (`chatty`, unchanged) checks that word against the sequence number it sent. The two agree
-on all 64 requests only if nothing was lost and no state was, so `SEQ_ECHOED` is the continuity
-witness without the client knowing which system it is in. A replacement that restarted from zero
-would answer request 40 with 0.
+The client (`swap_boundary_witness`, unchanged) checks that word against the sequence number it
+sent. The two agree on all 64 requests only if nothing was lost and no state was, so `SEQ_ECHOED` is
+the continuity witness without the client knowing which system it is in. A replacement that
+restarted from zero would answer request 40 with 0.
 
 Two more witnesses agree independently. The operator's `ABSORBED` step carries the tally the
 replacement took over, and the test asserts it equals the tally the incumbent reported at its second

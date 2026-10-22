@@ -24,7 +24,7 @@ The pieces, and note that only the first two are new:
 | The register poking | `kernel/src/drivers/ramfb.rs`: two DMA transactions, before `arch::mmu::init`, through the coarse boot map |
 | The memory and the wiring | `kernel/src/screen.rs` (**name provisional**): 800x600 of `.bss`, the device-tree lookup, and the same `console::attach_screen` call `x86_64` makes |
 | Painting text | `crates/screen_console`, unchanged |
-| The gate | `cargo xtask screen-boot <arch>` (**name provisional**), `uefi-boot`'s twin, decoding with `board_console::screen` unchanged |
+| The gate | `cargo xtask screen-boot <arch>` (**name provisional**), `uefi-boot`'s twin, decoding with `serial_console::screen` unchanged |
 
 Measured 2026-09-19, `cargo xtask screen-boot`, inside `script/test`'s two board legs:
 

@@ -78,7 +78,7 @@ names they were written with, per the rename procedure.
 | `truncated` | `crates/documentation (x2), crates/machine_discovery` | pub | 21 | `is_truncated` | crates follow-up |  |
 | `unclosed_fence` | `crates/documentation` | pub | 5 | `has_unclosed_fence` | crates follow-up |  |
 | `ink` | `crates/bitmap_font (and its example)` | pub | 25 | `is_ink` | crates follow-up |  |
-| `seen_in`, `relocated`, `finished` | `crates/board_console` | pub | 23 | `is_seen_in`, `is_relocated`, `is_finished` | crates follow-up |  |
+| `seen_in`, `relocated`, `finished` | `crates/serial_console` | pub | 23 | `is_seen_in`, `is_relocated`, `is_finished` | crates follow-up |  |
 | `bootable` | `crates/boot_slot` | pub | 10 | `is_bootable` | crates follow-up |  |
 | `block_size_ok` | `crates/globally_unique_identifier_partition_table` | pub | 12 | `is_block_size_ok` | crates follow-up |  |
 | `considered` | `crates/stick_maker` | private | 2 | `is_considered` | crates follow-up |  |

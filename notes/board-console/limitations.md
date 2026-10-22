@@ -86,7 +86,7 @@ that power-cycles is a different and more dangerous object than one that reads.
 
 The board profile is real now, and exactly one board has ever been checked against one. calef ruled
 on 2026-09-19 that this is one tool whose profile is the firmware prologue and nothing else.
-Milestone 324 part 3 built it. `crates/board_console/src/board.rs` declares radon's four rungs, its
+Milestone 324 part 3 built it. `crates/serial_console/src/board.rs` declares radon's four rungs, its
 two refusals and its relocation note as data. `--board` chooses, and `Stage::Firmware` is what a
 boot reaches while climbing one. What that does *not* do is add evidence. radon's rungs are asserted
 against bytes off the wire on 2026-09-01. xenon's profile says it has no prologue, which rests on one

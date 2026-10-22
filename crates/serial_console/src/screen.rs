@@ -119,7 +119,7 @@ impl std::error::Error for ReadError {}
 /// # Examples
 ///
 /// ```
-/// use board_console::screen;
+/// use serial_console::screen;
 ///
 /// // A two-by-one grid of 7x8 cells, in the PPM QEMU's `screendump` writes.
 /// let mut ppm = b"P6\n14 8\n255\n".to_vec();
@@ -191,7 +191,7 @@ pub struct Screendump {
 /// # Examples
 ///
 /// ```
-/// use board_console::screen;
+/// use serial_console::screen;
 ///
 /// let (ink, paper) = ([0xee, 0xe8, 0xd5], [0x07, 0x36, 0x42]);
 /// let mut ppm = b"P6\n14 8\n255\n".to_vec();
@@ -270,7 +270,7 @@ fn decode_rows(
 /// # Examples
 ///
 /// ```
-/// use board_console::screen;
+/// use serial_console::screen;
 ///
 /// // Two 2x1 cells: `a` is left-half ink, `b` right-half, on black.
 /// let draw = |ch: char, x: u32, _y: u32| match (ch, x) {

@@ -197,10 +197,11 @@ reports the spread rather than the best) records the line format, ratified by ca
   Checked by reading `crates/job_mix` and `kernel/src/job_mix.rs`: nothing has measured where a board
   runs out, and the supervisor's `FAILED: could not spawn task N` line is the measurement
   that would say. radon fit 32 on 2026-10-04 and printed none; above that is unmeasured.
-- **Milestone 324.** `crates/board_console` has no recogniser for this run, so an operator tells a
-  finished sweep from a wedged one by reading the log, with the reason it
-  was deliberately not written blind. The outcome table in `notes/job-mix.md` becomes evidence after
-  the first bench evening and a guess before it.
+- **Milestone 324.** That is milestone 324 (the bench console cannot speak to any of the three
+  boards). `crates/serial_console` has no recogniser for this run, so an operator tells a finished
+  sweep from a wedged one by reading the log, with the reason it was deliberately not written blind.
+  The outcome table in `notes/job-mix.md` becomes evidence after the first bench evening and a guess
+  before it.
 - **Milestone 493.** The disk-file mix, blocked on a disk radon can drive and on a file-service
   channel per client (a wire format, so calef's).
   milestone 493 (a disk-file job mix needs a disk), `design/roadmap/0493-a-disk-file-job-mix-needs-a-disk-radon-can-drive.md`.

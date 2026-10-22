@@ -80,7 +80,7 @@ counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_freq
 # program sent home, so no party has its own copy of the layout.
 block_roster = { version = "0.1.0", path = "../crates/block_roster" }
 # The boot ladder's console markers (milestone 268): the exact bytes each rung of the boot prints.
-# The kernel prints them and `board_console` matches them, so AGENTS.md rule 7 makes them a crate
+# The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
 # before this crate WAS two copies of a literal, one inside a single architecture's arm.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }

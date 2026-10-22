@@ -111,7 +111,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
     // riscv64 and x86_64 have opened with `nife on <arch>` since their ports were written, as the
     // first thing after the console comes up: it is the one line that says the console works and
     // says nothing else, which is exactly the claim wanted at first light on a board. aarch64 had
-    // no such line at all, so `board_console`'s `Stage::Banner` (which matches `nife on `,
+    // no such line at all, so `serial_console`'s `Stage::Banner` (which matches `nife on `,
     // deliberately generic so that a healthy aarch64 or x86_64 board would not read as never having
     // booted) was **unreachable on aarch64** for as long as the recogniser has existed. That is
     // milestone 268's finding 3 again, one rung lower, and it was found the same way: by looking
@@ -162,16 +162,16 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
 
         // **Rung two of the ladder** (milestone 268): the kernel proving it works on the machine it
         // has just described, before anything is handed to userspace. The same five checks on all
-        // three architectures, and the verdict line is what CI and `board_console` read. It
+        // three architectures, and the verdict line is what CI and `serial_console` read. It
         // reports and does not gate: a failure prints and the boot carries on to the prompt,
         // because a machine you cannot log into is a machine you cannot fix.
         self_test::run();
 
         // **The boot's middle stages ran to their end** (`boot_ladder::TOUR`, which
-        // `board_console` reads as `Stage::Tour`), and the stage `sched::dump_threads` reports as
+        // `serial_console` reads as `Stage::Tour`), and the stage `sched::dump_threads` reports as
         // finished, on all three architectures: the self-test's checks are the claims the per-port
         // tours made (calef's ruling of 2026-10-19 (UTC) on #2434). Only the hand-over lies between
-        // this line and the prompt, because `board_console` stops treating silence as a hang here.
+        // this line and the prompt, because `serial_console` stops treating silence as a hang here.
         println!("{}{}.", boot_ladder::TOUR, arch::NAME);
         sched::note_boot_stage(self_test::TOUR_STAGE);
 
@@ -264,7 +264,7 @@ fn hand_over() {
 ///
 /// The bring-up's own demonstration lines (`traps`, `timer`, `memory`, `paging`) are not printed
 /// here: `self_test::run` makes each of those claims on all three architectures as its
-/// `exceptions`, `timer`, `frames` and `mapping` checks, and `board_console` reads the ladder.
+/// `exceptions`, `timer`, `frames` and `mapping` checks, and `serial_console` reads the ladder.
 #[cfg(target_arch = "riscv64")]
 fn riscv64_banner(
     boot_info_pointer: usize,

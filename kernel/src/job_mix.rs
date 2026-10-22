@@ -33,7 +33,7 @@
 
 // **The seven markers in this import moved out of this file** (milestone 324 part 2): `CENSUS`,
 // `DONE`, `FAILED`, `KIND`, `POINT`, `STARTED` and `SUBRUN`. They were private `const`s here and
-// string literals in `xtask/src/main.rs`, agreeing with `crates/board_console`'s recogniser by a
+// string literals in `xtask/src/main.rs`, agreeing with `crates/serial_console`'s recogniser by a
 // reader having checked; that is milestone 268's finding 3 wearing different clothes, and the fix
 // is the one that milestone found. They now sit beside the rest of the workload's definition, which
 // both halves of the instrument already read, and `crates/boot_ladder`'s header carries the general

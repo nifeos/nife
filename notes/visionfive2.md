@@ -203,7 +203,7 @@ Setup, in order:
 4. Power: USB-C. The board boots on power, there is no power button.
 
 Transcripts of a successful manual boot and of the extlinux failure are committed under
-`crates/board_console/tests/fixtures/captured/`; read those rather than re-deriving what the board
+`crates/serial_console/tests/fixtures/captured/`; read those rather than re-deriving what the board
 prints. The card's U-Boot environment is degraded (`bad CRC, using default environment`), and the
 board boots through it.
 

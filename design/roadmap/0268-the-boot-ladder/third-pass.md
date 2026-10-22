@@ -77,4 +77,4 @@ written down as one.
   transcript. The leg now sets the child's environment explicitly instead of inheriting it, which
   also means an exported `NIFE_DISK` in a developer's shell cannot change what the gate boots.
 - `Stage::Prompt`'s own documentation still said the rung was unreachable on `x86_64`. Fixed
-  where a reader meets it, in `crates/board_console/src/progress.rs`.
+  where a reader meets it, in `crates/serial_console/src/progress.rs`.

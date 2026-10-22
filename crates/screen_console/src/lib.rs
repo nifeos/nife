@@ -26,11 +26,11 @@
 //!   `notes/serial-less-output/the-xenon-grid.md`.
 //! - Nothing here is proved on real silicon, only on the host and under OVMF.
 //!
-//! Name: ratified 2026-09-13 (calef), half of a pair with `serial_console` (`crates/board_console`,
-//! rename not yet performed): two consoles named for where the text comes out. Refused
-//! `framebuffer_console` (the thing it writes into), `pixel_console` (the unit, not the surface),
-//! `early_console` (when, not what) and `video_terminal` (the terminal emulator this deliberately is
-//! not; `script/names` reports it as refused here and live there, which is true).
+//! Name: ratified 2026-09-13 (calef), half of a pair with `serial_console`: two consoles named for
+//! where the text comes out. Refused `framebuffer_console` (the thing it writes into),
+//! `pixel_console` (the unit, not the surface), `early_console` (when, not what) and
+//! `video_terminal` (the terminal emulator this deliberately is not; `script/names` reports it as
+//! refused here and live there, which is true).
 
 #![no_std]
 

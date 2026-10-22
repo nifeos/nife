@@ -36,8 +36,8 @@ radon hands us does describe the TRNG. It describes it under a different node na
 
 `fdt addr ${fdtcontroladdr}` hands nife the vendor U-Boot's own control device tree: U-Boot 2021.10,
 `Build: jenkins-VF2_515_Branch_SDK_Release-24`, dated `Feb 12 2023`, from the board's own banner in
-`crates/board_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`. That tree is compiled
-from `arch/riscv/dts/jh7110.dtsi` in StarFive's U-Boot fork, and that file says:
+`crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`. That tree is
+compiled from `arch/riscv/dts/jh7110.dtsi` in StarFive's U-Boot fork, and that file says:
 
 ```
 trng: trng@1600C000 {
