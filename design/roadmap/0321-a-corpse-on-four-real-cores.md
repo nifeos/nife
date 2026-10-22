@@ -132,28 +132,65 @@ So the honest statement is the one `design/fatal-risks/README.md` risk 2 predict
 on real silicon, or it is rarer than 28 runs. The instrument for reading it when it next
 happens is now in the tree rather than on a bench.
 
-### A second failure under emulation, past the assertion this block instruments
+### A second failure under emulation, past the assertion this block instruments: found and fixed
 
-Two hundred runs per boot (`--repeat`) found one at four interleaved cores under OVMF, the
-firmware leg `cargo xtask uefi-test` boots, on 2026-10-21 at about 23:57 UTC:
+Repeated runs (`--repeat`) found a failure one assertion later than the one above. The corpse
+parked and was surveyed `DEAD`, and `REAP` passed `reap_decision`. Then `reclaim_region` refused,
+which `reap_supervised` reported as `NotPermitted`.
+
+**The cause is the corpse still standing on its own kernel stack.** `reclaim_region` now records
+why it refused (`sched::last_reclaim_refusal`, test builds), and the test's message prints it.
+Every failure measured read
 
 ```
-repeat result: FAILED. 52 runs of 200, 51 passed, first failure at run 52; its message is below
-
-[PANIC] panicked at system_tests/src/user/survey_tests.rs:410:5:
-assertion `left == right` failed: the tid a survey reported was not one the same rendezvous could reap
-  left: Err(NotPermitted)
- right: Ok(0)
+the reclaim refused because Some(Resident { tid: <the child>, state: Dead, on_cpu: true, being_reaped: false })
 ```
 
-The corpse parked and the survey listed it `DEAD`, so this block's assertion held. `REAP` then
-passed `reap_decision` (supervised and `Dead`), and `reclaim_region` refused, which
-`reap_supervised` reports as `NotPermitted`. Its comment names two causes, a child region and a
-racing reap. Neither is established. A third is not ruled out: `Dead` visible while the dying
-thread is still leaving its core. That is again the cross-core death this block points at.
+`depart` marks a supervised thread `Dead` and delivers its death message under `IPC_TABLES`,
+releases the lock, and only then calls `schedule()`. `handshake.on_cpu` stays set until that core's
+next thread runs `finish_switch`. A supervisor on another core can receive the message and `REAP`
+inside that window, and the refuse phase correctly declines to free a stack a core is standing on.
+The defect is in what `REAP` does with that refusal without the fix: `NotPermitted`, which
+`abi::rendezvous::REAP` documents only for a child region, and which `terminal_supervisor` and
+`sub_server_supervisor` treat as fatal on the first refusal.
 
-It was one failure in 255 OVMF runs. The PVH runner had none in 403 interleaved runs, nor in 200
-with `NIFE_TCG_THREAD=multi`.
+**The fix**: `reap_supervised` yields and looks again while the corpse it was asked for is still
+`on_cpu`, rather than handing the kernel's own transient condition to userspace. Nothing else
+needs to happen for it to clear, so the wait is bounded by one context switch on the corpse's core.
+`survey_tests::a_corpse_still_leaving_its_core_is_reaped_once_it_has_left` holds the window open on
+purpose (`sched::hold_on_its_core`) and fails without the fix with the same refusal the repeat runs
+printed. It passes on x86_64 at one and four cores and on aarch64 and riscv64 at four.
+
+Measured on patagonia (an Apple-silicon host), 2026-10-22 UTC, `NIFE_SMP=4`, before the fix, one
+boot at a time, 1,000 runs per boot and stopping at the first failure. `thread=single` is
+round-robin TCG and `thread=multi` is parallel cores (`NIFE_TCG_THREAD`, which the OVMF runner now
+honors too):
+
+| Leg | Memory | TCG | Failures / runs |
+|---|---|---|---|
+| OVMF | 2 GiB | single | 4 / 5,014 |
+| OVMF | 2 GiB | multi | 3 / 9,158 |
+| OVMF | 256 MiB | single | 7 / 1,565 |
+| PVH | 256 MiB | single | 8 / 996 |
+| PVH | 256 MiB | multi | 1 / 3,111 |
+
+**OVMF and PVH do not differ.** Both fail, with the same refusal. The rate does vary with the configuration and with time, and the table cannot
+separate them: the 256 MiB and PVH single rows ran back to back, so memory size and host load are
+confounded. Parallel cores fail less often than round-robin. That fits the window: a few hundred
+instructions on a core that keeps running, but a whole timeslice when round-robin moves on from
+the dying core just after it released the lock.
+
+After the fix, three boots of the original test ran 3,000 runs at PVH single and 3,000 at OVMF
+2 GiB single, with no failure. At the rates above, a clean 3,000 had a chance near e^-24 at PVH
+single but about one in eleven at OVMF 2 GiB, so the PVH leg is the evidence.
+
+### What this does not settle
+
+The 2026-09-17 failure on xenon is the parking assertion above, not this one: the corpse never
+reached the queue within two seconds. In every run counted in the table, about 20,000 across both
+legs and both TCG modes, that assertion held. The `REAP` defect cannot cause it, because it
+happens after the count is already 1. So the failure this block is named for is still
+unreproduced.
 
 ## What reading the code ruled out, and what it did not
 
@@ -178,10 +215,11 @@ know it. `start_thread_control_block` places a fresh child on another core's inb
 core, under a lock this one also takes. That is the region where a genuinely parallel machine can
 differ from an interleaved one, and it is where the next bench run's disposition line will point.
 
-**One thing deliberately not concluded:** that the kernel is correct. Twenty-eight green runs, twelve
-of them with really parallel cores, are not evidence that the condition is harmless on a machine
-none of them reproduced. "It passed on a retry" is what this block refuses, and "it passed
-twenty-eight times somewhere else" is the same refusal wearing a bigger number.
+**One thing deliberately not concluded:** that the kernel is correct. About 20,000 runs in which
+the parking assertion held, many of them with really parallel cores, are not evidence that the
+condition is harmless on a machine none of them reproduced. This block refuses "it passed on a
+retry." "It passed twenty thousand times somewhere else" is the same refusal wearing a bigger
+number.
 
 ## Why it is worth a lane rather than a retry
 
@@ -204,9 +242,10 @@ establishes that the kernel is correct and the test was wrong, with the reason w
 
 "It passed on a retry" is not an outcome this block accepts.
 
-**Neither has happened yet, which is why this is `PARTIAL` and not `BUILT`.** What has happened is
-that the next occurrence answers the question by itself, from the log, without the bench being
-available again.
+**For the failure this block is named for, neither has happened, which is why it is `PARTIAL`
+and not `BUILT`.** The defect one assertion later is found and fixed with such a test (above). The
+parking failure is not: what is in place is that its next occurrence answers the question by
+itself, from the log, without the bench being available again.
 
 ## Index row
 

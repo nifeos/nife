@@ -95,6 +95,7 @@ KEPT = {
     "kernel/src/arch/riscv64/timer.rs::within_raise_bound": ({"question-shape"}, _ACTS),
     "kernel/src/arch/x86_64/mmu/shootdown.rs::serve_shootdown_nmi": ({"question-shape"}, _ACTS),
     "kernel/src/sched/inspection.rs::kill_thread": ({"question-shape"}, _ACTS),
+    "kernel/src/sched/inspection.rs::hold_on_its_core": ({"question-shape"}, _ACTS),
     "kernel/src/sched/switch.rs::mark_current_fp_live": ({"question-shape"}, _ACTS),
     "kernel/src/user/fs_service/std_start.rs::release": ({"question-shape"}, _ACTS),
     "kernel/src/user/holding.rs::release": ({"question-shape"}, _ACTS),

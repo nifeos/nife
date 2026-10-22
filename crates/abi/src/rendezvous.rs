@@ -119,6 +119,16 @@ pub const CALL: u64 = 4;
 ///   space of children it does not supervise.
 /// - [`crate::Error::NotPermitted`] the corpse's region cannot be reclaimed yet (the child `SPLIT` its
 ///   own budget and those children are still live), the same refusal `DESTROY` gives.
+///
+/// # BUGS
+///
+/// - **`NotPermitted` has a second cause this list does not name.** The reclaim behind `REAP` also
+///   refuses when another thread whose page lies in the corpse's region can still run, and that
+///   refusal arms the kill of §16 (object revocation) on it, exactly as a refused `DESTROY` does.
+///   A supervisor that treats the first `NotPermitted` as fatal, as `terminal_supervisor` and
+///   `sub_server_supervisor` do, cannot tell the two apart. No test builds a corpse that shares its
+///   region with a live thread, so whether a supervisor can meet this is unmeasured. (The corpse
+///   itself still leaving its core is waited out by the kernel and never reaches here.)
 pub const REAP: u64 = 5;
 
 /// `invoke(cap, SURVEY, cursor, record, 0)` -> `(next_cursor, tid, word)`. **Read one entry of
