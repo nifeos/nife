@@ -36,3 +36,9 @@ upstream instead of releasing its own? The `elf` name on crates.io is theirs.
 
 An offer goes upstream only under 857's fork 8 and its approval cadence: disclosed as agent-written,
 and approved by calef before it is sent.
+
+Fork 8 sends offers only where a project's policy admits disclosed AI work. Neither
+google/gpt-disk-rs nor cole14/rust-elf has a written policy (read 2026-10-22 UTC, in
+[784's appendix](../0784-reuse-what-the-tree-wrote/upstreams-against-the-fork-test.md)). Asking
+either maintainer is calef's act. google/gpt-disk-rs also requires Google's CLA, which a person
+signs.

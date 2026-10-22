@@ -13,6 +13,9 @@ use super::*;
 /// **Synchronous IPC round trip, the classic microkernel number.** A server loops
 /// receive-then-send; the client times send-then-receive. One iteration is two rendezvous, two
 /// mailbox copies, two wakes, two switches.
+///
+/// It is the receiver-first mode: every send finds its receiver already waiting, the path a server
+/// loop lives on. The window's opening tick selects it, and the run fails if any send blocks.
 pub(super) fn ipc_rtt() {
     let request = sched::create_rendezvous();
     let reply = sched::create_rendezvous();
@@ -32,12 +35,19 @@ pub(super) fn ipc_rtt() {
         sched::ipc_send(request, [1, 0, 0]);
         sched::ipc_receive(reply);
     }
+    let blocked = sched::sends_blocked();
     timed("ipc_rtt", IPC_ITERS, || {
         for _ in 0..IPC_ITERS {
             sched::ipc_send(request, [1, 0, 0]);
             sched::ipc_receive(reply);
         }
     });
+    let blocked = sched::sends_blocked() - blocked;
+    assert!(
+        blocked == 0,
+        "{blocked} sends blocked in ipc_rtt's window, so it ran sender-first; the row is the \
+         receiver-first mode (calef, 2026-10-22 UTC; see sched::sends_blocked)",
+    );
     sched::ipc_send(request, [u64::MAX, 0, 0]); // release the server
 }
 

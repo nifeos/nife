@@ -172,6 +172,23 @@ pub fn ipc_send(ep: RendezvousId, msg: [u64; 3]) {
     ipc_send_badged(ep, msg, 0);
 }
 
+/// **Sends that found no receiver waiting and blocked, since boot, in the bench build.**
+///
+/// `ipc_rtt`'s row is the receiver-first mode of its ping-pong, in which every send meets a waiting
+/// receiver (calef, 2026-10-22 UTC, on milestone 939 (the icount bench runs without a preemption
+/// tick in its windows)). `kernel/src/bench/ipc.rs` reads this across the row's window and fails
+/// the run if it moved, so a change that flips the row to sender-first stops the bench rather
+/// than reading as a step in the floor.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone 939's lane.
+#[cfg(feature = "bench")]
+pub(crate) fn sends_blocked() -> u64 {
+    SENDS_BLOCKED.load(core::sync::atomic::Ordering::Relaxed)
+}
+
+#[cfg(feature = "bench")]
+static SENDS_BLOCKED: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+
 /// [`ipc_send`] through a badged endpoint capability: the receiver's `RECEIVE` sees `badge` in word 3
 /// (milestone 613 (a system log service), provisional; see [`wide`] for why a plain send carries
 /// it). The syscall layer passes the badge of the capability the sender invoked, so it is the
@@ -214,6 +231,8 @@ pub fn ipc_send_badged(ep: RendezvousId, msg: [u64; 3], badge: u64) {
                 false
             }
             inter_process_communication::Send::Blocked => {
+                #[cfg(feature = "bench")]
+                SENDS_BLOCKED.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
                 // `send` has already queued `current` as a sender; we record why it is parked.
                 let me = sched.threads.get_mut(current).unwrap();
                 me.mailbox = msg;

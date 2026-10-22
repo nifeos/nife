@@ -37,7 +37,12 @@ use super::irq;
 use super::port::{in8, out8};
 
 /// Ticks per second the scheduler asks for. The same 100 Hz both other architectures use.
-pub const TICK_HZ: u64 = 100;
+///
+/// **1 Hz in the bench build** (milestone 939 (the icount bench runs without a preemption tick in
+/// its windows)), so a timed window opened just after a tick has a full second of virtual time
+/// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
+/// way and fails the run if a tick lands inside one.
+pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// **The 8254 PIT's input frequency**, 1193182 Hz, and the one rate on a PC that is a fixed number
 /// rather than something to measure. It is 315/22 MHz divided by 12, which is to say it descends
@@ -505,7 +510,8 @@ pub fn init() {
         apic_hz != 0,
         "the local APIC timer's rate has not been measured yet (call init_frequency first)",
     );
-    let count = (apic_hz / TICK_HZ) as u32;
+    let count = u32::try_from(apic_hz / TICK_HZ)
+        .expect("one tick period does not fit the APIC timer's 32-bit initial count");
     assert!(
         count != 0,
         "the measured APIC timer rate is below the tick rate, which cannot be right",

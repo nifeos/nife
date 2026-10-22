@@ -1,8 +1,7 @@
 # toolchain: nightly-2026-10-22
 # qemu: 11.1.2
 # date: 2026-10-22
-# why: 2026-10-22: 180cccbaf (a new capability table is one copy of a static image, not a constant moved twice through ptr::write at -O0) and 0ec577bde (IrqSafeMutex::lock_masked always inlined, one call per lock at -O0), notes/benchmarks/riscv64-spawn-reap-drift.md. Together, measured with no tick in the window (TICK_HZ 1) on main 43a2d16e1: spawn_reap -2.27%, spawn_el0 -0.89%, call_reply -0.74%, broker_rtt -0.74%, ipc_rtt_el0 -0.68%, relay_rtt -0.66%, ipc_rtt -0.50%, yield_switch -0.49%, ctx_switch -0.46%, map_el0 -0.44%, map_new -0.27%, null_syscall 0.
-# why: 2026-10-22: this save also absorbs main's drift since the 2026-10-10 floor, unattributed here. Against that floor it reads spawn_el0 +3.15%, null_syscall +1.40%, ctx_switch +0.16%, yield_switch +0.05%, map_el0 -0.05%, map_new -0.40%, ipc_rtt_el0 -1.47%, ipc_rtt -1.68%, broker_rtt -1.76%, call_reply -1.79%, sink_throughput -2.00%, relay_rtt -2.26%, spawn_reap -2.59%; each row's move beyond the line above is main's.
+# why: 2026-10-22: milestone 939 (the icount bench runs without a preemption tick in its windows): the bench tick is 1 Hz and every row's window opens just after a tick, failing the run if one lands. ipc_rtt -3.04% is its receiver-first mode, which the opening tick selects (calef, 2026-10-22 20:05 UTC, #2578). ipc_rtt_el0 -0.59% is the tick's phase removed. sink_throughput +0.09% is the bench build's blocked-send counter. Every other row within 0.17%.
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -15,17 +14,17 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 1111048 2000
-ipc_rtt 1076523 1000
-relay_rtt 2084565 1000
-call_reply 1094513 1000
-broker_rtt 2185654 1000
-spawn_reap 225341 64
+yield_switch 1110254 2000
+ipc_rtt 1043817 1000
+relay_rtt 2083067 1000
+call_reply 1094192 1000
+broker_rtt 2184692 1000
+spawn_reap 225337 64
 map_new 16507 64
-coremark 20916026 256
-null_syscall 362503 20000
-ctx_switch 3004533 5000
-ipc_rtt_el0 10706846 5000
-sink_throughput 4387931 80000
-map_el0 300267 500
-spawn_el0 1449545 100
+coremark 20905121 256
+null_syscall 362504 20000
+ctx_switch 3002503 5000
+ipc_rtt_el0 10643346 5000
+sink_throughput 4391815 80000
+map_el0 299956 500
+spawn_el0 1447153 100
