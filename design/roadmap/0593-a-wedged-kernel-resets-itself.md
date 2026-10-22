@@ -93,6 +93,13 @@ line says whether step 1's discovery agrees with the datasheet. A `NOT ARMED` re
 holds `NO_REBOOT` visibly; an `ARMED` line cannot rule out a strap. The first `petted` line says whether the
 count moves. Only then run a wedge build, and watch whether the machine comes back or stops at POST.
 
+xenon passed it on 2026-10-21 (UTC), with one wedge build, which prints the same three lines
+before it wedges (`bench/xenon-2026-10-21/README-593.md`). `found the Intel TCO watchdog: Pch
+layout, TCO registers at I/O port 0x400`, then `ARMED`, then `petted at t=5s beat=1: the count had
+41 of 50 ticks left`. After `WEDGING NOW` the machine reset with nobody at it and POST did not stop.
+The firmware then booted the NVMe's older kernel rather than the stick, so `SECOND_TO_STS` on the
+boot after went unread.
+
 ## Step 2, radon's JH7110 watchdog: built 2026-10-20
 
 `crates/jh7110_watchdog` is the logic: the register offsets, the arm, pet and disarm sequences,
@@ -158,10 +165,12 @@ boot is the test. It needs a person in reach of radon's power, because nothing c
 
 ## BUGS
 
-- The PCH path has never run. q35 is an ICH9, so the SMBus lookup, the P2SB unhide and the sideband
-  `NO_REBOOT` write run first on xenon. Each prints what it found.
-- `TCO_EN` in `SMI_EN` is left as firmware set it, following Linux. If firmware's SMI handler pets
-  the timer, a wedged xenon never resets; that is the second thing to check after `NO_REBOOT`.
+- The PCH path has run on one board, xenon's Q270. Another PCH generation may place `TCOBASE` or
+  `NO_REBOOT` differently.
+- `TCO_EN` in `SMI_EN` is left as firmware set it, following Linux. xenon's firmware does not pet
+  the timer from SMI (it reset), but another board's might.
+- No silicon boot has read `SECOND_TO_STS` after a real reset: xenon's came back to a kernel that
+  does not read it.
 - radon's watchdog has never run. Every register write in step 2 runs first at its bench step.
 - The JH7110 keeps no record of a watchdog reset that this kernel knows of, so a second boot on
   radon cannot say how the first ended. Only the timing can.
@@ -172,8 +181,7 @@ boot is the test. It needs a person in reach of radon's power, because nothing c
 
 - **Done.** x86_64 soak builds include the watchdog by default, per calef's 2026-09-26 ruling, and
   `unwatched_soak_test` (`script/soak-test --no-watchdog`) is the opt-out. See step 1.
-- **Outstanding.** xenon's first bench step, under that heading above. It needs a person at xenon
-  with the serial chain on the desk.
+- **Done.** xenon's first bench step, under that heading above (2026-10-21).
 - **Outstanding.** radon's bench step, under that heading above. It needs a person in reach of
   radon's power.
 - **Outstanding.** Once radon's bench step passes, riscv64 soaks arm the watchdog unless they name
@@ -190,4 +198,5 @@ A soak arms the Intel TCO watchdog on x86_64 and pets it every beat, so a wedged
 the chipset 60 s after its last pet. Proven under QEMU q35 both ways: a deliberate wedge resets and
 the second boot reads the chipset's own record of it, and a healthy soak survives 180 s. On in every
 x86_64 soak build, with `unwatched_soak_test` as the opt-out. radon's JH7110 watchdog is armed by
-`watchdog_soak_test`, found and clocked from the tree. xenon, radon and argon are bench steps.
+`watchdog_soak_test`, found and clocked from the tree. A wedged xenon resets itself; radon and argon
+are bench steps.
