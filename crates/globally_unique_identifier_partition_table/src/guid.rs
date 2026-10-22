@@ -20,7 +20,7 @@
 //!    u32 LE       u16 LE u16 LE  as written
 //! ```
 //!
-//! where RFC 9562 order (what [`Uuid::to_bytes`] returns) is `C1 2A 73 28 F8 1F 11 D2 BA 4B ...`.
+//! where RFC 9562 order (what [`Uuid::into_bytes`] returns) is `C1 2A 73 28 F8 1F 11 D2 BA 4B ...`.
 //! This is Microsoft's `GUID` struct, which UEFI inherited; RFC 9562 section 4 names it as the one known
 //! exception to big-endian storage. Getting it wrong gives you a GUID that looks plausible, matches
 //! nothing, and is byte-reversed in three places out of five. [`from_disk`] and [`to_disk`] are the
