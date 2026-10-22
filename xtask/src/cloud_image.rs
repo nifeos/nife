@@ -1,16 +1,20 @@
-//! **The aarch64 boot file as a whole boot disk**, the shape a cloud's custom-image import takes
-//! (milestone 578 (an ACPI discovery path for aarch64), item 7). `cargo xtask acpi-boot` writes it
-//! beside the stick and boots it, so the file a person uploads is the file the gate booted.
+//! **A boot file as a whole boot disk**, the shape a cloud's custom-image import takes (milestone
+//! 578 (an ACPI discovery path for aarch64), item 7). `cargo xtask acpi-boot` writes the aarch64
+//! one beside the stick and boots it, so the file a person uploads is the file the gate booted.
+//! `cargo xtask stick-boot` writes and boots the riscv64 one, whose `BOOTRISCV64.EFI` is the name
+//! that needs `file_allocation_table`'s long-name entries, so EDK2 reads that run on every run of
+//! the gate.
 //!
 //! ```text
 //! cargo xtask acpi-boot                                   # writes target/cloud-image/nife-aarch64.img
+//! cargo xtask stick-boot                                  # and target/cloud-image/nife-riscv64.img
 //! qemu-img convert -f raw -O vmdk -o subformat=streamOptimized \
 //!     target/cloud-image/nife-aarch64.img target/cloud-image/nife-aarch64.vmdk
 //! ```
 //!
-//! The disk is a GPT with one partition, an EFI system partition holding `\EFI\BOOT\BOOTAA64.EFI`,
-//! the removable-media path every aarch64 UEFI firmware looks for when it has no boot entry of its
-//! own, which a freshly imported disk never has. The partition table and the FAT32 volume are laid
+//! The disk is a GPT with one partition, an EFI system partition holding the boot file at its
+//! removable-media path (`\EFI\BOOT\BOOTAA64.EFI` on aarch64), which every UEFI firmware looks
+//! for when it has no boot entry of its own, and a freshly imported disk never has one. The partition table and the FAT32 volume are laid
 //! out by the same crates `components/src/system_installer.rs` writes a real disk with, so this is
 //! a host-side caller of the installer's formats, not a second spelling of them. Nothing here reads
 //! its own output back: EDK2 reading it in `acpi-boot` is the check, as OVMF is for the installer.
@@ -54,17 +58,20 @@ const ALIGN: u64 = 2048;
 /// disk; a cloud grows the boot volume to its own minimum on import regardless.
 const ESP_SECTORS: u64 = 300 * 1024 * 1024 / LBA;
 
-const BOOT_FILE_NAME: &str = "BOOTAA64.EFI";
-
-/// Where the disk is written.
-pub(super) fn image_path() -> PathBuf {
-    workspace_root().join("target/cloud-image/nife-aarch64.img")
+/// Where `arch`'s disk is written.
+pub(super) fn image_path(arch: &str) -> PathBuf {
+    workspace_root().join(format!("target/cloud-image/nife-{arch}.img"))
 }
 
-/// **Write the disk around `boot_file`**, replacing whatever was at [`image_path`].
-pub(super) fn write(boot_file: &Path) -> Result<PathBuf, String> {
+/// **Write `arch`'s disk around `boot_file`**, replacing whatever was at [`image_path`]. The file
+/// keeps its own name on the volume, so `boot_file` is named for the removable-media path.
+pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
     let file = std::fs::read(boot_file)
         .map_err(|e| format!("cannot read {}: {e}", boot_file.display()))?;
+    let name = boot_file
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| format!("{} has no file name", boot_file.display()))?;
     let random = random_bytes::<36>()?;
     let disk_guid =
         Builder::from_random_bytes(random[..16].try_into().expect("16 bytes")).into_uuid();
@@ -77,7 +84,7 @@ pub(super) fn write(boot_file: &Path) -> Result<PathBuf, String> {
         ALIGN,
         file.len() as u64,
         volume_id,
-        BOOT_FILE_NAME,
+        name,
     )
     .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
     let blocks = ALIGN + ESP_SECTORS + ALIGN;
@@ -94,7 +101,7 @@ pub(super) fn write(boot_file: &Path) -> Result<PathBuf, String> {
     )
     .map_err(|e| format!("the partition table: {e:?}"))?;
 
-    let path = image_path();
+    let path = image_path(arch);
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)
             .map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
