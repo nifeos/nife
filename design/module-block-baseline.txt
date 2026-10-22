@@ -4841,6 +4841,7 @@ fixtures/src/interrupt_child_builder.rs::_start
 fixtures/src/interrupt_heeder.rs::_start
 fixtures/src/interrupt_ignorer.rs::_start
 fixtures/src/job_mix_task.rs::_start
+fixtures/src/kernel_test_subject.rs::_start
 fixtures/src/least_authority_demo_builder.rs::_start
 fixtures/src/login_test_client.rs::EMPTY_SCHEDULE
 fixtures/src/login_test_client.rs::FREE_TERMINAL
@@ -4892,7 +4893,6 @@ fixtures/src/network_time_test_server.rs::_start
 fixtures/src/noteless.rs::_start
 fixtures/src/notification_binder.rs::_start
 fixtures/src/os_primitives_benchmarker.rs::_start
-fixtures/src/outlaw.rs::_start
 fixtures/src/page_frame_consumer.rs::_start
 fixtures/src/page_frame_producer.rs::_start
 fixtures/src/painter.rs::_start
@@ -5670,9 +5670,6 @@ kernel/src/user/entropy_service.rs::wait_for_ready
 kernel/src/user/entry.rs::DELEGATED_TEST_INTERRUPT
 kernel/src/user/entry.rs::DELEGATED_TEST_INTERRUPT
 kernel/src/user/entry.rs::Mapping
-kernel/src/user/entry.rs::OUTLAW_BUILD_WITH_NOTHING
-kernel/src/user/entry.rs::OUTLAW_READ_KERNEL
-kernel/src/user/entry.rs::OUTLAW_ROUND_TRIP
 kernel/src/user/entry.rs::Spawn
 kernel/src/user/entry.rs::run
 kernel/src/user/entry.rs::run_with_own_space

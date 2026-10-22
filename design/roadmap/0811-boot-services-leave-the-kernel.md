@@ -54,7 +54,7 @@ architecture.
 | `x86_userspace_demo` | `lib.rs:943`; the demo is in `user/boot_demos.rs` | two hand-assembled children | `x86_64`, every boot |
 | tour: `console_service::start` | `lib.rs:2134` | `console` | aarch64 |
 | tour: `virtio_service::start`, `start_pci` | `lib.rs:2207`, `lib.rs:2244` | the virtio and PCIe block demos | aarch64 |
-| tour: `outlaw` | `lib.rs:2267`, `lib.rs:1328` | `outlaw` | aarch64, riscv64 |
+| tour: `kernel_test_subject` | `lib.rs:2267`, `lib.rs:1328` | `kernel_test_subject` | aarch64, riscv64 |
 | tour: `memory_region_service::start` | `lib.rs:2304` | `memory_region_depleter` | aarch64 |
 | tour: `riscv_least_authority_demo`, `riscv_uart_driver_demo` | `lib.rs:1419`, `lib.rs:1520` | demo programs | riscv64 |
 | tour: `entropy_service::ensure` (MMIO, JH7110) | `lib.rs:1665`, `lib.rs:1721` | `entropy`, `jh7110_entropy` | riscv64 |

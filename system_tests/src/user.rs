@@ -1351,10 +1351,10 @@ mod eighth_pass_delegation_race_tests;
 mod eighth_pass_elf_attack_tests;
 
 /// **A user program cannot read the kernel through its other addresses either** (an eighth
-/// outsider pass at the confinement claim, claim 21). The outlaw is aimed at kernel text and at
-/// the direct-map alias of a page the cited test already proves unreadable at its link-time
-/// address, on every ISA the suite boots, each fault asserted to be a read at the exact address
-/// handed in.
+/// outsider pass at the confinement claim, claim 21). The `kernel_test_subject` is aimed at kernel
+/// text and at the direct-map alias of a page the cited test already proves unreadable at its
+/// link-time address, on every ISA the suite boots, each fault asserted to be a read at the exact
+/// address handed in.
 ///
 /// Cross-ISA by construction: the claim is (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
@@ -1372,10 +1372,11 @@ mod eighth_pass_port_boundary_tests;
 /// (an eighth outsider pass at the confinement claim, claims 23, 31 and 32). A real spawned
 /// program granted the unvouched shape (one endpoint, two read-only pages) has its whole table
 /// read back slot for slot: exactly those three, and no device capability of any kind. The
-/// outlaw's `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt from inside,
-/// through the real `SYS_INVOKE`.
+/// `kernel_test_subject`'s `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt
+/// from inside, through the real `SYS_INVOKE`.
 ///
-/// Cross-ISA: the spawn path, the census and the outlaw are portable (DECISIONS §19).
+/// Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS
+/// §19).
 #[cfg(all(test, initial_ramdisk))]
 mod eighth_pass_spawn_audit_tests;
 
@@ -1453,10 +1454,11 @@ mod ninth_pass_revocation_tests;
 mod ninth_pass_elf_tests;
 
 /// **A user program cannot read kernel code** (a ninth outsider pass at the confinement claim,
-/// claim 21). Where `el0_boundary_tests` reads a kernel rodata sentinel, this aims the `outlaw` at
-/// the address of a kernel function and asserts the same permission fault on the read.
+/// claim 21). Where `el0_boundary_tests` reads a kernel rodata sentinel, this aims the
+/// `kernel_test_subject` at the address of a kernel function and asserts the same permission fault
+/// on the read.
 ///
-/// Cross-ISA: every target with an initial ramdisk packs the `outlaw` (DECISIONS §19).
+/// Cross-ISA: every target with an initial ramdisk packs the `kernel_test_subject` (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
 mod ninth_pass_el0_tests;
 
