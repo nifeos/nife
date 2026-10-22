@@ -193,10 +193,13 @@ bench evening that was not an assertion written against QEMU.
 
 ## Follow-on
 
-- **Outstanding.** The failure itself is unresolved and is gated on xenon: run the x86_64 suite at
-  `NIFE_SMP=4` on that machine. If the assertion fires, its message now names which of the three
-  readings is true. If it does not fire, the frequency of the original is itself worth recording,
-  because a one-in-many failure in supervision is not a lesser finding than a deterministic one.
+- **Outstanding.** The failure itself is unresolved and is gated on xenon. If the assertion fires,
+  its message now names which of the three readings is true. If it does not fire, the frequency of
+  the original is itself worth recording, because a one-in-many failure in supervision is not a
+  lesser finding than a deterministic one. On 2026-10-21 (UTC) xenon ran the kernel suite (138
+  passed) and `survey_tests` on four real cores, and the test passed once
+  (`bench/xenon-2026-10-21/README-321.md`). One clean run in one says nothing about a frequency.
+  Each further run costs a boot, since the harness cannot repeat a test within one.
 - **Milestone 315.** `kernel::user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write`
   also fails at `NIFE_SMP=4`, and this lane spent a while treating that as its own find before
   reading the runner it had been editing. `helpers/qemu-runner-x86_64.sh`'s own header already names
