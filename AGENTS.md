@@ -251,8 +251,9 @@ holds the rule and its stages.
   Narrative and worked examples go in the doc comment or the note.
 - "The caller must..." becomes an assertion or a type where one fits.
 - History goes in the commit message. Do not write comments that restate the next line.
-- A `Name:` provenance block stays as [design/naming.md](design/naming.md) shapes it, refusals and
-  dates included (calef, 2026-10-22 UTC).
+- A `Name:` provenance block stays where it is, as [design/naming.md](design/naming.md) ("Where a
+  name's provenance lives") shapes it, refusals and dates included. It is neither history nor
+  narrative (calef, 2026-10-22 UTC).
 
 ## Style
 

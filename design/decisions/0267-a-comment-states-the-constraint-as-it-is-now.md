@@ -71,7 +71,8 @@ stay as they are. The newcomer test is met by the note a doc comment links to.
 A name's provenance comment stays (calef, 2026-10-22 03:35 UTC: *"Approved assuming naming
 provenance comments remain."*). The `Name:` block, with its dates, rulings and refusals, is where
 [design/naming.md](../naming.md) ("Where a name's provenance lives") keeps a name's record. It is
-not history for the commit message, and the paydown leaves it in place.
+neither history for the commit message nor narrative for a note, and the paydown leaves it in
+place.
 
 New code meets the rule everywhere now. The existing comments are paid down in stages, ordered by
 effort and the merge queue rather than by exemption: `kernel/`; then `crates/` and `components/`;
