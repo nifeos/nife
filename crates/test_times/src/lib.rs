@@ -54,7 +54,9 @@ use core::fmt;
 pub const HEADING: &str = "time per test, in milliseconds:";
 
 /// What opens a repeated run's transcript (`NIFE_TEST_REPEAT`), followed by the count and
-/// ` times`. `xtask` reads it to know the record holds a sum over runs. Name provisional.
+/// ` times`. `xtask` reads it to know the record holds a sum over runs.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-repeat-count.
 pub const REPEAT_ANNOUNCEMENT: &str = "repeat: each selected test runs";
 
 /// What every record line starts with, its trailing space included so a match is on a boundary.

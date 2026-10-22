@@ -223,7 +223,7 @@ bench evening that was not an assertion written against QEMU.
   One boot measures it: `cargo xtask uefi-test --test
   a_dead_child_is_still_in_the_domain_until_it_is_reaped --repeat 200 --stage-only` stages a
   stick image that runs the test 200 times and stops at the first failure, naming its run
-  (`notes/scripts.md`, "Repeating it").
+  (`notes/scripts/one-kernel-test.md`, "Repeating it").
 - **Milestone 315.** `kernel::user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write`
   also fails at `NIFE_SMP=4`, and this lane spent a while treating that as its own find before
   reading the runner it had been editing. `helpers/qemu-runner-x86_64.sh`'s own header already names

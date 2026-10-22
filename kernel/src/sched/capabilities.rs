@@ -345,7 +345,7 @@ pub fn grant(capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
 /// and at a few dozen repeats [`grant`] refuses with `NoFreeSlot` in an iteration that did nothing
 /// wrong, so the runner prints this every iteration and refuses before the table is full.
 ///
-/// Name: provisional.
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-repeat-count.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn current_capability_slots() -> (usize, usize) {
     current_capabilities().map_or((0, 0), |t| (t.used(), t.len()))
