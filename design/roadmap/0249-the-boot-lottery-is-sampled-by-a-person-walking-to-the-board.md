@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-09-03
+built: 2026-10-22
 milestone_dependencies: 592
 decision_dependencies: none
 machine_requirements: none
@@ -252,8 +253,8 @@ notes/board-reboot.md.
   This refusal is milestone 477 (design/roadmap/0477-a-power-cycled-boot-series.md), which carries it
   with the condition that would change it.
 - **Done.** The tally's clean-core definition is `serial_console::lottery`'s. Over 129 draws the
-  rate follows it without an overlap between classes (above), so the reader holds on this board.
-  A second board is what would test the definition itself.
+  rate follows it with no overlap between classes (above). A second board would test the
+  definition itself.
 
 ## BUGS
 

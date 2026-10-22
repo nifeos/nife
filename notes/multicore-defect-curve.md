@@ -86,7 +86,8 @@ recorded with workload `soak-test (not crossing)` and excluded from the curve.
 ### The rows
 
 Every exposure row so far is radon's, so the table is in
-[`multicore-defect-curve/radon-rows.md`](multicore-defect-curve/radon-rows.md), beside the notes on
+[`multicore-defect-curve/radon-rows.md`](multicore-defect-curve/radon-rows.md) and its dated
+continuations in that directory, beside the notes on
 what each bench evening's rows record. A first row from another machine starts its own appendix.
 
 radon's curve stands at about 12.11 million crossings over 109 crossing boots and about 29.7 hours,
