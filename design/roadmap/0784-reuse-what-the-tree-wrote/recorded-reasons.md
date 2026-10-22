@@ -7,7 +7,7 @@ landed wording.
 
 - `calendar`: Reuse: write. Proved (11 Kani over every day in range); the §46 worked example, and
   `time` and `chrono` cannot be restructured for CBMC. The proof argument has not changed.
-- `elf`: Reuse: write. Kernel, and proved (8 Kani); `xmas-elf` shows the bug class (RUSTSEC-2025-0018).
+- `elf`: Reuse: write. Kernel, and proved (8 Kani); `xmas-elf` shows the bug class (RUSTSEC-2025-0018). `goblin`, cole14's `elf` and `object` measured and refused (calef, 2026-10-22 UTC).
 - `device_tree_blob`: Reuse: write. Kernel, proved (4 Kani); `fdt` is MPL-2.0.
 - `globally_unique_identifier_partition_table`: Reuse: write. Proved (8 Kani, CRC restructured for
   CBMC per §46), which a dependency would lose; installer and loader must agree

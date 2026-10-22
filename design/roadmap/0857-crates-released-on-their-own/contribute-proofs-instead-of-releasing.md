@@ -31,6 +31,10 @@ upstream instead of releasing its own? The `elf` name on crates.io is theirs.
   or whole subsystems)'s kernel exemption keeps it, and its 8 harnesses prove the loader's front
   half panic-free on hostile input. 784 records `goblin` and `xmas-elf` as losing to our proved
   `elf`, and gives no other reason against `goblin`.
+- Measured: 784's [`elf` against three readers](../0784-reuse-what-the-tree-wrote/elf-against-three-readers.md)
+  weighs `goblin`, cole14's `elf` and `object` on fit, hostile input, proofs, cost and upkeep.
+  calef ruled to keep ours (2026-10-22 UTC). Of the two, `object` is the better upstream to
+  contribute to.
 
 ## For both
 
