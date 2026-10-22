@@ -48,10 +48,6 @@
 //! - **Every wait is a bounded poll of the event ring through bring-up**, the interrupt is used
 //!   only afterwards. The bounds are a second per command and per transfer, and half a second per
 //!   port reset, chosen from the specification's own limits rather than measured on xenon.
-//! - **A device plugged in after boot is not debounced.** It is reset as soon as its connect
-//!   change is seen, where Linux first waits for its connection to hold 100 ms
-//!   ([`port::Settle`]'s numbers). On xenon a keyboard attached this way types; a device whose
-//!   connection bounces may be refused, silently.
 //! - **Events that arrive while a command is waited for are dropped** unless they are port
 //!   changes, which are remembered. A key pressed during a stall recovery is lost.
 //!
@@ -681,13 +677,33 @@ impl Host {
     /// answer: a device that arrives later is attached from its connect change, in
     /// [`Host::service_ports`].
     fn settle_ports(&self) -> bool {
-        let mut settle = port::Settle::new(monotonic_nanos() / MS, self.connections());
+        self.hold_still(&|h: &Host| h.connections())
+    }
+
+    /// **Debounce one port** whose connect change just arrived, as Linux's hub driver does before
+    /// it resets a new device: `true` when its connection held for [`port::DEBOUNCE_STABLE_MS`]
+    /// and it is still connected. A bouncing plug is reset once it stops bouncing, not mid-bounce.
+    fn debounce(&self, n: u8) -> bool {
+        let only = |h: &Host| {
+            let mut bits = [0u32; 8];
+            if h.reg(h.capabilities.portsc(n)) & port::CONNECTED != 0 {
+                bits[usize::from(n / 32)] = 1 << (n % 32);
+            }
+            bits
+        };
+        self.hold_still(&only) && self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0
+    }
+
+    /// Read `read` every [`port::DEBOUNCE_STEP_MS`] until [`port::Settle`] says it held still
+    /// (`true`) or gave up (`false`).
+    fn hold_still(&self, read: &dyn Fn(&Host) -> port::Connections) -> bool {
+        let mut settle = port::Settle::new(monotonic_nanos() / MS, read(self));
         loop {
             let end = deadline(port::DEBOUNCE_STEP_MS);
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.observe(monotonic_nanos() / MS, self.connections()) {
+            if let Some(settled) = settle.observe(monotonic_nanos() / MS, read(self)) {
                 return settled;
             }
         }
@@ -741,6 +757,9 @@ impl Host {
                     self.found = None;
                 }
                 None if sc & port::CONNECTED != 0 && changed & port::CONNECT_CHANGE != 0 => {
+                    if !self.debounce(n) {
+                        continue;
+                    }
                     if let Ok(k) = self.attach(n) {
                         self.keyboard = Some(k);
                     }

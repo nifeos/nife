@@ -89,7 +89,8 @@ changed for 100 ms (USB 2.0's `TATTDB`), reading every 25 ms and giving up after
 Linux's hub debounce numbers, and no machine's timing is in them
 (`extensible_host_controller_interface::port::Settle`). A scan that gave up says so in the boot
 line instead of printing a count. The scan only names the keyboard early: a device that shows up
-later arrives as a connect change and is attached then.
+later arrives as a connect change, and its port is debounced the same way before the driver
+resets it.
 
 To see what the ports read on a machine, build with `--features xhci_port_probe`
 (`cargo xtask uefi-image --features xhci_port_probe` on x86_64). The kernel prints every root

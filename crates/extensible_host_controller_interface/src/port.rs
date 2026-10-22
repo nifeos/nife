@@ -102,7 +102,7 @@ pub const fn speed_name(speed: u8) -> &'static str {
 ///
 /// The three numbers are Linux's (`drivers/usb/core/hub.c`), and none was measured on a machine.
 /// Nothing here is the last word on what is plugged in: a device that shows up later reaches the
-/// driver as a connect change.
+/// driver as a connect change, and that one port is debounced the same way before it is reset.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -283,6 +283,17 @@ mod tests {
         assert_eq!(settled, Some(true));
         assert_eq!(seen, ports(&[1, 4, 9]));
         assert_eq!(t, 125);
+    }
+
+    /// **A plug that bounces as it goes in**: connected, gone 30 ms later, back 30 ms after that.
+    /// The port is believed only once the last bounce has held for the stable interval, so the
+    /// driver resets the device after the bounce, not during it.
+    #[test]
+    fn a_bouncing_connect_is_believed_after_its_last_bounce_holds() {
+        let (t, settled, seen) = settle(&[(0, &[3]), (30, &[]), (60, &[3])]);
+        assert_eq!(settled, Some(true));
+        assert_eq!(seen, ports(&[3]));
+        assert_eq!(t, 175);
     }
 
     /// QEMU reports a connection the moment the controller runs: nothing changes, and the scan
