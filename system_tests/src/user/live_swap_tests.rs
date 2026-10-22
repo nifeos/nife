@@ -24,7 +24,7 @@ const RPT_DEPENDENTS: u64 = 15;
 const RPT_DEPUTY: u64 = 16;
 const RPT_FAILED: u64 = 99;
 
-/// `component_plan::Refusal::Unprovided`'s wire code: the supervisor routes nothing to a role the
+/// `capability_plan::Refusal::Unprovided`'s wire code: the supervisor routes nothing to a role the
 /// component's manifest declares. Mirrored here for the same reason every other constant in this
 /// block is: userspace owns the definition.
 const REFUSAL_UNPROVIDED: u64 = 1;
@@ -305,7 +305,7 @@ fn had_step(msgs: &[[u64; 5]], step: u64) -> bool {
 }
 
 /// **A component this operator cannot provide for is refused before anything is built**
-/// (milestone 23's component manifest; `crates/component_plan`, notes/component-manifest.md).
+/// (milestone 23's component manifest; `crates/capability_plan`, notes/component-manifest.md).
 ///
 /// Asserted on both channels, because a mechanism that only worked for the one component it was
 /// written against would not be a mechanism. On the direct channel the operator plans the queue
@@ -343,10 +343,11 @@ fn a_component_the_operator_cannot_provide_for_was_refused_first(msgs: &[[u64; 5
 }
 
 /// **The dependency graph a supervisor would compute agrees with what this channel actually ran**
-/// (milestone 23's dependency-aware-orchestration residual; `crates/component_plan`'s `dependents`).
+/// (milestone 23's dependency-aware-orchestration residual; `crates/capability_plan`'s
+/// `dependents`).
 ///
 /// `swapper` reports one `RPT_DEPENDENTS` per swap target it considers: `w1` = how many live
-/// instances `component_plan::dependents` returned, `w2` = the first one's id (0 if none). This is
+/// instances `capability_plan::dependents` returned, `w2` = the first one's id (0 if none). This is
 /// not a report about what the operator *did*; it is the graph's own verdict, computed from
 /// `Requirements::depends_on` before any orchestration step runs, so a mismatch here would mean the
 /// graph and the hand-written sequencing had drifted apart.

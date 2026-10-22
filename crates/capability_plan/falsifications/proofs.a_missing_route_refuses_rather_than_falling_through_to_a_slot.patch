@@ -1,4 +1,4 @@
-Falsifies `component_plan::proofs::a_missing_route_refuses_rather_than_falling_through_to_a_slot`.
+Falsifies `capability_plan::proofs::a_missing_route_refuses_rather_than_falling_through_to_a_slot`.
 
 The defect is the one the harness's doc names: a role the supervisor routes nothing to falls
 through to slot 0, `unwrap_or(0)` in place of the `let ... else { return Err }`. Slot 0 is the
@@ -7,10 +7,10 @@ supervisor's construction budget in every program in this tree, so the child is 
 Expected to fail: the harness's `assert!(n0 == "a" && n1 == "b")`: `plan` returned `Ok` for a shape where one
 role was never routed.
 
-diff --git a/crates/component_plan/src/lib.rs b/crates/component_plan/src/lib.rs
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
 index 53c4931a2..ab7436b90 100644
---- a/crates/component_plan/src/lib.rs
-+++ b/crates/component_plan/src/lib.rs
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
 @@ -707,5 +707,3 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
      for (i, need) in reqs.caps.iter().enumerate() {
 -        let Some(slot) = provisions.slot_for(need.role) else {

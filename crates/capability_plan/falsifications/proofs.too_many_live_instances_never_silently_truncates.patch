@@ -1,14 +1,14 @@
-Falsifies `component_plan::proofs::too_many_live_instances_never_silently_truncates`.
+Falsifies `capability_plan::proofs::too_many_live_instances_never_silently_truncates`.
 
 The defect: `dependents` clamps the registry to `MAX_LIVE` instead of refusing it. The answer is
 then a quiet prefix, and a supervisor that swaps a service out sees fewer dependents than exist.
 
 Expected to fail: the harness's `assert!(matches!(dependents(..), Err(TooManyLive { .. })))`: the call returns `Ok`.
 
-diff --git a/crates/component_plan/src/lib.rs b/crates/component_plan/src/lib.rs
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
 index 53c4931a2..4c2325e38 100644
---- a/crates/component_plan/src/lib.rs
-+++ b/crates/component_plan/src/lib.rs
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
 @@ -925,5 +925,3 @@ pub fn dependents(
  ) -> Result<Dependents, OrchestrationRefusal> {
 -    if live.len() > MAX_LIVE {

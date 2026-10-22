@@ -11,7 +11,7 @@ hung component cannot be asked to serialize anything. So a state handoff protoco
 when the outgoing instance cooperates recovers a planned swap and not a failure, which is the case
 it is most wanted for. Erlang/OTP's `code_change` has the same shape and the same hole.
 
-Dependency-aware orchestration is built (`component_plan::depends_on` and `dependents`,
+Dependency-aware orchestration is built (`capability_plan::depends_on` and `dependents`,
 notes/dependency-orchestration.md). The quiescence
 protocol orchestration needs is telling a dependent to degrade before its dependency is swapped.
 That is precisely the step a hang makes unavailable. So a dependency-aware supervisor still needs a

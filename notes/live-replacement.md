@@ -243,10 +243,10 @@ which is the control this whole milestone rests on and which the test asserts on
   from a declaration, and the slot agreement is a compile-time derivation. See
   notes/component-manifest.md, including the honest limit: a manifest is compiled in rather than
   shipped beside a binary, which is a wire format and so a decision left to the architect.
-- **Dependency-aware orchestration**: `component_plan::depends_on` names which contracts a component
-  cannot silently tolerate the absence of, and `dependents` answers who must be warned before a
-  given contract is swapped. `queued()`'s `BOP_DOWN`/`BOP_UP` are driven by that answer rather than
-  sent unconditionally. Direct dependents only; see notes/dependency-orchestration.md.
+- **Dependency-aware orchestration**: `capability_plan::depends_on` names which contracts a
+  component cannot silently tolerate the absence of, and `dependents` answers who must be warned
+  before a given contract is swapped. `queued()`'s `BOP_DOWN`/`BOP_UP` are driven by that answer
+  rather than sent unconditionally. Direct dependents only; see notes/dependency-orchestration.md.
 - **A hung component**: `swapper`'s `ROLE_HUNG` runs the swap against an incumbent that stops
   answering, and notices because its bounded `OPERATION_QUIESCE` goes unanswered. It gets the
   service back with no authority the operator did not already hold, because the step that needed the

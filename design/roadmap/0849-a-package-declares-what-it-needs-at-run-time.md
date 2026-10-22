@@ -45,10 +45,11 @@ What a program needs at run time is declared, but per program and in code, never
   slot (`:3550`, `:3559`) and says so.
 - The log service has no client side at all yet. `:1728` records that nothing registers a log writer,
   so there is no manifest field for it either.
-- `component_plan::Requirements` (`crates/component_plan/src/lib.rs:355`) is the closest thing to a
-  provider declaration in the tree: a `contract`, capabilities tagged `Serve` or `Use` (`:216`), and
-  `depends_on` (`:396`) naming contracts. Only milestone 23 (a capability-routed component OS with live replacement)'s swappable components use it. The boot's
-  own services are built from literals in `system_initializer`.
+- `capability_plan::Requirements` (`crates/capability_plan/src/lib.rs:355`) is the closest thing to
+  a provider declaration in the tree: a `contract`, capabilities tagged `Serve` or `Use` (`:216`),
+  and `depends_on` (`:396`) naming contracts. Only milestone 23 (a capability-routed component OS
+  with live replacement)'s swappable components use it. The boot's own services are built from
+  literals in `system_initializer`.
 
 Nothing joins these. No gate knows that `uuid` (in `core-tools`) declares `entropy`, that the
 `entropy` package provides it, or that an image without the second still ships the first.
@@ -283,7 +284,7 @@ Every fork is ruled. Names still provisional: `level`, `contracts`, `runners`, `
 ## BUGS
 
 - Needs between boot services, such as `system_log`'s `WRITE` on the console, stay literals in
-  `system_initializer`. Only `component_plan` components declare those.
+  `system_initializer`. Only `capability_plan` components declare those.
 - A contract names a kind of service, not an instance. Two file servers would both provide
   `filesystem`, and the progenitor still chooses.
 - Prior art marked "recalled" was not reread for this file.
