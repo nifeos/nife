@@ -49,9 +49,9 @@
 <path class="seg s0" d="M542.8,324.0 V83.3 Q542.8,79.3 546.8,79.3 H577.4 Q581.4,79.3 581.4,83.3 V324.0 Z"><title>2026W42, merged that week: 368</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="74.3" font-size="10" text-anchor="middle">368</text>
-<path class="seg s0" d="M601.4,324.0 V246.9 Q601.4,242.9 605.4,242.9 H636.0 Q640.0,242.9 640.0,246.9 V324.0 Z"><title>2026W43, merged that week: 122</title></path>
+<path class="seg s0" d="M601.4,324.0 V226.9 Q601.4,222.9 605.4,222.9 H636.0 Q640.0,222.9 640.0,226.9 V324.0 Z"><title>2026W43, merged that week: 152</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="620.7" y="237.9" font-size="10" text-anchor="middle">122</text>
+<text class="fg val" x="620.7" y="217.9" font-size="10" text-anchor="middle">152</text>
 <line class="tr" x1="93.3" y1="277.1" x2="151.9" y2="270.6" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="151.9" y1="270.6" x2="210.5" y2="262.3" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="210.5" y1="262.3" x2="269.1" y2="264.4" stroke-width="2" stroke-dasharray="4 3"/>
@@ -60,7 +60,7 @@
 <line class="tr" x1="386.3" y1="234.4" x2="444.9" y2="220.5" stroke-width="2"/>
 <line class="tr" x1="444.9" y1="220.5" x2="503.5" y2="200.8" stroke-width="2"/>
 <line class="tr" x1="503.5" y1="200.8" x2="562.1" y2="184.1" stroke-width="2"/>
-<line class="tr" x1="562.1" y1="184.1" x2="620.7" y2="183.3" stroke-width="2"/>
+<line class="tr" x1="562.1" y1="184.1" x2="620.7" y2="181.3" stroke-width="2"/>
 <circle class="trd" cx="93.3" cy="277.1" r="3"><title>2026W34, trailing mean, fewer than 10 weeks: 70.5</title></circle>
 <circle class="trd" cx="151.9" cy="270.6" r="3"><title>2026W35, trailing mean, fewer than 10 weeks: 80.3</title></circle>
 <circle class="trd" cx="210.5" cy="262.3" r="3"><title>2026W36, trailing mean, fewer than 10 weeks: 92.8</title></circle>
@@ -70,7 +70,7 @@
 <circle class="trd" cx="444.9" cy="220.5" r="3"><title>2026W40, trailing 10-week mean: 155.6</title></circle>
 <circle class="trd" cx="503.5" cy="200.8" r="3"><title>2026W41, trailing 10-week mean: 185.2</title></circle>
 <circle class="trd" cx="562.1" cy="184.1" r="3"><title>2026W42, trailing 10-week mean: 210.4</title></circle>
-<circle class="trd" cx="620.7" cy="183.3" r="3"><title>2026W43, trailing 10-week mean: 211.6</title></circle>
+<circle class="trd" cx="620.7" cy="181.3" r="3"><title>2026W43, trailing 10-week mean: 214.6</title></circle>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 10-week mean</tspan></text>
 <line class="tr" x1="672" y1="88" x2="683" y2="88" stroke-width="2" stroke-dasharray="4 3"/>
