@@ -15,8 +15,12 @@
 //! | FATs | 2, because every tool writes two and a firmware that reads the second finds it |
 //! | Cluster 2 | the root directory: a volume label and `EFI` |
 //! | Cluster 3 | `EFI`: the dot entries and `BOOT` |
-//! | Cluster 4 | `BOOT`: the dot entries and the boot file |
+//! | Cluster 4 | `BOOT`: the dot entries and the boot file, with its long-name run if it has one |
 //! | Cluster 5 onward | the boot file's data, contiguous |
+//!
+//! **A file name that is not 8.3 gets VFAT long-name entries** ahead of a `~1` short alias, so
+//! `BOOTRISCV64.EFI` is written as itself (see `long_name.rs`). A name that is 8.3 is written as a
+//! short entry alone, the form every FAT driver reads.
 //!
 //! **The cluster count is load-bearing**: Microsoft's specification types a volume by its data
 //! clusters, so under 65525 it *is* FAT16 whatever the boot sector says, and a volume below
@@ -24,12 +28,13 @@
 //!
 //! # BUGS
 //!
-//! - The file name must be 8.3 and upper case (no long-name entries), so `BOOTRISCV64.EFI` cannot
-//!   be written (`design/roadmap/0560-a-long-file-name-or-riscv64-cannot-be-installed.md`).
+//! - The short alias of a long name is always `~1`, which is right only because the volume holds
+//!   one file. A crate that writes a second file has to number aliases against the directory.
 //! - Every timestamp is zero: a `mkfs` with no clock capability writes 1970 rather than inventing one.
 //! - The `FSInfo` free-cluster count is written once, which the specification lets a driver tolerate.
 //! - Nothing here reads back what it writes. Other drivers prove it: OVMF in
-//!   `cargo xtask install-boot`, and the host's in `tests/a_third_party_driver_reads_it.rs`.
+//!   `cargo xtask install-boot`, EDK2 riscv64 reading a long name in `cargo xtask stick-boot`, and
+//!   the host's in `tests/a_third_party_driver_reads_it.rs`.
 //! - Not crash-atomic and no journal, which is FAT.
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): FAT spelled out as the tree's acronym rule asks;
@@ -40,6 +45,10 @@
 /// FAT32 permits 512, 1024, 2048 and 4096; this crate writes 512, which is what every disk this
 /// project has met reports and what `globally_unique_identifier_partition_table` counts in.
 pub const SECTOR: usize = 512;
+
+mod long_name;
+
+use long_name::LongName;
 
 /// Sectors per cluster, so 4096-byte clusters.
 ///
@@ -102,9 +111,14 @@ pub enum Error {
     NotFat32,
     /// The partition is larger than FAT32 addresses.
     TooLarge,
-    /// The file name is not 8.3, or is not upper case, or carries a character the short-name form
-    /// does not admit. See this crate's `BUGS`.
-    NameNotShort,
+    /// The file name is neither an 8.3 short name nor a long name a VFAT entry may carry: empty,
+    /// over 255 units, outside the Basic Multilingual Plane, holding a control character or one of
+    /// `" * / : < > ? \ |`, or ending in a space or a period.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by
+    /// milestone/560-a-long-file-name-or-riscv64-cannot-be-installed, for the refusal a short name
+    /// alone used to be. calef has not named it.
+    NameRefused,
     /// The file does not fit in the clusters the volume has left after its directories.
     FileTooBig,
 }
@@ -140,6 +154,8 @@ pub struct Volume {
     file_clusters: u32,
     volume_id: u32,
     name: [u8; 11],
+    /// The long name written ahead of `name`, which is then its alias; `None` for an 8.3 name.
+    long_name: Option<LongName>,
 }
 
 impl Volume {
@@ -163,7 +179,13 @@ impl Volume {
         if total_sectors > u32::MAX as u64 || hidden_sectors > u32::MAX as u64 {
             return Err(Error::TooLarge);
         }
-        let name = short_name(file_name)?;
+        let (name, long_name) = match short_name(file_name) {
+            Some(name) => (name, None),
+            None => {
+                let long = LongName::new(file_name).ok_or(Error::NameRefused)?;
+                (long.alias().ok_or(Error::NameRefused)?, Some(long))
+            }
+        };
         let total_sectors = total_sectors as u32;
 
         // Microsoft's own sizing arithmetic (`fatgen103`, "Determining FAT type"), which over-sizes
@@ -215,6 +237,7 @@ impl Volume {
             file_clusters,
             volume_id,
             name,
+            long_name,
         })
     }
 
@@ -292,9 +315,13 @@ impl Volume {
             }
             i if i == self.cluster_sector(ROOT_CLUSTER) => self.root_cluster(out),
             i if i == self.cluster_sector(EFI_CLUSTER) => self.efi_cluster(out),
-            i if i == self.cluster_sector(BOOT_CLUSTER) => self.boot_dir_cluster(out),
-            // Reserved sectors with nothing in them, and the second and later sectors of each
-            // directory cluster: zero, which is what `out.fill(0)` above already made them.
+            i if (self.cluster_sector(BOOT_CLUSTER)..self.cluster_sector(FILE_CLUSTER))
+                .contains(&i) =>
+            {
+                self.boot_dir_sector(i - self.cluster_sector(BOOT_CLUSTER), out)
+            }
+            // Reserved sectors with nothing in them, and the second and later sectors of the root
+            // and `EFI`: zero, which is what `out.fill(0)` above already made them.
             _ => {}
         }
         true
@@ -393,18 +420,37 @@ impl Volume {
         dir_entry(out, 2, b"BOOT       ", ATTR_DIRECTORY, BOOT_CLUSTER, 0);
     }
 
-    /// `EFI\BOOT`: the dot entries, then the boot file itself.
-    fn boot_dir_cluster(&self, out: &mut [u8]) {
-        dir_entry(out, 0, b".          ", ATTR_DIRECTORY, BOOT_CLUSTER, 0);
-        dir_entry(out, 1, b"..         ", ATTR_DIRECTORY, EFI_CLUSTER, 0);
-        dir_entry(
-            out,
-            2,
-            &self.name,
-            ATTR_ARCHIVE,
-            FILE_CLUSTER,
-            self.file_len,
-        );
+    /// Sector `within` of `EFI\BOOT`: the dot entries, the long-name run if the file has one,
+    /// then the file's short entry.
+    ///
+    /// A 255-unit name is twenty long-name entries, so with the dot entries and the short entry
+    /// the directory is 23 slots and reaches into its second sector. Every slot past those is
+    /// zero, which a driver reads as the end of the directory.
+    fn boot_dir_sector(&self, within: u64, out: &mut [u8]) {
+        let per_sector = SECTOR / DIR_ENTRY;
+        let first = within as usize * per_sector;
+        let run = self.long_name.map_or(0, |n| n.entries());
+        for at in 0..per_sector {
+            match first + at {
+                0 => dir_entry(out, at, b".          ", ATTR_DIRECTORY, BOOT_CLUSTER, 0),
+                1 => dir_entry(out, at, b"..         ", ATTR_DIRECTORY, EFI_CLUSTER, 0),
+                slot if slot < 2 + run => {
+                    if let Some(long) = &self.long_name {
+                        let entry = &mut out[at * DIR_ENTRY..(at + 1) * DIR_ENTRY];
+                        long.entry(slot - 2, long_name::checksum(&self.name), entry);
+                    }
+                }
+                slot if slot == 2 + run => dir_entry(
+                    out,
+                    at,
+                    &self.name,
+                    ATTR_ARCHIVE,
+                    FILE_CLUSTER,
+                    self.file_len,
+                ),
+                _ => {}
+            }
+        }
     }
 }
 
@@ -420,13 +466,12 @@ fn dir_entry(out: &mut [u8], slot: usize, name: &[u8; 11], attr: u8, cluster: u3
     put32(out, at + 28, size); // DIR_FileSize, zero for a directory
 }
 
-/// Turn `name` into the eleven-byte short form, or refuse it.
+/// **Turn `name` into the eleven-byte short form**, or `None` when it needs a long name.
 ///
-/// Deliberately strict: upper-case letters, digits and a small set of punctuation, at most eight
-/// characters before the dot and three after. Anything a long-name entry would be needed for is a
-/// refusal rather than a mangled name, because a mangled name is a file the firmware will not find
-/// and nothing will say why.
-fn short_name(name: &str) -> Result<[u8; 11], Error> {
+/// Strict: upper-case letters, digits and the short form's punctuation, at most eight before the
+/// dot and three after. Anything else, lower case included, goes to [`LongName`], so the name a
+/// driver shows is always the name asked for.
+fn short_name(name: &str) -> Option<[u8; 11]> {
     let bytes = name.as_bytes();
     let dot = bytes.iter().position(|b| *b == b'.');
     let (base, ext): (&[u8], &[u8]) = match dot {
@@ -434,17 +479,16 @@ fn short_name(name: &str) -> Result<[u8; 11], Error> {
         None => (bytes, b""),
     };
     if base.is_empty() || base.len() > 8 || ext.len() > 3 {
-        return Err(Error::NameNotShort);
+        return None;
     }
-    let ok =
-        |b: &u8| b.is_ascii_uppercase() || b.is_ascii_digit() || b"$%'-_@~`!(){}^#&".contains(b);
+    let ok = |b: &u8| *b != b' ' && long_name::is_short_byte(*b);
     if !base.iter().all(ok) || !ext.iter().all(ok) {
-        return Err(Error::NameNotShort);
+        return None;
     }
     let mut out = [b' '; 11];
     out[..base.len()].copy_from_slice(base);
     out[8..8 + ext.len()].copy_from_slice(ext);
-    Ok(out)
+    Some(out)
 }
 
 /// A little-endian `u16` at `at`.
@@ -672,14 +716,77 @@ mod tests {
     }
 
     #[test]
-    fn a_name_that_is_not_8_dot_3_is_refused_rather_than_mangled() {
-        assert_eq!(short_name("BOOTX64.EFI"), Ok(*b"BOOTX64 EFI"));
-        assert_eq!(short_name("BOOTAA64.EFI"), Ok(*b"BOOTAA64EFI"));
-        // The riscv64 removable-media name. See this crate's BUGS.
-        assert_eq!(short_name("BOOTRISCV64.EFI"), Err(Error::NameNotShort));
-        assert_eq!(short_name("bootx64.efi"), Err(Error::NameNotShort));
-        assert_eq!(short_name(""), Err(Error::NameNotShort));
-        assert_eq!(short_name("A.LONGEXT"), Err(Error::NameNotShort));
+    fn an_8_dot_3_name_is_short_and_anything_else_is_long() {
+        assert_eq!(short_name("BOOTX64.EFI"), Some(*b"BOOTX64 EFI"));
+        assert_eq!(short_name("BOOTAA64.EFI"), Some(*b"BOOTAA64EFI"));
+        for long in ["BOOTRISCV64.EFI", "bootx64.efi", "", "A.LONGEXT"] {
+            assert_eq!(short_name(long), None, "{long}");
+        }
+        assert_eq!(
+            Volume::new(ESP_SECTORS, 2048, 1024, 1, "a:b"),
+            Err(Error::NameRefused)
+        );
+        assert_eq!(
+            Volume::new(ESP_SECTORS, 2048, 1024, 1, ""),
+            Err(Error::NameRefused)
+        );
+    }
+
+    /// The slots of `EFI\BOOT`, as 32-byte entries read out of its first two sectors.
+    fn boot_dir_slots(v: &Volume) -> [[u8; DIR_ENTRY]; 2 * SECTOR / DIR_ENTRY] {
+        let first = v.cluster_sector(BOOT_CLUSTER);
+        let mut slots = [[0; DIR_ENTRY]; 2 * SECTOR / DIR_ENTRY];
+        let both = [sector(v, first), sector(v, first + 1)];
+        for (slot, chunk) in slots
+            .iter_mut()
+            .zip(both.iter().flat_map(|s| s.chunks_exact(DIR_ENTRY)))
+        {
+            slot.copy_from_slice(chunk);
+        }
+        slots
+    }
+
+    /// **The riscv64 removable-media name**: two long-name entries between the dot entries and
+    /// the `BOOTRI~1.EFI` short entry, each stamped with the checksum of that short entry's name
+    /// bytes as they sit on disk, which is the binding a driver checks.
+    #[test]
+    fn bootriscv64_efi_is_written_as_a_long_name_run_ahead_of_its_alias() {
+        let v = Volume::new(ESP_SECTORS, 2048, 9_000_000, 1, "BOOTRISCV64.EFI").expect("a volume");
+        let slots = boot_dir_slots(&v);
+        assert_eq!(&slots[0][..11], b".          ");
+        assert_eq!(&slots[1][..11], b"..         ");
+        assert_eq!([slots[2][0], slots[3][0]], [0x42, 0x01]);
+        let short = &slots[4];
+        assert_eq!(&short[..11], b"BOOTRI~1EFI");
+        assert_eq!(short[11], ATTR_ARCHIVE);
+        assert_eq!(
+            u32::from_le_bytes(short[28..32].try_into().unwrap()),
+            9_000_000
+        );
+        let sum = long_name::checksum(short[..11].try_into().unwrap());
+        for entry in &slots[2..4] {
+            assert_eq!(entry[11], long_name::ATTR_LONG_NAME);
+            assert_eq!(entry[13], sum);
+        }
+        assert_eq!(
+            slots[5], [0; DIR_ENTRY],
+            "the directory ends after the file"
+        );
+    }
+
+    /// A 255-unit name is twenty entries, so the directory crosses into its second sector and
+    /// the file's short entry is slot 22. Only the first two sectors hold anything.
+    #[test]
+    fn the_longest_name_reaches_the_boot_directorys_second_sector() {
+        let name = "n".repeat(251) + ".efi";
+        let v = Volume::new(ESP_SECTORS, 2048, 1024, 1, &name).expect("a volume");
+        let slots = boot_dir_slots(&v);
+        assert_eq!(slots[2][0], 0x40 | 20);
+        assert_eq!(slots[21][0], 1);
+        assert_eq!(&slots[22][..11], b"NNNNNN~1EFI");
+        assert_eq!(slots[23], [0; DIR_ENTRY]);
+        let third = v.cluster_sector(BOOT_CLUSTER) + 2;
+        assert_eq!(sector(&v, third), [0; SECTOR]);
     }
 
     #[test]
@@ -746,13 +853,21 @@ mod tests {
         assert_eq!(u32::from_le_bytes(out[60..64].try_into().unwrap()), 77);
     }
 
-    /// Each rule that makes a name not short refuses it alone, and the longest short name is kept.
+    /// Each rule that makes a name not short sends it to a long name alone, and the longest short
+    /// name is kept.
     #[test]
-    fn a_short_name_is_refused_for_each_reason_and_the_longest_is_kept() {
+    fn a_name_is_long_for_each_reason_and_the_longest_short_name_is_kept() {
         assert_eq!(short_name("ABCDEFGH.XYZ").unwrap(), *b"ABCDEFGHXYZ");
         assert_eq!(short_name("A").unwrap(), *b"A          ");
-        for bad in [".EFI", "ABCDEFGHI.EFI", "ABC.WXYZ", "abc.efi", "AB CD"] {
-            assert_eq!(short_name(bad), Err(Error::NameNotShort), "{bad}");
+        for long in [
+            ".EFI",
+            "ABCDEFGHI.EFI",
+            "ABC.WXYZ",
+            "abc.efi",
+            "AB CD",
+            "A+B",
+        ] {
+            assert_eq!(short_name(long), None, "{long}");
         }
     }
 }
