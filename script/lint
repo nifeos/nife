@@ -1164,10 +1164,11 @@ echo "==> roadmap status"
 # (riscv64 would refuse `xtask`, which needs std), `xtask` is a host tool, and redoxfs_server is its
 # own workspace.
 #
-# `serial_console` (milestone 216) is the second host-only member and joins `xtask` on the host
-# line. It opens a serial port and spawns `stty`, so it is `std` by nature and cannot document for
-# a bare-metal target any more than `xtask` can. Both are still documented, on the pass that suits
-# them; the exclusion is about the target, not about skipping them.
+# `serial_console` (milestone 216 (nothing in this tree can read a board)) is the second host-only
+# member and joins `xtask` on the host line. It opens a serial port and spawns `stty`, so it is
+# `std` by nature and cannot document for a bare-metal target any more than `xtask` can. Both are
+# still documented, on the pass that suits them; the exclusion is about the target, not about
+# skipping them.
 #
 # `stick_maker` (the stick program, 2026-09-19) is the third, and for the same reason: it is a
 # host program that runs `diskutil` and reads sysfs. This list is typed out where `script/drift`

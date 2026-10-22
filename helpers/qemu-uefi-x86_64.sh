@@ -135,9 +135,9 @@ fi
 # the PVH runner (notes/x86-uefi-boot.md's table was measured that way).
 # A QEMU monitor on a unix socket, when NIFE_SCREEN_MON names one (milestone 243). This is what
 # lets a GATE read a screen: `screendump` writes a PPM of the scanout and works with `-display none`
-# (the aarch64 runner has relied on that since milestone 29), and `serial_console::screen` turns
-# that PPM back into the text nife's framebuffer console drew into it. Without the variable QEMU
-# gets no monitor, exactly as before.
+# (the aarch64 runner has relied on that since milestone 29 (a display terminal)), and
+# `serial_console::screen` turns that PPM back into the text nife's framebuffer console drew into
+# it. Without the variable QEMU gets no monitor, exactly as before.
 #
 # **This machine has a display adapter whether or not anyone looks at it**, which is the fact the
 # whole milestone rests on: `-display none` suppresses the host WINDOW, not the emulated VGA device,

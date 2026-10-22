@@ -26,9 +26,9 @@ error[E0463]: can't find crate for `std`
   --> crates/serial_console/src/port.rs:54:5
 ```
 
-`crates/serial_console` arrived with milestone 216, opens a real serial port on the dev machine and
-spawns `stty`, so it is `std` by nature. Nothing added `--exclude board_console`, because nothing
-was watching a list.
+`crates/serial_console` arrived with milestone 216 (nothing in this tree can read a board), opens a
+real serial port on the dev machine and spawns `stty`, so it is `std` by nature. Nothing added
+`--exclude board_console`, because nothing was watching a list.
 
 ## Why it recurred, which is the only interesting part
 

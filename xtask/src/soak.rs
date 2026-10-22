@@ -28,13 +28,14 @@ use crate::{
 /// radon, by `notes/job-mix.md`'s procedure. What this proves is that the workload runs, that the
 /// sweep completes, and that the output is the shape the bench evening will read.
 ///
-/// **The judging is `serial_console`'s**, not this function's (milestone 324 part 2), which is the
-/// same move `soak_test` below already made and for the same reason: a second reader drifts from
-/// the bench-side one the first time either changes, and the cheapest way for two things to agree
-/// is for there to be one of them. What stood here instead was a loop over `starts_with("job-mix")`
-/// with no timeout at all, so a sweep that wedged mid-subrun hung this command forever and a
-/// finished sweep and a dead one shared an exit status. That is the limitation milestone 168's lane
-/// filed and milestone 324's part 2 names.
+/// **The judging is `serial_console`'s**, not this function's (milestone 324 (the bench console
+/// cannot speak to any of the three boards), part 2), which is the same move `soak_test` below
+/// already made and for the same reason: a second reader drifts from the bench-side one the first
+/// time either changes, and the cheapest way for two things to agree is for there to be one of
+/// them. What stood here instead was a loop over `starts_with("job-mix")` with no timeout at all,
+/// so a sweep that wedged mid-subrun hung this command forever and a finished sweep and a dead one
+/// shared an exit status. That is the limitation milestone 168's lane filed and milestone 324's
+/// part 2 names.
 ///
 /// The kernel parks in `wfi` rather than exiting, so the host side owns the process and tears it
 /// down; that half is `run_bench`'s and is unchanged. See `script/job-mix`.

@@ -21,10 +21,11 @@
 #
 # **And then it happened again, to this file, exactly as written** (milestone 312). Moving the copy
 # out of the YAML and into here made it one copy instead of two; it did not stop it being a copy.
-# `crates/serial_console` arrived with milestone 216, needs `std` because it drives a real serial
-# port on the dev machine, and nobody added `--exclude serial_console`. The workflow was red on
-# every run for seventeen days, could report nothing about upstream, and again the permanent failure
-# looked like the mechanism working, because this job is designed to tolerate red.
+# `crates/serial_console` arrived with milestone 216 (nothing in this tree can read a board), needs
+# `std` because it drives a real serial port on the dev machine, and nobody added `--exclude
+# serial_console`. The workflow was red on every run for seventeen days, could report nothing about
+# upstream, and again the permanent failure looked like the mechanism working, because this job is
+# designed to tolerate red.
 #
 # So the lists below are now **derived**, which is rung one of AGENTS.md's ladder rather than rung
 # four: there is no list to forget to update, and a crate or an architecture added to the workspace
