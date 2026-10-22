@@ -630,8 +630,8 @@ pub fn rendezvous_waiting_senders(ep: RendezvousId) -> usize {
     }
 }
 
-/// **Hold a corpse in the window between departing and leaving its core** (milestone 321). Test
-/// support.
+/// **Hold a corpse in the window between departing and leaving its core** (milestone 321 (a corpse
+/// that did not park, on four real cores)). Test support.
 ///
 /// `depart` publishes a supervised thread's death before its core switches away, so for a short
 /// while the corpse is `Dead`, parked, and still `on_cpu`. On silicon that window is a few hundred

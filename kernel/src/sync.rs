@@ -230,8 +230,9 @@ pub mod rank {
     #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))] // ACPI is x86_64's description
     pub(crate) const ACPI: u32 = 13;
 
-    /// Why the last region reclaim refused (milestone 321), test builds only. A leaf written under
-    /// `IPC_TABLES` and read with nothing held; it takes nothing beneath it. Name: provisional.
+    /// Why the last region reclaim refused (milestone 321 (a corpse that did not park, on four real
+    /// cores)), test builds only. A leaf written under `IPC_TABLES` and read with nothing held; it
+    /// takes nothing beneath it. Name: provisional.
     #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
     pub(crate) const RECLAIM_REFUSAL: u32 = 11;
 

@@ -457,10 +457,11 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
     process::forget_empty(sched, base, end)
 }
 
-/// **Why [`reclaim_region`] last refused** (milestone 321). Test support: a refusal reaches
-/// userspace as one `NotPermitted` whatever its cause, and the failure this was built for happened
-/// once in 255 boots, so the next one has to name its cause in the log it leaves. Each refusing
-/// check overwrites it; nothing clears it, so read it right after the refusal it explains.
+/// **Why [`reclaim_region`] last refused** (milestone 321 (a corpse that did not park, on four real
+/// cores)). Test support: a refusal reaches userspace as one `NotPermitted` whatever its cause, and
+/// the failure this was built for happened about once in a thousand runs, so each one has to name
+/// its cause in the log it leaves. Each refusing check overwrites it; nothing clears it, so read it right
+/// after the refusal it explains.
 ///
 /// For a resident it records the last one the refuse phase turned away, with the two flags that
 /// together make up `standing`.

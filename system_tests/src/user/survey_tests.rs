@@ -410,8 +410,9 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, cap, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
     // A refusal reaches userspace as one `NotPermitted` whatever stopped it, so the message names
-    // the check that refused and the state it saw (milestone 321): a rare failure here has to be
-    // diagnosable from the log of a run nobody can repeat on demand.
+    // the check that refused and the state it saw (milestone 321 (a corpse that did not park, on
+    // four real cores)): a rare failure here has to be diagnosable from the log of a run nobody can
+    // repeat on demand.
     let reaped = invoke(&mut frame, cap, abi::rendezvous::REAP, child, 0, 0);
     assert_eq!(
         reaped,
