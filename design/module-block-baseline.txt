@@ -4831,7 +4831,7 @@ fixtures/src/device_child.rs::_start
 fixtures/src/device_child_builder.rs::_start
 fixtures/src/file_sink.rs::_start
 fixtures/src/file_source.rs::_start
-fixtures/src/flaky.rs::_start
+fixtures/src/first_attempt_crasher.rs::_start
 fixtures/src/frame_revoker.rs::_start
 fixtures/src/fs_test_client/role.rs::_start
 fixtures/src/greeting.rs::_start

@@ -15,9 +15,10 @@
 // retention declaration precisely so that nothing supplies one silently.
 #![allow(clippy::new_without_default)]
 //! **The supervision tree: the shared half.** The programs that shrink init's authority
-//! (`root_supervisor`, `spawner`, `sub_server_supervisor`, and the `flaky` sub-server they manage)
-//! share this: the protocol words they speak, and **the tree's only userspace ELF loader**.
-//! `system_initializer` builds with it too; nothing else builds a process in userspace.
+//! (`root_supervisor`, `spawner`, `sub_server_supervisor`, and the `first_attempt_crasher`
+//! sub-server they manage) share this: the protocol words they speak, and **the tree's only
+//! userspace ELF loader**. `system_initializer` builds with it too; nothing else builds a process
+//! in userspace.
 //!
 //! The loader takes the builder's own budget and the budget the child is built *from* as separate
 //! arguments (the same for a server building from its own memory, different for a spawner building
@@ -89,10 +90,10 @@ pub const REQ_BUILD: u64 = 1;
 /// **The labels `sub_server_supervisor` gives its two children, and the attempt each starts at**
 /// (milestone 105, DECISIONS §148 (resolves by asking the kernel) as amended 2026-10-04; name
 /// provisional). The supervisor
-/// tells its children apart by nothing else. The first starts at attempt 0, which `flaky` crashes
-/// on; the second at attempt 10, which it finishes cleanly. So a supervisor that confused the two
-/// would restart the wrong one, which is what makes the difference observable. Mirrored in the
-/// kernel's `authority_tests`.
+/// tells its children apart by nothing else. The first starts at attempt 0, which
+/// `first_attempt_crasher` crashes on; the second at attempt 10, which it finishes cleanly. So a
+/// supervisor that confused the two would restart the wrong one, which is what makes the difference
+/// observable. Mirrored in the kernel's `authority_tests`.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Plural because it holds both children's labels and their
 /// first attempts; `CHILD_LABELS` was considered and is less specific about whose children.
@@ -120,7 +121,8 @@ pub const PAGE: u64 = 4096;
 pub const CHILD_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
 
 /// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]). Four pages,
-/// which is enough for the supervision tree's programs; the flaky sub-server would be fine with one.
+/// which is enough for the supervision tree's programs; the `first_attempt_crasher` sub-server
+/// would be fine with one.
 ///
 /// **A child at the interactive prompt gets three times this** (`system_initializer::CHILD_STACK_PAGES`),
 /// and the difference is deliberate rather than drift: the prompt's children run the shell's

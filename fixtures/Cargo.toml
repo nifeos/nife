@@ -243,8 +243,8 @@ test = false
 bench = false
 
 [[bin]]
-name = "flaky"
-path = "src/flaky.rs"
+name = "first_attempt_crasher"
+path = "src/first_attempt_crasher.rs"
 test = false
 bench = false
 

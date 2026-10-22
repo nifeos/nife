@@ -574,8 +574,8 @@ mod force_kill_tests;
 /// phase B.2).
 ///
 /// Cross-ISA, because every piece is portable: the whole tree is four ordinary user programs
-/// (`root_supervisor`, `spawner`, `sub_server_supervisor`, `flaky`) built out of the capability verbs, and the kernel's only
-/// part is the fault endpoint phase A already built.
+/// (`root_supervisor`, `spawner`, `sub_server_supervisor`, `first_attempt_crasher`) built out of
+/// the capability verbs, and the kernel's only part is the fault endpoint phase A already built.
 ///
 /// The kernel spawns `root_supervisor` the way it spawns the progenitor: the archive mapped read-only, one untyped
 /// budget, one report endpoint. `root_supervisor` then builds a construction sub-server and a supervisor, hands
