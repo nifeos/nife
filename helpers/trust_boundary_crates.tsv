@@ -28,13 +28,14 @@ calendar	shared	c_library,components,fixtures,kernel
 canary_gate	kernel	retired
 capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
+capability_plan	shared	components,fixtures,kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
 clock_contract	shared	components,fixtures,kernel,std
 clock_proto	shared	retired
 clock_protocol	shared	retired
-component_plan	shared	components,fixtures,kernel
+component_plan	shared	retired
 compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures

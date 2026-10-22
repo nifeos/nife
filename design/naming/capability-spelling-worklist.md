@@ -45,7 +45,7 @@ two kinds of identifier, listed by file in `KEPT` in the helper. Both are propos
 
 If calef rules a kept name should be spelled out after all, it leaves `KEPT` and joins the sweep.
 
-Not counted, and on the list by hand: `ncaps` (15 sites, in `crates/component_plan` and
+Not counted, and on the list by hand: `ncaps` (15 sites, in `crates/capability_plan` and
 `crates/system_initializer`) has no separator, so the gate reads it as one word. Propose
 `capability_count`.
 
@@ -74,7 +74,7 @@ becomes `capability`, `caps` becomes `capabilities`, `Cap` becomes `Capability`,
 
 | Today | Proposed | Note |
 |---|---|---|
-| `CapNeed` (`crates/component_plan`) | `CapabilityNeed` | |
+| `CapNeed` (`crates/capability_plan`) | `CapabilityNeed` | |
 | `MAX_CAPS`, `TooManyCaps`, `FULL_CAPS`, `OVER_CAPS`, `CAP_TWICE`, `caps()` | `MAX_CAPABILITIES`, `TooManyCapabilities` and so on | |
 | `Command::Caps` (`crates/grant_plan`) | `Command::Capabilities` | see the swish builtin below. `CapKind` is done: it became `CapabilityKind` on 2026-10-11 (UTC), #1913 |
 | `CAP_TAG` (`crates/grant_plan/src/spawnproto.rs`) | `CAPABILITY_TAG` | the value `0x6361_705f` stays: it is a wire marker |

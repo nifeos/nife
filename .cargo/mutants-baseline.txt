@@ -15,9 +15,9 @@ c_seam 21 1 0 3
 calendar 372 4 3 16
 capability 98 3 3 26
 capability_manifest_note 191 3 10 65
+capability_plan 102 2 10 40
 capability_witness_contract 10 6 0 0
 clock_contract 54 3 7 5
-component_plan 102 2 10 40
 compositor 211 15 0 12
 coremark 106 2 1 0
 counter_frequency_contract 16 0 0 7

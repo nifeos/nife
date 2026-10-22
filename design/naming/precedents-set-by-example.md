@@ -59,7 +59,7 @@ thing: `schedule`, `swap`, `map`, `console`, `argument`, `tick`, `probe`, `frame
 ### A word the tree uses for two things gets a qualifier
 
 When one word names two things, each gets a qualifier. `handoff` is `state_handoff` in
-`component_plan`, and a note about the framebuffer is `framebuffer-handoff-...`. A `frame` is a stack
+`capability_plan`, and a note about the framebuffer is `framebuffer-handoff-...`. A `frame` is a stack
 frame or a page frame.
 
 ### Prefer the standard word

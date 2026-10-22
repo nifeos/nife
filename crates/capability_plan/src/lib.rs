@@ -1,4 +1,4 @@
-//! **`component_plan`: what a component declares it needs, and how a supervisor wires it.** Under
+//! **`capability_plan`: what a component declares it needs, and how a supervisor wires it.** Under
 //! §41 (the endpoint is the broker), any program that speaks the protocol and holds the right
 //! capabilities is the component; this is the capability half. No IO and no syscalls: a [`Requirements`] (what the component says it needs) and
 //! a [`Provisions`] (what the supervisor routes to this child) become a [`Plan`] (exactly what to
@@ -34,8 +34,9 @@
 //!   declaration; it is a provisioning mistake that should be a [`Refusal`]. Found by the eighth
 //!   outsider pass (`notes/confinement-outsider-pass-8.md`, near miss 3).
 //!
-//! Name: provisional, and ruled: calef ruled **`capability_plan`** on 2026-09-13. The block stays
-//! `provisional` until the rename is performed.
+//! Name: ratified 2026-09-13 (calef), replacing `component_plan`. The crate is the capability half
+//! of §41's component, so the name says capability; `grant_plan` is its sibling over a different
+//! world, and the header above carries the difference rather than the name.
 
 #![no_std]
 
@@ -396,7 +397,7 @@ impl<'a> Provisions<'a> {
 /// A supervisor that does not hold what the component asks for is refused, and nothing is built:
 ///
 /// ```
-/// # use component_plan::{CapNeed, Direction, Provisions, Refusal, Requirements};
+/// # use capability_plan::{CapNeed, Direction, Provisions, Refusal, Requirements};
 /// # const TALKER: Requirements = Requirements {
 /// #     contract: "talker",
 /// #     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
@@ -405,7 +406,7 @@ impl<'a> Provisions<'a> {
 /// #     depends_on: &[],
 /// #     state_handoff: None,
 /// # };
-/// let refused = component_plan::plan(&TALKER, &Provisions { held: &[("report", 1)] });
+/// let refused = capability_plan::plan(&TALKER, &Provisions { held: &[("report", 1)] });
 /// assert_eq!(refused, Err(Refusal::Unprovided { role: "service" }));
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -554,7 +555,7 @@ impl Plan {
 /// # Examples
 ///
 /// ```
-/// use component_plan::{CapNeed, Direction, MapNeed, PageKind, Provisions, Requirements};
+/// use capability_plan::{CapNeed, Direction, MapNeed, PageKind, Provisions, Requirements};
 ///
 /// pub const TALKER: Requirements = Requirements {
 ///     contract: "talker",
@@ -570,10 +571,10 @@ impl Plan {
 ///
 /// const _: () = assert!(TALKER.problem().is_none());
 ///
-/// pub const SERVICE: u64 = component_plan::slot_of(&TALKER, "service");
+/// pub const SERVICE: u64 = capability_plan::slot_of(&TALKER, "service");
 /// assert_eq!(SERVICE, 0);
 ///
-/// let plan = component_plan::plan(
+/// let plan = capability_plan::plan(
 ///     &TALKER,
 ///     &Provisions { held: &[("service", 5), ("report", 1), ("witness", 9)] },
 /// )
@@ -668,7 +669,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
 /// that is a compile error rather than a panic.
 ///
 /// ```compile_fail
-/// # use component_plan::{CapNeed, Direction, Requirements};
+/// # use capability_plan::{CapNeed, Direction, Requirements};
 /// const R: Requirements = Requirements {
 ///     contract: "talker",
 ///     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
@@ -678,7 +679,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
 ///     state_handoff: None,
 /// };
 /// // There is no `control` role, so this constant cannot be evaluated.
-/// const CONTROL: u64 = component_plan::slot_of(&R, "control");
+/// const CONTROL: u64 = capability_plan::slot_of(&R, "control");
 /// ```
 pub const fn slot_of(reqs: &Requirements, role: &str) -> u64 {
     let mut i = 0;
@@ -788,7 +789,7 @@ impl Dependents {
 /// # EXAMPLES
 ///
 /// ```
-/// use component_plan::{dependents, CapNeed, Direction, LiveInstance, Requirements};
+/// use capability_plan::{dependents, CapNeed, Direction, LiveInstance, Requirements};
 ///
 /// const BACKEND: Requirements = Requirements {
 ///     contract: "backend",

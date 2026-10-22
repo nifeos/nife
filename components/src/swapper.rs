@@ -67,7 +67,7 @@
 
 // Two shared modules: the swap system's protocol and the supervision tree's loader. Each binary
 // uses a different slice of both, so the unused halves are expected (§38).
-use component_plan::Provisions;
+use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_protocol::{ChildEndowment, Retention};
 use user_mode_runtime::{
@@ -87,9 +87,9 @@ const WAKE: u64 = 3;
 const TIMER: u64 = 4;
 
 // Pages per process we build is NOT here any more. It is `hot_swap_contract::INSTANCE_PAGES`, declared by
-// each contract, and it reaches this program through `component_plan::Plan::pages`. It is a **peak**,
-// because this operator destroys a region only on the hung channel, and otherwise all five splits are
-// live at once and the budget has to cover them together.
+// each contract, and it reaches this program through `capability_plan::Plan::pages`. It is a
+// **peak**, because this operator destroys a region only on the hung channel, and otherwise all
+// five splits are live at once and the budget has to cover them together.
 
 /// The channels this operator owns, created once out of its own budget.
 struct Wiring {
@@ -169,10 +169,10 @@ fn deputy(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let to_client = Provisions {
         held: &[("service", w.svc), ("report", REPORT), ("operator", w.note)],
     };
-    let Ok(component) = component_plan::plan(&hot_swap_contract::CONSOLE, &to_component) else {
+    let Ok(component) = capability_plan::plan(&hot_swap_contract::CONSOLE, &to_component) else {
         bail(61)
     };
-    let Ok(client) = component_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
+    let Ok(client) = capability_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
         bail(62)
     };
 
@@ -217,8 +217,8 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     // **What this operator will route, per child, by the name the component uses for it.** This is
     // the whole of what used to be four literal endowment arrays: no rights are spelled here, no
     // addresses, and no slot order, because every one of those is declared by the component and
-    // computed by `component_plan`. What is left is the only thing an operator actually knows, which
-    // is which of *its own* objects answers to which name.
+    // computed by `capability_plan`. What is left is the only thing an operator actually knows,
+    // which is which of *its own* objects answers to which name.
     //
     // Two tables rather than one, and the reason is not that the manifests would take too much from
     // a wide one (they take what they declare either way). It is that the two bounds are
@@ -248,15 +248,15 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     // instance's post-revoke probe surviving is.
     // ------------------------------------------------------------------------------------------
 
-    match component_plan::plan(&hot_swap_contract::BROKER, &to_component) {
+    match capability_plan::plan(&hot_swap_contract::BROKER, &to_component) {
         Ok(_) => bail(60),
         Err(refusal) => send(REPORT, hot_swap_contract::RPT_REFUSED, refusal.code(), 0),
     };
 
-    let Ok(component) = component_plan::plan(&hot_swap_contract::CONSOLE, &to_component) else {
+    let Ok(component) = capability_plan::plan(&hot_swap_contract::CONSOLE, &to_component) else {
         bail(61)
     };
-    let Ok(client) = component_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
+    let Ok(client) = capability_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
         bail(62)
     };
 
@@ -301,11 +301,11 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     // swapped, swapping it means warning that client first. On this channel the answer is a real
     // empty set rather than a fixture: nothing this operator runs declares `console` in its own
     // `depends_on` (`CLIENT` is a pure consumer and never needs telling, per §41's sender-queue
-    // argument recorded in `component_plan::Requirements::depends_on`'s doc comment). Reported so
+    // argument recorded in `capability_plan::Requirements::depends_on`'s doc comment). Reported so
     // the test can check the graph agrees with what this channel has always done: nothing extra.
     // ------------------------------------------------------------------------------------------
 
-    let live = [component_plan::LiveInstance {
+    let live = [capability_plan::LiveInstance {
         id: 1,
         reqs: &hot_swap_contract::CONSOLE,
     }];
@@ -368,7 +368,7 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
 fn attack_the_service(
     w: &Wiring,
     client_img: &elf::Elf,
-    client: &component_plan::Plan,
+    client: &capability_plan::Plan,
     corpses: &mut u64,
 ) {
     // ------------------------------------------------------------------------------------------
@@ -451,14 +451,14 @@ fn attack_the_service(
 /// step 1 of [`direct`] and [`hung`]. Bails `stage` or `stage + 1`.
 fn build_without_devices(
     elf: &elf::Elf,
-    component: &component_plan::Plan,
+    component: &capability_plan::Plan,
     faultep: u64,
     stage: u64,
 ) -> Unstarted {
     // The one endowment this operator still writes by hand, and it is the deferral rather than the
     // authority: `maps_without_devices` is the declaration minus what a revoke is about to take, and
-    // `devices` below is the rest of it. `component_plan` sorts device mappings last so both halves
-    // are slices of one plan and neither can be built by hand.
+    // `devices` below is the rest of it. `capability_plan` sorts device mappings last so both
+    // halves are slices of one plan and neither can be built by hand.
     let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, component.pages()) else {
         bail(stage)
     };
@@ -507,7 +507,7 @@ fn revoke_device(stage: u64) {
 fn endow_devices_and_start(
     u: Unstarted,
     elf: &elf::Elf,
-    component: &component_plan::Plan,
+    component: &capability_plan::Plan,
     stage: u64,
 ) {
     for &(va, slot, mode) in component.devices() {
@@ -530,10 +530,10 @@ fn endow_devices_and_start(
 /// first. Bails `stage` on a refusal.
 fn report_dependents(
     target: &str,
-    live: &[component_plan::LiveInstance],
+    live: &[capability_plan::LiveInstance],
     stage: u64,
-) -> component_plan::Dependents {
-    let Ok(deps) = component_plan::dependents(target, live) else {
+) -> capability_plan::Dependents {
+    let Ok(deps) = capability_plan::dependents(target, live) else {
         bail(stage)
     };
     let order = deps.quiesce_order();
@@ -656,13 +656,13 @@ fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
 /// incumbent and the replacements share a declaration and differ only in their `control` endpoint.
 fn plan_handoff(
     w: &Wiring,
-    declared: component_plan::StateHandoff,
+    declared: capability_plan::StateHandoff,
     state: u64,
     replacement_control: u64,
 ) -> (
-    component_plan::Plan,
-    component_plan::Plan,
-    component_plan::Plan,
+    capability_plan::Plan,
+    capability_plan::Plan,
+    capability_plan::Plan,
 ) {
     let to_incumbent = Provisions {
         held: &[
@@ -671,7 +671,7 @@ fn plan_handoff(
             ("operator", w.note),
             ("control", w.poke),
             ("witness", w.log_page_frame),
-            (component_plan::STATE_HANDOFF_ROLE, state),
+            (capability_plan::STATE_HANDOFF_ROLE, state),
         ],
     };
     let to_replacement = Provisions {
@@ -681,7 +681,7 @@ fn plan_handoff(
             ("operator", w.note),
             ("control", replacement_control),
             ("witness", w.log_page_frame),
-            (component_plan::STATE_HANDOFF_ROLE, state),
+            (capability_plan::STATE_HANDOFF_ROLE, state),
         ],
     };
     let to_client = Provisions {
@@ -695,21 +695,21 @@ fn plan_handoff(
     // table is such a supervisor, so asking it for the stateful contract is a real refusal.
     // ------------------------------------------------------------------------------------------
 
-    match component_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_client) {
+    match capability_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_client) {
         Ok(_) => bail(92),
         Err(refusal) => send(REPORT, hot_swap_contract::RPT_REFUSED, refusal.code(), 0),
     };
 
-    let Ok(incumbent) = component_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_incumbent)
+    let Ok(incumbent) = capability_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_incumbent)
     else {
         bail(93)
     };
     let Ok(replacement) =
-        component_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_replacement)
+        capability_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_replacement)
     else {
         bail(94)
     };
-    let Ok(client) = component_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
+    let Ok(client) = capability_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
         bail(95)
     };
     if incumbent.state_handoff() != Some(declared) {
@@ -809,7 +809,7 @@ struct Unstarted {
 
 fn build_unstarted(
     elf: &elf::Elf,
-    plan: &component_plan::Plan,
+    plan: &capability_plan::Plan,
     faultep: u64,
     stage: u64,
 ) -> Unstarted {
@@ -923,16 +923,16 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
     // whoever the graph names" have always produced the same four syscalls. What changed is which
     // one this operator actually asked. `broker`'s own manifest (`hot_swap_contract::BROKER`) declares
     // `depends_on: &["backend"]`, so a two-instance live registry naming this system's broker and
-    // backend, checked against `component_plan::dependents`, is what decides whether the broker is
+    // backend, checked against `capability_plan::dependents`, is what decides whether the broker is
     // warned at all -- not this function's own memory of what it built five lines up.
     // ------------------------------------------------------------------------------------------
 
     let live = [
-        component_plan::LiveInstance {
+        capability_plan::LiveInstance {
             id: 1,
             reqs: &hot_swap_contract::BACKEND,
         },
-        component_plan::LiveInstance {
+        capability_plan::LiveInstance {
             id: 2,
             reqs: &hot_swap_contract::BROKER,
         },
@@ -1005,9 +1005,9 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
 
 /// What [`queued`] builds its three children from, and the signal that wakes the broker.
 struct QueuedPlans {
-    backend: component_plan::Plan,
-    broker: component_plan::Plan,
-    producer: component_plan::Plan,
+    backend: capability_plan::Plan,
+    broker: capability_plan::Plan,
+    producer: capability_plan::Plan,
     signal: u64,
 }
 
@@ -1055,20 +1055,20 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
     // before anything is built. This is the same refusal from the other side, which is why both
     // roles report it: a mechanism that only worked for the one component it was written against
     // would not be a mechanism.
-    match component_plan::plan(&hot_swap_contract::CONSOLE, &to_backend) {
+    match capability_plan::plan(&hot_swap_contract::CONSOLE, &to_backend) {
         Ok(_) => bail(60),
         Err(refusal) => send(REPORT, hot_swap_contract::RPT_REFUSED, refusal.code(), 0),
     };
 
     // No device on this channel: the backend behind a broker is a plain service, and mixing the
     // device story into the queue story would make it unclear which mechanism carried which claim.
-    let Ok(backend) = component_plan::plan(&hot_swap_contract::BACKEND, &to_backend) else {
+    let Ok(backend) = capability_plan::plan(&hot_swap_contract::BACKEND, &to_backend) else {
         bail(61)
     };
-    let Ok(broker) = component_plan::plan(&hot_swap_contract::BROKER, &to_broker) else {
+    let Ok(broker) = capability_plan::plan(&hot_swap_contract::BROKER, &to_broker) else {
         bail(62)
     };
-    let Ok(producer) = component_plan::plan(&hot_swap_contract::CLIENT, &to_producer) else {
+    let Ok(producer) = capability_plan::plan(&hot_swap_contract::CLIENT, &to_producer) else {
         bail(63)
     };
     QueuedPlans {
@@ -1165,10 +1165,10 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     } else {
         &hot_swap_contract::BACKEND
     };
-    let Ok(component) = component_plan::plan(contract, &to_component) else {
+    let Ok(component) = capability_plan::plan(contract, &to_component) else {
         bail(70)
     };
-    let Ok(client) = component_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
+    let Ok(client) = capability_plan::plan(&hot_swap_contract::CLIENT, &to_client) else {
         bail(71)
     };
 
@@ -1478,7 +1478,7 @@ fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
 /// writes, and which of `chatty`'s three roles it is playing).
 fn start_child(
     elf: &elf::Elf,
-    plan: &component_plan::Plan,
+    plan: &capability_plan::Plan,
     faultep: u64,
     args: [u64; 3],
     stage: u64,
@@ -1490,7 +1490,7 @@ fn start_child(
 /// to end the child whatever it is doing ([`end_region`]).
 fn start_child_keeping_region(
     elf: &elf::Elf,
-    plan: &component_plan::Plan,
+    plan: &capability_plan::Plan,
     faultep: u64,
     args: [u64; 3],
     stage: u64,
@@ -1516,7 +1516,13 @@ fn start_child_keeping_region(
 
 /// [`start_child`], for a child with a notification bound to its thread before it runs: `broker`,
 /// whose §231 warning arrives as a signal while it is parked receiving on its front endpoint.
-fn start_bound(elf: &elf::Elf, plan: &component_plan::Plan, faultep: u64, signal: u64, stage: u64) {
+fn start_bound(
+    elf: &elf::Elf,
+    plan: &capability_plan::Plan,
+    faultep: u64,
+    signal: u64,
+    stage: u64,
+) {
     let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, plan.pages()) else {
         bail(stage)
     };

@@ -112,7 +112,7 @@ fn any_slot() -> u64 {
 /// It is needed at all because `SHAPES[i]` with a symbolic `i` makes the slice CBMC reads a
 /// symbolic pointer, so the lengths it walks are symbolic to the solver even though only four
 /// concrete declarations exist. Without a bound `str_eq` unwinds forever.
-/// Falsification: replayable `crates/component_plan/falsifications/proofs.a_plan_never_grants_a_right_the_declaration_did_not_ask_for.patch`
+/// Falsification: replayable `crates/capability_plan/falsifications/proofs.a_plan_never_grants_a_right_the_declaration_did_not_ask_for.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
@@ -160,7 +160,7 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
 /// child with whatever the supervisor keeps in slot 0, which in every program in this tree is its
 /// construction budget. Proved over every arrangement of the two names being routed or not, and
 /// over arbitrary slots.
-/// Falsification: replayable `crates/component_plan/falsifications/proofs.a_missing_route_refuses_rather_than_falling_through_to_a_slot.patch`
+/// Falsification: replayable `crates/capability_plan/falsifications/proofs.a_missing_route_refuses_rather_than_falling_through_to_a_slot.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn a_missing_route_refuses_rather_than_falling_through_to_a_slot() {
@@ -250,7 +250,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
 /// revoke, so an entry falling in both would be mapped twice and one falling in neither would
 /// leave a component reading an unmapped page. Proved for every arrangement of kinds, including
 /// a device declared first, which is what the sort exists for.
-/// Falsification: replayable `crates/component_plan/falsifications/proofs.the_device_split_partitions_the_mappings.patch`
+/// Falsification: replayable `crates/capability_plan/falsifications/proofs.the_device_split_partitions_the_mappings.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn the_device_split_partitions_the_mappings() {
@@ -342,7 +342,7 @@ fn declares_by_core_eq(depends_on: &[&str], name: &str) -> bool {
 /// told fewer than exist (a component left unwarned mid-swap) or more (a component quiesced for
 /// no reason). Proved over every arrangement two live instances can be in, at every id a
 /// supervisor could have chosen for them.
-/// Falsification: replayable `crates/component_plan/falsifications/proofs.dependents_finds_exactly_the_non_target_instances_that_declared_it.patch`
+/// Falsification: replayable `crates/capability_plan/falsifications/proofs.dependents_finds_exactly_the_non_target_instances_that_declared_it.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn dependents_finds_exactly_the_non_target_instances_that_declared_it() {
@@ -397,7 +397,7 @@ fn dependents_finds_exactly_the_non_target_instances_that_declared_it() {
 /// check is a single `>` against a fixed constant, but the point of proving it at all is that a
 /// truncated answer here is the dangerous failure: a supervisor that got fewer dependents back
 /// than exist would swap out from under an unwarned client).
-/// Falsification: replayable `crates/component_plan/falsifications/proofs.too_many_live_instances_never_silently_truncates.patch`
+/// Falsification: replayable `crates/capability_plan/falsifications/proofs.too_many_live_instances_never_silently_truncates.patch`
 #[kani::proof]
 fn too_many_live_instances_never_silently_truncates() {
     let entries: [LiveInstance; MAX_LIVE + 1] = [LiveInstance {

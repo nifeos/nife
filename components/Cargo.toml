@@ -651,7 +651,7 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 # The supervisor half of milestone 23's component manifest: the operator wires a component from
 # its declaration rather than from literals, and `chatty` and `broker` derive their own slot
 # numbers from the declarations they are built against.
-component_plan = { version = "0.1.0", path = "../crates/component_plan" }
+capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 virtio = { version = "0.1.0", path = "../crates/virtio" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }

@@ -151,7 +151,7 @@ pub const RPT_ATTACK: u64 = 7;
 /// did not exist.
 pub const RPT_DRAINED: u64 = 10;
 /// **A component was refused before it was built** (milestone 23's manifest). `w1` = the
-/// `component_plan::Refusal` code, `w2` = the contract's own index in the operator's order.
+/// `capability_plan::Refusal` code, `w2` = the contract's own index in the operator's order.
 ///
 /// The manifest's control that must fail, and the reason it is a *report* rather than a fault: a
 /// supervisor that cannot satisfy a declaration has a legible thing to say and a child it did not
@@ -168,7 +168,7 @@ pub const RPT_SURVEY: u64 = 12;
 
 /// **The dependency graph's own verdict, before any orchestration acts on it** (milestone 23's
 /// dependency-aware-orchestration residual). `w1` = how many live instances
-/// `component_plan::dependents` returned, `w2` = the first one's id (0 if none).
+/// `capability_plan::dependents` returned, `w2` = the first one's id (0 if none).
 ///
 /// Reported once per swap target this channel considers, so the test can check the graph a
 /// supervisor would compute against the sequencing the operator actually ran, rather than trusting
@@ -543,8 +543,8 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // these are the words a reader meets first.
 // ===========================================================================================
 
-use component_plan::Direction::{Serve, Use};
-use component_plan::{CapNeed, MapNeed, PageKind, Requirements};
+use capability_plan::Direction::{Serve, Use};
+use capability_plan::{CapNeed, MapNeed, PageKind, Requirements};
 
 /// **The pages one instance is built out of**: its segments (three for a debug build of a program
 /// this small), its four-page stack, its address-space root, its TCB, its page tables and its
@@ -553,7 +553,7 @@ use component_plan::{CapNeed, MapNeed, PageKind, Requirements};
 /// Thirty-two, roughly double what any of these programs uses. It was a constant in the operator
 /// until milestone 23's manifest lane; it is here now because it is a fact about the thing being
 /// built rather than about who builds it. It is also the one number in a manifest that is a property
-/// of the **build** rather than of the contract, which `component_plan`'s `BUGS` section records.
+/// of the **build** rather than of the contract, which `capability_plan`'s `BUGS` section records.
 pub const INSTANCE_PAGES: u64 = 32;
 
 /// **The console component**: the thing that gets replaced. It serves the stable endpoint, owns a
@@ -706,7 +706,7 @@ pub const STATEFUL_BACKEND: Requirements = Requirements {
     maps: BACKEND.maps,
     pages: INSTANCE_PAGES,
     depends_on: &[],
-    state_handoff: Some(component_plan::StateHandoff {
+    state_handoff: Some(capability_plan::StateHandoff {
         va: STATE_VA,
         // Two, and the tally is written on the second: a blob that only used the first page would
         // pass whether or not the operator's run reached past it.
@@ -884,26 +884,26 @@ pub fn log_get(seq: u64) -> u64 {
 /// on its report channel, with nothing to see but a hang. Now the number **is** the position in the
 /// declaration, computed at compile time, and a role this component does not declare does not
 /// compile.
-pub const SVC: u64 = component_plan::slot_of(&CONSOLE, "service");
+pub const SVC: u64 = capability_plan::slot_of(&CONSOLE, "service");
 /// WRITE: the record the test reads. See [`SVC`].
-pub const RPT: u64 = component_plan::slot_of(&CONSOLE, "report");
+pub const RPT: u64 = capability_plan::slot_of(&CONSOLE, "report");
 /// WRITE: the operator's own coordination channel. See [`SVC`].
-pub const NOTE: u64 = component_plan::slot_of(&CONSOLE, "operator");
+pub const NOTE: u64 = capability_plan::slot_of(&CONSOLE, "operator");
 /// READ: what to do once quiesced. See [`SVC`].
-pub const POKE: u64 = component_plan::slot_of(&CONSOLE, "control");
+pub const POKE: u64 = capability_plan::slot_of(&CONSOLE, "control");
 
 /// **One binary serves both contracts, so both must put its capabilities in the same slots.** That
 /// was true by inspection of two literal arrays in the operator; it is a compile error to break it
 /// now. `serve` reads [`SVC`] whichever channel it was started on, and [`BACKEND`] is a separate
 /// declaration that could drift.
-const _: () = assert!(component_plan::slot_of(&BACKEND, "service") == SVC);
-const _: () = assert!(component_plan::slot_of(&BACKEND, "report") == RPT);
-const _: () = assert!(component_plan::slot_of(&BACKEND, "operator") == NOTE);
-const _: () = assert!(component_plan::slot_of(&BACKEND, "control") == POKE);
-const _: () = assert!(component_plan::slot_of(&STATEFUL_BACKEND, "service") == SVC);
-const _: () = assert!(component_plan::slot_of(&STATEFUL_BACKEND, "report") == RPT);
-const _: () = assert!(component_plan::slot_of(&STATEFUL_BACKEND, "operator") == NOTE);
-const _: () = assert!(component_plan::slot_of(&STATEFUL_BACKEND, "control") == POKE);
+const _: () = assert!(capability_plan::slot_of(&BACKEND, "service") == SVC);
+const _: () = assert!(capability_plan::slot_of(&BACKEND, "report") == RPT);
+const _: () = assert!(capability_plan::slot_of(&BACKEND, "operator") == NOTE);
+const _: () = assert!(capability_plan::slot_of(&BACKEND, "control") == POKE);
+const _: () = assert!(capability_plan::slot_of(&STATEFUL_BACKEND, "service") == SVC);
+const _: () = assert!(capability_plan::slot_of(&STATEFUL_BACKEND, "report") == RPT);
+const _: () = assert!(capability_plan::slot_of(&STATEFUL_BACKEND, "operator") == NOTE);
+const _: () = assert!(capability_plan::slot_of(&STATEFUL_BACKEND, "control") == POKE);
 
 /// **Touch the device one last time.** The operator sends this to an instance it has already
 /// revoked, and the fault that follows is the receipt.
@@ -1225,7 +1225,7 @@ mod tests {
     /// and keeps the capability layout the shared serving code reads.
     #[test]
     fn the_stateful_contract_is_refused_to_a_supervisor_that_cannot_carry_state() {
-        let without = component_plan::Provisions {
+        let without = capability_plan::Provisions {
             held: &[
                 ("service", 1),
                 ("report", 2),
@@ -1235,22 +1235,22 @@ mod tests {
             ],
         };
         assert_eq!(
-            component_plan::plan(&STATEFUL_BACKEND, &without),
-            Err(component_plan::Refusal::Unprovided {
-                role: component_plan::STATE_HANDOFF_ROLE
+            capability_plan::plan(&STATEFUL_BACKEND, &without),
+            Err(capability_plan::Refusal::Unprovided {
+                role: capability_plan::STATE_HANDOFF_ROLE
             })
         );
-        let with = component_plan::Provisions {
+        let with = capability_plan::Provisions {
             held: &[
                 ("service", 1),
                 ("report", 2),
                 ("operator", 3),
                 ("control", 4),
                 ("witness", 5),
-                (component_plan::STATE_HANDOFF_ROLE, 6),
+                (capability_plan::STATE_HANDOFF_ROLE, 6),
             ],
         };
-        let p = component_plan::plan(&STATEFUL_BACKEND, &with).unwrap();
+        let p = capability_plan::plan(&STATEFUL_BACKEND, &with).unwrap();
         assert_eq!(p.state_handoff().map(|h| h.va), Some(STATE_VA));
         assert!(p.devices().is_empty());
     }
