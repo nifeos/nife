@@ -18,9 +18,9 @@ needs a recorded reason. Title and slug are drafts. Every crate the table below 
 weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a), (d), (e), (f2) and (g) are built, on calef's approvals of `httparse`
-(2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `talc` and `object` (both
-2026-10-21 UTC). Items (f) and (h) are refused.
+under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approvals of `httparse`
+(2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC), `talc` and `object` (both
+2026-10-21 UTC) and `uuid` (2026-10-22 UTC). Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -211,7 +211,7 @@ on the customer path.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
 - (g) BUILT: `xtask` takes `object` for the ELF and the PE; the conversion stays ours.
 - (h) REFUSED for base: the four `coreutils` programs stay ours.
-- (i) `uuid` 1.28.0 replaces `universally_unique_identifier`.
+- (i) BUILT: `uuid` 1.28.0 replaces `universally_unique_identifier`.
 
 ## Recorded reasons for what stays
 
@@ -249,8 +249,7 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).
-- **Outstanding.** Item (i). calef, 2026-10-22 (UTC), on #2548: "A"; see
-  [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
+- **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 
