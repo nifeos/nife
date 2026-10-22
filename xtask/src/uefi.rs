@@ -424,6 +424,9 @@ fn uefi_boot_staged() -> bool {
     let _ = std::fs::remove_file(&sock);
     ok &= uefi_screen_showed_the_tour(&screen, &shot);
     ok &= uefi_screen_showed_the_shell(&screen, &shot);
+    // The same image at the modes a real monitor reports, since 1280x800 is the one mode no
+    // bench machine's panel has. See `uefi_screen_modes`.
+    ok &= crate::uefi_screen_modes::every_mode_hands_the_screen_over(&uefi_screen_esp_dir());
 
     if ok {
         eprintln!("uefi-boot: booted under OVMF from \\EFI\\BOOT\\BOOTX64.EFI");
@@ -481,7 +484,7 @@ fn start_uefi_screen_boot(sock: &str) -> Option<std::process::Child> {
 }
 
 /// The two reader threads [`collect_uefi_streams`] starts, and the transcript they share.
-type CollectedStreams = (
+pub(crate) type CollectedStreams = (
     std::thread::JoinHandle<String>,
     std::thread::JoinHandle<String>,
     std::sync::Arc<std::sync::Mutex<String>>,
@@ -489,7 +492,7 @@ type CollectedStreams = (
 
 /// **Collect the runner's stdout and stderr on threads of their own**, each into its own string
 /// for the join and both into one shared transcript as they arrive.
-fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
+pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
     // Both streams collected on threads of their own, because the watcher below decides when the
     // boot has said enough and a blocking read here would decide it instead.
     //
