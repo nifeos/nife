@@ -1215,3 +1215,60 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     );
     crate::sched::reclaim_region(region).expect("test region would not reclaim");
 }
+
+/// **A kill armed while a kernel thread builds a user address space waits until the space is
+/// adopted.** `user::run_with` holds the space it is loading as a local on its own stack, and
+/// `schedule` never resumes a thread it converts, so a kill carried out mid-load loses that space
+/// for the boot. `Holding::release` armed exactly that kill on the ntp server whenever a test ended
+/// before the server had loaded, and the frame ledger read it as an overrun of 22 frames in about
+/// one CI run in eight.
+///
+/// The thread is killed inside its window and then passes through `schedule` three times. It must
+/// survive all three, and must then die in `allow_kill` rather than run past it.
+///
+/// Falsification: replayable `kernel/falsifications/sched.tests.a_kill_armed_while_a_space_is_built_waits_for_it_to_be_adopted.patch`
+#[test_case]
+fn a_kill_armed_while_a_space_is_built_waits_for_it_to_be_adopted() {
+    static INSIDE: AtomicBool = AtomicBool::new(false);
+    static ARMED: AtomicBool = AtomicBool::new(false);
+    static SURVIVED: AtomicBool = AtomicBool::new(false);
+    static RAN_PAST: AtomicBool = AtomicBool::new(false);
+
+    let tid = crate::sched::spawn(|| {
+        crate::sched::defer_kill();
+        INSIDE.store(true, Ordering::SeqCst);
+        while !ARMED.load(Ordering::SeqCst) {
+            core::hint::spin_loop();
+        }
+        for _ in 0..3 {
+            crate::sched::yield_now();
+        }
+        SURVIVED.store(true, Ordering::SeqCst);
+        crate::sched::allow_kill();
+        RAN_PAST.store(true, Ordering::SeqCst);
+    })
+    .expect("spawn failed");
+
+    assert!(
+        wait_for(|| INSIDE.load(Ordering::SeqCst)),
+        "the builder never ran"
+    );
+    assert!(
+        crate::sched::kill_thread(tid),
+        "the builder was gone before the kill"
+    );
+    ARMED.store(true, Ordering::SeqCst);
+    assert!(
+        wait_for(|| !crate::sched::is_thread_present(tid)),
+        "a killed builder was never reaped: allow_kill did not carry the kill out"
+    );
+    assert!(
+        SURVIVED.load(Ordering::SeqCst),
+        "a kill armed inside defer_kill's window was carried out at a schedule inside it, which \
+         is the point where an un-adopted address space is lost"
+    );
+    assert!(
+        !RAN_PAST.load(Ordering::SeqCst),
+        "the builder ran past allow_kill with a kill armed on it"
+    );
+}

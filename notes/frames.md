@@ -202,6 +202,13 @@ server parked in `RECEIVE` can be reclaimed. The boot now ends with a free run o
 still held at the end is accounted for item by item: boot services wired once, `root_supervisor`'s
 split trees, and the DMA pages a dead driver's NIC may still write.
 
+A kill must not land on a kernel thread that is still building a process. `user::run_with` holds
+the space it loads as a local until `sched::adopt_address_space` hands it to the registry, and a
+thread `schedule` converts is never resumed, so a kill carried out in between loses that space for
+the boot. `sched::defer_kill` and `sched::allow_kill` bracket the window: an armed kill waits and is
+carried out once the space is the thread's. `sched::tests::a_kill_armed_while_a_space_is_built_waits_for_it_to_be_adopted`
+proves it.
+
 Read a large per-test charge as "the first test to need that service", not as an accusation. The
 ledger attributes by the running test. The tables, the fix in full, the itemized residue and the
 ledger's own BUGS are in [the page frame budget](frames/page-frame-budget.md).
