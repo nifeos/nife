@@ -59,19 +59,21 @@ compile_error!(
      yet. argon's Tegra WDT is a later step of design/roadmap/0593-a-wedged-kernel-resets-itself.md."
 );
 
-// **Every x86_64 soak arms the watchdog unless it opts out**, calef's ruling of 2026-09-26 (UTC):
-// "A soak should reset itself when it freezes." `build.rs` decides the `soak_watchdog` cfg, and
-// this restates the rule it must implement, so a build-script edit that drops the default fails
-// the x86_64 `soak_test` build rather than shipping xenon a soak that waits for a person.
+// **Every x86_64 and riscv64 soak arms the watchdog unless it opts out**, calef's ruling of
+// 2026-09-26 (UTC): "A soak should reset itself when it freezes." `build.rs` decides the
+// `soak_watchdog` cfg, and this restates the rule it must implement, so a build-script edit that
+// drops the default fails the `soak_test` build rather than shipping xenon or radon a soak that
+// waits for a person.
 #[cfg(all(
     feature = "soak_test",
-    target_arch = "x86_64",
+    any(target_arch = "x86_64", target_arch = "riscv64"),
     not(feature = "unwatched_soak_test"),
     not(soak_watchdog)
 ))]
 compile_error!(
-    "an x86_64 soak_test build must arm the watchdog unless it names unwatched_soak_test \
-     (calef, 2026-09-26 UTC); kernel/build.rs no longer sets the soak_watchdog cfg for it"
+    "an x86_64 or riscv64 soak_test build must arm the watchdog unless it names \
+     unwatched_soak_test (calef, 2026-09-26 UTC); kernel/build.rs no longer sets the soak_watchdog \
+     cfg for it"
 );
 
 // The opt-out and the insistence cannot both be meant. `wedge_soak_test` implies
@@ -618,8 +620,7 @@ const WEDGE_AFTER_SECONDS: u64 = 30;
 /// says so on the only channel it has, with how to stop it, before it can happen.
 #[cfg(all(soak_watchdog, target_arch = "x86_64"))]
 fn arm_watchdog() -> Option<Watchdog> {
-    // A stale byte must not halt the watchdog at the first beat; see `arm_reboot`.
-    crate::console::discard_rx();
+    discard_stale_bytes();
     let tco = match arch::tco::find() {
         Ok(tco) => tco,
         Err(why) => {
@@ -668,6 +669,18 @@ fn arm_watchdog() -> Option<Watchdog> {
     }
 }
 
+/// **Drop what U-Boot left in the receive buffer before the watchdog arms**, so a stale byte cannot
+/// halt it at the first beat (see `arm_reboot`).
+///
+/// A rebooting soak has already drained at its own banner, and that banner is where
+/// `script/board-console --stop` sends the escape. Draining a second time here would throw that
+/// byte away, and the series would never stop. So only a soak that does not reboot drains here.
+#[cfg(soak_watchdog)]
+fn discard_stale_bytes() {
+    #[cfg(not(feature = "reboot_soak_test"))]
+    crate::console::discard_rx();
+}
+
 /// The watchdog each architecture's soak arms (milestone 593).
 #[cfg(all(soak_watchdog, target_arch = "x86_64"))]
 type Watchdog = arch::tco::Tco;
@@ -695,7 +708,7 @@ fn print_watchdog_escape() {
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn arm_watchdog() -> Option<Watchdog> {
     use jh7110_watchdog::CORE_CLOCK_HZ;
-    crate::console::discard_rx();
+    discard_stale_bytes();
     let Some((found, sys)) = crate::memory::jh7110_watchdog() else {
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: this machine's device tree names no JH7110 watchdog \

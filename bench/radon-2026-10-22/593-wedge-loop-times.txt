@@ -1,0 +1,19 @@
+17:47:56.372 U-Boot SPL
+17:48:05.944 payload came
+17:48:06.757 soak-test: started
+17:48:07.163 ARMED.
+17:48:37.180 WEDGING NOW
+17:49:38.995 U-Boot SPL
+17:49:48.363 payload came
+17:49:48.976 soak-test: started
+17:49:49.386 ARMED.
+17:50:19.564 WEDGING NOW
+17:51:21.284 U-Boot SPL
+17:51:31.793 payload came
+17:51:32.406 soak-test: started
+17:51:32.826 ARMED.
+17:52:03.061 WEDGING NOW
+17:53:04.843 U-Boot SPL
+17:53:14.349 payload came
+17:53:15.188 soak-test: started
+17:53:15.611 ARMED.
