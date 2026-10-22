@@ -1,38 +1,33 @@
 //! **The check that is worth more than every other test in this crate**, and it is `#[ignore]`d
-//! because it needs a person and a host filesystem.
+//! because it needs a host filesystem driver and attaches a disk image.
 //!
 //! A writer tested against its own reader proves almost nothing, and this crate has no reader at
-//! all (see its `BUGS`). What proves it is somebody else's FAT driver reading what it wrote. Two do:
-//! OVMF, in `cargo xtask install-boot`, which is the gate; and the host's own, which is this file,
-//! and which is the one a person can run in three seconds while changing the layout.
+//! all (see its `BUGS`). What proves it is somebody else's FAT driver reading what it wrote. Three
+//! do: OVMF in `cargo xtask install-boot`, EDK2 on riscv64 in `cargo xtask stick-boot`, and the
+//! host's own, which is this file and the one a person can run in seconds while changing the
+//! layout.
+//!
+//! The volume holds `\EFI\BOOT\BOOTRISCV64.EFI`, the name that needs long-name entries, because a
+//! wrong checksum or a malformed run fails silently: a driver that rejects the run shows the alias
+//! `BOOTRI~1.EFI` instead, and only a reader that lists the directory can tell. On macOS this test
+//! runs `fsck_msdos -n` on the image, which must exit 0, then attaches it read-only, requires the
+//! directory listing to hold `BOOTRISCV64.EFI` and not the alias, and compares every byte. Elsewhere
+//! it writes the image and stops.
 //!
 //! # EXAMPLES
 //!
 //! ```console
 //! $ cargo test -p file_allocation_table -- --ignored --nocapture
 //! wrote target/file-allocation-table-check.img
-//!
-//! $ hdiutil attach -imagekey diskimage-class=CRawDiskImage -nobrowse \
-//!       target/file-allocation-table-check.img
-//! /dev/disk7                                     /Volumes/NIFE
-//!
-//! $ diskutil info /dev/disk7 | grep Personality
-//!    File System Personality:   MS-DOS FAT32
-//!
-//! $ ls -l /Volumes/NIFE/EFI/BOOT/BOOTX64.EFI
-//! -rwx------  1 calef  staff  3000000 ... /Volumes/NIFE/EFI/BOOT/BOOTX64.EFI
-//!
-//! $ hdiutil detach /dev/disk7
+//! fsck_msdos: ** Phase 1 - Preparing FAT ... ** Phase 4 - Checking Directories ...
+//! the host's driver lists ["BOOTRISCV64.EFI"] in /private/tmp/dmg.XXXXXX/EFI/BOOT
 //! ```
 //!
-//! On Linux the same two commands are `sudo mount -o loop,ro` and `umount`.
-//!
-//! **Run and passed on macOS 15 (Darwin 25.6.0) on 2026-09-21**, which is the record that matters:
-//! Apple's `msdos` driver mounted the volume, reported it as **FAT32** (so the cluster count clears
-//! the 65525 floor the boot sector's claim depends on), walked `\EFI\BOOT\BOOTX64.EFI` through both
-//! directory levels, and returned all 3,000,000 bytes byte-exact.
+//! On Linux, `fsck.fat -n` and `sudo mount -o loop,ro` are the same two checks, run by hand.
 
 use std::io::Write;
+use std::path::Path;
+use std::process::Command;
 
 use file_allocation_table::{SECTOR, Volume};
 
@@ -44,18 +39,29 @@ const FILE_LEN: u64 = 3_000_000;
 /// sparse file costs nothing.
 const TOTAL_SECTORS: u64 = 700 * 1024 * 2;
 
-#[test]
-#[ignore = "writes an image for a host FAT driver to mount; see this file's header"]
-fn write_an_image_for_the_hosts_own_fat_driver() {
-    let volume = Volume::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, "BOOTX64.EFI")
-        .expect("700 MiB is a FAT32 volume");
+/// The riscv64 removable-media name, fifteen units and so two long-name entries.
+const NAME: &str = "BOOTRISCV64.EFI";
 
+#[test]
+#[ignore = "attaches an image for the host's FAT driver to read; see this file's header"]
+fn the_hosts_own_fat_driver_reads_the_long_name_back() {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../target/file-allocation-table-check.img"
     );
-    let mut image = std::fs::File::create(path).expect("create the image");
+    let body = write_image(Path::new(path));
+    eprintln!("wrote {path}");
+    if cfg!(target_os = "macos") {
+        check_with_fsck(path);
+        read_back(path, &body);
+    }
+}
 
+/// Write the volume to `path`, returning the file's bytes.
+fn write_image(path: &Path) -> Vec<u8> {
+    let volume = Volume::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, NAME)
+        .expect("700 MiB is a FAT32 volume");
+    let mut image = std::fs::File::create(path).expect("create the image");
     let mut sector = [0u8; SECTOR];
     for index in 0..volume.metadata_sectors() {
         assert!(
@@ -73,10 +79,73 @@ fn write_an_image_for_the_hosts_own_fat_driver() {
     image
         .write_all(&vec![0u8; tail as usize])
         .expect("pad the last cluster");
-
-    // Everything past the file is never read, and a sparse tail is what keeps this cheap.
     image
         .set_len(TOTAL_SECTORS * SECTOR as u64)
         .expect("size the image");
-    eprintln!("wrote {path}");
+    body
+}
+
+/// `fsck_msdos -n` checks every long-name run against its short entry and exits non-zero on a
+/// mismatch, without writing.
+fn check_with_fsck(path: &str) {
+    let out = Command::new("fsck_msdos")
+        .args(["-n", path])
+        .output()
+        .expect("run fsck_msdos");
+    let report =
+        String::from_utf8_lossy(&out.stdout).into_owned() + &String::from_utf8_lossy(&out.stderr);
+    eprintln!("fsck_msdos: {}", report.replace('\n', " "));
+    assert!(out.status.success(), "fsck_msdos refused the volume");
+}
+
+/// Attach the image read-only at a fresh mount point, list `EFI/BOOT`, compare the file and
+/// detach, detaching even when an assertion fails.
+fn read_back(path: &str, body: &[u8]) {
+    let out = Command::new("hdiutil")
+        .args([
+            "attach",
+            "-imagekey",
+            "diskimage-class=CRawDiskImage",
+            "-nobrowse",
+            "-readonly",
+            "-mountrandom",
+            "/tmp",
+            path,
+        ])
+        .output()
+        .expect("run hdiutil attach");
+    assert!(out.status.success(), "hdiutil attach failed");
+    let attached = String::from_utf8_lossy(&out.stdout).into_owned();
+    let line = attached
+        .lines()
+        .find(|l| l.contains("/tmp"))
+        .expect("a mount point");
+    let device = line.split_whitespace().next().expect("a device").to_owned();
+    let mount = &line[line
+        .find("/private/tmp")
+        .or_else(|| line.find("/tmp"))
+        .unwrap()..];
+    let checked = std::panic::catch_unwind(|| {
+        let dir = Path::new(mount.trim()).join("EFI/BOOT");
+        let names: Vec<String> = std::fs::read_dir(&dir)
+            .expect("list EFI/BOOT")
+            .map(|e| {
+                e.expect("an entry")
+                    .file_name()
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .collect();
+        eprintln!("the host's driver lists {names:?} in {}", dir.display());
+        assert_eq!(names, [NAME], "the long name, not the alias");
+        assert_eq!(std::fs::read(dir.join(NAME)).expect("read the file"), body);
+    });
+    let detached = Command::new("hdiutil").args(["detach", &device]).status();
+    assert!(
+        detached.is_ok_and(|s| s.success()),
+        "hdiutil detach {device}"
+    );
+    if let Err(panic) = checked {
+        std::panic::resume_unwind(panic);
+    }
 }

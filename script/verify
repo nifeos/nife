@@ -388,6 +388,7 @@ direct_memory_access_validator	148	the DMA-confinement validator, no descriptor 
 network_time_protocol	22	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	47	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	66	the partition table's CRC-32, its round trips, and partitions that overlap
+file_allocation_table	60	the long-name writer: the checksum, the run of entries, and that every alias is a legal short name
 calendar	314	the civil-date arithmetic, and the parser on hostile text
 glob	708	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth

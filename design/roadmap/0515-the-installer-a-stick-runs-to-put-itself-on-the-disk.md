@@ -37,9 +37,9 @@ below said "Rung 2a was built". Re-run on `main` at `e613c520` on 2026-10-03:
 | `cargo xtask rollback-boot` | PASS: a doomed slot 1 is abandoned, slot 0 boots by itself | not timed |
 | `cargo xtask confirm-boot` | PASS: a good trial boot marks itself successful | not timed |
 
-All three are x86_64 under OVMF. aarch64 and riscv64 have no installer, and the two gaps are
-milestones of their own: milestone 560 (a long file name, or riscv64 cannot be installed) and
-milestone 568 (the boot file has nowhere to go on a device-tree machine). Criteria 2 and 3 are
+All three are x86_64 under OVMF. aarch64 and riscv64 have no installer. The gap is milestone 568
+(the boot file has nowhere to go on a device-tree machine); the riscv64 file name it also needed
+is milestone 560 (a long file name, or riscv64 cannot be installed), built. Criteria 2 and 3 are
 hardware; criterion 2 was met on 2026-10-04 (see Follow-on), and criterion 3 is what keeps this PARTIAL.
 
 ## The layout ruling
@@ -213,7 +213,7 @@ PC once rung 1 has one.
   Milestone stays PARTIAL on criterion 3.
 - **Outstanding.** Exit criterion 3, a fleet machine that is not xenon, from milestone 243 (a machine with no serial port has no way to say anything)'s fleet.
 - **Decision.** Ruled 2026-10-03 in `design/decisions/0244-the-installed-disk-has-four-partitions.md`: the layout above stands, and slots stay at 64 MiB. Two conditions remain with another lane: the installer installs a release image, and CI gates the release image at 16 MiB.
-- **Milestone 560.** `BOOTRISCV64.EFI` is not an 8.3 name, so riscv64 cannot be installed.
+- **Milestone 560.** `BOOTRISCV64.EFI` is not an 8.3 name; the FAT writer's long-name entries carry it.
 - **Milestone 568.** `/chosen` has one initrd slot, so aarch64 and riscv64
   have no installer.
 - **Milestone 569.** Open as milestone 569 (the disk an installer names has no model, only a size).

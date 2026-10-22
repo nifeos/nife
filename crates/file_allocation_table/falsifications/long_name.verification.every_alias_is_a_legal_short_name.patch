@@ -1,0 +1,21 @@
+Falsifies `file_allocation_table::long_name::verification::every_alias_is_a_legal_short_name`.
+
+The defect: the alias keeps seven base units instead of six, so a long base pushes the `~1` tail to
+bytes 7 and 8 and its `1` into the extension. The bytes are all legal short-name bytes, which is
+why the harness checks where the tail sits and not only what the bytes are.
+
+Expected to fail: the harness's `assert!((1..=6).contains(&tilde))`.
+
+diff --git a/crates/file_allocation_table/src/long_name.rs b/crates/file_allocation_table/src/long_name.rs
+index 0bc37e010..74cab65f6 100644
+--- a/crates/file_allocation_table/src/long_name.rs
++++ b/crates/file_allocation_table/src/long_name.rs
+@@ -133,7 +133,7 @@ impl LongName {
+             None => (units, &[][..]),
+         };
+         let mut out = [b' '; 11];
+-        let base_len = fold(base, &mut out[..6]);
++        let base_len = fold(base, &mut out[..7]);
+         if base_len == 0 {
+             return None;
+         }

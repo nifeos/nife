@@ -97,9 +97,9 @@ Installing is.
   linked at QEMU `virt`'s RAM (milestone 441's note on milestone 127 (the seL4 machine)).
 - riscv64. A board like radon (VisionFive 2) boots through U-Boot from microSD, so its procedure
   differs. radon runs `script/board-image`'s card today, and whether its U-Boot's `bootefi` runs
-  the stick's `BOOTRISCV64.EFI` is unmeasured (notes/boot-stick.md). The installer cannot write that
-  eleven-character name either (milestone 560 (a long file name, or riscv64 cannot be installed)),
-  and milestone 568 applies here too.
+  the stick's `BOOTRISCV64.EFI` is unmeasured (notes/boot-stick.md). The installer's FAT writer
+  writes that eleven-character name with long-name entries (milestone 560 (a long file name, or
+  riscv64 cannot be installed)), and milestone 568 applies here too.
 
 The plan: the x86_64 path ships first. Each other path is a follow-on, proposed with its own
 procedure on the page when a machine a stranger plausibly owns exists for it.
