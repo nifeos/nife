@@ -86,7 +86,7 @@ upstream on 2024-10-23 unreleased, and a release request has been open since 202
 
 `fatfs` and `embedded-sdmmc` were measured against this block on 2026-10-22 (UTC), Kani included,
 in [784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md). calef's #2580
-ruling above settles it: this block builds the full crate, in the stages below.
+ruling above settles it: this block builds the full crate, in the stages above.
 
 ## References and oracles
 
