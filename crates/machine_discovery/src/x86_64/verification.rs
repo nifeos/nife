@@ -84,6 +84,7 @@ fn a_range_read_out_of_the_memory_map_never_wraps_to_look_empty() {
 fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
     let w = CpuidWords {
         leaf0: [kani::any(), 0, 0, 0],
+        leaf1_ecx: kani::any(),
         leaf7_0: [0, kani::any(), 0, 0],
         extended_max_leaf: kani::any(),
         extended_leaf1_edx: kani::any(),
@@ -113,19 +114,42 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
         assert!(!isa.has_random_seed_instruction());
     }
 
-    // `REQUIRED` and `WARNED` are folded out of `TABLE` by a `const fn` comparing discriminants,
-    // which is the one place a row's gate can be got wrong without any call site changing. So
-    // the refusal is tied back to the two features by name: a table edit that demoted NX to
-    // `Gate::Warn` would boot a part whose page tables' no-execute is a comment.
+    if w.leaf0[0] < 1 {
+        assert!(!isa.under_hypervisor);
+    }
+
+    // `REQUIRED` and `REQUIRED_UNLESS_HYPERVISOR` are folded out of `TABLE` by a `const fn`
+    // comparing discriminants, which is the one place a row's gate can be got wrong without any
+    // call site changing. So the refusal is tied back to the three features by name: a table edit
+    // that moved NX to `Gate::RefuseUnlessHypervisor` would boot a guest whose page tables'
+    // no-execute is a comment, and one that moved the invariant TSC to `Gate::Refuse` would
+    // refuse every boot under QEMU's TCG.
     assert_eq!(
         isa.missing_requirements().any(),
-        !(isa.features.contains(NX) && isa.features.contains(SYSCALL))
+        !(isa.features.contains(NX)
+            && isa.features.contains(SYSCALL)
+            && (isa.under_hypervisor || isa.features.contains(INVARIANT_TSC)))
     );
     assert!(!isa.unpromised().contains(NX) && !isa.unpromised().contains(SYSCALL));
+    // A row the part does not report is refused or warned, never both, and warned only under a
+    // hypervisor.
+    assert!(
+        isa.missing_requirements()
+            .features
+            .difference(isa.unpromised())
+            == isa.missing_requirements().features
+    );
+    if !isa.under_hypervisor {
+        assert!(isa.unpromised().is_empty());
+    }
 
     kani::cover!(
         !isa.missing_requirements().any(),
         "some part clears the boot gate"
     );
     kani::cover!(isa.missing_requirements().any(), "some part is refused");
+    kani::cover!(
+        !isa.missing_requirements().any() && !isa.unpromised().is_empty(),
+        "some guest boots with a warning"
+    );
 }

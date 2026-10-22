@@ -330,23 +330,38 @@ mod verification;
 ///
 /// The other two architectures' tables carry a `required: bool` here, and two values were enough
 /// for them. x86 needed a third, and the third one is the interesting one: it exists because a
-/// feature this kernel is genuinely built on can be one **the only machine the project can run on
-/// does not promise**, and there is no honest way to spell that as either a yes or a no.
+/// feature this kernel is genuinely built on can be one **a hypervisor declines to promise on the
+/// guest's behalf**, and there is no honest way to spell that as either a yes or a no.
 ///
 /// Collapsing it into `required: false` would file a load-bearing assumption next to `RDSEED`, an
-/// optional convenience. Collapsing it into `required: true` would refuse every boot. So it is its
-/// own value, it prints its own line, and promoting it to [`Gate::Refuse`] is a one-token change
-/// on the day a machine reports the bit.
+/// optional convenience. Collapsing it into `required: true` would refuse every boot under QEMU's
+/// TCG, which never reports the invariant TSC. So the row says which machine it refuses, and the
+/// decision reads the hypervisor bit beside the feature bits.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Gate {
-    /// The boot refuses without it. [`REQUIRED`] is exactly these rows.
+    /// The boot refuses without it, on every machine. [`REQUIRED`] is exactly these rows.
     Refuse,
-    /// The kernel is built on it, no machine this project runs on reports it, and a refusal would
-    /// therefore refuse everything. Said out loud on every boot instead. [`WARNED`] is these rows.
-    Warn,
+    /// The boot refuses without it on bare metal, where the bit is the part's own promise. Under
+    /// a hypervisor (`CPUID.1:ECX[31]` set; see [`HYPERVISOR_CITE`]) the hypervisor owns the
+    /// guest's clock and decides what to advertise, so the boot warns on its own line instead.
+    /// [`REQUIRED_UNLESS_HYPERVISOR`] is exactly these rows.
+    ///
+    /// Name: provisional. Spells calef's ruling of 2026-10-22 00:54 UTC on #2534, "refuse a CPU
+    /// without invariant TSC unless the hypervisor bit is set; under a hypervisor, warn."
+    /// Considered `RefuseOnBareMetal`, which names the case that refuses but not the bit that
+    /// decides it.
+    RefuseUnlessHypervisor,
     /// Useful to know and not load-bearing. Reported on the boot line and never fatal.
     Report,
 }
+
+/// Where `CPUID` says a hypervisor is present, spelled the way [`Row::cite`] spells a feature.
+/// Bit 31 of leaf 1's `ECX` reads zero on silicon and is set by a hypervisor that wants its guest
+/// to know, which QEMU does under TCG and under KVM.
+///
+/// Name: provisional. `_CITE` because it is what [`Row::cite`] is for a row: the leaf, register
+/// and bit, for a refusal or warning line to print.
+pub const HYPERVISOR_CITE: &str = "CPUID.1:ECX[31]";
 
 /// One row of [`TABLE`]: a `CPUID` feature this kernel names, and why it names it.
 ///
@@ -421,23 +436,19 @@ pub const TABLE: [Row; 4] = [
         cite: "CPUID.80000001H:EDX[11]",
         why: "the kernel's whole ring-3 entry path; absent, the ABI is #UD on the first call",
     },
-    // **This one is built on and cannot be refused on, and the reason is measured rather than
-    // argued.** QEMU's TCG refuses to advertise the bit at all: `-cpu max,invtsc=on` answers
+    // **Refused on silicon, warned under a hypervisor, and the split is measured rather than
+    // argued.** Real silicon has had this bit since about 2008, and xenon, milestone 87 (the
+    // x86_64 bare-metal machine), reports it. QEMU's TCG refuses to advertise it at all:
+    // `-cpu max,invtsc=on` answers
     // `warning: TCG doesn't support requested feature: CPUID[eax=80000007h].EDX.invtsc [bit 8]`
     // and clears it (QEMU 11, 2026-09-21). It is a KVM-only feature there, because QEMU will not
-    // promise rate constancy across a migration it cannot control, and the x86_64 suite runs
-    // entirely under TCG on an Apple Silicon host where KVM is not available at all. So every
-    // machine this project can run on today reports zero here, and `Gate::Refuse` would refuse
-    // every boot.
-    //
-    // Two things keep that from being a quiet downgrade. The boot says so on its own line rather
-    // than burying it in a feature list, and the promotion trigger is written down:
-    // milestone 87 (the x86_64 bare-metal machine) is real silicon, real silicon has had this bit
-    // since about 2008, and the day a boot there reports it this becomes `Gate::Refuse`.
+    // promise rate constancy across a migration it cannot control, and the x86_64 suite runs under
+    // TCG. A guest's clock is the hypervisor's to keep, so the hypervisor bit decides which gate
+    // applies (calef, 2026-10-22 00:54 UTC, #2534).
     Row {
         name: "invariant-tsc",
         bit: INVARIANT_TSC,
-        gate: Gate::Warn,
+        gate: Gate::RefuseUnlessHypervisor,
         cite: "CPUID.80000007H:EDX[8]",
         why: "the boot measures the TSC's rate ONCE; without this there is no single rate to measure",
     },
@@ -454,9 +465,11 @@ pub const TABLE: [Row; 4] = [
 /// and no others.
 pub const REQUIRED: Features = gathered(Gate::Refuse);
 
-/// The features the kernel is built on and does not refuse for: the [`Gate::Warn`] rows. A boot
-/// that does not report one of these says so, every time, in its own line.
-pub const WARNED: Features = gathered(Gate::Warn);
+/// The features the kernel refuses to boot without on bare metal and warns about under a
+/// hypervisor: the [`Gate::RefuseUnlessHypervisor`] rows.
+///
+/// Name: provisional, after the variant it gathers.
+pub const REQUIRED_UNLESS_HYPERVISOR: Features = gathered(Gate::RefuseUnlessHypervisor);
 
 /// The [`TABLE`] rows carrying one gate, as a set. `const` so both sets above are derived from the
 /// table rather than written twice; a row's gate is then the only thing anyone can get wrong.
@@ -488,6 +501,8 @@ pub struct CpuidWords {
     /// Leaf 0, all four registers: `EAX` is the maximum standard leaf, `EBX`/`EDX`/`ECX` are the
     /// vendor string in that order, which is not the register order anyone guesses.
     pub leaf0: [u32; 4],
+    /// Leaf 1's `ECX`, for the hypervisor bit. Meaningful only when `leaf0[0] >= 1`.
+    pub leaf1_ecx: u32,
     /// Leaf 7 subleaf 0. Meaningful only when `leaf0[0] >= 7`.
     pub leaf7_0: [u32; 4],
     /// Leaf `0x80000000`'s `EAX`: the maximum *extended* leaf, a separate space with its own
@@ -524,6 +539,9 @@ pub struct Isa {
     pub extended_max_leaf: u32,
     /// Which of [`TABLE`]'s features the part reports.
     pub features: Features,
+    /// Whether `CPUID` says a hypervisor is present ([`HYPERVISOR_CITE`]). Decides what a
+    /// [`Gate::RefuseUnlessHypervisor`] row does.
+    pub under_hypervisor: bool,
 }
 
 impl Default for Isa {
@@ -537,6 +555,7 @@ impl Default for Isa {
             max_leaf: 0,
             extended_max_leaf: 0,
             features: Features::NONE,
+            under_hypervisor: false,
         }
     }
 }
@@ -544,7 +563,8 @@ impl Default for Isa {
 /// What a machine is missing that this kernel needs. Empty on a machine we can run.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct Missing {
-    /// Required features (see [`REQUIRED`]) the part does not report.
+    /// Required features the part does not report: [`REQUIRED`]'s, plus
+    /// [`REQUIRED_UNLESS_HYPERVISOR`]'s on bare metal.
     pub features: Features,
 }
 
@@ -596,6 +616,7 @@ impl Isa {
             max_leaf: w.leaf0[0],
             extended_max_leaf: w.extended_max_leaf,
             features,
+            under_hypervisor: w.leaf0[0] >= 1 && w.leaf1_ecx & (1 << 31) != 0,
         }
     }
 
@@ -609,20 +630,34 @@ impl Isa {
     /// as unknown. `CPUID` is the part describing itself, and a part that does not answer leaf
     /// `0x80000001` at all is a part from before these features existed. There is nobody in
     /// between to be terse.
+    ///
+    /// On bare metal the [`Gate::RefuseUnlessHypervisor`] rows count as required. Under a
+    /// hypervisor they move to [`unpromised`](Isa::unpromised) instead, so every absent row of
+    /// either gate lands in exactly one of the two.
     pub fn missing_requirements(&self) -> Missing {
+        let required = if self.under_hypervisor {
+            REQUIRED
+        } else {
+            REQUIRED.union(REQUIRED_UNLESS_HYPERVISOR)
+        };
         Missing {
-            features: REQUIRED.difference(self.features),
+            features: required.difference(self.features),
         }
     }
 
-    /// **What the kernel is built on that this part does not promise**: the [`Gate::Warn`] rows it
-    /// does not report. Empty on a part that promises everything.
+    /// **What the kernel is built on that this guest's hypervisor does not promise**: the
+    /// [`Gate::RefuseUnlessHypervisor`] rows the part does not report, under a hypervisor. Always
+    /// empty on bare metal, where those rows refuse instead.
     ///
     /// Separate from [`missing_requirements`](Isa::missing_requirements) because the two call
     /// sites do different things (one refuses, one prints) and because a reader has to be able to
     /// tell "we checked and it is fine" from "we checked, it is not fine, and we booted anyway".
     pub fn unpromised(&self) -> Features {
-        WARNED.difference(self.features)
+        if self.under_hypervisor {
+            REQUIRED_UNLESS_HYPERVISOR.difference(self.features)
+        } else {
+            Features::NONE
+        }
     }
 
     /// Does the part implement `RDSEED`, Intel's "read random seed" instruction, which returns bits
