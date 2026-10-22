@@ -50,7 +50,7 @@ filesystem_contract = { version = "0.1.0", path = "../../crates/filesystem_contr
 # bytes are the partition. `no_std` with no dependencies of its own, so it costs this build nothing,
 # and it crosses the workspace boundary the same way `filesystem_contract` already does.
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../../crates/globally_unique_identifier_partition_table" }
-universally_unique_identifier = { version = "0.1.0", path = "../../crates/universally_unique_identifier" }
+uuid = { version = "1.28.0", default-features = false }
 
 # The same redox_syscall (lib name `syscall`) the engine uses, so an error out of `find_node` can be
 # read by its errno. Recovery needs exactly one of those. **`ENOENT` is the only error that may be

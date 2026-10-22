@@ -347,10 +347,6 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # is in the verify table" check is that missing comparison, and it costs a second instead of 42
 # minutes.
 #
-# `universally_unique_identifier`'s 6 seconds (lane/uuid-crate, 2026-10-06) are a guess priced from
-# the two harnesses it took from `globally_unique_identifier_partition_table`; the first refresh
-# after it lands replaces it.
-#
 # `kernel`'s seconds carry one extra caveat: what the solver spends is milliseconds, and the row is
 # almost entirely the crate's own compile. It will grow with the harnesses rather than with the kernel.
 #
@@ -392,7 +388,6 @@ direct_memory_access_validator	148	the DMA-confinement validator, no descriptor 
 network_time_protocol	22	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	47	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	66	the partition table's CRC-32, its round trips, and partitions that overlap
-universally_unique_identifier	6	the UUID text form round trips, and the version-4 stamp touches only the six bits it reserves
 calendar	314	the civil-date arithmetic, and the parser on hostile text
 glob	708	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth

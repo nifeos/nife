@@ -259,10 +259,10 @@ dependencies = [
  "timetable",
  "tock-registers",
  "top",
- "universally_unique_identifier",
  "uptime",
  "usb",
  "user_mode_runtime",
+ "uuid",
  "video_terminal",
  "virtio",
  "vmstat",
@@ -590,7 +590,7 @@ version = "0.1.0"
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
- "universally_unique_identifier",
+ "uuid",
 ]
 
 [[package]]
@@ -1575,7 +1575,7 @@ dependencies = [
  "screen_console",
  "sealed_pair",
  "uefi_loader",
- "universally_unique_identifier",
+ "uuid",
 ]
 
 [[package]]
@@ -1589,10 +1589,6 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
-
-[[package]]
-name = "universally_unique_identifier"
-version = "0.1.0"
 
 [[package]]
 name = "uptime"
@@ -1612,6 +1608,12 @@ dependencies = [
  "entropy_contract",
  "socket_contract",
 ]
+
+[[package]]
+name = "uuid"
+version = "1.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cc1186384beb7dd8eedea376413fd654937285ea6c9cfbb928dc3043ea4b606"
 
 [[package]]
 name = "valuable"
@@ -1718,6 +1720,7 @@ dependencies = [
  "serial_console",
  "test_times",
  "toml",
+ "uuid",
  "video_terminal",
  "walk_pricing",
 ]

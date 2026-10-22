@@ -37,7 +37,6 @@ interfaces = [
     "boot_slot",
     "nifefs",
     "globally_unique_identifier_partition_table",
-    "universally_unique_identifier",
     "file_allocation_table",
     "grant_plan",
     "component_plan",

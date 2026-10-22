@@ -4500,15 +4500,6 @@ crates/timetable/src/registry.rs::register_installed
 crates/timetable/src/registry.rs::rows
 crates/top/src/lib.rs::write_machine_line
 crates/top/src/lib.rs::write_summary
-crates/universally_unique_identifier/src/lib.rs::NIL
-crates/universally_unique_identifier/src/lib.rs::Uuid
-crates/universally_unique_identifier/src/lib.rs::from_bytes
-crates/universally_unique_identifier/src/lib.rs::from_fields
-crates/universally_unique_identifier/src/lib.rs::is_nil
-crates/universally_unique_identifier/src/lib.rs::to_ascii
-crates/universally_unique_identifier/src/lib.rs::to_bytes
-crates/universally_unique_identifier/src/lib.rs::try_from_ascii
-crates/universally_unique_identifier/src/lib.rs::v4_from_random
 crates/uptime/src/lib.rs::Formatted
 crates/uptime/src/lib.rs::MAX_LEN
 crates/uptime/src/lib.rs::as_bytes

@@ -54,7 +54,7 @@ use globally_unique_identifier_partition_table::span::Span;
 use globally_unique_identifier_partition_table::{
     ENTRY_ARRAY_BYTES, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA, mbr,
 };
-use universally_unique_identifier::Uuid;
+use uuid::Uuid;
 use user_mode_runtime::{call, send};
 
 /// Slot 0: where the verdict goes. An endpoint with `WRITE`.
@@ -135,14 +135,14 @@ pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
 fn partition() -> ! {
     // Four unique ids: the disk's, and one per partition. Drawn first and all together, because the
     // only refusal worth making is one made before anything is written.
-    let mut guids = [Uuid::NIL; 4];
+    let mut guids = [Uuid::nil(); 4];
     for g in guids.iter_mut() {
         let mut bytes = [0u8; 16];
         if user_mode_runtime::entropy::fill(ENTROPY, &mut bytes).is_none() {
             send(REPORT, R_NO_ENTROPY, 0, 0);
             user_mode_runtime::exit()
         }
-        *g = Uuid::v4_from_random(bytes);
+        *g = uuid::Builder::from_random_bytes(bytes).into_uuid();
     }
 
     let layout = [
@@ -275,7 +275,7 @@ fn verify() -> ! {
 
     let mut named = 0u64;
     let mut unique = 0u64;
-    let mut seen = [Uuid::NIL; blank::PARTITIONS];
+    let mut seen = [Uuid::nil(); blank::PARTITIONS];
     for (i, part) in table.partitions() {
         if partitions as usize >= blank::PARTITIONS {
             partitions += 1; // more entries than the layout has: the count below will say so
@@ -296,7 +296,8 @@ fn verify() -> ! {
         // never arrived and something invented an id anyway, which is the failure this program's
         // whole shape exists to prevent.
         let g = part.unique_guid;
-        let text = g.to_ascii();
+        let mut text = Uuid::encode_buffer();
+        let text = g.hyphenated().encode_upper(&mut text).as_bytes();
         if !g.is_nil() && text[14] == b'4' && !seen[..partitions as usize].contains(&g) {
             unique += 1;
         }

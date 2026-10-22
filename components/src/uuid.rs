@@ -1,6 +1,6 @@
 //! **`uuid`**: print a version-4 UUID drawn from the entropy service (notes/entropy.md). Ask the
 //! service for sixteen bytes, stamp the six bits RFC 9562 reserves
-//! (`universally_unique_identifier::Uuid::v4_from_random`), print the canonical form in RFC order.
+//! (`uuid::Builder::from_random_bytes`), print the canonical form in RFC order, uppercase.
 //! It is `disk_partitioner`'s draw with the disk taken away, and `date`'s shape one manifest field
 //! over ([`grant_plan::Manifest::entropy`] rather than `Manifest::clock`): the part of randomness a
 //! person at the prompt can reach.
@@ -46,7 +46,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use universally_unique_identifier::Uuid;
+use uuid::{Builder, Uuid};
 use user_mode_runtime::{exit, is_granted, send};
 
 /// Slot 0: where the identifier goes. An endpoint with `WRITE`, under the sink contract.
@@ -84,8 +84,12 @@ pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     }
 
     if let Some(bytes) = drawn {
+        // Uppercase, as `sgdisk`, macOS's `uuidgen` and the UEFI shell print it (calef's "A" on
+        // #2548 kept it); `uuid`'s own `Display` is lowercase.
+        let id = Builder::from_random_bytes(bytes).into_uuid();
         let mut line = [b'\n'; 37];
-        line[..36].copy_from_slice(&Uuid::v4_from_random(bytes).to_ascii());
+        let mut text = Uuid::encode_buffer();
+        line[..36].copy_from_slice(id.hyphenated().encode_upper(&mut text).as_bytes());
         write_on(REPORT, &line);
     }
 

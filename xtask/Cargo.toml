@@ -39,6 +39,7 @@ walk_pricing = { version = "0.1.0", path = "../crates/walk_pricing" }
 # tests run against tables `sgdisk` and macOS `diskutil` wrote. It also slices the data partition out
 # of the image so the host tool can open the filesystem inside it.
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
+uuid = { version = "1.28.0", default-features = false }
 # The FAT32 `mkfs` the installer lays its EFI system partition down with (milestone 578 (an ACPI
 # discovery path for aarch64), item 7): `acpi-boot` writes the cloud boot disk with the same crate,
 # so the disk a person imports into a cloud is the installer's format, booted by EDK2 in the gate.

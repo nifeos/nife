@@ -94,7 +94,6 @@ thread_wake_handshake 14 0 0 5
 timetable 707 12 5 23
 top 18 0 0 0
 uefi_loader 370 6 12 9
-universally_unique_identifier 68 3 1 5
 uptime 48 0 0 5
 usb 121 7 0 12
 user_mode_heap 23 0 5 7

@@ -52,7 +52,6 @@ members = [
     "crates/graphics_contract",
     "crates/glob",
     "crates/globally_unique_identifier_partition_table",
-    "crates/universally_unique_identifier",
     "crates/inter_process_communication",
     "crates/jh7110_clock_and_reset",
     "crates/jh7110_entropy",

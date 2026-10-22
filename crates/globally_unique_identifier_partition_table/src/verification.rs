@@ -73,7 +73,7 @@ fn an_entry_survives_the_round_trip() {
 /// EFI System Partition vector in `guid.rs`'s tests proves they are the right permutation.
 /// Until 2026-10-06 (UTC) the swap lived in the printer and this was
 /// `a_guid_survives_printing_and_parsing`; the text half moved to
-/// `crates/universally_unique_identifier` with the type.
+/// the `uuid` crate with the type.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_guid_survives_the_on_disk_layout.patch`
 #[kani::proof]
 #[kani::unwind(17)]
@@ -144,8 +144,8 @@ fn the_header_fields_partition_the_block() {
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.overlap_is_exactly_sharing_a_block.patch`
 #[kani::proof]
 fn overlap_is_exactly_sharing_a_block() {
-    let a = Entry::new(types::LINUX_FILESYSTEM, Uuid::NIL, kani::any(), kani::any());
-    let b = Entry::new(types::NIFE_DATA, Uuid::NIL, kani::any(), kani::any());
+    let a = Entry::new(types::LINUX_FILESYSTEM, Uuid::nil(), kani::any(), kani::any());
+    let b = Entry::new(types::NIFE_DATA, Uuid::nil(), kani::any(), kani::any());
     kani::assume(a.first_lba <= a.last_lba && b.first_lba <= b.last_lba);
 
     let shared = a.first_lba.max(b.first_lba) <= a.last_lba.min(b.last_lba);
@@ -154,7 +154,7 @@ fn overlap_is_exactly_sharing_a_block() {
 
     // An unused entry overlaps nothing, whatever its bounds say.
     let mut ghost = a;
-    ghost.type_guid = Uuid::NIL;
+    ghost.type_guid = Uuid::nil();
     assert!(!ghost.overlaps(&b));
 }
 
