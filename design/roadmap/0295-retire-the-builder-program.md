@@ -118,7 +118,7 @@ All eight were real; one path in the survey was stale and is corrected here.
    to `user_mode_runtime`. `initrd.rs`'s "seven programs" count and its quotation of
    `timetable.rs` are *kept*, with a note that six are left, because they are an account of what
    milestone 139 collapsed rather than a description of today.
-6. `crates/board_console/src/progress.rs`, `userspace_ran()`. The one with teeth, and it resolved
+6. `crates/serial_console/src/progress.rs`, `userspace_ran()`. The one with teeth, and it resolved
    as the proposal predicted: the matcher stays and the live claim moves. See below.
 
 Two sites beyond the eight, found by re-verifying: `components/src/timetable.rs` and
@@ -134,8 +134,8 @@ cannot appear unless userspace built the console server, the line discipline, th
 the shell.
 
 The matcher for `init/build` stays anyway, and this is not sentiment.
-`crates/board_console/tests/fixtures/captured/vf2-2026-09-01-userspace.log` contains the line and is
-asserted on. That capture is bytes off real VisionFive 2 silicon and cannot be re-taken with a
+`crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-userspace.log` contains the line and
+is asserted on. That capture is bytes off real VisionFive 2 silicon and cannot be re-taken with a
 different kernel; a recognizer that could no longer read it would be throwing evidence away to tidy
 code. So `userspace_ran()`'s doc now says which of the two questions it answers, at the accessor
 itself, and the matcher carries a comment saying the same. `notes/board-console.md` says it where a
@@ -174,7 +174,7 @@ moves is one nobody can check.
   none of the rest. This is the risk option (b) accepted, priced after looking rather than before.
   Numbered on 2026-09-19 by milestone 433's drain of the pile.
 - **Recorded.** The synthetic fixture
-  `crates/board_console/tests/fixtures/synthetic/qemu-soak-then-silence.log` still contains an
+  `crates/serial_console/tests/fixtures/synthetic/qemu-soak-then-silence.log` still contains an
   `init/build` line, describing a boot shape no kernel produces any more. It is a recognizer test
   rather than evidence, so it is left alone and named in `BUGS` below rather than rewritten.
 

@@ -37,7 +37,7 @@ of milestone 142 (a text display good enough that people use it instead of a GUI
 ## The boot console's font: ours, drawn in the Kaypro II's style
 
 `crates/bitmap_font` is a 7x8 monochrome bitmap font and a pure function from `(byte, x, y)` to a
-color. The kernel's boot console (`crates/screen_console`) and `board_console` draw with it; the
+color. The kernel's boot console (`crates/screen_console`) and `serial_console` draw with it; the
 terminal does not.
 
 It is an original drawing, made for this tree in `crates/bitmap_font/kaypro-style-7x8.art`. Nobody

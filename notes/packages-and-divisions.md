@@ -52,7 +52,7 @@ Normal and build dependencies only, counted per package pair, dependent first.
 | fixtures to services | 3 | `system_initializer`, `schedule_store`, `network_time_protocol` |
 | contracts to runtime | 2 | `supervision_protocol` and `hot_swap_contract` link `user_mode_runtime` |
 | boot to kernel | 3 | `device_tree_blob`, `machine_discovery`: leaf libraries, not the kernel |
-| boot to fixtures | 1 | `board_console` links `job_mix` |
+| boot to fixtures | 1 | `serial_console` links `job_mix` |
 
 Contracts depend on almost nothing. Runtime depends only on contracts. Those two are the boundary a
 third party crosses, and they are nearly clean today.

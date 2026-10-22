@@ -26,9 +26,9 @@ claims note routed here.
 test was opt-in and red, which was the finding. #1817 (merged 2026-10-07 UTC) rewrote both for the
 capability model; the test is now green in the default suite, with a replayable falsification.
 
-`fixtures/src/chatty.rs` grew `ROLE_PLANT`, and `swapper`'s direct channel retires the last
-receiver before the attack and un-parks the plant boundedly. Claim 26's cited test is green on
-aarch64 (the whole module, 8 tests) and riscv64; x86_64 skips as always (§121 (what a device
+`fixtures/src/swap_boundary_witness.rs` grew `ROLE_PLANT`, and `swapper`'s direct channel retires
+the last receiver before the attack and un-parks the plant boundedly. Claim 26's cited test is green
+on aarch64 (the whole module, 8 tests) and riscv64; x86_64 skips as always (§121 (what a device
 capability is when the device has no page)'s UART-page gap). With the kernel's `RECEIVE_CAP`
 check deleted it goes red at its own assertion, under its recorded patch.
 

@@ -41,13 +41,13 @@
 #
 # THE NUMBER, which is measured rather than picked. Across all 143 host test binaries in this tree
 # (`cargo test --workspace` minus the bare-metal crates, at `--test-threads=4`, reading each child's
-# own VmPeak), the largest peak is `board_console` at **1,028 MiB** and the mean is 169 MiB. Four
+# own VmPeak), the largest peak is `serial_console` at **1,028 MiB** and the mean is 169 MiB. Four
 # gibibytes is 4.0x the largest honest binary, which is the headroom half. The other half is the
 # ceiling the MACHINE imposes: `-j 2` means two test binaries can be resident at once, so a runaway
 # in each costs 2 x the ceiling, and 8 GiB is survivable on the 16 GiB boxes this runs on where
 # 2 x 8 GiB would not be. Four is the largest value that keeps both true. Corroborated the other
 # way round, by lowering it until it bites: the honest suite is unaffected at 4 GiB and at 1 GiB,
-# and at 256 MiB `board_console` fails, exactly where its measured peak says it should.
+# and at 256 MiB `serial_console` fails, exactly where its measured peak says it should.
 #
 # BUGS: the ceiling is on ADDRESS SPACE (RLIMIT_AS, `ulimit -v`) rather than on resident memory, so
 # it over-counts every reservation nothing ever touches. RUST_MIN_STACK is 16 MiB in

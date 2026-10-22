@@ -102,18 +102,6 @@ name = "block_roster"
 version = "0.1.0"
 
 [[package]]
-name = "board_console"
-version = "0.1.0"
-dependencies = [
- "bitmap_font",
- "boot_ladder",
- "job_mix",
- "machine_discovery",
- "screen_console",
- "video_terminal",
-]
-
-[[package]]
 name = "boot_ladder"
 version = "0.1.0"
 
@@ -1159,6 +1147,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "serial_console"
+version = "0.1.0"
+dependencies = [
+ "bitmap_font",
+ "boot_ladder",
+ "job_mix",
+ "machine_discovery",
+ "screen_console",
+ "video_terminal",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1696,7 +1696,6 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
- "board_console",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1716,6 +1715,7 @@ dependencies = [
  "package_index",
  "screen_console",
  "sealed_pair",
+ "serial_console",
  "test_times",
  "toml",
  "video_terminal",

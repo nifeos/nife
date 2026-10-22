@@ -9,7 +9,7 @@ Built 2026-09-01. Minted the same day by the maintainer, from calef wiring the
 VisionFive 2 as a remote target and the gap becoming concrete the same hour.
 
 What was built. `script/board-console` (name provisional), over `cargo xtask board-console`
-and `crates/board_console` (both names provisional). It opens the port at 115200 8N1, tees every
+and `crates/serial_console` (both names provisional). It opens the port at 115200 8N1, tees every
 byte to a log file that is never optional, recognizes the runbook's boot sequence, and returns a
 different exit status for each way a session can end. Reached the stage asked for, the board
 announced a failure, it spoke and then went quiet, the time ran out, or the port would not open.
@@ -24,7 +24,7 @@ forever for the deadline, a FIFO standing in for a port to cover a failing `stty
 speaks and then stops. The real CH343 dongle covered everything except the board, including that
 `stty` on the already-open descriptor moves it from 9600 to 115200 and reverts on exit. Then
 calef powered the board on, on 2026-09-01, and captured a full boot and a full failure. Both are
-committed under `crates/board_console/tests/fixtures/captured/` as raw bytes off the wire, and
+committed under `crates/serial_console/tests/fixtures/captured/` as raw bytes off the wire, and
 both are asserted on. The documentation was right about the seven markers it named, which is the
 part worth recording: the recognizer needed no correction, only additions.
 
@@ -191,7 +191,7 @@ as built serves every read-only use, and 218 is the thing to do first either way
   This refusal is milestone 472 (design/roadmap/0472-a-bench-console-that-drives-power.md), which
   carries it with the condition that would change it.
 - **Recorded.** `design/naming.md` holds the naming backlog this milestone added to:
-  `script/board-console`, `cargo xtask board-console` and `crates/board_console` all shipped
+  `script/board-console`, `cargo xtask board-console` and `crates/serial_console` all shipped
   provisional, as a lane's names are, and `script/names --unratified` is the worklist.
 - **Milestone 324.** Whether `script/board-console`
   should ever be able to write to the serial port at all, and if so whether that is this tool with

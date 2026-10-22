@@ -102,7 +102,7 @@ off a board:
 **The first two predate the marker rename and are left exactly as they arrived** (milestone 297,
 2026-09-14: `soak:` became `soak-test:` and `soak-census:` became `soak-test-census:` when
 `script/soak` became `script/soak-test`). A capture is a record, so the respelling happens at read
-time in `board_console::respell_pre_297_markers` and never on disk; that function's block says why
+time in `serial_console::respell_pre_297_markers` and never on disk; that function's block says why
 the parser does not simply match both spellings, and why the third capture above is what makes that
 affordable. Rewriting the marker inside a `captured/` file would be the fabricated transcript
 `design/naming/rename-where-names-hide.md` records, and this directory exists to make that

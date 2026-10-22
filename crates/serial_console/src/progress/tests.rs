@@ -431,7 +431,7 @@ fn the_placement_census_changes_nothing_the_recogniser_reads() {
 ///
 /// Separate from the test above because that one proves the start line still works, and this
 /// one proves the census does not stand in for it: a log truncated to census lines has not seen
-/// a soak start, and reporting one would make `board_console` claim a stage from an artefact.
+/// a soak start, and reporting one would make `serial_console` claim a stage from an artefact.
 #[test]
 fn a_census_alone_does_not_reach_the_soak_stage() {
     let progress = run("soak-test-census: core=0 threads=6 R0 C0 C0 C0 G0 W0\n");

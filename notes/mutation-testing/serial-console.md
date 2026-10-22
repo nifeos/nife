@@ -1,7 +1,8 @@
-# `board_console`
+# `serial_console`
 
-This appendix holds the 2026-09-20 triage of `board_console`'s 43 survivors, module by module. The
-summary and the current figures are in [notes/mutation-testing.md](../mutation-testing.md).
+This appendix holds the 2026-09-20 triage of `serial_console`'s 43 survivors, module by module,
+taken while the crate was named `board_console`, the name the account below keeps. The summary and
+the current figures are in [notes/mutation-testing.md](../mutation-testing.md).
 
 ## 2026-09-20: `board_console`, milestone 326 (turn a mutation score upward) part 3
 

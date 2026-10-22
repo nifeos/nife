@@ -522,7 +522,7 @@ fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
 /// machine can replay)): milestone 202 (every confinement test is a ritual until somebody breaks
 /// the confinement)'s wrong-reason red on a third claim. The operator now
 /// retires the replacement first, so nothing ever receives on the endpoint again, then starts the
-/// plant (a `chatty` role that parks a message on it), then the attacker. A let-open
+/// plant (a `swap_boundary_witness` role that parks a message on it), then the attacker. A let-open
 /// `RECEIVE_CAP` *returns the plant's message*, and the assertion below fires: the attacker's
 /// report carries the marker word rather than the refusal. The operator then drains the plant
 /// itself on the honest kernel, so both programs exit and the run reclaims as before. The

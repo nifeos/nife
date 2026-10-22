@@ -12,7 +12,7 @@ notes/visionfive2.md carries the bench record. The three on-board items are done
 
 - The on-board test-suite exit. `kernel/src/arch/riscv64/semihosting.rs` replaces the
   `sifive_test` finisher with a UART marker plus SBI SRST under the `board` feature. It is the
-  mechanism `script/soak` and `crates/board_console` judge every board run by.
+  mechanism `script/soak` and `crates/serial_console` judge every board run by.
 - The DTB-driven UART IRQ. On radon the kernel takes the UART's interrupt source (32) from the
   machine description. Two `kernel::sched::tests` interrupt-delivery tests read
   `user::uart_irq_and_source()` rather than QEMU's source 10.
@@ -91,7 +91,7 @@ it underneath the check.
 
 - **Done.** The on-board test-suite exit is `kernel/src/arch/riscv64/semihosting.rs`, whose board
   feature replaces the `sifive_test` finisher with a UART verdict marker plus SBI SRST shutdown.
-  `script/soak` and `crates/board_console` are what read it.
+  `script/soak` and `crates/serial_console` are what read it.
 - **Done.** The DTB-driven UART IRQ landed. The machine description supplies the source in
   `kernel/src/user.rs`, read by `kernel/src/main.rs` and by the input service, and the nine boots
   of the 2026-09-03 series each printed `uart irq : source 32 (machine description)`.

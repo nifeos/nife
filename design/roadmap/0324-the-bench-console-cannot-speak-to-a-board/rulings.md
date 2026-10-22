@@ -33,7 +33,7 @@ A tool each would fork 3,545 lines whose portable majority is already proven sha
 is literally `script/board-console`'s code, exit statuses included.
 
 The split the profile needs was already in the source, undocumented as a design. `Stage` in
-`crates/board_console/src/progress.rs` was two things in one enum. `Spl`, `OpenSbi`, `UBoot` and
+`crates/serial_console/src/progress.rs` was two things in one enum. `Spl`, `OpenSbi`, `UBoot` and
 `Handoff` are radon's firmware chain. `Banner`, `Machine`, `SelfTest`, `Tour` and `Soak` are the
 kernel's own ladder. That half's doc comments already recorded it as reachable on all three
 architectures since milestone 268. A board profile is a firmware prologue and nothing else; the rest

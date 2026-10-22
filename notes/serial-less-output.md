@@ -3,7 +3,7 @@
 Milestone 243 (a machine with no serial port). Every word nife had ever said, it said down a UART.
 That covers the boot tour on all three architectures, the console server and the shell, the
 kernel's fault reports, and every automated gate that reads any of them (`script/board-console`, the soak's heartbeat, `script/swish-check`,
-`crates/board_console`'s stage judging).
+`crates/serial_console`'s stage judging).
 
 A commodity machine does not have one. xenon does, and that was chosen rather than lucky: milestone
 87 picked a Dell with a C4PDJ serial module and a null modem. Meanwhile the same milestone made a
@@ -57,7 +57,7 @@ is on the host, and only the address arithmetic is in the kernel.
 | the question | `uefi_loader::find_screen` | one `LocateProtocol` call and three field reads |
 | the painter | `crates/screen_console` | a cursor over a `&mut [u8]`, with `bitmap_font`'s glyphs |
 | the seam | `kernel::console`, `arch::x86_64::machine::attach_screen` | tee `print!` to the screen; record the aperture so `mmu::init` carries the mapping |
-| the gate | `board_console::screen`, `cargo xtask uefi-boot` | a screendump, decoded back into text, judged by `board_console::progress` |
+| the gate | `serial_console::screen`, `cargo xtask uefi-boot` | a screendump, decoded back into text, judged by `serial_console::progress` |
 
 The address rides PVH's existing command line (`cmdline_paddr`) as one `screen=` token, rather than
 a field appended to Xen's `hvm_start_info`. That is cheap to change because the loader embeds the
@@ -78,7 +78,7 @@ halves.
 
 ## The gate: a program reading a screen
 
-`board_console::screen` turns a screendump back into text. It is not optical character recognition
+`serial_console::screen` turns a screendump back into text. It is not optical character recognition
 and the difference is the whole reason it is trustworthy: `bitmap_font` is a constant table of
 monochrome 7x8 glyphs, so a cell either matches a glyph bit for bit or matches nothing. There is no
 threshold to tune and no confidence to report.
