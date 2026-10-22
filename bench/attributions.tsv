@@ -20,6 +20,16 @@
 # baseline file cannot hold them, because a save rebuilds it (script/bench's BUGS). An attribution
 # found later, a bisect in a note for instance, is transcribed here with its numbers.
 
+# The records the causes below cite: milestone 23 (a capability-routed component OS with live
+# replacement), milestone 58 (RISC-V TLB shootdown), milestone 124 (a thread is born where it
+# lives), milestone 126 (the `procps` package), milestone 139 (drive the unsafe count down),
+# milestone 142 (a text display good enough that people use it), milestone 206 (a program image
+# has under 896 KiB), milestone 299 (the x86 port-range capability), milestone 300 (decompose the
+# icount baseline drift), milestone 447 (a thread's vector registers are its own), milestone 541
+# (a timed window that excludes preemption), milestone 629 (the context-switch statistic stops
+# costing the switch path), milestone 812 (`std::thread::spawn` runs real threads in one address
+# space), §204 (how userspace asks where a thread runs).
+
 # The pre-ledger saves (before 2026-09-23), read as explained by the change their own commit
 # names. EXCEPTION, marked, by calef's ruling on #2554 (2026-10-22 UTC): these saves also
 # absorbed drift on main that nothing separated, and nothing can separate it now.
