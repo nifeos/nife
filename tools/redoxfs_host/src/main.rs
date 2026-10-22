@@ -180,7 +180,11 @@ fn take_selector(args: &mut Vec<String>) -> Result<Option<PartitionSelector>, St
             }
             "--partition-type" => {
                 let value = value_for(&flag, inline, &mut it)?;
-                let guid = universally_unique_identifier::Uuid::try_from_ascii(value.as_bytes())
+                // `try_parse_ascii` also reads the 32-digit, braced and URN forms; of its forms
+                // only the hyphenated one is 36 characters, which is the only one this flag takes.
+                let guid = uuid::Uuid::try_parse_ascii(value.as_bytes())
+                    .ok()
+                    .filter(|_| value.len() == 36)
                     .ok_or_else(|| {
                         format!("--partition-type wants a 36-character type GUID, not {value:?}")
                     })?;
@@ -223,16 +227,15 @@ fn value_for(
 fn table(device: &str) -> Result<(), String> {
     let table = redoxfs_host::partitions(Path::new(device))?;
     println!(
-        "{}-byte logical blocks, disk GUID {}",
-        table.block_size,
-        String::from_utf8_lossy(&table.disk_guid.to_ascii()),
+        "{}-byte logical blocks, disk GUID {:X}",
+        table.block_size, table.disk_guid,
     );
     println!("  #   first LBA    last LBA          size  type");
     for p in &table.partitions {
         let kind = p
             .type_name
             .map(str::to_string)
-            .unwrap_or_else(|| String::from_utf8_lossy(&p.type_guid.to_ascii()).into_owned());
+            .unwrap_or_else(|| format!("{:X}", p.type_guid));
         println!(
             "{:>3}  {:>10}  {:>10}  {:>12}  {kind}{}",
             p.number,

@@ -17,5 +17,7 @@ workspace = true
 
 [dependencies]
 # The identifier every entry and the header carry. This crate owns only how a GPT stores one
-# (mixed-endian, `guid::from_disk`/`to_disk`); the type and its text form are RFC 9562's.
-universally_unique_identifier = { version = "0.1.0", path = "../universally_unique_identifier" }
+# (mixed-endian, `guid::from_disk`/`to_disk`); the type and its text form are RFC 9562's, taken
+# from `uuid` with default features off (calef's "A" on #2548, §46 (thin primitives or whole
+# subsystems)).
+uuid = { version = "1.28.0", default-features = false }

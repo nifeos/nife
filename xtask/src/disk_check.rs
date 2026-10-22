@@ -68,11 +68,10 @@ pub(crate) fn blank_check_after_run() -> bool {
     // Every unique GUID distinct and version 4. Two partitions with one id is the failure the
     // entropy capability exists to prevent, and it is invisible to everything else here.
     for (i, (_, part)) in parts.iter().enumerate() {
-        let text = part.unique_guid.to_ascii();
-        if text[14] != b'4' {
+        let text = format!("{:X}", part.unique_guid);
+        if text.as_bytes()[14] != b'4' {
             eprintln!(
-                "BLANK IMAGE CHECK FAILED: partition {i}'s unique GUID is not version 4: {}",
-                String::from_utf8_lossy(&text),
+                "BLANK IMAGE CHECK FAILED: partition {i}'s unique GUID is not version 4: {text}",
             );
             return false;
         }
@@ -92,10 +91,10 @@ pub(crate) fn blank_check_after_run() -> bool {
 
     // The filesystem inside it, opened by the pinned engine on the host, at the offset the tool
     // works out from the same table this function just checked.
-    let data_type = String::from_utf8_lossy(
-        &globally_unique_identifier_partition_table::guid::types::NIFE_DATA.to_ascii(),
-    )
-    .into_owned();
+    let data_type = format!(
+        "{:X}",
+        globally_unique_identifier_partition_table::guid::types::NIFE_DATA
+    );
     let out = capture(
         "cargo",
         &[
