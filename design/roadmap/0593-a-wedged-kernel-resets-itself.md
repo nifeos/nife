@@ -185,8 +185,13 @@ nife again and wedging again, until the served kernel was swapped for the health
   to bring back a boot from radon's card.
 - The JH7110 keeps no record of a watchdog reset that this kernel knows of, so a second boot on
   radon cannot say how the first ended. Only the timing can.
-- A reboot soak and a watchdog soak in one build are not guarded against. Under QEMU the TCO keeps
-  counting across a `0xcf9` reset, so the second boot could be reset before it arms.
+- Every riscv64 rebooting soak is also a watchdog soak. On radon the two ran together for 52 draws
+  (milestone 249's series of 2026-10-22), each draw arming afresh after the AXP15060 reset, and none
+  was reset early. On x86_64 nothing guards the pair: under QEMU the TCO keeps counting across a
+  `0xcf9` reset, so the second boot could be reset before it arms.
+- In a rebooting soak only `arm_reboot` drains the receive buffer, so the escape that
+  `script/board-console --stop` sends on its banner reaches both. That is proven under QEMU by
+  hand and not by any check in `script/soak-test`, whose `--reboot` run sends nothing.
 
 ## Follow-on
 

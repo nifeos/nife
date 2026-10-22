@@ -620,8 +620,7 @@ const WEDGE_AFTER_SECONDS: u64 = 30;
 /// says so on the only channel it has, with how to stop it, before it can happen.
 #[cfg(all(soak_watchdog, target_arch = "x86_64"))]
 fn arm_watchdog() -> Option<Watchdog> {
-    // A stale byte must not halt the watchdog at the first beat; see `arm_reboot`.
-    crate::console::discard_rx();
+    discard_stale_bytes();
     let tco = match arch::tco::find() {
         Ok(tco) => tco,
         Err(why) => {
@@ -670,6 +669,18 @@ fn arm_watchdog() -> Option<Watchdog> {
     }
 }
 
+/// **Drop what U-Boot left in the receive buffer before the watchdog arms**, so a stale byte cannot
+/// halt it at the first beat (see `arm_reboot`).
+///
+/// A rebooting soak has already drained at its own banner, and that banner is where
+/// `script/board-console --stop` sends the escape. Draining a second time here would throw that
+/// byte away, and the series would never stop. So only a soak that does not reboot drains here.
+#[cfg(soak_watchdog)]
+fn discard_stale_bytes() {
+    #[cfg(not(feature = "reboot_soak_test"))]
+    crate::console::discard_rx();
+}
+
 /// The watchdog each architecture's soak arms (milestone 593).
 #[cfg(all(soak_watchdog, target_arch = "x86_64"))]
 type Watchdog = arch::tco::Tco;
@@ -697,7 +708,7 @@ fn print_watchdog_escape() {
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn arm_watchdog() -> Option<Watchdog> {
     use jh7110_watchdog::CORE_CLOCK_HZ;
-    crate::console::discard_rx();
+    discard_stale_bytes();
     let Some((found, sys)) = crate::memory::jh7110_watchdog() else {
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: this machine's device tree names no JH7110 watchdog \
