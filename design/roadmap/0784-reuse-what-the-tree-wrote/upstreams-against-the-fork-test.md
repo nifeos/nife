@@ -10,7 +10,8 @@ anything.
 - Written AI-contribution policy. Read in each repository at its default branch's head: the README,
   any `CONTRIBUTING`, any `.github/` template, and the owning organization's `.github` repository
   where one exists. A GitHub issue search for AI, LLM, Copilot, ChatGPT and Claude found nothing in
-  any of the six. *Missing* means no written policy exists in those places. It is not acceptance.
+  any of the six. The policy readings behind 857's fork 8 cover none of these rows: rcore-os's
+  `tgoskits` is a different repository from `virtio-drivers`. *Missing* means no written policy exists in those places. It is not acceptance.
 - CLA. A contributor license agreement the repository requires in writing. The license's own
   inbound-equals-outbound clause, as `xhci`'s README states, is not one.
 - Last release. The newest non-yanked version on crates.io.
@@ -38,11 +39,11 @@ has commits and releases in the last year; 3, the crate is not one we release or
 ## What each row means for 784
 
 - `elf`. No release in the last year, and ours is Kani-proved and loads the kernel's program
-  images, so a fork does not beat ours. Contributing our proofs (857's item 4) needs a written
-  policy that admits agent-written work, and there is none.
+  images, so a fork does not beat ours. Under 857's fork 8, contributing our proofs (its item 4)
+  needs a policy that admits disclosed AI work, and none is written.
 - `gpt_disk_types`. Active in commits but no release in the last year, and ours is Kani-proved, so
-  a fork does not beat ours. Contributing (857's item 3) needs a written policy, and there is none.
-  It also needs a person to sign Google's CLA once.
+  a fork does not beat ours. Under fork 8, contributing (857's item 3) needs a written policy, and
+  there is none. It also needs a person to sign Google's CLA once.
 - `virtio-drivers`. Nothing of ours to carry: `VIRTIO_F_ACCESS_PLATFORM` is upstream's #232, merged
   2026-03-17 and in no release. The crate passes all three conditions, so the test favors a fork of
   0.13.0 carrying #232 over keeping our drivers. Item (c0) stands as calef ruled it on 2026-10-20

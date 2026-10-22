@@ -31,14 +31,13 @@ dormant upstream leaves it nothing to merge. The cases read this way:
 
 ## The AI-submissions criterion
 
-calef, 2026-10-22 (UTC): *"I think AI submissions is likely to be a key criteria for evaluating
-our dependencies unless we can take them unmodified."* This tree's patches are written by agents,
-so an upstream's written policy on agent-written contributions weighs this way:
+Whether nife contributes to a project is ruled by fork 8 of milestone 857 (crates released on their
+own). Offers go only to projects whose policy admits disclosed AI work. Where AI is banned, nife
+sends no code or proofs. calef, 2026-10-22 (UTC), carries the same question into choosing a
+dependency: *"I think AI submissions is likely to be a key criteria for evaluating our dependencies
+unless we can take them unmodified."* This tree's patches are written by agents, so for a
+dependency an upstream's written policy on agent-written contributions weighs this way:
 
-- Contribute. It decides the verdict. Milestone 857 (crates released on their own)'s fork 8 sends
-  code and proofs only where a written policy admits disclosed agent-written work, and that holds
-  for
-  [its contribute questions](../0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md).
 - Take unmodified. It is a risk line, weighed by how likely we are to need a fix: heavy for a
   hostile-input parser with open defects, light for a stable leaf crate.
 - Fork or write. An upstream that refuses our patches still lets us merge its changes, one way. A
