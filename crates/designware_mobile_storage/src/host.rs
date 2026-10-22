@@ -16,7 +16,7 @@
 //! ([`crate::idmac`]). Commands and identification are the same on both.
 
 use crate::command::{Command, UPDATE_CLOCK};
-use crate::idmac::{DmaRegion, Idmac, NoDma, PAGE};
+use crate::idmac::{DirectMemoryAccessRegion, Idmac, NoDirectMemoryAccess, PAGE};
 use crate::regs;
 
 /// **The register window, and a clock**: everything the driver needs from the machine.
@@ -143,7 +143,7 @@ pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> 
 /// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
 /// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver; [`Host::with_idmac`]
 /// makes a `Host<R, D>` whose every data phase goes through the IDMAC.
-pub struct Host<R: Registers, D: DmaRegion = NoDma> {
+pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess> {
     pub(crate) regs: R,
     fifo: u32,
     pub(crate) depth: u32,
@@ -204,7 +204,7 @@ impl<R: Registers> Host<R> {
     ///
     /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     #[must_use]
-    pub fn with_idmac<D: DmaRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
+    pub fn with_idmac<D: DirectMemoryAccessRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
         Host {
             regs: self.regs,
             fifo: self.fifo,
@@ -215,7 +215,7 @@ impl<R: Registers> Host<R> {
     }
 }
 
-impl<R: Registers, D: DmaRegion> Host<R, D> {
+impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// The FIFO depth in words, as decided by [`Host::new`].
     #[must_use]
     pub fn fifo_depth(&self) -> u32 {

@@ -30,7 +30,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::vec::Vec;
 
 use crate::host::Registers;
-use crate::idmac::{DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DmaRegion};
+use crate::idmac::{DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion};
 use crate::regs;
 
 /// What the bus holds and what has been ordered: the driver's writes since its last barrier, and
@@ -73,7 +73,7 @@ impl Memory {
     }
 }
 
-impl DmaRegion for Memory {
+impl DirectMemoryAccessRegion for Memory {
     fn bus_address(&self) -> u64 {
         self.bus().base
     }

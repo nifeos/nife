@@ -14,7 +14,7 @@
 //! would need only this file's twenty lines and a device-tree match.
 
 use designware_mobile_storage::host::Registers;
-use designware_mobile_storage::idmac::DmaRegion;
+use designware_mobile_storage::idmac::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
 pub(crate) struct Window {
@@ -89,7 +89,7 @@ impl Region {
     }
 }
 
-impl DmaRegion for Region {
+impl DirectMemoryAccessRegion for Region {
     fn bus_address(&self) -> u64 {
         self.phys
     }

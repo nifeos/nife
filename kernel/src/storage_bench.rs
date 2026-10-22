@@ -40,7 +40,7 @@
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
-use designware_mobile_storage::idmac::{DmaRegion, Idmac, Refusal};
+use designware_mobile_storage::idmac::{DirectMemoryAccessRegion, Idmac, Refusal};
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::regs;
 use designware_mobile_storage::sd::{self, BLOCK, InitError, IoError, Kind};

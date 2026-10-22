@@ -16,8 +16,8 @@
 //! descriptor's `OWN` bit for the memory side, since a read's `DTO` can land while the IDMAC
 //! still has words to write.
 //!
-//! Name: provisional (milestone 53's IDMAC lane, 2026-10-22 UTC). The databook's own name for the
-//! engine, as `regs` names its registers.
+//! Name: provisional (milestone 53 (the board's own peripherals)'s IDMAC lane, 2026-10-22 UTC).
+//! The databook's own name for the engine, as `regs` names its registers.
 
 use crate::command::Command;
 use crate::host::{COMMAND_DEADLINE_US, DATA_DEADLINE_US, Error, Host, Identity, Registers};
@@ -28,7 +28,7 @@ use crate::regs;
 /// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-pub trait DmaRegion {
+pub trait DirectMemoryAccessRegion {
     /// The region's first byte as the controller addresses it: on radon, its physical address.
     fn bus_address(&self) -> u64;
     /// The region's length in bytes.
@@ -52,9 +52,9 @@ pub trait DmaRegion {
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NoDma {}
+pub enum NoDirectMemoryAccess {}
 
-impl DmaRegion for NoDma {
+impl DirectMemoryAccessRegion for NoDirectMemoryAccess {
     fn bus_address(&self) -> u64 {
         match *self {}
     }
@@ -120,13 +120,13 @@ pub enum Refusal {
 /// one, so a [`Host`] holding one has an IDMAC, 32-bit descriptors and a region they can address.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-pub struct Idmac<D: DmaRegion> {
+pub struct Idmac<D: DirectMemoryAccessRegion> {
     region: D,
     bus: u32,
     capacity: u32,
 }
 
-impl<D: DmaRegion> Idmac<D> {
+impl<D: DirectMemoryAccessRegion> Idmac<D> {
     /// **Check `region` against the controller `id` describes.**
     ///
     /// # Errors
@@ -229,7 +229,7 @@ pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32
     ]
 }
 
-impl<R: Registers, D: DmaRegion> Host<R, D> {
+impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// **Run `cmd`'s data phase through the IDMAC**, the data already in the region for a write.
     /// Stops and resets the IDMAC before returning, whatever happened.
     pub(crate) fn idmac_transfer(&mut self, cmd: &Command, bytes: u32) -> Result<[u32; 4], Error> {

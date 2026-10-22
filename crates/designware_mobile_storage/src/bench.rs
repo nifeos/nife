@@ -13,7 +13,7 @@
 //!   written.
 
 use crate::host::{Host, Registers};
-use crate::idmac::DmaRegion;
+use crate::idmac::DirectMemoryAccessRegion;
 use crate::partition::Mbr;
 use crate::sd::{self, BLOCK, Card, InitError, IoError};
 
@@ -55,7 +55,7 @@ pub enum ReadFailure {
 /// # Errors
 ///
 /// The first step that failed.
-pub fn read_only<R: Registers, D: DmaRegion>(
+pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     bus_width: u8,
     buf: &mut [u8],
@@ -88,7 +88,7 @@ pub fn read_only<R: Registers, D: DmaRegion>(
 
 /// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buf.len()` bytes a
 /// command, stopping before the card's end. Returns the blocks read and the microseconds taken.
-fn timed_read<R: Registers, D: DmaRegion>(
+fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     first: u64,
@@ -132,7 +132,7 @@ pub struct IdmacReport {
 /// The read that failed.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-pub fn idmac_read<R: Registers, D: DmaRegion>(
+pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     r: &ReadReport,
     reference: &[u8],
@@ -180,7 +180,7 @@ pub enum WriteVerdict {
 
 /// **The scratch write test.** `mbr` is what [`read_only`] parsed from this card; `original` and
 /// `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
-pub fn scratch_write<R: Registers, D: DmaRegion>(
+pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     mbr: Option<&Mbr>,

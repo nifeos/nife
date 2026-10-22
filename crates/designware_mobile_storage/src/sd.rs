@@ -25,7 +25,7 @@ use crate::card::{
 };
 use crate::command::{self as c, Command, Data, Response};
 use crate::host::{Error, Host, Registers};
-use crate::idmac::DmaRegion;
+use crate::idmac::DirectMemoryAccessRegion;
 
 /// The identification clock, the spec's ceiling for it.
 pub(crate) const IDENTIFY_HZ: u32 = 400_000;
@@ -132,7 +132,7 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitError> {
 /// # Errors
 ///
 /// The step that failed; see [`InitError`].
-pub fn identify<R: Registers, D: DmaRegion>(
+pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     max_bus_width: u8,
 ) -> Result<Card, InitError> {
@@ -174,7 +174,7 @@ pub fn identify<R: Registers, D: DmaRegion>(
 
 /// Steps 1 and 2: reset the controller at the identification clock, `CMD0`, then `CMD8`. Returns
 /// whether the card echoed the check pattern (SD 2.0 or later).
-fn go_idle_and_check_interface<R: Registers, D: DmaRegion>(
+fn go_idle_and_check_interface<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
 ) -> Result<bool, InitError> {
     host.reset().map_err(InitError::Controller)?;
@@ -196,7 +196,7 @@ fn go_idle_and_check_interface<R: Registers, D: DmaRegion>(
 
 /// Step 3: `ACMD41` until the card is powered up, or `CMD1` for an eMMC. Returns which kind of card
 /// answered and its OCR.
-fn power_up<R: Registers, D: DmaRegion>(
+fn power_up<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     v2: bool,
 ) -> Result<(Kind, u32), InitError> {
@@ -225,7 +225,7 @@ fn power_up<R: Registers, D: DmaRegion>(
 
 /// Step 4: `CMD2` for the CID, `CMD3` for the relative address, `CMD9` for the CSD, `CMD7` to
 /// select. Returns the raw CID, the address and the raw CSD.
-fn address_and_select<R: Registers, D: DmaRegion>(
+fn address_and_select<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     kind: Kind,
 ) -> Result<([u32; 4], u16, [u32; 4]), InitError> {
@@ -272,7 +272,7 @@ fn address_and_select<R: Registers, D: DmaRegion>(
 }
 
 /// Steps 5 and 6 for an eMMC: the transfer clock, then `EXT_CSD` for the true sector count.
-fn configure_mmc<R: Registers, D: DmaRegion>(
+fn configure_mmc<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &mut Card,
     csd_raw: &[u32; 4],
@@ -308,7 +308,7 @@ fn configure_mmc<R: Registers, D: DmaRegion>(
 
 /// Steps 5 and 6 for an SD card: the capacity from the CSD, `ACMD6` to 4-bit if the slot allows,
 /// `CMD16` to 512 bytes, then the transfer clock.
-fn configure_sd<R: Registers, D: DmaRegion>(
+fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &mut Card,
     csd_raw: &[u32; 4],
@@ -338,7 +338,7 @@ fn configure_sd<R: Registers, D: DmaRegion>(
     Ok(())
 }
 
-fn app_command<R: Registers, D: DmaRegion>(
+fn app_command<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
 ) -> Result<(), InitError> {
@@ -348,7 +348,7 @@ fn app_command<R: Registers, D: DmaRegion>(
     r1_ok(c::APP_CMD, r1[0])
 }
 
-fn sd_power_up<R: Registers, D: DmaRegion>(
+fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     v2: bool,
 ) -> Result<u32, InitError> {
@@ -373,7 +373,9 @@ fn sd_power_up<R: Registers, D: DmaRegion>(
     }
 }
 
-fn mmc_power_up<R: Registers, D: DmaRegion>(host: &mut Host<R, D>) -> Result<u32, InitError> {
+fn mmc_power_up<R: Registers, D: DirectMemoryAccessRegion>(
+    host: &mut Host<R, D>,
+) -> Result<u32, InitError> {
     let start = host.registers().now_us();
     loop {
         let ocr = host
@@ -461,7 +463,7 @@ fn check(len: usize, card: &Card, lba: u64) -> Result<u32, IoError> {
 ///
 /// [`IoError::Length`] or [`IoError::Range`] before anything is sent; otherwise what the
 /// controller or the card reported.
-pub fn read_blocks<R: Registers, D: DmaRegion>(
+pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     lba: u64,
@@ -483,7 +485,7 @@ pub fn read_blocks<R: Registers, D: DmaRegion>(
 /// # Errors
 ///
 /// As [`read_blocks`].
-pub fn write_blocks<R: Registers, D: DmaRegion>(
+pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     lba: u64,
