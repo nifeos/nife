@@ -14,9 +14,8 @@ Written by the research lane `lane/reuse-audit` on 2026-10-04 (UTC) at base `7da
 calef's question of the same day: under the §46 (thin primitives or whole subsystems) amendment,
 *what that we already have in the tree would be a better candidate for reuse?* The ruling: outside the
 kernel and the crates Kani proves, the default is to take or adapt existing code, and writing our own
-needs a recorded reason. The amendment's text was still in flight as pull request #1637 (a claim
-commit only), so the `Reuse:` lines below use the ruling's terms and should be conformed to the
-landed wording. Title and slug are drafts.
+needs a recorded reason. Title and slug are drafts. Every crate the table below does not weigh is
+weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
 under §46. Items (a), (d), (e), (f2) and (g) are built, on calef's approvals of `httparse`
