@@ -266,12 +266,14 @@ mod tests {
         };
         let mut s = Settle::new(0, at(0));
         let mut t = 0;
-        loop {
+        // Bounded, so a broken `observe` fails here rather than hanging the test run.
+        while t < DEBOUNCE_TIMEOUT_MS {
             t += DEBOUNCE_STEP_MS;
             if let Some(settled) = s.observe(t, at(t)) {
                 return (t, Some(settled), at(t));
             }
         }
+        (t, None, at(t))
     }
 
     /// **xenon's ports after the reset**, from the PORTSC probe on 2026-10-21 (UTC): nothing at
@@ -310,6 +312,7 @@ mod tests {
         let mut s = Settle::new(0, ports(&[]));
         let mut t = 0;
         let end = loop {
+            assert!(t < DEBOUNCE_TIMEOUT_MS, "the wait never ended");
             t += DEBOUNCE_STEP_MS;
             let bouncing = if (t / DEBOUNCE_STEP_MS) % 2 == 0 {
                 ports(&[3])
