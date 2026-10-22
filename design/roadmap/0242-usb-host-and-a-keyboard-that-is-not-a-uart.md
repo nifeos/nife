@@ -167,7 +167,11 @@ Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear
 ## Follow-on
 
 - **Outstanding.** calef's bench step on xenon, above: the only part of this milestone that is about
-  real hardware, and the part that closes milestone 192. Checked 2026-10-04.
+  real hardware, and the part that closes milestone 192. On 2026-10-21 (UTC) xenon's keyboard
+  reached the shell with no monitor attached, and with pull request #2529's settle the step 2 line
+  read `a keyboard on port 4 (low speed, c0f4:08f5)` (`bench/xenon-2026-10-21/README-242.md`).
+  `main`'s scan runs before the ports re-detect and prints `0 of 26`. Step 3's monitor waits on
+  pull request #2528.
 - **Recorded.** Hubs: a keyboard behind a hub, or with one built in, is not found. In
   `crates/extensible_host_controller_interface`'s and `components/src/usb_keyboard_driver.rs`'s
   `BUGS`.
