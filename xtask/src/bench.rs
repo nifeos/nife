@@ -566,7 +566,7 @@ fn run_bench(
     let _ = child.wait();
 
     if !done {
-        eprintln!("bench: QEMU ended before printing `bench: done`; no results");
+        eprintln!("bench: the kernel stopped before printing `bench: done`; no results");
         return false;
     }
 
@@ -583,9 +583,14 @@ fn run_bench(
     true
 }
 
-/// **The bench kernel's lines, read until it says `bench: done`**: each result as (name, ticks,
-/// iterations), the counter frequency, and whether `done` arrived.
-fn read_bench_lines(stdout: std::process::ChildStdout) -> (Vec<(String, u64, u64)>, u64, bool) {
+/// **The bench kernel's lines, read until it says `bench: done` or panics**: each result as (name,
+/// ticks, iterations), the counter frequency, and whether `done` arrived.
+///
+/// A bench kernel that panics halts in `wfi` and never exits, so a reader waiting for `done` would
+/// wait forever. The `[PANIC]` line is where it stops instead, with `done` false, which fails the
+/// run. `TickWindow` (kernel/src/bench/timing.rs) relies on this: a tick in a timed window is a
+/// panic, and it has to fail the gate rather than hang it.
+fn read_bench_lines(stdout: impl std::io::Read) -> (Vec<(String, u64, u64)>, u64, bool) {
     // Read lines until the guest says it is done, then kill it: it is parked in wfi and will
     // never exit by itself (deliberately; see kernel/src/bench.rs).
     use std::io::BufRead;
@@ -595,6 +600,10 @@ fn read_bench_lines(stdout: std::process::ChildStdout) -> (Vec<(String, u64, u64
     let mut done = false;
     for line in reader.lines() {
         let Ok(line) = line else { break };
+        if line.starts_with("[PANIC]") {
+            eprintln!("bench: the kernel panicked: {line}");
+            break;
+        }
         // **Diagnostics pass straight through, and deliberately do not become rows.** A probe
         // reports a count or a bitmask, not a duration, so putting it in the table would invite
         // `--check` to police an exact value with a 10% tolerance and would print a meaningless
@@ -934,5 +943,22 @@ mod tests {
         );
         assert!(!h.contains("# why:"));
         assert!(h.lines().nth(3).unwrap().starts_with("# bench/"));
+    }
+
+    /// A panicking bench kernel fails the run instead of hanging it. The kernel halts in `wfi`
+    /// after a panic and QEMU never exits, so without the stop the reader would block forever, and
+    /// `TickWindow`'s check (a tick in a timed window) would hang CI instead of failing it. The
+    /// lines after the panic stand in for a pipe that never closes: the reader must not reach them.
+    #[test]
+    fn a_kernel_panic_ends_the_run_without_done() {
+        let out = "bench: cntfrq 10000000\n\
+                   bench: yield_switch 183330 2000\n\
+                   [PANIC] panicked at kernel/src/bench/timing.rs:1:1: a tick landed\n\
+                   bench: ipc_rtt 175709 1000\n\
+                   bench: done\n";
+        let (results, cntfrq, done) = super::read_bench_lines(out.as_bytes());
+        assert!(!done);
+        assert_eq!(cntfrq, 10_000_000);
+        assert_eq!(results, vec![("yield_switch".to_string(), 183_330, 2000)]);
     }
 }
