@@ -278,9 +278,10 @@ jobs:
   # fourteen generated files): a changed file under `notes/project-metrics/` skips only when no
   # gated file names it, so the `falsification-times.tsv` `script/verify` shards by still runs.
   #
-  # **Comment-only Rust rides the same skip** (milestone 929). A `.rs` file whose tokens are
-  # unchanged once comments are removed counts as skippable, unless a patch or a gated reader could
-  # notice; `helpers/prose_only.py`'s COMMENT-ONLY RUST has the rule. It also sets `comments`, which
+  # **Comment-only Rust rides the same skip** (milestone 929 (comments in the Linux style across
+  # first-party Rust)). A `.rs` file whose tokens are unchanged once comments are removed counts as
+  # skippable, unless a patch or a gated reader could notice; `helpers/prose_only.py`'s
+  # COMMENT-ONLY RUST has the rule. It also sets `comments`, which
   # keeps `rustfmt` running, and `comment_tests`, which `lint` tests on the host.
   #
   # **Fails toward running.** A classifier error leaves `prose` empty and `!= 'true'` admits it.

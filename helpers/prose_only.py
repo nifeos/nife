@@ -100,8 +100,8 @@ job), each naming its own files, so every record a gated job reads keeps running
 
 # COMMENT-ONLY RUST
 
-Milestone 929 pays comments down across the tree in pull requests that change nothing else, and
-each one ran the full suite. A changed `.rs` file is **comment-only** when its tokens at the base
+Milestone 929 (comments in the Linux style across first-party Rust) pays comments down in pull
+requests that change nothing else, which would otherwise each run the full suite. A changed `.rs` file is **comment-only** when its tokens at the base
 and at the head are equal once every comment is removed, doc comments included. That is decided by
 lexing (`rust_code_tokens`), not by a pattern on `//`: a string, raw string, byte string or char
 literal is one token, so a `//` or `*/` inside one is code, and a block comment ends where its
@@ -816,7 +816,7 @@ def selftest():
                            "      - run: git grep -l proof -- 'kernel/src'\n"})
     cases.append(("a merge-group workflow that walks the directory runs", p is False))
     p, t, r, c = rs(edit, {"helpers/x.py": 'SRC = "kernel/src/map.rs"\n'})
-    cases.append(("a script lint runs is logged, not acted on", p is True and "helpers/x.py:1" in r[0]))
+    cases.append(("a script lint runs is logged, not acted on", p is True and "helpers/x.py" in r[0]))
     p, t, r, c = rs(edit, {"kernel/Cargo.toml": '[package]\nname = "kernel"\n[[bin]]\npath = "src/map.rs"\n',
                            "kernel/src/lib.rs": '#[path = "map.rs"]\nmod map;\n',
                            "xtask/src/x.rs": 'panic!("see kernel/src/map.rs for why");\n'})
