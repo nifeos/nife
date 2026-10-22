@@ -1,0 +1,695 @@
+--- a/README.md
++++ b/README.md
+@@ -38,7 +38,7 @@
+ | `VIRTIO_F_INDIRECT_DESC`     | ✅        | Indirect descriptors                    |
+ | `VIRTIO_F_EVENT_IDX`         | ✅        | `avail_event` and `used_event` fields   |
+ | `VIRTIO_F_VERSION_1`         | TODO      | VirtIO version 1 compliance             |
+-| `VIRTIO_F_ACCESS_PLATFORM`   | ❌        | Limited device access to memory         |
++| `VIRTIO_F_ACCESS_PLATFORM`   | ✅        | Limited device access to memory         |
+ | `VIRTIO_F_RING_PACKED`       | ❌        | Packed virtqueue layout                 |
+ | `VIRTIO_F_IN_ORDER`          | ❌        | Optimisations for in-order buffer usage |
+ | `VIRTIO_F_ORDER_PLATFORM`    | ❌        | Platform ordering for memory access     |
+--- a/src/device/blk.rs
++++ b/src/device/blk.rs
+@@ -15,7 +15,8 @@
+     .union(BlkFeature::FLUSH)
+     .union(BlkFeature::RING_INDIRECT_DESC)
+     .union(BlkFeature::RING_EVENT_IDX)
+-    .union(BlkFeature::VERSION_1);
++    .union(BlkFeature::VERSION_1)
++    .union(BlkFeature::ACCESS_PLATFORM);
+ 
+ /// Driver for a VirtIO block device.
+ ///
+@@ -67,6 +68,7 @@
+             QUEUE,
+             negotiated_features.contains(BlkFeature::RING_INDIRECT_DESC),
+             negotiated_features.contains(BlkFeature::RING_EVENT_IDX),
++            negotiated_features.contains(BlkFeature::ACCESS_PLATFORM),
+         )?;
+         transport.finish_init();
+ 
+--- a/src/device/console.rs
++++ b/src/device/console.rs
+@@ -21,7 +21,8 @@
+     .union(Features::RING_INDIRECT_DESC)
+     .union(Features::SIZE)
+     .union(Features::EMERG_WRITE)
+-    .union(Features::VERSION_1);
++    .union(Features::VERSION_1)
++    .union(Features::ACCESS_PLATFORM);
+ 
+ /// Driver for a VirtIO console device.
+ ///
+@@ -97,12 +98,14 @@
+             QUEUE_RECEIVEQ_PORT_0,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            negotiated_features.contains(Features::ACCESS_PLATFORM),
+         )?;
+         let transmitq = VirtQueue::new(
+             &mut transport,
+             QUEUE_TRANSMITQ_PORT_0,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            negotiated_features.contains(Features::ACCESS_PLATFORM),
+         )?;
+ 
+         // Safe because no alignment or initialisation is required for [u8], the DMA buffer is
+--- a/src/device/gpu/mod.rs
++++ b/src/device/gpu/mod.rs
+@@ -19,6 +19,7 @@
+ const SUPPORTED_FEATURES: Features = Features::RING_EVENT_IDX
+     .union(Features::RING_INDIRECT_DESC)
+     .union(Features::VERSION_1)
++    .union(Features::ACCESS_PLATFORM)
+     .union(Features::EDID);
+ 
+ /// A virtio based graphics adapter.
+@@ -45,6 +46,8 @@
+     queue_buf_recv: Box<[u8]>,
+     /// Whether EDID feature was negotiated.
+     has_edid: bool,
++    /// Whether `VIRTIO_F_ACCESS_PLATFORM` was negotiated.
++    access_platform: bool,
+ }
+ 
+ impl<H: Hal, T: Transport> VirtIOGpu<H, T> {
+@@ -60,17 +63,21 @@
+             events_read, num_scanouts
+         );
+ 
++        let access_platform = negotiated_features.contains(Features::ACCESS_PLATFORM);
++
+         let control_queue = VirtQueue::new(
+             &mut transport,
+             QUEUE_TRANSMIT,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            access_platform,
+         )?;
+         let cursor_queue = VirtQueue::new(
+             &mut transport,
+             QUEUE_CURSOR,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            access_platform,
+         )?;
+ 
+         let queue_buf_send = FromZeros::new_box_zeroed_with_elems(PAGE_SIZE).unwrap();
+@@ -90,6 +97,7 @@
+             queue_buf_send,
+             queue_buf_recv,
+             has_edid,
++            access_platform,
+         })
+     }
+ 
+@@ -174,7 +182,11 @@
+         self.resource_create_2d(RESOURCE_ID_FB, width, height)?;
+ 
+         let size = width * height * 4;
+-        let frame_buffer_dma = Dma::new(pages(size as usize), BufferDirection::DriverToDevice)?;
++        let frame_buffer_dma = Dma::new(
++            pages(size as usize),
++            BufferDirection::DriverToDevice,
++            self.access_platform,
++        )?;
+ 
+         self.resource_attach_backing(RESOURCE_ID_FB, frame_buffer_dma.paddr() as u64, size)?;
+         self.set_scanout(rect, SCANOUT_ID, RESOURCE_ID_FB)?;
+@@ -214,7 +226,11 @@
+         if cursor_image.len() != size as usize {
+             return Err(Error::InvalidParam);
+         }
+-        let cursor_buffer_dma = Dma::new(pages(size as usize), BufferDirection::DriverToDevice)?;
++        let cursor_buffer_dma = Dma::new(
++            pages(size as usize),
++            BufferDirection::DriverToDevice,
++            self.access_platform,
++        )?;
+ 
+         // SAFETY: `Dma::new` guarantees that the pointer returned from
+         // `raw_slice` is non-null, aligned, and the allocation is zeroed. The
+--- a/src/device/input.rs
++++ b/src/device/input.rs
+@@ -35,12 +35,14 @@
+             QUEUE_EVENT,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         let status_queue = VirtQueue::new(
+             &mut transport,
+             QUEUE_STATUS,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         for (i, event) in event_buf.as_mut().iter_mut().enumerate() {
+             // SAFETY: The buffer lasts as long as the queue.
+@@ -303,7 +305,8 @@
+ const QUEUE_STATUS: u16 = 1;
+ const SUPPORTED_FEATURES: Feature = Feature::RING_EVENT_IDX
+     .union(Feature::RING_INDIRECT_DESC)
+-    .union(Feature::VERSION_1);
++    .union(Feature::VERSION_1)
++    .union(Feature::ACCESS_PLATFORM);
+ 
+ // a parameter that can change
+ const QUEUE_SIZE: usize = 32;
+--- a/src/device/net/dev_raw.rs
++++ b/src/device/net/dev_raw.rs
+@@ -42,12 +42,14 @@
+             QUEUE_TRANSMIT,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            negotiated_features.contains(Features::ACCESS_PLATFORM),
+         )?;
+         let recv_queue = VirtQueue::new(
+             &mut transport,
+             QUEUE_RECEIVE,
+             negotiated_features.contains(Features::RING_INDIRECT_DESC),
+             negotiated_features.contains(Features::RING_EVENT_IDX),
++            negotiated_features.contains(Features::ACCESS_PLATFORM),
+         )?;
+ 
+         transport.finish_init();
+--- a/src/device/net/mod.rs
++++ b/src/device/net/mod.rs
+@@ -77,6 +77,8 @@
+         const RING_INDIRECT_DESC = 1 << 28;
+         const RING_EVENT_IDX = 1 << 29;
+         const VERSION_1 = 1 << 32; // legacy
++        // since virtio v1.1
++        const ACCESS_PLATFORM = 1 << 33;
+     }
+ }
+ 
+@@ -202,4 +204,5 @@
+     .union(Features::STATUS)
+     .union(Features::RING_EVENT_IDX)
+     .union(Features::RING_INDIRECT_DESC)
+-    .union(Features::VERSION_1);
++    .union(Features::VERSION_1)
++    .union(Features::ACCESS_PLATFORM);
+--- a/src/device/rng.rs
++++ b/src/device/rng.rs
+@@ -11,7 +11,8 @@
+ const QUEUE_SIZE: usize = 8;
+ const SUPPORTED_FEATURES: Feature = Feature::RING_INDIRECT_DESC
+     .union(Feature::RING_EVENT_IDX)
+-    .union(Feature::VERSION_1);
++    .union(Feature::VERSION_1)
++    .union(Feature::ACCESS_PLATFORM);
+ 
+ /// Driver for a VirtIO random number generator device.
+ pub struct VirtIORng<H: Hal, T: Transport> {
+@@ -28,6 +29,7 @@
+             QUEUE_IDX,
+             feat.contains(Feature::RING_INDIRECT_DESC),
+             feat.contains(Feature::RING_EVENT_IDX),
++            feat.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         transport.finish_init();
+         Ok(Self { transport, queue })
+--- a/src/device/socket/vsock.rs
++++ b/src/device/socket/vsock.rs
+@@ -21,7 +21,8 @@
+ pub(crate) const QUEUE_SIZE: usize = 8;
+ const SUPPORTED_FEATURES: Feature = Feature::RING_EVENT_IDX
+     .union(Feature::RING_INDIRECT_DESC)
+-    .union(Feature::VERSION_1);
++    .union(Feature::VERSION_1)
++    .union(Feature::ACCESS_PLATFORM);
+ 
+ /// Information about a particular vsock connection.
+ #[derive(Clone, Debug, Default, PartialEq, Eq)]
+@@ -262,18 +263,21 @@
+             RX_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         let tx = VirtQueue::new(
+             &mut transport,
+             TX_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         let event = VirtQueue::new(
+             &mut transport,
+             EVENT_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+ 
+         let rx = OwningQueue::new(rx)?;
+--- a/src/device/sound.rs
++++ b/src/device/sound.rs
+@@ -75,24 +75,28 @@
+             CONTROL_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         let event_queue = OwningQueue::new(VirtQueue::new(
+             &mut transport,
+             EVENT_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?)?;
+         let tx_queue = VirtQueue::new(
+             &mut transport,
+             TX_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         let rx_queue = VirtQueue::new(
+             &mut transport,
+             RX_QUEUE_IDX,
+             negotiated_features.contains(Feature::RING_INDIRECT_DESC),
+             negotiated_features.contains(Feature::RING_EVENT_IDX),
++            negotiated_features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+ 
+         // read configuration space
+@@ -753,7 +757,8 @@
+ 
+ const SUPPORTED_FEATURES: Feature = Feature::RING_INDIRECT_DESC
+     .union(Feature::RING_EVENT_IDX)
+-    .union(Feature::VERSION_1);
++    .union(Feature::VERSION_1)
++    .union(Feature::ACCESS_PLATFORM);
+ 
+ bitflags! {
+     #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+--- a/src/device/virtio_9p.rs
++++ b/src/device/virtio_9p.rs
+@@ -12,7 +12,8 @@
+ const P9_HEADER_SIZE: usize = 7; // size (4) + type (1) + tag (2)
+ const SUPPORTED_FEATURES: Feature = Feature::RING_INDIRECT_DESC
+     .union(Feature::RING_EVENT_IDX)
+-    .union(Feature::VERSION_1);
++    .union(Feature::VERSION_1)
++    .union(Feature::ACCESS_PLATFORM);
+ 
+ /// Driver for a VirtIO 9p device.
+ pub struct VirtIO9p<H: Hal, T: Transport> {
+@@ -31,6 +32,7 @@
+             QUEUE,
+             features.contains(Feature::RING_INDIRECT_DESC),
+             features.contains(Feature::RING_EVENT_IDX),
++            features.contains(Feature::ACCESS_PLATFORM),
+         )?;
+         transport.finish_init();
+ 
+--- a/src/hal.rs
++++ b/src/hal.rs
+@@ -13,6 +13,7 @@
+     paddr: PhysAddr,
+     vaddr: NonNull<u8>,
+     pages: usize,
++    access_platform: bool,
+     _hal: PhantomData<H>,
+ }
+ 
+@@ -28,8 +29,8 @@
+     /// the given direction.
+     ///
+     /// The pages will be zeroed.
+-    pub fn new(pages: usize, direction: BufferDirection) -> Result<Self> {
+-        let (paddr, vaddr) = H::dma_alloc(pages, direction);
++    pub fn new(pages: usize, direction: BufferDirection, access_platform: bool) -> Result<Self> {
++        let (paddr, vaddr) = H::dma_alloc(pages, direction, access_platform);
+         if paddr == 0 {
+             return Err(Error::DmaError);
+         }
+@@ -37,6 +38,7 @@
+             paddr,
+             vaddr,
+             pages,
++            access_platform,
+             _hal: PhantomData,
+         })
+     }
+@@ -64,7 +66,8 @@
+     fn drop(&mut self) {
+         // SAFETY: The memory was previously allocated by `dma_alloc` in `Dma::new`,
+         // not yet deallocated, and we are passing the values from then.
+-        let err = unsafe { H::dma_dealloc(self.paddr, self.vaddr, self.pages) };
++        let err =
++            unsafe { H::dma_dealloc(self.paddr, self.vaddr, self.pages, self.access_platform) };
+         assert_eq!(err, 0, "failed to deallocate DMA");
+     }
+ }
+@@ -88,7 +91,11 @@
+     /// [_valid_](https://doc.rust-lang.org/std/ptr/index.html#safety) pointer, aligned to
+     /// [`PAGE_SIZE`], and won't alias any other allocations or references in the program until it
+     /// is deallocated by `dma_dealloc`. The pages must be zeroed.
+-    fn dma_alloc(pages: usize, direction: BufferDirection) -> (PhysAddr, NonNull<u8>);
++    fn dma_alloc(
++        pages: usize,
++        direction: BufferDirection,
++        access_platform: bool,
++    ) -> (PhysAddr, NonNull<u8>);
+ 
+     /// Deallocates the given contiguous physical DMA memory pages.
+     ///
+@@ -97,7 +104,12 @@
+     /// The memory must have been allocated by `dma_alloc` on the same `Hal` implementation, and not
+     /// yet deallocated. `pages` must be the same number passed to `dma_alloc` originally, and both
+     /// `paddr` and `vaddr` must be the values returned by `dma_alloc`.
+-    unsafe fn dma_dealloc(paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32;
++    unsafe fn dma_dealloc(
++        paddr: PhysAddr,
++        vaddr: NonNull<u8>,
++        pages: usize,
++        access_platform: bool,
++    ) -> i32;
+ 
+     /// Converts a physical address used for MMIO to a virtual address which the driver can access.
+     ///
+@@ -127,7 +139,11 @@
+     ///
+     /// The buffer must be a valid pointer to a non-empty memory range which will not be accessed by
+     /// any other thread for the duration of this method call.
+-    unsafe fn share(buffer: NonNull<[u8]>, direction: BufferDirection) -> PhysAddr;
++    unsafe fn share(
++        buffer: NonNull<[u8]>,
++        direction: BufferDirection,
++        access_platform: bool,
++    ) -> PhysAddr;
+ 
+     /// Unshares the given memory range from the device and (if necessary) copies it back to the
+     /// original buffer.
+@@ -137,7 +153,12 @@
+     /// The buffer must be a valid pointer to a non-empty memory range which will not be accessed by
+     /// any other thread for the duration of this method call. The `paddr` must be the value
+     /// previously returned by the corresponding `share` call.
+-    unsafe fn unshare(paddr: PhysAddr, buffer: NonNull<[u8]>, direction: BufferDirection);
++    unsafe fn unshare(
++        paddr: PhysAddr,
++        buffer: NonNull<[u8]>,
++        direction: BufferDirection,
++        access_platform: bool,
++    );
+ }
+ 
+ /// The direction in which a buffer is passed.
+--- a/src/hal/fake.rs
++++ b/src/hal/fake.rs
+@@ -13,7 +13,11 @@
+ 
+ /// Fake HAL implementation for use in unit tests.
+ unsafe impl Hal for FakeHal {
+-    fn dma_alloc(pages: usize, _direction: BufferDirection) -> (PhysAddr, NonNull<u8>) {
++    fn dma_alloc(
++        pages: usize,
++        _direction: BufferDirection,
++        _access_platform: bool,
++    ) -> (PhysAddr, NonNull<u8>) {
+         assert_ne!(pages, 0);
+         let layout = Layout::from_size_align(pages * PAGE_SIZE, PAGE_SIZE).unwrap();
+         // Safe because the size and alignment of the layout are non-zero.
+@@ -25,7 +29,12 @@
+         }
+     }
+ 
+-    unsafe fn dma_dealloc(_paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
++    unsafe fn dma_dealloc(
++        _paddr: PhysAddr,
++        vaddr: NonNull<u8>,
++        pages: usize,
++        _access_platform: bool,
++    ) -> i32 {
+         assert_ne!(pages, 0);
+         let layout = Layout::from_size_align(pages * PAGE_SIZE, PAGE_SIZE).unwrap();
+         // Safe because the layout is the same as was used when the memory was allocated by
+@@ -40,7 +49,11 @@
+         NonNull::new(paddr as _).unwrap()
+     }
+ 
+-    unsafe fn share(buffer: NonNull<[u8]>, direction: BufferDirection) -> PhysAddr {
++    unsafe fn share(
++        buffer: NonNull<[u8]>,
++        direction: BufferDirection,
++        _access_platform: bool,
++    ) -> PhysAddr {
+         assert_ne!(buffer.len(), 0);
+         // To ensure that the driver is handling and unsharing buffers properly, allocate a new
+         // buffer and copy to it if appropriate.
+@@ -58,7 +71,12 @@
+         virt_to_phys(vaddr)
+     }
+ 
+-    unsafe fn unshare(paddr: PhysAddr, buffer: NonNull<[u8]>, direction: BufferDirection) {
++    unsafe fn unshare(
++        paddr: PhysAddr,
++        buffer: NonNull<[u8]>,
++        direction: BufferDirection,
++        _access_platform: bool,
++    ) {
+         assert_ne!(buffer.len(), 0);
+         assert_ne!(paddr, 0);
+         let vaddr = phys_to_virt(paddr);
+--- a/src/queue.rs
++++ b/src/queue.rs
+@@ -64,6 +64,8 @@
+     last_used_idx: u16,
+     /// Whether the `VIRTIO_F_EVENT_IDX` feature has been negotiated.
+     event_idx: bool,
++    /// Whether the `VIRTIO_F_ACCESS_PLATFORM` feature has been negotiated.
++    access_platform: bool,
+     #[cfg(feature = "alloc")]
+     indirect: bool,
+     #[cfg(feature = "alloc")]
+@@ -85,6 +87,7 @@
+         idx: u16,
+         indirect: bool,
+         event_idx: bool,
++        access_platform: bool,
+     ) -> Result<Self> {
+         #[allow(clippy::let_unit_value)]
+         let _ = Self::SIZE_OK;
+@@ -98,9 +101,9 @@
+         let size = SIZE as u16;
+ 
+         let layout = if transport.requires_legacy_layout() {
+-            VirtQueueLayout::allocate_legacy(size)?
++            VirtQueueLayout::allocate_legacy(size, access_platform)?
+         } else {
+-            VirtQueueLayout::allocate_flexible(size)?
++            VirtQueueLayout::allocate_flexible(size, access_platform)?
+         };
+ 
+         transport.queue_set(
+@@ -141,6 +144,7 @@
+             avail_idx: 0,
+             last_used_idx: 0,
+             event_idx,
++            access_platform,
+             #[cfg(feature = "alloc")]
+             indirect,
+             #[cfg(feature = "alloc")]
+@@ -229,7 +233,7 @@
+             // SAFETY: Our caller promises that the buffers live at least until `pop_used`
+             // returns them.
+             unsafe {
+-                desc.set_buf::<H>(buffer, direction, DescFlags::NEXT);
++                desc.set_buf::<H>(buffer, direction, DescFlags::NEXT, self.access_platform);
+             }
+             last = self.free_head;
+             self.free_head = desc.next;
+@@ -264,7 +268,7 @@
+             // SAFETY: Our caller promises that the buffers live at least until `pop_used`
+             // returns them.
+             unsafe {
+-                desc.set_buf::<H>(buffer, direction, DescFlags::NEXT);
++                desc.set_buf::<H>(buffer, direction, DescFlags::NEXT, self.access_platform);
+             }
+             desc.next = (i + 1) as u16;
+         }
+@@ -294,6 +298,7 @@
+                 Box::leak(indirect_list).as_bytes().into(),
+                 BufferDirection::DriverToDevice,
+                 DescFlags::INDIRECT,
++                self.access_platform,
+             );
+         }
+         self.write_desc(head);
+@@ -452,6 +457,7 @@
+                         paddr,
+                         indirect_list.as_mut_bytes().into(),
+                         BufferDirection::DriverToDevice,
++                        self.access_platform,
+                     );
+                 }
+ 
+@@ -465,7 +471,12 @@
+                     unsafe {
+                         // Unshare the buffer (and perhaps copy its contents back to the original
+                         // buffer).
+-                        H::unshare(indirect_list[i].addr, buffer, direction);
++                        H::unshare(
++                            indirect_list[i].addr,
++                            buffer,
++                            direction,
++                            self.access_platform,
++                        );
+                     }
+                 }
+                 drop(indirect_list);
+@@ -493,7 +504,7 @@
+                 // from which we got `paddr`.
+                 unsafe {
+                     // Unshare the buffer (and perhaps copy its contents back to the original buffer).
+-                    H::unshare(paddr, buffer, direction);
++                    H::unshare(paddr, buffer, direction, self.access_platform);
+                 }
+             }
+ 
+@@ -591,11 +602,11 @@
+     /// required by legacy interfaces.
+     ///
+     /// Ref: 2.6.2 Legacy Interfaces: A Note on Virtqueue Layout
+-    fn allocate_legacy(queue_size: u16) -> Result<Self> {
++    fn allocate_legacy(queue_size: u16, access_platform: bool) -> Result<Self> {
+         let (desc, avail, used) = queue_part_sizes(queue_size);
+         let size = align_up(desc + avail) + align_up(used);
+         // Allocate contiguous pages.
+-        let dma = Dma::new(size / PAGE_SIZE, BufferDirection::Both)?;
++        let dma = Dma::new(size / PAGE_SIZE, BufferDirection::Both, access_platform)?;
+         Ok(Self::Legacy {
+             dma,
+             avail_offset: desc,
+@@ -608,10 +619,18 @@
+     ///
+     /// This is preferred over `allocate_legacy` where possible as it reduces memory fragmentation
+     /// and allows the HAL to know which DMA regions are used in which direction.
+-    fn allocate_flexible(queue_size: u16) -> Result<Self> {
++    fn allocate_flexible(queue_size: u16, access_platform: bool) -> Result<Self> {
+         let (desc, avail, used) = queue_part_sizes(queue_size);
+-        let driver_to_device_dma = Dma::new(pages(desc + avail), BufferDirection::DriverToDevice)?;
+-        let device_to_driver_dma = Dma::new(pages(used), BufferDirection::DeviceToDriver)?;
++        let driver_to_device_dma = Dma::new(
++            pages(desc + avail),
++            BufferDirection::DriverToDevice,
++            access_platform,
++        )?;
++        let device_to_driver_dma = Dma::new(
++            pages(used),
++            BufferDirection::DeviceToDriver,
++            access_platform,
++        )?;
+         Ok(Self::Modern {
+             driver_to_device_dma,
+             device_to_driver_dma,
+@@ -732,10 +751,11 @@
+         buf: NonNull<[u8]>,
+         direction: BufferDirection,
+         extra_flags: DescFlags,
++        access_platform: bool,
+     ) {
+         // SAFETY: Our caller promises that the buffer is valid.
+         unsafe {
+-            self.addr = H::share(buf, direction);
++            self.addr = H::share(buf, direction, access_platform);
+         }
+         self.len = buf.len().try_into().unwrap();
+         self.flags = extra_flags
+@@ -1016,7 +1036,7 @@
+         )
+         .unwrap();
+         assert_eq!(
+-            VirtQueue::<FakeHal, 8>::new(&mut transport, 0, false, false).unwrap_err(),
++            VirtQueue::<FakeHal, 8>::new(&mut transport, 0, false, false, false).unwrap_err(),
+             Error::InvalidParam
+         );
+     }
+@@ -1029,9 +1049,9 @@
+             UniqueMmioPointer::from([].as_mut_slice()),
+         )
+         .unwrap();
+-        VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+         assert_eq!(
+-            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap_err(),
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap_err(),
+             Error::AlreadyUsed
+         );
+     }
+@@ -1044,7 +1064,8 @@
+             UniqueMmioPointer::from([].as_mut_slice()),
+         )
+         .unwrap();
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+         assert_eq!(
+             unsafe { queue.add(&[], &mut []) }.unwrap_err(),
+             Error::InvalidParam
+@@ -1059,7 +1080,8 @@
+             UniqueMmioPointer::from([].as_mut_slice()),
+         )
+         .unwrap();
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+         assert_eq!(queue.available_desc(), 4);
+         assert_eq!(
+             unsafe { queue.add(&[&[], &[], &[]], &mut [&mut [], &mut []]) }.unwrap_err(),
+@@ -1075,7 +1097,8 @@
+             UniqueMmioPointer::from([].as_mut_slice()),
+         )
+         .unwrap();
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+         assert_eq!(queue.available_desc(), 4);
+ 
+         // Add a buffer chain consisting of two device-readable parts followed by two
+@@ -1142,7 +1165,8 @@
+             UniqueMmioPointer::from([].as_mut_slice()),
+         )
+         .unwrap();
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, true, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, true, false, false).unwrap();
+         assert_eq!(queue.available_desc(), 4);
+ 
+         // Add a buffer chain consisting of two device-readable parts followed by two
+@@ -1198,7 +1222,8 @@
+             device_features: 0,
+             state: state.clone(),
+         };
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+ 
+         // Check that the avail ring's flag is zero by default.
+         assert_eq!(
+@@ -1234,7 +1259,8 @@
+             device_features: 0,
+             state: state.clone(),
+         };
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, false, false).unwrap();
+ 
+         // Add a buffer chain with a single device-readable part.
+         unsafe { queue.add(&[&[42]], &mut []) }.unwrap();
+@@ -1264,7 +1290,8 @@
+             device_features: Feature::RING_EVENT_IDX.bits(),
+             state: state.clone(),
+         };
+-        let mut queue = VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, true).unwrap();
++        let mut queue =
++            VirtQueue::<FakeHal, 4>::new(&mut transport, 0, false, true, false).unwrap();
+ 
+         // Add a buffer chain with a single device-readable part.
+         assert_eq!(unsafe { queue.add(&[&[42]], &mut []) }.unwrap(), 0);
