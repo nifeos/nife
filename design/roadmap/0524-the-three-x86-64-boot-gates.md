@@ -1,23 +1,15 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-09-21
-milestone_dependencies: none
-decision_dependencies: none
-machine_requirements: an x86_64 CPU reporting invariant TSC
-specific_machine: xenon (milestone 87's machine; the boot that reports the invariant-TSC bit)
-needs_person: yes
+built: 2026-10-22
 ---
 # 524. The three x86_64 boot gates: NX, SYSCALL, and the invariant TSC
 
-Two of the three gates refuse, are tested on the host, and have been watched refusing a real boot.
-The third cannot refuse on any machine this project can run on, for a reason that was measured
-rather than assumed, and it warns instead; the trigger that promotes it is written down below and in
-the code.
-
-What is left is one token in one table row, and what gates it is a boot on a
-part that reports `CPUID.80000007H:EDX[8]`. QEMU's TCG will not, on any invocation, so no amount of
-work here can clear it: milestone 87 (the x86_64 bare-metal machine) is the machine, and the trigger is
-a boot there reporting the bit.
+All three gates refuse, are tested on the host, and have been watched refusing a real boot. The
+third refuses only on bare metal. Under a hypervisor it warns, because a guest's clock is the
+hypervisor's to keep and QEMU's TCG never reports the bit (calef, 2026-10-22 00:54 UTC, on #2534:
+"524: refuse a CPU without invariant TSC unless the hypervisor bit is set; under a hypervisor,
+warn.").
 
 The defect was one defect. `kernel/src/arch/x86_64/isa.rs`'s own `BUGS` said it plainly:
 *"Nothing is recorded or checked yet. The other two implementations gate the boot on the features
@@ -67,10 +59,9 @@ saying what it always said, and it appears as time itself being wrong.
 **A wrong assumption cannot be caught by measuring harder.** That is the whole argument for
 treating it as a gate rather than as something a better calibration loop would catch.
 
-## The finding: it cannot be a gate here, and the machine is why
+## The finding: under an emulator it cannot be a plain gate, and the machine is why
 
-The first run of the check refused the boot, which is what it is for, and what it refused was the
-machine this project runs on.
+A plain refusal refuses the machine this project's suite runs on.
 
 **QEMU's TCG does not advertise the invariant TSC and cannot be persuaded to.** `-cpu max,invtsc=on`
 answers:
@@ -84,28 +75,31 @@ will not promise rate constancy across a migration it does not control. The x86_
 entirely under TCG, on an Apple Silicon host where KVM is not available at all, so every x86
 machine this project can run on today reports zero, and a refusal would refuse every boot.
 
-That is worth stating as a finding rather than as an obstacle: **the assumption
-`arch::x86_64::timer` had been making since the port landed is one the machine underneath has never
-promised.** The old `BUGS` entry in `timer.rs` said "QEMU's TSC is invariant". It is not, or at
-least the machine declines to say so, and nothing had ever asked.
+That is worth stating as a finding rather than as an obstacle: **the rate `arch::x86_64::timer`
+measures under QEMU is one the machine underneath has never promised.**
 
-What was built instead of a two-valued flag. The other two architectures' feature tables carry
-`required: bool`, and two values were enough for them. This one has three:
+Real silicon does promise it. Every x86 part since about 2008 has the bit, and xenon (milestone 87,
+the x86_64 bare-metal machine; an Intel Core i5-7500T) prints `features : nx syscall invariant-tsc
+rdseed` (`bench/xenon-2026-10-21/README-524.md`). So the rule splits on who keeps the clock, and
+`CPUID.1:ECX[31]`, the hypervisor bit, says which. It reads zero on silicon. QEMU sets it under TCG,
+measured on the boot below.
+
+The other two architectures' feature tables carry `required: bool`, and two values were enough for
+them. This one has three:
 
 | `Gate` | Means |
 |---|---|
 | `Refuse` | the boot stops and says what is missing (NX, `syscall`) |
-| `Warn` | the kernel is built on it, no machine here reports it, and the boot says so on its own line every time (invariant TSC) |
+| `RefuseUnlessHypervisor` | on bare metal, as `Refuse`; under a hypervisor the boot says so on its own line every time and continues (invariant TSC) |
 | `Report` | useful to know, never fatal (`RDSEED`) |
 
 Collapsing the middle value into `required: false` would file a load-bearing assumption beside an
-optional convenience, which is the shape of record that goes stale without anyone noticing.
-`REQUIRED` and `WARNED` are both derived from the table at compile time, so a row's `Gate` is the
-only thing anyone can get wrong, and a host test pins today's three values.
-
-The promotion trigger (the `BUGS`-to-roadmap convention): a boot on real silicon that reports
-the bit. Milestone 87 (the x86_64 bare-metal machine) is that machine, every x86 part since about 2008
-has had it, and the change is one token in one table row.
+optional convenience, and collapsing it into `Refuse` would refuse every boot the suite runs.
+`REQUIRED` and `REQUIRED_UNLESS_HYPERVISOR` are both derived from the table at compile time, so a
+row's `Gate` is the only thing anyone can get wrong, and a host test pins today's values. The
+decision reads the hypervisor bit beside the feature bits, so an absent row of either gate lands in
+exactly one of `missing_requirements` and `unpromised`, and the Kani proof over the decode holds
+that. Both new names are provisional.
 
 ## How the refusal was tested, given that it is unreachable
 
@@ -114,17 +108,21 @@ NX and `syscall`. Both halves of the answer are in the tree.
 
 On the host, `crates/machine_discovery/tests/x86_64_cpu_features.rs`: the decision function
 takes the `CPUID` words as an argument, so a part that does not exist can be handed to it and the
-refusal watched happening, in milliseconds and without an emulator. Nine tests, one per required
-feature cleared on its own (so a decode reading the wrong bit cannot pass by clearing everything at
-once), plus the two maximum-leaf cases. Those are the rule x86 actually needs: `CPUID` has no way
-to report "I do not implement that leaf" other than answering with some other leaf's bits.
+refusal watched happening, in milliseconds and without an emulator. One test per required feature
+cleared on its own (so a decode reading the wrong bit cannot pass by clearing everything at once).
+The invariant TSC gets four, present or absent on bare metal or under a hypervisor, from two
+fixtures: QEMU's `-cpu max` and xenon. Three more are maximum-leaf cases. Those are the rule x86
+actually needs: `CPUID` has no way to report "I do not implement that leaf" other than answering
+with some other leaf's bits, and that includes leaf 1, so the hypervisor bit is believed only from
+a part that answers it.
 
 And on a real boot, which is the stronger test and turned out to be available: QEMU can hide a
 feature from the guest.
 
 ```
-NIFE_CPU="max,nx=off"      helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
-NIFE_CPU="max,syscall=off" helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
+NIFE_CPU="max,nx=off"         helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
+NIFE_CPU="max,syscall=off"    helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
+NIFE_CPU="max,hypervisor=off" helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
 ```
 
 The first produces the assembly refusal, over a UART nothing had configured, before paging:
@@ -137,7 +135,19 @@ halted before enabling paging, because EFER.NXE would #GP here.
 ```
 
 The second produces the Rust refusal, after the console banner, naming the feature and the leaf.
-Neither is a substitute for the host tests: QEMU can only hide a feature from a whole boot, so each
+The third hides the hypervisor bit, so TCG's guest looks like silicon without an invariant TSC, and
+the boot refuses it (2026-10-22):
+
+```
+nife cannot run on this machine:
+  cpu feature : invariant-tsc is absent (the boot measures the TSC's rate ONCE; without this there is no single rate to measure)
+                CPUID.80000007H:EDX[8] reads 0
+                refused on bare metal: CPUID.1:ECX[31] reads 0, so the part's promise is all there is
+```
+
+That is the only machine on which the bare-metal refusal can fire: xenon reports the bit, so a
+boot there takes the clean branch, and the host tests are the proof for the refusing one. None of
+these is a substitute for the host tests: QEMU can only hide a feature from a whole boot, so each
 case costs a minute of emulator and cannot assert on the decision in isolation.
 
 ## What the part reports, which was the other half of the old BUGS entry
@@ -146,11 +156,12 @@ case costs a minute of emulator and cannot assert on the decision in isolation.
 spaces' maxima, and every row of the table present or absent (`no-invariant-tsc` rather than
 silence, because a missing word in a list of present ones is not something a reader notices).
 
-On QEMU `q35`, `-cpu max`, TCG, on an Apple Silicon host, 2026-09-21:
+On QEMU `q35`, `-cpu max`, TCG, on an Apple Silicon host, 2026-10-22:
 
 ```
   unpromised  : invariant-tsc (CPUID.80000007H:EDX[8] reads 0); the boot measures the TSC's rate ONCE; without this there is no single rate to measure
-  cpu         : x86_64, vendor AuthenticAMD, cpuid leaves 0..0xd and 0x80000000..0x80000021
+                warned, not refused: CPUID.1:ECX[31] reads 1; a guest's clock is its hypervisor's
+  cpu         : x86_64, vendor AuthenticAMD, cpuid leaves 0..0xd and 0x80000000..0x80000021, under a hypervisor
               : QEMU TCG CPU version 2.5+
   features    : nx syscall no-invariant-tsc rdseed
 ```
@@ -166,16 +177,14 @@ rather than in a guess.
   wrong on a hybrid one, where Intel's P-cores and E-cores differ in what leaf 7 reports.
   `machine_discovery::riscv64` already solves the twin problem (the intersection over every hart),
   so the shape to copy exists. Recorded in `kernel/src/arch/x86_64/isa.rs`'s `BUGS`.
-- The invariant TSC is untested on silicon, which is the same sentence as the promotion trigger
-  above and is why this milestone is PARTIAL rather than BUILT.
+- Under a hypervisor the invariant-TSC gate warns, and the gate believes the hypervisor bit, so a
+  hypervisor that hides itself is treated as silicon and refused. Recorded in the same `BUGS`.
 
 ## Follow-on
 
-- **Outstanding.** Promote the invariant-TSC row from `Gate::Warn` to `Gate::Refuse`. Checked
-  2026-09-21 by running `-cpu max,invtsc=on` and reading QEMU's refusal, so the blocker is the
-  emulator and not the code. The change is one token in
-  `crates/machine_discovery/src/x86_64.rs`'s `TABLE`, and the host test that pins today's value
-  fails on purpose when it moves.
+- **Done.** The invariant-TSC row is `Gate::RefuseUnlessHypervisor`, per calef's ruling of
+  2026-10-22 00:54 UTC on #2534, in `crates/machine_discovery/src/x86_64.rs`'s `TABLE`, carried by
+  branch `milestone/524-hypervisor-tsc-gate`.
 - **Recorded.** Per-core feature checks, for a hybrid part where the boot CPU does not speak for
   the others. In `kernel/src/arch/x86_64/isa.rs`'s `BUGS` section, beside the gates it qualifies.
 
@@ -187,10 +196,10 @@ because that write is itself the hazard and there is no console yet to explain a
 and the invariant TSC are checked in `isa::init` before their consumers. The decision takes the
 `CPUID` words as an argument, so the refusal path is exercised on the host in milliseconds although
 no machine here lacks any of the three, and it was also watched refusing a real boot with
-`NIFE_CPU=max,nx=off`. The invariant TSC turned out not to be gateable. QEMU's TCG declines to
-advertise the bit under any invocation, so the rate `arch::x86_64::timer` measures once at boot is
-a constant the machine has never promised. The gate that cannot fire yet says so on its own
-line every boot.
+`NIFE_CPU=max,nx=off`. The invariant TSC refuses on bare metal and warns under a hypervisor,
+because QEMU's TCG declines to advertise the bit under any invocation and a guest's clock is the
+hypervisor's to keep. The hypervisor bit, `CPUID.1:ECX[31]`, decides which, and the warning says so
+on its own line every boot.
 
 ## Where this leaves milestone 161
 

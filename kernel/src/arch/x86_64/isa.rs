@@ -15,7 +15,7 @@
 //! |---|---|---|
 //! | NX | `boot.s`, before `EFER.NXE` is written | that write is itself the hazard: setting a reserved `EFER` bit on a part without NX is `#GP`, with no IDT, which QEMU shows as a silent reset |
 //! | `syscall` | [`init`], six lines before `arch::init` programs the four MSRs | the console is up, so the refusal can be read |
-//! | invariant TSC | [`init`], before `timer::init_frequency` measures a rate | same, and see below; this one warns rather than refuses, and the table row in [`machine_discovery::x86_64`] says why |
+//! | invariant TSC | [`init`], before `timer::init_frequency` measures a rate | same, and see below; under a hypervisor this one warns rather than refuses, and the table row in [`machine_discovery::x86_64`] says why |
 //!
 //! [`init`] re-checks NX because the assembly gate can only halt, and this one can say what is
 //! wrong.
@@ -29,16 +29,18 @@
 //! so **there is no single rate for that measurement to be the answer to**. The error appears later,
 //! as time itself being wrong. A wrong assumption cannot be caught by measuring harder.
 //!
-//! **It warns rather than refuses** because QEMU's TCG reports the bit as zero and will not be
-//! persuaded (`-cpu max,invtsc=on` clears it; it is KVM-only), and every x86 machine this project
-//! runs on is TCG, so a refusal would refuse every boot. The warning prints on its own line each
-//! boot, and `Gate::Warn` in [`machine_discovery::x86_64`] carries the promotion trigger.
+//! **On bare metal it refuses; under a hypervisor it warns** (`Gate::RefuseUnlessHypervisor` in
+//! [`machine_discovery::x86_64`]). A guest's clock is the hypervisor's to keep, and QEMU's TCG
+//! reports the bit as zero and will not be persuaded (`-cpu max,invtsc=on` clears it; it is
+//! KVM-only), so a refusal there would refuse every boot the x86_64 suite runs. The warning prints
+//! on its own line each boot and names the hypervisor bit as the reason it is not a refusal.
 //!
 //! # BUGS
 //!
-//! - **One of the three gates does not refuse**: a part that does not promise a constant TSC rate
-//!   boots and is trusted for timekeeping anyway. The promotion trigger is a boot on real silicon
-//!   reporting the bit (milestone 87 (the `x86_64` bare-metal machine)), and the change is one token.
+//! - **Under a hypervisor, the invariant-TSC gate warns and does not refuse**: a guest whose
+//!   hypervisor does not promise a constant TSC rate boots and is trusted for timekeeping anyway.
+//!   The gate believes the hypervisor bit, so a hypervisor that hides itself is treated as silicon
+//!   and refused.
 //! - **The gates are checked on the boot CPU only.** Secondaries replay the `EFER` write and the
 //!   `syscall` MSRs without re-reading `CPUID`. On a hybrid part (Intel's P-cores and E-cores differ
 //!   in leaf 7) a per-core check would earn its cost; [`machine_discovery::riscv64`] already solves
@@ -48,7 +50,7 @@
 
 use core::arch::x86_64::CpuidResult;
 
-use machine_discovery::x86_64::{CpuidWords, Isa, TABLE};
+use machine_discovery::x86_64::{CpuidWords, Gate, HYPERVISOR_CITE, Isa, TABLE};
 
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
@@ -138,6 +140,7 @@ pub fn init(boot_info_pointer: usize) {
 
     let cpu = Isa::decode(&CpuidWords {
         leaf0: words(leaf0),
+        leaf1_ecx: cpuid(1).ecx,
         leaf7_0: words(cpuid_count(7, 0)),
         extended_max_leaf,
         extended_leaf1_edx: cpuid(0x8000_0001).edx,
@@ -153,24 +156,30 @@ pub fn init(boot_info_pointer: usize) {
             if missing.features.contains(row.bit) {
                 println!("  cpu feature : {} is absent ({})", row.name, row.why);
                 println!("                {} reads 0", row.cite);
+                if row.gate == Gate::RefuseUnlessHypervisor {
+                    println!(
+                        "                refused on bare metal: {HYPERVISOR_CITE} reads 0, so the part's promise is all there is"
+                    );
+                }
             }
         }
         panic!("required CPU feature is absent");
     }
 
     // And the third kind of answer, which is neither a refusal nor a clean boot: something the
-    // kernel is built on that the part does not promise. It gets its own line rather than a
-    // `no-invariant-tsc` token in the feature list below, because a missing word in a list of
-    // present ones is not something a reader notices. See `Gate::Warn`.
+    // kernel is built on that this guest's hypervisor does not promise. It gets its own line rather
+    // than a `no-invariant-tsc` token in the feature list below, because a missing word in a list
+    // of present ones is not something a reader notices. See `Gate::RefuseUnlessHypervisor`.
     let unpromised = cpu.unpromised();
-    if !unpromised.is_empty() {
-        for row in &TABLE {
-            if unpromised.contains(row.bit) {
-                println!(
-                    "  unpromised  : {} ({} reads 0); {}",
-                    row.name, row.cite, row.why
-                );
-            }
+    for row in &TABLE {
+        if unpromised.contains(row.bit) {
+            println!(
+                "  unpromised  : {} ({} reads 0); {}",
+                row.name, row.cite, row.why
+            );
+            println!(
+                "                warned, not refused: {HYPERVISOR_CITE} reads 1; a guest's clock is its hypervisor's"
+            );
         }
     }
 
@@ -249,8 +258,9 @@ pub fn draw_random_seed() -> Option<u64> {
 /// (milestone 87 (the `x86_64` bare-metal machine)) where it may be populated.
 ///
 /// **Whatever answer this gives, the rate it describes is a constant only because [`init`]
-/// refused to boot without the invariant TSC.** That gate is what makes "the TSC's rate" a
-/// quantity at all, here and in the calibration path both.
+/// refused to boot on bare metal without the invariant TSC** (under a hypervisor it warned
+/// instead). That gate is what makes "the TSC's rate" a quantity at all, here and in the
+/// calibration path both.
 pub(crate) fn tsc_crystal_hz() -> Option<u64> {
     if get().max_leaf < 0x15 {
         return None;
@@ -272,8 +282,15 @@ pub(crate) fn tsc_crystal_hz() -> Option<u64> {
 pub(crate) fn print_summary() {
     let cpu = get();
     let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("<not utf-8>");
+    // The hypervisor bit decides whether a `Gate::RefuseUnlessHypervisor` row refused or warned,
+    // so a reader of a boot log needs it as much as the feature line below.
+    let host = if cpu.under_hypervisor {
+        "under a hypervisor"
+    } else {
+        "bare metal"
+    };
     println!(
-        "  cpu         : x86_64, vendor {vendor}, cpuid leaves 0..{:#x} and {:#x}..{:#x}",
+        "  cpu         : x86_64, vendor {vendor}, cpuid leaves 0..{:#x} and {:#x}..{:#x}, {host}",
         cpu.max_leaf, 0x8000_0000u32, cpu.extended_max_leaf
     );
     if let Some(brand) = cpu.brand_str() {

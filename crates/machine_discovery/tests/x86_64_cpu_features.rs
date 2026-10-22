@@ -26,12 +26,15 @@ use machine_discovery::x86_64::*;
 /// **The vendor is `AuthenticAMD`**, which is not the guess: QEMU's `max` model under TCG claims
 /// to be AMD, and the maximum extended leaf is `0x80000021`, well past Intel's. **And
 /// `extended_leaf7_edx` is zero**, which is the whole reason the invariant-TSC row is
-/// [`Gate::Warn`]: TCG refuses to set that bit even when asked with `invtsc=on`.
+/// [`Gate::RefuseUnlessHypervisor`]: TCG refuses to set that bit even when asked with
+/// `invtsc=on`, and sets the hypervisor bit, so this machine boots with a warning.
 fn qemu_max() -> CpuidWords {
     CpuidWords {
         // EAX = maximum standard leaf; EBX/EDX/ECX = "Auth" "enti" "cAMD", which is the register
         // order nobody guesses (EDX before ECX).
         leaf0: [0xd, 0x6874_7541, 0x444d_4163, 0x6974_6e65],
+        // Leaf 1 ECX bit 31, the hypervisor bit. The other bits are not read.
+        leaf1_ecx: 1 << 31,
         // Leaf 7 subleaf 0. EBX bit 18 is RDSEED, which this model reports.
         leaf7_0: [0, 1 << 18, 0, 0],
         extended_max_leaf: 0x8000_0021,
@@ -41,6 +44,23 @@ fn qemu_max() -> CpuidWords {
         // No invariant TSC. See the doc comment.
         extended_leaf7_edx: 0,
         brand: brand_words("QEMU TCG CPU version 2.5+"),
+    }
+}
+
+/// xenon, an Intel Core i5-7500T: milestone 87's bare-metal machine, as its boot line printed it on
+/// 2026-10-21 (`cpuid leaves 0..0x16 and 0x80000000..0x80000008`, `features : nx syscall
+/// invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the hypervisor bit
+/// is clear because nothing sits between this part and the kernel.
+fn xenon() -> CpuidWords {
+    CpuidWords {
+        // "Genu" "ineI" "ntel", EDX before ECX as above.
+        leaf0: [0x16, 0x756e_6547, 0x6c65_746e, 0x4965_6e69],
+        leaf1_ecx: 0,
+        leaf7_0: [0, 1 << 18, 0, 0],
+        extended_max_leaf: 0x8000_0008,
+        extended_leaf1_edx: (1 << 20) | (1 << 11) | (1 << 29),
+        extended_leaf7_edx: 1 << 8,
+        brand: brand_words("Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz"),
     }
 }
 
@@ -74,11 +94,12 @@ fn the_machine_this_project_boots_on_can_run_this_kernel() {
         cpu.has_random_seed_instruction(),
         "the entropy service's instruction backend"
     );
+    assert!(cpu.under_hypervisor);
     assert!(!cpu.missing_requirements().any());
     assert_eq!(
         cpu.unpromised(),
         INVARIANT_TSC,
-        "and it boots anyway, saying so; milestone 87 (the x86_64 bare-metal machine) changes it"
+        "and it boots anyway, saying so, because a hypervisor keeps this clock"
     );
 }
 
@@ -106,36 +127,74 @@ fn a_part_without_syscall_is_refused_and_nothing_else_is_blamed() {
     assert_eq!(missing.features, SYSCALL);
 }
 
-/// **The one whose absence nothing else would catch, and the one that cannot refuse yet.**
+/// **The one whose absence nothing else would catch, and the one gated on who keeps the clock.**
 ///
 /// NX and `syscall` announce themselves the moment they are used (a `#GP` on the `EFER` write, a
 /// `#UD` on the first system call); a TSC that is not invariant measures perfectly at boot and is
 /// wrong later, when the core changes power state and the stored rate keeps saying what it always
 /// said. No amount of measuring at boot finds that, which is why it belongs in this table at all.
 ///
-/// It is nonetheless [`Gate::Warn`] rather than [`Gate::Refuse`], because QEMU's TCG will not
-/// advertise the bit and TCG is every x86 machine this project runs on; see the row's own comment.
-/// This test asserts the state that is actually true, so the day it changes, it changes here.
+/// The four tests below are the bit present or absent, on bare metal or under a hypervisor. The
+/// bare-metal refusal is the case no machine here can take: xenon reports the bit, and QEMU sets
+/// the hypervisor bit. This is where it is exercised.
 #[test]
-fn a_part_whose_tsc_is_not_invariant_boots_and_says_so() {
+fn bare_metal_without_an_invariant_tsc_is_refused_and_nothing_else_is_blamed() {
+    let mut w = xenon();
+    w.extended_leaf7_edx = 0;
+    let cpu = Isa::decode(&w);
+
+    assert_eq!(cpu.missing_requirements().features, INVARIANT_TSC);
+    assert!(
+        cpu.unpromised().is_empty(),
+        "refused, so not also warned about"
+    );
+}
+
+#[test]
+fn a_guest_without_an_invariant_tsc_boots_and_says_so() {
     let cpu = Isa::decode(&qemu_max());
 
-    assert!(
-        !cpu.missing_requirements().any(),
-        "Gate::Warn does not refuse"
-    );
+    assert!(!cpu.missing_requirements().any(), "warned, not refused");
     assert_eq!(cpu.unpromised(), INVARIANT_TSC);
 }
 
-/// The other half of the same fact: a part that *does* promise it has nothing unpromised. The
-/// fixture above is the machine this project boots, so this is the assertion that would start
-/// failing on real silicon, which is exactly the signal the promotion trigger waits for.
 #[test]
-fn a_part_that_promises_an_invariant_tsc_has_nothing_unpromised() {
+fn bare_metal_with_an_invariant_tsc_boots_clean() {
+    let cpu = Isa::decode(&xenon());
+
+    assert_eq!(&cpu.vendor, b"GenuineIntel");
+    assert_eq!(
+        cpu.brand_str(),
+        Some("Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz")
+    );
+    assert!(!cpu.under_hypervisor);
+    assert!(!cpu.missing_requirements().any());
+    assert!(cpu.unpromised().is_empty());
+}
+
+#[test]
+fn a_guest_with_an_invariant_tsc_boots_clean() {
     let mut w = qemu_max();
     w.extended_leaf7_edx |= 1 << 8;
+    let cpu = Isa::decode(&w);
 
-    assert!(Isa::decode(&w).unpromised().is_empty());
+    assert!(!cpu.missing_requirements().any());
+    assert!(cpu.unpromised().is_empty());
+}
+
+/// **The hypervisor bit is believed only from a leaf the part answers**, the maximum-leaf rule
+/// one more time. A part reporting no standard leaf above 0 answers leaf 1 with leaf 0's words,
+/// and believing bit 31 of those would turn the bare-metal refusal into a warning.
+#[test]
+fn a_part_below_leaf_one_is_not_taken_for_a_guest() {
+    let mut w = xenon();
+    w.leaf0[0] = 0;
+    w.leaf1_ecx = 1 << 31;
+    w.extended_leaf7_edx = 0;
+    let cpu = Isa::decode(&w);
+
+    assert!(!cpu.under_hypervisor);
+    assert_eq!(cpu.missing_requirements().features, INVARIANT_TSC);
 }
 
 /// **A part that does not answer the extended leaves at all is refused**, and this is the case
@@ -176,29 +235,29 @@ fn a_part_below_leaf_seven_does_not_report_rdseed() {
 
 /// **Neither derived set can pick up a row that did not ask for it.** Both are computed from the
 /// table at compile time, so the thing that can go wrong is a row's `Gate`, not the arithmetic; this
-/// is the assertion a row flipped by accident has to get past, and it pins today's three gates.
+/// is the assertion a row flipped by accident has to get past, and it pins today's gates.
 #[test]
 fn the_derived_sets_are_exactly_the_rows_that_say_so() {
     let mut refuse = Features::NONE;
-    let mut warn = Features::NONE;
+    let mut unless_hypervisor = Features::NONE;
     for row in &TABLE {
         assert!(!row.why.is_empty(), "{} has no reason beside it", row.name);
         assert!(row.cite.starts_with("CPUID."), "{}", row.name);
         match row.gate {
             Gate::Refuse => refuse = refuse.union(row.bit),
-            Gate::Warn => warn = warn.union(row.bit),
+            Gate::RefuseUnlessHypervisor => unless_hypervisor = unless_hypervisor.union(row.bit),
             Gate::Report => {}
         }
     }
 
     assert_eq!(refuse, REQUIRED);
-    assert_eq!(warn, WARNED);
+    assert_eq!(unless_hypervisor, REQUIRED_UNLESS_HYPERVISOR);
     assert!(REQUIRED.contains(NX));
     assert!(REQUIRED.contains(SYSCALL));
     assert!(!REQUIRED.contains(RDSEED));
     assert_eq!(
-        WARNED, INVARIANT_TSC,
-        "promoting this to Gate::Refuse is the whole of milestone 87's trigger"
+        REQUIRED_UNLESS_HYPERVISOR, INVARIANT_TSC,
+        "Gate::Refuse here would refuse every boot under QEMU's TCG (calef, 2026-10-22, #2534)"
     );
 }
 
