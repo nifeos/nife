@@ -166,7 +166,7 @@ KEPT = {
         ({'cap', 'current_cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
     'system_tests/src/user/eighth_pass_spawn_audit_tests.rs':
         ({'cap', 'page_frame_run_cap', 'rendezvous_cap'}, _CALLS),
-    'crates/component_plan/src/lib.rs': ({'CapNeed', 'caps'}, _CALLS),
+    'crates/capability_plan/src/lib.rs': ({'CapNeed', 'caps'}, _CALLS),
     'kernel/src/user/x86_programs.rs': ({'SYS_CAP_DELETE'}, _CALLS),
     # Milestone 914 (a ninth outsider pass attacks the confinement claim): the pass's tests call
     # these APIs by their existing names and mint none of their own.

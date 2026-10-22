@@ -604,12 +604,12 @@ fn schedule(behaviour: u64, budget: u64, dir: u64) -> u64 {
     flags
 }
 
-/// **Write `doc` as this identity's stored schedule** (`schedule_store::SCHEDULE_FILE_NAME`, in
+/// **Write `doc` as this identity's stored schedule** (`timetable_store::SCHEDULE_FILE_NAME`, in
 /// the root of the delegated directory, which is the identity's own subtree), replacing whatever
 /// was there. `true` when every byte landed.
 fn store_schedule(dir: u64, doc: &[u8]) -> bool {
     use filesystem_contract::fs;
-    let name = schedule_store::SCHEDULE_FILE_NAME.as_bytes();
+    let name = timetable_store::SCHEDULE_FILE_NAME.as_bytes();
     put_page(name);
     let (mut h, _) = call(dir, fs::req(fs::CREATE, fs::ROOT, name.len() as u64), 0);
     if (h as i64) < 0 {

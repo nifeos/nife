@@ -6,7 +6,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 
-use super::test_programs::{a_kernel_address, loader_subject_image, outlaw_image};
+use super::test_programs::{a_kernel_address, kernel_test_subject_image, loader_subject_image};
 use super::*;
 use crate::arch::exceptions::USER_FAULTS;
 use crate::arch::timer;
@@ -519,27 +519,28 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
     // has to hold forever.
     //
     // Snapshot the fault count BEFORE spawning (as the loop below always did). The old
-    // order, spawn then snapshot, was a race: on SMP the outlaw can fault in that gap, the
-    // snapshot swallows its fault, and the wait below times out on a count that will never
+    // order, spawn then snapshot, was a race: on SMP the `kernel_test_subject` can fault in that
+    // gap, the snapshot swallows its fault, and the wait below times out on a count that will never
     // move again. Latent until milestone 14 phase A.2/A.3 made spawn-to-fault fast enough
     // to lose the race about once in seven runs.
     //
-    // Pin the outlaws to THIS core (DECISIONS §28 made `spawn` scatter them). PageFrame accounting
-    // must be exact to catch a leak (the milestone-6 bug this test guards), but a thread's frames
-    // are freed by `finish_switch` on whatever core reaps it, *after* it leaves the thread table
-    // and outside IPC_TABLES. Scattered across cores, that free is asynchronous, so `used()` fluctuates
-    // and never reads exact. Kept on the test's own core, each outlaw's fault, reap, and frame
-    // free happen synchronously under the test's own yields, so `used()` is exact again. This
-    // tests the reaper, not placement, so pinning costs nothing.
+    // Pin the `kernel_test_subject` instances to THIS core (DECISIONS §28 made `spawn` scatter
+    // them). PageFrame accounting must be exact to catch a leak (the milestone-6 bug this test
+    // guards), but a thread's frames are freed by `finish_switch` on whatever core reaps it,
+    // *after* it leaves the thread table and outside IPC_TABLES. Scattered across cores, that free
+    // is asynchronous, so `used()` fluctuates and never reads exact. Kept on the test's own core,
+    // each `kernel_test_subject` instance's fault, reap, and frame free happen synchronously under
+    // the test's own yields, so `used()` is exact again. This tests the reaper, not placement, so
+    // pinning costs nothing.
     let here = crate::cpu::id();
-    let image = outlaw_image();
+    let image = kernel_test_subject_image();
     let kernel_addr = a_kernel_address();
-    let outlaw_here = move || {
+    let kernel_test_subject_here = move || {
         sched::spawn_on(here, move || {
             run(
                 image,
                 Spawn {
-                    arg0: OUTLAW_READ_KERNEL,
+                    arg0: KERNEL_TEST_SUBJECT_READ_KERNEL,
                     arg1: kernel_addr,
                     arg2: 0,
                     grants: &[],
@@ -549,23 +550,23 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
         })
     };
 
-    // Each outlaw's reap is proven by `is_thread_present` on ITS ThreadId, not by `thread_count()`
-    // returning to a baseline sampled at the top of the test. The count is the whole table, so a
-    // baseline taken while an earlier test's teardown is still in flight is a number the system
-    // moves on its own; the per-ThreadId wait is immune to neighbours by construction. Same fix as the
-    // reap wait in `reclaim_frees_a_started_then_exited_childs_regions`; see
-    // notes/load-sensitive-assertions.md.
+    // Each `kernel_test_subject` instance's reap is proven by `is_thread_present` on ITS ThreadId,
+    // not by `thread_count()` returning to a baseline sampled at the top of the test. The count is
+    // the whole table, so a baseline taken while an earlier test's teardown is still in flight is a
+    // number the system moves on its own; the per-ThreadId wait is immune to neighbours by
+    // construction. Same fix as the reap wait in
+    // `reclaim_frees_a_started_then_exited_childs_regions`; see notes/load-sensitive-assertions.md.
     let f0 = USER_FAULTS.load(Ordering::Relaxed);
-    let warmup = outlaw_here().expect("spawn failed");
+    let warmup = kernel_test_subject_here().expect("spawn failed");
     assert!(wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > f0));
     assert!(wait_for(|| !sched::is_thread_present(warmup)));
 
     // Sample the baseline only once `used()` has STOPPED MOVING, for the same reason the
     // assertion below waits rather than reading instantly, applied to the other end. The warm-up
-    // outlaw's address space is freed by `finish_switch` on whatever core actually ran it, which
-    // under §28 placement need not be this one, and that free lands a beat *after* its ThreadId
-    // stops resolving. Sampling `before` inside that window captures frames that are about
-    // to come back, `used()` then settles BELOW `before`, and a wait for equality could never
+    // `kernel_test_subject`'s address space is freed by `finish_switch` on whatever core actually
+    // ran it, which under §28 placement need not be this one, and that free lands a beat *after*
+    // its ThreadId stops resolving. Sampling `before` inside that window captures frames that are
+    // about to come back, `used()` then settles BELOW `before`, and a wait for equality could never
     // succeed. The failure said so plainly when it happened: it reported "-18 frames did not come
     // back", a NEGATIVE leak, which no real leak can produce. Found when an unrelated change to
     // the std::fs test shifted this test's timing; the race was already here.
@@ -585,25 +586,27 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
 
     for _ in 0..4 {
         let f = USER_FAULTS.load(Ordering::Relaxed);
-        let outlaw = outlaw_here().expect("spawn failed");
+        let kernel_test_subject = kernel_test_subject_here().expect("spawn failed");
         assert!(wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > f));
-        assert!(wait_for(|| !sched::is_thread_present(outlaw)));
+        assert!(wait_for(|| !sched::is_thread_present(kernel_test_subject)));
     }
 
-    // Exact in the leak direction, but allow the asynchronous reap to settle. Pinning the outlaws
-    // with `spawn_on` is a placement HINT, not a pin (DECISIONS §28): an idle core can steal one
-    // before this core runs it, and then the frame free (finish_switch dropping the address space,
-    // after the thread leaves the table and outside IPC_TABLES) lands on that core a beat after the ThreadId
-    // resolves to nothing. So wait for `used()` to come back to `before` rather than reading it
-    // the instant the last outlaw is gone. Still a leak trap: a real leak (the milestone-6 bug)
-    // never gives the frames back, so this wait times out and fails.
+    // Exact in the leak direction, but allow the asynchronous reap to settle. Pinning the
+    // `kernel_test_subject` instances with `spawn_on` is a placement HINT, not a pin (DECISIONS
+    // §28): an idle core can steal one before this core runs it, and then the frame free
+    // (finish_switch dropping the address space, after the thread leaves the table and outside
+    // IPC_TABLES) lands on that core a beat after the ThreadId resolves to nothing. So wait for
+    // `used()` to come back to `before` rather than reading it the instant the last
+    // `kernel_test_subject` is gone. Still a leak trap: a real leak (the milestone-6 bug) never
+    // gives the frames back, so this wait times out and fails.
     //
     // `<=`, not `==`. Equality demanded that no OTHER test's teardown free a frame during this
-    // window, which is not a property four outlaw address spaces are responsible for, and it is
-    // the only way the old form could fail with a NEGATIVE count: it did, on CI and on a quiet
-    // aarch64 dev machine, as "-19 frames did not come back", frames arriving from outside the
-    // measured window. A leak still fails identically: every frame the outlaws keep holds
-    // `used()` above `before` forever. See notes/load-sensitive-assertions.md.
+    // window, which is not a property four `kernel_test_subject` address spaces are responsible
+    // for, and it is the only way the old form could fail with a NEGATIVE count: it did, on CI and
+    // on a quiet aarch64 dev machine, as "-19 frames did not come back", frames arriving from
+    // outside the measured window. A leak still fails identically: every frame the
+    // `kernel_test_subject` instances keep holds `used()` above `before` forever. See
+    // notes/load-sensitive-assertions.md.
     //
     // The count in the message is the one the wait DECIDED on, not a fresh sample, and this site is
     // why the distinction is worth code. `used() as i64 - before as i64` re-reads the allocator

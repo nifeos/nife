@@ -25,10 +25,10 @@ manifest.
   refused as `UnknownVersion`). That is the note's encoding, not any contract's.
 - §235 (the OS is built and updated from packages)'s ABI revision field is ruled into the note and
   not built.
-- `component_plan::Requirements::contract` is "not matched against anything: what makes a build
+- `capability_plan::Requirements::contract` is "not matched against anything: what makes a build
   substitutable is that it speaks the protocol, and a string it carries cannot prove that", in its
   own documentation. No contract has a version exchange on the wire.
-- `component_plan::dependents` names the direct dependents to warn before one contract is swapped,
+- `capability_plan::dependents` names the direct dependents to warn before one contract is swapped,
   and §231 (a swap's warning to a dependent is advisory) makes that warning advisory. It orders
   nothing.
 - One install is one package. `jig` takes one name per verb (`main` in `jig/src/main.rs`), and the
@@ -129,7 +129,7 @@ admits a break with no overlap, which forces quiescing both ends and swapping bo
 rule makes that case unrepresentable.
 
 So swap order follows without a rule of its own. When a provider swaps live, it goes first and
-serves both levels while consumers follow, and `component_plan::dependents` names whom to warn.
+serves both levels while consumers follow, and `capability_plan::dependents` names whom to warn.
 
 ### 8. Additive first, and a breaking change puts the level in the badge
 

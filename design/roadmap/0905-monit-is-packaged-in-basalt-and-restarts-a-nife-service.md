@@ -65,9 +65,10 @@ existence and restart; `cpu` and `memory` rules report "not available" through t
 ## Where monit overlaps nife's supervision, and what it adds
 
 The overlap is the mechanism. nife already turns a death into a message (§26) and keeps restart
-policy in userspace. `sub_server_supervisor` restarts `flaky` per label, from milestone 22 (trusted
-init: verify it, and shrink what a broken one can do). monit's restart, done right on nife, is the same
-shape: monit spawns the service, so the service's death reaches monit, and monit spawns it again.
+policy in userspace. `sub_server_supervisor` restarts `first_attempt_crasher` per label, from
+milestone 22 (trusted init: verify it, and shrink what a broken one can do). monit's restart, done
+right on nife, is the same shape: monit spawns the service, so the service's death reaches monit,
+and monit spawns it again.
 
 What monit adds is everything above the mechanism, and today nife has none of it on a booted
 system. Milestone 854 (the init package holds only what init does) found that nothing on today's

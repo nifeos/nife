@@ -16,9 +16,9 @@ swapped live by `terminal_supervisor`. The compositor is not, because no boot ru
 All three run under the kernel test harness. Outside it, two are built and only `line_editor` has
 a supervisor that could swap it.
 
-`display_terminal` and `compositor` have no `component_plan` declaration. `display_terminal`'s
+`display_terminal` and `compositor` have no `capability_plan` declaration. `display_terminal`'s
 slots are one list every builder reads (`video_terminal::component`), because two of them are a
-map budget and frame runs, which `component_plan::Direction` has no word for. A declaration for
+map budget and frame runs, which `capability_plan::Direction` has no word for. A declaration for
 either is written against the ELF-note manifest of milestone 597 (a program carries its manifest
 in an ELF note).
 

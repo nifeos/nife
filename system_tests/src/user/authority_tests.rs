@@ -10,8 +10,8 @@ const REPORT_SUP_GAVE_UP: u64 = 4;
 const REPORT_FAILED: u64 = 9;
 /// `sub_server_supervisor`'s two children: the label it gives each, and the attempt each starts
 /// at. Mirrors `supervision_protocol::SUB_SERVER_LABELS` (milestone 105 (the two forks)). The first starts at the
-/// attempt `flaky` crashes on and the second at one it finishes, so the two must be told apart for
-/// the right one to be restarted.
+/// attempt `first_attempt_crasher` crashes on and the second at one it finishes, so the two must be
+/// told apart for the right one to be restarted.
 const LABEL_CRASHES: u64 = 0x1abe_0a01;
 const LABEL_FINISHES: u64 = 0x1abe_0b02;
 const FIRST_ATTEMPT_FINISHES: u64 = 10;

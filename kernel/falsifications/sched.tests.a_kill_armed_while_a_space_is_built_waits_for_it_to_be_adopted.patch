@@ -1,0 +1,24 @@
+Falsifies `kernel::sched::tests::a_kill_armed_while_a_space_is_built_waits_for_it_to_be_adopted`.
+
+The defect is a scheduler that ignores `kill_deferred` and carries out an armed kill at the first
+`schedule` it finds the thread running, which is the behavior that lost the ntp server's address
+space whenever `Holding::release` killed it mid-load.
+
+Expected to fail: the third assertion, "a kill armed inside defer_kill's window was carried out at
+a schedule inside it", because the first `yield_now` inside the window converts the thread.
+
+diff --git a/kernel/src/sched/switch.rs b/kernel/src/sched/switch.rs
+--- a/kernel/src/sched/switch.rs
++++ b/kernel/src/sched/switch.rs
+@@ -467,10 +467,7 @@ pub(super) fn carry_out_orders(sched: &mut IpcTables, current: ThreadId) {
+         return;
+     };
+     let running = t.handshake.state == State::Running;
+-    if t.killed
+-        && !t.kill_deferred
+-        && (running || (t.handshake.state == State::Blocked && !t.handshake.wake_pending))
+-    {
++    if t.killed && (running || (t.handshake.state == State::Blocked && !t.handshake.wake_pending)) {
+         finish_killed_current(sched, current);
+     } else if t.suspend_requested && running {
+         suspension::park_suspended_current(sched, current);

@@ -27,13 +27,14 @@ calendar	shared	c_library,components,fixtures,kernel
 canary_gate	kernel	retired
 capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
+capability_plan	shared	components,fixtures,kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
 clock_contract	shared	components,fixtures,kernel,std
 clock_proto	shared	retired
 clock_protocol	shared	retired
-component_plan	shared	components,fixtures,kernel
+component_plan	shared	retired
 compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures
@@ -139,7 +140,6 @@ portable_executable	host	retired
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 ps	userspace	components
 regions	kernel	retired
-schedule_store	userspace	components,fixtures
 screen_console	shared	components,kernel,uefi_loader
 sealed_pair	host	-
 serial_console	host	-
@@ -170,6 +170,7 @@ test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired
 timetable	userspace	components,fixtures
+timetable_store	userspace	components,fixtures
 top	userspace	components
 universally_unique_identifier	shared	components,kernel,redoxfs_server,uefi_loader
 uptime	userspace	components

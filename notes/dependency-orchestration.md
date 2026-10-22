@@ -1,7 +1,7 @@
 # Dependency-aware orchestration
 
 *Milestone 23's fourth residual, and the last one this milestone names: "if component B is a client
-of component A, swapping A means quiesce B, swap, resume." `crates/component_plan`'s `depends_on`,
+of component A, swapping A means quiesce B, swap, resume." `crates/capability_plan`'s `depends_on`,
 `LiveInstance` and `dependents`; `components/src/swapper.rs`'s `queued()`. Read notes/live-replacement.md
 and notes/component-manifest.md first if you have not; this builds on both.*
 
@@ -15,7 +15,7 @@ The quiescence protocol already existed before this lane, in one instance: `brok
 `queued()` sent `BOP_DOWN` unconditionally, because in the one system this tree runs there is exactly
 one component (`broker`) that ever needs it, so "always warn it" and "warn whoever the graph names"
 produced the same four syscalls and nothing distinguished the two. The manifest itself said nothing
-about it: `component_plan::Requirements` declared what a component *needs*, never that another
+about it: `capability_plan::Requirements` declared what a component *needs*, never that another
 component *supplies* it, so there was no dependency graph to compute an answer from even in
 principle.
 
@@ -62,7 +62,7 @@ The falsifiable rule, stated once so a future contract author can apply it witho
 
 ## What `dependents` computes, and what it deliberately does not
 
-`component_plan::dependents(target_contract, live)` takes the running system as a caller-supplied
+`capability_plan::dependents(target_contract, live)` takes the running system as a caller-supplied
 list of `LiveInstance { id, reqs }` and returns, in the order given, the ids whose `Requirements`
 name `target_contract` in their own `depends_on`. An instance of the target contract is excluded from
 its own answer even if a malformed declaration named itself.
@@ -85,7 +85,7 @@ of that same order on the way back up. In this tree's one queued system that is 
 message each way, because there is exactly one component with a `depends_on` edge to `backend`. The
 behavior is unchanged; what changed is which code decided it.
 
-The direct channel gets the negative case for the same reason `component_plan`'s own test suite
+The direct channel gets the negative case for the same reason `capability_plan`'s own test suite
 pairs every positive assertion with one. `dependents("console", &[(1, CONSOLE)])` must return empty,
 because nothing in that system declares a dependency on `console`. A mechanism that only ever
 returns something has not been shown to refuse correctly.
@@ -104,7 +104,7 @@ Ask who must be told before a contract is swapped, given the components a superv
 currently running:
 
 ```rust
-use component_plan::{dependents, LiveInstance};
+use capability_plan::{dependents, LiveInstance};
 
 let live = [
     LiveInstance { id: 1, reqs: &hot_swap_contract::BACKEND },

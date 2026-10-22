@@ -912,12 +912,12 @@ impl Console {
 }
 
 /// **What the checks read, which starts at the hand-over.** Every architecture runs its self-test
-/// before handing over, and its `userspace` check kills a program on purpose (`outlaw`, reading a
-/// kernel address); `x86_64`'s tour also kills two hand-built threads under supervision. Those are
-/// the kernel's fault path working, printed before any process this gate is about exists, so the
-/// fault check and the "was the kernel writing during the boot" test both start where the
-/// progenitor does. The cut is the same on all three, at the line `kernel/src/boot.rs`'s
-/// `hand_over` prints.
+/// before handing over, and its `userspace` check kills a program on purpose
+/// (`kernel_test_subject`, reading a kernel address); `x86_64`'s tour also kills two hand-built
+/// threads under supervision. Those are the kernel's fault path working, printed before any process
+/// this gate is about exists, so the fault check and the "was the kernel writing during the boot"
+/// test both start where the progenitor does. The cut is the same on all three, at the line
+/// `kernel/src/boot.rs`'s `hand_over` prints.
 fn after_hand_over(t: &str) -> String {
     t.find(X86_HAND_OVER_START)
         .map_or(t, |at| &t[at..])
