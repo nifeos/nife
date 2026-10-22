@@ -846,14 +846,28 @@ const _: () = assert!(
     "a capability table now needs dropping; Threads::remove must drop it before recycling the page"
 );
 
-/// An empty table behind an unheld lock, as a constant operand: [`init_capability_table`] copies it
-/// straight into the page rather than building a temporary the size of the table on its own frame
-/// (the reason milestone 754 (the capability table grows to 64 slots) gives for an empty table constant).
-#[allow(clippy::declare_interior_mutable_const)] // only ever moved into a page, never borrowed
-pub(crate) const EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::IrqSafeMutex::new(
+/// An empty table behind an unheld lock, the image [`write_empty_capability_table`] copies.
+///
+/// **A static, copied by pointer, and not a constant written with `ptr::write`.** The gate's -O0
+/// build does not inline `write`, so a constant operand is first built into a temporary the size
+/// of the table and then copied again into the page: two copies of 2 KiB on every thread's birth.
+/// One copy from here took 1,194 instructions off each riscv64 `spawn_reap` iteration.
+/// Never locked or borrowed as a lock: a copy of an unheld lock's bytes is a fresh unheld lock.
+static EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::IrqSafeMutex::new(
     crate::sync::rank::CAPABILITY_TABLE,
     crate::cap::CapabilityTable::new(),
 );
+
+/// Write an empty, unheld capability table at `table`.
+///
+/// # Safety
+///
+/// `table` is valid for a write of a `CapabilityTableLock`, aligned, and reachable by no other core.
+pub(crate) unsafe fn write_empty_capability_table(table: *mut CapabilityTableLock) {
+    // SAFETY: the caller's contract for the destination; the source is a live static that nothing
+    // writes, and the two cannot overlap because the destination is not a static.
+    unsafe { core::ptr::copy_nonoverlapping(&raw const EMPTY_CAPABILITY_TABLE, table, 1) };
+}
 
 /// The address of `thread`'s capability table.
 ///
@@ -892,7 +906,7 @@ pub(crate) unsafe fn init_capability_table(thread: *mut Thread) {
     // SAFETY: the caller's contract; one aligned write inside the page, over bytes nothing reads.
     unsafe {
         let own = own_capability_table_of(thread);
-        own.cast_mut().write(EMPTY_CAPABILITY_TABLE);
+        write_empty_capability_table(own.cast_mut());
         (&raw mut (*thread).capability_table).write(own);
     }
 }
