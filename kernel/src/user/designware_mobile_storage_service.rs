@@ -7,10 +7,11 @@
 //! may serve. Everything else, the card included, is the process's to bring up:
 //! `components/src/designware_mobile_storage.rs` has what it holds and what it is refused.
 //!
-//! **The booted system does not start it yet** ([`PROVEN_ON_SILICON`]). Its first caller is the
-//! `storage_bench` boot, which starts it over a window it chose from the card's own partition table
-//! and reads and writes through it the way the FS server would. Which window the booted system
-//! gives it is an open question for an architect, in the 53 block.
+//! **The booted system does not start it yet**, although it may ([`PROVEN_ON_SILICON`]). Its one
+//! caller is the `storage_bench` boot, which starts it over a window it chose from the card's own
+//! partition table and reads and writes through it the way the FS server would. What the booted
+//! system's block server serves on radon is a USB drive (§260 (radon's block server serves a USB
+//! drive)), not this card.
 
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::serve::{Handoff, REGISTER_VA, TRANSFER_VA, Window};
@@ -20,10 +21,11 @@ use super::*;
 use crate::cap::{Rights, rendezvous_cap};
 use crate::sched::RendezvousId;
 
-/// **Whether the booted system may start this server.** False until a `storage_bench` boot on
-/// radon has read and written through it (notes/designware-mobile-storage.md's runbook); the lane
-/// that reads that log flips it, citing the log.
-pub(crate) const PROVEN_ON_SILICON: bool = false;
+/// **Whether the booted system may start this server.** True: a `storage_bench` boot on radon
+/// read and wrote through it on 2026-10-22 (UTC), `verdict READ-OK 10960 KiB/s, WRITE-VERIFIED
+/// sectors 2040..2048 (were zero), restored, EL0 block server served`
+/// (`bench/radon-2026-10-22/53-storage-write.log`, notes/designware-mobile-storage.md's runbook).
+pub(crate) const PROVEN_ON_SILICON: bool = true;
 
 /// A running server: where a client sends, where readiness arrives, and the physical base of the
 /// transfer region a client maps.

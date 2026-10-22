@@ -191,6 +191,8 @@ Each way it can end, by the last lines:
 | date (UTC) | commit | coherence | link | lease | bytes | rate | verdict |
 |---|---|---|---|---|---|---|---|
 | 2026-10-20 | `290d3ba8b` | `Coherent` | 1000 Mbit/s full duplex, 2830 ms | 192.168.8.200 | 104,857,600 in 362.965 s | 2.311 Mbit/s | `LEASED-AND-MEASURED` |
+| 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.542 s | 14.329 Mbit/s | `LEASED-AND-MEASURED` |
+| 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.606 s | 14.313 Mbit/s | `LEASED-AND-MEASURED` |
 
 The row is `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
 the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
@@ -206,15 +208,20 @@ cabling, not the driver. What the run settled that nothing read had predicted:
   `local-mac-address`.
 - The rate is a finding, not a pass: 2.3 Mbit/s on a gigabit link (below).
 
-[`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has why the row is 2.3 Mbit/s,
-how QEMU reproduces it, the fix, and the bench step that measures the fix on radon.
+The 2026-10-22 rows are two boots of one image, `bench/radon-2026-10-22/53-network-rate.log`;
+`README-53.md` there says how they ran. Their peer was the TFTP host's wired adapter, where the
+2026-10-20 row's was its Wi-Fi, so the two dates do not share a path.
+
+[`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has why the first row is 2.3
+Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
 
 ## BUGS
 
-- **The rate after the receive-path fix is unmeasured on radon.** The Results row is 2.3 Mbit/s;
-  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the cause, the fix and the
-  bench step that measures it.
-- **One silicon run.** The Results row is one boot, on one board, with one cable. Every other test
+- **14.3 Mbit/s on a gigabit link.** radon advertises 4 to 5 KiB of its 16 KiB receive window at
+  a 2 ms round trip, so the reader on radon drains its buffer slower than the wire fills it.
+  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the measurement; what
+  drains it slowly is not yet found.
+- **One board.** The Results rows are three boots, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
 - **The booted system brings the port up on every radon boot**
