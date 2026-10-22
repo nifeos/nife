@@ -630,7 +630,7 @@ fn read_bench_lines(stdout: std::process::ChildStdout) -> (Vec<(String, u64, u64
 
 /// **`NIFE_BENCH_READINGS=<file>`: append this leg's icount rows to `file`** as `arch name ticks
 /// iters`, tab-separated, so CI's bench job can keep what `main` measured as an artifact. The
-/// weekly drift chart reads that artifact (helpers/baseline_drift.py `--update`, calef's ruling on
+/// weekly drift chart reads that artifact (`helpers/baseline_drift.py --update`, calef's ruling on
 /// #2554, 2026-10-22 UTC) instead of parsing the table above out of a job log. An environment
 /// variable rather than a flag because `script/ci-build bench` chains three legs in one command and
 /// each must append to the same file. The architecture is the baseline's, read from its file name.
