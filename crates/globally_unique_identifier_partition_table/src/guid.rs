@@ -282,7 +282,9 @@ mod tests {
         assert_eq!(to_disk(types::EFI_SYSTEM), EFI_SYSTEM_ON_DISK);
         assert_eq!(from_disk(EFI_SYSTEM_ON_DISK), types::EFI_SYSTEM);
         assert_eq!(
-            &*from_disk(EFI_SYSTEM_ON_DISK).hyphenated().encode_upper(&mut Uuid::encode_buffer()),
+            &*from_disk(EFI_SYSTEM_ON_DISK)
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
             "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
         );
     }
@@ -290,11 +292,15 @@ mod tests {
     #[test]
     fn printing_a_type_constant_gives_its_registered_string() {
         assert_eq!(
-            &*types::NIFE_DATA.hyphenated().encode_upper(&mut Uuid::encode_buffer()),
+            &*types::NIFE_DATA
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
             "EC5CC08B-D749-4434-AC38-A274C50385BA"
         );
         assert_eq!(
-            &*types::NIFE_BOOT.hyphenated().encode_upper(&mut Uuid::encode_buffer()),
+            &*types::NIFE_BOOT
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
             "11631EE3-E18F-4AFC-9D7F-171572635629"
         );
     }

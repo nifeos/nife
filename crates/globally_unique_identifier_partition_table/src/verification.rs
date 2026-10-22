@@ -144,7 +144,12 @@ fn the_header_fields_partition_the_block() {
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.overlap_is_exactly_sharing_a_block.patch`
 #[kani::proof]
 fn overlap_is_exactly_sharing_a_block() {
-    let a = Entry::new(types::LINUX_FILESYSTEM, Uuid::nil(), kani::any(), kani::any());
+    let a = Entry::new(
+        types::LINUX_FILESYSTEM,
+        Uuid::nil(),
+        kani::any(),
+        kani::any(),
+    );
     let b = Entry::new(types::NIFE_DATA, Uuid::nil(), kani::any(), kani::any());
     kani::assume(a.first_lba <= a.last_lba && b.first_lba <= b.last_lba);
 

@@ -54,8 +54,8 @@ use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
     ENTRY_ARRAY_BYTES, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA,
 };
-use uuid::Uuid;
 use user_mode_runtime::{call, send};
+use uuid::Uuid;
 
 /// Slot 0: where the verdict goes. An endpoint with `WRITE`.
 const REPORT: u64 = 0;

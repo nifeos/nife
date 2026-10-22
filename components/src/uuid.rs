@@ -46,8 +46,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use uuid::{Builder, Uuid};
 use user_mode_runtime::{exit, is_granted, send};
+use uuid::{Builder, Uuid};
 
 /// Slot 0: where the identifier goes. An endpoint with `WRITE`, under the sink contract.
 const REPORT: u64 = 0;
