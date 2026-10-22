@@ -93,9 +93,11 @@ SMP="${NIFE_SMP:-2}"
 #   `thread=multi` for this pair and issues no warning, and nobody here has audited whether its
 #   barrier placement is complete. So a failure seen only under this knob might be the guest's bug or
 #   might be the emulator's, and the honest next step for one is a bench, not a patch.
-# - **It found nothing yet.** Milestone 321 added it while failing to reproduce a supervision failure
-#   from xenon; twelve runs at `NIFE_SMP=4` with `thread=multi` were green, which is why the default
-#   is unchanged and this is a knob rather than a new posture.
+# - **Round-robin is not the safe reading either.** Milestone 321's `REAP` defect (a corpse still
+#   standing on its stack was refused) reproduced under both settings and more often under
+#   round-robin, where a timeslice can land inside a window a few hundred instructions long on
+#   silicon. Neither setting is the faithful one, which is why the default is unchanged and this is
+#   a knob rather than a new posture.
 TCG_THREAD=""
 if [ -n "$NIFE_TCG_THREAD" ]; then
     TCG_THREAD="-accel tcg,thread=$NIFE_TCG_THREAD"
