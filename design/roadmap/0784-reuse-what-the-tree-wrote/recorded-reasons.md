@@ -13,7 +13,7 @@ landed wording.
   CBMC per §46), which a dependency would lose; installer and loader must agree
   byte for byte.
 - `measured_boot`'s SHA-256: Reuse: write. calef ruled "Keep our SHA-256." on 2026-10-22 (UTC):
-  §46's rule 3 (the kernel writes) wins over rule 4 (crypto is taken), and `sha2` stays out of the
+  §46 (thin primitives or whole subsystems)'s rule 3 (the kernel writes) wins over rule 4 (crypto is taken), and `sha2` stays out of the
   measured-boot trusted base.
 - `network_time_protocol`: Reuse: write. Proved (7 Kani, fixed-point multiply restructured per §46);
   `sntpc` exists but would lose the proof.
