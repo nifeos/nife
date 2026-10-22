@@ -272,7 +272,10 @@ mod tests {
         assert!(LongName::new(&"a".repeat(255)).is_some());
         assert_eq!(LongName::new(&"a".repeat(256)), None);
         // `from_units` holds the length limit itself, since a caller with units skips `new`.
-        assert_eq!(LongName::from_units(&[u16::from(b'a'); MAX_UNITS + 1]), None);
+        assert_eq!(
+            LongName::from_units(&[u16::from(b'a'); MAX_UNITS + 1]),
+            None
+        );
     }
 
     /// `BOOTRISCV64.EFI` is fifteen units, so two entries: the first on disk holds units 13 and 14,

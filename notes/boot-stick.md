@@ -239,8 +239,6 @@ $ cargo xtask stick-boot
 stick-boot: x86_64: booted from BOOTX64.EFI to the progenitor
 stick-boot: aarch64: booted from BOOTAA64.EFI to the progenitor
 stick-boot: riscv64: booted from BOOTRISCV64.EFI to the progenitor
-stick-boot: wrote target/cloud-image/nife-riscv64.img
-stick-boot: riscv64: booted from BOOTRISCV64.EFI on target/cloud-image/nife-riscv64.img to the progenitor
 $ helpers/stick-maker-proof.sh        # about twelve minutes: six boots, each held to its bound
 ```
 

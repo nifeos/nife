@@ -51,7 +51,7 @@ riscv64 or aarch64 machine installing itself. They are worth naming here so that
 this expecting the rung:
 
 1. A FAT name the writer can produce. `BOOTRISCV64.EFI` is not 8.3, and
-   `crates/file_allocation_table` writes it with long-name entries (milestone 560, built).
+   `crates/file_allocation_table` writes it with long-name entries (milestone 560 (a long file name, or riscv64 cannot be installed), built).
 2. A disk the firmware will boot from. Rung 2a's second boot rests on a UEFI firmware finding
    `\EFI\BOOT\<file>` on an NVMe disk with no boot variable. radon boots from a card through vendor
    U-Boot, not from an ESP. So "install onto the disk" is a different sentence there, and milestone

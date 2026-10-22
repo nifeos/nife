@@ -46,10 +46,10 @@ character or one of `" * / : < > ? \ |`, or ending in a space or a period is ref
 
 ## Done means
 
-- Kani proves the checksum equals the specification's shift-and-add loop for every short name,
-  that every run of every length up to 255 has the right ordinals, flag, attribute, type, cluster,
-  checksum and unit packing with its terminator and padding, and that every alias of a name up to
-  14 units is a legal short name. Each harness has a replayable falsification patch.
+- Kani proves three things. The checksum equals the specification's shift-and-add loop for every
+  short name. Every run of every length up to 255 has the right ordinals, flag, attribute, type,
+  cluster, checksum, unit packing, terminator and padding. Every alias of a name up to 14 units is
+  a legal short name. Each harness has a replayable falsification patch.
 - `tests/a_third_party_driver_reads_it.rs` writes `\EFI\BOOT\BOOTRISCV64.EFI`; on macOS
   `fsck_msdos -n` exits 0, the host's `msdos` driver lists `BOOTRISCV64.EFI` and not the alias,
   and the file reads back byte for byte. A flipped checksum fails it.

@@ -41,7 +41,7 @@ fn the_checksum_is_the_specifications_loop() {
 #[kani::unwind(21)]
 fn every_long_name_run_is_well_formed() {
     let len: usize = kani::any();
-    kani::assume(len >= 1 && len <= MAX_UNITS);
+    kani::assume((1..=MAX_UNITS).contains(&len));
     let name = LongName {
         units: kani::any(),
         len,
@@ -92,7 +92,7 @@ const ALIAS_UNITS: usize = 14;
 #[kani::unwind(16)]
 fn every_alias_is_a_legal_short_name() {
     let len: usize = kani::any();
-    kani::assume(len >= 1 && len <= ALIAS_UNITS);
+    kani::assume((1..=ALIAS_UNITS).contains(&len));
     let mut units = [0u16; MAX_UNITS];
     let chosen: [u16; ALIAS_UNITS] = kani::any();
     units[..ALIAS_UNITS].copy_from_slice(&chosen);
@@ -105,7 +105,7 @@ fn every_alias_is_a_legal_short_name() {
         .iter()
         .rposition(|b| *b == b'~')
         .expect("a numeric tail");
-    assert!(tilde >= 1 && tilde <= 6);
+    assert!((1..=6).contains(&tilde));
     assert!(alias[..tilde].iter().all(|b| *b != b' '));
     assert_eq!(alias[tilde + 1], b'1');
     assert!(alias[tilde + 2..8].iter().all(|b| *b == b' '));

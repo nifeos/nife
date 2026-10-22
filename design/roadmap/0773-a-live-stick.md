@@ -64,7 +64,7 @@ Under QEMU, a gate checks criterion 5 by hashing the NVMe image around a stick b
 | G7. Secure Boot on | Must be off | Milestone 500 (a stick that boots with Secure Boot on), NOT-STARTED |
 | G8. Network | virtio-net only | Milestone 494 (the network card a PC has), PR #1632; Wi-Fi is a proposal in progress on PR #1650 (`wifi-on-a-pc-that-has-no-ethernet.md`) |
 | G9. Saving files back to the stick | No USB mass storage, no writable FAT | Nobody; see Persistence |
-| G10. The install path on aarch64 and riscv64 | No install offer: a device-tree handoff has no slot for the boot file. The FAT writer writes `BOOTRISCV64.EFI` with long-name entries (milestone 560, built). Both run live meanwhile | Milestone 568 (the boot file has nowhere to go on a device-tree machine) |
+| G10. The install path on aarch64 and riscv64 | No install offer: a device-tree handoff has no slot for the boot file. The FAT writer writes `BOOTRISCV64.EFI` with long-name entries (milestone 560 (a long file name, or riscv64 cannot be installed), built). Both run live meanwhile | Milestone 568 (the boot file has nowhere to go on a device-tree machine) |
 | G11. Each board's install-target disk driver | Unsurveyed. Nobody has listed which disk argon and radon would install onto, or whether nife has a driver for it | Nobody |
 
 G1 and G2 are this proposal's findings, read in the code (see BUGS).
