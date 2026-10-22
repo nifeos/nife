@@ -1,10 +1,6 @@
-# Name: recorded (AGENTS.md's naming section, "standard terms a reader already knows from
-# outside"). This block previously declined to claim `recorded` on the ground that the reasoning
-# was not written down anywhere, and that was wrong by one file: AGENTS.md's protected-class
-# paragraph is the written reasoning, and it covers this case exactly, which is why `elf`, `pci`,
-# `paging` and `glob` were left alone by the same rule. `kernel` is the standard term for the
-# thing this is, so nobody recorded a decision because nobody had to make one, and the general
-# rule is the record. no architect has ratified it.
+# Name: ratified 2026-10-22 (calef, #2562). AGENTS.md's naming section keeps "standard terms a
+# reader already knows from outside", which is why `elf`, `pci`, `paging` and `glob` were left alone
+# by the same rule. `kernel` is the standard term for the thing this is.
 
 [package]
 name = "kernel"

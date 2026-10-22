@@ -1,11 +1,9 @@
-# Name: recorded (design/roadmap/0039-repository-structure.md's "Not everything in `user/` is a
-# service", performed by milestone 175). The programs that exist to exercise or measure the system
-# rather than to be shipped: test clients, attackers that share the honest path, stand-in servers,
-# workloads and benchmarks. 39 named eight of them by hand on a tree less than half this size and
-# called mixing them with the real components "much of why the directory reads as shapeless"; this
-# is that separation. `tests/` was not available and would have been wrong anyway, since Cargo owns
-# that directory name and these are `[[bin]]` targets rather than test harnesses. Nobody has put
-# the name to an architect.
+# Name: ratified 2026-10-22 (calef, #2562). The programs that exist to exercise or measure the
+# system rather than to be shipped: test clients, attackers that share the honest path, stand-in
+# servers, workloads and benchmarks. design/roadmap/0039-repository-structure.md's "Not everything
+# in `user/` is a service" called mixing them with the real components "much of why the directory
+# reads as shapeless"; this is that separation. `tests/` would be wrong, since Cargo owns that
+# directory name and these are `[[bin]]` targets rather than test harnesses.
 
 [package]
 name = "fixtures"
