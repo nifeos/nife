@@ -55,9 +55,9 @@
 //!
 //! **DHCP has no bound.** The lease loop runs until a server answers, and every spawner blocks
 //! on the report, so a link that is up with no DHCP server behind it is a wait with no end. The
-//! e1000e and DesignWare wirings refuse a link that never came up (`Absent::NoLink`,
-//! `NotStarted::NoLink`) and every test runner provides slirp's server, so only a live link to a
-//! LAN with no DHCP server reaches it.
+//! kernel's `e1000e_service` and `designware_ethernet_service` refuse a link that never came up
+//! (`Absent::NoLink`, `NotStarted::NoLink`) and every test runner provides slirp's server, so only
+//! a live link to a LAN with no DHCP server reaches it.
 //!
 //! **A spawn without slot 8 cannot reuse a socket's page.** With no address space to `UNMAP` from,
 //! a closed socket's page stays mapped, and its table entry refuses every later frame rather than
