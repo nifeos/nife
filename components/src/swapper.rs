@@ -151,7 +151,7 @@ pub extern "C" fn _start(role: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
 fn deputy(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
-    let client_img = image(fs, "chatty", 4);
+    let client_img = image(fs, "swap_boundary_witness", 4);
 
     // The server's routing includes the device (`uart`) and the witness page; the client's does not,
     // exactly as on the direct channel. This is what makes "the client was never granted the device"
@@ -212,7 +212,7 @@ fn deputy(fs: &nifefs::Fs, w: &Wiring) -> ! {
 fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
-    let client_img = image(fs, "chatty", 4);
+    let client_img = image(fs, "swap_boundary_witness", 4);
 
     // **What this operator will route, per child, by the name the component uses for it.** This is
     // the whole of what used to be four literal endowment arrays: no rights are spelled here, no
@@ -571,7 +571,7 @@ fn report_dependents(
 fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
-    let client_img = image(fs, "chatty", 4);
+    let client_img = image(fs, "swap_boundary_witness", 4);
 
     // The handoff run, as many pages as the contract declares, minted as one frame capability
     // (`MemoryRegion::RETYPE`'s page count). A contract with no handoff would not reach this role.
@@ -889,7 +889,7 @@ fn warn_broker(signal: u64, down: bool) {
 fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
-    let client_img = image(fs, "chatty", 4);
+    let client_img = image(fs, "swap_boundary_witness", 4);
     let broker_img = image(fs, "broker", 40);
 
     // `svc` is the *back* endpoint here: what the broker forwards to and what a backend receives
@@ -1135,7 +1135,7 @@ enum Quiesce {
 fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
-    let client_img = image(fs, "chatty", 4);
+    let client_img = image(fs, "swap_boundary_witness", 4);
 
     // Identical to the direct channel's routing: same declarations, same objects, same rights.
     // Nothing about the wiring says this channel is different, which is the point. What differs is
@@ -1438,9 +1438,9 @@ fn survey_domain(faultep: u64) -> (u64, u64) {
 fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
     // The raw syscall return, which is the **negative** discriminant: `abi::Error`'s variants are
     // already negative (`StillAlive = -9`) and `invoke` hands them back unchanged. Programs that
-    // report an error upward negate it to get a positive code (`chatty`'s attack report does), and
-    // comparing against a negated constant here was this lane's one wrong line: it made every
-    // refusal look like a success and the test said 0 of 2.
+    // report an error upward negate it to get a positive code (`swap_boundary_witness`'s attack
+    // report does), and comparing against a negated constant here was this lane's one wrong line:
+    // it made every refusal look like a success and the test said 0 of 2.
     let still_alive = abi::Error::StillAlive as i64;
     let mut asked = 0u64;
     let mut refused = 0u64;
@@ -1475,7 +1475,7 @@ fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
 /// signature: the caller says which component and which supervision endpoint, and every capability,
 /// every mapping and the region size come from the component's own declaration. `args` stays a
 /// caller's business because it is configuration and not authority (which log entries this instance
-/// writes, and which of `chatty`'s three roles it is playing).
+/// writes, and which of `swap_boundary_witness`'s three roles it is playing).
 fn start_child(
     elf: &elf::Elf,
     plan: &component_plan::Plan,

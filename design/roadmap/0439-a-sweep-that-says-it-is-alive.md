@@ -18,7 +18,7 @@ already a shared constant. Nothing here is anybody's decision.
 
 ## The problem, and it is a comparison the tool cannot make
 
-`crates/board_console` can tell a finished job-mix sweep from a wedged one, since milestone 324's
+`crates/serial_console` can tell a finished job-mix sweep from a wedged one, since milestone 324's
 part 2. **What it cannot do is tell a wedged sweep from a slow one**, and the reason is that a sweep
 emits nothing between subruns.
 
@@ -43,7 +43,7 @@ sweep exists to run on and nobody has watched one there yet.
 ## What the work is
 
 A heartbeat from the supervisor on a timer rather than only between subruns, the same shape
-`kernel/src/soak.rs` already ships. Then `board_console`'s quiet timer is sized against a chosen
+`kernel/src/soak.rs` already ships. Then `serial_console`'s quiet timer is sized against a chosen
 interval instead of against a measured worst case. That is the whole point.
 
 It is a kernel change, which is why milestone 324 (the bench console cannot speak to any of the
@@ -52,7 +52,7 @@ supervisor has to print from a timer, and that is outside a milestone about a co
 
 ## What it is not
 
-**Not a new exit status.** `board_console` already reports a quiet run as `2`; what changes is the
+**Not a new exit status.** `serial_console` already reports a quiet run as `2`; what changes is the
 threshold's justification, not the vocabulary. Milestone 324's lane deliberately added no status and
 this should not either.
 
@@ -65,14 +65,14 @@ green on both branches. A heartbeat is a new line rather than an edited one for 
 ## Follow-on
 
 - **Recorded.** *The limitation as it stands today*, in the `BUGS` sections of `script/job-mix`,
-  `crates/board_console/src/progress.rs` and `notes/job-mix.md`, each naming the fifteen-to-one
+  `crates/serial_console/src/progress.rs` and `notes/job-mix.md`, each naming the fifteen-to-one
   ratio and the fact that no sweep has been watched on a board.
 - **Milestone 324.** Where the measurement comes from, and where the ratio was corrected from twenty
   to fifteen when the fixture was re-captured against the merged kernel.
 
 ## Index row
 
-`crates/board_console` can tell a finished job-mix sweep from a wedged one since milestone 324. It
+`crates/serial_console` can tell a finished job-mix sweep from a wedged one since milestone 324. It
 cannot tell a wedged one from a slow one, because a sweep prints nothing between subruns. Its quiet timer is
 therefore sized against the slowest subrun anyone has measured. That is 4.0 seconds on QEMU against a
 60-second default. Fifteen to one is a guess rather than a choice. That ratio was

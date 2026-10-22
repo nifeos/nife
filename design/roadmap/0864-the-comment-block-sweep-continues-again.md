@@ -22,7 +22,7 @@ document.
 This worth's rows:
 `crates/jh7110_clock_and_reset/src/lib.rs:2` (184), `crates/current_cpu_contract/src/lib.rs:1`
 (183), `components/src/login.rs:1` (178), then `crates/jh7110_entropy/src/lib.rs:2` and
-`crates/board_console/src/lib.rs:1` (176 each). A worth takes the worst handful that is not a
+`crates/serial_console/src/lib.rs:1` (176 each). A worth takes the worst handful that is not a
 gated example, and every shrink is banked. The method, the
 refused alternatives and the evidence are milestone 860 (comments state the constraint as it
 is now)'s block and
@@ -47,14 +47,14 @@ documents):
   and 860's garbled pointer sentence is fixed.
 - `crates/jh7110_entropy/src/lib.rs:2` 176 to 166: the source bullets keep identity, dates and
   facts; the fetch mechanics went to git.
-- `crates/board_console/src/lib.rs:1` 176 to 173: the Miri section keeps the measurement and the
+- `crates/serial_console/src/lib.rs:1` 176 to 173: the Miri section keeps the measurement and the
   mechanisms, not the narration.
 
 ## Follow-on
 
 - **Milestone 865.** Milestone 865 (the comment-block sweep's worth five). Next worst: `components/src/timetable.rs:1` (191), `components/src/login.rs:1`
   (177), `crates/current_cpu_contract/src/lib.rs:1` (176), `components/src/system_installer.rs:1`
-  (175), `crates/board_console/src/lib.rs:1` (173).
+  (175), `crates/serial_console/src/lib.rs:1` (173).
 
 ## Index row
 

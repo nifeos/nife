@@ -77,7 +77,7 @@ flow control, or at a non-standard baud, the trade changes and the dependency is
 The board was powered off for all of this and its power strip was unreachable, so nothing below
 involved a booting machine.
 
-- The recognizer runs against four fixtures under `crates/board_console/tests/fixtures/`, fed one
+- The recognizer runs against four fixtures under `crates/serial_console/tests/fixtures/`, fed one
   byte at a time. That is the worst case a real UART delivers, and the case that catches a
   recognizer depending on chunk boundaries. Two of them are in `captured/` and are raw bytes off the
   wire on 2026-09-01, control characters and all. Two are in `synthetic/` and are cases nobody has

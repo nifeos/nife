@@ -83,7 +83,7 @@ Argued in earlier appendices, and still reported by this re-run (39):
   on the same conditions, and every `cargo test` build has debug assertions, so a bad ASID panics
   before the guard is reached. The guard is release-only, and no test here builds release.
 - `board_console::port` (3): `candidates` twice and `confirm_speed`, already gaps in
-  [board-console](board-console.md). They need the host's `/dev` or a real tty.
+  [serial-console](serial-console.md). They need the host's `/dev` or a real tty.
 - `job_mix::order`'s `seed | 1` (1), the recorded `BUGS` entry on `order`.
 - `network_time_protocol::PROVED_NANOS` (1). A `const` inside the `cfg(kani)` module gets no module
   path in its mutant name, so the `verification::` exclusion misses it. This is the

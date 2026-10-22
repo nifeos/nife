@@ -36,7 +36,7 @@ That was the whole milestone: something that runs on every core, for hours, that
 `--features soak` replaces the halt at the end of the boot tour with a pool of user-mode workers and
 a supervisor that watches them forever. `notes/soak.md` is the account; the pieces are
 `kernel/src/soak.rs`, `fixtures/src/soaker.rs`, `crates/soak_page`, `script/soak`, `script/board-image
---soak`, and `Stage::Soak` in `crates/board_console`.
+--soak`, and `Stage::Soak` in `crates/serial_console`.
 
 It runs on all three architectures under QEMU and is the same workload that would run on radon,
 argon and xenon. `script/soak --arch <a>` boots it and judges it with the same recognizer and the
@@ -57,7 +57,7 @@ thing with different deadlines.
   progress for a whole beat.
 
   **Which existing instrument it extends, and why the other two could not be it.** It extends
-  `crates/board_console`, so the QEMU rehearsal and the bench run are judged by one recognizer.
+  `crates/serial_console`, so the QEMU rehearsal and the bench run are judged by one recognizer.
   `script/repeat-under-load` repeats a terminating suite under induced host load and reports a
   distribution over runs; a soak has no runs to repeat, and the load it wants is the guest's own.
   `script/interleaving-check` is loom over the extracted protocols on the host, which searches a
@@ -103,7 +103,7 @@ still prints on time, with a rate that says so; a machine doing none still print
 check fires. Silence means the thing that prints is itself wedged, which is the only thing silence
 is allowed to mean.
 
-`crates/board_console` implements the other half rather than agreeing to it in prose. `Stage::Soak`
+`crates/serial_console` implements the other half rather than agreeing to it in prose. `Stage::Soak`
 is reached by the kernel's own `soak: started` line, and reaching it re-arms the quiet check that
 a completed boot tour suppresses: a halted kernel is supposed to be quiet and a soaking one is not.
 One word (`< Stage::Tour` became `!= Stage::Tour`), asserted on a real QEMU capture cut off after its

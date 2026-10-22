@@ -73,7 +73,7 @@ another soak number.
 `sched::on_tick` gained one `#[cfg(feature = "soak")]` call. `kernel/src/soak.rs` gained the tick
 route (a rendezvous, a soak-only intid, and the signal the tick sends it). `fixtures/src/soaker.rs`
 gained a waiter role that loops on `user_rt::irq_wait`. `crates/soak_page` gained a third counter
-array so a wake is never mistaken for a round trip. `crates/board_console` and the `script/soak`
+array so a wake is never mistaken for a round trip. `crates/serial_console` and the `script/soak`
 summary carry the new field and the sentence that says what the crossings are.
 
 No syscall, no architecture-specific code, and no new feature: it is all behind the `soak` feature

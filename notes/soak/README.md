@@ -6,7 +6,7 @@ behind each section of the main page.
 
 - [`qemu-2026-09.md`](qemu-2026-09.md): the first QEMU numbers, and what a soak build costs.
 - [`saturated-workload-does-not-migrate.md`](saturated-workload-does-not-migrate.md): a saturated workload does not migrate, and why
-  the soak extends `board_console`.
+  the soak extends `serial_console`.
 - [`tick-route.md`](tick-route.md): the mechanism that makes the soak cross cores, and its two bugs.
 - [`placement-census.md`](placement-census.md): where the threads are, and the four QEMU runs.
 - [`radon-2026-09-03.md`](radon-2026-09-03.md): the first runs off a board, and the three-hour run.

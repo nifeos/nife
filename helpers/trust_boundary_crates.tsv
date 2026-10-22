@@ -15,7 +15,6 @@ asid	kernel	retired
 bitfont	shared	retired
 bitmap_font	shared	components,kernel,uefi_loader
 block_roster	shared	components,kernel
-board_console	host	-
 boot_ladder	shared	components,kernel
 boot_slot	shared	components,kernel,uefi_loader
 byte_sink_contract	shared	components,fixtures,kernel,std
@@ -143,6 +142,7 @@ regions	kernel	retired
 schedule_store	userspace	components,fixtures
 screen_console	shared	components,kernel,uefi_loader
 sealed_pair	host	-
+serial_console	host	-
 sink_proto	shared	retired
 slab	kernel	retired
 slabtop	userspace	components

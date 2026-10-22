@@ -10,9 +10,9 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  components/src/system_installer.rs | disks under ~700 MiB refused but untested; clone keeps source disk/partition GUIDs; no firmware boot entry written | system_installer: small-disk test, re-draw GUIDs on clone | S  |
 |  components/src/usb_keyboard_driver.rs, crates/extensible_host_controller_interface/src/lib.rs | root ports only (no hubs), no key repeat/lock keys/LEDs, events dropped during stall recovery; 0242 lists them as limits, 0618 excludes hubs | USB keyboard: hubs, key repeat, lock LEDs | L  |
 |  crates/address_space_map/src/lib.rs | too-large image reported as "could not spawn" rather than check_image's reason | Userspace loader reports check_image's reason | S  |
-|  crates/board_console/src/progress.rs | field names after the marker head (tasks=, ticks_median=...) are string literals nowhere shared; a kernel rename leaves tests green and parse empty | Share job-mix field names between kernel and parser | S  |
-|  crates/board_console/src/screen.rs | nothing checks bitmap_font for duplicate glyphs, so glyph lookup can silently prefer the earlier char | bitmap_font: gate against duplicate glyphs | S  |
-|  crates/board_console/src/stop.rs | soak markers are string literals checked by a reader; hoisting into boot_ladder would make them agree by construction | Hoist soak markers into boot_ladder | S  |
+|  crates/serial_console/src/progress.rs | field names after the marker head (tasks=, ticks_median=...) are string literals nowhere shared; a kernel rename leaves tests green and parse empty | Share job-mix field names between kernel and parser | S  |
+|  crates/serial_console/src/screen.rs | nothing checks bitmap_font for duplicate glyphs, so glyph lookup can silently prefer the earlier char | bitmap_font: gate against duplicate glyphs | S  |
+|  crates/serial_console/src/stop.rs | soak markers are string literals checked by a reader; hoisting into boot_ladder would make them agree by construction | Hoist soak markers into boot_ladder | S  |
 |  crates/e1000e/src/pch/mod.rs | flow control neither configured nor advertised (FreeBSD does both); 0494 does not name it | e1000e PCH: flow control | S  |
 |  crates/installed_programs/src/lib.rs | no retention for old generations; one page holds only about two dozen programs; atomicity of the `current` write on RedoxFS unchecked | installed_programs: retention, capacity, atomic current | M  |
 |  crates/screen_console/src/lib.rs | On xenon the screen shows a grid instead of text; finding and experiment are written up but no milestone owns the fix. | Find and fix the xenon grid on the firmware screen | M  |
@@ -71,7 +71,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  roadmap 0803 | other QEMU assumptions on the aarch64 boot path not swept beyond four files | Sweep the aarch64 boot path for QEMU assumptions | M  |
 |  roadmap 0805 | a reset does not quiesce devices; in-flight DMA is cut off | Reboot quiesces devices | M  |
 |  roadmap 0811 | whether kernel must reset the I/O queue pair before a server restart is unmeasured | Measure NVMe server restart state | S  |
-|  roadmap 0890 | `serial_driver` shipped and started by nothing; `board_console` has not read radon's profile | Start or drop serial_driver; radon console profile | S  |
+|  roadmap 0890 | `serial_driver` shipped and started by nothing; `serial_console` has not read radon's profile | Start or drop serial_driver; radon console profile | S  |
 |  uefi_loader/src/chooser.rs | power cut mid table write, write order, and fallback to the backup table are all untested or unimplemented | Chooser survives a power cut and reads the backup table | M  |
 |  uefi_loader/src/chooser.rs (slot image) | an image started from a slot has no boot file so cannot install to a second disk; `booted_from_nvme` assumes NVMe | Let a slot-booted image find its boot file and check its disk | S  |
 |  uefi_loader/src/device_tree_from_acpi.rs (PCI) | no PCI or virtio-mmio on an ACPI aarch64 machine (needs `_CRS`/`_PRT`); a present bus is invisible (578 covers discovery, not AML) | Describe PCI on ACPI aarch64 machines | L  |

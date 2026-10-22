@@ -100,8 +100,8 @@
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="77.2" font-size="10" text-anchor="middle">909</text>
 <rect class="seg s0" x="601.4" y="306.4" width="38.7" height="17.6"><title>2026W43, Closed (removed, superseded or refused): 66</title></rect>
-<rect class="seg s1" x="601.4" y="179.8" width="38.7" height="126.6"><title>2026W43, Built: 476</title></rect>
-<rect class="seg s2" x="601.4" y="171.3" width="38.7" height="8.5"><title>2026W43, Partial: 32</title></rect>
+<rect class="seg s1" x="601.4" y="179.3" width="38.7" height="127.1"><title>2026W43, Built: 478</title></rect>
+<rect class="seg s2" x="601.4" y="171.3" width="38.7" height="8.0"><title>2026W43, Partial: 30</title></rect>
 <rect class="seg s3" x="601.4" y="80.1" width="38.7" height="91.2"><title>2026W43, Not started: 343</title></rect>
 <rect class="seg s4" x="601.4" y="79.5" width="38.7" height="0.5"><title>2026W43, Optional: 2</title></rect>
 <path class="seg s6" d="M601.4,79.5 V78.6 Q601.4,77.7 602.3,77.7 H639.1 Q640.0,77.7 640.0,78.6 V79.5 Z"><title>2026W43, Proposal, no number yet: 7</title></path>

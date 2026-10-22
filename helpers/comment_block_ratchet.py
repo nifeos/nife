@@ -11,6 +11,7 @@ comparison against the merge base, and a selftest that runs before the check.
 
     python3 helpers/comment_block_ratchet.py --check          # what script/lint runs
     python3 helpers/comment_block_ratchet.py --bank           # lower the baseline to the tree; never raises
+    python3 helpers/comment_block_ratchet.py --step kernel/ 10  # lower a directory's cap a step, listing what it reaches
     python3 helpers/comment_block_ratchet.py --selftest       # the rules, as fixtures
     python3 helpers/comment_block_ratchet.py --init           # write the baseline from scratch (milestone 860 only)
 
@@ -33,6 +34,22 @@ before it. Measured 2026-10-09 (UTC) at `2d59ddde1` with the note's method, whic
 comment as a one-line block: 28,950 blocks, median 2 lines, mean 4.77. Blocks over 40 hold
 19.8% of comment lines (the note, one day earlier, measured 20%); over 30 holds 24.5% and over 50
 holds 17.3%, so 40 is where the long tail's bulk sits, and it is the number calef named.
+
+**Caps per directory, and what the cap does not count** (milestone 929 (comments in the Linux style
+across first-party Rust)). A `cap` row in the baseline sets a directory's cap; the longest prefix
+that holds a file wins, and a directory with no row is at 40. A cap is 40, 20 or 10 and only falls.
+`--step DIR CAP` takes a directory down a step: it writes the row, lists every block over the new
+cap at its size, and starts the directory's in-body ceiling. That one change may add rows for that
+directory, each at no more than its block's size at the merge base; no other change may. A block's
+size leaves out two kinds of line §267 keeps whole: a `// SAFETY:` comment from its marker to the
+block's end, and a `Name:` paragraph (design/naming.md) from its marker to the next empty doc line.
+
+**The in-body count** (milestone 929). An `in-body` row holds the plain whole-line comment lines
+inside `fn` bodies under one directory, nested closures and items included and `// SAFETY:`
+comments left out, to a ceiling. The ceiling only falls, `--bank` lowers it, and once written it may
+not be removed. Bodies are found by the lexer: a `fn` outside brackets starts a signature, and the
+next `{` outside brackets opens its body unless a `;`, `,` or `}` comes first (a trait method, a
+`fn` pointer type).
 
 **The rules** (§266 section 3 option (b)'s shape, ruled there by calef over exact match, applied
 one level down):
@@ -81,8 +98,11 @@ BASELINE = 'design/comment-block-baseline.tsv'
 
 HEADER = """\
 # The comment-block ratchet's baseline: milestone 860 (comments state the constraint as it is now),
-# for §267 (a comment states the constraint as it is now).
-# One row per comment block over the 40-line cap when it was written: the file and the block's
+# for §267 (a comment states the constraint as it is now), and milestone 929 (comments in the Linux
+# style across first-party Rust).
+# A `cap` row lowers one directory's cap from 40 to 20 or 10, and an `in-body` row holds its plain
+# comment lines inside function bodies to a ceiling; both only fall (`--step`, then `--bank`).
+# One row per comment block over its directory's cap when it was written: the file and the block's
 # first line (with `#2`, `#3`... only where two over-cap blocks would start at one line), then the
 # block's lines. A number is a ceiling that may only go DOWN: lower it with
 # `python3 helpers/comment_block_ratchet.py --bank`, which never raises and never adds. A row goes,
@@ -105,17 +125,36 @@ def fmt(n):
 
 def read_baseline(text):
     """{(path, first_line, occurrence): ceiling}, the occurrence starting at 1."""
-    rows = {}
+    return read_table(text)[0]
+
+
+def read_table(text):
+    """(rows, caps, in_body) from a baseline: the block rows as `read_baseline` gives them, the
+    directory caps {prefix: cap} from `cap` rows, and the in-body ceilings {prefix: lines} from
+    `in-body` rows."""
+    rows, caps, in_body = {}, {}, {}
     for line in text.splitlines():
         if not line.strip() or line.startswith('#'):
             continue
         cells = line.split('\t')
         if cells[0] == 'block':
             continue
+        if cells[0] in ('cap', 'in-body') and len(cells) == 3:
+            (caps if cells[0] == 'cap' else in_body)[cells[1]] = int(cells[2])
+            continue
         key = parse_key(cells[0])
         if key:
             rows[key] = int(cells[1])
-    return rows
+    return rows, caps, in_body
+
+
+def cap_of(path, caps):
+    """The block cap for `path`: the longest directory prefix in `caps` that holds it, else 40."""
+    best = None
+    for prefix in caps:
+        if path.startswith(prefix) and (best is None or len(prefix) > len(best)):
+            best = prefix
+    return caps[best] if best is not None else CEILING
 
 
 def parse_key(cell):
@@ -126,8 +165,13 @@ def parse_key(cell):
     return (m.group(1), int(m.group(2)), int(m.group(3) or 1))
 
 
-def write_baseline(rows):
-    out = [HEADER, 'block\tlines\n']
+def write_baseline(rows, caps=None, in_body=None):
+    out = [HEADER]
+    for prefix in sorted(caps or {}):
+        out.append(f'cap\t{prefix}\t{caps[prefix]}\n')
+    for prefix in sorted(in_body or {}):
+        out.append(f'in-body\t{prefix}\t{in_body[prefix]}\n')
+    out.append('block\tlines\n')
     for key in sorted(rows, key=lambda k: (k[0], k[1], k[2])):
         path, line, occ = key
         suffix = f'#{occ}' if occ > 1 else ''
@@ -242,27 +286,56 @@ def lex_comment_spans(src):
     return spans
 
 
-def blocks_over(src, ceiling=CEILING):
-    """[(first_line, lines)] for every block over `ceiling`, in line order.
+def blocks(src):
+    """[(first_line, last_line, size)] for every block, in line order.
 
     A block is a run of adjacent comment spans of one kind whose line ranges are consecutive. A
     trailing comment labels the code line it sits on, so it neither begins nor joins a block, and
-    its code line ends the run around it.
+    its code line ends the run around it. `size` is the block's lines less the two kinds §267
+    keeps whole (`exempt_lines`), so it can be smaller than the block's span.
     """
+    lines = src.split('\n')
     out = []
     cur = None
-    for kind, a, b in lex_comment_spans(src):
+    for kind, a, b in lex_comment_spans(src) + [('end', 0, 0)]:
         if kind == 'trailing':
             continue
-        if cur and a == cur[1] + 1 and kind == cur[2]:
+        if cur and kind == cur[2] and a == cur[1] + 1:
             cur = [cur[0], b, kind]
-        else:
-            if cur and cur[1] - cur[0] + 1 > ceiling:
-                out.append((cur[0], cur[1] - cur[0] + 1))
-            cur = [a, b, kind]
-    if cur and cur[1] - cur[0] + 1 > ceiling:
-        out.append((cur[0], cur[1] - cur[0] + 1))
+            continue
+        if cur:
+            span = [line.strip() for line in lines[cur[0] - 1:cur[1]]]
+            out.append((cur[0], cur[1], len(span) - exempt_lines(span)))
+        cur = [a, b, kind]
     return out
+
+
+NAME_LINE = re.compile(r'//[/!]\s?Name:')
+
+
+def exempt_lines(span):
+    """How many of a block's lines the cap does not count: a `// SAFETY:` comment from its marker
+    to the block's end (Linux demands that comment, and §267 keeps the `SAFETY` discipline), and a
+    `Name:` paragraph from its marker to the next empty doc line or the block's end (calef,
+    2026-10-22 UTC: "Approved assuming naming provenance comments remain.")."""
+    exempt, i = 0, 0
+    while i < len(span):
+        if span[i].startswith('// SAFETY:'):
+            return exempt + len(span) - i
+        if NAME_LINE.match(span[i]):
+            j = i + 1
+            while j < len(span) and span[j] not in ('///', '//!'):
+                j += 1
+            exempt += j - i
+            i = j
+            continue
+        i += 1
+    return exempt
+
+
+def blocks_over(src, ceiling=CEILING):
+    """[(first_line, lines)] for every block over `ceiling`, in line order."""
+    return [(first, size) for first, _last, size in blocks(src) if size > ceiling]
 
 
 def block_texts(src, ceiling=CEILING):
@@ -270,13 +343,130 @@ def block_texts(src, ceiling=CEILING):
     lines with indentation stripped, so a block that moved out of an inline `mod x { }` into its own
     file, one indent shallower, still reads as the same block."""
     lines = src.split('\n')
-    return [(first, size, tuple(line.strip() for line in lines[first - 1:first - 1 + size]))
-            for first, size in blocks_over(src, ceiling)]
+    return [(first, size, tuple(line.strip() for line in lines[first - 1:last]))
+            for first, last, size in blocks(src) if size > ceiling]
 
 
-def block_counts(paths, read):
-    """{path: [(first_line, lines)]} for the over-cap blocks of each path."""
-    return {p: blocks_over(read(p)) for p in paths}
+# --- the in-body count -----------------------------------------------------------------------------
+#
+# Milestone 929 (comments in the Linux style across first-party Rust): a comment inside a function
+# body states a constraint the code cannot show. What it counts is plain whole-line comment lines
+# inside a `fn` body, nested items and closures included; a `// SAFETY:` comment, from its marker
+# to the end of its block, is not counted. Each started directory holds the count to a ceiling that
+# only falls.
+
+def fn_body_ranges(src):
+    """[(open_line, close_line)] of every outermost `fn` body. A `fn` at bracket depth 0 starts a
+    signature; the next `{` at depth 0 opens its body, and a `;`, `,`, `)` or `}` first means it had
+    none (a trait method, a `fn` pointer type). Lexing is the ratchet's: comments and literals are
+    skipped whole."""
+    out = []
+    i, n, line = 0, len(src), 1
+    depth = 0        # () and [] nesting outside any body
+    pending = False  # a `fn` seen, its body not yet opened
+    body = None      # (open_line, brace depth) while inside a body
+    braces = 0
+    while i < n:
+        c = src[i]
+        if c == '\n':
+            line += 1
+            i += 1
+            continue
+        if src.startswith('//', i):
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if src.startswith('/*', i):
+            d, j = 0, i
+            while j < n:
+                if src.startswith('/*', j):
+                    d, j = d + 1, j + 2
+                elif src.startswith('*/', j):
+                    d, j = d - 1, j + 2
+                    if d == 0:
+                        break
+                else:
+                    line += src[j] == '\n'
+                    j += 1
+            i = j
+            continue
+        ident_before = i > 0 and (src[i - 1].isalnum() or src[i - 1] == '_')
+        m = None if ident_before else re.match(r'(?:b|c)?r(#*)"', src[i:i + 300])
+        if m:
+            end = '"' + m.group(1)
+            j = src.find(end, i + m.end())
+            j = n if j < 0 else j + len(end)
+            line += src[i:j].count('\n')
+            i = j
+            continue
+        if c == '"' or (c in 'bc' and src[i + 1:i + 2] == '"' and not ident_before):
+            j = i + (1 if c == '"' else 2)
+            while j < n and src[j] != '"':
+                j += 2 if src[j] == '\\' else 1
+            line += src[i:j + 1].count('\n')
+            i = j + 1
+            continue
+        if c == "'" or (c == 'b' and src[i + 1:i + 2] == "'" and not ident_before):
+            k = i + (1 if c == "'" else 2)
+            m = re.match(r"(\\(x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}|.)|[^\\'\n])'", src[k:k + 16])
+            if m:
+                i = k + m.end()
+                continue
+        m = re.match(r"'?[A-Za-z_][A-Za-z0-9_]*", src[i:i + 200])
+        if m:
+            if body is None and m.group(0) == 'fn' and depth == 0:
+                pending = True
+            i += m.end()
+            continue
+        if body is not None:
+            if c == '{':
+                braces += 1
+            elif c == '}':
+                braces -= 1
+                if braces == 0:
+                    out.append((body, line))
+                    body = None
+        elif c in '([':
+            depth += 1
+        elif c in ')]':
+            depth = max(0, depth - 1)
+        elif pending and depth == 0 and c == '{':
+            body, braces, pending = line, 1, False
+        elif pending and depth == 0 and c in ';,}':
+            pending = False
+        i += 1
+    return out
+
+
+def in_body_lines(src):
+    """The plain whole-line comment lines inside `fn` bodies, `// SAFETY:` comments left out."""
+    ranges = fn_body_ranges(src)
+    if not ranges:
+        return 0
+    lines = src.split('\n')
+    inside = lambda a: any(o < a < c for o, c in ranges)
+    count, cur = 0, None
+    for kind, a, b in lex_comment_spans(src) + [('end', 0, 0)]:
+        if kind == 'plain' and inside(a) and cur and a == cur[1] + 1:
+            cur = [cur[0], b]
+            continue
+        if cur:
+            span = [line.strip() for line in lines[cur[0] - 1:cur[1]]]
+            safety = next((k for k, t in enumerate(span) if t.startswith('// SAFETY:')), len(span))
+            count += safety
+        cur = [a, b] if kind == 'plain' and inside(a) else None
+    return count
+
+
+def block_counts(paths, read, caps=None):
+    """{path: [(first_line, lines)]} for the over-cap blocks of each path, at its directory's cap."""
+    return {p: blocks_over(read(p), cap_of(p, caps or {})) for p in paths}
+
+
+def in_body_counts(paths, read, prefixes):
+    """{prefix: in-body lines} over the paths under each started prefix."""
+    return {prefix: sum(in_body_lines(read(p)) for p in paths if p.startswith(prefix))
+            for prefix in prefixes}
 
 
 def rows_from_counts(counts):
@@ -409,7 +599,8 @@ def carry(moves, base_counts, base_rows, renames=()):
 
 # --- the rules, pure so the selftest can drive them ------------------------------------------------
 
-def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=()):
+def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(), caps=None,
+             stepped=()):
     """Every failure in one tree. See the header for the rules.
 
     `counts` is the tree's {path: [(first_line, lines)]}; `rows` the baseline's
@@ -417,6 +608,8 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(
     base, where there was one; `renames` git's (old, new) `.rs` pairs since the base; `moves` the
     blocks a split carried, from `moved_blocks`. The baseline comparison is skipped when
     `base_rows` is None, which is the base holding no baseline: the change that first lands one.
+    `caps` is the tree's {directory: cap}; `stepped` the directories whose cap this change lowered,
+    where rows may be added at no more than each block's size at the base.
     """
     if not counts:
         return ['the check judged no Rust file at all. A selector that matches nothing passes by '
@@ -438,7 +631,7 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(
         if len(listed) < len(blocks):
             for line, size in blocks[len(listed):]:
                 bad.append(f'{path}:{line}: a {fmt(size)}-line comment block against the '
-                           f'{fmt(CEILING)}-line cap, and it is not on the list. A new block meets '
+                           f'{fmt(cap_of(path, caps or {}))}-line cap, and it is not on the list. A new block meets '
                            f'the cap outright; a block moved from another file keeps its row only '
                            f'when it moved unchanged or cut. {REMEDY}')
         for (line, size), (_row_line, _occ, ceiling) in zip(blocks, listed):
@@ -483,6 +676,20 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(
             listed = sorted(by_file[path])
             old = was_called.get(path, path)
             was = sorted(base_by_file.get(old) or base_by_file.get(path) or [])
+            if any(path.startswith(d) for d in stepped):
+                # A step lists the blocks the lower cap newly reaches. Each row may stand no
+                # higher than its block stood at the base, so the step adds no room to grow.
+                sizes = [size for _line, size in (base_counts or {}).get(old, [])]
+                if len(listed) > len(sizes):
+                    bad.append(f'{BASELINE}: {path} lists {len(listed)} rows for {len(sizes)} '
+                               f'blocks over its new cap at the merge base. A step lists only '
+                               f'blocks that were already there')
+                for (line, occ, ceiling), size in zip(listed, sizes):
+                    if ceiling > size:
+                        bad.append(f'{BASELINE}: {path}:{line} lists {fmt(ceiling)} lines for a '
+                                   f'block of {fmt(size)} at the merge base. A step lists a block '
+                                   f'at its size')
+                continue
             if not was:
                 bad.append(f'{BASELINE}: {path} gained rows. The list only shrinks; a new block '
                            f'meets the cap outright')
@@ -498,6 +705,54 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(
                                f'{fmt(was_ceiling)} to {fmt(ceiling)}. An entry only goes down '
                                f'(§266 section 3, option (b), applied one level down)')
     return bad
+
+
+STEPS = (40, 20, 10)
+
+
+def table_problems(caps, base_caps, in_body, base_in_body, in_body_counts):
+    """Every failure in the cap and in-body rows, against the tree and the merge base.
+
+    A cap is one of the steps, 40, 20 or 10, and may only fall; a cap row may not go, since that
+    lifts the directory back to 40. An in-body ceiling holds its directory's count and may only
+    fall; one may be added, which starts a directory's stage, and none may go. `base_caps` and
+    `base_in_body` are None when the base had no baseline."""
+    bad = []
+    for prefix, cap in sorted(caps.items()):
+        if cap not in STEPS:
+            bad.append(f'{BASELINE}: cap {prefix} is {cap}. A cap steps 40, 20, 10 (milestone 929)')
+        if not prefix.endswith('/'):
+            bad.append(f'{BASELINE}: cap {prefix} names no directory; write it with a trailing /')
+    for prefix, ceiling in sorted(in_body.items()):
+        now = in_body_counts.get(prefix, 0)
+        if now > ceiling:
+            bad.append(f'{prefix}: {fmt(now)} plain comment lines inside function bodies, over the '
+                       f'ceiling of {fmt(ceiling)}. A comment in a body states a constraint the '
+                       f'code cannot show; narrative goes in the item\'s doc comment or its note '
+                       f'(§267)')
+    if base_caps is not None:
+        for prefix, was in sorted(base_caps.items()):
+            if prefix not in caps:
+                bad.append(f'{BASELINE}: cap {prefix} is gone. A cap only falls')
+            elif caps[prefix] > was:
+                bad.append(f'{BASELINE}: cap {prefix} rose from {was} to {caps[prefix]}. A cap '
+                           f'only falls')
+        for prefix, cap in sorted(caps.items()):
+            if prefix not in base_caps and cap == CEILING:
+                bad.append(f'{BASELINE}: cap {prefix} is 40, which every directory already has')
+    if base_in_body is not None:
+        for prefix, was in sorted(base_in_body.items()):
+            if prefix not in in_body:
+                bad.append(f'{BASELINE}: in-body {prefix} is gone. A ceiling only falls')
+            elif in_body[prefix] > was:
+                bad.append(f'{BASELINE}: in-body {prefix} rose from {fmt(was)} to '
+                           f'{fmt(in_body[prefix])}. A ceiling only falls')
+    return bad
+
+
+def stepped_dirs(caps, base_caps):
+    """The directories whose cap this change lowered."""
+    return {p for p, cap in caps.items() if cap < (base_caps or {}).get(p, CEILING)}
 
 
 def banked(rows, counts):
@@ -539,36 +794,54 @@ def rows_of(table, paths):
 
 # --- the verbs ------------------------------------------------------------------------------------
 
+def read_file(path):
+    return open(path, encoding='utf-8', errors='replace').read()
+
+
 def gather():
-    """(counts, rows, base_counts, base_rows, renames, moves) for the tree and its merge base."""
-    read = lambda p: open(p, encoding='utf-8', errors='replace').read()
-    counts = block_counts(tracked_rust(), read)
-    rows = read_baseline(open(BASELINE).read())
+    """The tree and its merge base, as the rules take them: a dict of counts, rows, caps, in-body
+    ceilings and counts, and each at the base where there is one."""
+    rows, caps, in_body = read_table(open(BASELINE).read())
+    paths = tracked_rust()
+    g = {'counts': block_counts(paths, read_file, caps), 'rows': rows, 'caps': caps,
+         'in_body': in_body, 'in_body_counts': in_body_counts(paths, read_file, in_body),
+         'base_counts': None, 'base_rows': None, 'base_caps': None, 'base_in_body': None,
+         'renames': (), 'moves': ()}
     base = merge_base()
-    base_counts, base_rows, renames, moves = None, None, (), ()
-    if base:
-        renames = renamed_rust(base)
-        old_text = git('show', f'{base}:{BASELINE}')
-        if old_text is not None:
-            base_rows = read_baseline(old_text)
-        # The base's listed files are read too, not only the tree's, so a file whose every row a
-        # split carried away is still there to carry from.
-        wanted = ({path for (path, _line, _occ) in rows} | {new for _old, new in renames}
-                  | {path for (path, _line, _occ) in (base_rows or {})})
-        base_counts, base_texts = {}, {}
-        for path in sorted(wanted):
-            text = git('show', f'{base}:{path}')
-            if text is not None:
-                over = block_texts(text)
-                if over:
-                    base_counts[path] = [(line, size) for line, size, _text in over]
-                    base_texts[path] = over
-        if base_rows is not None:
-            listed = {path for (path, _line, _occ) in base_rows}
-            tree_texts = {path: block_texts(read(path)) for path in sorted(counts) if counts[path]}
-            moves = moved_blocks({p: t for p, t in base_texts.items() if p in listed}, tree_texts,
-                                 renames)
-    return counts, rows, base_counts, base_rows, renames, moves
+    if not base:
+        return g
+    g['renames'] = renamed_rust(base)
+    old_text = git('show', f'{base}:{BASELINE}')
+    if old_text is not None:
+        g['base_rows'], g['base_caps'], g['base_in_body'] = read_table(old_text)
+    # The base's listed files are read too, not only the tree's, so a file whose every row a split
+    # carried away is still there to carry from. Each is measured at the tree's cap for its
+    # directory, so rows pair with the same blocks on both sides of a step.
+    wanted = ({path for (path, _line, _occ) in rows} | {new for _old, new in g['renames']}
+              | {path for (path, _line, _occ) in (g['base_rows'] or {})})
+    base_counts, base_texts = {}, {}
+    for path in sorted(wanted):
+        text = git('show', f'{base}:{path}')
+        if text is not None:
+            over = block_texts(text, cap_of(path, caps))
+            if over:
+                base_counts[path] = [(line, size) for line, size, _text in over]
+                base_texts[path] = over
+    g['base_counts'] = base_counts
+    if g['base_rows'] is not None:
+        listed = {path for (path, _line, _occ) in g['base_rows']}
+        tree_texts = {path: block_texts(read_file(path), cap_of(path, caps))
+                      for path in sorted(g['counts']) if g['counts'][path]}
+        g['moves'] = moved_blocks({p: t for p, t in base_texts.items() if p in listed},
+                                  tree_texts, g['renames'])
+    return g
+
+
+def all_problems(g):
+    return (problems(g['counts'], g['rows'], g['base_counts'], g['base_rows'], g['renames'],
+                     g['moves'], g['caps'], stepped_dirs(g['caps'], g['base_caps']))
+            + table_problems(g['caps'], g['base_caps'], g['in_body'], g['base_in_body'],
+                             g['in_body_counts']))
 
 
 def run_check():
@@ -576,24 +849,31 @@ def run_check():
         print(f'comment-block ratchet: {BASELINE} is missing. The gate and its list are one change; '
               f'deleting one deletes the gate', file=sys.stderr)
         return 1
-    counts, rows, base_counts, base_rows, renames, moves = gather()
-    bad = problems(counts, rows, base_counts, base_rows, renames, moves)
+    g = gather()
+    bad = all_problems(g)
     if bad:
         print('comment-block ratchet: the tree breaks §267 against its baseline:', file=sys.stderr)
         for b in bad:
             print(f'  {b}', file=sys.stderr)
         print('\nMove the history to a commit message and the findings to a note, bank the shrink '
               'with --bank, or amend §267 with an architect. See milestone 860\'s block, '
-              'design/roadmap/0860-comments-state-the-constraint-as-it-is-now.md.', file=sys.stderr)
+              'design/roadmap/0860-comments-state-the-constraint-as-it-is-now.md, and milestone '
+              '929\'s, design/roadmap/0929-kernel-comments-in-the-linux-style.md.', file=sys.stderr)
         return 1
-    over = sum(len(blocks) for blocks in counts.values())
-    carried = f', {len(moves)} carried by a split' if moves else ''
-    print(f'comment-block ratchet: {len(counts)} Rust files, {fmt(over)} comment blocks over the '
-          f'{fmt(CEILING)}-line cap, all held to {len(rows)} baseline rows{carried}')
+    over = sum(len(blocks) for blocks in g['counts'].values())
+    carried = f', {len(g["moves"])} carried by a split' if g['moves'] else ''
+    caps = ''.join(f', {p} capped at {c}' for p, c in sorted(g['caps'].items()))
+    bodies = ''.join(f'; {p} holds {fmt(g["in_body_counts"][p])} in-body comment lines against '
+                     f'{fmt(c)}' for p, c in sorted(g['in_body'].items()))
+    print(f'comment-block ratchet: {len(g["counts"])} Rust files, {fmt(over)} comment blocks over '
+          f'the cap (40{caps}), all held to {len(g["rows"])} baseline rows{carried}{bodies}')
     return 0
 
 
-def bank(init=False):
+def bank(init=False, step=None):
+    """Write the baseline. `--bank` lowers rows and in-body ceilings to the tree, never raising
+    or adding. `--step DIR CAP` is a bank that also lowers DIR's cap, lists every block over the
+    new cap at its size, and starts DIR's in-body ceiling at its count if it has none."""
     if init and os.path.exists(BASELINE):
         print(f'comment-block ratchet: {BASELINE} already exists. --init wrote it once, in '
               f'milestone 860; it is refused now, and --bank is the verb that never raises',
@@ -604,13 +884,32 @@ def bank(init=False):
               file=sys.stderr)
         return 2
     if init:
-        counts = block_counts(tracked_rust(),
-                              lambda p: open(p, encoding='utf-8', errors='replace').read())
-        rows = rows_from_counts(counts)
-    else:
-        counts, rows, base_counts, base_rows, renames, moves = gather()
-        rows = banked(carried_rows(moves, base_counts, base_rows, rows, renames), counts)
-    write_baseline(rows)
+        counts = block_counts(tracked_rust(), read_file)
+        write_baseline(rows_from_counts(counts))
+        print(f'comment-block ratchet: {len(counts)} files measured into {BASELINE}')
+        return 0
+    rows, caps, in_body = read_table(open(BASELINE).read())
+    if step:
+        prefix, cap = step
+        if cap not in STEPS or cap >= cap_of(prefix, caps) or not prefix.endswith('/'):
+            print(f'comment-block ratchet: --step {prefix} {cap}: a step names a directory with a '
+                  f'trailing / and lowers its cap ({cap_of(prefix, caps)}) to the next of '
+                  f'{", ".join(map(str, STEPS))}', file=sys.stderr)
+            return 2
+        caps[prefix] = cap
+        paths = tracked_rust()
+        in_body.setdefault(prefix, in_body_counts(paths, read_file, [prefix])[prefix])
+        # The directory's rows are rewritten at the tree's sizes. A listed block was already at or
+        # under its row (the check holds that), so no row rises.
+        counts = block_counts([p for p in paths if p.startswith(prefix)], read_file, caps)
+        rows = {k: v for k, v in rows.items() if not k[0].startswith(prefix)}
+        rows.update(rows_from_counts(counts))
+        write_baseline(rows, caps, in_body)
+    g = gather()
+    rows = banked(carried_rows(g['moves'], g['base_counts'], g['base_rows'], g['rows'],
+                               g['renames']), g['counts'])
+    in_body = {p: min(c, g['in_body_counts'][p]) for p, c in g['in_body'].items()}
+    write_baseline(rows, g['caps'], in_body)
     print(f'comment-block ratchet: {len(rows)} rows written to {BASELINE}')
     return 0
 
@@ -781,6 +1080,64 @@ def selftest():
             [('plain', 1, 1), ('trailing', 1, 1), ('trailing', 1, 1), ('plain', 2, 2),
              ('plain', 2, 2)]:
         cases.append(('a comment after code trails, a comment after only comments does not', False))
+    # Milestone 929: a cap per directory, stepped 40, 20, 10, and a step that lists its blocks.
+    if cap_of('kernel/src/a.rs', {'kernel/': 20, 'kernel/src/arch/': 10}) != 20 or \
+            cap_of('kernel/src/arch/x.rs', {'kernel/': 20, 'kernel/src/arch/': 10}) != 10 or \
+            cap_of('crates/a.rs', {'kernel/': 20}) != 40:
+        cases.append(('a path takes its longest directory prefix\'s cap, else 40', False))
+    K = {'x/': 20}
+    msg = problems(tree(a=[(10, 25)]), {}, caps=K)
+    fails('a block over a lowered cap and unlisted fails', msg)
+    if msg and '20-line cap' not in msg[0]:
+        cases.append(('the failure names the directory\'s cap', False))
+    at_base = tree(a=[(10, 25), (90, 30)])
+    step_rows = rows('x/a.rs', (10, 1, 25), (90, 1, 30))
+    passes('a step lists the blocks its cap reaches, at their sizes',
+           problems(at_base, step_rows, at_base, {}, caps=K, stepped={'x/'}))
+    fails('a step that lists a block above its base size fails',
+          problems(at_base, rows('x/a.rs', (10, 1, 26), (90, 1, 30)), at_base, {}, caps=K,
+                   stepped={'x/'}))
+    fails('a step that lists more rows than blocks fails',
+          problems(at_base, {**step_rows, ('x/a.rs', 200, 1): 22}, at_base, {}, caps=K,
+                   stepped={'x/'}))
+    fails('a block grown in the step\'s own change fails',
+          problems(tree(a=[(10, 27), (90, 30)]), rows('x/a.rs', (10, 1, 27), (90, 1, 30)),
+                   at_base, {}, caps=K, stepped={'x/'}))
+    fails('rows added with no step fail', problems(at_base, step_rows, at_base, {}, caps=K))
+    passes('a cap that falls a step passes', table_problems({'x/': 20}, {}, {}, {}, {}))
+    fails('a cap that is not a step fails', table_problems({'x/': 25}, {}, {}, {}, {}))
+    fails('a cap that names no directory fails', table_problems({'x': 20}, {}, {}, {}, {}))
+    fails('a cap that rises fails', table_problems({'x/': 20}, {'x/': 10}, {}, {}, {}))
+    fails('a cap row that goes fails', table_problems({}, {'x/': 20}, {}, {}, {}))
+    if stepped_dirs({'x/': 20, 'y/': 10}, {'y/': 10}) != {'x/'}:
+        cases.append(('a step is a cap below its base value', False))
+    # The in-body ceiling: held, only falls, may start, may not go.
+    passes('an in-body count at its ceiling passes', table_problems({}, {}, {'x/': 9}, {}, {'x/': 9}))
+    fails('an in-body count over its ceiling fails', table_problems({}, {}, {'x/': 9}, {}, {'x/': 10}))
+    fails('an in-body ceiling that rises fails',
+          table_problems({}, {}, {'x/': 10}, {'x/': 9}, {'x/': 9}))
+    fails('an in-body ceiling that goes fails', table_problems({}, {}, {}, {'x/': 9}, {}))
+    passes('an in-body ceiling may start', table_problems({}, {}, {'x/': 9}, {}, {'x/': 9}))
+    # What the cap does not count: a SAFETY comment from its marker, a Name: paragraph.
+    safety = '// why\n' * 5 + '// SAFETY: the lock is held.\n' + '// more of the argument\n' * 30
+    if blocks_over(safety, 10) or blocks_over('// why\n' * 11 + '// SAFETY: x\n', 10) != [(1, 11)]:
+        cases.append(('a SAFETY comment counts only the lines before its marker', False))
+    named = '//! A crate.\n//!\n//! Name: provisional, 2026-10-22.\n' + '//! refused x\n' * 20 + \
+            '//!\n' + '//! more doc\n' * 8
+    if blocks_over(named, 10) != [(1, 11)] or blocks_over(named, 11):
+        cases.append(('a Name: paragraph is not counted, the doc around it is', False))
+    if block_texts(named, 10)[0][2][-1] != '//! more doc':
+        cases.append(('a block\'s text spans its exempt lines, so a split still finds it', False))
+    # The in-body count: plain lines in fn bodies, nested closures in, SAFETY out, signatures and
+    # fn-pointer types are not bodies, and a { inside a string is not a brace.
+    body = ('/// doc\nfn a(x: fn(u8) -> u8) -> impl Fn() {\n    // one\n    // two\n'
+            '    let s = "{ // no";\n    // SAFETY: fine\n    // still the argument\n'
+            '    move || {\n        // three\n    }\n}\ntrait T { fn b(&self); }\n'
+            'struct S { f: fn(u8), }\nimpl S {\n    fn c(&self) -> [u8; { 2 }] {\n'
+            '        /* four\n           five */\n        [0; 2]\n    }\n}\n// outside\n')
+    if fn_body_ranges(body) != [(2, 11), (15, 19)] or in_body_lines(body) != 5:
+        cases.append(('the in-body count finds bodies and counts their plain lines', False))
+
     # The message names the file, the line, the sizes and the remedy.
     msg = problems(tree(a=[(10, 41)]), {})[0]
     if not all(s in msg for s in ('a.rs:10', '41', '40', 'commit message', 'note', 'never to delete')):
@@ -808,6 +1165,8 @@ def main(argv):
         return run_check()
     if argv[0] in ('--bank', '--init'):
         return bank(init=argv[0] == '--init')
+    if argv[0] == '--step' and len(argv) == 3 and argv[2].isdigit():
+        return bank(step=(argv[1], int(argv[2])))
     print(__doc__.split('\n\n')[1], file=sys.stderr)
     return 2
 

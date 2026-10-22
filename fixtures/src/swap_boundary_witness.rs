@@ -35,11 +35,9 @@
 //! is a one-way pipe in whichever direction each holder was trusted with. It reports the refusal.
 //!
 
-//! Name: provisional, and ruled: calef ruled **`swap_boundary_witness`** on 2026-09-13, working
-//! the unratified worklist. The block stays `provisional` for the reason `flaky`'s does: the
-//! ratified name is not this file's until the rename is performed, and this one travels with
-//! `flaky`'s, whose file set it sits inside. Introduced 2026-07-30 with milestone 23's live replacement, as a fixture rather
-//! than a component.
+//! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `chatty`.
+//! Introduced 2026-07-30 with milestone 23's live replacement, as a fixture rather than a
+//! component.
 //!
 //! `chatty` was an adjective, one of exactly two among the seventy-odd programs in `user/src/`
 //! (`flaky` was the other, from the following day), where AGENTS.md says a program is a thing

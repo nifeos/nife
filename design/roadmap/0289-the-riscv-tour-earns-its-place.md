@@ -28,8 +28,8 @@ its own argument check ("all replace the end of the boot tour; pick one"). So ev
 tour. The `shell` feature reaches the same hand-over before the tour and parks. No bench record in
 `notes/visionfive2.md` shows one having run.
 
-`crates/board_console` reads the builder's output line. `Progress::userspace_ran` is set by
-`line.contains("init/build")` (`crates/board_console/src/progress.rs`), which is the line
+`crates/serial_console` reads the builder's output line. `Progress::userspace_ran` is set by
+`line.contains("init/build")` (`crates/serial_console/src/progress.rs`), which is the line
 `kernel/src/main.rs` prints when the builder's child reports 81. It is asserted by four host tests
 and appears in three captured transcripts, one of them off the board itself:
 `tests/fixtures/captured/vf2-2026-09-01-userspace.log`. Its filename is the word `userspace`,
@@ -101,7 +101,7 @@ meaning; the table it moved past was never updated. Corrected, with stage 11 nam
 block, because the next person to ask calef's question will be reading that file and not this one
 (AGENTS.md's ladder, rung three). It carries a `BUGS` section for the first time.
 
-The tour's own comment now names `crates/board_console` as a consumer of its output line, so
+The tour's own comment now names `crates/serial_console` as a consumer of its output line, so
 "nothing reads this" is falsifiable from the call site.
 
 ## What is an architect's, and is not decided here
@@ -183,7 +183,7 @@ calef asked what `components/src/builder.rs` is for in a world that boots to swi
 keep, and the premise was false: booting to swish describes aarch64 and
 riscv64's `--features shell`, not the default riscv64 build, which is what `script/board-image` puts on a card. `progenitor` has never run on RISC-V silicon; `boot_progenitor` needs the PLIC, the NS16550 delegated and a UART source number that differs
 between QEMU (10) and the JH7110 (32), and `builder` needs a budget and a report endpoint and
-nothing else. `crates/board_console` parses its `init/build` line into `userspace_ran`, asserted
+nothing else. `crates/serial_console` parses its `init/build` line into `userspace_ran`, asserted
 by four host tests and two captured board fixtures, and `notes/board-console.md` calls it the only
 difference between the two successful captures. The VF2 bring-up did use the tour with an initrd:
 three of the fifth stop's five identifications are facts about `builder`. Found the breadcrumb

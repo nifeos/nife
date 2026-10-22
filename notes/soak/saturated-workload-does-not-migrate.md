@@ -62,7 +62,7 @@ exactly the misuse `design/roadmap/0219-a-workload-that-does-not-stop.md`'s BUGS
 The second half is now runnable, which is a different claim from "has been run". See
 [tick-route.md](tick-route.md).
 
-## Why this extends `board_console` and not the other two instruments
+## Why this extends `serial_console` and not the other two instruments
 
 `script/repeat-under-load` and `script/interleaving-check` are the tree's existing load and
 concurrency instruments, and neither was the right place for this.
@@ -76,5 +76,5 @@ concurrency instruments, and neither was the right place for this.
   interleaving the C11 model permits. It is the strongest evidence available about those protocols,
   and it says so honestly: loom models C11, not ARM and not RISC-V. A soak on silicon is the evidence
   loom cannot give, not a substitute for it.
-- `crates/board_console` was the right one. The thing a soak needs that did not exist is a judgment
+- `crates/serial_console` was the right one. The thing a soak needs that did not exist is a judgment
   about *silence*, and that crate already owned it.

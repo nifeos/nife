@@ -73,7 +73,7 @@ Not kernel, not proved, not protocol: the candidates. Surprise: the kernel lists
 | `uefi_loader/src/efi.rs` | 307 | firmware | base | `r-efi` 7.1.0 | MIT/Apache/LGPL, take MIT; `no_std`, no deps | 382M, 2026-08 | none |
 | `stick_maker` `plist.rs` | 335 | host OS output | conveyed host program | `plist` 1.10.1 | MIT, std | 74M, 2026-09 | none |
 | `portable_executable` | 778 | our own ELF | host (`xtask`) | `object` 0.40.0 `write::pe::Writer` | MIT/Apache | 640M, 2026-08 | none |
-| `board_console` `port.rs` | part of 3,418 | none | host | `rustix` or `libc` termios | MIT/Apache | *(from memory)* very wide | none checked |
+| `serial_console` `port.rs` | part of 3,418 | none | host | `rustix` or `libc` termios | MIT/Apache | *(from memory)* very wide | none checked |
 | `coreutils` programs `wc`, `rm`, `printenv`, `date` | 87 + 199 + 110 + 145 | user | base | uutils `uu_*` 0.12.0 | MIT, std | 130k each, 2026-09 | none |
 | `rmle` editor | 460 | user files | optional | `kibi` 0.3.3, or GNU `nano` as GPL-as-package, milestone 170 (`nano`: a real, full-featured screen editor) | MIT/Apache; std, no threads or async, but `libc` termios and raw stdin, which the PAL does not bind | 12k, 2026-02 | none |
 | `file_allocation_table` (writer) | 512 | none (writes our own) | base | `fatfs` 0.3.6 | MIT; std builds with no threads or async, `no_std` only through `core_io`; `system_installer` is a `no_std` program today | 1.6M, 2023-01 | none |
@@ -129,7 +129,7 @@ replace it without touching base.
 Write the driver logic; take the definitions. The crate is dormant (release 2023-07), so expect to
 carry it as a fork or vendor it under §34 (RedoxFS is the primary filesystem, on three conditions)'s "we must patch it" trigger.
 
-Not ranked: `board_console`'s `port.rs` could take `rustix` termios (host-only). DNS is surveyed
+Not ranked: `serial_console`'s `port.rs` could take `rustix` termios (host-only). DNS is surveyed
 separately in pull request #1638.
 
 ## Needing std is not, by itself, a reason to refuse a crate

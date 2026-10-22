@@ -232,5 +232,5 @@ are what decide between them, not effort.
 ## What is blocked until this is answered
 
 Milestone 342, and every bench session on argon, radon and xenon whose log a human or
-`board_console` reads. `design/roadmap/0342-kernel-console-arbitration.md`'s `decision_dependencies`
-is corrected in this lane's commit to `175`, from `unwritten`.
+`serial_console` reads. `design/roadmap/0342-kernel-console-arbitration.md`'s
+`decision_dependencies` is corrected in this lane's commit to `175`, from `unwritten`.
