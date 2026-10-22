@@ -3330,7 +3330,6 @@ crates/machine_discovery/src/x86_64.rs::REQUIRED
 crates/machine_discovery/src/x86_64.rs::Row
 crates/machine_discovery/src/x86_64.rs::SYSCALL
 crates/machine_discovery/src/x86_64.rs::TABLE
-crates/machine_discovery/src/x86_64.rs::WARNED
 crates/machine_discovery/src/x86_64.rs::any
 crates/machine_discovery/src/x86_64.rs::brand_str
 crates/machine_discovery/src/x86_64.rs::contains

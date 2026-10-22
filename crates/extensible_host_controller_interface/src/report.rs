@@ -8,8 +8,8 @@
 /// Word 0: a boot keyboard is configured and its reports are queued. Word 1 is [`keyboard`]'s
 /// packing; word 2 is the interface and endpoint.
 pub const KEYBOARD: u64 = 0x5542_0001;
-/// Word 0: the controller runs, and no boot keyboard was found at bring-up. Word 1 is how many
-/// ports there are and how many had a device; word 2 is the last [`Step`] refused and its port.
+/// Word 0: the controller runs, and no boot keyboard was found at bring-up. Word 1 is [`ports`]'s
+/// packing; word 2 is the last [`Step`] refused and its port.
 /// The driver keeps watching for one being plugged in.
 pub const NO_KEYBOARD: u64 = 0x5542_0002;
 /// Word 0: the controller could not be brought up. Word 1 is the [`Step`]; word 2 its detail.
@@ -114,6 +114,22 @@ pub const fn keyboard_of(w: u64) -> (u8, u8, u16, u16) {
     (w as u8, (w >> 8) as u8, (w >> 16) as u16, (w >> 32) as u16)
 }
 
+/// [`NO_KEYBOARD`]'s word 1: how many root ports there are, how many had a device at the scan,
+/// and whether every port's connection had held still before it (`false`: the scan ran at the
+/// debounce timeout, so its count is a moment, not a settled fact).
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub const fn ports(ports: u8, connected: u8, settled: bool) -> u64 {
+    ports as u64 | (connected as u64) << 8 | (settled as u64) << 16
+}
+
+/// [`ports`] back: `(ports, connected, settled)`.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub const fn ports_of(w: u64) -> (u8, u8, bool) {
+    (w as u8, (w >> 8) as u8, (w >> 16) & 1 != 0)
+}
+
 /// A step and its detail, packed for word 2 of [`NO_KEYBOARD`] or word 1/2 of [`FAILED`]: the
 /// step in the low byte, the port in the next, the detail above.
 pub const fn refusal(step: Step, port: u8, detail: u32) -> u64 {
@@ -148,6 +164,8 @@ mod tests {
         }
         assert_eq!(Step::from_code(18), None);
         assert_eq!(keyboard_of(keyboard(5, 1, 0x0627, 1)), (5, 1, 0x0627, 1));
+        assert_eq!(ports_of(ports(26, 3, true)), (26, 3, true));
+        assert_eq!(ports_of(ports(255, 255, false)), (255, 255, false));
         assert_eq!(
             refusal_of(refusal(Step::NotABootKeyboard, 3, 7)),
             (Some(Step::NotABootKeyboard), 3, 7)

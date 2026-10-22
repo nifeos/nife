@@ -25,9 +25,10 @@
 //!   xenon (notes/e1000e.md's bench step). FreeBSD's link-up reconfiguration is not ported
 //!   (`pch`'s `BUGS`).
 //! - **Waiting for link is a bounded spin at bring-up**, up to [`LINK_WAIT_MS`]. QEMU's link is
-//!   up at once; a real copper link negotiates in seconds, and a bring-up that times out still
-//!   hands the process a working device whose first DHCP DISCOVER may simply be lost (smoltcp
-//!   retries). The spin holds a core, which is acceptable once per wiring and not more often.
+//!   up at once; a real copper link negotiates in seconds. A bring-up that times out reports
+//!   [`Found::link_up`] false and `user::e1000e_service` starts no server over it, because a
+//!   `net_stack` with no link waits for a lease that never comes. The spin holds a core, which is
+//!   acceptable once per wiring and not more often.
 //! - **The DMA region is allocated once per boot and never returned**, like the NVMe region, so a
 //!   boot that wires the NIC carries [`::e1000e::layout::PAGES`] pages for its whole life.
 

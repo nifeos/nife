@@ -1,0 +1,471 @@
+nife on x86_64 (long mode, ring 0, 4-level paging)
+  cpu 0 booted: high-half kernel, .bss, and the 16550 console are up.
+  running at  : 0xffffffff82057980  (high half: the long-mode jump landed)
+  boot info   : 0x00000000b9fb4000  (PVH hvm_start_info, not a device tree)
+  screen      : none in the boot cmdline; this console is the UART
+  pat         : 0x0007040600070106 on core 0 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 0; ring 0 faults on a fetch from a ring-3 page
+  memory      : 38 regions from the PVH handoff, rsdp 0xcae09000
+                0x000000000000..0x000000008000  ram
+                0x000000008000..0x000000009000  reserved
+                0x000000009000..0x000000058000  ram
+                0x000000058000..0x000000059000  reserved
+                0x000000059000..0x00000009e000  ram
+                0x00000009e000..0x0000000a0000  reserved
+                0x000000100000..0x000002000000  ram
+                0x000002000000..0x000002339000  reserved
+                0x000002339000..0x0000acfc0000  ram
+                0x0000acfc0000..0x0000ad000000  ram
+                0x0000ad000000..0x0000b7790000  ram
+                0x0000b7790000..0x0000b82c5000  reserved
+                0x0000b82c5000..0x0000b9efd000  ram
+                0x0000b9efd000..0x0000b9efe000  acpi-nvs
+                0x0000b9efe000..0x0000b9eff000  reserved
+                0x0000b9eff000..0x0000b9fb0000  ram
+                0x0000b9fb0000..0x0000b9fb3000  ram
+                0x0000b9fb3000..0x0000b9fb4000  ram
+                0x0000b9fb4000..0x0000b9fbf000  reserved
+                0x0000b9fbf000..0x0000c8940000  ram
+                0x0000c8940000..0x0000c8c89000  ram
+                0x0000c8c89000..0x0000c97c4000  ram
+                0x0000c97c4000..0x0000cadfb000  reserved
+                0x0000cadfb000..0x0000cae41000  acpi
+                0x0000cae41000..0x0000cb775000  acpi-nvs
+                0x0000cb775000..0x0000cbd18000  reserved
+                0x0000cbd18000..0x0000cbdff000  reserved
+                0x0000cbdff000..0x0000cbe00000  ram
+                0x000100000000..0x000140000000  ram
+                0x000140000000..0x000141639000  ram
+                0x000141639000..0x00042e000000  ram
+                0x0000000a0000..0x000000100000  reserved
+                0x0000cbe00000..0x0000d0000000  reserved
+                0x0000f0000000..0x0000f8000000  reserved
+                0x0000fe000000..0x0000fe011000  reserved
+                0x0000fec00000..0x0000fec01000  reserved
+                0x0000fee00000..0x0000fee01000  reserved
+                0x0000ff000000..0x000100000000  reserved
+                usable ram: 16622488 KiB
+  acpi        : rsdp at 0xcae09000 (revision 2), root table 0xcae090b8 (xsdt)
+                0x00cae34200  FACP (268 bytes)
+                0x00cae34310  APIC (132 bytes)
+                0x00cae34398  FPDT (68 bytes)
+                0x00cae343e0  FIDT (172 bytes)
+                0x00cae34490  MCFG (60 bytes)
+                0x00cae344d0  HPET (56 bytes)
+                0x00cae34508  SSDT (12662 bytes)
+                0x00cae37680  SSDT (9637 bytes)
+                0x00cae39c28  HPET (56 bytes)
+                0x00cae39c60  SSDT (3557 bytes)
+                0x00cae3aa48  SSDT (2996 bytes)
+                0x00cae3b600  UEFI (66 bytes)
+                0x00cae3b648  SSDT (3806 bytes)
+                0x00cae3c528  LPIT (148 bytes)
+                0x00cae3c5c0  SSDT (321 bytes)
+                0x00cae3c708  SSDT (671 bytes)
+                0x00cae3c9a8  SSDT (12290 bytes)
+                0x00cae3f9b0  SSDT (1293 bytes)
+                0x00cae3fec0  DBGP (52 bytes)
+                0x00cae3fef8  DBG2 (84 bytes)
+                0x00cae3ff50  MSDM (85 bytes)
+                0x00cae3ffa8  SLIC (374 bytes)
+                0x00cae40120  TPM2 (52 bytes)
+                0x00cae40158  ASF! (160 bytes)
+                0x00cae401f8  DMAR (204 bytes)
+                local apic 0xfee00000, 4 cpu(s) enabled, 0 disabled, 8259s present (must be masked)
+                io apic 2 at 0xfec00000, gsi base 0
+                isa irq 0 -> gsi 2 (active high, edge)
+                isa irq 9 -> gsi 9 (active high, level)
+                pcie ecam 0xf0000000, buses 0..=127 (q35's default is 0xb0000000)
+                vt-d drhd at 0xfed90000, named devices only
+                vt-d drhd at 0xfed91000, all (the catch-all)
+                vt-d rmrr 0xcac4e000..=0xcac6dfff (128 KiB), identity-mapped for the device(s) it names
+                vt-d rmrr 0xcd800000..=0xcfffffff (40960 KiB), identity-mapped for the device(s) it names
+                no IVRS: no AMD-Vi unit described
+                fadt reset register: Io 0xb2 (8 bits) <- 0x73
+  pci         : ecam at 0xf0000000 (buses 0..=127), decode was already on
+                bar window 0xd0000000..0xd0200000, from the firmware map and TOLUD, agreeing
+                00:00.0 8086:591f class 060000
+                00:02.0 8086:5912 class 030000
+                00:14.0 8086:a2af class 0c0330
+                00:14.2 8086:a2b1 class 118000
+                00:15.0 8086:a2e0 class 118000
+                00:16.0 8086:a2ba class 078000
+                00:16.3 8086:a2bd class 070002
+                00:17.0 8086:a282 class 010601
+                00:1b.0 8086:a2e7 class 060400 bridge to buses 01..=01
+                00:1c.0 8086:a297 class 060400 bridge to buses 02..=02
+                00:1f.0 8086:a2c6 class 060100
+                00:1f.2 8086:a2a1 class 058000
+                00:1f.3 8086:a2f0 class 040300
+                00:1f.4 8086:a2a3 class 0c0500
+                00:1f.6 8086:15e3 class 020000
+                01:00.0 1344:5411 class 010802
+                02:00.0 8086:24fd class 028000
+                17 function(s) over 3 bus(es) of the 128 described; mapping 3072 KiB of config space
+                17 function(s) on the bus, 0 with a BAR this kernel can neither use nor adopt
+  frames      : allocator up over 15 ram region(s)
+  smp: 4 core(s) in the madt
+  apic        : local apic 0xfee00000 up, id 0, version 0x15, 8259s masked
+  clocks      : tsc 2713 MHz (PIT calibration, best of 2 windows, worst 2713 MHz), apic timer 1 MHz (measured against the PIT)
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  vt-d        : drhd 0xfed90000 up (1 of 2, named devices only), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  vt-d        : drhd 0xfed91000 up (2 of 2, the catch-all), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  io apic     : id 2 at 0xfec00000 up, version 0x20, 120 redirection entries, gsi base 0
+  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 21 interrupts in ~0.2s at 100 Hz
+  smp: init-sipi-sipi via the local apic, trampoline at 0x8000
+  pat         : 0x0007040600070106 on core 2 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 2; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 4 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 4; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 6 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 6; ring 0 faults on a fetch from a ring-3 page
+  smp: 4 core(s) online
+  cycles      : IA32_PERF_FIXED_CTR1 (unhalted core cycles), 48 bits, perfmon v4
+
+running 151 tests
+
+test kernel::arch::x86_64::amd_vi::tests::a_device_no_unit_serves_gets_no_entry ... skipped: no AMD-Vi unit is up
+test kernel::arch::x86_64::amd_vi::tests::a_device_nobody_confined_is_blocked ... skipped: this machine's ACPI names no IVRS
+test kernel::arch::x86_64::amd_vi::tests::a_firmware_exclusion_range_is_cleared ... skipped: no AMD-Vi unit is up
+test kernel::arch::x86_64::amd_vi::tests::a_quarantine_blocks_the_alias_too ... skipped: no IVRS alias range here (the AMD-Vi runner adds a pci-bridge)
+test kernel::arch::x86_64::amd_vi::tests::every_unit_the_ivrs_names_is_translating ... skipped: this machine's ACPI names no IVRS, so there is no unit to ask
+test kernel::arch::x86_64::amd_vi::tests::no_entry_enables_interrupt_remapping ... skipped: no AMD-Vi unit is up
+test kernel::arch::x86_64::amd_vi::tests::quarantine_restores_the_blocked_entry ... skipped: this machine's ACPI names no IVRS
+test kernel::arch::x86_64::amd_vi::tests::the_entries_are_what_table_7_says ... ok
+test kernel::arch::x86_64::amd_vi::tests::two_devices_behind_one_alias_never_share_a_domain ... skipped: no IVRS alias range here (the AMD-Vi runner adds a pci-bridge)
+test kernel::arch::x86_64::iommu::tests::a_device_no_unit_owns_gets_no_context_entry ... skipped: bus 0xfe has an owner on this DMAR (a catch-all takes it)
+test kernel::arch::x86_64::iommu::tests::every_unit_the_dmar_names_is_translating ... ok
+test kernel::arch::x86_64::iommu::tests::interrupt_remapping_is_reported_and_never_enabled ... ok
+test kernel::arch::x86_64::irq::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band ... ok
+test kernel::arch::x86_64::isa::tests::the_part_described_itself ... ok
+test kernel::arch::x86_64::isa::tests::the_part_has_what_the_kernel_refuses_to_run_without ... ok
+test kernel::arch::x86_64::isa::tests::the_rdseed_bit_agrees_with_rdseed ... ok
+test kernel::arch::x86_64::isa::tests::the_unpromised_set_is_the_invariant_tsc_or_nothing ... ok
+test kernel::arch::x86_64::ist::tests::an_nmi_finds_its_per_cpu_block_whatever_the_gs_base_held ... ok
+test kernel::arch::x86_64::ist::tests::an_nmi_leaves_the_gs_base_it_found ... ok
+test kernel::arch::x86_64::ist::tests::every_interrupt_stack_table_guard_page_is_unmapped ... ok
+test kernel::arch::x86_64::ist::tests::every_online_core_has_its_own_three_interrupt_stack_table_entries ... ok
+test kernel::arch::x86_64::ist::tests::the_ist_stack_region_is_the_size_the_linker_reserved ... ok
+test kernel::arch::x86_64::ist::tests::the_nmi_double_fault_and_machine_check_gates_select_their_own_stacks ... ok
+test kernel::arch::x86_64::mmu::map_tests::a_hole_with_no_room_answers_none ... ok
+test kernel::arch::x86_64::mmu::map_tests::a_small_machine_is_unchanged ... ok
+test kernel::arch::x86_64::mmu::map_tests::an_empty_hole_gives_up_its_floor ... ok
+test kernel::arch::x86_64::mmu::map_tests::the_disagreement_names_both_sources ... ok
+test kernel::arch::x86_64::mmu::map_tests::the_failure_names_both_ranges ... ok
+test kernel::arch::x86_64::mmu::map_tests::the_fill_stops_below_the_devices_on_a_17_gib_machine ... ok
+test kernel::arch::x86_64::mmu::map_tests::the_mmio_hole_on_a_17_gib_machine_is_bounded_at_both_ends ... ok
+test kernel::arch::x86_64::mmu::map_tests::the_window_steps_over_a_framebuffer_at_the_floor_of_the_hole ... ok
+test kernel::arch::x86_64::mmu::shootdown::tests::a_shootdown_round_masks_interrupts_whatever_its_caller_held ... ok
+test kernel::arch::x86_64::pmu::tests::a_narrow_counter_wraps_to_a_small_delta ... ok
+test kernel::arch::x86_64::pmu::tests::qemu_reaches_a_decided_answer ... ok
+test kernel::arch::x86_64::pmu::tests::the_msrs_are_only_touched_when_cpuid_allowed_it ... ok
+test kernel::arch::x86_64::pmu::tests::the_outcome_and_the_counter_agree ... ok
+test kernel::arch::x86_64::timer_calibration_tests::boot::the_calibration_timed_several_windows ... ok
+test kernel::arch::x86_64::timer_calibration_tests::boot::the_stored_rate_is_the_smallest_window ... ok
+test kernel::arch::x86_64::timer_calibration_tests::estimator::a_descheduled_window_does_not_satisfy_the_rule ... ok
+test kernel::arch::x86_64::timer_calibration_tests::estimator::agreement_is_judged_against_the_smallest ... ok
+test kernel::arch::x86_64::timer_calibration_tests::estimator::one_window_never_converges ... ok
+test kernel::arch::x86_64::timer_calibration_tests::estimator::the_agreeing_pair_need_not_be_adjacent ... ok
+test kernel::arch::x86_64::timer_calibration_tests::estimator::two_agreeing_windows_converge ... ok
+test kernel::console::tests::console_lock_can_be_busted ...     (console still works after force_unlock)
+ok
+test kernel::cpu::tests::held_rank_lives_in_the_percpu_block ... ok
+test kernel::cpu::tests::percpu_is_self_consistent_on_whatever_cpu_we_run ... ok
+test kernel::fp::tests::a_thread_with_no_vector_state_finds_the_registers_scrubbed ... ok
+test kernel::fp::tests::the_first_floating_point_instruction_takes_a_trap ... ok
+test kernel::fp::tests::the_whole_register_file_survives_a_save_and_a_restore ... ok
+test kernel::fp::tests::two_threads_doing_vector_work_do_not_see_each_others_registers ... ok
+test kernel::fp::tests::two_threads_that_never_used_the_unit_leave_it_shut ... ok
+test kernel::interrupt_stack::tests::a_slots_guard_page_begins_where_the_slot_below_it_ends ... ok
+test kernel::interrupt_stack::tests::interrupts_are_handled_on_the_interrupt_stack ... ok
+test kernel::interrupt_stack::tests::the_interrupt_stack_region_is_the_size_the_linker_reserved ... ok
+test kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack ... ipc-stack-depth: kernel null (the instrument alone) floor 960 median 792 max 2312 margin 512 clean
+ipc-stack-depth: kernel send_receive client SEND median 1768 min 1768 max 2856 below-caller 1096 floor 1232 samples 256
+ipc-stack-depth: kernel send_receive client RECEIVE median 3256 min 2168 max 3256 below-caller 2584 floor 1232 samples 256
+ipc-stack-depth: kernel send_receive server RECEIVE median 2968 min 1880 max 2968 below-caller 2584 floor 944 samples 256
+ipc-stack-depth: kernel send_receive server SEND median 1496 min 1496 max 2584 below-caller 1096 floor 960 samples 256
+ipc-stack-depth: kernel call_reply client CALL median 3032 min 3032 max 3032 below-caller 2456 floor 1136 samples 256
+ipc-stack-depth: kernel call_reply server RECEIVE_CAP median 3112 min 2024 max 3112 below-caller 2728 floor 944 samples 256
+ipc-stack-depth: kernel call_reply server REPLY median 1256 min 1256 max 1256 below-caller 872 floor 944 samples 256
+ipc-stack-depth: el0 send_receive client SEND median 3960 min 2872 max 3960 below-caller 3960 floor 1104 samples 256
+ipc-stack-depth: el0 send_receive client RECEIVE median 3320 min 3320 max 4408 below-caller 3320 floor 1104 samples 256
+ipc-stack-depth: el0 send_receive server RECEIVE median 3320 min 3320 max 4408 below-caller 3320 floor 1104 samples 256
+ipc-stack-depth: el0 send_receive server SEND median 3960 min 2872 max 3960 below-caller 3960 floor 1104 samples 256
+ipc-stack-depth: el0 call_reply client CALL median 4248 min 4248 max 4248 below-caller 4248 floor 1104 samples 256
+ipc-stack-depth: el0 call_reply server RECEIVE_CAP median 4552 min 3464 max 4552 below-caller 4552 floor 1104 samples 256
+ipc-stack-depth: el0 call_reply server REPLY median 2600 min 2600 max 2600 below-caller 2600 floor 1104 samples 256
+ok
+    [that test kept 33 frames]
+test kernel::memory::tests::alloc_and_free_balance ... ok
+test kernel::memory::tests::allocator_never_hands_out_the_kernel ... ok
+test kernel::memory::tests::an_allocated_frame_is_real_memory ... ok
+test kernel::memory::tests::bitmap_overlaps_nothing ... ok
+test kernel::memory::tests::every_frame_of_the_kernel_image_is_reserved ... ok
+test kernel::memory::tests::initial_ramdisk_is_reserved_if_present ... ok
+test kernel::memory::tests::memory_map_came_from_the_device_tree ... ok
+test kernel::pci::tests::a_controller_behind_a_bridge_is_found_on_the_bus_behind_it ... ok
+test kernel::pci::tests::acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge ...     host bridge: vendor 0x8086, device 0x591f
+ok
+test kernel::preemption_window_tests::a_masked_window_takes_no_preemption ... ok
+test kernel::preemption_window_tests::unmasking_delivers_the_tick_that_was_held ... ok
+test kernel::revoke::tests::a_device_take_back_ignores_the_object_and_spares_one_holder ... ok
+test kernel::revoke::tests::an_exhausted_budget_refuses_the_record_not_the_safety ... ok
+test kernel::revoke::tests::destroy_unmaps_a_region_before_reclaiming_it ... ok
+test kernel::revoke::tests::destroying_a_region_deletes_every_capability_naming_it ... ok
+test kernel::revoke::tests::revoke_unmaps_a_shared_page_from_every_address_space ... ok
+test kernel::revoke::tests::revoking_a_run_unmaps_every_page_of_it_everywhere ... ok
+test kernel::revoke::tests::revoking_one_run_leaves_an_overlapping_capability_and_its_mappings_alone ... ok
+test kernel::sched::region_reaping::tests::destroyed_region_slots_are_reused ... ok
+test kernel::sched::region_reaping::tests::reclaim_frees_a_regions_idle_rendezvous ... ok
+test kernel::sched::region_reaping::tests::reclaim_frees_an_embryo_thread_control_blocks_region ... ok
+test kernel::sched::region_reaping::tests::reclaim_frees_an_unbound_address_spaces_region ... ok
+test kernel::sched::region_reaping::tests::split_returns_child_pages_to_the_parent ... ok
+test kernel::sched::rendezvous::tests::a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked ... ok
+test kernel::sched::rendezvous::tests::a_call_gets_a_reply ... ok
+test kernel::sched::rendezvous::tests::a_receiver_blocks_until_a_sender_arrives ... ok
+test kernel::sched::rendezvous::tests::a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed ... ok
+test kernel::sched::rendezvous::tests::a_reply_reaches_the_caller_that_called ... ok
+test kernel::sched::rendezvous::tests::a_reply_to_a_thread_parked_as_a_receiver_is_dropped ... ok
+test kernel::sched::rendezvous::tests::a_request_gets_a_reply ... ok
+test kernel::sched::rendezvous::tests::a_retyped_rendezvous_carries_ipc_and_pins_its_region ... ok
+test kernel::sched::rendezvous::tests::a_sender_blocks_until_a_receiver_arrives ... ok
+test kernel::sched::rendezvous::tests::a_server_that_exits_frees_the_caller_it_never_answered ... ok
+test kernel::sched::rendezvous::tests::a_wake_without_delivery_cannot_complete_a_parked_receive ... ok
+test kernel::sched::rendezvous::tests::the_kernels_rendezvous_supply_grows_past_one_chunk ... ok
+    [that test kept 32 frames]
+test kernel::sched::suspension::tests::a_self_suspended_thread_returns_from_suspend_when_resumed ... ok
+test kernel::sched::suspension::tests::a_suspended_thread_stops_and_a_resumed_one_continues_where_it_stopped ... ok
+test kernel::sched::suspension::tests::a_thread_suspended_in_receive_takes_its_message_only_when_resumed ... ok
+test kernel::sched::suspension::tests::an_embryo_or_a_reaped_thread_is_refused ... ok
+test kernel::sched::tests::a_dead_thread_still_standing_on_its_stack_is_not_reapable ... ok
+test kernel::sched::tests::a_finished_thread_is_reaped_and_its_memory_returned ... ok
+test kernel::sched::tests::a_guard_page_fault_names_its_stack ... ok
+test kernel::sched::tests::a_running_thread_cannot_be_granted_the_cycle_counter ... ok
+test kernel::sched::tests::a_slots_guard_page_begins_where_the_slot_below_it_ends ... ok
+test kernel::sched::tests::a_spawn_quota_caps_live_children_and_replenishes_on_reap ... ok
+test kernel::sched::tests::a_spawned_thread_runs ... ok
+test kernel::sched::tests::a_thread_that_never_yields_is_preempted_anyway ... ok
+test kernel::sched::tests::an_interrupt_becomes_a_message ... ok
+test kernel::sched::tests::an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack ... ok
+test kernel::sched::tests::an_interrupt_that_arrives_before_the_wait_is_not_lost ... ok
+test kernel::sched::tests::every_thread_stack_has_a_guard_page ... ok
+test kernel::sched::tests::kernel_stacks_do_not_touch_the_frame_allocator_in_steady_state ... ok
+test kernel::sched::tests::other_threads_run_while_one_is_blocked ... ok
+test kernel::sched::tests::the_canary_reports_a_byte_that_changed_behind_its_back ...     canary: tick=1031 addr=0xffffffff821af0af (range 0xffffffff821af0a8+0x20 off 0x7) 0xa5 -> 0x5a
+ok
+test kernel::sched::tests::threads_round_robin ... ok
+test kernel::smp::tests::a_batch_of_cpu_bound_work_reaches_every_cpu ... ok
+test kernel::smp::tests::a_migrated_kernel_thread_keeps_its_hart_pointer ... ok
+test kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name ... ok
+test kernel::smp::tests::all_secondaries_came_online ... ok
+test kernel::smp::tests::every_cpu_the_tree_described_is_running ... ok
+test kernel::smp::tests::every_secondary_runs_scheduled_work ... ok
+test kernel::smp::tests::every_secondary_stack_sits_on_a_guard_page ... ok
+test kernel::smp::tests::the_online_set_is_the_mask_and_the_sampler_stays_inside_it ... ok
+test kernel::smp::tests::the_roster_is_the_machines_own_cpu_list ... skipped: nothing has read this machine's core roster from a device tree (either described_count() is 0, or this is x86_64, whose roster is ACPI-based and has no independent device-tree re-read to check it against yet)
+test kernel::smp::tests::the_secondary_stack_region_is_the_size_the_linker_reserved ... ok
+test kernel::smp::tests::work_can_be_placed_on_every_cpu ... ok
+test kernel::stack::tests::stack_canary_is_intact_and_we_have_headroom ... ok
+test kernel::sync::tests::holding_nothing_permits_any_rank ... ok
+test kernel::sync::tests::irq_safe_mutex_masks_interrupts_while_held ... ok
+test kernel::sync::tests::irq_safe_mutex_restores_rather_than_enables ... ok
+test kernel::sync::tests::nested_locks_restore_correctly ... ok
+test kernel::sync::tests::releasing_an_inner_lock_restores_the_outer_rank ... ok
+test kernel::sync::tests::taking_a_lock_records_its_rank ... ok
+test kernel::sync::tests::the_hierarchy_permits_only_strictly_decreasing_ranks ... ok
+test kernel::syscall::tests::a_partly_mapped_run_is_rolled_all_the_way_back ... ok
+test kernel::syscall::tests::a_slice_maps_only_its_window ... ok
+test kernel::syscall::tests::retype_mints_a_run_and_a_refused_run_moves_nothing ... ok
+test kernel::syscall::tests::split_inherits_the_parent_capabilitys_rights_never_widening ... ok
+test kernel::syscall::tests::split_refused_for_a_full_capability_table_orphans_no_child ... ok
+test kernel::tests::bss_was_zeroed ... ok
+test kernel::tests::device_tree_has_the_right_magic ... skipped: this machine hands over PVH hvm_start_info, not a device tree (see machine_discovery::x86_64, host-tested)
+test kernel::tests::device_tree_pointer_was_provided ... ok
+test kernel::tests::harness_runs ... ok
+test kernel::tests::stack_pointer_is_16_byte_aligned ... ok
+test kernel::virtio::tests::a_device_write_to_the_read_only_shadow_is_refused ... skipped: no PCIe disk on the bus, so there is nothing to confine
+test kernel::virtio::tests::a_pci_queue_has_no_doorbell_until_it_is_set_up ... ok
+test kernel::virtio::tests::a_register_read_outside_the_slot_is_refused ... ok
+test kernel::virtio::tests::a_second_queue_validates_on_its_own_block ... ok
+test kernel::virtio::tests::feature_negotiation_leaves_the_blk_flush_bit_alone ... ok
+test kernel::virtio::tests::feature_negotiation_strips_indirect_and_packed ... ok
+test kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain ... skipped: no PCIe disk on the bus, so there is nothing to confine
+test kernel::virtio::tests::the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation ... ok
+test kernel::virtio::tests::the_validator_refuses_a_descriptor_that_escapes_the_dma_region ... ok
+test kernel::virtio::tests::the_validator_refuses_an_indirect_descriptor ... ok
+test kernel::virtio::tests::the_validator_refuses_an_rx_descriptor_that_escapes_the_region ... ok
+test kernel::virtio::tests::the_validator_refuses_more_new_entries_than_the_ring_can_hold ... ok
+
+stack high-water: boot   35728/65504 bytes (54%), paint floor 640
+stack high-water: core2  4808/65536 bytes (7%)
+stack high-water: core4  4808/65536 bytes (7%)
+stack high-water: core6  4808/65536 bytes (7%)
+stack high-water: irq0   1080/16384 bytes (6%)
+stack high-water: irq2   840/16384 bytes (5%)
+stack high-water: irq4   840/16384 bytes (5%)
+stack high-water: irq6   840/16384 bytes (5%)
+stack high-water: thread 4904/24576 bytes (19%, deepest of 460 stacks)
+frames: 4153165 free before the first test, 4153098 after the last (67 never returned); longest free run 3334144
+  the biggest single spender was kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack at 33 frames
+threads: 21 live at the peak, of 256 the image allows (235 spare). See sched::MAX_THREADS.
+regions: 8 live at the peak, of 256 the image allows (248 spare), set during kernel::syscall::tests::split_inherits_the_parent_capabilitys_rights_never_widening. See memory_region::MAX_REGIONS.
+rendezvous: 42 live at the peak, of 512 the image allows (470 spare), set during kernel::sched::suspension::tests::a_thread_suspended_in_receive_takes_its_message_only_when_resumed; 40 were created on kernel chunks, which are never freed. See sched::MAX_RENDEZVOUS.
+frames: at the lowest 4153068 were free, during kernel::memory::tests::allocator_never_hands_out_the_kernel. See memory::FREE_LOW_WATER.
+
+time per test, in milliseconds:
+time 0 kernel::arch::x86_64::amd_vi::tests::a_device_no_unit_serves_gets_no_entry
+time 0 kernel::arch::x86_64::amd_vi::tests::a_device_nobody_confined_is_blocked
+time 0 kernel::arch::x86_64::amd_vi::tests::a_firmware_exclusion_range_is_cleared
+time 0 kernel::arch::x86_64::amd_vi::tests::a_quarantine_blocks_the_alias_too
+time 0 kernel::arch::x86_64::amd_vi::tests::every_unit_the_ivrs_names_is_translating
+time 0 kernel::arch::x86_64::amd_vi::tests::no_entry_enables_interrupt_remapping
+time 0 kernel::arch::x86_64::amd_vi::tests::quarantine_restores_the_blocked_entry
+time 0 kernel::arch::x86_64::amd_vi::tests::the_entries_are_what_table_7_says
+time 0 kernel::arch::x86_64::amd_vi::tests::two_devices_behind_one_alias_never_share_a_domain
+time 0 kernel::arch::x86_64::iommu::tests::a_device_no_unit_owns_gets_no_context_entry
+time 0 kernel::arch::x86_64::iommu::tests::every_unit_the_dmar_names_is_translating
+time 0 kernel::arch::x86_64::iommu::tests::interrupt_remapping_is_reported_and_never_enabled
+time 0 kernel::arch::x86_64::irq::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band
+time 0 kernel::arch::x86_64::isa::tests::the_part_described_itself
+time 0 kernel::arch::x86_64::isa::tests::the_part_has_what_the_kernel_refuses_to_run_without
+time 0 kernel::arch::x86_64::isa::tests::the_rdseed_bit_agrees_with_rdseed
+time 0 kernel::arch::x86_64::isa::tests::the_unpromised_set_is_the_invariant_tsc_or_nothing
+time 0 kernel::arch::x86_64::ist::tests::an_nmi_finds_its_per_cpu_block_whatever_the_gs_base_held
+time 0 kernel::arch::x86_64::ist::tests::an_nmi_leaves_the_gs_base_it_found
+time 0 kernel::arch::x86_64::ist::tests::every_interrupt_stack_table_guard_page_is_unmapped
+time 0 kernel::arch::x86_64::ist::tests::every_online_core_has_its_own_three_interrupt_stack_table_entries
+time 0 kernel::arch::x86_64::ist::tests::the_ist_stack_region_is_the_size_the_linker_reserved
+time 0 kernel::arch::x86_64::ist::tests::the_nmi_double_fault_and_machine_check_gates_select_their_own_stacks
+time 0 kernel::arch::x86_64::mmu::map_tests::a_hole_with_no_room_answers_none
+time 0 kernel::arch::x86_64::mmu::map_tests::a_small_machine_is_unchanged
+time 0 kernel::arch::x86_64::mmu::map_tests::an_empty_hole_gives_up_its_floor
+time 0 kernel::arch::x86_64::mmu::map_tests::the_disagreement_names_both_sources
+time 0 kernel::arch::x86_64::mmu::map_tests::the_failure_names_both_ranges
+time 0 kernel::arch::x86_64::mmu::map_tests::the_fill_stops_below_the_devices_on_a_17_gib_machine
+time 0 kernel::arch::x86_64::mmu::map_tests::the_mmio_hole_on_a_17_gib_machine_is_bounded_at_both_ends
+time 0 kernel::arch::x86_64::mmu::map_tests::the_window_steps_over_a_framebuffer_at_the_floor_of_the_hole
+time 0 kernel::arch::x86_64::mmu::shootdown::tests::a_shootdown_round_masks_interrupts_whatever_its_caller_held
+time 0 kernel::arch::x86_64::pmu::tests::a_narrow_counter_wraps_to_a_small_delta
+time 0 kernel::arch::x86_64::pmu::tests::qemu_reaches_a_decided_answer
+time 0 kernel::arch::x86_64::pmu::tests::the_msrs_are_only_touched_when_cpuid_allowed_it
+time 0 kernel::arch::x86_64::pmu::tests::the_outcome_and_the_counter_agree
+time 0 kernel::arch::x86_64::timer_calibration_tests::boot::the_calibration_timed_several_windows
+time 0 kernel::arch::x86_64::timer_calibration_tests::boot::the_stored_rate_is_the_smallest_window
+time 0 kernel::arch::x86_64::timer_calibration_tests::estimator::a_descheduled_window_does_not_satisfy_the_rule
+time 0 kernel::arch::x86_64::timer_calibration_tests::estimator::agreement_is_judged_against_the_smallest
+time 0 kernel::arch::x86_64::timer_calibration_tests::estimator::one_window_never_converges
+time 0 kernel::arch::x86_64::timer_calibration_tests::estimator::the_agreeing_pair_need_not_be_adjacent
+time 0 kernel::arch::x86_64::timer_calibration_tests::estimator::two_agreeing_windows_converge
+time 3 kernel::console::tests::console_lock_can_be_busted
+time 0 kernel::cpu::tests::held_rank_lives_in_the_percpu_block
+time 0 kernel::cpu::tests::percpu_is_self_consistent_on_whatever_cpu_we_run
+time 0 kernel::fp::tests::a_thread_with_no_vector_state_finds_the_registers_scrubbed
+time 0 kernel::fp::tests::the_first_floating_point_instruction_takes_a_trap
+time 0 kernel::fp::tests::the_whole_register_file_survives_a_save_and_a_restore
+time 1 kernel::fp::tests::two_threads_doing_vector_work_do_not_see_each_others_registers
+time 0 kernel::fp::tests::two_threads_that_never_used_the_unit_leave_it_shut
+time 0 kernel::interrupt_stack::tests::a_slots_guard_page_begins_where_the_slot_below_it_ends
+time 0 kernel::interrupt_stack::tests::interrupts_are_handled_on_the_interrupt_stack
+time 0 kernel::interrupt_stack::tests::the_interrupt_stack_region_is_the_size_the_linker_reserved
+time 385 kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack
+time 0 kernel::memory::tests::alloc_and_free_balance
+time 0 kernel::memory::tests::allocator_never_hands_out_the_kernel
+time 0 kernel::memory::tests::an_allocated_frame_is_real_memory
+time 0 kernel::memory::tests::bitmap_overlaps_nothing
+time 0 kernel::memory::tests::every_frame_of_the_kernel_image_is_reserved
+time 0 kernel::memory::tests::initial_ramdisk_is_reserved_if_present
+time 0 kernel::memory::tests::memory_map_came_from_the_device_tree
+time 0 kernel::pci::tests::a_controller_behind_a_bridge_is_found_on_the_bus_behind_it
+time 4 kernel::pci::tests::acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge
+time 30 kernel::preemption_window_tests::a_masked_window_takes_no_preemption
+time 30 kernel::preemption_window_tests::unmasking_delivers_the_tick_that_was_held
+time 0 kernel::revoke::tests::a_device_take_back_ignores_the_object_and_spares_one_holder
+time 1 kernel::revoke::tests::an_exhausted_budget_refuses_the_record_not_the_safety
+time 0 kernel::revoke::tests::destroy_unmaps_a_region_before_reclaiming_it
+time 0 kernel::revoke::tests::destroying_a_region_deletes_every_capability_naming_it
+time 0 kernel::revoke::tests::revoke_unmaps_a_shared_page_from_every_address_space
+time 0 kernel::revoke::tests::revoking_a_run_unmaps_every_page_of_it_everywhere
+time 0 kernel::revoke::tests::revoking_one_run_leaves_an_overlapping_capability_and_its_mappings_alone
+time 12 kernel::sched::region_reaping::tests::destroyed_region_slots_are_reused
+time 0 kernel::sched::region_reaping::tests::reclaim_frees_a_regions_idle_rendezvous
+time 0 kernel::sched::region_reaping::tests::reclaim_frees_an_embryo_thread_control_blocks_region
+time 0 kernel::sched::region_reaping::tests::reclaim_frees_an_unbound_address_spaces_region
+time 0 kernel::sched::region_reaping::tests::split_returns_child_pages_to_the_parent
+time 0 kernel::sched::rendezvous::tests::a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked
+time 0 kernel::sched::rendezvous::tests::a_call_gets_a_reply
+time 0 kernel::sched::rendezvous::tests::a_receiver_blocks_until_a_sender_arrives
+time 0 kernel::sched::rendezvous::tests::a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed
+time 0 kernel::sched::rendezvous::tests::a_reply_reaches_the_caller_that_called
+time 500 kernel::sched::rendezvous::tests::a_reply_to_a_thread_parked_as_a_receiver_is_dropped
+time 0 kernel::sched::rendezvous::tests::a_request_gets_a_reply
+time 0 kernel::sched::rendezvous::tests::a_retyped_rendezvous_carries_ipc_and_pins_its_region
+time 0 kernel::sched::rendezvous::tests::a_sender_blocks_until_a_receiver_arrives
+time 0 kernel::sched::rendezvous::tests::a_server_that_exits_frees_the_caller_it_never_answered
+time 500 kernel::sched::rendezvous::tests::a_wake_without_delivery_cannot_complete_a_parked_receive
+time 0 kernel::sched::rendezvous::tests::the_kernels_rendezvous_supply_grows_past_one_chunk
+time 50 kernel::sched::suspension::tests::a_self_suspended_thread_returns_from_suspend_when_resumed
+time 50 kernel::sched::suspension::tests::a_suspended_thread_stops_and_a_resumed_one_continues_where_it_stopped
+time 50 kernel::sched::suspension::tests::a_thread_suspended_in_receive_takes_its_message_only_when_resumed
+time 0 kernel::sched::suspension::tests::an_embryo_or_a_reaped_thread_is_refused
+time 0 kernel::sched::tests::a_dead_thread_still_standing_on_its_stack_is_not_reapable
+time 0 kernel::sched::tests::a_finished_thread_is_reaped_and_its_memory_returned
+time 0 kernel::sched::tests::a_guard_page_fault_names_its_stack
+time 0 kernel::sched::tests::a_running_thread_cannot_be_granted_the_cycle_counter
+time 0 kernel::sched::tests::a_slots_guard_page_begins_where_the_slot_below_it_ends
+time 0 kernel::sched::tests::a_spawn_quota_caps_live_children_and_replenishes_on_reap
+time 0 kernel::sched::tests::a_spawned_thread_runs
+time 4 kernel::sched::tests::a_thread_that_never_yields_is_preempted_anyway
+time 0 kernel::sched::tests::an_interrupt_becomes_a_message
+time 20 kernel::sched::tests::an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack
+time 0 kernel::sched::tests::an_interrupt_that_arrives_before_the_wait_is_not_lost
+time 0 kernel::sched::tests::every_thread_stack_has_a_guard_page
+time 0 kernel::sched::tests::kernel_stacks_do_not_touch_the_frame_allocator_in_steady_state
+time 0 kernel::sched::tests::other_threads_run_while_one_is_blocked
+time 8 kernel::sched::tests::the_canary_reports_a_byte_that_changed_behind_its_back
+time 0 kernel::sched::tests::threads_round_robin
+time 41 kernel::smp::tests::a_batch_of_cpu_bound_work_reaches_every_cpu
+time 397 kernel::smp::tests::a_migrated_kernel_thread_keeps_its_hart_pointer
+time 2308 kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name
+time 0 kernel::smp::tests::all_secondaries_came_online
+time 0 kernel::smp::tests::every_cpu_the_tree_described_is_running
+time 0 kernel::smp::tests::every_secondary_runs_scheduled_work
+time 0 kernel::smp::tests::every_secondary_stack_sits_on_a_guard_page
+time 0 kernel::smp::tests::the_online_set_is_the_mask_and_the_sampler_stays_inside_it
+time 0 kernel::smp::tests::the_roster_is_the_machines_own_cpu_list
+time 0 kernel::smp::tests::the_secondary_stack_region_is_the_size_the_linker_reserved
+time 0 kernel::smp::tests::work_can_be_placed_on_every_cpu
+time 0 kernel::stack::tests::stack_canary_is_intact_and_we_have_headroom
+time 0 kernel::sync::tests::holding_nothing_permits_any_rank
+time 0 kernel::sync::tests::irq_safe_mutex_masks_interrupts_while_held
+time 0 kernel::sync::tests::irq_safe_mutex_restores_rather_than_enables
+time 0 kernel::sync::tests::nested_locks_restore_correctly
+time 0 kernel::sync::tests::releasing_an_inner_lock_restores_the_outer_rank
+time 0 kernel::sync::tests::taking_a_lock_records_its_rank
+time 0 kernel::sync::tests::the_hierarchy_permits_only_strictly_decreasing_ranks
+time 0 kernel::syscall::tests::a_partly_mapped_run_is_rolled_all_the_way_back
+time 0 kernel::syscall::tests::a_slice_maps_only_its_window
+time 0 kernel::syscall::tests::retype_mints_a_run_and_a_refused_run_moves_nothing
+time 0 kernel::syscall::tests::split_inherits_the_parent_capabilitys_rights_never_widening
+time 0 kernel::syscall::tests::split_refused_for_a_full_capability_table_orphans_no_child
+time 0 kernel::tests::bss_was_zeroed
+time 0 kernel::tests::device_tree_has_the_right_magic
+time 0 kernel::tests::device_tree_pointer_was_provided
+time 0 kernel::tests::harness_runs
+time 0 kernel::tests::stack_pointer_is_16_byte_aligned
+time 0 kernel::virtio::tests::a_device_write_to_the_read_only_shadow_is_refused
+time 0 kernel::virtio::tests::a_pci_queue_has_no_doorbell_until_it_is_set_up
+time 0 kernel::virtio::tests::a_register_read_outside_the_slot_is_refused
+time 0 kernel::virtio::tests::a_second_queue_validates_on_its_own_block
+time 0 kernel::virtio::tests::feature_negotiation_leaves_the_blk_flush_bit_alone
+time 0 kernel::virtio::tests::feature_negotiation_strips_indirect_and_packed
+time 0 kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain
+time 0 kernel::virtio::tests::the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation
+time 0 kernel::virtio::tests::the_validator_refuses_a_descriptor_that_escapes_the_dma_region
+time 0 kernel::virtio::tests::the_validator_refuses_an_indirect_descriptor
+time 0 kernel::virtio::tests::the_validator_refuses_an_rx_descriptor_that_escapes_the_region
+time 0 kernel::virtio::tests::the_validator_refuses_more_new_entries_than_the_ring_can_hold
+
+test result: ok. 138 passed, 13 skipped
+

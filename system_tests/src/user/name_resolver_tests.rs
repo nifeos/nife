@@ -250,16 +250,10 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
             "no entropy source on this machine, and the resolver asks nothing without one"
         );
     };
-    let mut w = match e1000e_service::start_net_server(
+    let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            crate::testing::skip!("no e1000e NIC attached");
-        }
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    };
+    ));
     // The lease, drained so `net_stack` enters its serve loop. Its second word is the name server
     // DHCP named (slirp's 10.0.2.3, which forwards to the host's resolver); the resolver here is
     // pointed at the runners' own peer instead, because that is the zone the cases are written
@@ -345,16 +339,10 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_client() {
             "no entropy source on this machine, and the resolver asks nothing without one"
         );
     };
-    let mut w = match e1000e_service::start_net_server(
+    let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            crate::testing::skip!("no e1000e NIC attached");
-        }
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    };
+    ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, FIRST, fixture::ZONE);
@@ -502,16 +490,10 @@ fn a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant() {
     let Some(entropy) = entropy() else {
         crate::testing::skip!("no entropy source on this machine, and the resolver needs one");
     };
-    let mut w = match e1000e_service::start_net_server(
+    let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            crate::testing::skip!("no e1000e NIC attached");
-        }
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    };
+    ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, GRANTED_STD, fixture::ZONE);
@@ -549,16 +531,10 @@ fn a_std_program_asks_each_badge_in_order_until_one_holds_the_name() {
     let Some(entropy) = entropy() else {
         crate::testing::skip!("no entropy source on this machine, and the resolver needs one");
     };
-    let mut w = match e1000e_service::start_net_server(
+    let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            crate::testing::skip!("no e1000e NIC attached");
-        }
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    };
+    ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, ELSEWHERE_THEN_ZONE[0], "elsewhere.test");

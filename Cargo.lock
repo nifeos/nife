@@ -1364,6 +1364,7 @@ dependencies = [
  "current_cpu_contract",
  "domain_name_resolution_contract",
  "domain_name_system",
+ "e1000e",
  "elf",
  "entropy_contract",
  "environment_contract",

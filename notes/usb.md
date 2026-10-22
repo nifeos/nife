@@ -80,12 +80,29 @@ Measured on patagonia with the swish-check keystrokes alone (riscv64, TCG, four 
 300 boots with the priority written first, 0 in 300 with the enable first. aarch64: 0 in 150. x86_64
 was not counted.
 
+## The ports settle before the scan
+
+The driver's controller reset disconnects every device, and a root port reports its device again
+only once it has re-detected it. QEMU does that the instant the controller runs; xenon's Intel
+controller takes about ten milliseconds. So the boot-time scan waits until no port's connection has
+changed for 100 ms (USB 2.0's `TATTDB`), reading every 25 ms and giving up after 2 s. Those are
+Linux's hub debounce numbers, and no machine's timing is in them
+(`extensible_host_controller_interface::port::Settle`). A scan that gave up says so in the boot
+line instead of printing a count. The scan only names the keyboard early: a device that shows up
+later arrives as a connect change, and its port is debounced the same way before the driver
+resets it.
+
+To see what the ports read on a machine, build with `--features xhci_port_probe`
+(`cargo xtask uefi-image --features xhci_port_probe` on x86_64). The kernel prints every root
+port's `PORTSC` as the firmware left it and over the five seconds after the driver's scan, as
+`xhci-probe:` lines.
+
 ## Per architecture
 
 | | aarch64 | riscv64 | x86_64 |
 |---|---|---|---|
 | Under QEMU | INTx, SMMUv3; green | INTx, riscv-iommu; green | MSI (and MSI-X), VT-d; green |
-| Real silicon | argon: not tried | radon: refused, no IOMMU | xenon: calef's bench step |
+| Real silicon | argon: not tried | radon: refused, no IOMMU | xenon: a low-speed keyboard found at boot and typing; MSI, VT-d |
 
 ## BUGS
 
@@ -100,5 +117,5 @@ was not counted.
   sits on a page nothing else withholds. A compromised driver can then hand the controller back to
   the firmware's SMI handler. The kernel never needs the driver to touch it. Proposed as
   `the-xhci-driver-is-not-mapped-the-legacy-support-capability` in `design/roadmap/proposals/`.
-- Never run on silicon. Every number here is QEMU's: timeouts are the specification's limits,
-  not measurements, and QEMU cannot model a low-speed device.
+- Silicon is one machine, xenon. Every timeout but the port settle is the specification's
+  limit, not a measurement.

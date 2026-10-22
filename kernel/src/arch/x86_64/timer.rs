@@ -14,9 +14,10 @@
 //!
 //! # BUGS
 //!
-//! - The TSC is assumed invariant; `arch::x86_64::isa::init` refuses a part whose
-//!   `CPUID.80000007H:EDX[8]` says otherwise, untested on silicon. Under QEMU on an aarch64 host
-//!   the TSC is the host's nanosecond clock (notes/tsc-under-tcg.md), which does not carry to x86.
+//! - The TSC is assumed invariant; `arch::x86_64::isa::init` refuses a bare-metal part whose
+//!   `CPUID.80000007H:EDX[8]` says otherwise, and under a hypervisor warns. Under QEMU on an
+//!   aarch64 host the TSC is the host's nanosecond clock (notes/tsc-under-tcg.md), which does not
+//!   carry to x86.
 //! - Min-of-N is a filter, not a bound: a host that never leaves this vCPU alone for ten
 //!   milliseconds still inflates the rate. The boot line prints the worst window beside the chosen
 //!   one, so a fought calibration shows a gap. A part reporting leaf 0x15 skips all of this

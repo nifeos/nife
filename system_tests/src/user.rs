@@ -70,6 +70,40 @@ macro_rules! skip_unless_required {
     };
 }
 
+/// **What a test does with `e1000e_service`'s answer**: the wiring, or a skip, or a failure. Like
+/// `skip!`, it returns from its caller, so it must be called directly inside a `#[test_case]`.
+///
+/// - No NIC on the bus skips unless the x86_64 runner attached one ([`skip_unless_required!`]).
+/// - **No link** skips on a PCH part such as xenon's I219, because no runner attaches one: it is
+///   silicon, and whether a cable is in its port is a fact about the desk, like an absent device.
+///   On any other part it skips unless the runner attached the NIC, because QEMU's 82574L reports
+///   link at once and a runner's NIC with no link is a bring-up that broke. Either way it returns
+///   at once instead of blocking on a lease that cannot come.
+/// - Anything else (a refused bring-up, or a server a previous test left running) fails.
+// Index exception (2026-10-21): beside `skip_unless_required!` for the same textual-scope reason.
+macro_rules! wired_or_skip {
+    ($started:expr) => {
+        match $started {
+            Ok(wired) => wired,
+            Err(crate::user::e1000e_service::Absent::NoController) => {
+                skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
+            }
+            Err(crate::user::e1000e_service::Absent::NoLink { device }) => {
+                assert!(
+                    ::e1000e::pch::is_pch(device) || !X86_NIC_ATTACHED,
+                    "the runner's e1000e (8086:{device:04x}) has no link: QEMU's reports link at \
+                     once, so bring-up never saw STATUS.LU",
+                );
+                crate::testing::skip!("no link on the e1000e NIC (is a cable in its port?)");
+            }
+            Err(why) => panic!(
+                "an e1000e NIC is on the bus and could not be wired: {why:?}. Not a skip: see \
+                 notes/e1000e.md"
+            ),
+        }
+    };
+}
+
 /// **Reading a real disk's partition table, and the difference between listing and holding**
 /// (milestone 57).
 ///

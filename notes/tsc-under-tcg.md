@@ -6,8 +6,9 @@
 
 Measured 2026-09-21 on patagonia by the `tscdrift` lane, after milestone 524 (the three x86_64 boot
 gates: NX, SYSCALL, and the invariant TSC) established that QEMU's TCG refuses to advertise
-`CPUID.80000007H:EDX[8]` under any invocation. So no machine this project runs `x86_64` on promises
-that the time-stamp counter keeps a constant rate. `kernel/src/arch/x86_64/timer.rs` measures that
+`CPUID.80000007H:EDX[8]` under any invocation. So no QEMU guest this project runs `x86_64` in
+promises that the time-stamp counter keeps a constant rate, and the boot warns rather than
+refuses there because the hypervisor bit is set. `kernel/src/arch/x86_64/timer.rs` measures that
 rate once at boot and everything time-derived on x86 flows from that one number, and its `BUGS`
 section had asserted *"QEMU's TSC is invariant"* with nothing ever having checked.
 

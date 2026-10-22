@@ -78,20 +78,16 @@ fn net_stack_image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
 }
 
-/// Start `net_stack` over the `e1000e` and drain its lease. `None` when no `e1000e` is attached.
-fn start_stack() -> Option<(Holding, RendezvousId)> {
-    match crate::user::e1000e_service::start_net_server(
+/// Start `net_stack` over the `e1000e` and drain its lease; the caller reads a refusal with
+/// `wired_or_skip!`.
+fn start_stack() -> Result<(Holding, RendezvousId), crate::user::e1000e_service::Absent> {
+    let w = crate::user::e1000e_service::start_net_server(
         net_stack_image(),
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(w) => {
-            // Drain the lease so the server reaches its serve loop before any client asks.
-            let [_lease, ..] = crate::sched::ipc_receive(w.report);
-            Some((w.held, w.stack))
-        }
-        Err(crate::user::e1000e_service::Absent::NoController) => None,
-        Err(why) => panic!("the e1000e NIC is on the bus and its bring-up refused: {why:?}"),
-    }
+    )?;
+    // Drain the lease so the server reaches its serve loop before any client asks.
+    let [_lease, ..] = crate::sched::ipc_receive(w.report);
+    Ok((w.held, w.stack))
 }
 
 /// Spawn one `net_stack` role: slot 0 its report endpoint, slot 1 `WRITE` on the stack's front door
@@ -184,9 +180,7 @@ fn next_report(report: RendezvousId, what: &str) -> [u64; 5] {
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic.patch`
 #[test_case]
 fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
-    let Some((mut held, stack)) = start_stack() else {
-        skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-    };
+    let (mut held, stack) = wired_or_skip!(start_stack());
     let go_region = crate::memory_region::create(1).expect("no region for the go endpoint");
     let go = crate::sched::create_rendezvous_from(go_region).expect("no go endpoint");
 
@@ -260,9 +254,7 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_socket_holder_cannot_receive_on_its_socket_capability.patch`
 #[test_case]
 fn a_socket_holder_cannot_receive_on_its_socket_capability() {
-    let Some((mut held, stack)) = start_stack() else {
-        skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-    };
+    let (mut held, stack) = wired_or_skip!(start_stack());
     let squatter = spawn_client(NET_ROLE_SQUATTER, Some(stack), &[], &mut held);
     let armed = next_report(squatter, "squatter");
     assert_eq!(
@@ -293,9 +285,7 @@ fn a_socket_holder_cannot_receive_on_its_socket_capability() {
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing.patch`
 #[test_case]
 fn a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing() {
-    let Some((mut held, stack)) = start_stack() else {
-        skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-    };
+    let (mut held, stack) = wired_or_skip!(start_stack());
     let region = crate::memory_region::create(2).expect("no region for the hand-off endpoints");
     let handoff = crate::sched::create_rendezvous_from(region).expect("no hand-off endpoint");
     let go = crate::sched::create_rendezvous_from(region).expect("no go endpoint");
@@ -351,9 +341,7 @@ fn a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing() {
 /// green but did not break the code it guards to watch it go red.
 #[test_case]
 fn a_re_badged_socket_capability_is_refused_and_the_socket_survives() {
-    let Some((mut held, stack)) = start_stack() else {
-        skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-    };
+    let (mut held, stack) = wired_or_skip!(start_stack());
     let forger = spawn_client(NET_TEST_SOCKET_BADGE_FORGE, Some(stack), &[], &mut held);
     let verdict = next_report(forger, "badge forger");
     assert_eq!(

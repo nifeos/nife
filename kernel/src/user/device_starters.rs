@@ -38,6 +38,8 @@ pub(super) fn boot_usb_keyboard() -> Option<usb_keyboard_service::Wiring> {
     match usb_keyboard_service::start(image) {
         Ok(w) => {
             usb_keyboard_service::describe(&w.report);
+            #[cfg(feature = "xhci_port_probe")]
+            crate::xhci_port_probe::after_report();
             (w.report[0] != extensible_host_controller_interface::report::FAILED).then_some(w)
         }
         Err(why) => {
@@ -263,7 +265,7 @@ pub(super) fn boot_e1000e_network() -> Option<e1000e_service::Wiring> {
             );
             None
         }
-        Err(NotAtBoot::NoLink { device }) => {
+        Err(NotAtBoot::Absent(Absent::NoLink { device })) => {
             crate::println!(
                 "  network     : NONE. The e1000e ({}) has no link, and a stack waiting for DHCP \
                  would hold the prompt back for ever",

@@ -1,0 +1,562 @@
+nife on x86_64 (long mode, ring 0, 4-level paging)
+  cpu 0 booted: high-half kernel, .bss, and the 16550 console are up.
+  running at  : 0xffffffff822ba910  (high half: the long-mode jump landed)
+  boot info   : 0x00000000b9fb4000  (PVH hvm_start_info, not a device tree)
+  screen      : none in the boot cmdline; this console is the UART
+  pat         : 0x0007040600070106 on core 0 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 0; ring 0 faults on a fetch from a ring-3 page
+  memory      : 38 regions from the PVH handoff, rsdp 0xcae09000
+                0x000000000000..0x000000008000  ram
+                0x000000008000..0x000000009000  reserved
+                0x000000009000..0x000000058000  ram
+                0x000000058000..0x000000059000  reserved
+                0x000000059000..0x00000009e000  ram
+                0x00000009e000..0x0000000a0000  reserved
+                0x000000100000..0x000002000000  ram
+                0x000002000000..0x000003032000  reserved
+                0x000003032000..0x0000acfc0000  ram
+                0x0000acfc0000..0x0000ad000000  ram
+                0x0000ad000000..0x0000b7790000  ram
+                0x0000b7790000..0x0000b82c5000  reserved
+                0x0000b82c5000..0x0000b9efd000  ram
+                0x0000b9efd000..0x0000b9efe000  acpi-nvs
+                0x0000b9efe000..0x0000b9eff000  reserved
+                0x0000b9eff000..0x0000b9fb0000  ram
+                0x0000b9fb0000..0x0000b9fb3000  ram
+                0x0000b9fb3000..0x0000b9fb4000  ram
+                0x0000b9fb4000..0x0000b9fbf000  reserved
+                0x0000b9fbf000..0x0000c8940000  ram
+                0x0000c8940000..0x0000c8c89000  ram
+                0x0000c8c89000..0x0000c97c4000  ram
+                0x0000c97c4000..0x0000cadfb000  reserved
+                0x0000cadfb000..0x0000cae41000  acpi
+                0x0000cae41000..0x0000cb775000  acpi-nvs
+                0x0000cb775000..0x0000cbd18000  reserved
+                0x0000cbd18000..0x0000cbdff000  reserved
+                0x0000cbdff000..0x0000cbe00000  ram
+                0x000100000000..0x000140000000  ram
+                0x000140000000..0x000142873000  ram
+                0x000142873000..0x00042e000000  ram
+                0x0000000a0000..0x000000100000  reserved
+                0x0000cbe00000..0x0000d0000000  reserved
+                0x0000f0000000..0x0000f8000000  reserved
+                0x0000fe000000..0x0000fe011000  reserved
+                0x0000fec00000..0x0000fec01000  reserved
+                0x0000fee00000..0x0000fee01000  reserved
+                0x0000ff000000..0x000100000000  reserved
+                usable ram: 16609204 KiB
+  acpi        : rsdp at 0xcae09000 (revision 2), root table 0xcae090b8 (xsdt)
+                0x00cae34200  FACP (268 bytes)
+                0x00cae34310  APIC (132 bytes)
+                0x00cae34398  FPDT (68 bytes)
+                0x00cae343e0  FIDT (172 bytes)
+                0x00cae34490  MCFG (60 bytes)
+                0x00cae344d0  HPET (56 bytes)
+                0x00cae34508  SSDT (12662 bytes)
+                0x00cae37680  SSDT (9637 bytes)
+                0x00cae39c28  HPET (56 bytes)
+                0x00cae39c60  SSDT (3557 bytes)
+                0x00cae3aa48  SSDT (2996 bytes)
+                0x00cae3b600  UEFI (66 bytes)
+                0x00cae3b648  SSDT (3806 bytes)
+                0x00cae3c528  LPIT (148 bytes)
+                0x00cae3c5c0  SSDT (321 bytes)
+                0x00cae3c708  SSDT (671 bytes)
+                0x00cae3c9a8  SSDT (12290 bytes)
+                0x00cae3f9b0  SSDT (1293 bytes)
+                0x00cae3fec0  DBGP (52 bytes)
+                0x00cae3fef8  DBG2 (84 bytes)
+                0x00cae3ff50  MSDM (85 bytes)
+                0x00cae3ffa8  SLIC (374 bytes)
+                0x00cae40120  TPM2 (52 bytes)
+                0x00cae40158  ASF! (160 bytes)
+                0x00cae401f8  DMAR (204 bytes)
+                local apic 0xfee00000, 4 cpu(s) enabled, 0 disabled, 8259s present (must be masked)
+                io apic 2 at 0xfec00000, gsi base 0
+                isa irq 0 -> gsi 2 (active high, edge)
+                isa irq 9 -> gsi 9 (active high, level)
+                pcie ecam 0xf0000000, buses 0..=127 (q35's default is 0xb0000000)
+                vt-d drhd at 0xfed90000, named devices only
+                vt-d drhd at 0xfed91000, all (the catch-all)
+                vt-d rmrr 0xcac4e000..=0xcac6dfff (128 KiB), identity-mapped for the device(s) it names
+                vt-d rmrr 0xcd800000..=0xcfffffff (40960 KiB), identity-mapped for the device(s) it names
+                no IVRS: no AMD-Vi unit described
+                fadt reset register: Io 0xb2 (8 bits) <- 0x73
+  pci         : ecam at 0xf0000000 (buses 0..=127), decode was already on
+                bar window 0xd0000000..0xd0200000, from the firmware map and TOLUD, agreeing
+                00:00.0 8086:591f class 060000
+                00:02.0 8086:5912 class 030000
+                00:14.0 8086:a2af class 0c0330
+                00:14.2 8086:a2b1 class 118000
+                00:15.0 8086:a2e0 class 118000
+                00:16.0 8086:a2ba class 078000
+                00:16.3 8086:a2bd class 070002
+                00:17.0 8086:a282 class 010601
+                00:1b.0 8086:a2e7 class 060400 bridge to buses 01..=01
+                00:1c.0 8086:a297 class 060400 bridge to buses 02..=02
+                00:1f.0 8086:a2c6 class 060100
+                00:1f.2 8086:a2a1 class 058000
+                00:1f.3 8086:a2f0 class 040300
+                00:1f.4 8086:a2a3 class 0c0500
+                00:1f.6 8086:15e3 class 020000
+                01:00.0 1344:5411 class 010802
+                02:00.0 8086:24fd class 028000
+                17 function(s) over 3 bus(es) of the 128 described; mapping 3072 KiB of config space
+                17 function(s) on the bus, 0 with a BAR this kernel can neither use nor adopt
+  frames      : allocator up over 15 ram region(s)
+  smp: 4 core(s) in the madt
+  apic        : local apic 0xfee00000 up, id 0, version 0x15, 8259s masked
+  clocks      : tsc 2713 MHz (PIT calibration, best of 2 windows, worst 2713 MHz), apic timer 1 MHz (measured against the PIT)
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  vt-d        : drhd 0xfed90000 up (1 of 2, named devices only), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  vt-d        : drhd 0xfed91000 up (2 of 2, the catch-all), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  io apic     : id 2 at 0xfec00000 up, version 0x20, 120 redirection entries, gsi base 0
+  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 21 interrupts in ~0.2s at 100 Hz
+  smp: init-sipi-sipi via the local apic, trampoline at 0x8000
+  pat         : 0x0007040600070106 on core 2 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 2; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 4 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 4; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 6 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 6; ring 0 faults on a fetch from a ring-3 page
+  smp: 4 core(s) online
+  cycles      : IA32_PERF_FIXED_CTR1 (unhalted core cycles), 48 bits, perfmon v4
+
+running 385 tests
+
+test system_tests::user::address_space_tests::a_dead_user_thread_frees_its_whole_address_space ... 
+  user thread 4294967301 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff823a92d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa0b000, the thread's own
+      walk ends: OtherHalf
+  the kernel is fine.
+
+  user thread 8589934597 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff823a92d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa0b000, the thread's own
+      walk ends: OtherHalf
+  the kernel is fine.
+
+  user thread 12884901893 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff823a92d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa0b000, the thread's own
+      walk ends: OtherHalf
+  the kernel is fine.
+
+  user thread 17179869189 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff823a92d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa0b000, the thread's own
+      walk ends: OtherHalf
+  the kernel is fine.
+
+  user thread 21474836485 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff823a92d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa0b000, the thread's own
+      walk ends: OtherHalf
+  the kernel is fine.
+ok
+test system_tests::user::address_space_tests::a_read_only_segment_is_mapped_read_only ... ok
+test system_tests::user::address_space_tests::a_user_built_aspace_maps_translates_and_revokes ... ok
+test system_tests::user::address_space_tests::an_asid_flush_reaches_the_other_cpus ... ok
+test system_tests::user::address_space_tests::an_installed_space_stays_installed_across_a_timer_tick ... ok
+test system_tests::user::address_space_tests::asid_tagging_keeps_address_spaces_apart_without_flushes ... skipped: this machine does not tag address spaces (x86 runs with CR4.PCIDE clear, so every root switch flushes the whole TLB and this test could not fail for its stated reason)
+test system_tests::user::authority_tests::a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root ... 
+  user thread 4294967304 killed: vector 14 (page fault)
+    rip 0x0000000060000064   addr 0x0000000000a50000   user rsp 0x000000007ffeffd8   err 0x00000004
+    cr3 root 0xa71000, the thread's own
+      level 0: table 0xa71000 (allocated) [0] = 0x0000000000a73027
+      level 1: table 0xa73000 (allocated) [0] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 1105 frames]
+test system_tests::user::authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again ... 
+  user thread 11 killed: vector 14 (page fault)
+    rip 0x0000000060000064   addr 0x0000000000a50000   user rsp 0x000000007ffeffd8   err 0x00000004
+    cr3 root 0xebd000, the thread's own
+      level 0: table 0xebd000 (allocated) [0] = 0x0000000000ebf027
+      level 1: table 0xebf000 (allocated) [0] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 1106 frames]
+test system_tests::user::block_driver_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport ... skipped: no virtio-pci disk on the bus
+test system_tests::user::block_driver_tests::a_userspace_driver_writes_a_block_over_the_pcie_transport ... skipped: no virtio-pci disk on the bus
+test system_tests::user::c_program_tests::unmodified_ioping_times_reads_in_a_granted_directory ... skipped: no ioping in this archive: `cargo xtask basalt-fetch` fetches it (milestone 906)
+test system_tests::user::c_program_tests::unmodified_sqlite_speedtest1_runs_in_memory ... skipped: no speedtest1 in this archive: `cargo xtask basalt-fetch` fetches it (milestone 897)
+test system_tests::user::c_program_tests::unmodified_sqlite_speedtest1_runs_on_a_file ... skipped: no speedtest1 in this archive: `cargo xtask basalt-fetch` fetches it (milestone 897)
+test system_tests::user::c_seam_tests::a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant ... 
+  user thread 4294967308 killed: vector 14 (page fault)
+    rip 0x00000000600059a5   addr 0x0000000050001000   user rsp 0x000000007ffeffb8   err 0x00000007
+    cr3 root 0x130b000, the thread's own
+      level 0: table 0x130b000 (allocated) [0] = 0x000000000130d027
+      level 1: table 0x130d000 (allocated) [1] = 0x000000000130e027
+      level 2: table 0x130e000 (allocated) [128] = 0x0000000001322027
+      level 3: table 0x1322000 (allocated) [1] = 0x8000000001307025
+      walk ends: Mapped
+  the kernel is fine.
+
+  user thread 8589934604 killed: vector 14 (page fault)
+    rip 0x00000000600059b2   addr 0x0000000050002000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x136c000, the thread's own
+      level 0: table 0x136c000 (allocated) [0] = 0x000000000136e027
+      level 1: table 0x136e000 (allocated) [1] = 0x000000000136f027
+      level 2: table 0x136f000 (allocated) [128] = 0x0000000001383027
+      level 3: table 0x1383000 (allocated) [2] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 17179869196 killed: vector 14 (page fault)
+    rip 0x00000000600059c3   addr 0x000000004ffff000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x136c000, the thread's own
+      level 0: table 0x136c000 (allocated) [0] = 0x000000000136e027
+      level 1: table 0x136e000 (allocated) [1] = 0x000000000136f027
+      level 2: table 0x136f000 (allocated) [127] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 592 frames]
+test system_tests::user::c_seam_tests::a_c_underrun_below_the_grant_faults_and_changes_nothing_outside_it ... 
+  user thread 13 killed: vector 14 (page fault)
+    rip 0x00000000600059a5   addr 0x0000000050001000   user rsp 0x000000007ffeffb8   err 0x00000007
+    cr3 root 0x155a000, the thread's own
+      level 0: table 0x155a000 (allocated) [0] = 0x000000000155c027
+      level 1: table 0x155c000 (allocated) [1] = 0x000000000155d027
+      level 2: table 0x155d000 (allocated) [128] = 0x0000000001571027
+      level 3: table 0x1571000 (allocated) [1] = 0x8000000001556025
+      walk ends: Mapped
+  the kernel is fine.
+
+  user thread 4294967309 killed: vector 14 (page fault)
+    rip 0x00000000600059b2   addr 0x0000000050002000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x15bb000, the thread's own
+      level 0: table 0x15bb000 (allocated) [0] = 0x00000000015bd027
+      level 1: table 0x15bd000 (allocated) [1] = 0x00000000015be027
+      level 2: table 0x15be000 (allocated) [128] = 0x00000000015d2027
+      level 3: table 0x15d2000 (allocated) [2] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 12884901901 killed: vector 14 (page fault)
+    rip 0x00000000600059c3   addr 0x000000004ffff000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x15bb000, the thread's own
+      level 0: table 0x15bb000 (allocated) [0] = 0x00000000015bd027
+      level 1: table 0x15bd000 (allocated) [1] = 0x00000000015be027
+      level 2: table 0x15be000 (allocated) [127] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 592 frames]
+test system_tests::user::c_seam_tests::the_supervisor_restarts_the_faulted_c_component_and_the_restart_does_real_work ... 
+  user thread 14 killed: vector 14 (page fault)
+    rip 0x00000000600059a5   addr 0x0000000050001000   user rsp 0x000000007ffeffb8   err 0x00000007
+    cr3 root 0x17aa000, the thread's own
+      level 0: table 0x17aa000 (allocated) [0] = 0x00000000017ac027
+      level 1: table 0x17ac000 (allocated) [1] = 0x00000000017ad027
+      level 2: table 0x17ad000 (allocated) [128] = 0x00000000017c1027
+      level 3: table 0x17c1000 (allocated) [1] = 0x80000000017a6025
+      walk ends: Mapped
+  the kernel is fine.
+
+  user thread 4294967310 killed: vector 14 (page fault)
+    rip 0x00000000600059b2   addr 0x0000000050002000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x180b000, the thread's own
+      level 0: table 0x180b000 (allocated) [0] = 0x000000000180d027
+      level 1: table 0x180d000 (allocated) [1] = 0x000000000180e027
+      level 2: table 0x180e000 (allocated) [128] = 0x0000000001822027
+      level 3: table 0x1822000 (allocated) [2] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 12884901902 killed: vector 14 (page fault)
+    rip 0x00000000600059c3   addr 0x000000004ffff000   user rsp 0x000000007ffeffb8   err 0x00000006
+    cr3 root 0x180b000, the thread's own
+      level 0: table 0x180b000 (allocated) [0] = 0x000000000180d027
+      level 1: table 0x180d000 (allocated) [1] = 0x000000000180e027
+      level 2: table 0x180e000 (allocated) [127] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 592 frames]
+test system_tests::user::c_thread_tests::the_c_library_keeps_the_pieces_fio_needed ... skipped: no c_library_contract in this archive: build it with helpers/build-c-library-contract.sh (milestone 833)
+test system_tests::user::c_thread_tests::unmodified_hackbench_threads_over_pipes ... skipped: no hackbench in this archive: `cargo xtask basalt-fetch` fetches it (milestone 907)
+test system_tests::user::c_thread_tests::unmodified_hackbench_threads_over_socket_pairs ... skipped: no hackbench in this archive: `cargo xtask basalt-fetch` fetches it (milestone 907)
+test system_tests::user::capability_tests::a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation ... ok
+    [that test kept 19 frames]
+test system_tests::user::capability_tests::a_frame_capability_shares_a_page_and_a_read_only_view_cannot_write_it ... ok
+test system_tests::user::capability_tests::a_new_thread_holds_no_capabilities ... ok
+test system_tests::user::capability_tests::a_process_calls_a_server_and_the_reply_is_one_shot ... ok
+    [that test kept 21 frames]
+test system_tests::user::capability_tests::a_process_can_mint_an_rendezvous_and_ipc_flows_over_it ... ok
+test system_tests::user::capability_tests::a_process_revokes_a_frame_and_loses_the_capability ... ok
+test system_tests::user::capability_tests::a_reply_carries_a_capability_the_caller_can_use ... ok
+    [that test kept 19 frames]
+test system_tests::user::capability_tests::a_user_client_moves_data_through_shared_memory ... ok
+test system_tests::user::capability_tests::map_physical_maps_a_shared_frame_and_a_device_page ... ok
+test system_tests::user::child_thread_tests::a_process_can_build_start_and_run_a_child_thread ... ok
+test system_tests::user::child_thread_tests::a_process_composed_from_two_capabilities_runs_in_the_space_it_built ... ok
+test system_tests::user::child_thread_tests::reclaim_frees_a_started_then_exited_childs_regions ... ok
+test system_tests::user::child_thread_tests::spawn_to_reap_repeats_without_leaking ... ok
+test system_tests::user::clock_tests::a_proposer_can_ask_and_cannot_tell ... ok
+    [that test kept 56 frames]
+test system_tests::user::clock_tests::adjusting_the_wall_clock_leaves_the_monotonic_counter_alone ... ok
+    [that test kept 24 frames]
+test system_tests::user::clock_tests::an_unknown_opcode_is_answered_rather_than_fatal ... ok
+    [that test kept 24 frames]
+test system_tests::user::clock_tests::the_clock_service_reads_a_plausible_wall_clock_from_the_rtc ... ok
+    [that test kept 24 frames]
+test system_tests::user::compositor_tests::a_client_cannot_read_any_page_of_its_neighbours_it_can_name ... 
+  user thread 22 killed: vector 14 (page fault)
+    rip 0x0000000060000512   addr 0x0000000000614000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d56000, the thread's own
+      level 0: table 0x1d56000 (allocated) [0] = 0x0000000001d57027
+      level 1: table 0x1d57000 (allocated) [0] = 0x0000000001d66027
+      level 2: table 0x1d66000 (allocated) [3] = 0x0000000001d67027
+      level 3: table 0x1d67000 (allocated) [20] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 4294967318 killed: vector 14 (page fault)
+    rip 0x0000000060000512   addr 0x0000000000615000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d56000, the thread's own
+      level 0: table 0x1d56000 (allocated) [0] = 0x0000000001d57027
+      level 1: table 0x1d57000 (allocated) [0] = 0x0000000001d66027
+      level 2: table 0x1d66000 (allocated) [3] = 0x0000000001d67027
+      level 3: table 0x1d67000 (allocated) [21] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 8589934614 killed: vector 14 (page fault)
+    rip 0x0000000060000512   addr 0x0000000000616000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d56000, the thread's own
+      level 0: table 0x1d56000 (allocated) [0] = 0x0000000001d57027
+      level 1: table 0x1d57000 (allocated) [0] = 0x0000000001d66027
+      level 2: table 0x1d66000 (allocated) [3] = 0x0000000001d67027
+      level 3: table 0x1d67000 (allocated) [22] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 12884901910 killed: vector 14 (page fault)
+    rip 0x0000000060000512   addr 0x0000000000617000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d56000, the thread's own
+      level 0: table 0x1d56000 (allocated) [0] = 0x0000000001d57027
+      level 1: table 0x1d57000 (allocated) [0] = 0x0000000001d66027
+      level 2: table 0x1d66000 (allocated) [3] = 0x0000000001d67027
+      level 3: table 0x1d67000 (allocated) [23] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 17179869206 killed: vector 14 (page fault)
+    rip 0x0000000060000512   addr 0x0000000000618000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d56000, the thread's own
+      level 0: table 0x1d56000 (allocated) [0] = 0x0000000001d57027
+      level 1: table 0x1d57000 (allocated) [0] = 0x0000000001d66027
+      level 2: table 0x1d66000 (allocated) [3] = 0x0000000001d67027
+      level 3: table 0x1d67000 (allocated) [24] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 65 frames]
+test system_tests::user::compositor_tests::a_client_granted_no_screen_capability_cannot_map_or_read_the_screen ... 
+  user thread 21474836502 killed: vector 14 (page fault)
+    rip 0x00000000600005d7   addr 0x0000000000800000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1d7a000, the thread's own
+      level 0: table 0x1d7a000 (allocated) [0] = 0x0000000001d7b027
+      level 1: table 0x1d7b000 (allocated) [0] = 0x0000000001d8a027
+      level 2: table 0x1d8a000 (allocated) [4] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 60 frames]
+test system_tests::user::compositor_tests::a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen ... 
+  user thread 24 killed: vector 14 (page fault)
+    rip 0x0000000060000562   addr 0x0000000000615000   user rsp 0x000000007ffefe68   err 0x00000006
+    cr3 root 0x1dd7000, the thread's own
+      level 0: table 0x1dd7000 (allocated) [0] = 0x0000000001dd8027
+      level 1: table 0x1dd8000 (allocated) [0] = 0x0000000001de7027
+      level 2: table 0x1de7000 (allocated) [3] = 0x0000000001de8027
+      level 3: table 0x1de8000 (allocated) [21] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+
+  user thread 4294967319 killed: vector 14 (page fault)
+    rip 0x00000000600005d7   addr 0x0000000000800000   user rsp 0x000000007ffefe68   err 0x00000004
+    cr3 root 0x1dbf000, the thread's own
+      level 0: table 0x1dbf000 (allocated) [0] = 0x0000000001dc0027
+      level 1: table 0x1dc0000 (allocated) [0] = 0x0000000001dcf027
+      level 2: table 0x1dcf000 (allocated) [4] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+    [that test kept 69 frames]
+test system_tests::user::compositor_tests::a_client_with_no_input_grant_finds_nothing_in_the_input_slot ... ok
+    [that test kept 60 frames]
+test system_tests::user::compositor_tests::a_forged_control_page_changes_nothing_and_stops_no_one ... ok
+    [that test kept 65 frames]
+test system_tests::user::compositor_tests::a_lying_damage_rectangle_cannot_stop_the_compositor_or_misdraw_the_screen ... ok
+    [that test kept 89 frames]
+test system_tests::user::compositor_tests::a_lying_damage_rectangle_changes_nothing_of_its_neighbours ... ok
+    [that test kept 97 frames]
+test system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen ... ok
+    [that test kept 65 frames]
+test system_tests::user::compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours ... ok
+    [that test kept 523 frames]
+test system_tests::user::compositor_tests::input_reaches_only_the_focused_client_and_focus_is_the_compositors_call ... ok
+    [that test kept 113 frames]
+test system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it ... skipped: no virtio-gpu-pci function on the bus: either this kernel enumerated no PCI at all, or (x86_64 under OVMF) the firmware runner attaches no GPU; see design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md
+test system_tests::user::confined_fuzzer_tests::a_caller_chosen_list_cursor_is_refused ... ok
+test system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted ...     confined fuzzer: seeds 0..32 and corpus [52, 202643000066]
+    confined fuzzer: 34 seeds, 168 ms (202 seeds/s)
+ok
+test system_tests::user::confinement_attack_tests::a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing ... ok
+test system_tests::user::confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks ... ok
+test system_tests::user::confinement_attack_tests::a_write_only_rendezvous_holder_cannot_receive_reap_or_survey ... ok
+test system_tests::user::counter_frequency_tests::a_userspace_program_reads_the_frequency_the_kernel_measured ...   uart irq  : 4 (machine description)
+ok
+test system_tests::user::counter_frequency_tests::the_machines_own_rate_is_inside_the_plausibility_band ... ok
+test system_tests::user::cpu_time_tests::a_blocked_thread_earns_nothing ... ok
+test system_tests::user::cpu_time_tests::a_corpse_keeps_what_it_earned ... ok
+test system_tests::user::cpu_time_tests::the_figure_is_whole_tick_periods_of_milliseconds ... ok
+test system_tests::user::cpu_time_tests::the_thread_that_ran_is_the_thread_that_is_charged ... ok
+test system_tests::user::credential_tests::a_client_gets_a_correct_yes_or_no_and_nothing_else ... skipped: no virtio-rng device on the mmio bus (NIFE_RNG not set?)
+test system_tests::user::credential_tests::provisioning_fills_the_store_and_the_seal_closes_it ... skipped: no virtio-rng device on the mmio bus (NIFE_RNG not set?)
+test system_tests::user::credential_tests::the_same_endowment_cannot_write_the_store ... skipped: no virtio-rng device on the mmio bus (NIFE_RNG not set?)
+test system_tests::user::cryptography_tests::a_tls_crypto_provider_computes_what_the_specifications_say ... skipped: no cryptography_exerciser in this archive: `cargo xtask test` builds it, as does helpers/build-cryptography-exerciser.sh (milestone 442)
+test system_tests::user::current_cpu_tests::a_space_that_never_ran_has_no_answer_and_then_has_the_right_one ... ok
+test system_tests::user::current_cpu_tests::a_userspace_thread_reads_a_cpu_that_is_really_online ... ok
+test system_tests::user::current_cpu_tests::the_page_is_returned_when_the_space_is_dropped ... ok
+test system_tests::user::cycle_counter_tests::a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults ... ok
+test system_tests::user::cycle_counter_tests::the_coremark_builder_runs_the_workload_and_it_checks_out ...   uart irq  : 4 (machine description)
+ok
+test system_tests::user::date_tests::a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty ... ok
+test system_tests::user::date_tests::an_unknown_clock_is_said_plainly_rather_than_printed_as_1970 ... ok
+    [that test kept 29 frames]
+test system_tests::user::date_tests::date_prints_the_wall_clock_it_was_granted ... ok
+    [that test kept 24 frames]
+test system_tests::user::date_tests::date_reports_where_the_time_came_from ... ok
+    [that test kept 24 frames]
+test system_tests::user::date_tests::without_a_second_stream_the_complaint_stays_in_band ... ok
+test system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside ... skipped: no RedoxFS service on this boot: either nothing packed a redoxfs_server into this archive, or this machine has no RedoxFS disk for one to serve
+test system_tests::user::dir_capability_tests::a_name_set_capability_reads_its_attributes_and_still_names_only_its_set ... skipped: no RedoxFS service on this boot: either nothing packed a redoxfs_server into this archive, or this machine has no RedoxFS disk for one to serve
+test system_tests::user::dir_capability_tests::a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it ... skipped: no RedoxFS service on this boot: either nothing packed a redoxfs_server into this archive, or this machine has no RedoxFS disk for one to serve
+test system_tests::user::dir_capability_tests::an_append_only_directory_capability_adds_and_cannot_walk_or_list ... skipped: no RedoxFS service on this boot: either nothing packed a redoxfs_server into this archive, or this machine has no RedoxFS disk for one to serve
+test system_tests::user::disk_tests::the_disk_surveyor_reads_a_table_gptfdisk_wrote ... skipped: no GPT disk attached (this boot did not build the GPT image)
+test system_tests::user::disk_tests::the_roster_can_be_revoked_out_from_under_its_holder ... 
+  user thread 163208757284 killed: vector 14 (page fault)
+    rip 0x0000000060001e3f   addr 0x0000000050010000   user rsp 0x000000007ffeff58   err 0x00000004
+    cr3 root 0x1a8b000, the thread's own
+      level 0: table 0x1a8b000 (allocated) [0] = 0x0000000001a8c027
+      level 1: table 0x1a8c000 (allocated) [1] = 0x0000000001a8d027
+      level 2: table 0x1a8d000 (allocated) [128] = 0x0000000001a83027
+      level 3: table 0x1a83000 (allocated) [16] = 0x0000000000000000
+      walk ends: NotPresent
+  the kernel is fine.
+ok
+test system_tests::user::disk_tests::the_roster_is_a_listing_and_not_a_lever ... 
+  user thread 167503724580 killed: vector 14 (page fault)
+    rip 0x0000000060001ed5   addr 0x0000000050010000   user rsp 0x000000007ffeff58   err 0x00000007
+    cr3 root 0x1a94000, the thread's own
+      level 0: table 0x1a94000 (allocated) [0] = 0x0000000001a95027
+      level 1: table 0x1a95000 (allocated) [1] = 0x0000000001a96027
+      level 2: table 0x1a96000 (allocated) [128] = 0x0000000001a8c007
+      level 3: table 0x1a8c000 (allocated) [16] = 0x8000000001a8b025
+      walk ends: Mapped
+  the kernel is fine.
+ok
+test system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else ... skipped: no mkfs in this archive (nothing built one for this target before the archive was packed)
+test system_tests::user::display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu ... skipped: no virtio-gpu-pci function on the bus (NIFE_GPU not set?)
+test system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout ... skipped: no virtio-gpu-pci function on the bus (NIFE_GPU not set?)
+test system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer ... skipped: no virtio-gpu-pci function on the bus: either this kernel enumerated no PCI at all, or (x86_64 under OVMF) the firmware runner attaches no GPU; see design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md
+test system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver ... ok
+test system_tests::user::display_tests::a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte ... skipped: no virtio-input function on the bus (NIFE_KEYBOARD not set?)
+test system_tests::user::e1000e_tests::a_client_completes_a_udp_round_trip_through_the_e1000e_nic ...   e1000e: UlpByMe { cleared: true }
+  e1000e: PhyReached { at: Directly, id: 0x015400a0 }
+  e1000e: LcdConfigured { pairs: 22 }
+
+WATCHDOG: test exceeded its 90 s budget (ran 90 s) WHILE MAKING PROGRESS: a livelock, not a lost wakeup. The no-progress heartbeat cannot see this, which is why the per-test ceiling exists. If this test is honestly this slow, give it an entry in test_times::SLOW_TESTS.
+  test: system_tests::user::e1000e_tests::a_client_completes_a_udp_round_trip_through_the_e1000e_nic
+--- thread dump (hang diagnostic; pc* = on-cpu, racy; tour stage 0) ---
+  tid=0x0000 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x00000000 address_space=0x00000000 wait=0x10000004c/Receiver
+  tid=0x0001 state=Running on_cpu=true wake_pending=false has_outgoing_cap=false pc=0xffffc90000007000* address_space=0x00000000 wait=-
+  tid=0x0002 state=Running on_cpu=true wake_pending=false has_outgoing_cap=false pc=0x00000000* address_space=0x00000000 wait=-
+  tid=0x100000003 state=Running on_cpu=true wake_pending=false has_outgoing_cap=false pc=0x00000000* address_space=0x00000000 wait=-
+  tid=0x100000004 state=Running on_cpu=true wake_pending=false has_outgoing_cap=false pc=0x00000000* address_space=0x00000000 wait=-
+  tid=0x800000005 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600086c2 address_space=0x00a21000 wait=0x4/Receiver
+  tid=0x100000006 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60005982 address_space=0x00bf1000 wait=0x1/Receiver
+  tid=0x100000007 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60001392 address_space=0x00c12000 wait=0x3/Receiver
+  tid=0x300000008 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600086c2 address_space=0x00e6d000 wait=0x8/Receiver
+  tid=0x100000009 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60005982 address_space=0x0103d000 wait=0x5/Receiver
+  tid=0x000a state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60001392 address_space=0x0105e000 wait=0x7/Receiver
+  tid=0x20000000b state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60009482 address_space=0x012b9000 wait=0x9/Receiver
+  tid=0x50000000c state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60009482 address_space=0x01508000 wait=0xa/Receiver
+  tid=0x40000000d state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60009482 address_space=0x01757000 wait=0xb/Receiver
+  tid=0xa0000000e state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0xffffffff822e3414 address_space=0x00000000 wait=0xb00000000/Receiver
+  tid=0xf0000000f state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x019f2000 wait=0x20000000f/Receiver
+  tid=0x100000010 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x01a0a000 wait=0x11/Receiver
+  tid=0x0011 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x01a22000 wait=0x13/Receiver
+  tid=0x0012 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x01a3a000 wait=0x15/Receiver
+  tid=0x3a00000013 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x01a53000 wait=0x2300000046/Receiver
+  tid=0x0014 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01d21000 wait=0x17/Receiver
+  tid=0x100000015 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01d5d000 wait=0x1b/Receiver
+  tid=0x600000016 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01da2000 wait=0x1e/Receiver
+  tid=0x200000017 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01dde000 wait=0x23/Receiver
+  tid=0x200000018 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01e1f000 wait=0x26/Receiver
+  tid=0x100000019 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01e60000 wait=0x2a/Receiver
+  tid=0x10000001a state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60002822 address_space=0x01e7d000 wait=0x2d/Sender
+  tid=0x10000001b state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01ed9000 wait=0x2e/Receiver
+  tid=0x10000001c state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01f1a000 wait=0x32/Receiver
+  tid=0x20000001d state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01f5b000 wait=0x36/Receiver
+  tid=0x10000001e state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600067b2 address_space=0x03032000 wait=0x3a/Receiver
+  tid=0x001f state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600067b2 address_space=0x03115000 wait=0x3b/Receiver
+  tid=0x0020 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x600025d2 address_space=0x01fa0000 wait=0x3c/Receiver
+  tid=0x0021 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60002822 address_space=0x01fbd000 wait=0x40/Receiver
+  tid=0x0022 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60002822 address_space=0x01fd4000 wait=0x41/Receiver
+  tid=0x2800000023 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60000af2 address_space=0x01a6b000 wait=0x48/Receiver
+  tid=0x2900000024 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=false pc=0x60033e22 address_space=0x01b3b000 wait=0x2400000000/Notification
+  tid=0x100000025 state=Blocked on_cpu=false wake_pending=false has_outgoing_cap=true pc=0x60033e22 address_space=0x01bde000 wait=0x10000004d/Reply
+  ep=0xb00000000 senders=0 receivers=1 pending=0
+  ep=0x0001 senders=0 receivers=1 pending=0
+  ep=0x0003 senders=0 receivers=1 pending=0
+  ep=0x0004 senders=0 receivers=1 pending=0
+  ep=0x0005 senders=0 receivers=1 pending=0
+  ep=0x0007 senders=0 receivers=1 pending=0
+  ep=0x0008 senders=0 receivers=1 pending=0
+  ep=0x0009 senders=0 receivers=1 pending=0
+  ep=0x000a senders=0 receivers=1 pending=0
+  ep=0x000b senders=0 receivers=1 pending=0
+  ep=0x20000000f senders=0 receivers=1 pending=0
+  ep=0x0011 senders=0 receivers=1 pending=0
+  ep=0x0013 senders=0 receivers=1 pending=0
+  ep=0x0015 senders=0 receivers=1 pending=0
+  ep=0x0017 senders=0 receivers=1 pending=0
+  ep=0x001b senders=0 receivers=1 pending=0
+  ep=0x001e senders=0 receivers=1 pending=0
+  ep=0x0023 senders=0 receivers=1 pending=0
+  ep=0x0026 senders=0 receivers=1 pending=0
+  ep=0x002a senders=0 receivers=1 pending=0
+  ep=0x002d senders=1 receivers=0 pending=0
+  ep=0x002e senders=0 receivers=1 pending=0
+  ep=0x0032 senders=0 receivers=1 pending=0
+  ep=0x0036 senders=0 receivers=1 pending=0
+  ep=0x003a senders=0 receivers=1 pending=0
+  ep=0x003b senders=0 receivers=1 pending=0
+  ep=0x003c senders=0 receivers=1 pending=0
+  ep=0x0040 senders=0 receivers=1 pending=0
+  ep=0x0041 senders=0 receivers=1 pending=0
+  ep=0x2300000046 senders=0 receivers=1 pending=0
+  ep=0x0048 senders=0 receivers=1 pending=0
+  ep=0x10000004c senders=0 receivers=1 pending=0
+  ep=0x10000004d senders=1 receivers=0 pending=0
+  notification=0x2400000000 waiters=1 word=0x0 bound=Some(176093659172)
+  core 0: current=0x0001 idle=0x0001 switched_from=0xffffffffffffffff need_resched=false inbox_len=0 ticks=37371 steal_req=None
+    core 0 events [51009..51025): switch:0x1 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x1 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x1 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x1
+  core 2: current=0x0002 idle=0x0002 switched_from=0xffffffffffffffff need_resched=true inbox_len=0 ticks=37371 steal_req=None
+    core 2 events [50738..50754): switch:0x2 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x2 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x2 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x2
+  core 4: current=0x100000003 idle=0x100000003 switched_from=0xffffffffffffffff need_resched=true inbox_len=0 ticks=37371 steal_req=None
+    core 4 events [45628..45644): switch:0x100000003 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000003 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000003 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000003
+  core 6: current=0x100000004 idle=0x100000004 switched_from=0xffffffffffffffff need_resched=true inbox_len=0 ticks=37371 steal_req=None
+    core 6 events [48396..48412): switch:0x100000004 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000004 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000004 serve:0x2900000024/9 wake:0x2900000024 switch:0x2900000024 block:0x2900000024/0 switch:0x100000004
+--- end thread dump ---
+
