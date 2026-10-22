@@ -32,6 +32,8 @@ pub struct ReadReport {
     /// The first partition's first sector's bytes 82..90 (FAT32's `"FAT32   "` file system
     /// type), for the transcript.
     pub fs_type: [u8; 8],
+    /// The block the timed read started at: the first partition's, or 0 without one.
+    pub timed_from: u64,
     /// Blocks read in the timed sequential read.
     pub timed_blocks: u64,
     /// Microseconds the timed read took.
@@ -78,6 +80,7 @@ pub fn read_only<R: Registers, D: DmaRegion>(
         mbr,
         partition_boot_signature,
         fs_type,
+        timed_from: first,
         timed_blocks: timed,
         timed_us,
     })
@@ -117,22 +120,22 @@ pub struct IdmacReport {
 }
 
 /// **The IDMAC's half of the read-only probe**, on a host [`Host::with_idmac`] made from the one
-/// [`read_only`] ran on. `reference` is the polled host's read of `reference.len()` bytes from
-/// `first`; the same blocks are read through the IDMAC and compared, then [`read_only`]'s timed
-/// read runs again from `first` in `buf.len()`-byte commands, so the two rates differ only in the
-/// data path.
+/// [`read_only`] ran on and reported `r`. `reference` is the polled host's read of
+/// `reference.len()` bytes from `r.timed_from`; the same blocks are read through the IDMAC and
+/// compared, then [`read_only`]'s timed read runs again from there in `buf.len()`-byte commands,
+/// so the two rates differ only in the data path.
 ///
 /// # Errors
 ///
 /// The read that failed.
 pub fn idmac_read<R: Registers, D: DmaRegion>(
     host: &mut Host<R, D>,
-    card: &Card,
-    first: u64,
+    r: &ReadReport,
     reference: &[u8],
     buf: &mut [u8],
     timed_blocks: u64,
 ) -> Result<IdmacReport, ReadFailure> {
+    let (card, first) = (&r.card, r.timed_from);
     let n = reference.len().min(buf.len());
     sd::read_blocks(host, card, first, &mut buf[..n]).map_err(|e| ReadFailure::Read(first, e))?;
     let matches = n > 0 && buf[..n] == reference[..n];

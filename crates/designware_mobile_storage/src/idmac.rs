@@ -571,13 +571,22 @@ mod tests {
         sd::write_blocks(&mut h, &card, 2048, &data).unwrap();
         let mut reference = vec![0u8; 128 * 512];
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
+        let report = crate::bench::ReadReport {
+            card,
+            mbr: None,
+            partition_boot_signature: false,
+            fs_type: [0; 8],
+            timed_from: 2048,
+            timed_blocks: 0,
+            timed_us: 0,
+        };
         let mut h = with_idmac(h, &memory);
         let mut buf = vec![0u8; 128 * 512];
-        let r = crate::bench::idmac_read(&mut h, &card, 2048, &reference, &mut buf, 1024).unwrap();
+        let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 1024).unwrap();
         assert!(r.matches);
         assert_eq!(r.timed_blocks, 1024);
         h.registers().dma_corrupts = true;
-        let r = crate::bench::idmac_read(&mut h, &card, 2048, &reference, &mut buf, 256).unwrap();
+        let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 256).unwrap();
         assert!(!r.matches);
         assert_eq!(r.timed_blocks, 256);
     }
