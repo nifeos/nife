@@ -293,6 +293,10 @@ fi
 ACCEL=""
 if [ "${NIFE_ACCEL:-}" = "kvm" ]; then
     ACCEL="-accel kvm"
+elif [ -n "$NIFE_TCG_THREAD" ]; then
+    # Parallel or interleaved TCG cores, the PVH runner's knob with the same meaning and the same
+    # BUGS (helpers/qemu-runner-x86_64.sh): a hunting instrument, not a gate. Provisional name.
+    ACCEL="-accel tcg,thread=$NIFE_TCG_THREAD"
 fi
 
 # **The NIC, said out loud** (milestone 494 (a driver for the network card a PC actually has)).
