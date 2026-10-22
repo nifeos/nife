@@ -208,13 +208,12 @@ on the customer path.
 - (a) BUILT: `http_response` parses its head with `httparse`. Gate: existing host tests and fuzz target.
 - (b) Held for milestone 705 (full-screen programs)'s engine choice (calef, 2026-10-18 UTC): a full engine has its own
   parser. Else `video_terminal` parses with `vte`; gate: host tests, new fuzz target.
-- (c0) BUILT: `vendor/virtio-drivers` carries 0.13.0 plus #232 until a crates.io release includes
-  it. calef, 2026-10-22 21:58 (UTC), on #2586: *"A"*, once
+- (c0) BUILT: `vendor/virtio-drivers` carries 0.13.0 plus #232 until a release includes it. calef,
+  2026-10-22 21:58 (UTC), on #2586: *"A"*, once
   [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
   device behind the IOMMU. It did, on all three.
 - (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
-  number before and after on all three architectures. `begin_init` never reads `FEATURES_OK` back,
-  so each driver checks the status after init.
+  number before and after on all three architectures.
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
