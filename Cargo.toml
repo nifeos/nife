@@ -63,7 +63,7 @@ members = [
     "crates/pci",
     "crates/usb",
     "crates/extensible_host_controller_interface",
-    "crates/schedule_store",
+    "crates/timetable_store",
     "crates/sealed_pair",
     "crates/screen_console",
     "crates/pgrep",

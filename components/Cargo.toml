@@ -745,7 +745,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122/§125): the fixed file
 # names and the manifest format `login.rs` writes at a login and reads at start-up, which neither
 # `timetable` nor `filesystem_contract` already owns.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }

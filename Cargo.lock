@@ -258,7 +258,6 @@ dependencies = [
  "pgrep",
  "pmap",
  "ps",
- "schedule_store",
  "screen_console",
  "slabtop",
  "smoltcp",
@@ -269,6 +268,7 @@ dependencies = [
  "system_log",
  "system_log_contract",
  "timetable",
+ "timetable_store",
  "tock-registers",
  "top",
  "universally_unique_identifier",
@@ -551,12 +551,12 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
- "schedule_store",
  "soak_page",
  "socket_contract",
  "supervision_protocol",
  "system_initializer",
  "timetable",
+ "timetable_store",
  "user_mode_runtime",
 ]
 
@@ -1100,10 +1100,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
-name = "schedule_store"
-version = "0.1.0"
-
-[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1387,12 +1383,12 @@ dependencies = [
  "pgrep",
  "pmap",
  "ps",
- "schedule_store",
  "socket_contract",
  "spin",
  "std_runtime_contract",
  "system_log_contract",
  "timetable",
+ "timetable_store",
  "video_terminal",
 ]
 
@@ -1451,6 +1447,10 @@ dependencies = [
  "calendar",
  "grant_plan",
 ]
+
+[[package]]
+name = "timetable_store"
+version = "0.1.0"
 
 [[package]]
 name = "tock-registers"

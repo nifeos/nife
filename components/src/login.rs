@@ -946,7 +946,7 @@ fn rederive(
     let mut manifest = [0u8; login_contract::PAGE];
     let Some(n) = read_file(
         fs::ROOT,
-        schedule_store::MANIFEST_FILE_NAME.as_bytes(),
+        timetable_store::MANIFEST_FILE_NAME.as_bytes(),
         &mut manifest,
     ) else {
         return;
@@ -954,7 +954,7 @@ fn rederive(
     let Ok(text) = core::str::from_utf8(&manifest[..n]) else {
         return;
     };
-    let Ok(manifest) = schedule_store::parse_manifest(text) else {
+    let Ok(manifest) = timetable_store::parse_manifest(text) else {
         return;
     };
     // No list, or one that cannot be read, suspends nobody: `login_contract::SUSPENDED_LIST`'s
@@ -1713,7 +1713,7 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
     if d < 0 {
         return None;
     }
-    let n = read_file(d as u64, schedule_store::SCHEDULE_FILE_NAME.as_bytes(), out);
+    let n = read_file(d as u64, timetable_store::SCHEDULE_FILE_NAME.as_bytes(), out);
     call(FS_EP, fs::req(fs::CLOSE, d as u64, 0), 0);
     n
 }
@@ -1722,7 +1722,7 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
 /// pending work)), which is what [`rederive`] reads at the next start-up to learn whose schedules to
 /// bring back. A failure is not fatal to a login, and costs only that start-up pass.
 fn record_in_manifest(identity: &[u8], present: bool) {
-    let name = schedule_store::MANIFEST_FILE_NAME.as_bytes();
+    let name = timetable_store::MANIFEST_FILE_NAME.as_bytes();
     let mut now = [0u8; login_contract::PAGE];
     let had = read_file(filesystem_contract::fs::ROOT, name, &mut now).unwrap_or(0);
     let mut next = [0u8; login_contract::PAGE];
