@@ -72,7 +72,7 @@ soak-test: t=<s>s beat=<n> rounds=<n> rate=<n>/s wakes=<n> wakerate=<n>/s worker
 Take the last such line of the boot. `hours` is its `t=` divided by 3,600, `crossings` and
 `beats` are read off it, and `result` is `clean` when its three failure counters are all zero and no
 `soak-test: FAILED` line appears anywhere in the log. Milestone 297 (`soak` becomes `soak-test`)
-landed on 2026-09-14; logs from before it spell the prefix `soak:`, which `crates/board_console`
+landed on 2026-09-14; logs from before it spell the prefix `soak:`, which `crates/serial_console`
 already normalizes.
 
 A non-clean boot opens a defect row with class `unclassified`, and it stays unclassified until

@@ -89,9 +89,9 @@ impl Direction {
 /// supervisor.
 ///
 /// The `role` is the component's own word for what it needs the object *for*, never the
-/// supervisor's word for the object. That is what lets one declaration be wired two ways: `chatty`
-/// asks to use `service`, and whether that is the shared rendezvous or a queue broker's front rendezvous
-/// is the supervisor's business and invisible to the component.
+/// supervisor's word for the object. That is what lets one declaration be wired two ways:
+/// `swap_boundary_witness` asks to use `service`, and whether that is the shared rendezvous or a
+/// queue broker's front rendezvous is the supervisor's business and invisible to the component.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CapNeed {
     /// The component's name for this need. Unique within one [`Requirements`]; a repeat is

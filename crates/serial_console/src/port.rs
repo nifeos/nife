@@ -191,7 +191,7 @@ const DEVICE_FLAG: &str = if cfg!(target_os = "linux") {
 ///
 /// ```no_run
 /// use std::fs::File;
-/// use board_console::{port, watch::{self, Policy}};
+/// use serial_console::{port, watch::{self, Policy}};
 ///
 /// let path = port::choose(None)?;
 /// let (device, complaint) = port::open(&path)?;
@@ -396,7 +396,7 @@ mod tests {
     #[test]
     fn scan_keeps_only_the_matching_prefixes_and_sorts_them() {
         let dir = std::env::temp_dir().join(format!(
-            "board_console-scan-{}-{:?}",
+            "serial_console-scan-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));
@@ -524,7 +524,7 @@ mod tests {
     fn open_hands_back_a_readable_descriptor_and_a_complaint_it_can_survive() {
         let captured = include_bytes!("../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log");
         let path = std::env::temp_dir().join(format!(
-            "board_console-open-{}-{:?}.log",
+            "serial_console-open-{}-{:?}.log",
             std::process::id(),
             std::thread::current().id()
         ));
@@ -581,7 +581,8 @@ mod tests {
     /// train the reader to ignore the real one.
     #[test]
     fn a_speed_that_cannot_be_read_is_not_reported_as_wrong() {
-        let path = std::env::temp_dir().join(format!("board_console-speed-{}", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("serial_console-speed-{}", std::process::id()));
         File::create(&path).unwrap();
         assert_eq!(confirm_speed(&path), None);
         std::fs::remove_file(&path).ok();

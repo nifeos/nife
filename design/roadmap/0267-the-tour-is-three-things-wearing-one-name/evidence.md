@@ -58,7 +58,7 @@ All of them, and none of them observe the thing this milestone moved.
 
 `Stage::Tour` is reached by exactly one line of text, `"nife: the capability core runs on "`, printed
 at `kernel/src/main.rs:1401` in the RISC-V arm. The aarch64 tour prints no marker at all. The
-consumers are `crates/board_console/src/progress.rs` (which reaches the stage and labels it),
+consumers are `crates/serial_console/src/progress.rs` (which reaches the stage and labels it),
 `watch.rs` (whose `quiet_after` policy exempts exactly this stage, because a boot that ends in `wfi`
 is quiet on purpose), `port.rs`, and `xtask/src/main.rs:9383`, which parses `--until tour` on the
 command line. Six tests in `board_console` assert on it.

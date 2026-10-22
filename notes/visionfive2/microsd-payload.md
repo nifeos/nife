@@ -49,7 +49,7 @@ the boot scripts named in `$boot_scripts`, which is `boot.scr.uimg boot.scr` [ub
 ## The extlinux path is a dead end on this board
 
 The reason is upstream of us. Milestone 218 (every boot of the VisionFive 2 needs a human typing four commands into U-Boot) captured it on 2026-09-01 in
-`crates/board_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log`. With no
+`crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log`. With no
 `fdt`/`fdtdir` line in the label, U-Boot's pxe path hands `bootm` no device tree at all. RISC-V's
 `boot_prep_linux` refuses rather than guessing:
 
@@ -96,7 +96,7 @@ control DTB near the top of RAM. It sits above gigapage 2 on every variant and a
 ## What the 2026-09-01 captures settled
 
 Both halves of this were captured on 2026-09-01. The transcripts are committed under
-`crates/board_console/tests/fixtures/captured/`: a successful manual boot, and the extlinux path
+`crates/serial_console/tests/fixtures/captured/`: a successful manual boot, and the extlinux path
 failing. Read those rather than re-deriving what the board prints. They settled two facts the
 parent note did not have.
 

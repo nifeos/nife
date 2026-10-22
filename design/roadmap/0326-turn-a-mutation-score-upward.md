@@ -164,7 +164,7 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   `board_console`'s three gaps all need a real tty or a pseudo-terminal pair, which is a dependency
   question above a triage lane's authority. `video_terminal` needed no gap and no exclusion, and the
   crate-by-crate accounts are in `notes/mutation-testing/video-terminal.md` and
-  `notes/mutation-testing/board-console.md`.
+  `notes/mutation-testing/serial-console.md`.
 - **Recorded.** `notes/mutation-testing.md`'s `## Scope and honest caveats` section: a mutant that
   hangs is not a mutant that survived, and this instrument cannot say so. Nine survivors across
   the two 326 lanes were non-terminating rather than wrong. cargo-mutants 27.1.0's complete set of

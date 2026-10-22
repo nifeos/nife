@@ -81,8 +81,8 @@ entry as it was written, sentence-split for the prose limits.
   judged against one real capture with a census in it
   (`qemu-2026-09-03-riscv64-soak-census.log`, one clean core of four at 18,963/s). Every multi-boot
   case it asserts on is text this project wrote, because no multi-boot capture exists anywhere yet.
-  That is the same gap `crates/board_console`'s own `BUGS` records for its recognizer, one milestone
-  later. The first bench log closes it.
+  That is the same gap `crates/serial_console`'s own `BUGS` records for its recognizer, one
+  milestone later. The first bench log closes it.
 - A rebooting series and a long run are different experiments, and neither substitutes. Fifty
   two-minute draws measure the distribution over placements. The three-hour run measures what one
   placement does over time, and it is the only evidence here that a slow draw is stable rather than
@@ -91,5 +91,5 @@ entry as it was written, sentence-split for the prose limits.
   attempts on a QEMU capture, which then looks like fewer boots than draws. Honest and odd.
 - Nothing runs a soak in `script/test`. A twenty-second leg per architecture would gate the build
   against bitrot, and it is not there. The soak is exercised by `script/soak-test` and by
-  `board_console`'s host tests over a real capture. If the feature stops compiling, nothing will say
-  so until someone runs the script.
+  `serial_console`'s host tests over a real capture. If the feature stops compiling, nothing will
+  say so until someone runs the script.

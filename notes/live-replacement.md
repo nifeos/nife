@@ -6,12 +6,12 @@ under a client that is talking to it, and the client's stream is unbroken.*
 ## The shape
 
 ```text
-                   ┌──── the stable name: one endpoint object, forever ────┐
-   chatty ──CALL──►│                       SVC                              │◄─RECEIVE_CAP── rust_swappable  (v1, Rust)
-  (a client)       └────────────────────────────────────────────────────────┘◄─RECEIVE_CAP── c_swappable (v2, C)
-                                            ▲
-                                            │ swapper, an unprivileged operator, changes
-                                            │ WHICH of the two is parked in RECEIVE_CAP
+                                  ┌──── the stable name: one endpoint object, forever ────┐
+   swap_boundary_witness ──CALL──►│                       SVC                              │◄─RECEIVE_CAP── rust_swappable  (v1, Rust)
+   (a client)                     └────────────────────────────────────────────────────────┘◄─RECEIVE_CAP── c_swappable (v2, C)
+                                                           ▲
+                                                           │ swapper, an unprivileged operator, changes
+                                                           │ WHICH of the two is parked in RECEIVE_CAP
 ```
 
 Five programs, sharing one module (`swap.rs`) the way the supervision tree
@@ -22,7 +22,7 @@ shares `supervision_protocol`:
 | `swapper` | the operator: builder, supervisor and verifier | a budget, one device capability, four endpoints |
 | `rust_swappable` | the component, version 1 (Rust) | the service endpoint (READ), a report endpoint, a coordination channel, the device, a shared page |
 | `c_swappable` | the component, version 2, whose answers are computed in C | identical |
-| `chatty` | the client, the producer, and the attacker (three roles, one binary) | the service endpoint (WRITE, not READ) |
+| `swap_boundary_witness` | the client, the producer, and the attacker (three roles, one binary) | the service endpoint (WRITE, not READ) |
 | `broker` | the queue broker, the ladder's opt-in rung | a front endpoint (READ), a back endpoint (WRITE) |
 
 ## Why there is no broker in the fast path
@@ -54,9 +54,9 @@ already use (notes/benchmarks.md).
 
 What endpoint-only naming does not mean is "whoever holds the endpoint is the server". `SEND` and
 `RECEIVE` are gated by *different rights* on the same object, so the same endpoint handed out two ways
-is a one-way pipe in whichever direction each holder was trusted with. `chatty`'s usurper role holds
-the honest client's exact capabilities and tries to receive on the service endpoint; it gets
-`NotPermitted`.
+is a one-way pipe in whichever direction each holder was trusted with. `swap_boundary_witness`'s
+usurper role holds the honest client's exact capabilities and tries to receive on the service
+endpoint; it gets `NotPermitted`.
 
 ## The steps
 
@@ -105,13 +105,13 @@ still wants the real tree, and still is not built.
 The shape milestones 29, 33 and 36 used: two witnesses in two address spaces, an attacker with real
 authority, and a control that must fail.
 
-Witness one, the client, in its own address space. `chatty` calls sixty-four times in a plain
-loop, holding one capability for its whole life. It never reconnects, never retries, and has no code
-path for "the server went away" because there is no such event to have one for. It checks, from what
-it saw, that every call returned. Every reply echoed the sequence number that asked for it (so the
-kernel's one-shot `Reply` never misrouted). Every digest matched its own independent computation
-of the same definition. And the version word went up exactly once, somewhere strictly inside the
-conversation.
+Witness one, the client, in its own address space. `swap_boundary_witness` calls sixty-four times in
+a plain loop, holding one capability for its whole life. It never reconnects, never retries, and has
+no code path for "the server went away" because there is no such event to have one for. It checks,
+from what it saw, that every call returned. Every reply echoed the sequence number that asked for it
+(so the kernel's one-shot `Reply` never misrouted). Every digest matched its own independent
+computation of the same definition. And the version word went up exactly once, somewhere strictly
+inside the conversation.
 
 That last one is worth stating precisely. The client *can* tell a swap happened, because the reply
 carries a version word put there for exactly that purpose. The claim is that its stream was

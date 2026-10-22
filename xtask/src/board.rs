@@ -1,7 +1,7 @@
 //! The real board: its serial console (milestone 216), and the U-Boot script that boots it
 //! without a person at its prompt (milestone 218).
 //!
-//! The recogniser that says how far a boot got lives in `board_console`; this keeps the
+//! The recogniser that says how far a boot got lives in `serial_console`; this keeps the
 //! argument parsing, the log, and the report. See notes/visionfive2.md.
 
 use std::path::{Path, PathBuf};
@@ -13,7 +13,7 @@ use std::process::{Command, ExitCode};
 
 /// Open a real board's serial console, log every byte, and stop on a deadline.
 ///
-/// The engine is `crates/board_console`; this is argument parsing and a report, deliberately, for
+/// The engine is `crates/serial_console`; this is argument parsing and a report, deliberately, for
 /// the reason every host-logic crate in this tree exists: the interesting half is a recogniser
 /// over text, and a recogniser wants a thousand host tests in milliseconds, not a board.
 ///
@@ -23,7 +23,7 @@ use std::process::{Command, ExitCode};
 /// success/failure is exactly the loss of information the milestone is about.
 /// **Read a finished capture of many boots and print what the lottery drew** (milestone 249).
 ///
-/// `board_console::lottery` is the whole of the logic and has the tests; this reads a file and
+/// `serial_console::lottery` is the whole of the logic and has the tests; this reads a file and
 /// prints. Two exit statuses only, and they are not the watcher's four: this is an analysis of a
 /// log that has already happened, so there is no board to have gone quiet.
 ///
@@ -38,7 +38,7 @@ fn board_console_tally(path: &std::path::Path) -> ExitCode {
             return ExitCode::from(4);
         }
     };
-    let series = board_console::lottery::tally(&log);
+    let series = serial_console::lottery::tally(&log);
     print!("{}", series.report());
     if series.draws.len() < 50 {
         eprintln!(
@@ -54,7 +54,7 @@ fn board_console_tally(path: &std::path::Path) -> ExitCode {
 /// soak on radon, argon and xenon) built it for milestone 201 (is multicore reliability
 /// converging).
 ///
-/// `board_console::exposure` is the logic and has the tests, including one that reads radon's
+/// `serial_console::exposure` is the logic and has the tests, including one that reads radon's
 /// eight-hour log back into the E4 row a person wrote by hand. This parses `<log>` and the three
 /// columns no console line carries, and prints a row per boot that soaked.
 ///
@@ -62,7 +62,7 @@ fn board_console_tally(path: &std::path::Path) -> ExitCode {
 /// `1` one is not (the board announced a failure or a counter is nonzero), `3` no boot in the log
 /// reached a heartbeat, `4` the file or the arguments.
 fn board_console_exposure(args: &[String]) -> ExitCode {
-    use board_console::exposure::{self, Meta};
+    use serial_console::exposure::{self, Meta};
 
     let usage = || {
         eprintln!(
@@ -108,7 +108,7 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
     let profile = meta
         .machine
         .as_deref()
-        .and_then(board_console::board::profile);
+        .and_then(serial_console::board::profile);
     // Lossy, not `read_to_string`: a serial capture carries whatever the wire did, and one bad
     // byte in eight hours must not cost the row.
     let text = String::from_utf8_lossy(&bytes);
@@ -177,7 +177,7 @@ pub(crate) fn board_console() -> ExitCode {
             }
         };
         eprintln!("--- replaying {} ---", path.display());
-        board_console::watch::watch(captured, &mut sink, &args.policy, false)
+        serial_console::watch::watch(captured, &mut sink, &args.policy, false)
     } else {
         match watch_the_port(&args, &mut sink, &log_path) {
             Ok(session) => session,
@@ -212,7 +212,7 @@ struct ConsoleArgs {
     port: Option<PathBuf>,
     replay: Option<PathBuf>,
     log: Option<PathBuf>,
-    policy: board_console::watch::Policy,
+    policy: serial_console::watch::Policy,
     /// **The writing mode** (milestone 324 (the bench console cannot speak to any of the three
     /// boards)). `None` is every reading session, which is still the default and still the common
     /// case. `Some(n)` is `--stop-after n`, and `--stop` is `Some(1)`:
@@ -239,7 +239,7 @@ impl ConsoleArgs {
             port: std::env::var_os("NIFE_BOARD_PORT").map(PathBuf::from),
             replay: None,
             log: None,
-            policy: board_console::watch::Policy::default(),
+            policy: serial_console::watch::Policy::default(),
             stop_after: None,
             until_given: false,
             cap_given: false,
@@ -320,7 +320,7 @@ impl ConsoleArgs {
                 }
                 // **Which board is on the other end** (milestone 324 part 3). It chooses the firmware
                 // prologue and nothing else: everything from the kernel banner up is shared, which is
-                // what calef's ruling settled and what `crates/board_console::board` implements.
+                // what calef's ruling settled and what `crates/serial_console::board` implements.
                 "--board" => c.policy.board = board_profile(value(i)?)?,
                 other => {
                     eprintln!("board-console: unknown argument {other}");
@@ -409,11 +409,11 @@ impl ConsoleArgs {
 }
 
 /// `--board`'s profile by name, or exit status 4 after naming the ones there are.
-fn board_profile(name: &str) -> Result<&'static board_console::board::Profile, ExitCode> {
-    board_console::board::profile(name).ok_or_else(|| {
+fn board_profile(name: &str) -> Result<&'static serial_console::board::Profile, ExitCode> {
+    serial_console::board::profile(name).ok_or_else(|| {
         eprintln!(
             "board-console: unknown board {name}. Known: {}.",
-            board_console::board::PROFILES
+            serial_console::board::PROFILES
                 .iter()
                 .map(|p| p.name)
                 .collect::<Vec<_>>()
@@ -434,12 +434,12 @@ fn watch_the_port(
     args: &ConsoleArgs,
     sink: &mut Tee,
     log_path: &std::path::Path,
-) -> Result<std::io::Result<board_console::watch::Session>, ExitCode> {
-    let path = board_console::port::choose(args.port.as_deref()).map_err(|e| {
+) -> Result<std::io::Result<serial_console::watch::Session>, ExitCode> {
+    let path = serial_console::port::choose(args.port.as_deref()).map_err(|e| {
         eprintln!("board-console: {e}");
         ExitCode::from(4)
     })?;
-    let (device, complaint) = board_console::port::open(&path).map_err(|e| {
+    let (device, complaint) = serial_console::port::open(&path).map_err(|e| {
         eprintln!("board-console: cannot open {}: {e}", path.display());
         ExitCode::from(4)
     })?;
@@ -451,7 +451,7 @@ fn watch_the_port(
     eprintln!(
         "--- {} at {} baud, logging to {}, up to {:?} ---",
         path.display(),
-        board_console::port::BAUD,
+        serial_console::port::BAUD,
         log_path.display(),
         args.policy.total
     );
@@ -477,11 +477,11 @@ fn watch_the_port(
                 "--- stopping after {n} armed draw(s); one byte will be sent to the board \
                  and printed into the log ---"
             );
-            Some(board_console::stop::Escape::new(n, w))
+            Some(serial_console::stop::Escape::new(n, w))
         }
         _ => None,
     };
-    Ok(board_console::watch::watch_with(
+    Ok(serial_console::watch::watch_with(
         device,
         sink,
         &args.policy,
@@ -493,7 +493,7 @@ fn watch_the_port(
 /// **The session's report under its transcript**: the summary, the writing mode's verdict, and
 /// the lines a person reads instead of the log. `from_port` is false for a replay.
 fn report_console_session(
-    session: &board_console::watch::Session,
+    session: &serial_console::watch::Session,
     from_port: bool,
     log_path: &std::path::Path,
 ) {
@@ -502,7 +502,7 @@ fn report_console_session(
     // The writing mode's own verdict, on its own line, whenever the session did not already end on
     // it. `--stop` is run to find out one thing and a reader should not have to infer it from an
     // exit status.
-    if session.outcome != board_console::watch::Outcome::Stopped
+    if session.outcome != serial_console::watch::Outcome::Stopped
         && let Some(report) = &session.stop
     {
         eprintln!("board-console: {}", report.describe());
@@ -621,10 +621,10 @@ pub(crate) fn parse_duration(text: &str) -> Option<std::time::Duration> {
 /// tool is missing, it is a line that machine will never print, and answering it with `None` here
 /// is what turns a two-minute wait into a refusal that says so.
 fn parse_stage(
-    board: &'static board_console::board::Profile,
+    board: &'static serial_console::board::Profile,
     text: &str,
-) -> Option<Option<board_console::progress::Stage>> {
-    use board_console::progress::Stage;
+) -> Option<Option<serial_console::progress::Stage>> {
+    use serial_console::progress::Stage;
     // The firmware prologue first, because a board may name a rung whatever it likes and the
     // portable words below are not a board's to redefine.
     if let Some(rung) = board.rung(text) {
@@ -654,7 +654,7 @@ fn parse_stage(
 }
 
 /// The `--until` words this board understands, for the message printed when one is refused.
-fn stage_words(board: &'static board_console::board::Profile) -> String {
+fn stage_words(board: &'static serial_console::board::Profile) -> String {
     let mut words: Vec<&str> = board.keys().collect();
     words.extend([
         "banner",
@@ -678,8 +678,8 @@ fn stage_words(board: &'static board_console::board::Profile) -> String {
 // refuses rather than guessing: `Device tree not found or missing FDT support`, then
 // `### ERROR ### Please RESET the board ###`, which is a `hang()` that only the reset button
 // clears. Captured on the board 2026-09-01;
-// crates/board_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log is the transcript,
-// and it is evidence about U-Boot rather than about this kernel: the payload never ran.
+// crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log is the
+// transcript, and it is evidence about U-Boot rather than about this kernel: the payload never ran.
 //
 // So the card carries a U-Boot script instead. `scan_dev_for_scripts` sources it, and it issues
 // exactly the commands a person types at the `StarFive #` prompt today, which is the sequence the

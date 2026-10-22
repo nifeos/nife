@@ -141,6 +141,16 @@ builds for all three targets. In `nifeos/jh7110_entropy`, the run that published
 Kani job green ahead of the publish job, and every harness's falsification patch makes its proof
 fail. The five soak criteria of release step 6 hold before it publishes.
 
+Two checks of the shared template (milestone 887) are this crate's, because it publishes first.
+calef, 2026-10-22 (UTC): *"A: 887 is BUILT once a v7 dry-run release on the canary passes the gate
+and waits in crates-io for my approval; the first-publish and semver-baseline checks move to 818."*
+
+- First publish: 0.1.0 publishes through the scoped token (`CRATES_IO_FIRST_PUBLISH_TOKEN` on the
+  `crates-io` environment, reaching the called release job), after the gate and calef's approval.
+  calef then binds the trusted publisher and deletes the secret.
+- Semver baseline: a pull request that breaks the API against the published 0.1.0 gets
+  `needs-architect` from the template's labeler.
+
 The name check of release step 1 passes first, so the repository, the package and every doc link
 carry a ratified name. Before the move, `script/crate-standalone jh7110_entropy` exits 0 in nife,
 and every row of *What is proven* names a harness that stock Kani proves in the copy and whose

@@ -1,7 +1,7 @@
 # The name and the reasons for it are in src/lib.rs's provenance block.
 #
 # **A host program, not a nife program.** It runs on macOS, Linux and Windows and never on nife, so
-# it lives in `crates/` beside the other host tools (`board_console`) rather than in `components/`.
+# it lives in `crates/` beside the other host tools (`serial_console`) rather than in `components/`.
 #
 # **No external dependencies**, deliberately (DECISIONS §46). Finding a stick is `diskutil` on macOS,
 # sysfs on Linux and four `kernel32` calls on Windows; erasing is each host's own tool. A USB or FAT

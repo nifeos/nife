@@ -87,7 +87,7 @@ name: mutation testing
 #     (`helpers/memory-bounded-runner.sh`, wired up by `script/mutation`). A mutant that allocates
 #     without limit now fails its own allocation at 4 GiB and is recorded as an ordinary CAUGHT
 #     mutant, in under nine seconds and inside the auto timeout, and the sweep continues. The
-#     ceiling is 4.0x the largest honest test binary in the tree (`board_console`, 1,028 MiB
+#     ceiling is 4.0x the largest honest test binary in the tree (`serial_console`, 1,028 MiB
 #     measured across all 143 of them) and 2 x 4 GiB is survivable on a 16 GiB runner, which is what
 #     picks 4 rather than a rounder number. cargo-mutants itself offers no memory option at any
 #     version this tree has pinned; its whole set of limits is clocks.

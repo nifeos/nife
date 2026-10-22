@@ -77,7 +77,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 <!-- package table: helpers/packages.py --table writes this -->
 | package | kind | members | allowed dependencies | home |
 |---|---|---|---|---|
-| `boot` | base | crates: `bitmap_font*`, `board_console`, `screen_console*`, `sealed_pair*`, `uefi_loader`; programs: `uefi_loader` | interfaces only; 1 dated exception(s) | `boot` (provisional) |
+| `boot` | base | crates: `bitmap_font*`, `screen_console*`, `sealed_pair*`, `serial_console`, `uefi_loader`; programs: `uefi_loader` | interfaces only; 1 dated exception(s) | `boot` (provisional) |
 | `core-tools` | base | programs: `date`, `printenv`, `rm`, `uuid`, `wc` | interfaces only | `core-tools` (provisional) |
 | `disk-tools` | base | programs: `disk_partitioner`, `disk_surveyor` | interfaces only | `disk-tools` (provisional) |
 | `drivers` | base | crates: `designware_ethernet*`, `designware_mobile_storage*`, `e1000e*`, `jh7110_entropy`, `non_volatile_memory_express`, `virtio`; programs: `block_driver`, `designware_mobile_storage`, `jh7110_entropy`, `non_volatile_memory_express`, `serial_driver` | interfaces only | `drivers` (provisional) |
@@ -178,7 +178,7 @@ dev-dependencies, and the gate failed their exceptions as stale, so nine remain:
 | `kernel` | `non_volatile_memory_express`, `jh7110_entropy` | a handoff record and a device discovery living in driver crates |
 | `kernel` | `video_terminal` | display service wiring in `kernel/src/user/` |
 | `kernel` | `coremark`, `job_mix`, `soak_page` | benchmarks and probes built into the kernel; a release kernel should not link a fixture |
-| `boot` | `job_mix` | `board_console` runs the job mix to prove a board boots |
+| `boot` | `job_mix` | `serial_console` runs the job mix to prove a board boots |
 | `init` | `http_response`, `video_terminal` | `system_initializer` builds the whole interactive image; it is integration, not init |
 
 The driver row wants a lane of its own, and so do `ps::Row` and `pmap::Row`, which the kernel
@@ -215,6 +215,6 @@ holds the plan.
 - A `depends` line admits every crate of that package, internals included. It is a reviewed
   declaration, not a proof, so review has to ask whether each one is true.
 - Four fixtures are linked by base packages: `coremark`, `job_mix` and `soak_page` by the kernel,
-  and `job_mix` by `board_console`. They are exceptions until a release build can leave them out.
+  and `job_mix` by `serial_console`. They are exceptions until a release build can leave them out.
 - `system_initializer` sits in `init` but builds the whole image. It links `network` and `display`
   internals under exception until it has its own integration package.

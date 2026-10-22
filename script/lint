@@ -1164,10 +1164,11 @@ echo "==> roadmap status"
 # (riscv64 would refuse `xtask`, which needs std), `xtask` is a host tool, and redoxfs_server is its
 # own workspace.
 #
-# `board_console` (milestone 216) is the second host-only member and joins `xtask` on the host
-# line. It opens a serial port and spawns `stty`, so it is `std` by nature and cannot document for
-# a bare-metal target any more than `xtask` can. Both are still documented, on the pass that suits
-# them; the exclusion is about the target, not about skipping them.
+# `serial_console` (milestone 216 (nothing in this tree can read a board)) is the second host-only
+# member and joins `xtask` on the host line. It opens a serial port and spawns `stty`, so it is
+# `std` by nature and cannot document for a bare-metal target any more than `xtask` can. Both are
+# still documented, on the pass that suits them; the exclusion is about the target, not about
+# skipping them.
 #
 # `stick_maker` (the stick program, 2026-09-19) is the third, and for the same reason: it is a
 # host program that runs `diskutil` and reads sysfs. This list is typed out where `script/drift`
@@ -1190,7 +1191,7 @@ echo "==> roadmap status"
 echo "==> rustdoc (broken intra-doc links)"
 DOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags"
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --workspace --exclude xtask \
-    --exclude board_console --exclude stick_maker --exclude sealed_pair --exclude walk_pricing \
+    --exclude serial_console --exclude stick_maker --exclude sealed_pair --exclude walk_pricing \
     --exclude c_library_errno --exclude kernel --target aarch64-unknown-none-softfloat
 # The kernel on its own, private items included (milestone 609 (the system tests leave the kernel
 # crate)). It was a binary, and rustdoc documents a binary's private items by default; it is a
@@ -1199,7 +1200,7 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --workspace --exclude xtask
 # library target only: the binary is a link line with the same name.
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p kernel --lib --document-private-items \
     --target aarch64-unknown-none-softfloat
-RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p xtask -p board_console -p stick_maker \
+RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p xtask -p serial_console -p stick_maker \
     -p sealed_pair -p walk_pricing -p c_library_errno
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_server/Cargo.toml --lib
 
@@ -3315,7 +3316,7 @@ for ws in redoxfs_server tools/redoxfs_host tools/glyph_atlas_generator fuzz; do
 done
 python3 helpers/lint_ratchet.py --check "$lint_ratchet_dir"
 rm -rf "$lint_ratchet_dir"
-echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07)"
+echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)"
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
 # (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
 # comment states the constraint as it is now): a comment states the constraint as it is now, in a
@@ -3327,9 +3328,11 @@ echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 202
 # adjacent comment lines of one kind), the rules, the ceiling-not-exact-match argument and the
 # failure messages live in helpers/comment_block_ratchet.py, whose header is the manual, as the
 # other two ratchets' are. Its lexer is adapted from the note's own, so the gate and the
-# measurement read the same tree. 338 blocks are over the cap today and are held one row each in
+# measurement read the same tree. The blocks over their directory's cap are held one row each in
 # design/comment-block-baseline.tsv; they may only shrink, swept a milestone's worth at a time, and
-# an unlisted block meets the cap outright.
+# an unlisted block meets the cap outright. Milestone 929 (comments in the Linux style across
+# first-party Rust) steps each directory's cap from 40 to 20 to 10 and holds its in-body comment
+# lines to a ceiling, in the same file.
 python3 helpers/comment_block_ratchet.py --selftest
 python3 helpers/comment_block_ratchet.py --check
 echo "==> the parent-index check (§282: when a file is split, the parent becomes an index)"

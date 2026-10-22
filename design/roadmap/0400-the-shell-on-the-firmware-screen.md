@@ -64,7 +64,7 @@ uefi-boot:   | $ ?
 uefi-boot: booted under OVMF from \EFI\BOOT\BOOTX64.EFI
 ```
 
-`board_console::screen` reads a cell that matches no glyph as `?` rather than refusing the picture,
+`serial_console::screen` reads a cell that matches no glyph as `?` rather than refusing the picture,
 so the tour's last row ends in `?` (the screendump caught the kernel mid-line) and so does the last
 prompt (the cursor block).
 

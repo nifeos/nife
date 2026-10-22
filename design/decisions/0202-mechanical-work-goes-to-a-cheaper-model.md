@@ -120,7 +120,7 @@ So the trial is bounded and measured rather than assumed:
 
 ## Trial 1, `board_console`, 2026-09-20: passed, and the prediction was wrong
 
-The work. 43 mutation survivors in `crates/board_console`, briefed identically to a frontier
+The work. 43 mutation survivors in `crates/serial_console`, briefed identically to a frontier
 lane (same hazards, same gates, same stopping rule), so that the comparison measures the model
 rather than the brief.
 

@@ -59,8 +59,8 @@ proof, and the survey assertion says what a failure there would mean.
 ## Why the quiesce has a stand-in
 
 A `CALL` takes no deadline. A bound notification ends a `RECEIVE` (milestone 106), and nothing ends
-a caller parked on a sender queue or awaiting a reply. So the operator starts a `chatty` instance as
-`ROLE_QUIESCER` to make the one call, and waits with a deadline on the answer it forwards. When the
-deadline wins, the stand-in is still queued on the stable endpoint holding a quiesce request, and the
-operator destroys its region before starting the replacement, which would otherwise receive that
-request and drain itself.
+a caller parked on a sender queue or awaiting a reply. So the operator starts a
+`swap_boundary_witness` instance as `ROLE_QUIESCER` to make the one call, and waits with a deadline
+on the answer it forwards. When the deadline wins, the stand-in is still queued on the stable
+endpoint holding a quiesce request, and the operator destroys its region before starting the
+replacement, which would otherwise receive that request and drain itself.

@@ -2,17 +2,17 @@
 //! **Live component replacement: the shared half** (milestone 23, DECISIONS §41).
 //!
 //! Four programs make up the hot-swap system (`swapper` the operator, `rust_swappable` and
-//! `c_swappable` the two instances of the swappable component, `chatty` the client and the
-//! attacker), and this is what they share: the wire protocol, the addresses of the pages they pass
-//! between them, the digest both language implementations of the component must compute, and the
-//! serving loop itself. Each of the four depends on this crate (rule 7).
+//! `c_swappable` the two instances of the swappable component, `swap_boundary_witness` the client
+//! and the attacker), and this is what they share: the wire protocol, the addresses of the pages
+//! they pass between them, the digest both language implementations of the component must compute,
+//! and the serving loop itself. Each of the four depends on this crate (rule 7).
 //!
 //! # The shape
 //!
 //! ```text
-//!                     ┌──── the stable name: one endpoint, forever ────┐
-//!    chatty ──CALL──► │                  SVC                           │ ◄──RECEIVE_CAP── rust_swappable v1
-//!   (client)          └────────────────────────────────────────────────┘ ◄──RECEIVE_CAP── c_swappable v2
+//!                                    ┌──── the stable name: one endpoint, forever ────┐
+//!    swap_boundary_witness ──CALL──► │                  SVC                           │ ◄──RECEIVE_CAP── rust_swappable v1
+//!    (client)                        └────────────────────────────────────────────────┘ ◄──RECEIVE_CAP── c_swappable v2
 //! ```
 //!
 //! There is no process in that data path. The client's capability never changes, the client's loop
@@ -41,8 +41,8 @@ use user_mode_runtime::invoke;
 /// `call(SVC, OPERATION_PUT, seq)` -> `(digest(seq), (version << 32) | seq)`.
 ///
 /// Two words out, two words back, and the reply carries **who answered**. A client that only wanted
-/// the answer would ignore the version word entirely; `chatty` reads it because the version word is
-/// the only way anything outside the operator can tell that a swap happened at all.
+/// the answer would ignore the version word entirely; `swap_boundary_witness` reads it because the
+/// version word is the only way anything outside the operator can tell that a swap happened at all.
 pub const OPERATION_PUT: u64 = 1;
 
 /// **The sequence number a wedging instance swallows**: it takes the request, files the caller's
@@ -377,9 +377,9 @@ pub const V1: u64 = 1;
 /// The C-computed digest.
 pub const V2: u64 = 2;
 
-/// `chatty`'s roles. One binary, because an attacker that shares the honest client's code and
-/// capabilities is a fair test of the boundary rather than a different program failing for its own
-/// reasons.
+/// `swap_boundary_witness`'s roles. One binary, because an attacker that shares the honest client's
+/// code and capabilities is a fair test of the boundary rather than a different program failing for
+/// its own reasons.
 pub const ROLE_CLIENT: u64 = 0;
 /// The attacker: the same code and capabilities as [`ROLE_CLIENT`], testing the boundary rather
 /// than a program written to fail for its own reasons.
@@ -618,9 +618,9 @@ pub const BACKEND: Requirements = Requirements {
     state_handoff: None,
 };
 
-/// **The client** (`chatty`, in all three of its roles). It *uses* the service and never serves it,
-/// which is the whole of why the attacker role cannot become the server: `Use` is `WRITE`, and there
-/// is no longer anywhere for an operator to type `READ` by mistake.
+/// **The client** (`swap_boundary_witness`, in all three of its roles). It *uses* the service and
+/// never serves it, which is the whole of why the attacker role cannot become the server: `Use` is
+/// `WRITE`, and there is no longer anywhere for an operator to type `READ` by mistake.
 pub const CLIENT: Requirements = Requirements {
     contract: "client",
     caps: &[
@@ -641,9 +641,10 @@ pub const CLIENT: Requirements = Requirements {
     pages: INSTANCE_PAGES,
     // A pure consumer: no `Serve` need at all, so it never forwards anyone else's request through
     // to `service`. §41 already proved a `CALL` to an absent server degrades for free (the
-    // endpoint's own sender queue), so `chatty` never needs telling before a swap, on either
-    // channel it is wired to. See `Requirements::depends_on`'s doc comment for why this is empty
-    // rather than naming whichever contract `service` happens to resolve to on a given wiring.
+    // endpoint's own sender queue), so `swap_boundary_witness` never needs telling before a swap,
+    // on either channel it is wired to. See `Requirements::depends_on`'s doc comment for why this
+    // is empty rather than naming whichever contract `service` happens to resolve to on a given
+    // wiring.
     depends_on: &[],
     state_handoff: None,
 };
