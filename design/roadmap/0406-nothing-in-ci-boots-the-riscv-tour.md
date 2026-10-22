@@ -70,7 +70,7 @@ So every step of that boot is asserted by nothing on a pull request: the userspa
 the hardware-entropy step's line, and the final banner. Some of what they demonstrate is covered
 independently by the riscv64 kernel suite, which is why this is a gap rather than a hole. What is not
 covered is the boot as a sequence, which is exactly what a board produces and what
-`crates/board_console` was written to read. They are checked today by a person remembering to type
+`crates/serial_console` was written to read. They are checked today by a person remembering to type
 `script/soak-test`, which is AGENTS.md's rung four holding a claim `design/fatal-risks/README.md` cites.
 
 ## Why this is worth a milestone rather than a patch
@@ -81,7 +81,7 @@ CI: a crate's host tests over captured board logs, two `script/` tools nobody ru
 bench note. A step nothing asserts and a step nothing needs produce the same evidence, and this tree
 has already spent one lane telling them apart.
 
-The recognizer already exists and is tested. `crates/board_console` parses this exact transcript:
+The recognizer already exists and is tested. `crates/serial_console` parses this exact transcript:
 `Progress` ratchets `spl`/`opensbi`/`uboot`/`handoff`/`banner`/`tour`, recognizes five failure
 markers, and sets `userspace_ran` from the `init/build` line. `script/soak-test` already judges a QEMU run
 with it. So the missing piece is a caller that boots the default kernel with `-initrd` under
@@ -91,7 +91,7 @@ not a new instrument.
 ## What it would take, priced
 
 The boot itself is one `cargo xtask` verb over machinery that is all present: `initial_ramdisk_riscv()`,
-`helpers/qemu-runner-riscv64.sh`, `crates/board_console`. A bounded tour boot is seconds, not
+`helpers/qemu-runner-riscv64.sh`, `crates/serial_console`. A bounded tour boot is seconds, not
 minutes, because the tour halts on its own; the cost is the riscv64 kernel build, which
 `script/ci-build` already pays for other reasons.
 
@@ -125,7 +125,7 @@ was written: milestone 268's `script/boot-check` boots the default kernel on all
 architectures in `script/ci-build`'s local tier, which is the caller this block asked for. It boots
 with no initrd, so it stops at the machine description and the self-test verdict, and what is still
 asserted by nobody is the boot as a sequence past that point: `Stage::Tour` with
-`userspace_ran()`. That is what a board actually produces and what `crates/board_console` was
+`userspace_ran()`. That is what a board actually produces and what `crates/serial_console` was
 written to read. The recognizer exists and is tested, `Progress` already ratchets the stages and
 sets `userspace_ran` from the `init/build` line, and `script/soak-test` already judges a QEMU run
 with it. So the missing piece is an initrd and two assertions rather than an instrument. What is

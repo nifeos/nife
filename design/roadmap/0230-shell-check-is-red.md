@@ -102,7 +102,7 @@ and in order. The kernel prints a user fault report with its own UART driver; th
 `console` server drives the same UART from its own address space; nothing arbitrates between two
 processes writing one device. So a thread dying while init prints shuffles the two lines together.
 
-This is not the partial-line problem `crates/board_console` solved for milestone 216 (nothing in
+This is not the partial-line problem `crates/serial_console` solved for milestone 216 (nothing in
 this tree can read a board, so every hardware milestone waits on a person). That crate's
 `observe_partial` is about a line the reader has not finished receiving, and its answer, `contains`
 on a completed line, is exactly what fails here.
@@ -183,7 +183,7 @@ What depends on that stream being readable, beyond this gate:
 - Every bench session on argon, radon and xenon. Each of the three target boards has one serial
   line (`notes/target-hardware.md`), so a serial log is the only window into a board, and it can
   shuffle.
-- **`crates/board_console`** (milestone 216), whose whole job is to recognize how far a boot got from the text
+- **`crates/serial_console`** (milestone 216), whose whole job is to recognize how far a boot got from the text
   alone. Its `progress` recognizer matches on complete lines, which is the assumption this breaks.
 - Milestone 218's boot script, which parses the same stream.
 

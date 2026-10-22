@@ -19,7 +19,7 @@ commit message and git, and no narrative is transplanted into a document.
 The baseline holds 336 rows. The worst after worth four:
 `components/src/timetable.rs:1` (191), `components/src/login.rs:1` (177),
 `crates/current_cpu_contract/src/lib.rs:1` (176), `components/src/system_installer.rs:1` (175)
-and `crates/board_console/src/lib.rs:1` (173). A worth
+and `crates/serial_console/src/lib.rs:1` (173). A worth
 takes the worst handful that is not a gated example, and every shrink is banked. The method, the
 refused alternatives and the evidence are milestone 860 (comments state the constraint as it
 is now)'s block and `notes/comment-cost-2026-10-07.md`.
@@ -38,7 +38,7 @@ worth only runs the sweep and banks, and takes no new code.
   history. What remains is §204 (how userspace asks where a thread runs)'s argument.
 - `components/src/system_installer.rs:1` held at 175, floor, untouched by earlier worths. The
   two-slot ruling, the GPT attribute-bit ownership and the RedoxFS origin scan are constraint.
-- `crates/board_console/src/lib.rs:1` held at 173, floor. Worth four took the narration.
+- `crates/serial_console/src/lib.rs:1` held at 173, floor. Worth four took the narration.
 
 The finding this worth adds: the worst rows are now constraint floors. The one remaining gated
 example, `crates/system_initializer/src/lib.rs:6` (300), is a `no_run` doctest a gate holds open.

@@ -26,8 +26,9 @@
 //!
 //! notes/board-console.md's BUGS lists them, in full in `notes/board-console/limitations.md`.
 //!
-//! Name: provisional, and ruled: calef ruled **`serial_console`** on 2026-09-13, pairing it with
-//! `screen_console`. The block stays `provisional` until the rename is performed.
+//! Name: ratified 2026-09-13 (calef), replacing `board_console`; half of a pair with
+//! `screen_console`, two consoles named for where the text comes out. The command a bench session
+//! types is still `script/board-console`, a name of its own (`script/names board-console`).
 
 pub mod board;
 pub mod exposure;

@@ -1,5 +1,5 @@
 [package]
-name = "board_console"
+name = "serial_console"
 version = "0.1.0"
 edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
@@ -7,11 +7,6 @@ license.workspace = true
 
 # The serial console for a real board (milestone 216): open the port, log every byte, recognise how
 # far the boot got, and stop on a deadline instead of hanging.
-#
-# Name: PROVISIONAL, this lane's coinage (2026-09-01). It is a noun and it is what the thing is; the
-# open question the roadmap block already names is whether this stays one crate with a board profile
-# or becomes three, which is a naming decision as much as a design one. Expect the integrator to
-# surface it.
 #
 # A crate rather than code inside `xtask` for the reason CLAUDE.md rule 7 and every host-logic crate
 # here give: the interesting half is a recogniser over text, and a recogniser is worth thousands of

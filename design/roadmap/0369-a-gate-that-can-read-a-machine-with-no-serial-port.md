@@ -24,7 +24,7 @@ In brief. Milestone 243 (a machine with no serial port has no way to say anythin
 read it) answered the half of its block that a human needs. On a UEFI machine
 with no serial port the boot tour is now painted into the firmware's linear framebuffer. A person
 standing in front of the machine can watch nife boot. It did **not** answer the half a gate
-needs on real hardware. The screen check it added (`board_console::screen`, driven by
+needs on real hardware. The screen check it added (`serial_console::screen`, driven by
 `cargo xtask uefi-boot`) works by asking QEMU's monitor for a screendump. Nobody can ask a Dell
 for one.
 
@@ -38,7 +38,7 @@ VisionFive 2 *out* of for boards that do have a serial port.
 Postmortem to the boot medium. The stick the machine booted from is a FAT32 EFI system
 partition that a person is going to carry back to patagonia anyway. A kernel that appended its
 console transcript to a file on it would turn "photograph the screen" into "plug the stick in and
-run the gate", and `board_console::progress` would judge the result unchanged, exactly as it judges
+run the gate", and `serial_console::progress` would judge the result unchanged, exactly as it judges
 a screendump and a serial log today.
 
 Three pieces, in the order they block each other:
@@ -56,7 +56,7 @@ Three pieces, in the order they block each other:
 says nothing until the stack is up. So it cannot report the failures that happen before it, and a
 machine whose only voice is the network cannot report a network failure.
 
-**Not a photograph read by a program.** `board_console::screen` decodes a *screendump*: pixel-aligned
+**Not a photograph read by a program.** `serial_console::screen` decodes a *screendump*: pixel-aligned
 bytes with exact glyph matches and no threshold to tune. A phone camera produces none of those
 properties, and the honest cost of making it work is optical character recognition, which is a
 different project.
@@ -79,7 +79,7 @@ can be brought up by hand, with a person reading a monitor and taking a photogra
 precisely the state milestone 216 got the VisionFive 2 out of for boards that have a serial port.
 The shape proposed is a postmortem written to the boot medium, which is a FAT32 EFI system
 partition somebody carries back to patagonia anyway, turning "photograph the screen" into "plug the
-stick in and run the gate" with `board_console::progress` judging the result unchanged. Three pieces
+stick in and run the gate" with `serial_console::progress` judging the result unchanged. Three pieces
 block each other in order: USB mass storage, then a FAT32 writer or a reserved span at a known
 offset, then a transcript buffer in the kernel. That is new state on the diagnostic path and wants
 arguing rather than assuming. Not a network console, which cannot report the failures that happen

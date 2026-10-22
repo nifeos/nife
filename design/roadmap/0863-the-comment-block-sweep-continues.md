@@ -18,7 +18,7 @@ milestone 862 (the comment-block sweep's next worth).
 
 This worth's rows: `crates/system_initializer/src/lib.rs:6` (301, held by
 its `no_run` doctest, which is a gate and stays), `components/src/timetable.rs:1` (201), then
-`crates/glob/src/lib.rs:1` (190), `crates/board_console/src/lib.rs:1` (186), and
+`crates/glob/src/lib.rs:1` (190), `crates/serial_console/src/lib.rs:1` (186), and
 `crates/non_volatile_memory_express/src/lib.rs:2` and `crates/component_plan/src/lib.rs:1` (185
 each). A worth takes the worst handful that is not a gated example. Each block's history goes to
 a commit message, its findings to a note, its naming record to `design/naming/`, and every shrink
@@ -31,7 +31,7 @@ worth only runs the sweep and banks, and takes no new code.
 ## The worth, 2026-10-09 (UTC): built
 
 Swept and banked: `components/src/timetable.rs:1` 201 to 191 (the slots list stopped restating
-`timetable::contract`'s table), `crates/glob/src/lib.rs:1` 190 to 153, `crates/board_console/`
+`timetable::contract`'s table), `crates/glob/src/lib.rs:1` 190 to 153, `crates/serial_console/`
 186 to 176, `crates/non_volatile_memory_express/` 186 to 92, and `crates/component_plan/` 185 to
 159. Baseline rows held at 336.
 

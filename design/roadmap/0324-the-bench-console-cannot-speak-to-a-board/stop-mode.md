@@ -10,8 +10,8 @@ test coverage and the two choices calef may want to overrule.
 ## What landed
 
 `--stop` and `--stop-after <n>` on `script/board-console`, the rewritten invariant in its header,
-and the same invariant in `crates/board_console/src/lib.rs` and `notes/board-console.md`. The engine
-is a new module, `crates/board_console/src/stop.rs`, whose header carries the argument. The reading
+and the same invariant in `crates/serial_console/src/lib.rs` and `notes/board-console.md`. The engine
+is a new module, `crates/serial_console/src/stop.rs`, whose header carries the argument. The reading
 loop was not duplicated; it took one parameter (`watch::watch_with`).
 
 ## The invariant is a mechanism

@@ -136,7 +136,7 @@ pub struct Meta {
 /// # Examples
 ///
 /// ```
-/// use board_console::exposure::{self, Meta};
+/// use serial_console::exposure::{self, Meta};
 ///
 /// let log = "nife on aarch64 (EL1)\n  smp: 4 core(s) online\n\
 ///            nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz\n\

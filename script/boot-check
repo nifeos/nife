@@ -21,7 +21,7 @@
 #   - the boot handed over and `swish` came up, which is the ladder's top rung and the stated
 #     terminal state of a default boot
 #
-# It reads those with `crates/board_console`, the same recogniser `cargo xtask board-console` points
+# It reads those with `crates/serial_console`, the same recogniser `cargo xtask board-console` points
 # at a real board over a serial cable. One reader, so a gate cannot pass something a bench run would
 # call broken.
 #

@@ -51,7 +51,7 @@ incomplete in five ways). The working is in [`rulings.md`](0324-the-bench-consol
 
 ## Why a cluster
 
-`script/board-console` and `crates/board_console` are one tool, and four lanes filed four
+`script/board-console` and `crates/serial_console` are one tool, and four lanes filed four
 limitations against it from four directions. Two came from the sweep of 216's block by milestone 247
 (follow-on work named by a finished milestone goes nowhere). One came from milestone 249's
 boot-lottery lane and one from the job-mix lane of milestone 168 (a multi-tasking workload
@@ -72,7 +72,7 @@ being a bench session and being a job.
    sends the byte and logs that it sent it. `--stop-after <n>` ends a series with exactly the sample
    it was asked for. Read *What landed* before extending this: the obvious trigger is the wrong one.
 2. BUILT 2026-09-19. It cannot tell a finished job-mix sweep from a wedged one.
-   `crates/board_console` recognized the boot sequence and, since milestone 219 (the boot tour ends
+   `crates/serial_console` recognized the boot sequence and, since milestone 219 (the boot tour ends
    and the kernel halts, so there is nothing to soak), a soak's stages and heartbeat; the job-mix
    sweep had no recognizer. Found by milestone 168's lane. Two rungs close it, `sweep` and
    `sweep-done`.
@@ -82,7 +82,7 @@ being a bench session and being a job.
    2026-09-19 reports the banner, the machine line, the five-of-five self-test and the measured-boot
    refusal. Nothing was added for xenon: it boots through PVH straight into our banner. What was
    left was radon's prologue being hard-coded rather than declared, now
-   `crates/board_console/src/board.rs`. Found by milestone 247's sweep, from the block of
+   `crates/serial_console/src/board.rs`. Found by milestone 247's sweep, from the block of
    milestone 216 (nothing in this tree can read a board).
 4. BUILT 2026-09-19. It cannot type at a board, and it should be able to. A named mode, its bytes
    logged, not a keyboard: `--stop`, `--stop-after <n>`, and the rewritten invariant.
@@ -92,8 +92,8 @@ being a bench session and being a job.
 ## What landed, 2026-09-19: parts 1 and 4
 
 `--stop` and `--stop-after <n>` on `script/board-console`, and the rewritten invariant in its
-header, in `crates/board_console/src/lib.rs` and in `notes/board-console.md`. The engine is
-`crates/board_console/src/stop.rs`; the reading loop took one parameter (`watch::watch_with`)
+header, in `crates/serial_console/src/lib.rs` and in `notes/board-console.md`. The engine is
+`crates/serial_console/src/stop.rs`; the reading loop took one parameter (`watch::watch_with`)
 rather than being copied. `Escape::observe_line` is the only writer in the crate. It logs and
 flushes the announcement before the byte goes out, and the log shows the byte as `0x0d`.
 
@@ -116,7 +116,7 @@ default duplicated rather than shared. The reasoning for all of this is in
 
 ## What landed, 2026-09-19: parts 2 and 3
 
-Part 2: `crates/board_console::progress` gained `Stage::Sweep` and `Stage::SweepDone`,
+Part 2: `crates/serial_console::progress` gained `Stage::Sweep` and `Stage::SweepDone`,
 `Failure::SweepFailed`, and the sweep's numbers (`SweepPoint`, `SweepSubrun`). `script/board-console
 --until sweep-done` answers the part's question with no new exit status. `cargo xtask job-mix`
 judges with the same recognizer instead of a `starts_with("job-mix")` loop with no timeout, and tees
@@ -124,7 +124,7 @@ the boot to a replayable log under `target/`. It exits 0 on a complete sweep, 2 
 1s` and 3 with `--for 30s`; a host test covers the refusal. All were re-run after milestone 168
 merged.
 
-Part 3: `crates/board_console/src/board.rs` declares a `Profile` of firmware `Rung`s, `Refusal`s and
+Part 3: `crates/serial_console/src/board.rs` declares a `Profile` of firmware `Rung`s, `Refusal`s and
 the relocation discriminator. `Stage`'s four firmware variants became `Stage::Firmware(&'static
 Rung)`, and two U-Boot failures became `Failure::FirmwareRefused`. `--board radon|xenon` selects,
 with radon the default. One radon capture read through both profiles reaches the same tour, with
@@ -149,7 +149,7 @@ The head did not move, so every marker matched and `SweepPoint` parsed nothing. 
 green, because the parser and its fixture came from the same pre-168 kernel. It was found by reading
 the merged source. The fix spells `SweepPoint`'s seven fields as the wire does, re-captured the
 fixture, and added `KIND` to the shared markers. The field names inside the line are still not
-shared, and that is recorded in `crates/board_console/src/progress.rs`'s `BUGS`.
+shared, and that is recorded in `crates/serial_console/src/progress.rs`'s `BUGS`.
 
 ## What could not be tested
 
@@ -170,25 +170,25 @@ no profile at all.
   one against the default rather than twenty. A developer does not edit another milestone's block,
   so the correction lives here.
 - **Recorded.** *A marker is shared and the fields inside the line are not*, in
-  `crates/board_console/src/progress.rs`'s `BUGS` and in `crates/job_mix`'s marker header. A reader
+  `crates/serial_console/src/progress.rs`'s `BUGS` and in `crates/job_mix`'s marker header. A reader
   may want it minted as a milestone; its shape is not obvious.
 - **Recorded.** *The job-mix sweep has no wall-clock heartbeat, so its wedge timer is a guess with
   headroom*, in the `BUGS` of `script/job-mix` and `notes/board-console.md`, and beside
   `Stage::Sweep`. This is the item a reader may most want minted. It is a kernel change, outside
   parts 2 and 3.
 - **Recorded.** *No job-mix sweep has been watched on a board*, in the `BUGS` of `script/job-mix`,
-  `crates/board_console/src/lib.rs`, `notes/board-console.md` and
-  `crates/board_console/tests/fixtures/README.md`. radon running one is milestone 168's own HARDWARE
+  `crates/serial_console/src/lib.rs`, `notes/board-console.md` and
+  `crates/serial_console/tests/fixtures/README.md`. radon running one is milestone 168's own HARDWARE
   gate; the first bench sweep closes it.
 - **Recorded.** *Only radon's profile has been checked against a machine, xenon's emptiness rests on
-  one capture, and argon has none*, in the `BUGS` of `crates/board_console/src/board.rs` and
+  one capture, and argon has none*, in the `BUGS` of `crates/serial_console/src/board.rs` and
   `notes/board-console.md`.
 - **Recorded.** *Nothing gates a board profile against the board it claims to describe*, in
-  `crates/board_console/src/board.rs`'s `BUGS`. It is the gap `crates/boot_ladder` carries against
+  `crates/serial_console/src/board.rs`'s `BUGS`. It is the gap `crates/boot_ladder` carries against
   the kernel, one level out, with the same mechanism: review, plus a capture for every rung asserted
   on.
 - **Recorded.** *The soak's console markers are string literals agreeing by a reader having checked,
-  in three places*, in the `BUGS` of `crates/board_console/src/stop.rs`. They were never hoisted
+  in three places*, in the `BUGS` of `crates/serial_console/src/stop.rs`. They were never hoisted
   into `crates/boot_ladder`. It is a kernel change, outside parts 1 and 4, and the soak's are now
   the last set in that state.
 - **Recorded.** *No byte of the writing mode has reached a board*, in the `BUGS` of `stop.rs` and of
@@ -218,7 +218,7 @@ only on the board's own arming announcement and never before it, and every byte 
 the log in hex. `--until sweep-done` tells a finished job-mix sweep from a wedged one, with no new
 exit status and with `cargo xtask job-mix` judging through the same recognizer rather than a second
 copy that had no timeout at all. And the firmware prologue is data: `--board radon|xenon`, with
-radon's four rungs and two refusals declared in `crates/board_console/src/board.rs` and everything
+radon's four rungs and two refusals declared in `crates/serial_console/src/board.rs` and everything
 from the kernel banner up shared. It is proved by reading one radon capture through both profiles and
 getting the same tour with and without a prologue. What none of it proves is hardware: no
 `--stop` has reached a board and no sweep has been watched on one.

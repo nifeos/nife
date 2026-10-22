@@ -59,7 +59,7 @@ than one laptop's, and it means the 240-minute budget has about twenty percent o
 The cost is concentrated, not spread, which is why "run it less often" is the wrong lever and
 "run less of it" is the right one. The evidence already in the tree:
 
-- `board_console` alone was **55 minutes** against roughly four for the whole rest of the workspace,
+- `serial_console` alone was **55 minutes** against roughly four for the whole rest of the workspace,
   and is excluded for exactly this reason. It contains no `unsafe` and no dependencies.
 - `compositor`'s six full-screen sweeps are 317,856 pixels each; one was measured at over 44 minutes
   without finishing and is now strided, and the header calls the other five a milestone of their own.
@@ -104,7 +104,7 @@ measured it: about three hours, 3:09:41 on patagonia and 2:58:13 on `ubuntu-24.0
 because most of it is one interpreter thread. So more cores buy no wall clock back and two very
 different machines agreeing within eleven minutes makes three hours the job's cost rather than one
 laptop's. The cost is concentrated rather than spread, which is why running it less often is the
-wrong lever and running less of it is the right one. `board_console` alone was 55 minutes against
+wrong lever and running less of it is the right one. `serial_console` alone was 55 minutes against
 four for the rest of the workspace, and five crates already gate their exhaustive sweeps down under
 `cfg(miri)`. What is missing is the per-crate number, which `cargo miri test` prints already and
 nobody has collected, and which turns the argument into a decision.

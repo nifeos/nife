@@ -376,7 +376,7 @@ fn uefi_boot_staged() -> bool {
     eprintln!("--- boot under real firmware, x86_64 (QEMU q35 + OVMF) ---");
 
     // **The screen half** (milestone 243). A QEMU monitor on a unix socket, a poller that asks it
-    // for a screendump until the tour's last line is *on the screen*, and `board_console::screen` to
+    // for a screendump until the tour's last line is *on the screen*, and `serial_console::screen` to
     // turn the picture back into text. Everything the framebuffer path can get wrong shows up here
     // and nowhere else: the loader's `LocateProtocol`, the byte order, the stride, the mapping
     // surviving `mmu::init`, and the glyphs. The serial transcript below would be identical if the
@@ -788,16 +788,16 @@ struct ScreenReadings {
 /// **The firmware screen read as the shell's terminal draws it**: `glyph_atlas` cells in
 /// `video_terminal`'s default colors, at the scale `display_service::start_screen_terminal` chose
 /// for the screen's width, one string per row with its trailing blanks trimmed. The tour before
-/// the hand-over is the boot console's 7x8 bitmap, which `board_console::screen::read` reads; this
+/// the hand-over is the boot console's 7x8 bitmap, which `serial_console::screen::read` reads; this
 /// reads what replaces it.
 fn terminal_text(ppm: &[u8]) -> Option<String> {
-    let width = board_console::screen::decode_exact(ppm, u32::MAX, u32::MAX, 1, b"", |_, _, _| 0)
+    let width = serial_console::screen::decode_exact(ppm, u32::MAX, u32::MAX, 1, b"", |_, _, _| 0)
         .ok()?
         .width;
     let scale = screen_console::ScreenConsole::scale_for_cell(width, video_terminal::CELL_W);
     let printable: Vec<u8> = (0x20..=0x7e).collect();
     let (fg, bg) = video_terminal::Attr::DEFAULT.colours();
-    let screen = board_console::screen::decode_exact(
+    let screen = serial_console::screen::decode_exact(
         ppm,
         video_terminal::CELL_W,
         video_terminal::CELL_H,
@@ -863,7 +863,7 @@ fn screen_watch(
         let bytes = std::fs::read(shot).ok();
         let text = bytes
             .as_ref()
-            .and_then(|bytes| board_console::screen::read(bytes).ok());
+            .and_then(|bytes| serial_console::screen::read(bytes).ok());
         // The shell's half is drawn by `display_terminal`, in its own font, not the tour's.
         let shell = bytes.as_ref().and_then(|bytes| terminal_text(bytes));
         if let Some(shell) = &shell {

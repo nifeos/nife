@@ -241,7 +241,7 @@ impl RebootPhase<'_> {
 
 /// **The screendump decoded back into rows of text, in the terminal's own scheme.**
 ///
-/// The decoder is `board_console::screen::decode_exact` (milestone 377 (two screendump decoders,
+/// The decoder is `serial_console::screen::decode_exact` (milestone 377 (two screendump decoders,
 /// in two crates, reading the same font), which deleted this leg's own `parse_ppm`,
 /// `decode_cell` and `scanout_rows`); what this call site contributes is the
 /// three things that belong to the leg and not to a decoder:
@@ -256,9 +256,9 @@ impl RebootPhase<'_> {
 ///   `Vt::pixel` paints with and [`super::super::scanout`]'s exact text check grades.
 ///
 /// The alphabet is the caller's: this leg only ever searches for what it itself types.
-fn screen_rows(bytes: &[u8], alphabet: &[u8]) -> Result<board_console::screen::Screendump, String> {
+fn screen_rows(bytes: &[u8], alphabet: &[u8]) -> Result<serial_console::screen::Screendump, String> {
     let (fg, bg) = video_terminal::Attr::DEFAULT.colours();
-    let screen = board_console::screen::decode_exact(
+    let screen = serial_console::screen::decode_exact(
         bytes,
         video_terminal::CELL_W,
         video_terminal::CELL_H,

@@ -73,7 +73,7 @@ directory; the maintainer can drop it and apply the three one-line changes at me
 
 ### 2. FIXED: two citations described `design/naming.md` in a way that stopped being true
 
-`crates/board_console/tests/fixtures/README.md` and milestone 297 (soak becomes soak-test) said the
+`crates/serial_console/tests/fixtures/README.md` and milestone 297 (soak becomes soak-test) said the
 fabricated transcript is what `design/naming.md` "opens its rename section with". After the split
 the rename section opens with three links, and the transcript is recorded in
 `design/naming/rename-where-names-hide.md`. Both now say so. A stale pointer that describes its

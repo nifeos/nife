@@ -75,7 +75,7 @@ file's own header says *"the squaring is arbitrary and the authority is the poin
 after the arithmetic drops the point, and `demo` is a generic word with no precedent in this tree.
 
 `worker` has the same sweep hazard as `spinner`, in a different place: 99 files match, and
-`crates/board_console`'s soak-census uses the English word ("where the kernel placed each worker at
+`crates/serial_console`'s soak-census uses the English word ("where the kernel placed each worker at
 spawn"). Read those rather than sweeping them. `README.md`'s `worker 7` at the prompt is the command
 and does move.
 
@@ -175,7 +175,7 @@ lines of link argument and `fixtures/build.rs` keeps milestone 36's clang resolu
 swept. `heeder` was the only mechanical one (59 occurrences, every one the program). `spinner` is
 177 occurrences of which about forty are the program, and `worker` is 696 across 110 files, of which
 the English word holds `kernel/src/soak.rs`, `crates/soak_page`, `kernel/src/smp.rs`,
-`kernel/src/bench.rs`, `crates/board_console`'s soak census, `kernel/src/testing.rs` and half a dozen
+`kernel/src/bench.rs`, `crates/serial_console`'s soak census, `kernel/src/testing.rs` and half a dozen
 notes. Every occurrence of both was read. Records that narrate the past keep the old name (milestone
 39's 2026-07-30 measurement, 264's worklist, the dated findings in 47 and 51, the board sessions in
 `notes/visionfive2.md`, the milestone-10 note in `notes/shell.md`). Documentation describing the

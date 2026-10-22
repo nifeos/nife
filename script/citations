@@ -628,7 +628,7 @@ if mode == "--ratchet":
         return r.stdout.decode(errors="replace")
 
     # `*.log` and design/roadmap/README.md are here for one reason: **nobody wrote those lines as
-    # prose.** A captured console log under crates/board_console/tests/fixtures/captured/ is a
+    # prose.** A captured console log under crates/serial_console/tests/fixtures/captured/ is a
     # recording of what a machine printed, and the roadmap index was generated from the blocks from
     # milestone 294 (`design/roadmap/README.md`'s index is generated, not hand-maintained) until
     # calef retired it on 2026-09-21. Asking either to carry a gloss asks a lane to edit a

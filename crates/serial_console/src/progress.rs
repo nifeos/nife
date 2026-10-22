@@ -541,7 +541,7 @@ impl BootProgress {
     ///
     /// A bench script reading this gets the curve's latest entry without re-parsing the log. What
     /// it does **not** get is the whole curve: this is a progress ratchet, and the points are in
-    /// the capture. `crates/board_console::lottery` is the precedent for reading a finished log for
+    /// the capture. `crates/serial_console::lottery` is the precedent for reading a finished log for
     /// its results.
     #[must_use]
     pub fn sweep_point(&self) -> Option<&SweepPoint> {

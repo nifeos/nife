@@ -28,7 +28,7 @@ use crate::{
 /// radon, by `notes/job-mix.md`'s procedure. What this proves is that the workload runs, that the
 /// sweep completes, and that the output is the shape the bench evening will read.
 ///
-/// **The judging is `board_console`'s**, not this function's (milestone 324 part 2), which is the
+/// **The judging is `serial_console`'s**, not this function's (milestone 324 part 2), which is the
 /// same move `soak_test` below already made and for the same reason: a second reader drifts from
 /// the bench-side one the first time either changes, and the cheapest way for two things to agree
 /// is for there to be one of them. What stood here instead was a loop over `starts_with("job-mix")`
@@ -41,8 +41,8 @@ use crate::{
 pub(crate) fn job_mix_sweep() -> ExitCode {
     use std::time::Duration;
 
-    use board_console::progress::Stage;
-    use board_console::watch::{Policy, watch};
+    use serial_console::progress::Stage;
+    use serial_console::watch::{Policy, watch};
 
     let policy = Policy {
         // Ten minutes. The whole sweep is eighteen subruns and took well under a minute on the
@@ -55,7 +55,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // seconds whatever it is doing, so fifteen is three missed beats. A sweep speaks only when
         // a subrun ends, and the longest is the top of `job_mix::TASK_SWEEP`: measured at
         // 249,234,771 ticks on a 62.5 MHz counter, which is 4.0 seconds, in the capture at
-        // `crates/board_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`.
+        // `crates/serial_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`.
         // Sixty seconds is fifteen times that, which is headroom for a slower host and still names
         // a wedge inside a minute. It was twenty times a 2.6-second subrun until milestone 168
         // took twenty-one repeats of a seven-kind mix instead of three of a five-kind one, which
@@ -67,7 +67,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // and a sweep that has printed its last point is past every such gate.
         settle: Duration::from_secs(0),
         // An emulator has no firmware prologue to climb; see `boot_check`'s note.
-        board: &board_console::board::EMULATOR,
+        board: &serial_console::board::EMULATOR,
     };
     // `--hvf` and `--release` (added 2026-09-19 for the HVF cross-check in notes/job-mix.md): the
     // two flags the tree already spells this way, `run`'s and `bench`'s, rather than new ones. HVF
@@ -161,7 +161,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
 }
 
 /// What `job-mix` says about a sweep that finished, however it finished.
-fn report_sweep(session: &board_console::watch::Session, log_path: &std::path::Path) {
+fn report_sweep(session: &serial_console::watch::Session, log_path: &std::path::Path) {
     eprintln!();
     eprintln!("job-mix: {}", session.summary());
     match session.progress.sweep_point() {
@@ -198,7 +198,7 @@ struct RunArgs {
     arch: String,
     smp: Option<String>,
     log: Option<PathBuf>,
-    policy: board_console::watch::Policy,
+    policy: serial_console::watch::Policy,
     /// Whether `--for` was given, so a command can pick its own default for a run of its kind.
     duration_given: bool,
     switches: Vec<&'static str>,
@@ -211,7 +211,7 @@ impl RunArgs {
         command: &str,
         switches: &[&'static str],
         usage: &str,
-        policy: board_console::watch::Policy,
+        policy: serial_console::watch::Policy,
     ) -> Result<Self, ExitCode> {
         let args: Vec<String> = std::env::args().skip(2).collect();
         let mut run = RunArgs {
@@ -399,7 +399,7 @@ fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
 /// 219's block is explicit that the workload and the console must agree about what a hang is, and
 /// the cheapest way for two things to agree is for there to be one of them.
 ///
-/// What this adds over `board_console` is only what a board does not need: building the kernel and
+/// What this adds over `serial_console` is only what a board does not need: building the kernel and
 /// the archive, starting QEMU, and killing it afterwards. See `script/soak-test`.
 ///
 /// Named for the command rather than for the workload (milestone 297): this function *is*
@@ -408,7 +408,7 @@ fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
 pub(crate) fn soak_test() -> ExitCode {
     use std::time::Duration;
 
-    use board_console::watch::{Policy, watch};
+    use serial_console::watch::{Policy, watch};
 
     // A minute by default: long enough that the beat, the rate and the cross-core counters are all
     // real numbers rather than a first sample, and short enough that nobody is tempted to skip it.
@@ -419,7 +419,7 @@ pub(crate) fn soak_test() -> ExitCode {
         quiet_after: Some(Duration::from_secs(15)),
         settle: Duration::from_secs(0),
         // The emulator's profile; see `boot_check_policy`'s note.
-        board: &board_console::board::EMULATOR,
+        board: &serial_console::board::EMULATOR,
     };
     // Milestone 249 (the boot lottery is sampled by a person walking to the board)'s QEMU proof:
     // `--reboot` builds the rebooting soak and passes only when a second boot starts soaking after
@@ -614,11 +614,11 @@ impl SoakKind {
 /// **What a plain soak says, and its exit status**: the watcher's summary and the last heartbeat,
 /// and a QEMU that ended early or never beat is a failure whatever the watcher scored.
 fn soak_verdict(
-    session: &board_console::watch::Session,
+    session: &serial_console::watch::Session,
     total: std::time::Duration,
     log_path: &std::path::Path,
 ) -> ExitCode {
-    use board_console::watch::Outcome;
+    use serial_console::watch::Outcome;
 
     eprintln!();
     eprintln!("soak-test: {}", session.summary());
@@ -630,7 +630,7 @@ fn soak_verdict(
 
     // The one judgement that is this driver's rather than the watcher's, because it is about a
     // process and not about a board. A serial port cannot end; a pipe can, and QEMU exiting before
-    // the deadline means the guest is gone. `board_console` scores `Ended` as success when nothing
+    // the deadline means the guest is gone. `serial_console` scores `Ended` as success when nothing
     // was being waited for, which is right for a replayed capture and wrong here.
     if session.outcome == Outcome::Ended
         && session.elapsed + std::time::Duration::from_secs(1) < total
@@ -648,7 +648,7 @@ fn soak_verdict(
 }
 
 /// **The last heartbeat of a soak, and what it does and does not mean**, said on every run.
-fn report_beat(beat: &board_console::progress::SoakBeat) {
+fn report_beat(beat: &serial_console::progress::SoakBeat) {
     eprintln!(
         "soak-test: {} round trips in {}s ({} /s at the last beat), {} cross-core handoffs",
         beat.rounds, beat.seconds, beat.rate, beat.crossings
@@ -711,9 +711,9 @@ fn report_beat(beat: &board_console::progress::SoakBeat) {
 /// firmware, a guest that printed its reset line and stopped, and a QEMU that exited on the reset
 /// all fail here, which is the difference this test exists to draw.
 ///
-/// It reads the stream itself rather than going through `board_console::watch`, because that
+/// It reads the stream itself rather than going through `serial_console::watch`, because that
 /// recogniser judges one boot and treats a second banner as the story starting over; teaching it
-/// multi-boot runs is `board_console::lottery`'s job on a real capture, not this proof's.
+/// multi-boot runs is `serial_console::lottery`'s job on a real capture, not this proof's.
 ///
 /// Exit statuses follow `soak-test`'s: 0 came back, 1 the kernel said the reset failed or panicked,
 /// 2 the deadline passed first, 3 QEMU's output ended.

@@ -45,7 +45,7 @@
 // **The console markers, which are a contract and not a wording** (milestone 324 part 2).
 //
 // Everything below this comment and above `COMPUTE` is text that leaves the machine and is read
-// back by something that is not the machine: `crates/board_console` on a bench or in CI, and
+// back by something that is not the machine: `crates/serial_console` on a bench or in CI, and
 // `cargo xtask job-mix` under QEMU. `crates/boot_ladder` holds the boot tour's markers for exactly
 // this reason and its header carries the argument; these are the sweep's, and they lived as four
 // private `const`s in `kernel/src/job_mix.rs` plus four string literals in `xtask/src/main.rs`
@@ -53,7 +53,7 @@
 // 268's finding 3, and the fix is the one that milestone found: there is one of them.
 //
 // **What is shared is the head, and the fields inside the line are not.** That is the gap
-// `crates/board_console`'s `SweepPoint` carries a `BUGS` entry for, and 2026-09-19 is the day it
+// `crates/serial_console`'s `SweepPoint` carries a `BUGS` entry for, and 2026-09-19 is the day it
 // cost something: the tail of [`POINT`] gained four field names and lost two, every marker here
 // still matched, and the recogniser silently read nothing.
 //

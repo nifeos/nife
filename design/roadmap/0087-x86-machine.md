@@ -129,7 +129,7 @@ withdrawn. Milestone 267 (the tour is three things wearing one name) established
 deleted one of them (the narrative program). So "the tour" would cite something that partly does not exist.
 
 The self-test is the right bound for **this** milestone. It is a machine-readable line that
-`script/soak` and `crates/board_console` already judge board runs by, so nothing new has to learn to
+`script/soak` and `crates/serial_console` already judge board runs by, so nothing new has to learn to
 read it. Passing it means exceptions, mapping, frames, timer and scheduler all work on the hardware.
 That is "this machine runs nife" with a definite answer rather than a liveness signal.
 

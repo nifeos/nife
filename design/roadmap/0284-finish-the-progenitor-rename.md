@@ -75,7 +75,7 @@ under `design/` and so is not a lane's either.
   `INIT_STACK_PAGES` and the five `hello` roles stayed exactly as they are. Where the prose around
   one had to stop lying, it says what the thing is and leaves the identifier alone.
 - A string a gate or a log parser matches does not change on its own. New here, and it cost a
-  real decision. `crates/board_console` recognizes the boot-tour label `init/build  :` by substring,
+  real decision. `crates/serial_console` recognizes the boot-tour label `init/build  :` by substring,
   against captured VisionFive 2 logs that are evidence and cannot be re-written; so the label
   stays and the sentence after it was corrected. Runtime strings nothing parses (the `expect`s in
   `kernel/src/user.rs`, `could not spawn (init is out of memory)`, the handoff line) were changed,
@@ -163,7 +163,7 @@ them, deliberately, so that a rename moves one set of words and not two.
 ## BUGS
 
 - The `init/build  :` boot-tour label is still wrong and is left that way on purpose.
-  `crates/board_console::progress` matches it by substring and its captured VisionFive 2 fixture logs
+  `crates/serial_console::progress` matches it by substring and its captured VisionFive 2 fixture logs
   contain it; changing the label means changing the recognizer and stranding evidence that cannot be
   re-captured without the board. The sentence after the label was corrected, so the transcript now
   reads `init/build  : the userspace builder loaded ...`, which is honest and mismatched.
@@ -190,7 +190,7 @@ them, deliberately, so that a rename moves one set of words and not two.
 ## Follow-on
 
 - **Recorded.** The `init/build  :` label, the `design/` occurrences and the dated quotations are
-  limitations beside the features they belong to: `crates/board_console/src/progress.rs` for the
+  limitations beside the features they belong to: `crates/serial_console/src/progress.rs` for the
   label, and this block's `BUGS` for the rest.
 - **Recorded.** The 471 occurrences in `design/roadmap/` and `design/decisions/` are this block's
   own `BUGS` entry beside the count, in `design/roadmap/0284-finish-the-progenitor-rename.md`, because

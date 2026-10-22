@@ -242,7 +242,7 @@ def _crate_buckets(path):
 
 
 CRATE_BUCKETS = _crate_buckets(pathlib.Path(__file__).with_name('trust_boundary_crates.tsv'))
-# The `crates/` members no binary on nife links (`stick_maker`, `board_console` and the like). They
+# The `crates/` members no binary on nife links (`stick_maker`, `serial_console` and the like). They
 # stay in `unsafe_census` (its `HOST_ONLY` is paths, and the lint ceiling keeps its meaning); this
 # split leaves them out, because kernel privilege or userspace confinement has no answer for code
 # that runs on neither.
