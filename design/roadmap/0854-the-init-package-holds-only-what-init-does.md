@@ -74,8 +74,8 @@ names. `*` marks a crate `contracts` or `runtime` already exports, so linking it
 | `root_supervisor` | `abi*`, `address_space_map*`, `elf*`, `nifefs*`, `supervision_protocol*`, `user_mode_runtime*` | `authority_tests` only |
 | `spawner`, `sub_server_supervisor` | a subset of the row above | `root_supervisor` only |
 | `job_undertaker` | `abi*`, `grant_plan*`, `user_mode_runtime*` | `system_initializer`, at boot |
-| `swapper` | `abi*`, `component_plan*`, `elf*`, `nifefs*`, `supervision_protocol*`, `hot_swap_contract*`, `user_mode_runtime*` | `live_swap_tests` only; it builds `broker` and the `swap_boundary_witness`, `rust_swappable` and `c_swappable` fixtures by name |
-| `broker` | `component_plan*`, `hot_swap_contract*`, `user_mode_runtime*` | `swapper` only |
+| `swapper` | `abi*`, `capability_plan*`, `elf*`, `nifefs*`, `supervision_protocol*`, `hot_swap_contract*`, `user_mode_runtime*` | `live_swap_tests` only; it builds `broker` and the `swap_boundary_witness`, `rust_swappable` and `c_swappable` fixtures by name |
+| `broker` | `capability_plan*`, `hot_swap_contract*`, `user_mode_runtime*` | `swapper` only |
 | `system_log` (program) | `system_log`, `system_log_contract*`, `abi*`, `address_space_map*`, `user_mode_runtime*` | `system_initializer` builds it by archive name; `console` and the kernel speak `system_log_contract` to it |
 | `system_log` (crate) | `byte_sink_contract*`, `system_log_contract*` | linked by the `system_log` program and a fuzz target, nothing else |
 | `system_initializer` | 23 crates, all contracts or runtime except `http_response` (`network`) and `video_terminal` (`display`) | linked by `progenitor` only |
@@ -265,7 +265,7 @@ item waits on it.
 3. Fork 3: rename `broker` to `queue_broker`. A code change, performed as design/naming.md says a
    ratified rename is performed. Its scope, measured 2026-10-06: the `[[bin]]` and source file in
    `components`, the `init` package line, and the archive name `swapper` builds it by. Then the
-   `contract` string in `hot_swap_contract` and `component_plan`, and the kernel's `broker_rtt`
+   `contract` string in `hot_swap_contract` and `capability_plan`, and the kernel's `broker_rtt`
    comments. The provenance line keeps the 2026-07-30 ruling and adds this one. Best after item 2, so
    the file it edits in `swapper` has settled in its new package. The `broker_rtt` benchmark name is
    keyed in the three `bench/baseline-*.txt` files and the recorded radon logs; the program rename

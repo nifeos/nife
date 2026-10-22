@@ -1,4 +1,5 @@
-//! **The outlaw: the two programs the privilege-boundary tests need, and nothing else wants.**
+//! **The kernel test subject: the two programs the privilege-boundary tests need, and nothing else
+//! wants.**
 //!
 //! Both of these used to be aarch64 machine code assembled inline in `kernel/src/user.rs` (the
 //! `user_program!` macro, milestone 7a). That was fine while there was one instruction set. It
@@ -18,11 +19,9 @@
 //! every frame comes back exactly.
 //!
 
-//! Name: provisional, and ruled: calef ruled **`kernel_test_subject`** on 2026-09-13, working the
-//! unratified worklist. The block stays `provisional` because the ratified name is not this file's
-//! until the rename is performed, which waits on milestone 175 moving this file and travels with
-//! `flaky`'s and `chatty`'s sweep. Introduced 2026-07-31 as the fixture that does what it is not
-//! permitted to do, so the kernel's refusal has a witness.
+//! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `outlaw`.
+//! Introduced 2026-07-31 as the fixture that does what it is not permitted to do, so the kernel's
+//! refusal has a witness.
 //!
 //! **This block used to defend `outlaw` with an argument its own code refutes**, and the refutation
 //! is why the name went. It claimed the metaphor "generalises correctly: the file already holds two
@@ -65,8 +64,8 @@ use user_mode_runtime::{exit, yield_now};
 /// is the assertion, because the second can only happen if the return from the first genuinely put
 /// us back at EL0/U-mode. One proves we left. Two prove we came back.
 /// It is also the default, so nothing branches on this constant; it is here because the kernel side
-/// (`user::OUTLAW_ROUND_TRIP`) has to name the same number, and a role catalogue with a hole in it
-/// is how the numbers drift apart.
+/// (`user::KERNEL_TEST_SUBJECT_ROUND_TRIP`) has to name the same number, and a role catalogue with
+/// a hole in it is how the numbers drift apart.
 #[allow(dead_code)]
 const ROUND_TRIP: u64 = 0;
 

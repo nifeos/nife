@@ -73,7 +73,7 @@ argument for a gate rather than a convention.
 ## Prior art inside this tree
 
 The shape is built and works, twice. `crates/hot_swap_contract` and `crates/job_mix` both publish the role
-numbers their two binaries agree on, and `crates/schedule_store` publishes the file names
+numbers their two binaries agree on, and `crates/timetable_store` publishes the file names
 `session_reviver` and `fs_test_client` both depend on, for exactly this reason and with the reason
 written down. Milestone 293 did the same for the credential values three files were copying
 (`credential_contract::fixture::PEOPLE`). What is missing is not a design, it is the sweep.
@@ -115,8 +115,8 @@ as a bug in the code under test rather than as a mismatch. It is not hypothetica
 the counter-example is the strongest argument for a gate rather than a convention:
 `crates/hot_swap_contract` already publishes three role numbers with real doc comments and
 `system_tests/src/user/live_swap_tests.rs` re-declares all three locally anyway. The shape is built and
-works three times over, in `hot_swap_contract`, `job_mix` and `schedule_store`, so what is missing is
-not a design but the sweep. What a lane cannot decide is the crate names, and there is no useful
+works three times over, in `hot_swap_contract`, `job_mix` and `timetable_store`, so what is missing
+is not a design but the sweep. What a lane cannot decide is the crate names, and there is no useful
 half of this work that does not create one. These numbers are not part of any shipped wire
 contract, so putting a test client's behavior numbers into a protocol crate would widen what a real
 client is written against with something no real client needs. Two shapes are priced so the question

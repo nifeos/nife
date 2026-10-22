@@ -261,8 +261,8 @@ needed it.
 
 ## The fault is a PERMISSION fault, and that word is the whole boundary
 
-The outlaw program reads `0xffff_0000_4008_0000`. That address is mapped. It is readable.
-The kernel reads it all day.
+The `kernel_test_subject` program reads `0xffff_0000_4008_0000`. That address is mapped. It is
+readable. The kernel reads it all day.
 
 The hardware picks `TTBR1` from bits 63:48, walks the kernel's own tables, finds the page,
 reads the `AP` bits, and says no.

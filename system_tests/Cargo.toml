@@ -88,7 +88,7 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 timetable = { version = "0.1.0", path = "../crates/timetable" }
 # The stored schedule's fixture (milestone 152), so the replacement the test sends first is the
 # document the store test writes to disk, byte for byte.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }

@@ -1,4 +1,4 @@
-Falsifies `component_plan::proofs::dependents_finds_exactly_the_non_target_instances_that_declared_it`.
+Falsifies `capability_plan::proofs::dependents_finds_exactly_the_non_target_instances_that_declared_it`.
 
 The defect: `str_eq` returns true for two strings of different lengths. A supervisor
 about to swap a component then reads every live instance as a dependent of every
@@ -14,10 +14,10 @@ this diff moved the expectation and the implementation together and the harness 
 Confirmed by applying it against the old phrasing and watching it stay green. The
 expectation now uses `core`'s `==` on `&str`, which nothing in this crate can redefine.
 
-diff --git a/crates/component_plan/src/lib.rs b/crates/component_plan/src/lib.rs
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
 index 8633f7ed..1ef4509f 100644
---- a/crates/component_plan/src/lib.rs
-+++ b/crates/component_plan/src/lib.rs
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
 @@ -619,7 +619,7 @@ pub const fn slot_of(reqs: &Requirements, role: &str) -> u64 {
  const fn str_eq(a: &str, b: &str) -> bool {
      let (a, b) = (a.as_bytes(), b.as_bytes());

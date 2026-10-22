@@ -1,8 +1,8 @@
 // Moved out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to
 // their own files). Its docs stay on its `pub mod` line in `lib.rs`, where they always were.
 
-use component_plan::Direction::{Serve, Use};
-use component_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
+use capability_plan::Direction::{Serve, Use};
+use capability_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
 
 /// Where the handoff page sits. Clear of the three pages `line_editor` already maps.
 pub const HANDOFF_VA: u64 = 0x00a0_0000;
@@ -283,19 +283,19 @@ pub mod supervisor {
 const _: () = assert!(CONSOLE.problem().is_none());
 const _: () = assert!(DISPLAY.problem().is_none());
 // The slots `line_editor` reads without being told.
-const _: () = assert!(component_plan::slot_of(&CONSOLE, "terminal") == 0);
-const _: () = assert!(component_plan::slot_of(&CONSOLE, "sink") == 1);
-const _: () = assert!(component_plan::slot_of(&CONSOLE, "sink_reply") == 2);
-const _: () = assert!(component_plan::slot_of(&DISPLAY, "terminal") == 0);
-const _: () = assert!(component_plan::slot_of(&DISPLAY, "sink") == 1);
+const _: () = assert!(capability_plan::slot_of(&CONSOLE, "terminal") == 0);
+const _: () = assert!(capability_plan::slot_of(&CONSOLE, "sink") == 1);
+const _: () = assert!(capability_plan::slot_of(&CONSOLE, "sink_reply") == 2);
+const _: () = assert!(capability_plan::slot_of(&DISPLAY, "terminal") == 0);
+const _: () = assert!(capability_plan::slot_of(&DISPLAY, "sink") == 1);
 // And the one it is told: the notification endpoint follows the control endpoint in both.
 const _: () = assert!(
-    component_plan::slot_of(&CONSOLE, "supervisor")
-        == component_plan::slot_of(&CONSOLE, "control") + 1
+    capability_plan::slot_of(&CONSOLE, "supervisor")
+        == capability_plan::slot_of(&CONSOLE, "control") + 1
 );
 const _: () = assert!(
-    component_plan::slot_of(&DISPLAY, "supervisor")
-        == component_plan::slot_of(&DISPLAY, "control") + 1
+    capability_plan::slot_of(&DISPLAY, "supervisor")
+        == capability_plan::slot_of(&DISPLAY, "control") + 1
 );
 // Two instances of INSTANCE_PAGES (48) and sixteen pages of the supervisor's own, written out
 // so a changed operator in the sum is a build error. Mutation survivor triage, milestone 326

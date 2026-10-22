@@ -170,7 +170,7 @@ fn a_fault_after_the_prompt_does_not_excuse_a_missing_boot_line() {
 progenitor: every program measured against the archive table
 
 nife capability shell. naming a resource in a command IS granting it.
-$ outlaw
+$ kernel_test_subject
   user thread 22 killed: scause 0x3 (code 3)
   the kernel is fine.
 ";

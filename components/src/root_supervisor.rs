@@ -15,7 +15,7 @@
 //!     |
 //!     +-- sub_server_supervisor    a request channel + a fault endpoint         (holds NO memory at all)
 //!             |
-//!             +-- flaky   a report endpoint                      (the supervised sub-server)
+//!             +-- first_attempt_crasher   a report endpoint      (the supervised sub-server)
 //!
 //!   then: root_supervisor deletes its untyped and becomes a RECEIVE loop on its own supervision endpoint.
 //! ```
@@ -78,7 +78,7 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     };
     // The sub-server's image travels as *bytes*, not as an archive: the spawner gets exactly the one
     // program it may build. We hold the initial ramdisk; it never does.
-    let Some(flaky) = fs.read("flaky") else {
+    let Some(first_attempt_crasher) = fs.read("first_attempt_crasher") else {
         bail(4)
     };
 
@@ -120,14 +120,14 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
                 (childfault, abi::rights::READ | abi::rights::GRANT),
             ],
             maps: &[],
-            blobs: &[(SPAWNER_IMAGE_VA, flaky)],
+            blobs: &[(SPAWNER_IMAGE_VA, first_attempt_crasher)],
             fault: Some(rootfault),
             ..ChildEndowment::new(Retention::Nothing)
         },
     ) else {
         bail(10)
     };
-    if !supervision_protocol::start_child(child, 0, flaky.len() as u64, 0) {
+    if !supervision_protocol::start_child(child, 0, first_attempt_crasher.len() as u64, 0) {
         bail(11)
     }
 

@@ -1,8 +1,9 @@
 # The component manifest
 
-*Milestone 23's second residual, built 2026-08-17. `crates/component_plan`, the four declarations in
-`crates/hot_swap_contract`, and the operator that no longer contains an endowment. The mechanism it serves
-is DECISIONS §41 and notes/live-replacement.md; read those first if you want the swap itself.*
+*Milestone 23's second residual, built 2026-08-17. `crates/capability_plan`, the four declarations
+in `crates/hot_swap_contract`, and the operator that no longer contains an endowment. The mechanism
+it serves is DECISIONS §41 and notes/live-replacement.md; read those first if you want the swap
+itself.*
 
 ## The defect, in the roadmap's own six words
 
@@ -50,7 +51,7 @@ comprehension disaster in a tree whose first tenet is that a reader meets a name
 
 They are siblings, not one thing, and the difference fits in a sentence.
 `grant_plan::Manifest` declares **what a human at a prompt may designate** for a program;
-`component_plan::Requirements` declares **what a supervisor must route before a component can serve
+`capability_plan::Requirements` declares **what a supervisor must route before a component can serve
 anyone**. Four differences follow, each checkable against the code rather than a matter of taste.
 
 There is no command line and no human. `grant_plan` exists to make designation authorization: a
@@ -76,10 +77,10 @@ the contract is wired by code that never heard of that build.
 
 What the two **do** share is a shape, and the shape is the reusable idea rather than the struct: a
 declaration, plus what the wirer holds, checked into an endowment or a typed refusal, before anything
-is spawned. `grant_plan::plan(run, holdings, expansion)` and `component_plan::plan(reqs, provisions)`
-are the same function over different worlds, and each crate's refusal enum is the same kind of
-answer. That parallel is why the crate is called `component_plan` and not `component_manifest`: the
-echo is the part worth teaching, and the distinguishing word carries the difference.
+is spawned. `grant_plan::plan(run, holdings, expansion)` and `capability_plan::plan(reqs,
+provisions)` are the same function over different worlds, and each crate's refusal enum is the same
+kind of answer. That parallel is why the crate's name ends in `plan` and not `manifest`: the echo is
+the part worth teaching, and the distinguishing word carries the difference.
 
 ## Where a manifest lives, and why it is the contract's and not the build's
 
@@ -145,11 +146,11 @@ that would otherwise be invisible at run time: a component reading one of two sl
 silently winning, or a region split refusing for no visible reason.
 
 The slot numbers are derived, which is the same rung reached a second way. `hot_swap_contract::SVC` is
-not `0` any more; it is `component_plan::slot_of(&CONSOLE, "service")`, computed at compile time from
-the declaration the operator wires from. A role the manifest does not declare **does not compile**.
-`swap_boundary_witness` and `broker` derive their own the same way, and because one binary serves
-both `CONSOLE` and `BACKEND` there are four more assertions pinning the two declarations to the same
-slots.
+not `0` any more; it is `capability_plan::slot_of(&CONSOLE, "service")`, computed at compile time
+from the declaration the operator wires from. A role the manifest does not declare **does not
+compile**. `swap_boundary_witness` and `broker` derive their own the same way, and because one
+binary serves both `CONSOLE` and `BACKEND` there are four more assertions pinning the two
+declarations to the same slots.
 
 Provisioning is a runtime refusal, because what a supervisor holds is only known when it runs.
 That is `plan()`'s job, and its answer is a value the operator reports rather than a fault it takes.
@@ -181,12 +182,12 @@ manifest a request the supervisor may refuse rather than an instruction it carri
 A greppable claim. `components/src/swapper.rs` contains no `abi::rights::*` and no
 `abi::address_space::MAP_R*`. There is nothing left in the operator to type wrong.
 
-Plus thirteen host tests and three Kani harnesses on the pure logic, which is where `component_plan`
-lives for exactly that reason. The three proofs are the ones a case-by-case test cannot close. No
-routing table ever gives a component a right its declaration did not ask for (and never `GRANT`). A
-missing route refuses rather than falling through to slot zero (which in every program in this tree
-is its construction budget). The device split is a partition for every declaration, whichever order
-and kinds were declared.
+Plus thirteen host tests and three Kani harnesses on the pure logic, which is where
+`capability_plan` lives for exactly that reason. The three proofs are the ones a case-by-case test
+cannot close. No routing table ever gives a component a right its declaration did not ask for (and
+never `GRANT`). A missing route refuses rather than falling through to slot zero (which in every
+program in this tree is its construction budget). The device split is a partition for every
+declaration, whichever order and kinds were declared.
 
 ## EXAMPLES
 
@@ -218,8 +219,8 @@ supervisor:
 2. Derive the slots the component itself reads, so the two cannot drift:
 
    ```rust
-   pub const FRAMES: u64 = component_plan::slot_of(&RENDERER, "frames");
-   pub const RPT: u64 = component_plan::slot_of(&RENDERER, "report");
+   pub const FRAMES: u64 = capability_plan::slot_of(&RENDERER, "frames");
+   pub const RPT: u64 = capability_plan::slot_of(&RENDERER, "report");
    ```
 
 3. In the supervisor, say which of *its* objects answers to each name, and start it:
@@ -228,7 +229,7 @@ supervisor:
    let to_renderer = Provisions {
        held: &[("frames", my_ep), ("report", REPORT), ("canvas", my_page)],
    };
-   let Ok(plan) = component_plan::plan(&RENDERER, &to_renderer) else { bail(70) };
+   let Ok(plan) = capability_plan::plan(&RENDERER, &to_renderer) else { bail(70) };
    start_child(&image, &plan, faultep, [0, 0, 0], 71);
    ```
 
@@ -236,7 +237,7 @@ Substitute a component's peer without touching the component. Route its `service
 else. That is the whole of what the queued channel does to `swap_boundary_witness`: `to_producer`,
 in `components/src/swapper.rs` `plan_queued`, routes `service` to the broker's `front` endpoint.
 
-Hand a device over on the far side of a revoke. `component_plan` sorts device mappings last, so
+Hand a device over on the far side of a revoke. `capability_plan` sorts device mappings last, so
 both halves are slices of one plan: build the child from `plan.maps_without_devices()` with
 `Retention::Nothing` (§142 (what a spawner retains over a child)), and after `DeviceFrame::REVOKE` map
 each of `plan.devices()` with `abi::address_space::MAP_INTO`. `components/src/swapper.rs`
@@ -289,9 +290,8 @@ the direction and the address, which is what a supervisor can get wrong *silentl
 type is what the kernel already refuses loudly.
 
 The role names are provisional. A lane may not mint a name, and `service`, `report`, `operator`,
-`control`, `witness`, `uart`, `requests` and `backend` are the words a reader meets first. So is
-`component_plan` itself, and so are `Requirements`, `Provisions`, `Plan`, `CapNeed`, `MapNeed` and
-`Direction`.
+`control`, `witness`, `uart`, `requests` and `backend` are the words a reader meets first. So are
+`Requirements`, `Provisions`, `Plan`, `CapNeed`, `MapNeed` and `Direction`.
 
 Three residuals of milestone 23 (a capability-routed component OS with live replacement) remain,
 untouched here: state handoff (the crux,

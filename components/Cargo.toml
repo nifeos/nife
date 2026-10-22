@@ -8,8 +8,8 @@
 # The package holds every EL0 program a distribution would ship because somebody wants its function:
 # the services and drivers, the progenitor and supervision spine, and the tools a person invokes at the
 # prompt. What it is not is in `fixtures/`, and the dividing question is what a program IS rather
-# than who runs it, since nearly everything here is reached only from a kernel test. Nobody has put
-# either name to an architect, which is what `recorded` claims and all it claims.
+# than who runs it, since nearly everything here is reached only from a kernel test. calef held the
+# name on 2026-10-22 (UTC, #2562) without ruling it, so it stays `recorded`.
 [package]
 name = "components"
 version = "0.1.0"
@@ -140,9 +140,9 @@ bench = false
 
 # The authority-shrinking supervision tree (milestone 22 phase B.2). Four programs, one shared module
 # (src/suptree.rs): `root_supervisor` is a progenitor that hands its construction authority to `spawner` and its
-# restart policy to `sub_server_supervisor` and then DELETES its budget; `flaky` is the supervised sub-server that
-# crashes once so the tree has something real to keep alive. Portable, both ISAs; the kernel's
-# authority_tests drive them.
+# restart policy to `sub_server_supervisor` and then DELETES its budget; `first_attempt_crasher` is
+# the supervised sub-server that crashes once so the tree has something real to keep alive.
+# Portable, both ISAs; the kernel's authority_tests drive them.
 [[bin]]
 name = "root_supervisor"
 path = "src/root_supervisor.rs"
@@ -651,7 +651,7 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 # The supervisor half of milestone 23's component manifest: the operator wires a component from
 # its declaration rather than from literals, and `swap_boundary_witness` and `broker` derive their
 # own slot numbers from the declarations they are built against.
-component_plan = { version = "0.1.0", path = "../crates/component_plan" }
+capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 virtio = { version = "0.1.0", path = "../crates/virtio" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
@@ -745,7 +745,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122/§125): the fixed file
 # names and the manifest format `login.rs` writes at a login and reads at start-up, which neither
 # `timetable` nor `filesystem_contract` already owns.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }

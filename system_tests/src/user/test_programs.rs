@@ -11,8 +11,8 @@
 //! their *scaffolding* was aarch64. Three things moved and the tests came along unchanged:
 //!
 //! 1. The hand-assembled programs became real ELFs the toolchain builds for both targets (the
-//!    `outlaw` binary and the `interrupt_ignorer` that already existed). See the note above
-//!    `OUTLAW_ROUND_TRIP`.
+//!    `kernel_test_subject` binary and the `interrupt_ignorer` that already existed). See the note
+//!    above `KERNEL_TEST_SUBJECT_ROUND_TRIP`.
 //! 2. `ESR`/`FAR` became `arch::UserFault`, the same fact in words RISC-V can say, which is what
 //!    keeps "a PERMISSION fault at exactly this address" assertable rather than softened to "a fault
 //!    happened".
@@ -70,10 +70,10 @@ pub(super) fn blk_image() -> &'static [u8] {
     program("block_driver").expect("no block_driver program in the initial ramdisk")
 }
 
-/// The `outlaw` program's ELF bytes: the two privilege-boundary behaviours that used to be
-/// hand-assembled aarch64 machine code in this file. See [`OUTLAW_ROUND_TRIP`].
-pub(super) fn outlaw_image() -> &'static [u8] {
-    program("outlaw").expect("no outlaw program in the initial ramdisk")
+/// The `kernel_test_subject` program's ELF bytes: the two privilege-boundary behaviours that used
+/// to be hand-assembled aarch64 machine code in this file. See [`KERNEL_TEST_SUBJECT_ROUND_TRIP`].
+pub(super) fn kernel_test_subject_image() -> &'static [u8] {
+    program("kernel_test_subject").expect("no kernel_test_subject program in the initial ramdisk")
 }
 
 /// **An address in the kernel's own memory: mapped, readable by the kernel, forbidden to

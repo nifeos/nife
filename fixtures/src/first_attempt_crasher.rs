@@ -8,12 +8,10 @@
 //! §26) against a real supervisor: a crash that must be restarted, and a clean exit that must not be.
 //! A program that only crashed would prove the restart but not the policy.
 //!
-//! Name: provisional, and ruled: calef ruled **`first_attempt_crasher`** on 2026-09-13, working
-//! the unratified worklist. The block stays `provisional` because the ratified name is not this
-//! file's yet: the rename waits for milestone 175 to move this file, and until it lands `flaky`
-//! belongs on the worklist rather than off it. Introduced 2026-07-29 as a
-//! supervision fixture: attempt 0 crashes on purpose and any later attempt exits cleanly, which
-//! exercises both halves of the fault endpoint (DECISIONS §26) against a real supervisor.
+//! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `flaky`.
+//! Introduced 2026-07-29 as a supervision fixture: attempt 0 crashes on purpose and any later
+//! attempt exits cleanly, which exercises both halves of DECISIONS §26 (the fault
+//! endpoint) against a real supervisor.
 //!
 //! The reason the old name failed is the reason a blind sweep would be dangerous, and they are
 //! the same reason. "Flaky" is the field's established word for a test that fails
