@@ -217,3 +217,18 @@ aarch64	84232e8c9	ctx_switch	-1.79	#2426: read_current_thread in one asm block
 aarch64	84232e8c9	ipc_rtt_el0	-2.99	#2426: read_current_thread in one asm block
 aarch64	84232e8c9	sink_throughput	-3.31	#2426: read_current_thread in one asm block
 aarch64	84232e8c9	spawn_el0	-0.50	#2426: read_current_thread in one asm block
+
+# #2565 (bench/riscv64-spawn-reap-drift): riscv64, each merge against its parent, measured with
+# `TICK_HZ` 1 so no preemption tick lands in a window. Only measured costs: by calef's ruling B on
+# #2565 (2026-10-22 UTC), a step that only the tick's phase moved stays unexplained until milestone
+# 939 (the icount bench runs without a preemption tick in its windows).
+# The lines cite milestone 761 (capability lookup off the global lock).
+riscv64	476641ddf	spawn_reap	+0.25	#1620, the IPC fastpaths shrunk (+86 ticks)
+riscv64	62619d7ff	spawn_reap	+1.84	#1614, fatal risk 4: the reaper frees a thread's stack outside IPC_TABLES and takes it again (+645 ticks)
+riscv64	ccea3ba7f	spawn_reap	+2.56	#1617, milestones 754 and 761: the 64-slot table, copied twice at each birth until #2565 (+916 ticks)
+riscv64	d9a2eeb93	spawn_reap	-0.37	#1743 (-134 ticks)
+riscv64	ddd38f0b0	spawn_reap	+1.55	#1892, milestone 812: threads in one address space (+569 ticks)
+riscv64	025722fb3	spawn_reap	-0.48	#2148 (-177 ticks)
+riscv64	8d6f3964f	spawn_reap	-0.23	#2188 (-84 ticks)
+riscv64	cec04e4a9	spawn_reap	+0.04	#2331, SUSPEND and RESUME (+13 ticks)
+riscv64	ccea3ba7f	yield_switch	+3.42	#1617, milestone 761: set_current stores the table pointer on every switch, and lock split in two (+6440 ticks)
