@@ -1,8 +1,9 @@
 # The live candidates against the fork test and the AI-submissions criterion
 
 Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.md), measuring the
-crates it names against the two criteria in [take, fork, vendor or write](take-fork-vendor-or-write.md). Everything here was read on 2026-10-22 between 21:08 and 21:11 (UTC). Nobody upstream was
-asked anything.
+crates it names against the two criteria in
+[take, fork, vendor or write](take-fork-vendor-or-write.md). Everything here was read on
+2026-10-22 between 21:08 and 21:11 (UTC). Nobody upstream was asked anything.
 
 ## Method, and what the numbers mean
 
