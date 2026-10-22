@@ -182,7 +182,9 @@ on the customer path.
    only). `fatfs` waits because `system_installer` is `no_std` and the crate has not released since
    2023-01. `pulldown-cmark` no longer loses: needing std was the wrong test. `noline`, `fdt` and `serialport` lost on
    license (MPL-2.0, not in `deny.toml`). `goblin` and `xmas-elf` lost to our Kani-proved `elf`
-   (`xmas-elf` has RUSTSEC-2025-0018, an out-of-bounds read on a malformed ELF).
+   (`xmas-elf` has RUSTSEC-2025-0018, an out-of-bounds read on a malformed ELF). `goblin`, cole14's
+   `elf` and `object` are measured against ours in
+   [an appendix](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md).
 2. What the tree already does. `smoltcp` is taken whole and unpatched, and argon2 and RustCrypto
    are ordinary dependencies; `httparse`, `vte` and `r-efi` fit that shape. `virtio-drivers` will
    too, once a release carries #232.
