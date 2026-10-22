@@ -57,12 +57,12 @@ board and a date, like `notes/soak/radon-2026-10-21-pmic.md`.*
 | E135 | 2026-10-22 ~20:28 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot | 0.03 | 4,326 | 24 | clean | `bench/radon-2026-10-22/249-lottery-draws.log` |
 | E136 | 2026-10-22 ~20:30 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot (not crossing) | 0.03 | 19 | 24 | clean | `bench/radon-2026-10-22/249-lottery-draws.log` |
 | E137 | 2026-10-22 ~20:33 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot | 0.03 | 23,890 | 24 | clean | `bench/radon-2026-10-22/249-lottery-draws.log` |
-| E138 | 2026-10-22 ~20:35 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot | 0.00 | 381 | 2 | clean | `bench/radon-2026-10-22/249-lottery-draws.log` |
+| E138 | 2026-10-22 ~20:35 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot, disarmed at t=65 s | 0.63 | 79,122 | 454 | clean | `bench/radon-2026-10-22/249-lottery-draws.log`, then `225-soak-e138.log` |
 
 E87 to E138 are milestone 249 (the boot lottery is sampled by a person walking to the board)'s
 series of 2026-10-22. That is 52 draws from one build. Each was reset by the draw before it. The
 JH7110 watchdog was armed on every draw. Start times are spread evenly between the first and last
-draws, so each is good to about a minute. The rows add 685,080 crossings over 40 crossing draws.
+draws, so each is good to about a minute. The rows add 763,821 crossings over 40 crossing draws.
 Twelve are "not crossing", frozen at 17 to 28. Six of those drew zero clean cores and six drew
-one. E138 was disarmed by hand at t=65 s and left soaking. Its row is cut at two beats, and the
-soak it became is a later row.
+one. E138 was disarmed by hand at t=65 s and left soaking. Its capture ended at t=2281 s, when the
+console cable was unplugged, so its row stops there; the board was still beating.
