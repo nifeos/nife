@@ -1,0 +1,268 @@
+nife on x86_64 (long mode, ring 0, 4-level paging)
+  cpu 0 booted: high-half kernel, .bss, and the 16550 console are up.
+  running at  : 0xffffffff8201bfd0  (high half: the long-mode jump landed)
+  boot info   : 0x00000000b9fb4000  (PVH hvm_start_info, not a device tree)
+  screen      : none in the boot cmdline; this console is the UART
+  pat         : 0x0007040600070106 on core 0 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 0; ring 0 faults on a fetch from a ring-3 page
+  memory      : 38 regions from the PVH handoff, rsdp 0xcae09000
+                0x000000000000..0x000000008000  ram
+                0x000000008000..0x000000009000  reserved
+                0x000000009000..0x000000058000  ram
+                0x000000058000..0x000000059000  reserved
+                0x000000059000..0x00000009e000  ram
+                0x00000009e000..0x0000000a0000  reserved
+                0x000000100000..0x000002000000  ram
+                0x000002000000..0x0000022bf000  reserved
+                0x0000022bf000..0x0000acfc0000  ram
+                0x0000acfc0000..0x0000ad000000  ram
+                0x0000ad000000..0x0000b7791000  ram
+                0x0000b7791000..0x0000b82c5000  reserved
+                0x0000b82c5000..0x0000b9efd000  ram
+                0x0000b9efd000..0x0000b9efe000  acpi-nvs
+                0x0000b9efe000..0x0000b9eff000  reserved
+                0x0000b9eff000..0x0000b9fb0000  ram
+                0x0000b9fb0000..0x0000b9fb3000  ram
+                0x0000b9fb3000..0x0000b9fb4000  ram
+                0x0000b9fb4000..0x0000b9fbf000  reserved
+                0x0000b9fbf000..0x0000c8940000  ram
+                0x0000c8940000..0x0000c8c89000  ram
+                0x0000c8c89000..0x0000c97c4000  ram
+                0x0000c97c4000..0x0000cadfb000  reserved
+                0x0000cadfb000..0x0000cae41000  acpi
+                0x0000cae41000..0x0000cb775000  acpi-nvs
+                0x0000cb775000..0x0000cbd18000  reserved
+                0x0000cbd18000..0x0000cbdff000  reserved
+                0x0000cbdff000..0x0000cbe00000  ram
+                0x000100000000..0x000140000000  ram
+                0x000140000000..0x000141468000  ram
+                0x000141468000..0x00042e000000  ram
+                0x0000000a0000..0x000000100000  reserved
+                0x0000cbe00000..0x0000d0000000  reserved
+                0x0000f0000000..0x0000f8000000  reserved
+                0x0000fe000000..0x0000fe011000  reserved
+                0x0000fec00000..0x0000fec01000  reserved
+                0x0000fee00000..0x0000fee01000  reserved
+                0x0000ff000000..0x000100000000  reserved
+                usable ram: 16622980 KiB
+  acpi        : rsdp at 0xcae09000 (revision 2), root table 0xcae090b8 (xsdt)
+                0x00cae34200  FACP (268 bytes)
+                0x00cae34310  APIC (132 bytes)
+                0x00cae34398  FPDT (68 bytes)
+                0x00cae343e0  FIDT (172 bytes)
+                0x00cae34490  MCFG (60 bytes)
+                0x00cae344d0  HPET (56 bytes)
+                0x00cae34508  SSDT (12662 bytes)
+                0x00cae37680  SSDT (9637 bytes)
+                0x00cae39c28  HPET (56 bytes)
+                0x00cae39c60  SSDT (3557 bytes)
+                0x00cae3aa48  SSDT (2996 bytes)
+                0x00cae3b600  UEFI (66 bytes)
+                0x00cae3b648  SSDT (3806 bytes)
+                0x00cae3c528  LPIT (148 bytes)
+                0x00cae3c5c0  SSDT (321 bytes)
+                0x00cae3c708  SSDT (671 bytes)
+                0x00cae3c9a8  SSDT (12290 bytes)
+                0x00cae3f9b0  SSDT (1293 bytes)
+                0x00cae3fec0  DBGP (52 bytes)
+                0x00cae3fef8  DBG2 (84 bytes)
+                0x00cae3ff50  MSDM (85 bytes)
+                0x00cae3ffa8  SLIC (374 bytes)
+                0x00cae40120  TPM2 (52 bytes)
+                0x00cae40158  ASF! (160 bytes)
+                0x00cae401f8  DMAR (204 bytes)
+                local apic 0xfee00000, 4 cpu(s) enabled, 0 disabled, 8259s present (must be masked)
+                io apic 2 at 0xfec00000, gsi base 0
+                isa irq 0 -> gsi 2 (active high, edge)
+                isa irq 9 -> gsi 9 (active high, level)
+                pcie ecam 0xf0000000, buses 0..=127 (q35's default is 0xb0000000)
+                vt-d drhd at 0xfed90000, named devices only
+                vt-d drhd at 0xfed91000, all (the catch-all)
+                vt-d rmrr 0xcac4e000..=0xcac6dfff (128 KiB), identity-mapped for the device(s) it names
+                vt-d rmrr 0xcd800000..=0xcfffffff (40960 KiB), identity-mapped for the device(s) it names
+                no IVRS: no AMD-Vi unit described
+                fadt reset register: Io 0xb2 (8 bits) <- 0x73
+  pci         : ecam at 0xf0000000 (buses 0..=127), decode was already on
+                bar window 0xd0000000..0xd0200000, from the firmware map and TOLUD, agreeing
+                00:00.0 8086:591f class 060000
+                00:02.0 8086:5912 class 030000
+                00:14.0 8086:a2af class 0c0330
+                00:14.2 8086:a2b1 class 118000
+                00:15.0 8086:a2e0 class 118000
+                00:16.0 8086:a2ba class 078000
+                00:16.3 8086:a2bd class 070002
+                00:17.0 8086:a282 class 010601
+                00:1b.0 8086:a2e7 class 060400 bridge to buses 01..=01
+                00:1c.0 8086:a297 class 060400 bridge to buses 02..=02
+                00:1f.0 8086:a2c6 class 060100
+                00:1f.2 8086:a2a1 class 058000
+                00:1f.3 8086:a2f0 class 040300
+                00:1f.4 8086:a2a3 class 0c0500
+                00:1f.6 8086:15e3 class 020000
+                01:00.0 1344:5411 class 010802
+                02:00.0 8086:24fd class 028000
+                17 function(s) over 3 bus(es) of the 128 described; mapping 3072 KiB of config space
+                17 function(s) on the bus, 0 with a BAR this kernel can neither use nor adopt
+  frames      : allocator up over 15 ram region(s)
+  smp: 4 core(s) in the madt
+  apic        : local apic 0xfee00000 up, id 0, version 0x15, 8259s masked
+  clocks      : tsc 2713 MHz (PIT calibration, best of 2 windows, worst 2713 MHz), apic timer 1 MHz (measured against the PIT)
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  vt-d        : drhd 0xfed90000 up (1 of 2, named devices only), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  vt-d        : drhd 0xfed91000 up (2 of 2, the catch-all), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  io apic     : id 2 at 0xfec00000 up, version 0x20, 120 redirection entries, gsi base 0
+  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 21 interrupts in ~0.2s at 100 Hz
+  smp: init-sipi-sipi via the local apic, trampoline at 0x8000
+  pat         : 0x0007040600070106 on core 2 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 2; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 4 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 4; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 6 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 6; ring 0 faults on a fetch from a ring-3 page
+  smp: 4 core(s) online
+  cycles      : IA32_PERF_FIXED_CTR1 (unhalted core cycles), 48 bits, perfmon v4
+
+nife
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  stack top       : 0xffffffff82196000
+  firmware handoff: 0x00000000b9fb4000  (PVH hvm_start_info)
+  processors      : 4 online of 4 described, boot cpu hwid 0x0
+  memory          : 17119 MiB total, 16223 MiB free (916704 KiB in use)
+  console         : 16550 at i/o port 0x03f8, interrupt line 4
+                  : no screen; this console is the UART alone
+  interrupts      : local apic 0x00000000fee00000 (id 0), io apic 0x00000000fec00000 (120 entries)
+  timer           : 100 Hz tick, counter at 2713 MHz, interrupts ON
+  initial ramdisk : 11745280 bytes at 0x00000000b7791000, a nifefs archive of 123 program(s)
+  pcie            : ecam 0x00000000f0000000..0xf8000000, bar window 0xd0000000..0xd0200000
+  iommu           : VT-d drhd at 0x00000000fed90000, root table default-deny, translating, interrupt remapping offered (unused), dmar INTR_REMAP set
+  iommu           : VT-d drhd at 0x00000000fed91000, root table default-deny, translating, interrupt remapping offered (unused), dmar INTR_REMAP set
+  mmu             : fine W^X 4-level map installed (cr3 0x186000), image 0xffffffff80000000, direct map 0xffff888000000000
+                  : 336 KiB of page tables (ram in 1 GiB blocks), no identity map, guard pages are holes
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: x86_64, 4 processor(s), 17119 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffff88846e000000 -> 0x9fd000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x9fd000; used 229178 -> Some(229179) -> Some(229178)
+  self-test       : timer      ok      the 2713MHz counter advanced 54272643 and 8 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+  self-test       : preemption ok      5 never-yield threads on 4 core(s): 0 starved, 81 preemptions
+
+  user thread 8589934597 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff82182260   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa00000
+      walk ends: OtherHalf
+  the kernel is fine.
+  self-test       : userspace  ok      a program at user level read 0xffffffff82182260: killed, and the kernel survived
+  capability slots: 2 of 64 at peak
+  self-test       : budget     ok      a process mapped 22 pages of a 24-page untyped; kernel frames used 229256 -> 229256
+  self-test       : blockdev   absent  no virtio block device on this machine, over MMIO or PCIe
+  self-test       : deviceirq  ok      21 interrupts from a device line in ~0.2s at bring-up
+  self-test       : clock      absent  no JH7110 on this architecture
+  self-test       : trng       absent  no JH7110 on this architecture
+  self-test       : entropy    ok      the CPU's seed instruction served 32+32 bytes to a client, first d5cec19e.., the two draws differ: true
+nife self-test: 10 of 13 passed, 3 absent:   capability slots: 3 of 64 at peak
+blockdev clock trng
+nife: the capability core runs on x86_64.
+
+nife: handing the system to the userspace progenitor.
+  uart irq  : 4 (machine description)
+  entropy     : the CPU's seed instruction; the progenitor serves it
+xhci-probe: firmware's  USBCMD=0x00000000 USBSTS=0x00000001 HCSPARAMS1=0x1a000840 HCCPARAMS1=0x200077c1 (PPC=0)
+xhci-probe: protocol    USB 2.0: ports 1..=16
+xhci-probe: protocol    USB 3.0: ports 17..=26
+xhci-probe: firmware's  USBLEGSUP=0x00002201 USBLEGCTLSTS=0xc0000000
+xhci-probe: firmware's  USBSTS=0x00000001 IMAN=0x00000000 ERDP=0xcb90f520
+xhci-probe: firmware's  port  1 PORTSC=0x000006e1 CCS=1 PED=0 PP=1 PLS=7 speed=1 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  2 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  3 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  4 PORTSC=0x00000ae1 CCS=1 PED=0 PP=1 PLS=7 speed=2 CSC=0 PRC=0 PLC=0
+  capability slots: 12 of 64 at peak
+xhci-probe: firmware's  port  5 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  6 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  7 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  8 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port  9 PORTSC=0x000006e1 CCS=1 PED=0 PP=1 PLS=7 speed=1 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 10 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 11 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 12 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 13 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 14 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 15 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 16 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 17 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 18 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 19 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 20 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 21 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 22 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 23 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 24 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 25 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  port 26 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: firmware's  3 of 26 connected
+  usb       : a keyboard on port 4 (low speed, c0f4:08f5); its keys reach the shell
+xhci-probe: at report   USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: at report   port  1 PORTSC=0x00000e03 CCS=1 PED=1 PP=1 PLS=0 speed=3 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  2 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  3 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  4 PORTSC=0x00000a03 CCS=1 PED=1 PP=1 PLS=0 speed=2 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  5 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  6 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  7 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  8 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port  9 PORTSC=0x000206e1 CCS=1 PED=0 PP=1 PLS=7 speed=1 CSC=1 PRC=0 PLC=0
+xhci-probe: at report   port 10 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 11 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 12 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 13 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 14 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 15 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 16 PORTSC=0x000002a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 17 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 18 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 19 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 20 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 21 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 22 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 23 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 24 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 25 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   port 26 PORTSC=0x000802a0 CCS=0 PED=0 PP=1 PLS=5 speed=0 CSC=0 PRC=0 PLC=0
+xhci-probe: at report   3 of 26 connected
+xhci-probe: +1ms        USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +1ms        3 of 26 connected
+xhci-probe: +10ms       USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +10ms       3 of 26 connected
+xhci-probe: +50ms       USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +50ms       3 of 26 connected
+xhci-probe: +100ms      USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +100ms      3 of 26 connected
+xhci-probe: +250ms      USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +250ms      3 of 26 connected
+xhci-probe: +500ms      USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +500ms      3 of 26 connected
+xhci-probe: +1000ms     USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +1000ms     3 of 26 connected
+xhci-probe: +2000ms     USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +2000ms     3 of 26 connected
+xhci-probe: +5000ms     USBSTS=0x00000018 IMAN=0x00000002 ERDP=0x00b28160
+xhci-probe: +5000ms     3 of 26 connected
+  network     : NONE. An e1000e (I219-LM5 (SPT), 8086:15e3) is on the bus and left alone: no gate has driven that part yet (milestone 494's bench boot is how one does)
+  capability slots: 13 of 64 at peak
+  progenitor stack: 14128 of 57344 bytes at peak, 43216 spare
+  cappraboigelintiyt ors:lo ctosn: st23r ucofti 6o4n  abtud gpeeta kdr
+opped; retype answers NoSuchSlot
+progenitor: every program measured against the archive table
+progenitor: entropy service up; the kernel built it on the CPU's seed instruction
+nife capability shell. naming a resource in a command IS granting it.
+commands: help, echo <text>, caps [command], time <command>, xargs <command>,
+          cd, pwd, ls, mkdir, touch, apropos <word>, rm, wc, mdr, <prog> [--mem N] [arg]
+          and the operators  >  >>  <  |
+          'quote a whole word'   and   ;  &&  ||   with  echo $?  for the status
+$ echo hi
+hi
+$ 
