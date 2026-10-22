@@ -132,6 +132,29 @@ So the honest statement is the one `design/fatal-risks/README.md` risk 2 predict
 on real silicon, or it is rarer than 28 runs. The instrument for reading it when it next
 happens is now in the tree rather than on a bench.
 
+### A second failure under emulation, past the assertion this block instruments
+
+Two hundred runs per boot (`--repeat`) found one at four interleaved cores under OVMF, the
+firmware leg `cargo xtask uefi-test` boots, on 2026-10-21 at about 23:57 UTC:
+
+```
+repeat result: FAILED. 52 runs of 200, 51 passed, first failure at run 52; its message is below
+
+[PANIC] panicked at system_tests/src/user/survey_tests.rs:410:5:
+assertion `left == right` failed: the tid a survey reported was not one the same rendezvous could reap
+  left: Err(NotPermitted)
+ right: Ok(0)
+```
+
+The corpse parked and the survey listed it `DEAD`, so this block's assertion held. `REAP` then
+passed `reap_decision` (supervised and `Dead`), and `reclaim_region` refused, which
+`reap_supervised` reports as `NotPermitted`. Its comment names two causes, a child region and a
+racing reap. Neither is established. A third is not ruled out: `Dead` visible while the dying
+thread is still leaving its core. That is again the cross-core death this block points at.
+
+It was one failure in 255 OVMF runs. The PVH runner had none in 403 interleaved runs, nor in 200
+with `NIFE_TCG_THREAD=multi`.
+
 ## What reading the code ruled out, and what it did not
 
 Reading is not measurement and this section is careful to say which is which. Three of the
@@ -197,6 +220,10 @@ bench evening that was not an assertion written against QEMU.
   `NIFE_SMP=4` on that machine. If the assertion fires, its message now names which of the three
   readings is true. If it does not fire, the frequency of the original is itself worth recording,
   because a one-in-many failure in supervision is not a lesser finding than a deterministic one.
+  One boot measures it: `cargo xtask uefi-test --test
+  a_dead_child_is_still_in_the_domain_until_it_is_reaped --repeat 200 --stage-only` stages a
+  stick image that runs the test 200 times and stops at the first failure, naming its run
+  (`notes/scripts/one-kernel-test.md`, "Repeating it").
 - **Milestone 315.** `kernel::user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write`
   also fails at `NIFE_SMP=4`, and this lane spent a while treating that as its own find before
   reading the runner it had been editing. `helpers/qemu-runner-x86_64.sh`'s own header already names

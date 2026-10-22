@@ -178,7 +178,8 @@ location's root fetched from the off-root host, and two redirects allowed fetche
   self-signs, and trusting a key is scoped) and §195 (a reviewed recipe vouches for a package).
   The backup address amends §250 clause 1, as clause 6 (question A).
 - Not a ruling but calef's hands: the run on xenon. That is `needs_person`. It waits on xenon's
-  I219, which the kernel refuses until milestone 494's bench boot proves it.
+  I219, which the kernel refuses until milestone 494's bench boot proves it, and on a fresh
+  install: the one on xenon's NVMe no longer boots (`bench/xenon-2026-10-21/README-801.md`).
 
 Reuse: the package client, digest check and installer of milestone 198 are this milestone's
 base. The §46 (thin primitives or whole subsystems) survey of index formats is

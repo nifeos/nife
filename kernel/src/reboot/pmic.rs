@@ -6,23 +6,25 @@
 #[cfg(target_arch = "riscv64")]
 use super::*;
 
+/// The PMIC's bus, programmed for standard mode: the controller, its timing and the PMIC's
+/// address, or `None` on a machine whose tree names no PMIC bus. Prints the clock chain it derived
+/// the timing from, since a wrong IC clock is the first suspect when a transfer fails.
 #[cfg(target_arch = "riscv64")]
-pub(super) fn pmic_reset_attempt(marker: &str) {
+fn pmic_bus(
+    marker: &str,
+) -> Option<(
+    designware_i2c::DesignWareI2c,
+    jh7110_clock_and_reset::StandardMode,
+    u8,
+)> {
     use jh7110_clock_and_reset::{
-        IcClkWords, PMIC_RESET_BIT, PMIC_RESET_REG, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC,
-        SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT, SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_div,
-        standard_mode_100k,
+        IcClkWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
+        SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_div, standard_mode_100k,
     };
 
-    let Some((sys, bus)) = crate::memory::jh7110_pmic_bus() else {
-        return;
-    };
-    let Some((controller, _size)) = bus.controller else {
-        return;
-    };
-    let Some(address) = bus.pmic_address else {
-        return;
-    };
+    let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
+    let (controller, _size) = bus.controller?;
+    let address = bus.pmic_address?;
 
     // The input-clock chain, from the two windows the plan's guard mapped: the CRG words at their
     // ids' offsets, the PLL2 words in the syscon at the offsets the vendor's pll.c masks name.
@@ -60,13 +62,24 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
         mode.sda_hold,
     );
 
-    let i2c =
-        designware_i2c::DesignWareI2c::new(crate::arch::mmu::phys_to_virt(controller) as usize);
+    Some((
+        designware_i2c::DesignWareI2c::new(crate::arch::mmu::phys_to_virt(controller) as usize),
+        mode,
+        address as u8,
+    ))
+}
+
+#[cfg(target_arch = "riscv64")]
+pub(super) fn pmic_reset_attempt(marker: &str) {
+    use jh7110_clock_and_reset::{PMIC_RESET_BIT, PMIC_RESET_REG};
+    let Some((i2c, mode, address)) = pmic_bus(marker) else {
+        return;
+    };
     // The register is read first so the write sets the reset bit alone and the PMIC's other bits
     // keep whatever they hold, which is the difference between option B and the power-off bit 7
     // radon's OpenSBI sets unconditionally.
     let mut current = [0u8; 1];
-    if let Err(failure) = i2c.write_read(&mode, address as u8, &[PMIC_RESET_REG], &mut current) {
+    if let Err(failure) = i2c.write_read(&mode, address, &[PMIC_RESET_REG], &mut current) {
         println!(
             "{marker} AXP15060: read of reg {PMIC_RESET_REG:#04x} failed: {failure:?}; the \
              firmware route is next"
@@ -82,7 +95,7 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
     // The line above is the one the 2026-10-09 bench lost, so it goes out on the wire before the
     // byte that may cut power behind it.
     crate::console::drain();
-    match i2c.write_read(&mode, address as u8, &[PMIC_RESET_REG, value], &mut []) {
+    match i2c.write_read(&mode, address, &[PMIC_RESET_REG, value], &mut []) {
         Ok(()) => {
             // The write completed and the board is still up: the PMIC acknowledged a byte it did
             // not act on, or acts slower than the controller's stop. Say so and let the firmware
@@ -93,6 +106,48 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
         }
         Err(failure) => {
             println!("{marker} AXP15060: write failed: {failure:?}; the firmware route is next");
+        }
+    }
+}
+
+/// **What the PMIC remembers about the last power event**, printed and then cleared (milestone 225
+/// (run the soak on radon, argon and xenon)). A reset that prints nothing from the kernel, as E27's
+/// did, leaves no trace on the SoC side; the AXP15060 keeps its own. The registers are Linux's
+/// `axp20x.h` names: the startup source (`0x00`), the PWROK and power-off control (`0x1f`), the
+/// wake and shutdown-sequence controls (`0x31`, `0x32`), the interrupt enables (`0x40`, `0x41`) and
+/// the latched interrupt status (`0x48`, `0x49`: die temperature, DCDC under-voltage, the power key).
+/// The status is cleared after it is printed (write one to clear), so each boot reports only what
+/// happened since the boot before it. Name: provisional.
+#[cfg(all(target_arch = "riscv64", feature = "reboot_soak_test"))]
+pub(crate) fn pmic_report(marker: &str) {
+    const SHOWN: [u8; 8] = [0x00, 0x1f, 0x31, 0x32, 0x40, 0x41, 0x48, 0x49];
+    const STATUS: [u8; 2] = [0x48, 0x49];
+    // The PMIC's I2C controller comes out of the firmware gated and held in reset; the reset route
+    // ungates it the same way before it speaks to the PMIC.
+    super::prepare_reset_route(marker);
+    let Some((i2c, mode, address)) = pmic_bus(marker) else {
+        println!("{marker} AXP15060 report: this tree names no PMIC bus");
+        return;
+    };
+    let mut values = [0u8; SHOWN.len()];
+    for (reg, value) in SHOWN.iter().zip(values.iter_mut()) {
+        let mut byte = [0u8; 1];
+        if let Err(failure) = i2c.write_read(&mode, address, &[*reg], &mut byte) {
+            println!("{marker} AXP15060 report: read of reg {reg:#04x} failed: {failure:?}");
+            return;
+        }
+        *value = byte[0];
+    }
+    println!(
+        "{marker} AXP15060 report: startup {:#04x} pwrok/voff {:#04x} wakeup {:#04x} down-seq \
+         {:#04x} irq-enable {:#04x} {:#04x} irq-status {:#04x} {:#04x}",
+        values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+    );
+    for (reg, value) in STATUS.iter().zip(&values[6..]) {
+        if *value != 0
+            && let Err(failure) = i2c.write_read(&mode, address, &[*reg, *value], &mut [])
+        {
+            println!("{marker} AXP15060 report: clearing reg {reg:#04x} failed: {failure:?}");
         }
     }
 }

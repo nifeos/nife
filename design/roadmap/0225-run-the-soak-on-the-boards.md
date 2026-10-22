@@ -152,6 +152,31 @@ about t=105 s without printing the kernel's reset sequence (`BUGS`). The run tab
 `notes/soak/radon-2026-10-21.md`; the capture and the mechanics are
 `bench/radon-2026-10-21/README-225.md`.
 
+## radon, 2026-10-21 evening: 36 draws that read the PMIC, zero defects
+
+Lane `milestone/225-radon-silent-reset`, built at `0e0866d93` with `script/board-image --soak
+--reboot --tftp` (SEALED). Each draw's arming reads the AXP15060's startup source, PWROK control
+and latched interrupt status (die temperature, DCDC under-voltage, the power key), prints them,
+and clears the status (`reboot::pmic_report`). These are rows E51 to E86, 491,341 crossings over
+28 crossing draws. Every reset in the capture follows the kernel's `rebooting now`, and every
+PMIC report reads `startup 0x00 ... irq-status 0x00 0x00`. One draw, E86, drew a placement with no
+clean core and ran at 30,857/s, a class E13 to E50 never drew. The run table is
+`notes/soak/radon-2026-10-21-pmic.md`; the capture is `bench/radon-2026-10-21/225-pmic-report-draws.log`.
+
+## What can reset a JH7110 with no line from the kernel
+
+Every reset path this kernel takes prints first (`reboot::cold_reset`), so a silent reset comes
+from outside it:
+
+- **A power event.** The AXP15060 pulls PWROK when a rail sags, the die overheats or the power key
+  is held. It latches the cause, and the soak now prints it at the next boot.
+- **A watchdog the firmware armed.** None on radon: E27's reset fell at t=105 s, and a firmware
+  watchdog would reset every draw at the same point.
+- **M-mode firmware.** OpenSBI resets only when asked through SBI, and the kernel prints before
+  every SBI reset it asks for.
+- **A stray store** to a reset register in the SYS or AON clock-and-reset blocks. No such store has
+  been seen, and nothing records one.
+
 ## argon, 2026-10-05: not yet a one-command run, and exactly why
 
 *(Awaiting the board, 2026-10-06: what is on the desk is a TK1 going back, not argon. The tegra210
@@ -215,8 +240,9 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   `script/board-console` reads without writing.
 - **radon reset once with no reset sequence printed**: E27, 2026-10-21, between t=105 s and t=110 s
   of a 120 s draw. The kernel's `window reached` and AXP15060 lines are absent, nobody touched the
-  board or its outlet, and no watchdog is armed. Firmware, power and a kernel path that resets
-  without printing are all open (`notes/soak/radon-2026-10-21.md`).
+  board or its outlet, and no watchdog is armed. Its cause is not known. It has not recurred in the
+  65 draws captured since (E51 to E86, and 29 more the same afternoon summarized but not kept), and
+  the PMIC report means a recurrence now says whether it was a power event.
 - **The crossing count varies by more than 2x between identical runs**, recorded in milestone 221's
   BUGS, so it is not a figure to compare machines on without more care than a single run affords.
 - **argon has never booted nife at all**, so its soak sits behind milestone 127 (the seL4 machine)
@@ -238,11 +264,9 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   soaked for long with this build. Checked 2026-09-25: E4 is the only radon row with a log.
   Updated 2026-10-10: §259's count is met (E4, E6, E7), so further radon boots are draws for the
   placement distribution rather than owed to the standard, and since milestone 592's reset is
-  proven they cost no plug cycle; unowned. E13 to E50 are thirty-eight more, all on one clean core,
-  so they sampled one placement class.
-- **Outstanding.** The reset on E27 that printed no reset sequence (`BUGS`). A lane runs it down:
-  what can reset a JH7110 with no line from the kernel, and whether a longer series of draws
-  repeats it.
+  proven they cost no plug cycle; unowned. E13 to E85 all drew one clean core; E86 drew none.
+- **Outstanding.** The reset on E27 that printed no reset sequence (`BUGS`) waits for a recurrence.
+  The candidates are listed above, and every rebooting soak on radon now prints the PMIC's record.
 - **Done.** The false `NOT SEALED` on a soak build that cost this run half an hour. Milestone 563
   (a seal check that reads bytes cannot see a check that was dropped) carried it, merged
   2026-09-26: soak builds now seal, and `script/board-image --soak` printed `SEALED` on a rebuild.

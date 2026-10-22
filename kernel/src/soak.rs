@@ -514,6 +514,9 @@ const REBOOT_GRACE_SECONDS: u64 = 5;
 #[cfg(feature = "reboot_soak_test")]
 fn arm_reboot() {
     crate::console::discard_rx();
+    // What ended the previous boot, from the PMIC's side: E27's reset printed nothing here.
+    #[cfg(target_arch = "riscv64")]
+    crate::reboot::pmic_report(REBOOT_MARKER);
     println!(
         "{REBOOT_MARKER} THIS BUILD REBOOTS THE BOARD. It soaks for {REBOOT_AFTER_SECONDS}s, then \
          asks for a cold reboot ({REBOOT_ROUTE}) and draws the thread-placement lottery again, \

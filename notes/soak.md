@@ -127,8 +127,13 @@ never crossed. Run table: [soak/radon-2026-10-20.md](soak/radon-2026-10-20.md).
 ## radon, 2026-10-21
 
 Twenty-five 120-second reboot draws from one power-on, zero defects; seven draws never crossed.
-One draw reset without the kernel's reset sequence, the only such reset in thirty-eight draws. Run
+One draw reset without the kernel's reset sequence, the only such reset in any captured draw. Run
 table: [soak/radon-2026-10-21.md](soak/radon-2026-10-21.md).
+
+Later the same day, 36 more draws on a build that prints what the PMIC recorded at each arming:
+zero defects, every reset the kernel's, every PMIC report clean. One drew a placement with no
+clean core, at about 16% of the usual rate. Run table:
+[soak/radon-2026-10-21-pmic.md](soak/radon-2026-10-21-pmic.md).
 
 ## How a hang is told from a slow run
 

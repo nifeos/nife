@@ -1,0 +1,311 @@
+#!/bin/sh
+#
+# Drive one AWS Graviton metal probe from a workstation with the AWS CLI. ../aws-graviton.md is the
+# runbook; this is its section 5.
+#
+#     run preflight                 read-only checks; launches nothing
+#     run all [nife-aarch64.img]    preflight, the Linux probe, the disk, the nife boot, teardown, check
+#     run teardown                  delete everything tagged nife-probe=aws-graviton in the region
+#     run check                     look in every region for anything billable; exit 1 if found
+#
+# Environment: AWS_PROFILE (default nife-metal; its region is the region used), NIFE_METAL_OUT (the
+# run directory, default $HOME/nife-metal-runs/<UTC time>; keep it outside any worktree),
+# INSTANCE_TYPE (default c7g.metal, the only type bootstrap.sh's policy allows), AZ (default: the
+# first zone that offers the type), SERIAL_HOST (default serial-console.ec2-instance-connect.<region>.aws;
+# newer regions use ec2-serial-console.<region>.api.aws), NIFE_BOOT_MINUTES (default 25).
+#
+# Three things stop a forgotten instance from billing, because a metal hour costs dollars and
+# nothing else would notice: the Linux instance shuts itself down (and so terminates) after
+# PROBE_MINUTES, an exit trap here tears down whatever it tagged, and a detached watchdog runs
+# teardown at DEADLINE_MINUTES even if this shell dies. The nife instance has only the last two,
+# since nife cannot be told to power off. All three need this workstation awake; the budget alarm
+# is the backstop, hours late.
+#
+# Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC). A verb, as an action takes in
+# the script/ family.
+
+set -eu
+
+here=$(cd "$(dirname "$0")" && pwd)
+self=$here/run
+: "${AWS_PROFILE:=nife-metal}"
+: "${INSTANCE_TYPE:=c7g.metal}"
+: "${PROBE_MINUTES:=100}"
+: "${NIFE_BOOT_MINUTES:=25}"
+: "${DEADLINE_MINUTES:=180}"
+export AWS_PROFILE
+tag_key='nife-probe'
+tag_value=aws-graviton
+region=$(aws configure get region) || { echo "run: profile $AWS_PROFILE has no region" >&2; exit 1; }
+: "${SERIAL_HOST:=serial-console.ec2-instance-connect.$region.aws}"
+out=${NIFE_METAL_OUT:-$HOME/nife-metal-runs/$(date -u +%Y%m%dT%H%M%SZ)}
+case $out in *' '*) echo "run: the run directory may not contain a space: $out" >&2; exit 1 ;; esac
+mkdir -p "$out"
+log=$out/driver.log
+
+say() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" | tee -a "$log" >&2; }
+die() { say "run: $*"; exit 1; }
+ec2() { aws ec2 --region "$region" --output text "$@"; }
+tagspec() { printf 'ResourceType=%s,Tags=[{Key=%s,Value=%s}]' "$1" "$tag_key" "$tag_value"; }
+tagged() { printf 'Name=tag:%s,Values=%s' "$tag_key" "$tag_value"; }
+
+preflight() {
+    account=$(aws sts get-caller-identity --query Account --output text)
+    # Kept for the scrub at the end, never copied into anything published.
+    printf '%s\n' "$account" > "$out/.account"
+    say "preflight: region $region, instance type $INSTANCE_TYPE, run directory $out"
+    if [ -z "${AZ:-}" ]; then
+        AZ=$(ec2 describe-instance-type-offerings --location-type availability-zone \
+            --filters "Name=instance-type,Values=$INSTANCE_TYPE" \
+            --query 'InstanceTypeOfferings[0].Location')
+    fi
+    [ -n "$AZ" ] && [ "$AZ" != None ] || die "$INSTANCE_TYPE is not offered in $region"
+    vcpus=$(ec2 describe-instance-types --instance-types "$INSTANCE_TYPE" \
+        --query 'InstanceTypes[0].VCpuInfo.DefaultVCpus')
+    quota=$(aws service-quotas get-service-quota --region "$region" --service-code ec2 \
+        --quota-code L-1216C47A --query Quota.Value --output text)
+    awk "BEGIN { exit !($quota >= $vcpus) }" ||
+        die "the on-demand standard vCPU quota is $quota and $INSTANCE_TYPE needs $vcpus; the request bootstrap.sh made is still pending"
+    [ "$(ec2 get-serial-console-access-status --query SerialConsoleAccessEnabled)" = True ] ||
+        die "serial console access is off in $region; bootstrap.sh turns it on"
+    budgets=$(aws budgets describe-budgets --account-id "$account" --query 'length(Budgets)' --output text 2>/dev/null || echo 0)
+    [ "${budgets:-0}" != None ] && [ "${budgets:-0}" -ge 1 ] ||
+        die "no budget exists; one is set before anything launches (bootstrap.sh)"
+    say "preflight: zone $AZ, quota $quota vCPUs, serial console on, $budgets budget(s); ready"
+}
+
+# Hold one serial console session open for $3 seconds, logging to $2, reconnecting when AWS drops
+# it. The key is good for 60 seconds, so it is pushed again before every connect.
+serial_capture() {
+    id=$1 file=$2 secs=$3
+    end=$(( $(date +%s) + secs ))
+    while [ "$(date +%s)" -lt "$end" ] && [ ! -e "$out/stop-$id" ]; do
+        if aws ec2-instance-connect send-serial-console-ssh-public-key --region "$region" \
+            --instance-id "$id" --serial-port 0 --ssh-public-key "file://$out/key.pub" \
+            >/dev/null 2>>"$out/serial-errors.txt"; then
+            printf '\n[serial session opened %s]\n' "$(date -u +%FT%TZ)" >>"$file"
+            # ssh -tt wants a stdin that stays open and sends nothing; a fifo with an idle writer.
+            rm -f "$out/serial.in" && mkfifo "$out/serial.in"
+            sleep $(( end - $(date +%s) + 1 )) >"$out/serial.in" &
+            holder=$!
+            ssh -tt -i "$out/key" -o UserKnownHostsFile="$out/known_hosts" \
+                -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 \
+                "$id.port0@$SERIAL_HOST" <"$out/serial.in" >>"$file" 2>>"$out/serial-errors.txt" &
+            echo $! >"$out/serial-ssh-$id.pid"
+            wait $! || true
+            kill "$holder" 2>/dev/null || true
+        fi
+        sleep 10
+    done
+}
+
+stop_serial() {
+    touch "$out/stop-$1"
+    [ -e "$out/serial-ssh-$1.pid" ] && kill "$(cat "$out/serial-ssh-$1.pid")" 2>/dev/null || true
+}
+
+# The CLI's own waiters give up after ten minutes, and a metal instance can take longer.
+wait_state() {
+    want=$1
+    shift
+    for _ in $(seq 120); do
+        left=$(ec2 describe-instances --instance-ids "$@" 2>/dev/null \
+            --query "Reservations[].Instances[] | [?State.Name!='$want'].InstanceId") || left=$*
+        [ -z "$left" ] && return 0
+        sleep 15
+    done
+    die "not $want after 30 minutes: $left"
+}
+
+wait_terminated() { wait_state terminated "$@"; }
+
+launch() {
+    image=$1
+    shift
+    ec2 run-instances --image-id "$image" --instance-type "$INSTANCE_TYPE" \
+        --placement "AvailabilityZone=$AZ" --instance-initiated-shutdown-behavior terminate \
+        --tag-specifications "$(tagspec instance)" "$(tagspec volume)" "$(tagspec network-interface)" \
+        --query 'Instances[0].InstanceId' "$@"
+}
+
+linux_probe() {
+    ssh-keygen -q -t ed25519 -N '' -C nife-probe -f "$out/key"
+    ec2 import-key-pair --key-name nife-probe --public-key-material "fileb://$out/key.pub" \
+        --tag-specifications "$(tagspec key-pair)" >/dev/null
+    vpc=$(ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId')
+    sg=$(ec2 create-security-group --group-name nife-probe --description 'nife metal probe, ssh from one address' \
+        --vpc-id "$vpc" --tag-specifications "$(tagspec security-group)" --query GroupId)
+    me=$(curl -fsS https://checkip.amazonaws.com)
+    ec2 authorize-security-group-ingress --group-id "$sg" --protocol tcp --port 22 --cidr "$me/32" >/dev/null
+    ami=$(aws ssm get-parameter --region "$region" --output text --query Parameter.Value \
+        --name /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id)
+    printf '#!/bin/sh\nshutdown -h +%s\n' "$PROBE_MINUTES" >"$out/user-data"
+    say "linux: launching $INSTANCE_TYPE from $ami in $AZ"
+    linux=$(launch "$ami" --key-name nife-probe --security-group-ids "$sg" \
+        --user-data "file://$out/user-data")
+    say "linux: instance $linux; serial console capture starts"
+    serial_capture "$linux" "$out/serial-linux.log" 3500 &
+    wait_state running "$linux"
+    say "linux: running"
+    ip=$(ec2 describe-instances --instance-ids "$linux" --query 'Reservations[0].Instances[0].PublicIpAddress')
+    sshi="ssh -i $out/key -o UserKnownHostsFile=$out/known_hosts -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 ubuntu@$ip"
+    for _ in $(seq 180); do $sshi true 2>/dev/null && break; sleep 20; done
+    $sshi true || die "linux: no ssh after an hour"
+    say "linux: ssh answers; running probe.sh"
+    $sshi 'sudo bash -s' <"$here/probe.sh" >"$out/probe.log" 2>&1 || say "linux: probe.sh exited $?"
+    scp -i "$out/key" -o UserKnownHostsFile="$out/known_hosts" "ubuntu@$ip:/tmp/acpi-tables.tar" "$out/" ||
+        say "linux: no ACPI tarball"
+    say "linux: probe done"
+}
+
+nife_disk() {
+    img=$1
+    gzip -c "$img" >"$out/nife.img.gz"
+    vol=$(ec2 create-volume --availability-zone "$AZ" --size 1 --volume-type gp3 \
+        --tag-specifications "$(tagspec volume)" --query VolumeId)
+    ec2 wait volume-available --volume-ids "$vol"
+    ec2 attach-volume --volume-id "$vol" --instance-id "$linux" --device /dev/sdf >/dev/null
+    dev=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_$(printf %s "$vol" | tr -d -)
+    # conv=sparse skips the image's zero blocks, so the snapshot stores only what nife wrote.
+    $sshi "for i in \$(seq 60); do [ -e $dev ] && break; sleep 2; done; gunzip -c | sudo dd of=$dev bs=1M conv=sparse,fsync status=none" \
+        <"$out/nife.img.gz" || die "disk: writing the image failed"
+    ec2 detach-volume --volume-id "$vol" >/dev/null
+    ec2 wait volume-available --volume-ids "$vol"
+    snap=$(ec2 create-snapshot --volume-id "$vol" --description 'nife aarch64 boot disk' \
+        --tag-specifications "$(tagspec snapshot)" --query SnapshotId)
+    ec2 wait snapshot-completed --snapshot-ids "$snap" || ec2 wait snapshot-completed --snapshot-ids "$snap"
+    ec2 delete-volume --volume-id "$vol"
+    nife_ami=$(ec2 register-image --name "nife-probe-$(date -u +%Y%m%dT%H%M%SZ)" \
+        --architecture arm64 --boot-mode uefi --ena-support --root-device-name /dev/xvda \
+        --block-device-mappings "DeviceName=/dev/xvda,Ebs={SnapshotId=$snap,VolumeType=gp3,DeleteOnTermination=true}" \
+        --tag-specifications "$(tagspec image)" --query ImageId)
+    say "disk: $nife_ami registered from $snap"
+}
+
+nife_boot() {
+    say "nife: launching $INSTANCE_TYPE from $nife_ami"
+    nife=$(launch "$nife_ami")
+    say "nife: instance $nife; capturing the serial console for $NIFE_BOOT_MINUTES minutes"
+    serial_capture "$nife" "$out/serial-nife.log" $(( NIFE_BOOT_MINUTES * 60 )) &
+    capture=$!
+    wait_state running "$nife"
+    say "nife: running"
+    wait "$capture" || true
+    ec2 get-console-output --instance-id "$nife" --latest --query Output >"$out/console-nife.txt" || true
+    ec2 terminate-instances --instance-ids "$nife" >/dev/null
+}
+
+teardown() {
+    say "teardown: everything tagged $tag_key=$tag_value in $region"
+    ids=$(ec2 describe-instances --filters "$(tagged)" \
+        Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down \
+        --query 'Reservations[].Instances[].InstanceId')
+    if [ -n "$ids" ]; then
+        # shellcheck disable=SC2086
+        ec2 terminate-instances --instance-ids $ids >/dev/null
+        # shellcheck disable=SC2086
+        wait_terminated $ids
+    fi
+    for i in $(ec2 describe-images --owners self --filters "$(tagged)" --query 'Images[].ImageId'); do
+        ec2 deregister-image --image-id "$i"
+    done
+    for s in $(ec2 describe-snapshots --owner-ids self --filters "$(tagged)" --query 'Snapshots[].SnapshotId'); do
+        ec2 delete-snapshot --snapshot-id "$s"
+    done
+    for v in $(ec2 describe-volumes --filters "$(tagged)" --query 'Volumes[].VolumeId'); do
+        ec2 detach-volume --volume-id "$v" --force >/dev/null 2>&1 || true
+        ec2 wait volume-available --volume-ids "$v" 2>/dev/null || true
+        ec2 delete-volume --volume-id "$v"
+    done
+    ec2 delete-key-pair --key-name nife-probe >/dev/null 2>&1 || true
+    for g in $(ec2 describe-security-groups --filters "$(tagged)" --query 'SecurityGroups[].GroupId'); do
+        ec2 delete-security-group --group-id "$g"
+    done
+    say "teardown: done"
+}
+
+# Every region, not only the probe's, and untagged resources too: the question is whether the
+# account bills, not whether this script cleaned up after itself.
+check() {
+    found=0
+    for r in $(aws ec2 describe-regions --region "$region" --query 'Regions[].RegionName' --output text); do
+        q() { aws ec2 --region "$r" --output text "$@"; }
+        n=$(q describe-instances --filters Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down \
+            --query 'length(Reservations[].Instances[])')
+        v=$(q describe-volumes --query 'length(Volumes)')
+        s=$(q describe-snapshots --owner-ids self --query 'length(Snapshots)')
+        i=$(q describe-images --owners self --query 'length(Images)')
+        a=$(q describe-addresses --query 'length(Addresses)')
+        if [ "$n$v$s$i$a" != 00000 ]; then
+            say "check: $r has $n instances, $v volumes, $s snapshots, $i images, $a addresses"
+            found=1
+        fi
+    done
+    [ "$found" = 0 ] || die "check: something is still billing (above)"
+    say "check: no instance, volume, snapshot, image or address in any region"
+}
+
+# The account number is in error messages and ARNs; it stays in lab, so it leaves every file here.
+scrub_and_assemble() {
+    t=$out/transcript.txt
+    {
+        for f in driver.log probe.log serial-linux.log serial-nife.log console-nife.txt serial-errors.txt; do
+            [ -e "$out/$f" ] || continue
+            printf '\n######## %s\n' "$f"
+            perl -pe 's/\e\[[0-9;?]*[A-Za-z]//g; s/\r//g' "$out/$f"
+        done
+        printf '\n######## serial console host key\n'
+        ssh-keygen -lf "$out/known_hosts" 2>/dev/null || true
+    } >"$t"
+    account=$(cat "$out/.account" 2>/dev/null || true)
+    if [ -n "$account" ]; then
+        find "$out" -type f \( -name '*.log' -o -name '*.txt' \) -exec perl -pi -e "s/$account/<account>/g" {} +
+        ! grep -rl "$account" "$out" --exclude=.account || die "scrub: the account number is still in a file above"
+    fi
+    say "transcript: $t"
+}
+
+finish() {
+    status=$?
+    trap - EXIT INT TERM
+    [ "$status" = 0 ] || say "run: stopped with status $status; tearing down"
+    [ -n "${linux:-}" ] && stop_serial "$linux"
+    [ -n "${nife:-}" ] && stop_serial "$nife"
+    # Subshells, because die exits and the steps after each must still run.
+    (teardown) || status=1
+    (check) || status=1
+    if [ -n "${watchdog:-}" ]; then
+        kill "$watchdog" 2>/dev/null || true
+        wait "$watchdog" 2>/dev/null || true
+    fi
+    (scrub_and_assemble) || status=1
+    exit "$status"
+}
+
+case ${1:-} in
+preflight) preflight ;;
+teardown) teardown ;;
+check) check ;;
+all)
+    img=${2:-}
+    [ -z "$img" ] || [ -r "$img" ] || die "no such image: $img"
+    preflight
+    nohup sh -c "sleep $(( DEADLINE_MINUTES * 60 )) && NIFE_METAL_OUT='$out' '$self' teardown" \
+        >>"$out/watchdog.log" 2>&1 &
+    watchdog=$!
+    trap finish EXIT
+    trap 'exit 130' INT TERM
+    linux_probe
+    if [ -n "$img" ]; then
+        nife_disk "$img"
+    fi
+    stop_serial "$linux"
+    ec2 terminate-instances --instance-ids "$linux" >/dev/null
+    wait_terminated "$linux"
+    say "linux: terminated"
+    if [ -n "$img" ]; then
+        nife_boot
+    fi
+    ;;
+*) sed -n '3,9p' "$0" >&2; exit 2 ;;
+esac

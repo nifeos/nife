@@ -340,6 +340,17 @@ pub fn grant(capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
     })
 }
 
+/// **`(occupied, capacity)` of the running thread's capability table**, read by the test runner's
+/// repeat mode (`testing::runner`). A test that leaves one slot filled per run is invisible once,
+/// and at a few dozen repeats [`grant`] refuses with `NoFreeSlot` in an iteration that did nothing
+/// wrong, so the runner prints this every iteration and refuses before the table is full.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-repeat-count.
+#[cfg(any(test, feature = "system_tests"))]
+pub fn current_capability_slots() -> (usize, usize) {
+    current_capabilities().map_or((0, 0), |t| (t.used(), t.len()))
+}
+
 /// Hand the current thread a capability **at an explicit slot**, leaving lower slots empty.
 ///
 /// [`grant`] fills the first free slot, which is what an ordinary `Spawn` literal wants: slot 0 is
@@ -352,6 +363,24 @@ pub fn grant(capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
 pub fn grant_at(slot: u64, capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
     current_capabilities().map_or(Err(crate::cap::Error::NoFreeSlot), |mut t| {
         t.insert_at(slot, capability)
+    })
+}
+
+/// **How many pages every `PageFrame` run the current thread already holds names**, summed
+/// ([`crate::cap::Object::mappable_pages`]). Name provisional (the surface map budget lane,
+/// 2026-10-21 UTC).
+///
+/// For `user::entry`'s spawn, which sizes the new address space's mapping log before the program
+/// runs. A kernel spawn closure places capabilities at fixed slots with [`grant_at`] before it
+/// calls `run`, and a run placed that way never appears in `Spawn::grants`. Counting the table
+/// itself, rather than a list the caller wrote, is what keeps a caller from leaving its largest run
+/// out of the budget. A linear scan of every slot, paid once per spawn and never on a syscall.
+pub(crate) fn current_mappable_pages() -> u64 {
+    current_capabilities().map_or(0, |t| {
+        (0..t.len() as u64)
+            .filter_map(|slot| t.get(slot).ok())
+            .map(|c| c.object.mappable_pages())
+            .sum()
     })
 }
 

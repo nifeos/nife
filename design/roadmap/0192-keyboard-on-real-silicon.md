@@ -197,6 +197,7 @@ fatal-risk list that months of driver work is a reasonable thing to spend.
   option B is not priced as a line item here.
 - **Outstanding.** Next: milestone 242's xenon bench step, ahead of option A's board run (calef,
   2026-10-21: *"Yes"*). It closes this milestone when its step 3 prints `hello` on the monitor.
+  xenon's keyboard reaches the shell (242's bench README); the monitor half is what remains.
 - **Outstanding.** Option A has still never been run on a board and cannot be until milestone 157
   puts a pixel on a board's framebuffer. The six-step bench procedure is written and unexecuted.
 - **Outstanding.** No keystroke has reached a screen on real silicon; that waits on milestone 157.
