@@ -14,9 +14,8 @@ Written by the research lane `lane/reuse-audit` on 2026-10-04 (UTC) at base `7da
 calef's question of the same day: under the §46 (thin primitives or whole subsystems) amendment,
 *what that we already have in the tree would be a better candidate for reuse?* The ruling: outside the
 kernel and the crates Kani proves, the default is to take or adapt existing code, and writing our own
-needs a recorded reason. The amendment's text was still in flight as pull request #1637 (a claim
-commit only), so the `Reuse:` lines below use the ruling's terms and should be conformed to the
-landed wording. Title and slug are drafts.
+needs a recorded reason. Title and slug are drafts. Every crate the table below does not weigh is
+weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
 under §46. Items (a), (d), (e), (f2) and (g) are built, on calef's approvals of `httparse`
@@ -49,7 +48,7 @@ amendment's exemption). The crates: `paging` (2,866 lines, 36 Kani), `capability
 
 Kani-proved and outside the kernel, keep unless a proof is no longer worth having. The crates, with lines and Kani proofs: `calendar`
 (1,089, 11), `timetable` (2,884, 10), `globally_unique_identifier_partition_table` (2,219, 9),
-`elf` (1,173, 8, also kernel), `network_time_protocol` (684, 7). Also `glob` (650, 6), `component_plan`
+`elf` (1,173, 8, also kernel), `network_time_protocol` (684, 7). Also `glob` (650, 6), `capability_plan`
 (1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel),
 `credential_contract` (322, 3), `filesystem_contract` (2,636, 3), `package_archive` (677, 2),
 `capability_manifest_note` (607, 2), `nifefs` (354, 2).
@@ -212,6 +211,7 @@ on the customer path.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
 - (g) BUILT: `xtask` takes `object` for the ELF and the PE; the conversion stays ours.
 - (h) REFUSED for base: the four `coreutils` programs stay ours.
+- (i) `uuid` 1.28.0 replaces `universally_unique_identifier`.
 
 ## Recorded reasons for what stays
 
@@ -249,6 +249,8 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).
+- **Outstanding.** Item (i). calef, 2026-10-22 (UTC), on #2548: "A"; see
+  [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 

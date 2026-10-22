@@ -9,7 +9,7 @@ use core::sync::atomic::Ordering;
 
 #[cfg(target_arch = "aarch64")]
 use super::test_programs::loader_subject_image;
-use super::test_programs::{a_kernel_address, outlaw_image, reap_bare, spawn_bare};
+use super::test_programs::{a_kernel_address, kernel_test_subject_image, reap_bare, spawn_bare};
 use super::*;
 use crate::arch::exceptions::{SVC_COUNT, USER_FAULTS, last_user_fault};
 use crate::arch::{UserFault, UserFaultAccess, timer};
@@ -59,7 +59,12 @@ fn el1_runs_on_sp_el1() {
 fn a_user_program_reaches_el0_and_returns_twice() {
     let before = SVC_COUNT.load(Ordering::Relaxed);
 
-    spawn_bare(outlaw_image(), OUTLAW_ROUND_TRIP, 0).expect("spawn failed");
+    spawn_bare(
+        kernel_test_subject_image(),
+        KERNEL_TEST_SUBJECT_ROUND_TRIP,
+        0,
+    )
+    .expect("spawn failed");
 
     assert!(
         wait_for(|| SVC_COUNT.load(Ordering::Relaxed) >= before + 2),
@@ -93,7 +98,12 @@ fn a_user_program_cannot_read_a_kernel_address() {
 
     let before = USER_FAULTS.load(Ordering::Relaxed);
 
-    spawn_bare(outlaw_image(), OUTLAW_READ_KERNEL, kernel_addr).expect("spawn failed");
+    spawn_bare(
+        kernel_test_subject_image(),
+        KERNEL_TEST_SUBJECT_READ_KERNEL,
+        kernel_addr,
+    )
+    .expect("spawn failed");
 
     assert!(
         wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > before),

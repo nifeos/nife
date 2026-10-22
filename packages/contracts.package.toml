@@ -40,7 +40,7 @@ interfaces = [
     "universally_unique_identifier",
     "file_allocation_table",
     "grant_plan",
-    "component_plan",
+    "capability_plan",
     "capability_manifest_note",
     "glob",
     "documentation",

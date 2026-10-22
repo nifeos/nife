@@ -38,7 +38,7 @@ narrows to the slot's programs in the same change.
 ## Fork 3: how new bytes take effect
 
 - 3a. Immediately, by kind. A per-use program at its next spawn. A swappable component by live
-  swap. A long-lived service by a restart in `component_plan`'s dependency order, the way NixOS
+  swap. A long-lived service by a restart in `capability_plan`'s dependency order, the way NixOS
   restarts changed units. A service with state it cannot hand over is restarted and its clients
   reconnect.
 - 3b. At the next boot, as Fuchsia does for its base. Simple, and the reboot calef asked to remove.

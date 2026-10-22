@@ -19,9 +19,9 @@
 # so this crate genuinely only ever will serve RedoxFS, and a generic `fs_server` name claims
 # something a second filesystem server (`fat32_server`, when it exists) would contradict.
 #
-# Name: recorded (design/roadmap/0140-foreign-filesystems.md). Renamed from `fs_server` to
-# `redoxfs_server` on 2026-08-25 as that decision's "increment zero", once milestone 138 settled:
-# calef, 2026-08-18, "fs_server is misnamed. Its something like redoxfs_server."
+# Name: ratified 2026-10-22 (calef, #2562). Refused `fs_server` (generic, where this crate only ever
+# serves RedoxFS). calef, 2026-08-18: "fs_server is misnamed. Its something like redoxfs_server."
+# design/roadmap/0140-foreign-filesystems.md has the change.
 
 [package]
 name = "redoxfs_server"

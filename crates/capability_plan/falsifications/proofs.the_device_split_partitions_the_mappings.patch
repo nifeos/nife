@@ -1,4 +1,4 @@
-Falsifies `component_plan::proofs::the_device_split_partitions_the_mappings`.
+Falsifies `capability_plan::proofs::the_device_split_partitions_the_mappings`.
 
 The defect: `PageKind::mode` returns `MAP_RW` for device registers as well as for shared
 pages, so every device register window a component is endowed with is mapped writable.
@@ -14,9 +14,9 @@ Confirmed by applying it against the old phrasing and watching it stay green. Th
 constants are now written out, and the harness also asserts the two differ, so a defect
 that collapsed them cannot pass by making the partition trivially uniform.
 
-diff --git a/crates/component_plan/src/lib.rs b/crates/component_plan/src/lib.rs
---- a/crates/component_plan/src/lib.rs
-+++ b/crates/component_plan/src/lib.rs
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
 @@ -277,7 +277,7 @@ impl PageKind {
      pub const fn mode(self) -> u64 {
          match self {
