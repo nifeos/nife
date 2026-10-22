@@ -99,13 +99,20 @@ fn measure() -> &'static str {
             return "FAILED: the NIC is on the bus and bring-up refused it";
         }
         Err(Absent::Busy) => return "FAILED: a server already holds the NIC",
+        Err(Absent::NoLink { device }) => {
+            println!(
+                "network-bench: nic       : 8086:{device:04x} {}, link NOT UP",
+                ::e1000e::model(device).unwrap_or("?"),
+            );
+            return "FAILED: no link (autonegotiation did not finish in the link wait; check the \
+                    cable and the port's LEDs)";
+        }
     };
     let m = w.mac;
     println!(
-        "network-bench: nic       : 8086:{:04x} {}, link {}, mac {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+        "network-bench: nic       : 8086:{:04x} {}, link up, mac {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
         w.device,
         ::e1000e::model(w.device).unwrap_or("?"),
-        if w.link_up { "up" } else { "NOT UP" },
         m[0],
         m[1],
         m[2],

@@ -27,15 +27,6 @@ fn image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
 }
 
-/// A NIC that is on the bus and refused is a failure, and a busy one is a test that leaked its
-/// holding; only an absent one is a skip, and the caller says so at its own call site.
-fn refused(why: e1000e_service::Absent) -> ! {
-    panic!(
-        "an e1000e NIC is on the bus and could not be wired: {why:?}. Not a skip: see \
-         notes/e1000e.md"
-    )
-}
-
 /// **The lease, and the confinement it was won under.** smoltcp's DHCP round trip completes over
 /// the `e1000e` data plane at EL0, and the address lands in slirp's 10.0.2.0/24, which only a real
 /// exchange through the device can produce. The IOMMU that owns the NIC was translating it: on this
@@ -51,21 +42,14 @@ fn refused(why: e1000e_service::Absent) -> ! {
 /// replayable patch.
 #[test_case]
 fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
-    let w = match e1000e_service::start_net_server(image(), socket_contract::NO_LISTEN_GRANT) {
-        Ok(w) => w,
-        Err(e1000e_service::Absent::NoController) => {
-            skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-        }
-        Err(why) => refused(why),
-    };
+    let w = wired_or_skip!(e1000e_service::start_net_server(
+        image(),
+        socket_contract::NO_LISTEN_GRANT
+    ));
     assert!(
         w.confined_by_iommu,
         "the e1000e NIC (device {:#06x}) was not behind a translating IOMMU unit that owns it",
         w.device
-    );
-    assert!(
-        w.link_up,
-        "QEMU's e1000e reports link at once; bring-up never saw STATUS.LU"
     );
     // Every runner gives this NIC `mac=52:54:00:e1:00:0e`, which is neither QEMU's default nor the
     // virtio server's constant: seeing it here proves the address came from the device's
@@ -96,17 +80,11 @@ fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
 /// above; nobody has broken the exchange this test adds to watch it fail.
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_e1000e_nic() {
-    let (report, w) = match e1000e_service::start_net_stack(
+    let (report, w) = wired_or_skip!(e1000e_service::start_net_stack(
         image(),
         NET_TEST_TCP_ECHO,
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(v) => v,
-        Err(e1000e_service::Absent::NoController) => {
-            skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-        }
-        Err(why) => refused(why),
-    };
+    ));
     let verdict = crate::sched::ipc_receive(report)[0];
     assert_eq!(
         verdict, NET_CLIENT_OK,
@@ -123,17 +101,11 @@ fn a_client_echoes_over_tcp_through_the_e1000e_nic() {
 /// above; nobody has broken the exchange this test adds to watch it fail.
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_e1000e_nic() {
-    let (report, w) = match e1000e_service::start_net_stack(
+    let (report, w) = wired_or_skip!(e1000e_service::start_net_stack(
         image(),
         NET_TEST_UDP_TFTP,
         socket_contract::NO_LISTEN_GRANT,
-    ) {
-        Ok(v) => v,
-        Err(e1000e_service::Absent::NoController) => {
-            skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-        }
-        Err(why) => refused(why),
-    };
+    ));
     let verdict = crate::sched::ipc_receive(report)[0];
     assert_eq!(
         verdict, NET_CLIENT_OK,
@@ -155,18 +127,12 @@ fn a_client_completes_a_udp_round_trip_through_the_e1000e_nic() {
 fn a_package_fetched_over_the_e1000e_nic_is_accepted_only_by_the_image_digest() {
     let catalogue = program(package_archive::CATALOG)
         .expect("no package catalogue in the initial ramdisk: the archive build packs one");
-    let (report, w) = match e1000e_service::start_package_fetch(
+    let (report, w) = wired_or_skip!(e1000e_service::start_package_fetch(
         image(),
         NET_TEST_HTTP_PACKAGE,
         catalogue.len() as u64,
         catalogue,
-    ) {
-        Ok(v) => v,
-        Err(e1000e_service::Absent::NoController) => {
-            skip_unless_required!(X86_NIC_ATTACHED, "no e1000e NIC attached");
-        }
-        Err(why) => refused(why),
-    };
+    ));
     let [genuine, tampered, ..] = crate::sched::ipc_receive(report);
     assert_eq!(
         genuine, NET_CLIENT_OK,
