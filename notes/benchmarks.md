@@ -281,7 +281,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 | [preemption-in-the-window](benchmarks/preemption-in-the-window.md) | the masked `map_new` window | 2026-09-21 (three) |
 | [drift-since-the-2026-09-26-floors](benchmarks/drift-since-the-2026-09-26-floors.md) | drift on `main` on all three ISAs | 2026-10-02 |
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
-| [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | four costs, a double copy and the tick | 2026-10-22 |
+| [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
 
 ## BUGS
 

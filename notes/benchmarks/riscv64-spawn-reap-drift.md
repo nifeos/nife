@@ -42,14 +42,14 @@ saw; "cost" is tick-free. Merges that move neither by more than 10 are left out.
 
 | merge | with tick | cost | what |
 |---|---:|---:|---|
-| #1360, milestone 126 (the `procps` package) | +1,075 | **+576** | the 24-to-32 slot table and the switch counter ([#1486](drift-since-the-2026-09-26-floors.md)) |
+| #1360, milestone 126 (the `procps` package) | +1,075 | +576 | the 24-to-32 slot table and the switch counter ([#1486](drift-since-the-2026-09-26-floors.md)) |
 | #1489, milestone 629 (the context-switch statistic stops costing the switch path) | -373 | -86 | the counter made cheap |
 | #1620, the IPC fastpaths shrunk | +374 | +86 | |
-| #1614, fatal risk 4's `null_syscall` contention | +380 | **+645** | the reaper frees a thread's stack outside `IPC_TABLES` and takes it again to remove the thread |
-| #1617, milestones 754 and 761 | +873 | **+916** | below |
+| #1614, fatal risk 4's `null_syscall` contention | +380 | +645 | the reaper frees a thread's stack outside `IPC_TABLES` and takes it again to remove the thread |
+| #1617, milestones 754 and 761 | +873 | +916 | below |
 | #1743 | -133 | -134 | |
-| #1852, milestone 139's queue token | +123 | +124 | |
-| #1892, milestone 812 (threads in one address space) | +569 | **+569** | |
+| #1852, the run queue's ownership token, milestone 139 (drive the unsafe count down) | +123 | +124 | |
+| #1892, milestone 812 (threads in one address space) | +569 | +569 | |
 | #2148 | -177 | -177 | |
 | #2188 | -41 | -84 | |
 | #2331, `SUSPEND` and `RESUME` | +733 | +13 | the tick |
@@ -59,8 +59,8 @@ The tick-only merges with no cost: #1443 +51, #1473 -264, #1525 +498, #1542 -211
 
 ### #1617: two chosen costs and an accidental third
 
-Inside the merge, each milestone on its own base: 754 (the table grows to 64 slots) +140, 761 (each
-table gets its own lock, in the TCB page) +23. Together +917. A per-function profile of 64
+Inside the merge, each milestone on its own base: milestone 754 (the table grows to 64 slots)
++140, milestone 761 (capability lookup off the global lock) +23. Together +917. A per-function profile of 64
 iterations (a QEMU plugin counting each translation block, the run at 128 iterations minus the run
 at 64) put +82,560 of the difference in `memcpy`. 761 moved the table out of the `Thread` and into
 `init_capability_table`'s `ptr::write` of a constant. At -O0 that write is a call, so the constant
@@ -95,10 +95,10 @@ switching ([drift-since-the-2026-10-10-floor](drift-since-the-2026-10-10-floor.m
 
 ## What stays, and why
 
-- **#1614, +645 (+1.8%).** Chosen: freeing six stack pages under the global lock stalled every
+- #1614, +645 (+1.8%), chosen: freeing six stack pages under the global lock stalled every
   other core's IPC on radon. The second critical section is the price.
-- **#1892, +569 (+1.6%).** Chosen: milestone 812's process join, as #2426 recorded on aarch64.
-- **#1360 and #1617's table bytes.** Chosen: milestones 126 and 754 grew the table, and spawning
+- #1892, +569 (+1.6%), chosen: milestone 812's process join, as #2426 recorded on aarch64.
+- #1360 and #1617's table bytes, chosen: milestones 126 and 754 grew the table, and spawning
   initializes it. Milestone 778 (capability tables sized per process) is where that is reconsidered.
 
 ## `yield_switch`
