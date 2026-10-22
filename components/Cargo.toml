@@ -8,8 +8,8 @@
 # The package holds every EL0 program a distribution would ship because somebody wants its function:
 # the services and drivers, the progenitor and supervision spine, and the tools a person invokes at the
 # prompt. What it is not is in `fixtures/`, and the dividing question is what a program IS rather
-# than who runs it, since nearly everything here is reached only from a kernel test. Nobody has put
-# either name to an architect, which is what `recorded` claims and all it claims.
+# than who runs it, since nearly everything here is reached only from a kernel test. calef held the
+# name on 2026-10-22 (UTC, #2562) without ruling it, so it stays `recorded`.
 [package]
 name = "components"
 version = "0.1.0"

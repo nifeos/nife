@@ -31,9 +31,13 @@
 //! `script/test`'s host pass excludes it; they run under `cargo test --doc -p supervision_protocol`
 //! on an aarch64 host.
 //!
-//! Name: recorded (design/naming.md's crate section). The `_protocol` contract suffix (calef,
-//! 2026-09-05) plus the stem, the tree's word for the restart discipline; `ChildEndowment` is an
-//! open naming question of its own (§69 (`Endow` is a verb)).
+//! Name: provisional. Reopened by calef on 2026-10-22 (UTC, #2562), whose ruling was
+//! "`supervision_protocol`: reopen". The question put to him: the crate holds the supervision tree's
+//! protocol words and also the tree's only userspace ELF loader, which builds a child process and
+//! states its authority as a `ChildEndowment`, so `_protocol` names only the first half. The rename
+//! waits on the split into `supervision_contract` and `process_builder` that
+//! design/naming/convention-rulings.md names. `ChildEndowment` is an open naming question of its
+//! own (§69 (`Endow` is a verb)).
 
 use user_mode_runtime::{
     address_space_map_into, cap_delete, destroy_memory_region, invoke, retype_into_kernel_object,
