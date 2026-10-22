@@ -188,6 +188,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 helpers/verify_times.py update
 
+      # What `main` measured, per week (calef's ruling on #2554, 2026-10-22 UTC): the bench job's
+      # `bench-readings` artifact at each week's newest merge, committed as `bench-on-main.csv` for
+      # `script/metrics`' unexplained-drift chart. Artifacts live 90 days and the readings are the
+      # one input git cannot restate, so a week once read is kept, and rewritten only by a newer
+      # merge of the same week.
+      - name: Fetch the bench readings of main
+        id: benchreadings
+        continue-on-error: true  # outcome: re-raised
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 helpers/baseline_drift.py --update
+
       # Where each merge-group job's time went, per day, per job and per step (milestone 808 (every
       # gate accounts for its time), §254 (a gate prints what each item cost) Fork 4), from the jobs
       # API, committed as `ci-job-times.csv`, and each green build's timeline as `ci-builds.csv` for
@@ -357,7 +369,7 @@ jobs:
         if: >-
           steps.covtool.outcome == 'failure' || steps.coverage.outcome == 'failure' ||
           steps.interfacetool.outcome == 'failure' || steps.interface.outcome == 'failure' ||
-          steps.verifytimes.outcome == 'failure' ||
+          steps.verifytimes.outcome == 'failure' || steps.benchreadings.outcome == 'failure' ||
           steps.jobtimes.outcome == 'failure' || steps.budgetissues.outcome == 'failure'
         run: |
           echo "::error::an instrument failed, so its cells were carried rather than measured:" \
@@ -366,6 +378,7 @@ jobs:
             "interface target '${{ steps.interfacetool.outcome }}'," \
             "interface '${{ steps.interface.outcome }}'," \
             "verify shard times '${{ steps.verifytimes.outcome }}'," \
+            "bench readings '${{ steps.benchreadings.outcome }}'," \
             "CI job times '${{ steps.jobtimes.outcome }}'," \
             "near-budget issues '${{ steps.budgetissues.outcome }}'"
           exit 1

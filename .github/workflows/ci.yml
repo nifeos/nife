@@ -1745,6 +1745,8 @@ jobs:
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
       - run: helpers/hang_evidence.py run -- script/ci-build bench
+        env:
+          NIFE_BENCH_READINGS: ${{ runner.temp }}/bench-readings.tsv
       # Three legs, three architectures, since 2026-09-15: `script/ci-build`'s `bench` row is
       # `script/bench --check && script/bench --riscv --check && script/bench --x86 --check`, so
       # this one step pulls all three tripwires. **This comment said the opposite for six days**,
@@ -1755,6 +1757,19 @@ jobs:
       # paragraph, arriving twice in one file: a claim about what a script does, kept beside the
       # step rather than in the script, and drifting the moment the script changed.
       # See notes/benchmarks.md, 2026-09-21.
+
+      # What `main` measured, kept for the weekly unexplained-drift chart (calef's ruling on #2554,
+      # 2026-10-22 UTC): `helpers/baseline_drift.py --update` reads the newest of these per week.
+      # A merge group's run is `main`'s reading, because the push that follows it skips the suite
+      # for a SHA the queue already passed (the `gate` job). Pull requests keep none: their head is
+      # not `main`. Ninety days is GitHub's ceiling, and the weekly fetch commits what it reads.
+      - name: Keep the readings
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: bench-readings
+          path: ${{ runner.temp }}/bench-readings.tsv
+          retention-days: 90
 
       # The instruction-count instrument (milestone 78), here rather than in its own job because it
       # wants exactly what this job already has: the pinned QEMU, the same cache, and the same skip on

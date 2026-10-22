@@ -32,7 +32,7 @@ use std::process::Command;
 
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{Entry, GloballyUniqueIdentifierPartitionTable};
-use universally_unique_identifier::Uuid;
+use uuid::Uuid;
 
 /// The built binary, not the library: `cargo test` compiles it and hands us the path.
 const TOOL: &str = env!("CARGO_BIN_EXE_redoxfs_host");
@@ -106,7 +106,7 @@ fn tool_fails(args: &[&str]) -> String {
 
 /// A version-4-shaped GUID with a recognisable body, so a failure names which one it was.
 fn guid(tag: u8) -> Uuid {
-    Uuid::v4_from_random([tag; 16])
+    uuid::Builder::from_random_bytes([tag; 16]).into_uuid()
 }
 
 /// Build a device: a protective MBR, a primary and backup GPT, and a RedoxFS image dropped into the
@@ -202,7 +202,7 @@ fn a_filesystem_inside_a_partition_reads_back_through_the_tool() {
     let payload = b"CRK110: this filesystem lives in partition 3 of a device\n";
     build_device(&device, payload, DATA, DEVICE_BLOCKS);
     let dev = device.display().to_string();
-    let data_type = String::from_utf8(types::NIFE_DATA.to_ascii().to_vec()).unwrap();
+    let data_type = format!("{:X}", types::NIFE_DATA);
 
     let before = digest(&std::fs::read(&device).unwrap());
 
@@ -358,7 +358,7 @@ fn the_refusals_say_which_thing_was_wrong() {
     );
 
     // A type nothing on this disk carries.
-    let apfs = String::from_utf8(types::APPLE_APFS.to_ascii().to_vec()).unwrap();
+    let apfs = format!("{:X}", types::APPLE_APFS);
     let err = tool_fails(&["cat", &dev, "motd", "--partition-type", &apfs]);
     assert!(
         err.contains("no partition of type"),

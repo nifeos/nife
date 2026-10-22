@@ -32,10 +32,11 @@ use std::path::{Path, PathBuf};
 
 use file_allocation_table as fat;
 use globally_unique_identifier_partition_table::entry::Entry;
-use globally_unique_identifier_partition_table::guid::{Uuid, types};
+use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
     DEFAULT_ENTRY_COUNT, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA, entry,
 };
+use uuid::Builder;
 
 use crate::host::workspace_root;
 
@@ -65,8 +66,10 @@ pub(super) fn write(boot_file: &Path) -> Result<PathBuf, String> {
     let file = std::fs::read(boot_file)
         .map_err(|e| format!("cannot read {}: {e}", boot_file.display()))?;
     let random = random_bytes::<36>()?;
-    let disk_guid = Uuid::v4_from_random(random[..16].try_into().expect("16 bytes"));
-    let part_guid = Uuid::v4_from_random(random[16..32].try_into().expect("16 bytes"));
+    let disk_guid =
+        Builder::from_random_bytes(random[..16].try_into().expect("16 bytes")).into_uuid();
+    let part_guid =
+        Builder::from_random_bytes(random[16..32].try_into().expect("16 bytes")).into_uuid();
     let volume_id = u32::from_le_bytes(random[32..].try_into().expect("4 bytes"));
 
     let volume = fat::Volume::new(

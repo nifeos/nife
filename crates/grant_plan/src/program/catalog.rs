@@ -333,7 +333,7 @@ programs! {
         ///
         /// **It is `disk_partitioner`'s draw with the disk taken away**, which is what makes it an
         /// honest consumer rather than a demonstration. Both call
-        /// `universally_unique_identifier::Uuid::v4_from_random` over sixteen bytes from the same
+        /// `uuid::Builder::from_random_bytes` over sixteen bytes from the same
         /// service, because a GPT gives every partition a random unique id and neither crate will
         /// invent one. The partitioner
         /// needs a disk capability this shell does not hold and cannot attenuate; the sixteen bytes and
@@ -347,7 +347,7 @@ programs! {
         /// predictable identifier is worse than a file containing nothing.
         ///
         /// Name: provisional. RFC 9562's own term for the object, which
-        /// `crates/universally_unique_identifier` also uses (2026-10-06); the partition table says
+        /// `uuid` crate also uses; the partition table says
         /// GUID only for the UEFI fields that carry one.
         Uuid { id: 12, name: "uuid" },
         /// **Rank the members of that same domain by the CPU time each has been scheduled for**

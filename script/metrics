@@ -496,11 +496,13 @@ MEASURES = [
     # ceiling in design/prose-baseline.tsv.
     # Milestone 611. File and column names provisional (that lane's, 2026-09-27).
     ('homes', HOMES_COLUMNS),
-    # Milestone 415 (sub-tripwire drift accumulates across baseline saves), item 3: icount drift
-    # since a fixed anchor. calef ruled on 2026-09-26 that it is a report and not a gate, in §190
-    # (must an icount baseline save record why it moved). See DRIFT_BEGIN below. File and column names provisional (that lane's).
-    ('baseline-drift', [prefix + arch for arch in baseline_drift.ARCHES
-                        for prefix in ('baseline_drift_max_pct_', 'baseline_drift_rows_over_5pct_')]),
+    # Milestone 415 (sub-tripwire drift accumulates across baseline saves), item 3, a report and
+    # not a gate (§190 (must an icount baseline save record why it moved)), narrowed by calef's ruling on #2554 (2026-10-22 UTC) to the drift on `main`
+    # that no record accounts for. See DRIFT_BEGIN below. File and column names provisional
+    # (lane/bench/unexplained-drift-chart).
+    ('unexplained-drift', [prefix + arch for arch in baseline_drift.ARCHES
+                           for prefix in ('unexplained_drift_max_pct_',
+                                          'unexplained_drift_rows_over_5pct_')]),
     # Milestone 610 (provisional): the interface's stability. `helpers/interface_stability.py`
     # writes these cells, because they need `cargo doc`, which nothing in this script may run; this
     # script only carries them (INTERFACE_FIELDS below) and draws them. File and column names
@@ -1699,13 +1701,15 @@ def line_citation_debt(tree):
             'line_citations_ceiling': int(ceiling.group(1)) if ceiling else ''}
 
 
-# Cumulative icount drift since a fixed anchor: milestone 415 item 3, which calef ruled on
-# 2026-09-26 (UTC) is a report and not a gate (§190). The arithmetic and its selftest are
+# Unexplained icount drift on `main`: milestone 415 item 3, a report and not a gate (§190), as
+# calef's ruling on #2554 (2026-10-22 UTC) defines it. The arithmetic and its selftest are
 # helpers/baseline_drift.py. Three outputs: two cells per architecture in
-# `baseline-drift.csv` (the largest upward drift, and rows past half the tripwire), one generated
-# line on the page between DRIFT_BEGIN and DRIFT_END, and the whole report, every row and every
-# save's `# why:` lines, regenerated as the appendix DRIFT_REPORT. The line and the appendix read
-# HEAD, like the table of contents; the CSV restates each week from its own revision.
+# `unexplained-drift.csv` (the largest unexplained drift, and rows past 5%), one generated line on
+# the page between DRIFT_BEGIN and DRIFT_END naming the rows past 5%, and the whole report, every
+# row and every save's `# why:` lines and what accounts for them, regenerated as the appendix
+# DRIFT_REPORT. The line and the appendix read HEAD; the CSV restates each week from that week's
+# reading of `main` (notes/project-metrics/bench-on-main.csv) and today's bench/attributions.tsv,
+# so a week falls once a lane explains it.
 DRIFT_BEGIN = '<!-- baseline-drift: script/metrics writes this -->'
 DRIFT_END = '<!-- /baseline-drift -->'
 DRIFT_REPORT = DATA_DIR / 'baseline-drift.md'
@@ -1757,9 +1761,7 @@ def write_interface_line(rows):
 
 def write_drift_report():
     """The page's generated drift line and the appendix beside it, both from HEAD."""
-    reports, stamp = baseline_drift.report('HEAD')
-    head = git('rev-parse', 'HEAD').decode().strip()
-    week = week_of(git('show', '-s', '--format=%cI', head).decode().strip())
+    line, body = baseline_drift.page('HEAD')
     path = pathlib.Path(PAGE)
     text = path.read_text()
     if text.count(DRIFT_BEGIN) != 1 or text.count(DRIFT_END) != 1:
@@ -1767,11 +1769,9 @@ def write_drift_report():
                          % (PAGE, DRIFT_BEGIN, DRIFT_END))
     before, rest = text.split(DRIFT_BEGIN)
     _old, after = rest.split(DRIFT_END)
-    new = (before + DRIFT_BEGIN + '\n' + baseline_drift.status(reports, week) + '\n'
-           + DRIFT_END + after)
+    new = before + DRIFT_BEGIN + '\n' + line + '\n' + DRIFT_END + after
     if new != text:
         path.write_text(new)
-    body = baseline_drift.render(reports, stamp)
     if not DRIFT_REPORT.exists() or DRIFT_REPORT.read_text() != body:
         DRIFT_REPORT.write_text(body)
 
@@ -1983,7 +1983,7 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
                  writing_standards(tree), comment_block_debt(tree), line_citation_debt(tree),
                  homes(tree), crate_release_cells(tree)):
         row.update(part)
-    row.update(baseline_drift.series_cells(rev))
+    row.update(baseline_drift.series_cells(week))
     return row
 
 
@@ -2811,13 +2811,13 @@ CHARTS = [
      [('home undecided', 'paths_home_undecided'), ('home provisional', 'paths_home_provisional'),
       ('home ratified', 'paths_home_ratified'), ('unclaimed', 'paths_unclaimed')], 1000.0, None,
      'packages_total'),
-    # Milestone 415 item 3. Stacked by architecture because a count adds up; the largest drift
-    # per architecture does not, so it stays in the CSV and on the page's generated line.
-    ('baseline-drift.svg', 'Benchmark rows more than 5% above their anchor',
-     'icount per iteration since the 2026-09-15 audit\'s anchors, restamp term included; '
-     'the tripwire is 10% per save, so this is what it cannot see',
-     [(arch, 'baseline_drift_rows_over_5pct_' + arch) for arch in baseline_drift.ARCHES],
-     1.0, None, 'baseline_drift_rows_over_5pct_aarch64'),
+    # Milestone 415 item 3, by calef's ruling on #2554. Side by side, not stacked: the largest
+    # drift per architecture does not add up. The rows past 5% are named on the page's line.
+    ('unexplained-drift.svg', 'Unexplained benchmark drift on main, in percent',
+     'per architecture, the row whose icount drift since the audit\'s anchors no line in '
+     'bench/attributions.tsv accounts for; read at each week\'s last merge',
+     [(arch, 'unexplained_drift_max_pct_' + arch) for arch in baseline_drift.ARCHES],
+     1.0, (baseline_drift.WATCH_PCT, 'lane at'), 'unexplained_drift_max_pct_aarch64'),
     # Milestone 857's two (provisional, lane/crate-release-gates). A pipeline that starts flat is
     # correct: all eight crates sit in the tree, and a band moves only when one clears a stage.
     ('crate-release.svg', 'The crates 857 releases, by how far each has got',
@@ -3135,7 +3135,7 @@ def github_anchor(heading):
 # Charts whose series stand side by side rather than stacked, and charts that carry stored columns
 # as lines over the bars: [(legend label, column)]. The build chart's jobs run side by side, and
 # §213's limits overlap (one document can be over two), so neither may be summed.
-GROUPED = {'ci-jobs.svg', 'writing-standards.svg'}
+GROUPED = {'ci-jobs.svg', 'writing-standards.svg', 'unexplained-drift.svg'}
 # Two lines, so the second is dotted with open markers: solid and dashed already mean a trailing
 # mean's full and short window on this page (TRENDS).
 LINES = {'ci-jobs.svg': [('median build', 'ci_build_median_minutes'),
