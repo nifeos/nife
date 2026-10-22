@@ -22,8 +22,8 @@ What this tree's standards add, each measured where the tree already pays it:
 | Kani, where tractable | boot sector and BPB parse, FAT entry decode, directory entry and long-name checksum and assembly, chain walks bounded by the cluster count, and a small round trip | GPT carries 8 harnesses in 103 code lines and 135 lines of patches; FAT needs about twice the properties |
 | fuzzing for the reader | whole images through mount, walk and read, and a second target through the writer | the tree's fuzz targets run 27 to 41 code lines each, plus a seed corpus (#1803's two images) |
 | the mutation gate | every surviving mutant killed by a test or excluded with its reason | host tests sized like `fatfs`'s 984 lines or `embedded-sdmmc`'s 1,296 |
-| §283's 100-line functions, §266's 2,000-line files | the parser split by on-disk structure | `fatfs` already passes both, so the shape is known to fit |
-| §267's comment rules | a doc comment on every item, constraints only in bodies | prose, counted in no line figure here |
+| §283 (a function is held to 100 code lines by a lint ratchet) and §266 (a Rust source file stays under 2,000 lines) | the parser split by on-disk structure | `fatfs` already passes both, so the shape is known to fit |
+| §267 (a comment states the constraint as it is now) | a doc comment on every item, constraints only in bodies | prose, counted in no line figure here |
 | oracle tests | rust-fatfs reads what we wrote; `fsck_msdos` exits 0; FAT12 and FAT16 images from `newfs_msdos` | a dev-dependency ruling for the oracle's pin |
 
 The estimate, stated as one: about 5,500 code lines of crate, 1,500 of host and oracle tests, 300 of
