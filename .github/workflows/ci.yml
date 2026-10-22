@@ -278,6 +278,11 @@ jobs:
   # fourteen generated files): a changed file under `notes/project-metrics/` skips only when no
   # gated file names it, so the `falsification-times.tsv` `script/verify` shards by still runs.
   #
+  # **Comment-only Rust rides the same skip** (milestone 929). A `.rs` file whose tokens are
+  # unchanged once comments are removed counts as skippable, unless a patch or a gated reader could
+  # notice; `helpers/prose_only.py`'s COMMENT-ONLY RUST has the rule. It also sets `comments`, which
+  # keeps `rustfmt` running, and `comment_tests`, which `lint` tests on the host.
+  #
   # **Fails toward running.** A classifier error leaves `prose` empty and `!= 'true'` admits it.
   gate:
     name: draft gate
@@ -293,6 +298,8 @@ jobs:
       run: ${{ steps.state.outputs.run }}
       prose: ${{ steps.prose.outputs.prose }}
       prose_tests: ${{ steps.prose.outputs.prose_tests }}
+      comments: ${{ steps.prose.outputs.comments }}
+      comment_tests: ${{ steps.prose.outputs.comment_tests }}
     timeout-minutes: 25
     steps:
       - name: Start the job wall-time clock
@@ -1274,7 +1281,9 @@ jobs:
     name: rustfmt
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    # A comment-only Rust change skips the heavy jobs but not this one: a reflowed comment can
+    # break formatting, and a reindent is the class's one non-comment change.
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && (needs.gate.outputs.prose != 'true' || needs.gate.outputs.comments == 'true') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -1401,6 +1410,31 @@ jobs:
           set -eu
           args=""
           for p in $PROSE_TESTS; do args="$args -p $p"; done
+          echo "==> cargo test$args"
+          # shellcheck disable=SC2086 # one word per package, split on purpose
+          cargo test $args
+      # **What a comment-only Rust change can still break, beside the clippy and rustdoc passes
+      # above.** Doc comments hold doctests, and a doc comment can be read at run time (a derive's
+      # help text), so each package the gate owes a run gets `cargo test`, doctests included. A
+      # package that builds only for bare metal (`kernel`, `system_tests`, and what
+      # helpers/host-excluded-crates.sh derives) has no host test to run, and is named and skipped.
+      - name: The host tests of the packages whose comments this change touched
+        if: needs.gate.outputs.prose == 'true' && needs.gate.outputs.comments == 'true' && needs.gate.outputs.comment_tests != ''
+        # Through the environment, as above; the classifier refuses any name that is not
+        # `[A-Za-z0-9_-]+`.
+        env:
+          COMMENT_TESTS: ${{ needs.gate.outputs.comment_tests }}
+        run: |
+          set -eu
+          bare=" kernel system_tests $(helpers/host-excluded-crates.sh | tr '\n' ' ') "
+          args=""
+          for p in $COMMENT_TESTS; do
+            case "$bare" in
+              *" $p "*) echo "==> $p builds only for bare metal: clippy and rustdoc above are its check" ;;
+              *) args="$args -p $p" ;;
+            esac
+          done
+          [ -n "$args" ] || exit 0
           echo "==> cargo test$args"
           # shellcheck disable=SC2086 # one word per package, split on purpose
           cargo test $args
