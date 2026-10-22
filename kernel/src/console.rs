@@ -436,7 +436,7 @@ pub fn hold_screen_at_handover() {
 /// host answers, with nothing able to paint in between (the kernel is the only painter until
 /// [`yield_screen`] says otherwise, and no other kernel line is printed here).
 fn hold_screen_for_host() {
-    /// Ten seconds, in scheduler ticks. `TICK_HZ` is 100 on all three architectures.
+    /// Ten seconds, in scheduler ticks at whatever `TICK_HZ` the build has.
     const HOLD_TICKS: u64 = 10 * crate::arch::timer::TICK_HZ;
     /// The flat backstop, paid down only while the tick counter has not yet moved. Large enough
     /// that it is never the bound that fires on a machine whose timer works, and finite so that a
