@@ -40,8 +40,8 @@ dormant upstream leaves it nothing to merge. The cases read this way:
 - `xhci`, item 10, fails the second: no commit since 2024-09. A fork has nothing to merge, so the
   definitions are vendored under rule 6 if they need a patch.
 - `virtio-drivers`, item (c0), carries nothing of ours: the feature we need is upstream's #232. It
-  passes all three, so the test favors a fork of 0.13.0 carrying #232 over keeping our drivers. The
-  ruling stands as calef gave it: no fork, wait for a release.
+  passes all three, and is carried as a fork of 0.13.0 with #232 until a release includes it
+  (calef, 2026-10-22 21:58 UTC).
 
 ## The exception a fork carries
 

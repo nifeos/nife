@@ -1,9 +1,10 @@
 # Pin metadata for vendor/virtio-drivers, read by script/vendor-verify and script/vendor-watch.
 #
 # The tree in vendor/virtio-drivers is the published crates.io package below plus exactly the
-# changes in the divergence patch, which is rcore-os/virtio-drivers#232 ("add support
+# changes in the divergence patch: rcore-os/virtio-drivers#232 ("add support
 # features(ACCESS_PLATFORM) for some device") as upstream merged it, restricted to the files the
-# package ships. vendor/README.md says why it is carried and when it drops. Format as
+# package ships, and one line out of the package's .gitignore so its Cargo.lock can be tracked.
+# vendor/README.md says why it is carried and when it drops. Format as
 # vendor/redoxfs.pin.
 
 name = virtio-drivers
