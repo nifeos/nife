@@ -16,15 +16,112 @@
 //! - `STATUS` reports the FIFO's fill and, for a few reads after a write, data busy.
 //! - a read with the card read threshold (`CARDTHRCTL`) enabled above the FIFO's size ends at
 //!   once with `FRUN` and `DTO`, the word radon's controller gave for it.
+//! - with the IDMAC selected in `CTRL` and enabled in `BMOD`, the FIFO's other end is [`Memory`]:
+//!   the walk starts at `DBADDR`, loads each descriptor, suspends with `DU` on one it does not own,
+//!   stops with `FBE` on an address outside memory, moves its buffer, closes it (clears `OWN`,
+//!   raises `RI` or `TI` unless `DIC`), and stops after `LD` or follows `CH`. A read's last words
+//!   reach memory after `DTO`, as on silicon, so the driver must wait for the descriptor too.
 //!
 //! Time is one microsecond per call to `now_us`, so every deadline is reached in a bounded number
 //! of polls and a test that would hang on silicon fails here instead.
 
 use std::collections::VecDeque;
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::vec::Vec;
 
 use crate::host::Registers;
+use crate::idmac::{DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DmaRegion};
 use crate::regs;
+
+/// What the bus holds and what has been ordered: the driver's writes since its last barrier, and
+/// the device's.
+#[derive(Debug, Default)]
+pub(crate) struct Bus {
+    /// The memory's first byte's bus address.
+    pub base: u64,
+    /// The memory.
+    pub bytes: Vec<u8>,
+    cpu_unfenced: bool,
+    device_unfenced: bool,
+    /// The IDMAC was started with driver writes to memory not yet behind a barrier.
+    pub unfenced_start: bool,
+    /// The driver read data the IDMAC wrote without a barrier between.
+    pub unfenced_read: bool,
+    /// Bytes the IDMAC has written to memory.
+    pub device_written: usize,
+}
+
+/// **Memory the simulated IDMAC reaches**, and the region the driver writes it through: two
+/// handles on one [`Bus`].
+#[derive(Debug, Clone)]
+pub(crate) struct Memory(Arc<Mutex<Bus>>);
+
+impl Memory {
+    /// `pages` pages at bus address `base`, zero.
+    #[must_use]
+    pub fn new(base: u64, pages: usize) -> Memory {
+        Memory(Arc::new(Mutex::new(Bus {
+            base,
+            bytes: vec![0; pages * 4096],
+            ..Bus::default()
+        })))
+    }
+
+    /// The bus, locked.
+    pub fn bus(&self) -> MutexGuard<'_, Bus> {
+        self.0.lock().unwrap()
+    }
+}
+
+impl DmaRegion for Memory {
+    fn bus_address(&self) -> u64 {
+        self.bus().base
+    }
+    fn bytes(&self) -> u32 {
+        u32::try_from(self.bus().bytes.len()).unwrap()
+    }
+    fn read_u32(&self, off: u32) -> u32 {
+        let b = &self.bus().bytes[off as usize..off as usize + 4];
+        u32::from_le_bytes([b[0], b[1], b[2], b[3]])
+    }
+    fn write_u32(&mut self, off: u32, v: u32) {
+        let mut bus = self.bus();
+        bus.cpu_unfenced = true;
+        bus.bytes[off as usize..off as usize + 4].copy_from_slice(&v.to_le_bytes());
+    }
+    fn read_bytes(&self, off: u32, out: &mut [u8]) {
+        let mut bus = self.bus();
+        if bus.device_unfenced {
+            bus.unfenced_read = true;
+        }
+        out.copy_from_slice(&bus.bytes[off as usize..off as usize + out.len()]);
+    }
+    fn write_bytes(&mut self, off: u32, src: &[u8]) {
+        let mut bus = self.bus();
+        bus.cpu_unfenced = true;
+        bus.bytes[off as usize..off as usize + src.len()].copy_from_slice(src);
+    }
+    fn barrier(&mut self) {
+        let mut bus = self.bus();
+        bus.cpu_unfenced = false;
+        bus.device_unfenced = false;
+    }
+}
+
+/// Where the simulated IDMAC is in its walk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Walk {
+    /// Starts at `DBADDR` when next there is work.
+    Idle,
+    /// On the descriptor at this bus address, this many bytes of its buffer moved.
+    At(u32, u32),
+    /// Suspended (`DU`) on the descriptor at this address until a poll demand.
+    Suspended(u32),
+    /// Stopped by a bus error until a reset.
+    Halted,
+    /// Past a descriptor with `LD`.
+    Finished,
+}
 
 /// Which card is in the slot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -151,6 +248,19 @@ pub struct Sim {
     pub mangle_write: Option<(usize, u64)>,
     /// Microseconds per call to `now_us`.
     pub clock_step: u64,
+    /// What the IDMAC reaches, if a test gave it any.
+    pub memory: Option<Memory>,
+    walk: Walk,
+    /// The bus refuses the buffer of the descriptor walked at this position (from 0) of a chain.
+    pub bus_error_at: Option<u32>,
+    walked: u32,
+    /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
+    /// a read's `DTO` land well before its last words reach memory.
+    pub dma_words_per_step: Option<usize>,
+    /// The IDMAC flips bit 0 of every word it writes to memory: a bus that corrupts.
+    pub dma_corrupts: bool,
+    /// The direction of the last data command: the way the IDMAC moves words.
+    dma_write: bool,
 }
 
 /// The `VERID` the simulation reports: release 2.90a, which puts the FIFO at `0x200`.
@@ -205,6 +315,13 @@ impl Sim {
             ext_csd_sectors: None,
             mangle_write: None,
             clock_step: 1,
+            memory: None,
+            walk: Walk::Idle,
+            bus_error_at: None,
+            walked: 0,
+            dma_words_per_step: None,
+            dma_corrupts: false,
+            dma_write: false,
         };
         s.regs[(regs::VERID / 4) as usize] = VERID;
         s.regs[(regs::HCON / 4) as usize] = HCON;
@@ -413,6 +530,13 @@ impl Sim {
         if answer.is_some() && word & regs::CMD_DATA_EXPECTED != 0 {
             let bytes = *self.reg(regs::BYTCNT) as usize;
             let write = word & regs::CMD_WRITE != 0;
+            self.dma_write = write;
+            if self.idmac_active()
+                && let Some(m) = &self.memory
+                && m.bus().cpu_unfenced
+            {
+                m.bus().unfenced_start = true;
+            }
             let ext_csd = index == 8;
             let mut t = Transfer {
                 write,
@@ -454,6 +578,13 @@ impl Sim {
 
     /// Advance the data phase: fill or drain the FIFO, and end it when every byte has moved.
     fn pump(&mut self) {
+        self.idmac_step();
+        self.pump_card();
+        self.idmac_step();
+    }
+
+    /// The card's side of the data phase.
+    fn pump_card(&mut self) {
         let Some(mut t) = self.transfer.take() else {
             return;
         };
@@ -520,6 +651,111 @@ impl Sim {
         self.transfer = Some(t);
     }
 
+    fn idmac_active(&self) -> bool {
+        let both = regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE;
+        self.peek(regs::CTRL) & both == both
+            && self.peek(regs::BMOD) & regs::BMOD_DMA_ENABLE != 0
+            && self.memory.is_some()
+    }
+
+    /// **One stretch of the IDMAC's walk**: move words between the FIFO and memory until the FIFO
+    /// is empty (a read) or full (a write), or the walk stops.
+    fn idmac_step(&mut self) {
+        if !self.idmac_active() {
+            return;
+        }
+        let Some(memory) = self.memory.clone() else {
+            return;
+        };
+        let mut bus = memory.bus();
+        let mut budget = self.dma_words_per_step.unwrap_or(usize::MAX);
+        loop {
+            if budget == 0 {
+                return;
+            }
+            budget -= 1;
+            let more = if self.dma_write {
+                self.fifo.len() < self.depth
+            } else {
+                !self.fifo.is_empty()
+            };
+            if !more {
+                return;
+            }
+            let (desc, done) = match self.walk {
+                Walk::Idle => (self.peek(regs::DBADDR), 0),
+                Walk::At(d, n) => (d, n),
+                Walk::Suspended(_) | Walk::Halted | Walk::Finished => return,
+            };
+            let Some(at) = self.offset(&bus, desc, 16) else {
+                self.halt();
+                return;
+            };
+            let word = |i: usize| {
+                let b = &bus.bytes[at + 4 * i..at + 4 * i + 4];
+                u32::from_le_bytes([b[0], b[1], b[2], b[3]])
+            };
+            let (des0, size, buffer, next) = (word(0), word(1) & DES1_BS1_MASK, word(2), word(3));
+            if des0 & DES0_OWN == 0 {
+                self.walk = Walk::Suspended(desc);
+                *self.reg(regs::IDSTS) |= regs::IDSTS_DU | regs::IDSTS_AIS;
+                return;
+            }
+            if done == 0 && self.bus_error_at == Some(self.walked) {
+                self.halt();
+                return;
+            }
+            let Some(buf) = self.offset(&bus, buffer.wrapping_add(done), 4) else {
+                self.halt();
+                return;
+            };
+            if self.dma_write {
+                let b = &bus.bytes[buf..buf + 4];
+                self.fifo
+                    .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
+            } else if let Some(w) = self.fifo.pop_front() {
+                let w = w ^ u32::from(self.dma_corrupts);
+                bus.bytes[buf..buf + 4].copy_from_slice(&w.to_le_bytes());
+                bus.device_unfenced = true;
+                bus.device_written += 4;
+            }
+            let done = done + 4;
+            if done < size {
+                self.walk = Walk::At(desc, done);
+                continue;
+            }
+            bus.bytes[at..at + 4].copy_from_slice(&(des0 & !DES0_OWN).to_le_bytes());
+            bus.device_unfenced = true;
+            self.walked += 1;
+            if des0 & DES0_DIC == 0 {
+                let finished = if self.dma_write {
+                    regs::IDSTS_TI
+                } else {
+                    regs::IDSTS_RI
+                };
+                *self.reg(regs::IDSTS) |= finished | regs::IDSTS_NIS;
+            }
+            self.walk = if des0 & DES0_LD != 0 {
+                Walk::Finished
+            } else if des0 & DES0_CH != 0 {
+                Walk::At(next, 0)
+            } else {
+                Walk::At(desc + 16, 0)
+            };
+        }
+    }
+
+    /// The byte offset in memory of `len` bytes at bus address `addr`, if they are all there.
+    fn offset(&self, bus: &Bus, addr: u32, len: usize) -> Option<usize> {
+        let off = usize::try_from(u64::from(addr).checked_sub(bus.base)?).ok()?;
+        (off + len <= bus.bytes.len()).then_some(off)
+    }
+
+    fn halt(&mut self) {
+        self.walk = Walk::Halted;
+        *self.reg(regs::IDSTS) |= regs::IDSTS_FBE | regs::IDSTS_AIS;
+    }
+
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
     fn threshold_beyond_fifo(&self) -> bool {
@@ -562,6 +798,13 @@ impl Registers for Sim {
                 self.reset_pending = false;
                 let v = *self.reg(regs::CTRL);
                 *self.reg(regs::CTRL) &= !regs::CTRL_ALL_RESET;
+                v
+            }
+            regs::BMOD if self.peek(regs::BMOD) & regs::BMOD_SOFTWARE_RESET != 0 => {
+                let v = self.peek(regs::BMOD);
+                if !self.reset_stuck {
+                    *self.reg(regs::BMOD) &= !regs::BMOD_SOFTWARE_RESET;
+                }
                 v
             }
             regs::STATUS => {
@@ -618,7 +861,30 @@ impl Registers for Sim {
         self.writes.push((offset, value));
         match offset {
             regs::RINTSTS => *self.reg(regs::RINTSTS) &= !value,
+            regs::IDSTS => *self.reg(regs::IDSTS) &= !value,
+            regs::BMOD => {
+                if value & regs::BMOD_SOFTWARE_RESET != 0
+                    || value & regs::BMOD_DMA_ENABLE & !self.peek(regs::BMOD) != 0
+                {
+                    self.walk = Walk::Idle;
+                    self.walked = 0;
+                }
+                *self.reg(regs::BMOD) = value;
+            }
+            regs::DBADDR => {
+                self.walk = Walk::Idle;
+                self.walked = 0;
+                *self.reg(regs::DBADDR) = value;
+            }
+            regs::PLDMND => {
+                if let Walk::Suspended(d) = self.walk {
+                    self.walk = Walk::At(d, 0);
+                }
+            }
             regs::CTRL => {
+                if value & regs::CTRL_DMA_RESET != 0 {
+                    self.walk = Walk::Idle;
+                }
                 if value & regs::CTRL_ALL_RESET != 0 {
                     self.reset_pending = !self.reset_stuck;
                     if value & regs::CTRL_FIFO_RESET != 0 {

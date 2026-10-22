@@ -8,17 +8,15 @@
 //! masked, and a 64-bit FIFO is refused rather than handled (radon's is measured by the bench step
 //! before anything depends on it).
 //!
-//! # Why the CPU moves the data
+//! # Two data paths
 //!
-//! The controller has its own descriptor-walking DMA engine (the IDMAC), and OpenBSD uses it for
-//! every transfer it can. This driver does not yet, on purpose: a first read on silicon that goes
-//! through DMA tests the controller, the card protocol **and** whether radon's DMA is coherent
-//! with its caches, all at once, and a failure would not say which. Through the FIFO, the only
-//! thing between the card and the CPU is MMIO, which no cache stands in front of. The cost is
-//! throughput, and the bench step measures it rather than guessing; the DMA path is identified
-//! work, in the crate root's BUGS.
+//! `Host<R>` moves every word through the FIFO by MMIO, which nothing but the controller and the
+//! card stands behind; that is what radon's first silicon read tested. `Host<R, D>`, made by
+//! [`Host::with_idmac`], hands each data phase to the controller's own DMA engine instead
+//! ([`crate::idmac`]). Commands and identification are the same on both.
 
 use crate::command::{Command, UPDATE_CLOCK};
+use crate::idmac::{DmaRegion, Idmac, NoDma, PAGE};
 use crate::regs;
 
 /// **The register window, and a clock**: everything the driver needs from the machine.
@@ -40,7 +38,7 @@ pub trait Registers {
 pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
     FifoWidth(u32),
-    /// A reset bit in `CTRL` did not clear: the word last read.
+    /// A reset bit in `CTRL` or `BMOD` did not clear: the word last read.
     ResetStuck(u32),
     /// The controller did not take a clock update (the start bit stayed set).
     ClockUpdate,
@@ -60,6 +58,8 @@ pub enum Error {
     BufferSize,
     /// The card held DAT0 busy past the deadline.
     Busy,
+    /// The IDMAC stopped on a bus error or a descriptor it did not own: the index and `IDSTS`.
+    Dma(u8, u32),
 }
 
 /// The controller's identity, read before anything is written: what a bench transcript prints.
@@ -140,12 +140,15 @@ pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> 
     if bytes < remaining { bytes } else { remaining }
 }
 
-/// The driver: a window, the FIFO's place and depth, and the card clock's source rate.
-pub struct Host<R: Registers> {
-    regs: R,
+/// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
+/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver; [`Host::with_idmac`]
+/// makes a `Host<R, D>` whose every data phase goes through the IDMAC.
+pub struct Host<R: Registers, D: DmaRegion = NoDma> {
+    pub(crate) regs: R,
     fifo: u32,
-    depth: u32,
+    pub(crate) depth: u32,
     base_hz: u32,
+    pub(crate) dma: Option<Idmac<D>>,
 }
 
 impl<R: Registers> Host<R> {
@@ -190,11 +193,27 @@ impl<R: Registers> Host<R> {
                 fifo: regs::fifo_offset(id.verid),
                 depth,
                 base_hz,
+                dma: None,
             },
             id,
         ))
     }
 
+    /// **Move every later data phase through the IDMAC**, over a region [`Idmac::new`] checked.
+    /// The controller's state carries over: a card identified by the polled host stays selected.
+    #[must_use]
+    pub fn with_idmac<D: DmaRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
+        Host {
+            regs: self.regs,
+            fifo: self.fifo,
+            depth: self.depth,
+            base_hz: self.base_hz,
+            dma: Some(idmac),
+        }
+    }
+}
+
+impl<R: Registers, D: DmaRegion> Host<R, D> {
     /// The FIFO depth in words, as decided by [`Host::new`].
     #[must_use]
     pub fn fifo_depth(&self) -> u32 {
@@ -211,7 +230,12 @@ impl<R: Registers> Host<R> {
         self.regs
     }
 
-    fn wait<F: FnMut(&mut R) -> bool>(&mut self, deadline_us: u64, mut done: F) -> bool {
+    /// The IDMAC's region, if the data moves by DMA.
+    pub fn idmac(&mut self) -> Option<&mut Idmac<D>> {
+        self.dma.as_mut()
+    }
+
+    pub(crate) fn wait<F: FnMut(&mut R) -> bool>(&mut self, deadline_us: u64, mut done: F) -> bool {
         let start = self.regs.now_us();
         loop {
             if done(&mut self.regs) {
@@ -321,7 +345,9 @@ impl<R: Registers> Host<R> {
         }
     }
 
-    fn issue(&mut self, cmd: &Command) -> Result<[u32; 4], Error> {
+    /// Send `cmd`, its data phase prepared first; `dma` arms the IDMAC between the FIFO reset and
+    /// the command.
+    pub(crate) fn issue(&mut self, cmd: &Command, dma: bool) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
         if let Some(d) = cmd.data {
             self.regs.write(regs::BYTCNT, d.bytes());
@@ -332,6 +358,9 @@ impl<R: Registers> Host<R> {
                 r.read(regs::CTRL) & regs::CTRL_FIFO_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.regs.read(regs::CTRL)));
+            }
+            if dma {
+                self.idmac_start()?;
             }
         }
         self.regs.write(regs::RINTSTS, regs::INT_ALL);
@@ -376,16 +405,16 @@ impl<R: Registers> Host<R> {
         if cmd.data.is_some() {
             return Err(Error::BufferSize);
         }
-        self.issue(cmd)
+        self.issue(cmd, false)
     }
 
     /// **Send a command whose data phase reads into `buf`.** `buf` must be exactly the command's
-    /// byte count, and a whole number of words.
+    /// byte count, and a whole number of words; through the IDMAC, no more than its capacity.
     ///
     /// # Errors
     ///
     /// [`Error::BufferSize`] on a size mismatch or a write command; any command-phase error;
-    /// [`Error::Data`] or [`Error::DataTimeout`] from the data phase.
+    /// [`Error::Data`], [`Error::Dma`] or [`Error::DataTimeout`] from the data phase.
     pub fn read(&mut self, cmd: &Command, buf: &mut [u8]) -> Result<[u32; 4], Error> {
         let Some(d) = cmd.data else {
             return Err(Error::BufferSize);
@@ -393,7 +422,17 @@ impl<R: Registers> Host<R> {
         if d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
             return Err(Error::BufferSize);
         }
-        let resp = self.issue(cmd)?;
+        if let Some(capacity) = self.dma.as_ref().map(Idmac::capacity) {
+            if d.bytes() > capacity {
+                return Err(Error::BufferSize);
+            }
+            let resp = self.idmac_transfer(cmd, d.bytes())?;
+            if let Some(dma) = self.dma.as_mut() {
+                dma.region().read_bytes(PAGE, buf);
+            }
+            return Ok(resp);
+        }
+        let resp = self.issue(cmd, false)?;
         let mut done = 0usize;
         while done < buf.len() {
             let (status, rint) =
@@ -421,7 +460,16 @@ impl<R: Registers> Host<R> {
         if !d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
             return Err(Error::BufferSize);
         }
-        let resp = self.issue(cmd)?;
+        if let Some(dma) = self.dma.as_mut() {
+            if d.bytes() > dma.capacity() {
+                return Err(Error::BufferSize);
+            }
+            dma.region().write_bytes(PAGE, buf);
+            let resp = self.idmac_transfer(cmd, d.bytes())?;
+            self.wait_not_busy()?;
+            return Ok(resp);
+        }
+        let resp = self.issue(cmd, false)?;
         let mut done = 0usize;
         while done < buf.len() {
             let (status, rint) =
