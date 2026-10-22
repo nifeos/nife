@@ -211,6 +211,7 @@ on the customer path.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
 - (g) BUILT: `xtask` takes `object` for the ELF and the PE; the conversion stays ours.
 - (h) REFUSED for base: the four `coreutils` programs stay ours.
+- (i) `uuid` 1.28.0 replaces `universally_unique_identifier`.
 
 ## Recorded reasons for what stays
 
@@ -248,6 +249,8 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).
+- **Outstanding.** Item (i). calef, 2026-10-22 (UTC), on #2548: "A"; see
+  [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 

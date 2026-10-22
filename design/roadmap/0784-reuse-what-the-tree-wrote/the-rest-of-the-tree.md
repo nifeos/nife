@@ -117,7 +117,7 @@ Two records disagree with what was measured here:
 
 ## Ranked: trust gained per cost
 
-1. Proposed: `uuid` 1.28.0 replaces `universally_unique_identifier`. It is the one crate here
+1. Ruled: `uuid` 1.28.0 replaces `universally_unique_identifier`, item (i). It is the one crate here
    whose exemption does not hold. It is in `script/verify`, but its two harnesses prove the text
    form round trips and the version-4 stamp keeps its bits, and nothing the system rests on
    depends on either. §46's amendment says harnesses added to code that could have been taken do
@@ -128,6 +128,8 @@ Two records disagree with what was measured here:
    they still finish is unmeasured. Gain: small, and stated plainly. On target nothing parses a
    UUID; the code is a printer and a stamp, and `uuid` has 905M downloads behind it and a fuzz
    target. The case is §46's default, not a hazard. Loss: the two harnesses. New crates: one.
+   calef, 2026-10-22 (UTC), on #2548: *"A"*, with default features off. The `uuid` program's
+   output stays uppercase through `uuid`'s uppercase hyphenated encoder.
 2. Not proposed, exemption holds: `network_time_protocol` against `sntpc`. Its claim, that no
    hostile packet moves the clock, is one the system rests on (a clock decides certificate
    validity), and `sntpc` proves nothing.
@@ -146,9 +148,10 @@ not the effort.
 ## What 857 should know
 
 Of 857's review list, every crate except the device logic and FAT already has an existing crate
-that does its job, and 857's dispositions already say contribute or internal for each. None is
-headed for a rival publication. Two rows need attention at their reviews:
+that does its job, and 857's dispositions already say contribute or internal for each. Two rows
+need attention at their reviews:
 
 - FAT (813) and `jh7110_clock_and_reset` (819) are not proven today. 857's gate requires proofs
   before publishing, so neither can publish yet.
-- `universally_unique_identifier` would leave 857's list if the proposal above is taken.
+- 857's third review entry pairs `universally_unique_identifier` with the partition-table crate,
+  which would publish a second UUID type. Item (i) retires ours, and the entry drops it.
