@@ -155,6 +155,12 @@ aarch64	4a58737d0	map_el0	*	nightly-2026-10-10, the compiler term alone
 aarch64	4a58737d0	map_new	*	nightly-2026-10-10, the compiler term alone
 aarch64	4a58737d0	sink_throughput	*	nightly-2026-10-10, the compiler term alone
 
+riscv64	ae940dc46	map_el0	-2.927	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	ipc_rtt_el0	-0.473	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	sink_throughput	+0.008	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	spawn_el0	-0.002	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	null_syscall	-0.001	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+
 # #1486 (notes/benchmarks/drift-since-the-2026-09-26-floors.md): riscv64 ticks per merge, as a
 # percent of the 2026-09-26 floor, inside the step 2026-10-03's save absorbed.
 riscv64	b4f657d8a	map_new	+5.61	#1373, milestone 23: RETYPE takes a page count (+133 ticks)
