@@ -13,7 +13,8 @@
 # Needs the network for the crate's dependencies. The kernel module holds the DMA region in
 # globals because `Hal`'s methods are static, and allocates from a bump heap that never frees;
 # neither is a design for (c1). The worktree stays for a rerun; `git worktree remove --force
-# "$WORK/tree"` drops it.
+# "$WORK/tree"` drops it. The patch was written against 79941d883; on a later base its context may
+# need refreshing.
 set -eu
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH='' cd -- "$HERE/../../.." && pwd)
@@ -27,44 +28,30 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 index 3153e0544..effa9de57 100644
 --- a/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
-@@ -26,6 +26,7 @@ bench = false
- workspace = true
- 
+@@ -28,2 +28,3 @@ workspace = true
  [dependencies]
 +virtio-drivers = { path = "@VIRTIO_DRIVERS@", default-features = false, features = ["alloc"] }
  # NOTE: `aarch64-cpu` is NOT here. It is target-gated at the bottom of this file, and the reason is
- # recorded there rather than by its absence.
- abi = { version = "0.1.0", path = "../crates/abi" }
 diff --git a/kernel/src/lib.rs b/kernel/src/lib.rs
 index aa1b6d06c..c38aa0f27 100644
 --- a/kernel/src/lib.rs
 +++ b/kernel/src/lib.rs
-@@ -169,6 +169,8 @@ mod delegation_pause;
- mod trust;
- mod user;
+@@ -171,2 +171,4 @@ mod user;
  mod virtio;
 +#[cfg(feature = "system_tests")]
 +mod virtio_drivers_probe;
  
- // The boot itself (milestone 876 (the kernel crate root is split along its seams)): `kernel_main`
- // and the steps all three boots share, and the machine description.
-@@ -274,6 +276,9 @@ pub mod system_test_access {
-     pub mod user {
-         pub use crate::user::*;
+@@ -276,2 +278,5 @@ pub mod system_test_access {
      }
 +    pub mod virtio_drivers_probe {
 +        pub use crate::virtio_drivers_probe::*;
 +    }
  }
- 
- #[cfg(test)]
 diff --git a/kernel/src/pci.rs b/kernel/src/pci.rs
 index c5490ad07..ad983e371 100644
 --- a/kernel/src/pci.rs
 +++ b/kernel/src/pci.rs
-@@ -1440,3 +1440,13 @@ mod tests {
-         );
-     }
+@@ -1442 +1442,11 @@ mod tests {
  }
 +
 +// THROWAWAY (784 c0 probe).
@@ -334,14 +321,10 @@ diff --git a/system_tests/src/user.rs b/system_tests/src/user.rs
 index 90acd013e..964a66f9b 100644
 --- a/system_tests/src/user.rs
 +++ b/system_tests/src/user.rs
-@@ -359,6 +359,7 @@ mod compositor_tests;
- /// copies of it that can drift (DECISIONS §19: parity is a gate).
- #[cfg(all(test, initial_ramdisk))]
+@@ -361,2 +361,3 @@ mod compositor_tests;
  mod display_tests;
 +mod virtio_drivers_probe_tests;
  
- /// **Rust `std` on the native ABI** (milestone 27): spawn the `std_exerciser` demo, an ordinary Rust
- /// program (no `no_std`, no attributes) built for the `*-unknown-nife` custom target with std's
 diff --git a/system_tests/src/user/virtio_drivers_probe_tests.rs b/system_tests/src/user/virtio_drivers_probe_tests.rs
 new file mode 100644
 index 000000000..2427b1cd5

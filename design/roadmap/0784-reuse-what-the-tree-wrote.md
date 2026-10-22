@@ -211,7 +211,7 @@ on the customer path.
 - (c0) BUILT: `vendor/virtio-drivers` carries 0.13.0 plus #232 until a crates.io release includes
   it. calef, 2026-10-22 21:58 (UTC), on #2586: *"A"*, once
   [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
-  device behind the IOMMU. It did, on all three architectures.
+  device behind the IOMMU. It did, on all three.
 - (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
   number before and after on all three architectures. `begin_init` never reads `FEATURES_OK` back,
   so each driver checks the status after init.
@@ -262,7 +262,7 @@ the measured-boot trusted base.
 - **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Done.** Item (c0), nifeos/nife#2587, on calef's "A" on #2586.
-- **Outstanding.** (c1) to (c4), none started.
+- **Outstanding.** (c1) to (c4): no pull request names them (checked 2026-10-22 UTC).
 
 ## Index row
 

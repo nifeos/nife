@@ -129,8 +129,8 @@ members = [
 # reason. It is no workspace root of its own: it builds only as the `[patch.crates-io]` below.
 #
 # `vendor/virtio-drivers`, the virtio drivers carried with upstream's `ACCESS_PLATFORM` support, is
-# excluded for the same first reason. Nothing builds it yet: milestone 784's (c1) to (c4) move the
-# devices onto it one at a time.
+# excluded for the same first reason. Nothing builds it yet: milestone 784 (reuse what the tree
+# wrote)'s items (c1) to (c4) move the devices onto it one at a time.
 #
 # `fuzz` is excluded for a different reason (milestone 42): its targets link libFuzzer's `main`, are
 # built with a sanitizer and `-Zbuild-std`, and are meaningless to `cargo build`. It is its own
