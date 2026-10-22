@@ -14,7 +14,8 @@ crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver c
 IOMMU before enable, class-code enumeration over §18 (the PCIe transport), and an end-to-end boot
 test on both ISAs. The network half is built to the bench (below, "The network half"), and so is the
 radon SD card and eMMC half (below, "The storage half on radon"). The network half has passed its
-radon bench boot, and the storage half its read-only one; its write test is outstanding. What else
+radon bench boot, and the storage half its read-only one; its write test and the IDMAC's bench
+run are outstanding. What else
 remains is two things. The board-side PLDA XpressRICH root
 complex that carries the NVMe driver to the real M.2 slot is milestone 163 (the JH7110's PCIe root
 complex), NOT-STARTED. And the EL0 NVMe driver that §86 (whether an NVMe driver can leave the
@@ -112,8 +113,14 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
 - `components/src/designware_mobile_storage.rs`: `filesystem_contract::blk` at EL0 over one
   register page and a window of the card, the virtio and NVMe servers' shape. The booted system
   does not start it (`PROVEN_ON_SILICON`).
-- The CPU moves every byte through the FIFO, so the first silicon read tests the controller and
-  the card protocol without depending on radon's DMA coherence, which nobody has measured yet.
+- Two data paths. The polled one moves every word through the FIFO, so the first silicon read
+  tested the controller and the card protocol without DMA. The IDMAC one (`idmac`,
+  `Host::with_idmac`) hands each data phase to the controller's DMA engine over one region, a
+  descriptor page and up to 256 data pages, and stops the engine before every return. It is
+  built and tested against a `sim` that walks the descriptor chain, with a Kani harness on the
+  chain; its bench run is outstanding. The storage bench times the same 8 MiB both ways, checks
+  the IDMAC's bytes against the polled read's, and in a write build runs the write test through
+  it too.
 - Parity scope note (rule 5): the controller is the JH7110's, so the kernel half and the bench
   boot are riscv64-only, and `storage_bench` is a compile error elsewhere. The crate is
   architecture-neutral.

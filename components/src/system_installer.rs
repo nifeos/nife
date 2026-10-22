@@ -54,8 +54,8 @@ use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
     ENTRY_ARRAY_BYTES, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA,
 };
-use universally_unique_identifier::Uuid;
 use user_mode_runtime::{call, send};
+use uuid::Uuid;
 
 /// Slot 0: where the verdict goes. An endpoint with `WRITE`.
 const REPORT: u64 = 0;
@@ -436,14 +436,14 @@ fn install(boot_file_len: u64) -> ! {
     // **Every random byte this install needs, drawn together and before the first write**, so that
     // a process with no entropy endpoint finds out while the disk still holds whatever it held.
     // One id for the disk, one per partition, and one serial for the FAT volume.
-    let mut guids = [Uuid::NIL; 1 + 2 + SLOTS];
+    let mut guids = [Uuid::nil(); 1 + 2 + SLOTS];
     for g in guids.iter_mut() {
         let mut bytes = [0u8; 16];
         if user_mode_runtime::entropy::fill(ENTROPY, &mut bytes).is_none() {
             send(REPORT, R_NO_ENTROPY, 0, 0);
             user_mode_runtime::exit()
         }
-        *g = Uuid::v4_from_random(bytes);
+        *g = uuid::Builder::from_random_bytes(bytes).into_uuid();
     }
     let mut serial = [0u8; 4];
     if user_mode_runtime::entropy::fill(ENTROPY, &mut serial).is_none() {

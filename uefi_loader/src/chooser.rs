@@ -47,7 +47,7 @@ use r_efi::efi::{self, BY_PROTOCOL, BootServices, Handle, SystemTable};
 use r_efi::protocols::block_io::{self, Protocol as BlockIo};
 use r_efi::protocols::loaded_image;
 use uefi_loader::device_path;
-use universally_unique_identifier::Uuid;
+use uuid::Uuid;
 
 use crate::{BOOT_FILE_MAX, PAGE, SUCCESS, allocate_below, boot_services, say, say_decimal};
 

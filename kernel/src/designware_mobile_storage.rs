@@ -14,6 +14,7 @@
 //! would need only this file's twenty lines and a device-tree match.
 
 use designware_mobile_storage::host::Registers;
+use designware_mobile_storage::idmac::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
 pub(crate) struct Window {
@@ -60,5 +61,72 @@ impl Registers for Window {
     fn now_us(&mut self) -> u64 {
         // In 128 bits so a counter that has run for days cannot overflow the multiplication.
         (u128::from(crate::arch::timer::now()) * 1_000_000 / u128::from(self.hz)) as u64
+    }
+}
+
+/// **The IDMAC's region**: contiguous pages in the direct map, ordinary cached memory. radon's DMA
+/// is coherent (notes/designware-ethernet.md's probe), so a `fence` is all the ordering the
+/// controller needs; a board whose DMA is not would need cache maintenance here.
+pub(crate) struct Region {
+    phys: u64,
+    bytes: u32,
+}
+
+impl Region {
+    /// `pages` zeroed, contiguous pages, or `None` when the allocator has no such run. Never
+    /// freed: the bench boot that uses it halts.
+    pub(crate) fn allocate(pages: usize) -> Option<Region> {
+        let frame = crate::memory::alloc_contiguous_zeroed(pages)?;
+        Some(Region {
+            phys: frame.addr(),
+            bytes: u32::try_from(pages * 4096).ok()?,
+        })
+    }
+
+    fn at(&self, off: u32, len: usize) -> usize {
+        assert!(u64::from(off) + len as u64 <= u64::from(self.bytes));
+        crate::arch::mmu::phys_to_virt(self.phys) as usize + off as usize
+    }
+}
+
+impl DirectMemoryAccessRegion for Region {
+    fn bus_address(&self) -> u64 {
+        self.phys
+    }
+
+    fn bytes(&self) -> u32 {
+        self.bytes
+    }
+
+    fn read_u32(&self, off: u32) -> u32 {
+        // SAFETY: `at` bounds the access to the run `allocate` took, which the direct map covers
+        // and nothing else owns; descriptor words are 4-aligned in a page-aligned run. Volatile,
+        // because the controller writes these words behind the compiler's back.
+        unsafe { core::ptr::read_volatile(self.at(off, 4) as *const u32) }
+    }
+
+    fn write_u32(&mut self, off: u32, v: u32) {
+        // SAFETY: as `read_u32`.
+        unsafe { core::ptr::write_volatile(self.at(off, 4) as *mut u32, v) }
+    }
+
+    fn read_bytes(&self, off: u32, out: &mut [u8]) {
+        let base = self.at(off, out.len());
+        // SAFETY: as `read_u32`, over the bounded span. Called only after `barrier` has ordered
+        // the controller's last write before it, and while the IDMAC is stopped.
+        unsafe { core::ptr::copy_nonoverlapping(base as *const u8, out.as_mut_ptr(), out.len()) }
+    }
+
+    fn write_bytes(&mut self, off: u32, src: &[u8]) {
+        let base = self.at(off, src.len());
+        // SAFETY: as `read_bytes`; the IDMAC is stopped until the chain that covers these bytes
+        // is armed, after `barrier`.
+        unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), base as *mut u8, src.len()) }
+    }
+
+    /// A full `fence` on riscv64, the one architecture this runs on, so it orders the CPU's reads
+    /// after the controller's writes as well as its writes before the register writes.
+    fn barrier(&mut self) {
+        crate::arch::direct_memory_access_write_barrier();
     }
 }

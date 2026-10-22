@@ -117,7 +117,7 @@ Two records disagree with what was measured here:
 
 ## Ranked: trust gained per cost
 
-1. Ruled: `uuid` 1.28.0 replaces `universally_unique_identifier`, item (i). It is the one crate here
+1. BUILT: `uuid` 1.28.0 replaces `universally_unique_identifier`, item (i). It is the one crate here
    whose exemption does not hold. It is in `script/verify`, but its two harnesses prove the text
    form round trips and the version-4 stamp keeps its bits, and nothing the system rests on
    depends on either. §46's amendment says harnesses added to code that could have been taken do

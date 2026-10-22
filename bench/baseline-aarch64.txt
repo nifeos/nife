@@ -1,19 +1,8 @@
 # toolchain: nightly-2026-10-22
 # qemu: 11.1.2
-# date: 2026-10-10
-# why: 2026-10-10: nightly-2026-10-09 to nightly-2026-10-10, the compiler term alone, on QEMU 11.1.2 and the tree #1899 re-recorded the floors on (calef's option Q1 moved the emulator first, so this save carries no emulator term). The restamp job refused this floor because its one-runner A/B on CI read map_el0 -2.849% (300745 to 292177). This machine does not reproduce that: map_el0 reads 300428 on nightly-2026-10-10 against 300427 on nightly-2026-10-09, and CI already read the same code on 10-09 0.1% off this machine, so the row looks sensitive to the build host (plausibly the image's layout) rather than to codegen in the path; not established. Every aarch64 row is within 0.2% of the floor this replaces (largest ipc_rtt_el0 -0.20%, inside its own run-to-run spread); no row moved over 0.5%.
-# why: 2026-10-11: restamped from nightly-2026-10-10 to nightly-2026-10-11 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-12: restamped from nightly-2026-10-11 to nightly-2026-10-12 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-13: restamped from nightly-2026-10-12 to nightly-2026-10-13 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.203%, sink_throughput -0.015%, map_new +0.006% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.203%, sink_throughput -0.015%, map_new +0.006%
-# why: 2026-10-14: restamped from nightly-2026-10-13 to nightly-2026-10-14 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.239%, ctx_switch +0.020%, sink_throughput +0.015% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.036%, ctx_switch +0.020%, map_new +0.006%
-# why: 2026-10-15: restamped from nightly-2026-10-14 to nightly-2026-10-15 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.036%, ctx_switch +0.020%, map_new +0.006%
-# why: 2026-10-16: restamped from nightly-2026-10-15 to nightly-2026-10-16 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.032%, sink_throughput -0.023%, map_new -0.006% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.068%, sink_throughput -0.023%, ctx_switch +0.020%
-# why: 2026-10-17: restamped from nightly-2026-10-16 to nightly-2026-10-17 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.349%, spawn_el0 -0.099%, ctx_switch -0.020% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.416%, spawn_el0 -0.099%, sink_throughput -0.037%
-# why: 2026-10-18: restamped from nightly-2026-10-17 to nightly-2026-10-18 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_new +0.006% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.416%, spawn_el0 -0.099%, sink_throughput -0.037%, map_new +0.006%
-# why: 2026-10-20: restamped from nightly-2026-10-18 to nightly-2026-10-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.111%, map_el0 +0.102%, ctx_switch +0.020% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.526%, map_el0 +0.102%, spawn_el0 -0.099%, sink_throughput -0.046%, ctx_switch +0.020%, map_new +0.012%
-# why: 2026-10-20: restamped from nightly-2026-10-19 to nightly-2026-10-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.129%, ctx_switch -0.020% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.654%, map_el0 +0.102%, spawn_el0 -0.099%, sink_throughput -0.046%, map_new +0.012%
-# why: 2026-10-21: restamped from nightly-2026-10-20 to nightly-2026-10-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.345%, spawn_el0 -0.099%, ctx_switch +0.020% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -0.996%, spawn_el0 -0.198%, map_el0 +0.102%, sink_throughput -0.046%, ctx_switch +0.020%, map_new +0.012%
-# why: 2026-10-22: restamped from nightly-2026-10-21 to nightly-2026-10-22 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.274%, sink_throughput +0.023%, map_new -0.006% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 -1.267%, spawn_el0 -0.198%, map_el0 +0.102%, sink_throughput -0.023%, ctx_switch +0.020%, map_new +0.006%
+# date: 2026-10-22
+# why: 2026-10-22: 180cccbaf (a new capability table is one copy of a static image, not a constant moved twice through ptr::write at -O0) and 0ec577bde (IrqSafeMutex::lock_masked always inlined, one call per lock at -O0), notes/benchmarks/riscv64-spawn-reap-drift.md. Together, measured with no tick in the window (TICK_HZ 1) on main 43a2d16e1: spawn_reap -2.27%, spawn_el0 -0.89%, call_reply -0.74%, broker_rtt -0.74%, ipc_rtt_el0 -0.68%, relay_rtt -0.66%, ipc_rtt -0.50%, yield_switch -0.49%, ctx_switch -0.46%, map_el0 -0.44%, map_new -0.27%, null_syscall 0.
+# why: 2026-10-22: this save also absorbs main's drift since the 2026-10-10 floor, unattributed here. Against that floor it reads spawn_el0 +3.15%, null_syscall +1.40%, ctx_switch +0.16%, yield_switch +0.05%, map_el0 -0.05%, map_new -0.40%, ipc_rtt_el0 -1.47%, ipc_rtt -1.68%, broker_rtt -1.76%, call_reply -1.79%, sink_throughput -2.00%, relay_rtt -2.26%, spawn_reap -2.59%; each row's move beyond the line above is main's.
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -26,17 +15,17 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 1110543 2000
-ipc_rtt 1094888 1000
-relay_rtt 2132829 1000
-call_reply 1114470 1000
-broker_rtt 2224920 1000
-spawn_reap 231325 64
-map_new 16574 64
-coremark 20915892 256
-null_syscall 357503 20000
-ctx_switch 2999750 5000
-ipc_rtt_el0 10866141 5000
-sink_throughput 4477490 80000
-map_el0 300428 500
-spawn_el0 1405263 100
+yield_switch 1111048 2000
+ipc_rtt 1076523 1000
+relay_rtt 2084565 1000
+call_reply 1094513 1000
+broker_rtt 2185654 1000
+spawn_reap 225341 64
+map_new 16507 64
+coremark 20916026 256
+null_syscall 362503 20000
+ctx_switch 3004533 5000
+ipc_rtt_el0 10706846 5000
+sink_throughput 4387931 80000
+map_el0 300267 500
+spawn_el0 1449545 100

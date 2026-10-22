@@ -12,7 +12,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/guid.rs b/cra
 index 46c0b3a59..90b67dd60 100644
 --- a/crates/globally_unique_identifier_partition_table/src/guid.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/guid.rs
-@@ -40,3 +40,3 @@ pub use universally_unique_identifier::Uuid;
+@@ -40,3 +40,3 @@ pub use uuid::Uuid;
  /// The same table read either way, because each swap is its own inverse.
 -const SWAP: [usize; 16] = [3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15];
 +const SWAP: [usize; 16] = [3, 2, 1, 0, 5, 4, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15];

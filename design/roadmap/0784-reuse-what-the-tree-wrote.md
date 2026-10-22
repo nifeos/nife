@@ -18,9 +18,9 @@ needs a recorded reason. Title and slug are drafts. Every crate the table below 
 weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a), (d), (e), (f2) and (g) are built, on calef's approvals of `httparse`
-(2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC) and `talc` and `object` (both
-2026-10-21 UTC). Items (f) and (h) are refused.
+under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approvals of `httparse`
+(2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC), `talc` and `object` (both
+2026-10-21 UTC) and `uuid` (2026-10-22 UTC). Items (f) and (h) are refused.
 
 ## Method, and what the numbers mean
 
@@ -153,7 +153,7 @@ Rechecked under this rule, reading each crate's source for threads and runtimes:
 | Crate | Serves | That component | Threads, async, OS APIs | Verdict |
 |---|---|---|---|---|
 | `pulldown-cmark` 0.13.4 | `mdr` | `no_std` program, could be std | none | unblocked: candidate 9a |
-| `fatfs` 0.3.6 | `system_installer` | base `no_std` program | none | std removes the `core_io` problem, but moving the installer to std is itself a milestone, and the crate has not released since 2023-01. Survey further |
+| `fatfs` 0.3.6 | `system_installer` | base `no_std` program | none | measured in [an appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md), with [the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md); ruling pending |
 | `kibi` 0.3.3 | `rmle` | `optional` program | no threads; needs `libc` termios and raw stdin | blocked on the PAL, not on std |
 | `rustyline` 18.0.0 | `line_editor` | engine used by the terminal service | no threads; `libc` and `nix` termios | blocked on the PAL, and the engine sits under the console |
 | uutils `uucore` 0.12.0 | `coreutils` | base programs, could be std | `std::thread` in test modules only; `libc` in its feature modules | unchanged: survey which `uu_*` build |
@@ -211,20 +211,19 @@ on the customer path.
 - (f2) BUILT: `mdr` is a std program and parses with `pulldown-cmark`; the renderer and index stay.
 - (g) BUILT: `xtask` takes `object` for the ELF and the PE; the conversion stays ours.
 - (h) REFUSED for base: the four `coreutils` programs stay ours.
-- (i) `uuid` 1.28.0 replaces `universally_unique_identifier`.
+- (i) BUILT: `uuid` 1.28.0 replaces `universally_unique_identifier`.
 
 ## Recorded reasons for what stays
 
 Each component that stays has a `Reuse:` line ready to paste, to be conformed to the amendment's
 landed wording: [recorded-reasons.md](0784-reuse-what-the-tree-wrote/recorded-reasons.md).
 
-## One question for an architect, outside the default
+## The measured-boot SHA-256 stays ours
 
-`measured_boot` hand-writes SHA-256 (about a hundred lines, by its own header) while `sha2` is already
-an ordinary dependency of `cryptography_provider`. Rule 3 (kernel) says write; rule 4 (crypto) says
-take. The header's reason, a small trusted computing base checked against FIPS 180-4 vectors, is a
-real one, and the kernel is exempt from the new default, so this proposal does not recommend a change.
-It records that two rules of §46 disagree here and only an architect can say which wins.
+calef, 2026-10-22 (UTC), on #2548: *"Keep our SHA-256."* `measured_boot` keeps its hand-written
+SHA-256, checked against the FIPS 180-4 vectors. For it, §46's rule 3 (the kernel writes) wins over
+rule 4 (crypto is taken), so `sha2`, an ordinary dependency of `cryptography_provider`, stays out of
+the measured-boot trusted base.
 
 ## Follow-on
 
@@ -249,8 +248,7 @@ It records that two rules of §46 disagree here and only an architect can say wh
 - **Done.** Item (h), refused. calef, 2026-10-21 (UTC), on #2490: "A". uutils is a basalt package
   candidate under §297 (software reaches a nife system as a package `jig` installs from basalt's
   index).
-- **Outstanding.** Item (i). calef, 2026-10-22 (UTC), on #2548: "A"; see
-  [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
+- **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Outstanding.** (c0) is a wait: the latest release is 0.13.0 (checked 2026-10-21 UTC).
 

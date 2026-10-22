@@ -15,6 +15,11 @@
 //! BLAKE3 and Ed25519-signed images (follow-ups in DECISIONS §26 (the fault endpoint)'s
 //! milestone-22 phase B block) are more code inside the boundary. Speed is not the constraint: this runs once, before the first user instruction.
 //!
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-22
+//! (UTC), "Keep our SHA-256.", on milestone 784 (reuse what the tree wrote)'s question of which of
+//! §46's rules wins here: rule 3 (the kernel writes) over rule 4 (crypto is taken). `sha2`, already
+//! an ordinary dependency of `cryptography_provider`, stays out of the measured-boot trusted base.
+//!
 //! **One implementation, both sides.** The build (xtask, on the host) and the kernel (`no_std`, at
 //! boot) hash through *this* crate, so there is exactly one definition of the measurement and no
 //! chance of a host/target disagreement quietly turning into a boot failure. The risk it trades
