@@ -1,7 +1,9 @@
 # radon, 2026-10-22 (UTC): milestone 53's network rate and storage write
 
-Four boots, 18:10 to 18:35 UTC, each from `main` at `699fcf61a` (the storage builds after a merge
-of `main` at `03fc15894`), each built with `script/board-image --tftp`, `SEALED`, served by
+Milestone 53 (the board's own peripherals: network and storage on real silicon), four boots, 18:10
+to 18:35 UTC. The network boots ran from `main` at `699fcf61a`, the storage and ordinary boots
+from `03fc15894` (this branch with `main` at `2f641c7e2` merged). Each was built with
+`script/board-image --tftp`, `SEALED`, served by
 `script/board-netboot` and powered by calef at radon's own outlet. Captures were taken with
 `script/board-console --until none` and cleaned with `briefs/bench-session.md` step 6's `tr`.
 
@@ -32,5 +34,5 @@ Served` the server's. The eMMC socket answered `NoCard(NoResponse(1))`; it holds
 Step 3. Boot 4 printed `payload came from net`, `nife self-test: 11 of 13 passed, 2 absent:
 blockdev deviceirq` and the prompt. `echo hello` typed over the UART echoed and ran. `reboot`
 then printed `the kernel was asked to restart the machine` and the AXP15060 lines of milestone
-592's direct route, and the board came back through U-Boot SPL with nobody at it. That next boot
-was milestone 249's series, `bench/radon-2026-10-22/README-249.md`.
+592 (radon's cold reboot dies in OpenSBI's PMIC write)'s direct route, and the board came back through U-Boot SPL with nobody at it. That next boot
+was milestone 249 (the boot lottery is sampled by a person walking to the board)'s series, `bench/radon-2026-10-22/README-249.md`.
