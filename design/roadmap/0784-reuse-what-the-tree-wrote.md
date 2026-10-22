@@ -218,13 +218,12 @@ on the customer path.
 Each component that stays has a `Reuse:` line ready to paste, to be conformed to the amendment's
 landed wording: [recorded-reasons.md](0784-reuse-what-the-tree-wrote/recorded-reasons.md).
 
-## One question for an architect, outside the default
+## The measured-boot SHA-256 stays ours
 
-`measured_boot` hand-writes SHA-256 (about a hundred lines, by its own header) while `sha2` is already
-an ordinary dependency of `cryptography_provider`. Rule 3 (kernel) says write; rule 4 (crypto) says
-take. The header's reason, a small trusted computing base checked against FIPS 180-4 vectors, is a
-real one, and the kernel is exempt from the new default, so this proposal does not recommend a change.
-It records that two rules of §46 disagree here and only an architect can say which wins.
+calef, 2026-10-22 (UTC), on #2548: *"Keep our SHA-256."* `measured_boot` keeps its hand-written
+SHA-256, checked against the FIPS 180-4 vectors. For it, §46's rule 3 (the kernel writes) wins over
+rule 4 (crypto is taken), so `sha2`, an ordinary dependency of `cryptography_provider`, stays out of
+the measured-boot trusted base.
 
 ## Follow-on
 

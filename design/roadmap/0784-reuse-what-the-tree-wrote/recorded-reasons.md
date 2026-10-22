@@ -9,9 +9,12 @@ landed wording.
   `time` and `chrono` cannot be restructured for CBMC. The proof argument has not changed.
 - `elf`: Reuse: write. Kernel, and proved (8 Kani); `xmas-elf` shows the bug class (RUSTSEC-2025-0018).
 - `device_tree_blob`: Reuse: write. Kernel, proved (4 Kani); `fdt` is MPL-2.0.
-- `globally_unique_identifier_partition_table`: Reuse: write. Proved (9 Kani, CRC restructured for
+- `globally_unique_identifier_partition_table`: Reuse: write. Proved (8 Kani, CRC restructured for
   CBMC per §46), which a dependency would lose; installer and loader must agree
   byte for byte.
+- `measured_boot`'s SHA-256: Reuse: write. calef ruled "Keep our SHA-256." on 2026-10-22 (UTC):
+  §46 (thin primitives or whole subsystems)'s rule 3 (the kernel writes) wins over rule 4 (crypto is taken), and `sha2` stays out of the
+  measured-boot trusted base.
 - `network_time_protocol`: Reuse: write. Proved (7 Kani, fixed-point multiply restructured per §46);
   `sntpc` exists but would lose the proof.
 - `glob`, `timetable`, `capability_plan`, `subtree_scope`, `capability_manifest_note`: Reuse: write. Proved, and
