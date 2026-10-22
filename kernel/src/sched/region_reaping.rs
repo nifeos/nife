@@ -585,9 +585,12 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
 /// it, because it never holds a capability to it.
 ///
 /// Takes and releases `IPC_TABLES` before the reclaim, which takes it again: `reap_region_objects` must
-/// run with the lock and cannot be called under it.
+/// run with the lock and cannot be called under it. **It may yield while it decides**: a corpse whose
+/// core has not yet switched away from it is waited for rather than refused, so a supervisor that
+/// received the death message on another core is never told `NotPermitted` for a condition that
+/// belongs to the kernel and clears by itself.
 pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error> {
-    let region = {
+    let region = loop {
         let guard = IPC_TABLES.lock();
         let sched = guard.as_ref().ok_or(abi::Error::NotSupervised)?;
         // A stale or recycled tid resolves to `None` here (generational names, `crates/slots`), so
@@ -600,14 +603,28 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
             capability::Reap::StillAlive => return Err(abi::Error::StillAlive),
             capability::Reap::Permitted => {}
         }
+        // **A corpse still leaving its core is waited for, not refused** (milestone 321). `depart`
+        // publishes the death under `IPC_TABLES` and switches away only after releasing it, so a
+        // supervisor on another core can get here while the corpse's core still stands on its
+        // stack. `reclaim_region` refuses that, correctly, and the refusal would reach userspace as
+        // `NotPermitted`, which the ABI gives one other meaning and two supervisors in this tree
+        // treat as fatal. The condition is this kernel's own and ends at that core's next
+        // `finish_switch`, which needs nothing from this caller but the lock, so yield it and look
+        // again.
+        if t.is_some_and(|t| t.handshake.on_cpu) {
+            drop(guard);
+            yield_now();
+            continue;
+        }
         // A supervised thread is always one `create_thread_control_block` built out of a region, so this is `Some`;
         // be honest rather than unwrap, and report "nothing here to collect" if it ever is not.
-        t.and_then(|t| t.thread_control_block_region)
-            .ok_or(abi::Error::NotSupervised)?
+        break t
+            .and_then(|t| t.thread_control_block_region)
+            .ok_or(abi::Error::NotSupervised)?;
     };
     // `NotPermitted` for the same reasons `DESTROY` gives it: the child `SPLIT` its own budget and a
-    // child region still owns part of the run, or a racing reap got there first and the name is now
-    // stale. A restart policy reads it as "not yet", which is what it means.
+    // child region still owns part of the run, another thread in the region can still run, or a
+    // racing reap got there first and the name is now stale. A restart policy reads it as "not yet", which is what it means.
     reclaim_region(region).map_err(|_| abi::Error::NotPermitted)
 }
 

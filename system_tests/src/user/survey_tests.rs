@@ -1,3 +1,5 @@
+use core::sync::atomic::{AtomicBool, Ordering};
+
 use abi::Error;
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB, build_child_in};
@@ -428,6 +430,73 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     );
 
     tidy(budget, rendezvous_region, &[cap]);
+}
+
+/// **A corpse still leaving its core is collected, not refused** (milestone 321).
+///
+/// `depart` marks a supervised thread `Dead` and delivers its death message under `IPC_TABLES`,
+/// releases the lock, and only then switches away; `handshake.on_cpu` stays set until that core's
+/// next thread runs `finish_switch`. A supervisor on another core can receive the message and
+/// `REAP` inside that window, and `reclaim_region` rightly refuses to free a stack a core still
+/// stands on. What `REAP` must not do is report that as `NotPermitted`: its ABI names one cause for
+/// that error (a child region of the corpse's), and `terminal_supervisor` and
+/// `sub_server_supervisor` fail on the first one, as they should for the cause the ABI names.
+///
+/// The window is a few hundred instructions on silicon, so this holds it open on purpose: the
+/// corpse is marked standing, a helper on any core clears the mark after a delay, and the reap must
+/// return `Ok` having waited for it.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
+///
+/// Falsification: replayable `system_tests/falsifications/user.survey_tests.a_corpse_still_leaving_its_core_is_reaped_once_it_has_left.patch`
+#[test_case]
+fn a_corpse_still_leaving_its_core_is_reaped_once_it_has_left() {
+    static LEFT: AtomicBool = AtomicBool::new(false);
+    LEFT.store(false, Ordering::SeqCst);
+
+    let (budget, rendezvous_region) = arena();
+    let ep = rendezvous(rendezvous_region);
+    let child = child_in(budget, FAULT_STUB, None, ep);
+    let supervisor = hold_supervisor(ep);
+    assert!(
+        super::wait_for(|| sched::rendezvous_waiting_senders(ep) == 1),
+        "the child never died onto its supervision rendezvous",
+    );
+
+    // Once the real departure is over (`hold_on_its_core` refuses while the corpse genuinely
+    // stands), so the real `finish_switch` cannot clear the mark this sets.
+    assert!(
+        super::wait_for(|| sched::hold_on_its_core(child, true)),
+        "the corpse never left its core, or was not there to hold",
+    );
+    sched::spawn(move || {
+        let until = crate::arch::timer::now() + crate::arch::timer::frequency() / 4;
+        while crate::arch::timer::now() < until {
+            sched::yield_now();
+        }
+        LEFT.store(true, Ordering::SeqCst);
+        sched::hold_on_its_core(child, false);
+    });
+
+    let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
+    invoke(&mut frame, supervisor, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    assert!(
+        !LEFT.load(Ordering::SeqCst),
+        "the helper let the corpse go before the reap, so this run proves nothing",
+    );
+    assert_eq!(
+        invoke(&mut frame, supervisor, abi::rendezvous::REAP, child, 0, 0),
+        Ok(0),
+        "a corpse still leaving its core was refused rather than waited for; the reclaim refused \
+         because {:?}",
+        sched::last_reclaim_refusal(),
+    );
+    assert!(
+        LEFT.load(Ordering::SeqCst),
+        "the reap freed a corpse a core still stood on"
+    );
+
+    tidy(budget, rendezvous_region, &[supervisor]);
 }
 
 /// **The cursor resumes, and it never repeats or skips a member.**

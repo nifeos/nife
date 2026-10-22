@@ -1,0 +1,27 @@
+Falsifies `system_tests::user::survey_tests::a_corpse_still_leaving_its_core_is_reaped_once_it_has_left`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is `reap_supervised` refusing a corpse its core has not yet switched away from, rather
+than waiting for it. `reclaim_region`'s refuse phase declines to free a stack a core stands on, and
+without the wait that refusal reaches the supervisor as `NotPermitted`.
+
+Expected to fail: `assert_eq!(..REAP.., Ok(0), "a corpse still leaving its core was refused rather
+than waited for; ...")`, with `left: Err(NotPermitted)` and the refusal printed as
+`Resident { state: Dead, on_cpu: true, being_reaped: false }`. Confirmed red on 2026-10-22 (UTC)
+on all three architectures at four cores with `NIFE_SMP=4 script/test --arch <arch> --test
+a_corpse_still_leaving_its_core_is_reaped_once_it_has_left` (1 of 1 each).
+
+diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
+index 14c7ee6fb..6d23f028a 100644
+--- a/kernel/src/sched/region_reaping.rs
++++ b/kernel/src/sched/region_reaping.rs
+@@ -611,7 +611,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
+         // treat as fatal. The condition is this kernel's own and ends at that core's next
+         // `finish_switch`, which needs nothing from this caller but the lock, so yield it and look
+         // again.
+-        if t.is_some_and(|t| t.handshake.on_cpu) {
++        if false && t.is_some_and(|t| t.handshake.on_cpu) {
+             drop(guard);
+             yield_now();
+             continue;
