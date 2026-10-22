@@ -315,9 +315,20 @@ pub fn run_with_own_space(image: &[u8], spawn: Spawn, slot: u64) -> ! {
 fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Option<u64>) -> ! {
     // What this process is about to have mapped into it beyond its own image: the `Spawn` windows,
     // a device run, and every `PageFrame` run it is granted, since a process maps a granted run
-    // into itself and pays its own log for each page (a 1120x624 screen is 683 records, five log
-    // pages). See [`load`] for why the number is taken here rather than asked of each caller.
-    let granted_runs: u64 = spawn.grants.iter().map(|g| g.object.mappable_pages()).sum();
+    // into itself and pays its own log for each page (a 1920x1080 surface is 2025 records, twelve
+    // log pages). See [`load`] for why the number is taken here rather than asked of each caller.
+    //
+    // **Both kinds of grant**: the runs still to come from `spawn.grants`, and the runs the spawn
+    // closure already placed at fixed slots with `grant_at`, which is how every screen and GPU
+    // spawn hands over its surface (`grants: &[]`). Counting only the first leaves the surface
+    // out, and the log runs dry partway through mapping it: at 1920x1080 the framebuffer driver is
+    // refused page 1029 of 2025 and dies with `E_SURFACE`.
+    let granted_runs: u64 = spawn
+        .grants
+        .iter()
+        .map(|g| g.object.mappable_pages())
+        .sum::<u64>()
+        + crate::sched::current_mappable_pages();
     let windowed = spawn.maps.len() as u64 + device.as_ref().map_or(0, |d| d.pages) + granted_runs;
     let (mut space, entry) = match load(image, windowed) {
         Ok(v) => v,

@@ -424,6 +424,9 @@ fn uefi_boot_staged() -> bool {
     let _ = std::fs::remove_file(&sock);
     ok &= uefi_screen_showed_the_tour(&screen, &shot);
     ok &= uefi_screen_showed_the_shell(&screen, &shot);
+    // The same image at the modes a real monitor reports, since 1280x800 is the one mode no
+    // bench machine's panel has. See `uefi_screen_modes`.
+    ok &= crate::uefi_screen_modes::every_mode_hands_the_screen_over(&uefi_screen_esp_dir());
 
     if ok {
         eprintln!("uefi-boot: booted under OVMF from \\EFI\\BOOT\\BOOTX64.EFI");
@@ -481,7 +484,7 @@ fn start_uefi_screen_boot(sock: &str) -> Option<std::process::Child> {
 }
 
 /// The two reader threads [`collect_uefi_streams`] starts, and the transcript they share.
-type CollectedStreams = (
+pub(crate) type CollectedStreams = (
     std::thread::JoinHandle<String>,
     std::thread::JoinHandle<String>,
     std::sync::Arc<std::sync::Mutex<String>>,
@@ -489,7 +492,7 @@ type CollectedStreams = (
 
 /// **Collect the runner's stdout and stderr on threads of their own**, each into its own string
 /// for the join and both into one shared transcript as they arrive.
-fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
+pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
     // Both streams collected on threads of their own, because the watcher below decides when the
     // boot has said enough and a blocking read here would decide it instead.
     //
@@ -914,6 +917,47 @@ fn screen_watch(
     seen
 }
 
+/// `cargo xtask uefi-test [--test <filter> [--repeat <N>]] [--stage-only [--image <package>]]`.
+///
+/// `--test` and `--repeat` mean what they mean to `cargo xtask test`. `--stage-only` builds one
+/// test image (`system_tests` unless `--image kernel`) into `target/esp-test` and boots nothing,
+/// which is how a bench stick gets a test kernel: a filtered, repeated run is the one boot a bench
+/// visit buys (milestone 321 (a corpse that did not park, on four real cores)). `--stage-only` and
+/// `--image` are provisional names, after `disk-throughput --stage-only`.
+pub(crate) fn uefi_test_command() -> bool {
+    let filter = crate::suite::export_test_filter();
+    if !crate::suite::export_test_repeat(filter.as_deref()) {
+        return false;
+    }
+    if !std::env::args().any(|a| a == "--stage-only") {
+        return uefi_test();
+    }
+    let package = crate::host::flag_value("--image").unwrap_or_else(|| "system_tests".into());
+    if package != "system_tests" && package != "kernel" {
+        eprintln!("uefi-test: --image is `system_tests` or `kernel`, not {package:?}");
+        return false;
+    }
+    if !prepare_uefi_test() {
+        return false;
+    }
+    let Some(kernel) = kernel_test_elf(&package, X86_TARGET, "uefi-test") else {
+        return false;
+    };
+    if !uefi_stage(
+        &kernel,
+        &uefi_test_esp_dir(),
+        "the loader, the test kernel and the archive",
+        false,
+    ) {
+        return false;
+    }
+    eprintln!(
+        "uefi-test: staged the {package} test image under {}; nothing booted (--stage-only)",
+        uefi_test_esp_dir().display()
+    );
+    true
+}
+
 /// **Run the kernel suite under real firmware** (milestone 195), rather than the tour
 /// `uefi_boot` boots.
 ///
@@ -937,6 +981,17 @@ fn screen_watch(
 ///   calef carries to the bench; a regression that only the shipping image has would otherwise be
 ///   gated by nothing.
 pub(crate) fn uefi_test() -> bool {
+    if !prepare_uefi_test() || !mkdisk() || !mknvmedisk() {
+        return false;
+    }
+    // Both test images (milestone 609 (the system tests leave the kernel crate)): the kernel's own
+    // unit tests and the whole-system suite are separate boots now, and "passes under real
+    // firmware" is a claim about both.
+    uefi_test_image("kernel") && uefi_test_image("system_tests")
+}
+
+/// What every test image under firmware is built with, booted here or staged for a stick.
+fn prepare_uefi_test() -> bool {
     // **A test boot is a test boot however it is reached.** The system_tests image's confinement
     // suite asserts the DMA-escape role in the archive's NVMe server, and fails by name without
     // it (that is 857654808's guard speaking: the attacker stays out of every boot that is not
@@ -957,13 +1012,7 @@ pub(crate) fn uefi_test() -> bool {
     // spawned, and the only thread xtask ever starts (the transcript reader in swish_check_leg)
     // copies pipe bytes into a String and never touches the environment.
     unsafe { std::env::remove_var("NIFE_X86_FIXTURES_REQUIRED") };
-    if !initial_ramdisk_x86() || !mkdisk() || !mknvmedisk() {
-        return false;
-    }
-    // Both test images (milestone 609 (the system tests leave the kernel crate)): the kernel's own
-    // unit tests and the whole-system suite are separate boots now, and "passes under real
-    // firmware" is a claim about both.
-    uefi_test_image("kernel") && uefi_test_image("system_tests")
+    initial_ramdisk_x86()
 }
 
 /// One test image's boot under OVMF, and its verdict: [`uefi_test`] runs it for each image.

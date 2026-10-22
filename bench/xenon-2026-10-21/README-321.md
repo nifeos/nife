@@ -16,5 +16,5 @@ step 6's `tr`.
 
 The test this milestone is about, `a_dead_child_is_still_in_the_domain_until_it_is_reaped`, passed
 in the third boot in 33 ms. That is one clean run in one, on four real cores. The original failure
-was also seen once, so one pass says nothing about its frequency. The harness cannot repeat a test
-within a boot, so each further run costs a boot.
+was also seen once, so one pass says nothing about its frequency. The next xenon boot for this
+milestone is the block's `--repeat 200` image.

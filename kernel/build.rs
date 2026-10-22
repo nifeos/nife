@@ -49,6 +49,14 @@ fn main() {
         "cargo::rustc-env=NIFE_TEST_FILTER_ACROSS_IMAGES={}",
         std::env::var("NIFE_TEST_FILTER_ACROSS_IMAGES").unwrap_or_default()
     );
+    // **How many times the filtered tests run in one boot** (milestone 321 (a corpse that did not
+    // park, on four real cores)), the filter's mechanism for the filter's reason. `cargo xtask test
+    // --repeat N` sets it; `testing::TEST_REPEAT` parses it at compile time. Name provisional.
+    println!("cargo::rerun-if-env-changed=NIFE_TEST_REPEAT");
+    println!(
+        "cargo::rustc-env=NIFE_TEST_REPEAT={}",
+        std::env::var("NIFE_TEST_REPEAT").unwrap_or_default()
+    );
 
     // **E3's pad size and layout shift** (milestone 134's layout control), the same mechanism as
     // the test filter above and chosen for a measured reason: a Cargo feature per size was built

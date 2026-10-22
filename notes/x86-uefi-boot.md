@@ -99,11 +99,15 @@ whose loader holds the screen for the gate, and is not for a stick.
 
 ```console
 $ cargo xtask uefi-test                        # the kernel's TEST binary under the same firmware
+$ cargo xtask uefi-test --test <name> --repeat 200 --stage-only
+                                               # one test, 200 times, staged at target/esp-test for a stick
 ```
 
 Both run inside `script/test --arch x86_64`, after the PVH suite. `uefi-boot` boots the tour at two
 cores and asserts `(xsdt)`, no `rsdp 0x0`, the tour's completion line, `smp: 2 core(s) online`, and
-the tour's tail read back off the screen. `uefi-test` boots the test binary and asserts both the
+the tour's tail read back off the screen. It then boots the same image at 1920x1080 and 2560x1440
+and asserts on the serial line that the screen was handed to `framebuffer_driver` and the shell came
+up, because OVMF's default 1280x800 is no bench panel's mode. `uefi-test` boots the test binary and asserts both the
 harness's verdict and QEMU's exit status. On 2026-09-02 the suite's numbers under OVMF matched PVH's
 exactly. Running it under firmware moved `PHYS_START` from 1 MiB to 32 MiB, and the loader now names
 the descriptors in the way when an allocation is refused. The suite stays at one core because of

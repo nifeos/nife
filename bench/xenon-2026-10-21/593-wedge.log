@@ -1,0 +1,201 @@
+nife on x86_64 (long mode, ring 0, 4-level paging)
+  cpu 0 booted: high-half kernel, .bss, and the 16550 console are up.
+  running at  : 0xffffffff820af7e0  (high half: the long-mode jump landed)
+  boot info   : 0x00000000b9fb4000  (PVH hvm_start_info, not a device tree)
+  screen      : none in the boot cmdline; this console is the UART
+  pat         : 0x0007040600070106 on core 0 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 0; ring 0 faults on a fetch from a ring-3 page
+  memory      : 38 regions from the PVH handoff, rsdp 0xcae09000
+                0x000000000000..0x000000008000  ram
+                0x000000008000..0x000000009000  reserved
+                0x000000009000..0x000000058000  ram
+                0x000000058000..0x000000059000  reserved
+                0x000000059000..0x00000009e000  ram
+                0x00000009e000..0x0000000a0000  reserved
+                0x000000100000..0x000002000000  ram
+                0x000002000000..0x00000228f000  reserved
+                0x00000228f000..0x0000acfc0000  ram
+                0x0000acfc0000..0x0000ad000000  ram
+                0x0000ad000000..0x0000b7791000  ram
+                0x0000b7791000..0x0000b82c5000  reserved
+                0x0000b82c5000..0x0000b9efd000  ram
+                0x0000b9efd000..0x0000b9efe000  acpi-nvs
+                0x0000b9efe000..0x0000b9eff000  reserved
+                0x0000b9eff000..0x0000b9fb0000  ram
+                0x0000b9fb0000..0x0000b9fb3000  ram
+                0x0000b9fb3000..0x0000b9fb4000  ram
+                0x0000b9fb4000..0x0000b9fbf000  reserved
+                0x0000b9fbf000..0x0000c8940000  ram
+                0x0000c8940000..0x0000c8c89000  ram
+                0x0000c8c89000..0x0000c97c4000  ram
+                0x0000c97c4000..0x0000cadfb000  reserved
+                0x0000cadfb000..0x0000cae41000  acpi
+                0x0000cae41000..0x0000cb775000  acpi-nvs
+                0x0000cb775000..0x0000cbd18000  reserved
+                0x0000cbd18000..0x0000cbdff000  reserved
+                0x0000cbdff000..0x0000cbe00000  ram
+                0x000100000000..0x000140000000  ram
+                0x000140000000..0x0001413d0000  ram
+                0x0001413d0000..0x00042e000000  ram
+                0x0000000a0000..0x000000100000  reserved
+                0x0000cbe00000..0x0000d0000000  reserved
+                0x0000f0000000..0x0000f8000000  reserved
+                0x0000fe000000..0x0000fe011000  reserved
+                0x0000fec00000..0x0000fec01000  reserved
+                0x0000fee00000..0x0000fee01000  reserved
+                0x0000ff000000..0x000100000000  reserved
+                usable ram: 16623172 KiB
+  acpi        : rsdp at 0xcae09000 (revision 2), root table 0xcae090b8 (xsdt)
+                0x00cae34200  FACP (268 bytes)
+                0x00cae34310  APIC (132 bytes)
+                0x00cae34398  FPDT (68 bytes)
+                0x00cae343e0  FIDT (172 bytes)
+                0x00cae34490  MCFG (60 bytes)
+                0x00cae344d0  HPET (56 bytes)
+                0x00cae34508  SSDT (12662 bytes)
+                0x00cae37680  SSDT (9637 bytes)
+                0x00cae39c28  HPET (56 bytes)
+                0x00cae39c60  SSDT (3557 bytes)
+                0x00cae3aa48  SSDT (2996 bytes)
+                0x00cae3b600  UEFI (66 bytes)
+                0x00cae3b648  SSDT (3806 bytes)
+                0x00cae3c528  LPIT (148 bytes)
+                0x00cae3c5c0  SSDT (321 bytes)
+                0x00cae3c708  SSDT (671 bytes)
+                0x00cae3c9a8  SSDT (12290 bytes)
+                0x00cae3f9b0  SSDT (1293 bytes)
+                0x00cae3fec0  DBGP (52 bytes)
+                0x00cae3fef8  DBG2 (84 bytes)
+                0x00cae3ff50  MSDM (85 bytes)
+                0x00cae3ffa8  SLIC (374 bytes)
+                0x00cae40120  TPM2 (52 bytes)
+                0x00cae40158  ASF! (160 bytes)
+                0x00cae401f8  DMAR (204 bytes)
+                local apic 0xfee00000, 4 cpu(s) enabled, 0 disabled, 8259s present (must be masked)
+                io apic 2 at 0xfec00000, gsi base 0
+                isa irq 0 -> gsi 2 (active high, edge)
+                isa irq 9 -> gsi 9 (active high, level)
+                pcie ecam 0xf0000000, buses 0..=127 (q35's default is 0xb0000000)
+                vt-d drhd at 0xfed90000, named devices only
+                vt-d drhd at 0xfed91000, all (the catch-all)
+                vt-d rmrr 0xcac4e000..=0xcac6dfff (128 KiB), identity-mapped for the device(s) it names
+                vt-d rmrr 0xcd800000..=0xcfffffff (40960 KiB), identity-mapped for the device(s) it names
+                no IVRS: no AMD-Vi unit described
+                fadt reset register: Io 0xb2 (8 bits) <- 0x73
+  pci         : ecam at 0xf0000000 (buses 0..=127), decode was already on
+                bar window 0xd0000000..0xd0200000, from the firmware map and TOLUD, agreeing
+                00:00.0 8086:591f class 060000
+                00:02.0 8086:5912 class 030000
+                00:14.0 8086:a2af class 0c0330
+                00:14.2 8086:a2b1 class 118000
+                00:15.0 8086:a2e0 class 118000
+                00:16.0 8086:a2ba class 078000
+                00:16.3 8086:a2bd class 070002
+                00:17.0 8086:a282 class 010601
+                00:1b.0 8086:a2e7 class 060400 bridge to buses 01..=01
+                00:1c.0 8086:a297 class 060400 bridge to buses 02..=02
+                00:1f.0 8086:a2c6 class 060100
+                00:1f.2 8086:a2a1 class 058000
+                00:1f.3 8086:a2f0 class 040300
+                00:1f.4 8086:a2a3 class 0c0500
+                00:1f.6 8086:15e3 class 020000
+                01:00.0 1344:5411 class 010802
+                02:00.0 8086:24fd class 028000
+                17 function(s) over 3 bus(es) of the 128 described; mapping 3072 KiB of config space
+                17 function(s) on the bus, 0 with a BAR this kernel can neither use nor adopt
+  frames      : allocator up over 15 ram region(s)
+  smp: 4 core(s) in the madt
+  apic        : local apic 0xfee00000 up, id 0, version 0x15, 8259s masked
+  clocks      : tsc 2713 MHz (PIT calibration, best of 2 windows, worst 2714 MHz), apic timer 1 MHz (measured against the PIT)
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  vt-d        : drhd 0xfed90000 up (1 of 2, named devices only), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  vt-d        : drhd 0xfed91000 up (2 of 2, the catch-all), translation enabled (gsts.tes confirmed), 1 rmrr device(s) identity-mapped
+  io apic     : id 2 at 0xfec00000 up, version 0x20, 120 redirection entries, gsi base 0
+  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 21 interrupts in ~0.2s at 100 Hz
+  smp: init-sipi-sipi via the local apic, trampoline at 0x8000
+  pat         : 0x0007040600070106 on core 2 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 2; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 4 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 4; ring 0 faults on a fetch from a ring-3 page
+  pat         : 0x0007040600070106 on core 6 (was 0x0007040600070406); entry 1 is write-combining
+  cr4.smep    : set on core 6; ring 0 faults on a fetch from a ring-3 page
+  smp: 4 core(s) online
+  cycles      : IA32_PERF_FIXED_CTR1 (unhalted core cycles), 48 bits, perfmon v4
+
+nife
+  cpu         : x86_64, vendor GenuineIntel, cpuid leaves 0..0x16 and 0x80000000..0x80000008
+              : Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+  features    : nx syscall invariant-tsc rdseed
+  stack top       : 0xffffffff82166000
+  firmware handoff: 0x00000000b9fb4000  (PVH hvm_start_info)
+  processors      : 4 online of 4 described, boot cpu hwid 0x0
+  memory          : 17119 MiB total, 16223 MiB free (916512 KiB in use)
+  console         : 16550 at i/o port 0x03f8, interrupt line 4
+                  : no screen; this console is the UART alone
+  interrupts      : local apic 0x00000000fee00000 (id 0), io apic 0x00000000fec00000 (120 entries)
+  timer           : 100 Hz tick, counter at 2713 MHz, interrupts ON
+  initial ramdisk : 11745280 bytes at 0x00000000b7791000, a nifefs archive of 123 program(s)
+  pcie            : ecam 0x00000000f0000000..0xf8000000, bar window 0xd0000000..0xd0200000
+  iommu           : VT-d drhd at 0x00000000fed90000, root table default-deny, translating, interrupt remapping offered (unused), dmar INTR_REMAP set
+  iommu           : VT-d drhd at 0x00000000fed91000, root table default-deny, translating, interrupt remapping offered (unused), dmar INTR_REMAP set
+  mmu             : fine W^X 4-level map installed (cr3 0x186000), image 0xffffffff80000000, direct map 0xffff888000000000
+                  : 336 KiB of page tables (ram in 1 GiB blocks), no identity map, guard pages are holes
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: x86_64, 4 processor(s), 17119 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffff88846e000000 -> 0x9fd000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x9fd000; used 229130 -> Some(229131) -> Some(229130)
+  self-test       : timer      ok      the 2713MHz counter advanced 54270722 and 8 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+  self-test       : preemption ok      5 never-yield threads on 4 core(s): 0 starved, 81 preemptions
+
+  user thread 8589934597 killed: vector 14 (page fault)
+    rip 0x0000000060000097   addr 0xffffffff8214b2d0   user rsp 0x000000007ffeffb8   err 0x00000005
+    cr3 root 0xa00000
+      walk ends: OtherHalf
+  the kernel is fine.
+  self-test       : userspace  ok      a program at user level read 0xffffffff8214b2d0: killed, and the kernel survived
+  capability slots: 2 of 64 at peak
+  self-test       : budget     ok      a process mapped 22 pages of a 24-page untyped; kernel frames used 229208 -> 229208
+  self-test       : blockdev   absent  no virtio block device on this machine, over MMIO or PCIe
+  self-test       : deviceirq  ok      21 interrupts from a device line in ~0.2s at bring-up
+  self-test       : clock      absent  no JH7110 on this architecture
+  self-test       : trng       absent  no JH7110 on this architecture
+  self-test       : entropy    ok      the CPU's seed instruction served 32+32 bytes to a client, first 4a083ad5.., the two draws differ: true
+nife self-test: 10 of 13 passed  capability slots: 3 of 64 at peak
+, 3 absent: blockdev clock trng
+nife: the capability core runs on x86_64.
+
+soak-test: started 4 groups of one responder, 3 callers, 1 grinder and 1 tick waiter (24 user threads) on 4 online core(s), beating every 5s
+soak-test: silence longer than a few beats is a hang, not a slow run; the beat is on the wall clock and does not depend on the workload making progress
+soak-test: a clean run is a number to compare against, NOT evidence that the concurrency is correct (design/roadmap/0219-a-workload-that-does-not-stop.md)
+soak-test: the threads that cross cores are the tick waiters, NOT the rendezvous pairs; a rising crossings count is the wake protocol sustained across cores under load, not the IPC workload migrating (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test: rounds counts IPC round trips and wakes counts tick-route wakes; they are separate because they are separate quantities, and neither rate compares with a soak built differently
+soak-test-census: where the kernel placed each worker at spawn: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=0 threads=6 R0 W0 C1 C2 C2 C3
+soak-test-census: core=2 threads=5 G0 C1 C1 G2 C3
+soak-test-census: core=4 threads=6 C0 C0 W1 W2 C3 G3
+soak-test-census: core=6 threads=7 C0 R1 G1 R2 C2 R3 W3
+soak-test-census: this is the boot-time lottery and NOT where the run settles: a rendezvous wake queues the peer on the waker's own core (DECISIONS 138, how a saturated workload is made to hand threads across cores), so each group converges onto one core within a few exchanges
+soak-test-census: the beat line's drifted= is how many responders, callers and grinders are no longer on the core the census above put them on; while it reads 0 that census is current, and a nonzero one is followed by the census that replaces it
+soak-test-census: tick waiters are excluded from drifted= because their movement is the point rather than a surprise, and it is already crossings= (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test-watchdog: found the Intel TCO watchdog: Pch layout, TCO registers at I/O port 0x400
+soak-test-watchdog: the previous boot was not ended by this watchdog (SECOND_TO_STS clear)
+soak-test-watchdog: ARMED. THIS BUILD RESETS THE MACHINE IF THE SOAK STOPS BEATING: 50 ticks of 0.6s counted twice, so a reset 60.0s after the last pet, which comes every 5s from the beat.
+soak-test-watchdog: a soak that FAILS prints its verdict and dump and then stops petting, so the reset follows the evidence and never replaces it. To stop the watchdog: press any key on this console. It is halted at the next beat and the soak keeps running.
+soak-test: t=5s beat=1 rounds=1193036 rate=238607/s wakes=2169 wakerate=433/s workers=24 refused=0 mismatch=0 stalled=0 drifted=10 crossings=325 remote=1596 steals=5 deferred=1
+soak-test-census: where the workers are NOW, the arrangement above having changed: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=0 threads=4 R0 C0 C0 C0
+soak-test-census: core=2 threads=6 G0 R1 C1 C1 C1 G2
+soak-test-census: core=4 threads=5 W0 W1 W2 G3 W3
+soak-test-census: core=6 threads=9 G1 R2 C2 C2 C2 R3 C3 C3 C3
+soak-test-watchdog: petted at t=5s beat=1: the count had 41 of 50 ticks left
+soak-test: t=10s beat=2 rounds=2318121 rate=225017/s wakes=4216 wakerate=409/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=608 remote=3076 steals=5 deferred=1
+soak-test: t=15s beat=3 rounds=3424901 rate=221356/s wakes=6228 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=875 remote=4529 steals=5 deferred=1
+soak-test: t=20s beat=4 rounds=4531438 rate=221307/s wakes=8240 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1163 remote=5984 steals=5 deferred=1
+soak-test: t=25s beat=5 rounds=5637462 rate=221204/s wakes=10252 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1416 remote=7448 steals=5 deferred=1
+soak-test: t=30s beat=6 rounds=6743280 rate=221163/s wakes=12264 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=1677 remote=8907 steals=5 deferred=1
+soak-test-watchdog: WEDGING NOW at t=30s, deliberately (--features wedge_soak_test): this core masks interrupts and spins, the beat stops, and nothing pets the watchdog. The next thing this console should show is this kernel booting again.
+
