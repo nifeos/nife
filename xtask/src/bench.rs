@@ -571,6 +571,9 @@ fn run_bench(
     }
 
     report_bench_table(&results, cntfrq, real);
+    if !real && !record_readings(&results, &baseline_path) {
+        return false;
+    }
 
     *LAST_RUN.lock().unwrap_or_else(|e| e.into_inner()) = results.clone();
 
@@ -623,6 +626,44 @@ fn read_bench_lines(stdout: std::process::ChildStdout) -> (Vec<(String, u64, u64
         }
     }
     (results, cntfrq, done)
+}
+
+/// **`NIFE_BENCH_READINGS=<file>`: append this leg's icount rows to `file`** as `arch name ticks
+/// iters`, tab-separated, so CI's bench job can keep what `main` measured as an artifact. The
+/// weekly drift chart reads that artifact (`helpers/baseline_drift.py --update`, calef's ruling on
+/// #2554, 2026-10-22 UTC) instead of parsing the table above out of a job log. An environment
+/// variable rather than a flag because `script/ci-build bench` chains three legs in one command and
+/// each must append to the same file. The architecture is the baseline's, read from its file name.
+fn record_readings(results: &[(String, u64, u64)], baseline_path: &std::path::Path) -> bool {
+    use std::io::Write;
+    let Some(path) = std::env::var_os("NIFE_BENCH_READINGS") else {
+        return true;
+    };
+    let Some(arch) = baseline_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .and_then(|s| s.strip_prefix("baseline-"))
+    else {
+        eprintln!("bench: {} names no architecture", baseline_path.display());
+        return false;
+    };
+    let mut text = String::new();
+    for (name, ticks, iters) in results {
+        text.push_str(&format!("{arch}\t{name}\t{ticks}\t{iters}\n"));
+    }
+    let written = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .and_then(|mut f| f.write_all(text.as_bytes()));
+    if let Err(e) = written {
+        eprintln!(
+            "bench: could not append readings to {}: {e}",
+            path.to_string_lossy()
+        );
+        return false;
+    }
+    true
 }
 
 /// The results as a table, with ns computed from `cntfrq` for a magnitude to look at.
