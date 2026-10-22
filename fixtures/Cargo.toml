@@ -616,7 +616,7 @@ byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" 
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule
 # store) and §125 (which identities have pending work)): the schedule file's name, which
 # `login_test_client.rs` writes and `login.rs` reads back.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }

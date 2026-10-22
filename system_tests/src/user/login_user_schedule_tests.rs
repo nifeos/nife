@@ -362,7 +362,7 @@ fn the_stored_schedule_came_back_and_was_emptied(back: [u64; 5]) {
 /// Whether the durable-session manifest at the file service's root names `identity`.
 fn manifest_lists(identity: &[u8]) -> bool {
     let mut buf = [0u8; 512];
-    fs_service::read_root_file(schedule_store::MANIFEST_FILE_NAME, &mut buf)
+    fs_service::read_root_file(timetable_store::MANIFEST_FILE_NAME, &mut buf)
         .is_some_and(|n| login_contract::lists(&buf[..n], identity))
 }
 
@@ -377,7 +377,7 @@ const START_UP_CONSTRUCTION_PAGES: u64 = 128 + DURABLE_UT_PAGES + 32 + 32;
 /// against the retired `session_reviver`, now against `login` itself.
 ///
 /// The store is written as a reboot would find it: `alice` and `bob` each have
-/// `schedule_store::fixture::DEMO_SCHEDULE_DOC` stored in their own subtree (§122 (the on-disk
+/// `timetable_store::fixture::DEMO_SCHEDULE_DOC` stored in their own subtree (§122 (the on-disk
 /// schedule store)), the manifest (§125 (which identities have pending work)) names both, `alice`
 /// first, and the owner's suspended list names `alice`. Then a second `login` starts against that
 /// store, and three exchanges on its front door, none of them a successful login, show what its
@@ -415,11 +415,11 @@ fn a_durable_session_is_re_derived_at_start_up_unless_suspended() {
         fs_service::root_directory(fs_service::blk_server_image(), redoxfs_server_image())
             .expect("wired() already brought the file service up");
 
-    let doc = schedule_store::fixture::DEMO_SCHEDULE_DOC.as_bytes();
-    let stored = schedule_store::SCHEDULE_FILE_NAME;
+    let doc = timetable_store::fixture::DEMO_SCHEDULE_DOC.as_bytes();
+    let stored = timetable_store::SCHEDULE_FILE_NAME;
     fs_service::set_home_file(b"alice", stored, Some(doc));
     fs_service::set_home_file(b"bob", stored, Some(doc));
-    fs_service::set_root_list(schedule_store::MANIFEST_FILE_NAME, Some(b"alice\nbob\n"));
+    fs_service::set_root_list(timetable_store::MANIFEST_FILE_NAME, Some(b"alice\nbob\n"));
     fs_service::set_root_list(login_contract::SUSPENDED_LIST, Some(b"alice\n"));
 
     let w = ls::start(
@@ -479,7 +479,7 @@ fn a_durable_session_is_re_derived_at_start_up_unless_suspended() {
     let skips = rederive_skips();
 
     fs_service::set_root_list(login_contract::SUSPENDED_LIST, None);
-    fs_service::set_root_list(schedule_store::MANIFEST_FILE_NAME, None);
+    fs_service::set_root_list(timetable_store::MANIFEST_FILE_NAME, None);
     fs_service::set_home_file(b"alice", stored, None);
     fs_service::set_home_file(b"bob", stored, None);
     assert_eq!(

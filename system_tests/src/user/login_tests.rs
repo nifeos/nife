@@ -169,7 +169,7 @@ pub(super) fn wired() -> Option<ls::Wiring> {
             // A fresh machine's manifest: nothing for `login`'s start-up pass to re-derive, so
             // every test here meets a `login` holding no durable session. The start-up pass has
             // its own test and its own `login`.
-            fs_service::set_root_list(schedule_store::MANIFEST_FILE_NAME, None);
+            fs_service::set_root_list(timetable_store::MANIFEST_FILE_NAME, None);
             install_scheduled_program();
             let login_image = program("login").expect("no login program in the initial ramdisk");
             let w = ls::start(

@@ -93,7 +93,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `swish` | base | crates: `swish`; programs: `swish` | interfaces only | `swish` (provisional) |
 | `terminal` | base | crates: `line_editor*`; programs: `console`, `input`, `line_editor`, `terminal_sink_caretaker`, `terminal_supervisor` | interfaces only | `terminal` (provisional) |
 | `time` | base | crates: `network_time_protocol`; programs: `clock`, `network_time_client` | interfaces only | `time` (provisional) |
-| `timetable` | base | crates: `schedule_store`, `timetable`; programs: `timetable`; paths: `components/timetable.conf` | interfaces only | `timetable` (provisional) |
+| `timetable` | base | crates: `timetable`, `timetable_store`; programs: `timetable`; paths: `components/timetable.conf` | interfaces only | `timetable` (provisional) |
 | `demos` | optional | programs: `least_authority_demo` | interfaces only | `demos` (provisional) |
 | `display` | optional | crates: `compositor*`, `extensible_host_controller_interface`, `glyph_atlas*`, `glyph_atlas_generator`, `usb`, `video_terminal*`; programs: `compositor`, `display_terminal`, `framebuffer_driver`, `glyph_atlas_generator`, `gpu_driver`, `graphical_terminal`, `keyboard_driver`, `usb_keyboard_driver`; paths: `vendor/dejavu/` | interfaces only | `display` (provisional) |
 | `redoxfs` | optional | crates: `redoxfs`, `redoxfs_host`, `redoxfs_server`; programs: `mkfs`, `redoxfs`, `redoxfs-ar`, `redoxfs-clone`, `redoxfs-mkfs`, `redoxfs-resize`, `redoxfs_host`, `redoxfs_server`, `second_mount`; paths: `vendor/redoxfs.divergence.patch`, `vendor/redoxfs.pin` | interfaces only | undecided: the server and host tool are ours and the library is Redox's; whether the port goes upstream is open |
