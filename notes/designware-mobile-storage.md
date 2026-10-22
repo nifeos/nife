@@ -61,37 +61,23 @@ U-Boot's driver and both device trees are GPL and were read only for facts about
 
 ## Two data paths: the FIFO and the IDMAC
 
-`Host<R>` moves every word through the FIFO by MMIO. Nothing but the controller and the card
-stands behind it, which is why radon's first silicon read used it: a failure could only be the
-controller or the card protocol, not DMA as well. The cost is throughput.
+`Host<R>` moves every word through the FIFO by MMIO, so radon's first silicon read could fail only
+in the controller or the card protocol, not in DMA as well. `Host::with_idmac` hands each data phase
+to the controller's own DMA engine, the IDMAC; `crates/designware_mobile_storage/src/idmac.rs`
+holds its sequence. It waited on two things, both met: radon's DMA is coherent with its caches
+(`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC), notes/designware-ethernet.md),
+so a `fence` each way is all the ordering it needs, and the polled read works (Results, below).
 
-`Host::with_idmac` makes a host whose data phases go through the controller's own DMA engine, the
-IDMAC (`crates/designware_mobile_storage/src/idmac.rs`). It waited on two things, both met: radon's
-DMA is coherent with its caches (the network half's `designware_ethernet::coherence` probe read
-`Coherent` on 2026-10-20 (UTC), notes/designware-ethernet.md), and the polled read works (Results,
-below). What it is:
+- One region: a page of descriptors, then up to 256 data pages, one descriptor each. Reads are
+  copied out of it and writes in. `Idmac::new` refuses a controller without an IDMAC, 64-bit
+  descriptors, or a region not wholly below 4 GiB, which an 8 GB board's upper RAM is not.
+- A transfer is done at `DTO` (and `ACD`) with the last descriptor closed, since a read's `DTO`
+  can land before its last words reach memory.
+- Every transfer, finished or failed, stops and resets the engine before returning, so none is
+  left walking a chain the caller reuses.
 
-- **One region**: a page of 16-byte descriptors, then up to 256 data pages, one descriptor each,
-  chained. A command moves at most the data pages; reads are copied out of them and writes in, one
-  copy in cached memory. `Idmac::new` refuses a controller without an IDMAC (`HCON` bits 17:16 not
-  0), 64-bit descriptor addressing (`HCON` bit 27), and a region not wholly below 4 GiB, which an
-  8 GB board's upper RAM is not. radon reads 0 and clear.
-- **The sequence**: FIFO reset, IDMAC soft reset, `FIFOTH` for bursts (16 words on radon's tree
-  depth of 32), `DBADDR`, `CTRL` bits 25 and 5, `BMOD`'s enable and fixed burst, a poll demand,
-  then the command. `IDINTEN` stays zero and `CTRL`'s interrupt enable clear: the driver polls.
-- **Done** is `DTO` (and `ACD` after more than one block) and the last descriptor's `OWN` clear. A
-  read's `DTO` can land while the IDMAC still has words to write, so `DTO` alone is not enough. The
-  deadline restarts whenever a descriptor closes.
-- **Every transfer, finished or failed, stops the engine before returning**: `BMOD` disabled and
-  soft-reset, `CTRL`'s DMA bits cleared with a DMA and FIFO reset, `IDSTS` cleared, the polled
-  thresholds back. A data error in `RINTSTS`, a bus error or missing descriptor in `IDSTS`, and a
-  stall past the deadline all end there, so no engine is left walking a chain the caller reuses.
-- **Ordering**: a `fence` after the chain and data are written and before the registers start it,
-  and another after completion and before the data is read. Coherent DMA needs nothing more.
-
-`sim` walks the chain through memory the tests share with the driver: `OWN`, `CH`, `LD`, `DIC`,
-`DU` on a descriptor it does not own, `FBE` on an address outside memory, a slow bus, and a fence
-tracker. A Kani harness proves a chain describes exactly its bytes inside the region.
+`sim` walks the chain through memory it shares with the tests, and a Kani harness proves a chain
+describes exactly its bytes inside the region.
 
 ## Never break the card radon boots from
 
@@ -153,12 +139,12 @@ What to look for, all lines prefixed `storage-bench:`:
 | `partition 1: type 0x0b, sectors N..` and `boot sector: signature 55aa, type field "FAT32   "` | reads return the card's real bytes |
 | `scratch range a write test would use: Some((N-8, 8))` | where step 2 would write, before it does |
 | `timed read: 16384 blocks in ... us, ... KiB/s (128 blocks per command, polled FIFO)` | the polled read rate |
-| `IDMAC region at 0x..., 69632 bytes` | where the IDMAC's descriptors and data pages are; below 4 GiB, or `Above4GiB` in the verdict |
+| `IDMAC region at 0x..., 69632 bytes` | where the IDMAC's region is |
 | `timed read: ... KiB/s (128 blocks per command, IDMAC); the first 64 KiB match the polled read` | the IDMAC rate over the same 8 MiB, and that it read the same bytes |
 | `EL0 block server: Served` | the same card through the EL0 server, as the FS server would call it: block 0 of partition 1 is the boot sector, a write is refused `EROFS`, a block past the window `EINVAL` |
 | `slot 0 (eMMC socket): ...` | whether an eMMC module is fitted (`NO-CARD` if not) |
 | `verdict READ-OK ... KiB/s, IDMAC READ-OK ... KiB/s, EL0 block server served` | the step passed: the polled rate, then the IDMAC's |
-| `IDMAC read failed: ...; IDSTS ... DSCADDR ... BUFADDR ...` | printed only after a failed IDMAC read: the engine's status, the descriptor and buffer it was on |
+| `IDMAC read failed: ...; IDSTS ... DSCADDR ... BUFADDR ...` | after a failed IDMAC read only: the engine's status and position |
 | `at the failure: STATUS ... TCBCNT n TBBCNT m` | printed only after a failed read: `STATUS`'s FIFO count, and `TCBCNT`, the bytes the card sent. `TBBCNT` does not restart at each command on radon (a clean 1024-byte read leaves it near 5000), so `m` against `n` says nothing |
 
 `NO-CARD` on slot 1 or any `FAILED` verdict: stop, keep the log, and send it. Nothing was written.

@@ -9,8 +9,7 @@
 //! In order, for the microSD slot (slot 1) and then the eMMC socket (slot 0):
 //!
 //! 1. the slot as the tree describes it;
-//! 2. its clocks and reset as the firmware left them, then walked through
-//!    `jh7110_clock_and_reset::SDIO_BRING_UP` (every step idempotent);
+//! 2. its clocks and reset as found, walked through `SDIO_BRING_UP` (every step idempotent);
 //! 3. the controller's identity (`VERID`, `HCON`, the FIFO, `CDETECT`) and the five registers the
 //!    firmware's driver last wrote, read before anything is written;
 //! 4. the read-only probe (`designware_mobile_storage::bench::read_only`): identification, the CID,
@@ -19,9 +18,7 @@
 //! 5. **only on the microSD slot and only in a build made with `NIFE_STORAGE_BENCH_WRITE=scratch`**,
 //!    the scratch write test (`bench::scratch_write`): up to eight sectors before the first
 //!    partition, read, overwritten with a pattern, read back, restored, read back;
-//! 6. the same card through the IDMAC (`bench::idmac_read`): the partition's first 64 KiB read
-//!    both ways and compared, then the same timed read, so the two rates differ only in the data
-//!    path; in a write build, the scratch write test again, through the IDMAC;
+//! 6. the same reads through the IDMAC (`through_idmac`), and in a write build the write test;
 //! 7. on the microSD slot, the same card through the EL0 block server
 //!    (`components/src/designware_mobile_storage.rs`), called the way the FS server calls a block
 //!    server: over the first partition, read-only, in a read-only build (block 0 must be the boot
@@ -370,23 +367,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         Ok(r) => r,
     };
     print_read(slot, &r);
-    let verdict = if write {
-        let (Some(a), Some(b)) = (pages(1), pages(1)) else {
-            return Outcome::NoMemory;
-        };
-        let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
-        say!(slot, "scratch write test: {v:?}");
-        Some(v)
-    } else {
-        None
-    };
-    let dma = through_idmac(slot, host, &id, &r, write);
-    say!(slot, "{dma}");
-    let kib = kib_per_s(r.timed_blocks, r.timed_us);
-    let outcome = match verdict {
-        Some(v) => Outcome::Written(kib, v, dma),
-        None => Outcome::ReadOk(kib, dma),
-    };
+    let outcome = write_and_idmac(slot, host, &id, &r, write);
     // The kernel is done with this controller: `through_idmac` took `host` and stopped the IDMAC,
     // and from here the EL0 server drives it.
     if slot.index == 1 {
@@ -397,6 +378,34 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         }
     }
     outcome
+}
+
+/// **The probe's last kernel steps**: in a write build the scratch write test, polled, then the
+/// IDMAC phase, which takes the host. The outcome carries both.
+fn write_and_idmac(
+    slot: &Slot,
+    mut host: Host<Window>,
+    id: &Identity,
+    r: &ReadReport,
+    write: bool,
+) -> Outcome {
+    let verdict = if write {
+        let (Some(a), Some(b)) = (pages(1), pages(1)) else {
+            return Outcome::NoMemory;
+        };
+        let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
+        say!(slot, "scratch write test: {v:?}");
+        Some(v)
+    } else {
+        None
+    };
+    let dma = through_idmac(slot, host, id, r, write);
+    say!(slot, "{dma}");
+    let kib = kib_per_s(r.timed_blocks, r.timed_us);
+    match verdict {
+        Some(v) => Outcome::Written(kib, v, dma),
+        None => Outcome::ReadOk(kib, dma),
+    }
 }
 
 /// How the EL0 phase ended.

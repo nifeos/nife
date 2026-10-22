@@ -26,6 +26,8 @@ use crate::regs;
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
 /// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub trait DmaRegion {
     /// The region's first byte as the controller addresses it: on radon, its physical address.
     fn bus_address(&self) -> u64;
@@ -47,6 +49,8 @@ pub trait DmaRegion {
 
 /// **No region**: a [`Host`] that moves its data through the FIFO. Uninhabited, so a host of this
 /// type provably never takes the IDMAC path.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoDma {}
 
@@ -76,11 +80,11 @@ impl DmaRegion for NoDma {
 
 /// A page: the descriptor chain's size, and the most one descriptor's buffer holds here. The
 /// databook's field holds 8191 bytes; a page keeps each buffer inside one page of the region.
-pub const PAGE: u32 = 4096;
+pub(crate) const PAGE: u32 = 4096;
 /// One 32-bit-address descriptor: four words.
-pub const DESCRIPTOR_BYTES: u32 = 16;
+pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
-pub const MAX_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
+pub(crate) const MAX_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
 
 /// Descriptor word 0: the IDMAC owns this descriptor. Cleared by the IDMAC when it closes it.
 pub(crate) const DES0_OWN: u32 = 1 << 31;
@@ -96,6 +100,8 @@ pub(crate) const DES0_DIC: u32 = 1 << 1;
 pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
 
 /// Why a region was refused before anything was written.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
@@ -112,6 +118,8 @@ pub enum Refusal {
 
 /// **A region the IDMAC can use**, checked against the controller once. Only [`Idmac::new`] makes
 /// one, so a [`Host`] holding one has an IDMAC, 32-bit descriptors and a region they can address.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub struct Idmac<D: DmaRegion> {
     region: D,
     bus: u32,
@@ -125,6 +133,8 @@ impl<D: DmaRegion> Idmac<D> {
     ///
     /// A [`Refusal`]: no IDMAC, 64-bit addressing, or a region that is unaligned, the wrong size,
     /// or not wholly below 4 GiB.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     pub fn new(region: D, id: &Identity) -> Result<Idmac<D>, Refusal> {
         let interface = regs::dma_interface(id.hcon);
         if interface != 0 {
@@ -157,18 +167,13 @@ impl<D: DmaRegion> Idmac<D> {
 
     /// The most bytes one transfer moves: the region's data pages.
     #[must_use]
-    pub fn capacity(&self) -> u32 {
+    pub(crate) fn capacity(&self) -> u32 {
         self.capacity
     }
 
     /// The region, for a caller that wants to inspect it.
-    pub fn region(&mut self) -> &mut D {
+    pub(crate) fn region(&mut self) -> &mut D {
         &mut self.region
-    }
-
-    /// Give the region back.
-    pub fn into_region(self) -> D {
-        self.region
     }
 
     /// Write the chain for `bytes`, every descriptor the IDMAC's, and nothing past its last.
@@ -194,7 +199,7 @@ impl<D: DmaRegion> Idmac<D> {
 
 /// How many descriptors a transfer of `bytes` takes: one a page, and at least one.
 #[must_use]
-pub const fn descriptors_for(bytes: u32) -> u32 {
+pub(crate) const fn descriptors_for(bytes: u32) -> u32 {
     if bytes == 0 { 1 } else { bytes.div_ceil(PAGE) }
 }
 
@@ -203,7 +208,7 @@ pub const fn descriptors_for(bytes: u32) -> u32 {
 /// IDMAC's and chained; the first carries `FS`, the last `LD` and the only completion status, and
 /// each holds a page except the last, which holds what is left.
 #[must_use]
-pub const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32; 4] {
+pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32; 4] {
     let last = i + 1 == count;
     let mut des0 = DES0_OWN | DES0_CH;
     if i == 0 {

@@ -59,7 +59,7 @@ pub(crate) struct Memory(Arc<Mutex<Bus>>);
 impl Memory {
     /// `pages` pages at bus address `base`, zero.
     #[must_use]
-    pub fn new(base: u64, pages: usize) -> Memory {
+    pub(crate) fn new(base: u64, pages: usize) -> Memory {
         Memory(Arc::new(Mutex::new(Bus {
             base,
             bytes: vec![0; pages * 4096],
@@ -68,7 +68,7 @@ impl Memory {
     }
 
     /// The bus, locked.
-    pub fn bus(&self) -> MutexGuard<'_, Bus> {
+    pub(crate) fn bus(&self) -> MutexGuard<'_, Bus> {
         self.0.lock().unwrap()
     }
 }

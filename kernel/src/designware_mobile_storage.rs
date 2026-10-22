@@ -75,7 +75,7 @@ pub(crate) struct Region {
 impl Region {
     /// `pages` zeroed, contiguous pages, or `None` when the allocator has no such run. Never
     /// freed: the bench boot that uses it halts.
-    pub fn allocate(pages: usize) -> Option<Region> {
+    pub(crate) fn allocate(pages: usize) -> Option<Region> {
         let frame = crate::memory::alloc_contiguous_zeroed(pages)?;
         Some(Region {
             phys: frame.addr(),
@@ -124,9 +124,9 @@ impl DmaRegion for Region {
         unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), base as *mut u8, src.len()) }
     }
 
+    /// A full `fence` on riscv64, the one architecture this runs on, so it orders the CPU's reads
+    /// after the controller's writes as well as its writes before the register writes.
     fn barrier(&mut self) {
-        // A full `fence` on riscv64, the one architecture this runs on, so it orders the CPU's
-        // reads after the controller's writes as well as its writes before the register writes.
         crate::arch::direct_memory_access_write_barrier();
     }
 }

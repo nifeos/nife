@@ -109,6 +109,8 @@ fn timed_read<R: Registers, D: DmaRegion>(
 }
 
 /// What the IDMAC's half of the read-only probe found.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IdmacReport {
     /// The first transfer's bytes are the polled host's for the same blocks.
@@ -128,6 +130,8 @@ pub struct IdmacReport {
 /// # Errors
 ///
 /// The read that failed.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub fn idmac_read<R: Registers, D: DmaRegion>(
     host: &mut Host<R, D>,
     r: &ReadReport,

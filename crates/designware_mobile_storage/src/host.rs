@@ -201,6 +201,8 @@ impl<R: Registers> Host<R> {
 
     /// **Move every later data phase through the IDMAC**, over a region [`Idmac::new`] checked.
     /// The controller's state carries over: a card identified by the polled host stays selected.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     #[must_use]
     pub fn with_idmac<D: DmaRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
         Host {
@@ -228,11 +230,6 @@ impl<R: Registers, D: DmaRegion> Host<R, D> {
     /// Give the window back.
     pub fn into_registers(self) -> R {
         self.regs
-    }
-
-    /// The IDMAC's region, if the data moves by DMA.
-    pub fn idmac(&mut self) -> Option<&mut Idmac<D>> {
-        self.dma.as_mut()
     }
 
     pub(crate) fn wait<F: FnMut(&mut R) -> bool>(&mut self, deadline_us: u64, mut done: F) -> bool {
