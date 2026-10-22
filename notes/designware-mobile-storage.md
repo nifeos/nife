@@ -189,7 +189,7 @@ logs under `bench/radon-<date>/` and say which commit they came from.
 | 2026-10-21 | `54c8e773b` | 1, read-only | identified; blocks 0 and 2048 read by CMD17; the CMD18 read from 2048 failed, `Host(Data(18, 164))`, `TCBCNT 1100 TBBCNT 4580` | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
 | 2026-10-21 | `f7ae6ee29` | 1 and the read matrix | as above; the matrix (below) fails every read at the nominal 25 MHz and passes every one at 12.5 and 6.25 | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
 | 2026-10-21 | `ffac21104` | 1 and the read matrix | card clock set to 49.5 MHz; the 8 MiB read, 16,384 blocks in 0.75 s; every matrix row passes | `NoCard(NoResponse(1))` | `READ-OK 10959 KiB/s, EL0 block server served` |
-| 2026-10-22 | `03fc15894` | 2, the scratch write; then 3 | polled FIFO; sectors 2040 to 2047 written, verified and restored, kernel and EL0 server; the ordinary image then reached its prompt | `NoCard(NoResponse(1))` | `READ-OK 10960 KiB/s, WRITE-VERIFIED sectors 2040..2048 (were zero), restored, EL0 block server served` |
+| 2026-10-22 | `03fc15894` | 2 and 3 | polled FIFO; sectors 2040 to 2047 written, verified, restored; ordinary image to its prompt | `NoCard(NoResponse(1))` | `READ-OK 10960 KiB/s, WRITE-VERIFIED sectors 2040..2048 (were zero), restored, EL0 block server served` |
 
 **The card clock ran four times faster than the driver thought.** The tree gives the `ciu` clock
 `assigned-clock-rates = <50000000>`, a rate the OS is asked to program. radon's firmware leaves
@@ -204,11 +204,8 @@ words. Every row then passes, the FIFO never fills (peak 27 of its words at 24.7
 8 MiB read runs at 10,959 KiB/s (`bench/radon-2026-10-21/53-card-clock.log`). `STATUS` counted 128
 words with its full flag set, so radon's FIFO holds at least 128 words, not the tree's 32.
 
-The 2026-10-22 row is `bench/radon-2026-10-22/53-storage-write.log`, with `README-53.md` there.
-The 2026-10-21 rows' logs and how they ran are in `bench/radon-2026-10-21/`. For the 2026-10-20 row:
-the log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
-how the boot was run. The banner said `Read-only build: nothing on any card is written.` Steps 2
-and 3 were not run, as step 1 says. What it settled:
+Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.log` for
+2026-10-22, `storage-bench-read.log` for 2026-10-20. The 2026-10-20 row settled:
 
 - U-Boot hands both controllers over running (`already up true`). It leaves the microSD
   controller with `CTRL 0x2000000` (its IDMAC selected), `CLKDIV 0x2`, `CLKENA 0x10001` and a
