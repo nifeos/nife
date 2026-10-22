@@ -1,8 +1,8 @@
 # radon's exposure rows from 2026-10-22
 
-*An appendix to [`notes/multicore-defect-curve.md`](../multicore-defect-curve.md), continuing
-[`radon-rows.md`](radon-rows.md), whose columns and conventions these rows follow. Name:
-provisional, the stem of `notes/soak/radon-2026-10-21-pmic.md`'s kind: a board and a date.*
+*An appendix to [`notes/multicore-defect-curve.md`](../multicore-defect-curve.md). It continues
+[`radon-rows.md`](radon-rows.md) and follows its conventions. Name: provisional. The stem is a
+board and a date, like `notes/soak/radon-2026-10-21-pmic.md`.*
 
 | id | start (UTC) | machine | arch | cores | build | workload | hours | crossings | beats | result | source |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -60,9 +60,9 @@ provisional, the stem of `notes/soak/radon-2026-10-21-pmic.md`'s kind: a board a
 | E138 | 2026-10-22 ~20:35 | radon | riscv64 | 4 | `80fd9428c` | soak-test-reboot | 0.00 | 381 | 2 | clean | `bench/radon-2026-10-22/249-lottery-draws.log` |
 
 E87 to E138 are milestone 249 (the boot lottery is sampled by a person walking to the board)'s
-series of 2026-10-22. That is 52 draws from one build, each reset by the draw before it, with the
-JH7110 watchdog armed on every draw. Their start times are spread evenly between the capture's
-first and last draws, so each is good to about a minute. They add 685,080 crossings over 40
-crossing draws. Twelve are "not crossing": the six that drew zero clean cores and six that drew
-one, all frozen at 17 to 28 crossings. E138 was disarmed by hand at t=65 s and left soaking, so
-its row is cut at two beats; the soak it became is a later row.
+series of 2026-10-22. That is 52 draws from one build. Each was reset by the draw before it. The
+JH7110 watchdog was armed on every draw. Start times are spread evenly between the first and last
+draws, so each is good to about a minute. The rows add 685,080 crossings over 40 crossing draws.
+Twelve are "not crossing", frozen at 17 to 28. Six of those drew zero clean cores and six drew
+one. E138 was disarmed by hand at t=65 s and left soaking. Its row is cut at two beats, and the
+soak it became is a later row.
