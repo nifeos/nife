@@ -177,14 +177,28 @@ pub(crate) fn describe(w: &[u64; 5]) {
             );
         }
         report::NO_KEYBOARD => {
-            let (ports, connected) = (w[1] as u8, (w[1] >> 8) as u8);
-            match report::refusal_of(w[2]) {
-                (Some(step), port, detail) => crate::println!(
+            let (ports, connected, settled) = report::ports_of(w[1]);
+            // An unsettled count is a moment in a port that was still changing, so it is not
+            // printed as a fact about what is plugged in.
+            let seen = if settled {
+                Some((connected, ports))
+            } else {
+                None
+            };
+            match (report::refusal_of(w[2]), seen) {
+                ((Some(step), port, detail), Some((connected, ports))) => crate::println!(
                     "  usb       : no keyboard yet ({connected} of {ports} ports in use; port {port}: {} ({detail})); one plugged in later is found",
                     step.describe(),
                 ),
-                (None, ..) => crate::println!(
+                ((Some(step), port, detail), None) => crate::println!(
+                    "  usb       : no keyboard yet (the ports were still settling; port {port}: {} ({detail})); one plugged in later is found",
+                    step.describe(),
+                ),
+                ((None, ..), Some((connected, ports))) => crate::println!(
                     "  usb       : no keyboard yet ({connected} of {ports} ports in use); one plugged in later is found"
+                ),
+                ((None, ..), None) => crate::println!(
+                    "  usb       : no keyboard yet (the ports were still settling); one plugged in later is found"
                 ),
             }
         }

@@ -95,8 +95,12 @@ mod designware_ethernet;
 // the firmware, draw the driver's register window and confine its DMA, then hand the whole
 // controller to `usb_keyboard_driver` at EL0. See kernel/src/extensible_host_controller_interface.rs.
 mod extensible_host_controller_interface;
+// What an xHCI's ports read before the firmware handoff and after the driver's scan: an instrument
+// for xenon's `0 of 26 ports in use`. See kernel/src/xhci_port_probe.rs.
 mod revoke;
 mod sched;
+#[cfg(feature = "xhci_port_probe")]
+mod xhci_port_probe;
 // **A screen on the two architectures whose firmware never lights one**, milestone 243 (a machine
 // with no serial port): the `ramfb` discovery half, and the question of whether a framebuffer is
 // this kernel's own memory.
