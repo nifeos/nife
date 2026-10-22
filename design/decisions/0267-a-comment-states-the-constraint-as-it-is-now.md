@@ -68,6 +68,11 @@ all first-party Rust, every non-`vendor/` directory:
 Rustdoc takes the place of Linux's kernel-doc, and `missing_docs` and the `// SAFETY:` discipline
 stay as they are. The newcomer test is met by the note a doc comment links to.
 
+A name's provenance comment stays (calef, 2026-10-22 03:35 UTC: *"Approved assuming naming
+provenance comments remain."*). The `Name:` block, with its dates, rulings and refusals, is where
+[design/naming.md](../naming.md) ("Where a name's provenance lives") keeps a name's record. It is
+not history for the commit message, and the paydown leaves it in place.
+
 New code meets the rule everywhere now. The existing comments are paid down in stages, ordered by
 effort and the merge queue rather than by exemption: `kernel/`; then `crates/` and `components/`;
 then `system_tests/`, `xtask/` and every other directory. In the same order a directory's block cap
