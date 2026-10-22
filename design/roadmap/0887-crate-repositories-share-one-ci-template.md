@@ -248,8 +248,6 @@ being on the list, and `helpers/ci_job_times.py` reads a crate repository by arg
   creates; the template's weekly Kani bump and the canary's release `tag` job need the same pair. Checked by a dispatch for `v6` opening its pull request.
 - **Outstanding.** The stranger cadence's first run, a person's as in nife; the weekly job fails
   until `docs/stranger-test.md` records one.
-- **Outstanding.** The team `crates-io` is deleted by calef, leaving `crate-maintainers` the one
-  crates team. Checked by `gh api orgs/nifeos/teams` listing it alone.
 
 ## Index row
 
