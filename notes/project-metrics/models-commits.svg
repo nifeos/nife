@@ -101,37 +101,37 @@
 <path class="seg c12" d="M542.8,111.4 V84.3 Q542.8,80.3 546.8,80.3 H577.4 Q581.4,80.3 581.4,84.3 V111.4 Z"><title>2026W42, claim (an empty commit): 292</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="75.3" font-size="10" text-anchor="middle">2290</text>
-<rect class="seg c2" x="601.4" y="266.2" width="38.7" height="57.8"><title>2026W43, Opus 5.5: 543</title></rect>
-<rect class="seg c4" x="601.4" y="264.5" width="38.7" height="1.7"><title>2026W43, Sonnet 5.5: 16</title></rect>
-<rect class="seg c10" x="601.4" y="263.1" width="38.7" height="1.4"><title>2026W43, unattributed: 13</title></rect>
-<rect class="seg c11" x="601.4" y="235.5" width="38.7" height="27.7"><title>2026W43, merge (a pull request landing): 260</title></rect>
-<path class="seg c12" d="M601.4,235.5 V225.0 Q601.4,221.0 605.4,221.0 H636.0 Q640.0,221.0 640.0,225.0 V235.5 Z"><title>2026W43, claim (an empty commit): 136</title></path>
+<rect class="seg c2" x="601.4" y="264.5" width="38.7" height="59.5"><title>2026W43, Opus 5.5: 559</title></rect>
+<rect class="seg c4" x="601.4" y="262.8" width="38.7" height="1.7"><title>2026W43, Sonnet 5.5: 16</title></rect>
+<rect class="seg c10" x="601.4" y="261.3" width="38.7" height="1.5"><title>2026W43, unattributed: 14</title></rect>
+<rect class="seg c11" x="601.4" y="232.5" width="38.7" height="28.8"><title>2026W43, merge (a pull request landing): 271</title></rect>
+<path class="seg c12" d="M601.4,232.5 V221.3 Q601.4,217.3 605.4,217.3 H636.0 Q640.0,217.3 640.0,221.3 V232.5 Z"><title>2026W43, claim (an empty commit): 143</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="620.7" y="216.0" font-size="10" text-anchor="middle">968</text>
-<rect class="c0" x="672" y="64" width="11" height="11" rx="2"/>
-<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Opus 4.8</tspan></text>
-<rect class="c1" x="672" y="83" width="11" height="11" rx="2"/>
-<text class="fg" y="93" font-size="11"><tspan x="689" dy="0">Opus 5</tspan></text>
-<rect class="c2" x="672" y="102" width="11" height="11" rx="2"/>
-<text class="fg" y="112" font-size="11"><tspan x="689" dy="0">Opus 5.5</tspan></text>
-<rect class="c3" x="672" y="121" width="11" height="11" rx="2"/>
-<text class="fg" y="131" font-size="11"><tspan x="689" dy="0">Sonnet 5</tspan></text>
-<rect class="c4" x="672" y="140" width="11" height="11" rx="2"/>
-<text class="fg" y="150" font-size="11"><tspan x="689" dy="0">Sonnet 5.5</tspan></text>
-<rect class="c5" x="672" y="159" width="11" height="11" rx="2"/>
-<text class="fg" y="169" font-size="11"><tspan x="689" dy="0">Fable 5.1</tspan></text>
-<rect class="c6" x="672" y="178" width="11" height="11" rx="2"/>
-<text class="fg" y="188" font-size="11"><tspan x="689" dy="0">Haiku 4.5</tspan></text>
-<rect class="c7" x="672" y="197" width="11" height="11" rx="2"/>
-<text class="fg" y="207" font-size="11"><tspan x="689" dy="0">GLM 5.3</tspan></text>
-<rect class="c8" x="672" y="216" width="11" height="11" rx="2"/>
-<text class="fg" y="226" font-size="11"><tspan x="689" dy="0">GLM 5.3 Flash</tspan></text>
-<rect class="c9" x="672" y="235" width="11" height="11" rx="2"/>
-<text class="fg" y="245" font-size="11"><tspan x="689" dy="0">other models</tspan></text>
-<rect class="c10" x="672" y="254" width="11" height="11" rx="2"/>
-<text class="fg" y="264" font-size="11"><tspan x="689" dy="0">unattributed</tspan></text>
-<rect class="c11" x="672" y="273" width="11" height="11" rx="2"/>
-<text class="fg" y="283" font-size="11"><tspan x="689" dy="0">merge (a pull request</tspan><tspan x="689" dy="13">landing)</tspan></text>
-<rect class="c12" x="672" y="305" width="11" height="11" rx="2"/>
-<text class="fg" y="315" font-size="11"><tspan x="689" dy="0">claim (an empty</tspan><tspan x="689" dy="13">commit)</tspan></text>
+<text class="fg val" x="620.7" y="212.3" font-size="10" text-anchor="middle">1003</text>
+<rect class="c12" x="672" y="64" width="11" height="11" rx="2"/>
+<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">claim (an empty</tspan><tspan x="689" dy="13">commit)</tspan></text>
+<rect class="c11" x="672" y="96" width="11" height="11" rx="2"/>
+<text class="fg" y="106" font-size="11"><tspan x="689" dy="0">merge (a pull request</tspan><tspan x="689" dy="13">landing)</tspan></text>
+<rect class="c10" x="672" y="128" width="11" height="11" rx="2"/>
+<text class="fg" y="138" font-size="11"><tspan x="689" dy="0">unattributed</tspan></text>
+<rect class="c9" x="672" y="147" width="11" height="11" rx="2"/>
+<text class="fg" y="157" font-size="11"><tspan x="689" dy="0">other models</tspan></text>
+<rect class="c8" x="672" y="166" width="11" height="11" rx="2"/>
+<text class="fg" y="176" font-size="11"><tspan x="689" dy="0">GLM 5.3 Flash</tspan></text>
+<rect class="c7" x="672" y="185" width="11" height="11" rx="2"/>
+<text class="fg" y="195" font-size="11"><tspan x="689" dy="0">GLM 5.3</tspan></text>
+<rect class="c6" x="672" y="204" width="11" height="11" rx="2"/>
+<text class="fg" y="214" font-size="11"><tspan x="689" dy="0">Haiku 4.5</tspan></text>
+<rect class="c5" x="672" y="223" width="11" height="11" rx="2"/>
+<text class="fg" y="233" font-size="11"><tspan x="689" dy="0">Fable 5.1</tspan></text>
+<rect class="c4" x="672" y="242" width="11" height="11" rx="2"/>
+<text class="fg" y="252" font-size="11"><tspan x="689" dy="0">Sonnet 5.5</tspan></text>
+<rect class="c3" x="672" y="261" width="11" height="11" rx="2"/>
+<text class="fg" y="271" font-size="11"><tspan x="689" dy="0">Sonnet 5</tspan></text>
+<rect class="c2" x="672" y="280" width="11" height="11" rx="2"/>
+<text class="fg" y="290" font-size="11"><tspan x="689" dy="0">Opus 5.5</tspan></text>
+<rect class="c1" x="672" y="299" width="11" height="11" rx="2"/>
+<text class="fg" y="309" font-size="11"><tspan x="689" dy="0">Opus 5</tspan></text>
+<rect class="c0" x="672" y="318" width="11" height="11" rx="2"/>
+<text class="fg" y="328" font-size="11"><tspan x="689" dy="0">Opus 4.8</tspan></text>
 </svg>

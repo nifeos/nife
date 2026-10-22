@@ -35,6 +35,22 @@ impl fmt::Debug for ReadDir {
     }
 }
 
+impl ReadDir {
+    /// **The directory this listing came from, reopened by its path** (`ReadDir::dir`,
+    /// `#![feature(dirfd)]`, added upstream in rust-lang/rust#163701). Unix derives the handle
+    /// from the stream's own descriptor, so it names the directory that was listed even if the
+    /// path has since moved. This listing holds no handle to derive from, because `readdir`
+    /// drained it and let the server's handle go (the type's header says why), so it does what
+    /// upstream's hermit, SOLID and UEFI backends do: open `root` again. That is the race std's
+    /// own documentation of `dir` warns about, a rename between `read_dir` and `dir` reaches
+    /// whatever is at the path now.
+    pub fn dir(&self) -> io::Result<Dir> {
+        let mut opts = OpenOptions::new();
+        opts.read(true);
+        Dir::open(&self.root, &opts)
+    }
+}
+
 impl Iterator for ReadDir {
     type Item = io::Result<DirEntry>;
 
