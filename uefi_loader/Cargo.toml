@@ -103,7 +103,7 @@ boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
 # them and rewrites it to spend a try. Ours, no external dependencies; the alternative is a second
 # GPT reader in the one place in the tree that must agree with the installer byte for byte.
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
-universally_unique_identifier = { version = "0.1.0", path = "../crates/universally_unique_identifier" }
+uuid = { version = "1.28.0", default-features = false }
 
 # **The device-tree reader this loader's writers are tested against, and the riscv64 loader's own
 # reader.** It was a dev-dependency until this milestone, which was a latent build break rather than

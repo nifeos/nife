@@ -69,7 +69,7 @@ pub mod span;
 use crc::crc32;
 pub use entry::Entry;
 pub use header::Header;
-use universally_unique_identifier::Uuid;
+use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.
 pub const MIN_BLOCK_SIZE: usize = 512;

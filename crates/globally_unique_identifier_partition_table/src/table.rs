@@ -138,9 +138,9 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// # use globally_unique_identifier_partition_table::Entry;
     /// # use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
     /// # use globally_unique_identifier_partition_table::guid::types;
-    /// # use universally_unique_identifier::Uuid;
-    /// # let disk_guid = Uuid::NIL;
-    /// # let part_guid = Uuid::NIL;
+    /// # use uuid::Uuid;
+    /// # let disk_guid = Uuid::nil();
+    /// # let part_guid = Uuid::nil();
     /// let mut array = [0u8; globally_unique_identifier_partition_table::ENTRY_ARRAY_BYTES];
     /// let table = GloballyUniqueIdentifierPartitionTable::create(
     ///     disk_guid,

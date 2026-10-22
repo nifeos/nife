@@ -82,8 +82,8 @@ pub struct Entry {
 impl Entry {
     /// An unused entry: all zeros, which is what an empty slot in the array looks like on disk.
     pub const UNUSED: Entry = Entry {
-        type_guid: Uuid::NIL,
-        unique_guid: Uuid::NIL,
+        type_guid: Uuid::nil(),
+        unique_guid: Uuid::nil(),
         first_lba: 0,
         last_lba: 0,
         attributes: 0,

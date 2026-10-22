@@ -1,4 +1,5 @@
 use crate::host::fifo_step;
+use crate::idmac::{DESCRIPTOR_BYTES, MAX_DESCRIPTORS, PAGE, descriptor, descriptors_for};
 use crate::partition::{Entry, Mbr};
 use crate::sd::in_range;
 
@@ -88,5 +89,34 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
         } else {
             assert!((last + 1) * 512 <= 1 << 32);
         }
+    }
+}
+
+/// A chain for any transfer a region admits describes exactly its bytes, each descriptor a page
+/// or less inside the region's data pages, and points only at descriptors in the chain page.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_chain_describes_its_bytes_inside_the_region.patch`
+#[kani::proof]
+fn a_chain_describes_its_bytes_inside_the_region() {
+    let pages: u32 = kani::any();
+    kani::assume((1..=MAX_DESCRIPTORS).contains(&pages));
+    let bus: u32 = kani::any();
+    kani::assume(bus.is_multiple_of(PAGE));
+    kani::assume(u64::from(bus) + u64::from((pages + 1) * PAGE) <= 1 << 32);
+    let bytes: u32 = kani::any();
+    kani::assume((1..=pages * PAGE).contains(&bytes));
+    let count = descriptors_for(bytes);
+    assert!((1..=pages).contains(&count));
+    let i: u32 = kani::any();
+    kani::assume(i < count);
+    let [des0, size, buffer, next] = descriptor(bus, i, count, bytes);
+    assert!((1..=PAGE).contains(&size));
+    assert!(buffer >= bus + PAGE && buffer - bus + size <= (pages + 1) * PAGE);
+    if i + 1 == count {
+        assert!(i * PAGE + size == bytes);
+        assert!(des0 & crate::idmac::DES0_LD != 0);
+    } else {
+        assert!(size == PAGE && next == bus + (i + 1) * DESCRIPTOR_BYTES);
+        assert!(des0 & crate::idmac::DES0_LD == 0);
     }
 }

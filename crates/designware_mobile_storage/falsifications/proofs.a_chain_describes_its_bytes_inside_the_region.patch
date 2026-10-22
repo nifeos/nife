@@ -1,0 +1,20 @@
+Falsifies `designware_mobile_storage::proofs::a_chain_describes_its_bytes_inside_the_region`.
+
+The defect: the last descriptor holds a whole page whatever is left, so a transfer that is not a
+whole number of pages describes more bytes than the command moves, and the IDMAC waits on a
+descriptor the card will never fill.
+
+Expected to fail: `assert!(i * PAGE + size == bytes)`, on any `bytes` that is not a multiple of a page.
+
+diff --git a/crates/designware_mobile_storage/src/idmac.rs b/crates/designware_mobile_storage/src/idmac.rs
+--- a/crates/designware_mobile_storage/src/idmac.rs
++++ b/crates/designware_mobile_storage/src/idmac.rs
+@@ -214,7 +214,7 @@
+     } else {
+         des0 |= DES0_DIC;
+     }
+-    let size = if last { bytes - i * PAGE } else { PAGE };
++    let size = PAGE;
+     let next = if last { 0 } else { i + 1 };
+     [
+         des0,

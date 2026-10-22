@@ -349,7 +349,11 @@ impl<T> IrqSafeMutex<T> {
 
     /// [`lock`](Self::lock) after the caller has already masked interrupts, handing over the state
     /// it found so the guard restores that. Private: [`lock_found`] is the one caller with a reason.
-    #[inline]
+    ///
+    /// **Always inlined**, so `lock` is one call and not two in the gate's -O0 build: every
+    /// `IPC_TABLES` acquisition pays this, and the second call frame cost a riscv64 yield round
+    /// trip 56 instructions when this was split out of `lock`.
+    #[inline(always)]
     fn lock_masked(&self, irqs_were_enabled: bool) -> IrqSafeGuard<'_, T> {
         // From here to the matching restore in `drop`, interrupts are off, so this core is the
         // only thing that can touch its own held-rank.

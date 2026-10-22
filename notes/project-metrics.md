@@ -214,19 +214,17 @@ because the floor did not exist yet. The provenance is in the register's
 
 ![Files](project-metrics/homes-paths.svg)
 
-## Benchmark drift since a fixed anchor
+## Unexplained benchmark drift on main
 
-![Benchmark rows more than 5% above their anchor](project-metrics/baseline-drift.svg)
+![Unexplained benchmark drift on main](project-metrics/unexplained-drift.svg)
 
-The tripwire compares each save with the last, so steps under 10% add up unseen. This counts rows
-past 5% since fixed anchors (calef, 2026-09-26). Every row and reason: [the drift
-report](project-metrics/baseline-drift.md).
+Drift since the anchors that no line in [bench/attributions.tsv](../bench/attributions.tsv)
+accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10-22). Every row,
+save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W43: aarch64 `spawn_reap` +33.14%, riscv64 `spawn_reap` +28.32%, x86_64 `spawn_reap` +10.59%; 19 rows past 5%.
+2026W43, `main` at `6b9b21bbc`: unexplained past 5%: riscv64 `spawn_reap` +6.00%.
 <!-- /baseline-drift -->
-
-- 2026W39: milestone 447 (a thread's vector registers are its own), #1015, 2026-09-21, added 1 to 3% to switch and IPC rows, taking rows past 5% from 2 to 7 (aarch64), 3 to 6 (riscv64), 1 to 2 (x86_64). Nightly bump #1112 added less.
 
 ## Interface stability
 
