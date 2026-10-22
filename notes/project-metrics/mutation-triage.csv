@@ -1025,8 +1025,6 @@ system_log_protocol,kernel_ring::Ring<'a>::read,replace < with ==,killed,killed 
 system_log_protocol,kernel_ring::Ring<'a>::read,replace >> with <<,equivalent,"meta never writes above bit 32 (severity, flags << 8, len << 16), so the kind byte reads 0 either way: (m >> 32) & 0xff and (m << 32) & 0xff are both 0; the 2026-10-12 per-crate re-run still reports it"
 system_log_protocol,kernel_ring::meta,replace | with ^,equivalent,"severity (a byte), flags << 8 (a byte) and len << 16 occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 system_log_protocol,kernel_ring::slot,replace % with /,killed,killed by the_kernel_ring_keeps_each_record_and_its_counters
-universally_unique_identifier,Uuid::try_from_ascii,replace | with ^,equivalent,"nibble() returns at most 15, so (hi << 4) and lo occupy disjoint bits and | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-universally_unique_identifier,Uuid::v4_from_random,replace | with ^,equivalent,"(b & 0x0f) | 0x40 and (b & 0x3f) | 0x80 each join disjoint bits, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 usb,ConfigurationHeader::parse,replace < with <=,killed,killed by a_configuration_header_is_nine_bytes_of_type_two
 usb,ConfigurationHeader::parse,replace < with >,killed,killed by a_configuration_header_is_nine_bytes_of_type_two
 usb,ConfigurationHeader::parse,replace || with &&,killed,killed by a_configuration_header_is_nine_bytes_of_type_two
