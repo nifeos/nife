@@ -101,9 +101,9 @@ same across the eight merges to within one tick in ten thousand.
   holds it to that.
 - x86_64's APIC count is a checked conversion, because at 1 Hz it is the whole APIC rate.
 
-`ipc_rtt` starts in the mode the tick before its window leaves it in. The tick preempts the waiting
-bench thread and reschedules, and the ping-pong then runs in its faster mode on all three
-architectures: 1,050,692 on aarch64, 173,351 on riscv64 and 17,138,066 on x86_64, against
+`ipc_rtt` starts in the mode the tick before its window leaves it in. That tick preempts the
+waiting bench thread and reschedules, and the ping-pong then runs in its faster mode on all three
+architectures. It reads 1,050,692 on aarch64, 173,351 on riscv64 and 17,138,066 on x86_64, against
 1,098,942, 178,571 and 17,820,066 at `TICK_HZ` 1 with no alignment. Every other row reads what it
 read at `TICK_HZ` 1 to within a few ticks. The mode is fixed by the window's construction rather
 than by where unrelated code left the tick.
@@ -112,6 +112,11 @@ The exit criterion is met on all three architectures. With this built onto `2583
 `e972aa622` and `d31c86226`, no row moves by more than 0.011% (a few ticks of `spawn_reap`). With
 the bench tick put back to 100 Hz, the riscv64 bench fails at its first row, `yield_switch`, naming
 the row and the tick. Each floor is resaved with `--save --why` by a person.
+
+## Follow-on
+
+- **None.** The riscv64 steps that #2565 left on the tick's phase are listed in this milestone's
+  pull request, for that lane's attribution lines to re-measure.
 
 ## Index row
 

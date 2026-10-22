@@ -30,9 +30,10 @@ pub(crate) const TIMER_INTID: u32 = 5;
 
 /// Ticks per second, the preemption rate. Same 100 Hz as aarch64.
 ///
-/// **1 Hz in the bench build** (milestone 939), so a timed window opened just after a tick has a
-/// full second of virtual time before the next one. `kernel/src/bench/timing.rs`'s `TickWindow`
-/// opens every row's window that way and fails the run if a tick lands inside one.
+/// **1 Hz in the bench build** (milestone 939 (the icount bench runs without a preemption tick in
+/// its windows)), so a timed window opened just after a tick has a full second of virtual time
+/// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
+/// way and fails the run if a tick lands inside one.
 pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// **The `time` CSR frequency, read from the machine** (`/cpus/timebase-frequency`, milestone 100).

@@ -42,20 +42,22 @@ pub(super) fn measure(name: &str, iters: u64, f: impl FnOnce()) {
 }
 
 /// **A stretch of a bench run that no preemption tick lands in, and the check that fails loudly if
-/// one does** (milestone 939). [`open`](Self::open) waits for this core's next tick and
-/// [`close`](Self::close) panics if another arrived since, so a row can never again read the luck
-/// of where the tick fell as its cost.
+/// one does** (milestone 939 (the icount bench runs without a preemption tick in its windows)).
+/// [`open`](Self::open) waits for this core's next tick and [`close`](Self::close) panics if
+/// another arrived since, so no row reads where the tick fell as its cost.
 ///
 /// A ping-pong row (`ipc_rtt`, `ipc_rtt_el0`) is bimodal under the tick: each receive either finds
 /// its message waiting or blocks for it, and a tick inside the window can flip the loop between the
 /// two for the rest of the run. Where ticks land depends on every instruction retired before the
-/// window, so an unrelated change moved those rows by whole percent. The bench build's `TICK_HZ`
-/// is 1, so a window that opens on a tick has a full second of virtual time before the next one,
-/// and every row's window is a fraction of that. The close is what proves it on every run, on every
-/// architecture, rather than a comment that would stop being true the day a row grows.
+/// window, so under a free-running tick an unrelated change moves those rows by whole percent. The
+/// bench build's `TICK_HZ` is 1, so a window that opens on a tick has a full second of virtual
+/// time before the next one, and every row's window is a fraction of that. The close is what
+/// proves it on every run, on every architecture, rather than a comment that would stop being true
+/// the day a row grows. The tick that opens the window also fixes the mode a ping-pong starts in.
 ///
-/// Voluntary switching is untouched: `yield_switch` and `spawn_reap` still do not mask interrupts
-/// (milestone 541's rule), and a window opened here only moves where the involuntary ones fall.
+/// Voluntary switching is untouched: `yield_switch` and `spawn_reap` still do not mask interrupts,
+/// the rule of milestone 541 (a timed window that excludes preemption), and a window opened here
+/// only moves where the involuntary switches fall.
 ///
 /// A thread that changes cores inside the window cannot be checked, because ticks are counted per
 /// core. Under `-icount` the bench boots one hart and nothing moves; a `--real --smp` run prints a

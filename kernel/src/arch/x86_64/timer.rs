@@ -38,9 +38,10 @@ use super::port::{in8, out8};
 
 /// Ticks per second the scheduler asks for. The same 100 Hz both other architectures use.
 ///
-/// **1 Hz in the bench build** (milestone 939), so a timed window opened just after a tick has a
-/// full second of virtual time before the next one. `kernel/src/bench/timing.rs`'s `TickWindow`
-/// opens every row's window that way and fails the run if a tick lands inside one.
+/// **1 Hz in the bench build** (milestone 939 (the icount bench runs without a preemption tick in
+/// its windows)), so a timed window opened just after a tick has a full second of virtual time
+/// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
+/// way and fails the run if a tick lands inside one.
 pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// **The 8254 PIT's input frequency**, 1193182 Hz, and the one rate on a PC that is a fixed number

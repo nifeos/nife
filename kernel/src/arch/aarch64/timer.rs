@@ -102,9 +102,10 @@ pub(crate) const TIMER_INTID: u32 = 27;
 /// doing nothing useful. Linux ships 250 Hz and can be built tickless; 100 Hz is the old Unix
 /// default and it is plenty for a kernel with no threads yet.
 ///
-/// **1 Hz in the bench build** (milestone 939), so a timed window opened just after a tick has a
-/// full second of virtual time before the next one. `kernel/src/bench/timing.rs`'s `TickWindow`
-/// opens every row's window that way and fails the run if a tick lands inside one.
+/// **1 Hz in the bench build** (milestone 939 (the icount bench runs without a preemption tick in
+/// its windows)), so a timed window opened just after a tick has a full second of virtual time
+/// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
+/// way and fails the run if a tick lands inside one.
 pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// Every tick, forever. The heartbeat.
