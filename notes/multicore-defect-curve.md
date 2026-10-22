@@ -89,7 +89,7 @@ Every exposure row so far is radon's, so the table is in
 [`multicore-defect-curve/radon-rows.md`](multicore-defect-curve/radon-rows.md), beside the notes on
 what each bench evening's rows record. A first row from another machine starts its own appendix.
 
-radon's curve stands at about 11.42 million crossings over 69 crossing boots and about 28.2 hours,
+radon's curve stands at about 12.11 million crossings over 109 crossing boots and about 29.7 hours,
 with zero defects. The §259 (a multicore soak counts toward risk 5 at ten million crossings over
 three boots) ledger counts plain boots only: E4 + E6 + E7 = 10,288,805 crossings over 3 boots,
 which meets it. What each bench evening's rows record, and the caveats on E1 to E3, are with the rows.
