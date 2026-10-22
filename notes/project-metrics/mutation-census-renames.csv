@@ -75,3 +75,4 @@ std_runtime_protocol,std_runtime_contract,3e58ecf3,2026-10-18
 system_log_protocol,system_log_contract,3e58ecf3,2026-10-18
 activation_set,installed_programs,aff16739,2026-10-18
 manifest_note,capability_manifest_note,1b4f87b7,2026-10-18
+schedule_store,timetable_store,0bd11d2e,2026-10-22
