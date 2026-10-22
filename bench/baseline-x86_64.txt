@@ -1,8 +1,7 @@
 # toolchain: nightly-2026-10-22
 # qemu: 11.1.2
 # date: 2026-10-22
-# why: 2026-10-22: 180cccbaf (a new capability table is one copy of a static image, not a constant moved twice through ptr::write at -O0) and 0ec577bde (IrqSafeMutex::lock_masked always inlined, one call per lock at -O0), notes/benchmarks/riscv64-spawn-reap-drift.md. Together, measured with no tick in the window (TICK_HZ 1) on main 43a2d16e1: spawn_reap -1.11%, call_reply -0.80%, broker_rtt -0.80%, relay_rtt -0.70%, ipc_rtt -0.54%, yield_switch -0.52%, map_new -0.41%.
-# why: 2026-10-22: this save also absorbs main's drift since the 2026-10-10 floor, unattributed here. Against that floor it reads ipc_rtt +1.04%, spawn_reap +0.89%, tss_iomap_lazy_switch +0.88%, tss_iomap_lazy_nop +0.18%, tss_iomap_switch +0.11%, yield_switch -0.02%, map_new -0.55%, call_reply -1.71%, broker_rtt -1.71%, relay_rtt -2.19%; each row's move beyond the line above is main's.
+# why: 2026-10-22: milestone 939 (the icount bench runs without a preemption tick in its windows): the bench tick is 1 Hz and every row's window opens just after a tick, failing the run if one lands. ipc_rtt -4.02% is its receiver-first mode (calef, 2026-10-22 20:05 UTC, #2578). Every other row within 0.1%.
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -15,14 +14,14 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 18401484 2000
-tss_iomap_switch 23204451 2000
-tss_iomap_lazy_switch 23046930 2000
-tss_iomap_lazy_nop 18902086 2000
-ipc_rtt 17731192 1000
-relay_rtt 33991276 1000
-call_reply 17849189 1000
-broker_rtt 35652622 1000
-spawn_reap 2953695 64
+yield_switch 18390060 2000
+tss_iomap_switch 23190063 2000
+tss_iomap_lazy_switch 23023044 2000
+tss_iomap_lazy_nop 18898060 2000
+ipc_rtt 17018066 1000
+relay_rtt 33977066 1000
+call_reply 17842063 1000
+broker_rtt 35640063 1000
+spawn_reap 2953639 64
 map_new 192082 64
-coremark 306296726 256
+coremark 306137561 256

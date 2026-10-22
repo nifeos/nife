@@ -1,10 +1,7 @@
 # toolchain: nightly-2026-10-22
 # qemu: 11.1.2
 # date: 2026-10-22
-# why: 2026-10-22: 180cccbaf, a new capability table is one copy of a static image, not a constant moved twice through ptr::write at -O0 (notes/benchmarks/riscv64-spawn-reap-drift.md). Measured with no tick in the window (TICK_HZ 1) on main 43a2d16e1: spawn_reap -2.07%, spawn_el0 -0.51%, every other row within one tick.
-# why: 2026-10-22: 0ec577bde, IrqSafeMutex::lock_masked is always inlined, so taking a lock is one call at -O0. Measured with no tick in the window on main 43a2d16e1, 180cccbaf beneath it: call_reply -0.80%, broker_rtt -0.80%, spawn_reap -0.75%, ipc_rtt_el0 -0.73%, relay_rtt -0.70%, sink_throughput -0.70%, spawn_el0 -0.57%, ipc_rtt -0.54%, map_el0 -0.53%, yield_switch -0.52%, ctx_switch -0.48%, map_new -0.31%.
-# why: 2026-10-22: against the cfcf2f671 floor, with the tick, this save reads spawn_reap -3.19%, spawn_el0 -1.06%, ipc_rtt_el0 -0.87%, call_reply -0.81%, broker_rtt -0.80%, sink_throughput -0.71%, relay_rtt -0.69%, ipc_rtt -0.64%, yield_switch -0.52%, ctx_switch -0.52%, map_new -0.31%, the two changes above; spawn_reap's remaining -0.37% is the preemption tick's phase, unexplained under calef's ruling B on #2565 until milestone 939 (the icount bench runs without a preemption tick in its windows).
-# why: 2026-10-22: map_el0 +2.56% corrects cfcf2f671, not this change. That save recorded 46103 as the compiler term alone, but map_el0 reads 46103 or 47493 by the preemption tick's phase (measured by milestone 939's lane, #2578), and on patagonia with nightly-2026-10-22 cfcf2f671 itself reads 47493, as do its A/B base f9a29ca79 and main ae940dc46 (47494). With the two changes above the tree reads 47285, -0.44% against main.
+# why: 2026-10-22: milestone 939 (the icount bench runs without a preemption tick in its windows): the bench tick is 1 Hz and every row's window opens just after a tick, failing the run if one lands. ipc_rtt -1.40% is its receiver-first mode (calef, 2026-10-22 20:05 UTC, #2578). spawn_reap -1.62% is the tick's phase removed, including the -0.37% #2565 left unexplained. map_el0 reads 47,244; 46,103 and 45,853 were the tick's other mode, which this removes. Every other row within 0.1%.
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -17,18 +14,18 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 182370 2000
-ipc_rtt 174589 1000
-relay_rtt 343736 1000
-call_reply 182238 1000
-broker_rtt 363919 1000
-spawn_reap 36498 64
+yield_switch 182340 2000
+ipc_rtt 172151 1000
+relay_rtt 343530 1000
+call_reply 182170 1000
+broker_rtt 363790 1000
+spawn_reap 35906 64
 map_new 2543 64
 rfence_self 6073 512
-coremark 3654792 256
-null_syscall 67642 20000
-ctx_switch 498018 5000
-ipc_rtt_el0 1787633 5000
-sink_throughput 733975 80000
-map_el0 47285 500
-spawn_el0 233540 100
+coremark 3653244 256
+null_syscall 67601 20000
+ctx_switch 497900 5000
+ipc_rtt_el0 1786176 5000
+sink_throughput 734241 80000
+map_el0 47244 500
+spawn_el0 233457 100
