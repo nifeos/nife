@@ -519,6 +519,9 @@ fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
 ///
 /// `ROUND_TRIP` yields twice and exits: two syscalls from user mode, where the second can only
 /// happen if the return from the first genuinely put the thread back at EL0/U-mode.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane maintainer/rename-outlaw: the program's
+/// ratified name and the role.
 // The tests use it on both ISAs; of the two boot tours only RISC-V's has a syscall-count step.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const KERNEL_TEST_SUBJECT_ROUND_TRIP: u64 = 0;
@@ -526,6 +529,9 @@ pub const KERNEL_TEST_SUBJECT_ROUND_TRIP: u64 = 0;
 /// `READ_KERNEL` reads the address handed to it in the second argument register, which is what makes
 /// the program portable: the kernel's own memory lives at a different virtual address on each ISA,
 /// and the caller knows which. See `tests::a_user_program_cannot_read_a_kernel_address`.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane maintainer/rename-outlaw: the program's
+/// ratified name and the role.
 // The tour uses it, and the shell/bench boots skip the tour.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const KERNEL_TEST_SUBJECT_READ_KERNEL: u64 = 1;
@@ -533,5 +539,8 @@ pub const KERNEL_TEST_SUBJECT_READ_KERNEL: u64 = 1;
 /// `BUILD_WITH_NOTHING` tries to mint a page, a message and a kernel object on slots it was never
 /// granted, and reports the three errnos, which is claim 23's zero-authority corner: with no
 /// untyped budget in the table, every path to building must answer "nothing there".
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane maintainer/rename-outlaw: the program's
+/// ratified name and the role.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const KERNEL_TEST_SUBJECT_BUILD_WITH_NOTHING: u64 = 2;

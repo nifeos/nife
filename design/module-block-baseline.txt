@@ -5669,9 +5669,6 @@ kernel/src/user/entropy_service.rs::jh7110_trng_device
 kernel/src/user/entropy_service.rs::wait_for_ready
 kernel/src/user/entry.rs::DELEGATED_TEST_INTERRUPT
 kernel/src/user/entry.rs::DELEGATED_TEST_INTERRUPT
-kernel/src/user/entry.rs::KERNEL_TEST_SUBJECT_BUILD_WITH_NOTHING
-kernel/src/user/entry.rs::KERNEL_TEST_SUBJECT_READ_KERNEL
-kernel/src/user/entry.rs::KERNEL_TEST_SUBJECT_ROUND_TRIP
 kernel/src/user/entry.rs::Mapping
 kernel/src/user/entry.rs::Spawn
 kernel/src/user/entry.rs::run
