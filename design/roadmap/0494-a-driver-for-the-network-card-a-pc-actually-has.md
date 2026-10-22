@@ -241,7 +241,7 @@ meet a known gap). Take no dependency; vendor nothing.
 
 - **Outstanding.** The bench runbook on xenon (exit criterion 2), which is calef's. Then a
   lane flips `PCH_PROVEN_ON_SILICON` in `kernel/src/user/e1000e_service.rs`, citing the Results
-  row. Checked 2026-10-05: no xenon boot of this driver exists.
+  row. It waits for a wired xenon; the PCH bring-up has run there (`bench/xenon-2026-10-21/README-494.md`).
 - **Done.** The booted system uses this NIC since 2026-10-05 (milestone 198 (a package manager)):
   the kernel builds `net_stack` on it when there is no virtio-net NIC and grants the progenitor its
   endpoint, and swish-check's x86_64 leg types the fetch lines. A PCH part is left alone at boot, so
