@@ -699,6 +699,12 @@ pub struct Thread {
     /// that way is `Blocked` on [`Wait::Resume`]. `notes/suspend-and-resume.md` has the cases.
     /// Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
     pub(crate) suspend_requested: bool,
+    /// **An armed kill waits** (`sched::defer_kill`): this kernel thread is building a user address
+    /// space that is still a local on its own stack, and a thread converted to a corpse here is never
+    /// resumed, so that local would never be dropped. `schedule` leaves [`killed`](Self::killed)
+    /// armed while this is set, and `sched::allow_kill` carries it out once the space is adopted and
+    /// the reaper can free it. Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
+    pub(crate) kill_deferred: bool,
     /// **Where this thread's fault/exit is reported** (milestone 22, DECISIONS §26), or `None` for
     /// an unsupervised thread. Set once at `START` from the child's reserved fault slot (abi's
     /// `FAULT_EP_SLOT`) and never afterward: supervision is granted at spawn only, so the
@@ -958,6 +964,7 @@ impl Thread {
             thread_page: None,
             thread_control_block_kmem: true,
             killed: false,
+            kill_deferred: false,
             suspend_requested: false,
             fault_ep: None,
             fault_label: 0,
@@ -1015,6 +1022,7 @@ impl Thread {
                 thread_page: None,
                 thread_control_block_kmem: true,
                 killed: false,
+                kill_deferred: false,
                 suspend_requested: false,
                 fault_ep: None,
                 fault_label: 0,
@@ -1166,6 +1174,7 @@ impl Thread {
                 thread_page: None,
                 thread_control_block_kmem: true,
                 killed: false,
+                kill_deferred: false,
                 suspend_requested: false,
                 fault_ep: None,
                 fault_label: 0,
@@ -1211,6 +1220,7 @@ impl Thread {
             thread_page: None,
             thread_control_block_kmem: false, // a user-retyped TCB page; the region owns it
             killed: false,
+            kill_deferred: false,
             suspend_requested: false,
             fault_ep: None,
             fault_label: 0,

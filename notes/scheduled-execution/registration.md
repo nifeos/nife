@@ -14,7 +14,7 @@ which process holds a user's schedule, what crosses the wire, and how one entry 
 ## What waits on the answer
 
 - A `REPLACE` handler in `components/src/timetable.rs`, and its constant in `crates/timetable`.
-- Wiring `crates/schedule_store` into a running scheduler rather than only into `session_reviver`.
+- Wiring `crates/timetable_store` into a running scheduler rather than only into `session_reviver`.
 - Milestone 129's removal item, which has had no answer since #387.
 
 All three also wait on milestone 152 (durable delegation), whatever the answer. The registrar is a user's durable
@@ -107,7 +107,7 @@ Checked on 2026-09-26 against `256815e56`:
 - The timetable runs in the interactive boot. False: only `system_tests/src/user/timetable_tests.rs`
   spawns it, and `crates/system_initializer` never names it. C adds no process to a real boot until
   a session schedules something.
-- `crates/schedule_store` has no removal verb. True, and under C it needs none.
+- `crates/timetable_store` has no removal verb. True, and under C it needs none.
 
 ## Reversibility, and whether we would still choose C
 

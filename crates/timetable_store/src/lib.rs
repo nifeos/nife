@@ -23,13 +23,12 @@
 //! touch `timetable::Schedule` or `timetable::parse`, and depends on nothing.
 //!
 
-//! Name: provisional, and ruled: calef ruled **`timetable_store`** on 2026-09-13; the block stays
-//! `provisional` until the rename is performed. A reader scanning `crates/` asks *"What kind of
-//! schedule? Is this the thread scheduler?"*, and `crates/timetable` already avoids `scheduler`
-//! (`kernel/src/sched.rs`). `schedule_store` is the plain noun §122 and §123 use in running prose,
-//! but a crate name has no surrounding sentences. Refused `schedule_proto` (this is names and a
-//! file format, not a request/reply vocabulary). Refused `schedule_file` (names one of the two
-//! documents).
+//! Name: ratified 2026-09-13 (calef), replacing `schedule_store`. A reader scanning `crates/` asks
+//! *"What kind of schedule? Is this the thread scheduler?"*, and `crates/timetable` already avoids
+//! `scheduler` (`kernel/src/sched.rs`). `schedule_store` is the plain noun §122 and §123 use in
+//! running prose, but a crate name has no surrounding sentences. Refused `schedule_proto` (this is
+//! names and a file format, not a request/reply vocabulary). Refused `schedule_file` (names one of
+//! the two documents).
 
 #![no_std]
 
@@ -114,13 +113,13 @@ impl Error {
 /// # Examples
 ///
 /// ```
-/// let doc = schedule_store::parse_manifest("# who has pending work\nalice\nbob\n")
+/// let doc = timetable_store::parse_manifest("# who has pending work\nalice\nbob\n")
 ///     .expect("that document is well formed");
 /// assert_eq!(doc.entries(), &[b"alice".as_slice(), b"bob".as_slice()]);
 ///
 /// // Comments and blank lines are ignored, and an empty manifest is not an error: nobody has
 /// // registered a schedule yet, which is a fact about the fleet, not a malformed document.
-/// let empty = schedule_store::parse_manifest("# nobody yet\n\n").unwrap();
+/// let empty = timetable_store::parse_manifest("# nobody yet\n\n").unwrap();
 /// assert_eq!(empty.entries().len(), 0);
 /// ```
 pub fn parse_manifest(doc: &str) -> Result<Manifest<'_>, Error> {
@@ -169,14 +168,14 @@ fn strip_comment(line: &str) -> &str {
 ///
 /// ```
 /// let mut buf = [0u8; 64];
-/// let n = schedule_store::render_manifest(&[b"alice", b"bob"], &mut buf)
+/// let n = timetable_store::render_manifest(&[b"alice", b"bob"], &mut buf)
 ///     .expect("two short names fit");
 /// assert_eq!(&buf[..n], b"alice\nbob\n");
 ///
 /// // Parsing what this just rendered gives back exactly what went in: the round trip the write
 /// // path and the read path both depend on.
 /// let doc = core::str::from_utf8(&buf[..n]).unwrap();
-/// let parsed = schedule_store::parse_manifest(doc).unwrap();
+/// let parsed = timetable_store::parse_manifest(doc).unwrap();
 /// assert_eq!(parsed.entries(), &[b"alice".as_slice(), b"bob".as_slice()]);
 /// ```
 pub fn render_manifest(names: &[&[u8]], buf: &mut [u8]) -> Option<usize> {

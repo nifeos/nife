@@ -8,7 +8,7 @@ notes/dependency-orchestration.md and notes/hung-component.md first.*
 
 ## The question as the block states it
 
-`component_plan::dependents` names who must be warned before a contract is swapped. On the one edge
+`capability_plan::dependents` names who must be warned before a contract is swapped. On the one edge
 this tree has, the warning is `broker`'s `BOP_DOWN`: stop calling through to the backend and start
 buffering. The block's open question is what a supervisor does when the dependent it must warn does
 not answer. It files that as "the same open decision one level out" as the hung component's two:

@@ -239,13 +239,21 @@ the hour is near midnight, put the time in the record too, because a reader cann
 
 ## Comments
 
-The kernel is commented far more heavily than production code would be, deliberately. A comment
-should explain a constraint the code can't show: *why* `sp` must be set before the first `bl`, *why*
-`.bss` needs zeroing by hand, *why* the baud divisors are ignored by QEMU but needed by a real Pi.
-Cross-reference the notes (`See notes/stack.md`) so the code and the glossary stay stitched
-together.
+Comments follow Linux's convention in all first-party Rust (calef, 2026-10-22 UTC: "Consider 929
+ruled."). [§267 (a comment states the constraint as it is now)](design/decisions/0267-a-comment-states-the-constraint-as-it-is-now.md)
+holds the rule and its stages.
 
-Do not write comments that restate the next line.
+- An item's doc comment opens with a summary sentence, then its arguments, what it holds and what
+  it returns or refuses, and links the note that carries its design (`See notes/stack.md`). A
+  `Context:` line appears only on code that holds locks or runs in interrupt context.
+- A comment inside a function body states a constraint the code can't show: *why* `sp` must be set
+  before the first `bl`, a `// SAFETY:` argument, a memory ordering and what it pairs with.
+  Narrative and worked examples go in the doc comment or the note.
+- "The caller must..." becomes an assertion or a type where one fits.
+- History goes in the commit message. Do not write comments that restate the next line.
+- A `Name:` provenance block stays where it is, as [design/naming.md](design/naming.md) ("Where a
+  name's provenance lives") shapes it, refusals and dates included. It is neither history nor
+  narrative (calef, 2026-10-22 UTC).
 
 ## Style
 

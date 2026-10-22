@@ -59,10 +59,10 @@ use user_mode_runtime::{call, reply, send};
 // the slot a name lands in and the slot this code reads are one number rather than two that agree.
 // `requests` is the only `Serve` here: a broker answers producers and asks its backend, and those
 // two directions on one hop are the whole of what a queue rung is.
-const FRONT: u64 = component_plan::slot_of(&hot_swap_contract::BROKER, "requests");
-const BACK: u64 = component_plan::slot_of(&hot_swap_contract::BROKER, "backend");
-const RPT: u64 = component_plan::slot_of(&hot_swap_contract::BROKER, "report");
-const NOTE: u64 = component_plan::slot_of(&hot_swap_contract::BROKER, "operator");
+const FRONT: u64 = capability_plan::slot_of(&hot_swap_contract::BROKER, "requests");
+const BACK: u64 = capability_plan::slot_of(&hot_swap_contract::BROKER, "backend");
+const RPT: u64 = capability_plan::slot_of(&hot_swap_contract::BROKER, "report");
+const NOTE: u64 = capability_plan::slot_of(&hot_swap_contract::BROKER, "operator");
 
 /// How deep the backlog goes. Fixed storage in our own `.bss`, which lives in the region this
 /// instance was built in, so the bound is a bound on *this process's* memory and the kernel's

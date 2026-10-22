@@ -42,7 +42,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use component_plan::Provisions;
+use capability_plan::Provisions;
 use line_editor::component::{self, supervisor as s};
 use line_editor::proto;
 use supervision_protocol::{Child as Built, ChildEndowment, Retention};
@@ -162,7 +162,7 @@ fn supervise(mode: u64, lengths: u64, swap: u64) -> ! {
         Kind::LineEditor {
             decl,
             mode,
-            control_in_child: component_plan::slot_of(decl, "control"),
+            control_in_child: capability_plan::slot_of(decl, "control"),
             handoff,
         },
         s::TERMINAL,
@@ -218,10 +218,10 @@ struct Supervisor<'a> {
 
 /// Which of the two programs a [`Child`] is, and what only that one needs.
 enum Kind {
-    /// Built from its `component_plan` declaration, with its one-page handoff mapped at build in
+    /// Built from its `capability_plan` declaration, with its one-page handoff mapped at build in
     /// every instance.
     LineEditor {
-        decl: &'static component_plan::Requirements,
+        decl: &'static capability_plan::Requirements,
         mode: u64,
         control_in_child: u64,
         handoff: u64,
@@ -383,7 +383,7 @@ impl<'a> Child<'a> {
     }
 
     /// The plan for a `line_editor` whose control endpoint is `control`.
-    fn plan_for(&self, control: u64) -> component_plan::Plan {
+    fn plan_for(&self, control: u64) -> capability_plan::Plan {
         let Kind::LineEditor { decl, handoff, .. } = self.kind else {
             fail()
         };
@@ -398,9 +398,9 @@ impl<'a> Child<'a> {
             ("sink_page", s::SINK_PAGE),
             ("client_out", s::CLIENT_OUT),
             ("client_in", s::CLIENT_IN),
-            (component_plan::STATE_HANDOFF_ROLE, handoff),
+            (capability_plan::STATE_HANDOFF_ROLE, handoff),
         ];
-        let Ok(plan) = component_plan::plan(decl, &Provisions { held: &held }) else {
+        let Ok(plan) = capability_plan::plan(decl, &Provisions { held: &held }) else {
             fail()
         };
         plan

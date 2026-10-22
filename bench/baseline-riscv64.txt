@@ -1,19 +1,7 @@
-# toolchain: nightly-2026-10-21
+# toolchain: nightly-2026-10-22
 # qemu: 11.1.2
-# date: 2026-10-10
-# why: 2026-10-10: QEMU 11.1.1 to 11.1.2, the emulator term alone. Homebrew upgraded patagonia's QEMU on 2026-10-10 and can install only the newest, so calef ruled (option Q1) to move .qemu-version to 11.1.2 in its own pull request, before and apart from any nightly bump. Same tree (main 3c861eadd), same nightly (nightly-2026-10-09), run under both emulators on one machine (11.1.1 built from source for the comparison): every riscv64 row moved under 0.3% between the two, the largest ipc_rtt_el0 -0.28% and spawn_el0 -0.10%; one early 11.1.2 run read ipc_rtt +1.8%, and two repeats then read 178506 on both emulators, so that was this row's run-to-run spread and not QEMU. Rows that moved over 0.5% against the old floor, main's drift since the 2026-10-08 save and reproduced on 11.1.1: yield_switch -5.2% and ctx_switch -4.9%, from #1852 (milestone 139 (drive the unsafe count down) round 10, the scheduler queue ownership token; the aarch64 bisect, and riscv64 reads the same at that merge); ipc_rtt_el0 -1.1% and ipc_rtt, the EL0 and IPC rows that wobble about 1% build to build. Nothing moved 10%.
-# why: 2026-10-10: restamped from nightly-2026-10-09 to nightly-2026-10-10 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.053%, broker_rtt -0.010%, call_reply -0.010% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.053%, broker_rtt -0.010%, call_reply -0.010%, spawn_reap +0.003%, null_syscall +0.001%, yield_switch -0.001%, sink_throughput +0.001%
-# why: 2026-10-11: restamped from nightly-2026-10-10 to nightly-2026-10-11 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.055%, sink_throughput -0.007%, map_el0 +0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.108%, call_reply -0.010%, broker_rtt -0.010%, sink_throughput -0.006%, spawn_reap +0.003%, map_el0 +0.002%, yield_switch -0.001%
-# why: 2026-10-12: restamped from nightly-2026-10-11 to nightly-2026-10-12 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.067%, ctx_switch -0.020%, map_el0 -0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.175%, ctx_switch -0.020%, call_reply -0.010%, broker_rtt -0.010%, sink_throughput -0.006%, spawn_reap +0.003%, null_syscall +0.001%, yield_switch -0.001%
-# why: 2026-10-13: restamped from nightly-2026-10-12 to nightly-2026-10-13 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.163%, sink_throughput +0.007%, map_el0 -0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.338%, ctx_switch -0.020%, call_reply -0.010%, broker_rtt -0.010%, spawn_reap +0.003%, map_el0 -0.002%, yield_switch -0.001%, sink_throughput +0.001%
-# why: 2026-10-14: restamped from nightly-2026-10-13 to nightly-2026-10-14 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ctx_switch -0.060%, ipc_rtt_el0 -0.043%, sink_throughput -0.008% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.295%, ctx_switch -0.080%, call_reply -0.010%, broker_rtt -0.010%, sink_throughput -0.007%, spawn_reap +0.003%, map_el0 -0.002%, yield_switch -0.001%
-# why: 2026-10-15: restamped from nightly-2026-10-14 to nightly-2026-10-15 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.126%, ctx_switch -0.020%, map_el0 -0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.168%, ctx_switch -0.100%, call_reply -0.010%, broker_rtt -0.010%, sink_throughput -0.007%, map_el0 -0.004%, spawn_reap +0.003%, yield_switch -0.001%, ipc_rtt -0.001%
-# why: 2026-10-16: restamped from nightly-2026-10-15 to nightly-2026-10-16 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ctx_switch +0.020%, sink_throughput +0.007%, ipc_rtt_el0 -0.006% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.162%, ctx_switch -0.080%, call_reply -0.010%, broker_rtt -0.010%, map_el0 -0.004%, spawn_reap +0.003%, yield_switch -0.001%, ipc_rtt -0.001%
-# why: 2026-10-17: restamped from nightly-2026-10-16 to nightly-2026-10-17 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.006%, spawn_reap +0.003%, map_el0 +0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.156%, ctx_switch -0.080%, call_reply -0.010%, broker_rtt -0.010%, spawn_reap +0.006%, map_el0 -0.002%, null_syscall +0.001%, yield_switch -0.001%, ipc_rtt -0.001%
-# why: 2026-10-18: restamped from nightly-2026-10-17 to nightly-2026-10-18 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_el0 +0.102%, sink_throughput +0.015%, null_syscall +0.001% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ipc_rtt_el0 +0.156%, spawn_el0 +0.102%, ctx_switch -0.080%, sink_throughput +0.015%, broker_rtt -0.010%, call_reply -0.010%, spawn_reap +0.006%, null_syscall +0.002%, map_el0 -0.002%, yield_switch -0.002%, ipc_rtt -0.001%
-# why: 2026-10-19: restamped from nightly-2026-10-18 to nightly-2026-10-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 -0.109%, sink_throughput -0.008%, ipc_rtt -0.001% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_el0 +0.102%, ctx_switch -0.080%, ipc_rtt_el0 +0.046%, call_reply -0.011%, broker_rtt -0.010%, sink_throughput +0.007%, spawn_reap +0.006%, yield_switch -0.002%, map_el0 -0.002%, null_syscall +0.002%, ipc_rtt -0.002%
-# why: 2026-10-20: restamped from nightly-2026-10-19 to nightly-2026-10-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: ipc_rtt_el0 +0.034%, sink_throughput -0.006%, map_el0 +0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_el0 +0.102%, ipc_rtt_el0 +0.080%, ctx_switch -0.080%, call_reply -0.011%, broker_rtt -0.010%, spawn_reap +0.006%, null_syscall +0.003%, yield_switch -0.002%, ipc_rtt -0.002%, sink_throughput +0.001%
-# why: 2026-10-21: restamped from nightly-2026-10-20 to nightly-2026-10-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_el0 -0.103%, sink_throughput -0.008%, null_syscall +0.001% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: ctx_switch -0.080%, ipc_rtt_el0 +0.080%, call_reply -0.011%, broker_rtt -0.010%, sink_throughput -0.007%, spawn_reap +0.006%, null_syscall +0.004%, yield_switch -0.002%, ipc_rtt -0.001%, spawn_el0 -0.001%
+# date: 2026-10-22
+# why: 2026-10-22: nightly-2026-10-21 to nightly-2026-10-22. The compiler term alone, measured on f9a29ca79 by `cargo xtask bench --riscv --restamp` (an A/B of the two nightlies on one tree, bit-identical on two runs): map_el0 -2.927% (47493 to 46103), ipc_rtt_el0 -0.473%, sink_throughput +0.008%, spawn_el0 -0.002%, null_syscall -0.001%, every other row 0. map_el0 is past the restamp bound (0.5% per row), which is why this is a --save; its cause inside the new codegen is not established. This save also absorbs main's drift since the 2026-10-10 floor, read on nightly-2026-10-21 against that floor, absorbed and unattributed here: spawn_el0 +4.220%, spawn_reap +3.011% (the find-riscv64-spawn-reap lane is bisecting it), null_syscall +1.197%, map_el0 +0.110%, relay_rtt -2.556%, sink_throughput -2.046%, broker_rtt -1.819%, call_reply -1.802%, ipc_rtt_el0 -1.623%, ipc_rtt -1.567%, yield_switch -0.564%, ctx_switch -0.339%, map_new -0.157%, coremark -0.001%, rfence_self 0. QEMU 11.1.2 throughout. Nothing moved 10%.
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -26,18 +14,18 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 184370 2000
-ipc_rtt 178506 1000
-relay_rtt 355218 1000
-call_reply 187089 1000
-broker_rtt 373639 1000
-spawn_reap 36600 64
-map_new 2555 64
+yield_switch 183330 2000
+ipc_rtt 175709 1000
+relay_rtt 346137 1000
+call_reply 183717 1000
+broker_rtt 366841 1000
+spawn_reap 37702 64
+map_new 2551 64
 rfence_self 6073 512
-coremark 3654877 256
-null_syscall 66843 20000
-ctx_switch 502322 5000
-ipc_rtt_el0 1841695 5000
-sink_throughput 754569 80000
-map_el0 47441 500
-spawn_el0 226496 100
+coremark 3654844 256
+null_syscall 67642 20000
+ctx_switch 500620 5000
+ipc_rtt_el0 1803231 5000
+sink_throughput 739190 80000
+map_el0 46103 500
+spawn_el0 236049 100

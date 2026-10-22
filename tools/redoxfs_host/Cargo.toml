@@ -7,15 +7,11 @@
 # vendor/README.md.
 [workspace]
 
-# Name: recorded (package `redoxfs_server`, recorded against
-# design/roadmap/0140-foreign-filesystems.md, whose rename calef called on 2026-08-18). Descriptive
-# rather than chosen: `redoxfs` names the vendored engine, which is upstream's own name and
-# therefore in the protected class, and `host` names the side this tool runs on. The stem is on
-# the record twice over, since calef's own words settling the sibling were "fs_server is misnamed.
-# Its something like redoxfs_server", which is a ruling that the engine's name belongs in front.
-# Milestone 63 renamed the DIRECTORY from `tools/redoxfs-host/` to match the package on
-# 2026-08-01, which is AGENTS.md's rule that a directory holding a Rust package is named exactly
-# as the package. no architect has ratified the package name itself.
+# Name: ratified 2026-10-22 (calef, #2562). `redoxfs` names the vendored engine, which is upstream's
+# own name and therefore in the protected class, and `host` names the side this tool runs on. The
+# engine's name goes in front for the reason package `redoxfs_server` gives. The directory matches
+# the package, per AGENTS.md's rule that a directory holding a Rust package is named exactly as the
+# package.
 
 [package]
 name = "redoxfs_host"

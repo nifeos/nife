@@ -6,15 +6,12 @@
 # toolchain with build-std flags the workspace crates must never inherit, and its target dir is
 # its own. `cargo xtask std-exerciser` is the front door.
 
-# Name: recorded (program `allocator_exerciser`, ratified 2026-08-01 by calef in milestone 63).
-# The `_exerciser` half is not this package's coinage and was argued at length: 63 turned down
-# `demo` as a suffix anywhere, on the ground that "exercise" is this tree's own verb, that memory,
-# bus and disk exercisers have meant this for decades in real systems vocabulary, and that a demo
-# shows something off where an exerciser puts a subsystem under load and sees whether it holds.
-# That is exactly what this package does to `std` on nife. `std` is the standard library's own
-# name. This is also the package the `script/names` blind spot was found through: it sat here for
-# weeks answering "neither a name in the tree nor a recorded refusal", because the tool only
-# looked in `crates/`, `components/src/`, `fixtures/src/` and `script/`. no architect has ratified it.
+# Name: ratified 2026-10-22 (calef, #2562). The `_exerciser` half follows program
+# `allocator_exerciser` (ratified 2026-08-01 in milestone 63 (directory and package names: one
+# spelling per thing)), which turned down `demo` as a suffix anywhere: "exercise" is this tree's own
+# verb, memory, bus and disk exercisers have meant this for decades in real systems vocabulary, and
+# a demo shows something off where an exerciser puts a subsystem under load and sees whether it
+# holds. That is what this package does to `std` on nife. `std` is the standard library's own name.
 
 [package]
 name = "std_exerciser"
