@@ -89,6 +89,11 @@ The stages, in order:
 - A second count in the same helper: plain comment lines inside function bodies, held per directory
   by a ceiling that only falls, like `helpers/line_citations.py`. A directory's ceiling starts when
   its stage starts. `// SAFETY:` lines are not counted.
+- Neither count includes a `// SAFETY:` comment from its marker on, and the block cap leaves out a
+  `Name:` paragraph, which stays as design/naming.md shapes it.
+- `kernel/` is at cap 20, with its 278 blocks over 20 listed, and its in-body ceiling is 5,289 lines
+  (2026-10-22 UTC). That count is the lexer's, about twice the proxy in the table above, which
+  missed bodies indented 4. Every other directory is at 40 with no ceiling.
 - Both are charted in `notes/project-metrics.md` with the existing chart code, one series per
   directory.
 
