@@ -159,14 +159,14 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 /// of a block or overruns the FIFO. The receive watermark is one burst less one word, so a burst
 /// is ready whenever the IDMAC is asked for one. Depth 32 gives bursts of 16.
 #[must_use]
-pub(crate) const fn fifoth_for_dma(depth: u32) -> u32 {
+pub(crate) fn fifoth_for_dma(depth: u32) -> u32 {
     const BURSTS: [u32; 8] = [1, 4, 8, 16, 32, 64, 128, 256];
     let tx = depth / 2;
     let free = depth - tx;
-    let mut code = BURSTS.len() - 1;
-    while code > 0 && !(128 % BURSTS[code] == 0 && free.is_multiple_of(BURSTS[code])) {
-        code -= 1;
-    }
+    let code = (0..BURSTS.len())
+        .rev()
+        .find(|&c| 128 % BURSTS[c] == 0 && free.is_multiple_of(BURSTS[c]))
+        .unwrap_or(0);
     let rx = BURSTS[code] - 1;
     ((code as u32) << 28) | ((rx & 0xfff) << 16) | (tx & 0xfff)
 }
@@ -333,6 +333,8 @@ mod tests {
         assert_eq!(fifoth_for_dma(48), (2 << 28) | (7 << 16) | 24);
         assert_eq!(fifoth_for_dma(128), (5 << 28) | (63 << 16) | 64);
         assert_eq!(fifoth_for_dma(1), 0);
+        // An odd depth leaves a free half one word larger than the transmit watermark: 4 of 7.
+        assert_eq!(fifoth_for_dma(7), (1 << 28) | (3 << 16) | 3);
     }
 
     #[test]

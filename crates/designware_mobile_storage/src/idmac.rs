@@ -223,7 +223,7 @@ pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32
     let next = if last { 0 } else { i + 1 };
     [
         des0,
-        size & DES1_BS1_MASK,
+        size,
         bus + PAGE * (i + 1),
         bus + DESCRIPTOR_BYTES * next,
     ]
@@ -257,9 +257,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let Some(bus) = self.dma.as_ref().map(|d| d.bus) else {
             return Ok(());
         };
-        let bmod = self.regs.read(regs::BMOD);
-        self.regs
-            .write(regs::BMOD, bmod | regs::BMOD_SOFTWARE_RESET);
+        self.regs.write(regs::BMOD, regs::BMOD_SOFTWARE_RESET);
         if !self.wait(COMMAND_DEADLINE_US, |r| {
             r.read(regs::BMOD) & regs::BMOD_SOFTWARE_RESET == 0
         }) {
@@ -275,11 +273,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             regs::CTRL,
             ctrl | regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE,
         );
-        let bmod = self.regs.read(regs::BMOD);
-        self.regs.write(
-            regs::BMOD,
-            bmod | regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST,
-        );
+        self.regs
+            .write(regs::BMOD, regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST);
         self.regs.write(regs::PLDMND, 1);
         Ok(())
     }
@@ -325,13 +320,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     /// **Stop the IDMAC** and hand the FIFO back to the CPU: disable it, deselect it, reset it and
     /// the FIFO, clear its status, and put back the polled thresholds. After this nothing the
-    /// controller does can reach the region.
+    /// controller does can reach the region. `BMOD` is written whole, as [`Host::idmac_start`]
+    /// writes it: none of its other bits is the firmware's to keep. A reset that does not clear is
+    /// reported with the `CTRL` word if that is the one held, else the `BMOD` word.
     fn idmac_stop(&mut self) -> Result<(), Error> {
-        let bmod = self.regs.read(regs::BMOD);
-        self.regs.write(
-            regs::BMOD,
-            (bmod & !(regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST)) | regs::BMOD_SOFTWARE_RESET,
-        );
+        self.regs.write(regs::BMOD, regs::BMOD_SOFTWARE_RESET);
         let ctrl =
             self.regs.read(regs::CTRL) & !(regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE);
         self.regs.write(
@@ -345,10 +338,13 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.regs.write(regs::IDSTS, regs::IDSTS_ALL);
         self.regs
             .write(regs::FIFOTH, regs::fifoth_for_pio(self.depth));
+        let ctrl = self.regs.read(regs::CTRL);
         if quiet {
             Ok(())
+        } else if ctrl & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) != 0 {
+            Err(Error::ResetStuck(ctrl))
         } else {
-            Err(Error::ResetStuck(self.regs.read(regs::CTRL)))
+            Err(Error::ResetStuck(self.regs.read(regs::BMOD)))
         }
     }
 }
@@ -498,11 +494,16 @@ mod tests {
     }
 
     /// One more block than the region holds is refused before anything is sent, rather than
-    /// written past the region's end.
+    /// written past the region's end; exactly what it holds is moved.
     #[test]
     fn a_transfer_larger_than_the_region_is_refused_unsent() {
         let (h, card, memory) = polled(3);
         let mut h = with_idmac(h, &memory);
+        let full = pattern(0x42, 16 * 512);
+        sd::write_blocks(&mut h, &card, 0, &full).unwrap();
+        let mut back = vec![0u8; 16 * 512];
+        sd::read_blocks(&mut h, &card, 0, &mut back).unwrap();
+        assert_eq!(back, full);
         h.registers().commands.clear();
         let mut big = vec![0u8; 17 * 512];
         assert_eq!(
@@ -517,9 +518,9 @@ mod tests {
     }
 
     /// **Every way a transfer fails stops the engine before the driver returns**: a bus error
-    /// (`IDSTS`), a data CRC error (`RINTSTS`) and a card that stalls (the deadline, owing the one
-    /// descriptor still open). Afterwards the IDMAC is deselected and disabled, the FIFO is the
-    /// CPU's again, a card that resumes moves nothing into memory, and the next transfer works.
+    /// and a descriptor the IDMAC does not own (`IDSTS`), and a data CRC error (`RINTSTS`); the
+    /// stall is the next test's. Afterwards the IDMAC is deselected and disabled, the FIFO is the CPU's
+    /// again, a card that resumes moves nothing into memory, and the next transfer works.
     #[test]
     fn every_failed_transfer_stops_the_idmac_and_the_next_one_works() {
         type Inject = fn(&mut Sim);
@@ -530,21 +531,21 @@ mod tests {
                 |e| matches!(e, Error::Dma(18, s) if s & regs::IDSTS_FBE != 0),
             ),
             (
-                |s| s.fail_next_read_crc = true,
-                |e| matches!(e, Error::Data(18, r) if r & regs::INT_DCRC != 0),
+                |s| s.unowned_at = Some(1),
+                |e| matches!(e, Error::Dma(18, s) if s & regs::IDSTS_DU != 0),
             ),
             (
-                |s| s.stall_after = Some(4096 + 512),
-                |e| matches!(e, Error::DataTimeout(18, _, 4096)),
+                |s| s.fail_next_read_crc = true,
+                |e| matches!(e, Error::Data(18, r) if r & regs::INT_DCRC != 0),
             ),
         ];
         for (inject, expected) in cases {
             let (mut h, card, memory) = polled(3);
-            let data = pattern(0x77, 16 * 512);
+            let data = pattern(0x77, 9 * 512);
             sd::write_blocks(&mut h, &card, 60, &data).unwrap();
             let mut h = with_idmac(h, &memory);
             inject(h.registers());
-            let mut back = vec![0u8; 16 * 512];
+            let mut back = vec![0u8; 9 * 512];
             match sd::read_blocks(&mut h, &card, 60, &mut back) {
                 Err(IoError::Host(e)) => assert!(expected(&e), "{e:?}"),
                 other => panic!("{other:?}"),
@@ -556,6 +557,7 @@ mod tests {
             assert_eq!(sim.peek(regs::FIFOTH), regs::fifoth_for_pio(32));
             sim.stall_after = None;
             sim.bus_error_at = None;
+            sim.unowned_at = None;
             let written = memory.bus().device_written;
             for _ in 0..64 {
                 sim.read(regs::STATUS);
@@ -563,6 +565,132 @@ mod tests {
             assert_eq!(memory.bus().device_written, written);
             sd::read_blocks(&mut h, &card, 60, &mut back).unwrap();
             assert_eq!(back, data);
+        }
+    }
+
+    /// **A card that stalls is given up on once the deadline has passed**, owing both descriptors
+    /// still open (a page and a 512-byte tail of a nine-block read), with the engine stopped. A
+    /// clock that advances seven microseconds a read never lands on the deadline exactly, so the
+    /// give-up test has to be a comparison past it. On a worker, so a wait that never gives up is
+    /// a named failure rather than a hung run.
+    #[test]
+    fn a_stalled_transfer_gives_up_once_the_deadline_has_passed() {
+        let (h, card, memory) = polled(3);
+        let mut h = with_idmac(h, &memory);
+        h.registers().stall_after = Some(512);
+        h.registers().clock_step = 7;
+        assert_ne!(DATA_DEADLINE_US % 7, 0);
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut back = vec![0u8; 9 * 512];
+            let r = sd::read_blocks(&mut h, &card, 60, &mut back);
+            let _ = tx.send((r, h.registers().peek(regs::BMOD)));
+        });
+        let (r, bmod) = rx
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .expect("the deadline never fired");
+        assert!(matches!(
+            r,
+            Err(IoError::Host(Error::DataTimeout(18, _, 4608)))
+        ));
+        assert_eq!(bmod & regs::BMOD_DMA_ENABLE, 0);
+    }
+
+    /// **The register contract of one transfer**, write by write, on a controller whose firmware
+    /// left `CTRL` bit 8 and the IDMAC selected (radon's U-Boot hands over `CTRL` bit 25 set).
+    /// Arming keeps the firmware's bit and sets both DMA bits whatever they were; `BMOD` is
+    /// written whole; stopping clears both DMA bits, resets the DMA interface and the FIFO, and
+    /// puts the polled thresholds back. A single block finishes on `DTO` alone.
+    #[test]
+    fn one_transfer_arms_and_stops_the_idmac_register_by_register() {
+        let (mut h, card, memory) = polled(2);
+        let firmware = 1 << 8 | regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE;
+        h.registers().write(regs::CTRL, firmware);
+        let mut h = with_idmac(h, &memory);
+        h.registers().writes.clear();
+        let mut block = [0u8; 512];
+        sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
+        let writes = &h.registers().writes;
+        let from = |w: (u32, u32)| writes.iter().position(|&x| x == w).unwrap();
+        let armed = from((regs::BMOD, regs::BMOD_SOFTWARE_RESET));
+        assert_eq!(
+            writes[armed..armed + 8],
+            [
+                (regs::BMOD, regs::BMOD_SOFTWARE_RESET),
+                (regs::FIFOTH, regs::fifoth_for_dma(32)),
+                (regs::IDINTEN, 0),
+                (regs::IDSTS, regs::IDSTS_ALL),
+                (regs::DBADDR, BASE as u32),
+                (regs::CTRL, firmware),
+                (regs::BMOD, regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST),
+                (regs::PLDMND, 1),
+            ]
+        );
+        let stopped = armed
+            + 1
+            + writes[armed + 1..]
+                .iter()
+                .position(|&x| x == (regs::BMOD, regs::BMOD_SOFTWARE_RESET))
+                .unwrap();
+        assert_eq!(
+            writes[stopped..stopped + 4],
+            [
+                (regs::BMOD, regs::BMOD_SOFTWARE_RESET),
+                (
+                    regs::CTRL,
+                    1 << 8 | regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET
+                ),
+                (regs::IDSTS, regs::IDSTS_ALL),
+                (regs::FIFOTH, regs::fifoth_for_pio(32)),
+            ]
+        );
+    }
+
+    /// More than one block is over only when the automatic `CMD12` is, which can land after `DTO`
+    /// and after the last descriptor closes.
+    #[test]
+    fn a_multi_block_transfer_waits_for_the_automatic_stop() {
+        let (h, card, memory) = polled(2);
+        let mut h = with_idmac(h, &memory);
+        h.registers().late_acd = 5;
+        let mut blocks = [0u8; 2 * 512];
+        sd::read_blocks(&mut h, &card, 7, &mut blocks).unwrap();
+        assert_ne!(h.registers().peek(regs::RINTSTS) & regs::INT_ACD, 0);
+    }
+
+    /// A reset that never clears is reported, not assumed done, with the word that holds it:
+    /// `BMOD` when arming, and when stopping `BMOD` or `CTRL`, whichever is held.
+    #[test]
+    fn an_idmac_reset_that_never_clears_is_reported_with_its_register() {
+        type Hold = fn(&mut Sim);
+        type Word = fn(u32) -> bool;
+        // Whether the read command reached the card: a stuck arming reset stops before it.
+        let sent = [false, true, true];
+        let cases: [(Hold, Word); 3] = [
+            (
+                |s| s.bmod_resets_cleared = Some(0),
+                |w| w == regs::BMOD_SOFTWARE_RESET,
+            ),
+            (
+                |s| s.bmod_resets_cleared = Some(1),
+                |w| w == regs::BMOD_SOFTWARE_RESET,
+            ),
+            (
+                |s| s.ctrl_resets_cleared = Some(1),
+                |w| w & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) != 0,
+            ),
+        ];
+        for ((hold, word), sent) in cases.into_iter().zip(sent) {
+            let (h, card, memory) = polled(2);
+            let mut h = with_idmac(h, &memory);
+            hold(h.registers());
+            h.registers().commands.clear();
+            let mut block = [0u8; 512];
+            match sd::read_blocks(&mut h, &card, 7, &mut block) {
+                Err(IoError::Host(Error::ResetStuck(w))) => assert!(word(w), "{w:#x}"),
+                other => panic!("{other:?}"),
+            }
+            assert_eq!(h.registers().commands.iter().any(|c| c.0 == 17), sent);
         }
     }
 

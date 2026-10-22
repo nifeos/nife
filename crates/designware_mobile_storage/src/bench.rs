@@ -142,7 +142,8 @@ pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
     let (card, first) = (&r.card, r.timed_from);
     let n = reference.len().min(buf.len());
     sd::read_blocks(host, card, first, &mut buf[..n]).map_err(|e| ReadFailure::Read(first, e))?;
-    let matches = n > 0 && buf[..n] == reference[..n];
+    // An empty reference never gets here: a read of no blocks is refused as `Length`.
+    let matches = buf[..n] == reference[..n];
     let (timed_blocks, timed_us) = timed_read(host, card, first, buf, timed_blocks)?;
     Ok(IdmacReport {
         matches,

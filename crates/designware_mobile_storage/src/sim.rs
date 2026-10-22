@@ -253,6 +253,13 @@ pub struct Sim {
     walk: Walk,
     /// The bus refuses the buffer of the descriptor walked at this position (from 0) of a chain.
     pub bus_error_at: Option<u32>,
+    /// The descriptor walked at this position (from 0) of a chain reads as the CPU's: a chain the
+    /// driver did not finish handing over.
+    pub unowned_at: Option<u32>,
+    /// This many `CTRL` reset requests clear; every later one holds, as `reset_stuck` does.
+    pub ctrl_resets_cleared: Option<u32>,
+    /// This many `BMOD` soft resets clear; every later one holds.
+    pub bmod_resets_cleared: Option<u32>,
     walked: u32,
     /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
     /// a read's `DTO` land well before its last words reach memory.
@@ -318,6 +325,9 @@ impl Sim {
             memory: None,
             walk: Walk::Idle,
             bus_error_at: None,
+            unowned_at: None,
+            ctrl_resets_cleared: None,
+            bmod_resets_cleared: None,
             walked: 0,
             dma_words_per_step: None,
             dma_corrupts: false,
@@ -696,7 +706,7 @@ impl Sim {
                 u32::from_le_bytes([b[0], b[1], b[2], b[3]])
             };
             let (des0, size, buffer, next) = (word(0), word(1) & DES1_BS1_MASK, word(2), word(3));
-            if des0 & DES0_OWN == 0 {
+            if des0 & DES0_OWN == 0 || done == 0 && self.unowned_at == Some(self.walked) {
                 self.walk = Walk::Suspended(desc);
                 *self.reg(regs::IDSTS) |= regs::IDSTS_DU | regs::IDSTS_AIS;
                 return;
@@ -751,6 +761,18 @@ impl Sim {
         (off + len <= bus.bytes.len()).then_some(off)
     }
 
+    /// Whether a reset request holds, given how many more `left` will clear.
+    fn holds(left: &mut Option<u32>) -> bool {
+        match left {
+            Some(0) => true,
+            Some(n) => {
+                *n -= 1;
+                false
+            }
+            None => false,
+        }
+    }
+
     fn halt(&mut self) {
         self.walk = Walk::Halted;
         *self.reg(regs::IDSTS) |= regs::IDSTS_FBE | regs::IDSTS_AIS;
@@ -802,7 +824,7 @@ impl Registers for Sim {
             }
             regs::BMOD if self.peek(regs::BMOD) & regs::BMOD_SOFTWARE_RESET != 0 => {
                 let v = self.peek(regs::BMOD);
-                if !self.reset_stuck {
+                if !self.reset_stuck && !Self::holds(&mut self.bmod_resets_cleared) {
                     *self.reg(regs::BMOD) &= !regs::BMOD_SOFTWARE_RESET;
                 }
                 v
@@ -886,7 +908,8 @@ impl Registers for Sim {
                     self.walk = Walk::Idle;
                 }
                 if value & regs::CTRL_ALL_RESET != 0 {
-                    self.reset_pending = !self.reset_stuck;
+                    self.reset_pending =
+                        !self.reset_stuck && !Self::holds(&mut self.ctrl_resets_cleared);
                     if value & regs::CTRL_FIFO_RESET != 0 {
                         self.fifo.clear();
                     }
