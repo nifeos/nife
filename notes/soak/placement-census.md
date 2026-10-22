@@ -19,7 +19,7 @@ The kernel knew the answer the whole time and threw it away. `sched::spawn` call
 ## What it prints
 
 Three things, all under a `soak-test-census:` prefix of their own. That prefix is not `soak-test:`
-on purpose. `crates/board_console`'s recognizer matches two substrings on that one
+on purpose. `crates/serial_console`'s recognizer matches two substrings on that one
 (`soak-test: started` and `soak-test: t=`), and a census is neither. Giving it its own word means a
 block of census lines never has to be proven harmless against a recognizer it has nothing to do
 with.

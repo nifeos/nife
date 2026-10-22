@@ -29,9 +29,9 @@ applied to the console.
 
 Premise re-checked 2026-09-19 and still true. Row 26 of `notes/confinement-claims.md` still
 answers no in the falsified column, and `hot_swap_contract::try_receive_cap` still invokes `RECEIVE_CAP`
-directly, so the name still promises a try that the syscall does not offer. `fixtures/src/chatty.rs`
-still calls it at one site. Nothing in the syscall surface has gained a non-blocking or timed
-receive.
+directly, so the name still promises a try that the syscall does not offer.
+`fixtures/src/swap_boundary_witness.rs` still calls it at one site. Nothing in the syscall surface
+has gained a non-blocking or timed receive.
 
 ## In brief
 
@@ -63,8 +63,8 @@ cause, and the cause here is a missing primitive rather than a mistake anyone ma
 
 Milestone 202 solved the same shape for §31 by adding `wait_for_report`, a bounded wait, so that a
 stall is reported where it means something instead of surfacing 234 seconds later as a watchdog. The
-equivalent here is that the usurper's attempt must return, so `chatty`'s `usurp()` can report
-"the kernel let me receive" as a verdict rather than blocking on it.
+equivalent here is that the usurper's attempt must return, so `swap_boundary_witness`'s `usurp()`
+can report "the kernel let me receive" as a verdict rather than blocking on it.
 
 `hot_swap_contract::try_receive_cap` is named `try_` and is not one: it invokes `RECEIVE_CAP` straight, and
 `RECEIVE_CAP` blocks. That naming is itself worth calef's attention.

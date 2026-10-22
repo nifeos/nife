@@ -2,10 +2,10 @@
 //! two architectures whose firmware never lights a screen.
 //!
 //! [`crate::uefi`]'s `uefi_boot` twin, and deliberately the same shape: a QEMU monitor on a unix
-//! socket, a poller asking it for a screendump, and `board_console::screen` turning the picture back
-//! into text. What differs is only where the framebuffer came from. On `x86_64` the firmware lit one
-//! and the loader measured it; here the kernel allocates one and tells the emulator about it over
-//! `fw_cfg` (`kernel/src/screen.rs`).
+//! socket, a poller asking it for a screendump, and `serial_console::screen` turning the picture
+//! back into text. What differs is only where the framebuffer came from. On `x86_64` the firmware
+//! lit one and the loader measured it; here the kernel allocates one and tells the emulator about
+//! it over `fw_cfg` (`kernel/src/screen.rs`).
 //!
 //! *Module and subcommand names provisional (AGENTS.md: calef names these).*
 
@@ -245,7 +245,7 @@ fn watch(sock: &str, shot: &std::path::Path) -> Option<String> {
         answered = true;
         if let Some(text) = std::fs::read(shot)
             .ok()
-            .and_then(|bytes| board_console::screen::read(&bytes).ok())
+            .and_then(|bytes| serial_console::screen::read(&bytes).ok())
         {
             if text.contains(boot_ladder::SELF_TEST) {
                 return Some(text);

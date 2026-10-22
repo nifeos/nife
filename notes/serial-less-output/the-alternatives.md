@@ -12,7 +12,7 @@ The block listed candidates and endorsed none. Each was priced against both halv
 | **Keep `ConOut` alive longer** | until `ExitBootServices` and no further | no | not a candidate, it is a fact: boot services *are* the console, and a kernel that never exits them never gets its memory map. The loader already prints there and this milestone kept that |
 | **Postmortem to the boot medium** | no (it is postmortem) | **yes, and on real hardware** | the gate half's real answer, and it needs a **USB mass-storage driver**, which nife does not have. Milestone 242 is USB host. Deferred as a proposal, not refused |
 | **A network console** | no | yes, and unattended | needs a NIC driver per board and says nothing until the stack is up, which excludes every failure before it. The block's own objection stands: a machine that can only report over a network cannot report a network failure |
-| **A photograph of the screen** | it *is* the human | no | not pixel-aligned and not a screendump; `board_console::screen` cannot read one, and saying so is cheaper than discovering it |
+| **A photograph of the screen** | it *is* the human | no | not pixel-aligned and not a screendump; `serial_console::screen` cannot read one, and saying so is cheaper than discovering it |
 
 The honest summary is that the two halves want different mechanisms, which the block anticipated
 and this lane confirms. The framebuffer is the human's answer and is the right first increment

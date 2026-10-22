@@ -11,7 +11,7 @@ license.workspace = true
 # The rungs of the boot ladder, as the exact bytes that appear on a console (milestone 268).
 #
 # A crate rather than a constant in each place, because AGENTS.md rule 7 is exactly this case:
-# anything two binaries must agree on is a crate. The kernel prints these; `board_console` matches
+# anything two binaries must agree on is a crate. The kernel prints these; `serial_console` matches
 # them; `swish` prints the last one. Three binaries, one definition.
 #
 # **No dependencies, and `no_std`.** It is six `&'static str`s. A crate that could fail to compile

@@ -33,7 +33,7 @@ Every host-testable workspace member (`--workspace` minus the three bare-metal c
 After triage, the front door (`script/undefined-behavior-check`, one `--workspace` invocation, 95 test binaries) runs
 green in 27 minutes of wall time on the dev machine with a warm compile cache. **That figure is
 2026-08-03's and no longer describes the run** (milestone 238): the job was red from 2026-08-10 and
-died in under two minutes, so nothing measured it again while `board_console` and `compositor` grew
+died in under two minutes, so nothing measured it again while `serial_console` and `compositor` grew
 expensive underneath. See the section on what three weeks of red hid.
 The sequential per-crate triage sweep took about 31 minutes, of which
 five packages are 79% (`xtask` 473 s, `cred` 452 s, `measured_boot` 334 s, `coremark` 190 s, `gpt`
@@ -131,7 +131,7 @@ getting for free.
 
 These two are also the entire content of the three weeks the weekly workflow spent red. It
 reported failure from 2026-08-10 to 2026-09-03 and never once for undefined behavior: first an
-environment variable Miri does not forward, then a `read_dir` behind it, then five `board_console`
+environment variable Miri does not forward, then a `read_dir` behind it, then five `serial_console`
 tests behind that. Each was hidden by the one before because `cargo miri test` stops at the first. The
 audit that found it (milestone 232) recorded the fix as one flag, in good faith; it was three
 layers. See notes/check-inventory.md and `script/cadence-check`, which exists so the next dead
@@ -148,9 +148,9 @@ Worth recording as a pattern rather than as four facts, because the shape recurs
 stops at the first failure, so a broken run reports exactly one problem however many it has. From
 2026-08-10 the weekly job died inside two minutes on a missing environment variable, and milestone
 232's audit read that message and reasonably estimated a one-flag fix. Behind it, in order, sat:
-`read_dir` against isolation; five `board_console` tests doing host I/O; five more in `board_console`
-that are wall-clock driven; `board_console`'s 55-minute cost; and a `compositor` test sweeping
-317,856 pixels that ran 44 minutes without finishing.
+`read_dir` against isolation; five `serial_console` tests doing host I/O; five more in
+`serial_console` that are wall-clock driven; `serial_console`'s 55-minute cost; and a `compositor`
+test sweeping 317,856 pixels that ran 44 minutes without finishing.
 
 None of those were regressions. They accumulated while the job was red, invisibly, because a job
 that fails in two minutes never reaches the code that would take an hour. The 27-minute figure
@@ -158,7 +158,7 @@ this note and the workflow both quote is from 2026-08-03 and has not described t
 general lesson is the one `script/cadence-check` exists for: a check that has been failing is not
 merely not-checking, it is also not-measuring, and the bill accrues the whole time.
 
-**`board_console` is excluded from the run entirely, which is the fourth exclusion and the
+**`serial_console` is excluded from the run entirely, which is the fourth exclusion and the
 expensive one** (milestone 238). It measured 3,307 seconds, 55 minutes, for its lib tests alone
 on 2026-09-03, against roughly four minutes for the whole rest of the workspace, and it has no
 dependencies and no `unsafe`. Ten of its forty-one tests could not run under the interpreter

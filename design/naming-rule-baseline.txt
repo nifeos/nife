@@ -8,8 +8,8 @@ components/src/swish/witness.rs::removed question-shape
 crates/abi/src/futex.rs::admitted question-shape
 crates/abi/src/virtio.rs::DMA_PHYS_OFFSET spelled-out
 crates/address_space_identifier/src/lib.rs::ASIDS spelled-out
-crates/board_console/src/exposure.rs::soaked question-shape
-crates/board_console/src/progress.rs::userspace_ran question-shape
+crates/serial_console/src/exposure.rs::soaked question-shape
+crates/serial_console/src/progress.rs::userspace_ran question-shape
 crates/boot_slot/src/lib.rs::NVME spelled-out
 crates/boot_slot/src/lib.rs::encode_nvme spelled-out
 crates/boot_slot/src/lib.rs::is_nvme spelled-out

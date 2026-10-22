@@ -234,7 +234,7 @@ pub(crate) const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
 /// (radon's device tree does not describe the TRNG, so a working driver never runs) exists.
 ///
 /// The tree nife is handed on the VisionFive 2 is the vendor U-Boot's control DTB (U-Boot 2021.10,
-/// per `crates/board_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`), from
+/// per `crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`), from
 /// `StarFive`'s fork, which spells the node \[uboot-dtsi\]:
 ///
 /// ```text

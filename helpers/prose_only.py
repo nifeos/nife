@@ -25,7 +25,8 @@ nothing to do. The gate now decides once, and a prose-only change skips those jo
 
 A changed file is **prose** when it ends in `.md` and lies under `notes/`, `design/` or `briefs/`,
 or at the repository root, AND nothing in the tree at the head being tested reads it. A diff is
-prose-only when it is non-empty and every file in it is prose. Anything else runs everything.
+prose-only when it is non-empty and every file in it is prose, or comment-only Rust (COMMENT-ONLY
+RUST below). Anything else runs everything.
 
 "Nothing reads it" is computed from the tree on every run, never from a list. A list of consumers
 somebody has to remember to extend is rung three at best and would rot the first time a lane added
@@ -97,8 +98,46 @@ forgiven set on 2026-10-09 were `helpers/verify_times.py` (the two verify tables
 `falsifications.yml`, `verify-shard-refresh.yml` and `mutation.yml` (scheduled, none a pull-request
 job), each naming its own files, so every record a gated job reads keeps running everything.
 
+# COMMENT-ONLY RUST
+
+Milestone 929 (comments in the Linux style across first-party Rust) pays comments down in pull
+requests that change nothing else, which would otherwise each run the full suite. A changed `.rs` file is **comment-only** when its tokens at the base
+and at the head are equal once every comment is removed, doc comments included. That is decided by
+lexing (`rust_code_tokens`), not by a pattern on `//`: a string, raw string, byte string or char
+literal is one token, so a `//` or `*/` inside one is code, and a block comment ends where its
+nesting does. Whitespace outside literals is not a token, so a reindent rides the class too, and
+the `rustfmt` job judges it. A comment-only file is skippable when all of these hold:
+
+- It existed at the base and still does (an added, deleted or renamed file runs everything), it is
+  outside `vendor/`, and its package is a member of the root workspace, the one the lint job tests.
+- No tracked patch rewrites it. A falsification record is a patch, and a comment edit in its
+  context lines stops it applying, which only the re-falsify shards would see.
+- Nothing that could read its text names it on a code line or walks a directory above it (a quoted
+  path with a slash, `"kernel/src"`). Rust in a root-workspace package that does is owed its
+  package's host tests; Rust elsewhere runs everything. Manifests and assembly (WIRING), a
+  `#[path]` line, a path inside a sentence, and a workflow that no pull request or merge group
+  runs are not readers. A script under `script/` or `helpers/` is printed and not acted on, the
+  way a directory read outside Rust is for prose, because lint runs them on every pull request.
+
+A diff of prose and skippable comment-only Rust skips the heavy jobs like prose and sets
+`comments=true`, so the `rustfmt` job still runs. `comment_tests` names the owed packages (each
+file's own and its readers'). The `lint` job, which never skips, runs clippy and rustdoc as always,
+and then `cargo test` for each owed package that builds on the host. That covers the doctests,
+since doc comments hold them, and `missing_docs`, which clippy reads. `kernel` and `system_tests`
+build only for bare metal, and their doc comments reach no host test, so for them clippy and
+rustdoc are the whole check.
+
 # BUGS
 
+- **A comment-only Rust change shifts line numbers.** Panic locations and `file!()`/`line!()` move
+  with it, and a test that pinned one would be skipped; no test in the tree reads `line!()`.
+- **A script under `script/` or `helpers/` that reads a Rust file's comments and runs only in a
+  skipped job is not seen.** `script/falsifications` reads `/// Falsification:` records, and the
+  lint job runs its count. A new script that a QEMU job runs and that parses comments would slip
+  through.
+- **A Rust file a falsification patch rewrites runs everything** even when the edit is far from the
+  patch's context (39 of 259 kernel files, 82 of 499 under `crates/` on 2026-10-22 UTC). A lint
+  check that every patch still applies would let them skip.
 - **HOST_ONLY_TOOLS is a hand-kept list, and a script that begins to call a listed tool is not
   seen.** The root check covers callers outside `script/` and `helpers/` only. A new `script/x`
   that runs `script/metrics` and is run by a gated job would let a metrics-only change skip a job
@@ -141,7 +180,7 @@ DIR_LITERAL = re.compile(
 QUOTED = re.compile(r""""(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'""")
 
 
-def path_tokens(line):
+def path_tokens(line, token=MD_TOKEN):
     """The .md tokens on a line that are used as paths rather than mentioned in a sentence.
 
     A token inside a quoted string that contains whitespace is a message ("see notes/stack.md"),
@@ -150,7 +189,7 @@ def path_tokens(line):
     unquoted one is a shell word or a line inside a string this check cannot see the start of,
     both of which are kept, because a wrong keep costs minutes and a wrong skip a red main."""
     sentences = [m.span() for m in QUOTED.finditer(line) if re.search(r"\s", m.group(0))]
-    for m in MD_TOKEN.finditer(line):
+    for m in token.finditer(line):
         if not any(a < m.start() and m.end() < b for a, b in sentences):
             yield m.group(0)
 
@@ -309,16 +348,200 @@ def scan(tree):
     return files, dirs
 
 
-def classify(changed, tree):
-    """(prose_only, packages to test, report lines). Pure: no git, no disk."""
+# The comment-only Rust class (milestone 929): see COMMENT-ONLY RUST in the header.
+
+RS_TOKEN = re.compile(r"[A-Za-z0-9_./-]*[A-Za-z0-9_-]\.rs\b")
+PATH_LITERAL = re.compile(r"""(["'])(?:\.\./)*(?:\./)?([A-Za-z0-9_][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+)+)/?\1""")
+PATCH_TARGET = re.compile(r"^(?:\+\+\+ b/|--- a/)(\S+)", re.M)
+# `#[path = "x.rs"] mod x;` compiles the file; it does not read it as text.
+MODULE_PATH = re.compile(r"\s*#\[path\s*=")
+# Namers that wire a file into a build or a mutation run without reading its text: manifests, and
+# assembly, whose trailing `//` comments the whole-line comment filter does not drop.
+WIRING = (".toml", ".s", ".S")
+# Namers that script/lint or the lint job run, on every pull request: logged, as a directory read
+# outside Rust is for prose. See COMMENT-ONLY RUST, and its BUGS.
+LINT_SIDE = ("script/", "helpers/", ".githooks/")
+
+
+def rust_code_tokens(src):
+    """The tokens of a Rust source with every comment removed, doc comments included.
+
+    Two texts with equal token lists differ only in comments and whitespace outside literals. It is
+    a lexer, not a regex on `//`: a string, raw string, byte string or char literal is one token
+    whatever it holds, so `"// x"` changing is a code change, and a block comment ends at the `*/`
+    that closes its nesting depth."""
+    out = []
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in " \t\r\n":
+            i += 1
+            continue
+        if src.startswith("//", i):
+            j = src.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if src.startswith("/*", i):
+            depth, j = 0, i
+            while j < n:
+                if src.startswith("/*", j):
+                    depth, j = depth + 1, j + 2
+                elif src.startswith("*/", j):
+                    depth, j = depth - 1, j + 2
+                    if depth == 0:
+                        break
+                else:
+                    j += 1
+            i = j
+            continue
+        ident_before = i > 0 and (src[i - 1].isalnum() or src[i - 1] == "_")
+        m = None if ident_before else re.match(r'(?:b|c)?r(#*)"', src[i:i + 300])
+        if m:
+            end = '"' + m.group(1)
+            j = src.find(end, i + m.end())
+            j = n if j < 0 else j + len(end)
+            out.append(src[i:j])
+            i = j
+            continue
+        if c == '"' or (c in "bc" and src[i + 1:i + 2] == '"' and not ident_before):
+            j = i + (1 if c == '"' else 2)
+            while j < n and src[j] != '"':
+                j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1])
+            i = j + 1
+            continue
+        if c == "'" or (c == "b" and src[i + 1:i + 2] == "'" and not ident_before):
+            k = i + (1 if c == "'" else 2)
+            m = re.match(r"(\\(x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}|.)|[^\\'\n])'", src[k:k + 16])
+            if m:
+                out.append(src[i:k + m.end()])
+                i = k + m.end()
+                continue
+        m = re.match(r"'?[A-Za-z_][A-Za-z0-9_]*|[0-9][0-9A-Za-z_.]*", src[i:i + 200])
+        if m:
+            out.append(m.group(0))
+            i += m.end()
+            continue
+        out.append(c)
+        i += 1
+    return out
+
+
+def rust_readers(tree):
+    """What in the tree could notice a comment in a Rust file: (named, walked, patched).
+
+    named maps a resolved `.rs` path to the places naming it on a code line; walked maps a quoted
+    directory literal (one with a slash, `"kernel/src"`) to (place, package-or-None) for each place
+    naming it; patched is every path a tracked patch rewrites, whose context lines a comment edit
+    can break."""
+    named, walked, patched = {}, {}, set()
+    for path, text in tree.items():
+        if not scanned(path) or text is None:
+            continue
+        if path.endswith((".patch", ".diff")):
+            patched.update(PATCH_TARGET.findall(text))
+        pkg = package_of(path, tree) if path.endswith(".rs") else None
+        for n, line in code_lines(path, text):
+            if MODULE_PATH.match(line):
+                continue
+            for tok in path_tokens(line, RS_TOKEN):
+                for r in resolutions(path, tok):
+                    named.setdefault(r, []).append((f"{path}:{n}", pkg, path))
+            for m in PATH_LITERAL.finditer(line):
+                d = m.group(2).rstrip("/")
+                if d.endswith(".rs"):
+                    continue
+                walked.setdefault(d, []).append((f"{path}:{n}", pkg, path))
+    return named, walked, patched
+
+
+def workspace_members(tree):
+    """The root workspace's member directories, read from its `members` list."""
+    m = re.search(r"^members\s*=\s*\[(.*?)^\]", tree.get("Cargo.toml") or "", re.M | re.S)
+    return set(re.findall(r'"([^"]+)"', re.sub(r"#.*", "", m.group(1)))) if m else set()
+
+
+def manifest_dir(path, tree):
+    """The directory of the nearest Cargo.toml above `path` ("" for the root), or None."""
+    d = os.path.dirname(path)
+    while True:
+        if (os.path.join(d, "Cargo.toml") if d else "Cargo.toml") in tree:
+            return d
+        if not d:
+            return None
+        d = os.path.dirname(d)
+
+
+def gated_workflow(text):
+    """Does a workflow run on a pull request or a merge group? Only its `on:` block is read, so a
+    job condition naming `pull_request` does not count."""
+    m = re.search(r"^on:(.*(?:\n(?:[ \t#].*|))*)", text, re.M)
+    return bool(m and re.search(r"\b(?:pull_request|pull_request_target|merge_group)\b",
+                                re.sub(r"#.*", "", m.group(1))))
+
+
+def comment_only_rust(f, tree, before, readers):
+    """(skippable, reason, packages owed a test run) for one changed `.rs` file."""
+    after = tree.get(f)
+    if f.startswith("vendor/"):
+        return False, "vendored upstream code", ()
+    if before is None or after is None:
+        return False, "added, deleted or renamed Rust", ()
+    if rust_code_tokens(before) != rust_code_tokens(after):
+        return False, "Rust whose code changed, not only its comments", ()
+    pkg = package_of(f, tree)
+    if pkg is None:
+        return False, "comment-only Rust in no package, so nothing can test it", ()
+    if manifest_dir(f, tree) not in workspace_members(tree):
+        return False, "comment-only Rust outside the root workspace, where the lint job tests nothing", ()
+    named, walked, patched = readers
+    if f in patched:
+        return False, "comment-only Rust that a falsification patch rewrites; its context may no longer apply", ()
+    owed, logged = {pkg}, set()
+    hits = [h for h in named.get(f, []) if h[2] != f]
+    hits += [h for d, hs in walked.items() if f.startswith(d + "/") for h in hs]
+    for place, rpkg, rpath in sorted(set(hits)):
+        if rpath.endswith(".rs"):
+            if rpkg is None or manifest_dir(rpath, tree) not in workspace_members(tree):
+                return False, f"comment-only Rust read by Rust outside the root workspace ({place})", ()
+            owed.add(rpkg)
+        elif rpath.endswith(WIRING):
+            continue
+        elif rpath.startswith(LINT_SIDE):
+            logged.add(place)
+        elif rpath.startswith(".github/workflows/") and not gated_workflow(tree.get(rpath) or ""):
+            continue
+        else:
+            return False, f"comment-only Rust named by {place}", ()
+    note = f"; named by scripts lint runs: {' '.join(sorted(logged)[:3])}" if logged else ""
+    return True, f"comment-only Rust; owes fmt, lint and the host tests of {' '.join(sorted(owed))}{note}", owed
+
+
+def classify(changed, tree, before=None):
+    """(prose_only, packages to test, report lines, comment tests). Pure: no git, no disk.
+
+    `before` maps each changed `.rs` path to its text at the base, None where it did not exist.
+    `comment tests` is None unless the diff skips and at least one changed file is comment-only
+    Rust; then it is the packages whose host tests that Rust owes."""
     report = []
     if not changed:
         report.append("no changed files: a scope that failed to resolve runs everything")
-        return False, [], report
+        return False, [], report, None
     files, dirs = scan(tree)
     prose_only = True
     tests, unacted = set(), set()
+    readers, comment_tests = None, None
     for f in changed:
+        if f.endswith(".rs"):
+            if readers is None:
+                readers = rust_readers(tree)
+            ok, why, owed = comment_only_rust(f, tree, (before or {}).get(f), readers)
+            report.append(f"{'SKIP' if ok else 'RUN '}  {f}: {why}")
+            if ok:
+                comment_tests = (comment_tests or set()) | set(owed)
+            else:
+                prose_only = False
+            continue
         if f in HOST_ONLY_TOOLS:
             readers = host_tool_readers(f, tree)
             if readers:
@@ -361,7 +584,9 @@ def classify(changed, tree):
         report.append("note: these read a changed file's directory outside Rust and are not acted on,")
         report.append("      because lint runs them on every pull request or no gate does (see BUGS):")
         report.append("      " + " ".join(sorted(unacted)))
-    return prose_only, (sorted(tests) if prose_only else []), report
+    if not prose_only:
+        return False, [], report, None
+    return True, sorted(tests), report, (sorted(comment_tests) if comment_tests is not None else None)
 
 
 def git_tree():
@@ -379,25 +604,41 @@ def git_tree():
     return tree
 
 
+def git_show(rev, path):
+    """`path`'s text at `rev`, or None where it did not exist there."""
+    r = subprocess.run(["git", "show", f"{rev}:{path}"], capture_output=True)
+    if r.returncode != 0:
+        return None
+    return r.stdout.decode("utf-8", errors="replace")
+
+
 def main_classify(base):
     changed = subprocess.run(["git", "diff", "--name-only", base, "HEAD"],
                              capture_output=True, text=True, check=True).stdout.splitlines()
-    prose, tests, report = classify(changed, git_tree())
+    before = {f: git_show(base, f) for f in changed if f.endswith(".rs")}
+    prose, tests, report, comment_tests = classify(changed, git_tree(), before)
     for line in report:
         print(line)
     print(f"prose-only: {'yes' if prose else 'no'} ({len(changed)} changed files)")
     print(f"prose-tests: {' '.join(tests)}")
+    print(f"comment-only rust: {'yes' if comment_tests is not None else 'no'}")
+    print(f"comment-tests: {' '.join(comment_tests or [])}")
     out = os.environ.get("GITHUB_OUTPUT")
     if out:
         with open(out, "a") as fh:
             fh.write(f"prose={'true' if prose else 'false'}\n")
             fh.write(f"prose_tests={' '.join(tests)}\n")
+            fh.write(f"comments={'true' if comment_tests is not None else 'false'}\n")
+            fh.write(f"comment_tests={' '.join(comment_tests or [])}\n")
     return 0
 
 
 def selftest():
     base_tree = {
-        "Cargo.toml": "[workspace]\nmembers = []\n",
+        "Cargo.toml": '[workspace]\nmembers = [\n    "kernel",\n    "xtask",\n    "crates/abi",\n'
+                      '    "crates/documentation",\n]\n',
+        "vendor/x/Cargo.toml": '[package]\nname = "x"\n',
+        "tools/host/Cargo.toml": '[package]\nname = "host"\n',
         "crates/documentation/Cargo.toml": '[package]\nname = "documentation"\nversion = "0.1.0"\n',
         "crates/documentation/tests/render.rs":
             '// walks the corpus\nfor dir in ["notes", "design/decisions"] {}\n',
@@ -412,7 +653,7 @@ def selftest():
     def run(changed, extra=None):
         tree = dict(base_tree)
         tree.update(extra or {})
-        return classify(changed, tree)
+        return classify(changed, tree)[:3]
 
     cases = []
     # Code: a .rs file is never prose.
@@ -517,6 +758,88 @@ def selftest():
     p, t, r = run(["notes/project-metrics/baseline-drift.md"],
                   {"helpers/baseline_drift.py": 'OUT = "notes/project-metrics/baseline-drift.md"\n'})
     cases.append(("the writing tool is not a reader", p is True))
+
+    # Comment-only Rust (milestone 929). Each case changes one kernel file from BASE_RS.
+    BASE_RS = ('/// Maps a page.\n'
+               'pub fn map(x: u64) -> u64 {\n'
+               '    // SAFETY: the caller holds the lock.\n'
+               '    let s = "// not a comment";\n'
+               '    /* a block /* nested */ still */ x + 1\n'
+               '}\n')
+    kernel = {"kernel/Cargo.toml": '[package]\nname = "kernel"\n'}
+
+    def rs(after, extra=None, path="kernel/src/map.rs", before=BASE_RS):
+        tree = dict(base_tree, **kernel, **{path: after})
+        tree.update(extra or {})
+        return classify([path], tree, {path: before})
+
+    p, t, r, c = rs(BASE_RS.replace("Maps a page.", "Maps one page into the table."))
+    cases.append(("a doc comment edit skips, owing its package's tests", p is True and c == ["kernel"]))
+    p, t, r, c = rs(BASE_RS.replace("the caller holds", "this CPU holds"))
+    cases.append(("a plain comment edit skips", p is True and c == ["kernel"]))
+    p, t, r, c = rs(BASE_RS.replace("still */", "still, longer\n   across lines */"))
+    cases.append(("a nested block comment edit skips", p is True))
+    # The test 929 asks for: a diff that touches code beside a comment runs everything.
+    p, t, r, c = rs(BASE_RS.replace("the caller holds the lock.", "the caller holds it.")
+                    .replace("x + 1", "x + 2"))
+    cases.append(("code changed beside a comment runs everything",
+                  p is False and c is None and "code changed" in r[0]))
+    # A `//` inside a string literal is code, and so is a `*/` inside one.
+    p, t, r, c = rs(BASE_RS.replace('"// not a comment"', '"// still not a comment"'))
+    cases.append(("a // inside a string is code", p is False))
+    p, t, r, c = rs(BASE_RS.replace("x + 1", 'x + 1; let r = r#"*/ x"#; 0'))
+    cases.append(("a raw string holding */ is code", p is False))
+    # Deleting a whole comment line is comment-only; deleting the code under it is not.
+    p, t, r, c = rs(BASE_RS.replace("    // SAFETY: the caller holds the lock.\n", ""))
+    cases.append(("a deleted comment line skips", p is True))
+    p, t, r, c = rs(BASE_RS.replace('    let s = "// not a comment";\n', ""))
+    cases.append(("a deleted code line runs", p is False))
+    # A new or deleted file, vendored code, and Rust in no package run everything.
+    cases.append(("a new file runs", rs(BASE_RS, before=None)[0] is False))
+    cases.append(("vendored Rust runs", rs("// x\n" + BASE_RS, path="vendor/x/src/lib.rs")[0] is False))
+    cases.append(("Rust in no package runs", rs("// x\n" + BASE_RS, path="loose/x.rs")[0] is False))
+    cases.append(("Rust outside the root workspace runs",
+                  rs("// x\n" + BASE_RS, path="tools/host/src/lib.rs")[0] is False))
+    # Readers: a patch that rewrites the file, a file that names it, a walk of its directory.
+    edit = BASE_RS.replace("Maps a page.", "Maps one page.")
+    p, t, r, c = rs(edit, {"kernel/falsifications/f.patch": "--- a/kernel/src/map.rs\n+++ b/kernel/src/map.rs\n"})
+    cases.append(("a file a falsification patch rewrites runs", p is False and "patch" in r[0]))
+    p, t, r, c = rs(edit, {"xtask/src/lint.rs": 'const F: &str = "kernel/src/map.rs";\n'})
+    cases.append(("Rust that names the file owes its package's tests", p is True and c == ["kernel", "xtask"]))
+    p, t, r, c = rs(edit, {".github/workflows/x.yml": "on:\n  pull_request:\njobs:\n      - run: grep SAFETY kernel/src/map.rs\n"})
+    cases.append(("a workflow that names the file runs", p is False and "named by" in r[0]))
+    p, t, r, c = rs(edit, {".github/workflows/x.yml": "on:\n  workflow_dispatch:\n  # not on pull_request\n"
+                           "jobs:\n  a:\n    if: github.event_name != 'pull_request'\n"
+                           "    steps:\n      - run: git grep -l proof -- 'kernel/src'\n"})
+    cases.append(("a workflow no pull request runs is not a reader", p is True))
+    p, t, r, c = rs(edit, {".github/workflows/x.yml": "on:\n  push:\n  merge_group:\njobs:\n"
+                           "      - run: git grep -l proof -- 'kernel/src'\n"})
+    cases.append(("a merge-group workflow that walks the directory runs", p is False))
+    p, t, r, c = rs(edit, {"helpers/x.py": 'SRC = "kernel/src/map.rs"\n'})
+    cases.append(("a script lint runs is logged, not acted on", p is True and "helpers/x.py" in r[0]))
+    p, t, r, c = rs(edit, {"kernel/Cargo.toml": '[package]\nname = "kernel"\n[[bin]]\npath = "src/map.rs"\n',
+                           "kernel/src/lib.rs": '#[path = "map.rs"]\nmod map;\n',
+                           "xtask/src/x.rs": 'panic!("see kernel/src/map.rs for why");\n'})
+    cases.append(("a manifest, a #[path] and a message are not readers", p is True and c == ["kernel"]))
+    p, t, r, c = rs(edit, {"xtask/src/lint.rs": '// kernel/src/map.rs is checked\n'})
+    cases.append(("a comment naming the file is not a reader", p is True))
+    p, t, r, c = rs(edit, {"xtask/src/archive.rs": 'walk(&root.join("kernel/src"));\n'})
+    cases.append(("a Rust walk of its directory owes that package's tests", p is True and c == ["kernel", "xtask"]))
+    p, t, r, c = rs(edit, {"loose/walk.rs": 'walk("kernel/src");\n'})
+    cases.append(("a walk from Rust in no package runs", p is False))
+    # Mixed with prose, comment-only Rust still skips; mixed with code it runs.
+    tree = dict(base_tree, **kernel, **{"kernel/src/map.rs": edit})
+    p, t, r, c = classify(["kernel/src/map.rs", "design/roadmap/0001-x.md"], tree, {"kernel/src/map.rs": BASE_RS})
+    cases.append(("comment-only Rust beside prose skips", p is True and c == ["kernel"]))
+    p, t, r, c = classify(["kernel/src/map.rs", "Cargo.lock"], tree, {"kernel/src/map.rs": BASE_RS})
+    cases.append(("comment-only Rust beside code runs", p is False and c is None))
+    # A prose-only diff reports no comment class, so rustfmt keeps skipping it.
+    cases.append(("prose alone has no comment class", classify(["design/roadmap/0001-x.md"], dict(base_tree))[3] is None))
+    # The lexer: lifetimes and chars, byte strings, and an escaped quote.
+    if rust_code_tokens("fn f<'a>(c: char) { let q = '\"'; let b = b\"/*\"; } // x\n") != \
+            ["fn", "f", "<", "'a", ">", "(", "c", ":", "char", ")", "{", "let", "q", "=", "'\"'",
+             ";", "let", "b", "=", 'b"/*"', ";", "}"]:
+        cases.append(("the lexer keeps lifetimes, chars and byte strings whole", False))
 
     bad = [name for name, ok in cases if not ok]
     for name, ok in cases:

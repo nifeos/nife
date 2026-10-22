@@ -19,7 +19,7 @@ merge queue lands it.)*
 Its `DECISION` gate was answered by a build rather than by calef, and that is worth saying
 plainly. The gate was right: `job_mix::REPEATS` decides how long every bench evening takes on
 every board, and the `job-mix-repeat:` line is output that two programs read (`script/job-mix`'s
-rehearsal and `crates/board_console`'s recognizer). The lane that built it had the change assigned
+rehearsal and `crates/serial_console`'s recognizer). The lane that built it had the change assigned
 in its maintainer's brief, noted that both readers are in-tree, and recorded the choice in milestone
 168 so it is visible rather than implied. So the question is settled in the tree, and it was not
 settled by the person whose call it was.

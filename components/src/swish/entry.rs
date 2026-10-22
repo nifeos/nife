@@ -97,7 +97,7 @@ pub(super) fn interactive(rights: u64) -> ! {
     // **The line that says userspace is up**, and it is the top rung of milestone 268's boot
     // ladder: a default boot ends at this prompt rather than at a halt, so this is the sentence a
     // watcher reads to learn that the boot finished. Its head comes from `crates/boot_ladder`
-    // rather than from a literal here, because `crates/board_console` matches it and AGENTS.md
+    // rather than from a literal here, because `crates/serial_console` matches it and AGENTS.md
     // rule 7 says two binaries agreeing on a string means a crate.
     print(boot_ladder::PROMPT.as_bytes());
     print(b". naming a resource in a command IS granting it.\n");

@@ -11,7 +11,7 @@
 //! calef, 2026-09-09: *"I could see building tools to diagnose what broke but we can only run them
 //! if there is a prompt"*. A failing check prints its verdict and the boot carries on to userspace.
 //! **So the verdict is read by a program**: `boot_ladder::SELF_TEST` is the contract,
-//! `crates/board_console` matches it, and `cargo xtask boot-check` boots all three architectures
+//! `crates/serial_console` matches it, and `cargo xtask boot-check` boots all three architectures
 //! and fails on a red one in CI.
 //!
 //! ```text
@@ -25,12 +25,12 @@
 //!   distinguishable from "ran the set and passed".
 //! - **A check whose device this machine lacks is `absent`, with its reason**, neither a pass nor a
 //!   failure (calef's ruling of 2026-10-20 (UTC) on #2447). Which absences a board allows is
-//!   `board_console`'s board profile's to say, and an absence its profile forbids is a failure
+//!   `serial_console`'s board profile's to say, and an absence its profile forbids is a failure
 //!   there: radon may not be without `entropy`, `trng` or `clock`, xenon without `entropy` or
 //!   `deviceirq`.
 //!
 //! The wording is **provisional**: a line two programs agree on is an architect's.
-//! `board_console::progress` is tested against this module's own constant.
+//! `serial_console::progress` is tested against this module's own constant.
 //!
 
 //! # BUGS
@@ -63,7 +63,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 // **The verdict's two fixed strings come from `crates/boot_ladder`**, not from literals here, so
-// that this module and `crates/board_console` cannot hold two copies of one contract (`AGENTS.md`
+// that this module and `crates/serial_console` cannot hold two copies of one contract (`AGENTS.md`
 // rule 7). Each carries its own trailing space, so a matcher that finds one has found a boundary
 // rather than the start of a longer word.
 use boot_ladder::{SELF_TEST as VERDICT, SELF_TEST_ABSENT as ABSENT, SELF_TEST_FAILED as FAILED};
@@ -189,7 +189,7 @@ impl Tally {
     /// (`boot_ladder::SELF_TEST_ABSENT`; calef's ruling of 2026-10-20 (UTC) on #2447).
     ///
     /// Absent is neither a pass nor a failure, and the verdict says so by name. Whether an absence
-    /// is acceptable is a fact about the machine, which the kernel cannot know: `board_console`'s
+    /// is acceptable is a fact about the machine, which the kernel cannot know: `serial_console`'s
     /// board profiles name the checks that may not be absent on each board, and read an absence of
     /// one of those as a failure. The reason is stated because "no device" must be distinguishable
     /// from "no device this kernel looked for".
@@ -960,8 +960,8 @@ fn deviceirq(tally: &mut Tally) {
 /// the draw timed, which is fatal risk 6's "at real speed" (milestone 306 (time the hw entropy
 /// step)). The kernel never reads a `RAND` register.
 ///
-/// **Absent on every machine but a JH7110**, and radon's board profile in `board_console` names both
-/// as checks that may not be absent there.
+/// **Absent on every machine but a JH7110**, and radon's board profile in `serial_console` names
+/// both as checks that may not be absent there.
 fn jh7110(tally: &mut Tally) {
     #[cfg(target_arch = "riscv64")]
     jh7110_on_riscv64(tally);
