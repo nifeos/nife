@@ -83,10 +83,13 @@ was not counted.
 ## The ports settle before the scan
 
 The driver's controller reset disconnects every device, and a root port reports its device again
-only once the port has re-detected it. QEMU does that the instant the controller runs; xenon's Intel
-controller takes milliseconds. So the driver waits 100 ms (USB 2.0's `TSIGATT`, the least Linux
-waits after powering a root hub) before it scans. A device that appears later still arrives as a
-connect change and is attached then.
+only once it has re-detected it. QEMU does that the instant the controller runs; xenon's Intel
+controller takes about ten milliseconds. So the boot-time scan waits until no port's connection has
+changed for 100 ms (USB 2.0's `TATTDB`), reading every 25 ms and giving up after 2 s. Those are
+Linux's hub debounce numbers, and no machine's timing is in them
+(`extensible_host_controller_interface::port::Settle`). A scan that gave up says so in the boot
+line instead of printing a count. The scan only names the keyboard early: a device that shows up
+later arrives as a connect change and is attached then.
 
 To see what the ports read on a machine, build with `--features xhci_port_probe`
 (`cargo xtask uefi-image --features xhci_port_probe` on x86_64). The kernel prints every root

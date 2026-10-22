@@ -48,6 +48,10 @@
 //! - **Every wait is a bounded poll of the event ring through bring-up**, the interrupt is used
 //!   only afterwards. The bounds are a second per command and per transfer, and half a second per
 //!   port reset, chosen from the specification's own limits rather than measured on xenon.
+//! - **A device plugged in after boot is not debounced.** It is reset as soon as its connect
+//!   change is seen, where Linux first waits for its connection to hold 100 ms
+//!   ([`port::Settle`]'s numbers). On xenon a keyboard attached this way types; a device whose
+//!   connection bounces may be refused, silently.
 //! - **Events that arrive while a command is waited for are dropped** unless they are port
 //!   changes, which are remembered. A key pressed during a stall recovery is lost.
 //!
@@ -108,11 +112,6 @@ const CONTROL_BUFFER: MappedWindow =
 /// One millisecond, in the units [`monotonic_nanos`] counts.
 const MS: u64 = 1_000_000;
 
-/// **How long the root ports get to show their devices** after the controller starts, before the
-/// scan reads them: USB 2.0's `TSIGATT` (section 7.1.7.3), the 100 ms a device has to attach after
-/// its port is powered, which is also the least Linux's hub driver waits after powering a root hub.
-const SETTLE_MS: u64 = 100;
-
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
 /// The NVMe server's barrier and for its reason (`components/src/non_volatile_memory_express.rs`
 /// says why it is local rather than shared): the doorbell is a direct store to a device page.
@@ -153,7 +152,7 @@ struct Attached {
 
 /// **The driver's whole state.**
 struct Host {
-    caps: Capabilities,
+    capabilities: Capabilities,
     dma_phys: u64,
     commands: ProducerRing,
     events: EventRing,
@@ -198,7 +197,7 @@ impl Host {
     }
 
     fn op(&self, off: u64) -> u64 {
-        self.caps.operational + off
+        self.capabilities.operational + off
     }
 
     fn phys(&self, page: u64) -> u64 {
@@ -207,7 +206,7 @@ impl Host {
 
     fn ring_doorbell(&self, slot: u8, target: u32) {
         barrier();
-        self.set_reg(self.caps.doorbell(slot), target);
+        self.set_reg(self.capabilities.doorbell(slot), target);
     }
 
     /// Write one TRB, the cycle dword last.
@@ -242,7 +241,7 @@ impl Host {
         }
         self.events.advance();
         self.set_reg64(
-            self.caps.interrupter(regs::ERDP),
+            self.capabilities.interrupter(regs::ERDP),
             self.events.dequeue_pointer() | regs::ERDP_BUSY,
         );
         Some(Event::decode(t))
@@ -351,7 +350,8 @@ impl Host {
     }
 
     fn input_context(&self, index: u8, words: [u32; 8]) {
-        let at = dma::INPUT_CONTEXT * PAGE + context::input_offset(index, self.caps.context_bytes);
+        let at = dma::INPUT_CONTEXT * PAGE
+            + context::input_offset(index, self.capabilities.context_bytes);
         for (i, w) in words.iter().enumerate() {
             DMA.w32(at + 4 * i as u64, *w);
         }
@@ -359,7 +359,7 @@ impl Host {
 
     /// **Bring one connected root port's device up to a served keyboard**, or say why not.
     fn attach(&mut self, port_number: u8) -> Result<Attached, Fail> {
-        let portsc = self.caps.portsc(port_number);
+        let portsc = self.capabilities.portsc(port_number);
         let sc = self.reg(portsc);
         // Acknowledge every change pending, so a stale connect change does not bring us back.
         self.set_reg(portsc, port::write_value(sc, sc & port::CHANGES));
@@ -539,7 +539,7 @@ impl Host {
     /// **Halt, reset, lay out, run.** The controller is the driver's from here; the kernel only
     /// found it, took it from the firmware and confined it.
     fn bring_up(h: Handoff) -> Result<Host, Fail> {
-        let caps = Capabilities::decode(
+        let capabilities = Capabilities::decode(
             REGS.r32(regs::CAPLENGTH),
             REGS.r32(regs::HCSPARAMS1),
             REGS.r32(regs::HCSPARAMS2),
@@ -549,7 +549,7 @@ impl Host {
         );
         let phys = |page: u64| h.dma_phys + page * PAGE;
         let host = Host {
-            caps,
+            capabilities,
             dma_phys: h.dma_phys,
             commands: ProducerRing::new(phys(dma::COMMAND_RING), dma::RING_ENTRIES),
             events: EventRing::new(phys(dma::EVENT_RING), dma::RING_ENTRIES),
@@ -595,8 +595,8 @@ impl Host {
         if self.reg(self.op(regs::PAGESIZE)) & 1 == 0 {
             return Err((Step::NoFourKibibytePages, self.reg(self.op(regs::PAGESIZE))));
         }
-        if u64::from(dma_pages) < dma::region_pages(self.caps.scratchpads) {
-            return Err((Step::RegionTooSmall, self.caps.scratchpads.into()));
+        if u64::from(dma_pages) < dma::region_pages(self.capabilities.scratchpads) {
+            return Err((Step::RegionTooSmall, self.capabilities.scratchpads.into()));
         }
         Ok(())
     }
@@ -610,8 +610,8 @@ impl Host {
         self.set_reg(config, (self.reg(config) & !0xff) | 1);
 
         // The slot array, its entry 0 the scratchpad array when the controller wants one.
-        if self.caps.scratchpads > 0 {
-            for i in 0..u64::from(self.caps.scratchpads) {
+        if self.capabilities.scratchpads > 0 {
+            for i in 0..u64::from(self.capabilities.scratchpads) {
                 DMA.w64(
                     dma::SCRATCHPAD_ARRAY * PAGE + 8 * i,
                     phys(dma::WORK_PAGES + i),
@@ -632,17 +632,17 @@ impl Host {
             DMA.w32(dma::EVENT_SEGMENT_TABLE * PAGE + 4 * i as u64, *w);
         }
         barrier();
-        self.set_reg(self.caps.interrupter(regs::ERSTSZ), 1);
+        self.set_reg(self.capabilities.interrupter(regs::ERSTSZ), 1);
         self.set_reg64(
-            self.caps.interrupter(regs::ERDP),
+            self.capabilities.interrupter(regs::ERDP),
             self.events.dequeue_pointer(),
         );
         self.set_reg64(
-            self.caps.interrupter(regs::ERSTBA),
+            self.capabilities.interrupter(regs::ERSTBA),
             phys(dma::EVENT_SEGMENT_TABLE),
         );
         self.set_reg(
-            self.caps.interrupter(regs::IMAN),
+            self.capabilities.interrupter(regs::IMAN),
             regs::IMAN_ENABLE | regs::IMAN_PENDING,
         );
     }
@@ -662,31 +662,54 @@ impl Host {
         Ok(())
     }
 
-    /// Power every port that is not powered (only on a controller with port power control),
-    /// then wait [`SETTLE_MS`] before anything reads a port.
-    ///
-    /// The wait is unconditional because the controller reset disconnects every device, powered
-    /// or not: a root port reads not connected until the device it already had is detected again.
-    /// QEMU reports the connection the moment the controller runs, so only silicon shows this.
+    /// Power every port that is not powered (only on a controller with port power control).
     fn power_ports(&self) {
-        for n in 1..=self.caps.max_ports {
-            let sc = self.reg(self.caps.portsc(n));
+        for n in 1..=self.capabilities.max_ports {
+            let sc = self.reg(self.capabilities.portsc(n));
             if sc & port::POWER == 0 {
-                self.set_reg(self.caps.portsc(n), port::write_value(sc, port::POWER));
+                self.set_reg(
+                    self.capabilities.portsc(n),
+                    port::write_value(sc, port::POWER),
+                );
             }
         }
-        let end = deadline(SETTLE_MS);
-        while !past(end) {
-            core::hint::spin_loop();
+    }
+
+    /// **Wait until every root port's connection has held still** ([`port::Settle`]), so the
+    /// boot-time scan reads what is plugged in rather than what the controller has re-detected
+    /// so far. `false` when the ports were still changing at the timeout. Nothing here is the
+    /// answer: a device that arrives later is attached from its connect change, in
+    /// [`Host::service_ports`].
+    fn settle_ports(&self) -> bool {
+        let mut settle = port::Settle::new(monotonic_nanos() / MS, self.connections());
+        loop {
+            let end = deadline(port::DEBOUNCE_STEP_MS);
+            while !past(end) {
+                core::hint::spin_loop();
+            }
+            if let Some(settled) = settle.observe(monotonic_nanos() / MS, self.connections()) {
+                return settled;
+            }
         }
+    }
+
+    /// Every root port's `CCS`, one bit per port.
+    fn connections(&self) -> port::Connections {
+        let mut bits = [0u32; 8];
+        for n in 1..=self.capabilities.max_ports {
+            if self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0 {
+                bits[usize::from(n / 32)] |= 1 << (n % 32);
+            }
+        }
+        bits
     }
 
     /// **Try every connected port until one is a keyboard.** `(connected, last refusal)`.
     fn scan(&mut self) -> (u8, u64) {
         let mut connected = 0;
         let mut refused = 0;
-        for n in 1..=self.caps.max_ports {
-            if self.reg(self.caps.portsc(n)) & port::CONNECTED == 0 {
+        for n in 1..=self.capabilities.max_ports {
+            if self.reg(self.capabilities.portsc(n)) & port::CONNECTED == 0 {
                 continue;
             }
             connected += 1;
@@ -704,8 +727,8 @@ impl Host {
     /// **A port changed**: give back the slot of a keyboard that left, and look at a port that
     /// gained a device when nothing is being served.
     fn service_ports(&mut self) {
-        for n in 1..=self.caps.max_ports {
-            let at = self.caps.portsc(n);
+        for n in 1..=self.capabilities.max_ports {
+            let at = self.capabilities.portsc(n);
             let sc = self.reg(at);
             let changed = sc & port::CHANGES;
             if changed != 0 {
@@ -842,6 +865,7 @@ pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
             exit();
         }
     };
+    let settled = host.settle_ports();
     let (connected, refused) = host.scan();
     match (host.keyboard, host.found) {
         (Some(k), Some((vendor, product, speed))) => send(
@@ -853,7 +877,7 @@ pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         _ => send(
             REPORT,
             report::NO_KEYBOARD,
-            u64::from(host.caps.max_ports) | u64::from(connected) << 8,
+            report::ports(host.capabilities.max_ports, connected, settled),
             refused,
         ),
     };
@@ -868,7 +892,7 @@ pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         // Clear the pending bits before draining, so an event that lands after the drain raises
         // the interrupt again rather than waiting for the next one.
         host.set_reg(
-            host.caps.interrupter(regs::IMAN),
+            host.capabilities.interrupter(regs::IMAN),
             regs::IMAN_ENABLE | regs::IMAN_PENDING,
         );
         host.set_reg(

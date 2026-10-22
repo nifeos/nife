@@ -93,6 +93,76 @@ pub const fn speed_name(speed: u8) -> &'static str {
     }
 }
 
+/// **When the root ports are believed after a controller reset.** The reset disconnects every
+/// device, powered or not, and silicon reports each one again only after some milliseconds; QEMU
+/// does it at once. A boot-time scan therefore waits until no port's `CCS` has changed for
+/// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
+/// The clock starts when the ports are powered, so nothing is believed before
+/// [`DEBOUNCE_STABLE_MS`] after power either.
+///
+/// The three numbers are Linux's (`drivers/usb/core/hub.c`), and none was measured on a machine.
+/// Nothing here is the last word on what is plugged in: a device that shows up later reaches the
+/// driver as a connect change.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Settle {
+    start_ms: u64,
+    changed_ms: u64,
+    last: Connections,
+}
+
+/// Every root port's `CCS`, one bit per port number: 256 bits, since `HCSPARAMS1.MaxPorts` is a byte.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub type Connections = [u32; 8];
+
+/// USB 2.0's `TATTDB` (section 7.1.7.3), a connection's debounce interval, and Linux's
+/// `HUB_DEBOUNCE_STABLE`. It also covers USB 2.0's `TSIGATT` (a device attaches within 100 ms of
+/// power) and is Linux's floor on a root hub's power-on-to-good time.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub const DEBOUNCE_STABLE_MS: u64 = 100;
+/// Linux's `HUB_DEBOUNCE_STEP`.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub const DEBOUNCE_STEP_MS: u64 = 25;
+/// Linux's `HUB_DEBOUNCE_TIMEOUT`.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+pub const DEBOUNCE_TIMEOUT_MS: u64 = 2000;
+
+impl Settle {
+    /// Start at `now_ms`, when the ports were powered, having read `first`.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+    pub const fn new(now_ms: u64, first: Connections) -> Settle {
+        Settle {
+            start_ms: now_ms,
+            changed_ms: now_ms,
+            last: first,
+        }
+    }
+
+    /// The ports read `seen` at `now_ms`: `None` to keep reading, `Some(true)` once nothing has
+    /// changed for [`DEBOUNCE_STABLE_MS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MS`].
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+    pub fn observe(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
+        if seen != self.last {
+            self.last = seen;
+            self.changed_ms = now_ms;
+        }
+        if now_ms.saturating_sub(self.changed_ms) >= DEBOUNCE_STABLE_MS {
+            Some(true)
+        } else if now_ms.saturating_sub(self.start_ms) >= DEBOUNCE_TIMEOUT_MS {
+            Some(false)
+        } else {
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,5 +241,75 @@ mod tests {
         assert_eq!(default_control_packet(speed::HIGH), Some(64));
         assert_eq!(default_control_packet(speed::SUPER), Some(512));
         assert_eq!(default_control_packet(0), None);
+    }
+
+    fn ports(numbers: &[u8]) -> Connections {
+        let mut bits = [0; 8];
+        for &n in numbers {
+            bits[usize::from(n / 32)] |= 1 << (n % 32);
+        }
+        bits
+    }
+
+    /// Run a settle over `timeline` (milliseconds after power, the ports connected from then on),
+    /// reading every step as the driver does: when it stops, and what it last read.
+    fn settle(timeline: &[(u64, &[u8])]) -> (u64, Option<bool>, Connections) {
+        let at = |t: u64| {
+            ports(
+                timeline
+                    .iter()
+                    .rev()
+                    .find(|(from, _)| *from <= t)
+                    .unwrap()
+                    .1,
+            )
+        };
+        let mut s = Settle::new(0, at(0));
+        let mut t = 0;
+        loop {
+            t += DEBOUNCE_STEP_MS;
+            if let Some(settled) = s.observe(t, at(t)) {
+                return (t, Some(settled), at(t));
+            }
+        }
+    }
+
+    /// **xenon's ports after the reset**, from the PORTSC probe on 2026-10-21 (UTC): nothing at
+    /// first, ports 4 and 9 back about 10 ms later, port 1 a millisecond after them. The scan the
+    /// boot line counts read none of them; a settled scan reads all three.
+    #[test]
+    fn xenons_ports_are_all_counted_once_they_settle() {
+        let (t, settled, seen) = settle(&[(0, &[]), (10, &[4, 9]), (11, &[1, 4, 9])]);
+        assert_eq!(settled, Some(true));
+        assert_eq!(seen, ports(&[1, 4, 9]));
+        assert_eq!(t, 125);
+    }
+
+    /// QEMU reports a connection the moment the controller runs: nothing changes, and the scan
+    /// still waits the power-on floor rather than reading at once.
+    #[test]
+    fn a_port_connected_from_the_start_is_believed_after_the_floor() {
+        assert_eq!(settle(&[(0, &[5])]), (100, Some(true), ports(&[5])));
+    }
+
+    /// A port that keeps changing never settles, and the wait ends at the timeout with `false`, so
+    /// the boot line can say its count is not a fact.
+    #[test]
+    fn a_port_that_never_holds_still_ends_at_the_timeout() {
+        let mut s = Settle::new(0, ports(&[]));
+        let mut t = 0;
+        let end = loop {
+            t += DEBOUNCE_STEP_MS;
+            let bouncing = if (t / DEBOUNCE_STEP_MS) % 2 == 0 {
+                ports(&[3])
+            } else {
+                ports(&[])
+            };
+            if let Some(settled) = s.observe(t, bouncing) {
+                break settled;
+            }
+        };
+        assert!(!end);
+        assert_eq!(t, DEBOUNCE_TIMEOUT_MS);
     }
 }
