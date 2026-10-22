@@ -47,13 +47,13 @@ fn qemu_max() -> CpuidWords {
     }
 }
 
-/// xenon, an Intel Core i5-7500T: milestone 87's bare-metal machine, as its boot line printed it on
-/// 2026-10-21 (`cpuid leaves 0..0x16 and 0x80000000..0x80000008`, `features : nx syscall
-/// invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the hypervisor bit
-/// is clear because nothing sits between this part and the kernel.
+/// xenon, an Intel Core i5-7500T: milestone 87 (the x86_64 bare-metal machine), as its boot line
+/// printed it on 2026-10-21 (`cpuid leaves 0..0x16 and 0x80000000..0x80000008`, `features : nx
+/// syscall invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the
+/// hypervisor bit is clear because nothing sits between this part and the kernel.
 fn xenon() -> CpuidWords {
     CpuidWords {
-        // "Genu" "ineI" "ntel", EDX before ECX as above.
+        // "GenuineIntel" in EBX, EDX, ECX order, as above.
         leaf0: [0x16, 0x756e_6547, 0x6c65_746e, 0x4965_6e69],
         leaf1_ecx: 0,
         leaf7_0: [0, 1 << 18, 0, 0],

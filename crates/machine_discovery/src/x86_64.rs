@@ -437,8 +437,8 @@ pub const TABLE: [Row; 4] = [
         why: "the kernel's whole ring-3 entry path; absent, the ABI is #UD on the first call",
     },
     // **Refused on silicon, warned under a hypervisor, and the split is measured rather than
-    // argued.** Real silicon has had this bit since about 2008, and xenon (milestone 87, the
-    // x86_64 bare-metal machine) reports it. QEMU's TCG refuses to advertise it at all:
+    // argued.** Real silicon has had this bit since about 2008, and xenon, milestone 87 (the
+    // x86_64 bare-metal machine), reports it. QEMU's TCG refuses to advertise it at all:
     // `-cpu max,invtsc=on` answers
     // `warning: TCG doesn't support requested feature: CPUID[eax=80000007h].EDX.invtsc [bit 8]`
     // and clears it (QEMU 11, 2026-09-21). It is a KVM-only feature there, because QEMU will not

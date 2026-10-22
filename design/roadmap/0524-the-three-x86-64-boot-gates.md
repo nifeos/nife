@@ -78,8 +78,8 @@ machine this project can run on today reports zero, and a refusal would refuse e
 That is worth stating as a finding rather than as an obstacle: **the rate `arch::x86_64::timer`
 measures under QEMU is one the machine underneath has never promised.**
 
-Real silicon does promise it. Every x86 part since about 2008 has the bit, and xenon (milestone 87,
-the x86_64 bare-metal machine; an Intel Core i5-7500T) prints `features : nx syscall invariant-tsc
+Real silicon does promise it. Every x86 part since about 2008 has the bit, and xenon, milestone 87 (the
+x86_64 bare-metal machine), an Intel Core i5-7500T, prints `features : nx syscall invariant-tsc
 rdseed` (`bench/xenon-2026-10-21/README-524.md`). So the rule splits on who keeps the clock, and
 `CPUID.1:ECX[31]`, the hypervisor bit, says which. It reads zero on silicon. QEMU sets it under TCG,
 measured on the boot below.
