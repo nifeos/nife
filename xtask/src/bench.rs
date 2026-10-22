@@ -598,10 +598,12 @@ fn read_bench_lines(stdout: impl std::io::Read) -> (Vec<(String, u64, u64)>, u64
     let mut results: Vec<(String, u64, u64)> = Vec::new();
     let mut cntfrq: u64 = 0;
     let mut done = false;
-    for line in reader.lines() {
-        let Ok(line) = line else { break };
+    let mut lines = reader.lines();
+    while let Some(Ok(line)) = lines.next() {
         if line.starts_with("[PANIC]") {
-            eprintln!("bench: the kernel panicked: {line}");
+            // The panic's message is the line after its location.
+            let message = lines.next().and_then(Result::ok).unwrap_or_default();
+            eprintln!("bench: the kernel panicked: {line} {message}");
             break;
         }
         // **Diagnostics pass straight through, and deliberately do not become rows.** A probe
@@ -953,7 +955,8 @@ mod tests {
     fn a_kernel_panic_ends_the_run_without_done() {
         let out = "bench: cntfrq 10000000\n\
                    bench: yield_switch 183330 2000\n\
-                   [PANIC] panicked at kernel/src/bench/timing.rs:1:1: a tick landed\n\
+                   [PANIC] panicked at kernel/src/bench/timing.rs:1:1:\n\
+                   1 preemption tick(s) landed in ipc_rtt's timed window\n\
                    bench: ipc_rtt 175709 1000\n\
                    bench: done\n";
         let (results, cntfrq, done) = super::read_bench_lines(out.as_bytes());
