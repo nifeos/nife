@@ -167,8 +167,8 @@ P2 and P3 "failures" are by design: it hands back unchecked ranges and leaves bo
 
 A proof upstream would have to be one of these harnesses. cole14's and `object`'s note walks already
 hold as written, so a contribution there is the harness and a CI job, not a restructuring.
-`goblin` would need restructuring before a harness finishes, which is the code change §46's
-exemption exists for.
+`goblin` would need restructuring before a harness finishes. That is the code change §46 (thin
+primitives or whole subsystems) keeps the kernel's own code for.
 
 ## Cost
 
