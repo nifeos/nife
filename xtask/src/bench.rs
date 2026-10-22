@@ -657,7 +657,10 @@ fn record_readings(results: &[(String, u64, u64)], baseline_path: &std::path::Pa
         .open(&path)
         .and_then(|mut f| f.write_all(text.as_bytes()));
     if let Err(e) = written {
-        eprintln!("bench: could not append readings to {}: {e}", path.to_string_lossy());
+        eprintln!(
+            "bench: could not append readings to {}: {e}",
+            path.to_string_lossy()
+        );
         return false;
     }
     true
