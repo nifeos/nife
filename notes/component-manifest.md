@@ -110,15 +110,16 @@ The corollary is the property that makes a component substitutable at all:
 
 `hot_swap_contract::CLIENT` asks to *use* an endpoint it calls `service`. On the direct channel the operator
 routes that name to the shared service endpoint; on the queued channel it routes the same name to the
-queue broker's front endpoint. One declaration, two routings, and `chatty` cannot tell which it got.
-That is what makes a component's **peer** substitutable and not only the component.
+queue broker's front endpoint. One declaration, two routings, and `swap_boundary_witness` cannot
+tell which it got. That is what makes a component's **peer** substitutable and not only the
+component.
 
 ## What the manifest declares, and what it deliberately does not
 
 | declared | not declared |
 |---|---|
 | capabilities, by role name and direction, **in capability table slot order** | supervision: a component does not choose whether it is watched (§32) |
-| pages, by role name and the virtual address its own code reads | start arguments: which log entries this instance writes, which of `chatty`'s three roles it is |
+| pages, by role name and the virtual address its own code reads | start arguments: which log entries this instance writes, which of `swap_boundary_witness`'s three roles it is |
 | how many pages of budget one instance is built out of | stack size, and everything else `ChildEndowment` defaults (retention excepted: DECISIONS §142 gives it no default) |
 
 The line is that **a manifest declares what a component needs, not everything about how it is
@@ -146,8 +147,9 @@ silently winning, or a region split refusing for no visible reason.
 The slot numbers are derived, which is the same rung reached a second way. `hot_swap_contract::SVC` is
 not `0` any more; it is `component_plan::slot_of(&CONSOLE, "service")`, computed at compile time from
 the declaration the operator wires from. A role the manifest does not declare **does not compile**.
-`chatty` and `broker` derive their own the same way, and because one binary serves both `CONSOLE` and
-`BACKEND` there are four more assertions pinning the two declarations to the same slots.
+`swap_boundary_witness` and `broker` derive their own the same way, and because one binary serves
+both `CONSOLE` and `BACKEND` there are four more assertions pinning the two declarations to the same
+slots.
 
 Provisioning is a runtime refusal, because what a supervisor holds is only known when it runs.
 That is `plan()`'s job, and its answer is a value the operator reports rather than a fault it takes.
@@ -231,8 +233,8 @@ supervisor:
    ```
 
 Substitute a component's peer without touching the component. Route its `service` name somewhere
-else. That is the whole of what the queued channel does to `chatty`: `to_producer`, in
-`components/src/swapper.rs` `plan_queued`, routes `service` to the broker's `front` endpoint.
+else. That is the whole of what the queued channel does to `swap_boundary_witness`: `to_producer`,
+in `components/src/swapper.rs` `plan_queued`, routes `service` to the broker's `front` endpoint.
 
 Hand a device over on the far side of a revoke. `component_plan` sorts device mappings last, so
 both halves are slices of one plan: build the child from `plan.maps_without_devices()` with
