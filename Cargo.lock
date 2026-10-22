@@ -157,6 +157,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "capability_plan"
+version = "0.1.0"
+dependencies = [
+ "abi",
+]
+
+[[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
 
@@ -190,13 +197,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
-name = "component_plan"
-version = "0.1.0"
-dependencies = [
- "abi",
-]
-
-[[package]]
 name = "components"
 version = "0.1.0"
 dependencies = [
@@ -208,8 +208,8 @@ dependencies = [
  "byte_sink_contract",
  "calendar",
  "capability_manifest_note",
+ "capability_plan",
  "clock_contract",
- "component_plan",
  "compositor",
  "credential_contract",
  "credentialer",
@@ -516,9 +516,9 @@ dependencies = [
  "byte_sink_contract",
  "c_seam",
  "capability_manifest_note",
+ "capability_plan",
  "capability_witness_contract",
  "clock_contract",
- "component_plan",
  "compositor",
  "confined_syscall_fuzzer_contract",
  "coremark",
@@ -644,7 +644,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
- "component_plan",
+ "capability_plan",
  "user_mode_runtime",
 ]
 
@@ -809,7 +809,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 name = "line_editor"
 version = "0.1.0"
 dependencies = [
- "component_plan",
+ "capability_plan",
 ]
 
 [[package]]

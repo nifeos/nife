@@ -7,7 +7,7 @@ should be denominated in, and where the built one, a duration on the swap's quie
 Take the three candidate owners in turn, because the manifest answer is genuinely attractive and it
 is wrong.
 
-The manifest's, and no. `component_plan::Requirements` is where a deadline looks like it belongs:
+The manifest's, and no. `capability_plan::Requirements` is where a deadline looks like it belongs:
 one declaration, shipped with the contract, read by every supervisor. It fails on the tree's own
 evidence. A contract cannot know the machine. The same `OPERATION_PUT` under QEMU TCG, under HVF,
 and on a VisionFive 2 differ by orders of magnitude (notes/cpu-models.md, the matrix of milestone 59

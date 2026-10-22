@@ -97,7 +97,7 @@ of those 404, crate by crate, re-measuring the same way after every batch: 235 i
 a hard gate, so those crates cannot regress:
 
 `abi`, `address_space_identifier`, `bitmap_font`, `block_roster`, `c_seam`, `calendar`, `memory_corruption_canary_gate`, `capability`,
-`clock_contract`, `component_plan`, `coremark`, `cpu_set`, `cred`, `credential_contract`,
+`clock_contract`, `capability_plan`, `coremark`, `cpu_set`, `cred`, `credential_contract`,
 `dma_validator`, `device_tree_blob`. `elf`, `entropy_contract`, `page_frames`,
 `filesystem_contract`, `graphics_contract`, `glob`, `inter_process_communication`, `intrusive_fifo`,
 `line_editor`,

@@ -1,4 +1,4 @@
-Falsifies `component_plan::proofs::a_plan_never_grants_a_right_the_declaration_did_not_ask_for`.
+Falsifies `capability_plan::proofs::a_plan_never_grants_a_right_the_declaration_did_not_ask_for`.
 
 The defect: `Direction::rights` returns `READ` for `Use` as well as for `Serve`. A
 component that declared it *uses* a rendezvous is routed a capability it can only receive
@@ -21,10 +21,10 @@ The record this replaces was `Direction::rights` adding `GRANT` to everything, w
 assertion was blind to it and left the rewrite to a later lane. This is that rewrite, and
 the defect the first assertion is now load-bearing against.
 
-diff --git a/crates/component_plan/src/lib.rs b/crates/component_plan/src/lib.rs
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
 index 6332eb8f..61bc12d5 100644
---- a/crates/component_plan/src/lib.rs
-+++ b/crates/component_plan/src/lib.rs
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
 @@ -199,7 +199,7 @@ impl Direction {
      pub const fn rights(self) -> u64 {
          match self {

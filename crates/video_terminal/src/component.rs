@@ -3,10 +3,10 @@
 //!
 //! The capability slots every builder hands `display_terminal` (the kernel's test wiring,
 //! `system_initializer`'s session, and `terminal_supervisor`), so the four agree through one list
-//! (AGENTS.md rule 7). They are positions rather than a `component_plan` declaration because two of
-//! them are not endpoints: a map budget and two frame runs, which `component_plan::Direction` has no
-//! word for. A declaration for this program is milestone 597 (a program carries its manifest in an
-//! ELF note)'s to write.
+//! (AGENTS.md rule 7). They are positions rather than a `capability_plan` declaration because two
+//! of them are not endpoints: a map budget and two frame runs, which `capability_plan::Direction`
+//! has no word for. A declaration for this program is milestone 597 (a program carries its manifest
+//! in an ELF note)'s to write.
 //!
 //! # The swap, as `display_terminal` sees it
 //!
