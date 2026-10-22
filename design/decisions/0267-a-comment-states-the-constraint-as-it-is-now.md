@@ -43,11 +43,37 @@ The naming record's refusal archive keeps its own convention (§155 (the naming 
 out of the constitution); design/naming.md says where
 it lives); this amendment ends the sweep adding to it.
 
-The rule the tree already had (AGENTS.md, "Comments": a comment explains a constraint the code
-can't show; never restate the next line) is unchanged. The measurement that asked the question
-found the rule is being followed: a uniform sample of 30 blocks kept 24, cut 4 and moved 2. What
-the ruling adds is the cap on the long tail, and the placement rule for the sentences that
-accumulate in place.
+A comment explains a constraint the code can't show, and never restates the next line. The
+measurement that asked the question found that rule followed: a uniform sample of 30 blocks kept
+24, cut 4 and moved 2. What the ruling adds is the cap on the long tail, and the placement rule for
+the sentences that accumulate in place.
+
+## Comments in the Linux style
+
+calef, 2026-10-22 00:53 UTC, on [milestone 929 (comments in the Linux style across first-party
+Rust)](../roadmap/0929-kernel-comments-in-the-linux-style.md) in the scope
+[PR #2531](https://github.com/nifeos/nife/pull/2531) set: *"Consider 929 ruled."* The rule binds
+all first-party Rust, every non-`vendor/` directory:
+
+1. An item's doc comment opens with a summary sentence, then gives its arguments, what it holds and
+   what it returns or refuses, and links the note that carries its design. A design argument goes
+   in the note, not the doc comment. A `Context:` line (the locks it takes, whether it may run in
+   interrupt context) appears only on code that holds locks or runs in interrupt context.
+2. A comment inside a function body states a constraint the code cannot show: an ordering, a
+   `SAFETY` argument, a hardware quirk. Narrative, worked examples and "how this works" go in the
+   item's doc comment or the note.
+3. An invariant a comment states as "the caller must..." becomes an assertion or a type where one
+   fits.
+
+Rustdoc takes the place of Linux's kernel-doc, and `missing_docs` and the `// SAFETY:` discipline
+stay as they are. The newcomer test is met by the note a doc comment links to.
+
+New code meets the rule everywhere now. The existing comments are paid down in stages, ordered by
+effort and the merge queue rather than by exemption: `kernel/`; then `crates/` and `components/`;
+then `system_tests/`, `xtask/` and every other directory. In the same order a directory's block cap
+steps from 40 to 20 to 10, and a ceiling on plain comment lines inside function bodies starts for
+it. The cap and ceiling in force for each directory are the ones
+`helpers/comment_block_ratchet.py` holds.
 
 ## The cap: 40 lines
 

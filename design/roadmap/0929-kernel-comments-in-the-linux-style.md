@@ -10,9 +10,9 @@ needs_person: no
 ---
 # 929. Comments in the Linux style across first-party Rust
 
-This proposes applying Linux's commenting convention to all first-party Rust, `kernel/` first. Its
-scope is ruled; the rule is not in force. It amends §267 (a comment states the constraint as it is
-now) and the "Comments" section of `AGENTS.md`, so nothing here binds until calef rules on the rule.
+This applies Linux's commenting convention to all first-party Rust, `kernel/` first. calef ruled
+it on 2026-10-22 (UTC), and the rule is in force in §267 (a comment states the constraint as it is
+now) and the "Comments" section of `AGENTS.md`. What remains here is the mechanism and the paydown.
 
 ## Linux's convention
 
@@ -57,7 +57,7 @@ alone would move at most the plain lines and leave `kernel/` near 0.65. The long
 real target, and it is Linux's rule 3: a design essay on an item belongs in the note for its
 subsystem. And the cap in force, 40 lines, is met everywhere: no directory has a block over it.
 
-## The rule proposed, for all first-party Rust
+## The rule, for all first-party Rust
 
 The rule is one rule. The stage order below is about effort and the merge queue, and exempts no
 directory.
@@ -118,7 +118,7 @@ most two in the queue:
 - The in-body proxy over-counts where a plain comment is indented inside a nested `impl` or `mod`,
   and the real ceiling is set by the lexer when the helper's count is written.
 
-The end state is not Linux's 0.33, and this proposal does not aim at it. Reaching it would mean
+The end state is not Linux's 0.33, and this milestone does not aim at it. Reaching it would mean
 cutting the item documentation the newcomer test rests on, not moving it.
 
 ## Done means
@@ -134,4 +134,4 @@ Linux style across first-party Rust" says it. The file keeps its number-and-slug
 
 ## Index row
 
-Linux comments at a function's head and keeps design in `Documentation/`; this tree's comment density runs from 0.46 to 0.84 per code line against Linux's 0.33. The proposal measures the gap and the cost of a Linux-style rule for all first-party Rust, `kernel/` first, and the rule is not in force until calef rules.
+Linux comments at a function's head and keeps design in `Documentation/`; this tree's comment density runs from 0.46 to 0.84 per code line against Linux's 0.33. It measures the gap and the cost of a Linux-style rule for all first-party Rust, `kernel/` first; the rule is in force in §267, and the mechanism and paydown remain.
