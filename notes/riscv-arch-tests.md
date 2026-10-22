@@ -238,9 +238,10 @@ problems, and only the first was large.
    **Outcome:** exactly this, and cheaper than sized. All five hand-assembled programs (three
    aarch64, two RISC-V) are gone, along with `exec`, the one-page raw-machine-code loader they
    needed, plus three duplicate copies of a nine-instruction stub the supervision tests already kept
-   a portable pair of. The replacements are one new binary (`fixtures/src/outlaw.rs`, two roles) and the
-   `interrupt_ignorer` that §24's interrupt work had already built. The trick that made one program serve two ISAs was
-   passing the forbidden address in a register instead of baking it into the code.
+   a portable pair of. The replacements are one new binary (`fixtures/src/kernel_test_subject.rs`,
+   two roles) and the `interrupt_ignorer` that §24's interrupt work had already built. The trick
+   that made one program serve two ISAs was passing the forbidden address in a register instead of
+   baking it into the code.
 
 2. The fault-register assertions. Roughly a third of the tests assert on `ESR`/`FAR` (that a
    fault was a *permission* fault and not a translation fault, that `FAR` named the exact address).

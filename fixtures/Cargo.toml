@@ -200,12 +200,12 @@ path = "src/interrupt_ignorer.rs"
 test = false
 bench = false
 
-# The outlaw (milestone 19, the user-test port): reads an address it is not allowed to touch, and
-# round-trips through user mode. The two programs kernel::user::tests used to hand-assemble as
-# aarch64 machine code; a real ELF here is what lets those tests run on both ISAs.
+# The kernel test subject (milestone 19, the user-test port): reads an address it is not allowed to
+# touch, and round-trips through user mode. The two programs kernel::user::tests used to
+# hand-assemble as aarch64 machine code; a real ELF here is what lets those tests run on both ISAs.
 [[bin]]
-name = "outlaw"
-path = "src/outlaw.rs"
+name = "kernel_test_subject"
+path = "src/kernel_test_subject.rs"
 test = false
 bench = false
 

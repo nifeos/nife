@@ -708,11 +708,11 @@ fn preemption(tally: &mut Tally) {
 /// **A program runs at user level, reaches for a kernel address, and is killed; the kernel is
 /// not.**
 ///
-/// The privilege boundary, both halves. `outlaw` is handed the address of the kernel's own fault
-/// counter, which is certainly mapped and certainly not the program's, so the fault it takes is a
-/// permission fault on a page that exists rather than a translation fault on one that does not. The
-/// program has to run at user level to take it, and the counter it reached for is the one that
-/// records it. The kernel then executes the next line, which is the other half.
+/// The privilege boundary, both halves. `kernel_test_subject` is handed the address of the kernel's
+/// own fault counter, which is certainly mapped and certainly not the program's, so the fault it
+/// takes is a permission fault on a page that exists rather than a translation fault on one that
+/// does not. The program has to run at user level to take it, and the counter it reached for is the
+/// one that records it. The kernel then executes the next line, which is the other half.
 ///
 /// Needs the archive, which every boot that can hand over has. A boot without one fails this check
 /// by name rather than passing it: no user program ran.
@@ -727,11 +727,13 @@ fn userspace(tally: &mut Tally) {
     use crate::arch::exceptions::{USER_FAULTS, last_user_fault};
     use crate::user;
 
-    let Some(image) = user::program("outlaw") else {
+    let Some(image) = user::program("kernel_test_subject") else {
         tally.record(
             "userspace",
             false,
-            format_args!("the archive has no outlaw program, so no user program could run"),
+            format_args!(
+                "the archive has no kernel_test_subject program, so no user program could run"
+            ),
         );
         return;
     };
@@ -741,7 +743,7 @@ fn userspace(tally: &mut Tally) {
         user::run(
             image,
             user::Spawn {
-                arg0: user::OUTLAW_READ_KERNEL,
+                arg0: user::KERNEL_TEST_SUBJECT_READ_KERNEL,
                 arg1: kernel_addr,
                 arg2: 0,
                 grants: &[],
