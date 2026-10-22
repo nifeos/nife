@@ -166,14 +166,17 @@ rather than in a guess.
   wrong on a hybrid one, where Intel's P-cores and E-cores differ in what leaf 7 reports.
   `machine_discovery::riscv64` already solves the twin problem (the intersection over every hart),
   so the shape to copy exists. Recorded in `kernel/src/arch/x86_64/isa.rs`'s `BUGS`.
-- The invariant TSC is untested on silicon, which is the same sentence as the promotion trigger
-  above and is why this milestone is PARTIAL rather than BUILT.
+- The invariant TSC is read on silicon: xenon, an Intel Core i5-7500T, prints `features : nx
+  syscall invariant-tsc rdseed` and no `unpromised` line (`bench/xenon-2026-10-21/README-524.md`).
+  The row is still `Gate::Warn`, which is why this milestone is PARTIAL rather than BUILT.
 
 ## Follow-on
 
-- **Outstanding.** Promote the invariant-TSC row from `Gate::Warn` to `Gate::Refuse`. Checked
-  2026-09-21 by running `-cpu max,invtsc=on` and reading QEMU's refusal, so the blocker is the
-  emulator and not the code. The change is one token in
+- **Outstanding.** Promote the invariant-TSC row from `Gate::Warn` to `Gate::Refuse`. The
+  silicon trigger is met (above). The token alone cannot move: QEMU's TCG never reports the bit,
+  so `Refuse` would refuse every `x86_64` boot the gates run. The promotion needs a rule for an
+  emulated CPU first (for example, refuse only where `CPUID.1:ECX[31]`, the hypervisor bit, is
+  clear), and that rule is an architect's call. The table row is in
   `crates/machine_discovery/src/x86_64.rs`'s `TABLE`, and the host test that pins today's value
   fails on purpose when it moves.
 - **Recorded.** Per-core feature checks, for a hybrid part where the boot CPU does not speak for
