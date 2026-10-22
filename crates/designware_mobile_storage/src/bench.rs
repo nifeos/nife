@@ -13,6 +13,7 @@
 //!   written.
 
 use crate::host::{Host, Registers};
+use crate::idmac::DirectMemoryAccessRegion;
 use crate::partition::Mbr;
 use crate::sd::{self, BLOCK, Card, InitError, IoError};
 
@@ -31,6 +32,8 @@ pub struct ReadReport {
     /// The first partition's first sector's bytes 82..90 (FAT32's `"FAT32   "` file system
     /// type), for the transcript.
     pub fs_type: [u8; 8],
+    /// The block the timed read started at: the first partition's, or 0 without one.
+    pub timed_from: u64,
     /// Blocks read in the timed sequential read.
     pub timed_blocks: u64,
     /// Microseconds the timed read took.
@@ -52,8 +55,8 @@ pub enum ReadFailure {
 /// # Errors
 ///
 /// The first step that failed.
-pub fn read_only<R: Registers>(
-    host: &mut Host<R>,
+pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
+    host: &mut Host<R, D>,
     bus_width: u8,
     buf: &mut [u8],
     timed_blocks: u64,
@@ -71,23 +74,80 @@ pub fn read_only<R: Registers>(
         partition_boot_signature = sector[510..512] == [0x55, 0xaa];
         fs_type.copy_from_slice(&sector[82..90]);
     }
-    let per = (buf.len() / BLOCK) as u64;
-    let mut timed = 0u64;
-    let start = host.registers().now_us();
-    if per > 0 {
-        while timed < timed_blocks && first + timed + per <= card.blocks {
-            sd::read_blocks(host, &card, first + timed, buf)
-                .map_err(|e| ReadFailure::Read(first + timed, e))?;
-            timed += per;
-        }
-    }
-    let timed_us = host.registers().now_us().wrapping_sub(start);
+    let (timed, timed_us) = timed_read(host, &card, first, buf, timed_blocks)?;
     Ok(ReadReport {
         card,
         mbr,
         partition_boot_signature,
         fs_type,
+        timed_from: first,
         timed_blocks: timed,
+        timed_us,
+    })
+}
+
+/// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buf.len()` bytes a
+/// command, stopping before the card's end. Returns the blocks read and the microseconds taken.
+fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
+    host: &mut Host<R, D>,
+    card: &Card,
+    first: u64,
+    buf: &mut [u8],
+    timed_blocks: u64,
+) -> Result<(u64, u64), ReadFailure> {
+    let per = (buf.len() / BLOCK) as u64;
+    let mut timed = 0u64;
+    let start = host.registers().now_us();
+    if per > 0 {
+        while timed < timed_blocks && first + timed + per <= card.blocks {
+            sd::read_blocks(host, card, first + timed, buf)
+                .map_err(|e| ReadFailure::Read(first + timed, e))?;
+            timed += per;
+        }
+    }
+    Ok((timed, host.registers().now_us().wrapping_sub(start)))
+}
+
+/// What the IDMAC's half of the read-only probe found.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IdmacReport {
+    /// The first transfer's bytes are the polled host's for the same blocks.
+    pub matches: bool,
+    /// Blocks read in the timed sequential read.
+    pub timed_blocks: u64,
+    /// Microseconds the timed read took.
+    pub timed_us: u64,
+}
+
+/// **The IDMAC's half of the read-only probe**, on a host [`Host::with_idmac`] made from the one
+/// [`read_only`] ran on and reported `r`. `reference` is the polled host's read of
+/// `reference.len()` bytes from `r.timed_from`; the same blocks are read through the IDMAC and
+/// compared, then [`read_only`]'s timed read runs again from there in `buf.len()`-byte commands,
+/// so the two rates differ only in the data path.
+///
+/// # Errors
+///
+/// The read that failed.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
+    host: &mut Host<R, D>,
+    r: &ReadReport,
+    reference: &[u8],
+    buf: &mut [u8],
+    timed_blocks: u64,
+) -> Result<IdmacReport, ReadFailure> {
+    let (card, first) = (&r.card, r.timed_from);
+    let n = reference.len().min(buf.len());
+    sd::read_blocks(host, card, first, &mut buf[..n]).map_err(|e| ReadFailure::Read(first, e))?;
+    // An empty reference never gets here: a read of no blocks is refused as `Length`.
+    let matches = buf[..n] == reference[..n];
+    let (timed_blocks, timed_us) = timed_read(host, card, first, buf, timed_blocks)?;
+    Ok(IdmacReport {
+        matches,
+        timed_blocks,
         timed_us,
     })
 }
@@ -121,8 +181,8 @@ pub enum WriteVerdict {
 
 /// **The scratch write test.** `mbr` is what [`read_only`] parsed from this card; `original` and
 /// `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
-pub fn scratch_write<R: Registers>(
-    host: &mut Host<R>,
+pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
+    host: &mut Host<R, D>,
     card: &Card,
     mbr: Option<&Mbr>,
     original: &mut [u8],
