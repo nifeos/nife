@@ -1713,7 +1713,11 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
     if d < 0 {
         return None;
     }
-    let n = read_file(d as u64, timetable_store::SCHEDULE_FILE_NAME.as_bytes(), out);
+    let n = read_file(
+        d as u64,
+        timetable_store::SCHEDULE_FILE_NAME.as_bytes(),
+        out,
+    );
     call(FS_EP, fs::req(fs::CLOSE, d as u64, 0), 0);
     n
 }
