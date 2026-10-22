@@ -199,10 +199,10 @@ has the method and its limits.
 ### x86_64
 
 There is no HVF or KVM for x86_64 on this host, so `--real` there is plain TCG, whose magnitudes
-mean nothing. The icount leg works and gates (since 2026-08-25). The I/O-bitmap write that
+mean nothing. The icount leg works and gates. The I/O-bitmap write that
 §121 (x86 port I/O) priced costs +216 ticks per iteration when nothing holds a port, against +2,373 for the
 naive 8 KiB write ([x86 TSS I/O bitmap](benchmarks/x86-tss-iomap.md)). `CR4.PGE` and `CR4.PCIDE`
-cannot be measured under TCG at all ([x86 instruments](benchmarks/x86-instruments.md)).
+cannot be measured under TCG ([x86 instruments](benchmarks/x86-instruments.md)).
 
 ## What the instruments cannot see
 
