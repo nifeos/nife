@@ -36,6 +36,13 @@ under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approva
   allows MIT, Apache-2.0, BSD-3-Clause, 0BSD and ISC, so an MPL-2.0 crate (`fdt`, `noline`,
   `serialport`) would need a license ruling first.
 
+## Take, adapt, fork, vendor or write
+
+Rule 6 of the codebase rules governs. For a crate we cannot take unmodified, calef's fork test and
+AI-submissions criterion (2026-10-22 UTC) are in
+[take, fork, vendor or write](0784-reuse-what-the-tree-wrote/take-fork-vendor-or-write.md),
+measured in [an appendix](0784-reuse-what-the-tree-wrote/upstreams-against-the-fork-test.md).
+
 ## The inventory, grouped by why it stays or goes
 
 Kernel, or used by the kernel for more than shared constants, keep by default (rule 3 and the
@@ -125,8 +132,8 @@ replace it without touching base.
 9a. BUILT: `mdr` is a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
 
 10. xHCI, when milestone 242 starts: adapt rust-osdev `xhci` for register and TRB definitions.
-Write the driver logic; take the definitions. The crate is dormant (release 2023-07), so expect to
-carry it as a fork or vendor it under §34 (RedoxFS is the primary filesystem, on three conditions)'s "we must patch it" trigger.
+Write the driver logic; take the definitions. The crate is dormant (release 2023-07), so it fails the fork test and is vendored if
+it needs a patch, under §34 (RedoxFS is the primary filesystem, on three conditions)'s "we must patch it" trigger.
 
 Not ranked: `serial_console`'s `port.rs` could take `rustix` termios (host-only). DNS is surveyed
 separately in pull request #1638.

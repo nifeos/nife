@@ -1,0 +1,21 @@
+Falsifies `file_allocation_table::long_name::verification::every_long_name_run_is_well_formed`.
+
+The defect: the units after the terminator are written as `0x0000` instead of `0xFFFF`. The name
+reads back right in a lenient driver, which stops at the first zero, and is a malformed run to one
+that checks the padding the specification requires.
+
+Expected to fail: the harness's `assert_eq!(unit, expected)`.
+
+diff --git a/crates/file_allocation_table/src/long_name.rs b/crates/file_allocation_table/src/long_name.rs
+index 0bc37e010..d5188ac14 100644
+--- a/crates/file_allocation_table/src/long_name.rs
++++ b/crates/file_allocation_table/src/long_name.rs
+@@ -168,7 +168,7 @@ impl LongName {
+         } else if position == self.len {
+             0x0000
+         } else {
+-            0xFFFF
++            0x0000
+         }
+     }
+ }

@@ -13,7 +13,7 @@ needs_person: no
 customer path: milestone 140 (mount a drive this system did not create)
 needs it for its FAT32 stratum.)*
 
-calef's rulings, quoted from the maintainer comments of 2026-10-07 (UTC):
+calef's rulings, quoted from the maintainer comments of 2026-10-07 and 2026-10-22 (UTC):
 
 - #1803, fork 2: *"take no FAT dependency. nife writes its own FAT12/16/32 crate (about 5,000 lines
   by the probed crates' sizes), proven with Kani because it parses hostile input from foreign
@@ -31,6 +31,31 @@ calef's rulings, quoted from the maintainer comments of 2026-10-07 (UTC):
   on its own" (write it, prove it, oracle tests, its own nifeos repository on the shared CI template
   (milestone 887) at first publication, trusted publishing); milestone 140's FAT32 stratum depends
   on it and adds the filesystem-contract server. On the customer path."* His word: *"Yes"*.
+- #2580, build or adopt (2026-10-22 19:57 UTC): *"build our own full-featured FAT crate, not
+  adopt `fatfs`. It covers FAT12/16/32 read-write, long names, rename, format, FSInfo and the dirty
+  bit, MBR, and a sector interface, with Kani proofs on the parsers, fuzzing and the mutation gate,
+  staged as fat-adopt-or-build.md sets out. Stage 1 is 560's long-name writer in the existing mkfs.
+  `fatfs` stays the test oracle, outside the base graph."* His word: *"A"*.
+
+## The stages
+
+Built in this order, by the #2580 ruling. Each lands on its own and leaves the installer working;
+[fat-adopt-or-build.md](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md) prices them.
+
+1. The long-name writer in the existing `mkfs`: milestone 560, built.
+2. The sector interface, boot sector and BPB parse, and FAT type by cluster count, with a
+   per-sector no-panic harness and the reader's first fuzz target. The oracle's dev-dependency pin
+   is ruled here.
+3. FAT entry decode and the bounded chain walk.
+4. Directories: entries, long-name assembly with the checksum checked, and #1803's macOS images
+   read to their recorded hashes.
+5. File read and the MBR. Milestone 140's read-only FAT stratum can start here.
+6. Allocation, write, extend, truncate and delete, with FSInfo and the dirty bit, and the
+   round-trip harness. Two pull requests.
+7. Make and remove directories, rename, and long-name creation with alias numbering.
+8. The general format for FAT12, FAT16 and FAT32, folding the `mkfs` in, with FAT12 and FAT16
+   oracle images.
+9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -43,8 +68,9 @@ calef's rulings, quoted from the maintainer comments of 2026-10-07 (UTC):
   open, read, extend, delete or rename anything, and it never will", and points the read half at
   milestone 140. This milestone retires that sentence. calef has since ruled that the crate is the
   format and 140 is the server. No scope conflict: the `mkfs` becomes the crate's format path.
-- Milestone 560 (a long file name, or riscv64 cannot be installed) is that `mkfs` crate's missing
-  long-name entry. The long-name writer here covers it.
+- Milestone 560 (a long file name, or riscv64 cannot be installed) is stage 1, built: the `mkfs`
+  writes VFAT long-name entries in `src/long_name.rs`, with three Kani harnesses in
+  `src/long_name/verification.rs` on the writer's half of the fourth property below.
 - `notes/filesystem-crates-2026-10-07.md` (#1803) measured five read-write FAT crates on nife's
   three targets and built two FAT32 images that macOS formatted and wrote, one bare and one inside
   an MBR, with every file's hash in `expected.sha256`. `make-images.sh` rebuilds them on macOS.
@@ -59,9 +85,8 @@ upstream on 2024-10-23 unreleased, and a release request has been open since 202
 #81).
 
 `fatfs` and `embedded-sdmmc` were measured against this block on 2026-10-22 (UTC), Kani included,
-in [784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md). Whether this block
-adopts one or builds a full crate, and whether FAT still publishes first, waits on calef
-([the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md)).
+in [784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md). calef's #2580
+ruling above settles it: this block builds the full crate, in the stages above.
 
 ## References and oracles
 
@@ -101,8 +126,8 @@ Non-goals for the first release:
 
 ## What is proven
 
-Nothing yet. The crate has no Kani harnesses today, so writing all four is this milestone's scope,
-not a step before it. Each row is a property this crate must prove before it publishes. The harness
+The writer's half of the fourth property is proved; the reader's half and the other three are
+this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
 cell names the Kani harness that proves it, or says `none yet`; every named harness carries a
 falsification patch that makes it fail at its own assertion. Each patch sits at
 `crates/file_allocation_table/falsifications/<module.path>.<harness>.patch`, as §134 (a harness
@@ -113,7 +138,7 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 | No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | none yet |
 | Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | none yet |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the FAT and directory consistent | none yet |
-| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | none yet |
+| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: none yet |
 
 Kani bounds its inputs, so whole-image coverage comes from composing per-sector proofs, with
 `script/fuzz` over whole images as the backstop. The block states that bound rather than claiming

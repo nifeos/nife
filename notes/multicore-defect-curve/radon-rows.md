@@ -134,3 +134,5 @@ confidence about one architecture and one workload, not a verdict about anything
 E4 is the first row with a log in the tree and a build recorded, and on the crossings axis it dwarfs
 the three before it. It has 4.1 million against about 8,500 recorded in total, from one boot of 8.16
 hours that drew the fast arrangement. radon's running total is in the curve note.
+
+Rows E87 onward, from 2026-10-22, are in [`radon-rows-2026-10-22.md`](radon-rows-2026-10-22.md).

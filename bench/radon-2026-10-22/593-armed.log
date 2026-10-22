@@ -1,0 +1,395 @@
+
+U-Boot SPL 2021.10 (Feb 12 2023 - 18:15:33 +0800)
+DDR version: dc2e84f0.
+Trying to boot from SPI
+
+OpenSBI v1.2
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : StarFive VisionFive V2
+Platform Features         : medeleg
+Platform HART Count       : 5
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 4000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : jh7110-hsm
+Platform PMU Device       : ---
+Platform Reboot Device    : pm-reset
+Platform Shutdown Device  : pm-reset
+Firmware Base             : 0x40000000
+Firmware Size             : 292 KB
+Runtime SBI Version       : 1.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 1
+Domain0 HARTs             : 0*,1*,2*,3*,4*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000040000000-0x000000004007ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000040200000
+Domain0 Next Arg1         : 0x0000000042200000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 1
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdcbx
+Boot HART ISA Extensions  : none
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 4096
+Boot HART PMP Address Bits: 34
+Boot HART MHPM Count      : 2
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+
+
+U-Boot 2021.10 (Feb 12 2023 - 18:15:33 +0800), Build: jenkins-VF2_515_Branch_SDK_Release-24
+
+CPU:   rv64imacu
+Model: StarFive VisionFive V2
+DRAM:  8 GiB
+MMC:   sdio0@16010000: 0, sdio1@16020000: 1
+Loading Environment from SPIFlash... SF: Detected gd25lq128 with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+StarFive EEPROM format v2
+
+--------EEPROM INFO--------
+Vendor : StarFive Technology Co., Ltd.
+Product full SN: VF7110B1-2253-D008E000-00004584
+data version: 0x2
+PCB revision: 0xb2
+BOM revision: A
+Ethernet MAC0 address: 6c:cf:39:00:47:2c
+Ethernet MAC1 address: 6c:cf:39:00:47:2d
+--------EEPROM INFO--------
+
+In:    serial@10000000
+Out:   serial@10000000
+Err:   serial@10000000
+Model: StarFive VisionFive V2
+Net:   eth0: ethernet@16030000, eth1: ethernet@16040000
+switch to partitions #0, OK
+mmc1 is current device
+found device 1
+bootmode flash device 1
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Hit any key to stop autoboot:  2  1  0 
+** Invalid partition 3 **
+Couldn't find partition mmc 1:3
+Can't set block device
+Importing environment from mmc1 ...
+## Warning: Input data exceeds 1048576 bytes - truncated
+## Info: input data size = 1048578 = 0x100002
+** Invalid partition 2 **
+Couldn't find partition mmc 1:2
+Can't set block device
+## Warning: defaulting to text format
+## Error: "boot2" not defined
+switch to partitions #0, OK
+mmc1 is current device
+Scanning mmc 1:1...
+Found U-Boot script /boot.scr.uimg
+1595 bytes read in 8 ms (194.3 KiB/s)
+## Executing script at 43900000
+nife: boot.scr is driving this boot, milestones 218 and 257
+nife: tftp server is 192.168.8.206, setenv nife_boot_server to point somewhere else
+ethernet@16030000 Waiting for PHY auto negotiation to complete...... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+DHCP client bound to address 192.168.8.200 (256 ms)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-vf2.img'.
+Load address: 0x40200000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 ##############################
+	 7 MiB/s
+done
+Bytes transferred = 3296428 (324cac hex)
+Using ethernet@16030000 device
+TFTP from server 192.168.8.206; our IP address is 192.168.8.200
+Filename 'nife-initrd.img'.
+Load address: 0x90000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 ##################################
+	 7.2 MiB/s
+done
+Bytes transferred = 17670656 (10da200 hex)
+nife: payload came from net
+Moving Image from 0x40200000 to 0x80200000, end=80524000
+## Flattened Device Tree blob at 86000000
+   Booting using the fdt blob at 0x86000000
+   Using Device Tree in place at 0000000086000000, end 000000008600d41a
+
+Starting kernel ...
+
+clk u5_dw_i2c_clk_core already disabled
+clk u5_dw_i2c_clk_apb already disabled
+
+nife on RISC-V (rv64, S-mode, Sv39)
+  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.
+  running at  : 0xffffffc0802090d2  (high half: Sv39 paging is on)
+  device tree : 0x0000000086000000
+  screen      : none (no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for); this console is the UART
+  smp: 5 core(s) in the device tree, 4 startable
+  smp: cpu 0's riscv,isa names user mode and not supervisor: it cannot run this kernel, whatever status and mmu-type claim; not started
+  plic: S contexts from the device tree differ from the 2h+1 formula (expected on the JH7110: the disabled S7 shifts every context down one)
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  smp: sbi hsm hart_start (the only mechanism RISC-V defines)
+  smp: cpu 0 is not startable by this kernel (disabled, no supervisor
+       mode, or an enable-method we do not speak); leaving it alone.
+  smp: 4 core(s) online
+  cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
+
+nife
+  isa         : rv64i m a c f d
+              : 5 hart(s), mmu sv39 declared and sv39 in use, satp.ASID 0 bits measured; read from the deprecated riscv,isa
+  firmware    : OpenSBI 0x10002, SBI 1.0, TIME IPI RFENCE HSM PMU
+  stack top       : 0xffffffc080474000
+  firmware handoff: 0x0000000086000000  (device tree)
+  processors      : 4 online of 5 described, boot cpu hwid 0x1
+  memory          : 4096 MiB total, 4067 MiB free (29536 KiB in use)
+  console         : NS16550 at 0xffffffc010000000, interrupt line 32
+                  : no screen; this console is the UART alone
+  interrupts      : PLIC at 0x000000000c000000, this hart's S-mode context 2
+  timer           : 100 Hz tick, counter at 4 MHz, interrupts ON
+  initial ramdisk : 17670656 bytes at 0x0000000090000000, a nifefs archive of 123 program(s)
+  pcie            : none (this machine describes no host bridge)
+  iommu           : none (no riscv-iommu-pci function on this machine's bus)
+  mmu             : Sv39 on, fine-grained W^X tables installed, one satp, kernel high half at 0xffffffc000000000
+                  : kernel root 0x00000000400a0000, live satp root 0x00000000400a0000
+  scheduler       : 5 thread(s), round robin, preemptive
+nife machine: riscv64, 4 processor(s), 4096 MiB, 100 Hz
+  self-test       : exceptions ok      a breakpoint was caught and stepped over (1)
+  self-test       : mapping    ok      0xffffffc180000000 -> 0x408ce000, read back 0xc0ffee, unmapped
+  self-test       : frames     ok      one frame out and back at 0x408ce000; used 7386 -> Some(7387) -> Some(7386)
+  self-test       : timer      ok      the 4MHz counter advanced 80000 and 2 tick(s) arrived in ~20ms
+  self-test       : scheduler  ok      thread 5 ran and carried its captured state (0x268026802680268)
+  self-test       : preemption ok      5 never-yield threads on 4 core(s): 0 starved, 85 preemptions
+
+  user thread 8589934597 killed: scause 0xd (code 13)
+    pc 0x0000000060000072   stval 0xffffffc080286c90   user sp 0x000000007ffeffb0
+    satp 0x80000000000408d1 (root 0x408d1000), leaf at stval Some(Flags(11))
+  the kernel is fine.
+  self-test       : userspace  ok      a program at user level read 0xffffffc080286c90: killed, and the kernel survived
+  capability slots: 2 of 64 at peak
+  self-test       : budget     ok      a process mapped 22 pages of a 24-page untyped; kernel frames used 7463 -> 7463
+  self-test       : blockdev   absent  no virtio block device on this machine, over MMIO or PCIe
+  self-test       : deviceirq  absent  no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists
+  self-test       : clock      ok      JH7110 STG CRG at 0x10230000 (from the tree): clocks 0x00000000,0x00000000 -> 0x80000000,0x80000000, reset released after 1 polls
+  self-test       : trng       ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 81fd676b.., differ true; bring-up 550 us, 64 bytes in 64 us (992248 bytes/s)
+  capability slots: 3 of 64 at peak
+  self-test       : entropy    ok      the JH7110 TRNG served 32+32 bytes to a client, first 12264ff3.., the two draws differ: true
+nife self-test: 11 of 13 passed, 2 absent: blockdev deviceirq
+nife: the capability core runs on riscv64.
+
+soak-test: started 4 groups of one responder, 3 callers, 1 grinder and 1 tick waiter (24 user threads) on 4 online core(s), beating every 5s
+soak-test: silence longer than a few beats is a hang, not a slow run; the beat is on the wall clock and does not depend on the workload making progress
+soak-test: a clean run is a number to compare against, NOT evidence that the concurrency is correct (design/roadmap/0219-a-workload-that-does-not-stop.md)
+soak-test: the threads that cross cores are the tick waiters, NOT the rendezvous pairs; a rising crossings count is the wake protocol sustained across cores under load, not the IPC workload migrating (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test: rounds counts IPC round trips and wakes counts tick-route wakes; they are separate because they are separate quantities, and neither rate compares with a soak built differently
+soak-test-census: where the kernel placed each worker at spawn: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=1 threads=5 C0 W1 G2 W2 C3
+soak-test-census: core=2 threads=5 R0 C0 C1 C2 C3
+soak-test-census: core=3 threads=7 G0 W0 C1 G1 C2 C3 W3
+soak-test-census: core=4 threads=7 C0 R1 C1 R2 C2 R3 G3
+soak-test-census: this is the boot-time lottery and NOT where the run settles: a rendezvous wake queues the peer on the waker's own core (DECISIONS 138, how a saturated workload is made to hand threads across cores), so each group converges onto one core within a few exchanges
+soak-test-census: the beat line's drifted= is how many responders, callers and grinders are no longer on the core the census above put them on; while it reads 0 that census is current, and a nonzero one is followed by the census that replaces it
+soak-test-census: tick waiters are excluded from drifted= because their movement is the point rather than a surprise, and it is already crossings= (design/roadmap/0221-a-soak-that-crosses-cores.md)
+soak-test-watchdog: found the JH7110 watchdog: starfive,dskit-wdt at 0x13070000, its clocks and resets in the SYS CRG at 0x13020000 (named by this machine's tree)
+soak-test-watchdog: clock 123 0x80000000 -> 0x80000000
+soak-test-watchdog: clock 122 0x80000000 -> 0x80000000
+soak-test-watchdog: 2 of 2 reset(s) released, 0 step(s) rejected, 0 specifier(s) skipped
+soak-test-watchdog: the counter runs at 23999850 Hz, measured against this kernel's timer. The JH7110 keeps no record this kernel knows of how its previous boot ended, so a watchdog reset shows only as this kernel starting again.
+soak-test-watchdog: ARMED. THIS BUILD RESETS THE MACHINE IF THE SOAK STOPS BEATING: 720000000 ticks of the 24000000 Hz core clock counted twice, so a reset 60.0s after the last pet, which comes every 5s from the beat.
+soak-test-watchdog: a soak that FAILS prints its verdict and dump and then stops petting, so the reset follows the evidence and never replaces it. To stop the watchdog: press any key on this console. It is halted at the next beat and the soak keeps running.
+soak-test: t=5s beat=1 rounds=1059062 rate=211812/s wakes=2171 wakerate=434/s workers=24 refused=0 mismatch=0 stalled=0 drifted=10 crossings=1121 remote=1570 steals=2 deferred=0
+soak-test-census: where the workers are NOW, the arrangement above having changed: R=responder, C=caller, G=grinder, W=tick waiter, and the number after each letter is its group
+soak-test-census: core=1 threads=6 G2 R3 C3 C3 C3 W3
+soak-test-census: core=2 threads=6 R0 C0 C0 C0 W0 W2
+soak-test-census: core=3 threads=6 G0 G1 R2 C2 C2 C2
+soak-test-census: core=4 threads=6 R1 C1 C1 C1 W1 G3
+soak-test-watchdog: petted at t=5s beat=1: the count had 594358858 of 720000000 ticks left
+soak-test: t=10s beat=2 rounds=2050190 rate=198225/s wakes=4207 wakerate=407/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=2134 remote=3070 steals=2 deferred=0
+soak-test: t=15s beat=3 rounds=3028937 rate=195749/s wakes=6214 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=3154 remote=4516 steals=2 deferred=0
+soak-test: t=20s beat=4 rounds=4007680 rate=195748/s wakes=8222 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=4155 remote=6027 steals=2 deferred=0
+soak-test: t=25s beat=5 rounds=4988484 rate=196160/s wakes=10235 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=5198 remote=7456 steals=2 deferred=0
+soak-test: t=30s beat=6 rounds=5966891 rate=195681/s wakes=12242 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=6200 remote=8936 steals=2 deferred=0
+soak-test: t=35s beat=7 rounds=6945429 rate=195707/s wakes=14250 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=7251 remote=10362 steals=2 deferred=0
+soak-test-watchdog: petted at t=35s beat=7: the count had 599518084 of 720000000 ticks left
+soak-test: t=40s beat=8 rounds=7926517 rate=196217/s wakes=16264 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=8271 remote=11825 steals=2 deferred=0
+soak-test: t=45s beat=9 rounds=8904480 rate=195592/s wakes=18272 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=9262 remote=13300 steals=2 deferred=0
+soak-test: t=50s beat=10 rounds=9884475 rate=195999/s wakes=20283 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=10299 remote=14742 steals=2 deferred=0
+soak-test: t=55s beat=11 rounds=10862848 rate=195674/s wakes=22290 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=11301 remote=16210 steals=2 deferred=0
+soak-test: t=60s beat=12 rounds=11841175 rate=195665/s wakes=24298 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=12306 remote=17669 steals=2 deferred=0
+soak-test: t=65s beat=13 rounds=12819598 rate=195684/s wakes=26307 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=13267 remote=19159 steals=2 deferred=0
+soak-test-watchdog: petted at t=65s beat=13: the count had 599519863 of 720000000 ticks left
+soak-test: t=70s beat=14 rounds=13800376 rate=196155/s wakes=28320 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=14268 remote=20606 steals=2 deferred=0
+soak-test: t=75s beat=15 rounds=14778130 rate=195550/s wakes=30326 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=15323 remote=22045 steals=2 deferred=0
+soak-test: t=80s beat=16 rounds=15756006 rate=195575/s wakes=32334 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=16347 remote=23526 steals=2 deferred=0
+soak-test: t=85s beat=17 rounds=16734588 rate=195716/s wakes=34343 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=17357 remote=24991 steals=2 deferred=0
+soak-test: t=90s beat=18 rounds=17712820 rate=195646/s wakes=36351 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=18317 remote=26463 steals=2 deferred=0
+soak-test: t=95s beat=19 rounds=18691730 rate=195782/s wakes=38359 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=19341 remote=27923 steals=2 deferred=0
+soak-test-watchdog: petted at t=95s beat=19: the count had 599519994 of 720000000 ticks left
+soak-test: t=100s beat=20 rounds=19672139 rate=196081/s wakes=40371 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=20362 remote=29396 steals=2 deferred=0
+soak-test: t=105s beat=21 rounds=20650170 rate=195606/s wakes=42379 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=21349 remote=30853 steals=2 deferred=0
+soak-test: t=110s beat=22 rounds=21628626 rate=195691/s wakes=44387 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=22359 remote=32292 steals=2 deferred=0
+soak-test: t=115s beat=23 rounds=22606728 rate=195620/s wakes=46394 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=23364 remote=33734 steals=2 deferred=0
+soak-test: t=120s beat=24 rounds=23584819 rate=195618/s wakes=48401 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=24359 remote=35186 steals=2 deferred=0
+soak-test: t=125s beat=25 rounds=24564890 rate=196014/s wakes=50415 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=25358 remote=36619 steals=2 deferred=0
+soak-test-watchdog: petted at t=125s beat=25: the count had 599280085 of 720000000 ticks left
+soak-test: t=130s beat=26 rounds=25545605 rate=196143/s wakes=52429 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=26335 remote=38096 steals=2 deferred=0
+soak-test: t=135s beat=27 rounds=26525387 rate=195956/s wakes=54437 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=27330 remote=39540 steals=2 deferred=0
+soak-test: t=140s beat=28 rounds=27503356 rate=195593/s wakes=56445 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=28350 remote=41010 steals=2 deferred=0
+soak-test: t=145s beat=29 rounds=28482146 rate=195758/s wakes=58454 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=29339 remote=42478 steals=2 deferred=0
+soak-test: t=150s beat=30 rounds=29460005 rate=195571/s wakes=60461 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=30364 remote=43919 steals=2 deferred=0
+soak-test: t=155s beat=31 rounds=30438499 rate=195698/s wakes=62470 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=31396 remote=45351 steals=2 deferred=0
+soak-test-watchdog: petted at t=155s beat=31: the count had 599520001 of 720000000 ticks left
+soak-test: t=160s beat=32 rounds=31418879 rate=196076/s wakes=64482 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=32474 remote=46804 steals=2 deferred=0
+soak-test: t=166s beat=33 rounds=32397673 rate=195758/s wakes=66489 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=33479 remote=48267 steals=2 deferred=0
+soak-test: t=171s beat=34 rounds=33376853 rate=195836/s wakes=68499 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=34485 remote=49714 steals=2 deferred=0
+soak-test: t=176s beat=35 rounds=34355311 rate=195691/s wakes=70506 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=35447 remote=51192 steals=2 deferred=0
+soak-test: t=181s beat=36 rounds=35333864 rate=195710/s wakes=72514 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=36459 remote=52649 steals=2 deferred=0
+soak-test: t=186s beat=37 rounds=36312927 rate=195812/s wakes=74526 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=37445 remote=54112 steals=2 deferred=0
+soak-test-watchdog: petted at t=186s beat=37: the count had 599378428 of 720000000 ticks left
+soak-test: t=191s beat=38 rounds=37293012 rate=196017/s wakes=76537 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=38433 remote=55563 steals=2 deferred=0
+soak-test: t=196s beat=39 rounds=38271642 rate=195726/s wakes=78545 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=39450 remote=57035 steals=2 deferred=0
+soak-test: t=201s beat=40 rounds=39249437 rate=195559/s wakes=80554 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=40469 remote=58490 steals=2 deferred=0
+soak-test: t=206s beat=41 rounds=40227165 rate=195545/s wakes=82562 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=41499 remote=59932 steals=2 deferred=0
+soak-test: t=211s beat=42 rounds=41205607 rate=195688/s wakes=84569 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=42522 remote=61397 steals=2 deferred=0
+soak-test: t=216s beat=43 rounds=42185515 rate=195981/s wakes=86582 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=43539 remote=62847 steals=2 deferred=0
+soak-test-watchdog: petted at t=216s beat=43: the count had 599378417 of 720000000 ticks left
+soak-test: t=221s beat=44 rounds=43166027 rate=196102/s wakes=88594 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=44530 remote=64340 steals=2 deferred=0
+soak-test: t=226s beat=45 rounds=44146164 rate=196027/s wakes=90605 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=45506 remote=65803 steals=2 deferred=0
+soak-test: t=231s beat=46 rounds=45123940 rate=195555/s wakes=92614 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=46520 remote=67265 steals=2 deferred=0
+soak-test: t=236s beat=47 rounds=46102104 rate=195632/s wakes=94621 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=47496 remote=68689 steals=2 deferred=0
+soak-test: t=241s beat=48 rounds=47082242 rate=196027/s wakes=96633 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=48542 remote=70115 steals=2 deferred=0
+soak-test: t=246s beat=49 rounds=48060900 rate=195731/s wakes=98641 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=49573 remote=71578 steals=2 deferred=0
+soak-test-watchdog: petted at t=246s beat=49: the count had 599519894 of 720000000 ticks left
+soak-test: t=251s beat=50 rounds=49041570 rate=196134/s wakes=100654 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=50604 remote=73051 steals=2 deferred=0
+soak-test: t=256s beat=51 rounds=50020654 rate=195816/s wakes=102661 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=51637 remote=74508 steals=2 deferred=0
+soak-test: t=261s beat=52 rounds=50999013 rate=195671/s wakes=104670 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=52633 remote=75982 steals=2 deferred=0
+soak-test: t=266s beat=53 rounds=51978996 rate=195996/s wakes=106681 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=53647 remote=77448 steals=2 deferred=0
+soak-test: t=271s beat=54 rounds=52957587 rate=195718/s wakes=108688 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=54666 remote=78895 steals=2 deferred=0
+soak-test: t=276s beat=55 rounds=53937968 rate=196076/s wakes=110702 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=55702 remote=80367 steals=2 deferred=0
+soak-test-watchdog: petted at t=276s beat=55: the count had 599376262 of 720000000 ticks left
+soak-test: t=281s beat=56 rounds=54918369 rate=196080/s wakes=112713 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=56684 remote=81811 steals=2 deferred=0
+soak-test: t=286s beat=57 rounds=55896765 rate=195679/s wakes=114722 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=57687 remote=83288 steals=2 deferred=0
+soak-test: t=291s beat=58 rounds=56875425 rate=195732/s wakes=116729 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=58687 remote=84765 steals=2 deferred=0
+soak-test: t=296s beat=59 rounds=57853266 rate=195568/s wakes=118738 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=59685 remote=86222 steals=2 deferred=0
+soak-test: t=301s beat=60 rounds=58831595 rate=195665/s wakes=120746 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=60667 remote=87720 steals=2 deferred=0
+soak-test: t=306s beat=61 rounds=59810245 rate=195730/s wakes=122754 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=61694 remote=89199 steals=2 deferred=0
+soak-test-watchdog: petted at t=306s beat=61: the count had 599520144 of 720000000 ticks left
+soak-test: t=311s beat=62 rounds=60790211 rate=195993/s wakes=124764 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=62730 remote=90670 steals=2 deferred=0
+soak-test: t=316s beat=63 rounds=61769136 rate=195785/s wakes=126775 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=63775 remote=92134 steals=2 deferred=0
+soak-test: t=321s beat=64 rounds=62747189 rate=195610/s wakes=128782 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=64836 remote=93582 steals=2 deferred=0
+soak-test: t=326s beat=65 rounds=63726949 rate=195952/s wakes=130794 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=65840 remote=95055 steals=2 deferred=0
+soak-test: t=331s beat=66 rounds=64707535 rate=196117/s wakes=132806 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=66869 remote=96513 steals=2 deferred=0
+soak-test: t=336s beat=67 rounds=65686109 rate=195714/s wakes=134814 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=67881 remote=97982 steals=2 deferred=0
+soak-test-watchdog: petted at t=336s beat=67: the count had 599520116 of 720000000 ticks left
+soak-test: t=341s beat=68 rounds=66668221 rate=196422/s wakes=136829 wakerate=403/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=68900 remote=99477 steals=2 deferred=0
+soak-test: t=346s beat=69 rounds=67647074 rate=195770/s wakes=138838 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=69880 remote=100910 steals=2 deferred=0
+soak-test: t=351s beat=70 rounds=68625354 rate=195656/s wakes=140845 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=70877 remote=102389 steals=2 deferred=0
+soak-test: t=356s beat=71 rounds=69603346 rate=195598/s wakes=142853 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=71856 remote=103871 steals=2 deferred=0
+soak-test: t=361s beat=72 rounds=70581956 rate=195722/s wakes=144860 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=72884 remote=105321 steals=2 deferred=0
+soak-test: t=366s beat=73 rounds=71560209 rate=195650/s wakes=146871 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=73941 remote=106765 steals=2 deferred=0
+soak-test-watchdog: petted at t=366s beat=73: the count had 599519895 of 720000000 ticks left
+soak-test: t=371s beat=74 rounds=72540257 rate=196009/s wakes=148881 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=74984 remote=108235 steals=2 deferred=0
+soak-test: t=377s beat=75 rounds=73520782 rate=196105/s wakes=150893 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=75993 remote=109726 steals=2 deferred=0
+soak-test: t=382s beat=76 rounds=74498891 rate=195621/s wakes=152902 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=76998 remote=111202 steals=2 deferred=0
+soak-test: t=387s beat=77 rounds=75477180 rate=195657/s wakes=154910 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=77987 remote=112661 steals=2 deferred=0
+soak-test: t=392s beat=78 rounds=76455896 rate=195743/s wakes=156918 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=78995 remote=114125 steals=2 deferred=0
+soak-test: t=397s beat=79 rounds=77433902 rate=195601/s wakes=158926 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=79983 remote=115611 steals=2 deferred=0
+soak-test-watchdog: petted at t=397s beat=79: the count had 599425892 of 720000000 ticks left
+soak-test: t=402s beat=80 rounds=78413943 rate=196008/s wakes=160938 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=80989 remote=117066 steals=2 deferred=0
+soak-test: t=407s beat=81 rounds=79392879 rate=195787/s wakes=162946 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=81968 remote=118535 steals=2 deferred=0
+soak-test: t=412s beat=82 rounds=80370999 rate=195624/s wakes=164954 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=82958 remote=120001 steals=2 deferred=0
+soak-test: t=417s beat=83 rounds=81348865 rate=195573/s wakes=166962 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=83949 remote=121485 steals=2 deferred=0
+soak-test: t=422s beat=84 rounds=82329338 rate=196094/s wakes=168973 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=84965 remote=122941 steals=2 deferred=0
+soak-test: t=427s beat=85 rounds=83307763 rate=195685/s wakes=170981 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=85980 remote=124389 steals=2 deferred=0
+soak-test-watchdog: petted at t=427s beat=85: the count had 599520009 of 720000000 ticks left
+soak-test: t=432s beat=86 rounds=84287635 rate=195974/s wakes=172994 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=86972 remote=125865 steals=2 deferred=0
+soak-test: t=437s beat=87 rounds=85266191 rate=195711/s wakes=175003 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=87948 remote=127341 steals=2 deferred=0
+soak-test: t=442s beat=88 rounds=86246764 rate=196114/s wakes=177014 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=88952 remote=128795 steals=2 deferred=0
+soak-test: t=447s beat=89 rounds=87225367 rate=195720/s wakes=179022 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=89973 remote=130246 steals=2 deferred=0
+soak-test: t=452s beat=90 rounds=88203305 rate=195587/s wakes=181029 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=90968 remote=131720 steals=2 deferred=0
+soak-test: t=457s beat=91 rounds=89182028 rate=195744/s wakes=183039 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=91946 remote=133197 steals=2 deferred=0
+soak-test-watchdog: petted at t=457s beat=91: the count had 599520240 of 720000000 ticks left
+soak-test: t=462s beat=92 rounds=90161797 rate=195953/s wakes=185049 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=92945 remote=134646 steals=2 deferred=0
+soak-test: t=467s beat=93 rounds=91140609 rate=195762/s wakes=187058 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=93982 remote=136113 steals=2 deferred=0
+soak-test: t=472s beat=94 rounds=92119032 rate=195684/s wakes=189064 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=95000 remote=137561 steals=2 deferred=0
+soak-test: t=477s beat=95 rounds=93097569 rate=195707/s wakes=191074 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=95977 remote=139019 steals=2 deferred=0
+soak-test: t=482s beat=96 rounds=94075950 rate=195676/s wakes=193082 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=97034 remote=140452 steals=2 deferred=0
+soak-test: t=487s beat=97 rounds=95054005 rate=195611/s wakes=195089 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=98061 remote=141949 steals=2 deferred=0
+soak-test-watchdog: petted at t=487s beat=97: the count had 599425926 of 720000000 ticks left
+soak-test: t=492s beat=98 rounds=96033978 rate=195994/s wakes=197101 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=99058 remote=143407 steals=2 deferred=0
+soak-test: t=497s beat=99 rounds=97014390 rate=196082/s wakes=199114 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=100084 remote=144875 steals=2 deferred=0
+soak-test: t=502s beat=100 rounds=97992518 rate=195625/s wakes=201121 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=101108 remote=146338 steals=2 deferred=0
+soak-test: t=507s beat=101 rounds=98971152 rate=195726/s wakes=203130 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=102130 remote=147795 steals=2 deferred=0
+soak-test: t=512s beat=102 rounds=99950880 rate=195945/s wakes=205141 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=103140 remote=149260 steals=2 deferred=0
+soak-test: t=517s beat=103 rounds=100929737 rate=195771/s wakes=207151 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=104173 remote=150704 steals=2 deferred=0
+soak-test-watchdog: petted at t=517s beat=103: the count had 599520293 of 720000000 ticks left
+soak-test: t=522s beat=104 rounds=101912033 rate=196459/s wakes=209166 wakerate=403/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=105184 remote=152182 steals=2 deferred=0
+soak-test: t=527s beat=105 rounds=102890330 rate=195659/s wakes=211174 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=106163 remote=153644 steals=2 deferred=0
+soak-test: t=532s beat=106 rounds=103867982 rate=195530/s wakes=213182 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=107181 remote=155099 steals=2 deferred=0
+soak-test: t=537s beat=107 rounds=104846140 rate=195631/s wakes=215189 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=108197 remote=156564 steals=2 deferred=0
+soak-test: t=542s beat=108 rounds=105823809 rate=195533/s wakes=217197 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=109232 remote=158030 steals=2 deferred=0
+soak-test: t=547s beat=109 rounds=106803879 rate=196014/s wakes=219210 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=110234 remote=159526 steals=2 deferred=0
+soak-test-watchdog: petted at t=547s beat=109: the count had 599367957 of 720000000 ticks left
+soak-test: t=552s beat=110 rounds=107786374 rate=196499/s wakes=221226 wakerate=403/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=111221 remote=160988 steals=2 deferred=0
+soak-test: t=557s beat=111 rounds=108764758 rate=195676/s wakes=223233 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=112244 remote=162466 steals=2 deferred=0
+soak-test: t=562s beat=112 rounds=109743061 rate=195660/s wakes=225242 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=113292 remote=163928 steals=2 deferred=0
+soak-test: t=567s beat=113 rounds=110721357 rate=195659/s wakes=227251 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=114271 remote=165354 steals=2 deferred=0
+soak-test: t=572s beat=114 rounds=111699471 rate=195622/s wakes=229258 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=115288 remote=166814 steals=2 deferred=0
+soak-test: t=577s beat=115 rounds=112679411 rate=195988/s wakes=231269 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=116323 remote=168243 steals=2 deferred=0
+soak-test-watchdog: petted at t=577s beat=115: the count had 599280031 of 720000000 ticks left
+soak-test: t=582s beat=116 rounds=113660505 rate=196218/s wakes=233283 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=117347 remote=169720 steals=2 deferred=0
+soak-test: t=588s beat=117 rounds=114640115 rate=195922/s wakes=235292 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=118370 remote=171154 steals=2 deferred=0
+soak-test: t=593s beat=118 rounds=115618585 rate=195694/s wakes=237301 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=119377 remote=172625 steals=2 deferred=0
+soak-test: t=598s beat=119 rounds=116597034 rate=195689/s wakes=239310 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=120384 remote=174102 steals=2 deferred=0
+soak-test: t=603s beat=120 rounds=117575683 rate=195729/s wakes=241319 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=121391 remote=175540 steals=2 deferred=0
+soak-test: t=608s beat=121 rounds=118555468 rate=195957/s wakes=243330 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=122396 remote=176989 steals=2 deferred=0
+soak-test-watchdog: petted at t=608s beat=121: the count had 599279915 of 720000000 ticks left
+soak-test: t=613s beat=122 rounds=119535712 rate=196048/s wakes=245342 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=123346 remote=178451 steals=2 deferred=0
+soak-test: t=618s beat=123 rounds=120514122 rate=195682/s wakes=247349 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=124434 remote=179863 steals=2 deferred=0
+soak-test-watchdog: DISARMED at t=618s: a byte arrived on this console. The watchdog is halted and will not reset this machine. The soak keeps running.
+soak-test: t=623s beat=124 rounds=121494365 rate=196048/s wakes=249362 wakerate=402/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=125388 remote=181340 steals=2 deferred=0
+soak-test: t=628s beat=125 rounds=122472598 rate=195646/s wakes=251369 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=126414 remote=182781 steals=2 deferred=0
+soak-test: t=633s beat=126 rounds=123450901 rate=195660/s wakes=253378 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=127375 remote=184263 steals=2 deferred=0
+soak-test: t=638s beat=127 rounds=124429076 rate=195635/s wakes=255386 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=128383 remote=185742 steals=2 deferred=0
+soak-test: t=643s beat=128 rounds=125407374 rate=195659/s wakes=257393 wakerate=401/s workers=24 refused=0 mismatch=0 stalled=0 drifted=0 crossings=129407 remote=187223 steals=2 deferred=0

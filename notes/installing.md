@@ -196,7 +196,7 @@ proposal in `design/roadmap/proposals/`. The five, and what each is actually abo
 | `the-disk-an-installer-names-has-no-model.md` | the offer says "the NVMe disk attached to this machine", which is a guess on the first machine with two. The single most load-bearing sentence a stranger reads |
 | `the-install-offer-should-say-what-is-already-on-the-disk.md` | the survey asks only whether nife is there, so a disk holding Windows is described as an unqualified target |
 | `there-is-no-way-back-from-the-stick.md` | an installed disk is never offered an install again, which is right, and turns a power cut between the installer and `mkfs` into an unrecoverable state |
-| `a-long-file-name-or-riscv64-cannot-be-installed.md` | `BOOTRISCV64.EFI` is not 8.3 and the FAT writer refuses it rather than mangling it |
+| `a-long-file-name-or-riscv64-cannot-be-installed.md` | `BOOTRISCV64.EFI` is not 8.3; built as milestone 560 (a long file name, or riscv64 cannot be installed), so the FAT writer gives it long-name entries |
 | `the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md` | `/chosen` has one initrd slot and no second one, which is why this rung is an `x86_64` claim |
 
 A stick boot used to write the installed disk (the live stick proposal's G2, measured 2026-10-04).

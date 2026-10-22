@@ -75,3 +75,31 @@ probably set the rate. The capture decides:
 | windows reach 16384, acknowledgment gaps near 5 to 10 ms | the stack still sleeps to a tick per round trip | a lane, with the capture |
 | windows reach 16384, gaps well under a tick, rate under 50 | a third limit, probably copying on radon's cores | a Results row and a `BUGS` entry naming it; a lane to profile |
 | about 2.3 Mbit/s | neither change is in the image | `git log -1` against the image; rebuild |
+
+## What radon measured, 2026-10-22
+
+Two boots of the bench step from `699fcf61a`, which has the fix: 14.329 and 14.313 Mbit/s, six
+times the 2.3 and short of the 50 the table above asks for
+(`bench/radon-2026-10-22/53-network-rate.log`). patagonia's `tcpdump` needs `sudo`, which the run
+did not have, so the second boot's peer was a Python server that reads its own socket's
+`TCP_CONNECTION_INFO` every 5 ms instead, which macOS gives any process
+(`bench/radon-2026-10-22/53-network-rate-peer.py`). It served the same 100 MiB, and the rate
+matched the first boot's `nc`, so the peer is not the limit. What its socket saw
+(`53-network-rate-peer.txt`):
+
+| field | value |
+|---|---|
+| radon's window scale | 0 (none offered) |
+| maximum segment | 1460 bytes |
+| radon's advertised window, its six commonest values | 4,596, 4,704, 5,288, 4,412, 4,996 and 4,120 bytes, 1,710 to 2,428 samples each; the next two, 9,084 and 7,624, in 8 and 6 |
+| smoothed round trip, in whole milliseconds | 2 ms median and 90th percentile, 5 ms the most |
+| retransmitted bytes | 0 |
+
+So the window does reach past 2 KiB, which says the fix is in the image, and the wait does not
+sleep to a tick, since a round trip is 2 ms. But radon advertises about 4.6 KiB of the 16 KiB
+buffer at every acknowledgment, so about 11.5 KiB sits unread each time. A window of 4.6 KiB per
+2 ms round trip allows 18 Mbit/s, near the measured 14.3 given a round trip read only in whole
+milliseconds. No row of the table above has that shape. The nearest
+is its fourth: a third limit, on radon's side and after the wire. The receiving program or the
+copy into it drains the buffer slower than a gigabit link fills it, and which of the two is not
+yet measured.

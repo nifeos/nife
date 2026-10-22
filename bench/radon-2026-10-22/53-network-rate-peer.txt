@@ -1,0 +1,7 @@
+connection from 192.168.8.200 at 18:27:00 UTC
+  104857600 bytes in 73.609 s = 11.396 Mbit/s (sender side, to close)
+  wscale snd 0 rcv 6, maxseg 1460
+  radon's advertised window, sampled every 5 ms (value: samples): [(4596, 2428), (4704, 1933), (5288, 1914), (4412, 1901), (4996, 1884), (4120, 1710), (9084, 8), (7624, 6)]
+  srtt ms p50 2 p90 2 max 5
+  segments sent 25617, received from radon 0, retransmitted bytes 0
+  cwnd at end 65535

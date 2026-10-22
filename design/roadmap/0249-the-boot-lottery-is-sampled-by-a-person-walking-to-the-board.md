@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-09-03
+built: 2026-10-22
 milestone_dependencies: 592
 decision_dependencies: none
 machine_requirements: none
@@ -172,9 +173,10 @@ waiting on the expensive one.
 A distribution over at least fifty unattended boots, recorded in notes/soak.md beside the nine
 hand-drawn ones: how often each clean-core count comes up, and whether three or four ever does.
 
-Not a kernel that reboots, which is the mechanism rather than the result. By this test the
-milestone is not finished, and what remains is a bench session, not a phase somebody could build. `script/board-console --tally` is what turns that session's log into the row this section
-asks for, and it prints the caveats beside it so a count of draws is not quoted as a probability.
+Not a kernel that reboots, which is the mechanism rather than the result. The count under "The
+distribution" below meets it. `script/board-console --tally` is what turns a session's log into
+the rows this section asks for, and it prints the caveats beside them so a count of draws is not
+quoted as a probability.
 
 ## The bench answered it, 2026-09-04, and closed the route
 
@@ -204,13 +206,18 @@ filed (`design/roadmap/proposals/board-console-cannot-speak-to-the-board.md`). S
 wrong moment also stopped U-Boot's autoboot countdown and cost a power cycle, which is the fallback
 this block names working as an obstacle.
 
-## The draws so far, read 2026-10-21
+## The distribution, read 2026-10-22
 
-`script/board-console --tally` over the five radon captures in `bench/` counts **41 unattended
-draws of the rebooting soak: 38 at one clean core, 3 at two, none at zero, three or four.** Nine
-more reach the fifty. Four builds disagree (the two later ones drew one clean core 39 times in 39),
-so the pooled count is not one distribution. notes/soak/boot-lottery.md has the table, what was
-left out, and why these do not compare with the nine hand-drawn power cycles.
+`script/board-console --tally` over the seven radon captures in `bench/` counts **129 unattended
+draws of the rebooting soak: 7 at zero clean cores, 119 at one, 3 at two, none at three or
+four.** That passes the fifty this block's proof asks for. One series is 52 draws on one build
+with nobody at the board (`bench/radon-2026-10-22/249-lottery-draws.log`): 6 at zero and 46 at
+one. The builds disagree (two clean cores only on the two 2026-10-10 builds, zero only on the two
+latest), so the pooled count is not one distribution. notes/soak/boot-lottery.md has the table,
+what was left out, and why these do not compare with the nine hand-drawn power cycles.
+
+The rate follows the tally's clean-core count on every draw: about 30,860/s at zero, 177,520 to
+206,734/s at one, about 318,000/s at two.
 
 ## All three architectures, 2026-09-24
 
@@ -245,10 +252,9 @@ notes/board-reboot.md.
   that finding would arrive; raise it then.
   This refusal is milestone 477 (design/roadmap/0477-a-power-cycled-boot-series.md), which carries it
   with the condition that would change it.
-- **Outstanding.** The tally's clean-core definition is `serial_console::lottery`'s, host-tested
-  against the one settled arrangement radon has printed. If a series shows the rate does not follow
-  it, that is this milestone's result rather than a defect in the reader, and the definition is what
-  a second board would test. Checked 2026-09-03.
+- **Done.** The tally's clean-core definition is `serial_console::lottery`'s. Over 129 draws the
+  rate follows it with no overlap between classes (above). A second board would test the
+  definition itself.
 
 ## BUGS
 
@@ -272,5 +278,5 @@ notes/board-reboot.md.
 
 ## Index row
 
-SBI SRST is already called with reset type 0; type 1 is a cold reboot, and 3 and 4 clean cores
-have never been drawn
+radon reboots itself between soak draws, so the boot lottery is sampled unattended: 129 draws,
+7 at zero clean cores, 119 at one, 3 at two, and never three or four.

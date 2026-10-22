@@ -68,13 +68,16 @@ fn spawn_os_primitives_benchmarker(role: u64, report: sched::RendezvousId) -> bo
 /// the EL0<->EL1 boundary cost, which is the whole point of measuring here. See `fixtures/src/os_primitives_benchmarker.rs`.
 pub(super) fn null_syscall_el0() {
     let report = sched::create_rendezvous();
+    let window = TickWindow::open("null_syscall");
     if !spawn_os_primitives_benchmarker(EL_NULL_SYSCALL, report) {
+        window.close();
         println!(
             "bench: null_syscall skipped (no os_primitives_benchmarker in the initial ramdisk)"
         );
         return;
     }
     let [ticks, iters, ..] = sched::ipc_receive(report);
+    window.close();
     println!("bench: null_syscall {ticks} {iters}");
 }
 
@@ -87,14 +90,18 @@ pub(super) fn ctx_switch_el0() {
     let report = sched::create_rendezvous();
     // The peer first, so the timer always has something to switch to. It shares the report endpoint
     // (it never sends on it); the spawn shape stays uniform.
+    let window = TickWindow::open("ctx_switch");
     if !spawn_os_primitives_benchmarker(EL_YIELDER, report) {
+        window.close();
         println!("bench: ctx_switch skipped (no os_primitives_benchmarker in the initial ramdisk)");
         return;
     }
     if !spawn_os_primitives_benchmarker(EL_CTX_SWITCH, report) {
+        window.close();
         return;
     }
     let [ticks, iters, ..] = sched::ipc_receive(report);
+    window.close();
     println!("bench: ctx_switch {ticks} {iters}");
 }
 
@@ -111,6 +118,7 @@ pub(super) fn ipc_rtt_el0() {
     let reply = sched::create_rendezvous();
     let report = sched::create_rendezvous();
 
+    let window = TickWindow::open("ipc_rtt_el0");
     sched::spawn(move || {
         crate::user::run(
             image,
@@ -147,6 +155,7 @@ pub(super) fn ipc_rtt_el0() {
     .expect("bench: could not spawn the ipc client");
 
     let [ticks, iters, ..] = sched::ipc_receive(report);
+    window.close();
     // Distinct from the kernel-side `ipc_rtt` above: this one crosses the EL0<->EL1 boundary on every
     // send and receive, which is the whole point (comparable to lmbench). The gap between them is roughly
     // the trap cost of the four svcs per round trip.
@@ -179,6 +188,7 @@ pub(super) fn sink_throughput() {
     // The producer first, so the consumer's first `RECEIVE` meets a waiting sender rather than the
     // other way round. Either order works (a rendezvous blocks whichever side arrives first) and
     // this one keeps the warmup honest: the consumer's timed loop starts with the pipe already hot.
+    let window = TickWindow::open("sink_throughput");
     sched::spawn(move || {
         crate::user::run(
             image,
@@ -213,6 +223,7 @@ pub(super) fn sink_throughput() {
     .expect("bench: could not spawn the sink consumer");
 
     let [ticks, bytes, ..] = sched::ipc_receive(report);
+    window.close();
     println!("bench: sink_throughput {ticks} {bytes}");
 }
 
@@ -253,6 +264,7 @@ pub(super) fn map_el0() {
     };
 
     let report = sched::create_rendezvous();
+    let window = TickWindow::open("map_el0");
     sched::spawn(move || {
         crate::user::run(
             image,
@@ -272,6 +284,7 @@ pub(super) fn map_el0() {
     .expect("bench: could not spawn the map bencher");
 
     let [ticks, iters, ..] = sched::ipc_receive(report);
+    window.close();
     println!("bench: map_el0 {ticks} {iters}");
 }
 
@@ -292,6 +305,7 @@ pub(super) fn spawn_el0() {
     };
     let report = sched::create_rendezvous();
     let child_done = sched::create_rendezvous();
+    let window = TickWindow::open("spawn_el0");
     sched::spawn(move || {
         crate::user::run(
             image,
@@ -313,5 +327,6 @@ pub(super) fn spawn_el0() {
     })
     .expect("bench: could not spawn the spawner");
     let [ticks, iters, ..] = sched::ipc_receive(report);
+    window.close();
     println!("bench: spawn_el0 {ticks} {iters}");
 }

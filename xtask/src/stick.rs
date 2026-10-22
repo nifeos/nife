@@ -387,7 +387,24 @@ pub(super) fn stick_boot() -> bool {
         }
         ok &= boot_and_check("stick-boot", arch, &stick_dir(), file, &[], &[]);
     }
-    ok
+    ok & riscv64_from_our_volume()
+}
+
+/// **The riscv64 payload booted from a disk this tree wrote**, not from the stick directory.
+/// QEMU's `vvfat` synthesizes the directory's volume, so the boots above never read
+/// `file_allocation_table`'s long-name entries; this one does, since `BOOTRISCV64.EFI` is not an
+/// 8.3 name and EDK2 finds it only through a run whose checksum matches its `BOOTRI~1.EFI` alias.
+fn riscv64_from_our_volume() -> bool {
+    match crate::cloud_image::write("riscv64", &boot_dir().join("BOOTRISCV64.EFI")) {
+        Ok(disk) => {
+            eprintln!("stick-boot: wrote {}", disk.display());
+            boot_and_check("stick-boot", "riscv64", &disk, "BOOTRISCV64.EFI", &[], &[])
+        }
+        Err(e) => {
+            eprintln!("stick-boot: the riscv64 boot disk: {e}");
+            false
+        }
+    }
 }
 
 /// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons. The
@@ -439,7 +456,7 @@ pub(super) fn acpi_boot() -> bool {
     if !payload_aarch64() {
         return false;
     }
-    let disk = match crate::cloud_image::write(&boot_dir().join("BOOTAA64.EFI")) {
+    let disk = match crate::cloud_image::write("aarch64", &boot_dir().join("BOOTAA64.EFI")) {
         Ok(disk) => {
             eprintln!("acpi-boot: wrote {}", disk.display());
             disk
