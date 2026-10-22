@@ -4811,7 +4811,6 @@ fixtures/src/call_client.rs::_start
 fixtures/src/call_server.rs::_start
 fixtures/src/carried_capability_client.rs::_start
 fixtures/src/carried_capability_server.rs::_start
-fixtures/src/chatty.rs::_start
 fixtures/src/confined_syscall_fuzzer.rs::_start
 fixtures/src/console_server_builder.rs::_start
 fixtures/src/console_test_client.rs::_start
@@ -4907,6 +4906,7 @@ fixtures/src/scratch_release_witness.rs::_start
 fixtures/src/scratch_window_exerciser.rs::_start
 fixtures/src/sink_transcript_writer.rs::_start
 fixtures/src/soaker.rs::_start
+fixtures/src/swap_boundary_witness.rs::_start
 fixtures/src/tenor.rs::_start
 fixtures/src/unreachable_network_witness.rs::_start
 fixtures/src/unwritable_clock_witness.rs::RPT_PROBING

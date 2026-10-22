@@ -74,7 +74,7 @@ names. `*` marks a crate `contracts` or `runtime` already exports, so linking it
 | `root_supervisor` | `abi*`, `address_space_map*`, `elf*`, `nifefs*`, `supervision_protocol*`, `user_mode_runtime*` | `authority_tests` only |
 | `spawner`, `sub_server_supervisor` | a subset of the row above | `root_supervisor` only |
 | `job_undertaker` | `abi*`, `grant_plan*`, `user_mode_runtime*` | `system_initializer`, at boot |
-| `swapper` | `abi*`, `component_plan*`, `elf*`, `nifefs*`, `supervision_protocol*`, `hot_swap_contract*`, `user_mode_runtime*` | `live_swap_tests` only; it builds `broker` and the `chatty`, `rust_swappable` and `c_swappable` fixtures by name |
+| `swapper` | `abi*`, `component_plan*`, `elf*`, `nifefs*`, `supervision_protocol*`, `hot_swap_contract*`, `user_mode_runtime*` | `live_swap_tests` only; it builds `broker` and the `swap_boundary_witness`, `rust_swappable` and `c_swappable` fixtures by name |
 | `broker` | `component_plan*`, `hot_swap_contract*`, `user_mode_runtime*` | `swapper` only |
 | `system_log` (program) | `system_log`, `system_log_contract*`, `abi*`, `address_space_map*`, `user_mode_runtime*` | `system_initializer` builds it by archive name; `console` and the kernel speak `system_log_contract` to it |
 | `system_log` (crate) | `byte_sink_contract*`, `system_log_contract*` | linked by the `system_log` program and a fuzz target, nothing else |

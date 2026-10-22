@@ -9,7 +9,7 @@ model attacks the confinement claim) reshaped the fixture, this defect could not
 a let-open `RECEIVE_CAP` found an empty queue and blocked, and the run died at the 60-second
 watchdog instead of at the assertion (measured 2026-09-16, milestone 305 (the six kernel confinement
 rows get a falsification a machine can replay)). The operator now retires the last receiver first
-and a plant (`chatty`'s `ROLE_PLANT`) parks `hot_swap_contract::PLANT_MARKER` on the endpoint, so the
+and a plant (`swap_boundary_witness`'s `ROLE_PLANT`) parks `hot_swap_contract::PLANT_MARKER` on the endpoint, so the
 broken gate returns that word and the assertion fires: `error -1394018833` is `-PLANT_MARKER`.
 
 Expected to fail: `assert_eq!` "a client of the stable rendezvous received on it (or was refused
