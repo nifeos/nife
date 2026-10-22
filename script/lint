@@ -3315,7 +3315,7 @@ for ws in redoxfs_server tools/redoxfs_host tools/glyph_atlas_generator fuzz; do
 done
 python3 helpers/lint_ratchet.py --check "$lint_ratchet_dir"
 rm -rf "$lint_ratchet_dir"
-echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07)"
+echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)"
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
 # (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
 # comment states the constraint as it is now): a comment states the constraint as it is now, in a
@@ -3327,9 +3327,11 @@ echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 202
 # adjacent comment lines of one kind), the rules, the ceiling-not-exact-match argument and the
 # failure messages live in helpers/comment_block_ratchet.py, whose header is the manual, as the
 # other two ratchets' are. Its lexer is adapted from the note's own, so the gate and the
-# measurement read the same tree. 338 blocks are over the cap today and are held one row each in
+# measurement read the same tree. The blocks over their directory's cap are held one row each in
 # design/comment-block-baseline.tsv; they may only shrink, swept a milestone's worth at a time, and
-# an unlisted block meets the cap outright.
+# an unlisted block meets the cap outright. Milestone 929 (comments in the Linux style across
+# first-party Rust) steps each directory's cap from 40 to 20 to 10 and holds its in-body comment
+# lines to a ceiling, in the same file.
 python3 helpers/comment_block_ratchet.py --selftest
 python3 helpers/comment_block_ratchet.py --check
 echo "==> the parent-index check (§282: when a file is split, the parent becomes an index)"
