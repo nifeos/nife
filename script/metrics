@@ -497,7 +497,7 @@ MEASURES = [
     # Milestone 611. File and column names provisional (that lane's, 2026-09-27).
     ('homes', HOMES_COLUMNS),
     # Milestone 415 (sub-tripwire drift accumulates across baseline saves), item 3, a report and
-    # not a gate (§190), narrowed by calef's ruling on #2554 (2026-10-22 UTC) to the drift on `main`
+    # not a gate (§190 (must an icount baseline save record why it moved)), narrowed by calef's ruling on #2554 (2026-10-22 UTC) to the drift on `main`
     # that no record accounts for. See DRIFT_BEGIN below. File and column names provisional
     # (lane/bench/unexplained-drift-chart).
     ('unexplained-drift', [prefix + arch for arch in baseline_drift.ARCHES

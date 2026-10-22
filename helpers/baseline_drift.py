@@ -57,7 +57,8 @@ BUGS
 - `main` is read on CI's x86_64 Linux runner and the floors are saved on patagonia. At two save
   commits CI reproduced every x86_64 floor exactly and riscv64 within 0.11%, aarch64 within 0.5%
   except `map_el0` (-2.75%, a host term) and `ipc_rtt` (+3.79%, bimodal under the preemption tick
-  until milestone 939). Those two rows can carry a few percent no code caused.
+  until milestone 939 (the icount bench runs without a preemption tick in its windows)). Those two
+  rows can carry a few percent no code caused.
 - The readings for 2026W39 to 2026W43 came from the merge queue's job logs, before the bench job
   kept them as an artifact; 2026W39's is 2026-09-24's, the oldest the run listing reached. Weeks
   before it have no reading and chart as unmeasured.
