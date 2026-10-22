@@ -407,10 +407,16 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     // rather than refusing.
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, cap, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    // A refusal reaches userspace as one `NotPermitted` whatever stopped it, so the message names
+    // the check that refused and the state it saw (milestone 321): a rare failure here has to be
+    // diagnosable from the log of a run nobody can repeat on demand.
+    let reaped = invoke(&mut frame, cap, abi::rendezvous::REAP, child, 0, 0);
     assert_eq!(
-        invoke(&mut frame, cap, abi::rendezvous::REAP, child, 0, 0),
+        reaped,
         Ok(0),
-        "the tid a survey reported was not one the same rendezvous could reap",
+        "the tid a survey reported was not one the same rendezvous could reap; the reclaim \
+         refused because {:?}",
+        sched::last_reclaim_refusal(),
     );
     let mut buf = [ps::Row::default(); TEST_ROWS];
     let seen = walk(cap, &mut buf);
