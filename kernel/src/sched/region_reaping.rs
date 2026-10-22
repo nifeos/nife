@@ -201,6 +201,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
 pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
     let mut guard = IPC_TABLES.lock();
     let Some(sched) = guard.as_mut() else {
+        record_refusal(ReclaimRefusal::NoScheduler);
         return Err(());
     };
     // A TCB sits at the start of its page, so the page's physical address is the thread pointer
@@ -379,7 +380,11 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
         if !(base <= phys && phys < end) {
             continue;
         }
-        match region_reap_verdict(t.handshake.state, t.handshake.on_cpu || t.being_reaped) {
+        let verdict = region_reap_verdict(t.handshake.state, t.handshake.on_cpu || t.being_reaped);
+        if verdict != RegionReap::Reap {
+            record_refusal(ReclaimRefusal::resident(t));
+        }
+        match verdict {
             RegionReap::RefuseAndArm => {
                 t.killed = true;
                 live = true;
@@ -452,6 +457,65 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
     process::forget_empty(sched, base, end)
 }
 
+/// **Why [`reclaim_region`] last refused** (milestone 321 (a corpse that did not park, on four real
+/// cores)). Test support: a refusal reaches userspace as one `NotPermitted` whatever its cause, and
+/// the failure this was built for happened about once in a thousand runs, so each one has to name
+/// its cause in the log it leaves. Each refusing check overwrites it; nothing clears it, so read it right
+/// after the refusal it explains.
+///
+/// For a resident it records the last one the refuse phase turned away, with the two flags that
+/// together make up `standing`.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+#[derive(Debug, Clone, Copy)]
+pub enum ReclaimRefusal {
+    /// A child region still owns part of the run.
+    HasChildren,
+    /// The region name is stale: it was destroyed already, or never existed.
+    NoRegion,
+    /// No scheduler yet.
+    NoScheduler,
+    /// A thread in the region can still run, or is still standing on its own kernel stack.
+    Resident {
+        tid: ThreadId,
+        state: State,
+        on_cpu: bool,
+        being_reaped: bool,
+    },
+}
+
+impl ReclaimRefusal {
+    fn resident(t: &Thread) -> Self {
+        Self::Resident {
+            tid: t.id,
+            state: t.handshake.state,
+            on_cpu: t.handshake.on_cpu,
+            being_reaped: t.being_reaped,
+        }
+    }
+}
+
+#[cfg(feature = "system_tests")]
+static LAST_REFUSAL: crate::sync::IrqSafeMutex<Option<ReclaimRefusal>> =
+    crate::sync::IrqSafeMutex::new(crate::sync::rank::RECLAIM_REFUSAL, None);
+
+#[cfg_attr(not(feature = "system_tests"), allow(unused_variables))]
+fn record_refusal(why: ReclaimRefusal) {
+    #[cfg(feature = "system_tests")]
+    {
+        *LAST_REFUSAL.lock() = Some(why);
+    }
+}
+
+/// The cause [`reclaim_region`] recorded at its most recent refusal. See [`ReclaimRefusal`].
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
+#[cfg(feature = "system_tests")]
+pub fn last_reclaim_refusal() -> Option<ReclaimRefusal> {
+    *LAST_REFUSAL.lock()
+}
+
 /// **Reclaim an untyped region and every object retyped from it** (object revocation, the region-
 /// ownership half). The owner, holding the untyped capability, reclaims: tear the region's objects
 /// down (refusing if any is still live), unpin, and return the memory. Generational names make
@@ -487,9 +551,13 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
     // free those pages themselves. The owner must destroy the children first. Refuse before any
     // teardown, so a refused reclaim leaves the region exactly as it was.
     if crate::memory_region::has_children(region) {
+        record_refusal(ReclaimRefusal::HasChildren);
         return Err(());
     }
-    let (base, size) = crate::memory_region::region_bounds(region).ok_or(())?;
+    let Some((base, size)) = crate::memory_region::region_bounds(region) else {
+        record_refusal(ReclaimRefusal::NoRegion);
+        return Err(());
+    };
     // Threads first (IPC_TABLES), then the address spaces the region's destruction ends (the
     // registry's lock, which takes IPC_TABLES beneath it to ask about bound threads). Since §249 the
     // registry owns bound spaces too, so this second step also collects the space of every thread
@@ -518,9 +586,12 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
 /// it, because it never holds a capability to it.
 ///
 /// Takes and releases `IPC_TABLES` before the reclaim, which takes it again: `reap_region_objects` must
-/// run with the lock and cannot be called under it.
+/// run with the lock and cannot be called under it. **It may yield while it decides**: a corpse whose
+/// core has not yet switched away from it is waited for rather than refused, so a supervisor that
+/// received the death message on another core is never told `NotPermitted` for a condition that
+/// belongs to the kernel and clears by itself.
 pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error> {
-    let region = {
+    let region = loop {
         let guard = IPC_TABLES.lock();
         let sched = guard.as_ref().ok_or(abi::Error::NotSupervised)?;
         // A stale or recycled tid resolves to `None` here (generational names, `crates/slots`), so
@@ -533,14 +604,28 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
             capability::Reap::StillAlive => return Err(abi::Error::StillAlive),
             capability::Reap::Permitted => {}
         }
+        // **A corpse still leaving its core is waited for, not refused** (milestone 321). `depart`
+        // publishes the death under `IPC_TABLES` and switches away only after releasing it, so a
+        // supervisor on another core can get here while the corpse's core still stands on its
+        // stack. `reclaim_region` refuses that, correctly, and the refusal would reach userspace as
+        // `NotPermitted`, which the ABI gives one other meaning and two supervisors in this tree
+        // treat as fatal. The condition is this kernel's own and ends at that core's next
+        // `finish_switch`, which needs nothing from this caller but the lock, so yield it and look
+        // again.
+        if t.is_some_and(|t| t.handshake.on_cpu) {
+            drop(guard);
+            yield_now();
+            continue;
+        }
         // A supervised thread is always one `create_thread_control_block` built out of a region, so this is `Some`;
         // be honest rather than unwrap, and report "nothing here to collect" if it ever is not.
-        t.and_then(|t| t.thread_control_block_region)
-            .ok_or(abi::Error::NotSupervised)?
+        break t
+            .and_then(|t| t.thread_control_block_region)
+            .ok_or(abi::Error::NotSupervised)?;
     };
     // `NotPermitted` for the same reasons `DESTROY` gives it: the child `SPLIT` its own budget and a
-    // child region still owns part of the run, or a racing reap got there first and the name is now
-    // stale. A restart policy reads it as "not yet", which is what it means.
+    // child region still owns part of the run, another thread in the region can still run, or a
+    // racing reap got there first and the name is now stale. A restart policy reads it as "not yet", which is what it means.
     reclaim_region(region).map_err(|_| abi::Error::NotPermitted)
 }
 
