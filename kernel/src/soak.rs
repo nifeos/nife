@@ -59,19 +59,21 @@ compile_error!(
      yet. argon's Tegra WDT is a later step of design/roadmap/0593-a-wedged-kernel-resets-itself.md."
 );
 
-// **Every x86_64 soak arms the watchdog unless it opts out**, calef's ruling of 2026-09-26 (UTC):
-// "A soak should reset itself when it freezes." `build.rs` decides the `soak_watchdog` cfg, and
-// this restates the rule it must implement, so a build-script edit that drops the default fails
-// the x86_64 `soak_test` build rather than shipping xenon a soak that waits for a person.
+// **Every x86_64 and riscv64 soak arms the watchdog unless it opts out**, calef's ruling of
+// 2026-09-26 (UTC): "A soak should reset itself when it freezes." `build.rs` decides the
+// `soak_watchdog` cfg, and this restates the rule it must implement, so a build-script edit that
+// drops the default fails the `soak_test` build rather than shipping xenon or radon a soak that
+// waits for a person.
 #[cfg(all(
     feature = "soak_test",
-    target_arch = "x86_64",
+    any(target_arch = "x86_64", target_arch = "riscv64"),
     not(feature = "unwatched_soak_test"),
     not(soak_watchdog)
 ))]
 compile_error!(
-    "an x86_64 soak_test build must arm the watchdog unless it names unwatched_soak_test \
-     (calef, 2026-09-26 UTC); kernel/build.rs no longer sets the soak_watchdog cfg for it"
+    "an x86_64 or riscv64 soak_test build must arm the watchdog unless it names \
+     unwatched_soak_test (calef, 2026-09-26 UTC); kernel/build.rs no longer sets the soak_watchdog \
+     cfg for it"
 );
 
 // The opt-out and the insistence cannot both be meant. `wedge_soak_test` implies

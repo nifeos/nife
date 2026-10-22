@@ -366,16 +366,16 @@ reboot_soak_test = ["soak_test"]
 # arms the chipset's watchdog when it starts and pets it from its beat, so a kernel that wedges is
 # reset by the hardware instead of waiting for a person. The Intel TCO on x86_64 and the JH7110's
 # watchdog on riscv64; aarch64 has none, and `kernel/src/soak.rs` says so with a `compile_error!`.
-# **On x86_64 every `soak_test` build has it without naming this feature**, on calef's ruling of
-# 2026-09-26 (UTC), "A soak should reset itself when it freezes": `build.rs` sets the
-# `soak_watchdog` cfg the code reads, and cargo features cannot differ by target. A riscv64 soak
-# arms the JH7110's only when this is named, until radon's bench step in
-# design/roadmap/0593-a-wedged-kernel-resets-itself.md has shown it resets. Name provisional, and it
-# follows `reboot_soak_test`'s shape on purpose: the hazard word first.
-watchdog_soak_test = ["soak_test", "dep:jh7110_watchdog"]
+# **On x86_64 and riscv64 every `soak_test` build has it without naming this feature**, on calef's
+# ruling of 2026-09-26 (UTC), "A soak should reset itself when it freezes": `build.rs` sets the
+# `soak_watchdog` cfg the code reads, and cargo features cannot differ by target. Naming it insists
+# on the watchdog. Name provisional, and it follows `reboot_soak_test`'s shape on purpose: the
+# hazard word first.
+watchdog_soak_test = ["soak_test"]
 # **The opt-out**: an x86_64 soak that does not arm the watchdog, so a wedge stays a wedge on the
-# console instead of becoming a reset. `script/soak-test --no-watchdog` builds it. On aarch64 and
-# riscv64 it changes nothing, since no soak there arms a watchdog unasked. It refuses to combine with
+# console instead of becoming a reset. `script/soak-test --no-watchdog` builds it on x86_64, and
+# `script/board-image --soak --extra-features unwatched_soak_test` on riscv64. On aarch64 it changes
+# nothing, since no aarch64 soak arms a watchdog. It refuses to combine with
 # `watchdog_soak_test` (`kernel/src/soak.rs`). Name provisional: the hazard word first, like its
 # siblings, and the hazard is that nothing recovers the machine.
 unwatched_soak_test = ["soak_test"]
@@ -516,8 +516,10 @@ single_hart = []
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 # The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional): its sequences,
 # arithmetic and discovery, for `drivers::jh7110_watchdog` and `memory::init`. Pure logic; only a
-# riscv64 build whose soak arms the watchdog reaches it, so `watchdog_soak_test` brings it in.
-jh7110_watchdog = { version = "0.1.0", path = "../crates/jh7110_watchdog", optional = true }
+# riscv64 build whose soak arms the watchdog reaches it, and that is every riscv64 soak but an
+# `unwatched_soak_test` one. Not optional, because a cargo feature cannot add a dependency for one
+# target only, and the default is decided per target in `build.rs`.
+jh7110_watchdog = { version = "0.1.0", path = "../crates/jh7110_watchdog" }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "11"

@@ -17,8 +17,8 @@ milestone 249 (the boot lottery is sampled by a person walking to the board)'s r
 architectures. That milestone resets a kernel that is working and chooses to. A kernel that has
 wedged cannot call `arch::reboot`, and a wedge is what the soak (milestones 219 and 225) looks for.
 
-xenon's step is built and proven under QEMU. radon's is built and host-tested, with no QEMU model
-to prove it on. Both wait on a person at the board. argon's waits on its first nife boot.
+xenon's step and radon's have each reset a deliberately wedged board with nobody at it. argon's
+waits on its first nife boot.
 
 ## The shape
 
@@ -118,9 +118,9 @@ clock reads a frozen count, and that refusal is what stops `ARMED` being printed
 naming no watchdog gets `NOT ARMED`. Under QEMU `virt` that line prints and the soak beats on.
 
 The load is 720,000,000 ticks, so the reset comes 60 s after the last pet, the same as xenon's.
-Only `--features watchdog_soak_test` arms it (or `wedge_soak_test`); a plain riscv64 soak does not.
-calef's ruling asks for every soak, and the default waits for the bench step below. A watchdog
-that reset a healthy radon soak would cost the run it is meant to protect.
+Every riscv64 `soak_test` build arms it, as every x86_64 one arms the TCO, and
+`--features unwatched_soak_test` is the opt-out. Under QEMU `virt` the soak prints `NOT ARMED` and
+beats on.
 
 Name: provisional. `jh7110_watchdog`, `Jh7110Watchdog`, `device_plan` and `DevicePlan`.
 
@@ -157,6 +157,16 @@ boot is the test. It needs a person in reach of radon's power, because nothing c
 | silence for three minutes after `WEDGING NOW` | The watchdog's reset does not reach the chip's. Power-cycle radon. |
 | SPL, then a stop before nife | The reset works and the boot after it does not. Record where it stops. |
 
+radon passed it on 2026-10-22 (UTC), netbooted rather than from a card
+(`bench/radon-2026-10-22/README-593.md`). The armed soak read `starfive,dskit-wdt at 0x13070000`,
+both clocks, `2 of 2 reset(s) released, 0 step(s) rejected`, a counter at 23,999,850 Hz and
+`ARMED`. It ran 608 s with no reset, every `petted` line between 594,358,858 and 599,367,957 of
+720,000,000 ticks left, and one byte gave `DISARMED at t=618s` with the soak still beating. The
+wedge build then reset itself three times in a row with nobody at the board, each time booting
+nife again and wedging again, until the served kernel was swapped for the healthy one. From
+`WEDGING NOW` to the next `U-Boot SPL` took 61.8 s, 61.7 s and 61.8 s, timed on the host to about
+0.2 s.
+
 ## Later steps
 
 | board | part | how it resets | testable in QEMU |
@@ -171,7 +181,8 @@ boot is the test. It needs a person in reach of radon's power, because nothing c
   the timer from SMI (it reset), but another board's might.
 - No silicon boot has read `SECOND_TO_STS` after a real reset: xenon's came back to a kernel that
   does not read it.
-- radon's watchdog has never run. Every register write in step 2 runs first at its bench step.
+- radon's watchdog has run on one board, from netboot. The reset it gives has not yet been seen
+  to bring back a boot from radon's card.
 - The JH7110 keeps no record of a watchdog reset that this kernel knows of, so a second boot on
   radon cannot say how the first ended. Only the timing can.
 - A reboot soak and a watchdog soak in one build are not guarded against. Under QEMU the TCO keeps
@@ -182,11 +193,9 @@ boot is the test. It needs a person in reach of radon's power, because nothing c
 - **Done.** x86_64 soak builds include the watchdog by default, per calef's 2026-09-26 ruling, and
   `unwatched_soak_test` (`script/soak-test --no-watchdog`) is the opt-out. See step 1.
 - **Done.** xenon's first bench step, under that heading above (2026-10-21).
-- **Outstanding.** radon's bench step, under that heading above. It needs a person in reach of
-  radon's power.
-- **Outstanding.** Once radon's bench step passes, riscv64 soaks arm the watchdog unless they name
-  `unwatched_soak_test`, as x86_64's do. That is the `kernel/build.rs` condition and the
-  `compile_error!` beside it in `kernel/src/soak.rs`.
+- **Done.** radon's bench step, under that heading above (2026-10-22).
+- **Done.** riscv64 soaks arm the watchdog unless they name `unwatched_soak_test`, as x86_64's do:
+  the `kernel/build.rs` condition and the `compile_error!` beside it in `kernel/src/soak.rs`.
 - **Outstanding.** argon's Tegra X1 watchdog, the row of Later steps. It waits on argon's
   first nife boot.
 - **Milestone 563.** A soak kernel could not reach xenon's stick. That gap was folded into milestone
@@ -198,5 +207,5 @@ A soak arms the Intel TCO watchdog on x86_64 and pets it every beat, so a wedged
 the chipset 60 s after its last pet. Proven under QEMU q35 both ways: a deliberate wedge resets and
 the second boot reads the chipset's own record of it, and a healthy soak survives 180 s. On in every
 x86_64 soak build, with `unwatched_soak_test` as the opt-out. radon's JH7110 watchdog is armed by
-`watchdog_soak_test`, found and clocked from the tree. A wedged xenon resets itself; radon and argon
-are bench steps.
+every riscv64 soak, found and clocked from the tree. A wedged xenon or radon resets itself; argon is
+a bench step.
