@@ -9,7 +9,8 @@ promoted_from: a-long-file-name-or-riscv64-cannot-be-installed
 Stage 1 of milestone 813 (a proven FAT crate, released on its own), by calef's ruling on #2580
 (2026-10-22 UTC), which 813's block quotes. Raised by the rung 2a lane of milestone 198 (a package
 manager, and the trivial install that makes a second customer possible), which wrote
-`crates/file_allocation_table` as an 8.3-only `mkfs`.
+`crates/file_allocation_table` as an 8.3-only `mkfs`. `fatfs` and `embedded-sdmmc` were measured
+against this milestone in [784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md).
 
 ## The gap, in one line
 

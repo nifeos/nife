@@ -1,20 +1,8 @@
 # toolchain: nightly-2026-10-22
 # qemu: 11.1.2
-# date: 2026-10-10
-# why: 2026-10-10: QEMU 11.1.1 to 11.1.2, the emulator term alone. Homebrew upgraded patagonia's QEMU on 2026-10-10 and can install only the newest, so calef ruled (option Q1) to move .qemu-version to 11.1.2 in its own pull request, before and apart from any nightly bump. Same tree (main 3c861eadd), same nightly (nightly-2026-10-09), run under both emulators on one machine (11.1.1 built from source for the comparison): every x86_64 row read the same count to the instruction on both. Rows that moved over 0.5% against the old floor, all main's drift since the 2026-10-03 save and reproduced on 11.1.1: yield_switch -5.2%, tss_iomap_switch -4.0%, tss_iomap_lazy_switch -4.5% and tss_iomap_lazy_nop -5.4%, from #1852 (milestone 139 (drive the unsafe count down) round 10, the scheduler queue ownership token; main's tip reads exactly what that merge reads); ipc_rtt +0.9%, call_reply +1.2% and broker_rtt +1.2%, of which about +0.9% on call_reply and broker_rtt was already on main before #1852. Nothing moved 10%.
-# why: 2026-10-10: restamped from nightly-2026-10-09 to nightly-2026-10-10 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-11: restamped from nightly-2026-10-10 to nightly-2026-10-11 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-12: restamped from nightly-2026-10-11 to nightly-2026-10-12 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-13: restamped from nightly-2026-10-12 to nightly-2026-10-13 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-14: restamped from nightly-2026-10-13 to nightly-2026-10-14 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-15: restamped from nightly-2026-10-14 to nightly-2026-10-15 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-16: restamped from nightly-2026-10-15 to nightly-2026-10-16 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-17: restamped from nightly-2026-10-16 to nightly-2026-10-17 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-18: restamped from nightly-2026-10-17 to nightly-2026-10-18 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-19: restamped from nightly-2026-10-18 to nightly-2026-10-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-20: restamped from nightly-2026-10-19 to nightly-2026-10-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-21: restamped from nightly-2026-10-20 to nightly-2026-10-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-10-22: restamped from nightly-2026-10-21 to nightly-2026-10-22 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
+# date: 2026-10-22
+# why: 2026-10-22: 180cccbaf (a new capability table is one copy of a static image, not a constant moved twice through ptr::write at -O0) and 0ec577bde (IrqSafeMutex::lock_masked always inlined, one call per lock at -O0), notes/benchmarks/riscv64-spawn-reap-drift.md. Together, measured with no tick in the window (TICK_HZ 1) on main 43a2d16e1: spawn_reap -1.11%, call_reply -0.80%, broker_rtt -0.80%, relay_rtt -0.70%, ipc_rtt -0.54%, yield_switch -0.52%, map_new -0.41%.
+# why: 2026-10-22: this save also absorbs main's drift since the 2026-10-10 floor, unattributed here. Against that floor it reads ipc_rtt +1.04%, spawn_reap +0.89%, tss_iomap_lazy_switch +0.88%, tss_iomap_lazy_nop +0.18%, tss_iomap_switch +0.11%, yield_switch -0.02%, map_new -0.55%, call_reply -1.71%, broker_rtt -1.71%, relay_rtt -2.19%; each row's move beyond the line above is main's.
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
@@ -27,14 +15,14 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 18405414 2000
-tss_iomap_switch 23179686 2000
-tss_iomap_lazy_switch 22845598 2000
-tss_iomap_lazy_nop 18868994 2000
-ipc_rtt 17549047 1000
-relay_rtt 34751439 1000
-call_reply 18159373 1000
-broker_rtt 36274683 1000
-spawn_reap 2927525 64
-map_new 193138 64
-coremark 306298057 256
+yield_switch 18401484 2000
+tss_iomap_switch 23204451 2000
+tss_iomap_lazy_switch 23046930 2000
+tss_iomap_lazy_nop 18902086 2000
+ipc_rtt 17731192 1000
+relay_rtt 33991276 1000
+call_reply 17849189 1000
+broker_rtt 35652622 1000
+spawn_reap 2953695 64
+map_new 192082 64
+coremark 306296726 256

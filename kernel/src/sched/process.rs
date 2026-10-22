@@ -103,9 +103,7 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
                 ended: false,
                 ended_by: [0; 3],
             });
-            table_at(phys)
-                .cast_mut()
-                .write(crate::thread::EMPTY_CAPABILITY_TABLE);
+            crate::thread::write_empty_capability_table(table_at(phys).cast_mut());
         }
         // Cannot fail: capacity was checked above under this same hold.
         let pid = sched
