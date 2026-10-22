@@ -99,6 +99,8 @@ whose loader holds the screen for the gate, and is not for a stick.
 
 ```console
 $ cargo xtask uefi-test                        # the kernel's TEST binary under the same firmware
+$ cargo xtask uefi-test --test <name> --repeat 200 --stage-only
+                                               # one test, 200 times, staged at target/esp-test for a stick
 ```
 
 Both run inside `script/test --arch x86_64`, after the PVH suite. `uefi-boot` boots the tour at two
