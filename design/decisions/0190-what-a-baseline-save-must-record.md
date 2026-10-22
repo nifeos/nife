@@ -29,8 +29,9 @@ maintainer's session, not in this file, so they are written out here as they wer
 
 Milestone 415 built it in PR #1375. `helpers/baseline_drift.py` does the arithmetic from git
 alone, anchored at the 2026-09-15 audit's three commits, and reproduces that audit's five figures.
-`script/metrics` publishes it as `notes/project-metrics/baseline-drift.csv`, a chart and a
-generated appendix, `notes/project-metrics/baseline-drift.md`.
+`script/metrics` publishes it as a generated appendix, `notes/project-metrics/baseline-drift.md`,
+and charts the part of it on `main` that no line in `bench/attributions.tsv` accounts for (calef,
+2026-10-22 UTC, on #2554).
 
 The rest of this file is the section as it stood before the ruling.
 

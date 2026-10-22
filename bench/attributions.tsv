@@ -1,0 +1,203 @@
+# What explains a step in a benchmark row's drift since the anchor, for the weekly chart of
+# unexplained drift on `main` (helpers/baseline_drift.py; calef's ruling on #2554, 2026-10-22 UTC).
+# A step is one floor save's move on a row, or `main`'s gap to the current floor. A step no line
+# explains is unexplained, and above 5% that is a lane to open. Name: provisional, minted
+# 2026-10-22 (UTC) by lane/bench/unexplained-drift-chart.
+#
+# One line per claim, five tab-separated fields: arch, commit, row, percent, cause.
+#
+# - percent `*` claims the whole step of the save `commit` names: its own code change, or one term
+#   measured alone (the compiler, the emulator). Only a save can carry `*`; script/metrics refuses
+#   one on any other commit.
+# - a number claims that much of whichever step's range holds `commit` (a merge, or a commit
+#   inside one), compounded with the others. Write it against the merge's parent, as measured.
+# - row `*` is every row the save moved.
+# - a save that "absorbs drift already on main" or "mixes the compiler with drift on main" gets no
+#   line for that part; "partly" with no number gets none either. A split nobody measured is not
+#   a split.
+#
+# A `--save` that accounts for its moves adds its lines here in the same pull request; the
+# baseline file cannot hold them, because a save rebuilds it (script/bench's BUGS). An attribution
+# found later, a bisect in a note for instance, is transcribed here with its numbers.
+
+# The pre-ledger saves (before 2026-09-23), read as explained by the change their own commit
+# names. EXCEPTION, marked, by calef's ruling on #2554 (2026-10-22 UTC): these saves also
+# absorbed drift on main that nothing separated, and nothing can separate it now.
+aarch64	d1cf5452e	*	*	pre-ledger: milestone 124: a thread is built on its TCB page
+riscv64	d1cf5452e	*	*	pre-ledger: milestone 124: a thread is built on its TCB page
+aarch64	2774c603a	*	*	pre-ledger: the thread stack grows from 16 KiB (overflow under load)
+riscv64	2774c603a	*	*	pre-ledger: the thread stack grows from 16 KiB (overflow under load)
+aarch64	5ca26e83e	*	*	pre-ledger: milestone 124: a per-CPU interrupt stack
+riscv64	5ca26e83e	*	*	pre-ledger: milestone 124: a per-CPU interrupt stack
+aarch64	df3494615	*	*	pre-ledger: milestone 142: the terminal grows to a usable size
+riscv64	df3494615	*	*	pre-ledger: milestone 142: the terminal grows to a usable size
+aarch64	bf8be9cc4	*	*	pre-ledger: decision 132: capability-scoped PageFrame::REVOKE
+riscv64	bf8be9cc4	*	*	pre-ledger: decision 132: capability-scoped PageFrame::REVOKE
+aarch64	1c51104e3	*	*	pre-ledger: the thread-table ceiling raised on a measured peak
+riscv64	1c51104e3	*	*	pre-ledger: the thread-table ceiling raised on a measured peak
+aarch64	770f44983	*	*	pre-ledger: milestone 300: the drift decomposed, toolchain re-baselined
+riscv64	770f44983	*	*	pre-ledger: milestone 300: the drift decomposed, toolchain re-baselined
+aarch64	17cb9525f	*	*	pre-ledger: milestone 300: the cycle-counter switch-tuple regression recovered
+riscv64	17cb9525f	*	*	pre-ledger: milestone 300: the cycle-counter switch-tuple regression recovered
+x86_64	17cb9525f	*	*	pre-ledger: milestone 300: the cycle-counter switch-tuple regression recovered
+aarch64	cd6be279a	*	*	pre-ledger: milestone 447: a thread's vector registers are its own
+riscv64	cd6be279a	*	*	pre-ledger: milestone 447: a thread's vector registers are its own
+x86_64	cd6be279a	*	*	pre-ledger: milestone 447: a thread's vector registers are its own
+aarch64	6503f481d	*	*	pre-ledger: milestone 541: map_new times a longer window
+x86_64	6503f481d	*	*	pre-ledger: milestone 541: map_new times a longer window
+aarch64	2b848fb89	*	*	pre-ledger: the nightly-2026-09-22 bump
+riscv64	2b848fb89	*	*	pre-ledger: the nightly-2026-09-22 bump
+x86_64	2b848fb89	*	*	pre-ledger: the nightly-2026-09-22 bump
+aarch64	4b4929639	*	*	pre-ledger: the nightly-2026-09-23 bump
+riscv64	4b4929639	*	*	pre-ledger: the nightly-2026-09-23 bump
+x86_64	4b4929639	*	*	pre-ledger: the nightly-2026-09-23 bump
+riscv64	8fdf26771	*	*	pre-ledger: milestone 58: the RISC-V TLB shootdown
+riscv64	aa9655494	*	*	pre-ledger: riscv64 rfence_self, measured and explained
+riscv64	cfe251951	*	*	pre-ledger: §204: a thread reads its own CPU from a page
+x86_64	1e9a8a14a	*	*	pre-ledger: milestone 299: the x86 port-range capability
+
+# The ledger era: what each save's `# why:` lines account for, row by row.
+aarch64	228e8024a	broker_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	call_reply	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	coremark	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	ctx_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	ipc_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	ipc_rtt_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	map_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	map_new	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	null_syscall	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	relay_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	sink_throughput	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	spawn_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	yield_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	broker_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	call_reply	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	coremark	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	ctx_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	ipc_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	ipc_rtt_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	map_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	null_syscall	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	relay_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	rfence_self	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	sink_throughput	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	spawn_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	yield_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	broker_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	call_reply	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	coremark	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	ipc_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	map_new	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	relay_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	tss_iomap_lazy_nop	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	tss_iomap_lazy_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	tss_iomap_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+x86_64	228e8024a	yield_switch	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	62619d7ff	broker_rtt	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	call_reply	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	coremark	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	ctx_switch	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	ipc_rtt	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	ipc_rtt_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	map_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	map_new	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	null_syscall	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	relay_rtt	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	sink_throughput	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	spawn_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	spawn_reap	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	yield_switch	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	493ee18ec	map_el0	*	milestone 139 round 9: the revocation walk behind revoke::chain
+aarch64	493ee18ec	spawn_el0	*	milestone 139 round 9: the revocation walk behind revoke::chain
+riscv64	493ee18ec	map_el0	*	milestone 139 round 9: the revocation walk behind revoke::chain
+riscv64	493ee18ec	spawn_el0	*	milestone 139 round 9: the revocation walk behind revoke::chain
+aarch64	bc06c6a23	broker_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	call_reply	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	coremark	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	ctx_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	relay_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	sink_throughput	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	spawn_el0	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	spawn_reap	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	bc06c6a23	yield_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	broker_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	call_reply	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	ctx_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	map_el0	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	null_syscall	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	relay_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	sink_throughput	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	spawn_el0	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	spawn_reap	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	yield_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	coremark	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	map_new	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	relay_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	spawn_reap	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	tss_iomap_lazy_nop	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	tss_iomap_lazy_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	tss_iomap_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+x86_64	bc06c6a23	yield_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+aarch64	4a58737d0	coremark	*	nightly-2026-10-10, the compiler term alone
+aarch64	4a58737d0	ctx_switch	*	nightly-2026-10-10, the compiler term alone
+aarch64	4a58737d0	ipc_rtt_el0	*	nightly-2026-10-10, the compiler term alone
+aarch64	4a58737d0	map_el0	*	nightly-2026-10-10, the compiler term alone
+aarch64	4a58737d0	map_new	*	nightly-2026-10-10, the compiler term alone
+aarch64	4a58737d0	sink_throughput	*	nightly-2026-10-10, the compiler term alone
+
+# #1486 (notes/benchmarks/drift-since-the-2026-09-26-floors.md): riscv64 ticks per merge, as a
+# percent of the 2026-09-26 floor, inside the step 2026-10-03's save absorbed.
+riscv64	b4f657d8a	map_new	+5.61	#1373, milestone 23: RETYPE takes a page count (+133 ticks)
+riscv64	7a90fcc59	map_new	+1.82	#1352, milestone 206: the fixed +43, mechanism not found (+43 ticks)
+riscv64	0d90e750c	map_new	+0.42	#1360, milestone 126: the switch counter (+10 ticks)
+riscv64	0d90e750c	yield_switch	+2.93	#1360, milestone 126: the switch counter (+5471 ticks)
+riscv64	0d90e750c	ctx_switch	+2.66	#1360, milestone 126: the switch counter (+13640 ticks)
+riscv64	0d90e750c	ipc_rtt	+1.41	#1360, milestone 126: the switch counter (+2404 ticks)
+riscv64	0d90e750c	spawn_reap	+2.95	#1360, milestone 126: the counter and the 32-slot table (+1016 ticks)
+
+# #2426 (notes/benchmarks/drift-since-the-2026-10-10-floor.md): aarch64, each merge against its
+# parent, with the preemption tick, which is what the bench measures.
+aarch64	ddd38f0b0	yield_switch	+1.22	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt	+2.04	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	relay_rtt	+0.71	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	call_reply	+0.71	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	broker_rtt	+0.71	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	null_syscall	+1.49	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ctx_switch	+1.19	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt_el0	+1.53	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	spawn_el0	+3.51	#1892, milestone 812: threads in one address space
+aarch64	9bda691ce	yield_switch	+0.45	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt	-3.24	#2025: schedule split along its decision
+aarch64	9bda691ce	relay_rtt	+0.23	#2025: schedule split along its decision
+aarch64	9bda691ce	call_reply	+0.22	#2025: schedule split along its decision
+aarch64	9bda691ce	broker_rtt	+0.22	#2025: schedule split along its decision
+aarch64	9bda691ce	null_syscall	-0.09	#2025: schedule split along its decision
+aarch64	9bda691ce	ctx_switch	+0.41	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt_el0	-0.47	#2025: schedule split along its decision
+aarch64	9bda691ce	spawn_el0	+0.12	#2025: schedule split along its decision
+aarch64	8d6f3964f	yield_switch	+0.82	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt	+4.87	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	relay_rtt	+1.71	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	call_reply	+1.23	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	broker_rtt	+1.26	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	null_syscall	+0.09	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ctx_switch	+0.70	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt_el0	+2.54	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	spawn_el0	+0.24	#2188: read_current_thread masks IRQs
+aarch64	cec04e4a9	yield_switch	+0.29	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ipc_rtt	+0.18	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	relay_rtt	+0.18	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	call_reply	+0.14	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	broker_rtt	+0.14	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ctx_switch	+0.24	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ipc_rtt_el0	-0.57	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	spawn_el0	-0.09	#2331: SUSPEND and RESUME
+aarch64	84232e8c9	ipc_rtt	-6.81	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	relay_rtt	-4.00	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	call_reply	-2.91	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	broker_rtt	-2.91	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	yield_switch	-1.98	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ctx_switch	-1.79	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ipc_rtt_el0	-2.99	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	sink_throughput	-3.31	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	spawn_el0	-0.50	#2426: read_current_thread in one asm block

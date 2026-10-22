@@ -11,6 +11,9 @@
 #                            against): a floor that records only a number cannot tell
 #                            the next reader compiler drift from a regression, and twice in four
 #                            days it did not.
+#                            A save whose moves are accounted for also adds lines to
+#                            bench/attributions.tsv, or the weekly chart reads its step as
+#                            unexplained drift (calef's ruling on #2554, 2026-10-22 UTC).
 #   script/bench --real      HVF: natively on the Apple Silicon core; per-core magnitudes, no gating
 #   script/bench --real --smp  HVF on 4 harts; adds the multi-hart throughput bench (smp_throughput)
 #                              and, with a RedoxFS disk attached, the filesystem ones: fs_read and
