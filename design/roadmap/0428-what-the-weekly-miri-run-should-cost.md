@@ -59,8 +59,8 @@ than one laptop's, and it means the 240-minute budget has about twenty percent o
 The cost is concentrated, not spread, which is why "run it less often" is the wrong lever and
 "run less of it" is the right one. The evidence already in the tree:
 
-- `serial_console` alone was **55 minutes** against roughly four for the whole rest of the workspace,
-  and is excluded for exactly this reason. It contains no `unsafe` and no dependencies.
+- `serial_console` alone was **55 minutes** against roughly four for the whole rest of the
+  workspace, and is excluded for exactly this reason. It contains no `unsafe` and no dependencies.
 - `compositor`'s six full-screen sweeps are 317,856 pixels each; one was measured at over 44 minutes
   without finishing and is now strided, and the header calls the other five a milestone of their own.
 - `globally_unique_identifier_partition_table`, `glob`, `calendar`, `credentialer` and `network_time_protocol` already gate their exhaustive

@@ -56,10 +56,10 @@ Three pieces, in the order they block each other:
 says nothing until the stack is up. So it cannot report the failures that happen before it, and a
 machine whose only voice is the network cannot report a network failure.
 
-**Not a photograph read by a program.** `serial_console::screen` decodes a *screendump*: pixel-aligned
-bytes with exact glyph matches and no threshold to tune. A phone camera produces none of those
-properties, and the honest cost of making it work is optical character recognition, which is a
-different project.
+**Not a photograph read by a program.** `serial_console::screen` decodes a *screendump*:
+pixel-aligned bytes with exact glyph matches and no threshold to tune. A phone camera produces none
+of those properties, and the honest cost of making it work is optical character recognition, which
+is a different project.
 
 ## Why it is worth a milestone rather than a `BUGS` entry
 
@@ -79,9 +79,9 @@ can be brought up by hand, with a person reading a monitor and taking a photogra
 precisely the state milestone 216 got the VisionFive 2 out of for boards that have a serial port.
 The shape proposed is a postmortem written to the boot medium, which is a FAT32 EFI system
 partition somebody carries back to patagonia anyway, turning "photograph the screen" into "plug the
-stick in and run the gate" with `serial_console::progress` judging the result unchanged. Three pieces
-block each other in order: USB mass storage, then a FAT32 writer or a reserved span at a known
-offset, then a transcript buffer in the kernel. That is new state on the diagnostic path and wants
-arguing rather than assuming. Not a network console, which cannot report the failures that happen
-before the stack is up. Not a photograph read by a program, which is optical character
+stick in and run the gate" with `serial_console::progress` judging the result unchanged. Three
+pieces block each other in order: USB mass storage, then a FAT32 writer or a reserved span at a
+known offset, then a transcript buffer in the kernel. That is new state on the diagnostic path and
+wants arguing rather than assuming. Not a network console, which cannot report the failures that
+happen before the stack is up. Not a photograph read by a program, which is optical character
 recognition and a different project.

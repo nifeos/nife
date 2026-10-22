@@ -90,8 +90,9 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 ///
 /// So the kernel takes its check names from here, and its verdict counts against this list rather
 /// than against what ran. A listed check that did not run fails by name, a check that is not
-/// listed fails by name, and `serial_console` fails a verdict whose total is not this list's length.
-/// Changing the set is an edit to this one list, which every architecture and the recogniser read.
+/// listed fails by name, and `serial_console` fails a verdict whose total is not this list's
+/// length. Changing the set is an edit to this one list, which every architecture and the
+/// recogniser read.
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
 pub const SELF_TEST_CHECKS: &[&str] = &[

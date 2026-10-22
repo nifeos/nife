@@ -100,9 +100,9 @@ const BEAT_SECONDS: u64 = 5;
 
 /// The line that tells the watcher a soak has begun.
 ///
-/// `crates/serial_console`'s recogniser matches this prefix, so the two agree by construction rather
-/// than by both being remembered. Changing it means changing that recogniser, and its tests will
-/// say so.
+/// `crates/serial_console`'s recogniser matches this prefix, so the two agree by construction
+/// rather than by both being remembered. Changing it means changing that recogniser, and its tests
+/// will say so.
 ///
 /// **Spelled for the command, not for this module** (milestone 297, calef's ruling 2026-09-14): a
 /// console marker takes the spelling of the command a reader typed to produce it, and the reader's

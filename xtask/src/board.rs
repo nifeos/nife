@@ -678,8 +678,8 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 // refuses rather than guessing: `Device tree not found or missing FDT support`, then
 // `### ERROR ### Please RESET the board ###`, which is a `hang()` that only the reset button
 // clears. Captured on the board 2026-09-01;
-// crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log is the transcript,
-// and it is evidence about U-Boot rather than about this kernel: the payload never ran.
+// crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log is the
+// transcript, and it is evidence about U-Boot rather than about this kernel: the payload never ran.
 //
 // So the card carries a U-Boot script instead. `scan_dev_for_scripts` sources it, and it issues
 // exactly the commands a person types at the `StarFive #` prompt today, which is the sequence the

@@ -376,9 +376,9 @@ fn uefi_boot_staged() -> bool {
     eprintln!("--- boot under real firmware, x86_64 (QEMU q35 + OVMF) ---");
 
     // **The screen half** (milestone 243). A QEMU monitor on a unix socket, a poller that asks it
-    // for a screendump until the tour's last line is *on the screen*, and `serial_console::screen` to
-    // turn the picture back into text. Everything the framebuffer path can get wrong shows up here
-    // and nowhere else: the loader's `LocateProtocol`, the byte order, the stride, the mapping
+    // for a screendump until the tour's last line is *on the screen*, and `serial_console::screen`
+    // to turn the picture back into text. Everything the framebuffer path can get wrong shows up
+    // here and nowhere else: the loader's `LocateProtocol`, the byte order, the stride, the mapping
     // surviving `mmu::init`, and the glyphs. The serial transcript below would be identical if the
     // screen were black.
     //

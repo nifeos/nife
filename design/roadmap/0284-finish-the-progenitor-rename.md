@@ -75,11 +75,11 @@ under `design/` and so is not a lane's either.
   `INIT_STACK_PAGES` and the five `hello` roles stayed exactly as they are. Where the prose around
   one had to stop lying, it says what the thing is and leaves the identifier alone.
 - A string a gate or a log parser matches does not change on its own. New here, and it cost a
-  real decision. `crates/serial_console` recognizes the boot-tour label `init/build  :` by substring,
-  against captured VisionFive 2 logs that are evidence and cannot be re-written; so the label
-  stays and the sentence after it was corrected. Runtime strings nothing parses (the `expect`s in
-  `kernel/src/user.rs`, `could not spawn (init is out of memory)`, the handoff line) were changed,
-  each checked against the tree first.
+  real decision. `crates/serial_console` recognizes the boot-tour label `init/build  :` by
+  substring, against captured VisionFive 2 logs that are evidence and cannot be re-written; so the
+  label stays and the sentence after it was corrected. Runtime strings nothing parses (the `expect`s
+  in `kernel/src/user.rs`, `could not spawn (init is out of memory)`, the handoff line) were
+  changed, each checked against the tree first.
 
 ## What changed, by shape
 
@@ -163,10 +163,11 @@ them, deliberately, so that a rename moves one set of words and not two.
 ## BUGS
 
 - The `init/build  :` boot-tour label is still wrong and is left that way on purpose.
-  `crates/serial_console::progress` matches it by substring and its captured VisionFive 2 fixture logs
-  contain it; changing the label means changing the recognizer and stranding evidence that cannot be
-  re-captured without the board. The sentence after the label was corrected, so the transcript now
-  reads `init/build  : the userspace builder loaded ...`, which is honest and mismatched.
+  `crates/serial_console::progress` matches it by substring and its captured VisionFive 2 fixture
+  logs contain it; changing the label means changing the recognizer and stranding evidence that
+  cannot be re-captured without the board. The sentence after the label was corrected, so the
+  transcript now reads `init/build  : the userspace builder loaded ...`, which is honest and
+  mismatched.
 - `design/init-and-granular-spawn.md` is cited from nine places and is 40 occurrences of the old
   name, including its filename. It is under `design/`, which a lane may not edit.
 - 471 occurrences remain in roadmap blocks and decisions, 360 and 92 respectively plus the design

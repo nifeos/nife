@@ -148,9 +148,9 @@ Worth recording as a pattern rather than as four facts, because the shape recurs
 stops at the first failure, so a broken run reports exactly one problem however many it has. From
 2026-08-10 the weekly job died inside two minutes on a missing environment variable, and milestone
 232's audit read that message and reasonably estimated a one-flag fix. Behind it, in order, sat:
-`read_dir` against isolation; five `serial_console` tests doing host I/O; five more in `serial_console`
-that are wall-clock driven; `serial_console`'s 55-minute cost; and a `compositor` test sweeping
-317,856 pixels that ran 44 minutes without finishing.
+`read_dir` against isolation; five `serial_console` tests doing host I/O; five more in
+`serial_console` that are wall-clock driven; `serial_console`'s 55-minute cost; and a `compositor`
+test sweeping 317,856 pixels that ran 44 minutes without finishing.
 
 None of those were regressions. They accumulated while the job was red, invisibly, because a job
 that fails in two minutes never reaches the code that would take an hour. The 27-minute figure

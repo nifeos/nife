@@ -44,10 +44,11 @@ one-line change. Four mechanisms answer it, strongest first, in AGENTS.md's own 
    the board and whoever is at the terminal.
 4. Stopping disarms the reboot and leaves the soak running. It does not halt the kernel. That is
    deliberate, and it is the better half of the design. A halted kernel is silence, and `Stage::Soak`
-   has already told `serial_console` that silence after a soak starts is a hang. So stopping the loop
-   would have reported itself as the failure this whole instrument exists to detect. Disarming leaves
-   the board in the well-understood state of milestone 219 (the boot tour ends and the kernel halts, so there is nothing to soak), still beating, and the run is not thrown away
-   to get the board back.
+   has already told `serial_console` that silence after a soak starts is a hang. So stopping the
+   loop would have reported itself as the failure this whole instrument exists to detect. Disarming
+   leaves the board in the well-understood state of milestone 219 (the boot tour ends and the kernel
+   halts, so there is nothing to soak), still beating, and the run is not thrown away to get the
+   board back.
 
 And there is a fallback that needs no cooperation from this kernel at all. U-Boot's autoboot
 countdown runs on every one of these boots, and anything typed into it drops the board at

@@ -958,8 +958,8 @@ fn deviceirq(tally: &mut Tally) {
 /// the draw timed, which is fatal risk 6's "at real speed" (milestone 306 (time the hw entropy
 /// step)). The kernel never reads a `RAND` register.
 ///
-/// **Absent on every machine but a JH7110**, and radon's board profile in `serial_console` names both
-/// as checks that may not be absent there.
+/// **Absent on every machine but a JH7110**, and radon's board profile in `serial_console` names
+/// both as checks that may not be absent there.
 fn jh7110(tally: &mut Tally) {
     #[cfg(target_arch = "riscv64")]
     jh7110_on_riscv64(tally);

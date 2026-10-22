@@ -21,9 +21,9 @@
 #   - the boot handed over and `swish` came up, which is the ladder's top rung and the stated
 #     terminal state of a default boot
 #
-# It reads those with `crates/serial_console`, the same recogniser `cargo xtask board-console` points
-# at a real board over a serial cable. One reader, so a gate cannot pass something a bench run would
-# call broken.
+# It reads those with `crates/serial_console`, the same recogniser `cargo xtask board-console`
+# points at a real board over a serial cable. One reader, so a gate cannot pass something a bench
+# run would call broken.
 #
 # `--inject` builds each kernel with `--features self_test_injection`, which makes one check report
 # failure, and requires the run to come back RED. **A gate that has only ever been seen green is a

@@ -134,8 +134,8 @@ cannot appear unless userspace built the console server, the line discipline, th
 the shell.
 
 The matcher for `init/build` stays anyway, and this is not sentiment.
-`crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-userspace.log` contains the line and is
-asserted on. That capture is bytes off real VisionFive 2 silicon and cannot be re-taken with a
+`crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-userspace.log` contains the line and
+is asserted on. That capture is bytes off real VisionFive 2 silicon and cannot be re-taken with a
 different kernel; a recognizer that could no longer read it would be throwing evidence away to tidy
 code. So `userspace_ran()`'s doc now says which of the two questions it answers, at the accessor
 itself, and the matcher carries a comment saying the same. `notes/board-console.md` says it where a

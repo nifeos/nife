@@ -7,8 +7,9 @@
 ///
 /// It is in the shared arch layer rather than in each architecture's own module because it is the
 /// one fact about an architecture that is not about the hardware: it is what a person types and
-/// what a log is grepped for. Milestone 268's machine-description summary line prints it, so `serial_console` can
-/// say which of the three answered without keeping three copies of three spellings.
+/// what a log is grepped for. Milestone 268's machine-description summary line prints it, so
+/// `serial_console` can say which of the three answered without keeping three copies of three
+/// spellings.
 ///
 /// Name: provisional (milestone 268 (every architecture boots the same way)).
 #[cfg(target_arch = "aarch64")]

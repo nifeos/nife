@@ -581,7 +581,8 @@ mod tests {
     /// train the reader to ignore the real one.
     #[test]
     fn a_speed_that_cannot_be_read_is_not_reported_as_wrong() {
-        let path = std::env::temp_dir().join(format!("serial_console-speed-{}", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("serial_console-speed-{}", std::process::id()));
         File::create(&path).unwrap();
         assert_eq!(confirm_speed(&path), None);
         std::fs::remove_file(&path).ok();

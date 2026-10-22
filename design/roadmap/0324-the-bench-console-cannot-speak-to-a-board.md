@@ -124,8 +124,8 @@ the boot to a replayable log under `target/`. It exits 0 on a complete sweep, 2 
 1s` and 3 with `--for 30s`; a host test covers the refusal. All were re-run after milestone 168
 merged.
 
-Part 3: `crates/serial_console/src/board.rs` declares a `Profile` of firmware `Rung`s, `Refusal`s and
-the relocation discriminator. `Stage`'s four firmware variants became `Stage::Firmware(&'static
+Part 3: `crates/serial_console/src/board.rs` declares a `Profile` of firmware `Rung`s, `Refusal`s
+and the relocation discriminator. `Stage`'s four firmware variants became `Stage::Firmware(&'static
 Rung)`, and two U-Boot failures became `Failure::FirmwareRefused`. `--board radon|xenon` selects,
 with radon the default. One radon capture read through both profiles reaches the same tour, with
 and without a prologue. A xenon capture replays through xenon's empty one. `--until spl` on a board
@@ -178,8 +178,8 @@ no profile at all.
   parts 2 and 3.
 - **Recorded.** *No job-mix sweep has been watched on a board*, in the `BUGS` of `script/job-mix`,
   `crates/serial_console/src/lib.rs`, `notes/board-console.md` and
-  `crates/serial_console/tests/fixtures/README.md`. radon running one is milestone 168's own HARDWARE
-  gate; the first bench sweep closes it.
+  `crates/serial_console/tests/fixtures/README.md`. radon running one is milestone 168's own
+  HARDWARE gate; the first bench sweep closes it.
 - **Recorded.** *Only radon's profile has been checked against a machine, xenon's emptiness rests on
   one capture, and argon has none*, in the `BUGS` of `crates/serial_console/src/board.rs` and
   `notes/board-console.md`.
