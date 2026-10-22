@@ -80,7 +80,7 @@ in the order written:
 
 This is Microsoft's `GUID` struct layout, inherited. Get it wrong and you have a GUID that looks
 entirely reasonable, matches nothing, and is byte-reversed in three groups out of five. The
-identifier is `universally_unique_identifier::Uuid`, always in RFC 9562 order; `guid::from_disk`
+identifier is `uuid::Uuid`, always in RFC 9562 order; `guid::from_disk`
 and `guid::to_disk` are the only functions that see on-disk bytes (2026-10-06).
 
 ### 2. `last_lba` is inclusive
@@ -166,8 +166,7 @@ load is a serial dependency in the loop. That is the number that decided the tes
 
 ### Proved, symbolically
 
-`script/verify` runs ten harnesses over this crate's logic, about 96 seconds in total, the last two
-now `universally_unique_identifier`'s. They prove that the table-driven CRC-32 agrees with its
+`script/verify` runs eight harnesses over this crate's logic, 69 to 74 seconds in total. They prove that the table-driven CRC-32 agrees with its
 bitwise definition and that a changed byte always changes it. They prove that entries, GUIDs and
 header fields survive their on-disk layout, and that `create` never lays out a table `parse` would
 reject, for every disk size. And `overlap_is_exactly_sharing_a_block` is complete rather than
@@ -204,7 +203,7 @@ Stated plainly, because a demonstrator's docs are part of the deliverable:
   the program that does them, and on nothing else.
 
   **Both were unblocked on 2026-08-03, and the crate still generates nothing.** What it gained is
-  `v4_from_random` (now in `universally_unique_identifier`), which stamps bytes the caller brings. The section below is
+  `uuid::Builder::from_random_bytes`, which stamps bytes the caller brings. The section below is
   what uses it.
 - No alignment policy. `GloballyUniqueIdentifierPartitionTable::create` places partitions
   exactly where it is told. The 2048-block (1 MiB) convention that keeps a partition off an SSD

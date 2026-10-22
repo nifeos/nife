@@ -46,7 +46,7 @@ use filesystem_contract::xattr;
 use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
 use redoxfs::{BLOCK_SIZE, Disk, DiskFile, FileSystem, Node, Transaction, TreeData, TreePtr};
 use syscall::error::{EIO, Error};
-use universally_unique_identifier::Uuid;
+use uuid::Uuid;
 
 /// Public so the recovery test can read an attribute back off the host file the extract wrote. The
 /// round trip is the claim this feature makes, and closing it needs both halves in one place.

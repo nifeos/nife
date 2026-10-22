@@ -1,7 +1,7 @@
 //! GPT's GUIDs: how the GUID Partition Table stores a UUID on disk, and the partition types worth
 //! recognizing by name.
 //!
-//! The identifier itself is [`Uuid`], from `crates/universally_unique_identifier`, in RFC 9562's
+//! The identifier itself is [`Uuid`], from the `uuid` crate, in RFC 9562's
 //! byte order. This module keeps only what is GPT's: the on-disk byte layout and the type constants.
 //! It keeps the spec's word, GUID, because the UEFI fields it serves are spelled that way
 //! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`). Everything else says UUID, RFC 9562's
@@ -20,7 +20,7 @@
 //!    u32 LE       u16 LE u16 LE  as written
 //! ```
 //!
-//! where RFC 9562 order (what [`Uuid::to_bytes`] returns) is `C1 2A 73 28 F8 1F 11 D2 BA 4B ...`.
+//! where RFC 9562 order (what [`Uuid::into_bytes`] returns) is `C1 2A 73 28 F8 1F 11 D2 BA 4B ...`.
 //! This is Microsoft's `GUID` struct, which UEFI inherited; RFC 9562 section 4 names it as the one known
 //! exception to big-endian storage. Getting it wrong gives you a GUID that looks plausible, matches
 //! nothing, and is byte-reversed in three places out of five. [`from_disk`] and [`to_disk`] are the
@@ -34,7 +34,7 @@
 //! constant ([`types`]); the **unique** GUID names this particular partition and is generated once,
 //! never reused. Confusing them is how you get two partitions the OS thinks are the same one.
 
-pub use universally_unique_identifier::Uuid;
+pub use uuid::Uuid;
 
 /// Which RFC 9562 byte each on-disk byte holds: the first three fields reversed, the last two not.
 /// The same table read either way, because each swap is its own inverse.
@@ -60,7 +60,7 @@ pub const fn from_disk(bytes: [u8; 16]) -> Uuid {
 /// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". The inverse of `from_disk`, named to
 /// match it.
 pub const fn to_disk(id: Uuid) -> [u8; 16] {
-    let canonical = id.to_bytes();
+    let canonical = id.into_bytes();
     let mut bytes = [0u8; 16];
     let mut i = 0;
     while i < 16 {
@@ -83,14 +83,14 @@ pub mod types {
     use super::Uuid;
 
     /// An unused entry. The type GUID is what marks an entry live, not the LBA fields.
-    pub const UNUSED: Uuid = Uuid::NIL;
+    pub const UNUSED: Uuid = Uuid::nil();
 
     /// EFI System Partition: the FAT volume firmware loads a bootloader from.
     pub const EFI_SYSTEM: Uuid = Uuid::from_fields(
         0xC12A_7328,
         0xF81F,
         0x11D2,
-        [0xBA, 0x4B, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B],
+        &[0xBA, 0x4B, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B],
     );
 
     /// BIOS boot partition, where GRUB puts its core image on a legacy-booted GPT disk. The GUID
@@ -99,7 +99,7 @@ pub mod types {
         0x2168_6148,
         0x6449,
         0x6E6F,
-        [0x74, 0x4E, 0x65, 0x65, 0x64, 0x45, 0x46, 0x49],
+        &[0x74, 0x4E, 0x65, 0x65, 0x64, 0x45, 0x46, 0x49],
     );
 
     /// Microsoft basic data. Also what macOS's `diskutil` labels a FAT partition it creates, which
@@ -108,7 +108,7 @@ pub mod types {
         0xEBD0_A0A2,
         0xB9E5,
         0x4433,
-        [0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7],
+        &[0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7],
     );
 
     /// Linux filesystem data, `sgdisk` type code `8300`. The generic "there is a Linux filesystem
@@ -117,7 +117,7 @@ pub mod types {
         0x0FC6_3DAF,
         0x8483,
         0x4772,
-        [0x8E, 0x79, 0x3D, 0x69, 0xD8, 0x47, 0x7D, 0xE4],
+        &[0x8E, 0x79, 0x3D, 0x69, 0xD8, 0x47, 0x7D, 0xE4],
     );
 
     /// Linux swap.
@@ -125,7 +125,7 @@ pub mod types {
         0x0657_FD6D,
         0xA4AB,
         0x43C4,
-        [0x84, 0xE5, 0x09, 0x33, 0xC8, 0x4B, 0x4F, 0x4F],
+        &[0x84, 0xE5, 0x09, 0x33, 0xC8, 0x4B, 0x4F, 0x4F],
     );
 
     /// Linux root filesystem, arm64. From the Discoverable Partitions Specification, which is how a
@@ -135,7 +135,7 @@ pub mod types {
         0xB921_B045,
         0x1DF0,
         0x41C3,
-        [0xAF, 0x44, 0x4C, 0x6F, 0x28, 0x0D, 0x3F, 0xAE],
+        &[0xAF, 0x44, 0x4C, 0x6F, 0x28, 0x0D, 0x3F, 0xAE],
     );
 
     /// LUKS, Linux's encrypted-volume container. Recognised so that a tool can say "encrypted, and
@@ -144,7 +144,7 @@ pub mod types {
         0xCA7D_7CCB,
         0x63ED,
         0x4C53,
-        [0x86, 0x1C, 0x17, 0x42, 0x53, 0x60, 0x59, 0xCC],
+        &[0x86, 0x1C, 0x17, 0x42, 0x53, 0x60, 0x59, 0xCC],
     );
 
     /// Apple HFS+.
@@ -152,7 +152,7 @@ pub mod types {
         0x4846_5300,
         0x0000,
         0x11AA,
-        [0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
+        &[0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
     );
 
     /// Apple APFS, which is what any Mac disk made since 2017 is.
@@ -160,7 +160,7 @@ pub mod types {
         0x7C34_57EF,
         0x0000,
         0x11AA,
-        [0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
+        &[0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
     );
 
     /// **A nife data partition**, holding a RedoxFS volume (DECISIONS §34).
@@ -174,7 +174,7 @@ pub mod types {
         0xEC5C_C08B,
         0xD749,
         0x4434,
-        [0xAC, 0x38, 0xA2, 0x74, 0xC5, 0x03, 0x85, 0xBA],
+        &[0xAC, 0x38, 0xA2, 0x74, 0xC5, 0x03, 0x85, 0xBA],
     );
 
     /// **A nife boot slot**, holding one copy of the image the firmware's chooser starts
@@ -199,7 +199,7 @@ pub mod types {
         0x1163_1EE3,
         0xE18F,
         0x4AFC,
-        [0x9D, 0x7F, 0x17, 0x15, 0x72, 0x63, 0x56, 0x29],
+        &[0x9D, 0x7F, 0x17, 0x15, 0x72, 0x63, 0x56, 0x29],
     );
 
     /// A short name for a type GUID, or `None` for one this crate does not recognise.
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn the_efi_system_partition_guid_in_both_byte_orders() {
         assert_eq!(
-            types::EFI_SYSTEM.to_bytes(),
+            types::EFI_SYSTEM.into_bytes(),
             [
                 0xC1, 0x2A, 0x73, 0x28, 0xF8, 0x1F, 0x11, 0xD2, 0xBA, 0x4B, 0x00, 0xA0, 0xC9, 0x3E,
                 0xC9, 0x3B,
@@ -282,20 +282,48 @@ mod tests {
         assert_eq!(to_disk(types::EFI_SYSTEM), EFI_SYSTEM_ON_DISK);
         assert_eq!(from_disk(EFI_SYSTEM_ON_DISK), types::EFI_SYSTEM);
         assert_eq!(
-            &from_disk(EFI_SYSTEM_ON_DISK).to_ascii(),
-            b"C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+            &*from_disk(EFI_SYSTEM_ON_DISK)
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
+            "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
         );
     }
 
     #[test]
     fn printing_a_type_constant_gives_its_registered_string() {
         assert_eq!(
-            &types::NIFE_DATA.to_ascii(),
-            b"EC5CC08B-D749-4434-AC38-A274C50385BA"
+            &*types::NIFE_DATA
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
+            "EC5CC08B-D749-4434-AC38-A274C50385BA"
         );
         assert_eq!(
-            &types::NIFE_BOOT.to_ascii(),
-            b"11631EE3-E18F-4AFC-9D7F-171572635629"
+            &*types::NIFE_BOOT
+                .hyphenated()
+                .encode_upper(&mut Uuid::encode_buffer()),
+            "11631EE3-E18F-4AFC-9D7F-171572635629"
+        );
+    }
+
+    /// **RFC 9562 Appendix A.3, end to end, through the calls this tree makes**: the sixteen
+    /// random bytes the RFC starts from, stamped by `uuid::Builder::from_random_bytes` (what
+    /// `disk_partitioner`, `system_installer` and the `uuid` program call), printed by the uppercase
+    /// hyphenated encoder (what the `uuid` program prints), and read back in lower case. A `uuid`
+    /// release that moved the stamp or the case would fail here and nowhere else on the host.
+    #[test]
+    fn the_rfc_9562_version_4_example_comes_out_as_printed() {
+        let random = [
+            0x91, 0x91, 0x08, 0xF7, 0x52, 0xD1, 0x33, 0x20, 0x5B, 0xAC, 0xF8, 0x47, 0xDB, 0x41,
+            0x48, 0xA8,
+        ];
+        let id = uuid::Builder::from_random_bytes(random).into_uuid();
+        assert_eq!(
+            &*id.hyphenated().encode_upper(&mut Uuid::encode_buffer()),
+            "919108F7-52D1-4320-9BAC-F847DB4148A8"
+        );
+        assert_eq!(
+            Uuid::try_parse_ascii(b"919108f7-52d1-4320-9bac-f847db4148a8"),
+            Ok(id)
         );
     }
 
@@ -306,7 +334,7 @@ mod tests {
     #[test]
     fn a_version_4_uuid_lands_its_version_in_on_disk_byte_7() {
         for fill in [0x00u8, 0xff, 0x5a] {
-            let disk = to_disk(Uuid::v4_from_random([fill; 16]));
+            let disk = to_disk(uuid::Builder::from_random_bytes([fill; 16]).into_uuid());
             assert_eq!(disk[7] >> 4, 4, "version nibble, from a {fill:#04x} fill");
             assert_eq!(disk[8] >> 6, 0b10, "variant bits, from a {fill:#04x} fill");
         }

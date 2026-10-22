@@ -4,8 +4,9 @@ The Kani harnesses behind
 [`notes/globally-unique-identifier-partition-table.md`](../globally-unique-identifier-partition-table.md):
 what each quantifies over, how long it takes, and the three whose reasoning needs spelling out.
 
-`script/verify` runs these harnesses, about 96 seconds in total on an M-series laptop. The last two
-are now `universally_unique_identifier`'s.
+`script/verify` runs these eight harnesses, 69 to 74 seconds in total on patagonia (Apple M3) under a
+shared load on 2026-10-22 (UTC). The UUID type comes from the `uuid` crate, which carries no
+harness here.
 
 | harness | what it quantifies over | time |
 |---|---|---|
@@ -17,8 +18,6 @@ are now `universally_unique_identifier`'s.
 | `a_headers_fields_survive_the_round_trip` | every value of all nine header fields | 3 s |
 | `the_header_fields_partition_the_block` | every 512-byte block: no two fields share a byte | 2 s |
 | `create_never_lays_out_a_table_parse_would_reject` | every disk size and every partition placement | 22 s |
-| `a_uuid_survives_printing_and_parsing` | all 2^128 UUIDs, out through text and back | 5 s |
-| `stamping_reserves_six_bits_and_keeps_the_other_hundred_and_twenty_two` | all 2^128 random inputs to the v4 stamp | 1 s |
 
 Three of these need their reasoning spelled out, and one of them is a correction.
 

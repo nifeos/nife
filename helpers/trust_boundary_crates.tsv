@@ -172,7 +172,7 @@ timebase_proto	shared	retired
 timetable	userspace	components,fixtures
 timetable_store	userspace	components,fixtures
 top	userspace	components
-universally_unique_identifier	shared	components,kernel,redoxfs_server,uefi_loader
+universally_unique_identifier	shared	retired
 uptime	userspace	components
 usb	userspace	components
 user_heap	userspace	retired

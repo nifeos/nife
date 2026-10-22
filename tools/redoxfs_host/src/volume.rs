@@ -181,9 +181,8 @@ impl Volume<'_> {
                 .find(|e| e.type_guid == want)
                 .ok_or_else(|| {
                     format!(
-                        "{}: no partition of type {} on this disk",
+                        "{}: no partition of type {want:X} on this disk",
                         path.display(),
-                        String::from_utf8_lossy(&want.to_ascii()),
                     )
                 })?,
         };

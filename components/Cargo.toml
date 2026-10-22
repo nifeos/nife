@@ -665,8 +665,9 @@ domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_
 block_roster = { version = "0.1.0", path = "../crates/block_roster" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
-# before the partition table stores it mixed-endian.
-universally_unique_identifier = { version = "0.1.0", path = "../crates/universally_unique_identifier" }
+# before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
+# (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
+uuid = { version = "1.28.0", default-features = false }
 file_allocation_table = { version = "0.1.0", path = "../crates/file_allocation_table" }
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
