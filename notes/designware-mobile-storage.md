@@ -189,6 +189,7 @@ logs under `bench/radon-<date>/` and say which commit they came from.
 | 2026-10-21 | `54c8e773b` | 1, read-only | identified; blocks 0 and 2048 read by CMD17; the CMD18 read from 2048 failed, `Host(Data(18, 164))`, `TCBCNT 1100 TBBCNT 4580` | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
 | 2026-10-21 | `f7ae6ee29` | 1 and the read matrix | as above; the matrix (below) fails every read at the nominal 25 MHz and passes every one at 12.5 and 6.25 | `NoCard(NoResponse(1))` | `FAILED: read of block 2048` |
 | 2026-10-21 | `ffac21104` | 1 and the read matrix | card clock set to 49.5 MHz; the 8 MiB read, 16,384 blocks in 0.75 s; every matrix row passes | `NoCard(NoResponse(1))` | `READ-OK 10959 KiB/s, EL0 block server served` |
+| 2026-10-22 | `03fc15894` | 2, the scratch write; then 3 | polled FIFO; sectors 2040 to 2047 written, verified and restored, kernel and EL0 server; the ordinary image then reached its prompt | `NoCard(NoResponse(1))` | `READ-OK 10960 KiB/s, WRITE-VERIFIED sectors 2040..2048 (were zero), restored, EL0 block server served` |
 
 **The card clock ran four times faster than the driver thought.** The tree gives the `ciu` clock
 `assigned-clock-rates = <50000000>`, a rate the OS is asked to program. radon's firmware leaves
@@ -203,6 +204,7 @@ words. Every row then passes, the FIFO never fills (peak 27 of its words at 24.7
 8 MiB read runs at 10,959 KiB/s (`bench/radon-2026-10-21/53-card-clock.log`). `STATUS` counted 128
 words with its full flag set, so radon's FIFO holds at least 128 words, not the tree's 32.
 
+The 2026-10-22 row is `bench/radon-2026-10-22/53-storage-write.log`, with `README-53.md` there.
 The 2026-10-21 rows' logs and how they ran are in `bench/radon-2026-10-21/`. For the 2026-10-20 row:
 the log is `bench/radon-2026-10-20/storage-bench-read.log`, and that directory's `README.md` says
 how the boot was run. The banner said `Read-only build: nothing on any card is written.` Steps 2
@@ -236,14 +238,15 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 ## BUGS
 
-- **Steps 2 and 3 have not run.** Step 1 passes read-only; the scratch write test waits for calef.
+- **The scratch write has run on one card, through the polled FIFO.** No write has gone through
+  the IDMAC on silicon, nor outside the pre-partition gap.
 - **The IDMAC has not run on silicon.** It is tested against `sim`; step 1 measures its rate
   against the polled 10,959 KiB/s and checks its bytes, and step 2 its writes.
 - The IDMAC's error bits are read from `IDSTS` with `IDINTEN` zero, which the databook describes
   as raw status. If radon's set only when enabled, a bus error would surface as a timeout instead.
-- The card clock is set by the storage bench alone. `PROVEN_ON_SILICON` keeps the booted system
-  from starting the block server, so nothing else drives this controller yet, and whatever does
-  must set the clock the same way first.
+- The card clock is set by the storage bench alone. The booted system starts no block server on
+  this card (§260 (radon's block server serves a USB drive)), so nothing else drives this
+  controller yet, and whatever does must set the clock the same way first.
 - The card read threshold stays off. With the FIFO at least 128 words, one block now fits, but no
   bus mode this driver runs needs it.
 - Every other test is against `sim`, which models the contract as the databook and OpenBSD

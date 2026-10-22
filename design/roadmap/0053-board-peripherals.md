@@ -14,8 +14,8 @@ crate (queue mechanics, host-tested, 5 Kani harnesses), a rule-2 kernel driver c
 IOMMU before enable, class-code enumeration over §18 (the PCIe transport), and an end-to-end boot
 test on both ISAs. The network half is built to the bench (below, "The network half"), and so is the
 radon SD card and eMMC half (below, "The storage half on radon"). The network half has passed its
-radon bench boot, and the storage half its read-only one; its write test and the IDMAC's bench
-run are outstanding. What else
+radon bench boot, and the storage half its read and its scratch write; the IDMAC's bench run is
+outstanding. What else
 remains is two things. The board-side PLDA XpressRICH root
 complex that carries the NVMe driver to the real M.2 slot is milestone 163 (the JH7110's PCIe root
 complex), NOT-STARTED. And the EL0 NVMe driver that §86 (whether an NVMe driver can leave the
@@ -147,10 +147,11 @@ and both trees are GPL and were read for hardware facts only.
 - **Done.** The network half's first run on radon, 2026-10-20 (UTC): `LEASED-AND-MEASURED`
   with `coherence : Coherent`, and `designware_ethernet_service::PROVEN_ON_SILICON` is `true`
   citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
-- **Outstanding.** The network half's rate on radon. The 2.3 Mbit/s row was a one-segment
-  receive window times a scheduler tick per round trip, both in `net_stack`, reproduced under QEMU
-  and fixed (notes/designware-ethernet/the-receive-rate.md). That page's bench step measures the
-  fix on radon, which has not run.
+- **Outstanding.** The network half's rate on radon: 14.3 Mbit/s on a gigabit link, twice on
+  2026-10-22, against 2.3 before the `net_stack` fix (notes/designware-ethernet/the-receive-rate.md).
+  The fix holds, and the limit is now radon draining its receive buffer: it advertises 4 to 5 KiB
+  of the 16 KiB window at a 2 ms round trip. Whether the receiving program or the copy into it is
+  slow is the next measurement.
 - **Milestone 940.** radon's second port, `gmac1`, which this driver does not bring up, is
   milestone 940 (radon's second Ethernet port): `design/roadmap/0940-second-jh7110-ethernet-port.md`.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver
@@ -165,8 +166,9 @@ and both trees are GPL and were read for hardware facts only.
   puts RedoxFS on radon's card and writes through it, which nothing builds yet: `storage_bench`
   and the EL0 block server never mount a filesystem.
 - **Done.** The storage half's multi-block read on radon: step 1 passes, above.
-- **Outstanding.** Steps 2 and 3 of the note's bench step, the scratch write test and the ordinary
-  image back. Passing them lifts the block server's `PROVEN_ON_SILICON`.
+- **Done.** Steps 2 and 3 of the note's bench step on 2026-10-22: `WRITE-VERIFIED sectors
+  2040..2048 (were zero), restored, EL0 block server served`, then the ordinary image to its prompt.
+  The block server's `PROVEN_ON_SILICON` is `true`, citing `bench/radon-2026-10-22/53-storage-write.log`.
 - **Done.** The architect's call on which part of radon's storage the booted system's block server
   serves: a USB drive (calef, 2026-10-07 UTC; §260 (radon's block server serves a USB drive)). It
   refused the second microSD partition, the eMMC socket and NVMe for now. It needs milestone 163 (the
