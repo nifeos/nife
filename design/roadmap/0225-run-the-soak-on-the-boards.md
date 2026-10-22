@@ -264,8 +264,11 @@ Eight hours, for radon's reason. Red is `soak-test: FAILED`, a `[PANIC]`, three 
   soaked for long with this build. Checked 2026-09-25: E4 is the only radon row with a log.
   Updated 2026-10-10: §259's count is met (E4, E6, E7), so further radon boots are draws for the
   placement distribution rather than owed to the standard, and since milestone 592's reset is
-  proven they cost no plug cycle; unowned. E13 to E85 all drew one clean core; E86 drew none.
-- **Outstanding.** The reset on E27 that printed no reset sequence (`BUGS`) waits for a recurrence.
+  proven they cost no plug cycle; unowned. E13 to E85 all drew one clean core; E86 drew none. E87 to E138 (2026-10-22) drew one on 46
+  and none on 6, all clean, and E138 then soaked 0.63 h. The status stays PARTIAL: argon and
+  xenon have not run it.
+- **Outstanding.** The reset on E27 that printed no reset sequence (`BUGS`) waits for a recurrence;
+  none came in E87 to E138.
   The candidates are listed above, and every rebooting soak on radon now prints the PMIC's record.
 - **Done.** The false `NOT SEALED` on a soak build that cost this run half an hour. Milestone 563
   (a seal check that reads bytes cannot see a check that was dropped) carried it, merged
