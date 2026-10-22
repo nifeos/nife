@@ -1,0 +1,22 @@
+Falsifies `file_allocation_table::long_name::verification::the_checksum_is_the_specifications_loop`.
+
+The defect: the running byte is shifted right instead of rotated, so a set low bit is dropped
+rather than carried into bit 7. The checksum is still deterministic and every long-name entry still
+agrees with every other, so a reader of this crate's own output would never notice; a driver that
+recomputes it over the alias rejects the run.
+
+Expected to fail: the harness's `assert_eq!(checksum(&short), sum)`.
+
+diff --git a/crates/file_allocation_table/src/long_name.rs b/crates/file_allocation_table/src/long_name.rs
+index 0bc37e010..dddd59a2b 100644
+--- a/crates/file_allocation_table/src/long_name.rs
++++ b/crates/file_allocation_table/src/long_name.rs
+@@ -209,7 +209,7 @@ fn short_byte(unit: u16) -> u8 {
+ pub(crate) fn checksum(short: &[u8; 11]) -> u8 {
+     short
+         .iter()
+-        .fold(0u8, |sum, b| sum.rotate_right(1).wrapping_add(*b))
++        .fold(0u8, |sum, b| (sum >> 1).wrapping_add(*b))
+ }
+ 
+ /// Whether `b` may appear in a short name at all, padding space included.
