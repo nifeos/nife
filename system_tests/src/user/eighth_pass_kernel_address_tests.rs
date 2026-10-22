@@ -2,16 +2,16 @@
 //! outsider pass at the confinement claim, claim 21).
 //!
 //! The cited test reads one kernel static through its link-time virtual address. This module aims
-//! the same outlaw at two further kernel views of kernel memory that a real attacker would reach
-//! for first: the kernel's own code (a function pointer, the text half) and the **direct map**
-//! (the kernel's writable alias of physical memory, where the same sentinel page appears a second
-//! time). The claim is per-ISA (§19 (architectural parity is a tenet)), so both targets are driven
-//! on every architecture the suite boots.
+//! the same `kernel_test_subject` at two further kernel views of kernel memory that a real attacker
+//! would reach for first: the kernel's own code (a function pointer, the text half) and the
+//! **direct map** (the kernel's writable alias of physical memory, where the same sentinel page
+//! appears a second time). The claim is per-ISA (§19 (architectural parity is a tenet)), so both
+//! targets are driven on every architecture the suite boots.
 //!
 //! The precondition asserts each target is mapped for the kernel (`mmu::translate`), so a refusal
 //! to fault cannot hide behind "the address was unmapped anyway".
 
-use super::test_programs::{a_kernel_address, outlaw_image, spawn_bare};
+use super::test_programs::{a_kernel_address, kernel_test_subject_image, spawn_bare};
 use super::*;
 use crate::arch::exceptions::last_user_fault;
 use crate::arch::{UserFault, UserFaultAccess};
@@ -29,7 +29,7 @@ fn is_read_fault(kind: UserFault) -> bool {
     )
 }
 
-/// **The outlaw, aimed at kernel text and at the direct map, faults on both.**
+/// **The `kernel_test_subject`, aimed at kernel text and at the direct map, faults on both.**
 ///
 /// Three targets in one boot: the sentinel static (the cited test's, kept so this module's faults
 /// cannot all be about a mapping unique to this file), a function in the kernel's text, and the
@@ -37,11 +37,11 @@ fn is_read_fault(kind: UserFault) -> bool {
 /// very one the cited test proves unreadable at its link-time address, and the direct map is the
 /// kernel's other name for it.
 ///
-/// The observation is the outlaw's death plus the recorded fault, read with bounded retries
-/// because `last_user_fault` is one global slot on a loaded machine: an unrelated user thread's
-/// non-page fault records itself with address 0 and can overwrite the record between the fault and
-/// the read. A retry re-spawns and re-reads; the escape signal is different and unambiguous, being
-/// an outlaw that never dies because its read never faulted.
+/// The observation is the `kernel_test_subject`'s death plus the recorded fault, read with bounded
+/// retries because `last_user_fault` is one global slot on a loaded machine: an unrelated user
+/// thread's non-page fault records itself with address 0 and can overwrite the record between the
+/// fault and the read. A retry re-spawns and re-reads; the escape signal is different and
+/// unambiguous, being a `kernel_test_subject` that never dies because its read never faulted.
 ///
 /// The fault kind is `Permission(Read)` or `Translation(Read)`: the two table layouts (the page
 /// present but supervisor-only, and the page absent from the low half entirely) split across
@@ -79,11 +79,15 @@ fn a_user_program_cannot_read_kernel_text_or_the_direct_map() {
     for &target in &targets[..count] {
         let mut recorded = None;
         for _ in 0..3 {
-            let outlaw =
-                spawn_bare(outlaw_image(), OUTLAW_READ_KERNEL, target).expect("no outlaw thread");
+            let kernel_test_subject = spawn_bare(
+                kernel_test_subject_image(),
+                KERNEL_TEST_SUBJECT_READ_KERNEL,
+                target,
+            )
+            .expect("no kernel_test_subject thread");
             assert!(
-                super::wait_for(|| !sched::is_thread_present(outlaw)),
-                "the outlaw reading {target:#x} never died: its read was not stopped, and a user \
+                super::wait_for(|| !sched::is_thread_present(kernel_test_subject)),
+                "the kernel_test_subject reading {target:#x} never died: its read was not stopped, and a user \
                  program read the kernel's memory",
             );
             if let Some((kind, addr)) = last_user_fault()

@@ -16,7 +16,7 @@ this because somebody wants its function?*
   invokes at the prompt. `net_stack`, `gpu_driver`, `progenitor`, `wc`, `rm`, `date`.
 - `fixtures/` if no: the program exists to exercise or measure the system. Test clients,
   attackers that share the honest path, stand-in servers, workloads, benchmarks.
-  `swap_boundary_witness`, `outlaw`, `coremark`, `soaker`, `interrupt_ignorer`.
+  `swap_boundary_witness`, `kernel_test_subject`, `coremark`, `soaker`, `interrupt_ignorer`.
 
 "Who calls it" is not the test, and getting that wrong is the easy mistake: nearly everything
 here is reached only from a kernel test, `disk_partitioner` and `timetable` included, because this

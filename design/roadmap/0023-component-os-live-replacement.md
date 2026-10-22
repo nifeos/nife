@@ -62,7 +62,7 @@ rendezvous; the queue is userspace policy bounded by the broker's own untyped.
 
 ### The component manifest (2026-08-17)
 
-`crates/component_plan`, notes/component-manifest.md. `swapper` holds no endowment literals: each
+`crates/capability_plan`, notes/component-manifest.md. `swapper` holds no endowment literals: each
 contract declares its capability half in `hot_swap_contract`, and the operator says only which of its
 own objects answers to which role name, per child. A manifest is a request and the provisions are the
 authority (Fuchsia's `use`/`offer` split), so a vendor's declaration cannot widen its own authority.

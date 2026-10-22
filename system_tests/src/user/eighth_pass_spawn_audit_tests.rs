@@ -14,21 +14,21 @@
 //!   shell included, holds one only if its caller granted it. The boot half of the claim (that the
 //!   interactive boot's spawn service delegates the gpu's four rather than parking them in the
 //!   shell) is `swish-check`'s census, cited.
-//! - **Claim 23**: the outlaw, in its `BUILD_WITH_NOTHING` role, holds one report endpoint and
-//!   nothing else, and tries to mint a page, send a message and mint a kernel object through the
-//!   real `SYS_INVOKE`. Every answer must be `NoSuchSlot`: there is nothing there, which is what
-//!   authority being a capability means from the inside.
+//! - **Claim 23**: the `kernel_test_subject`, in its `BUILD_WITH_NOTHING` role, holds one report
+//!   endpoint and nothing else, and tries to mint a page, send a message and mint a kernel object
+//!   through the real `SYS_INVOKE`. Every answer must be `NoSuchSlot`: there is nothing there,
+//!   which is what authority being a capability means from the inside.
 //!
-//! Cross-ISA: the spawn path, the census and the outlaw are portable (DECISIONS §19
+//! Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS §19
 //! (architectural parity is a tenet)).
 
-use super::test_programs::outlaw_image;
+use super::test_programs::kernel_test_subject_image;
 use crate::cap::{
     Object, Rights, page_frame_run_cap as page_frame_run_capability, page_frame_run_len,
     rendezvous_cap as rendezvous_capability,
 };
 use crate::sched;
-use crate::user::{OUTLAW_BUILD_WITH_NOTHING, Spawn, run};
+use crate::user::{KERNEL_TEST_SUBJECT_BUILD_WITH_NOTHING, Spawn, run};
 
 /// The interrupt ignorer's ELF bytes: a `_start` that is nothing but a loop, so the table census
 /// below reads a live, settled child. `el0_boundary_tests` has the same helper; this file keeps
@@ -167,9 +167,9 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
 /// **A program with no construction authority cannot build, from inside, through the real
 /// syscall.**
 ///
-/// The outlaw's `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a `SEND` and a
-/// `RETYPE_OBJ` on slots it was never granted. Each must be `NoSuchSlot`: the refusal that means
-/// "there is nothing there", not "there is something there and you may not use it", because
+/// The `kernel_test_subject`'s `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a `SEND`
+/// and a `RETYPE_OBJ` on slots it was never granted. Each must be `NoSuchSlot`: the refusal that
+/// means "there is nothing there", not "there is something there and you may not use it", because
 /// authority in this kernel is a capability in a slot and no slot was ever filled. A program born
 /// with nothing cannot mint its way to anything, which is claim 23's zero-authority corner beside
 /// the cited drop-and-retry.
@@ -181,11 +181,11 @@ fn a_child_with_no_construction_authority_cannot_build() {
     let region = crate::memory_region::create(4).expect("no region");
     let report = sched::create_rendezvous_from(region).expect("no report rendezvous");
 
-    let outlaw = sched::spawn(move || {
+    let kernel_test_subject = sched::spawn(move || {
         run(
-            outlaw_image(),
+            kernel_test_subject_image(),
             Spawn {
-                arg0: OUTLAW_BUILD_WITH_NOTHING,
+                arg0: KERNEL_TEST_SUBJECT_BUILD_WITH_NOTHING,
                 arg1: 0,
                 arg2: 0,
                 grants: &[rendezvous_capability(report, Rights::WRITE)],
@@ -193,7 +193,7 @@ fn a_child_with_no_construction_authority_cannot_build() {
             },
         );
     })
-    .expect("no outlaw thread");
+    .expect("no kernel_test_subject thread");
 
     let answer = sched::ipc_receive(report);
     assert_eq!(
@@ -213,8 +213,8 @@ fn a_child_with_no_construction_authority_cannot_build() {
     );
 
     assert!(
-        super::wait_for(|| !sched::is_thread_present(outlaw)),
-        "the outlaw never exited after its report",
+        super::wait_for(|| !sched::is_thread_present(kernel_test_subject)),
+        "the kernel_test_subject never exited after its report",
     );
     sched::reclaim_region(region).expect("the region did not come back");
 }

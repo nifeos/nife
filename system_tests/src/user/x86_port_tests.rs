@@ -410,7 +410,7 @@ fn a_take_back_leaves_the_invokers_own_bitmap_installed() {
 /// Rows 27 to 29 claim things about *holding* a port capability, revoking one and deleting one.
 /// None of them claims that the capability's **rights** gate the `in`/`out`, yet the rest of the
 /// tree treats `WRITE` as the right that drives a port: `build_child` grants the driver `WRITE`
-/// with the comment "the rights a driver gets", and `component_plan` maps a `Use` component to
+/// with the comment "the rights a driver gets", and `capability_plan` maps a `Use` component to
 /// `WRITE` and a `Serve` component to `READ`. So a thread handed a `PortRange` narrowed to `READ`
 /// alone (a `Serve`-shaped grant) should fault on `out`, exactly as a non-holder does.
 ///

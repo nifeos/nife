@@ -686,7 +686,7 @@ fn await_reply(t: &Spawned, page: &[u8], seq: u64) {
     }
 }
 
-/// **The stored schedule's archive-mode control**: `schedule_store::fixture::DEMO_SCHEDULE_DOC`'s
+/// **The stored schedule's archive-mode control**: `timetable_store::fixture::DEMO_SCHEDULE_DOC`'s
 /// shape with the program renamed, because this fixture's timetable resolves its document in a
 /// narrowed **archive** and plans each line against `grant_plan`'s static manifest for a program it
 /// knows, and only image programs are known there. The store's own document names the suite's

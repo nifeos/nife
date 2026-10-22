@@ -12,4 +12,4 @@ workspace = true
 # The capability half of the terminal contract (milestone 23 (a capability-routed component OS with
 # live replacement)): what a supervisor must route to a `line_editor` it can replace, beside the wire
 # half in `proto`, where `hot_swap_contract` keeps its own.
-component_plan = { version = "0.1.0", path = "../component_plan" }
+capability_plan = { version = "0.1.0", path = "../capability_plan" }

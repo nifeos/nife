@@ -137,7 +137,7 @@ Each line is one lane. "Proposed" means a new milestone an integrator would numb
 Candidate, not proposed: kernel N-1 compatibility (Fork 5), triggered when the stability chart's
 syscall rows stay at zero changed for several weeks, or when a first customer arrives.
 
-Reuse: `crates/boot_slot`, `uefi_loader`'s chooser, `crates/installed_programs`, `crates/component_plan`'s
+Reuse: `crates/boot_slot`, `uefi_loader`'s chooser, `crates/installed_programs`, `crates/capability_plan`'s
 dependency graph, the `reboot` program, `helpers/package-http-peer` and basalt's gate. MINIX 3's
 service update, QNX's HAM, Mender, RAUC and SWUpdate were considered for their state machines, not
 their code: each assumes an OS or a bootloader nife does not have.

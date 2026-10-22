@@ -68,7 +68,7 @@ ratified after this table was drawn; that amendment is raised on #1360.
 
 ## The table raise, measured
 
-The one Kani harness family that ranges over the table size is `crates/component_plan`'s, whose
+The one Kani harness family that ranges over the table size is `crates/capability_plan`'s, whose
 `any_slot` assumes `s < abi::CAPABILITY_TABLE_SLOTS`. The five harnesses' verification times on
 patagonia (2026-09-27, one sample each, seconds):
 

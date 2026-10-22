@@ -7,6 +7,6 @@
 name = "timetable"
 kind = "base"
 home = { repo = "timetable", status = "provisional" }
-crates = ["timetable", "schedule_store"]
+crates = ["timetable", "timetable_store"]
 programs = ["timetable"]
 paths = ["components/timetable.conf"]

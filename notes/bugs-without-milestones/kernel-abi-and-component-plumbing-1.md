@@ -8,7 +8,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  crates/abi/src/lib.rs | notification and timer pages counted by the kernel but reported by no usage record, so object rows under-count | Usage records for notification and timer objects | S  |
 |  crates/abi/src/rendezvous.rs | sender's own w0 reads as an Error to a receiver; needs a register convention for RECEIVE status | RECEIVE status convention that a sender cannot forge | L  |
 |  crates/abi/src/rendezvous.rs | delegated cap passes NO_CAP guard for a server reading x1 raw; endpoint that refuses SEND_CAP is "recorded follow-on" of 0706 (BUILT) with no milestone | Endpoints that refuse SEND_CAP outright | M  |
-|  crates/component_plan/src/lib.rs | plan() does not refuse two roles routed to one supervisor slot (near miss from outsider pass 8) | component_plan refuses a doubly routed slot | S  |
+|  crates/capability_plan/src/lib.rs | plan() does not refuse two roles routed to one supervisor slot (near miss from outsider pass 8) | capability_plan refuses a doubly routed slot | S  |
 |  crates/current_cpu_contract/src/lib.rs | reader forms &AtomicU64 over read-only memory; Miri rejects it, soundness unsettled; raw atomic load is the fallback | current_cpu reader uses a raw atomic load | S  |
 |  crates/environment_contract/src/lib.rs | no Manifest field declares wanting the environment page, so no shell-facing grant or caps preview | Manifest field for the environment page | M  |
 |  crates/grant_plan/src/line.rs | `<<` is refused with the wrong message (NoRedirectTarget) | grant_plan: a refusal that says `<<` is unsupported | S  |

@@ -393,7 +393,7 @@ glob	708	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	266	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates
-component_plan	14	no wiring grants a right its declaration did not ask for
+capability_plan	14	no wiring grants a right its declaration did not ask for
 timetable	41	the scheduler's fire arithmetic: strictly forward, minimal, and a stall costs one fire
 jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
 designware_mobile_storage	4	the SD write test never lands in a partition, no served block leaves its window, the FIFO is never overrun, no admitted block wraps its address
