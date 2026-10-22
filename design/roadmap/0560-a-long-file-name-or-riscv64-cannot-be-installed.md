@@ -20,6 +20,11 @@ long names, and 813's Exit formats a volume holding `BOOTRISCV64.EFI`. The statu
 because this piece can still land first and on its own. The last BUGS line below, that the crate
 should never read, predates that ruling.*
 
+*`fatfs` and `embedded-sdmmc` were measured against this milestone on 2026-10-22 (UTC), in
+[784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md). Whether to adopt one or
+build a full crate of our own, with this piece first, waits on calef
+([the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md)).*
+
 Nothing has to be decided, bought or ruled on. It is a self-contained piece of
 `crates/file_allocation_table` with host tests and one third-party reader already wired up.
 

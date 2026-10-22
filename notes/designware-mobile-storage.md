@@ -59,19 +59,25 @@ What it did give: its JH7110 constants (a 50 MHz reference clock, a 32-word, 32-
 both device trees, a third independent agreement. Linux's `dw_mmc.c` and `dw_mmc-starfive.c`,
 U-Boot's driver and both device trees are GPL and were read only for facts about the hardware.
 
-## Why the CPU moves the data, for now
+## Two data paths: the FIFO and the IDMAC
 
-The controller has its own DMA engine (the IDMAC). This driver does not use it yet. Through the
-FIFO, nothing but MMIO stands between the card and the CPU, so a silicon read tests the controller
-and the card protocol and nothing else. The cost is throughput, and the bench step prints it
-rather than anyone guessing.
+`Host<R>` moves every word through the FIFO by MMIO, so radon's first silicon read could fail only
+in the controller or the card protocol, not in DMA as well. `Host::with_idmac` hands each data phase
+to the controller's own DMA engine, the IDMAC; `crates/designware_mobile_storage/src/idmac.rs`
+holds its sequence. It waited on two things, both met: radon's DMA is coherent with its caches
+(`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC), notes/designware-ethernet.md),
+so a `fence` each way is all the ordering it needs, and the polled read works (Results, below).
 
-radon's DMA is coherent with its caches: the network half's `designware_ethernet::coherence`
-probe read `Coherent` on 2026-10-20 (UTC) (notes/designware-ethernet.md). So the IDMAC path needs
-no cache maintenance on radon, only the `fence` the Ethernet driver already uses, and it is a
-contained change: descriptors in one page, the same `Registers` trait, and a sim that models the
-descriptor walk. It waits on the polled read working first (Results, below), so that a DMA read
-that fails is not also a FIFO read that fails.
+- One region: a page of descriptors, then up to 256 data pages, one descriptor each. Reads are
+  copied out of it and writes in. `Idmac::new` refuses a controller without an IDMAC, 64-bit
+  descriptors, or a region not wholly below 4 GiB, which an 8 GB board's upper RAM is not.
+- A transfer is done at `DTO` (and `ACD`) with the last descriptor closed, since a read's `DTO`
+  can land before its last words reach memory.
+- Every transfer, finished or failed, stops and resets the engine before returning, so none is
+  left walking a chain the caller reuses.
+
+`sim` walks the chain through memory it shares with the tests, and a Kani harness proves a chain
+describes exactly its bytes inside the region.
 
 ## Never break the card radon boots from
 
@@ -132,13 +138,18 @@ What to look for, all lines prefixed `storage-bench:`:
 | `card SdHighCapacity, ... blocks (... MiB), block-addressed, 4-bit at 24750000 Hz` | identification worked |
 | `partition 1: type 0x0b, sectors N..` and `boot sector: signature 55aa, type field "FAT32   "` | reads return the card's real bytes |
 | `scratch range a write test would use: Some((N-8, 8))` | where step 2 would write, before it does |
-| `timed read: 16384 blocks in ... us, ... KiB/s` | the polled read rate |
+| `timed read: 16384 blocks in ... us, ... KiB/s (128 blocks per command, polled FIFO)` | the polled read rate |
+| `IDMAC region at 0x..., 69632 bytes` | where the IDMAC's region is |
+| `timed read: ... KiB/s (128 blocks per command, IDMAC); the first 64 KiB match the polled read` | the IDMAC rate over the same 8 MiB, and that it read the same bytes |
 | `EL0 block server: Served` | the same card through the EL0 server, as the FS server would call it: block 0 of partition 1 is the boot sector, a write is refused `EROFS`, a block past the window `EINVAL` |
 | `slot 0 (eMMC socket): ...` | whether an eMMC module is fitted (`NO-CARD` if not) |
-| `verdict READ-OK ... KiB/s, EL0 block server served` | the step passed |
+| `verdict READ-OK ... KiB/s, IDMAC READ-OK ... KiB/s, EL0 block server served` | the step passed: the polled rate, then the IDMAC's |
+| `IDMAC read failed: ...; IDSTS ... DSCADDR ... BUFADDR ...` | after a failed IDMAC read only: the engine's status and position |
 | `at the failure: STATUS ... TCBCNT n TBBCNT m` | printed only after a failed read: `STATUS`'s FIFO count, and `TCBCNT`, the bytes the card sent. `TBBCNT` does not restart at each command on radon (a clean 1024-byte read leaves it near 5000), so `m` against `n` says nothing |
 
 `NO-CARD` on slot 1 or any `FAILED` verdict: stop, keep the log, and send it. Nothing was written.
+A verdict that opens `FAILED: polled READ-OK` passed polled and failed through the IDMAC, which
+writes only into its own region.
 
 ### Step 2: the scratch write test
 
@@ -156,7 +167,7 @@ pre-partition gap only.` Look for:
 
 | verdict | meaning |
 |---|---|
-| `READ-OK ..., WRITE-VERIFIED sectors A..B (were zero), restored, EL0 block server served` | writes work from the kernel and through the EL0 server (one block, the same range), and the range is back as it was |
+| `READ-OK ..., WRITE-VERIFIED sectors A..B (were zero), restored, IDMAC READ-OK ... KiB/s, IDMAC WRITE-VERIFIED, EL0 block server served` | writes work polled, through the IDMAC (the same test again) and through the EL0 server (one block, the same range), and the range is back as it was |
 | `READ-OK ..., WRITE-REFUSED: no gap before the first partition` | nothing was written; the card's layout leaves no room |
 | `FAILED: write test PatternMismatch(..)` or `Failed(..)` | the original was still written back; send the log |
 | `FAILED: write test RestoreMismatch(n)` | sector `n`, inside the gap, did not take its original back. Partition 1 was never touched |
@@ -226,6 +237,10 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 ## BUGS
 
 - **Steps 2 and 3 have not run.** Step 1 passes read-only; the scratch write test waits for calef.
+- **The IDMAC has not run on silicon.** It is tested against `sim`; step 1 measures its rate
+  against the polled 10,959 KiB/s and checks its bytes, and step 2 its writes.
+- The IDMAC's error bits are read from `IDSTS` with `IDINTEN` zero, which the databook describes
+  as raw status. If radon's set only when enabled, a bus error would surface as a timeout instead.
 - The card clock is set by the storage bench alone. `PROVEN_ON_SILICON` keeps the booted system
   from starting the block server, so nothing else drives this controller yet, and whatever does
   must set the clock the same way first.
@@ -238,9 +253,12 @@ have one) would need the kernel half's twenty lines and a device-tree match.
   card nife's filesystem would live on is an architect's call (the 53 block).
 - The EL0 server holds the controller's DMA registers, which share its one page. The JH7110 has
   no IOMMU, so the server is as confined as its own code. That is milestone 261 (the NVMe driver
-  leaves the kernel)'s position for a machine with no IOMMU. The server does no DMA.
-- Polled, default speed, no DMA. 24.75 MHz, 4-bit on SD and 1-bit on eMMC, the CPU moving every
-  word. No high-speed switch, no UHS-I, no HS200 tuning, no 8-bit eMMC bus.
+  leaves the kernel)'s position for a machine with no IOMMU. The server does no DMA: it moves its
+  data through the FIFO.
+- Polled, default speed. 24.75 MHz, 4-bit on SD and 1-bit on eMMC. No high-speed switch, no
+  UHS-I, no HS200 tuning, no 8-bit eMMC bus.
+- The IDMAC copies each transfer once through its region rather than pointing descriptors at the
+  caller's buffer, and moves at most the region's data pages per command.
 - A 64-bit FIFO is refused rather than handled; `HCON` says which radon has.
 - A read's tail may raise no FIFO request. Linux's `fifo-watermark-aligned` property, which
   both mainline JH7110 nodes carry, exists because a transfer whose tail is shorter than the

@@ -153,6 +153,24 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
     (2 << 28) | ((rx & 0xfff) << 16) | (half & 0xfff)
 }
 
+/// **The `FIFOTH` word for IDMAC transfers** with a FIFO of `depth` words. The transmit watermark
+/// stays at half. The burst is the largest the databook's encoding has (1, 4, 8, ... 256 words)
+/// that divides both a 512-byte block and the free half of the FIFO, so no burst is cut by the end
+/// of a block or overruns the FIFO. The receive watermark is one burst less one word, so a burst
+/// is ready whenever the IDMAC is asked for one. Depth 32 gives bursts of 16.
+#[must_use]
+pub(crate) fn fifoth_for_dma(depth: u32) -> u32 {
+    const BURSTS: [u32; 8] = [1, 4, 8, 16, 32, 64, 128, 256];
+    let tx = depth / 2;
+    let free = depth - tx;
+    let code = (0..BURSTS.len())
+        .rev()
+        .find(|&c| 128 % BURSTS[c] == 0 && free.is_multiple_of(BURSTS[c]))
+        .unwrap_or(0);
+    let rx = BURSTS[code] - 1;
+    ((code as u32) << 28) | ((rx & 0xfff) << 16) | (tx & 0xfff)
+}
+
 /// The receive watermark field of `FIFOTH`, which OpenBSD reads back as `depth - 1` when the tree
 /// gives no `fifo-depth` (the reset value is `depth - 1`).
 #[must_use]
@@ -180,6 +198,53 @@ pub const UHS: u32 = 0x074;
 pub const RST_N: u32 = 0x078;
 /// Internal DMA bus mode.
 pub const BMOD: u32 = 0x080;
+/// Reset the IDMAC's registers and state. Self-clearing.
+pub(crate) const BMOD_SOFTWARE_RESET: u32 = 1 << 0;
+/// Fixed-length bursts on the bus, of the size `FIFOTH`'s burst field names.
+pub(crate) const BMOD_FIXED_BURST: u32 = 1 << 1;
+/// The IDMAC walks descriptors.
+pub(crate) const BMOD_DMA_ENABLE: u32 = 1 << 7;
+/// Poll demand: any write wakes an IDMAC suspended on a descriptor it did not own.
+pub(crate) const PLDMND: u32 = 0x084;
+/// The bus address of the first descriptor (32-bit addressing; `HCON` bit 27 clear).
+pub(crate) const DBADDR: u32 = 0x088;
+/// IDMAC status, write one to clear. Raw: set whatever `IDINTEN` holds. The driver reads only
+/// its error bits; the completion bits are `sim`'s, and the tests'.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+pub const IDSTS: u32 = 0x08c;
+/// A descriptor without `DIC` finished a transmit (memory to card).
+#[cfg(test)]
+pub(crate) const IDSTS_TI: u32 = 1 << 0;
+/// A descriptor without `DIC` finished a receive (card to memory).
+#[cfg(test)]
+pub(crate) const IDSTS_RI: u32 = 1 << 1;
+/// Fatal bus error: the bus refused a descriptor or buffer access. The IDMAC stops.
+pub(crate) const IDSTS_FBE: u32 = 1 << 2;
+/// Descriptor unavailable: the next descriptor's `OWN` bit was clear. The IDMAC suspends.
+pub(crate) const IDSTS_DU: u32 = 1 << 4;
+/// Card error summary: a data-phase error in `RINTSTS` closed a descriptor.
+pub(crate) const IDSTS_CES: u32 = 1 << 5;
+/// Normal interrupt summary (`TI` or `RI`).
+#[cfg(test)]
+pub(crate) const IDSTS_NIS: u32 = 1 << 8;
+/// Abnormal interrupt summary (`FBE`, `DU` or `CES`).
+#[cfg(test)]
+pub(crate) const IDSTS_AIS: u32 = 1 << 9;
+/// Every `IDSTS` bit that means the IDMAC could not finish.
+pub(crate) const IDSTS_ERRORS: u32 = IDSTS_FBE | IDSTS_DU | IDSTS_CES;
+/// Every write-one-to-clear bit of `IDSTS`, bits 9:0.
+pub(crate) const IDSTS_ALL: u32 = 0x3ff;
+/// IDMAC interrupt enables. Zero: this driver polls, as it does `RINTSTS`.
+pub(crate) const IDINTEN: u32 = 0x090;
+/// The descriptor the IDMAC is on, for a transcript after a failure.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+pub const DSCADDR: u32 = 0x094;
+/// The buffer address the IDMAC is on.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+pub const BUFADDR: u32 = 0x098;
 /// Card read threshold control: hold a read until a block fits in the FIFO.
 pub(crate) const CARDTHRCTL: u32 = 0x100;
 /// Enable the card read threshold, which the driver never does; the sim and tests name it.
@@ -218,11 +283,19 @@ pub const fn fifo_width(hcon: u32) -> Option<u32> {
 }
 
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
-/// from `0x88` up, which this driver does not touch while it polls, and is recorded so the
-/// transcript says which layout a later DMA path must use.
+/// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
 #[must_use]
 pub const fn dma_64bit(hcon: u32) -> bool {
     hcon & (1 << 27) != 0
+}
+
+/// **The controller's external DMA interface**, `HCON` bits 17:16: 0 is none, 1 Synopsys' own
+/// `DW_DMA`, 2 a generic DMA handshake, 3 a non-Synopsys one. An IDMAC is built only into a
+/// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. radon
+/// reads 0, and its firmware reads the card through the IDMAC (`CTRL` bit 25 as it hands over).
+#[must_use]
+pub(crate) const fn dma_interface(hcon: u32) -> u32 {
+    (hcon >> 16) & 0x3
 }
 
 /// The highest offset this driver reads or writes, plus one word. The kernel maps at least this.
@@ -244,6 +317,24 @@ mod tests {
         assert_eq!(fifo_width(!(7 << 7) | (1 << 7)), Some(4));
         assert!(dma_64bit(1 << 27));
         assert!(!dma_64bit(!(1 << 27)));
+        // radon's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit
+        // descriptor addresses.
+        assert_eq!(dma_interface(0x00c4_3cc1), 0);
+        assert!(!dma_64bit(0x00c4_3cc1));
+        assert_eq!(dma_interface(3 << 16), 3);
+    }
+
+    /// The burst field is an encoding, not a count, and the IDMAC moves a burst at a time: a burst
+    /// that does not divide the FIFO's free half would overrun it. Depth 32 is radon's tree; 48
+    /// leaves a free half of 24, which 16 does not divide.
+    #[test]
+    fn the_dma_burst_divides_a_block_and_the_free_half_of_the_fifo() {
+        assert_eq!(fifoth_for_dma(32), (3 << 28) | (15 << 16) | 16);
+        assert_eq!(fifoth_for_dma(48), (2 << 28) | (7 << 16) | 24);
+        assert_eq!(fifoth_for_dma(128), (5 << 28) | (63 << 16) | 64);
+        assert_eq!(fifoth_for_dma(1), 0);
+        // An odd depth leaves a free half one word larger than the transmit watermark: 4 of 7.
+        assert_eq!(fifoth_for_dma(7), (1 << 28) | (3 << 16) | 3);
     }
 
     #[test]
@@ -306,6 +397,22 @@ mod tests {
             (INT_EBE, 0x8000),
             (STATUS_DATA_BUSY, 0x200),
             (CARDTHRCTL_READ_ENABLE, 0x1),
+            (BMOD_SOFTWARE_RESET, 0x1),
+            (BMOD_FIXED_BURST, 0x2),
+            (BMOD_DMA_ENABLE, 0x80),
+            (IDSTS_TI, 0x1),
+            (IDSTS_RI, 0x2),
+            (IDSTS_FBE, 0x4),
+            (IDSTS_DU, 0x10),
+            (IDSTS_CES, 0x20),
+            (IDSTS_NIS, 0x100),
+            (IDSTS_AIS, 0x200),
+            (PLDMND, 0x84),
+            (DBADDR, 0x88),
+            (IDSTS, 0x8c),
+            (IDINTEN, 0x90),
+            (DSCADDR, 0x94),
+            (BUFADDR, 0x98),
         ] {
             assert_eq!(bit, value);
         }

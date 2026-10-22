@@ -9,8 +9,7 @@
 //! In order, for the microSD slot (slot 1) and then the eMMC socket (slot 0):
 //!
 //! 1. the slot as the tree describes it;
-//! 2. its clocks and reset as the firmware left them, then walked through
-//!    `jh7110_clock_and_reset::SDIO_BRING_UP` (every step idempotent);
+//! 2. its clocks and reset as found, walked through `SDIO_BRING_UP` (every step idempotent);
 //! 3. the controller's identity (`VERID`, `HCON`, the FIFO, `CDETECT`) and the five registers the
 //!    firmware's driver last wrote, read before anything is written;
 //! 4. the read-only probe (`designware_mobile_storage::bench::read_only`): identification, the CID,
@@ -19,7 +18,8 @@
 //! 5. **only on the microSD slot and only in a build made with `NIFE_STORAGE_BENCH_WRITE=scratch`**,
 //!    the scratch write test (`bench::scratch_write`): up to eight sectors before the first
 //!    partition, read, overwritten with a pattern, read back, restored, read back;
-//! 6. on the microSD slot, the same card through the EL0 block server
+//! 6. the same reads through the IDMAC (`through_idmac`), and in a write build the write test;
+//! 7. on the microSD slot, the same card through the EL0 block server
 //!    (`components/src/designware_mobile_storage.rs`), called the way the FS server calls a block
 //!    server: over the first partition, read-only, in a read-only build (block 0 must be the boot
 //!    sector, `WRITE` must be `EROFS`, a block past the window `EINVAL`); over the scratch range,
@@ -40,11 +40,12 @@
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
+use designware_mobile_storage::idmac::{DirectMemoryAccessRegion, Idmac, Refusal};
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::regs;
-use designware_mobile_storage::sd::{BLOCK, InitError, IoError, Kind};
+use designware_mobile_storage::sd::{self, BLOCK, InitError, IoError, Kind};
 
-use crate::designware_mobile_storage::Window;
+use crate::designware_mobile_storage::{Region, Window};
 use crate::{arch, println};
 
 /// Whether this build carries the scratch write test: `NIFE_STORAGE_BENCH_WRITE=scratch` at build
@@ -129,29 +130,91 @@ enum Outcome {
     NoCard(InitError),
     /// A read failed: the block and the error.
     ReadFailed(u64, IoError),
-    /// Read-only, and every read succeeded: the timed rate in KiB/s.
-    ReadOk(u64),
-    /// Read, then the scratch write test: the rate and the test's verdict.
-    Written(u64, WriteVerdict),
+    /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
+    ReadOk(u64, Dma),
+    /// Read, then the scratch write test: the rate, the test's verdict, and the IDMAC phase.
+    Written(u64, WriteVerdict, Dma),
     /// The kernel's own probe passed and the EL0 block server's did not.
     El0(El0),
 }
 
+/// How the IDMAC phase ended.
+#[derive(Debug)]
+enum Dma {
+    /// No pages for the region or the buffers: nothing ran.
+    NoMemory,
+    /// The region was refused before anything was written.
+    Refused(Refusal),
+    /// A read failed, polled (the reference) or through the IDMAC.
+    Failed(ReadFailure),
+    /// The timed read's rate in KiB/s, whether the first 64 KiB matched the polled read, and in a
+    /// write build the scratch write test through the IDMAC.
+    Read(u64, bool, Option<WriteVerdict>),
+}
+
+impl Dma {
+    /// Whether the IDMAC did everything this build asked of it.
+    fn passed(&self) -> bool {
+        matches!(
+            self,
+            Dma::Read(
+                _,
+                true,
+                None | Some(WriteVerdict::Verified(..) | WriteVerdict::Refused)
+            )
+        )
+    }
+}
+
+impl core::fmt::Display for Dma {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Dma::Read(kib, true, None) => write!(f, "IDMAC READ-OK {kib} KiB/s"),
+            Dma::Read(kib, true, Some(WriteVerdict::Verified(..))) => {
+                write!(f, "IDMAC READ-OK {kib} KiB/s, IDMAC WRITE-VERIFIED")
+            }
+            Dma::Read(kib, true, Some(WriteVerdict::Refused)) => {
+                write!(f, "IDMAC READ-OK {kib} KiB/s")
+            }
+            Dma::Read(kib, false, _) => {
+                write!(
+                    f,
+                    "IDMAC FAILED: {kib} KiB/s but the bytes differ from the polled read"
+                )
+            }
+            Dma::Read(_, true, Some(v)) => write!(f, "IDMAC FAILED: write test {v:?}"),
+            Dma::NoMemory => write!(f, "IDMAC FAILED: no pages for its region or buffers"),
+            Dma::Refused(e) => write!(f, "IDMAC FAILED: region refused, {e:?}"),
+            Dma::Failed(e) => write!(f, "IDMAC FAILED: {e:?}"),
+        }
+    }
+}
+
 fn print_verdict(o: &Outcome) {
     match o {
-        Outcome::ReadOk(kib) => {
-            println!("storage-bench: verdict READ-OK {kib} KiB/s, EL0 block server served");
-        }
+        Outcome::ReadOk(kib, dma) => println!(
+            "storage-bench: verdict {} {kib} KiB/s, {dma}, EL0 block server served",
+            if dma.passed() {
+                "READ-OK"
+            } else {
+                "FAILED: polled READ-OK"
+            },
+        ),
         Outcome::El0(e) => println!("storage-bench: verdict FAILED: EL0 block server {e:?}"),
-        Outcome::Written(kib, WriteVerdict::Verified(first, count, blank)) => println!(
-            "storage-bench: verdict READ-OK {kib} KiB/s, WRITE-VERIFIED sectors {first}..{} (were {}), restored, EL0 block server served",
+        Outcome::Written(kib, WriteVerdict::Verified(first, count, blank), dma) => println!(
+            "storage-bench: verdict {} {kib} KiB/s, WRITE-VERIFIED sectors {first}..{} (were {}), restored, {dma}, EL0 block server served",
+            if dma.passed() {
+                "READ-OK"
+            } else {
+                "FAILED: polled READ-OK"
+            },
             first + count,
             if *blank { "zero" } else { "not zero" },
         ),
-        Outcome::Written(kib, WriteVerdict::Refused) => println!(
-            "storage-bench: verdict READ-OK {kib} KiB/s, WRITE-REFUSED: no gap before the first partition"
+        Outcome::Written(kib, WriteVerdict::Refused, dma) => println!(
+            "storage-bench: verdict READ-OK {kib} KiB/s, WRITE-REFUSED: no gap before the first partition, {dma}"
         ),
-        Outcome::Written(_, v) => println!("storage-bench: verdict FAILED: write test {v:?}"),
+        Outcome::Written(_, v, _) => println!("storage-bench: verdict FAILED: write test {v:?}"),
         Outcome::NotDescribed => {
             println!("storage-bench: verdict SKIPPED: the tree describes no microSD controller");
         }
@@ -304,26 +367,45 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         Ok(r) => r,
     };
     print_read(slot, &r);
-    let outcome = if write {
+    let outcome = write_and_idmac(slot, host, &id, &r, write);
+    // The kernel is done with this controller: `through_idmac` took `host` and stopped the IDMAC,
+    // and from here the EL0 server drives it.
+    if slot.index == 1 {
+        let el0 = through_el0(slot, &r, write);
+        say!(slot, "EL0 block server: {el0:?}");
+        if el0 != El0::Served && !matches!(outcome, Outcome::Written(_, WriteVerdict::Refused, _)) {
+            return Outcome::El0(el0);
+        }
+    }
+    outcome
+}
+
+/// **The probe's last kernel steps**: in a write build the scratch write test, polled, then the
+/// IDMAC phase, which takes the host. The outcome carries both.
+fn write_and_idmac(
+    slot: &Slot,
+    mut host: Host<Window>,
+    id: &Identity,
+    r: &ReadReport,
+    write: bool,
+) -> Outcome {
+    let verdict = if write {
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Outcome::NoMemory;
         };
         let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
         say!(slot, "scratch write test: {v:?}");
-        Outcome::Written(kib_per_s(&r), v)
+        Some(v)
     } else {
-        Outcome::ReadOk(kib_per_s(&r))
+        None
     };
-    // The kernel is done with this controller: nothing below touches `host`, and from here the EL0
-    // server drives it.
-    if slot.index == 1 {
-        let el0 = through_el0(slot, &r, write);
-        say!(slot, "EL0 block server: {el0:?}");
-        if el0 != El0::Served && !matches!(outcome, Outcome::Written(_, WriteVerdict::Refused)) {
-            return Outcome::El0(el0);
-        }
+    let dma = through_idmac(slot, host, id, r, write);
+    say!(slot, "{dma}");
+    let kib = kib_per_s(r.timed_blocks, r.timed_us);
+    match verdict {
+        Some(v) => Outcome::Written(kib, v, dma),
+        None => Outcome::ReadOk(kib, dma),
     }
-    outcome
 }
 
 /// How the EL0 phase ended.
@@ -575,16 +657,92 @@ fn print_read(slot: &Slot, r: &ReadReport) {
         "timed read: {} blocks in {} us, {} KiB/s ({} blocks per command, polled FIFO)",
         r.timed_blocks,
         r.timed_us,
-        kib_per_s(r),
+        kib_per_s(r.timed_blocks, r.timed_us),
         READ_PAGES * 4096 / BLOCK,
     );
 }
 
-fn kib_per_s(r: &ReadReport) -> u64 {
-    (r.timed_blocks * BLOCK as u64 * 1_000_000)
-        .checked_div(r.timed_us)
+fn kib_per_s(blocks: u64, us: u64) -> u64 {
+    (blocks * BLOCK as u64 * 1_000_000)
+        .checked_div(us)
         .unwrap_or(0)
         / 1024
+}
+
+/// **The same card through the IDMAC**: the polled host reads the partition's first 64 KiB as the
+/// reference, gives its controller to the IDMAC, and `bench::idmac_read` reads those blocks again
+/// and the same 8 MiB. In a write build the scratch write test then runs through the IDMAC. The
+/// region is one descriptor page and `READ_PAGES` data pages, so a command moves what the polled
+/// timed read's did.
+fn through_idmac(
+    slot: &Slot,
+    mut host: Host<Window>,
+    id: &Identity,
+    r: &ReadReport,
+    write: bool,
+) -> Dma {
+    let first = r.timed_from;
+    let (Some(reference), Some(buf)) = (pages(READ_PAGES), pages(READ_PAGES)) else {
+        return Dma::NoMemory;
+    };
+    if let Err(e) = sd::read_blocks(&mut host, &r.card, first, reference) {
+        return Dma::Failed(ReadFailure::Read(first, e));
+    }
+    let Some(region) = Region::allocate(1 + READ_PAGES) else {
+        return Dma::NoMemory;
+    };
+    say!(
+        slot,
+        "IDMAC region at {:#x}, {} bytes",
+        region.bus_address(),
+        region.bytes(),
+    );
+    let idmac = match Idmac::new(region, id) {
+        Ok(i) => i,
+        Err(e) => return Dma::Refused(e),
+    };
+    let mut host = host.with_idmac(idmac);
+    let report = match bench::idmac_read(&mut host, r, reference, buf, TIMED_BLOCKS) {
+        Ok(report) => report,
+        Err(e) => {
+            let w = host.registers();
+            say!(
+                slot,
+                "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
+                w.read(regs::IDSTS),
+                w.read(regs::DSCADDR),
+                w.read(regs::BUFADDR),
+                w.read(regs::STATUS),
+                w.read(regs::TCBCNT),
+            );
+            return Dma::Failed(e);
+        }
+    };
+    let kib = kib_per_s(report.timed_blocks, report.timed_us);
+    say!(
+        slot,
+        "timed read: {} blocks in {} us, {kib} KiB/s ({} blocks per command, IDMAC); the first {} KiB {} the polled read",
+        report.timed_blocks,
+        report.timed_us,
+        READ_PAGES * 4096 / BLOCK,
+        READ_PAGES * 4,
+        if report.matches {
+            "match"
+        } else {
+            "DIFFER FROM"
+        },
+    );
+    let verdict = if write {
+        let (Some(a), Some(b)) = (pages(1), pages(1)) else {
+            return Dma::NoMemory;
+        };
+        let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
+        say!(slot, "scratch write test through the IDMAC: {v:?}");
+        Some(v)
+    } else {
+        None
+    };
+    Dma::Read(kib, report.matches, verdict)
 }
 
 /// `count` zeroed, contiguous pages as a byte slice, leaked: this boot halts.
