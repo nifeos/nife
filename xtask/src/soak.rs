@@ -34,8 +34,8 @@ use crate::{
 /// time either changes, and the cheapest way for two things to agree is for there to be one of
 /// them. What stood here instead was a loop over `starts_with("job-mix")` with no timeout at all,
 /// so a sweep that wedged mid-subrun hung this command forever and a finished sweep and a dead one
-/// shared an exit status. That is the limitation milestone 168's lane filed and milestone 324's
-/// part 2 names.
+/// shared an exit status. That is the limitation the lane of milestone 168 (a multi-tasking workload
+/// benchmark) filed and milestone 324's part 2 names.
 ///
 /// The kernel parks in `wfi` rather than exiting, so the host side owns the process and tears it
 /// down; that half is `run_bench`'s and is unchanged. See `script/job-mix`.
