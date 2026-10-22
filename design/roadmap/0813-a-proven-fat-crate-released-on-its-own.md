@@ -58,6 +58,11 @@ restructure. Proofs are the point. And the main-line candidate, rust-fatfs, has 
 upstream on 2024-10-23 unreleased, and a release request has been open since 2023 (rafalh/rust-fatfs
 #81).
 
+`fatfs` and `embedded-sdmmc` were measured against this block on 2026-10-22 (UTC), Kani included,
+in [784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md). Whether this block
+adopts one or builds a full crate, and whether FAT still publishes first, waits on calef
+([the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md)).
+
 ## References and oracles
 
 Read for behavior and test against; copy no code unless its license allows it and the copy is

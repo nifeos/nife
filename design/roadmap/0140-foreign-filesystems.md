@@ -40,7 +40,9 @@ it. What it says is that a vendored store solved one requirement and the others 
 
 The FAT32 stratum depends on milestone 813 (`file_allocation_table`: a proven FAT crate, released
 on its own), calef's ruling of 2026-10-07 (UTC) on #1806: that crate is the format, and this
-stratum adds the filesystem-contract server around it.
+stratum adds the filesystem-contract server around it. What `fatfs` and `embedded-sdmmc` cover of the
+read side, and what they do not, was measured on 2026-10-22 (UTC) in
+[784's FAT appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md).
 
 The ext4 row was promoted on 2026-08-30 and is now milestone 190 (ext4, read and write),
 after calef said his own drives hold the family's borg repositories and nife has to read and write
