@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-10-11
+built: 2026-10-22
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -215,9 +216,10 @@ from the settings file and reports what it cannot do. It sets the features, the 
 the Actions permissions, the `crates-io` environment with calef as required reviewer, the team,
 the labels, and the `main` ruleset with the nine required checks. The drift check reads the
 settings back. It went red naming a hand-changed setting. The tag ruleset is live on the canary
-(ruleset 25290943), and `script/apply-settings` applies it from the settings file. The release gate passed on a green commit and created no tag under `dry-run`. The publish job then sat in the `crates-io`
-environment waiting on a person, which is the "publishes nothing without calef's environment
-approval" row. In nife, the allowlist lint fails a crate that drops `publish = false` without
+(ruleset 25290943), and `script/apply-settings` applies it from the settings file. On v7, a dry-run release on the canary (run 39716515649, at
+456ad0f20e41af263d1835df2607e86f8b932d75) passed the gate on that commit's push runs, created no
+tag, and its publish job waits in the `crates-io` environment for calef. That is the "publishes
+nothing without calef's environment approval" row and the ruled close. In nife, the allowlist lint fails a crate that drops `publish = false` without
 being on the list, and `helpers/ci_job_times.py` reads a crate repository by argument.
 
 ## BUGS
@@ -226,19 +228,13 @@ being on the list, and `helpers/ci_job_times.py` reads a crate repository by arg
   since is not in it, and nothing makes adding one ask "and the template?".
 - The template's release cadence is provisional. The check names are measured against what GitHub
   shows for cross-repository reusable workflow calls.
-- `needs_person` is `yes`: the exit's dry run waits in `crates-io` for calef.
-- The canary's callers at v6 run `check` and `proofs` on pull requests only. A pull request's runs
-  are recorded at its head, never at the merge commit a release dispatches at, so the release gate
-  refuses every release (crate-workflows-test run 39711321512). nifeos/crate-workflows #12 adds a
-  push trigger on `main` to the scaffold callers; it reaches the canary with the next release.
+- `needs_person` is `yes`: the stranger cadence's first run is a person's.
 - The settings-drift check's security rows and ruleset read want an administration-scoped token;
   with `GITHUB_TOKEN` they report what was unreadable.
 
 ## Follow-on
 
-- **Outstanding.** The exit's v7 dry run: the canary adopts release v7, and a dry-run release
-  there passes the gate and waits in `crates-io` for calef.
-- **Outstanding.** The stranger cadence's first run, a person's as in nife; the weekly job fails
+- **Recorded.** The stranger cadence's first run, a person's as in nife; the weekly job fails
   until `docs/stranger-test.md` records one.
 
 ## Index row
