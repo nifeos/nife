@@ -11,8 +11,8 @@ hold less, and to make it hold it for less time.
 
 ## The tree
 
-Four small portable programs (`components/src/root_supervisor.rs`, `spawner.rs`, `sub_server_supervisor.rs`, `flaky.rs`, sharing
-`crates/supervision_protocol`):
+Four small portable programs (`components/src/root_supervisor.rs`, `spawner.rs`,
+`sub_server_supervisor.rs`, `first_attempt_crasher.rs`, sharing `crates/supervision_protocol`):
 
 ```text
   root_supervisor   the root untyped + the initrd + a report endpoint       (briefly)
@@ -21,17 +21,18 @@ Four small portable programs (`components/src/root_supervisor.rs`, `spawner.rs`,
     |
     +-- sub_server_supervisor    a request channel + a fault endpoint, NO memory   (cannot build anything)
             |
-            +-- flaky   a report endpoint                           (the supervised sub-server)
+            +-- first_attempt_crasher   a report endpoint           (the supervised sub-server)
 
   then: root_supervisor deletes its untyped and becomes a RECEIVE loop on its own supervision endpoint.
 ```
 
 Each split is chosen so that the authority is the smallest thing that still does the job:
 
-- The spawner holds a program image, not the initrd. root_supervisor copies `flaky`'s bytes into fresh
-  read-only pages in the spawner's address space (the `blobs` field of `Endow`). So "build me program
-  X" is not a request the spawner *can* honor for any other X: the only program it can name is the
-  one it was handed. Compare the progenitor, which holds a 14 MB archive of every program in the system.
+- The spawner holds a program image, not the initrd. root_supervisor copies
+  `first_attempt_crasher`'s bytes into fresh read-only pages in the spawner's address space (the
+  `blobs` field of `Endow`). So "build me program X" is not a request the spawner *can* honor for
+  any other X: the only program it can name is the one it was handed. Compare the progenitor, which
+  holds a 14 MB archive of every program in the system.
 - The spawner's budget is WRITE without GRANT. It may spend memory; it may not lend it. Nothing
   it builds can be endowed with a budget of its own.
 - Each instance is built in its own region, split off the budget, so reaping it is one

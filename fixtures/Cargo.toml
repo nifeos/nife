@@ -1,11 +1,9 @@
-# Name: recorded (design/roadmap/0039-repository-structure.md's "Not everything in `user/` is a
-# service", performed by milestone 175). The programs that exist to exercise or measure the system
-# rather than to be shipped: test clients, attackers that share the honest path, stand-in servers,
-# workloads and benchmarks. 39 named eight of them by hand on a tree less than half this size and
-# called mixing them with the real components "much of why the directory reads as shapeless"; this
-# is that separation. `tests/` was not available and would have been wrong anyway, since Cargo owns
-# that directory name and these are `[[bin]]` targets rather than test harnesses. Nobody has put
-# the name to an architect.
+# Name: ratified 2026-10-22 (calef, #2562). The programs that exist to exercise or measure the
+# system rather than to be shipped: test clients, attackers that share the honest path, stand-in
+# servers, workloads and benchmarks. design/roadmap/0039-repository-structure.md's "Not everything
+# in `user/` is a service" called mixing them with the real components "much of why the directory
+# reads as shapeless"; this is that separation. `tests/` would be wrong, since Cargo owns that
+# directory name and these are `[[bin]]` targets rather than test harnesses.
 
 [package]
 name = "fixtures"
@@ -200,12 +198,12 @@ path = "src/interrupt_ignorer.rs"
 test = false
 bench = false
 
-# The outlaw (milestone 19, the user-test port): reads an address it is not allowed to touch, and
-# round-trips through user mode. The two programs kernel::user::tests used to hand-assemble as
-# aarch64 machine code; a real ELF here is what lets those tests run on both ISAs.
+# The kernel test subject (milestone 19, the user-test port): reads an address it is not allowed to
+# touch, and round-trips through user mode. The two programs kernel::user::tests used to
+# hand-assemble as aarch64 machine code; a real ELF here is what lets those tests run on both ISAs.
 [[bin]]
-name = "outlaw"
-path = "src/outlaw.rs"
+name = "kernel_test_subject"
+path = "src/kernel_test_subject.rs"
 test = false
 bench = false
 
@@ -243,8 +241,8 @@ test = false
 bench = false
 
 [[bin]]
-name = "flaky"
-path = "src/flaky.rs"
+name = "first_attempt_crasher"
+path = "src/first_attempt_crasher.rs"
 test = false
 bench = false
 
@@ -295,8 +293,8 @@ test = false
 bench = false
 
 [[bin]]
-name = "chatty"
-path = "src/chatty.rs"
+name = "swap_boundary_witness"
+path = "src/swap_boundary_witness.rs"
 test = false
 bench = false
 
@@ -584,9 +582,9 @@ supervision_protocol = { version = "0.1.0", path = "../crates/supervision_protoc
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }
 # The supervisor half of milestone 23's component manifest: the operator wires a component from
-# its declaration rather than from literals, and `chatty` and `broker` derive their own slot
-# numbers from the declarations they are built against.
-component_plan = { version = "0.1.0", path = "../crates/component_plan" }
+# its declaration rather than from literals, and `swap_boundary_witness` and `broker` derive their
+# own slot numbers from the declarations they are built against.
+capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
@@ -616,7 +614,7 @@ byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" 
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule
 # store) and §125 (which identities have pending work)): the schedule file's name, which
 # `login_test_client.rs` writes and `login.rs` reads back.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }

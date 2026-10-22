@@ -74,7 +74,7 @@ board spends their time on the machine rather than on reconstructing what to typ
 - **The escape**, four mechanisms deep, argued in the next section.
 - `script/board-image --soak --reboot`, which prints what the card will do and how to stop it
   before it builds anything.
-- `script/board-console --tally <log>` and `board_console::lottery` (names provisional): read a
+- `script/board-console --tally <log>` and `serial_console::lottery` (names provisional): read a
   capture of many boots and report what the lottery drew each time, plus the distribution. Eight
   host tests, two of them over real captures, including one taken for this milestone because the
   tree had no capture carrying a placement census.
@@ -119,7 +119,7 @@ strongest-first in AGENTS.md's ladder because the ordering is the argument.
    counts, so nothing has to agree on a character.
 4. Stopping disarms the reboot and leaves the soak running, rather than halting. This is the
    half of the design worth arguing for, because the obvious answer is to halt. `Stage::Soak` has
-   already told `board_console` that silence after a soak starts is a hang, so a halting escape
+   already told `serial_console` that silence after a soak starts is a hang, so a halting escape
    would report itself as the exact failure this instrument exists to detect. It would throw the
    run away to get the board back. Disarming leaves the board in milestone 219's understood state,
    still beating, and costs nothing.
@@ -245,7 +245,7 @@ notes/board-reboot.md.
   that finding would arrive; raise it then.
   This refusal is milestone 477 (design/roadmap/0477-a-power-cycled-boot-series.md), which carries it
   with the condition that would change it.
-- **Outstanding.** The tally's clean-core definition is `board_console::lottery`'s, host-tested
+- **Outstanding.** The tally's clean-core definition is `serial_console::lottery`'s, host-tested
   against the one settled arrangement radon has printed. If a series shows the rate does not follow
   it, that is this milestone's result rather than a defect in the reader, and the definition is what
   a second board would test. Checked 2026-09-03.

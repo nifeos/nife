@@ -8,10 +8,10 @@ name = "boot"
 kind = "base"
 home = { repo = "boot", status = "provisional" }
 interfaces = ["screen_console", "bitmap_font", "sealed_pair"]
-crates = ["uefi_loader", "board_console"]
+crates = ["uefi_loader", "serial_console"]
 
 [[exception]]
 date = 2026-09-27
-member = "board_console"
+member = "serial_console"
 crate = "job_mix"
 reason = "the board console runs the job mix to prove a board boots; the mix is a fixture a release image should not carry"

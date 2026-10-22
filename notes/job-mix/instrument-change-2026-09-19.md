@@ -33,12 +33,12 @@ best. `jpm_median` is not comparable with an old `jpm` even at the same task cou
 statistic, different mix.
 
 "Finds nothing" is the safer failure and it is still a silent one, which the tree learned the
-same day (2026-09-19). Another session was building `crates/board_console`'s sweep recognizer
+same day (2026-09-19). Another session was building `crates/serial_console`'s sweep recognizer
 against a capture from the old kernel. When this change landed, its parser went on matching the
 line's head, read none of the four numbers, and reported zeros. Its tests stayed green, because the
 fixture it asserted against had been made from the same old kernel and the two agreed with each
 other. The fix re-captured the fixture from a current kernel and the limitation is recorded in
-`crates/board_console/src/progress.rs`'s `BUGS`: the markers are shared through `crates/job_mix`,
+`crates/serial_console/src/progress.rs`'s `BUGS`: the markers are shared through `crates/job_mix`,
 the field names inside the line are not.
 
 ## What a `job-mix-kind:` line says

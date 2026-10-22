@@ -63,7 +63,7 @@ list is short and it is what makes the blockers concrete:
 4. Split 32 per-task budgets off its own region (`job_mix::TASK_BUDGET_PAGES` is 25 pages each,
    and a task needs its own because the map and spawn jobs spend it).
 5. Read the wall clock and the counter frequency, and print machine-readable lines
-   `crates/board_console`'s recognizer can read.
+   `crates/serial_console`'s recognizer can read.
 6. Print the placement census, because `notes/job-mix.md`'s procedure reads it at step 3 and
    `kernel/src/job_mix.rs`'s first `BUGS` entry says a number without it is not quotable.
 
@@ -138,7 +138,7 @@ numbers are not quotable by the instrument's own published standard.
 Milestone 240 (the soak reports what happened and not where, so an eightfold difference cannot be explained) found that placement decides throughput on radon by up to fifteenfold.
 `kernel/src/job_mix.rs` answers it with `sched::spawn_reporting_placement`
 (`sched/inspection.rs`), which returns the core the kernel picked, and prints a
-`job-mix-census:` line per core. `crates/board_console/src/lottery.rs` reads those lines to judge a
+`job-mix-census:` line per core. `crates/serial_console/src/lottery.rs` reads those lines to judge a
 draw, and `notes/job-mix.md` step 3 tells the operator to read them before reading any number.
 
 There is no userspace path to that fact, and it is not a gap in one place:

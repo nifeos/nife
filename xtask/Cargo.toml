@@ -1,9 +1,8 @@
-# Name: recorded (AGENTS.md's naming section, the `bind` precedent about not asserting novelty).
-# `xtask` is the established Rust pattern for a build-automation binary in its own package
-# (matklad's, widely adopted), so this is the protected class: a stranger who has met `cargo
-# xtask` anywhere else has met it here. Renaming it would assert novelty where there is none,
-# which is the argument DECISIONS §50 (namespace composition (`bind`), not stored paths) records for
-# keeping Plan 9's `bind`. no architect has ratified it.
+# Name: ratified 2026-10-22 (calef, #2562). `xtask` is the established Rust pattern for a
+# build-automation binary in its own package (matklad's, widely adopted), so this is the protected
+# class: a stranger who has met `cargo xtask` anywhere else has met it here. Renaming it would
+# assert novelty where there is none, which is the argument DECISIONS §50 (namespace composition
+# (`bind`), not stored paths) records for keeping Plan 9's `bind`.
 
 [package]
 name = "xtask"
@@ -70,9 +69,9 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # the loop that stops instead of hanging. A crate rather than code in here for the reason every
 # host-logic crate in this tree gives: the interesting half is text, and text is worth a thousand
 # tests in milliseconds. This file keeps the argument parsing and the report.
-board_console = { version = "0.1.0", path = "../crates/board_console" }
+serial_console = { version = "0.1.0", path = "../crates/serial_console" }
 # The rungs of the boot ladder (milestone 268), for the markers the UEFI boot waits on: the same
-# constants the kernel prints and `board_console` matches, rather than a third copy of one line.
+# constants the kernel prints and `serial_console` matches, rather than a third copy of one line.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the kernel's test runner prints
 # it and `time_record.rs` parses it, so rule 7 makes it a crate rather than a second copy.

@@ -29,7 +29,7 @@ Checked 2026-09-19 in this worktree:
 - `script/boot-check`'s own header, line 30, says "No initrd and no disk: every rung this reads is
   printed before userspace exists." It asserts the banner, that the machine description printed to
   its end, and the self-test verdict.
-- `crates/board_console/src/progress.rs:26` defines `Stage`, whose `Tour` variant is documented as
+- `crates/serial_console/src/progress.rs:26` defines `Stage`, whose `Tour` variant is documented as
   one architecture's rung, riscv64's, printed only by the milestone-tour build.
   `BootProgress::userspace_ran` (line 323) is set from the `init/build` line.
 
@@ -42,7 +42,7 @@ cites.
 ## What this tree already does in the analogous case
 
 The recognizer already exists and is tested, so this is a caller rather than an instrument.
-`crates/board_console`'s `Progress` ratchets the stages, recognizes failure markers, and
+`crates/serial_console`'s `Progress` ratchets the stages, recognizes failure markers, and
 `script/soak-test` already judges a QEMU run with it. The missing piece is a caller that boots the
 default kernel with `-initrd` under `helpers/qemu-bounded.sh` and asks whether it reached
 `Stage::Tour` with `userspace_ran`.
@@ -64,7 +64,7 @@ riscv64-only by construction, so it meets the same objection and has to answer i
 ## What it costs, measured
 
 The boot is one `cargo xtask` verb over machinery that is all present: `initial_ramdisk_riscv()`,
-`helpers/qemu-runner-riscv64.sh`, `crates/board_console`. **A bounded tour boot is seconds, not
+`helpers/qemu-runner-riscv64.sh`, `crates/serial_console`. **A bounded tour boot is seconds, not
 minutes**, because the tour halts on its own; the cost is the riscv64 kernel build, which
 `script/ci-build` already pays for other reasons.
 

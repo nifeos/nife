@@ -130,7 +130,7 @@ entry point that hands the machine to a shell, so its boot still ends in `nife x
 complete, halting.` after the self-test verdict. Both halves are needed and neither is this
 milestone's. One is §149 (may the kernel answer on an endpoint), for how `swish` reaches a console
 where §121 (port I/O as a capability) leaves no userspace holder. The other is milestone 182
-(x86_64's interactive boot), for the entry point. `crates/board_console`'s `Stage::Prompt` says so
+(x86_64's interactive boot), for the entry point. `crates/serial_console`'s `Stage::Prompt` says so
 in its own doc rather than leaving a reader to discover it from a watch that times out, and
 `script/boot-check` says so in its `BUGS`.
 
@@ -183,7 +183,7 @@ none (`user_rt` has no `x86_64` arms). So the retirement waits on either that le
 ruling that the progenitor carrying the claim wherever a progenitor runs is enough. The work when it
 happens: drop the tour's `init/build` step and `kernel::user::riscv_initrd_demo`, drop `builder`
 from `xtask`'s `boot_programs` and the archive table, and delete the program. Then give
-`crates/board_console` a live marker in place of `userspace_ran`'s `init/build`, since the captured
+`crates/serial_console` a live marker in place of `userspace_ran`'s `init/build`, since the captured
 board transcript keeps needing the old one.
 
 Correction, 2026-09-14 (milestone 182's lane): the premise that `x86_64` "has none" was false by the

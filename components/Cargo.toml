@@ -8,8 +8,8 @@
 # The package holds every EL0 program a distribution would ship because somebody wants its function:
 # the services and drivers, the progenitor and supervision spine, and the tools a person invokes at the
 # prompt. What it is not is in `fixtures/`, and the dividing question is what a program IS rather
-# than who runs it, since nearly everything here is reached only from a kernel test. Nobody has put
-# either name to an architect, which is what `recorded` claims and all it claims.
+# than who runs it, since nearly everything here is reached only from a kernel test. calef held the
+# name on 2026-10-22 (UTC, #2562) without ruling it, so it stays `recorded`.
 [package]
 name = "components"
 version = "0.1.0"
@@ -140,9 +140,9 @@ bench = false
 
 # The authority-shrinking supervision tree (milestone 22 phase B.2). Four programs, one shared module
 # (src/suptree.rs): `root_supervisor` is a progenitor that hands its construction authority to `spawner` and its
-# restart policy to `sub_server_supervisor` and then DELETES its budget; `flaky` is the supervised sub-server that
-# crashes once so the tree has something real to keep alive. Portable, both ISAs; the kernel's
-# authority_tests drive them.
+# restart policy to `sub_server_supervisor` and then DELETES its budget; `first_attempt_crasher` is
+# the supervised sub-server that crashes once so the tree has something real to keep alive.
+# Portable, both ISAs; the kernel's authority_tests drive them.
 [[bin]]
 name = "root_supervisor"
 path = "src/root_supervisor.rs"
@@ -223,8 +223,8 @@ bench = false
 # (src/swap.rs): `swapper` is the operator that swaps a running component under a talking client;
 # `rust_swappable` and `c_swappable` are the two instances of that component (the second computes
 # its answers in C, so the replacement is a different implementation in a different language);
-# `chatty` is the client that keeps talking across the swap and the attacker that tries to become
-# the server. Portable, both ISAs; the kernel's live_swap_tests drive them.
+# `swap_boundary_witness` is the client that keeps talking across the swap and the attacker that
+# tries to become the server. Portable, both ISAs; the kernel's live_swap_tests drive them.
 # The terminal's supervisor (milestone 23 (a capability-routed component OS with live replacement),
 # calef's ruling of 2026-09-27): builds `line_editor` from
 # its declaration and replaces it live, carrying its state. `system_initializer` builds this in
@@ -640,7 +640,7 @@ address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # serve loop over it.
 designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mobile_storage" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
-# prints the ones below it and `crates/board_console` matches all of them, so AGENTS.md rule 7
+# prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }
@@ -649,9 +649,9 @@ supervision_protocol = { version = "0.1.0", path = "../crates/supervision_protoc
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }
 # The supervisor half of milestone 23's component manifest: the operator wires a component from
-# its declaration rather than from literals, and `chatty` and `broker` derive their own slot
-# numbers from the declarations they are built against.
-component_plan = { version = "0.1.0", path = "../crates/component_plan" }
+# its declaration rather than from literals, and `swap_boundary_witness` and `broker` derive their
+# own slot numbers from the declarations they are built against.
+capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 virtio = { version = "0.1.0", path = "../crates/virtio" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
@@ -745,7 +745,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122/§125): the fixed file
 # names and the manifest format `login.rs` writes at a login and reads at start-up, which neither
 # `timetable` nor `filesystem_contract` already owns.
-schedule_store = { version = "0.1.0", path = "../crates/schedule_store" }
+timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }

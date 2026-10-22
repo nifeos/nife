@@ -164,3 +164,42 @@ pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
     cpu::current().with_runq(|q| q.push_back(token));
     Some(id)
 }
+
+/// **Hold off an armed kill while the current kernel thread builds a user address space.**
+///
+/// `schedule` carries out a kill on whatever thread it finds running, kernel code included, and a
+/// thread it converts is never resumed. A spawn closure holds the space it is loading as a local on
+/// its own stack until [`adopt_address_space`] gives it to the registry, so a kill landing between
+/// the two leaves that local undropped: the image, its page tables and its revocation log, about
+/// 22 frames, are lost for the boot. `Holding::release` arms exactly that kill when a test ends
+/// before the service it started has finished loading, and the frame ledger reported it as an
+/// intermittent overrun. See notes/frames.md.
+///
+/// Pair it with [`allow_kill`] right after the space is adopted. Nothing in between may block.
+///
+/// Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
+pub fn defer_kill() {
+    set_kill_deferred(true);
+}
+
+/// **End [`defer_kill`]'s window**, and die here if a kill arrived during it. The space is the
+/// thread's now, so the reaper frees it like any other corpse's.
+///
+/// Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
+pub fn allow_kill() {
+    if set_kill_deferred(false) {
+        yield_now(); // `schedule` carries the kill out and does not return
+    }
+}
+
+/// Set the current thread's deferral; returns whether a kill is armed on it.
+fn set_kill_deferred(on: bool) -> bool {
+    let current = current_thread_id();
+    let mut guard = IPC_TABLES.lock();
+    let t = guard
+        .as_mut()
+        .and_then(|sched| sched.threads.get_mut(current))
+        .expect("no current thread");
+    t.kill_deferred = on;
+    t.killed
+}

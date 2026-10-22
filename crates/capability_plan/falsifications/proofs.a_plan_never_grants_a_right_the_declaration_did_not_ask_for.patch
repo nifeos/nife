@@ -1,0 +1,36 @@
+Falsifies `capability_plan::proofs::a_plan_never_grants_a_right_the_declaration_did_not_ask_for`.
+
+The defect: `Direction::rights` returns `READ` for `Use` as well as for `Serve`. A
+component that declared it *uses* a rendezvous is routed a capability it can only receive
+on, so it parks itself in `RECEIVE_CAP` on the rendezvous it is a client of and steals its
+server's requests. That is precisely the confinement failure DECISIONS §41 names, produced
+by one word in a two-arm match.
+
+Expected to fail: `assert!(p.caps()[i].1 == expected)`, where `expected` is the mapping
+written out in the harness, on any declaration containing a `Use`.
+
+**Measured blind before milestone 211.** The harness asserted
+`p.caps()[i].1 == reqs.caps[i].direction.rights()`, and `plan` fills that word by calling
+`direction.rights()`, so both sides moved together. The two assertions beside it survive
+the defect as well: `READ` is still one of `READ | WRITE`, and it still carries no `GRANT`.
+Confirmed by applying this diff against the old phrasing and watching the whole harness
+stay green.
+
+The record this replaces was `Direction::rights` adding `GRANT` to everything, which the
+`& GRANT == 0` line beside it caught; milestone 202 recorded that this harness's *first*
+assertion was blind to it and left the rewrite to a later lane. This is that rewrite, and
+the defect the first assertion is now load-bearing against.
+
+diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
+index 6332eb8f..61bc12d5 100644
+--- a/crates/capability_plan/src/lib.rs
++++ b/crates/capability_plan/src/lib.rs
+@@ -199,7 +199,7 @@ impl Direction {
+     pub const fn rights(self) -> u64 {
+         match self {
+             Direction::Serve => abi::rights::READ,
+-            Direction::Use => abi::rights::WRITE,
++            Direction::Use => abi::rights::READ,
+         }
+     }
+ }

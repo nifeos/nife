@@ -15,9 +15,10 @@
 // retention declaration precisely so that nothing supplies one silently.
 #![allow(clippy::new_without_default)]
 //! **The supervision tree: the shared half.** The programs that shrink init's authority
-//! (`root_supervisor`, `spawner`, `sub_server_supervisor`, and the `flaky` sub-server they manage)
-//! share this: the protocol words they speak, and **the tree's only userspace ELF loader**.
-//! `system_initializer` builds with it too; nothing else builds a process in userspace.
+//! (`root_supervisor`, `spawner`, `sub_server_supervisor`, and the `first_attempt_crasher`
+//! sub-server they manage) share this: the protocol words they speak, and **the tree's only
+//! userspace ELF loader**. `system_initializer` builds with it too; nothing else builds a process
+//! in userspace.
 //!
 //! The loader takes the builder's own budget and the budget the child is built *from* as separate
 //! arguments (the same for a server building from its own memory, different for a spawner building
@@ -31,9 +32,13 @@
 //! `script/test`'s host pass excludes it; they run under `cargo test --doc -p supervision_protocol`
 //! on an aarch64 host.
 //!
-//! Name: recorded (design/naming.md's crate section). The `_protocol` contract suffix (calef,
-//! 2026-09-05) plus the stem, the tree's word for the restart discipline; `ChildEndowment` is an
-//! open naming question of its own (§69 (`Endow` is a verb)).
+//! Name: provisional. Reopened by calef on 2026-10-22 (UTC, #2562), whose ruling was
+//! "`supervision_protocol`: reopen". The question put to him: the crate holds the supervision tree's
+//! protocol words and also the tree's only userspace ELF loader, which builds a child process and
+//! states its authority as a `ChildEndowment`, so `_protocol` names only the first half. The rename
+//! waits on the split into `supervision_contract` and `process_builder` that
+//! design/naming/convention-rulings.md names. `ChildEndowment` is an open naming question of its
+//! own (§69 (`Endow` is a verb)).
 
 use user_mode_runtime::{
     address_space_map_into, cap_delete, destroy_memory_region, invoke, retype_into_kernel_object,
@@ -89,10 +94,10 @@ pub const REQ_BUILD: u64 = 1;
 /// **The labels `sub_server_supervisor` gives its two children, and the attempt each starts at**
 /// (milestone 105, DECISIONS §148 (resolves by asking the kernel) as amended 2026-10-04; name
 /// provisional). The supervisor
-/// tells its children apart by nothing else. The first starts at attempt 0, which `flaky` crashes
-/// on; the second at attempt 10, which it finishes cleanly. So a supervisor that confused the two
-/// would restart the wrong one, which is what makes the difference observable. Mirrored in the
-/// kernel's `authority_tests`.
+/// tells its children apart by nothing else. The first starts at attempt 0, which
+/// `first_attempt_crasher` crashes on; the second at attempt 10, which it finishes cleanly. So a
+/// supervisor that confused the two would restart the wrong one, which is what makes the difference
+/// observable. Mirrored in the kernel's `authority_tests`.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Plural because it holds both children's labels and their
 /// first attempts; `CHILD_LABELS` was considered and is less specific about whose children.
@@ -120,7 +125,8 @@ pub const PAGE: u64 = 4096;
 pub const CHILD_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
 
 /// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]). Four pages,
-/// which is enough for the supervision tree's programs; the flaky sub-server would be fine with one.
+/// which is enough for the supervision tree's programs; the `first_attempt_crasher` sub-server
+/// would be fine with one.
 ///
 /// **A child at the interactive prompt gets three times this** (`system_initializer::CHILD_STACK_PAGES`),
 /// and the difference is deliberate rather than drift: the prompt's children run the shell's

@@ -52,7 +52,7 @@ an agreement with anything; getting them wrong costs a re-run. `--stop` with `--
 outright, because a file has no board on the other end of it.
 
 And one mode that opens no port at all (milestone 249): `--tally <log>` reads a capture of many
-boots and reports what the thread-placement lottery drew on each. It is `board_console::lottery`
+boots and reports what the thread-placement lottery drew on each. It is `serial_console::lottery`
 rather than the recognizer. It answers a question no single-boot reader can be asked (how often does
 each arrangement come up). Its exit statuses are only `0` and `4`, because an analysis of a finished
 log has no board left to have gone quiet. See notes/soak.md.
@@ -82,7 +82,7 @@ this is a choice inside a contract that is already fixed rather than anything tw
 on. Carriage return because the kernel's own instruction is *"press any key on this console"* and
 Enter is what a person presses when told that: a tool whose byte is the one the documented manual
 procedure produces is running the same experiment the procedure runs. `NUL` was the other
-candidate, refused narrowly, and the reasoning is in `crates/board_console/src/stop.rs` beside the
+candidate, refused narrowly, and the reasoning is in `crates/serial_console/src/stop.rs` beside the
 constant.
 
 It will not send anything else. There is no mode that types a line, no mode that drives U-Boot,
@@ -160,8 +160,8 @@ line this mode writes into a log reads as a boot marker when that log is replaye
 
 Every marker was quoted from `notes/visionfive2.md`'s bench runbook or this tree's source, then
 checked on 2026-09-01 against a captured success and a captured failure that now live in
-`crates/board_console/tests/fixtures/captured/`. The firmware rungs (`spl`, `opensbi`, `uboot`,
-`handoff`) are radon's and live in a board profile (`crates/board_console/src/board.rs`); xenon's
+`crates/serial_console/tests/fixtures/captured/`. The firmware rungs (`spl`, `opensbi`, `uboot`,
+`handoff`) are radon's and live in a board profile (`crates/serial_console/src/board.rs`); xenon's
 profile is empty, because it boots through PVH straight into our banner. The kernel's rungs are
 shared by every board: `banner`, `machine`, `selftest`, `tour`, `prompt`, `soak`, `sweep` and
 `sweep-done`. Five markers end a session early: U-Boot's `### ERROR ###`, a bad image magic,

@@ -1,0 +1,17 @@
+[package]
+name = "timetable_store"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+# No dependencies. This crate is the manifest half of the on-disk schedule store (DECISIONS §122,
+# §125): the fixed file names two programs agree on and the parser/renderer for the one document
+# neither `timetable` nor `filesystem_contract` already owns (the list of identities that currently
+# have a durable session with pending scheduled work). The schedule document itself is
+# `timetable::parse`'s own format, reused unchanged; a reader of one identity's `schedule` file
+# depends on `timetable` directly (`components/src/login.rs` does), not through here, so this
+# crate does not need that dependency either.

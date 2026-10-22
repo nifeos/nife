@@ -169,7 +169,7 @@ fn boot_check_leg(
         }
     };
     // `stream_never_ends: false`: this is a pipe, so a zero-byte read means the emulator is gone.
-    let session = board_console::watch::watch(stdout, &mut *sink, &policy, false);
+    let session = serial_console::watch::watch(stdout, &mut *sink, &policy, false);
     let _ = sink.flush();
 
     stop_boot_check_leg(&mut child);
@@ -239,11 +239,11 @@ fn start_boot_check_leg(
     Some((child, stdout))
 }
 
-/// **What the leg waits for and how long**, in `board_console`'s terms.
-fn boot_check_policy() -> board_console::watch::Policy {
-    use board_console::progress::Stage;
+/// **What the leg waits for and how long**, in `serial_console`'s terms.
+fn boot_check_policy() -> serial_console::watch::Policy {
+    use serial_console::progress::Stage;
 
-    board_console::watch::Policy {
+    serial_console::watch::Policy {
         // Generous: a debug kernel under TCG on a loaded CI runner is slow, and the cost of a
         // too-short cap is a red build that means nothing.
         total: std::time::Duration::from_secs(180),
@@ -264,7 +264,7 @@ fn boot_check_policy() -> board_console::watch::Policy {
         // machines attach no disk and, on riscv64, no entropy source. xenon's and radon's lists
         // name devices those boards have, and would read a QEMU leg's honest `absent` as a
         // failure.
-        board: &board_console::board::EMULATOR,
+        board: &serial_console::board::EMULATOR,
     }
 }
 
@@ -285,13 +285,13 @@ fn stop_boot_check_leg(child: &mut std::process::Child) {
 /// **The leg's verdict**: green climbed to the prompt with nothing failed, and an injected run
 /// must come back red instead. A failure says which, and where the log is.
 fn boot_check_verdict(
-    session: &board_console::watch::Session,
+    session: &serial_console::watch::Session,
     arch: &str,
     inject: bool,
     log_path: &str,
 ) -> bool {
-    use board_console::progress::{Failure, Stage};
-    use board_console::watch::Outcome;
+    use serial_console::progress::{Failure, Stage};
+    use serial_console::watch::Outcome;
 
     let red = matches!(
         session.outcome,

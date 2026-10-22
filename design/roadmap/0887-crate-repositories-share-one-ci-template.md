@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-10-11
+built: 2026-10-22
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -108,10 +109,10 @@ calef ruled the names on 2026-10-17 (UTC):
 | The team `crates-io` becomes `crate-maintainers`; its crates.io owner string is `github:nifeos:crate-maintainers` | *"crate-maintainers"* |
 | The required checks: `check / fmt`, `check / clippy`, `check / tests`, `check / coverage`, `check / standalone`, `check / supply-chain`, `proofs / kani`, `proofs / falsify` and `hold / architect hold` | *"Per your suggestion"* |
 
-The `crates-io` environment keeps its name. The template carries the check names since
-nifeos/crate-workflows #9 (`d5ad709`, after the newest release `v5`). The live repositories still
-use the old ones; the switch is in the Follow-on. No `Name:` block in nife carries these names, so
-`script/names` has nothing to ratify.
+The `crates-io` environment keeps its name. Template release `v6` (`d5ad709`, nifeos/crate-workflows
+#9) carries the check names, and the canary's `main` ruleset requires all nine. The team
+`crate-maintainers` exists. No `Name:` block in nife carries these names, so `script/names` has
+nothing to ratify.
 
 ## The first publish: ruled
 
@@ -127,10 +128,17 @@ answered *"B"* to this option for how the first publish happens:
 He declined publishing v1 by hand. The `release` workflow decides by the crate's
 presence on crates.io, never by the secret's: an existing crate publishes through trusted
 publishing only, with no fallback to the token. A missing secret on an absent crate fails naming
-it. Built in nifeos/crate-workflows #8 (`3a2160b`), after the newest release, `v5`. The secret is
+it. Built in nifeos/crate-workflows #8 and released in `v6`. The secret is
 `CRATES_IO_FIRST_PUBLISH_TOKEN`, a provisional name.
 
 A first publish waits on its soak (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its own) is the pilot).
+
+## How 887 closes: ruled
+
+Every crate that could publish first depends on this milestone. calef, 2026-10-22 (UTC): *"A: 887
+is BUILT once a v7 dry-run release on the canary passes the gate and waits in crates-io for my
+approval; the first-publish and semver-baseline checks move to 818."* Milestone 818's exit carries
+both checks.
 
 ## Each nife gate, kept, adapted or dropped
 
@@ -196,20 +204,22 @@ copied. The workflows themselves are written, since none publishes a falsificati
 
 A crate repository, `nifeos/crate-workflows-test`, calls every reusable workflow from releases v1
 and v2. Built 2026-10-16 (UTC). The same day, calef ruled that it
-stands as the template's release canary, adopting each release before a crate depends on it. It has adopted release v5 (commit 30d26230faf82f54653cb302803edf2207f5392b), through its pull
-request 5, merged at 726058495831c9bd3968c405a4d5354709e3233e on `main`, which is the ritual's
-first run. The template's
-own selftest is green on every job, plus the release gate's refusal. The canary's earlier pull
-requests show fmt, tests, coverage, standalone and the falsification replay red on a commit made
+stands as the template's release canary, adopting each release before a crate depends on it. It
+has adopted release v6 (commit d5ad7091019cae8122b0c673fd790936039485ea) through its pull request
+7, merged at d8c155c39c97a74b9fcc5e4492814bdc374ba4af on `main`, where all nine ruled check names
+reported green. A published release opens that adoption pull request itself, as `nife-smelter`
+(`canary-adopt.yml`; for v7, the canary's pull request 8). The template's own selftest is green on every job, plus the release gate's
+refusal. The canary's earlier pull requests show fmt, tests, coverage, standalone and the falsification replay red on a commit made
 to break them and green on the next. Others show the lag check naming a stale pin and the
 supply-chain refusal of a floating action. A pull request held by `needs-architect` took a recorded ruling that swapped the label and turned the hold green. The apply script configures the canary
 from the settings file and reports what it cannot do. It sets the features, the security toggles,
 the Actions permissions, the `crates-io` environment with calef as required reviewer, the team,
 the labels, and the `main` ruleset with the nine required checks. The drift check reads the
 settings back. It went red naming a hand-changed setting. The tag ruleset is live on the canary
-(ruleset 25290943), and `script/apply-settings` applies it from the settings file. The release gate passed on a green commit and created no tag under `dry-run`. The publish job then sat in the `crates-io`
-environment waiting on a person, which is the "publishes nothing without calef's environment
-approval" row. In nife, the allowlist lint fails a crate that drops `publish = false` without
+(ruleset 25290943), and `script/apply-settings` applies it from the settings file. On v7, a dry-run release on the canary (run 39716515649, at
+456ad0f20e41af263d1835df2607e86f8b932d75) passed the gate on that commit's push runs, created no
+tag, and its publish job waits in the `crates-io` environment for calef. That is the "publishes
+nothing without calef's environment approval" row and the ruled close. In nife, the allowlist lint fails a crate that drops `publish = false` without
 being on the list, and `helpers/ci_job_times.py` reads a crate repository by argument.
 
 ## BUGS
@@ -218,38 +228,14 @@ being on the list, and `helpers/ci_job_times.py` reads a crate repository by arg
   since is not in it, and nothing makes adding one ask "and the template?".
 - The template's release cadence is provisional. The check names are measured against what GitHub
   shows for cross-repository reusable workflow calls.
-- `needs_person` is `yes`. The first publish needs calef to create the scoped token on his
-  crates.io account and, after v1, to bind the trusted publisher. Organization administration,
-  which the lane's token does not carry, covers the rest.
-- A push-triggered cross-repository reusable workflow call start-fails on GitHub with an empty
-  error (crate-workflows-test runs 38914536439 and 38914537601, same file green on
-  pull_request), so the gating callers trigger on pull_request only. A release dispatches at a
-  merge commit, whose runs exist from the pull request event, so nothing is lost.
-- The semver half of the labeler never fired against a real baseline: the test crate is
-  unpublished, so `cargo-semver-checks` has nothing to compare. The first published crate is the test.
+- `needs_person` is `yes`: the stranger cadence's first run is a person's.
 - The settings-drift check's security rows and ruleset read want an administration-scoped token;
   with `GITHUB_TOKEN` they report what was unreadable.
 
 ## Follow-on
 
-- **Outstanding.** A real crates.io publish end to end. calef creates the scoped token
-  (`publish-new`, one crate's name, a short expiry) as `CRATES_IO_FIRST_PUBLISH_TOKEN` on the
-  `crates-io` environment, a template release carries #8, and v1 goes through the gate and the
-  environment approval. Then calef binds the trusted publisher and deletes the secret. Not yet
-  shown: that an environment secret reaches the called workflow's job under that name. Checked by
-  the first publish; the dry-run rehearsal shows only which door the release would take.
-- **Outstanding.** The labeler's semver rule firing against a published baseline. The test crate
-  is unpublished, so only the no-baseline path has run; the false positive it produced is fixed in
-  v2. The first published crate (milestones 813 to 821) is the test.
-- **Outstanding.** A driver for the canary's release ritual: after each template release, a pull
-  request on `nifeos/crate-workflows-test` moves every caller's pin to the new commit. A
-  template-side workflow can open it once `nife-smelter` holds the workflows permission; it holds
-  contents and pull requests write, measured 2026-10-17 (UTC). Until then it is by hand.
-- **Outstanding.** The stranger cadence's first run, a person's as in nife; the weekly job fails
+- **Recorded.** The stranger cadence's first run, a person's as in nife; the weekly job fails
   until `docs/stranger-test.md` records one.
-- **Outstanding.** The live switch to the ruled names: release the template with #9, re-adopt it on
-  the canary, rename the team `crates-io` to `crate-maintainers`, and apply the settings, which
-  updates the required checks in each ruleset. Checked by the canary's `main` ruleset listing the new check names.
 
 ## Index row
 

@@ -467,7 +467,10 @@ pub(super) fn carry_out_orders(sched: &mut IpcTables, current: ThreadId) {
         return;
     };
     let running = t.handshake.state == State::Running;
-    if t.killed && (running || (t.handshake.state == State::Blocked && !t.handshake.wake_pending)) {
+    if t.killed
+        && !t.kill_deferred
+        && (running || (t.handshake.state == State::Blocked && !t.handshake.wake_pending))
+    {
         finish_killed_current(sched, current);
     } else if t.suspend_requested && running {
         suspension::park_suspended_current(sched, current);

@@ -89,6 +89,11 @@ The stages, in order:
 - A second count in the same helper: plain comment lines inside function bodies, held per directory
   by a ceiling that only falls, like `helpers/line_citations.py`. A directory's ceiling starts when
   its stage starts. `// SAFETY:` lines are not counted.
+- Neither count includes a `// SAFETY:` comment from its marker on, and the block cap leaves out a
+  `Name:` paragraph, which stays as design/naming.md shapes it.
+- `kernel/` is at cap 20, with its 278 blocks over 20 listed, and its in-body ceiling is 5,289 lines
+  (2026-10-22 UTC). That count is the lexer's, about twice the proxy in the table above, which
+  missed bodies indented 4. Every other directory is at 40 with no ceiling.
 - Both are charted in `notes/project-metrics.md` with the existing chart code, one series per
   directory.
 
@@ -110,8 +115,15 @@ most two in the queue:
 | 3 `system_tests/`, `xtask/`, the rest | 818 | 7,825 | 2,517 | 10,342 | 11 to 21 |
 | total | 3,078 | 31,134 | 9,765 | 40,899 | 42 to 83 |
 
-- CI: little. `helpers/prose_only.py` drops whole-line comments before judging a Rust file, so a
-  pull request that changes only comments and notes skips the jobs a prose change skips.
+- CI: a paydown pull request runs the full suite unless the classifier has a comment-only class.
+  `helpers/prose_only.py` skips the heavy jobs only for Markdown under `notes/`, `design/`,
+  `briefs/` or the root that no code reads. A `.rs` file is never prose to it, so a diff that
+  changes only comments runs everything. Its comment stripping decides only whether a file
+  *reads* a note, not whether a changed file is prose. `ci.yml` alone took 119 to 129
+  runner-minutes over 26 jobs in three merge-group runs on 2026-10-22 (UTC), of which the gate,
+  `lint` and `rustfmt` were 7; `verify.yml`'s Kani shards come on top. A comment-only class
+  (#2546) would leave a paydown pull request the gate, `rustfmt`, `lint` (clippy and rustdoc) and
+  the host tests of the crates it touches.
 - The return: comments are 57% of the bytes in this tree's Rust, and every agent that opens a file
   reads all of them. The sweep moves `kernel/` from 0.84 comment lines per code line to about 0.6,
   and the essays it moves are read only by an agent that follows the link.

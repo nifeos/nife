@@ -265,7 +265,7 @@ architect's.
 | [machine-discovery](mutation-testing/machine-discovery.md) | 77 survivors: 58 killed, 11 equivalent, 8 gaps | 2026-09-19 `### machine_discovery`; 2026-09-20 re-derivation |
 | [new-crate-backlog](mutation-testing/new-crate-backlog.md) | milestone 326 part 3, and a loop that waits | 2026-09-20: `work_steal_slot`, `memory_corruption_canary_gate`, `soak_page`, `schedule_store` |
 | [job-mix-and-jh7110-entropy](mutation-testing/job-mix-and-jh7110-entropy.md) | the same | 2026-09-20: `job_mix`, `jh7110_entropy` |
-| [board-console](mutation-testing/board-console.md) | the same | 2026-09-20: `board_console` |
+| [serial-console](mutation-testing/serial-console.md) | the same | 2026-09-20: `board_console` |
 | [video-terminal](mutation-testing/video-terminal.md) | the same | 2026-09-20: `video_terminal` |
 | [jh7110-clock-and-reset-non-volatile-memory-express-screen-console](mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md) | the same, and what part 3 left | 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console` |
 | [census-2026-09-21-triage](mutation-testing/census-2026-09-21-triage.md) | the 2026-09-21 census's 771, classified; 164 killed | 2026-09-24: `portable_executable`, `stick_maker`, `uefi_loader`, `paging` |

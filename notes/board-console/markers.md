@@ -7,10 +7,10 @@ in the four outcomes, and how a job-mix sweep is judged.
 Every marker was first quoted from `notes/visionfive2.md`'s bench runbook ("What appears, in order,
 on a good day" and the failure-triage ladder) or from this tree's own source. They were then
 checked against the board, on 2026-09-01, against a captured success and a captured failure that
-now live in `crates/board_console/tests/fixtures/captured/` and are asserted on by the tests.
+now live in `crates/serial_console/tests/fixtures/captured/` and are asserted on by the tests.
 
 The first four rows are radon's and live in a board profile (milestone 324 part 3,
-`crates/board_console/src/board.rs`); the rest are the kernel's and are shared by every board.
+`crates/serial_console/src/board.rs`); the rest are the kernel's and are shared by every board.
 
 | stage | board | marker | source |
 |---|---|---|---|
@@ -150,7 +150,7 @@ The quiet timer is the hard part, and a sweep is harder than a soak. A soak beat
 clock every five seconds whatever the workload is doing, so a missed beat is a missed deadline and
 fifteen seconds is three of them. A sweep speaks only when a subrun ends. The longest subrun is the
 top of `job_mix::TASK_SWEEP`, measured at 4.0 seconds
-(`crates/board_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`,
+(`crates/serial_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`,
 249,234,771 ticks on a 62.5 MHz counter), so `script/job-mix` defaults `--quiet-after` to sixty
 seconds, fifteen times that. A board outside that margin will be called wedged when it is merely
 slow; `--quiet-after 0` is the answer and it gives up the wedge detection. This is in both `BUGS`

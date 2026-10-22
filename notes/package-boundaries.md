@@ -77,7 +77,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 <!-- package table: helpers/packages.py --table writes this -->
 | package | kind | members | allowed dependencies | home |
 |---|---|---|---|---|
-| `boot` | base | crates: `bitmap_font*`, `board_console`, `screen_console*`, `sealed_pair*`, `uefi_loader`; programs: `uefi_loader` | interfaces only; 1 dated exception(s) | `boot` (provisional) |
+| `boot` | base | crates: `bitmap_font*`, `screen_console*`, `sealed_pair*`, `serial_console`, `uefi_loader`; programs: `uefi_loader` | interfaces only; 1 dated exception(s) | `boot` (provisional) |
 | `core-tools` | base | programs: `date`, `printenv`, `rm`, `uuid`, `wc` | interfaces only | `core-tools` (provisional) |
 | `disk-tools` | base | programs: `disk_partitioner`, `disk_surveyor` | interfaces only | `disk-tools` (provisional) |
 | `drivers` | base | crates: `designware_ethernet*`, `designware_mobile_storage*`, `e1000e*`, `jh7110_entropy`, `non_volatile_memory_express`, `virtio`; programs: `block_driver`, `designware_mobile_storage`, `jh7110_entropy`, `non_volatile_memory_express`, `serial_driver` | interfaces only | `drivers` (provisional) |
@@ -93,14 +93,14 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `swish` | base | crates: `swish`; programs: `swish` | interfaces only | `swish` (provisional) |
 | `terminal` | base | crates: `line_editor*`; programs: `console`, `input`, `line_editor`, `terminal_sink_caretaker`, `terminal_supervisor` | interfaces only | `terminal` (provisional) |
 | `time` | base | crates: `network_time_protocol`; programs: `clock`, `network_time_client` | interfaces only | `time` (provisional) |
-| `timetable` | base | crates: `schedule_store`, `timetable`; programs: `timetable`; paths: `components/timetable.conf` | interfaces only | `timetable` (provisional) |
+| `timetable` | base | crates: `timetable`, `timetable_store`; programs: `timetable`; paths: `components/timetable.conf` | interfaces only | `timetable` (provisional) |
 | `demos` | optional | programs: `least_authority_demo` | interfaces only | `demos` (provisional) |
 | `display` | optional | crates: `compositor*`, `extensible_host_controller_interface`, `glyph_atlas*`, `glyph_atlas_generator`, `usb`, `video_terminal*`; programs: `compositor`, `display_terminal`, `framebuffer_driver`, `glyph_atlas_generator`, `gpu_driver`, `graphical_terminal`, `keyboard_driver`, `usb_keyboard_driver`; paths: `vendor/dejavu/` | interfaces only | `display` (provisional) |
 | `redoxfs` | optional | crates: `redoxfs`, `redoxfs_host`, `redoxfs_server`; programs: `mkfs`, `redoxfs`, `redoxfs-ar`, `redoxfs-clone`, `redoxfs-mkfs`, `redoxfs-resize`, `redoxfs_host`, `redoxfs_server`, `second_mount`; paths: `vendor/redoxfs.divergence.patch`, `vendor/redoxfs.pin` | interfaces only | undecided: the server and host tool are ours and the library is Redox's; whether the port goes upstream is open |
 | `rmle` | optional | programs: `rmle` | interfaces only | `rmle` (provisional) |
 | `system_installer` | optional | programs: `system_installer` | interfaces only | `system_installer` (provisional) |
 | `c-library` | sdk | crates: `c_library`, `c_library_errno`; paths: `vendor/relibc/` | interfaces only | `c-library` (provisional) |
-| `contracts` | sdk | crates: `abi*`, `address_space_map*`, `block_roster*`, `boot_ladder*`, `boot_slot*`, `byte_sink_contract*`, `c_program_fixture*`, `capability_manifest_note*`, `capability_witness_contract*`, `clock_contract*`, `component_plan*`, `confined_syscall_fuzzer_contract*`, `counter_frequency_contract*`, `credential_contract*`, `current_cpu_contract*`, `device_tree_blob*`, `documentation*`, `elf*`, `entropy_contract*`, `environment_contract*`, `file_allocation_table*`, `filesystem_contract*`, `glob*`, `globally_unique_identifier_partition_table*`, `grant_plan*`, `graphics_contract*`, `hot_swap_contract*`, `installed_programs*`, `login_contract*`, `machine_discovery*`, `machine_statistics_contract*`, `measured_boot*`, `nifefs*`, `package_archive*`, `package_index*`, `program_argument_contract*`, `socket_contract*`, `std_runtime_contract*`, `supervision_protocol*`, `system_log_contract*`, `test_times*`, `universally_unique_identifier*` | interfaces only | `contracts` (provisional) |
+| `contracts` | sdk | crates: `abi*`, `address_space_map*`, `block_roster*`, `boot_ladder*`, `boot_slot*`, `byte_sink_contract*`, `c_program_fixture*`, `capability_manifest_note*`, `capability_plan*`, `capability_witness_contract*`, `clock_contract*`, `confined_syscall_fuzzer_contract*`, `counter_frequency_contract*`, `credential_contract*`, `current_cpu_contract*`, `device_tree_blob*`, `documentation*`, `elf*`, `entropy_contract*`, `environment_contract*`, `file_allocation_table*`, `filesystem_contract*`, `glob*`, `globally_unique_identifier_partition_table*`, `grant_plan*`, `graphics_contract*`, `hot_swap_contract*`, `installed_programs*`, `login_contract*`, `machine_discovery*`, `machine_statistics_contract*`, `measured_boot*`, `nifefs*`, `package_archive*`, `package_index*`, `program_argument_contract*`, `socket_contract*`, `std_runtime_contract*`, `supervision_protocol*`, `system_log_contract*`, `test_times*`, `universally_unique_identifier*` | interfaces only | `contracts` (provisional) |
 | `cryptography` | sdk | crates: `cryptography_provider*`, `pinned_tls_client*` | `network` | `cryptography` (provisional) |
 | `host-tools` | sdk | crates: `stick_maker`, `walk_pricing`, `xtask`; programs: `stick_maker`, `xtask` | `boot`, `display` | `host-tools` (provisional) |
 | `runtime` | sdk | crates: `allocation_cache*`, `calendar*`, `entropy_backend*`, `memory_region_heap*`, `talc*`, `user_mode_runtime*`; paths: `patches/`, `targets/`, `vendor/talc.divergence.patch`, `vendor/talc.pin` | interfaces only | `runtime` (provisional) |
@@ -178,7 +178,7 @@ dev-dependencies, and the gate failed their exceptions as stale, so nine remain:
 | `kernel` | `non_volatile_memory_express`, `jh7110_entropy` | a handoff record and a device discovery living in driver crates |
 | `kernel` | `video_terminal` | display service wiring in `kernel/src/user/` |
 | `kernel` | `coremark`, `job_mix`, `soak_page` | benchmarks and probes built into the kernel; a release kernel should not link a fixture |
-| `boot` | `job_mix` | `board_console` runs the job mix to prove a board boots |
+| `boot` | `job_mix` | `serial_console` runs the job mix to prove a board boots |
 | `init` | `http_response`, `video_terminal` | `system_initializer` builds the whole interactive image; it is integration, not init |
 
 The driver row wants a lane of its own, and so do `ps::Row` and `pmap::Row`, which the kernel
@@ -215,6 +215,6 @@ holds the plan.
 - A `depends` line admits every crate of that package, internals included. It is a reviewed
   declaration, not a proof, so review has to ask whether each one is true.
 - Four fixtures are linked by base packages: `coremark`, `job_mix` and `soak_page` by the kernel,
-  and `job_mix` by `board_console`. They are exceptions until a release build can leave them out.
+  and `job_mix` by `serial_console`. They are exceptions until a release build can leave them out.
 - `system_initializer` sits in `init` but builds the whole image. It links `network` and `display`
   internals under exception until it has its own integration package.

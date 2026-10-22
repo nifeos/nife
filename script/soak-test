@@ -106,7 +106,7 @@
 #
 # **What deliberately did NOT move**, because these name the *workload* rather than the command, and
 # the workload is still a soak: the crate `soak_page` (ratified 2026-09-13 in its own right), the
-# program `soaker`, the kernel module `kernel/src/soak.rs`, `notes/soak.md`, `board_console`'s
+# program `soaker`, the kernel module `kernel/src/soak.rs`, `notes/soak.md`, `serial_console`'s
 # `Stage::Soak` and its `--until soak` token, `BootProgress::soak`, and `script/board-image --soak`.
 # Each of those is calef's own call and none of them was put to him; milestone 297's report proposes
 # the sweep as its own piece of work rather than taking it here.

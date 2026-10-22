@@ -87,12 +87,12 @@ contract is the wire protocol it offers it over. "Server" is a fine role word in
   (milestone 266 (one progenitor)), rather than a role name packed over two different binaries, so
   the three names agree in every row.
 
-Fixtures and benchmarks (`interrupt_heeder`, `interrupt_ignorer`, `flaky`, `allocator_exerciser`,
-`coremark`, `os_primitives_benchmarker`) live in `fixtures/`. Milestone 175 (split `user/`)
-separated them from the real components there on 2026-09-13. The naming rule is the same either way:
-a fixture is a program and takes a program's name. `worker` was on that list by repetition and is
-not a fixture. calef ruled it the canonical minimal program on 2026-09-13, so it is
-`components/src/least_authority_demo.rs`.
+Fixtures and benchmarks (`interrupt_heeder`, `interrupt_ignorer`, `first_attempt_crasher`,
+`allocator_exerciser`, `coremark`, `os_primitives_benchmarker`) live in `fixtures/`. Milestone 175
+(split `user/`) separated them from the real components there on 2026-09-13. The naming rule is the
+same either way: a fixture is a program and takes a program's name. `worker` was on that list by
+repetition and is not a fixture. calef ruled it the canonical minimal program on 2026-09-13, so it
+is `components/src/least_authority_demo.rs`.
 
 ### Two suffixes carry a category
 

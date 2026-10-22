@@ -35,8 +35,8 @@ leaked.
 
 The escape's test is `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`.
 It drives a new `ROLE_DEPUTY` channel in `components/src/swapper.rs` and a new `ROLE_CONFUSED` role
-in `fixtures/src/chatty.rs`. `crates/hot_swap_contract` carries the new constants. It was opt-in and red
-when this pass reported; it is a default test now that the fix has landed.
+in `fixtures/src/swap_boundary_witness.rs`. `crates/hot_swap_contract` carries the new constants. It
+was opt-in and red when this pass reported; it is a default test now that the fix has landed.
 
 ## Independence
 

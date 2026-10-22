@@ -49,7 +49,8 @@ occur on a point line. It now carries `repeats=`, `ticks_min=`, `ticks_median=`,
 `jpm_median=`. A new line after the census says which statistic is in use and that transcripts
 before 2026-09-19 are not comparable. `notes/job-mix.md` has the old-and-new table. Only
 `cargo xtask job-mix` reads these lines in-tree, and it counts points by the unchanged
-`job-mix: tasks=` prefix; `crates/board_console` has no recogniser for this run (milestone 324).
+`job-mix: tasks=` prefix; `crates/serial_console` has no recogniser for this run (
+milestone 324 (the bench console cannot speak to any of the three boards)).
 
 ## The second hole: page mapping and process creation are in the mix
 

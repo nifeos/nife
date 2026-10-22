@@ -630,6 +630,33 @@ pub fn rendezvous_waiting_senders(ep: RendezvousId) -> usize {
     }
 }
 
+/// **Hold a corpse in the window between departing and leaving its core** (milestone 321 (a corpse
+/// that did not park, on four real cores)). Test support.
+///
+/// `depart` publishes a supervised thread's death before its core switches away, so for a short
+/// while the corpse is `Dead`, parked, and still `on_cpu`. On silicon that window is a few hundred
+/// instructions and no test can aim at it. This sets `on_cpu` on a corpse whose core has already
+/// left it, which is the same state held open, and clears it again; `false` from the setting call
+/// means there was no such corpse (not `Dead`, gone, or still genuinely standing, whose own
+/// `finish_switch` would clear the mark under the test).
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
+#[cfg(feature = "system_tests")]
+pub fn hold_on_its_core(tid: ThreadId, hold: bool) -> bool {
+    let mut guard = IPC_TABLES.lock();
+    let Some(sched) = guard.as_mut() else {
+        return false;
+    };
+    let Some(t) = sched.threads.get_mut(tid) else {
+        return false;
+    };
+    if t.handshake.state != State::Dead || (hold && t.handshake.on_cpu) {
+        return false;
+    }
+    t.handshake.on_cpu = hold;
+    true
+}
+
 /// **What a death actually did to a thread**: its run state, the supervision rendezvous it was
 /// spawned with, and the wait it is recorded as being in. `None` if the thread is no longer in the
 /// table at all. Test support (milestone 321). **Provisional name.**

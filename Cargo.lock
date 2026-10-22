@@ -102,18 +102,6 @@ name = "block_roster"
 version = "0.1.0"
 
 [[package]]
-name = "board_console"
-version = "0.1.0"
-dependencies = [
- "bitmap_font",
- "boot_ladder",
- "job_mix",
- "machine_discovery",
- "screen_console",
- "video_terminal",
-]
-
-[[package]]
 name = "boot_ladder"
 version = "0.1.0"
 
@@ -169,6 +157,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "capability_plan"
+version = "0.1.0"
+dependencies = [
+ "abi",
+]
+
+[[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
 
@@ -202,13 +197,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
-name = "component_plan"
-version = "0.1.0"
-dependencies = [
- "abi",
-]
-
-[[package]]
 name = "components"
 version = "0.1.0"
 dependencies = [
@@ -220,8 +208,8 @@ dependencies = [
  "byte_sink_contract",
  "calendar",
  "capability_manifest_note",
+ "capability_plan",
  "clock_contract",
- "component_plan",
  "compositor",
  "credential_contract",
  "credentialer",
@@ -258,7 +246,6 @@ dependencies = [
  "pgrep",
  "pmap",
  "ps",
- "schedule_store",
  "screen_console",
  "slabtop",
  "smoltcp",
@@ -269,6 +256,7 @@ dependencies = [
  "system_log",
  "system_log_contract",
  "timetable",
+ "timetable_store",
  "tock-registers",
  "top",
  "universally_unique_identifier",
@@ -528,9 +516,9 @@ dependencies = [
  "byte_sink_contract",
  "c_seam",
  "capability_manifest_note",
+ "capability_plan",
  "capability_witness_contract",
  "clock_contract",
- "component_plan",
  "compositor",
  "confined_syscall_fuzzer_contract",
  "coremark",
@@ -551,12 +539,12 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
- "schedule_store",
  "soak_page",
  "socket_contract",
  "supervision_protocol",
  "system_initializer",
  "timetable",
+ "timetable_store",
  "user_mode_runtime",
 ]
 
@@ -656,7 +644,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
- "component_plan",
+ "capability_plan",
  "user_mode_runtime",
 ]
 
@@ -821,7 +809,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 name = "line_editor"
 version = "0.1.0"
 dependencies = [
- "component_plan",
+ "capability_plan",
 ]
 
 [[package]]
@@ -1100,10 +1088,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
-name = "schedule_store"
-version = "0.1.0"
-
-[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1160,6 +1144,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c"
 dependencies = [
  "serde_core",
+]
+
+[[package]]
+name = "serial_console"
+version = "0.1.0"
+dependencies = [
+ "bitmap_font",
+ "boot_ladder",
+ "job_mix",
+ "machine_discovery",
+ "screen_console",
+ "video_terminal",
 ]
 
 [[package]]
@@ -1387,12 +1383,12 @@ dependencies = [
  "pgrep",
  "pmap",
  "ps",
- "schedule_store",
  "socket_contract",
  "spin",
  "std_runtime_contract",
  "system_log_contract",
  "timetable",
+ "timetable_store",
  "video_terminal",
 ]
 
@@ -1451,6 +1447,10 @@ dependencies = [
  "calendar",
  "grant_plan",
 ]
+
+[[package]]
+name = "timetable_store"
+version = "0.1.0"
 
 [[package]]
 name = "tock-registers"
@@ -1696,7 +1696,6 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
- "board_console",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1716,6 +1715,7 @@ dependencies = [
  "package_index",
  "screen_console",
  "sealed_pair",
+ "serial_console",
  "test_times",
  "toml",
  "video_terminal",

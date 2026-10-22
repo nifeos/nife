@@ -16,13 +16,13 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 | `package_archive` | 19 | 38 | 19 | 129 | 27 | 20 (74%) |
 | `socket_contract` | 17 | 37 | 20 | 80 | 38 | 35 (92%) |
 | `line_editor` | 14 | 37 | 15 | 140 | 47 | 39 (83%) |
-| `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
-| `abi` | 11 | 67 | 41 | 183 | 123 | 115 (93%) |
-| `hot_swap_contract` | 11 | 13 | 19 | 126 | 53 | 52 (98%) |
+| `component_plan` | 13 | 12 | 16 | 138 | 37 | 31 (84%) |
+| `hot_swap_contract` | 12 | 13 | 20 | 126 | 54 | 53 (98%) |
+| `abi` | 11 | 67 | 41 | 183 | 124 | 115 (93%) |
 | `graphics_contract` | 10 | 2 | 19 | 33 | 33 | 33 (100%) |
 | `compositor` | 9 | 4 | 19 | 99 | 38 | 31 (82%) |
 | `credential_contract` | 8 | 5 | 36 | 70 | 37 | 34 (92%) |
-| `current_cpu_contract` | 7 | 6 | 7 | 19 | 19 | 10 (53%) |
+| `current_cpu_contract` | 6 | 6 | 6 | 19 | 20 | 10 (50%) |
 | `byte_sink_contract` | 5 | 10 | 7 | 48 | 32 | 32 (100%) |
 | `capability_manifest_note` | 4 | 56 | 4 | 78 | 30 | 22 (73%) |
 | `clock_contract` | 3 | 2 | 6 | 54 | 32 | 29 (91%) |
@@ -43,7 +43,7 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 ## What broke in 2026W43
 
-Read at `f87c9b5c442c` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `43a2d16e1f9b` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
 > - `compositor`: changed `MAX_SURFACE_BYTES`
@@ -51,7 +51,6 @@ Read at `f87c9b5c442c` against the week before. Each line is one removed or chan
 > - `compositor`: changed `SCREEN_H`
 > - `compositor`: changed `SCREEN_PIXELS`
 > - `compositor`: changed `SCREEN_W`
-> - `current_cpu_contract`: format bump `MAGIC`
 > - `current_cpu_contract`: changed `PAGE_BYTES`
 > - `current_cpu_contract`: changed `build_page`
 > - `current_cpu_contract`: changed `build_page_allowing`
@@ -68,6 +67,7 @@ Read at `f87c9b5c442c` against the week before. Each line is one removed or chan
 > - `graphics_contract`: changed `SURFACE_BYTES`
 > - `graphics_contract`: changed `SURFACE_PAGE_FRAMES`
 > - `graphics_contract`: changed `WIDTH`
+> - `hot_swap_contract`: changed `CLIENT`
 > - `installed_programs`: removed `CURRENT`
 > - `installed_programs`: removed `CURRENT_STAGED`
 > - `installed_programs`: removed `DIRECTORY`

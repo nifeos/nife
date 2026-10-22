@@ -99,7 +99,7 @@ proposed to win on.
 Every ungranted `now()` would pay this, so the count is part of the price. Measured by grep in the
 merged tree on 2026-09-02: 42 direct call sites of `user_rt::now`, plus 18 of
 `user_rt::monotonic_nanos`, which is `now()` with a divide. The `Instant::now()` sites in
-`crates/credentialer` and `crates/board_console` reach the same counter through `std`.
+`crates/credentialer` and `crates/serial_console` reach the same counter through `std`.
 
 Most of them are `let start = now(); ...; now().wrapping_sub(start)` in benchmark and test code and
 would not care. Four shapes would.

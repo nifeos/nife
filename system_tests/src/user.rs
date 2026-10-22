@@ -574,8 +574,8 @@ mod force_kill_tests;
 /// phase B.2).
 ///
 /// Cross-ISA, because every piece is portable: the whole tree is four ordinary user programs
-/// (`root_supervisor`, `spawner`, `sub_server_supervisor`, `flaky`) built out of the capability verbs, and the kernel's only
-/// part is the fault endpoint phase A already built.
+/// (`root_supervisor`, `spawner`, `sub_server_supervisor`, `first_attempt_crasher`) built out of
+/// the capability verbs, and the kernel's only part is the fault endpoint phase A already built.
 ///
 /// The kernel spawns `root_supervisor` the way it spawns the progenitor: the archive mapped read-only, one untyped
 /// budget, one report endpoint. `root_supervisor` then builds a construction sub-server and a supervisor, hands
@@ -660,10 +660,11 @@ mod c_seam_tests;
 /// the one milestones 29, 33 and 36 used: two witnesses in two address spaces, an attacker with
 /// real authority, and a control that must fail.
 ///
-/// 1. **The client's witness**, computed inside `chatty` from the replies it received. It holds one
-///    capability to one endpoint for its whole life, calls sixty-four times in a plain loop, and
-///    checks every answer against its own independent computation of the digest. It has no code
-///    path for "the server went away" because there is no such event to have one for.
+/// 1. **The client's witness**, computed inside `swap_boundary_witness` from the replies it
+///    received. It holds one capability to one endpoint for its whole life, calls sixty-four times
+///    in a plain loop, and checks every answer against its own independent computation of the
+///    digest. It has no code path for "the server went away" because there is no such event to have
+///    one for.
 /// 2. **The operator's witness**, a shared page in `swapper`'s address space that each instance
 ///    stamps with its own version per request. Read after every writer is dead, it says that no
 ///    request went unserved (nothing was lost in the down window) and that the version never goes
@@ -673,11 +674,11 @@ mod c_seam_tests;
 ///    *after* the operator revoked it. It faults, and the kernel's fault message carries the
 ///    device's own virtual address. Before the revoke the same read succeeded, which is what makes
 ///    this a receipt rather than a coincidence.
-/// 4. **The attacker**, `chatty` in its usurper role, endowed with exactly the honest client's
-///    capabilities including a real working capability to the stable endpoint. It tries to park
-///    itself in `RECEIVE_CAP` and become the server. `NotPermitted`: its capability carries `WRITE`
-///    and not `READ`, so endpoint-only naming does not mean "whoever holds the endpoint is the
-///    server".
+/// 4. **The attacker**, `swap_boundary_witness` in its usurper role, endowed with exactly the
+///    honest client's capabilities including a real working capability to the stable endpoint. It
+///    tries to park itself in `RECEIVE_CAP` and become the server. `NotPermitted`: its capability
+///    carries `WRITE` and not `READ`, so endpoint-only naming does not mean "whoever holds the
+///    endpoint is the server".
 ///
 /// **The replacement is written in C** (`fixtures/c/c_swappable.c`, over the seam DECISIONS §31 built),
 /// and that is the strongest form of the claim: what held across the swap was the contract, not a
@@ -1350,10 +1351,10 @@ mod eighth_pass_delegation_race_tests;
 mod eighth_pass_elf_attack_tests;
 
 /// **A user program cannot read the kernel through its other addresses either** (an eighth
-/// outsider pass at the confinement claim, claim 21). The outlaw is aimed at kernel text and at
-/// the direct-map alias of a page the cited test already proves unreadable at its link-time
-/// address, on every ISA the suite boots, each fault asserted to be a read at the exact address
-/// handed in.
+/// outsider pass at the confinement claim, claim 21). The `kernel_test_subject` is aimed at kernel
+/// text and at the direct-map alias of a page the cited test already proves unreadable at its
+/// link-time address, on every ISA the suite boots, each fault asserted to be a read at the exact
+/// address handed in.
 ///
 /// Cross-ISA by construction: the claim is (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
@@ -1371,10 +1372,11 @@ mod eighth_pass_port_boundary_tests;
 /// (an eighth outsider pass at the confinement claim, claims 23, 31 and 32). A real spawned
 /// program granted the unvouched shape (one endpoint, two read-only pages) has its whole table
 /// read back slot for slot: exactly those three, and no device capability of any kind. The
-/// outlaw's `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt from inside,
-/// through the real `SYS_INVOKE`.
+/// `kernel_test_subject`'s `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt
+/// from inside, through the real `SYS_INVOKE`.
 ///
-/// Cross-ISA: the spawn path, the census and the outlaw are portable (DECISIONS §19).
+/// Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS
+/// §19).
 #[cfg(all(test, initial_ramdisk))]
 mod eighth_pass_spawn_audit_tests;
 
@@ -1452,10 +1454,11 @@ mod ninth_pass_revocation_tests;
 mod ninth_pass_elf_tests;
 
 /// **A user program cannot read kernel code** (a ninth outsider pass at the confinement claim,
-/// claim 21). Where `el0_boundary_tests` reads a kernel rodata sentinel, this aims the `outlaw` at
-/// the address of a kernel function and asserts the same permission fault on the read.
+/// claim 21). Where `el0_boundary_tests` reads a kernel rodata sentinel, this aims the
+/// `kernel_test_subject` at the address of a kernel function and asserts the same permission fault
+/// on the read.
 ///
-/// Cross-ISA: every target with an initial ramdisk packs the `outlaw` (DECISIONS §19).
+/// Cross-ISA: every target with an initial ramdisk packs the `kernel_test_subject` (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
 mod ninth_pass_el0_tests;
 

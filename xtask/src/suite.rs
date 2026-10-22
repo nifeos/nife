@@ -1438,7 +1438,7 @@ pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<
 ///
 /// - **`xtask`**, the build tool: its tests are safe pixel arithmetic, about seven minutes under
 ///   the interpreter for nothing the type system has not said.
-/// - **`board_console`**: no dependencies and no `unsafe`, about 55 minutes under Miri, and ten of
+/// - **`serial_console`**: no dependencies and no `unsafe`, about 55 minutes under Miri, and ten of
 ///   its tests reach the host filesystem (refused by isolation) or run on wall-clock timeouts,
 ///   which under an interpreter measure Miri.
 /// - **`stick_maker`**: its tests build trees under the temp dir, and isolation refuses `statx`;
@@ -1471,7 +1471,7 @@ pub(crate) fn undefined_behavior_check() -> bool {
             "--exclude",
             "xtask",
             "--exclude",
-            "board_console",
+            "serial_console",
             "--exclude",
             "stick_maker",
             "--exclude",

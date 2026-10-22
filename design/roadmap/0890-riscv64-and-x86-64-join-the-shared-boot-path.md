@@ -18,7 +18,7 @@ boot): "We should treat them as temporary."
 calef, 2026-10-19 (UTC), on the three per-port tours: "3". No per-port tours. Each claim the tours
 make becomes a check in `self_test::run` on every port where it applies, as milestone 268 (every
 architecture boots the same way) did for `mapping` and `scheduler`, and the tours and their port
-files go. The `TOUR` line and boot stage 11, which `board_console` and the hang watcher read, get a
+files go. The `TOUR` line and boot stage 11, which `serial_console` and the hang watcher read, get a
 new source in the same change.
 
 Reuse: not applicable; this moves and deletes kernel code and adds none.
@@ -51,7 +51,7 @@ timing helpers and `riscv_hand_over`. A lane would, per port:
 
 DECISIONS §19 (architectural parity is a tenet) is the reason. The riscv64 boot's middle stages
 are the only proof this tree has of them on real silicon (notes/visionfive2.md), so a lane keeps
-every transcript line `board_console` reads, or moves its claim into the shared path first.
+every transcript line `serial_console` reads, or moves its claim into the shared path first.
 
 ## What the premises turned out to be
 
@@ -71,9 +71,9 @@ Checked against `main` at `ee1f946ad` before anything moved.
   `arch::machine::bring_up_memory` instead. PCI has to be surveyed before `mmu::init` maps the
   buses. Its interrupt controller and timer need the MADT. That is the discovery seam
   `notes/x86-port/acpi-and-pci.md` names, and it is a slice of its own.
-- **`board_console` reads only the ladder.** It matches `boot_ladder`'s markers (banner, machine,
+- **`serial_console` reads only the ladder.** It matches `boot_ladder`'s markers (banner, machine,
   self-test, tour, prompt) and failure markers. No live gate reads riscv64's first-phase lines;
-  they appear in captured logs under `bench/` and `crates/board_console/tests/fixtures/`, which
+  they appear in captured logs under `bench/` and `crates/serial_console/tests/fixtures/`, which
   are records of what a kernel printed and stay as they are.
 - **The tail's "different order" is not one in effect.** riscv64's boot printed the machine
   description and ran the self-test before `icount`, `bench` and the test suite, and `kernel_main`
@@ -123,7 +123,7 @@ exactly that reason (riscv64_boot.rs, before this milestone), and the mask is go
   initial ramdisk on both ports, as riscv64's did.
 - riscv64's tour is its `milestone_tour`, in `riscv64_boot.rs`, reached from the line that reaches
   aarch64's. It keeps every line it printed, `boot_ladder::TOUR` and boot stage 11 included, so
-  `board_console` and the hang watcher read what they read before.
+  `serial_console` and the hang watcher read what they read before.
 - riscv64's banner is `riscv64_banner` in `boot.rs`, beside aarch64's.
 
 ## What was built: `x86_64` runs the shared bring-up and tail
@@ -153,7 +153,7 @@ APIC after the fine map, and the PIT's window runs with the scheduler up and the
 ## What was built: the tours are the self-test's checks
 
 calef, 2026-10-20 (UTC), on how a check reports a machine without its device: "Agreed", to a
-third outcome, `absent`. The condition: each `board_console` board profile names the checks that
+third outcome, `absent`. The condition: each `serial_console` board profile names the checks that
 may not be absent on that board, and reads such an absence as a failure.
 
 Every claim the three tours made, and where each one is now:
@@ -239,7 +239,7 @@ reaches the wire.
 1. `kernel/src/x86_64_boot.rs` and `kernel/src/riscv64_boot.rs` are gone, or hold only what
    `arch/<port>/` cannot.
 2. `kernel_main` has no `cfg(target_arch)` branch to a per-port boot.
-3. `script/test`, `script/swish-check` and the board's `board_console` stages pass on all three.
+3. `script/test`, `script/swish-check` and the board's `serial_console` stages pass on all three.
 
 ## Exit criteria, as built
 
@@ -259,7 +259,7 @@ reaches the wire.
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
   rather than a function every port implements.
 - `x86_64`'s new order is proven on xenon without a screen only (above).
-- `clock`, `trng` and `entropy` pass on radon, but `board_console` has not read radon's profile
+- `clock`, `trng` and `entropy` pass on radon, but `serial_console` has not read radon's profile
   against them.
 - `x86_64`'s supervised death and two-round frame steady state are not checks. No portable spawn
   takes a supervisor, and one before-and-after over a spawn and its teardown counts whatever else

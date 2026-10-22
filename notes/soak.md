@@ -1,7 +1,7 @@
 # The workload that does not stop, and what a clean run of it is worth
 
 *(Milestones 219 and 221. `kernel/src/soak.rs`, `fixtures/src/soaker.rs`, `crates/soak_page`,
-`script/soak-test`, and the `Stage::Soak` half of `crates/board_console`.)*
+`script/soak-test`, and the `Stage::Soak` half of `crates/serial_console`.)*
 
 `design/fatal-risks/README.md`'s fifth entry, *it cannot be made reliable on multicore, and the bugs appear
 only on silicon*, names its decisive experiment as sustained multi-core stress on the boards with
@@ -80,7 +80,7 @@ So risk 5's "sustained multi-core stress" is two experiments. The soak sustains 
 contention on shared kernel state. It does not sustain cross-core handoff, which is where the
 observed defect lived, and `script/soak-test` prints that gap on every run.
 [`soak/saturated-workload-does-not-migrate.md`](soak/saturated-workload-does-not-migrate.md) has the measurement, the instrument that
-found it, and why this extends `board_console` rather than the other load instruments.
+found it, and why this extends `serial_console` rather than the other load instruments.
 
 ## The tick route: how the soak was made to cross cores (milestone 221 (the soak never crosses cores, so build the hook that makes it))
 
@@ -144,7 +144,7 @@ still prints on time, with a `rate` that says it is crawling. A machine doing no
 its `stalled` count fires. So silence means the thing that prints is itself wedged, which is the only
 thing silence is allowed to mean.
 
-`crates/board_console` is the other half. Its `Stage::Soak` is reached by the kernel's own
+`crates/serial_console` is the other half. Its `Stage::Soak` is reached by the kernel's own
 `soak-test: started` line, and reaching it re-arms the quiet check that a completed boot tour
 suppresses: a halted kernel is supposed to be quiet and a soaking one is not. That is a one-word
 change (`< Stage::Tour` became `!= Stage::Tour`) and it is the whole agreement. Beat interval five
