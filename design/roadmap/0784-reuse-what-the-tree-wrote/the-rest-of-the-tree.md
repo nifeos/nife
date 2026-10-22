@@ -29,7 +29,8 @@ and component in the tree by the same method and columns, and adds one: whether 
 - (d) `talc` replaces `user_mode_heap`: *"A sounds right."*
 - (f) `stick_maker`'s `plist.rs` stays: *"Keep ours."*
 - (h) the four `coreutils` programs stay ours: *"A"*.
-- (b) waits on 705, and (c0) waits for a `virtio-drivers` release after 0.13.0.
+- (c0) `vendor/virtio-drivers` carries 0.13.0 with upstream's #232: *"A"*.
+- (b) waits on 705.
 
 Ruled or owned elsewhere, and only cited below:
 

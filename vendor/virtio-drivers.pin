@@ -1,0 +1,27 @@
+# Pin metadata for vendor/virtio-drivers, read by script/vendor-verify and script/vendor-watch.
+#
+# The tree in vendor/virtio-drivers is the published crates.io package below plus exactly the
+# changes in the divergence patch: rcore-os/virtio-drivers#232 ("add support
+# features(ACCESS_PLATFORM) for some device") as upstream merged it, restricted to the files the
+# package ships, and one line out of the package's .gitignore so its Cargo.lock can be tracked.
+# vendor/README.md says why it is carried and when it drops. Format as
+# vendor/redoxfs.pin.
+
+name = virtio-drivers
+version = 0.13.0
+
+url = https://static.crates.io/crates/virtio-drivers/virtio-drivers-0.13.0.crate
+sha256 = cfdc1c628cdd8ce7c3b9e65a8ed550d0338e9ef9f911e729666f1cce097de2f7
+
+# Upstream's own record of the commit that produced the package (vendor/virtio-drivers/.cargo_vcs_info.json).
+vcs = c5d3ea74d5896036c4760d6199c1a1cc1257b659
+
+divergence = vendor/virtio-drivers.divergence.patch
+
+# Where script/vendor-watch asks what has landed since `vcs`. The crate is the repository's root.
+vcs_url = https://github.com/rcore-os/virtio-drivers
+vcs_branch = master
+
+# The upstream pull request the divergence is. It merged on 2026-03-17 (UTC); script/vendor-watch
+# reports the release that first carries it, which is the day this pin drops.
+upstream_fix = https://github.com/rcore-os/virtio-drivers/pull/232
