@@ -186,6 +186,7 @@ pub fn spawn_elf_child_builder(
             + crate::revoke::log_pages_for(initial_ramdisk_pages)
             + PROGENITOR_STACK_PAGES
             + 8;
+        crate::sched::defer_kill();
         let mut space = AddressSpace::new(content).expect("no memory for the builder");
         map_segments(&mut space, &elf).expect("could not lay out the builder");
         // A multi-page stack: a builder that parses and builds a child ELF has deep call chains
@@ -214,6 +215,7 @@ pub fn spawn_elf_child_builder(
         }
 
         crate::sched::adopt_address_space(space);
+        crate::sched::allow_kill();
         // slot 0: the delegable root budget. A builder narrows and hands budgets to the children it
         // builds, so the root carries GRANT (milestone 31). Rights only narrow downward from here.
         crate::sched::grant(crate::cap::memory_region_root_cap(build_region))
@@ -330,6 +332,7 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
         .sum::<u64>()
         + crate::sched::current_mappable_pages();
     let windowed = spawn.maps.len() as u64 + device.as_ref().map_or(0, |d| d.pages) + granted_runs;
+    crate::sched::defer_kill();
     let (mut space, entry) = match load(image, windowed) {
         Ok(v) => v,
         Err(e) => {
@@ -370,6 +373,7 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
     }
 
     let name = crate::sched::adopt_address_space(space);
+    crate::sched::allow_kill();
 
     // HAND IT ITS WORLD. Granted in order, so slot 0 is `grants[0]`, and reading the caller's
     // `Spawn` literal tells you the entire authority of the process. There is no path it can
