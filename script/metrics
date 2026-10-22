@@ -2448,7 +2448,11 @@ def svg_chart(title, subtitle, weeks, series, path, ceiling=None, absent=None, t
                             for k, line in enumerate(lines))
             out.append('<text class="fg" y="%d" font-size="11">%s</text>' % (y + 10, spans))
             y += 19 + 13 * (len(lines) - 1)
-    for j, (label, _values, _hue) in enumerate(series):
+    # A stack draws series[0] at the bottom, so the legend lists the series from the top down to
+    # read in the order the colors sit; grouped bars run left to right and keep series order.
+    order = range(len(series)) if grouped else reversed(range(len(series)))
+    for j in order:
+        label = series[j][0]
         out.append('<rect class="%s" x="%d" y="%d" width="11" height="11" rx="2"/>'
                    % (_fill(j), legend_x, y))
         lines = _wrap(label, LEGEND_WRAP)
