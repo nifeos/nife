@@ -174,6 +174,9 @@ pub(crate) fn test() -> bool {
         return false;
     }
     let filter = export_test_filter();
+    if !export_test_repeat(filter.as_deref()) {
+        return false;
+    }
 
     // A plain run starts its own time record file (milestone 807 (the kernel suite reports what
     // each test cost)); a caller that set
@@ -333,9 +336,43 @@ fn export_cpu_model(hvf: bool) -> bool {
     true
 }
 
+/// `--repeat <N>`, onto `NIFE_TEST_REPEAT` for the kernel's build, or the variable cleared when
+/// no flag was given. False after refusing a count that is not a whole number of at least 1, or a
+/// repeat with no `--test` (the kernel refuses that too, but only after a whole build and boot).
+///
+/// It runs the filtered tests that many times in one boot (`testing::TEST_REPEAT` has the
+/// semantics), so a failure seen once in many boots gets a frequency from one bench visit
+/// (milestone 321 (a corpse that did not park, on four real cores)). Flag and variable names are
+/// provisional.
+pub(crate) fn export_test_repeat(filter: Option<&str>) -> bool {
+    let Some(count) = flag_value("--repeat") else {
+        // SAFETY: `remove_var` became unsafe in edition 2024 because it races other threads.
+        // xtask is single-threaded here: this runs on the main thread before any child is spawned.
+        unsafe { std::env::remove_var("NIFE_TEST_REPEAT") };
+        return true;
+    };
+    if !count.parse::<u32>().is_ok_and(|n| n >= 1) {
+        eprintln!("test: --repeat takes a whole number of at least 1, not {count:?}");
+        return false;
+    }
+    if filter.is_none() {
+        eprintln!(
+            "test: --repeat runs named tests, not the suite (the suite keeps services up for the \
+             boot, so a second pass measures them rather than the tests); add --test <name>"
+        );
+        return false;
+    }
+    eprintln!(
+        "--- repeat: each selected test runs {count} times in one boot (NIFE_TEST_REPEAT) ---"
+    );
+    // SAFETY: as above.
+    unsafe { std::env::set_var("NIFE_TEST_REPEAT", count) };
+    true
+}
+
 /// `--test`, onto `NIFE_TEST_FILTER` for the kernel's build, or the variables cleared when no flag
 /// was given. Returns the filter.
-fn export_test_filter() -> Option<String> {
+pub(crate) fn export_test_filter() -> Option<String> {
     // **`--test <substring>`: run one kernel test rather than the suite** (milestone 210).
     //
     // It rides to the kernel through the environment like `--cpu` does, but it lands in a different

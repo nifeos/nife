@@ -34,3 +34,38 @@ written are suppressed rather than allowed to fail for an unrelated reason:
   referee, so a filter that selects `a_host_process_connects_to_the_guest_and_is_answered` hangs
   until the 60 s watchdog: no host process ever connects. Seen 2026-10-13 (UTC) on riscv64 with
   `--test riscv_virtio_tests`, twice, with and without that day's `while_installed` change.
+
+## Repeating it (`--repeat N`)
+
+`--repeat N` runs the filtered tests N times in one boot, for a failure seen once in many boots
+(milestone 321 (a corpse that did not park, on four real cores)). It needs `--test`, and reaches
+the kernel as `NIFE_TEST_REPEAT` (provisional), the filter's compile-time channel.
+[`kernel/src/testing.rs`](../../kernel/src/testing.rs)'s `TEST_REPEAT` holds the semantics.
+
+```
+$ NIFE_SMP=4 script/test --arch x86_64 --test a_dead_child_is_still_in_the_domain_until_it_is_reaped --repeat 200
+repeat: each selected test runs 200 times (NIFE_TEST_REPEAT)
+repeat run 1 of 200: 59022 frames free, longest free run 53165, 0 of 64 capability slots held, 5 threads
+test system_tests::user::survey_tests::a_dead_child_is_still_in_the_domain_until_it_is_reaped ...
+  user thread 4294967301 killed: vector 14 (page fault)
+...
+ok
+repeat run 2 of 200: 59022 frames free (+0 since the last run), longest free run 53165, ...
+...
+repeat result: ok. 200 runs, 200 passed, no failure; 59022 frames free after the last run, 0 capability slots held
+```
+
+The first failure ends the boot with its own message and dump, preceded by
+`repeat result: FAILED. K runs of N, K-1 passed, first failure at run K`. A test that loses frames
+or capability slots each run is refused (`REPEAT REFUSED`) as soon as the loss projects past what
+is left, so running dry cannot read as the test failing. For a bench stick, `cargo xtask uefi-test
+--test <name> --repeat N --stage-only` builds the `system_tests` image into `target/esp-test` and
+boots nothing.
+
+### BUGS
+
+- The leak check covers frames and the runner's capability slots. A test leaking a thread or a
+  rendezvous per run fails in whichever run exhausts the table; the per-run thread count shows the
+  trend, and nothing refuses it.
+- The per-test time record holds the sum over every run, so a repeated run's record is not a
+  per-test cost.

@@ -229,7 +229,10 @@ impl Watch {
                     None if p.stage == Stage::Build => Stage::Boot,
                     None => return,
                 };
-                if p.stage != next {
+                // Every announced test restarts the clock, the same path included: a repeated run
+                // (`--repeat`, `NIFE_TEST_REPEAT`) announces one test many times, and each is a new
+                // test with its own budget, not one test running for the sum of them.
+                if p.stage != next || matches!(next, Stage::Test(_)) {
                     p.stage = next;
                     p.since = Instant::now();
                 }
@@ -543,6 +546,8 @@ pub(crate) struct Reading {
     pub(crate) record: Vec<(String, u64)>,
     /// Lines inside the block that did not parse, verbatim.
     pub(crate) malformed: Vec<String>,
+    /// Whether the runner said it repeats the selected tests (`NIFE_TEST_REPEAT`).
+    pub(crate) repeated: bool,
 }
 
 /// A transcript line that announces a test: `test <path> ... `, where the path is one `type_name`
@@ -579,6 +584,8 @@ pub(crate) fn read(lines: &[Stamped]) -> Reading {
             r.heading = Some(line.at);
         } else if text.starts_with("test result:") {
             r.result = Some(line.at);
+        } else if text.starts_with(test_times::REPEAT_ANNOUNCEMENT) {
+            r.repeated = true;
         } else if let Some(path) = announced_test(text) {
             r.tests.push(path.to_string());
         } else if r.running.is_none()
@@ -759,6 +766,17 @@ pub(crate) fn account(
         guest as f64 / 1000.0,
         host as f64 / 1000.0,
     );
+    // **Not judged on a repeated run.** Between runs the runner scans the frame bitmap twice and
+    // prints a line, which is fixed cost per run; against a test of a few milliseconds that is most
+    // of the span (measured: 0.10 at 200 runs of a 5 ms test under OVMF), so the band would fail an
+    // honest clock. The single-run legs CI runs still judge it.
+    if r.repeated {
+        eprintln!(
+            "time-record: {leg} {image}: a repeated run, so the clock check is not applied (the \
+             time between runs is the runner's, and the band is for single runs)"
+        );
+        return true;
+    }
     if let Err(why) = ClockCheck::judge(guest, host) {
         eprintln!("time-record: {leg} {image}: {why}");
         eprintln!(
@@ -1139,6 +1157,30 @@ mod tests {
         );
         let _ = watch.finish();
         assert!(started.elapsed() < Duration::from_secs(30));
+    }
+
+    /// **A test announced again gets a fresh bound** (`--repeat`). Four runs of one test, each well
+    /// inside a one-second bound and together past it, must not be killed as one hang.
+    #[test]
+    fn a_repeated_test_is_bounded_per_run_not_in_sum() {
+        fn one_second(stage: &Stage) -> Option<Duration> {
+            matches!(stage, Stage::Test(_)).then_some(Duration::from_secs(1))
+        }
+        let (mut child, watch) = Watch::spawn_bounded(
+            Command::new("sh").args([
+                "-c",
+                "echo 'running 1 tests'; for i in 1 2 3 4; do \
+                 printf 'test kernel::x::repeats ... '; sleep 0.6; echo ok; done",
+            ]),
+            one_second,
+        )
+        .expect("sh runs");
+        let status = watch.wait(&mut child, "x86_64 kernel");
+        assert!(
+            status.is_some_and(|s| s.success()),
+            "a repeated test was bounded in sum and killed"
+        );
+        let _ = watch.finish();
     }
 
     /// Exit criterion 3's host test: the cross-check fails when the two clocks disagree, in both

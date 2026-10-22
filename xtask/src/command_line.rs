@@ -69,7 +69,7 @@ pub(crate) fn main() -> ExitCode {
         // provisional (2026-09-21): `stick-boot` was already the boot stick's gate.
         "confirm-boot" => confirm::confirm_boot(),
         // Milestone 195: the same firmware, the kernel's test binary instead of its tour.
-        "uefi-test" => uefi_test(),
+        "uefi-test" => uefi_test_command(),
         // The stick (DECISIONS §157): every architecture's boot file, sealed, and `stick_maker`
         // built around them; then the same directory booted under all three firmwares. See
         // xtask/src/stick.rs and notes/boot-stick.md. Names provisional (2026-09-19).

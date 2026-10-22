@@ -340,6 +340,17 @@ pub fn grant(capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
     })
 }
 
+/// **`(occupied, capacity)` of the running thread's capability table**, read by the test runner's
+/// repeat mode (`testing::runner`). A test that leaves one slot filled per run is invisible once,
+/// and at a few dozen repeats [`grant`] refuses with `NoFreeSlot` in an iteration that did nothing
+/// wrong, so the runner prints this every iteration and refuses before the table is full.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by lane/321-repeat-count.
+#[cfg(any(test, feature = "system_tests"))]
+pub fn current_capability_slots() -> (usize, usize) {
+    current_capabilities().map_or((0, 0), |t| (t.used(), t.len()))
+}
+
 /// Hand the current thread a capability **at an explicit slot**, leaving lower slots empty.
 ///
 /// [`grant`] fills the first free slot, which is what an ordinary `Spawn` literal wants: slot 0 is

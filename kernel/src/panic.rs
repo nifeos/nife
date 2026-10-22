@@ -49,6 +49,10 @@ fn panic(info: &PanicInfo) -> ! {
     // spaces), the panic escape of §175 (where the kernel's own output goes).
     crate::console::enter_panic();
 
+    // A repeated run names its failing iteration first, so a console that drops the panic's
+    // second line still carries it (kernel/src/testing.rs, `TEST_REPEAT`).
+    #[cfg(any(test, feature = "system_tests"))]
+    crate::testing::note_repeat_failure("below");
     println!();
     println!("[PANIC] {info}");
     crate::stack::warn_if_smashed();
