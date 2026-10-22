@@ -3,9 +3,9 @@
 //! A boot climbs a fixed ladder: the console works, the machine has described itself, the kernel
 //! has tested itself, the machine has been handed to userspace. Each rung announces itself with a
 //! line, and each line is **a contract between the program that prints it and the programs that
-//! read it**: `crates/board_console` on a bench or in CI, and a person reading a photograph of a
+//! read it**: `crates/serial_console` on a bench or in CI, and a person reading a photograph of a
 //! monitor. The kernel prints [`BANNER`], [`MACHINE`] and [`SELF_TEST`]; `swish` prints
-//! [`PROMPT`]; `board_console` matches all of them (rule 7 of `AGENTS.md`).
+//! [`PROMPT`]; `serial_console` matches all of them (rule 7 of `AGENTS.md`).
 //!
 //! # Why a prefix rather than a whole line
 //!
@@ -30,7 +30,7 @@
 //! metaphor; the two are unambiguous in context, and *rungs of a boot* is legible on sight.
 //! Refused `boot_markers` (names the mechanism, strings that get matched, rather than the thing).
 //! Refused `boot_proto` (the `_protocol` suffix names a request/reply vocabulary; this is one-way
-//! text on a console). Refused `boot_stages` (`board_console`'s `progress::Stage` already spends
+//! text on a console). Refused `boot_stages` (`serial_console`'s `progress::Stage` already spends
 //! the word). Refused `console_contract` (describes the mechanism).
 
 #![no_std]
@@ -74,7 +74,7 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// An absent check neither passed nor failed: the machine has no device for it to test, and the
 /// kernel's line for that check says which. The verdict stays green unless something says
 /// [`SELF_TEST_FAILED`], which always comes after this list when both are present. Whether an
-/// absence is acceptable is the board's fact, not the kernel's: `board_console`'s board profiles
+/// absence is acceptable is the board's fact, not the kernel's: `serial_console`'s board profiles
 /// name the checks that may not be absent on each board, and read such an absence as a failure.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
@@ -90,8 +90,9 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 ///
 /// So the kernel takes its check names from here, and its verdict counts against this list rather
 /// than against what ran. A listed check that did not run fails by name, a check that is not
-/// listed fails by name, and `board_console` fails a verdict whose total is not this list's length.
-/// Changing the set is an edit to this one list, which every architecture and the recogniser read.
+/// listed fails by name, and `serial_console` fails a verdict whose total is not this list's
+/// length. Changing the set is an edit to this one list, which every architecture and the
+/// recogniser read.
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
 pub const SELF_TEST_CHECKS: &[&str] = &[

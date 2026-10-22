@@ -22,7 +22,7 @@
 //! Every [`BEAT_SECONDS`] of wall clock it prints a round-trip total with the counters that make it
 //! interpretable (crossings, contention, gate refusals), for comparison between architectures,
 //! between QEMU and silicon, and with the same machine later. A slow machine still prints; only a
-//! wedged printer is silent. `crates/board_console` reports `WentQuiet` after `--quiet-after`, and
+//! wedged printer is silent. `crates/serial_console` reports `WentQuiet` after `--quiet-after`, and
 //! [`START_MARKER`] re-arms that check, which a finished boot tour suppresses.
 //!
 //! # BUGS
@@ -93,16 +93,16 @@ use crate::{arch, memory, println, sched, smp};
 
 /// How often the supervisor speaks.
 ///
-/// Five seconds, against `board_console`'s fifteen-second default quiet window: three missed beats
+/// Five seconds, against `serial_console`'s fifteen-second default quiet window: three missed beats
 /// before a run is called a hang. Two would be tight on a board whose console is shared with
 /// U-Boot's leftovers; four would take a minute to notice a wedge.
 const BEAT_SECONDS: u64 = 5;
 
 /// The line that tells the watcher a soak has begun.
 ///
-/// `crates/board_console`'s recogniser matches this prefix, so the two agree by construction rather
-/// than by both being remembered. Changing it means changing that recogniser, and its tests will
-/// say so.
+/// `crates/serial_console`'s recogniser matches this prefix, so the two agree by construction
+/// rather than by both being remembered. Changing it means changing that recogniser, and its tests
+/// will say so.
 ///
 /// **Spelled for the command, not for this module** (milestone 297, calef's ruling 2026-09-14): a
 /// console marker takes the spelling of the command a reader typed to produce it, and the reader's
@@ -296,7 +296,7 @@ fn print_spawn_census(groups: usize, placed: &[u8]) {
 
 /// **The prefix every census line carries** (milestone 240).
 ///
-/// Deliberately not `soak-test:`. `crates/board_console`'s recogniser matches two substrings on
+/// Deliberately not `soak-test:`. `crates/serial_console`'s recogniser matches two substrings on
 /// that prefix, [`START_MARKER`] and `soak-test: t=`, and a census is neither the start of a run nor a
 /// heartbeat; giving it its own word keeps a block of census lines from having to be proven
 /// harmless against a recogniser it has nothing to do with. It is also what a reader greps for,
@@ -442,7 +442,7 @@ const TICK_INTID_TOP: u32 = 255;
 
 /// **The prefix every line about the reboot loop carries** (milestone 249).
 ///
-/// Its own word, for [`CENSUS_MARKER`]'s reason and one more of its own. `crates/board_console`'s
+/// Its own word, for [`CENSUS_MARKER`]'s reason and one more of its own. `crates/serial_console`'s
 /// recogniser matches two substrings on `soak-test: `, and neither of them is anything this loop
 /// says.
 /// The extra reason is that these are the lines a person greps a fifty-boot log for when they want

@@ -23,12 +23,12 @@ and the reason was:
 
 ```
 error[E0463]: can't find crate for `std`
-  --> crates/board_console/src/port.rs:54:5
+  --> crates/serial_console/src/port.rs:54:5
 ```
 
-`crates/board_console` arrived with milestone 216, opens a real serial port on the dev machine and
-spawns `stty`, so it is `std` by nature. Nothing added `--exclude board_console`, because nothing
-was watching a list.
+`crates/serial_console` arrived with milestone 216 (nothing in this tree can read a board), opens a
+real serial port on the dev machine and spawns `stty`, so it is `std` by nature. Nothing added
+`--exclude board_console`, because nothing was watching a list.
 
 ## Why it recurred, which is the only interesting part
 
@@ -198,7 +198,7 @@ No new names. No crate, program, module or public function was added. The two sh
 
 `.github/workflows/toolchain-drift.yml` had failed every daily run since 2026-09-01 and could report
 nothing about upstream. That is the second occurrence of the defect `script/drift`'s own header
-describes: a hand-kept `--exclude` list, `crates/board_console` (milestone 216) arriving as a host
+describes: a hand-kept `--exclude` list, `crates/serial_console` (milestone 216) arriving as a host
 crate that needs `std`. And a job designed to tolerate red made the permanent failure look like the
 mechanism working. The first fix moved the list out of the YAML and into the script; one copy is
 better than two and is still a copy, which is rung four of AGENTS.md's ladder and drifted the way

@@ -39,14 +39,15 @@
 # `network_time_protocol` already use, and "Miri-clean means the sampled paths" already covers it.
 #
 # **Behind that sat two more layers, because `cargo miri test` stops at the first failure and each
-# one hid the next.** Five `board_console` tests reach the host filesystem, and five more are
+# one hid the next.** Five `serial_console` tests reach the host filesystem, and five more are
 # wall-clock driven and expire against interpreted time. Clearing those exposed the real cost:
-# `board_console` alone runs **55 minutes** under the interpreter against roughly four for the whole
-# rest of the workspace, with no `unsafe` and no dependencies anywhere in it. It is now excluded
-# from the run the way `xtask` already was, for cost rather than principle, and the reasoning lives
-# in `xtask`'s exclusion list and the crate's own header. A three-week failure turned out to have
-# three causes; the audit that found it saw the one error message CI printed, which is the general
-# hazard rather than a lapse. See notes/undefined-behavior.md and notes/check-inventory.md.
+# `serial_console` alone runs **55 minutes** under the interpreter against roughly four for the
+# whole rest of the workspace, with no `unsafe` and no dependencies anywhere in it. It is now
+# excluded from the run the way `xtask` already was, for cost rather than principle, and the
+# reasoning lives in `xtask`'s exclusion list and the crate's own header. A three-week failure
+# turned out to have three causes; the audit that found it saw the one error message CI printed,
+# which is the general hazard rather than a lapse. See notes/undefined-behavior.md and
+# notes/check-inventory.md.
 #
 # BUGS: **nothing here notices if this job stops running.** That is not fixed by turning it green,
 # and it is what let three weeks pass. `script/cadence-check` (milestone 238) is the tripwire, run
@@ -83,7 +84,7 @@ jobs:
     # **The 27-minute figure this used to quote is from 2026-08-03 and stopped being true without
     # anyone able to notice** (milestone 238). The job had been red since 2026-08-10, dying inside
     # two minutes on an environment variable, so nothing reached the crates that had meanwhile grown
-    # expensive: `board_console` at 55 minutes (now excluded, no `unsafe` in it) and `compositor`,
+    # expensive: `serial_console` at 55 minutes (now excluded, no `unsafe` in it) and `compositor`,
     # whose six full-screen sweeps are 317,856 pixels each. One of those was measured at over 44
     # minutes without finishing and is now strided; the other five are a milestone of their own.
     #

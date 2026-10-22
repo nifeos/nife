@@ -28,7 +28,7 @@ text by matching 7x8 cells against `bitmap_font`:
 - `xtask/src/main.rs`: `parse_ppm`, `decode_cell`, `scanout_rows`, written by milestone 177 for the
   graphical `swish-check` leg. Hardcoded to `graphics_protocol`'s surface geometry and to
   `video_terminal::Attr::DEFAULT`'s colors, and it takes an explicit alphabet.
-- `crates/board_console/src/screen.rs`, written by milestone 243 (a machine with no serial port has
+- `crates/serial_console/src/screen.rs`, written by milestone 243 (a machine with no serial port has
   no way to say anything, and no gate can read it) for the framebuffer console's gate.
   Any geometry, any 24-bit PPM, `screen_console`'s colors, the whole printable alphabet, and its own
   host tests that paint with the crate the kernel links and read the result back.

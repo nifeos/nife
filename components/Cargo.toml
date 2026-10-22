@@ -640,7 +640,7 @@ address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # serve loop over it.
 designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mobile_storage" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
-# prints the ones below it and `crates/board_console` matches all of them, so AGENTS.md rule 7
+# prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }

@@ -32,7 +32,7 @@
 //! ```
 //!
 //! `cargo xtask test --arch aarch64` asks QEMU for `-device ramfb` and a monitor, takes a
-//! `screendump`, and decodes it back into text with `board_console::screen`, the gate that proves
+//! `screendump`, and decodes it back into text with `serial_console::screen`, the gate that proves
 //! the glyphs and not merely the boot line.
 //!
 //! # BUGS

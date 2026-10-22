@@ -233,7 +233,7 @@ enum Read1 {
 ///
 /// ```no_run
 /// use std::fs::File;
-/// use board_console::watch::{self, Policy};
+/// use serial_console::watch::{self, Policy};
 ///
 /// let captured = File::open("target/board-console.log")?;
 /// let mut nowhere = std::io::sink();

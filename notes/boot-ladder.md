@@ -1,7 +1,7 @@
 # The boot ladder: what a nife boot says, in order, on every architecture
 
 Milestone 268. A boot on this system climbs a fixed ladder, and each rung announces itself with one
-line. Those lines are a contract: they are what `crates/board_console` matches on a bench and in
+line. Those lines are a contract: they are what `crates/serial_console` matches on a bench and in
 CI, and they are what a person reads off a photograph of a monitor when there is no serial port.
 
 ```
@@ -15,7 +15,7 @@ $
 ```
 
 The heads of those four lines live in one crate, `crates/boot_ladder`, because three binaries agree
-on them (the kernel, `swish`, and `board_console`) and AGENTS.md rule 7 says that makes them a
+on them (the kernel, `swish`, and `serial_console`) and AGENTS.md rule 7 says that makes them a
 crate. The tails carry numbers and are free to improve; a matcher keys on the head only.
 
 ## Why the ladder exists at all
@@ -95,7 +95,7 @@ frame count does not move. The last five need a device:
 
 A machine without the device reports the check `absent`, with its reason, and the verdict lists
 it: `nife self-test: 10 of 13 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
-its own. Each `board_console` board profile names the checks its board has the device for, and an
+its own. Each `serial_console` board profile names the checks its board has the device for, and an
 absence of one of those is FAILED: radon may not be without `entropy`, `trng` or `clock`, and
 xenon not without `entropy` or `deviceirq`. The emulator profile `boot-check` uses forbids none.
 
@@ -147,7 +147,7 @@ board-console: self-test: nife self-test: 5 of 5 passed
 ```
 
 That capture is of a kernel with five checks. Today's kernel on radon should report `blockdev` and
-`deviceirq` absent and nothing else, and `board_console` fails it if `entropy`, `trng` or `clock`
+`deviceirq` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or `clock`
 is absent. No board has run it yet.
 
 Replay a capture through the same recognizer, which is how every marker in it is tested:
@@ -160,7 +160,7 @@ $ cargo xtask board-console --replay target/boot-check-riscv64.log --until selft
 
 - Closed 2026-09-14: "Nothing proves an architecture ran the *right* five checks."
   `boot_ladder::SELF_TEST_CHECKS` is the set, one list for every architecture and the recognizer;
-  the kernel names a listed check that never ran and `board_console` fails a verdict whose total is
+  the kernel names a listed check that never ran and `serial_console` fails a verdict whose total is
   not the list's length. What remains is that changing the set is one edit, which review judges.
 - Closed 2026-09-14: "A self-test can hang the boot." `timer` and `scheduler` read through
   `self_test::Counter`, which reports a counter that read one value a million times running, and

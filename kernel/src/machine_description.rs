@@ -168,7 +168,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     // **The summary line, and it is a contract** (milestone 268, item 3's sibling).
     //
     // Same shape and same reason as `self_test::VERDICT` below it: a **stable prefix, identical on
-    // all three architectures**, so that `board_console` and CI have something to match that does
+    // all three architectures**, so that `serial_console` and CI have something to match that does
     // not live inside one architecture's arm. Milestone 268's finding 3 is what happens without
     // one, and it hid for months.
     //

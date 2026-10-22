@@ -170,11 +170,11 @@ became `job_mix`. That is also what every other multiword feature in this kernel
 `--job-mix`.
 
 **The console markers moved to `job-mix:` and `job-mix-census:`, and that half is provisional.** They
-were checked for readers first, because a marker with readers is a contract. `crates/board_console`'s
-recognizer knows `soak:` and does **not** know this workload at all, which is what
-`design/roadmap/proposals/a-board-console-recogniser-for-the-job-mix-sweep.md` exists to fix, so the
-only reader in the tree is `xtask`'s own sweep and it moved in the same commit. The spelling is the
-command's rather than the crate's, for one deciding reason: `xtask` already printed
+were checked for readers first, because a marker with readers is a contract.
+`crates/serial_console`'s recognizer knows `soak:` and does **not** know this workload at all, which
+is what `design/roadmap/proposals/a-board-console-recogniser-for-the-job-mix-sweep.md` exists to
+fix, so the only reader in the tree is `xtask`'s own sweep and it moved in the same commit. The
+spelling is the command's rather than the crate's, for one deciding reason: `xtask` already printed
 `job-mix: QEMU ended before printing "jobmix: done"`, one sentence in two spellings. A marker is
 neither a Rust identifier nor a shell command; it is a string a person reads after typing
 `script/job-mix`. calef names what a reader meets, and he has not ruled on this one.
