@@ -49,10 +49,10 @@ pub(super) fn map_new() {
     // Preemption is masked across the window. Milestone 541 (a timed window that excludes
     // preemption) is this, and the masking is the whole of it.
     //
-    // **The window is ~250 microseconds of guest time and the scheduler tick is 10 ms**
-    // (`TICK_HZ` is 100 on all three architectures), so the window covers about 2.5% of a tick
-    // period and whether a timer interrupt lands inside it is decided by the phase the boot
-    // happened to leave the timer in. That phase moves when unrelated kernel code changes size.
+    // **The window is ~250 microseconds of guest time and the scheduler tick is 10 ms** outside
+    // the bench build (`TICK_HZ` 100 on all three architectures), so the window covers about 2.5%
+    // of a tick period and whether a timer interrupt lands inside it is decided by the phase the
+    // boot happened to leave the timer in. That phase moves when unrelated kernel code changes size.
     // On 2026-09-21 a semantically identical rewrite of one expression in `schedule()` moved it,
     // one preemption landed inside this window, and `map_new` read **+26.4%** and failed the 10%
     // tripwire while the map path's object code was byte-identical (notes/benchmarks.md).
@@ -74,8 +74,9 @@ pub(super) fn map_new() {
     // this.
     let preemptions_before = sched::preemptions_here();
 
+    let window = TickWindow::open("map_new");
     let irqs_were_on = crate::arch::interrupts::disable();
-    timed("map_new", MAP_ITERS, || {
+    measure("map_new", MAP_ITERS, || {
         for i in 0..MAP_ITERS {
             let page = space
                 .map_new(
@@ -88,6 +89,7 @@ pub(super) fn map_new() {
         }
     });
     crate::arch::interrupts::restore(irqs_were_on);
+    window.close();
 
     // **A probe, not a row**, for the reason the fence probe below states: it is a count, and a
     // 10% tolerance over a count is not a tripwire. It is what makes the masking above auditable

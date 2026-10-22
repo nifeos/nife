@@ -705,12 +705,11 @@ pub fn survey_supervised(
 /// **Milliseconds are converted here so the unit never leaves the kernel as a tick.** A tick count
 /// would make every reader depend on `TICK_HZ`, and would change meaning underneath them the day
 /// that constant moved; the conversion costs one multiply and one divide, on a path that already
-/// crossed a syscall boundary and took a lock. All three architectures tick at 100 Hz today, so
-/// the answer advances in steps of ten.
+/// crossed a syscall boundary and took a lock. All three architectures tick at 100 Hz outside the
+/// bench build, so the answer advances in steps of ten.
 pub(super) fn survey_cpu_time(slot: usize) -> u64 {
     let ticks = CPU_TICKS.get(slot).map_or(0, |c| c.load(Ordering::Relaxed));
-    // `TICK_HZ` is 100 everywhere, so this is `ticks * 10` and cannot overflow a `u64` short of
-    // 58 million years of continuous CPU time.
+    // Multiplied first; overflows only past 1.8e16 ticks, 5.8 million years of CPU at 100 Hz.
     ticks * 1000 / crate::arch::timer::TICK_HZ
 }
 

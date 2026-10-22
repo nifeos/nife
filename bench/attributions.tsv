@@ -232,3 +232,9 @@ riscv64	025722fb3	spawn_reap	-0.48	#2148 (-177 ticks)
 riscv64	8d6f3964f	spawn_reap	-0.23	#2188 (-84 ticks)
 riscv64	cec04e4a9	spawn_reap	+0.04	#2331, SUSPEND and RESUME (+13 ticks)
 riscv64	ccea3ba7f	yield_switch	+3.42	#1617, milestone 761: set_current stores the table pointer on every switch, and lock split in two (+6440 ticks)
+
+# Milestone 939 (the icount bench runs without a preemption tick in its windows): each save's
+# whole step is the change, measured against #2565's floors with main on them.
+aarch64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+riscv64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+x86_64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
