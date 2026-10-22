@@ -37,7 +37,8 @@ Ruled or owned elsewhere, and only cited below:
 - DNS: 384's `Reuse:` line and `notes/name-resolution.md`'s survey of six crates;
 - the package index: 801's `Reuse:` line, which takes a TUF client in 858;
 - xHCI's candidates: 785;
-- the terminal font (§100) and the anti-aliased font's rasteriser (§166).
+- §100 (the terminal font) and §166 (the rasteriser dependency, and whether the glyph atlas ships
+  one face or four).
 
 ## Candidates, measured
 
@@ -102,7 +103,8 @@ Two records disagree with what was measured here:
   (mimalloc, rpmalloc) are C *(from memory)*.
 - `number_writer`: `core::fmt`'s right alignment would do it, but that is no dependency, so no
   ruling, and it reads no untrusted input. Not proposed.
-- `c_library_errno`, `c_seam`, `c_program_fixture`: the values are relibc's (§265); none.
+- `c_library_errno`, `c_seam`, `c_program_fixture`: none. The values are relibc's, per §265 (a C
+  library started from relibc).
 - `bitmap_font`: §100 chose an original drawing. `noto-sans-mono-bitmap` 0.3.2 is another face.
 - `glyph_atlas`: its rasteriser is §166's question.
 - `filesystem_fixture`, `walk_pricing`, `loaded_image_check`, `confined_syscall_fuzzer_contract`:
