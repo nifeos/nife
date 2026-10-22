@@ -242,3 +242,6 @@ of code that is proved and strict. I would choose A at equal effort, so this is 
 argument. C is the right way to switch if the answer is "switch": the upstream change is small,
 and the proofs we would bring are ones that already hold on its code. D loses to C on upkeep and on
 the wrong-bytes case, not on effort.
+
+Ruled: A. calef, 2026-10-22 (UTC), on #2583: "A". `crates/elf` stays ours under the kernel
+exemption.
