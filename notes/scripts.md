@@ -257,8 +257,8 @@ So the boot is about 1% of the QEMU leg, and the flag is worth more than the blo
 is left in the 8.6 s is the fixture work `test` does before
 any leg (the userspace archive, the `std` exerciser, and five disk images), not the boot.
 
-How the filter reaches the kernel, and what a filtered run switches off, are in
-[one-kernel-test.md](scripts/one-kernel-test.md).
+[one-kernel-test.md](scripts/one-kernel-test.md) has how the filter reaches the kernel, what it
+switches off, and `--repeat N`.
 
 ### EXAMPLES
 

@@ -75,7 +75,7 @@ use crate::manual::{manual_store, tree_apropos};
 use crate::soak::{job_mix_sweep, soak_test};
 use crate::suite::{test, undefined_behavior_check};
 use crate::swish_check::swish_check;
-use crate::uefi::{uefi_boot_command, uefi_image_command, uefi_test};
+use crate::uefi::{uefi_boot_command, uefi_image_command, uefi_test_command};
 
 mod command_line;
 mod profile;

@@ -86,6 +86,147 @@ pub fn run_was_filtered() -> bool {
 /// the leg if the images together selected nothing. Unset, the rule below holds per image.
 const FILTER_COUNTED_ACROSS_IMAGES: bool = !env!("NIFE_TEST_FILTER_ACROSS_IMAGES").is_empty();
 
+/// **How many times the runner repeats the filtered tests in one boot**, baked in by
+/// `kernel/build.rs` from `NIFE_TEST_REPEAT` (name provisional), which `cargo xtask test --repeat`
+/// and `cargo xtask uefi-test --repeat` set. Empty means once, and then nothing about the run's
+/// output changes.
+///
+/// It exists for a failure that shows once in many boots on a bench where each boot costs a
+/// person a trip with a USB stick (milestone 321 (a corpse that did not park, on four real
+/// cores)). A frequency is the finding there, and two hundred runs in one boot measure it where
+/// two hundred boots would not be attempted.
+///
+/// Parsed at compile time, so a value that is not a whole number of at least 1 is a build error
+/// rather than a run that quietly repeats once.
+///
+/// # A failure stops the run
+///
+/// The first failing iteration ends the boot exactly as a single run's failure does: the panic
+/// handler or the watchdog prints its message and its dump, and [`note_repeat_failure`] adds which
+/// iteration it was and how many passed before it. Continuing and counting would need the kernel
+/// to survive a failed invariant and a test's half-built state, which is what the panic handler
+/// exists to refuse, and a second failure read after the first could be the first one's wreckage.
+/// So a frequency comes from the iteration the first failure lands on, and a run of N that passes
+/// says "no failure in N".
+///
+/// # BUGS
+///
+/// - **A repeat is refused without a filter.** The whole suite keeps services it built for the
+///   boot (the frame ledger's `SUITE_PAGE_FRAME_BUDGET` prices them), so repeating it measures that
+///   residue rather than the tests.
+/// - **The leak check sees frames and the runner's own capability slots, not every table.** A
+///   test that leaks a rendezvous or a thread table entry per run fails in whichever iteration
+///   runs out, and its message will read as the test's own. The per-iteration line prints the
+///   live thread count so the trend is at least on the page.
+const TEST_REPEAT: u32 = parse_repeat(env!("NIFE_TEST_REPEAT"));
+
+const fn parse_repeat(text: &str) -> u32 {
+    let bytes = text.as_bytes();
+    if bytes.is_empty() {
+        return 1;
+    }
+    let mut n: u32 = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        assert!(
+            bytes[i].is_ascii_digit(),
+            "NIFE_TEST_REPEAT must be a whole number"
+        );
+        n = n * 10 + (bytes[i] - b'0') as u32;
+        i += 1;
+    }
+    assert!(n >= 1, "NIFE_TEST_REPEAT must be at least 1");
+    n
+}
+
+/// The iteration running now, from 1, or 0 when the run is not repeating. Read by
+/// [`note_repeat_failure`] on the way out of a failed run.
+static REPEAT_ITERATION: AtomicU32 = AtomicU32::new(0);
+
+/// **Which iteration failed**, said before the failure's own message so a console that drops the
+/// panic's second line (xenon's did, milestone 321) still carries it. Called by the panic handler
+/// and both watchdogs; a no-op when the run is not repeating.
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
+pub(crate) fn note_repeat_failure(message: &str) {
+    let iteration = REPEAT_ITERATION.load(Ordering::Relaxed);
+    if iteration == 0 {
+        return;
+    }
+    println!();
+    println!(
+        "repeat result: FAILED. {iteration} runs of {TEST_REPEAT}, {} passed, first failure at \
+         run {iteration}; its message is {message}",
+        iteration - 1
+    );
+}
+
+/// The readings the repeat loop compares between iterations: what one test run can leak, and
+/// what a leak runs out of.
+#[derive(Clone, Copy)]
+struct RepeatReading {
+    frames: usize,
+    run: usize,
+    slots: usize,
+    slot_capacity: usize,
+}
+
+impl RepeatReading {
+    fn now() -> RepeatReading {
+        let (slots, slot_capacity) = crate::sched::current_capability_slots();
+        RepeatReading {
+            frames: crate::memory::free_page_frames(),
+            run: crate::memory::largest_free_run(),
+            slots,
+            slot_capacity,
+        }
+    }
+}
+
+/// **Refuse a repeat that would run dry and blame the test for it.**
+///
+/// The baseline is the second iteration, not the first: a first run may wire a service the boot
+/// then keeps (the frame ledger's held list), which is a one-time cost rather than a leak. From
+/// there the average loss per iteration is projected over the iterations left, and the run is
+/// refused as soon as the projection reaches the floor. Refused, not warned: a test that fails in
+/// iteration 140 with `OutOfPageFrames` reads exactly like the rare failure this mode exists to
+/// count, which is the misreport the refusal prevents.
+fn refuse_a_repeat_that_runs_dry(iteration: u32, baseline: RepeatReading, now: RepeatReading) {
+    // Iterations since the baseline, and the ones still to run including this one.
+    let since = (iteration - 2) as usize;
+    let left = (TEST_REPEAT - iteration + 1) as usize;
+    let frames_lost = baseline.frames.saturating_sub(now.frames);
+    let frames_needed = frames_lost.div_ceil(since) * left;
+    let slots_gained = now.slots.saturating_sub(baseline.slots);
+    let slots_needed = slots_gained.div_ceil(since) * left;
+    let frames_short = now.frames < frames_needed + SUITE_MIN_FREE_RUN;
+    let run_short = now.run < SUITE_MIN_FREE_RUN;
+    let slots_short = now.slots + slots_needed > now.slot_capacity;
+    if !frames_short && !run_short && !slots_short {
+        return;
+    }
+    println!();
+    println!(
+        "REPEAT REFUSED at run {iteration} of {TEST_REPEAT}: the selected tests do not give back \
+         what they take, so the remaining runs would fail by running out rather than by anything \
+         they test, and that failure would read as theirs."
+    );
+    println!(
+        "  frames: {} free at run 2, {} now ({frames_lost} lost over {since} runs); the {left} runs \
+         left need about {frames_needed}, plus the {SUITE_MIN_FREE_RUN} the ledger keeps. Longest \
+         free run {}.",
+        baseline.frames, now.frames, now.run
+    );
+    println!(
+        "  capability slots: {} held at run 2, {} now, of {}.",
+        baseline.slots, now.slots, now.slot_capacity
+    );
+    println!(
+        "  Fix the test's teardown, or lower NIFE_TEST_REPEAT. See kernel/src/testing.rs, \
+         TEST_REPEAT."
+    );
+    semihosting::exit(semihosting::EXIT_FAILURE);
+}
+
 static HEARTBEAT: AtomicU64 = AtomicU64::new(0);
 static WATCH_LAST_HB: AtomicU64 = AtomicU64::new(0);
 static WATCH_STALL_TICKS: AtomicU64 = AtomicU64::new(0);
@@ -572,6 +713,7 @@ pub(crate) fn watchdog_tick() {
             "WATCHDOG: no progress for ~60 s. Every core idle, every thread blocked: a lost-wakeup hang."
         );
         crate::sched::dump_threads();
+        note_repeat_failure("above");
         semihosting::exit(semihosting::EXIT_FAILURE);
     }
 }
@@ -607,6 +749,7 @@ fn check_test_ceiling() {
         println!("  test: {name}");
     }
     crate::sched::dump_threads();
+    note_repeat_failure("above");
     semihosting::exit(semihosting::EXIT_FAILURE);
 }
 
@@ -986,14 +1129,7 @@ pub fn runner(tests: &[&dyn Testable]) {
         tests.len(),
     );
 
-    for (index, test) in tests.iter().enumerate() {
-        if filter.is_empty() || test.name().contains(filter) {
-            test.run();
-            let ms = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
-            TEST_MILLISECONDS[index]
-                .store(u32::try_from(ms).unwrap_or(u32::MAX), Ordering::Relaxed);
-        }
-    }
+    run_selected(tests, filter);
 
     println!();
     #[cfg(any(test, feature = "system_tests"))]
@@ -1024,6 +1160,88 @@ pub fn runner(tests: &[&dyn Testable]) {
     }
 
     semihosting::exit(semihosting::EXIT_SUCCESS)
+}
+
+/// **Run every selected test, `TEST_REPEAT` times over**, reading the leak instruments between runs
+/// when it is more than once. See [`TEST_REPEAT`].
+fn run_selected(tests: &[&dyn Testable], filter: &str) {
+    let repeating = TEST_REPEAT > 1;
+    if repeating && filter.is_empty() {
+        println!(
+            "NIFE_TEST_REPEAT={TEST_REPEAT} without a filter: a repeat runs named tests, not the \
+             suite, whose services stay up for the boot. Add `--test <name>`. See TEST_REPEAT."
+        );
+        semihosting::exit(semihosting::EXIT_FAILURE)
+    }
+    if repeating {
+        println!(
+            "{} {TEST_REPEAT} times (NIFE_TEST_REPEAT)",
+            test_times::REPEAT_ANNOUNCEMENT
+        );
+    }
+
+    let mut baseline = None;
+    let mut previous_frames = None;
+    for iteration in 1..=TEST_REPEAT {
+        if repeating {
+            let now = announce_repeat_run(iteration, previous_frames);
+            previous_frames = Some(now.frames);
+            match baseline {
+                None if iteration == 2 => baseline = Some(now),
+                Some(base) => refuse_a_repeat_that_runs_dry(iteration, base, now),
+                None => {}
+            }
+        }
+        for (index, test) in tests.iter().enumerate() {
+            if filter.is_empty() || test.name().contains(filter) {
+                test.run();
+                // The record holds the sum over every run; `xtask` knows a repeated run by
+                // `test_times::REPEAT_ANNOUNCEMENT` and reads it as one.
+                let ms = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
+                let sum = u64::from(TEST_MILLISECONDS[index].load(Ordering::Relaxed)) + ms;
+                TEST_MILLISECONDS[index]
+                    .store(u32::try_from(sum).unwrap_or(u32::MAX), Ordering::Relaxed);
+            }
+        }
+    }
+    if repeating {
+        let end = RepeatReading::now();
+        println!();
+        println!(
+            "repeat result: ok. {TEST_REPEAT} runs, {TEST_REPEAT} passed, no failure; {} frames \
+             free after the last run, {} capability slots held",
+            end.frames, end.slots,
+        );
+        // Off the iteration, so a failure in the reports below is not blamed on the last run.
+        REPEAT_ITERATION.store(0, Ordering::Relaxed);
+    }
+}
+
+/// Open repeated run `iteration`: mark it for [`note_repeat_failure`] and print what it starts
+/// with, which is what the next run's line is compared against.
+fn announce_repeat_run(iteration: u32, previous_frames: Option<usize>) -> RepeatReading {
+    REPEAT_ITERATION.store(iteration, Ordering::Relaxed);
+    let now = RepeatReading::now();
+    print!(
+        "repeat run {iteration} of {TEST_REPEAT}: {} frames free",
+        now.frames
+    );
+    // Negative when a run handed back more than it took, which a reclaim landing late on another
+    // core does; signed so that reads as what it is.
+    if let Some(p) = previous_frames {
+        print!(
+            " ({:+} since the last run)",
+            now.frames as isize - p as isize
+        );
+    }
+    println!(
+        ", longest free run {}, {} of {} capability slots held, {} threads",
+        now.run,
+        now.slots,
+        now.slot_capacity,
+        crate::sched::thread_count(),
+    );
+    now
 }
 
 /// **A root region's run of frames, named while the region is alive.**

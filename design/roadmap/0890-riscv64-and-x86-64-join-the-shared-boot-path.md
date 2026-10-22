@@ -181,13 +181,14 @@ Absences board profiles forbid: radon `entropy`, `trng` and `clock`; xenon `entr
 or an older image still reads green. `milestone_tour.rs`, `riscv64_boot.rs`, `boot_demos.rs` and
 `console_service.rs` are gone.
 
-## The xenon boot that remains
+## The xenon boot, and the screen half that remains
 
-The shared bring-up holds under QEMU on q35 and under OVMF with two cores (`cargo xtask uefi-boot`
-and `uefi-test`). xenon is the one machine whose firmware places the APICs, the framebuffer and the
-BAR window for real, so one netboot of `main` closes the `x86_64` half: notes/x86-uefi-boot.md, "The
-bench: booting xenon over the network". What to look for: the `io apic`, `device irq` and `smp`
-lines, every tour line, the prompt, and `echo hello` echoing.
+xenon is the one machine whose firmware places the APICs, the framebuffer and the BAR window for
+real. With no monitor attached it boots `main` to the prompt: the `io apic`, `device irq` and `smp`
+lines, every tour line, and `echo hello` echoing (`bench/xenon-2026-10-21/README-890.md`). With its
+monitor attached the hand-over panics before the prompt, `the framebuffer driver did not come up
+(0xdead000000000002)` (pull request #2528). One boot with the monitor, after that lands, closes the
+`x86_64` half.
 
 ## The radon boot: to the prompt, and every keystroke
 
@@ -246,7 +247,7 @@ reaches the wire.
 |---|---|
 | 1 | Done. `riscv64_boot.rs` and `x86_64_boot.rs` are gone. |
 | 2 | Done. `kernel_main`'s `cfg(target_arch)` lines are each port's banner and riscv64's console register shape; `hand_over`'s one is `x86_64`'s install offer. |
-| 3 | Under QEMU, both ports: see each pull request's gate table. radon's half is the boot above; xenon's is outstanding. |
+| 3 | Under QEMU, both ports: see each pull request's gate table. radon's half is the boot above; xenon's lacks only its boot with a monitor. |
 
 ## BUGS
 
@@ -257,7 +258,7 @@ reaches the wire.
   riscv64 and `x86_64` share, the SMMUv3, riscv64's IOMMU and `x86_64`'s. Each calls into `arch/`
   or `pci`, so rule 1 holds, but a port that needs a step aarch64 does not is still a `cfg` here
   rather than a function every port implements.
-- `x86_64`'s new order is proven under QEMU and OVMF only, not on xenon (above).
+- `x86_64`'s new order is proven on xenon without a screen only (above).
 - `clock`, `trng` and `entropy` pass on radon, but `board_console` has not read radon's profile
   against them.
 - `x86_64`'s supervised death and two-round frame steady state are not checks. No portable spawn
@@ -276,7 +277,7 @@ reaches the wire.
 - **Done.** radon's keystroke path: the prompt takes every keystroke, and `echo hello` echoes and
   runs (above, "Why radon took one keystroke per boot";
   `bench/radon-2026-10-21/890-keystroke-fix.log`).
-- **Outstanding.** The xenon boot above, of the `x86_64` slice.
+- **Outstanding.** xenon's boot of `main` with its monitor attached, after pull request #2528 (above).
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
@@ -290,4 +291,4 @@ lands three times or drifts. This brings riscv64 and `x86_64` onto the path aarc
 at a time, until neither per-port boot file is left. Both ports run the shared bring-up and tail
 under QEMU, `x86_64` through `memory::init`'s PVH and ACPI front end, and the per-port tours are the
 self-test's checks on all three. radon runs both slices through the hand-over, its console now uses
-the UART's real stride, its prompt takes every keystroke, and the xenon boot remains.
+the UART's real stride, its prompt takes every keystroke, and xenon's boot with a monitor remains.
