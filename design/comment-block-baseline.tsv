@@ -13,7 +13,6 @@
 cap	kernel/	20
 in-body	kernel/	5289
 block	lines
-kernel/build.rs:144	23
 kernel/src/arch/aarch64/fp.rs:1	37
 kernel/src/arch/aarch64/gic_cpu_interface.rs:21	34
 kernel/src/arch/aarch64/instructions.rs:1	28
