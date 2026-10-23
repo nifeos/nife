@@ -104,7 +104,7 @@ The cost is page-table construction under the hold. Tables come from a region (`
 waits. `MAP` is spawn-time and setup work, never a step of the IPC round trip. The cost under
 contention is not measured. The read is protected by convention, not by type: a caller can still
 read a capability with `sched::current_cap` outside a hold and map with it. The `MAP` handlers
-receive only the slot, which is the same defence `sched::Delegation` uses.
+receive only the slot, which is the same defense `sched::Delegation` uses.
 
 A page table is recorded before the mapper links it, under the same hold. `revoke_region`'s cut
 pass takes the same registry, so it runs either before the retype, when the region is claimed and

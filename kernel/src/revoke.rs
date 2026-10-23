@@ -282,14 +282,14 @@ impl Registry {
 
     /// Drop every entry naming `root` and bring the bound back down over whatever emptiness that
     /// left at the top. The downward walk stops at the first live slot and can only step over a
-    /// slot that was filled and freed, so it is amortised O(1).
+    /// slot that was filled and freed, so it is amortized O(1).
     fn release(&mut self, root: u64) {
         for slot in self.spaces[..self.top].iter_mut() {
             if slot.as_ref().is_some_and(|s| s.root == root) {
                 *slot = None;
             }
         }
-        // Bounded by the array's length so a prover sees the bound; the `break` keeps it amortised
+        // Bounded by the array's length so a prover sees the bound; the `break` keeps it amortized
         // O(1).
         let mut top = self.top;
         for _ in 0..MAX_SPACES {
