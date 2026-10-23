@@ -121,6 +121,7 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 | [what-does-not-fit.md](x86-port/what-does-not-fit.md) | The four places the `arch/` seam did not stretch, the segment-base bug, the SMP counting bug, and where TSO pays out. |
 | [cpu-state.md](x86-port/cpu-state.md) | The control-register bits each core sets (PAT, SMEP, `PCE`), the port I/O gate, the boot CPU's id and the per-CPU pointer, the thread pointer, the FP and SSE unit, and the `CPUID` boot gates. |
 | [smp-bring-up.md](x86-port/smp-bring-up.md) | INIT-SIPI-SIPI, the one trampoline page every secondary shares, and the timing of the wait for each core. |
+| [kernel-page-tables.md](x86-port/kernel-page-tables.md) | The two kernel bases, what the direct map claims and in which order, the 32-bit MMIO hole and the BAR window, the user address spaces without PCID, and the MMU's BUGS. |
 
 ## BUGS
 

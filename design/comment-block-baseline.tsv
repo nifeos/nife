@@ -66,11 +66,6 @@ kernel/src/arch/x86_64/irq.rs:1216	38
 kernel/src/arch/x86_64/ist.rs:1	33
 kernel/src/arch/x86_64/machine.rs:638	35
 kernel/src/arch/x86_64/machine.rs:970	36
-kernel/src/arch/x86_64/mmu.rs:1	39
-kernel/src/arch/x86_64/mmu/memory_mapped_io_window.rs:15	22
-kernel/src/arch/x86_64/mmu/memory_mapped_io_window.rs:56	22
-kernel/src/arch/x86_64/mmu/memory_mapped_io_window.rs:171	39
-kernel/src/arch/x86_64/mmu/shootdown.rs:68	35
 kernel/src/arch/x86_64/mod.rs:1	38
 kernel/src/arch/x86_64/pmu.rs:1	31
 kernel/src/arch/x86_64/reset.rs:1	24

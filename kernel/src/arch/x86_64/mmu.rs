@@ -1,42 +1,12 @@
-//! **The MMU, `x86_64`.** `crates/paging` owns the level walk and `paging::x86_64::Ia32e` the entry
-//! format; this module names `CR3`, the direct map, and where this machine's devices are.
+//! **The MMU, `x86_64`.** `crates/paging` owns the level walk and `paging::x86_64::Ia32e` the
+//! entry format; this module names `CR3`, the direct map, and where this machine's devices are.
 //!
-//! **Two bases**, the one structural difference from aarch64 and RISC-V. `code-model: kernel`
-//! pins every symbol in the top 2 GiB, so the image cannot share a base with a direct map of more
-//! than 2 GiB of RAM. So, as on Linux:
-//!
-//! | What | Base | Who needs it there |
-//! |---|---|---|
-//! | The kernel **image** | [`KERNEL_VA_BASE`] `0xffffffff80000000` | the code model, non-negotiably |
-//! | The **direct map** of physical memory | [`DIRECT_MAP_BASE`] `0xffff888000000000` | [`phys_to_virt`], and it has room for 64 TiB |
-//!
-//! They are separate PML4 entries (511 and 273), both canonically high. [`virt_to_phys`] inverts
-//! both bases, because the kernel asks it about image addresses too (Linux's `__pa()`).
-//!
-//! **`phys_to_virt` means one thing for the machine's whole life**: `boot.s` gives the boot tables
-//! a PML4[273] entry over the low 4 GiB before the first Rust instruction, so the frame bitmap,
-//! PVH structure and ACPI tables can keep the pointers they took early, and [`init`] widens the
-//! direct map rather than introducing it. [`init`] drops the boot identity map, an alias of all
-//! physical memory in the half user programs get.
-//!
-//! # BUGS
-//!
-//! - RAM is mapped with the largest leaf that fits ([`largest_leaf`]) without reading the MTRRs,
-//!   trusting firmware to keep usable RAM write-back throughout; device windows and firmware
-//!   reservations stay in 4 KiB leaves, where mixed types live.
-//! - `mmu::init` must allocate its tables below 4 GiB, all the boot map reaches; a machine whose
-//!   RAM starts above 4 GiB would fault in `map_everything`.
-//! - `CR4.PGE` is off, so every `mov cr3` drops the kernel's translations too. TCG flushes on every
-//!   `CR3` write regardless and icount cannot see a refill, so its cost is unmeasured
-//!   (notes/benchmarks.md); turning it on is two lines in [`init`] and [`init_secondary`].
-//! - `CR4.PCIDE` is off, so [`ttbr0_value`] drops the address-space number and [`flush_asid`]
-//!   flushes everything. It is not a bit to flip: with PCIDE on, `invlpg` and `CR3` writes act on
-//!   the current PCID only, so [`unmap_user_at`], [`flush_asid`] and the NMI shootdown would leave
-//!   other spaces' stale entries alive until `INVPCID` covers every path.
-//! - The cacheable fill follows the firmware map only while it is contiguous
-//!   ([`firmware_fill_ceiling`]); ACPI tables above an undescribed gap inside low DRAM would fault.
-//! - An aperture firmware also reports as usable RAM panics, naming both ranges, on purpose: the
-//!   fix is excluding it from both the direct map and the allocator, not a second mapping.
+//! Two kernel bases, unlike aarch64 and RISC-V: `code-model: kernel` pins the image at
+//! [`KERNEL_VA_BASE`] (PML4[511]), so the direct map of physical memory is a separate PML4 entry
+//! at [`DIRECT_MAP_BASE`] (PML4[273]), as on Linux. `boot.s` installs the direct map's entry
+//! before the first Rust instruction, so [`phys_to_virt`] means one thing for the machine's whole
+//! life, and [`init`] drops the boot identity map. See notes/x86-port/kernel-page-tables.md,
+//! which holds the BUGS.
 
 use core::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 
