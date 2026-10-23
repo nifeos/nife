@@ -27,7 +27,8 @@ use crate::thread::ThreadId;
 
 /// The most threads one holding covers. The widest service this boot builds holds two (a
 /// `net_stack` and its socket client), and four keeps margin. A fifth panics rather than dropping
-/// one silently; raise this and [`MAX_REGIONS`] together.
+/// one silently. Raise this and [`MAX_REGIONS`] together: each client costs one thread, one region
+/// before death and two after.
 const MAX_THREADS: usize = 4;
 
 /// The most untyped regions one holding covers, in **each** phase. The widest service holds two

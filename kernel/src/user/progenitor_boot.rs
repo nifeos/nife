@@ -17,7 +17,7 @@ pub const PROGENITOR_ENTRY: &str = "progenitor";
 /// serial driver share this constant and are far shallower.
 ///
 /// Fourteen pages (56 KiB), from `crate::progenitor_stack`'s measured peaks on
-/// `script/swish-check`. Debug is the deep build, at about 44 KiB after `jig rollback` on all three
+/// `script/swish-check`. Debug is the deep build, at 42 to 44 KB after `jig rollback` on all three
 /// architectures, and the gauge's floor (`progenitor_stack::HEADROOM_FLOOR`, 8 KiB) is what fails
 /// `swish-check`. notes/stack/progenitor-stack.md has the frames and the tables.
 ///

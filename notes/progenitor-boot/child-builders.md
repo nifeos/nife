@@ -18,9 +18,8 @@ path, and every builder gets the same bare world:
 in the trust root, which is why the six are in `sealed_pair::BOOT_PROGRAMS` beside the progenitor.
 
 The building budget is carved before the thread exists, so the caller has a name for it and can
-reclaim it through the returned `Holding`. That is the difference between 8 MiB spent and 8 MiB
-lent: the measured aarch64 boot spent 12,289 frames on these tests, 42% of everything the suite
-never returned ([frames](../frames.md)).
+reclaim it through the returned `Holding`: 12,288 pages lent rather than spent
+([frames](../frames.md) has the suite's frame ledger).
 
 On `x86_64` slot 2 is a device capability over physical page zero, because `UART_PHYS` is zero
 there. It is a foot gun, marked as one where it is granted. The slot is positional, so declining to

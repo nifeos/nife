@@ -69,7 +69,7 @@ progenitor's own to fill.
 The progenitor reads its table positionally. A capability whose slot depends on what the machine
 turned out to have is wiring nobody can check by reading. So every grant names its slot
 (`thread_control_block_insert_cap(.., Some(n))`) rather than taking the first free one, and asserts
-where it landed. `notes/abi.md` section 4 calls this "the emptiness is load-bearing". First-free
+where it landed (`notes/abi.md` section 4). First-free
 numbering would shift the virtio-rng trio down by two on the ordinary boot that has a virtio-rng
 and no disk. Each conditional group sits past the highest slot of every group before it, for the
 same reason.

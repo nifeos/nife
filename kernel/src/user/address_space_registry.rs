@@ -219,8 +219,8 @@ pub fn user_address_space_root(name: u64) -> Option<u64> {
 ///
 /// Context: holds `ADDRESS_SPACES` (61) for the whole of `f`, above `MAPPINGS` (59), which is why
 /// the caller cannot use [`user_address_space_map`]. The caller checks the `Option` itself, to keep
-/// its own refusal order. A running space resolves here too, so `UNMAP` unmaps with the function
-/// every revoke uses,
+/// its own refusal order: a frame that is not there answers before a space that is not there.
+/// A running space resolves here too, so `UNMAP` unmaps with the function every revoke uses,
 /// whose TLB obligation reaches every core.
 pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressSpace>) -> R) -> R {
     let mut spaces = USER_SPACES.lock();

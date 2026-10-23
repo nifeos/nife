@@ -75,7 +75,7 @@ pub const DELEGATED_TEST_INTERRUPT: u32 = crate::arch::irq::SELF_TEST_VECTOR as 
 /// rather than leaving a test waiting on a report nobody sends. Slots 0 to 4 hold the building
 /// budget, `report`, the console UART's registers, the test interrupt and the UART receive
 /// interrupt. This is not the boot path; [`boot_progenitor`] is. See notes/progenitor-boot.md.
-/// Returns a [`holding::Holding`] over the thread and its 2048-frame building budget, to hand back.
+/// Returns a [`holding::Holding`] over the thread and its 12,288-page budget, to hand back.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names.
 /// Refused keeping `spawn_hello`: `hello` was the one binary all six builders were roles of, and
@@ -335,6 +335,7 @@ pub(crate) fn enter_at_on_current(entry: u64, user_sp: u64, arg0: u64, arg1: u64
     enter_frame(entry, user_sp, arg0, arg1, arg2)
 }
 
+/// Drop to EL0 at `entry` on a fresh stack, with `arg0` in `x0`. Never returns.
 fn enter_at(entry: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
     enter_frame(entry, USER_STACK_TOP, arg0, arg1, arg2)
 }

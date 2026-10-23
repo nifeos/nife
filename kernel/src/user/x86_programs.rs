@@ -188,11 +188,11 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
     let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
     let ext = (abi::SYS_EXIT as u32).to_le_bytes();
     pack_12([
-        0x4C, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov r8, [cpu]
+        0x4C, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov r8, [cpu]   (core before)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al
-        0x4C, 0x8B, 0x14, 0x25, a[0], a[1], a[2], a[3], // mov r10, [cpu]
+        0x4C, 0x8B, 0x14, 0x25, a[0], a[1], a[2], a[3], // mov r10, [cpu]  (core after)
         0x31, 0xFF, // xor edi, edi
         0x31, 0xF6, // xor esi, esi
         0xBA, w[0], w[1], w[2], w[3], // mov edx, word
