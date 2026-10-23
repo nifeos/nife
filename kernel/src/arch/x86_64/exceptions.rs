@@ -107,7 +107,7 @@ impl TrapFrame {
     /// of the CS it pops (the GDT layout in `segments.rs`). `rflags` is `IF | 0x2`: bit 1 always
     /// reads as one, and `IF` keeps a looping user thread preemptible. `IOPL` stays 0, so ring 3
     /// reaches a port only through the TSS's I/O permission bitmap, which a port capability fills
-    /// (§121, the port I/O capability; `segments.rs`).
+    /// (§121 (x86 port I/O); `segments.rs`).
     #[allow(dead_code)]
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         const RFLAGS_IF: u64 = 1 << 9;
@@ -291,7 +291,8 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 
 /// Write argument register `i` of a thread's saved user frame, the one [`user_pc`] reads. The
 /// return to user mode restores it, so this hands a trapped user thread a word its syscall path
-/// does not write; the death message's label rides in register 5 (§148, as amended 2026-10-04).
+/// does not write; the death message's label rides in register 5 (§148 (resolves by asking the
+/// kernel), as amended 2026-10-04).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -641,14 +642,14 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             BRK_COUNT.fetch_add(1, Ordering::Relaxed);
             false
         }
-        // `#NM`: `CR0.TS` traps a thread's first FP or SSE instruction (milestone 447). It is a
-        // fault, so the `iret` re-executes the instruction with the unit open; `crate::fp` has why
-        // this is not LazyFP. Ring 0 takes it too. With no thread to record against, fall through
-        // rather than retake the fault forever.
+        // `#NM`: `CR0.TS` traps a thread's first FP or SSE instruction (milestone 447 (a thread's
+        // vector registers are its own)). It is a fault, so the `iret` re-executes the instruction
+        // with the unit open; `crate::fp` has why this is not LazyFP. Ring 0 takes it too. With no
+        // thread to record against, fall through rather than retake the fault forever.
         7 if crate::fp::enable_for_current() => false,
 
-        // The local APIC timer. Record and defer (§9): `on_tick` marks a reschedule due, and the
-        // switch happens in `x86_trap_dispatch` on the thread's own stack, after the EOI.
+        // The local APIC timer. Record and defer (§9 (locking)): `on_tick` marks a reschedule due,
+        // and the switch happens in `x86_trap_dispatch` on the thread's own stack, after the EOI.
         v if v == super::irq::TIMER_VECTOR as u64 => {
             super::timer::tick();
             crate::sched::on_tick();
@@ -683,9 +684,10 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::irq::end_of_interrupt();
             true
         }
-        // A PCI function's MSI-X message, which becomes a driver's wakeup (milestone 215). An MSI
-        // vector is its intid (`irq::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted
-        // write that already happened, so the driver's `Irq::ACK` is a no-op.
+        // A PCI function's MSI-X message, which becomes a driver's wakeup (milestone 215 (a PCI
+        // function's interrupt reaches nothing on x86_64)). An MSI vector is its intid
+        // (`irq::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted write that already
+        // happened, so the driver's `Irq::ACK` is a no-op.
         v if super::irq::is_msi_vector(v) => {
             match crate::sched::irq_route(v as u32) {
                 Some(ep) => {
@@ -701,9 +703,10 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             true
         }
         // A device line on `irq::GSI_VECTOR_BASE` plus its redirection index, which becomes a
-        // driver's message (milestone 505). `irq::intid_of_vector` recovers the intid a driver
-        // bound. `irq::disable` holds off only a level-triggered line: an IO APIC drops an edge
-        // that arrives while its entry is masked. A line nothing bound is counted and acknowledged.
+        // driver's message (milestone 505 (an x86_64 input driver that never lets the core idle)).
+        // `irq::intid_of_vector` recovers the intid a driver bound. `irq::disable` holds off only a
+        // level-triggered line: an IO APIC drops an edge that arrives while its entry is masked. A
+        // line nothing bound is counted and acknowledged.
         v if super::irq::is_device_vector(v) => {
             DEVICE_IRQS.fetch_add(1, Ordering::Relaxed);
             let routed = super::irq::intid_of_vector(v)
@@ -808,7 +811,7 @@ pub(crate) unsafe extern "C" fn x86_paranoid_dispatch(frame: *mut TrapFrame) {
 }
 
 /// A ring-3 thread faulted: record what happened, say so, and kill it, so a driver bug is a crashed
-/// process and not a dead machine (§10).
+/// process and not a dead machine (§10 (process model)).
 ///
 /// Never returns: `sched::fault` delivers the death to a supervisor or takes the unsupervised path,
 /// and switches away for good, so `isr_restore` never runs. The next thread (the reaper) frees the

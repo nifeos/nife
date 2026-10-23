@@ -156,7 +156,7 @@ garbage on the first real board.
 ## The x86 CMOS RTC, read by the kernel
 
 x86's real-time clock is the CMOS RTC behind two fixed I/O ports, `0x70` (index) and `0x71`
-(data). There is no page, so no device capability can map it. §121 keeps every x86 legacy port
+(data). There is no page, so no device capability can map it. §121 (x86 port I/O) keeps every x86 legacy port
 kernel-side rather than paying a port-range capability's measured 1.5 to 2.7 us per context switch
 for a device a boot reads once. So, unlike the PL031 and Goldfish drivers above, nothing in
 userspace touches it: `arch::x86_64::rtc` reads it once per clock-service spawn and the service

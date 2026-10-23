@@ -48,9 +48,10 @@ const MAX_CMDLINE: usize = 256;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.
 ///
-/// One reader for every token: the screen ([`attach_screen`], milestone 243) and, on an installed
-/// machine, the boot slot ([`boot_slot`]), so a machine with no framebuffer still gets its slot.
-/// QEMU's PVH loader writes a zero command line, so `script/test --arch x86_64` gets `None`.
+/// One reader for every token: the screen ([`attach_screen`], milestone 243 (a machine with no
+/// serial port has no way to say anything)) and, on an installed machine, the boot slot
+/// ([`boot_slot`]), so a machine with no framebuffer still gets its slot. QEMU's PVH loader writes
+/// a zero command line, so `script/test --arch x86_64` gets `None`.
 fn cmdline(info: &BootInfo) -> Option<&'static str> {
     if info.cmdline == 0 {
         return None;
@@ -93,8 +94,9 @@ pub(crate) fn attach_screen(at: usize) -> Option<(Framebuffer, u32, u32)> {
     let found = Framebuffer::parse(cmdline)?;
     let span = found.span()? as u64;
 
-    // The screen-hold handshake a gate may ask for (milestone 445), armed only once a screen is
-    // found, so a machine with none cannot wait. See `console::hold_screen_at_handover`.
+    // The screen-hold handshake a gate may ask for (milestone 445 (the screen check stops sampling
+    // and starts asking)), armed only once a screen is found, so a machine with none cannot wait.
+    // See `console::hold_screen_at_handover`.
     if machine_discovery::framebuffer::has_screen_hold(cmdline) {
         crate::console::hold_screen_at_handover();
     }

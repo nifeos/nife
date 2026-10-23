@@ -79,7 +79,7 @@ different stacks. RISC-V does the same job with `sscratch`; aarch64 banks `SP_EL
   is not LazyFP (CVE-2018-3665; `crate::fp` has the argument). The arm serves ring 0 too, because
   every userspace target in `targets/` is soft-float and milestone 447's concurrency proof is
   written as kernel threads.
-- **The timer and the reschedule IPI.** Both record and defer (§9): the trap body returns `true`
+- **The timer and the reschedule IPI.** Both record and defer (§9 (locking)): the trap body returns `true`
   and `x86_trap_dispatch` runs `schedule()` one frame out, on the thread's own stack, after the EOI.
   Neither counts in `ROUTED_IRQS`, so a tick cannot satisfy a test waiting for a device.
 - **The self-test vectors.** The local APIC delivers a vector to its own core through the ICR, the
@@ -191,7 +191,7 @@ the TSS limit and every ring-3 `in`/`out` faults.
 
 `set_port_range_grant` installs a grant on switch-in, lazily. When the grant is unchanged, which is
 nearly every switch on nearly every machine, it costs a load and a branch. That is the property
-§121's refinement found the naive always-write threw away (about 2,682 ns per switch). When the
+The refinement of §121 (x86 port I/O) found the naive always-write threw away (about 2,682 ns per switch). When the
 grant changes, only the moving bits are written: for a 16550's eight ports, one byte and the
 `iomap_base` word. The function is `#[cold]` because its effect is rare though it is called on every
 switch. `script/fastpath-footprint` follows non-cold calls out of `schedule()`, and cold keeps this

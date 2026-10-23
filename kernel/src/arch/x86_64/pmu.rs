@@ -1,8 +1,8 @@
 //! Unhalted core cycles, `x86_64`: `IA32_PERF_FIXED_CTR1` (`CPU_CLK_UNHALTED.CORE`), the cycles the
 //! core ran at its own frequency, as aarch64's `PMCCNTR_EL0` gives; not the TSC, which
 //! [`super::timer::now()`] is. Read by `rdmsr` in ring 0 with `CR4.PCE` clear, so it grants nothing
-//! (§139). A stuck counter or one in step with the TSC is refused, never replaced by the TSC:
-//! [`cycles`] answers `None`. See notes/pmu.md.
+//! (§139 (who may read the cycle counter)). A stuck counter or one in step with the TSC is refused,
+//! never replaced by the TSC: [`cycles`] answers `None`. See notes/pmu.md.
 //!
 //! # BUGS
 //! - Never read on silicon (design/roadmap/0309-x86-64-core-cycles.md).

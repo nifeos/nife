@@ -42,7 +42,7 @@ const CALIBRATION_WINDOW_CAP: usize = 16;
 /// When to stop taking windows: two within one part in this of the smallest end the calibration.
 /// A descheduled window is inflated by an arbitrary amount, so two that agree to a thousandth were
 /// both left alone. Over 490 boots this matched the full cap's accuracy at a mean of 3.5 windows
-/// on a quiet host and 5.2 at load 30; see milestone 571's block in `design/roadmap/`.
+/// on a quiet host and 5.2 at load 30; see milestone 571 (the x86 boot calibrates the TSC once).
 const CALIBRATION_AGREEMENT_PARTS_PER: u64 = 1000;
 
 /// PIT channel 2's data port. Channel 2 is the one to use, and the reason is that it is the only
@@ -438,15 +438,16 @@ pub fn is_cycle_counter_grantable() -> bool {
     true
 }
 
-/// The `x86_64` half of the cycle-counter grant, which does nothing (milestone 229, §139 part 3).
-/// Called on every switch like its aarch64 and riscv64 twins, so `sched` has one portable call.
+/// The `x86_64` half of the cycle-counter grant, which does nothing (milestone 229 (build the
+/// cycle-counter grant), §139 (who may read the cycle counter) part 3). Called on every switch like
+/// its aarch64 and riscv64 twins, so `sched` has one portable call.
 ///
 /// A stated exception to §19 (architectural parity is a tenet): `CR4.TSD` could close `rdtsc`, but
 /// `crates/user_mode_runtime`'s `now()` is `rdtsc` with no coarse clock to fall back on, so every
 /// thread runs with the counter open, granted or not. See notes/x86-port/user-mode-runtime.md.
 ///
-/// Built only under `test` or `--features cycle_counter_grant` (milestone 237); see
-/// `kernel/Cargo.toml`'s feature block.
+/// Built only under `test` or `--features cycle_counter_grant` (milestone 237 (the cycle-counter
+/// grant costs 136 bytes of IPC fastpath)); see `kernel/Cargo.toml`'s feature block.
 #[inline(always)]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(_granted: bool) {}

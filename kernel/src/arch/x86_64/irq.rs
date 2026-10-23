@@ -298,10 +298,11 @@ const REDIR_ACTIVE_LOW: u32 = 1 << 13;
 /// The first vector the IO APIC's lines are routed to: 0x30, leaving 0x20..0x2f for the local
 /// APIC's own sources (the timer, the IPIs, and the thermal, performance and error LVT entries).
 ///
-/// A GSI's vector is this plus its redirection index within the owning IO APIC (milestone 308), so
-/// a stray vector names its entry by subtraction; the GSI needs the IO APIC's base too, and nothing
-/// inverts that. The flat map gives 0x30..0x47 two priority classes (x86 priority is the vector's
-/// top four bits) and no say over which line is in which; nothing has a priority policy yet.
+/// A GSI's vector is this plus its redirection index within the owning IO APIC (milestone 308 (a
+/// GSI reaches its vector by redirection index)), so a stray vector names its entry by subtraction;
+/// the GSI needs the IO APIC's base too, and nothing inverts that. The flat map gives 0x30..0x47
+/// two priority classes (x86 priority is the vector's top four bits) and no say over which line is
+/// in which; nothing has a priority policy yet.
 ///
 /// Name: provisional (milestone 161), along with [`gsi_vector`] and the IO APIC entry points
 /// below.
@@ -973,9 +974,10 @@ pub(crate) fn print_summary() {
     }
 }
 
-/// Proofs about the vector space (milestone 304), over numbers firmware chose: the MADT's GSI base,
-/// the version register's entry count, an override's GSI. Each picks an interrupt's vector, an
-/// index into the IDT, so a wrong one runs the page-fault handler. See notes/kernel-proofs.md and
+/// Proofs about the vector space (milestone 304 (`cargo kani -p kernel` only ever compiled one
+/// architecture)), over numbers firmware chose: the MADT's GSI base, the version register's entry
+/// count, an override's GSI. Each picks an interrupt's vector, an index into the IDT, so a wrong
+/// one runs the page-fault handler. See notes/kernel-proofs.md and
 /// design/roadmap/0304-prover-one-architecture.md.
 #[cfg(kani)]
 mod proofs {

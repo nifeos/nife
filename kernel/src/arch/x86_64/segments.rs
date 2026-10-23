@@ -3,7 +3,7 @@
 //! In 64-bit mode a segment's base and limit are ignored except for `fs` and `gs`, but the code
 //! segment's `L`, `DPL` and `D/B` bits still decide the CPU's mode, so the GDT stays. The TSS gives
 //! the stack on a ring change (`RSP0`), an unconditional stack per IST vector for a fault whose
-//! cause is an unusable stack, and the I/O permission bitmap (§121, the port I/O capability).
+//! cause is an unusable stack, and the I/O permission bitmap (§121 (x86 port I/O)).
 //!
 //! `syscall`/`sysret` derive four selectors from `IA32_STAR` by arithmetic (SS is CS + 8 entering;
 //! user SS and CS are the base + 8 and + 16), so the order kernel code, kernel data, user data,
@@ -54,8 +54,9 @@ const IOMAP_BASE_DENY_ALL: u16 = 0xFFFF;
 ///
 /// Long mode keeps three ring stacks, seven interrupt stacks, the bitmap offset and the bitmap.
 /// `#[repr(C, packed)]` because the layout is the CPU's and the reserved words are padding it
-/// requires. The bitmap is inside the TSS (milestone 299) because `iomap_base` is an offset from
-/// the TSS base; one per core, so no two cores share port permissions.
+/// requires. The bitmap is inside the TSS (milestone 299 (the x86 port-range capability)) because
+/// `iomap_base` is an offset from the TSS base; one per core, so no two cores share port
+/// permissions.
 #[repr(C, packed)]
 struct Tss {
     _reserved0: u32,
@@ -385,8 +386,8 @@ pub(super) fn revoke_installed_port_grant_on(id: usize, base: u16, count: u16) {
     }
 }
 
-/// Take the grant out of every online core's TSS, returning once they have (milestone 315):
-/// `PortRange::REVOKE`'s arch half.
+/// Take the grant out of every online core's TSS, returning once they have (milestone 315 (a port
+/// revoke that reaches every core)): `PortRange::REVOKE`'s arch half.
 ///
 /// A revoked holder may be running on another core whose bitmap still permits the range. The local
 /// reset comes first, as in [`super::mmu::flush_tlb`]; the remote half rides the TLB shootdown's

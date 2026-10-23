@@ -1,8 +1,8 @@
-//! The CMOS real-time clock, read by the kernel (§121, §130; milestone 176's piece 2): two fixed
-//! I/O ports and no page, so no device capability maps it. It is read once per clock-service spawn,
-//! and `kernel::user::clock_service::start` passes the reading as a `Spawn` argument
-//! (`clock_contract::rtc::CMOS`). Two snapshots, each after its own UIP wait, must agree. See
-//! notes/clock.md for the register map, tearing and the century.
+//! The CMOS real-time clock, read by the kernel (§121 (x86 port I/O), §130 (the kernel-resident
+//! CMOS RTC); milestone 176 (the x86_64 discovery seam's wide half), piece 2): two I/O ports and no
+//! page. Read once per clock-service spawn, it rides to `kernel::user::clock_service::start` as a
+//! `Spawn` argument (`clock_contract::rtc::CMOS`). Two snapshots, each after its own UIP wait, must
+//! agree. See notes/clock.md for the register map, tearing and the century.
 //!
 //! # BUGS
 //! - No century byte: the year is `2000 + value`, so dates outside 2000..=2099 cannot be read.
