@@ -27,6 +27,9 @@ placement census. It does not explain where placement lands; that belongs to §1
 workload is made to hand threads across cores). If a series shows the rate not following the count, that is the result. The count is
 still the right thing to have measured, which is why the report never prints the tally alone.
 
+The arrangements radon drew by hand line up with the count: two clean cores gave 342,000 to
+347,000 round trips a second, one gave 184,000 to 188,000, and none gave 23,000.
+
 ## What reading the screen proves
 
 `cargo xtask uefi-boot` asks QEMU for a screendump and reads the boot tour off it with

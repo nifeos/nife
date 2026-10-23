@@ -59,8 +59,8 @@ pub enum Stage {
     ///
     /// **This is the stage to wait for**: it is reachable on every architecture, it means paging,
     /// traps, the frame allocator, the timer with its interrupt and the scheduler came up, and its
-    /// line carries counts rather than a claim. A *failed* verdict is
-    /// [`Failure::SelfTestFailed`], not this stage, so a degraded board does not read as a good one.
+    /// line carries counts rather than a claim. A *failed* verdict is [`Failure::SelfTestFailed`],
+    /// not this stage, so a degraded board does not read as a good one.
     SelfTest,
     /// The boot's middle stages ran to their end (`nife: the capability core runs on ...`).
     ///
@@ -307,7 +307,8 @@ pub struct BootProgress {
     /// `None` until [`Stage::Machine`].
     machine_line: Option<String>,
     /// The self-test verdict exactly as it arrived, counts and all. Kept when green too, because
-    /// "five of five" and "one of one" differ, and the difference is what a vacuous pass looks like.
+    /// "five of five" and "one of one" differ, and the difference is what a vacuous pass looks
+    /// like.
     self_test_line: Option<String>,
     /// The most recent soak heartbeat's numbers, for the run's summary. `None` until a heartbeat
     /// has been seen and parsed.

@@ -7,14 +7,14 @@
 //!   screendump of nife's framebuffer console into text for it; [`board`] declares each board's
 //!   firmware prologue.
 //! - [`lottery`] and [`exposure`] read a finished soak capture into draws and exposure rows.
-//! - [`stop`] is the only part that writes: one logged byte that ends a self-rebooting soak.
+//!   [`stop`] alone writes, one logged byte ending a self-rebooting soak; none touches power.
 
 //! # BUGS
 //!
 //! - Excluded from Miri (`script/undefined-behavior-check`) for cost: its lib tests took 55
 //!   minutes under the interpreter, it has no `unsafe`, and some [`port`] and [`watch`] tests need
 //!   the host filesystem or the wall clock, so they fail there.
-//! - The rest are in notes/board-console.md's BUGS, in full in `notes/board-console/limitations.md`.
+//! - The rest are notes/board-console.md's BUGS, in full in `notes/board-console/limitations.md`.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `board_console`; half of a pair with
 //! `screen_console`, two consoles named for where the text comes out. The command a bench session

@@ -120,9 +120,9 @@ impl Session {
     ///
     /// `0` reached what was asked for (or, with no stage asked for, watched the whole duration
     /// without the board announcing a failure). `1` the board announced a failure. `2` it went
-    /// quiet. `3` the time ran out with the requested stage unreached, which is also an
-    /// unconfirmed stop. Callers add `4` for a port that could not be opened. A failure or a hang
-    /// outranks an unconfirmed stop: those are facts about the board, and it is one about this tool.
+    /// quiet. `3` the time ran out with the requested stage unreached, which is also an unconfirmed
+    /// stop. Callers add `4` for a port that could not be opened. A failure or a hang outranks an
+    /// unconfirmed stop: those are facts about the board, and it is one about this tool.
     #[must_use]
     pub fn exit_code(&self) -> i32 {
         let base = match &self.outcome {
@@ -684,8 +684,8 @@ mod tests {
         assert!(session.progress.is_relocated());
     }
 
-    /// Sustained watching, which is what `design/fatal-risks/README.md`'s multicore entry needs: no stage
-    /// to wait for, so running the clock out is the plan rather than a disappointment.
+    /// Sustained watching, which is what `design/fatal-risks/README.md`'s multicore entry needs: no
+    /// stage to wait for, so running the clock out is the plan rather than a disappointment.
     #[test]
     fn watching_for_a_duration_ends_successfully() {
         let mut sink = Vec::new();
