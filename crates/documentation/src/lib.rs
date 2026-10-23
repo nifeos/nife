@@ -1,6 +1,5 @@
-//! **The documentation crate**: markdown in, styled terminal bytes out, and the index that says
-//! what exists. It holds a renderer (`render`, feature `markdown`), the search index's byte layout
-//! and its query ([`index`]), and no IO; `mdr/` is the program. See notes/documentation.md.
+//! **The documentation crate**: a markdown renderer (`render`, feature `markdown`) and the search
+//! index ([`index`]), with no IO; `mdr/` is the program and uses a subset (notes/documentation.md).
 //!
 //! # BUGS
 //! - Width counts characters, not columns, so a wide CJK character counts as one.

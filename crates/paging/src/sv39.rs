@@ -1,5 +1,5 @@
 //! The RISC-V Sv39 format: three levels, 4 KiB pages, 39-bit virtual addresses. A PTE is a leaf
-//! when any of R/W/X is set, and an RSW bit carries "device memory", which base Sv39 cannot say.
+//! when any of R/W/X is set, and one RSW bit (9:8) carries "device memory", which base Sv39 lacks.
 //!
 //! ```text
 //!  38      30 29      21 20      12 11         0

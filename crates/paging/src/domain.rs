@@ -66,9 +66,11 @@ pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
     r.base.checked_add(off)
 }
 
-/// **Build a device's DMA domain: an identity map over `regions` and nothing else.** Every page is
-/// mapped IOVA == PA with its region's [`DmaRegion::flags`], in format `F`, under the top-level
-/// table `root`; two overlapping regions fail the build with [`MapError::AlreadyMapped`].
+/// **Build a device's DMA domain: an identity map over `regions` and nothing else.** `root` becomes
+/// the top-level table (what the IOMMU's STE or context descriptor points at), `alloc_page_frame`
+/// supplies intermediate tables, `phys_to_ptr` is [`Mapper`]'s transform, and `F` is the format.
+/// Every page is mapped IOVA == PA with its region's [`DmaRegion::flags`]; overlapping regions fail
+/// with [`MapError::AlreadyMapped`].
 ///
 /// # Safety
 /// `root` and every frame `alloc_page_frame` returns must be zeroed and page-aligned, and `phys_to_ptr`
