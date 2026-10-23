@@ -1,36 +1,13 @@
-//! **The NTPv4 wire format** (RFC 5905), as pure computation, with no socket, clock, service or
-//! policy: the clock service owns the offset and the authority to set it; these 48 bytes and the
-//! arithmetic over them are here. The parser, the fixed-point conversion and the response checks
-//! are host-tested and Kani-checked. See notes/ntp.md.
+//! **The NTPv4 wire format** (RFC 5905), as pure computation: no socket, clock, service or policy.
 //!
-//! **Unauthenticated NTPv4 only**: no NTS (RFC 8915) and no RFC 5905 symmetric-key MAC. An
-//! off-path attacker must guess the 64-bit nonce [`Query::accept`] checks; an on-path attacker
-//! reads it and wins, and nothing here pretends otherwise. So a time from this crate is untrusted
-//! input that the NTP client may propose and never set. notes/ntp.md has why NTS is a separate
-//! decision (it needs TLS, which needs a roughly correct clock).
-//!
-//! Three things are easy to get wrong:
-//!
-//! 1. **An NTP timestamp is not a Unix timestamp.** 64 bits: 32 of seconds since **1 January 1900**,
-//!    32 of fractional second. The epoch differs by [`UNIX_DELTA`] seconds and the fraction is binary
-//!    (a tick is 2<sup>-32</sup> s ≈ 233 ps), not decimal. See [`Timestamp`].
-//! 2. **The 32-bit second field wraps**, on 7 February 2036 at 06:28:16 UTC. [`Timestamp`] handles
-//!    that with a fixed pivot rather than ignoring it; the rule and its consequences are on
-//!    [`Timestamp::to_unix`], and the representable window is [`UNIX_MIN`]`..`[`UNIX_LIMIT`].
-//! 3. **The offset and delay arithmetic must be modular**, not absolute. Differences are taken in
-//!    wrapping 64-bit arithmetic and read back as signed ([`Interval`]), which is what makes an
-//!    exchange that straddles the 2036 boundary come out right instead of off by 136 years.
-//!
-//! [`Packet::parse`] is total on a 48-byte input: it decodes and judges nothing, so
-//! parse-then-serialise is the identity for every packet (proved). Every judgement is in
-//! [`Query::accept`], the only function that can reject.
-//!
-//! ```text
-//!   [u8; 48] ──parse──► Packet ──accept(nonce, sent, dest)──► Sample { offset, delay }
-//!                                       │
-//!                                       └── Reject: the response is not an answer to our question
-//! ```
-//!
+//! The clock service owns the offset and the authority to set it; these 48 bytes and the arithmetic
+//! over them are here. Unauthenticated NTPv4 only, with no NTS (RFC 8915) and no RFC 5905
+//! symmetric-key MAC: an off-path attacker must guess the 64-bit nonce [`Query::accept`] checks and
+//! an on-path one reads it, so a time from here is untrusted input the client may propose and never
+//! set. [`Packet::parse`] is total on 48 bytes; [`Query::accept`] alone rejects. A timestamp counts
+//! from 1900 in binary fractions ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16
+//! UTC ([`Timestamp::to_unix`]), and offsets are modular ([`Interval`]). See notes/ntp.md.
+
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the NTPv4 standard's own full
 //! name, so its `_protocol` is the standard's word and not nife's contract suffix. His answer was
 //! "`network_time_protocol`". The stem `network_time` was ruled 2026-09-13: a standard's name stays
@@ -204,30 +181,13 @@ impl Timestamp {
     /// **An NTP timestamp to Unix seconds and nanoseconds.** Total: every one of the 2<sup>64</sup>
     /// bit patterns decodes to some instant, because on the wire every one of them is one.
     ///
-    /// # The era pivot, which is the 2036 decision
-    ///
-    /// The seconds field is 32 bits and rolls over every 136 years, next on **7 February 2036 at
-    /// 06:28:16 UTC**. The field alone therefore does not say which era it means, and something has
-    /// to. RFC 5905 §6 gives the convention and this is it:
-    ///
-    /// - **The high bit set** (seconds ≥ 2<sup>31</sup>): era 0, seconds counted from 1900. This
-    ///   covers 20 January 1968 through 7 February 2036.
-    /// - **The high bit clear**: era 1, seconds counted from the 2036 rollover. This covers
-    ///   7 February 2036 through 26 February 2104.
-    ///
-    /// So the rule is a **fixed pivot, not a guess against the current time**. That is the choice
-    /// worth naming, because the alternative is real: an implementation can pick the era that puts
-    /// the timestamp nearest to what it already believes the time is, which is more flexible and
-    /// strictly worse here. It makes the decoder's output depend on the clock, so the same bytes
-    /// parse differently depending on when you ask; it makes the function untestable without
-    /// injecting a "now"; and on a machine whose clock is wrong (which is the entire situation this
-    /// crate exists to fix, since we boot believing it is 1970) it picks the wrong era with total
-    /// confidence. A fixed pivot is a pure function of its input, provable by Kani, and wrong only
-    /// after 2104. It also means **this crate has a documented expiry date**, which is better than
-    /// having an undocumented one.
-    ///
-    /// The window is the same one [`UNIX_MIN`]`..`[`UNIX_LIMIT`] names, clipped below at the Unix
-    /// epoch because the seconds we return are unsigned.
+    /// The 32-bit seconds field rolls over every 136 years, so RFC 5905 §6's era rule is a fixed
+    /// pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>) is era
+    /// 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is era 1,
+    /// counted from the rollover (to 26 February 2104). The window is
+    /// [`UNIX_MIN`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned are
+    /// unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
+    /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
         let secs = if s >= (1 << 31) {
@@ -246,17 +206,11 @@ impl Timestamp {
     /// **Replace the low `bits` of the fraction with random bits**, for use as the transmit
     /// timestamp of a request.
     ///
-    /// Why this exists: in plain NTP the client's transmit timestamp is the *only* thing an
-    /// off-path attacker has to guess in order to forge a reply, because [`Query::accept`] requires
-    /// the reply's origin field to match it exactly. RFC 5905 §3 accordingly says to randomise the
-    /// low-order bits. How many bits are actually random is set by the clock's precision, not by
-    /// this function: a clock that ticks every microsecond leaves about 12 fraction bits below its
-    /// own resolution, and 12 bits is 4096 guesses, which is not a lot. **The caller knows its
-    /// precision and this crate does not**, hence the parameter.
-    ///
-    /// If you have a real random source, prefer [`Query::with_nonce`], which puts a full 64 random
-    /// bits on the wire and keeps the true send time locally. `bits >= 32` randomises the whole
-    /// fraction, which is that idea applied to the fraction only.
+    /// [`Query::accept`] requires the reply's origin to match it exactly, so it is all an off-path
+    /// attacker has to guess, and RFC 5905 §3 says to randomise its low-order bits. How many are
+    /// random is the clock's precision, which the caller knows and this crate does not: a
+    /// microsecond clock leaves about 12, which is 4096 guesses. `bits >= 32` randomises the whole
+    /// fraction. With a real random source, prefer [`Query::with_nonce`] and its 64 random bits.
     pub const fn randomise_low(self, bits: u32, random: u32) -> Timestamp {
         if bits == 0 {
             return self;
@@ -504,10 +458,8 @@ const fn be64(w: &[u8], at: usize) -> u64 {
 
 /// **Why a reply was not an answer to our question.**
 ///
-/// Every variant is a check [`Query::accept`] makes. Read together they are the entire security
-/// story of unauthenticated NTP, which is why they are an enum with distinct variants rather than a
-/// bool: a client that logs *which* check failed can tell a broken server from an attack, and a
-/// kiss-o'-death is a instruction to back off rather than a failure to retry.
+/// One variant per check [`Query::accept`] makes, so a client can tell a broken server from an
+/// attack, and a kiss-o'-death (an instruction to back off) from a failure to retry.
 ///
 /// # Examples
 ///
@@ -717,26 +669,12 @@ impl Query {
     /// **Check a reply and compute the sample.** `dest` is T4: the local time the reply arrived,
     /// read as close to the receive as the caller can manage.
     ///
-    /// The checks, in the order they are made, and none of them is optional:
-    ///
-    /// 1. Exactly 48 bytes ([`Reject::Length`]).
-    /// 2. Version 4 ([`Reject::Version`]) and mode 4 ([`Reject::Mode`]). Mode is what keeps an
-    ///    unsolicited broadcast out.
-    /// 3. **Origin equals our nonce** ([`Reject::OriginMismatch`]). Checked before anything is
-    ///    believed and before the stratum is even looked at, because it is the check that says this
-    ///    packet is a reply to *us*.
-    /// 4. Stratum 0 is a kiss-o'-death ([`Reject::KissOfDeath`]), above [`MAX_STRATUM`] is not a
-    ///    time source ([`Reject::Stratum`]), and an unsynchronised leap indicator is the server
-    ///    saying the same thing ([`Reject::Unsynchronised`]).
-    /// 5. The transmit timestamp is not zero ([`Reject::TransmitZero`]).
-    /// 6. The four timestamps are consistent with causality: T2 ≤ T3 on the server, T1 ≤ T4 on us,
-    ///    and the round trip at least as long as the server's turnaround
-    ///    ([`Reject::ServerOrderReversed`], [`Reject::ClientOrderReversed`],
-    ///    [`Reject::NegativeDelay`]).
-    /// 7. The server's claimed root distance is inside [`MAX_ROOT_DISTANCE`].
-    ///
-    /// What none of this can do is authenticate. An on-path attacker sees the nonce and passes every
-    /// check. See the crate docs.
+    /// Refuses, in this order: a length other than 48; a version other than 4 or a mode other than
+    /// server; an origin that is not our nonce, checked before anything else is believed; a
+    /// kiss-o'-death, a stratum above [`MAX_STRATUM`] or an unsynchronised leap indicator; a zero
+    /// transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no shorter
+    /// than the turnaround); a root distance past [`MAX_ROOT_DISTANCE`]. Each is its [`Reject`]
+    /// variant. None authenticates: an on-path attacker sees the nonce. See notes/ntp.md.
     pub fn accept(&self, wire: &[u8], dest: Timestamp) -> Result<Sample, Reject> {
         let p = Packet::parse(wire)?;
 
@@ -833,11 +771,10 @@ mod tests {
         w
     }
 
+    /// 1 January 1970 00:00:00 UTC is NTP seconds 0x83AA7E80, a value any NTP reference can check.
+    /// The usual error, treating 1900 as a leap year, is exactly one day.
     #[test]
     fn the_epoch_delta_is_the_number_everyone_gets_wrong() {
-        // 1 January 1970 00:00:00 UTC is NTP seconds 0x83AA7E80. This constant is the crate's whole
-        // relationship to Unix time, and the usual error (treating 1900 as a leap year) is exactly
-        // one day, so pin it against a value that can be checked against any NTP reference.
         assert_eq!(UNIX_DELTA, 0x83AA_7E80);
         let epoch = Timestamp::from_unix(0, 0).unwrap();
         assert_eq!(epoch.seconds(), 0x83AA_7E80);
@@ -845,19 +782,18 @@ mod tests {
         assert_eq!(epoch.to_unix(), (0, 0));
     }
 
+    /// NTP seconds 0 is the rollover instant, 7 February 2036 06:28:16 UTC, Unix second 2085978496;
+    /// a naive decoder makes it 1 January 1900. The second before it, NTP seconds 0xFFFFFFFF, is in
+    /// era 0, and the two are adjacent in Unix time although the seconds field wrapped between
+    /// them.
     #[test]
     fn the_2036_rollover_decodes_to_2036_and_not_to_1900() {
-        // NTP seconds 0 is the rollover instant, 7 February 2036 06:28:16 UTC, which is Unix second
-        // 2085978496. Under a naive decoder it is 1 January 1900 and the answer is 136 years wrong.
         let rollover = Timestamp::from_bits(0);
         assert_eq!(rollover.to_unix(), (2_085_978_496, 0));
 
-        // And the second before it is in era 0: NTP seconds 0xFFFFFFFF.
         let before = Timestamp::from_bits(0xFFFF_FFFF << 32);
         assert_eq!(before.to_unix(), (2_085_978_495, 0));
 
-        // The two are adjacent in Unix time even though the seconds field wrapped between them,
-        // which is the property the pivot exists to give.
         assert_eq!(rollover.to_unix().0 - before.to_unix().0, 1);
     }
 
@@ -866,32 +802,21 @@ mod tests {
         // Just inside the window round trips.
         let last = Timestamp::from_unix(UNIX_LIMIT - 1, 999_999_999).unwrap();
         assert_eq!(last.to_unix(), (UNIX_LIMIT - 1, 999_999_999));
-        // Just outside is refused rather than aliased. Aliasing is the failure mode being bought
-        // off here: UNIX_LIMIT would encode to the same seconds field as 1968-01-20.
+        // Just outside is refused rather than aliased: UNIX_LIMIT would encode to the same seconds
+        // field as 1968-01-20.
         assert!(Timestamp::from_unix(UNIX_LIMIT, 0).is_none());
         assert!(Timestamp::from_unix(u64::MAX, 0).is_none());
         // A nanosecond field that is not a sub-second is a caller bug, not a rounding opportunity.
         assert!(Timestamp::from_unix(0, 1_000_000_000).is_none());
     }
 
-    /// **Every nanosecond there is, checked by running the code on all 10^9 of them.**
-    ///
-    /// This is not a sampled test, it is an exhaustive one, and it is deliberately the strongest
-    /// statement available about this function: the domain is a billion values and a billion values
-    /// is 0.6 s of arithmetic, so there is nothing to sample and nothing left to prove. Kani cannot
-    /// match it here (see `verification::PROVED_NANOS` for the measurements), which is a useful
-    /// reminder that a model checker is the tool for domains too big to enumerate, not a better
-    /// tool for domains that are not.
-    ///
-    /// It needs an optimised build to be this quick; `[profile.dev.package.network_time_protocol]` in the
-    /// workspace manifest supplies one, the same way `measured_boot` gets one for SHA-256.
-    ///
-    /// Under Miri the sweep is sampled instead: an interpreter is around three orders of magnitude
-    /// slower than 0.6 s of native arithmetic, so the full domain would run for days. A strided
-    /// walk (every 999,983rd value, a prime, so the samples do not line up with any power-of-two
-    /// structure in the arithmetic) plus the edges keeps the function on Miri's paths without
-    /// pretending to be the exhaustive claim; the native run above it stays that claim. "Miri-clean"
-    /// here means the sampled values. See notes/undefined-behavior.md.
+    /// **Every nanosecond there is, checked by running the code on all 10^9 of them**: 0.6 s, so
+    /// exhaustive, where Kani cannot finish (notes/ntp/what-is-proved.md has the measurements).
+    /// It needs the optimised build `[profile.dev.package.network_time_protocol]` in the workspace
+    /// manifest supplies, as `measured_boot` has for SHA-256. Under Miri, about a thousand times
+    /// slower, it walks every 999,983rd value (a prime, so the samples miss any power-of-two
+    /// structure) plus the edges, and "Miri-clean" means those values
+    /// (notes/undefined-behavior.md).
     #[test]
     fn every_nanosecond_survives_the_round_trip() {
         #[cfg(miri)]
@@ -977,15 +902,17 @@ mod tests {
         assert_eq!(w.len(), PACKET_LEN);
     }
 
+    /// Checkable by hand: the server clock is 0.5 s ahead, the request took 11.5 ms to arrive, the
+    /// server spent 0.4 ms, and the reply took 11.2 ms back.
+    ///
+    /// ```text
+    ///   offset = ((T2-T1) + (T3-T4))/2 = (0.5115 + 0.4888)/2 = 0.50015 s
+    ///   delay  = (T4-T1) - (T3-T2)     = 0.0231 - 0.0004    = 0.0227 s
+    /// ```
     #[test]
     fn the_offset_and_delay_are_the_numbers_the_rfc_formula_gives() {
-        // Constructed so both are checkable by hand: the server clock is 0.5 s ahead, the request
-        // took 11.5 ms to arrive, the server spent 0.4 ms, and the reply took 11.2 ms back.
-        //   offset = ((T2-T1) + (T3-T4))/2 = (0.5115 + 0.4888)/2 = 0.50015 s
-        //   delay  = (T4-T1) - (T3-T2)     = 0.0231 - 0.0004    = 0.0227 s
         let s = query().accept(&REPLY, T4).unwrap();
-        // 1 ns under 500_150_000: the fixed-point representation of 0.5115 s is not exact, and
-        // saying so is more useful than an assert that hides it behind a tolerance.
+        // 1 ns under 500_150_000: the fixed-point representation of 0.5115 s is not exact.
         assert_eq!(s.offset.nanos(), 500_149_999);
         assert_eq!(s.delay.nanos(), 22_700_000);
         assert_eq!(s.offset.micros(), 500_149);
@@ -993,22 +920,23 @@ mod tests {
         assert_eq!(s.response.stratum, 2);
     }
 
+    /// The bound the protocol promises. The path is asymmetric by 0.3 ms, so the true offset
+    /// (0.5 s) and the computed one differ by 0.15 ms, inside delay/2 (11.35 ms). A client that
+    /// trusts an offset further than this is trusting the network.
     #[test]
     fn the_offset_is_within_half_the_delay_of_the_truth() {
-        // The bound the protocol actually promises. Here the path is asymmetric by 0.3 ms, so the
-        // true offset (0.5 s) and the computed one differ by 0.15 ms, which is inside delay/2
-        // (11.35 ms). A client that trusts an offset further than this is trusting the network.
         let s = query().accept(&REPLY, T4).unwrap();
         let truth = 500_000_000i128;
         assert!((s.offset.nanos() - truth).abs() <= s.delay.nanos() / 2);
     }
 
+    /// The reason the arithmetic is modular. T1 is two seconds before the rollover (seconds field
+    /// 0xFFFFFFFE) and T4 one second after (0x00000001), so the raw seconds go DOWN across the
+    /// exchange: decoding then subtracting gives a delay of minus 136 years, wrapping gives three
+    /// seconds. Round trip 3 s and turnaround 1.5 s make the delay 1.5 s, and the offset
+    /// ((T2-T1) + (T3-T4))/2 = (1 + -0.5)/2 = 0.25 s. T2 and T3 straddle the era boundary.
     #[test]
     fn an_exchange_across_the_2036_rollover_comes_out_right() {
-        // The reason the arithmetic is modular. T1 is two seconds before the rollover (seconds
-        // field 0xFFFFFFFE) and T4 is one second after it (seconds field 0x00000001), so the raw
-        // seconds fields go DOWN across the exchange. Absolute decoding then subtracting would give
-        // a delay of minus 136 years; wrapping subtraction gives three seconds.
         let t1 = Timestamp::from_bits(0xFFFF_FFFE_0000_0000);
         let t2 = Timestamp::from_bits(0xFFFF_FFFF_0000_0000);
         let t3 = Timestamp::from_bits(0x0000_0000_8000_0000);
@@ -1019,12 +947,8 @@ mod tests {
         p.receive = t2;
         p.transmit = t3;
         let s = Query::new(t1).accept(&p.to_bytes(), t4).unwrap();
-        // Round trip 3 s, server turnaround 1.5 s, so delay 1.5 s;
-        // offset ((T2-T1) + (T3-T4))/2 = (1 + -0.5)/2 = 0.25 s.
         assert_eq!(s.delay.nanos(), 1_500_000_000);
         assert_eq!(s.offset.nanos(), 250_000_000);
-        // And the decoded instants really do straddle the era boundary, so this is not two
-        // timestamps that happen to subtract nicely.
         assert_eq!(t2.to_unix().0 + 1, t3.to_unix().0);
     }
 
@@ -1047,11 +971,10 @@ mod tests {
         assert_eq!(q.accept(&w, T4).unwrap().offset.nanos(), 500_149_999);
     }
 
+    /// A broadcast packet is unsolicited, so nobody should believe it, even carrying our origin
+    /// timestamp as it does here and passing the check usually thought of as "the" check.
     #[test]
     fn the_wrong_mode_is_refused_even_when_everything_else_is_perfect() {
-        // A broadcast packet is unsolicited: nobody asked, so nobody should believe it. Note it
-        // still carries our origin timestamp here, i.e. it passes the check that is usually thought
-        // of as "the" check.
         for m in [
             mode::SYMMETRIC_ACTIVE,
             mode::SYMMETRIC_PASSIVE,
@@ -1068,10 +991,10 @@ mod tests {
         assert_eq!(query().accept(&w, T4), Err(Reject::Version(3)));
     }
 
+    /// Stratum 0 with the kiss code in the reference id. A client that reads RATE as "try again"
+    /// is the client the packet exists to stop.
     #[test]
     fn a_kiss_of_death_is_reported_as_itself_and_not_as_a_failure() {
-        // Stratum 0 with the kiss code in the reference id. The distinction matters operationally:
-        // a client that reads RATE as "try again" is the client the packet exists to stop.
         for code in [b"RATE", b"DENY", b"RSTR"] {
             let w = tweak(|w| {
                 w[1] = 0;
@@ -1150,10 +1073,10 @@ mod tests {
         assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
     }
 
+    /// Extension fields and a MAC make a longer packet. This crate implements neither, and quietly
+    /// ignoring authentication data a server computed is the failure this refuses to have.
     #[test]
     fn a_reply_of_the_wrong_size_is_refused_rather_than_truncated() {
-        // Extension fields and a MAC make a longer packet. We implement neither, and quietly
-        // ignoring authentication data a server computed is the failure this refuses to have.
         let mut long = [0u8; PACKET_LEN + 20];
         long[..PACKET_LEN].copy_from_slice(&REPLY);
         assert_eq!(query().accept(&long, T4), Err(Reject::Length(68)));
@@ -1187,17 +1110,14 @@ mod tests {
     // Milestone 85 survivors. The exhaustive sweeps quantify over the CONVERSIONS; these are the
     // edges and accessors the sweeps never touch. See notes/mutation-testing.md.
 
-    /// `UNIX_LIMIT` is a wall with two sides, and only the far side was ever tested, so the
-    /// constant's own arithmetic could change with nothing failing.
+    /// `UNIX_LIMIT` is a wall with two sides. Checks read off the constant move with it, so the
+    /// wall is also pinned as a date worked by hand: era 0's 2^32 seconds less the 1900-to-1970
+    /// offset, plus the half-era the pivot grants, is 2104-02-26T09:42:24Z. A date well inside it
+    /// survives the round trip.
     #[test]
     fn the_range_limit_is_exactly_where_the_docs_say() {
         assert!(Timestamp::from_unix(UNIX_LIMIT - 1, 0).is_some());
         assert!(Timestamp::from_unix(UNIX_LIMIT, 0).is_none());
-        // Both sides above are read off the constant, so they move with it: a `-` turned `/` or a
-        // `<<` turned `>>` in its definition put the wall in 2038 or 2036 and every line above
-        // still passed (2026-10-07 census triage). The wall is a date, worked by hand: era 0's
-        // 2^32 seconds less the 1900-to-1970 offset, plus the half-era the pivot grants, is
-        // 2104-02-26T09:42:24Z. And a date well inside it has to survive the round trip.
         assert_eq!(UNIX_LIMIT, 4_233_462_144);
         const Y2100: u64 = 4_102_444_800; // 2100-01-01T00:00:00Z
         assert_eq!(
