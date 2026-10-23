@@ -72,14 +72,9 @@ fn init_from_device_tree() {
     record_interrupt_controllers(&dtb);
     record_devices(&dtb);
 
-    // Everything that is already spoken for, and must not be allocated or scribbled on.
-    //
-    // The initial ramdisk matters and is easy to miss: the bootloader loaded a file into RAM for
-    // us and told us where. Nobody else will protect it. Milestone 8 and 10 want to read
-    // it, and if the allocator hands that memory out first, the bug lands a long way from
-    // its cause.
-    // Image + DTB + initial ramdisk (3), plus the legacy reservation block and the /reserved-memory
-    // node (up to MAX_REGIONS each).
+    // Everything already spoken for, which must never be allocated: the image, the tree and the
+    // initial ramdisk (3; nobody else protects the ramdisk), then the legacy reservation block and
+    // /reserved-memory (up to MAX_REGIONS each).
     let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAX_REGIONS + 3];
     let mut n = 0;
 
@@ -126,16 +121,9 @@ fn init_from_device_tree() {
 /// Find the interrupt controller in the tree: aarch64's GIC, or the RISC-V PLIC.
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
-    // The interrupt controller, aarch64's GIC, found by its BINDING (milestone 227). It used to be
-    // found by the node-name prefix `intc@`, taking `reg[0]` and `reg[1]` as distributor and CPU
-    // interface. That is true of a GICv2 and false of a GICv3, whose `reg[1]` is the redistributor
-    // array, and milestone 222 measured the result: a kernel that booted, printed `interrupts ON`,
-    // and took none. `machine_discovery::gic` reads `compatible` instead, and an `intc@` node with a
-    // binding it does not know is refused here, by name, rather than driven on a guess.
-    // `arch::irq::init` then asks the hardware whether the tree is right before using it.
-    //
-    // aarch64 only: on RISC-V the interrupt controllers are the PLIC below and each hart's
-    // `riscv,cpu-intc`, neither of which is this question.
+    // aarch64's GIC, found by its binding (`machine_discovery::gic`), not by node name: a GICv3's
+    // `reg[1]` is the redistributor array, not a CPU interface. An unknown binding is refused by
+    // name, and `arch::irq::init` then checks the hardware agrees with the tree.
     #[cfg(target_arch = "aarch64")]
     match machine_discovery::gic::discover(dtb) {
         Ok(found) => *GIC_REGIONS.lock() = found,
@@ -149,13 +137,9 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         Err(refusal) => panic!("cannot read the device tree's GIC: {refusal:?}"),
     }
 
-    // The RISC-V interrupt controller (milestone 20): the PLIC. Found by its binding, because the
-    // node's label is the board author's: QEMU spells it `plic@c000000` and the JH7110
-    // `interrupt-controller@c000000`, so the old `plic@` name-prefix read found nothing on the
-    // board this has to boot next (notes/visionfive2.md). The name prefix stays as a fallback for
-    // a tree that names the node conventionally but states a compatible we do not know. aarch64
-    // has neither, so there `plic_region` stays None; the GIC above is its equivalent. One
-    // register block, unlike the GIC's distributor/CPU-interface pair.
+    // The RISC-V PLIC, found by its binding because the node name is the board author's (QEMU's
+    // `plic@c000000`, the JH7110's `interrupt-controller@c000000`); the `plic@` prefix is only a
+    // fallback for a compatible we do not know. One register block.
     {
         let mut plic = [Region { start: 0, size: 0 }; 1];
         // One compatible list, shared with the context map, so the two lookups cannot disagree
@@ -174,26 +158,12 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 /// controllers, the SMMUv3, the real-time clock, the UART's interrupt line and the PCIe host bridge.
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
-    // The JH7110's STG clock and reset generator (milestone 220), which nothing else on any
-    // machine this kernel boots has an analog of: every other device it drives came up already
-    // running. Recorded **only when this machine is a JH7110**, because `jh7110_clock_and_reset::discover`
-    // deliberately never fails to produce an address (it falls back to the corroborated constant
-    // when a tree names no controller), and mapping that constant on a board that has nothing
-    // there would be a device mapping of an address nobody named. The two ways to be a JH7110
-    // that matter here: the tree names a clock controller, or it names the TRNG whose clocks this
-    // exists to ungate. QEMU's `virt` board names neither, so `jh7110_clock_and_reset` stays None
-    // there and `drivers::jh7110_clock_and_reset` is never reached.
-    //
-    // The SYS window and the PMIC bus's plan (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
-    // provisional) ride the same guard, and
-    // only it: their own discovery also falls back to constants, so it cannot be the evidence that
-    // this machine is a JH7110. They are read here, while the tree is in hand, because the one
-    // caller (the rebooting soak, just before its SBI reset) runs long after boot.
+    // The JH7110's STG clock-and-reset generator, recorded only on a JH7110 (the tree names a
+    // clock controller, or the TRNG whose clocks it ungates): its discovery falls back to a
+    // constant, and mapping that on another board maps an address nobody named. The SYS window and
+    // the PMIC bus's plan ride the same guard, read now while the tree is in hand.
     record_jh7110(dtb);
-    // The JH7110's two SD/MMC controllers (milestone 53 (the board's own peripherals: network and
-    // storage on real silicon)), under the same guard: recorded only once `record_jh7110` has
-    // established that this is a JH7110, because the vendor tree's `snps,dw-mshc` is a generic
-    // binding that says nothing about which board it is on.
+    // The JH7110's SD/MMC controllers, under the same guard: `snps,dw-mshc` names no board.
     record_jh7110_storage(dtb);
     // The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional), only in
     // a build whose soak arms it. Its own node is the guard, as the Ethernet port's is.
@@ -211,12 +181,8 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         }
     }
 
-    // The real-time clock (milestone 51), matched on `compatible` rather than on a node name.
-    // This is the device where the name shortcut runs out: aarch64 `virt` calls it
-    // `pl031@9010000` and riscv64 `virt` calls it `rtc@101000`, so no prefix finds both, while
-    // `arm,pl031` and `google,goldfish-rtc` name exactly the register layouts a driver knows.
-    // Both boots probe for both, and a machine with neither leaves this None, which the clock
-    // service reports as "I do not know what time it is" (DECISIONS §42, §43).
+    // The RTC, by `compatible`: no node-name prefix finds both `virt` boards' (`pl031@9010000`,
+    // `rtc@101000`). None means the clock service says it does not know the time (DECISIONS §42).
     {
         let mut rtc = [Region { start: 0, size: 0 }; 1];
         for (compat, kind) in [
@@ -232,27 +198,17 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         }
     }
 
-    // The console UART's interrupt line, decoded per the tree's own `#interrupt-cells` rather
-    // than assumed (crates/machine_discovery/src/interrupt_id.rs). It was a constant, and the constant was the
-    // last QEMU number on the interrupt path: the tour's driver demo armed PLIC source 10 on the
-    // JH7110, whose UART0 interrupts on line 32, and boot 13 (2026-08-15) proved it on silicon
-    // when a key press at the finished tour's prompt reached nothing (notes/visionfive2.md,
-    // BUGS). A tree that does not say leaves this None, and the callers fall back to the QEMU
-    // `virt` constant and print which source won.
+    // The console UART's interrupt line, decoded per the tree's own `#interrupt-cells`
+    // (`machine_discovery::interrupt_id`): the JH7110's UART0 is line 32, not QEMU's 10. None when
+    // the tree does not say, and the callers fall back to the QEMU constant and say so.
     if let Ok(Some(irq)) = machine_discovery::interrupt_id::of_node(dtb, crate::console::UART_NODE)
     {
         *UART_IRQ.lock() = Some(irq);
     }
 
-    // The PCIe host bridge, matched on the generic-ECAM binding both QEMU `virt` boards state.
-    // `reg` is the ECAM config window; `ranges` carries the standard 7-cell PCI entries, of
-    // which the 32-bit non-prefetchable memory entry is the window the kernel assigns BARs from
-    // (`pci::mem32_window` owns that parse). The JH7110 has no such node (its PLDA controller
-    // is `starfive,jh7110-pcie`, a different device with no driver here yet), so there this
-    // stays None and no PCIe window is ever mapped or probed. It has to come from the tree: the
-    // old QEMU constants put the BAR window at 0x4000_0000, which on the JH7110 is DRAM base,
-    // already direct-mapped, and the first VisionFive 2 boot died on the mapper's overwrite
-    // refusal (DECISIONS §43, notes/visionfive2.md).
+    // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
+    // non-prefetchable `ranges` entry the BAR window (`pci::mem32_window`). It must come from the
+    // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node (DECISIONS §43).
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
         if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
@@ -358,42 +314,19 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 }
 
 /// **Bring the frame allocator up over a described machine**, given RAM and everything already
-/// spoken for. The half of [`init`] that does not care where the description came from.
+/// spoken for: the half of [`init`] that does not care where the description came from.
 ///
-/// # Why this is a separate function
-///
-/// It is the narrow half of the seam milestone 20 promised and did not build: "put device discovery
-/// behind a 'here is the hardware' interface (device tree today, ACPI/PCI later)". [`init`] above is
-/// a **device-tree front end**, so on a machine without a device tree there is nothing it can do,
-/// and `x86_64` has PVH's memory map and ACPI instead (milestone 161). Splitting the two apart is what
-/// lets a third architecture reach the allocator at all.
-///
-/// **Narrow, and the rest is still owed.** What crosses this seam is RAM and reservations. The
-/// device *windows* [`init`] also discovers (the interrupt controller, the RTC, the UART's interrupt
-/// line, the PCIe ECAM range) are still read from the tree by the front end and stored in this
-/// module's statics, which simply stay `None` on a machine with no tree. Widening it is its own
-/// milestone; see notes/x86-port/acpi-and-pci.md.
-///
-/// `ram` is every region that is real, allocatable memory. `forbidden` is every region inside it
-/// that something else already owns, and **it must include the kernel image**, or the allocator
-/// hands out the code it is running from.
+/// `ram` is all real, allocatable memory; `forbidden` is everything something else already owns,
+/// and **must include the kernel image**. Panics if no RAM run can hold the frame bitmap. See
+/// notes/physical-memory.md.
 ///
 /// # BUGS
-///
-/// - **The type at this seam is still the device tree's.** `Region` is `device_tree_blob::Region`,
-///   which is a plain `{ start, size }` pair and means nothing device-tree-specific, but a machine
-///   with no device tree naming a device-tree type is a smell rather than a design. Moving it
-///   belongs with the wider seam.
-/// - **At most `MAX_REGIONS` RAM regions.** More than that indexes past the map below. Both `virt`
-///   boards describe one; q35 describes three. A caller with more must decide what to drop, because
-///   this cannot.
+/// - The seam's type is still `device_tree_blob::Region`, a device-tree type on every machine.
+/// - At most `MAX_REGIONS` RAM regions; more indexes past the map.
 pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
     assert!(!ram.is_empty(), "the machine describes no RAM at all");
 
-    // The whole span we have to be able to describe. Note this is the *span*, not the
-    // *sum*: if a board has RAM at 0x4000_0000 and again at 0x8_0000_0000, we track
-    // every frame between them and simply never free the hole. A bit of wasted bitmap
-    // buys a much simpler index calculation.
+    // Track the span, not the sum: frames in a hole between regions are never freed.
     {
         let mut map = RAM.lock();
         for (i, r) in ram.iter().enumerate() {
@@ -404,53 +337,23 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
 
     let base = ram.iter().map(|r| r.start).min().unwrap();
 
-    // The span the bitmap must cover is RAM's, **widened by whatever `forbidden` reaches
-    // past it**, not RAM's alone. Found on x86_64 (decisions §86's VT-d/NVMe data point,
-    // 2026-08-25): QEMU's PVH loader places the initial ramdisk at a fixed offset below the top of
-    // guest memory, sized for a smaller device set than this boot's VT-d-plus-NVMe ACPI
-    // tables need. Attaching the NVMe controller grows those tables enough that the e820
-    // map's "usable RAM" boundary moves down past the initial ramdisk's last few hundred bytes,
-    // which land in the newly-`reserved` region instead. `bring_up_memory` (the x86_64
-    // front end) correctly still claims that whole initial ramdisk region as `forbidden`, physical
-    // bytes and all; what was missing is that `top` here was computed from `ram` alone, so
-    // the bitmap never grew far enough to represent those last frames at all, and
-    // `is_used` on them answered `None` (out of range) rather than the `Some(true)` a
-    // frame the kernel has explicitly claimed should always give. Widening `top` to the
-    // max of both closes that: the extra frames start (correctly) all-used by
-    // `PageFrameAllocator::new`, no `mark_free` ever runs on them because they are not in
-    // `ram`, and the `mark_used` below for `forbidden` now lands inside `total_frames`
-    // instead of being silently clamped away. A forbidden region entirely inside RAM (the
-    // common case, and every case on the other two architectures today) leaves `top`
-    // unchanged.
+    // The bitmap's span is RAM's widened by whatever `forbidden` reaches past it (x86_64's PVH
+    // initial ramdisk can end past e820's usable RAM), so every claimed frame is in range and
+    // reads as used. See notes/physical-memory.md.
     let top = ram
         .iter()
         .map(|r| r.end())
         .chain(forbidden.iter().map(|r| r.end()))
         .max()
         .unwrap();
-    // Round up to a whole frame before sizing the bitmap: RAM regions are frame-aligned in
-    // practice, but a `forbidden` region need not be (the initial ramdisk above is 4629504 bytes,
-    // not a multiple of 4096), and `page_frames_in` truncates. Rounding down here would
-    // silently drop the very last partial frame `top` was just widened to reach.
+    // Round up: a `forbidden` region need not be frame-aligned, and `page_frames_in` truncates.
     let total_frames = PageFrameAllocator::page_frames_in(top.next_multiple_of(FRAME_SIZE) - base);
 
     // --- the bootstrap problem ---
     //
-    // The allocator needs somewhere to put its bitmap. We have no allocator.
-    //
-    // The way out is to carve it, by hand, out of the very memory it is about to manage,
-    // and then reserve those frames from itself. **The allocator's first act is to
-    // allocate itself.**
-    //
-    // We used to just drop it immediately after the kernel image and hope. That worked,
-    // but only by luck: `image_size` in the arm64 Image header stops at `__stack_top`,
-    // so everything past `__image_end` is memory we never told the bootloader we wanted.
-    // QEMU happens to place the DTB and the initial ramdisk 64 MiB higher up. Different firmware
-    // need not.
-    //
-    // So instead: scan RAM for the first frame-aligned run that clears everything above.
-    // Same answer in practice, but now it's proven rather than lucky, and it will keep
-    // being right on hardware we haven't met.
+    // The allocator needs somewhere to put its bitmap, and there is no allocator. Carve it out of
+    // the memory it is about to manage, at the first frame-aligned run that clears everything
+    // spoken for (nothing past `__image_end` is promised to us), and reserve it from itself.
     let bitmap_bytes = PageFrameAllocator::bitmap_bytes(total_frames);
     let bitmap_start = place_bitmap(bitmap_bytes as u64, ram, forbidden);
     BITMAP_START.store(bitmap_start as usize, core::sync::atomic::Ordering::Relaxed);
@@ -517,40 +420,11 @@ fn overlaps(a: u64, alen: u64, b: u64, blen: u64) -> bool {
 
 /// **The fewest frames that were ever free at once on this boot**, and what was refused.
 ///
-/// The frame ledger in `testing.rs` reads the allocator twice, before the first test and after the
-/// last, and both of its gates are about that end state. What a boot actually runs out of is the
-/// middle, and an exhaustion shows up far from the tests that spent the memory. This says how close
-/// the run came, and the first refusal says where it went over (milestone 601 (the region table
-/// prints its peak)).
-///
-/// Kept under the allocator lock by [`alloc`] and [`alloc_contiguous`], so a plain load and store
-/// is enough (the lock orders them); atomics only because a `static` must be `Sync`.
-///
-/// # The ledger at the low-water
-///
-/// Measured 2026-09-26 on `main` at `484f3ebe` plus #1347, from the closing `frames:` lines:
-///
-/// | | free before the first test | lowest free | free after the last | refused |
-/// |---|---|---|---|---|
-/// | aarch64 | 57033 | **23654** | 34790 | 0 |
-/// | riscv64 | 57882 | **24682** | 35780 | 0 |
-/// | `x86_64` | 58841 | **35719** | 46813 | 0 |
-///
-/// Every low sits about 11,100 frames under its own end-of-suite figure, and the test named each
-/// time is a progenitor test (`the_report_child_builder_parses_an_elf_and_builds_a_running_child`, or on
-/// riscv64 `the_least_authority_demo_builder_passes_its_demo_an_argument`). Both carve a 12,288-page building
-/// budget (`memory_region::create(12288)` in `kernel/src/user.rs`) and give it back when they
-/// finish. So the ledger at the low-water is `notes/frames.md`'s held list plus that one
-/// reservation. What moves the low from one milestone to the next is the held list growing; what
-/// catches a load that no longer fits is the refusal count, which the same summary prints.
-///
-/// **Contiguity is not tracked per test**: `largest_free_run` per test never moved from the first
-/// test's reading, and a bitmap scan per test overran the `x86_64` 17 GiB leg's time bound. A
-/// refused `alloc_contiguous` is the contiguity failure itself, and that is counted here.
-///
-/// No allocation was refused on any architecture in that run, so a refusal line is news. Reports
-/// and does not gate, for `sched::MAX_THREADS`'s reason: the held list grows on purpose, and the
-/// frame ledger's two end-of-suite gates already hold the permanent part to account.
+/// The frame ledger in `testing.rs` reads the allocator before the first test and after the last;
+/// this says how close the middle came, and the first refusal says where it went over. It reports
+/// and does not gate. Kept under the allocator lock by [`alloc`] and [`alloc_contiguous`], so a
+/// plain load and store suffice; atomics only because a `static` must be `Sync`. See
+/// notes/physical-memory.md for the ledger at the low-water.
 static FREE_LOW_WATER: AtomicUsize = AtomicUsize::new(usize::MAX);
 /// How many allocations the allocator refused, and the largest request among them, in frames.
 static REFUSED: AtomicUsize = AtomicUsize::new(0);
@@ -602,20 +476,9 @@ pub(crate) fn alloc_contiguous(count: usize) -> Option<PageFrame> {
 
 /// A freshly allocated frame, zeroed.
 ///
-/// **This exists so the "is it sound to write over this frame" argument is made once, here,
-/// rather than at every caller.** Thirty-seven sites across the kernel used to allocate a frame
-/// and then hand-write the same `// SAFETY:` comment over `core::ptr::write_bytes`: a fresh frame
-/// is exclusively ours and the direct map reaches it, so zeroing it cannot race and cannot be seen
-/// by anyone else. That is not thirty-seven facts, it is one fact about what [`alloc`] returns,
-/// and the allocator is the only thing in the tree that can actually check it. Two of those
-/// comments had already noticed they were copies (`user/rmle_service.rs`: *"a second copy of three
-/// lines"*; `user/session_reviver_service.rs`: *"matches `fs_service::frame`'s own shape"*)
-/// without anyone lifting it out. Milestone 139 round 8, and DECISIONS §94's rule that a body
-/// copied verbatim into every caller is not per-caller, only its declaration is.
-///
-/// Callers who want the frame's bytes left alone still call [`alloc`]; nothing here is mandatory.
-/// Zeroing is a `FRAME_SIZE` memory touch and it happens after the allocator lock is released,
-/// which is why this is written as two statements rather than one expression.
+/// The argument that writing over a fresh frame is sound is made once, in `zero_frames`, rather
+/// than at every caller (DECISIONS §94). Callers who want the bytes left alone call [`alloc`].
+/// Zeroing is a `FRAME_SIZE` memory touch, done after the allocator lock is released.
 pub fn alloc_zeroed() -> Option<PageFrame> {
     let frame = alloc()?;
     zero_frames(frame, 1);
@@ -730,12 +593,9 @@ pub fn is_page_frame_used(frame: PageFrame) -> Option<bool> {
 
 /// **The interrupt controller, as the device tree describes it**: which GIC version its binding
 /// names, and its register blocks in the roles that version gives them, all **physical**. Stashed
-/// at `init` because that is the only moment we have the device tree parsed, and milestone 5 needs
-/// it much later. `None` on a machine whose tree names no GIC, and always on RISC-V and `x86_64`.
-///
-/// Until milestone 227 this was a bare (distributor, CPU interface) pair taken from whatever node
-/// was named `intc@`, which is why a GICv3 machine's redistributor was once driven as a CPU
-/// interface. The version travelling with the addresses is what keeps that from recurring.
+/// at `init` because that is the only moment we have the device tree parsed. `None` on a machine
+/// whose tree names no GIC, and always on RISC-V and `x86_64`. The version travels with the
+/// addresses because a GICv3's blocks are not a GICv2's.
 #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))] // riscv has a PLIC, x86 an APIC
 pub(crate) fn gic_regions() -> Option<machine_discovery::gic::Gic> {
     *GIC_REGIONS.lock()
@@ -983,11 +843,8 @@ pub(crate) fn record_uart_irq(irq: u32) {
 /// physical address it cannot use, and it must be able to touch any frame the allocator
 /// hands it (to zero a new page table, to fill a new user page).
 pub(crate) fn ram_regions() -> impl Iterator<Item = (u64, u64)> {
-    // Copy the whole map out under ONE lock acquisition, then iterate freely. 256 bytes.
-    //
-    // The alternative (an iterator that holds the lock, or takes it per element) would keep a
-    // kernel lock live across arbitrary caller code, with interrupts masked the whole time.
-    // That violates "keep critical sections short" (DECISIONS §9) for no benefit at all.
+    // Copy the whole map (256 bytes) out under ONE lock acquisition, so no kernel lock is held,
+    // interrupts masked, across the caller's iteration (DECISIONS §9).
     let map = *RAM.lock();
     (0..map.count).map(move |i| map.regions[i])
 }
@@ -1002,21 +859,12 @@ pub fn bitmap_region() -> (u64, u64) {
 }
 
 /// **Record where the loader put the initial ramdisk**, for a front end that is not the device
-/// tree's (milestone 161).
+/// tree's: `x86_64` reads it from PVH's module list (`arch::x86_64::machine::initial_ramdisk`).
 ///
-/// [`init`] reads the bounds out of `/chosen` and stores them itself, which works on the two
-/// architectures that have a device tree. `x86_64` gets them from PVH's module list instead
-/// (`arch::x86_64::machine::initial_ramdisk`), so the storing has to be reachable from there. This
-/// is the same seam [`bring_up_page_frames`] is: the fact crosses it, the *source* of the fact does
-/// not.
-///
-/// **It does not reserve the region**, and the asymmetry with [`init`] is deliberate. A caller here
-/// is already building the `forbidden` slice it hands [`bring_up_page_frames`], so doing it in both
-/// places would either double-reserve or, worse, make each side assume the other did it. The x86
-/// front end passes the same region both ways, one line apart, where a reader can see it.
-/// Only a device-tree-less front end calls this, so on the two architectures that have a tree it is
-/// dead, and saying so here is cheaper than the alternative (`#[cfg(target_arch = "x86_64")]`),
-/// which would make a seam look like an x86 detail.
+/// It does not reserve the region: the caller is already building the `forbidden` slice it hands
+/// [`bring_up_page_frames`]. Dead on the device-tree architectures, which [`init`] serves; an
+/// `allow` says so rather than a `cfg` that would make a seam look like an x86 detail. See
+/// notes/physical-memory.md.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `record_initrd` (the foreign spelling, which stops at the
@@ -1128,14 +976,8 @@ use core::sync::atomic::AtomicUsize;
 
 /// The RAM map, kept so the MMU can map it.
 ///
-/// **One lock, not sixteen.** This started life as `[IrqSafeMutex<(u64, u64)>; 16]`, which was
-/// sixteen locks for one piece of data and took one of them *per element* while iterating.
-/// That got the concurrency story exactly backwards: this is not shared mutable state, it is a
-/// **constant that happens to be computed at boot**, written once while single-threaded and
-/// read forever after.
-///
-/// Fixed-size rather than a `Vec` because `memory::init` runs *before* the heap exists. It is
-/// the last place in the kernel with that excuse.
+/// One lock for the whole map: it is a constant computed at boot, written once while
+/// single-threaded and read forever after. Fixed-size because `memory::init` runs before the heap.
 #[derive(Clone, Copy)]
 struct RamMap {
     regions: [(u64, u64); MAX_REGIONS],
@@ -1266,9 +1108,7 @@ pub(crate) fn print_summary() {
 /// module deals in *physical* frames, so we convert on the way in. Getting this backwards
 /// would reserve frames that don't exist and hand out the ones that hold our code.
 ///
-/// `pub(crate)` since milestone 161: an architecture that assembles its own forbidden list
-/// (`x86_64`, which has no device tree to read one from) needs the image's bounds to put in it,
-/// and the alternative was a second copy of this in `arch/`.
+/// `pub(crate)` because `x86_64` assembles its own forbidden list and needs the image's bounds.
 pub(crate) fn image_start() -> u64 {
     unsafe extern "C" {
         static __image_start: core::ffi::c_void;
@@ -1298,17 +1138,9 @@ mod tests {
 
     /// Proves we read a plausible memory map out of the device tree.
     ///
-    /// The allocator logic is tested exhaustively on the host (`cargo test -p frames`,
-    /// 14 tests, no emulator). What *only* the real machine can tell us is whether we
-    /// pointed it at the right memory, so that's all this checks.
-    ///
-    /// This used to assert an exact `256 * 1024 * 1024`, QEMU's runner-supplied `-m 256M`. Wrong
-    /// as a general claim: the VisionFive 2's device tree describes 4 GiB (`reg = <0x0 0x40000000
-    /// 0x1 0x0>`, bench 2026-08-21), regardless of what the board's own 8 GiB of physical DRAM
-    /// U-Boot's banner claims, so an exact QEMU literal was never going to survive a second
-    /// machine. The invariant this test actually owes is that the parse produced something real:
-    /// nonzero, and not some implausibly tiny remnant of a misparsed `reg` (a wrong cell width or
-    /// endianness reads back as a handful of bytes, not gigabytes).
+    /// Not an exact size: QEMU's runner passes 256 MiB and the VisionFive 2's tree describes 4 GiB.
+    /// The parse must produce something real, not the handful of bytes a wrong cell width or
+    /// endianness reads back as.
     #[test_case]
     fn memory_map_came_from_the_device_tree() {
         use page_frames::FRAME_SIZE;
@@ -1335,15 +1167,9 @@ mod tests {
 
     /// **The one that matters.** Every frame the kernel image touches must be reserved.
     ///
-    /// This states the invariant `mark_used` exists to maintain, directly. Our image ends
-    /// at 0x40097010, which is not frame-aligned, so the last frame is only *partly*
-    /// ours. Round that end down instead of up and the frame stays free, the allocator
-    /// hands it out, something writes to it, and the tail of the kernel is quietly
-    /// overwritten. The crash lands somewhere else entirely, much later, in code that did
-    /// nothing wrong.
-    ///
-    /// Checking the bitmap directly is both stronger and cheaper than draining the
-    /// allocator: it covers *every* frame of the image, and it allocates nothing.
+    /// The image's end is not frame-aligned, so its last frame is only partly ours; rounding that
+    /// end down would free it and let the tail of the kernel be overwritten. Checking the bitmap
+    /// covers every frame of the image and allocates nothing. See notes/physical-memory.md.
     #[test_case]
     fn every_frame_of_the_kernel_image_is_reserved() {
         use page_frames::{FRAME_SIZE, PageFrame};
@@ -1383,11 +1209,8 @@ mod tests {
             *slot = Some(frame);
         }
 
-        // `iter_mut().take()` and not `into_iter()`, which is the same lesson as the array size
-        // above one step further on. `into_iter` on an array consumes it BY VALUE, and a debug
-        // build gives that move its own stack temporary: `script/stack-frame-check` measured
-        // `<[Option<PageFrame>; 64] as IntoIterator>::into_iter` at **4224 bytes**, over the 4096-byte
-        // guard page, on both ISAs. Taking each slot in place copies one `Option<PageFrame>` instead.
+        // `iter_mut().take()`, not `into_iter()`: a debug build gives the by-value move its own
+        // stack temporary, measured at 4224 bytes, over the 4096-byte guard page.
         for slot in taken.iter_mut() {
             if let Some(frame) = slot.take() {
                 crate::memory::free(frame);
@@ -1428,13 +1251,8 @@ mod tests {
         crate::memory::free(frame);
     }
 
-    /// The bitmap must not sit on top of anything already spoken for.
-    ///
-    /// We used to place it immediately after the kernel image and hope. That worked, but
-    /// only because QEMU happens to put the device tree 64 MiB higher up. `image_size` in
-    /// the arm64 Image header stops at `__stack_top`, so everything past `__image_end` is
-    /// memory we never told the bootloader we wanted, and different firmware need not
-    /// leave it alone. Now the placement is scanned and proven; this checks it.
+    /// The bitmap must not sit on top of anything already spoken for: nothing past `__image_end`
+    /// is promised to us, so the placement is scanned, and this checks the scan.
     #[test_case]
     fn bitmap_overlaps_nothing() {
         let (bstart, bsize) = crate::memory::bitmap_region();
@@ -1462,16 +1280,8 @@ mod tests {
 
     /// If the bootloader gave us an initial ramdisk, the allocator must never hand it out.
     ///
-    /// Only meaningful when QEMU is run with `-initrd`, which the default test run isn't.
-    /// It asserts the invariant when there IS one and **skips** when there isn't, which is the
-    /// right shape: the check exists so that the day someone adds `-initrd` to the runner, this
-    /// catches it rather than milestone 10 catching it.
-    ///
-    /// It used to say "passes trivially when there isn't", and did: it returned, and the harness
-    /// counted a pass for a boot where the invariant was never looked at. That is the defect
-    /// milestone 214 (design/roadmap/0214-print-and-return-skips.md) swept, in its silent form:
-    /// a test that prints "skipping" and returns is counted as passed, and one that prints
-    /// nothing at all is counted as passed too.
+    /// Skips on a boot with no initial ramdisk (no `-initrd`), so a boot that never looked is not
+    /// counted as a pass.
     #[test_case]
     fn initial_ramdisk_is_reserved_if_present() {
         use page_frames::{FRAME_SIZE, PageFrame};

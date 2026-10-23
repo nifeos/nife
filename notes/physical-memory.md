@@ -35,9 +35,13 @@ The cost is 1 bit per frame: 32 KiB of bitmap per GiB of RAM. Or, for QEMU's 128
 
 The allocator needs memory for its bitmap. There is no allocator.
 
-The way out: carve the bitmap, by hand, out of the very memory it is about to manage. We know
-where the kernel image ends (the linker told us via `__image_end`), so the bitmap goes
-immediately after it, and then the allocator reserves those frames *from itself*.
+The way out: carve the bitmap, by hand, out of the very memory it is about to manage, and then
+have the allocator reserve those frames *from itself*. `place_bitmap` scans RAM in order for the
+first frame-aligned run that clears every forbidden region, jumping past the end of whatever a
+candidate hits. It does not simply take the memory after `__image_end`: `image_size` in the arm64
+Image header stops at `__stack_top`, so nothing past the image is memory we told the bootloader we
+wanted. QEMU happens to place the device tree and the initial ramdisk 64 MiB higher, and other
+firmware need not.
 
 The allocator's first act is to allocate itself.
 
@@ -94,6 +98,55 @@ table to search.
 
 If that ever becomes expensive, the fix is a per-region allocator. It isn't expensive yet.
 
+The span is RAM's **widened by whatever the forbidden list reaches past it**. On `x86_64`, QEMU's
+PVH loader places the initial ramdisk at a fixed offset below the top of guest memory, and a boot
+whose ACPI tables grow (VT-d plus NVMe) moves e820's usable-RAM boundary down past the ramdisk's
+last few hundred bytes. The x86 front end still claims the whole ramdisk as forbidden, so the
+bitmap has to reach it, or `is_used` on those frames answers `None` (out of range) instead of
+`Some(true)`, and the claim is silently clamped away. The extra frames start used and are never
+freed, because they are not in RAM. The top is rounded up to a whole frame, since a forbidden region
+need not be frame-aligned and `page_frames_in` truncates. A forbidden region inside RAM, the case
+on the other two architectures, leaves the span unchanged.
+
+## The seam with the machine description
+
+`memory::init` is a front end per description: a device tree on aarch64 and riscv64, PVH and ACPI
+on `x86_64` (`arch::discovery::init`). Both end in `bring_up_page_frames(ram, forbidden)`, which
+does not care where the description came from. What crosses the seam is RAM and reservations; the
+device windows the device-tree front end also discovers (the interrupt controller, the RTC, the
+UART's interrupt line, the PCIe ECAM range) are stored in `memory`'s statics, which stay `None` on
+a machine with no tree, and `x86_64` fills them through `record_*` calls instead (see
+[x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)). The `record_*` calls for facts the front end
+also reserves (the initial ramdisk, the boot file) store and do not reserve: the caller is already
+building the forbidden list, and reserving in both places would double-reserve or let each side
+assume the other did it.
+
+## The low-water ledger
+
+`memory::allocation_pressure` reports the fewest frames that were ever free at once on a boot,
+how many allocations were refused and the largest refused request. The frame ledger in `testing.rs`
+reads the allocator before the first test and after the last; what a boot runs out of is the
+middle, and an exhaustion shows up far from the tests that spent the memory. Measured 2026-09-26 at
+`484f3ebe` plus #1347, from the closing `frames:` lines:
+
+| | free before the first test | lowest free | free after the last | refused |
+|---|---|---|---|---|
+| aarch64 | 57033 | **23654** | 34790 | 0 |
+| riscv64 | 57882 | **24682** | 35780 | 0 |
+| `x86_64` | 58841 | **35719** | 46813 | 0 |
+
+Every low sits about 11,100 frames under its own end-of-suite figure, during a progenitor test
+(`the_report_child_builder_parses_an_elf_and_builds_a_running_child`, or on riscv64
+`the_least_authority_demo_builder_passes_its_demo_an_argument`). Both carve a 12,288-page building
+budget (`memory_region::create(12288)` in `kernel/src/user.rs`) and give it back. So the ledger at
+the low-water is [frames.md](frames.md)'s held list plus that one reservation: the held list growing
+moves the low, and the refusal count catches a load that no longer fits. Contiguity is not tracked
+per test: `largest_free_run` never moved from the first test's reading, and a bitmap scan per test
+overran the `x86_64` 17 GiB leg's time bound. A refused `alloc_contiguous` is the contiguity failure
+itself, and it is counted. The figure reports and does not gate, for `sched::MAX_THREADS`'s reason:
+the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent part to
+account.
+
 ## What we don't have
 
 No heap. No `Vec`, no `Box`. The regions coming out of the device tree go into fixed-size
@@ -111,3 +164,10 @@ code it interrupted can release. We need a written-down locking discipline befor
 ---
 
 *Add to this file as new memory concepts come up.*
+
+## BUGS
+
+- The seam's type is still `device_tree_blob::Region`, a plain `{ start, size }` pair, so a machine
+  with no device tree names a device-tree type. Moving it belongs with widening the seam.
+- At most `MAX_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three. A
+  caller with more must decide what to drop.
