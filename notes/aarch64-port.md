@@ -45,7 +45,7 @@ over `TVAL` is in interrupts.md, "The bug we shipped and then measured".
 
 The tick is per core, a banked PPI, and so is its count. A test that reads the count either side
 of a wait names the core (`ticks_on`), because a kernel thread can be stolen by an idle core at any
-preemption point (§28.3 (SMP placement)) and two reads on two cores compare unrelated counters.
+preemption point (§28 (SMP placement)) and two reads on two cores compare unrelated counters.
 
 ### The counter's rate is checked against the device tree
 
@@ -95,9 +95,9 @@ left them.
 
 ## The GICv3 CPU interface
 
-On a GICv2 the CPU interface is memory (`drivers/gic.rs`). On a GICv3 it is system registers, so its
-instructions live in `arch/aarch64/gic_cpu_interface.rs` by §4 rule 1. The distributor and
-redistributors are memory, in `drivers/gicv3.rs`. `arch/aarch64/irq.rs` is the one place that holds
+On a GICv2 the CPU interface is memory (`drivers/gic.rs`). On a GICv3 it is system registers, so
+its instructions live in `arch/aarch64/gic_cpu_interface.rs` by §4 (kernel shape) rule 1. The
+distributor and redistributors are memory, in `drivers/gicv3.rs`. `arch/aarch64/irq.rs` is the one place that holds
 both versions, so every caller names `arch::irq` and never a driver.
 
 | register | what it does | the failure if skipped |

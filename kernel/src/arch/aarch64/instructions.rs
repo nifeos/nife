@@ -1,14 +1,12 @@
-//! **One function per instruction**: the aarch64 `asm!` that logic calls, kept out of the logic so a
-//! proof can replace it. The twin of `arch/riscv64/instructions.rs`, which has the reasoning.
+//! **One function per instruction**, kept out of the logic so a proof can replace it; the twin of
+//! `arch/riscv64/instructions.rs`, which has the reasoning.
 //!
 //! *Name provisional (a lane minted it 2026-09-25, matching the riscv64 file; names are calef's).*
 //!
-//! Here is every `asm!` this tree wrote around logic. Registers reached through `aarch64-cpu`, and
-//! fixed sequences with no Rust logic inside (TLB and cache maintenance, `at` probes, the PSCI call,
-//! the GIC and PMU sequences), stay at their sites. A model of a function here is an unchecked
-//! claim about the silicon; each function says what a model must honour
-//! (notes/kernel-proofs/stubbing-an-instruction.md). Every function is `#[inline(always)]` and
-//! carries its call site's `options` unchanged.
+//! Here is every `asm!` this tree wrote around logic; registers reached through `aarch64-cpu` and
+//! fixed sequences with no Rust logic inside stay at their sites. A model of a function here is an
+//! unchecked claim about the silicon (notes/kernel-proofs/stubbing-an-instruction.md). Every
+//! function is `#[inline(always)]` and carries its call site's `options` unchanged.
 
 use core::arch::asm;
 

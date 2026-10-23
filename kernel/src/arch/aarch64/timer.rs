@@ -298,9 +298,8 @@ pub fn ticks() -> u64 {
 /// Ticks since boot on a **named** core, which is what a test needs when the thread doing the
 /// measuring can move between the two reads.
 ///
-/// A kernel thread can be stolen by an idle core at any preemption point (§28.3 (SMP
-/// placement)), so two reads of [`ticks`] may be of two counters. See
-/// notes/load-sensitive-assertions.md.
+/// A kernel thread can be stolen by an idle core at any preemption point (§28 (SMP placement)),
+/// so two reads of [`ticks`] may be of two counters. See notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     TICKS[cpu].load(Ordering::Relaxed)

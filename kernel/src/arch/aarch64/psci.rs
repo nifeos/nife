@@ -80,8 +80,7 @@ pub(super) const PSCI_SYSTEM_RESET: u64 = 0x8400_0009;
 ///
 /// # BUGS
 ///
-/// - **Proven under QEMU `virt` only, over `hvc`.** argon's TF-A, over `smc`, is milestone 249
-///   (the boot lottery is sampled by a person walking to the board)'s.
+/// - **Proven under QEMU `virt` only, over `hvc`.** argon's `smc` is milestone 249 (the boot lottery).
 /// - **The ACPI half (`machine_discovery::acpi::parse_arm_boot`) is not wired**: device tree only.
 ///
 /// Name: provisional (milestone 249): calef names public items.

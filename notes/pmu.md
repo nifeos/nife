@@ -184,7 +184,8 @@ test say there is nothing to measure.
 The closed register is not timing confinement. An ungranted thread can still time itself against
 `CNTVCT_EL0`, and two threads sharing a word build a far finer clock (confinement-claims.md). What
 it buys is that the cheap, accurate instrument is granted rather than ambient. Whether EL0 should
-ever be granted it is milestone 75's question.
+ever be granted it is the question of milestone 75 (who may read the cycle counter, and by
+what authority).
 
 ### BUGS
 
