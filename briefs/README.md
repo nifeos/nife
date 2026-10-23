@@ -76,6 +76,8 @@ on today is a cost problem that can change weekly without this directory changin
 | `gate-a-lane.md` | The four cheap gates every lane runs before pushing: order, traps, exit criteria. Provisional name. |
 | `gate-in-ci.md` | Push the heavy gates (QEMU, `script/verify`) to GitHub Actions instead of this laptop. |
 | `rebase-onto-main.md` | Rebase a branch onto `origin/main`, with the three known conflict classes named. |
+| `review-a-paydown.md` | Review one paydown pull request from its diff alone: the five recurring error classes, in order of harm, and the verdict line. Provisional name. |
+| `run-a-milestone-wide.md` | Run one large milestone across many concurrent lanes: what binds (the maintainer's loop, not the host), the partition into disjoint scope files, and the remedies in order of payoff. Provisional name. |
 | `session-start.md` | What a maintainer session does first: are the watchers alive, read what they found, and the tokens rules (lane count, model, the watch list, the CI-poll hook). |
 | `survey-the-queue.md` | Read-only report on the state of the merge queue. |
 | `triage-a-failing-check.md` | Read-only diagnosis of why a CI check failed, and this repository's specific log traps. |
