@@ -358,10 +358,10 @@ pub struct Thread {
     /// A capability parked here mid-delegation: a `SEND_CAP` with no receiver waiting blocks with
     /// it here, and the receiver `take()`s it into its own table. `None` for every ordinary send.
     ///
-    /// BUGS: the revocation sweeps clear this slot and the teardown paths (`depart`,
-    /// `finish_blocked_resident`, `reap_region_objects`) do not. That is safe only because a parked
-    /// sender is unparked through `set_ipc_aborted`, which clears it; a wake path that bypassed it
-    /// would leave a live capability in a corpse (`notes/confinement-claims.md` row 30).
+    /// # BUGS
+    ///
+    /// - Latent: the teardown paths never clear this slot, safe only while every wake of a parked
+    ///   sender goes through `set_ipc_aborted` (notes/thread-control-block.md).
     pub outgoing_cap: Option<crate::cap::Cap>,
 
     /// Did the delivery this thread is about to read install a capability? Set by the paths that
@@ -545,9 +545,11 @@ const FP_STATE_OFFSET: usize =
     size_of::<Thread>().next_multiple_of(align_of::<crate::arch::fp::FpState>());
 
 /// The page is the bound, and the compiler checks it. A `Thread` is always built at the start of a
-/// 4096-byte page it exclusively owns (`Threads::insert_at`, `insert_at_in_place`), and its FP
-/// register file lives in the page's idle space past the struct. Grow `Thread` past the point where
-/// the register file fits beside it and the kernel does not build.
+/// 4096-byte page it exclusively owns, because every route into the table (`insert_with` from
+/// `kmem`, `insert_from_page` from a user region's object page) goes through `Threads::insert_at`
+/// or `insert_at_in_place`. Its FP register file lives in the page's idle space past the struct.
+/// Grow `Thread` past the point where the register file fits beside it and the kernel does not
+/// build.
 const _: () = assert!(
     FP_STATE_OFFSET + size_of::<crate::arch::fp::FpState>() <= paging::PAGE_SIZE as usize,
     "a Thread plus its FP register file no longer fits in one TCB page"

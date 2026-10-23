@@ -6,7 +6,13 @@
 //! `PageFrame::MAP`, `AddressSpace::MAP_INTO` and `MemoryRegion::MAP`, just before the critical
 //! section that reads the source capability and files the copy. Nothing is held at the seam. Only
 //! the test kernel has it: the module and every call are under `cfg(feature = "system_tests")`. See
-//! notes/test-kernel-seams.md, which has the protocol and the `BUGS`.
+//! notes/test-kernel-seams.md, which has the protocol.
+
+//! # BUGS
+//!
+//! - One thread, one pause: arming again replaces the target, and a fired pause disarms itself.
+//! - Nothing enforces the protocol's order: [`disarm`] before starting the thread, [`arm`] inside
+//!   it.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

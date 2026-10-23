@@ -72,11 +72,13 @@ bit would cost 43 entries a log page. Every reader of a record must ask `is_tabl
 Recording a mapping scans the head page's used slots for a tombstone before it appends. The
 average scan is half of `LOG_ENTRIES`, and the cost of a record is linear in it. Taking
 `LOG_ENTRIES` from 255 to 170 moved `map_el0` by 16.9% on aarch64 (464,182 to 385,919 ticks) and
-16.4% on riscv64 (73,990 to 61,868), measured on 2026-08-27 (UTC) by changing that one number. A
-change to the constant moves both benchmarks, which then need re-recording.
+16.4% on riscv64 (73,990 to 61,868). Changing that one number on `main` and nothing else measured
+383,325 on aarch64, within 0.7% of the full change's figure, so the constant is the whole effect.
+A change to it moves `map_el0` on both architectures, which then needs re-recording.
 
 Walks loop over a chain's pages and then over each page's slice. A `flat_map` across the chain cost
-`map_el0` 39% and `spawn_el0` 19% on aarch64 icount against the floor (2026-10-08 UTC).
+`map_el0` 39% and `spawn_el0` 19% on aarch64 icount against the floor (2026-10-08 UTC); the
+per-page slice is 16% under the walk it replaced.
 
 The registry carries one past its highest live slot, so a walk costs the occupied prefix rather than
 `MAX_SPACES`. Without that bound, doubling `sched::MAX_THREADS` from 128 to 256 cost `spawn_el0`
@@ -204,6 +206,7 @@ scan cost `spawn_el0` 3,072 ticks a spawn on aarch64 icount (+21.5%), so one sca
 
 A space's root is a page table too, and nothing here cuts it. `CONFIGURE` binds a space to a thread
 whose TCB can come from another region, and `sched::reclaim_region` reaps a bound space only through
-its thread. Destroying the space's region while the thread lives frees the root it runs on. calef
+its thread. Destroying the space's region while the thread lives frees the root it runs on, which a scratch
+test drove once on aarch64. calef
 ruled on 2026-10-05 (UTC) that the thread dies as a resident, recorded in §16 (object revocation);
 milestone 765 (a destroyed region cannot free the root a running thread walks) builds it.

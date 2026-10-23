@@ -175,8 +175,11 @@ const PEAK_STABLE_PASSES_NEEDED: usize = 16;
 /// Say the boot's capability-slot high-water mark once it has stopped moving. Called from the
 /// scheduler's idle loop. It waits for [`PEAK_STABLE_PASSES_NEEDED`] passes with the mark
 /// unchanged, and `fetch_max` lets exactly one caller report a new peak, so a four-core machine
-/// prints one line. The number is `capability::highest_seen`'s, the highest any table reached, not
-/// a named thread's (notes/capability-objects.md's `BUGS`).
+/// prints one line. The number is `capability::highest_seen`'s, the highest any table reached.
+///
+/// # BUGS
+///
+/// - It names no thread: finding the table's owner would mean a walk under the scheduler lock.
 pub(crate) fn report_peak() {
     use core::sync::atomic::Ordering;
     let (peak, ceiling) = capability::highest_seen();

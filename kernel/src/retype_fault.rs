@@ -7,7 +7,13 @@
 //! One retype is one call into `memory_region::split`, `retype_run` or `retype_object_page`, so a
 //! `MAP` counts once per page table it builds. The target is a thread, read from the core's
 //! current-thread word. Only the test kernel has it (`cfg(feature = "system_tests")`). See
-//! notes/test-kernel-seams.md, which has the reasoning and the `BUGS`.
+//! notes/test-kernel-seams.md, which has the reasoning.
+
+//! # BUGS
+//!
+//! - One thread, not a process: a second thread of the same process that spends is not counted.
+//! - Only the Nth retype fails, not every one after it, so cleanup that allocates succeeds.
+//! - One target at a time: arming again replaces the earlier target.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 

@@ -56,8 +56,8 @@ impl LogEntry {
 /// size assertion holds.
 ///
 /// A benchmark input: [`MappingHold::record_mapping`] scans the head page for a tombstone before it
-/// appends, so recording a mapping costs time linear in this, and `map_el0` and `spawn_el0` move
-/// with it. notes/mapping-log.md has the measurements.
+/// appends, so recording a mapping costs time linear in this; `map_el0` is measured moving with it.
+/// notes/mapping-log.md has the measurements.
 const LOG_ENTRIES: usize = 170;
 
 /// How many log pages `n` recorded mappings cost, for a caller sizing an address space's backing
@@ -601,8 +601,11 @@ pub fn revoke_page_frame(phys: u64) {
 ///
 /// # BUGS
 ///
-/// An overlapping capability keeps its authority and mappings, and a device keeps its DMA window
-/// (§132's question 3). See notes/mapping-log.md.
+/// - An overlapping capability keeps its authority and its own mappings (§132's option B, refused).
+/// - A device keeps its DMA window: a revoke does not narrow `virtio::register` (§132's question
+///   3).
+///
+/// notes/mapping-log.md has both.
 ///
 /// Context: takes `IPC_TABLES` (each `CAPABILITY_TABLE` beneath it) for the capability pass and
 /// releases it, then `SPACES` once per page for the unmap pass.
@@ -652,15 +655,16 @@ pub fn revoke_port_range(base: u16, count: u16) {
 ///
 /// # BUGS
 ///
-/// A space's root is a page table too, and nothing here cuts it (milestone 765 (a destroyed region
-/// cannot free the root a running thread walks)).
+/// - A space's root is a page table too, and nothing here cuts it; a scratch test drove it once on
+///   aarch64 (milestone 765 (a destroyed region cannot free the root a running thread walks)).
 ///
 /// Context: takes `IPC_TABLES` for the capability pass and releases it, then `SPACES` for each scan
 /// and cut. The caller holds neither, nor `MEMORY_REGION`.
 pub fn revoke_region(base: u64, size: u64) {
     crate::sched::delete_page_frame_caps_overlapping(base, size);
     // One scan finds either kind of record, so the common case costs one pass over the logs. Order
-    // between kinds does not matter: a leaf under a table cut first is tombstoned with the cut.
+    // between kinds does not matter: a leaf under a table cut first is tombstoned with the cut, and
+    // an unmap through a cut table finds nothing and tombstones anyway.
     loop {
         let spaces = &mut *SPACES.lock();
         let mut table = None;
@@ -1029,9 +1033,9 @@ mod tests {
         let mut space = AddressSpace::new(0).expect("no space");
         let shared = crate::memory::alloc().expect("no frame").addr();
 
-        // A 0-content space has about 15 spendable pages, and 4096 mappings need about 16 log pages
-        // and 8 table pages, so the budget must run out mid-loop (2048 fits exactly). An exhausted
-        // region refuses a table page or a log page, and the `Err` does not say which.
+        // A 0-content space has about 15 spendable pages, and 4096 mappings need 25 log pages at
+        // `LOG_ENTRIES` (170) a page, plus about 8 table pages, so the budget runs out mid-loop. An
+        // exhausted region refuses a table page or a log page, and the `Err` does not say which.
         let mut refused = false;
         for i in 0..4096u64 {
             let va = 0x40_0000 + i * page_frames::FRAME_SIZE;
