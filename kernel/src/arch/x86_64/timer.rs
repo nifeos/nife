@@ -1,35 +1,13 @@
-//! **The timer, `x86_64`.** A calibrated TSC for reading time, and the local APIC timer for the tick.
-//!
-//! aarch64's `CNTFRQ_EL0` and RISC-V's device tree state their counter's rate; x86 does not on the
-//! parts this runs on (`CPUID` leaf 0x15 is often absent, and nothing reports the APIC timer's bus
-//! clock). So both rates are measured, from one shared wait, against the one fixed-rate device on a
-//! PC: the 8254 PIT at 1193182 Hz, over ten-millisecond windows timed by polling.
-//!
-//! **Several windows, and the smallest wins.** Polling sees the PIT's terminal count late, never
-//! early, so every window is an upper bound on the true rate and one descheduled window inflated it
-//! by up to 1153%. The minimum is the tightest bound; an average would be biased.
-//! [`CALIBRATION_WINDOW_CAP`] has the measured distributions, and
-//! [`CALIBRATION_AGREEMENT_PARTS_PER`] why the boot usually stops after three or four windows. The
-//! APIC timer's rate is the minimum over the same windows, taken independently.
+//! The timer, `x86_64`: the TSC, measured with the APIC timer against the 8254 PIT in polled
+//! 10 ms windows (smallest wins), and the APIC timer for the tick. See notes/tsc-under-tcg.md.
 //!
 //! # BUGS
-//!
-//! - The TSC is assumed invariant; `arch::x86_64::isa::init` refuses a bare-metal part whose
-//!   `CPUID.80000007H:EDX[8]` says otherwise, and under a hypervisor warns. Under QEMU on an
-//!   aarch64 host the TSC is the host's nanosecond clock (notes/tsc-under-tcg.md), which does not
-//!   carry to x86.
-//! - Min-of-N is a filter, not a bound: a host that never leaves this vCPU alone for ten
-//!   milliseconds still inflates the rate. The boot line prints the worst window beside the chosen
-//!   one, so a fought calibration shows a gap. A part reporting leaf 0x15 skips all of this
-//!   (`arch::x86_64::isa::tsc_crystal_hz`).
-//! - Under `-icount shift=0,sleep=off`, `script/bench --x86`'s default, the TSC is not wall time:
-//!   its rate follows the instruction stream.
-//! - `now()` is the calling core's TSC, and nothing measures or corrects skew between cores,
-//!   unlike aarch64's and RISC-V's system counters. A `kernel::user::wait_for` deadline that spans
-//!   a migration is only as good as that agreement. QEMU's skew is zero, so no test sees it.
-//! - Calibration costs boot time no other architecture pays: about 35 ms on a quiet host, up to
-//!   160 ms at the cap.
-//! - `init` panics if the local APIC is not up, because the order (APIC, then timer) is real.
+//! - The TSC is assumed invariant; `isa::init` refuses a bare-metal part that says otherwise.
+//! - Min-of-N filters a fought host rather than bounding it; the boot line prints the worst window.
+//! - Under `-icount shift=0,sleep=off` (`script/bench --x86`'s default) the TSC is not wall time.
+//! - `now()` is this core's TSC; nothing measures or corrects skew between cores (QEMU has none).
+//! - Calibration costs about 35 ms of boot on a quiet host, up to 160 ms at the cap.
+//! - `init` panics if the local APIC is not up: the order (APIC, then timer) is real.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -54,58 +32,17 @@ const PIT_HZ: u64 = 1_193_182;
 /// maximum is about 54.9 ms) and that boot does not visibly pause.
 const CALIBRATION_MS: u64 = 10;
 
-/// **The most windows that will ever be timed.** The answer is the smallest of the ones taken, and
-/// [`CALIBRATION_AGREEMENT_PARTS_PER`] usually stops it long before this.
-///
-/// One window was the original design and it is wrong by an unbounded amount: see this module's
-/// `BUGS`, and notes/tsc-under-tcg.md for the sweep that measured 1001 MHz to 4330 MHz against a
-/// counter known to tick at 1000.000 MHz. The error is **one-sided by construction**, because the
-/// poll can only notice the PIT's terminal count late and the whole TSC delta is then attributed
-/// to exactly [`CALIBRATION_MS`]. That is what makes the *minimum* the right estimator and an
-/// average the wrong one: every sample is an upper bound on the truth, so the smallest is the
-/// tightest bound available and more samples can only tighten it.
-///
-/// **This is a cap rather than a count, and it is where the accuracy actually comes from.** The
-/// stopping rule below decides when to stop early; this decides how bad a host the calibration can
-/// still survive, because on a host that keeps descheduling the vCPU every window is inflated and
-/// the only remedy is more of them.
-///
-/// **Sixteen is measured, not assumed** (the `calib` lane, 2026-09-21). calef's ruling named the
-/// shape, "fix the calibration with min-of-five windows", and left the count to be chosen
-/// honestly. Two hundred boots on a host deliberately saturated to load 30 on eight cores, each
-/// timing sixteen windows and reporting every one, give the error of the min over the first k:
-///
-/// | Cap | Median error | 99th percentile | Worst of 200 | Boots worse than 1% |
-/// |---|---|---|---|---|
-/// | 1 (what shipped) | +0.36% | +884% | **+1153%** | 56 / 200 |
-/// | 3 | +0.00% | +120% | +131% | 24 / 200 |
-/// | 5 | +0.00% | +20.6% | +51.4% | 11 / 200 |
-/// | 9 | +0.00% | +0.49% | +7.1% | 2 / 200 |
-/// | 16 | +0.00% | +0.01% | +0.47% | **0 / 200** |
-///
-/// **Five would have been the wrong number to ship**, and this is what the ruling asked to be
-/// checked rather than assumed: at this load a cap of five still leaves one boot in eighteen wrong
-/// by more than a per cent and a worst case of +51%. The tail only closes at sixteen. What makes
-/// that affordable rather than a 160 ms boot tax is the stopping rule below: the *mean* number of
-/// windows actually timed is 5.20 here and 3.5 on a quiet host, so the ruling's five is what this
-/// costs, and sixteen is only what it is willing to spend when the host is fighting.
+/// The most windows that will ever be timed; [`CALIBRATION_AGREEMENT_PARTS_PER`] usually stops
+/// sooner. A window can only be late, so each is an upper bound on the rate and the minimum is the
+/// tightest. Sixteen is measured: on a host saturated to load 30, a cap of five left one boot in
+/// eighteen wrong by over 1%, and sixteen left none of 200. The table is in
+/// notes/benchmarks/counter-frequency-and-calibration.md.
 const CALIBRATION_WINDOW_CAP: usize = 16;
 
-/// **When to stop taking windows**, as the reciprocal of the tolerance: two windows within one
-/// part in this of each other end the calibration.
-///
-/// The reasoning is the one-sidedness again, used the other way round. A window is inflated by the
-/// host descheduling the vCPU inside it, which is an event of essentially arbitrary size; for two
-/// windows to land within a thousandth of each other they must both have been left alone, because
-/// two independent deschedulings agreeing to three decimal places is not a thing that happens. So
-/// *agreement is the evidence of cleanliness*, and once there is evidence the remaining windows
-/// buy nothing but boot time.
-///
-/// Measured over 490 boots at three host loads, this reaches **exactly** the accuracy of taking
-/// the full cap every time, boot for boot, while averaging **3.5 windows on a quiet host and 5.2
-/// on one saturated to load 30**. A tighter tolerance (one part in 2000) changed the mean by 0.07
-/// windows and the error distribution not at all, which says the choice is not delicate: the clean
-/// windows agree to within the PIT's own quantisation and the dirty ones are nowhere near.
+/// When to stop taking windows: two within one part in this of the smallest end the calibration.
+/// A descheduled window is inflated by an arbitrary amount, so two that agree to a thousandth were
+/// both left alone. Over 490 boots this matched the full cap's accuracy at a mean of 3.5 windows
+/// on a quiet host and 5.2 at load 30; see milestone 571's block in `design/roadmap/`.
 const CALIBRATION_AGREEMENT_PARTS_PER: u64 = 1000;
 
 /// PIT channel 2's data port. Channel 2 is the one to use, and the reason is that it is the only
@@ -155,14 +92,9 @@ static TSC_HZ_FROM_CPUID: core::sync::atomic::AtomicBool =
 /// The local APIC timer's frequency in hertz, at the divider `irq` programs. Zero until measured.
 static APIC_TIMER_HZ: AtomicU64 = AtomicU64::new(0);
 
-/// **Every window's implied TSC rate, kept rather than discarded**, in the order they were timed.
-/// Only the first [`CALIBRATION_TAKEN`] entries mean anything; the rest are zero.
-///
-/// The spread across these is what says whether this boot's calibration was clean or whether the
-/// host was fighting it, and it is free once the windows have been taken. Keeping it is rung three
-/// of AGENTS.md's ladder: a bad calibration used to be silent, and a boot line that prints the
-/// worst window next to the chosen one makes it something a reader meets. [`calibration`] is the
-/// accessor.
+/// Every window's implied TSC rate, in the order timed; only the first [`CALIBRATION_TAKEN`] mean
+/// anything. Their spread says whether the host fought this boot's calibration, and the boot line
+/// prints the worst beside the chosen one. [`calibration`] is the accessor.
 static CALIBRATION_SAMPLES: [AtomicU64; CALIBRATION_WINDOW_CAP] =
     [const { AtomicU64::new(0) }; CALIBRATION_WINDOW_CAP];
 
@@ -225,11 +157,8 @@ fn measure_against_the_pit() -> (u64, u32) {
         t
     };
 
-    // Poll channel 2's output. Mode 0 holds it low while counting and raises it at terminal count.
-    // Bounded by nothing, deliberately: this is before any interrupt exists, the PIT is not
-    // optional on a PC, and a bound here would silently produce a wrong frequency rather than a
-    // visible hang. If it never returns, the machine has no PIT and that is worth finding out
-    // loudly.
+    // Poll channel 2's output, which mode 0 raises at terminal count. Unbounded on purpose: a bound
+    // would yield a wrong frequency silently, where a machine with no PIT hangs visibly.
     // SAFETY: reading the gate port, which has no read side effects.
     while unsafe { in8(PIT_GATE_PORT) } & 0x20 == 0 {
         core::hint::spin_loop();
@@ -268,18 +197,12 @@ pub(super) fn calibration_has_converged(samples: &[u64]) -> bool {
     samples.iter().filter(|&&s| s <= best + tolerance).count() >= 2
 }
 
-/// **Establish the TSC's rate and measure the local APIC timer against the PIT.**
+/// Establish the TSC's rate and measure the local APIC timer against the PIT. The arch contract's
+/// boot-info pointer is ignored: the numbers come from the machine.
 ///
-/// Takes the portable arch contract's boot-info-pointer argument, which x86 ignores; the numbers
-/// come from the machine rather than from a table, which is the shape of the difference this
-/// module's header is about.
-///
-/// **The TSC rate itself is asked for before it is measured** (milestone 161's `cntfrq`
-/// follow-up): `isa::tsc_crystal_hz` reads `CPUID` leaf `0x15` first, and only the PIT-measured
-/// delta is used if that comes back `None`. The local APIC timer's rate has no `CPUID`
-/// equivalent at all, so the PIT windows always run regardless of which source wins the TSC
-/// number; the same windows price both. See [`crate::arch::x86_64::isa::tsc_crystal_hz`] for why
-/// this project's own QEMU invocation always takes the calibrated path.
+/// [`crate::arch::x86_64::isa::tsc_crystal_hz`] (`CPUID` leaf 0x15) is asked first for the TSC,
+/// and has why QEMU always takes the calibrated path. The windows run regardless, because the APIC
+/// timer's rate has no `CPUID` source.
 ///
 /// # Panics
 /// If the local APIC is not up. The order is APIC then timer, and a timer calibrated against a
@@ -293,16 +216,9 @@ pub(crate) fn init_frequency(boot_info_pointer: usize) {
 
     let per_second = 1000 / CALIBRATION_MS;
 
-    // **The smallest window, not the only one.** Each window's error is non-negative (the poll
-    // notices the terminal count late, never early), so each sample is an upper bound on the true
-    // rate and the minimum is the tightest bound taken. An average would be a *biased* estimator
-    // here for exactly the same reason: it would carry every descheduling into the answer instead
-    // of discarding them. See `CALIBRATION_WINDOW_CAP` for the measured distributions.
-    //
-    // The TSC's minimum and the APIC timer's minimum are taken independently rather than both
-    // being read off whichever window was shortest. In practice that is the same window, because
-    // both deltas are proportional to the window's real duration; taking them separately costs
-    // nothing and means neither number can be dragged up by the other's outlier.
+    // The minimum, not an average: every window's error is non-negative, so an average would carry
+    // each descheduling into the answer. The TSC's and the APIC timer's minima are taken
+    // independently, so neither is dragged up by the other's outlier.
     let mut samples = [0u64; CALIBRATION_WINDOW_CAP];
     let mut apic_delta = u32::MAX;
     let mut taken = 0;
@@ -332,13 +248,8 @@ pub(crate) fn init_frequency(boot_info_pointer: usize) {
         None => (tsc_delta * per_second, false),
     };
 
-    // **The weakest of the three checks became the same check as the other two** (2026-09-21). This
-    // number had no validation at all: `frequency` asserted only that it was nonzero, which a
-    // calibration that came back garbage passes. Calibration is a *measurement*, against a PIT, on a
-    // vCPU the host may deschedule mid-window, so this is the one of the three rates that can be
-    // wrong without anything being broken. A rate outside the band is not a machine this kernel can
-    // time anything on; see `counter_frequency_contract::is_plausible` for where the bounds come
-    // from.
+    // A measured rate can be wrong with nothing broken, so it is held to the band the other
+    // architectures' rates are (`counter_frequency_contract::is_plausible`).
     assert!(
         counter_frequency_contract::is_plausible(hz),
         "the TSC rate came back as {hz} Hz ({}), which no real part runs at",
@@ -354,11 +265,8 @@ pub(crate) fn init_frequency(boot_info_pointer: usize) {
 
     let calibration = calibration();
     crate::println!(
-        // The worst window is printed beside the chosen one on purpose. The chosen rate is the
-        // *smallest* of several timed windows, because a window's error is one-sided, so the gap
-        // between them is this boot's own evidence of how much the host was descheduling the vCPU
-        // mid-calibration. A quiet host prints two numbers a megahertz apart; the boot that
-        // measured 4330 MHz would have printed the gap that said so. See CALIBRATION_WINDOWS.
+        // The gap between the worst window and the chosen one is this boot's evidence of how hard
+        // the host descheduled the vCPU; a quiet host prints two numbers a megahertz apart.
         "  clocks      : tsc {} MHz ({}, best of {} windows, worst {} MHz), apic timer {} MHz (measured against the PIT)",
         frequency() / 1_000_000,
         frequency_source(),
@@ -378,18 +286,11 @@ pub(crate) fn init_frequency(boot_info_pointer: usize) {
     }
 }
 
-/// **Start PIT channel 0 pulsing its interrupt line at about `hz`**, and report the rate actually
-/// programmed.
+/// Start PIT channel 0 pulsing its interrupt line at about `hz`, and return the rate programmed.
 ///
-/// The rate is "about" because the divisor is an integer: the PIT counts down from it at
-/// [`PIT_HZ`], so only the frequencies that divide 1193182 exactly are exact. 100 Hz is 11932.4,
-/// which rounds to a real rate of 100.0035 Hz. Reporting the achieved rate rather than the asked-for
-/// one is what keeps a boot print from claiming a number the hardware is not producing.
-///
-/// **This does not route the interrupt anywhere.** The line goes to both interrupt controllers; the
-/// 8259s are masked, and the IO APIC delivers nothing until `irq::enable` arms the redirection entry
-/// the MADT's override names. This is the device half, and it is here because `timer.rs` is where
-/// the PIT lives.
+/// The divisor is an integer, so 100 Hz is really 100.0035 Hz, and the achieved rate is returned.
+/// This does not route the interrupt: the 8259s are masked, and the IO APIC delivers nothing until
+/// `irq::enable` arms the entry the MADT's override names.
 ///
 /// Name: provisional (milestone 161 (the kernel port)).
 pub fn start_pit_ticking(hz: u64) -> u64 {
@@ -537,28 +438,15 @@ pub fn is_cycle_counter_grantable() -> bool {
     true
 }
 
-/// **The `x86_64` half of the cycle-counter grant, which does nothing** (milestone 229, DECISIONS
-/// 139 part 3). Called from the context switch on every switch, exactly as its aarch64 and riscv64
-/// twins are, so that `sched` has one portable call rather than three `cfg`s at the switch site.
-/// It compiles to nothing.
+/// The `x86_64` half of the cycle-counter grant, which does nothing (milestone 229, §139 part 3).
+/// Called on every switch like its aarch64 and riscv64 twins, so `sched` has one portable call.
 ///
-/// **This is a stated exception to DECISIONS §19 (architectural parity is a tenet), not a gap.**
-/// `CR4.TSD` (bit 2) would close `rdtsc` to ring 3 and is writable per switch like the other two
-/// registers, so option 4 is mechanically available here. What is not available is a fallback:
-/// `crates/user_mode_runtime`'s `now()` on this architecture **is** `rdtsc`, with no coarse monotonic source
-/// to fall back to the way aarch64 has `CNTVCT_EL0` and riscv64 has `rdtime`, so closing it for
-/// ungranted threads would take out `Instant`, `thread::sleep`, the random seed, smoltcp's
-/// timestamps and the benchmark harness at once. DECISIONS 139 measured the two alternatives
-/// (trap-and-emulate at 1,667 ns, 4.1x the syscall it is meant to beat; and there is no second
-/// user-readable clock, which is why Linux's own vDSO cannot work without a userspace TSC read)
-/// and closed both. `notes/x86-port/user-mode-runtime.md` carries the position where a reader meets it.
+/// A stated exception to §19 (architectural parity is a tenet): `CR4.TSD` could close `rdtsc`, but
+/// `crates/user_mode_runtime`'s `now()` is `rdtsc` with no coarse clock to fall back on, so every
+/// thread runs with the counter open, granted or not. See notes/x86-port/user-mode-runtime.md.
 ///
-/// So on this architecture every thread runs with the counter open, granted or not, and a program
-/// written against the grant works here for a reason it should not rely on.
-///
-/// **Built only under `test` or `--features cycle_counter_grant`** (milestone 237): the grant is
-/// a measurement build the way `soak_test` is. `kernel/Cargo.toml`'s feature block carries the
-/// reasoning and the measured cost. Milestone 228's closed default at `init` is NOT gated.
+/// Built only under `test` or `--features cycle_counter_grant` (milestone 237); see
+/// `kernel/Cargo.toml`'s feature block.
 #[inline(always)]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(_granted: bool) {}
@@ -570,9 +458,7 @@ pub(crate) fn set_cycle_counter_grant(_granted: bool) {}
 /// than one per handler.
 pub(crate) fn tick() {
     TICKS.fetch_add(1, Ordering::Relaxed);
-    // In a test build, feed the hang watchdogs (`testing::watchdog_tick`), as the other two
-    // architectures' ticks do. Missing here from milestone 161 until 2026-10-11 (UTC), so no x86_64
-    // test could fail by its budget or by a stall, and one hung for 9.5 hours (#1912).
+    // In a test build, feed the hang watchdogs, as the other two architectures' ticks do.
     #[cfg(any(test, feature = "system_tests"))]
     crate::testing::watchdog_tick();
 }
@@ -607,13 +493,9 @@ pub fn spin_for(counter_ticks: u64) {
 /// Scheduler ticks taken on `cpu`.
 ///
 /// # BUGS
-/// **This ignores its argument and reports the global count**, which was harmless when there was
-/// one CPU and is wrong now that there are several. The other two architectures keep a per-CPU
-/// array so a before/after pair names one CPU even if the caller migrated. It also blinds
-/// `sched::dump_threads`, whose per-core `ticks` column is how a dump tells a core wedged with
-/// interrupts masked from one that is merely idle: here every core prints the same number, and the
-/// other core's ticks hide the wedged one (corrected 2026-10-13 UTC by lane
-/// `maintainer/supervision-label-hang`, whose hang was exactly that shape).
+/// This ignores its argument and reports the global count; the other two architectures keep a
+/// per-CPU array. It blinds `sched::dump_threads`'s per-core `ticks` column, which tells a core
+/// wedged with interrupts masked from an idle one: here every core prints the same number.
 #[allow(dead_code)]
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     let _ = cpu;

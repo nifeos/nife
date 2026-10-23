@@ -1,42 +1,12 @@
-//! **Does the TSC tick at a constant rate under QEMU TCG?** A temporary measurement, not a feature.
+//! Does the TSC tick at a constant rate under QEMU TCG? A measurement behind the off-by-default
+//! `tsc_probe` feature, not a feature.
 //!
-//! `kernel/src/arch/x86_64/timer.rs` measures the TSC's rate once at boot and everything
-//! time-derived on x86 flows from that one number, while TCG refuses to advertise
-//! `CPUID.80000007H:EDX[8]` (the invariant-TSC bit) under any invocation. So nothing on this
-//! machine promises the rate is constant, and nothing had ever checked. This module checks, by
-//! comparing the TSC against a clock QEMU drives from a different source.
-//!
-//! # The independent clock, and why the obvious one is circular
-//!
-//! The PIT is **not** usable as the reference, because `timer::init_frequency` calibrates against
-//! it: an agreement between the two would be the calibration agreeing with itself. Worse, in QEMU
-//! both the i8254 and the TSC are driven from `QEMU_CLOCK_VIRTUAL`, so they are the same clock
-//! wearing two device models.
-//!
-//! The **CMOS RTC** is driven from `rtc_clock`, which is `QEMU_CLOCK_HOST` by default: host wall
-//! time, advanced by a host timer rather than by the vCPU. That makes it the one clock in the
-//! machine that is independent of the TSC by construction, and it is the reference here. Its
-//! resolution is one second, which is coarse, so this does not *read* it as a time: it watches the
-//! seconds register for an **edge** and timestamps the TSC there. The error per edge is then one
-//! poll-loop iteration rather than one second, and the loop's own period is measured and reported
-//! so the bound is a number rather than an assumption.
-//!
-//! # What is varied, and why that is the discriminating experiment
-//!
-//! The hypothesis worth killing first is *where TCG gets guest time from*. If it derives the TSC
-//! from host wall time, the rate is constant by construction whatever the guest does. If it derives
-//! it from the emulated instruction stream, the rate moves with how fast emulation is going.
-//!
-//! So alternate windows burn two workloads with wildly different host cost per guest instruction:
-//!
-//! - **`alu`**: a register-only loop. Many guest instructions, very cheap to emulate.
-//! - **`port`**: `out 0x80` in a loop (the POST diagnostic port, ignored by QEMU and by every real
-//!   chipset). Few guest instructions, each one a TCG exit into device emulation, so it is orders
-//!   of magnitude more host time per guest instruction.
-//!
-//! Every window ends with the same tight RTC poll, so edge detection is identical across them and
-//! only the burn differs. Under an instruction-derived clock the two window kinds report different
-//! implied frequencies. Under a host-time-derived clock they report the same one.
+//! TCG never advertises the invariant-TSC bit, and all time on x86 flows from `timer.rs`'s one
+//! measured rate. So this times the TSC against the CMOS RTC's seconds edge: QEMU drives the RTC
+//! from host time, where the PIT shares the TSC's clock. Windows alternate a cheap `alu` burn with
+//! a costly `port` burn (`out 0x80`); an instruction-derived TSC would give the two different
+//! rates. Each edge is timestamped to one poll iteration, measured and printed. See
+//! notes/tsc-under-tcg.md.
 
 use super::port::out8;
 use super::timer;
@@ -140,14 +110,8 @@ pub(crate) fn probe() {
         timer::frequency_source(),
     );
 
-    // Every calibration window, not just the one that won. This is what turns the probe from "is
-    // the calibration right" into "is the *estimator* right": the truth is at or below the
-    // smallest of these, so a run where the smallest is close to the RTC-measured rate and the
-    // largest is far above it is the min-of-N argument being demonstrated rather than asserted.
-    // See `timer::calibration_windows`, and milestone 571 (the x86 boot calibrates the TSC once, and
-    // can be wrong by 4x), in
-    // design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md, for the sweep
-    // that chose the count.
+    // Every calibration window, so a run shows the smallest near the RTC's rate and the largest
+    // far above it: the min-of-N argument demonstrated, not asserted.
     print!("tscprobe: calibration windows");
     for window in timer::calibration().windows() {
         print!(" {window}");
@@ -182,12 +146,8 @@ pub(crate) fn probe() {
         let start = tsc_at_edge;
         let start_seconds = last;
 
-        // Burn for most of the window, then tight-poll for the edge that ends it. The tail is one
-        // tight poll in both window kinds, so edge detection is identical and only the burn differs.
-        //
-        // The burn's length is set by the *calibrated* rate, which is exactly the number under
-        // suspicion, so it is deliberately not load-bearing: how long the burn ran does not enter
-        // the result. What the window spans is counted from the RTC's own seconds register below.
+        // Burn, then tight-poll for the ending edge. The burn's length uses the calibrated rate,
+        // the number under suspicion, so it does not enter the result; the RTC counts the span.
         let burn_until = start + hz.saturating_mul(WINDOW_SECONDS - 1);
         let mut work = 0u64;
         while timer::now() < burn_until {
@@ -199,9 +159,7 @@ pub(crate) fn probe() {
             work += 1;
         }
 
-        // The edge that ends the window. `elapsed` is read off the RTC rather than assumed: the
-        // burn may have crossed more or fewer seconds than intended, and an assumed count is how
-        // the first version of this harness reported a 1.25 GHz TSC that does not exist.
+        // `elapsed` is read off the RTC, not assumed: the burn may cross more or fewer seconds.
         let current = seconds();
         let (tsc, seen, poll_iterations) = wait_for_edge(current);
         last = seen;
