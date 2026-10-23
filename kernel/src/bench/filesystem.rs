@@ -104,12 +104,11 @@ pub(super) fn fs_throughput() {
     }
 }
 
-/// A directory walk through a confined grant: `std_exerciser` walks milestone 121's (`ripgrep` on
-/// nife: enumeration as a capability) tree behind an `fs_subtree_caretaker` with plain `std::fs`.
+/// A directory walk through a confined grant: `std_exerciser` walks, with `std::fs`, the tree of
+/// milestone 121 (`ripgrep` on nife: enumeration as a capability) behind a caretaker.
 ///
-/// The row is the median warm walk, and the probes split it by `std::fs` call.
-/// `bench/host/run_linux_walk.sh` prices Linux on the same machine and disk tier. `--real --smp`
-/// only; skips without the RedoxFS disk or `std_exerciser` (built with `-Zbuild-std`).
+/// The row is the median warm walk; probes split it by call. `bench/host/run_linux_walk.sh` prices
+/// Linux alike. `--real --smp` only; skips without the RedoxFS disk or `std_exerciser`.
 ///
 /// # BUGS
 /// Warm only: the first walk fills the FS server's memo, as a repeated `rg` or `find` finds it. A

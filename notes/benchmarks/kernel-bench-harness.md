@@ -53,13 +53,13 @@ exact.
 
 ## `rfence_self`: one remote fence, on one hart
 
-The 2026-08-15 `map_new` reading had two rival explanations, remote fences against an
-over-reporting mask or the mask arithmetic itself, and they differ by orders of magnitude, so one
-fence's cost decides it ([riscv-map-new-and-the-rfence-probe.md](riscv-map-new-and-the-rfence-probe.md)).
-A hart may name itself in an SBI hart mask. The firmware serves that legal call with a local
-fence, and it exercises the whole `ecall`-into-firmware path a shootdown pays and a local
-`sfence.vma` does not. It must be single-hart: under `-icount` all harts share one virtual clock,
-so a second hart's idle `wfi` dumps quantized time into the open window.
+The 2026-08-15 `map_new` reading had two rival explanations, remote fences against an over-reporting
+mask or the mask arithmetic itself, and they differ by orders of magnitude, so one fence's cost
+decides it ([riscv-map-new-and-the-rfence-probe.md](riscv-map-new-and-the-rfence-probe.md)). A hart
+may name itself in an SBI hart mask. The firmware serves that legal call with a local fence, and it
+exercises the whole `ecall`-into-firmware path a shootdown pays and a local `sfence.vma` does not.
+It must be single-hart: under `-icount` all harts share one virtual clock, so a second hart's idle
+`wfi` dumps quantized time into the open window.
 
 ## The cycle probe
 
@@ -74,9 +74,9 @@ ratio is a fact about the emulator, and the line says so.
   count would make the ratio depend on the code inside the loop, which is what differs between an
   emulator and a core.
 - On riscv64 the window is a constant 100,000 ticks (10 ms on QEMU, 25 ms on radon), kept so every
-  radon run stays comparable with milestone 74's recorded `100002 ticks`. On x86_64 it is ten
-  milliseconds of a TSC whose rate this kernel measured, because a constant would be microseconds on
-  one part and a visible pause on another.
+  radon run stays comparable with the `100002 ticks` recorded by milestone 74 (cycle counters). On
+  x86_64 it is ten milliseconds of a TSC whose rate this kernel measured, because a constant would
+  be microseconds on one part and a visible pause on another.
 - An unavailable counter prints the reason and never a number. A fallback to the reference clock
   would print an exact 1.00 on x86_64, where that clock is the TSC.
 - x86_64's fixed counters are commonly 48 bits, so its delta is width-aware; a plain subtraction
@@ -91,9 +91,9 @@ two crates share no header, so the numbers are mirrored by hand. `MAP_EL0_ITERS`
 sum plus overhead, and maps past what it funds fail cheaply and skew the row.
 
 `SPAWN_EL0_BUDGET` is 64 pages on purpose. Each child is split, run and destroyed strictly LIFO, so
-its pages return to the budget (§16 (object revocation: reclaim the objects a process built)) and only one child lives at a time. That 64 funds a
-100-iteration loop, which would need over 1,000 pages without return-to-parent, is itself the proof
-that LIFO reclaim works.
+its pages return to the budget (§16 (object revocation: reclaim the objects a process built)) and
+only one child lives at a time. That 64 funds a 100-iteration loop, which would need over 1,000
+pages without return-to-parent, is itself the proof that LIFO reclaim works.
 
 `sink_throughput` reports bytes rather than iterations, because bytes compare against a Unix pipe.
 `bench/host/pipe_throughput.rs` measures a Unix pipe twice: with the same sixteen-byte writes, which
@@ -124,11 +124,12 @@ whose ticks did not advance is a broken run and reports zero.
 
 ## Multi-hart throughput
 
-Every other row is hart-pinned, so it is per-core path length and cannot show the placement of §28 (SMP placement: two random choices at spawn, message-shaped stealing, local wakes).
-`smp_throughput` runs N independent workloads and times them by wall clock. It needs more than one
-hart, and under `-icount` all vCPUs share one virtual clock and TCG serializes them onto one host
-thread, so it runs only on the `--real --smp` boot and never gates. The scaling factor is the solo
-ns/iter over the all ns/iter.
+Every other row is hart-pinned, so it is per-core path length and cannot show the placement of §28
+(SMP placement: two random choices at spawn, message-shaped stealing, local wakes). `smp_throughput`
+runs N independent workloads and times them by wall clock. It needs more than one hart, and under
+`-icount` all vCPUs share one virtual clock and TCG serializes them onto one host thread, so it runs
+only on the `--real --smp` boot and never gates. The scaling factor is the solo ns/iter over the all
+ns/iter.
 
 - Compute workers make no syscalls, so they make no cross-core wakes and scale cleanly to the core
   count: the direct picture of placement filling the machine.
@@ -145,7 +146,8 @@ ns/iter over the all ns/iter.
 
 ## E1 and E4: one real core
 
-E1 (`ipc_thread_scaling`) and E4 (`app_displacement`) are milestone 134's tier A
+E1 (`ipc_thread_scaling`) and E4 (`app_displacement`) are tier A of milestone 134 (the register of
+measures)
 ([design/roadmap/0134-the-measurements-that-decide.md](../../design/roadmap/0134-the-measurements-that-decide.md)).
 E1 asks whether the kernel's own IPC path goes cache-cold as more threads cycle through it; E4 asks
 what an IPC-heavy kernel costs an unrelated application's working set, Liedtke's actual claim. Both
@@ -181,10 +183,11 @@ more than the pipelines' 4, because a batch that long catches more host preempti
 and `net_stack` both use. Its difference from `ipc_rtt` is what one confined intermediary costs,
 deterministic and gated, which the real servers' end-to-end paths cannot be under `-icount`.
 
-`broker_rtt` is the opt-in rung of milestone 23 (a capability-routed component OS with live replacement) and §41 (the endpoint is the broker): `broker` interposed so a producer never blocks on
-an absent consumer. Read against `call_reply`, the same client and backend with nothing between,
-the difference is the whole tax, paid on every request in the steady state. The default rung has no
-row of its own because it has no cost of its own: no process stands in the data path, so its steady
+`broker_rtt` is the opt-in rung of milestone 23 (a capability-routed component OS with live
+replacement) and §41 (the endpoint is the broker): `broker` interposed so a producer never blocks on
+an absent consumer. Read against `call_reply`, the same client and backend with nothing between, the
+difference is the whole tax, paid on every request in the steady state. The default rung has no row
+of its own because it has no cost of its own: no process stands in the data path, so its steady
 state is `call_reply`.
 
 ## The x86_64 I/O-bitmap rows

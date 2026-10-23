@@ -1,9 +1,9 @@
 # The soak supervisor: its constants and its orderings
 
-An appendix to [notes/soak.md](../soak.md). It carries the reasons behind
-`kernel/src/soak.rs`: why each constant has its value, and why each step happens where it does. The
-tick route is [tick-route.md](tick-route.md), the census is [placement-census.md](placement-census.md),
-and the reboot loop's hazard and escapes are [rebooting-soak.md](rebooting-soak.md).
+An appendix to [notes/soak.md](../soak.md). It carries the reasons behind `kernel/src/soak.rs`: why
+each constant has its value, and why each step happens where it does. The tick route is
+[tick-route.md](tick-route.md), the census is [placement-census.md](placement-census.md), and the
+reboot loop's hazard and escapes are [rebooting-soak.md](rebooting-soak.md).
 
 ## Where the workload and the detection live
 
@@ -18,9 +18,9 @@ trace counters.
 - `BEAT_SECONDS` is 5, against `serial_console`'s fifteen-second default quiet window: three missed
   beats before a run is called a hang. Two would be tight on a board whose console is shared with
   U-Boot's leftovers. Four would take a minute to notice a wedge.
-- `WAITERS_PER_GROUP` is 1, and the number does real work. A group's waiters block on one
-  rendezvous and a tick wakes one of them, so the waiter count is the number of threads the wake
-  protocol chooses between. It wants to be comparable with the core count, so `pick_wake_target` has
+- `WAITERS_PER_GROUP` is 1, and the number does real work. A group's waiters block on one rendezvous
+  and a tick wakes one of them, so the waiter count is the number of threads the wake protocol
+  chooses between. It wants to be comparable with the core count, so `pick_wake_target` has
   somewhere to put them. One per group is one per core, since `topology_groups` builds a group per
   core, and at least two so a single-core QEMU leg still runs more than one endpoint.
 - Each worker's seed is distinct, odd and well spread. The jitter it drives keeps the pairs from
@@ -31,25 +31,26 @@ trace counters.
   boot thread writes each once, after every worker exists. `TICK_CURSOR` is global rather than keyed
   on the core, so every route is covered on a single-core machine, which still has two groups.
 - `REBOOT_AFTER_SECONDS` is 120, and both bounds are measured. The floor is when the arrangement is
-  knowable: on radon the spawn placement holds for about twenty-five seconds and is then replaced, in
-  one drift event, by an arrangement that does not change again. A shorter window records the
+  knowable: on radon the spawn placement holds for about twenty-five seconds and is then replaced,
+  in one drift event, by an arrangement that does not change again. A shorter window records the
   lottery's first draw, not the one the rate belongs to. The ceiling is that fifty boots fit in an
   evening: two minutes plus the twenty-odd seconds a boot takes is about two hours for fifty draws,
   and a hundred is an overnight run. Two minutes buys roughly twenty beats after convergence, so the
   rate is read off several. It is a constant because a board kernel has no configuration path.
-- `REBOOT_GRACE_SECONDS` is 5, matching the beat, so a person who reads the announcement has a beat's
-  time to act. It is not the main escape: every beat of the window has already asked. It serves
-  someone who walks up mid-run and wants the board back without knowing where in the cycle it is.
-- `WATCHDOG_RESET_AFTER_SECONDS` is 60: twelve beats of margin, so a beat delayed by a loaded machine
-  cannot trip it, and short enough that a wedged board is back before a person would walk to it. Both
-  watchdogs count twice before they reset, so it is two counts of 30 s: 50 TCO ticks each, or
-  720,000,000 ticks of the JH7110's 24 MHz core clock.
+- `REBOOT_GRACE_SECONDS` is 5, matching the beat, so a person who reads the announcement has a
+  beat's time to act. It is not the main escape: every beat of the window has already asked. It
+  serves someone who walks up mid-run and wants the board back without knowing where in the cycle it
+  is.
+- `WATCHDOG_RESET_AFTER_SECONDS` is 60: twelve beats of margin, so a beat delayed by a loaded
+  machine cannot trip it, and short enough that a wedged board is back before a person would walk to
+  it. Both watchdogs count twice before they reset, so it is two counts of 30 s: 50 TCO ticks each,
+  or 720,000,000 ticks of the JH7110's 24 MHz core clock.
 - `WATCHDOG_REPORT_EVERY_BEATS` is 6. Every beat would double the log. The first line proves the
   counter moves, and the rest say it still does.
 - `WEDGE_AFTER_SECONDS` is 30, six beats, so the log shows the watchdog petted before it is starved.
 - A worker's core in the census is `u8::try_from` rather than `as`. An online cpu id is bounded by
-  `MAX_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the census's
-  "no answer", instead of a wrong core number.
+  `MAX_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the
+  census's "no answer", instead of a wrong core number.
 
 ## The orderings
 
@@ -71,8 +72,8 @@ trace counters.
 - On a failure the census prints before the thread dump, and the dump before the panic, because the
   panic handler prints none and a failure with no path into the wedge shows only its end state.
 - The verdicts are tried in this order: a finding about the kernel (the wake gate refused), then
-  about delivery (a mismatch), then about liveness (a stall). The first beat is exempt from the stall
-  check only: a worker not yet scheduled has not started.
+  about delivery (a mismatch), then about liveness (a stall). The first beat is exempt from the
+  stall check only: a worker not yet scheduled has not started.
 - A worker's progress is its two counters summed. A waiter leaves `rounds` at zero and the other
   roles leave `wakes` at zero, and neither counter falls, so an unchanged sum means both were
   unchanged, with no table of who plays which part.
