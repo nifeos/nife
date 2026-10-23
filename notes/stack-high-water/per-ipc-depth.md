@@ -74,6 +74,9 @@ paint and are never counted; the null line is the proof.
   of frame; "radon against QEMU at one commit" below has it.
 - Which bytes are hot. A depth is how far the path *can* reach on this stack; it is not a count of
   lines touched, and it is not a miss count. That is milestone 134's M7.
+- Placement. Under `script/test` the machine has four cores, and the two ends of a pair may land on
+  different ones, so a sample can come from the cross-core wake path or the same-core one. Both ends
+  are spawned on the caller's core, and the report's spread says whether it mattered.
 
 ## The numbers
 

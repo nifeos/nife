@@ -249,8 +249,8 @@ impl PerCpu {
 ///
 /// A count, not a depth like `inbox_len`, so a push and drain between two reads still show. It
 /// exists for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named
-/// core because stealing may move the thread before it runs. An array beside `PerCpu`, because a
-/// drain is on no hot path (notes/per-cpu.md).
+/// core because stealing may move the thread before it runs (notes/load-sensitive-assertions.md).
+/// An array beside `PerCpu`, because a drain is on no hot path (notes/per-cpu.md).
 static ADOPTED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// The per-CPU blocks, one per core, static so a core's block exists before any allocator.

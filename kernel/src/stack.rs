@@ -327,8 +327,8 @@ pub(crate) unsafe fn paint(bottom: u64, top: u64) {
 /// Measure the most bytes a painted stack `[bottom, top)` has ever used.
 ///
 /// Scans up from `bottom` for the first word that is not [`PAINT`] and returns its distance from
-/// `top`: the deepest point ever reached, not the depth now. A deepest word that happened to store
-/// the paint value reads one word shallow. See notes/stack-high-water.md.
+/// `top`: the deepest point ever reached, not the depth now. Iterative, so it needs little stack of
+/// its own. A deepest word that stored the paint value reads one word shallow.
 ///
 /// # Safety
 /// `[bottom, top)` must be a mapped, readable, 8-byte-aligned range, and it must be a range
