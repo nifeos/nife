@@ -21,7 +21,7 @@ It waits on a maintainer approving the fork's CI run, then on re-review. The com
   linking `kani_lib.c` as a precompiled object, measured on patagonia, in an arm64 Linux container
   and on a GitHub x86_64 Linux runner. It is part of #4913 (`1eaa2d9`, with the Apple Silicon
   `char` fix in `9b72fa016`), not a separate pull request. nife's carried patch has the same
-  change (milestone 635).
+  change (milestone 635, riscv64 proofs check against the riscv64 model).
 - [pr-4913-followups.patch](pr-4913-followups.patch): three small review findings, in #4913 as
   `450cbc2`.
 
