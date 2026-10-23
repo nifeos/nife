@@ -134,3 +134,26 @@ argon the ratio should be near the core clock over 19.2 MHz and **not** a clean 
 - **HVF could not be tried.** This QEMU refuses HVF with a GICv2 (`HVF does not support GICv2
   emulation`), and this kernel's GIC driver is GICv2-only, so what HVF does to a started counter is
   still the unmeasured claim in the section above.
+
+## The x86_64 counter
+
+`arch::x86_64::pmu` reads `IA32_PERF_FIXED_CTR1`, `CPU_CLK_UNHALTED.CORE`: cycles the core ran at
+its actual frequency, not counting halts. It cannot be the TSC. `timer::now()` already is `rdtsc`,
+so a probe reading the TSC would divide one counter by itself and print an exact `1.00` on every
+part. The TSC is invariant, a good clock and not a cycle counter.
+
+The MSRs are from the Intel SDM Volume 3B, "Architectural Performance Monitoring". `CPUID` leaf
+`0x0A` gives the version (fixed counters from 2) and the fixed counters' count and width.
+`IA32_FIXED_CTR_CTRL` (`0x38D`) enables counter 1 for ring 0 and ring 3. `IA32_PERF_GLOBAL_CTRL`
+(`0x38F`) is the master switch, and a counter enabled in only one of the two counts nothing.
+`IA32_PERF_FIXED_CTR1` (`0x30A`) is the counter. Both control registers are read, modified and
+written, so firmware's bits survive.
+
+The leaf is checked before any MSR, because `rdmsr` on an unimplemented MSR is a `#GP` with no
+recovery. QEMU without its `pmu` property reports version 0, and `init` stops there.
+
+A counter is checked before it is believed. One unmoved across a timed spin is `Stuck`. One whose
+delta equals the TSC's bit for bit is the clock wearing a hat, `InStepWithTheTsc`. The test is
+exact equality on purpose: a tolerance band would refuse a real core pegged at its base frequency.
+The counter runs for the whole boot and is only ever read as a difference.
+
