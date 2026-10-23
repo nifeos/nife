@@ -1,16 +1,12 @@
 //! **The console UART's register shape, carried as one start word** (milestone 890 (riscv64 and
-//! `x86_64` join the shared boot path); radon's silent prompt).
+//! `x86_64` join the shared boot path)).
 //!
-//! The NS16550's registers are numbered 0 to 7, and the distance between them is the machine's:
-//! QEMU `virt` puts them one byte apart, and the JH7110 four bytes apart with 32-bit access
-//! (`reg-shift = <2>`, `reg-io-width = <4>`). The kernel reads both from the device tree
-//! (`console::configure_from_dtb`). The userspace console and input drivers map the same page and
-//! read no tree, so the kernel hands its answer to the progenitor as its first start word and the
-//! progenitor hands that word on to both. A driver that assumed QEMU's stride on the JH7110 would
-//! read its line status from the wrong register and wait forever for a bit that never sets.
-//!
-//! The word is `reg_shift | reg_io_width << 8`, and 0 is QEMU's byte layout, which is what aarch64
-//! and `x86_64` pass: the PL011 and COM1 have no stride to describe.
+//! The NS16550's register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
+//! access on the JH7110 (`reg-shift = <2>`, `reg-io-width = <4>`). The kernel reads it from the
+//! device tree (`console::configure_from_dtb`); the userspace console and input drivers read no
+//! tree, so the kernel passes its answer to the progenitor as its first start word and the
+//! progenitor passes it on to both. The word is `reg_shift | reg_io_width << 8`; 0 is QEMU's byte
+//! layout, which aarch64 and `x86_64` pass, since the PL011 and COM1 have no stride to describe.
 //!
 //! Name: provisional (milestone 890's radon lane, 2026-10-20).
 
