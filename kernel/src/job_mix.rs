@@ -7,7 +7,13 @@
 //! and notes/job-mix/supervisor.md.
 //!
 //! # BUGS
-//! A single boot's jobs-per-minute is not a result; the rest are in notes/job-mix/supervisor.md.
+//! - A single boot's jobs-per-minute is not a result: placement spans the rate fifteenfold.
+//! - Each point is the median of [`job_mix::REPEATS`] repeats, with the spread beside it.
+//! - The untimed breakdown exchange warms the report path between repeats.
+//! - It cannot compare against an event kernel, which does not exist.
+//! - The supervisor is one more thread, blocked in `RECEIVE` through every timed window.
+//! - The clock includes draining the N task reports.
+//! - Any message on the report endpoint counts as a report, so a stray `CALL` wedges the sweep.
 
 #[cfg(feature = "lock_wait")]
 use job_mix::LOCK;

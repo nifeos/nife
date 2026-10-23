@@ -4,6 +4,11 @@
 //! owns the NVMe, and an LBA size this driver serves), measures a confined EL0 NVMe driver's write,
 //! flush and read throughput one command at a time, prints one `disk-throughput:` verdict and
 //! halts. It writes to the disk. See notes/bench-boots.md and notes/risk-6-bench-evening.md.
+//!
+//! # BUGS
+//! - It writes: [`WINDOW_BLOCKS`] blocks 1 MiB into the namespace are overwritten.
+//! - The client is in the kernel, so the figure leaves out a client process's cost.
+//! - Sequential only, one pass, no warm-up and no repeats.
 
 use filesystem_contract::blk;
 

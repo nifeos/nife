@@ -6,6 +6,11 @@
 //! only in a `NIFE_STORAGE_BENCH_WRITE=scratch` build, the scratch write test on the microSD slot),
 //! repeats them through the IDMAC and the EL0 block server, prints a `storage-bench:` verdict and
 //! halts. See notes/bench-boots.md and notes/designware-mobile-storage.md.
+//!
+//! # BUGS
+//! - The booted system has no block device on radon yet; this boot picks its own window.
+//! - It re-initializes the card U-Boot booted from, so it halts rather than hand the card back.
+//! - The eMMC socket is probed read-only, always.
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};

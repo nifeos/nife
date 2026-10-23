@@ -6,7 +6,8 @@
 //! filesystem (`reboot` sends `SYNC` first) and quiesces no device. See notes/board-reboot.md.
 //!
 //! # BUGS
-//! A firmware that accepts the call and hangs is indistinguishable from a slow reset.
+//! - A firmware that accepts the call and hangs is indistinguishable from a slow reset.
+//! - The caller gets the portable reason, not the firmware's number, which only the console has.
 //!
 //! Name: provisional (milestone 805). The module, the object, its method and [`MARKER`] are
 //! calef's to name; §251 calls them "the reboot object" and `REBOOT` for want of anything better.

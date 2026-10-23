@@ -6,8 +6,13 @@
 //! saturated workload is made to hand threads across cores). See notes/soak.md.
 //!
 //! # BUGS
-//! A green soak is never proof the concurrency is correct. notes/soak/limitations.md and
-//! notes/soak/supervisor.md have the rest.
+//! - A green soak is never proof the concurrency is correct.
+//! - The round-trip total is sampled while workers write it.
+//! - A panicked worker is reported "stalled", not "died", and is not restarted.
+//! - The tick route skips the interrupt controller's claim, mask and complete.
+//! - The supervisor yields in a loop, so its rate is not `script/bench`'s.
+//! - Nothing sets a duration, and [`REBOOT_AFTER_SECONDS`] is one draw, not one long run.
+//! - The escape polls one LSR bit nothing can prove is wired.
 
 // aarch64 has no watchdog to arm yet; a build that quietly never armed would look like a board
 // that never wedged. See notes/soak/supervisor.md.

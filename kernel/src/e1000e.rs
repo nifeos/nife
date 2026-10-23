@@ -6,8 +6,9 @@
 //! is the whole DMA bound. Every offset and layout is `crates/e1000e`'s. See notes/e1000e.md.
 //!
 //! # BUGS
-//! The link wait is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring, and the DMA
-//! region is never returned, so a wired boot keeps [`::e1000e::layout::PAGES`] pages for life.
+//! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
+//! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
+//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 

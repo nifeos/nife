@@ -4,7 +4,13 @@
 //! Each per-core word is written only by its own core, on a cache line of its own; the frame count
 //! under the allocator's lock. Before [`publish`] the writes land in a static sink, so a writer
 //! never tests whether the page exists. The layout is `crates/machine_statistics_contract`'s. See
-//! notes/machine-statistics.md, whose BUGS include what is not counted.
+//! notes/machine-statistics.md.
+//!
+//! # BUGS
+//! - A counter written before [`publish`] is lost.
+//! - The switch count on the page is up to one tick old.
+//! - A spurious or unrouted interrupt is not counted.
+//! - The soak build's timer-driven `irq_notify` counts as a device interrupt.
 //!
 //! Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 
