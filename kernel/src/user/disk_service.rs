@@ -487,7 +487,7 @@ pub fn start_maker(
             };
         }
         // Every slot placed with `grant_at`, so a withheld capability leaves a hole rather than
-        // renumbering the slots above it (notes/abi.md §4).
+        // renumbering the slots above it (notes/abi.md, section 4).
         crate::sched::grant_at(MAKER_SLOT_BUDGET, memory_region_cap(budget))
             .expect("mkfs slot 0 was occupied");
         if with_disk {
