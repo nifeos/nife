@@ -1,21 +1,12 @@
-//! PLIC driver: the RISC-V Platform-Level Interrupt Controller (milestone 20).
+//! PLIC driver: the RISC-V Platform-Level Interrupt Controller.
 //!
-//! The RISC-V analog of the GIC. Where an aarch64 device raises an SPI into the GIC and the CPU
-//! takes an IRQ exception, a RISC-V device raises a wire into the **PLIC**, which routes it to a
-//! *context* (a hart at a privilege level) as a supervisor external interrupt (`scause` = 9). The
-//! PLIC's job is priority arbitration and the claim/complete handshake. Between a claim and its
-//! completion the source's gateway forwards nothing more, which is the only mask the interrupt
-//! path uses; the per-context enable bits and threshold decide where a source may go at all.
+//! The PLIC routes a device's wire to a context (a hart at a privilege level) as a supervisor
+//! external interrupt. Between a claim and its completion the source's gateway forwards nothing
+//! more, the only mask the interrupt path uses. A completion counts only on a context that enables
+//! the source, so the interrupt path never disables one. See notes/interrupts/controller-drivers.md.
 //!
-//! **A completion counts only on a context that enables the source.** The specification says a
-//! completion for a source the target does not enable is silently ignored, and the JH7110's PLIC
-//! does ignore it, leaving the gateway waiting for a completion that has already been written:
-//! that source never interrupts again. QEMU's PLIC (`hw/intc/sifive_plic.c`) completes whatever
-//! it is given, so only silicon shows the difference. That is why the interrupt path never
-//! disables a source.
-//!
-//! The register model, all 32-bit MMIO at fixed offsets from the base (which comes from the device
-//! tree, like the GIC's):
+
+//! The register model, all 32-bit MMIO at fixed offsets from the base (from the device tree):
 //!
 //! ```text
 //!   base + 0x0000 + 4*source          per-source priority (0 = never interrupt)
@@ -25,35 +16,11 @@
 //!   base + 0x20_0004 + 0x1000*context per-context claim (read) / complete (write)
 //! ```
 //!
-//! A *context* is a (hart, privilege) pair, and **the numbering is the board's**, read out of the
-//! device tree's `interrupts-extended` by `arch::irq::init_contexts` (`machine_discovery::plic`). On QEMU's `virt`
-//! S-mode is `2*hart + 1` (`2*hart` is M-mode, which OpenSBI owns); on the JH7110 the disabled S7
-//! contributes only an M context and S-mode is `2*hart`. This driver is always handed a context
-//! and never derives one, so the mapping lives in `arch::irq`, not here.
-//!
-//! Same rule as every driver here (DECISIONS §4): **it reaches into no kernel globals.** [`init`]
-//! is handed the base address and the context; everything else works from the base it stored. (It
-//! owns a lock, as `drivers/gic.rs` does, which is not a kernel global: it is this driver's own
-//! state, and the rank constant is the only thing it borrows from above.)
-//!
 
-//! # Exactly one register in this map needs serializing, and it is not the hot one
-//!
-//! Audited register by register (finding 3 of notes/arch-audit.md):
-//!
-//! | Register | Shape | Serialized? |
-//! |---|---|---|
-//! | per-source priority | one 32-bit word **per source**, whole-word write of a constant | no: unshared |
-//! | per-context enable bits | one word shared by **32 sources**, read-modify-write | **yes** |
-//! | per-context threshold | one word per context, whole-word write of `0`, idempotent | no: not an RMW |
-//! | per-context claim/complete | one word per context, read = claim, write = complete | no: not an RMW |
-//!
-//! Only the enable word is a read-modify-write over state shared between callers, so only it takes
-//! the lock. The claim/complete handshake stays lock-free on purpose: it is the external-interrupt
-//! hot path. A claim is one read by the context's own hart, and a completion is one write of a
-//! source number, from whichever hart runs the driver's ACK; the PLIC orders the two itself, and
-//! neither reads back what the other wrote. It also does not share a word with the enable bits
-//! (different 0x2000 and `0x20_0000` blocks), so serializing one does not drag in the other.
+//! A context's number is the board's, from the device tree via `arch::irq`; this driver is handed
+//! one and never derives it. It reaches into no kernel globals (§4): [`init`] is handed the base
+//! and the context. Only the enable words, a read-modify-write shared by 32 sources, take a lock
+//! ([`ENABLE_BITS`]); claim/complete is the lock-free hot path.
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
@@ -110,51 +77,18 @@ pub unsafe fn init(base: usize, context: usize) {
 /// the first time it routes a device source there, so that hart can actually take the interrupt. A
 /// context whose threshold is never opened takes nothing, which is the safe default. Idempotent.
 ///
-/// **Deliberately not serialized**, and it was checked rather than assumed. The threshold is one
-/// whole 32-bit register per context and this writes the constant `0` into it: there is no read, so
-/// there is nothing to lose. Two harts racing here both store `0` and the register ends up `0`,
-/// which is the only value we ever write. The affinity work made this reachable from the boot hart
-/// for *another* hart's context, which is what put it on the audit list; it is a plain store, so it
-/// stays a plain store.
+/// Not serialized: a whole-word store of the constant `0`, with no read, so two racing harts
+/// both leave `0`.
 pub(crate) fn open_context(context: usize) {
     write(THRESHOLD_BASE + context * CONTEXT_STRIDE, 0);
 }
 
-/// **Serializes the per-context enable-bit words**, the one read-modify-write in this driver.
+/// Serializes the per-context enable-bit words, the one read-modify-write in this driver: two
+/// interleaved updates lose one, and a lost enable masks a device forever.
 ///
-/// # Why a lock at all
-///
-/// The enable bits are one 32-bit register per **32 sources** of a context, so setting one source's
-/// bit means read the word, set a bit, write it back. Two of those interleaved lose an update, and
-/// a lost enable leaves a device masked forever and its driver blocked on an interrupt that never
-/// comes. It is reachable, because [`enable`] runs from kernel-thread context on any hart (the
-/// spawn paths, an `Irq` ACK with no claim outstanding), and affinity puts several of QEMU `virt`'s
-/// sources on each context. See notes/arch-audit.md finding 3.
-///
-/// aarch64 needs no equivalent because the GIC's `ISENABLER`/`ICENABLER` are write-1-to-set and
-/// write-1-to-clear: one store touches one line and cannot disturb its neighbours, so the
-/// architecture hands you the atomicity. The PLIC has plain read/write enable bits and does not.
-///
-/// # Why an `IrqSafeMutex` and not a plain one
-///
-/// No interrupt handler takes it: the handler claims and the ACK completes, and neither touches an
-/// enable bit. It stays IRQ-safe because the critical section is two MMIO accesses, so masking
-/// costs nothing, and a handler that did take a plain spinlock here would be the §9 deadlock: a
-/// thread on hart H holding it, an external interrupt on H, and a handler spinning forever on code
-/// that cannot run until it returns.
-///
-/// # The rank
-///
-/// [`rank::IRQ_CONTROLLER`], the same rank the GIC's lock takes, because it is the same role on the
-/// other ISA (see sync.rs). It is a **leaf**: nothing is acquired while it is held (the body is two
-/// MMIO accesses and no calls), and it is itself always taken holding nothing: every [`enable`]
-/// caller has already released `IPC_TABLES` by the time it calls (`bind_irq` and
-/// `create_rendezvous` take and drop it first). So the strictly-decreasing rule has slack rather
-/// than being met exactly, which is the comfortable place to be.
-///
-/// It guards `()` rather than the base address on purpose. The state being protected is a device
-/// register, not Rust data, and wrapping [`PLIC_BASE`] would put this lock on the claim/complete hot
-/// path, which is precisely what must not happen.
+/// Context: an `IrqSafeMutex` at [`rank::IRQ_CONTROLLER`], a leaf taken holding nothing, never by
+/// an interrupt handler. It guards `()`, not [`PLIC_BASE`], so claim/complete never takes it. See
+/// notes/interrupts/controller-drivers.md and notes/arch-audit.md finding 3.
 static ENABLE_BITS: IrqSafeMutex<()> = IrqSafeMutex::new(rank::IRQ_CONTROLLER, ());
 
 /// Set or clear `source`'s bit in `context`'s enable word, under [`ENABLE_BITS`]. Clearing is the
@@ -171,45 +105,31 @@ fn set_enable_bit(source: u32, context: usize, on: bool) {
 
 /// Enable `source` for `context` and give it a nonzero priority, so the PLIC will deliver it there.
 ///
-/// `context` is a hart's S-mode context (the device tree's numbering; see the module docs); the
-/// affinity policy in `arch::irq` chooses which one, so a device line lands on a chosen hart
-/// rather than always the boot hart. The driver is told the context; it does not read the hartid
-/// (rule #2, DECISIONS §4).
+/// `context` is a hart's S-mode context, chosen by the affinity policy in `arch::irq`.
 ///
-/// **The enable bit first and the priority second, and the order is load-bearing.** This runs
-/// when a source is armed, and a device that spoke before it was armed has a pending bit waiting
-/// here. By the
-/// specification the PLIC delivers that the moment the bit is enabled. QEMU's PLIC (checked in
-/// `hw/intc/sifive_plic.c` at 11.1.1) does not: a write to an enable word changes the word and
-/// re-evaluates nothing, while a priority write, a threshold write, a completion and a rising
-/// source line all do. With the priority written first, the re-evaluation happened while the bit
-/// was still clear, the enable then changed nothing, and the interrupt stayed pending, enabled and
-/// undelivered until some other device's line happened to rise. That stalled the USB keyboard
-/// mid-line about one boot in thirty on riscv64 while the ACK was an enable (notes/usb.md); the
-/// ACK is now a [`complete`], which QEMU does re-evaluate on. Written second, the priority write is
-/// the re-evaluation. It costs nothing on a PLIC that follows the specification, where the order
-/// does not matter.
+/// Context: takes [`ENABLE_BITS`].
+///
+/// The enable bit first and the priority second: QEMU's PLIC re-evaluates a pending source on a
+/// priority write but not on an enable write, so the other order leaves an early interrupt pending
+/// and undelivered (notes/usb.md, "The keystroke stall").
 pub fn enable(source: u32, context: usize) {
     set_enable_bit(source, context, true);
-    // Priority 1 (the lowest that still interrupts; we do not prioritize among sources yet). Outside
-    // the lock deliberately: this is a whole-word write to a register private to `source`, so it
-    // shares nothing, and keeping it out keeps the critical section to the two accesses that need it
-    // (§9 (locking: IrqSafeMutex, plus a discipline): keep them short, interrupts are off for the
-    // whole of it). After the enable bit, for the reason above.
+    // Priority 1, the lowest that interrupts. Outside the lock: a whole-word write to a register
+    // private to `source`. After the enable bit, for the reason above.
     write(PRIORITY_BASE + source as usize * 4, 1);
 }
 
-/// **Claim the highest-priority pending interrupt** for `context`, which masks it: the PLIC will
+/// Claim the highest-priority pending interrupt for `context`, which masks it: the PLIC will
 /// not deliver this source again until [`complete`] is called for it. Returns 0 if nothing is pending
 /// (0 is not a valid source; source numbering starts at 1). Reading the claim register is the
-/// acknowledge, so call it exactly once per interrupt. `context` must be the **claiming hart's own**
+/// acknowledge, so call it exactly once per interrupt. `context` must be the claiming hart's own
 /// context, so a secondary hart claims from its context, not the boot hart's.
 pub fn claim(context: usize) -> u32 {
     // SAFETY: `claim_register` names `context`'s claim register, inside the block `init` mapped.
     unsafe { core::ptr::read_volatile(claim_register(context)) }
 }
 
-/// **Complete** a claimed interrupt: tell the PLIC we are done with `source`, so it may deliver that
+/// Complete a claimed interrupt: tell the PLIC we are done with `source`, so it may deliver that
 /// source again. The counterpart to [`claim`]; between the two the source is masked at the PLIC.
 /// `context` must be the context that claimed it, and `source` must still be enabled there, or the
 /// PLIC ignores the completion (the module doc). Any hart may write it.
@@ -225,13 +145,10 @@ const CLAIM_REACH: usize = THRESHOLD_BASE + u16::MAX as usize * CONTEXT_STRIDE +
 
 /// `context`'s claim/complete register.
 ///
-/// **Wrapping, because no wrap can happen**, and this is on every external interrupt and inlined
-/// into the trap body every syscall crosses (release builds check overflow,
-/// notes/overflow-checks.md). The offset is under `CLAIM_REACH` for any context at most
-/// `u16::MAX`, which is every context this kernel holds, and `init` refused a base that `CLAIM_REACH`
-/// would carry past the top of the address space. What the per-interrupt overflow checks used to
-/// refuse was only a context near `2^52`; a context past the PLIC's own 15,872 was never refused by
-/// them either, and is not now.
+/// Wrapping arithmetic, because no wrap can happen and this is inlined into the trap body every
+/// interrupt crosses (release builds check overflow, notes/overflow-checks.md): the offset is under
+/// `CLAIM_REACH` for every context this kernel holds, and `init` refused a base that `CLAIM_REACH`
+/// would carry past the top of the address space.
 #[inline(always)]
 fn claim_register(context: usize) -> *mut u32 {
     let off = THRESHOLD_BASE
@@ -242,25 +159,10 @@ fn claim_register(context: usize) -> *mut u32 {
 
 #[cfg(test)]
 mod tests {
-    //! **What can and cannot be tested here, stated up front.**
-    //!
-    //! The bug this file's lock closes is a lost update between two MMIO accesses. It cannot be
-    //! reproduced on demand: the window is two instructions wide, enables happen a handful of times
-    //! per boot, and widening the window to catch it would mean shipping test-only code inside the
-    //! critical section and then testing the instrumented version rather than the real one. A loop of
-    //! two harts hammering the enable bits would pass with the lock and pass without it, so it would
-    //! prove nothing. There is no test here that would have caught the bug, and pretending otherwise
-    //! would be worse than saying so.
-    //!
-    //! What *is* tested is the half that a test can actually pin: the read-modify-write preserves the
-    //! neighbours that share its word. That is precisely the invariant a lost update violates, so a
-    //! regression in the RMW itself (an inverted flag, a wrong bit or word index, a `write` that
-    //! forgets to `read` first) fails here deterministically.
-    //!
-    //! The rank is proved by the suite it runs inside rather than by an assertion: every riscv
-    //! virtio test spawns a driver, which calls `enable` from thread context with interrupts on. If
-    //! the rank were misplaced, §9's enforcement is an `assert!` in `IrqSafeMutex::lock` and the run
-    //! would panic with LOCK ORDER VIOLATION.
+    //! Tests of the enable path. The lost update the lock closes cannot be reproduced on demand,
+    //! so no test here would catch it; what is pinned is that the read-modify-write preserves its
+    //! neighbours, and that the lock restores the interrupt state. The rank is checked by every
+    //! riscv virtio test, whose `enable` would panic with LOCK ORDER VIOLATION if it were wrong.
 
     use super::*;
 
@@ -269,18 +171,12 @@ mod tests {
         set_enable_bit(source, context, false);
     }
 
-    /// **The read-modify-write does not clobber the sources that share its word.**
+    /// The read-modify-write does not clobber the sources that share its word: two sources are
+    /// enabled, one is disabled, and the other must survive.
     ///
-    /// One enable register carries 32 sources, so setting one bit means read, modify, write, and
-    /// getting that wrong takes its 31 neighbours with it. Two sources are enabled, then one is
-    /// disabled, and the other must survive: that is the lost-update *shape*, checked deterministically
-    /// on one hart.
-    ///
-    /// Sources 80 and 81 are used because they live in enable word 2 (sources 64..95), which nothing
-    /// on QEMU `virt` occupies: virtio-mmio (1..8) and the UART (10) are in word 0, PCIe INTx (32..35)
-    /// in word 1. So the test cannot perturb a live interrupt even transiently, and nothing raises
-    /// these lines, so enabling them delivers nothing. The word and the priorities are put back
-    /// afterwards regardless.
+    /// Sources 80 and 81 sit in enable word 2, which nothing on QEMU `virt` occupies (virtio-mmio
+    /// and the UART are in word 0, PCIe INTx in word 1), and nothing raises them. The word and the
+    /// priorities are restored.
     #[test_case]
     fn setting_one_enable_bit_leaves_its_neighbours_alone() {
         const A: u32 = 80;
@@ -347,17 +243,9 @@ mod tests {
         );
     }
 
-    /// **The lock is IRQ-safe at the shape that would deadlock.**
-    ///
-    /// `enable` runs in thread context with interrupts on, and the lock must be safe to take with
-    /// them masked too. A plain spinlock taken by a handler would let a thread take the word on hart
-    /// H, take an external interrupt on H, and spin in the handler forever on a lock only the
-    /// interrupted code can release (DECISIONS §9). The observable consequence of getting it right
-    /// is that the interrupt state around the call is *restored*, not merely enabled, in both
-    /// directions.
-    ///
-    /// This does not prove the mutual exclusion. It proves the thing that would turn the fix into a
-    /// hang, which is the more likely way to get this wrong later.
+    /// The lock is IRQ-safe: the interrupt state around the call is restored, not merely enabled,
+    /// in both directions (§9). This proves what would turn the lock into a hang, not the mutual
+    /// exclusion.
     #[test_case]
     fn the_enable_path_restores_the_interrupt_state_it_found() {
         use crate::arch::interrupts;
