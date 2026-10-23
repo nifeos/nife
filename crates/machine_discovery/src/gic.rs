@@ -8,25 +8,14 @@
 //! `GICC_IIDR.ArchitectureVersion` for a GICv2), so a tree that names the wrong version fails at
 //! boot. See `notes/machine-discovery.md` ("The GIC") and `notes/interrupts.md`.
 
-//! # Why `ID_AA64PFR0_EL1.GIC` is not one of the facts
-//!
-//! QEMU under Hypervisor.framework on an Apple core reports `ID_AA64PFR0_EL1` as
-//! `0x1101000010110011`, whose `GIC` field (bits 27:24) is **zero**, while QEMU emulates the GICv3
-//! system registers perfectly well behind it. The field describes the physical core, which has
-//! Apple's AIC rather than a GIC, and the hypervisor does not rewrite it. Like Linux's GICv3
-//! driver, the kernel's CPU-interface bring-up sets `ICC_SRE_EL1.SRE` and reads it back, panicking
-//! if it will not stick. The field is still the guard at EL2 (`boot.s`), where the question is
-//! whether the registers exist to be touched at all.
-//!
+//! `notes/machine-discovery.md` ("The GIC") says why `ID_AA64PFR0_EL1.GIC` is not a fact here.
 
 //! # BUGS
 //!
-//! - One redistributor region. A tree stating several is a
-//!   [`Refusal::SeveralRedistributorRegions`]; QEMU `virt` needs a second only past 123 cores.
-//! - The GICv2 list is the three strings an aarch64 GICv2 carries, checked against Linux's
-//!   `irq-gic.c` at v6.16; its version-1 parts exist only on 32-bit machines.
-//! - The ITS is not read; milestone 317 (the interrupt-remapping flags) records why remapping
-//!   wants it.
+//! - One redistributor region: several is [`Refusal::SeveralRedistributorRegions`].
+//! - The GICv2 list is the three strings an aarch64 GICv2 carries (Linux `irq-gic.c`, v6.16).
+//! - The ITS is not read; milestone 317 (the interrupt-remapping flags) says why it matters.
+//! - This is aarch64's question: on RISC-V an `interrupt-controller@...` node is the PLIC.
 //!
 //! Name: provisional (`gic` for the module, `Gic` for the record, `Refusal` and `Mismatch` for the
 //! two ways it says no), named for the controller whose binding it reads, the same pattern as

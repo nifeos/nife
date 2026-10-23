@@ -111,11 +111,23 @@ QEMU 11.1.1 writes the two bindings this way (`dumpdtb`, both versions of `virt`
 | `reg[1]` | GICC, `0x8010000 + 0x10000` | GICR, `0x80a0000 + 0xf60000` |
 | MSI child | `v2m@8020000` | `its@8080000` under TCG, `v2m@8020000` under HVF |
 
+`ID_AA64PFR0_EL1.GIC` is not one of the facts. QEMU under Hypervisor.framework on an Apple core
+reports `ID_AA64PFR0_EL1` as `0x1101000010110011`, whose `GIC` field (bits 27:24) is zero, while
+QEMU emulates the GICv3 system registers perfectly well behind it. The field describes the
+physical core, which has Apple's AIC rather than a GIC, and the hypervisor does not rewrite it.
+Like Linux's GICv3 driver, the kernel's CPU-interface bring-up sets `ICC_SRE_EL1.SRE` and reads it
+back, panicking if it will not stick. The field is still the guard at EL2 (`boot.s`), where the
+question is whether the registers exist to be touched at all.
+
 The kernel asks this question only on aarch64. On RISC-V a node named `interrupt-controller@...`
 is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel drives each version
 is in [interrupts.md](interrupts.md). The binding allows several redistributor regions
 (`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
 only past 123 cores, and the kernel's `cpu::MAX_CPUS` is eight, so the decoder refuses more than one.
+The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
+`arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's `IRQCHIP_DECLARE` table in
+`drivers/irqchip/irq-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
+machines.
 
 ## The screen token
 

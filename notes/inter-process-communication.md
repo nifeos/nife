@@ -61,8 +61,9 @@ of §26 (the fault endpoint). A fifth path cannot forget.
 An intrusive `Fifo` offers no arbitrary remove, and the rendezvous needs one in two cases.
 
 A corpse can be a queued sender. A supervised thread that dies with nobody in `RECEIVE` parks on
-its supervision rendezvous's sender queue, its death message in its mailbox. That is §26's rule 2:
-delivery reuses the synchronous-send rendezvous, and the corpse is the parked sender. Its supervisor may
+its supervision rendezvous's sender queue, its death message in its mailbox. That is item 2 of
+§26's "Implementation" section: delivery reuses the synchronous-send rendezvous, and the corpse is
+the parked sender. Its supervisor may
 then reap it without collecting the message, through §32 (a supervisor may collect a corpse
 without being able to build one) or the `DESTROY` of §16 (object revocation). Freeing a TCB that is still linked leaves a
 dangling pointer the next receive would follow, so the reap unlinks it first with

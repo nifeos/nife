@@ -1,11 +1,11 @@
 //! The IVRS: where AMD-Vi is, the AMD counterpart of the DMAR (provisional module name, lane
 //! `amd-vi`). Every field is from AMD document 48882 revision 2.62, chapter 5.
 //!
-//! An IVHD describes one IOMMU and the device ids it serves; an IVMD, memory a device keeps
-//! DMA-ing into. Firmware lists one IOMMU once per IVHD type it supports, so
-//! [`IvrsUnits::parse`] decodes only the highest type it understands, as Linux does. Ownership is by
-//! 16-bit device id, so [`IvrsUnits::owner_index`] needs no bus. See `notes/amd-vi.md` and
-//! `notes/machine-discovery.md` ("ACPI").
+//! An IVHD describes one IOMMU and the device ids it serves; an IVMD, memory a device keeps DMA-ing
+//! into. Firmware lists one IOMMU once per IVHD type it supports, so [`IvrsUnits::parse`] decodes
+//! only the highest type it understands, as Linux does. Ownership is by 16-bit device id, so
+//! [`IvrsUnits::owner_index`] needs no bus. See `notes/amd-vi.md` and `notes/machine-discovery.md`
+//! ("ACPI").
 
 //! # BUGS
 //!
@@ -14,7 +14,8 @@
 //! - A write-only IVMD is mapped readable too, since no DMA page format says "write, not read"
 //!   (milestone 767 (AMD-Vi hardening)). No machine met so far publishes an IVMD.
 //! - An exclusion-range IVMD becomes a read-write identity map, not the unit's exclusion registers.
-//! - Only segment 0 is described, as revision 2.62 requires; a unit on another is refused.
+//! - Only segment 0 is described, as revision 2.62 requires. A unit on another segment is
+//!   recorded here, and the kernel refuses to drive it.
 
 use super::{u16, u32, u64};
 use crate::acpi::Ownership;

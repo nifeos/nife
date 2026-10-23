@@ -7,9 +7,10 @@
 
 //! # BUGS
 //!
-//! - A `status = "disabled"` hart, and a hart whose own `riscv,isa` disclaims supervisor mode,
-//!   contribute nothing to the record: the kernel never runs on either. Both still count in
-//!   [`Isa::harts`], an honest node count rather than a roster.
+//! - A `status = "disabled"` hart contributes nothing to the record, since the kernel never runs
+//!   on it; it still counts in [`Isa::harts`], an honest node count rather than a roster.
+//! - A hart whose own `riscv,isa` disclaims supervisor mode contributes nothing either, whatever
+//!   its `status` claims; see [`supervisor_mode_claim`] for why that needs a bare `u` as witness.
 //! - An absent `zicsr` or `zifencei` in a legacy string is not evidence of absence: both left the
 //!   base `I` in 2019, and older strings omit them. So neither is in [`REQUIRED`], though the
 //!   kernel uses both; `M`, `A` and `C` gate the boot.

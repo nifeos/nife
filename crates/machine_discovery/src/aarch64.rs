@@ -11,6 +11,10 @@
 //! - `VARange` reporting 52 does not mean the kernel could use 52. ARMv8.2-LVA needs a 64 KiB
 //!   granule and ARMv8.7-LPA2 is a feature bit this record does not read; the field is reported
 //!   because it is what the machine says.
+//! - `TGran16` spells "supported" `0b0001` and "not" `0b0000`, inverted against `TGran4` and
+//!   `TGran64`; a uniform decoder reports 16 KiB backwards on every part.
+//! - `TGran4` has two "yes" encodings: `0b0001` (52-bit with `FEAT_LPA2`) is a stronger yes than
+//!   `0b0000`, and reading it as reserved refuses the boot on `FEAT_LPA2` parts.
 
 /// Which translation granules the machine supports at stage 1.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]

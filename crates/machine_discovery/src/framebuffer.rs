@@ -82,8 +82,9 @@ impl Framebuffer {
     /// The longest token [`Self::encode`] can produce, for a caller sizing a buffer.
     ///
     /// The worst case is 63 bytes: `screen=`, `0x` and sixteen hex digits, three ten-digit decimals
-    /// with their commas, and a four-character order. Rounded up with room to spare, because a
-    /// token that overflows its own buffer fails between two programs, where it is hardest to see.
+    /// with their commas, and a four-character order. Rounded up rather than derived, so nothing
+    /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
+    /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
     pub const MAX_LEN: usize = 72;
 
     /// How many bytes the console may touch: `stride * height`.

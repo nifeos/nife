@@ -11,8 +11,9 @@
 //! - Nothing checks that tables do not overlap or that a length suits where a table sits.
 //! - The MADT's `PCAT_COMPAT` (8259s present) is reported; whoever brings the APIC up masks them.
 //! - A DMAR's scopes and RMRRs fill fixed arrays, and overflow sets [`DmarUnits::truncated`];
-//!   other scope kinds and structures (ANDD among them) are not decoded, nor is `INTR_REMAP` acted
-//!   on. See the note's "ACPI".
+//!   other scope kinds and structures (ANDD among them) are not decoded. See the note's "ACPI".
+//! - `Dmar::flags`' `INTR_REMAP` is reported ([`DmarUnits::platform_interrupt_remapping`]) and
+//!   never acted on; this kernel does not build interrupt remapping.
 //! - An MCFG window with `end_bus` below `start_bus` is reported as written; [`McfgEntry::size`]
 //!   answers zero.
 
