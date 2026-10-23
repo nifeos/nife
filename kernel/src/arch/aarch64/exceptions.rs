@@ -68,7 +68,8 @@ impl TrapFrame {
     /// leak #3).
     ///
     /// `spsr = 0` returns to `EL0t`, AArch64, with IRQs unmasked, so a tight-loop user thread is
-    /// still preemptible (DECISIONS §5). Zero looks like a bug and is not.
+    /// still preemptible (DECISIONS §5 (preemptive threads with real stacks)). Zero looks like a
+    /// bug and is not.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         let mut x = [0u64; 31];
         x[0] = args[0]; // _start's first argument (AAPCS64 puts it in x0)
@@ -138,7 +139,8 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 
 /// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
 /// stack that [`user_pc`] reads, so a blocked or trapped thread gets a result word beyond the five
-/// its syscall path writes. The death message's label uses register 5 (DECISIONS §148).
+/// its syscall path writes. The death message's label uses register 5 (DECISIONS §148 (a
+/// supervisor restarts by asking)).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -447,14 +449,14 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
     );
     crate::println!("  the kernel is fine.");
 
-    // To a supervisor if there is one, else `exit`'s path (DECISIONS §26).
+    // To a supervisor if there is one, else `exit`'s path (§26 (the fault endpoint)).
     crate::sched::fault(frame.elr, far);
 }
 
 /// Service one hardware interrupt.
 ///
-/// Context: interrupt context, IRQs masked by the vector. Records and defers (DECISIONS §9):
-/// allocates nothing and takes no lock above rank GIC.
+/// Context: interrupt context, IRQs masked by the vector. Records and defers (§9 (locking:
+/// IrqSafeMutex, plus a discipline)): allocates nothing and takes no lock above rank GIC.
 fn handle_irq(_frame: &mut TrapFrame) {
     // The acknowledge has a side effect: exactly once.
     let intid = irq::acknowledge();
@@ -472,7 +474,7 @@ fn handle_irq(_frame: &mut TrapFrame) {
             crate::sched::on_tick();
         }
         crate::sched::RESCHED_SGI => {
-            // One SGI carries both an inbox hand-off and a steal request (DECISIONS §28).
+            // One SGI carries both an inbox hand-off and a steal request (§28 (SMP placement)).
             crate::sched::drain_inbox();
             crate::sched::serve_steal_request();
         }

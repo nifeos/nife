@@ -45,7 +45,7 @@ over `TVAL` is in interrupts.md, "The bug we shipped and then measured".
 
 The tick is per core, a banked PPI, and so is its count. A test that reads the count either side
 of a wait names the core (`ticks_on`), because a kernel thread can be stolen by an idle core at any
-preemption point (§28.3) and two reads on two cores compare unrelated counters.
+preemption point (§28.3 (SMP placement)) and two reads on two cores compare unrelated counters.
 
 ### The counter's rate is checked against the device tree
 

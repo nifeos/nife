@@ -1,7 +1,7 @@
 //! aarch64 support.
 //!
 //! Assembly, system registers, and CPU-specific behaviour live here and nowhere else (DECISIONS
-//! §4). See notes/aarch64-port.md and notes/portability.md.
+//! §4 (kernel shape)). See notes/aarch64-port.md and notes/portability.md.
 
 use core::arch::global_asm;
 

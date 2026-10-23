@@ -1,8 +1,8 @@
 //! The SMMUv3 driver: aarch64's IOMMU, in front of the PCIe bus.
 //!
 //! The SMMU translates every address a PCIe device emits through per-stream tables the kernel
-//! programs (DECISIONS §20). The page tables are VMSAv8-64, built by the portable seam
-//! (`paging::domain` via `crate::iommu`); this module owns the register file, the stream table,
+//! programs (§20 (IOMMU-backed DMA isolation)). The page tables are VMSAv8-64, built by the
+//! portable seam (`paging::domain` via `crate::iommu`); this module owns the register file, the stream table,
 //! the context descriptors, and the command and event queues the SMMU is driven by.
 //!
 //! Default deny: `init` sets `GBPA.ABORT`, installs an all-invalid stream table and only then sets

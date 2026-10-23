@@ -90,7 +90,7 @@ const _: () = assert!(
 
 /// **Test-only: does the per-CPU pointer name the hart we run on?** Always `true` here: the trap
 /// frame never saves `TPIDR_EL1`. The RISC-V twin checks, because its `tp` can ride a stale trap
-/// frame across a migration (DECISIONS §28).
+/// frame across a migration (§28 (SMP placement)).
 #[cfg(any(test, feature = "system_tests"))]
 pub fn percpu_matches_hart() -> bool {
     true

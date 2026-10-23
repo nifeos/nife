@@ -1,6 +1,6 @@
-//! The GICv3 CPU interface: system registers, `ICC_*_EL1`. The distributor and redistributors are `drivers/gicv3.rs`. The registers and the barrier
-//! sequence (Linux v6.16's, cited at each site) are in notes/aarch64-port.md, "The GICv3 CPU
-//! interface".
+//! The GICv3 CPU interface: system registers, `ICC_*_EL1`. The distributor and redistributors
+//! are `drivers/gicv3.rs`. The registers and the barrier sequence (Linux v6.16's, cited at each
+//! site) are in notes/aarch64-port.md, "The GICv3 CPU interface".
 //!
 //! # BUGS
 //!

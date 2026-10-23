@@ -9,8 +9,8 @@
 //! instructions whatever the count.
 use core::arch::global_asm;
 
-/// One sled unit: `fastpath_pad` alone links exactly this many `nop`s, and milestone 134's layout
-/// ladder links a multiple of it. See
+/// One sled unit: `fastpath_pad` alone links exactly this many `nop`s, and the layout ladder of
+/// milestone 134 (the register of measures) links a multiple of it. See
 /// `crate::fastpath_pad::PAD_UNITS` and, for the zero block after the sled,
 /// `crate::fastpath_pad::SHIFT_BYTES`.
 const UNIT_NOPS: usize = 1448;

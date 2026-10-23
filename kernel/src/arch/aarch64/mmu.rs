@@ -205,8 +205,8 @@ where
         Flags::device(),
     )?;
 
-    // 8. Bus 0's ECAM and the BAR slice of the PCI window (DECISIONS §18), from the device tree's
-    // `pci-host-ecam-generic` node: no node, no mapping (§19, §43).
+    // 8. Bus 0's ECAM and the BAR slice of the PCI window (§18 (the PCIe transport)), from the
+    // device tree's `pci-host-ecam-generic` node: no node, no mapping (§19 (architectural parity)).
     if let Some(((ecam, ecam_size), (bar, bar_size))) = memory::pci_regions() {
         direct_map(
             m,
@@ -601,7 +601,7 @@ pub fn current_user_root() -> u64 {
 /// Unmap one page at `va` from the user address space rooted at `root`, discharging the TLB
 /// obligation. Returns the physical frame it pointed at, or `None` if nothing was mapped there.
 ///
-/// Revocation (§13) calls it for every holder's space, so `root` is explicit; the registry forgets
+/// Revocation (§13 (capability revocation)) calls it for every holder's space, so `root` is explicit; the registry forgets
 /// a root before its tables are freed, so it is always live.
 pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
     // SAFETY: `root` is a live L0 table built with `Half::Low`; the direct map makes `phys_to_ptr`

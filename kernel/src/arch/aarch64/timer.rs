@@ -29,7 +29,7 @@ pub(crate) const TIMER_INTID: u32 = 27;
 pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// Ticks delivered, per core: each core has its own timer, and a lock masks only the holding core's
-/// interrupts. See DECISIONS §11.
+/// interrupts. See §11 (SMP: per-CPU run queues).
 static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// Counter ticks between interrupts, computed from `CNTFRQ_EL0`: the rate is the board's.
@@ -158,7 +158,7 @@ fn rearm(interval: u64) {
 
     if next <= now {
         MISSED_TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
-        // Interrupt context: record, never print (DECISIONS §9).
+        // Interrupt context: record, never print (§9 (locking: IrqSafeMutex, plus a discipline)).
         #[cfg(any(test, feature = "system_tests"))]
         miss_detail::record(now, next);
         next = now + interval;
@@ -298,8 +298,9 @@ pub fn ticks() -> u64 {
 /// Ticks since boot on a **named** core, which is what a test needs when the thread doing the
 /// measuring can move between the two reads.
 ///
-/// A kernel thread can be stolen by an idle core at any preemption point (DECISIONS §28.3), so two
-/// reads of [`ticks`] may be of two counters. See notes/load-sensitive-assertions.md.
+/// A kernel thread can be stolen by an idle core at any preemption point (§28.3 (SMP
+/// placement)), so two reads of [`ticks`] may be of two counters. See
+/// notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     TICKS[cpu].load(Ordering::Relaxed)
@@ -477,7 +478,7 @@ mod tests {
         };
 
         // A miss re-anchors the grid, so a window holding one proves nothing: retry it. An
-        // exhausted budget skips rather than fails, and the budget is not widened (DECISIONS §61).
+        // exhausted budget skips rather than fails, and the budget is not widened.
         const ATTEMPTS: u32 = 8;
         let mut attempts = 0;
         let measured = loop {
@@ -509,7 +510,8 @@ mod tests {
                 now.saturating_sub(next),
                 timer::interval(),
             );
-            // A test that measures nothing is a skip, not a pass (milestone 214).
+            // A test that measures nothing is a skip, not a pass (milestone 214 (a test that
+            // prints "skipping" and returns is counted as passed)).
             crate::testing::skip!(
                 "no miss-free window in which to measure the re-arm law this run"
             );
