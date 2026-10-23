@@ -1,7 +1,5 @@
 //! **Rendezvous**: creating one, and send, receive, call and reply on it, with capability transfer
-//! and the stranding of callers whose server is gone.
-//!
-//! Cut out of `sched.rs` unchanged by milestone 840 (the scheduler file is split along its seams).
+//! and the stranding of callers whose server is gone. See notes/scheduler/rendezvous.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -10,9 +8,6 @@ use super::*;
 
 /// Why creating an rendezvous failed. The two causes need telling apart because they call for opposite
 /// responses: a full region means carve more memory and retry, a full registry means give up.
-///
-/// They used to be one `None`, which is also why the registry-full case leaked a page: the caller
-/// could not know the page it had just spent was about to be thrown away.
 pub(super) enum RendezvousFailure {
     /// The region has no page left to retype. Nothing was spent.
     RegionFull,
@@ -22,15 +17,15 @@ pub(super) enum RendezvousFailure {
 
 /// Create an rendezvous **in `region`'s memory** (milestone 19a): one page retyped and pinned, the
 /// rendezvous at its start, a fresh generational name in the registry. The shared engine of the
-/// `RETYPE_OBJ` syscall and the kernel's own [`create_rendezvous`].
+/// `RETYPE_OBJ` syscall and the kernel's own [`create_rendezvous`]. Returns the name, or which
+/// limit refused it; a refusal spends nothing.
+///
+/// Context: takes `IPC_TABLES`, and `MEMORY_REGION` beneath it.
 pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, RendezvousFailure> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().ok_or(RendezvousFailure::RegistryFull)?;
 
-    // Checked BEFORE the retype, which is a fix and not just tidiness: this used to retype a page and
-    // then discover the registry was full, spending the page for nothing. The old comment called that
-    // "a process-local loss on its own budget", which is true and is still a leak a caller cannot see
-    // or recover. Asking first costs a compare.
+    // Checked before the retype, so a full registry spends no page.
     if sched.rendezvous_table.len() >= MAX_RENDEZVOUS {
         return Err(RendezvousFailure::RegistryFull);
     }
@@ -67,24 +62,15 @@ pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
     try_create_rendezvous_from(region).ok()
 }
 
-/// Create an IPC rendezvous on the kernel's own budget. Returns the name that goes inside an
-/// `Object::Rendezvous`. Chunks are carved lazily and **grown on demand**, so this does not depend on
-/// anyone having guessed the suite's eventual size.
+/// Create an IPC rendezvous on the kernel's own budget, from chunks carved lazily and grown on
+/// demand, and return the name that goes inside an `Object::Rendezvous`.
 ///
-/// Panics only on a genuinely unrecoverable condition: the registry at [`MAX_RENDEZVOUS`], the chunk
-/// bound reached (which cannot happen before the registry fills, by construction), or no memory left
-/// to carve from. Every caller is the kernel, so there is no user to return an error to.
+/// Panics on the unrecoverable: the registry at [`MAX_RENDEZVOUS`], the chunk bound reached, or no
+/// memory left to carve. `pub(crate)`, so the system tests cannot call it: the chunks are never
+/// freed, so a test endpoint made here would cost the boot a page for good. A test carves from a
+/// region it owns with [`create_rendezvous_from`]. See notes/scheduler/rendezvous.md.
 ///
-/// **`pub(crate)`, so the system tests cannot call it, and that is a gate rather than tidiness.**
-/// The chunks this carves are never freed, so every endpoint a test made here cost the boot a page
-/// for good, and the frame ledger moved in +32 steps charged to whichever later test crossed a chunk
-/// boundary (`testing::SUITE_PAGE_FRAME_BUDGET`'s history is mostly that). The kernel's own
-/// services create their endpoints once and keep them, which is what this is for. A test carves
-/// its endpoints with [`create_rendezvous_from`] from a region it owns and reclaims with
-/// [`reclaim_region`], or hands that region to a `user::holding::Holding`; a test whose endpoint
-/// must outlive it still uses a region of its own and says so where it does, so the page is charged
-/// to that test. The `system_tests` crate depends on this one, so a call from there does not
-/// compile.
+/// Context: takes `IPC_TABLES`, never across the carve.
 pub(crate) fn create_rendezvous() -> RendezvousId {
     loop {
         // Take, or lazily carve, the current chunk.
@@ -138,35 +124,24 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
 // there; what lives here is what the crate cannot see: the registry, the mailboxes, the wake, and
 // the TCB binding, which reaches into another object's wait queue. See notes/notification-objects.md.
 
-/// Widen an ordinary three-word IPC message into the five-word mailbox. Word 3 is the badge on the
-/// endpoint capability the sender invoked (0 when unbadged), and word 4 is zero; only a fault/exit
-/// message (DECISIONS §26) puts anything else in the top two, and a `RECEIVE` hands all five back.
-/// Keeping the mailbox one width means the fault path reuses the same rendezvous machinery rather
-/// than growing a parallel one.
-///
-/// **Why a plain `SEND` carries its badge** (milestone 613 (a system log service), provisional):
-/// §230 (badged endpoint capabilities) delivered a badge on `CALL` and `SEND_CAP` only, because its
-/// one customer, the file server, is a `CALL` protocol. §242 (a system log) stamps every record
-/// from the writer's badge, and a log writer speaks the byte sink, which is a plain `SEND`; without
-/// this word the badge a spawner minted would be silently dropped on exactly the path it was
-/// minted for. The store is the one `wide` already made (a zero became the badge), the same
-/// no-extra-instruction argument `ipc_send_cap`'s word 3 makes.
+/// Widen a three-word IPC message `m` into the five-word mailbox, with `badge` (the badge on the
+/// endpoint capability the sender invoked, 0 when unbadged) in word 3 and zero in word 4. Only a
+/// fault or exit message (DECISIONS §26) fills the top two otherwise, so the fault path reuses the
+/// rendezvous machinery. A plain `SEND` carries its badge because §242 (a system log) stamps every
+/// record from it; see notes/scheduler/rendezvous.md.
 pub(super) fn wide(m: [u64; 3], badge: u64) -> [u64; 5] {
     [m[0], m[1], m[2], badge, 0]
 }
 
-/// **Send three words to an rendezvous, blocking until a receiver takes them.**
+/// **Send three words `msg` to rendezvous `ep`, blocking until a receiver takes them.**
 ///
-/// The synchronous rendezvous, sender's half:
+/// A receiver already waiting gets the message in its mailbox and is woken, and nobody blocks.
+/// Otherwise the message is parked in our own mailbox, we join the sender queue and block, and a
+/// later receiver collects it and wakes us. A user thread reaches this through the `SEND` method.
+/// A stale `ep` sets the abort flag and an interrupt-carrying one the refusal flag, instead.
+/// See notes/scheduler/rendezvous.md.
 ///
-/// - **A receiver is already waiting.** Drop the message straight into its mailbox, wake it, and
-///   carry on. Nobody blocked; the rendezvous was instantaneous.
-/// - **Nobody is waiting.** Park the message in our own mailbox, join the rendezvous's sender
-///   queue, mark ourselves `Blocked`, and `schedule()` away. A future receiver will reach into
-///   our mailbox, wake us, and we return from `schedule()` as if no time had passed.
-///
-/// Callable by a kernel thread directly (this function) or by a user thread through the `SEND`
-/// method on an rendezvous capability (see syscall.rs). Same code underneath.
+/// Context: takes `IPC_TABLES`; may block.
 #[inline(always)]
 pub fn ipc_send(ep: RendezvousId, msg: [u64; 3]) {
     ipc_send_badged(ep, msg, 0);
@@ -277,25 +252,15 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
             return [0, 0, 0, 0, 0];
         };
         // One lookup serves both things this path needs from the running thread: whether it is
-        // bound, and its token (milestone 139 (drive the unsafe count down), round 10, which also
-        // retired the raw-pointer read the binding test used to make).
+        // bound, and its token.
         let me = sched.threads.get_mut(current).expect("running thread");
         let bound = me.bound_notification.is_some();
         let Some(token) = me.own_token.take() else {
             missing_token()
         };
-        // **The binding's receive-side half** (milestone 151, DECISIONS §101): a signal counted
-        // while this thread was elsewhere ends the receive before it can block. First, as a pending
-        // IRQ signal is taken before a queued sender, and for the same reason: it arrived earlier.
-        // This `is_some` on the thread already in hand is the one load and one branch §101 priced
-        // onto this path; only a bound thread goes further.
-        //
-        //
-        // **An arm of the same decision, not an early return**, and the difference is measured: a
-        // `return` from inside the lock hold gave the function a second copy of the unlock path,
-        // and cost `ipc_receive` 138 bytes on riscv64 and 174 on `x86_64`. Joining the other arms
-        // shares the one release below.
-        //
+        // A bound notification's pending signal ends the receive before it can block, ahead of a
+        // queued sender because it arrived earlier (DECISIONS §101). An arm of the decision, not an
+        // early return, which would duplicate the unlock path.
         if bound && let Some(word) = take_bound_signal(sched, current) {
             hold_token(token);
             Some(bound_delivery(word))
@@ -322,19 +287,9 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
                     ) || sched.threads.get(sender).unwrap().handshake.state
                         == State::Dead;
                     if !leave_blocked {
-                        // **A plain RECEIVE collected this sender, and a plain RECEIVE delivers no
-                        // capability** (milestone 633 (an outside agent attacks the confinement
-                        // claim), fatal risk 7's outsider pass, 2026-10-03
-                        // UTC). A `SEND_CAP` sender parked its delegation in `outgoing_cap` for a
-                        // receiver to take; this receiver did not take it, and the rendezvous is now
-                        // complete. Left in place, the delegation would ride the sender's next plain
-                        // `SEND` on a *different* rendezvous and reach whoever `RECEIVE_CAP`s there, a
-                        // delegation made to one endpoint delivered to another. This is the exact
-                        // hazard `set_ipc_aborted` closes on the teardown path; the successful-collect
-                        // path does not go through it, so it is closed here too. The sender still
-                        // holds its own copy (`SEND_CAP` narrows a copy, never moving the source), so
-                        // dropping this one loses nothing, which is `ipc_send_cap`'s documented
-                        // cap-table-full semantics: the data word arrives and the capability is dropped.
+                        // A plain RECEIVE delivers no capability: drop the delegation a `SEND_CAP`
+                        // sender parked, or it rides that sender's next plain `SEND` to another
+                        // rendezvous. The sender keeps its own copy.
                         sched.threads.get_mut(sender).unwrap().outgoing_cap = None;
                         // Collected: the sender's rendezvous is complete, which is what lets its
                         // wake through the boot-8 gate.
@@ -408,21 +363,15 @@ pub(super) fn call_meets_plain_receive(
     set_ipc_aborted(sched, caller);
 }
 
-/// **A plain `RECEIVE` collected a sender it does not wake as a completed send**: a corpse or a
-/// caller. Caller holds `IPC_TABLES`; `rendezvous.receive` has already popped `sender` off the
-/// sender queue.
+/// **A plain `RECEIVE` collected a `sender` it does not wake as a completed send**: a corpse or a
+/// caller.
 ///
-/// - A **dead sender** is a fault/exit corpse parked on its supervision rendezvous (DECISIONS §26):
-///   its message is delivered and it is never woken, because it is dead-until-reaped. It waits on
-///   nothing now; it only awaits its reap.
-/// - A **caller** is answered `Gone` (§246 (a plain `RECEIVE` never takes a capability),
-///   PROVISIONAL number; calef's ruling A, 2026-10-04 UTC): the sender-first half of
-///   [`call_meets_plain_receive`]. `set_ipc_aborted` drops the Reply staged in its `outgoing_cap`,
-///   which was the only copy. Until the ruling it was left parked on that Reply until teardown.
+/// A dead sender (a DECISIONS §26 corpse) waits on nothing now and is never woken; its label goes
+/// to the receiver, the running thread. A caller is answered `Gone` (§246 (a plain `RECEIVE` never
+/// takes a capability), PROVISIONAL number), the sender-first half of [`call_meets_plain_receive`],
+/// and `set_ipc_aborted` drops the Reply in its `outgoing_cap`, the only copy.
 ///
-/// A dead sender's label (milestone 105) is handed to the receiver here, the running thread, since
-/// this is the one place the parked-corpse half of a death delivery reaches it. Only a plain
-/// `RECEIVE` comes through this function, which is the receive §26 names for a death message.
+/// Context: caller holds `IPC_TABLES`; `rendezvous.receive` has already popped `sender`.
 #[cold]
 #[inline(never)]
 pub(super) fn collected_without_serving(sched: &mut IpcTables, sender: ThreadId) {
@@ -437,24 +386,15 @@ pub(super) fn collected_without_serving(sched: &mut IpcTables, sender: ThreadId)
     }
 }
 
-/// **Hand a death message's label to the supervisor receiving it** (milestone 105, DECISIONS §148
-/// as amended 2026-10-04, ruling R3): argument register 5 of its saved user frame, which is `x5`,
-/// `a5` or `r9`. Caller holds `IPC_TABLES`.
+/// **Hand a death message's `label` to the supervisor `receiver`**, in argument register 5 of
+/// its saved user frame (`x5`, `a5` or `r9`; DECISIONS §148, ruling R3).
 ///
-/// **Beside the mailbox, not in it, and that is the benchmark condition.** Word 3 already carries
-/// the fault address and word 4 is reserved for §26.4's resume protocol, so the label needs a sixth
-/// word. Widening `Thread::mailbox` to six would make every IPC delivery store one more word; written
-/// here, only a death pays, and `ipc_send_receive` and `ipc_call_reply` run no new instruction.
+/// Beside the mailbox, not in it, so only a death pays for the sixth word. Only a plain `RECEIVE`
+/// by a user thread gets it; a `RECEIVE_CAP` receiver or a kernel thread is left alone. An ordinary
+/// message writes nothing here, so a supervisor zeroes it first and a child cannot forge it. See
+/// notes/scheduler/rendezvous.md.
 ///
-/// Only a **plain `RECEIVE`** gets it. A `RECEIVE_CAP` receiver lays its result out differently
-/// (`x1` is a slot), and §26 names `RECEIVE` as the death message's receive. Neither does a kernel
-/// thread receiving in the kernel, which has no user frame: the bytes at its stack top are its own
-/// stack. A thread with an address space only ever reaches a receive by trapping from user mode.
-///
-/// An ordinary message writes nothing to this register, so a supervisor that wants `0` to mean
-/// "not stamped by the kernel" zeroes it before the `RECEIVE` (`user_mode_runtime::receive_fault`
-/// does). That is also why a child cannot forge a label: the badge on a capability it sends with
-/// arrives in word 3, never here.
+/// Context: caller holds `IPC_TABLES`.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). An alternative, `deliver_fault_label`, was suggested
 /// to match its siblings `deliver_death` and `deliver_capability`.
@@ -487,25 +427,13 @@ pub(super) fn reply_tag(slot: u64) -> u64 {
     }
 }
 
-/// **Delegate a capability plus one data word to an rendezvous.** The sender's half of a
-/// capability-carrying rendezvous, mirroring [`ipc_send`]. The one thing it adds: at the moment
-/// sender and receiver meet, `cap` moves out of the sender and into the receiver's capability table.
+/// **Send a `capability` the caller minted, plus one `data` word and `badge`, to `ep`.**
 ///
-/// - **A receiver is already waiting.** Insert the capability into its capability table right now, record the
-///   slot in its mailbox alongside the data word, and wake it.
-/// - **Nobody is waiting.** Park the data word in our mailbox and the capability in `outgoing_cap`,
-///   join the sender queue, and block. A future receiver reaches in, takes the capability, and
-///   files it in its own capability table.
-///
-/// If the receiver's capability table is full the capability is dropped and the receiver sees `NO_CAP`; the
-/// data word still arrives. The syscall layer has already checked the sender may delegate this
-/// capability (it holds `GRANT`) and that the rights only narrow.
-///
-/// **For a capability the caller minted, not one read from a table.** A copy of a capability the
-/// sender holds goes through [`ipc_delegate_cap`], which reads the source under the same hold of
-/// `IPC_TABLES` that files the copy; see [`Delegation`] for why the two cannot be separate steps.
-/// Since `SEND_CAP` moved to that path (2026-10-04 UTC) the only callers are system tests that
-/// hand over a capability they built, hence the `allow`.
+/// A receiver parked in `RECEIVE_CAP` gets the capability filed in its table and the slot in its
+/// mailbox, and is woken; a plain `RECEIVE` gets the data word and no capability. Otherwise the
+/// word and the capability are parked for a later receiver. A full receiver table drops the
+/// capability and reports `NO_CAP`. A copy of a held capability goes through [`ipc_delegate_cap`]
+/// ([`Delegation`]); only system tests call this, hence the `allow`.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn ipc_send_cap(ep: RendezvousId, data: u64, capability: crate::cap::Cap, badge: u64) {
     let sent = ipc_send_cap_from(ep, data, badge, |_, _| Ok(capability));
@@ -566,13 +494,9 @@ pub(super) fn ipc_send_cap_from(
                     // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
                     r.cap_delivered = true;
                 } else {
-                    // **A plain RECEIVE takes no capability** (§246 (a plain `RECEIVE` never takes
-                    // a capability), PROVISIONAL number; calef's ruling A, 2026-10-04 UTC). The data
-                    // word arrives and the copy is dropped, the same five words `ipc_receive`
-                    // returns when it collects this sender parked (milestone 633). Until the ruling
-                    // this arm installed into any parked receiver's table, so a server draining a
-                    // child's output lost a slot per delegation, on this arrival order only. The
-                    // sender keeps its own copy: `SEND_CAP` narrows a copy, never the source.
+                    // A plain RECEIVE takes no capability (§246 (a plain `RECEIVE` never takes a
+                    // capability), PROVISIONAL number): the data word arrives, the copy is dropped,
+                    // and the sender keeps its own.
                     r.mailbox = [data, 0, 0, badge, 0];
                 }
                 r.handshake.serve(); // delivered: this wake passes the boot-8 gate
@@ -610,9 +534,8 @@ pub(super) fn ipc_send_cap_from(
 /// table's own lock beneath it (rank 60 then 57, `sync::rank::CAPABILITY_TABLE`).
 ///
 /// **Out of line, one copy for the three delivering paths** (`ipc_send_cap`, `ipc_call`'s hand-off
-/// to a waiting server, and `ipc_receive_cap`'s collect). Since 2026-10-04 UTC the insert takes a
-/// second lock, and inlined at each site that lock's mask, rank check and release grew both
-/// `script/fastpath-footprint` closures past their band on aarch64 and riscv64. Name provisional.
+/// to a waiting server, and `ipc_receive_cap`'s collect): inlined, the second lock's mask, rank
+/// check and release grew both fastpath closures past their band. Name provisional.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -652,9 +575,7 @@ pub fn ipc_receive_cap(ep: RendezvousId) -> [u64; 5] {
         let Some(token) = me.own_token.take() else {
             missing_token()
         };
-        // The binding's receive-side half, exactly as in `ipc_receive`: a server in `RECEIVE_CAP` is the
-        // commonest bound thread §101's table names (the FS server, the compositor).
-        //
+        // The binding's receive-side half, exactly as in `ipc_receive`.
         if bound && let Some(word) = take_bound_signal(sched, current) {
             hold_token(token);
             Some(bound_delivery(word))
@@ -746,31 +667,16 @@ pub fn ipc_receive_cap(ep: RendezvousId) -> [u64; 5] {
     }
 }
 
-/// **Call: send two words and block until replied** (milestone 12). The atomic send-and-wait a
-/// one-shot reply capability makes safe. At the rendezvous the kernel mints a `Reply` capability
-/// naming *this* caller and hands it to the server (through [`ipc_receive_cap`]); we then block,
-/// discoverable **only** through that capability, until the server invokes it. Returns the reply
-/// words. See DECISIONS §12 and notes/ipc-naming.md.
+/// **Call: send two words `msg` to `ep` and block until replied**, returning the reply's words.
 ///
-/// If the server's capability table is full the reply cap is dropped (the server sees `NO_CAP`, exactly as a
-/// delegated cap would be) and, having no way to answer, the caller blocks until torn down: the same
-/// no-timeout limitation as a reply that never comes, and self-inflicted by the server.
+/// The kernel mints a one-shot `Reply` naming this caller and hands it to the server through
+/// [`ipc_receive_cap`], and the caller is reachable only through it (DECISIONS §12). See
+/// notes/scheduler/rendezvous.md.
 ///
 /// # BUGS
-///
-/// **A server that is alive and simply never replies blocks its caller forever.** There is no
-/// deadline on a `CALL` (that is milestone 106's fork, and L4's answer), and no way to end the
-/// server's thread (milestone 133's). What milestone 254 fixed is narrower and is the case the
-/// kernel used to get wrong in a way nothing recorded as intended: a server that **stops being able
-/// to answer**, by exiting, faulting, being killed, being reaped with its region, or having the
-/// rendezvous torn down under it, now frees its callers with [`abi::Error::Gone`] rather than
-/// leaving them blocked for the life of the machine. See [`strand_reply_caller`].
-///
-/// **The reply capability names a thread, not a call**, so what stops a stale one answering a later,
-/// unrelated `CALL` is that [`strand_reply_caller`] deletes it, not that [`ipc_reply`]'s guard could
-/// tell the two conversations apart. A future path that reached `ipc_reply` without presenting a
-/// capability would reopen that. The structural fix is a call identity in the payload:
-/// `design/roadmap/0371-a-reply-capability-that-names-a-call.md`.
+/// - A live server that never replies, or had no room for the Reply, blocks its caller forever:
+///   a `CALL` has no deadline. One that can no longer answer frees it ([`strand_reply_caller`]).
+/// - A Reply names a thread, not a call (milestone 371); see notes/scheduler/rendezvous.md.
 // Inlined so the unbadged fastpath (`ipc_call_reply`, the shape real services run and the one
 // `script/icount` measures) gains no call frame: this forwards to `ipc_call_badged` with badge 0,
 // which writes the same mailbox word 3 it always did.
@@ -779,26 +685,19 @@ pub fn ipc_call(ep: RendezvousId, msg: [u64; 2]) -> [u64; 3] {
     ipc_call_badged(ep, msg, 0)
 }
 
-/// [`ipc_call`] carrying the invoked endpoint capability's badge (milestone 599, provisional). The
-/// badge reaches the server's [`ipc_receive_cap`] in the delivered mailbox's word 3; a plain
-/// [`ipc_call`] passes 0, the unbadged value. Split out rather than given a parameter on the hot
-/// name so the tree's many `ipc_call(ep, msg)` sites (benches, tests, `ipc_stack_depth`) are
-/// unchanged and the fastpath's shape is untouched, which `script/icount`'s tripwire is what
-/// confirms.
+/// [`ipc_call`] carrying the invoked endpoint capability's `badge`, which reaches the server's
+/// [`ipc_receive_cap`] in word 3; a plain [`ipc_call`] passes 0. A separate name, so the many
+/// `ipc_call(ep, msg)` sites and the fastpath's shape are unchanged.
+///
+/// Context: takes `IPC_TABLES`; blocks.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
     target_os = "none",
     unsafe(link_section = ".text.hot.sched.ipc_call_badged")
 )]
 pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] {
-    // E3's footprint padding, on the CALL side as well as the SEND side (milestone 134, extended
-    // 2026-09-04). It was on `ipc_send` alone, and that was the whole of the fastpath when the
-    // padding was written; milestone 188 phase 1 then split the footprint gate into two closures
-    // and found the CALL/reply one is the larger and **is the shape real services run**, at which
-    // point a pad reachable only from `ipc_send` was padding a shape nothing in this tree uses.
-    // Measured on riscv64 before this line existed: `ipc_send_receive` 2.10x, `ipc_call_reply` 1.00x.
-    // One call site per shape, so the untaken-branch confound the module doc names stays one
-    // branch per round trip rather than three.
+    // E3's footprint padding (`crate::fastpath_pad`), on the CALL side as well as the SEND side:
+    // the CALL/reply closure is the shape real services run. One call site per shape.
     #[cfg(feature = "fastpath_pad")]
     crate::fastpath_pad::maybe_pad();
     {
@@ -880,21 +779,18 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
 
 /// **Reply: deliver two words to a blocked caller and wake it** (milestone 12). The other half of
 /// [`ipc_call`], reached by invoking the one-shot Reply capability, which carries the caller's `tid`.
-/// The caller is blocked awaiting exactly this. If it is already gone (it cannot be, while blocked,
-/// but be defensive), the reply is simply dropped.
+/// A `caller` that is gone, or is not parked awaiting a reply, gets nothing.
+///
+/// Context: takes `IPC_TABLES`.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.sched.ipc_reply"))]
 pub fn ipc_reply(caller: ThreadId, msg: [u64; 2]) {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     if let Some(t) = sched.threads.get_mut(caller) {
-        // **Only a caller that awaits a reply is touched** (boot 8's observe-and-strand guard).
-        // A Reply names a tid, not a wait state, and this is the one wake site addressed by tid
-        // rather than through an rendezvous's wait queue. Delivered to a thread parked as an
-        // ordinary receiver (a stale reply whose CALL was aborted long ago, its caller re-parked
-        // elsewhere), it would clobber that thread's mailbox and wake it messageless while its
-        // TCB is still linked on the rendezvous's wait queue, a double-enqueue on the one intrusive
-        // link. Anything not Reply-parked gets nothing, exactly as a reply to a dead caller.
+        // Only a caller awaiting a reply is touched: a Reply names a tid, not a wait state, and a
+        // thread parked as a receiver is still linked on a wait queue, so waking it would
+        // double-enqueue its one intrusive link.
         if !matches!(
             t.handshake.wait_on,
             Some(Wait::Rendezvous(_, WaitRole::Reply))
@@ -911,24 +807,15 @@ pub fn ipc_reply(caller: ThreadId, msg: [u64; 2]) {
     }
 }
 
-/// **Reply, carrying one capability** (`abi::reply::REPLY_CAPABILITY`, §255 (each socket is its own
-/// capability); name provisional). [`ipc_reply`] plus a copy of the capability in the running
-/// thread's `slot`, filed in the caller's table, the slot it landed in delivered as word 2.
+/// **Reply with `msg` and a copy of the running thread's capability in `slot`**, filed in
+/// `caller`'s table with the landing slot as word 2 (§255 (each socket is its own capability)).
 ///
-/// The source is read, checked (`GRANT`, as `SEND_CAP` requires) and filed under one hold of
-/// `IPC_TABLES`, the [`Delegation`] rule, so no revocation sweep falls between the read and the
-/// filing. The copy keeps the source's rights: a server narrows before it answers (the network stack
-/// mints from a `WRITE | GRANT` copy of its own endpoint), because the method has no word left to
-/// carry a rights mask.
+/// Read, checked (`GRANT`) and filed under one hold of `IPC_TABLES` ([`Delegation`]); the copy
+/// keeps its rights, so a server narrows first. `Err` is the source's answer, the caller still
+/// waiting. `Ok(true)`: the copy is in the caller's table. `Ok(false)`: the caller was not awaiting
+/// a reply, or its full table got the words and `NO_CAP`. Out of line, off the `REPLY` round trip.
 ///
-/// `Err` is the source's answer (`NoSuchSlot`, `NotPermitted`), with nothing delivered and the caller
-/// still waiting, so the server can still answer it with a plain `REPLY`. `Ok(true)` means the copy
-/// is in the caller's table. `Ok(false)` means it is not: a caller no longer waiting gets nothing,
-/// exactly as in [`ipc_reply`], and a caller whose table is full gets the two words and `NO_CAP`,
-/// the copy dropped. The server learns which, so it can undo what the capability was for.
-///
-/// **Out of line and off the round trip**: plain `REPLY` does not reach this, so `ipc_call_reply`'s
-/// footprint and `ipc_rtt` are unchanged by its existence.
+/// Context: takes `IPC_TABLES`, and capability-table locks beneath it.
 #[inline(never)]
 pub(crate) fn ipc_reply_capability(
     caller: ThreadId,
@@ -972,21 +859,13 @@ pub(crate) fn ipc_reply_capability(
     Ok(delivered != NO_CAP)
 }
 
-/// **Delete every unconsumed `Reply` capability naming `caller`, wherever in the machine it sits.**
-/// Caller holds `IPC_TABLES`.
+/// **Delete every unconsumed `Reply` capability naming `caller`**, in every capability table and
+/// every `outgoing_cap`, so no Reply names a thread that has left its park.
 ///
-/// The property both of this kernel's reply-park teardowns maintain, lifted into one function
-/// because they arrived a day apart with a copy each and the invariant is the same one:
-/// **no unconsumed reply capability names a thread that has left its park.** Milestone 254's
-/// [`strand_reply_caller`] runs it *before waking* a stranded caller, which is seL4's
-/// `cteDeleteOne(callerCap)` from `cancelIPC`; milestone 133's [`finish_blocked_resident`] runs it
-/// on a caller it is about to end and never wake, where the wake half does not apply.
+/// Run by [`strand_reply_caller`] before it wakes a caller, and by [`finish_blocked_resident`] on
+/// a caller it ends. O(threads x slots), on teardown paths only. See notes/scheduler/rendezvous.md.
 ///
-/// **`outgoing_cap` goes too**, and it is the half a second copy would forget: a caller that met no
-/// server rides its own reply capability there awaiting a `RECEIVE_CAP` that will now never collect
-/// it, and a live `Reply` in a hand-off slot is the same forgery one step earlier.
-///
-/// Cost is O(threads x slots), on a teardown path in both callers.
+/// Context: caller holds `IPC_TABLES`; takes each capability table's lock beneath it.
 pub(super) fn delete_reply_caps_naming(sched: &mut IpcTables, caller: ThreadId) {
     let target = crate::cap::Object::Reply(caller);
     for (t, table) in sched.threads.iter_mut_with_capabilities() {
@@ -999,35 +878,15 @@ pub(super) fn delete_reply_caps_naming(sched: &mut IpcTables, caller: ThreadId) 
     }
 }
 
-/// **Free one caller a server can no longer answer** (milestone 254). `abi::Error::Gone` reaches a
-/// rendezvous's *wait queues*, and a `CALL` caller whose request was already taken left those queues
-/// at the rendezvous: it is linked on nothing, and [`ipc_reply`] is the only thing that wakes it. So
-/// a caller stranded by a server that merely died stayed blocked for the life of the machine, and
-/// was itself a region nobody could reclaim. QNX Neutrino has not permitted that since the 1990s
-/// ("if the server thread fails, exits, or disappears, the client thread becomes READY, with
-/// `MsgSend()` indicating an error"), and nothing in this tree recorded it as intended, which is what
-/// made it a defect rather than a fork. See notes/blocked-thread-teardown.md, proposal C.
+/// **Free one `caller` its server can no longer answer, with `abi::Error::Gone`.**
 ///
-/// **The capability sweep is the larger half, and it must come before the wake.** Waking a
-/// reply-parked caller is exactly the path that opens the stale reply capability: [`crate::cap::
-/// reply_cap`] mints `Object::Reply(tid)` carrying a generational *thread* name and no call
-/// identity, and [`ipc_reply`]'s guard checks the `WaitRole` while discarding the rendezvous. That
-/// guard is sound only while nothing can leave a reply park and enter a second `CALL` with an
-/// unconsumed `Reply` still naming it, and this function is precisely what creates that path. A hung
-/// server holding the stale capability would otherwise forge an answer to a later, unrelated
-/// conversation; `L4Re` documents the identical hazard as a consequence of its own finite receive
-/// timeouts. So every `Object::Reply(caller)` in the machine is deleted first, which is seL4's
-/// `cteDeleteOne(callerCap)` reached from `cancelIPC`. seL4's other answer (never wake the victim,
-/// `ThreadState_Inactive`) is not available here, because waking it is the whole point.
+/// A `CALL` caller whose request was taken is linked on no wait queue, and only [`ipc_reply`] wakes
+/// it. Every `Reply` naming it is deleted before the wake, or a server holding a stale one could
+/// answer the caller's next, unrelated `CALL`. Only a thread parked awaiting a reply is touched;
+/// returns whether this did anything. `#[cold]` because every caller is a teardown, one of them
+/// the top of [`schedule`]. See notes/scheduler/rendezvous.md and notes/blocked-thread-teardown.md.
 ///
-/// **Only a thread actually parked awaiting a reply is touched**, which is [`ipc_reply`]'s own
-/// guard and is what keeps this from clobbering an ordinary receiver's park. Returns whether it
-/// did anything, so a scan can use the abort flag as its own termination.
-/// **`#[cold]`, and that is a claim rather than a hint.** Every caller of this is a teardown: a
-/// thread departing, a kill landing, a region being reaped, a rendezvous going away. Saying so keeps
-/// it out of `script/fastpath-footprint`'s closure, which matters because one of the four call sites
-/// is the top of [`schedule`], the hottest path in the kernel; inlined there it cost 1,363 bytes of
-/// `x86_64` IPC fastpath, a 20% growth, for code that runs when something is being torn down.
+/// Context: caller holds `IPC_TABLES`.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_reply_caller(sched: &mut IpcTables, caller: ThreadId) -> bool {
@@ -1046,20 +905,14 @@ pub(super) fn strand_reply_caller(sched: &mut IpcTables, caller: ThreadId) -> bo
     true
 }
 
-/// **Every caller `tid` was still holding a reply capability for is freed** (milestone 254): the
-/// server-side trigger, for a thread that can no longer answer anybody. Reached from three places
-/// where that becomes true and the capabilities are about to stop existing: [`depart`] (the thread
-/// exited or faulted, which is QNX's headline case), the forcible-teardown conversion at the top of
-/// [`schedule`] (DECISIONS §16's armed kill, which never reaches `depart`), and
-/// [`reap_region_objects`]'s removal phase (an `Embryo` or an already-reaped corpse).
+/// **Free every caller `tid` holds a reply capability for**: the server-side trigger, for a thread
+/// that can no longer answer anybody. Reached from [`depart`], the forcible-teardown conversion at
+/// the top of [`schedule`], and [`reap_region_objects`]'s removal phase.
 ///
-/// **It reads the table once and then acts**, which is a measured shape rather than a stylistic
-/// one. The obvious loop re-resolves `tid` through the generational thread table on every slot,
-/// because [`strand_reply_caller`] takes `sched` mutably and deletes out of this very table as it
-/// goes; at 24 slots that was 24 generational lookups per departing thread, and `script/bench`
-/// priced it at about 830 icount ticks on every `spawn_reap` iteration. One lookup, an array of
-/// [`crate::cap::CAPABILITY_TABLE_SLOTS`] victims (512 bytes at 64 slots, 256 at the 32 it was) in this function's own frame (it is `#[inline(never)]`, so the array is never
-/// on `reap_region_objects`'s), and the empty-table early-out cost nothing and gave it back.
+/// Reads the table once into an array of [`crate::cap::CAPABILITY_TABLE_SLOTS`] victims in this
+/// `#[inline(never)]` frame, then acts. See notes/scheduler/rendezvous.md.
+///
+/// Context: caller holds `IPC_TABLES`; takes `tid`'s capability-table lock beneath it.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
@@ -1089,22 +942,15 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
     }
 }
 
-/// **Every caller reply-parked on `ep` is freed** (milestone 254): the rendezvous-side trigger, for
-/// an rendezvous that is being torn down. This is the half `drain_waiters` structurally cannot do,
-/// and the reason is the whole defect: a reply park is linked on no queue, so the drain walks past
-/// it. `wait_on` records `(ep, WaitRole::Reply)`, so a scan over the thread table answers it, which
-/// is Zircon's answer (a closed channel fails the call in flight) reached without touching the
-/// server.
+/// **Free every caller reply-parked on `ep`**: the rendezvous-side trigger, for a rendezvous being
+/// torn down. `drain_waiters` cannot, because a reply park is linked on no queue; `wait_on` records
+/// it.
 ///
-/// **Rescan rather than list**, which is the opposite choice from [`strand_callers_of`] above and
-/// the difference is the bound: that one lists because a capability table is 64 slots, 512 bytes,
-/// and this one cannot because the bound here is `MAX_THREADS`, a kilobyte that grows every time
-/// the thread ceiling does. Both functions sit on the call chain through
-/// [`reap_region_objects`], the deepest frame in the kernel, whose own comment spends a paragraph
-/// on this exact array (see also notes/stack-high-water.md). The abort flag
-/// [`strand_reply_caller`] sets is what makes the rescan terminate, and it has to be the flag rather
-/// than `wait_on`: a wake deferred behind `on_cpu` leaves the park in place until that core's
-/// `finish_switch`, so a predicate reading only `wait_on` would spin.
+/// Rescans the thread table rather than listing victims, because a list bounded by `MAX_THREADS`
+/// would grow the deepest frame in the kernel. The scan ends on the abort flag, not on `wait_on`,
+/// which a wake deferred behind `on_cpu` leaves in place. See notes/scheduler/rendezvous.md.
+///
+/// Context: caller holds `IPC_TABLES`.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_callers_awaiting(sched: &mut IpcTables, ep: RendezvousId) {
