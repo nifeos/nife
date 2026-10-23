@@ -1,41 +1,12 @@
-//! **`vmstat`: the machine's counters since boot** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the
-//! machine and your share)).
+//! **`vmstat`: the machine's counters since boot** (§225 (`free` sees the machine and your share)).
 //!
-//! The program's logic, lifted out so it runs on the host; `components/src/vmstat.rs` reads the
-//! machine statistics page and the ambient clock and writes this. One report, which is upstream
-//! `vmstat`'s first line: averages since boot.
-//!
-//! # The columns nife has a subject for, and the ones it does not
-//!
-//! | upstream | here | why |
-//! |---|---|---|
-//! | `r` | `r` | runnable threads over every core, sampled at each core's last tick |
-//! | `b` | absent | no thread here sleeps uninterruptibly on I/O: the drivers are userspace programs |
-//! | `swpd`, `si`, `so` | absent | nife refuses paging out for now (calef, 2026-09-26, pull request #1356), so a zero would say swap exists and is empty |
-//! | `free` | `free` | the machine statistics page, KiB |
-//! | `buff`, `cache` | `total` instead | the kernel keeps no buffer or page cache to report |
-//! | `bi`, `bo` | absent | block I/O happens in userspace drivers the kernel does not count |
-//! | `in`, `cs` | `in`, `cs` | per second since boot |
-//! | `us`, `sy` | `busy` | the tick knows what ran, not which privilege level it interrupted |
-//! | `id` | `id` | idle-thread ticks |
-//! | `wa`, `st` | absent | no I/O wait and no hypervisor steal accounting |
-//!
-//! # EXAMPLES
-//!
-//! ```text
-//! $ vmstat
-//! procs ------memory (KiB)------ --system-- -cpu-
-//!     r       free      total     in     cs busy  id
-//!     1     110592     131072    104     35   12  88
-//! ```
+//! The logic of `components/src/vmstat.rs`: averages since boot, from the machine statistics page.
+//! Its columns: notes/process-view/the-machine-and-your-share.md, "`vmstat`'s columns".
 //!
 //! # BUGS
 //!
-//! - No interval and no count: this kernel has no timed wait (milestone 106 (a wait that ends on either the interrupt or the deadline)), so a repeating
-//!   `vmstat` would be a yield-spin that counted itself as the busiest thing on the machine, the
-//!   finding that cut `watch`.
-//! - `busy` is `us` and `sy` together; see the table.
-//! - Each figure is a word read a moment apart from the others, not one snapshot.
+//! No interval and no count (a prompt program holds no timer); `busy` is `us` and `sy` together;
+//! each figure is read a moment apart from the others.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table): upstream `procps`'s.
 

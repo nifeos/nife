@@ -133,6 +133,37 @@ under the lock it already holds. None of it takes a lock that was not already he
 fast path's footprint and the switch's instruction count are measured by `script/bench` in CI,
 which is where this change will be judged.
 
+## `vmstat`'s columns
+
+`vmstat` prints one report, upstream's first line: averages since boot. Each upstream column is
+kept, merged or absent for a reason about this system, not a gap in the program.
+
+| upstream | here | why |
+|---|---|---|
+| `r` | `r` | runnable threads over every core, sampled at each core's last tick |
+| `b` | absent | no thread here sleeps uninterruptibly on I/O: the drivers are userspace programs |
+| `swpd`, `si`, `so` | absent | see Swap, below |
+| `free` | `free` | the machine statistics page, KiB |
+| `buff`, `cache` | `total` instead | the kernel keeps no buffer or page cache to report |
+| `bi`, `bo` | absent | block I/O happens in userspace drivers the kernel does not count |
+| `in`, `cs` | `in`, `cs` | per second since boot |
+| `us`, `sy` | `busy` | the tick knows what ran, not which privilege level it interrupted |
+| `id` | `id` | idle-thread ticks |
+| `wa`, `st` | absent | no I/O wait and no hypervisor steal accounting |
+
+```text
+$ vmstat
+procs ------memory (KiB)------ --system-- -cpu-
+    r       free      total     in     cs busy  id
+    1     110592     131072    104     35   12  88
+```
+
+There is no interval and no count. A program at the prompt holds no timer: milestone 106 (a wait
+that ends on either the interrupt or the deadline) built the kernel's timed wait, and only services
+are granted one. A repeating `vmstat` would be a yield-spin that counted itself as the busiest thing
+on the machine, the finding that cut [`watch`](watch.md). `busy` is `us` and `sy` together, and each
+figure is a word read a moment apart from the others, not one snapshot.
+
 ## Swap
 
 `free` prints no `Swap:` line and `vmstat` no `swpd`, `si` or `so` columns. calef ruled on
