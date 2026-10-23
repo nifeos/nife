@@ -23,6 +23,7 @@ the parent's Results row points to it.
   that changed that day, and how to tell an old transcript from a new one.
 - [`hvf-cross-check-2026-09-19.md`](hvf-cross-check-2026-09-19.md): the HVF cross-check that did
   not run.
+- [`supervisor.md`](supervisor.md): the kernel supervisor's shape, its pool and its own BUGS.
 - [`limitations.md`](limitations.md): the parent's BUGS list in full.
 
 *Name: provisional, for the directory and every stem in it. Naming is an architect's;

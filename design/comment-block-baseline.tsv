@@ -140,7 +140,6 @@ kernel/src/interrupt_stack.rs:27	31
 kernel/src/interrupt_stack.rs:160	22
 kernel/src/iommu.rs:1	21
 kernel/src/ipc_stack_depth.rs:1	29
-kernel/src/job_mix.rs:1	32
 kernel/src/kernel_log.rs:1	39
 kernel/src/kmem.rs:1	23
 kernel/src/lib.rs:1	23
