@@ -55,8 +55,8 @@ pub mod rank {
     /// `KernelStack`'s `Drop` runs from the reaper.
     pub const STACK_VA: u32 = 55;
 
-    /// The revocation registry (§13 (capability revocation)): which address spaces live, and where their mapping logs are.
-    /// Above `MEMORY_REGION`; never held with `IPC_TABLES` in either order.
+    /// The revocation registry (§13 (capability revocation)): which address spaces live, and where
+    /// their mapping logs are. Above `MEMORY_REGION`; never held with `IPC_TABLES` in either order.
     pub const MAPPINGS: u32 = 59;
 
     /// The kernel's own page tables (`mmu::map_page` / `unmap_page`), shared by every core. Below
@@ -174,8 +174,8 @@ impl<T> IrqSafeMutex<T> {
     }
 
     /// [`lock`](Self::lock) after the caller has masked interrupts, with the state it found, which
-    /// the guard restores. Private: [`lock_found`] is the one other caller. Always inlined, so `lock`
-    /// is one call in the gate's -O0 build.
+    /// the guard restores. Private: [`lock_found`] is the one other caller. Always inlined, so
+    /// `lock` is one call in the gate's -O0 build.
     #[inline(always)]
     fn lock_masked(&self, irqs_were_enabled: bool) -> IrqSafeGuard<'_, T> {
         // Interrupts are off until the guard's `drop`, so nothing else touches this held-rank.

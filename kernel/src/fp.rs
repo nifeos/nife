@@ -15,8 +15,9 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::arch::fp::FpState;
 
-/// How many threads have ever asked for the floating-point unit. Zero on every shipping boot,
-/// which is the evidence the soft-float targets are weighed against (milestone 447 (a thread's vector registers are its own)).
+/// How many threads have ever asked for the floating-point unit. Zero on every shipping boot, which
+/// is the evidence the soft-float targets are weighed against (milestone 447 (a thread's vector
+/// registers are its own)).
 pub(crate) static ENABLES: AtomicUsize = AtomicUsize::new(0);
 
 /// Move the register file from the outgoing thread to the incoming one.

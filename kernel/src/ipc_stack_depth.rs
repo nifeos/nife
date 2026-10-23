@@ -4,8 +4,9 @@
 //! below its live `sp`; immediately after, it scans for the deepest word no longer paint. Kernel
 //! threads wrap each call in [`measured`] ([`kernel_thread_shapes`]); for EL0 threads
 //! [`after_syscall`] scans and repaints at the end of each syscall ([`el0_shapes`]). Each series
-//! reports its median, which is the per-IPC figure, beside the interrupt-contaminated maximum. Built
-//! only under `any(test, feature = "ipc_stack_depth")`. See notes/stack-high-water/per-ipc-depth.md.
+//! reports its median, which is the per-IPC figure, beside the interrupt-contaminated maximum.
+//! Built only under `any(test, feature = "ipc_stack_depth")`. See
+//! notes/stack-high-water/per-ipc-depth.md.
 //!
 //! Name: provisional (milestone 134 (the register of measures)'s lane, 2026-09-19): module, feature
 //! and the `ipc-stack-depth:` line prefix alike. Names are an architect's.
@@ -180,8 +181,8 @@ fn send_receive_kernel() {
     sched::ipc_receive(done);
 }
 
-/// CALL against `RECEIVE_CAP` and REPLY between two kernel threads, the shape `bench.rs`'s `call_reply`
-/// times and the one real services issue.
+/// CALL against `RECEIVE_CAP` and REPLY between two kernel threads, the shape `bench.rs`'s
+/// `call_reply` times and the one real services issue.
 fn call_reply_kernel() {
     for s in [
         &K_CR_CLIENT_CALL,

@@ -2,9 +2,9 @@
 //!
 //! Under `-icount shift=0,sleep=off` QEMU's virtual clock advances one nanosecond per retired
 //! instruction, so a busy host cannot move these numbers. [`run`] asserts four claims: the timer
-//! fired at the armed deadline, the handler stays under a bound, no tick is missed, and the deadline
-//! advances one interval per tick. Its own boot, `-smp 1`, behind the `icount` feature, which
-//! implies `bench`. See notes/instruction-clock.md.
+//! fired at the armed deadline, the handler stays under a bound, no tick is missed, and the
+//! deadline advances one interval per tick. Its own boot, `-smp 1`, behind the `icount` feature,
+//! which implies `bench`. See notes/instruction-clock.md.
 //!
 //! *Provisional names throughout: the `icount` feature, this module, `tick_trace`,
 //! `script/icount`.*

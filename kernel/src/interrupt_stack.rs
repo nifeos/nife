@@ -6,8 +6,8 @@
 //! notes/stack/interrupt-stack.md.
 //!
 //! Nothing that runs on an interrupt stack may context-switch away from it: the thread would resume
-//! on a core's stack that the next interrupt has overwritten. `sched::schedule` debug-asserts it and
-//! `script/stack-depth-check` proves no switch is reachable from the interrupt-stack entry.
+//! on a core's stack that the next interrupt has overwritten. `sched::schedule` debug-asserts it
+//! and `script/stack-depth-check` proves no switch is reachable from the interrupt-stack entry.
 
 //! # BUGS
 //!
@@ -146,8 +146,8 @@ mod tests {
 
     /// The linker reserved at least what this module lays out, starting where it starts.
     ///
-    /// The layout is here and `.interrupt_stacks` is in two linker scripts. A region too small would
-    /// put the last core's stack over whatever the linker put next, with no fault.
+    /// The layout is here and `.interrupt_stacks` is in two linker scripts. A region too small
+    /// would put the last core's stack over whatever the linker put next, with no fault.
     #[test_case]
     fn the_interrupt_stack_region_is_the_size_the_linker_reserved() {
         unsafe extern "C" {
@@ -188,8 +188,8 @@ mod tests {
     /// Some core's interrupt stack has been used, so traps do run on it.
     ///
     /// A nonzero high-water on a painted slot proves the switch fires. Any core rather than this
-    /// one, because tests are not pinned and a core that ran only user threads never switches. Not a
-    /// depth threshold: `stack::report_high_water` and `script/stack-depth-check` own that.
+    /// one, because tests are not pinned and a core that ran only user threads never switches. Not
+    /// a depth threshold: `stack::report_high_water` and `script/stack-depth-check` own that.
     #[test_case]
     fn interrupts_are_handled_on_the_interrupt_stack() {
         let used = (0..MAX_CPUS).any(|id| {

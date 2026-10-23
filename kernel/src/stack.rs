@@ -356,9 +356,9 @@ static BOOT_PAINT_CEILING: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 
 /// Paint the boot stack from above the canary to 512 bytes below the current `sp`.
 ///
-/// Called from `kernel_main` right after [`init`], so the live frames are skipped. Depth used before
-/// this runs and never reached again is invisible; the report prints the floor. The 512-byte margin
-/// covers the paint loop's own callees, which are real calls in a debug build.
+/// Called from `kernel_main` right after [`init`], so the live frames are skipped. Depth used
+/// before this runs and never reached again is invisible; the report prints the floor. The 512-byte
+/// margin covers the paint loop's own callees, which are real calls in a debug build.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn paint_boot_stack() {
     let ceiling = crate::arch::current_sp() - 512;

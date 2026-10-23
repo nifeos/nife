@@ -54,7 +54,8 @@ pub struct PerCpu {
     ///
     /// A `Finished` predecessor is reaped, and a wake that caught a `Blocked` one mid-switch-out
     /// (`thread_wake_handshake::Handshake`'s `wake_pending`) is completed, only after the switch,
-    /// when the thread is provably off its stack. Only this core touches it, with interrupts masked.
+    /// when the thread is provably off its stack. Only this core touches it, with interrupts
+    /// masked.
     pub switched_from: AtomicU64,
 
     /// This core's run queue: the threads ready to run here, in round-robin order.
@@ -68,17 +69,18 @@ pub struct PerCpu {
     /// This core's migration inbox: threads handed to it by other cores.
     ///
     /// The one cross-core scheduler structure. A remote core locks it, pushes the TCB and sends a
-    /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and `sched::drain_inbox`.
+    /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and
+    /// `sched::drain_inbox`.
     pub inbox: IrqSafeMutex<Fifo<Thread>>,
 
-    /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)). Kept exact
-    /// by the owner after every [`with_runq`](Self::with_runq); read relaxed and possibly stale, on
-    /// purpose. The thread on the CPU is not counted.
+    /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)).
+    /// Kept exact by the owner after every [`with_runq`](Self::with_runq); read relaxed and
+    /// possibly stale, on purpose. The thread on the CPU is not counted.
     runq_len: AtomicUsize,
 
     /// This core's inbox length, mirrored the same way and updated under the inbox lock. Counted in
-    /// [`runnable`](Self::runnable) so a core with a full inbox and an empty run queue does not read
-    /// as idle to placers and thieves.
+    /// [`runnable`](Self::runnable) so a core with a full inbox and an empty run queue does not
+    /// read as idle to placers and thieves.
     inbox_len: AtomicUsize,
 
     /// A pending work-steal request from an idle core (§28): this core hands one runnable thread to
@@ -231,7 +233,8 @@ impl PerCpu {
     /// # BUGS
     ///
     /// `sched::spawn` calls it with interrupts enabled, so a preemption between the load and the
-    /// store can lose an update or store into a block the thread has left. Neither breaks placement.
+    /// store can lose an update or store into a block the thread has left. Neither breaks
+    /// placement.
     pub(crate) fn rng_next(&self) -> u32 {
         let mut x = self.rng.load(Ordering::Relaxed);
         x ^= x << 13;
@@ -244,10 +247,10 @@ impl PerCpu {
 
 /// How many threads each core has adopted out of its own inbox, monotonic since boot.
 ///
-/// A count, not a depth like `inbox_len`, so a push and drain between two reads still show. It exists
-/// for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named core
-/// because stealing may move the thread before it runs. An array beside `PerCpu`, because a drain
-/// is on no hot path (notes/per-cpu.md).
+/// A count, not a depth like `inbox_len`, so a push and drain between two reads still show. It
+/// exists for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named
+/// core because stealing may move the thread before it runs. An array beside `PerCpu`, because a
+/// drain is on no hot path (notes/per-cpu.md).
 static ADOPTED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// The per-CPU blocks, one per core, static so a core's block exists before any allocator.
@@ -340,8 +343,8 @@ mod tests {
     /// block and no other.
     ///
     /// It does not assert which core it runs on: tests are not pinned, and §28's stealing may move
-    /// the test thread (notes/scheduler/test-flakes.md). `boot_cpu_id()` is read rather than assumed
-    /// 0, since on RISC-V QEMU picks the boot hart.
+    /// the test thread (notes/scheduler/test-flakes.md). `boot_cpu_id()` is read rather than
+    /// assumed 0, since on RISC-V QEMU picks the boot hart.
     #[test_case]
     fn percpu_is_self_consistent_on_whatever_cpu_we_run() {
         let me = id();
