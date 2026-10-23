@@ -152,3 +152,9 @@ forced inline where that does not cost the band: `current_thread_id` on riscv64,
 on riscv64 and `x86_64`. On aarch64, forcing either grows `syscall_entry` past its band. There
 `set_current` carries a `.text.hot` section instead. Inlined, the section is unused; out of line, the
 copy lands beside its caller.
+
+## BUGS
+
+- `thread::init_fp_state`'s doc gives "a `kmem` page is not zeroed" as its reason, and
+  `kmem::page` zeroes a recycled page. Either the doc is stale or a path hands out unzeroed pages;
+  nobody has checked which.
