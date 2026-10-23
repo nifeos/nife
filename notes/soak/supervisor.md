@@ -77,8 +77,8 @@ trace counters.
   roles leave `wakes` at zero, and neither counter falls, so an unchanged sum means both were
   unchanged, with no table of who plays which part.
 - `drifted=` is measured against the last census printed, not against spawn. Against spawn it
-  becomes a constant a few beats in (11 of 20 on the aarch64 QEMU leg) and says nothing further;
-  against the census it returns to zero after each reprint, so a nonzero one means a newer block
+  becomes a constant a few beats in (11 of 20 on the aarch64 QEMU leg) and says nothing further.
+  Against the census it returns to zero after each reprint, so a nonzero one means a newer block
   follows.
 
 ## Which builds reset the machine
@@ -97,9 +97,9 @@ unless it names `unwatched_soak_test`: "A soak should reset itself when it freez
 2026-09-26 UTC). `kernel/build.rs` sets the `soak_watchdog` cfg, and `soak.rs` restates the rule as
 a compile error, so a build-script edit that drops the default fails the build.
 
-Before it arms, the JH7110 path refuses twice where the TCO needs neither: the device tree must name
-the watchdog and its clocks, and the counter must run at the rate its count was computed for,
-measured against the kernel's timer over a tenth of a second (spun, so the window is the timer's). A
+Before it arms, the JH7110 path refuses twice where the TCO needs neither. The device tree must name
+the watchdog and its clocks. The counter must run at the rate its count was computed for, measured
+against the kernel's timer over a tenth of a second, spun so the window is the timer's. A
 counter on a gated clock reads a frozen count, and arming it would print `ARMED` over a timer that
 never fires.
 

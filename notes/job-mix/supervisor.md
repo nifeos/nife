@@ -10,8 +10,8 @@ micro-benchmarks cannot see.
 ## Why it is shaped like the soak
 
 It is shaped like `kernel/src/soak.rs`, not `kernel/src/bench.rs`, because the number has to be
-taken on radon and the bench boot has never run on a board: `--features job_mix`, the tour ends in
-it, its console lines are machine-readable, and `script/job-mix` is the QEMU rehearsal. Unlike the
+taken on radon and the bench boot has never run on a board. So it has `--features job_mix`, the tour
+ends in it, its console lines are machine-readable, and `script/job-mix` is the QEMU rehearsal. Unlike the
 soak it ends, printing `job_mix::DONE` and halting. It parks rather than exits: the watcher sees the
 marker and tears the run down, and a forgotten QEMU costs nothing in `wfi`.
 
