@@ -74,9 +74,8 @@ pub fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
 
 /// `RECEIVE` three words on the endpoint capability in `slot`. Blocks until a sender arrives; returns
 /// the three words the sender passed in `x0`, `x1`, `x2`.
-
-/// # Examples
 ///
+/// # Examples
 /// A pipeline stage. There is no `open` and no path: nothing that was not handed over can be named.
 /// The rendezvous is the flow control, and `Gone` from `send` is this system's SIGPIPE.
 ///
@@ -325,9 +324,8 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// `CALL` on the endpoint capability in `slot`: send two words and block until the server
 /// replies through the one-shot Reply capability the kernel mints (milestone 12). Returns the
 /// two reply words. The atomic send-and-wait that makes a request unmistakably answerable.
-
-/// # Examples
 ///
+/// # Examples
 /// The client never names the server and the server never names the client:
 ///
 /// ```no_run

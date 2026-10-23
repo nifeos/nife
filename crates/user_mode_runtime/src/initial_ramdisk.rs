@@ -10,7 +10,6 @@
 //! question 2), with [`bytes`]. His words: "Yes". Refused `initrd` (round 6's provisional name).
 
 //! # Examples
-//!
 //! Bare-metal only, like the rest of this crate (see the crate-level doc for why this is `no_run`).
 //!
 //! ```no_run

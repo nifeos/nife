@@ -8,7 +8,6 @@
 //! notes/user-mode-runtime.md.
 
 //! # Examples
-//!
 //! Bare-metal only, like the rest of this crate, so the first example is `no_run`.
 //!
 //! ```no_run
@@ -146,10 +145,9 @@ impl MappedWindow {
         }
     }
 
-    /// The whole window as an ordinary byte slice, for a caller that hands it to a parsing or
-    /// serialization routine rather than reading or writing fields. **Not volatile**: the compiler
-    /// may assume nothing else touches the bytes while the reference is alive.
-
+    /// The whole window as an ordinary byte slice, for a parser or serializer. **Not volatile**:
+    /// the compiler may assume nothing else touches the bytes while the reference is alive.
+    ///
     /// # Safety
     /// As [`new`](Self::new)'s, for as long as the returned reference is used, plus one more:
     /// nothing else, no peer process and no other reference or thread in this process, reads or

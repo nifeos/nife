@@ -30,6 +30,7 @@
 //!   [`ENTRIES_IN_FIRST_BLOCK`] files, and nothing in the format says so.
 //! - No directories, writes or permissions; the read-write filesystem is `redoxfs_server/`.
 
+//!
 //! Name: ratified 2026-08-01 as `crickerfs` (calef), renamed `nifefs` with the OS. Refused
 //! `cricker_fs` (`procfs` is the shape of a filesystem name; nobody writes `proc_fs`).
 
@@ -233,9 +234,8 @@ fn u32le(b: &[u8], at: usize) -> u32 {
 /// of bytes written. `out` must be large enough; the disk tool sizes it from [`image_size`].
 ///
 /// Not `no_std`-hostile, but only the disk-building tool calls it, on the host.
-
-/// # Examples
 ///
+/// # Examples
 /// Pack two files and read one back:
 ///
 /// ```
@@ -617,18 +617,14 @@ mod verification {
     }
 
     /// **A short image is always `Truncated`, never indexed**: for any image under the directory
-    /// span, parse refuses before touching a byte past the length check (which is what keeps the
-    /// entry reads, up to offset [`HEADER_LEN`] + [`MAX_FILES`] * [`ENTRY_LEN`] inside
-    /// [`DIR_BLOCKS`], in bounds).
+    /// span, parse refuses at the length check, which keeps the entry reads (up to [`HEADER_LEN`] +
+    /// [`MAX_FILES`] * [`ENTRY_LEN`], inside [`DIR_BLOCKS`]) in bounds.
     ///
-    /// `#[kani::unwind(9)]` lets a weakened guard reach a verdict instead of unrolling the entry
-    /// loop without end, and removes no path on the correct tree. 9 is the least bound that lets
-    /// the 8-byte magic compare finish. Measurements are in notes/nifefs.md.
-
-    /// # BUGS
-    /// - One record per harness (§134 (a harness carries a machine-replayable falsification
-    ///   record)), so this weakened guard replaced the magic-before-length reordering #1217
-    ///   recorded, which still goes red under this bound in 1.1 s and is the cheaper replay.
+    /// `#[kani::unwind(9)]` lets a weakened guard reach a verdict and removes no path on the correct
+    /// tree; 9 lets the 8-byte magic compare finish. Measurements are in notes/nifefs.md.
+    ///
+    /// BUGS: one record per harness (§134 (a harness carries a machine-replayable falsification
+    /// record)), so #1217's magic-before-length reordering, red in 1.1 s, is the cheaper replay.
     /// Falsification: replayable `crates/nifefs/falsifications/verification.a_short_image_is_refused_not_indexed.patch`
     #[kani::proof]
     #[kani::unwind(9)]

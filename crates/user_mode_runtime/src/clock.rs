@@ -65,9 +65,8 @@ pub fn cntfrq_checked() -> Option<u64> {
 /// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::init_frequency`) and publishes it
 /// (`kernel::user::timebase_page_phys`). No constant stands in: radon runs at 4 MHz. See
 /// notes/user-mode-runtime/time.md.
-
-/// # Panics
 ///
+/// # Panics
 /// If the rate is unknown: see [`cntfrq_checked`], which is this without the panic.
 #[cfg(target_arch = "riscv64")]
 pub fn cntfrq() -> u64 {
@@ -93,18 +92,15 @@ pub fn cntfrq_checked() -> Option<u64> {
 }
 
 /// The monotonic tick count (`x86_64`): `rdtsc`, readable from ring 3 because `CR4.TSD` is clear
-/// at reset and the kernel never sets it.
+/// at reset and the kernel never sets it. `rdtsc` answers in `edx:eax`, so this joins the halves;
+/// one `out(reg)` would read only the low half. Not serialized: the reordering window is tens of
+/// cycles. See notes/user-mode-runtime/time.md.
 ///
-/// `rdtsc` answers in `edx:eax`, so this joins the halves; one `out(reg)` would read only the low
-/// half, which wraps every four seconds at 1 GHz. Not serialized: the reordering window is tens of
-/// cycles, the trade the kernel's calibration accepts. See notes/user-mode-runtime/time.md.
-
 /// # BUGS
-///
 /// - The TSC is ambient, so every ring-3 program holds a fine timing instrument it was never
-///   granted, where aarch64 and riscv64 keep the fine counter shut (milestone 228 (the cycle
-///   counters are closed by assumption, and on two architectures the assumption is a comment)).
-///   Closing it needs a coarse monotonic page first (§43 (reading the clock is a page)).
+///   granted (milestone 228 (the cycle counters are closed by assumption, and on two architectures
+///   the assumption is a comment)); closing it needs a coarse monotonic page first (§43 (reading
+///   the clock is a page)).
 #[cfg(target_arch = "x86_64")]
 pub fn now() -> u64 {
     let (lo, hi): (u32, u32);
@@ -117,18 +113,13 @@ pub fn now() -> u64 {
 
 /// The counter frequency in Hz (`x86_64`), read from the **timebase page** the kernel maps
 /// read-only into every process at [`counter_frequency_contract::PAGE_VA`]: a plain load, no
-/// syscall.
+/// syscall. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
+/// `0x15` or calibrates (`arch::x86_64::timer::init_frequency`), and a child's page carries its
+/// parent's rate. See notes/user-mode-runtime/time.md.
 ///
-/// x86 has no architected rate ring 3 can ask for, so `arch::x86_64::timer::init_frequency` reads
-/// `CPUID` leaf `0x15` or calibrates, and `kernel::user::map_x86_timebase_page` maps the page.
-/// `supervision_protocol::build_child_space` fills a child's page from its parent's rate. See
-/// notes/user-mode-runtime/time.md.
-
 /// # Panics
-///
-/// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one. The panic
-/// traps (see [`trap`]) and the kernel kills the process with no message. [`cntfrq_checked`] is
-/// this without the panic.
+/// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
+/// traps (see [`trap`]) and the kernel kills the process. [`cntfrq_checked`] does not panic.
 #[cfg(target_arch = "x86_64")]
 pub fn cntfrq() -> u64 {
     cntfrq_checked().expect(
@@ -180,7 +171,7 @@ pub struct CycleReading {
 /// | aarch64 | `mrs PMCCNTR_EL0` | [`CycleMeaning::CoreCyclesUserAndKernel`]: EL0 and EL1, not EL2 |
 /// | riscv64 | `csrr cycle` | [`CycleMeaning::CoreCyclesEveryMode`]: every privilege mode |
 /// | `x86_64` | `rdtsc` | [`CycleMeaning::ConstantRateReferenceCycles`]: not core cycles |
-
+///
 /// # Examples
 ///
 /// ```no_run
@@ -193,14 +184,12 @@ pub struct CycleReading {
 /// }
 /// # let _ = spent;
 /// ```
-
-/// # BUGS
 ///
-/// - No manifest field grants the cycle counter yet, so outside the kernel's own test no aarch64
-///   or riscv64 program can call this without being killed (milestone 75's work).
-/// - riscv64 cannot say whether its counter is the kernel's: `cycle` is `mcycle`, and the kernel's
-///   probe may hold `hpmcounter3` (milestone 856 (a program asks whether it may read the cycle
-///   counter)).
+/// # BUGS
+/// - No manifest field grants the counter yet, so only the kernel's own test may call this on
+///   aarch64 or riscv64 (milestone 75's work).
+/// - riscv64's `cycle` is `mcycle`, and the kernel's probe may hold `hpmcounter3` (milestone 856
+///   (a program asks whether it may read the cycle counter)).
 /// - Under QEMU every count is emulator time, never a measurement of a core.
 ///
 /// Name: provisional, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
@@ -263,7 +252,7 @@ fn read_cycle_counter() -> u64 {
 /// the load, so a per-CPU cache built on it must stay correct on the previous core's answer. The
 /// value is a CPU id, not an index: size a per-CPU array by
 /// [`current_cpu_contract::CPU_ID_BOUND`]. See notes/user-mode-runtime/time.md.
-
+///
 /// # EXAMPLES
 ///
 /// ```no_run
@@ -273,9 +262,8 @@ fn read_cycle_counter() -> u64 {
 ///     per_cpu[cpu] += 1;
 /// }
 /// ```
-
-/// # BUGS
 ///
+/// # BUGS
 /// - A process whose address space was never bound to a TCB has no page here, and this faults on
 ///   an unmapped read rather than answering `None`. Only a space with no thread in it lacks the
 ///   page, and a fault is the one failure a caller cannot handle.

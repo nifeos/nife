@@ -8,13 +8,11 @@
 //! request records no other name considered.
 
 /// **The one trap in this crate**, one per architecture, used by every syscall: the number in
-/// `x8`/`a7`/`rax` and six words in both directions. No caller may declare a register as
-/// surviving the trap: the kernel writes its result into the first register on the way out of
-/// every syscall, and some methods write up to the sixth. The sixth goes in as zero, so
-/// [`receive_fault`] reads `0` for a death message the kernel did not label (§148 (resolves by
-/// asking the kernel)). `helpers/syscall_asm.py` gates every userspace trap. See
-/// notes/user-mode-runtime.md.
-
+/// `x8`/`a7`/`rax` and six words in both directions. No register survives: the kernel writes the
+/// first on every syscall and some methods write up to the sixth, which goes in as zero so
+/// [`receive_fault`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
+/// kernel)). `helpers/syscall_asm.py` gates every userspace trap. See notes/user-mode-runtime.md.
+///
 /// # Safety
 /// `svc`/`ecall` traps to the kernel. The kernel validates the capability and the method before
 /// acting; that is its whole job. The caller is trusting the kernel, not the other way around.
@@ -76,13 +74,10 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
 
 /// The raw six-register round trip (`x86_64`). See the aarch64 twin's doc for the contract; only
 /// the trap instruction and register file differ: `syscall`, the number in `rax`, the words in
-/// `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9` (§124 (ratify the x86_64 syscall ABI)).
+/// `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9` (§124 (ratify the x86_64 syscall ABI)). `syscall`
+/// writes `rcx` and `r11`, so both are declared clobbered, and `r10` replaces the C ABI's `rcx`.
+/// `options(nostack)` holds: `syscall` does not push. See notes/user-mode-runtime.md.
 ///
-/// `syscall` writes `rcx` and `r11` unconditionally, so both are declared clobbered; without them
-/// this compiles and corrupts whatever local sat there. `r10` replaces the C ABI's `rcx` for the
-/// same reason. `options(nostack)` holds because `syscall` does not push. See
-/// notes/user-mode-runtime.md.
-
 /// # Safety
 /// `syscall` traps to the kernel, which validates the capability and method before acting. Same
 /// contract as the aarch64 twin: the caller trusts the kernel, not the other way around.

@@ -32,21 +32,15 @@ pub fn exit() -> ! {
 }
 
 /// **Die where the mistake was.** Raise a breakpoint the kernel turns into a fault, so the process
-/// is killed rather than allowed to limp on.
+/// is killed rather than allowed to limp on. Unlike [`exit`] (`EVENT_EXIT`), this reports `EVENT_FAULT` to a supervisor (§26), so a panic
+/// must take this path: `brk #0`, `ebreak` or `ud2`. The trailing spin only satisfies `-> !`;
+/// calling `exit` would make an impossible return look like a clean death.
 ///
-/// Unlike [`exit`], which reports `EVENT_EXIT`, this reports `EVENT_FAULT` to a supervisor
-/// (`kernel/src/sched.rs`, §26), so a panic must take this path. The instruction is `brk #0` on
-/// aarch64, `ebreak` on riscv64 and `ud2` on `x86_64`. The trailing spin only satisfies `-> !`; it
-/// does not call `exit`, which would make an impossible return look like a clean death. See
-/// notes/user-mode-runtime.md.
-
 /// # BUGS
+/// - Every trap in a program prints the same fault line, since its `pc` is this one instruction;
+///   notes/user-mode-runtime.md has the fix and the workaround.
 ///
-/// - Every trap in a program prints the same fault line, because the `pc` is always this one
-///   breakpoint instruction. Printing the return address beside it needs the three
-///   `arch/*/exceptions.rs` fault printers changed; notes/user-mode-runtime.md has the workaround.
-///
-/// A verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all verbs, and
+/// Name: a verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all verbs, and
 /// the naming tenet's noun rule is about crates, programs and modules rather than about the things
 /// they do.
 pub fn trap() -> ! {
@@ -93,9 +87,8 @@ pub fn trap() -> ! {
 ///
 /// The one way a nife program says "no": there is no error value to return, and limping past a
 /// failed check turns a detected mistake into an undetected one, so this [`trap`]s at the call.
-
-/// # Examples
 ///
+/// # Examples
 /// ```ignore
 /// require(reply == 0);
 /// require(frame >= 0);
@@ -120,7 +113,7 @@ pub fn require(ok: bool) {
 /// Write `user_mode_runtime::panic_handler!();` once at the top level of a binary and it expands to a
 /// `#[panic_handler]` that calls [`trap`]. A library that defined the handler would force it on
 /// every binary that links the library; a macro defines nothing until a binary asks.
-
+///
 /// # Examples
 ///
 /// ```ignore
@@ -134,9 +127,8 @@ pub fn require(ok: bool) {
 ///     user_mode_runtime::exit()
 /// }
 /// ```
-
-/// # BUGS
 ///
+/// # BUGS
 /// It takes no arguments and ignores the `PanicInfo`, because a program with no console cannot
 /// print one. A program that *can* print (it holds a terminal endpoint) and wants the message on
 /// the way down still writes its own handler; this macro is the default, not a mandate.

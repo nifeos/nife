@@ -70,8 +70,8 @@ pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
 /// the store-store and load-load orders asked for, and every notify leaves through a serializing
 /// syscall, so a compiler fence is the whole answer. A fourth architecture fails to build. See
 /// notes/user-mode-runtime.md and notes/architecture-list-sweep.md, finding 9.
-
-/// Name is **provisional** (a lane's, not ratified): it sits in this module beside the four
+///
+/// Name: **provisional** (a lane's, not ratified): it sits in this module beside the four
 /// capability wrappers and took the `virtio_` prefix they then carried. calef's ruling of
 /// 2026-10-08 (UTC), #1842, dropped that prefix from those four ([`read_register`] and its
 /// siblings); whether this one follows is not yet ruled.
