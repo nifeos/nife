@@ -448,8 +448,8 @@ fn unmapping_nothing_is_an_error_not_a_silent_success() {
 /// architecturally unsafe: it can raise a TLB conflict abort, and the hardware is permitted
 /// to do essentially anything.
 ///
-/// AlreadyMapped is what forces the legal sequence. You CANNOT overwrite; you must unmap
-/// (which hands you a TlbFlush you cannot ignore) and then map. The API cannot be used
+/// `AlreadyMapped` is what forces the legal sequence. You CANNOT overwrite; you must unmap
+/// (which hands you a `TlbFlush` you cannot ignore) and then map. The API cannot be used
 /// incorrectly, rather than merely documenting the rule and hoping.
 #[test]
 fn changing_a_mapping_is_forced_through_break_before_make() {
@@ -499,7 +499,7 @@ fn unmap_then_map_reuses_the_intermediate_tables() {
         .expect("intermediate tables were thrown away");
 }
 
-/// #[must_use] catches `m.unmap(va);` as a bare statement. It does NOT catch
+/// `#[must_use]` catches `m.unmap(va);` as a bare statement. It does NOT catch
 /// `let (pa, _) = m.unmap(va)?;`, which is exactly the shape the mistake takes in real
 /// code. Rust has no linear types, so the only way to make "you must consume this"
 /// enforceable is to make NOT consuming it fail loudly.

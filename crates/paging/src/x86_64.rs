@@ -289,7 +289,7 @@ impl PageFormat for Vtd {
 /// document 48882 revision 2.62, section 2.2.3 (Figures 9 and 10, Tables 17 and 18).
 ///
 /// A directory entry written at walk level `L` names the AMD level it points at in `NextLevel`
-/// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) are ANDed down the
+/// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) combine by AND down the
 /// walk, so a directory grants both. `FC` (bit 60, leaves only) keeps a device's DMA coherent
 /// whatever it asks for. See notes/paging.md, "AMD-Vi". Name provisional.
 pub struct AmdVi;

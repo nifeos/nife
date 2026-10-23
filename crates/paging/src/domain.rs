@@ -56,7 +56,7 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
 /// **The IOVA of the `i`th whole page of a grant, which is also its PA (the domain is identity).**
 /// `None` if `i` does not name a whole page of this region; every add and multiply is checked, so
 /// the enumeration is total for any region and index. Soundness rests on [`grant_pages`] flooring
-/// the count, and the whole-page test below is defence in depth (notes/paging.md).
+/// the count, and the whole-page test below is defense in depth (notes/paging.md).
 pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
     let off = i.checked_mul(PAGE_SIZE)?;
     // The whole page must fit: a trailing partial page is not one of the grant's pages.
