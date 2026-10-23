@@ -1,4 +1,5 @@
-//! The RISC-V Sv39 page-table format: three levels, 4 KiB pages, 39-bit virtual addresses.
+//! The RISC-V Sv39 format: three levels, 4 KiB pages, 39-bit virtual addresses. A PTE is a leaf
+//! when any of R/W/X is set, and an RSW bit carries "device memory", which base Sv39 cannot say.
 //!
 //! ```text
 //!  38      30 29      21 20      12 11         0
@@ -7,12 +8,6 @@
 //! │  9 bits  │  9 bits  │  9 bits  │  12 bits   │
 //! └──────────┴──────────┴──────────┴────────────┘
 //! ```
-//!
-//! A Sv39 PTE is flatter than an aarch64 descriptor: the permission bits (R/W/X/U/G) are one bit
-//! each, and an entry is a *leaf* when any of R/W/X is set and a *pointer* when none are. Bits 9:8
-//! are RSW, reserved for the OS; we use one to carry the "device memory" flag, which base Sv39 (no
-//! Svpbmt) has no architectural PTE bit for. [`Sv39`] implements [`PageFormat`] by
-//! translating the crate's portable [`Flags`] to and from these bits.
 
 use crate::{
     CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, Flags, PageFormat,
@@ -129,30 +124,15 @@ impl PageFormat for Sv39 {
     }
 }
 
-/// **Sv39 with T-Head's memory-type bits** (`XTheadMae`): the format a C906 or C910 walks once firmware
-/// has set `MAEE` in `th.mxstatus`, as OpenSBI does on the TH1520 in milestone 89 (Scaleway EM-RV1).
+/// **Sv39 with T-Head's memory-type bits** (`XTheadMae`): the format a C906 or C910 walks once
+/// firmware has set `MAEE` in `th.mxstatus`, as OpenSBI does on the TH1520. The core then reads
+/// PTE bits 63:59, reserved in standard Sv39, on every leaf (SO, C, B, SH below; SEC unused), and
+/// all five clear is undefined for normal memory. The values are Linux's (`_PAGE_PMA_THEAD`,
+/// `_PAGE_IO_THEAD`): memory is C, B and SH, a device SO and SH, and pointer entries carry none.
 ///
-/// Before the Svpbmt extension was ratified, T-Head put a memory type in PTE bits 63:59, which
-/// standard Sv39 reserves. With `MAEE` set the core reads them on every leaf:
-///
-/// | bit | name | meaning |
-/// |---|---|---|
-/// | 63 | SO | strongly ordered |
-/// | 62 | C | cacheable |
-/// | 61 | B | bufferable |
-/// | 60 | SH | shareable |
-/// | 59 | SEC | trustable (not used here) |
-///
-/// A leaf with all five clear is something T-Head's manual does not define for normal memory, and a
-/// kernel that writes zero there, as plain [`Sv39`] does, is running on behavior nobody promised.
-/// The values are Linux's (`arch/riscv/include/asm/pgtable-64.h`, `_PAGE_PMA_THEAD` and
-/// `_PAGE_IO_THEAD`): memory is C, B and SH; a device is SO and SH. Pointer entries carry none.
-///
-/// Everything except the leaf encoding is [`Sv39`]'s, delegated rather than copied, so the two cannot
-/// drift. **A distinct type rather than a runtime switch inside `Sv39`**: the choice is made per
-/// machine at compile time (the kernel's `board_th1520` feature), the same way the early console
-/// is, and a type keeps this crate free of global state. The kernel checks at boot that the hart
-/// agrees with the type it was built for.
+/// Everything else is delegated to [`Sv39`]. A type rather than a runtime switch: the kernel picks
+/// it per machine at compile time (`board_th1520`), keeping this crate free of global state, and
+/// checks at boot that the hart agrees.
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC).
 pub struct Sv39Mae;
@@ -355,8 +335,7 @@ mod tests {
 
     /// **Any one of R, W and X makes an entry a leaf.** Every walk above the bottom level asks
     /// this before it descends, so an entry it misreads as a pointer is a megapage whose data is
-    /// walked as though it were a page table. Milestone 326 (turn a mutation score upward), 2026-09-24: no test asked it about a
-    /// leaf at all.
+    /// walked as though it were a page table.
     #[test]
     fn any_permission_bit_makes_a_leaf_and_none_makes_a_pointer() {
         for bits in [R, W, X, R | W, R | X] {
@@ -365,8 +344,8 @@ mod tests {
         assert!(!Sv39::is_block(Sv39::table_entry(0x8020_0000, 0)));
     }
 
-    /// **A write-combining request is encoded as plain device memory here** (the console-scroll
-    /// lane, 2026-10-04): correct, because device memory is the stricter of the two, and slower.
+    /// **A write-combining request is encoded as plain device memory here**: correct, because
+    /// device memory is the stricter of the two, and slower.
     /// Nothing on this architecture maps a device aperture as a screen yet; when something does,
     /// this is the test that says the request is being ignored.
     #[test]

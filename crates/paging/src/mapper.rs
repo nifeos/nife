@@ -26,7 +26,7 @@ pub enum MapError {
     NotMapped,
     /// **This page is part of a block**, so it cannot be unmapped on its own: `unmap` takes 4 KiB
     /// and a block is 2 MiB or 1 GiB of one entry. Splitting the block would be the way to honour
-    /// the request, and nothing here does that (see the module header). Name provisional.
+    /// the request, and nothing here does that (see the crate header). Name provisional.
     InsideBlock,
     /// The format has no leaf of the size asked for ([`PageFormat::block_entry`] declined). Name
     /// provisional.
@@ -34,7 +34,7 @@ pub enum MapError {
     /// **A region that is not a region**: its `base + size` wraps `u64`, so it has no end. Only
     /// [`domain::grant_pages`] raises this, and only for an input no caller can construct today; it
     /// exists because refusing such a region is what stops the page enumeration from wrapping into
-    /// addresses *outside* the grant. See [`domain::grant_pages`] for the whole argument.
+    /// addresses *outside* the grant. See notes/paging.md, "DMA domains".
     BadRegion,
 }
 
@@ -42,16 +42,10 @@ pub enum MapError {
 ///
 /// # Safety contract
 ///
-/// The mapper dereferences physical addresses directly. That is sound in exactly two situations,
-/// both of which apply to us:
-///
-/// - **the MMU is off**, so an address *is* a physical address (how we build the first table), or
-/// - **physical memory is identity- or direct-mapped**, so a physical address can be turned into a
-///   usable pointer by a known transform (how we edit tables afterwards).
-///
-/// `phys_to_ptr` is that transform. The host tests pass the identity function, and it works because
-/// a host allocation's address is as good a "physical address" as any: the pointer arithmetic is
-/// identical.
+/// The mapper dereferences physical addresses through `phys_to_ptr`. That is sound while the MMU is
+/// off, so an address is a physical one (how the first table is built), or while physical memory
+/// is identity- or direct-mapped by a known transform (how tables are edited afterwards). The host
+/// tests pass the identity, since a host allocation's address serves as a physical one.
 pub struct Mapper<A, P, F>
 where
     A: FnMut() -> Option<u64>,
@@ -243,17 +237,13 @@ where
     }
 
     /// **Map `len` bytes from `va` to `pa` in the largest leaves that fit**, none larger than
-    /// `largest`. The direct map's shape: a 4 KiB head up to the first 2 MiB boundary, blocks
-    /// through the middle, a 4 KiB tail.
+    /// `largest`: the direct map's shape, a 4 KiB head, blocks through the middle, a 4 KiB tail.
     ///
-    /// A block is used only where it lies wholly inside the span and both addresses are aligned to
-    /// it ([`PageSize::largest_fitting`], which is where that is proved), so this maps exactly the
-    /// pages [`map_range`](Self::map_range) would, in fewer entries. `largest` is the caller's
-    /// because only the caller knows what the running machine supports: x86 has 1 GiB leaves only
-    /// where `CPUID` says so, and a format cannot ask.
-    ///
-    /// `va`, `pa` and `len` must be page-aligned. Not atomic: on an error, what was mapped before
-    /// it stays mapped, exactly as with `map_range`.
+    /// A block is used only where it lies inside the span and both addresses are aligned to it
+    /// ([`PageSize::largest_fitting`], where that is proved), so this maps exactly the pages
+    /// [`map_range`](Self::map_range) would. `largest` is the caller's, because only it knows what
+    /// the machine supports (x86 has 1 GiB leaves only where `CPUID` says so). `va`, `pa` and `len`
+    /// must be page-aligned. Not atomic: on an error, what was mapped before it stays mapped.
     pub fn map_span(
         &mut self,
         va: u64,
@@ -364,28 +354,14 @@ where
     }
 
     /// **Cut the intermediate table at physical `table` out of the walk that reaches `va`**, and
-    /// say what span of addresses went with it. Name provisional (the page-tables-outlive-destroy
-    /// lane, 2026-10-05 UTC).
+    /// return `(base, span)`, the aligned range `table` translated, which now translates to nothing.
+    /// `None` when the walk to `va` never passes through `table`, which a caller cutting tables
+    /// top-down meets for every table below the first. Nothing is freed. Name provisional.
     ///
-    /// The walk descends from the root along `va`; the first present table entry that points at
-    /// `table` is cleared, and the answer is `(base, span)`: the naturally aligned range of virtual
-    /// addresses that `table` translated, all of which now translate to nothing. `None` when the
-    /// walk to `va` never passes through `table` (it was never linked there, or something above it
-    /// has already been cut), which is not an error: a caller cutting a set of tables top-down
-    /// meets exactly that for every table below the first.
-    ///
-    /// **Why a table, and not every leaf beneath it.** The kernel uses this when the memory a table
-    /// lives in is about to be handed back (`revoke::revoke_region`). Clearing the leaves would leave
-    /// the table itself still linked, and the next owner of that page would be writing this space's
-    /// translations. Cutting the one entry that points at it is the only change that makes the page
-    /// unreachable, and it takes the whole subtree with it in one store.
-    ///
-    /// Nothing is freed: the table is the caller's (it came from the allocator the caller passed),
-    /// and so is everything below it. The root is never a candidate, since no entry points at it.
-    ///
-    /// The [`TlbFlush`] covers the whole span and every level of cached walk, not one page: its
-    /// [`address`](TlbFlush::address) is `base`, and the caller must discharge it with an
-    /// invalidation that reaches non-leaf entries for the whole range (a by-ASID flush does).
+    /// The kernel cuts a table whose page is about to be handed back (`revoke::revoke_region`): one
+    /// store makes the page unreachable, where clearing its leaves would leave it linked. The
+    /// [`TlbFlush`]'s [`address`](TlbFlush::address) is `base`, and it must be discharged by an
+    /// invalidation that reaches non-leaf entries for the whole span (a by-ASID flush does).
     pub fn unlink_table(&mut self, va: u64, table: u64) -> Option<(u64, u64, TlbFlush)> {
         if !F::is_in_half(self.half, va) {
             return None;

@@ -28,24 +28,15 @@ thread_local! {
     static TABLES: RefCell<Vec<*mut PageTable>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Frees the test's tables when it ends. Declared FIRST in each test that builds a mapper, so it
-/// drops last, after the mapper that reads the tables is gone.
-///
-/// The tables used to be leaked, with a comment calling that fine because the process was about to
-/// exit. It was fine until milestone 79: Miri's leak check reports each one, and a suite that
-/// "fails" on purpose teaches everyone to ignore the gate. Owning the cleanup costs one line per
-/// test and keeps the leak check meaning something (notes/undefined-behavior.md).
+/// Frees the test's tables when it ends, so Miri's leak check stays meaningful
+/// (notes/undefined-behavior.md). Declared FIRST in each test that builds a mapper, so it drops
+/// last, after the mapper that reads the tables is gone.
 ///
 /// # BUGS
 ///
-/// **Binding this is opt-in, and that is a known defect rather than a design.** Every test in this
-/// file currently binds one, so nothing leaks today; nothing makes that stay true. The sibling
-/// fixture in `src/domain.rs` had the identical shape, one test written later did not bind its
-/// guard, and the weekly Miri workflow was red for five weeks before anyone noticed (milestone
-/// 310). That fixture now hangs allocation off the pool itself, so forgetting is a compile error;
-/// this one has not been converted, because it would touch twenty-one call sites in a file that is
-/// not currently failing. A test added here **must** declare `let _tables = TableGuard;` first, and
-/// first matters: it has to drop after the mapper that reads the tables.
+/// Binding this is opt-in: a test added here must declare `let _tables = TableGuard;` first, and
+/// nothing enforces it. `src/domain.rs` and `tests/blocks.rs` hang allocation off the pool, so
+/// forgetting is a compile error there; this file's twenty-one call sites are not converted.
 struct TableGuard;
 impl Drop for TableGuard {
     fn drop(&mut self) {
@@ -118,9 +109,9 @@ fn mapper(
     mapper_in(Half::Low, budget)
 }
 
+/// Each level takes a 9-bit slice. L0 = 47:39, L1 = 38:30, L2 = 29:21, L3 = 20:12.
 #[test]
 fn index_slices_the_address_correctly() {
-    // Each level takes a 9-bit slice. L0 = 47:39, L1 = 38:30, L2 = 29:21, L3 = 20:12.
     let va = (1u64 << 39) | (2 << 30) | (3 << 21) | (4 << 12) | 0xabc;
 
     assert_eq!(index(va, 0), 1);
@@ -129,9 +120,9 @@ fn index_slices_the_address_correctly() {
     assert_eq!(index(va, 3), 4);
 }
 
+/// 9 bits. Anything above bit 47 belongs to the sign-extension, not to L0.
 #[test]
 fn index_wraps_at_512() {
-    // 9 bits. Anything above bit 47 belongs to the sign-extension, not to L0.
     assert_eq!(index(0x1ff << 39, 0), 511);
     assert_eq!(index(0xfff << 12, 3), 511);
 }
@@ -174,9 +165,9 @@ fn unmapped_addresses_translate_to_nothing() {
     assert_eq!(m.translate(0xffff_0000_0000_0000), None);
 }
 
+/// The entire point of the exercise, and what milestone 4 step 4 depends on.
 #[test]
 fn a_virtual_address_can_differ_from_its_physical_one() {
-    // The entire point of the exercise, and what milestone 4 step 4 depends on.
     let _tables = TableGuard;
     let budget = Cell::new(16);
     let mut m = mapper(&budget);
@@ -221,12 +212,12 @@ fn the_top_16_bits_are_not_translated_they_choose_the_TABLE() {
     assert!(!Fmt::is_in_half(Half::High, low));
 }
 
+/// Without this check, mapping a kernel address into the userspace tables silently
+/// builds a mapping the CPU will never consult, because it would pick TTBR1 for that
+/// address and never look at this table at all. You would then chase the ghost for
+/// hours.
 #[test]
 fn mapping_into_the_wrong_half_is_refused() {
-    // Without this check, mapping a kernel address into the userspace tables silently
-    // builds a mapping the CPU will never consult, because it would pick TTBR1 for that
-    // address and never look at this table at all. You would then chase the ghost for
-    // hours.
     let _tables = TableGuard;
     let budget = Cell::new(16);
 
@@ -243,10 +234,10 @@ fn mapping_into_the_wrong_half_is_refused() {
     );
 }
 
+/// Top bits neither all-zero nor all-one. There is no memory there and there never can
+/// be: the hardware faults before it consults any table.
 #[test]
 fn non_canonical_addresses_belong_to_neither_half() {
-    // Top bits neither all-zero nor all-one. There is no memory there and there never can
-    // be: the hardware faults before it consults any table.
     let junk = 0x0001_0000_0000_0000u64;
     assert!(!Fmt::is_in_half(Half::Low, junk));
     assert!(!Fmt::is_in_half(Half::High, junk));
@@ -264,11 +255,11 @@ fn the_high_half_maps_normally_once_you_are_in_it() {
     assert_eq!(m.translate(va).unwrap().0, 0x4008_0000);
 }
 
+/// Two pages in the same 2 MiB region differ only in their L3 index, so the walk should
+/// create L1/L2/L3 once and reuse them. If it doesn't, we burn a frame per page and run
+/// out of memory mapping a kernel.
 #[test]
 fn nearby_pages_share_their_intermediate_tables() {
-    // Two pages in the same 2 MiB region differ only in their L3 index, so the walk should
-    // create L1/L2/L3 once and reuse them. If it doesn't, we burn a frame per page and run
-    // out of memory mapping a kernel.
     let _tables = TableGuard;
     let budget = Cell::new(3); // exactly enough for ONE chain of L1+L2+L3
     let mut m = mapper(&budget);
@@ -311,10 +302,10 @@ fn misaligned_addresses_are_rejected() {
     );
 }
 
+/// Silently overwriting is how you lose a page and never find out: the old physical
+/// frame is still marked used by the allocator, and nothing references it any more.
 #[test]
 fn mapping_over_an_existing_mapping_is_an_error() {
-    // Silently overwriting is how you lose a page and never find out: the old physical
-    // frame is still marked used by the allocator, and nothing references it any more.
     let _tables = TableGuard;
     let budget = Cell::new(16);
     let mut m = mapper(&budget);
@@ -345,11 +336,11 @@ fn map_range_maps_every_page() {
 // --- the portable access-flag behaviour (the aarch64 bit encodings, AF and the MAIR slot, are
 // pinned by unit tests in paging::aarch64 where those constants are in scope) ---
 
+/// W^X. A page that is both writable and executable is how a buffer overflow becomes
+/// code execution. There is deliberately no constructor that produces one, and this
+/// test exists so that adding one is a build failure rather than a security hole.
 #[test]
 fn nothing_is_both_writable_and_executable() {
-    // W^X. A page that is both writable and executable is how a buffer overflow becomes
-    // code execution. There is deliberately no constructor that produces one, and this
-    // test exists so that adding one is a build failure rather than a security hole.
     for flags in [
         Flags::kernel_code(),
         Flags::kernel_rodata(),
@@ -375,22 +366,22 @@ fn kernel_code_is_executable_by_the_kernel_and_nobody_else() {
     assert!(!f.is_user_accessible());
 }
 
+/// PXN is not paranoia. Without it, a bug that jumps the kernel into a user page
+/// executes USER-CONTROLLED INSTRUCTIONS AT EL1. Total compromise, and the defence is
+/// one bit.
 #[test]
 fn user_code_is_never_executable_by_the_kernel() {
-    // PXN is not paranoia. Without it, a bug that jumps the kernel into a user page
-    // executes USER-CONTROLLED INSTRUCTIONS AT EL1. Total compromise, and the defence is
-    // one bit.
     let f = Flags::user_code();
     assert!(f.is_user_executable());
     assert!(!f.is_kernel_executable(), "PXN is not set on user code");
     assert!(f.is_user_accessible());
 }
 
+/// Mapping MMIO as *normal* memory lets the CPU cache it, reorder writes to it, merge
+/// two writes into one, and speculatively read it. Every one of those is catastrophic
+/// for a device, because reading a FIFO register HAS A SIDE EFFECT.
 #[test]
 fn device_memory_is_typed_as_device_and_is_never_executable() {
-    // Mapping MMIO as *normal* memory lets the CPU cache it, reorder writes to it, merge
-    // two writes into one, and speculatively read it. Every one of those is catastrophic
-    // for a device, because reading a FIFO register HAS A SIDE EFFECT.
     let f = Flags::device();
 
     assert!(f.is_device(), "MMIO is not typed as device memory");
@@ -452,15 +443,15 @@ fn unmapping_nothing_is_an_error_not_a_silent_success() {
     }
 }
 
+/// On aarch64, changing a VALID descriptor directly into a different VALID descriptor is
+/// architecturally unsafe: it can raise a TLB conflict abort, and the hardware is permitted
+/// to do essentially anything.
+///
+/// AlreadyMapped is what forces the legal sequence. You CANNOT overwrite; you must unmap
+/// (which hands you a TlbFlush you cannot ignore) and then map. The API cannot be used
+/// incorrectly, rather than merely documenting the rule and hoping.
 #[test]
 fn changing_a_mapping_is_forced_through_break_before_make() {
-    // On aarch64, changing a VALID descriptor directly into a different VALID descriptor is
-    // architecturally unsafe: it can raise a TLB conflict abort, and the hardware is permitted
-    // to do essentially anything.
-    //
-    // AlreadyMapped is what forces the legal sequence. You CANNOT overwrite; you must unmap
-    // (which hands you a TlbFlush you cannot ignore) and then map. The API cannot be used
-    // incorrectly, rather than merely documenting the rule and hoping.
     let _tables = TableGuard;
     let budget = Cell::new(16);
     let mut m = mapper(&budget);
@@ -485,13 +476,13 @@ fn changing_a_mapping_is_forced_through_break_before_make() {
     assert_eq!(m.translate(0x1000).unwrap().0, 0x5000_0000);
 }
 
+/// unmap only clears the leaf. The L1/L2/L3 tables stay, so re-mapping into the same region
+/// costs no new frames.
+///
+/// The flip side: tearing down a whole address space by `unmap` would leak these tables. The
+/// kernel never does that; it frees the recorded frame set wholesale (notes/teardown.md).
 #[test]
 fn unmap_then_map_reuses_the_intermediate_tables() {
-    // unmap only clears the leaf. The L1/L2/L3 tables stay, so re-mapping into the same region
-    // costs no new frames.
-    //
-    // The flip side: tearing down a whole address space by `unmap` would leak these tables. The
-    // kernel never does that; it frees the recorded frame set wholesale (notes/teardown.md).
     let _tables = TableGuard;
     let budget = Cell::new(3); // exactly one chain of L1+L2+L3
     let mut m = mapper(&budget);
@@ -507,13 +498,13 @@ fn unmap_then_map_reuses_the_intermediate_tables() {
         .expect("intermediate tables were thrown away");
 }
 
+/// #[must_use] catches `m.unmap(va);` as a bare statement. It does NOT catch
+/// `let (pa, _) = m.unmap(va)?;`, which is exactly the shape the mistake takes in real
+/// code. Rust has no linear types, so the only way to make "you must consume this"
+/// enforceable is to make NOT consuming it fail loudly.
 #[test]
 #[should_panic(expected = "TLB was never invalidated")]
 fn dropping_the_tlb_obligation_is_fatal() {
-    // #[must_use] catches `m.unmap(va);` as a bare statement. It does NOT catch
-    // `let (pa, _) = m.unmap(va)?;`, which is exactly the shape the mistake takes in real
-    // code. Rust has no linear types, so the only way to make "you must consume this"
-    // enforceable is to make NOT consuming it fail loudly.
     let _tables = TableGuard;
     let budget = Cell::new(16);
     let mut m = mapper(&budget);
@@ -523,9 +514,8 @@ fn dropping_the_tlb_obligation_is_fatal() {
     // _flush drops here, un-discharged. Boom.
 }
 
-/// **Cutting a table takes its whole span out of the walk, and nothing beside it** (the
-/// page-tables-outlive-destroy lane, 2026-10-05 UTC). The kernel cuts a table whose page is about
-/// to be handed back (`revoke::revoke_region`); this pins what the cut does to the walk.
+/// **Cutting a table takes its whole span out of the walk, and nothing beside it.** The kernel
+/// cuts a table whose page is about to be handed back (`revoke::revoke_region`); this pins what the cut does to the walk.
 ///
 /// The second chain's L2 is cut. Both pages under it stop translating, the page under the first
 /// chain's L2 keeps translating, the span reported is the 1 GiB that L2 covered, and a table below

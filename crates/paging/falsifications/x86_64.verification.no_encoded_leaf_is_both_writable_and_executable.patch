@@ -27,11 +27,10 @@ same; only the lines around it moved. CI found it because `--affected-since` fol
 `crates/`, and the lane's own `--sweep kernel` did not, which is recorded in the milestone's block.
 
 diff --git a/crates/paging/src/x86_64.rs b/crates/paging/src/x86_64.rs
-index 72e0ea27..197e76a8 100644
 --- a/crates/paging/src/x86_64.rs
 +++ b/crates/paging/src/x86_64.rs
-@@ -110,7 +110,7 @@ impl Ia32e {
-         // is why it is said here.
+@@ -108,7 +108,7 @@
+         // which `arch::x86_64::init` sets on every core that offers it; this crate cannot check.
          if flags.is_kernel_executable() {
              bits |= SW_KERNEL_EXEC;
 -        } else if !flags.is_user_executable() {

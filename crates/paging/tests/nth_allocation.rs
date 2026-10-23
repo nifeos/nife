@@ -1,32 +1,9 @@
 //! **A page-table allocator that fails on its Nth call**, swept over N until the mapping succeeds.
 //!
-//! Every `OutOfPageFrames` return in `Mapper` is an error path that fires midway through a mapping,
-//! after something was taken: tables allocated for the levels above, or (for `map_span`,
-//! `map_range` and `build_identity_domain`) whole leaves mapped before the one that failed. No test
-//! reached any of them before this file (`notes/untested-error-paths.md` ranked twelve such paths in
-//! this crate). The proposal this builds is *a page-table allocator that fails on its Nth call*, in
-//! `design/roadmap/proposals/`.
-//!
-//! The allocator below fails on exactly one call, counted from 0, and succeeds on every other. One
-//! failure rather than exhaustion is the stricter model: a mapper that swallowed the error and
-//! carried on would succeed on the next call and leave a hole, which exhaustion would hide by
-//! failing that call too.
-//!
-//! After every failure, three things are asserted, and they are the whole claim:
-//!
-//! 1. **No table frame is leaked.** The tables reachable from the root are exactly the root plus
-//!    every frame the allocator handed out. A frame handed out and not reachable is one nobody can
-//!    free, because the mapper does not own frames and teardown frees what the tables reach.
-//! 2. **What is left mapped is a prefix**, in the caller's order, of what the successful run maps:
-//!    nothing for `map_block`, the leaves before the failing one for the rest. That prefix is what
-//!    the kernel's `unmap_run_prefix` is given to unwind. A leaf past a gap is a half-installed
-//!    request nobody records.
-//! 3. **The error is `OutOfPageFrames`**, the one the kernel turns into `OutOfMemory`.
-//!
-//! What the sweep measured on the tree it landed on is in the roadmap block that built it: no leak
-//! and no hole on any function, any format, any N. It does leave empty intermediate tables standing
-//! after a failure, which is reachable and so not a leak by (1); see `map`'s and `unmap`'s docs for
-//! why tables are never torn down piecemeal.
+//! It fails on exactly one call, counted from 0, so a mapper that swallowed the error would leave a
+//! hole. After every failure the sweep asserts that no table frame leaked (every frame handed out
+//! is reachable from the root), that what is left mapped is a prefix of what the successful run
+//! maps, and that the error is `OutOfPageFrames`. See notes/paging.md, "The Nth-allocation sweep".
 //!
 //! Names in this file (the file, the helpers, the tests) are provisional.
 

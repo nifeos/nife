@@ -1,30 +1,9 @@
-//! **The portable DMA-domain seam** (milestone 16b; DECISIONS §20).
-//!
-//! An IOMMU confines a device by translating every address it emits through page tables the kernel
-//! programs, in the CPU's own page-table format: SMMUv3 walks VMSAv8-64 tables (the aarch64 format,
-//! [`Aarch64`](crate::Aarch64)); the RISC-V IOMMU walks Sv39 ([`Sv39`](crate::Sv39)). Those are the
-//! *same two formats* [`Mapper`] already builds for process address spaces, so a DMA domain is not a
-//! new kind of table. It is an [`Mapper`] filled with an identity map over exactly the frames the
-//! device is allowed to reach, and nothing else.
-//!
-//! # Why identity, and why the low half
-//!
-//! The userspace virtio driver already puts *physical* addresses into its descriptors (its DMA
-//! region's frames, and the kernel's shadow page). With an IOMMU in front, the device emits those
-//! same numbers as **IOVAs**, and the domain translates each IOVA to the identical PA. An address
-//! the driver was never granted has no mapping, so the IOMMU faults instead of letting the DMA
-//! through. That is the whole confinement, now in hardware: the domain is an allow-list of frames,
-//! expressed as a page table. The driver's ABI does not change, because IOVA == PA means the
-//! addresses it computes still name the right memory. (Both `virt` boards place RAM in the low half:
-//! aarch64 at `0x4000_0000`, riscv at `0x8000_0000`, both far below either format's [`Half`] split.)
-//!
-//! # The RISC-V U-bit, stated once
-//!
-//! A single-stage (`iosatp`, no process context) RISC-V IOMMU translation faults on a leaf PTE
-//! whose U bit is clear, because the device is not "requesting supervisor privilege". So the domain
-//! is built with [`Flags::user_data`], which sets U on Sv39 and read/write on both formats, or
-//! [`Flags::user_rodata`] for a region the device may only read ([`DmaRegion::writable`]), which
-//! sets U and read alone. A device's data window is user-accessible with no execute.
+//! **The portable DMA-domain seam**, §20 (IOMMU-backed DMA isolation). An IOMMU translates every
+//! address a device emits through tables in the CPU's own format (SMMUv3 walks
+//! [`Aarch64`](crate::Aarch64), the RISC-V IOMMU walks [`Sv39`](crate::Sv39)), so a DMA domain is a
+//! [`Mapper`] holding an identity map, in the low half, over exactly the frames the device may
+//! reach. Its leaves are user-accessible and never executable, because a single-stage RISC-V IOMMU
+//! faults on a leaf whose U bit is clear. See notes/paging.md, "DMA domains".
 
 use crate::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable};
 
@@ -37,11 +16,8 @@ pub struct DmaRegion {
     pub size: u64,
     /// **Whether the device may write the region, as well as read it.** Read is always granted:
     /// no format this seam builds can say "write but not read", and a region nobody may read is
-    /// not a grant. A required field with no default, so every caller says which it means rather
-    /// than inheriting read-write (lane `amd-vi-hardening`, provisional milestone 767 (AMD-Vi
-    /// hardening before the first AMD boot); the name is provisional). Before it, every page of
-    /// every domain was writable, including the virtio shadow page the device only ever reads and
-    /// a firmware region the IVRS marked read-only.
+    /// not a grant. A required field with no default, so every caller says which it means. Name
+    /// provisional.
     pub writable: bool,
 }
 
@@ -59,36 +35,14 @@ impl DmaRegion {
 }
 
 /// **How many whole 4 KiB pages a grant contains, or why it is not a grant a page-granular domain
-/// can express.** The domain maps pages, so the grant it can express *exactly* is the set of whole
-/// pages inside `[base, base + size)`. This is the decision half of [`build_identity_domain`], split
-/// out as loopless arithmetic so Kani can quantify it over every region (see
-/// `an_enumerated_page_lies_inside_the_grant` and `every_whole_page_of_the_grant_is_enumerated`).
+/// can express.** The decision half of [`build_identity_domain`], loopless so Kani can quantify it
+/// over every region.
 ///
-/// Refused, rather than approximated:
-///
-/// - **an unaligned `base`**, because a page-granular domain cannot start mid-page. Rounding down
-///   would map the bytes below `base` (an over-map: memory the device was never granted becomes
-///   reachable), and rounding up would silently shift the whole grant. [`Mapper::map`] would have
-///   refused the first page with [`MapError::Misaligned`] anyway; deciding it here makes the refusal
-///   provable instead of incidental.
-/// - **a region whose `base + size` wraps `u64`**, which is not a region at all: it has no end, so
-///   "inside the grant" is not even a statement that can be made about it, let alone proved. That is
-///   literally how the proof found this: `an_enumerated_page_lies_inside_the_grant` cannot compute the
-///   grant's limit without the check, and fails on it. The old builder had no check, handed `map_range`
-///   a page count derived from such a size, and relied on `map_range`'s unchecked `va + i * PAGE_SIZE`.
-///
-///   **Stated honestly, because the first draft of this comment overstated it:** this is a proof
-///   obligation closed, not a reachable bug fixed. Reaching a wrapped address needs a low-half
-///   page-aligned base *and* a `size` within a page or so of `2^64`, and the builder would run the
-///   frame allocator dry ([`MapError::OutOfPageFrames`]) after a few thousand pages, tens of orders of
-///   magnitude before the index at which the multiply wraps. No caller can construct such a region
-///   anyway; every grant is frame-allocator memory bounded by RAM. What the check buys is that the
-///   confinement property is now *total*: it holds for every `DmaRegion` value, so nobody has to
-///   re-derive that argument when a new caller appears.
-///
-/// A `size` that is not a whole number of pages is *not* refused: the trailing partial page is simply
-/// not mapped. That is the safe direction (the device reaches less than it was granted, never more)
-/// and it is what the old `size / PAGE_SIZE` already did.
+/// Refuses an unaligned `base` with [`MapError::Misaligned`] (rounding down would map bytes below
+/// the grant, rounding up would shift it) and a `base + size` that wraps `u64` with
+/// [`MapError::BadRegion`] (such a region has no end). A trailing partial page is not refused and
+/// not mapped: the device reaches less than it was granted, never more. See notes/paging.md, "DMA
+/// domains".
 pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
     if !r.base.is_multiple_of(PAGE_SIZE) {
         return Err(MapError::Misaligned);
@@ -100,17 +54,9 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
 }
 
 /// **The IOVA of the `i`th whole page of a grant, which is also its PA (the domain is identity).**
-/// `None` if `i` does not name a whole page of this region, so a caller cannot walk off the end by
-/// arithmetic: every add and multiply is checked, which is what makes the enumeration total for any
-/// region and any index.
-///
-/// Which of the two guards here is load-bearing is worth being exact about, because trying to falsify
-/// the soundness proof revealed it. **Soundness rests on [`grant_pages`] flooring**, not on the
-/// partial-page test below: for `i` under the page count the test can never fire, and weakening it to
-/// `off >= r.size` leaves the soundness harness verifying happily (checked, not assumed). Rounding the
-/// *count* up is what breaks it. So the test below is defence in depth for a caller who passes an `i`
-/// the builder never would, and the checked arithmetic is what makes the function total; the
-/// confinement itself comes from the count.
+/// `None` if `i` does not name a whole page of this region; every add and multiply is checked, so
+/// the enumeration is total for any region and index. Soundness rests on [`grant_pages`] flooring
+/// the count, and the whole-page test below is defence in depth (notes/paging.md).
 pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
     let off = i.checked_mul(PAGE_SIZE)?;
     // The whole page must fit: a trailing partial page is not one of the grant's pages.
@@ -120,17 +66,9 @@ pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
     r.base.checked_add(off)
 }
 
-/// **Build a device's DMA domain: an identity map over `regions` and nothing else.**
-///
-/// `root` is a zeroed, page-aligned frame that becomes the domain's top-level table (the value the
-/// IOMMU's STE/context descriptor will point at). `alloc_page_frame` supplies zeroed intermediate tables;
-/// `phys_to_ptr` turns a physical table address into a pointer the same way [`Mapper`] requires. The
-/// generic `F` selects the format, so one call site builds a VMSAv8-64 domain on aarch64 and an Sv39
-/// domain on riscv from the same code, which is the seam's entire point.
-///
-/// Every page is mapped with its region's [`DmaRegion::flags`]: read always, write only when the
-/// region says so, no execute, U-bit set. Each region is mapped IOVA == PA, so a device emitting an in-region physical address is
-/// translated to itself and an out-of-region address faults.
+/// **Build a device's DMA domain: an identity map over `regions` and nothing else.** Every page is
+/// mapped IOVA == PA with its region's [`DmaRegion::flags`], in format `F`, under the top-level
+/// table `root`; two overlapping regions fail the build with [`MapError::AlreadyMapped`].
 ///
 /// # Safety
 /// `root` and every frame `alloc_page_frame` returns must be zeroed and page-aligned, and `phys_to_ptr`
@@ -147,58 +85,29 @@ where
     P: Fn(u64) -> *mut PageTable,
     F: PageFormat,
 {
-    // A domain translates IOVAs, which we place equal to physical addresses in the low half. The
-    // Mapper's WrongHalf guard then catches a region that strays into the high half rather than
-    // silently building a mapping the IOMMU would never consult.
+    // IOVA == PA in the low half, so the WrongHalf guard refuses a region in the high half, which
+    // the IOMMU would never consult.
     // SAFETY: forwarded from this function's contract.
     let mut m = unsafe { Mapper::<A, P, F>::new(root, Half::Low, alloc_page_frame, phys_to_ptr) };
     for r in regions {
-        // The page set is decided by [`grant_pages`]/[`grant_page`], the proved arithmetic, rather
-        // than by `map_range`'s unchecked `va + i * PAGE_SIZE`. That is what makes "the domain maps
-        // exactly the whole pages of the grant" a proved property of the code that runs: no page
-        // outside the grant is enumerated, and no whole page inside it is skipped.
+        // The page set comes from the proved arithmetic, not `map_range`'s unchecked
+        // `va + i * PAGE_SIZE`.
         let pages = grant_pages(*r)?;
         for i in 0..pages {
-            // Unreachable for `i < pages`, and *proved* unreachable by
-            // `a_page_index_below_the_count_always_resolves`; the branch stays because the compiler
-            // cannot see that and a silent `continue` would be a hole rather than an error.
+            // Proved unreachable (`a_page_index_below_the_count_always_resolves`); an error rather
+            // than a silent `continue`, because the compiler cannot see that.
             let page = grant_page(*r, i).ok_or(MapError::BadRegion)?;
-            // A fresh domain: every leaf is new, so map() returns () (no TlbFlush) and there is
-            // nothing to invalidate. The IOMMU has never walked these tables; they are not installed
-            // yet. `AlreadyMapped` here would mean two grants in `regions` overlap, which fails the
-            // whole build closed rather than quietly merging them.
+            // The tables are not installed yet, so no leaf needs a flush. `AlreadyMapped` means two
+            // grants overlap, and fails the build closed.
             m.map(page, page, r.flags())?;
         }
     }
     Ok(())
 }
 
-// =============================================================================================
-// Machine-checked proofs (Kani): **the domain maps exactly the grant.** Milestone 35 item 3.
-//
-// The property wanted is the hardware sibling of the DMA validator's: a device's domain maps
-// precisely the frames it was granted and nothing else. Stated over the *built page tables* it is a
-// `Mapper` build-and-translate round trip over a symbolic IOVA, which is the BMC-over-real-memory
-// wall notes/verification.md declined for the ELF parser and for `Mapper` itself. So it is
-// decomposed, the way that note says to decompose ("prefer refactoring the logic to shrinking the
-// proof"): the *page set* the builder feeds the mapper is loopless arithmetic, and that is proved
-// here for every region and every index. What the harnesses give, in the two directions that matter:
-//
-//   soundness (the security direction): every page the builder maps lies wholly inside a granted
-//     region, so no ungranted byte becomes device-reachable;
-//   completeness (the functional direction): every whole page of a granted region is mapped, so the
-//     confinement does not silently starve an honest driver;
-//   injectivity: no page is enumerated twice, so a build cannot fail `AlreadyMapped` against itself;
-//   totality: the arithmetic never panics or wraps, for any base, size, or index.
-//
-// This is format-independent, which is the right shape for a §19 parity gate: one proof covers the
-// SMMUv3 (VMSAv8-64) domain and the RISC-V IOMMU (Sv39) domain, because the page set does not depend
-// on the format. What is *not* proved here is the remaining link, "`Mapper::map` writes exactly one
-// leaf for the page it is told and touches nothing else." That stays underwritten by the proved walk
-// arithmetic (`index_is_always_in_bounds`, `distinct_pages_take_distinct_paths`, the leaf codec on
-// both formats) plus this module's build-and-translate tests below, on both formats. notes/dma.md
-// states that residual plainly.
-// =============================================================================================
+// Machine-checked proofs (Kani) that the domain maps exactly the grant: the page enumeration is
+// sound, complete, injective and total, for every region and index. See notes/paging.md, "DMA
+// domains", for the decomposition and what it leaves to tests.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -395,19 +304,10 @@ mod tests {
     use super::*;
     use crate::{Aarch64, AmdVi, Sv39};
 
-    // A SYNTHETIC physical address space, and the reason it exists is a CI failure worth recording.
-    //
-    // These tests used to leak zeroed host frames and use their host addresses directly as "physical"
-    // ones, with an identity `phys_to_ptr`. That works only if the host allocator happens to hand back
-    // addresses inside the format's addressable low half, which is not a property any allocator
-    // promises. On aarch64 macOS it did; on aarch64 Linux it does not, so `build_identity_domain`
-    // correctly refused with `MapError::WrongHalf` and two tests failed in CI while passing locally.
-    // The guard was right and the test was wrong.
-    //
-    // So the "physical" addresses are now chosen by the test, in the low half where both Sv39 and
-    // Aarch64 can express them, and the host frames sit *behind* `phys_to_ptr`, which is precisely
-    // what that indirection is for. The tests are host-independent and deterministic as a result: the
-    // addresses no longer depend on where malloc felt like putting something.
+    // A synthetic physical address space: the tests choose "physical" addresses in the low half
+    // every format can express, and the host frames sit behind `phys_to_ptr`. A host allocator's
+    // addresses need not lie in the low half (on aarch64 Linux they do not), and
+    // `build_identity_domain` rightly refuses those with `MapError::WrongHalf`.
 
     /// Where the synthetic pool starts. Low half, page-aligned, and far below Sv39's 2^38 ceiling.
     const POOL_BASE: u64 = 0x0100_0000;
@@ -428,26 +328,14 @@ mod tests {
     }
 
     /// The synthetic pool. **Holding one is the only way to allocate a frame**, and dropping it frees
-    /// every frame allocated through it.
+    /// every frame allocated through it, which keeps Miri's leak check meaningful
+    /// (`notes/undefined-behavior.md`). `frame` and `frame_at` are methods so that a test cannot
+    /// allocate without a pool; that is the whole reason for the otherwise unused receiver.
     ///
     /// # BUGS
     ///
-    /// The frames are host allocations that nothing else owns, so if they are not freed they leak.
-    /// They used to be, on the theory that a test process exits anyway. That is true under
-    /// `cargo test` and false under Miri, which checks for leaks by default: sixteen leak reports
-    /// drowned out anything this crate's Miri run might otherwise have said (milestone 79,
-    /// `notes/undefined-behavior.md`).
-    ///
-    /// The first fix, on 2026-08-03, was a bare `PoolGuard` that each test had to remember to bind.
-    /// **A test written afterwards did not, and the weekly Miri job went red for five weeks**; a
-    /// convention a test author has to remember is rung four of `AGENTS.md`'s ladder, and rung four
-    /// is what failed. So allocation now hangs off the pool itself: `frame` and `frame_at` are
-    /// methods, the free functions are gone, and a test that allocates without holding a pool does
-    /// not compile. That is the whole reason for the receiver, which is otherwise unused.
-    ///
-    /// Nesting two live pools on one thread would make the inner drop free the outer's frames and
-    /// leave dangling entries behind, so [`FramePool::new`] refuses it loudly rather than leaving it
-    /// to be discovered as a use-after-free.
+    /// Nesting two live pools on one thread would make the inner drop free the outer's frames, so
+    /// [`FramePool::new`] refuses it loudly rather than leave a use-after-free.
     struct FramePool;
 
     /// A [`Mapper`] that allocates nothing, over this module's synthetic physical memory.
@@ -602,7 +490,7 @@ mod tests {
 
     /// **A region the device may only read is mapped without write, on every DMA format**, and a
     /// writable one beside it keeps write: the leaf carries the region's rights rather than one
-    /// answer for the whole domain (provisional milestone 767). Asked through `leaf_flags`, which on
+    /// answer for the whole domain. Asked through `leaf_flags`, which on
     /// `Vtd` and `AmdVi` reports only write, so writability is what is compared.
     fn a_read_only_region_maps_read_only<F: PageFormat>() {
         let pool = FramePool::new();

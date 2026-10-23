@@ -44,15 +44,14 @@ That is the same blindness one level down, and it is why this patch is not
 sufficient evidence on its own that the property is watched.
 
 diff --git a/crates/paging/src/x86_64.rs b/crates/paging/src/x86_64.rs
-index 8967e642..c34b8144 100644
 --- a/crates/paging/src/x86_64.rs
 +++ b/crates/paging/src/x86_64.rs
-@@ -186,7 +186,7 @@ const VTD_W: u64 = 1 << 1;
+@@ -209,7 +209,7 @@
  /// width `Ia32e::ADDR_MASK` uses, because nothing this kernel runs names a wider physical address
  /// yet; VT-d's actual width is `CAP_REG.MGAW`-defined and this driver has not needed to narrow to
  /// it (`kernel/src/arch/x86_64/iommu.rs`'s BUGS says why).
 -const VTD_ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 +const VTD_ADDR_MASK: u64 = 0x7fff_ffff_ffff_f000;
  
- /// **Every bit a VT-d second-level entry is allowed to carry, written out**: R (bit 0), W (bit 1)
- /// and the address field (bits 51:12). Verified against QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`;
+ /// **Every bit a VT-d second-level entry may carry**: R (bit 0), W (bit 1) and the address field
+ /// (bits 51:12), per QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`; any other bit faults the transaction.

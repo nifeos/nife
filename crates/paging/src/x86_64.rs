@@ -1,4 +1,5 @@
-//! The `x86_64` four-level page-table format: 4 KiB pages, 48-bit virtual addresses.
+//! The `x86_64` four-level format, [`Ia32e`], and the IOMMU formats of its shape, [`Vtd`] and
+//! [`AmdVi`]. See notes/paging.md, "x86_64", for the inherited permissions and the NX bit.
 //!
 //! ```text
 //!  47      39 38      30 29      21 20      12 11         0
@@ -7,37 +8,6 @@
 //! │  9 bits  │  9 bits  │  9 bits  │  9 bits  │  12 bits   │
 //! └──────────┴──────────┴──────────┴──────────┴────────────┘
 //! ```
-//!
-//! **The type is called `Ia32e` rather than `X86_64` on purpose.** "IA-32e paging" is Intel's own
-//! name for this mode (SDM volume 3, chapter 4), so it is a term a reader already knows from
-//! outside this tree, which is the naming tenet's protected class. The mechanical reason is smaller
-//! and also real: `X86_64` is not camel case and `non_camel_case_types` is on. The module keeps the
-//! architecture's name, matching [`aarch64`](crate::aarch64) beside it. Name provisional.
-//!
-//! # What this format does differently from the other two, and it is one thing
-//!
-//! **Permissions are inherited down the walk, not stated at the leaf.** On aarch64 and Sv39 an
-//! intermediate entry carries no rights and the leaf is the single source of truth, which is why
-//! [`PageFormat::table_entry`] takes no flags. x86 is the opposite: the effective permission for an
-//! access is the **AND** of every level's `U/S`, `R/W` and (for NX, the OR of) `XD` bits. A leaf
-//! that says "user, writable" under a PML4 entry that says "supervisor, read-only" is
-//! supervisor-only and read-only.
-//!
-//! So this implementation makes intermediate entries **maximally permissive** (present, writable,
-//! user, executable) and lets the leaf decide, which reproduces the other two formats' semantics
-//! exactly and is what makes the shared [`Mapper`](crate::Mapper) walk correct here without knowing
-//! any of this. That is a deliberate trade and it has a cost worth naming: the hierarchical bits are
-//! a real x86 mechanism for revoking a whole subtree in one store, and this format gives it up in
-//! exchange for one meaning of "what does this mapping grant" across three architectures. A future
-//! subtree-revocation optimisation would have to reintroduce it, and would then have to explain
-//! itself to `translate`, which reads the leaf alone.
-//!
-//! # NX depends on a bit outside the page tables
-//!
-//! Bit 63 means "no execute" only while `IA32_EFER.NXE` is set; with NXE clear it is a **reserved**
-//! bit and setting it makes the entry faulting rather than non-executable. The kernel's boot
-//! trampoline sets NXE before it builds any table (`arch/x86_64/boot.s`), which is the ordering
-//! that makes this encoding safe. Nothing in this crate can check it, which is why it is said here.
 
 use crate::{
     CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, CAP_WRITE_COMBINE,
@@ -59,9 +29,8 @@ pub mod pat {
 
     /// **The value this kernel programs: the power-on table with entry 1 changed from
     /// write-through to write-combining (type 0x01).** Entry 1 is what `PWT` alone selects, and
-    /// before this nothing in the tree set `PWT` alone (device memory is `PCD | PWT`, entry 3,
-    /// strong UC, and everything else is entry 0), so the change touches no mapping that existed.
-    /// Linux makes the same choice for the same entry.
+    /// only a write-combining leaf sets `PWT` alone (device memory is `PCD | PWT`, entry 3, strong
+    /// UC, and everything else is entry 0). Linux makes the same choice for the same entry.
     pub const VALUE: u64 = (RESET & !0xff00) | 0x01 << 8;
 }
 
@@ -78,7 +47,10 @@ const G: u64 = 1 << 8; // Global (ignored unless CR4.PGE)
 /// [`PageFormat::is_block`] is only ever asked above the bottom, and it is reserved-must-be-zero in
 /// a PML4 entry, which is why [`Ia32e::block_entry`] declines anything larger than 1 GiB.
 const PS: u64 = 1 << 7;
-const XD: u64 = 1 << 63; // eXecute Disable, and only while IA32_EFER.NXE is set
+/// Bit 63, execute disable, and only while `IA32_EFER.NXE` is set: with NXE clear it is reserved
+/// and faults the entry. The boot trampoline sets NXE before it builds any table
+/// (`arch/x86_64/boot.s`), which this crate cannot check.
+const XD: u64 = 1 << 63;
 
 /// Bit 9, the first of the three "available to software" bits (11:9) in every entry. Used to record
 /// that a leaf was created as **kernel**-executable, which the hardware itself cannot express: x86
@@ -98,7 +70,8 @@ const SW_DEVICE: u64 = 1 << 10;
 /// and bit 63 is XD, so the mask must not be widened without checking both ends.
 const ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
-/// The `x86_64` four-level (IA-32e) page-table format.
+/// The `x86_64` four-level (IA-32e) page-table format. Named for Intel's own term, "IA-32e
+/// paging" (SDM volume 3, chapter 4), since `X86_64` is not camel case. Name provisional.
 pub struct Ia32e;
 
 impl Ia32e {
@@ -130,17 +103,9 @@ impl Ia32e {
             // reads back a value the device never produced.
             bits |= PCD | PWT | SW_DEVICE;
         }
-        // One execute permission, applying at whichever ring `U/S` names. A page executable by
-        // nobody gets XD; anything else leaves it clear and relies on U/S, which is exactly Sv39's
-        // arrangement of the same three facts.
-        //
-        // **With one difference the hardware draws and Sv39 does not**, found by milestone 313's
-        // audit. Sv39 refuses a supervisor fetch from a `U` page unconditionally. x86 does so only
-        // while `CR4.SMEP` is set; with it clear, a page whose `XD` is clear is executable at ring 0
-        // whatever `U/S` says. So `leaf_flags` reporting a user page as *not* kernel-executable is
-        // true on the machine only because `arch::x86_64::init` sets SMEP on every core whose CPUID
-        // offers it, and says on the console when one does not. This crate cannot check that, which
-        // is why it is said here.
+        // One execute permission, at whichever ring `U/S` names: XD only for a page nobody
+        // executes, as on Sv39. A user page is not kernel-executable only while `CR4.SMEP` is set,
+        // which `arch::x86_64::init` sets on every core that offers it; this crate cannot check.
         if flags.is_kernel_executable() {
             bits |= SW_KERNEL_EXEC;
         } else if !flags.is_user_executable() {
@@ -167,7 +132,7 @@ impl PageFormat for Ia32e {
 
     fn table_entry(pa: u64, _level: usize) -> u64 {
         // Maximally permissive, because x86 ANDs the levels together and the leaf must be able to
-        // grant anything. See this module's header for what that trades away.
+        // grant anything. See notes/paging.md for what that trades away.
         (pa & ADDR_MASK) | P | RW | US
     }
 
@@ -202,20 +167,16 @@ impl PageFormat for Ia32e {
         Flags::from_caps(caps)
     }
 
-    /// A PD entry (2 MiB) or a PDPT entry (1 GiB) with `PS` set, and otherwise exactly the page
-    /// leaf's bits: every attribute `attrs` sets (`RW`, `US`, `A`, `D`, `G`, `PWT`, `PCD`, `XD`
-    /// and the two software bits) sits in the same position at all three levels.
+    /// A PD entry (2 MiB) or a PDPT entry (1 GiB) with `PS` set, and otherwise the page leaf's
+    /// bits, every one of which sits in the same position at all three levels.
     ///
-    /// **Bit 12 is the one that moves.** In a large-page entry it is `PAT`, and bits 20:13 (2 MiB)
-    /// or 29:13 (1 GiB) are reserved-must-be-zero, so the address is masked down to the block's own
-    /// alignment rather than to `ADDR_MASK`: a stray low bit here is a reserved-bit page fault on
-    /// the first touch, not a slightly wrong address. `attrs` never sets bit 12, so `PAT` stays
-    /// 0 and the memory type is the same PAT entry a page leaf with the same flags selects.
+    /// Bit 12 is `PAT` in a large-page entry, and bits 20:13 (2 MiB) or 29:13 (1 GiB) are reserved,
+    /// so the address is masked to the block's own alignment: a stray low bit is a reserved-bit
+    /// fault. `attrs` never sets bit 12, so the memory type is the one a page leaf selects.
     ///
-    /// **A 1 GiB leaf is encodable on every `x86_64` and usable only where `CPUID` leaf 0x80000001
-    /// reports `Page1GB` (EDX bit 26)**; elsewhere `PS` in a PDPT entry is reserved. This crate
-    /// cannot ask, so the caller passes the largest size it has checked for (see
-    /// [`Mapper::map_span`](crate::Mapper::map_span)).
+    /// A 1 GiB leaf is usable only where `CPUID` leaf 0x80000001 reports `Page1GB` (EDX bit 26).
+    /// This crate cannot ask, so the caller passes the largest size it has checked for
+    /// ([`Mapper::map_span`](crate::Mapper::map_span)).
     fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
         match size {
             PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
@@ -230,21 +191,12 @@ impl PageFormat for Ia32e {
     }
 }
 
-/// **VT-d's second-level page-table format** (milestone 161, roadmap item 6): what an Intel IOMMU
-/// walks to translate a device's DMA address, not what the CPU walks. Same level count, same
-/// 9-bit-per-level, 4 KiB-leaf shape as [`Ia32e`] (VT-d's second-level tables were designed for
-/// the same walking hardware), which is why this lives beside it rather than in its own module.
-/// **The leaf encoding is not the same, and reusing `Ia32e` here would be wrong rather than
-/// merely imprecise**: verified against QEMU's `hw/i386/intel_iommu_internal.h`, a second-level
-/// leaf has exactly two meaningful bits, Read (0) and Write (1); bits 2 through 10 are
-/// reserved-must-be-zero (`VTD_SPTE_PAGE_L1_RSVD_MASK`), which QEMU's model actually checks and
-/// faults on. `Ia32e::leaf_entry` sets `US` (bit 2) for every user-accessible mapping and `XD`
-/// (bit 63) for every non-executable one, both of which a DMA domain's `Flags::user_data()`
-/// triggers on every leaf it builds; run through VT-d hardware, every one of those leaves would be
-/// a reserved-bits-set fault rather than a working translation. A device has no privilege level to
-/// gate (there is no `US` bit to set) and no separate execute permission in this mode (there is no
-/// `XD` to clear), so this format does not attempt to carry either: [`leaf_flags`](Vtd::leaf_flags)
-/// reports only what the two real bits mean.
+/// **VT-d's second-level page-table format**: what an Intel IOMMU walks to translate a device's
+/// DMA address. The shape of [`Ia32e`], but a leaf has exactly two meaningful bits, Read (0) and
+/// Write (1); bits 2 through 10 are reserved and checked (QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`), so
+/// `Ia32e`'s `US` and `XD` would fault every DMA. A device has no privilege level and no execute
+/// permission here, and [`leaf_flags`](Vtd::leaf_flags) reports only write. See notes/paging.md,
+/// "VT-d".
 pub struct Vtd;
 
 /// Read: the transaction may read through this entry. Bit 0, same position as `Ia32e`'s `P`,
@@ -259,21 +211,12 @@ const VTD_W: u64 = 1 << 1;
 /// it (`kernel/src/arch/x86_64/iommu.rs`'s BUGS says why).
 const VTD_ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
-/// **Every bit a VT-d second-level entry is allowed to carry, written out**: R (bit 0), W (bit 1)
-/// and the address field (bits 51:12). Verified against QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`;
-/// everything else is reserved-must-be-zero and faults the transaction rather than being ignored.
+/// **Every bit a VT-d second-level entry may carry**: R (bit 0), W (bit 1) and the address field
+/// (bits 51:12), per QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`; any other bit faults the transaction.
 ///
-/// **It exists because the reserved-bit claim cannot be stated through the constants that build
-/// the entry** (milestone 307). `Vtd::leaf_entry` returns `(pa & VTD_ADDR_MASK) | bits` with
-/// `bits` drawn from `VTD_R` and `VTD_W`, so `leaf & !(VTD_ADDR_MASK | VTD_R | VTD_W) == 0` is
-/// identically true for *every* value of those three constants: widen `VTD_ADDR_MASK` over bits
-/// 52..63 and the encoder and the assertion move together, leaving the harness green while every
-/// translated DMA faults on a reserved bit. The architecture chooses these bit positions and this
-/// crate does not, which is exactly the case for spelling them rather than citing ourselves; the
-/// same argument is already written out at `the_leaf_keeps_address_and_permissions_apart`.
-///
-/// `cfg`-gated to the two test configurations on purpose: an implementation that could reach it
-/// would reintroduce the coupling this constant exists to break.
+/// A literal, because the encoder is built from `VTD_R`, `VTD_W` and `VTD_ADDR_MASK`, and a check
+/// through them holds for every value they take. Gated to the test configurations, so no
+/// implementation can reach it. See notes/paging.md, "Reserved bits are spelled as literals".
 #[cfg(any(test, kani))]
 const VTD_PERMITTED_BITS: u64 = 0x000f_ffff_ffff_f003;
 
@@ -341,28 +284,14 @@ impl PageFormat for Vtd {
     }
 }
 
-/// **AMD-Vi's host page-table format** (provisional name, lane `amd-vi`): what an AMD IOMMU walks
-/// to translate a device's DMA address. Four levels of 512 eight-byte entries and 4 KiB leaves, the
-/// same shape as [`Vtd`] and [`Ia32e`], and an encoding that is neither. Every bit below is from
-/// AMD document 48882 revision 2.62, section 2.2.3 (Figures 9 and 10, Tables 17 and 18), read for
-/// this format rather than recalled.
+/// **AMD-Vi's host page-table format**: what an AMD IOMMU walks to translate a device's DMA
+/// address. The shape of [`Vtd`] and [`Ia32e`] and an encoding that is neither, every bit from AMD
+/// document 48882 revision 2.62, section 2.2.3 (Figures 9 and 10, Tables 17 and 18).
 ///
-/// **What makes it different is the `NextLevel` field (bits 11:9).** A directory entry names the
-/// level of the table it points at, which lets the hardware skip levels whose address bits are
-/// zero. This format never skips: a directory entry written into the table at walk level `L`
-/// (0 = top, as [`PageFormat::index`] counts) points at AMD level `LEVELS - 1 - L`, so the top
-/// table's entries say 3 and the bottom directory's say 1. That is why
-/// [`PageFormat::table_entry`] takes the level: there is no level-free encoding of an AMD-Vi
-/// directory entry. A leaf (a "page translation entry") says 0, which means "the default page
-/// size of this level"; at the bottom that is 4 KiB.
-///
-/// **Permissions are combined by AND down the walk** (`IR` bit 61, `IW` bit 62, at every level and in the
-/// device table entry as well), so a directory entry grants both and the leaf decides, the same
-/// argument [`Vtd::table_entry`] makes. **`FC` (bit 60) is set on every leaf**: it makes the IOMMU
-/// clear the PCI No Snoop attribute, so a device's DMA through this domain stays coherent with the
-/// CPU caches whatever the device asks for. Linux sets it on every leaf too
-/// (`drivers/iommu/amd/io_pgtable.c`, read at v6.12). Bit 60 is reserved in a directory entry
-/// (Table 18), so only leaves carry it.
+/// A directory entry written at walk level `L` names the AMD level it points at in `NextLevel`
+/// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) are ANDed down the
+/// walk, so a directory grants both. `FC` (bit 60, leaves only) keeps a device's DMA coherent
+/// whatever it asks for. See notes/paging.md, "AMD-Vi". Name provisional.
 pub struct AmdVi;
 
 /// `PR`: present. Bit 0, at every level.
@@ -454,10 +383,8 @@ impl PageFormat for AmdVi {
 
 // --- The AMD-Vi device table entry (AMD 48882 rev 2.62, section 2.2.2.1, Table 7). ---
 //
-// The entry that points a device at an `AmdVi` table. It lives here rather than in the kernel's
-// driver so Kani can prove it on any host: the kernel's x86_64 proofs compile only on an x86_64
-// host (notes/kernel-proofs.md), and this one is about bit positions, not about the machine
-// (provisional milestone 767 (AMD-Vi hardening before the first AMD boot)).
+// Here rather than in the kernel's driver so Kani can prove it on any host: the kernel's x86_64
+// proofs compile only on an x86_64 host (notes/kernel-proofs.md).
 
 /// `V`, bit 0: the entry's bits 127:1 are valid.
 const DTE_V: u64 = 1 << 0;
@@ -686,10 +613,7 @@ mod tests {
     /// Every `Flags` constructor is tried, including the ones (`user_code`, `kernel_data`, ...)
     /// that would set `US` or `XD` on `Ia32e`'s encoding of the same flags.
     ///
-    /// **The permitted set is a literal** ([`VTD_PERMITTED_BITS`]), for the reason milestone 307
-    /// found in the Kani harness that generalises this test: written as
-    /// `!(VTD_ADDR_MASK | VTD_R | VTD_W)` it was satisfied by any value of those three constants,
-    /// because `leaf_entry` builds the entry out of the same three.
+    /// The permitted set is a literal, [`VTD_PERMITTED_BITS`], which says why.
     #[test]
     fn a_vtd_leaf_sets_no_bit_outside_read_write_and_address() {
         for flags in [
@@ -704,12 +628,8 @@ mod tests {
         ] {
             for pa in [
                 0x10_0000,
-                // **An address with bits above 51 set**, which is what makes this test able to see
-                // a widened `VTD_ADDR_MASK` at all. With a small concrete address the encoder's
-                // masking is never exercised: `(pa & M) == pa` for every M wide enough, so the
-                // defect and the test move together exactly as they did in the Kani harness this
-                // generalises. Masking the address down is `leaf_entry`'s job and this is the
-                // input that asks it to do the job.
+                // Bits above 51 set: with a small address `(pa & M) == pa` for every wide enough
+                // M, and a widened `VTD_ADDR_MASK` would go unseen.
                 0x00ff_ffff_ffff_f000,
                 0xffff_ffff_ffff_f000,
             ] {
@@ -834,8 +754,7 @@ mod tests {
 
     /// **Execute permission reads back from an `Ia32e` leaf**, both rings. The software bit that
     /// tells kernel code from kernel rodata is only consulted when `XD` is clear, so an `XD` test
-    /// that is always true or always false loses exactly the pages that run. Milestone 326 (turn a mutation score upward),
-    /// 2026-09-24.
+    /// that is always true or always false loses exactly the pages that run.
     #[test]
     fn execute_permission_reads_back_from_a_leaf() {
         for flags in [
@@ -853,7 +772,7 @@ mod tests {
 
     /// **VT-d writes pages only, and reads bit 7 as a superpage.** `block_entry` refusing a 4 KiB
     /// "block" would make every DMA grant fail; `is_block` must agree with the hardware about an
-    /// entry this format never writes but a walk may still meet. Milestone 326, 2026-09-24.
+    /// entry this format never writes but a walk may still meet.
     #[test]
     fn vtd_writes_pages_only_and_knows_a_superpage_when_it_sees_one() {
         let data = Flags::user_data();
