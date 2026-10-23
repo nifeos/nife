@@ -150,12 +150,14 @@ checked out. Nothing was run on an arm64 26.04 host.
 ### Caches built on one release poison the other
 
 A QEMU 11.1.2 built by `script/ci-qemu` on 26.04 requires `GLIBC_2.43` (`objdump -T` on the built
-binary), so it cannot start on 24.04. The keys cannot tell the two apart. Whichever pool saves the
-key first serves the other pool a binary it cannot run. `script/ci-qemu`'s warm check then reads an
-empty version and rebuilds, which costs about 4.5 minutes in every QEMU job of every run. The rebuild
-is never saved, because the key already exists. The patched Kani and every `rust-cache` entry carry
-the same hazard. The reverse, a 24.04 build on 26.04, links the same sonames and probably runs, but
-nobody has run it.
+binary), so it cannot start on 24.04. The keys carry the architecture but not the release, so both
+releases on one architecture share an entry. That happens whenever both run at once: during a
+canary, on branches cut before a flip, and after a revert. Whichever release saves the entry first
+serves the other one. A 24.04 job handed a 26.04 binary gets an empty version from
+`script/ci-qemu`'s warm check and rebuilds, which costs about 4.5 minutes in every QEMU job of every
+run. The rebuild is never saved, because the key already exists. The patched Kani and every
+`rust-cache` entry carry the same hazard. The other direction, a 24.04 build on 26.04, links the
+same sonames and probably runs, but nobody has run it.
 
 The fix is one more key input: the release, read from `/etc/os-release` in a step. It is safe to
 land on 24.04 first, and it costs one cold rebuild per pool.
@@ -198,8 +200,8 @@ minutes, 7,969 on `ubuntu-24.04-arm` and 6,699 on `ubuntu-24.04`. `ci.yml` and `
 - The flip costs one cold QEMU build per pool (265 to 274 s, `ci.yml`'s `main-caches` comment) and
   one patched-Kani build on arm64 (145 s, measured 2026-09-25). Every `rust-cache` entry starts
   cold once.
-- Without the key change, a mixed period costs about 4.5 minutes on each QEMU job of each run,
-  for as long as it lasts.
+- Without the key change, any period with both releases on one architecture costs about 4.5
+  minutes on each QEMU job of each affected run.
 
 Public repositories run standard hosted runners at no charge (recalled from GitHub's billing
 documentation, not read today). The cost that binds is arm64 queue time, which milestone 587 found
@@ -271,8 +273,7 @@ These are an architect's, and nothing above decides them.
 ## Lint on 26.04, measured
 
 On 2026-10-23, `script/lint` ran on Ubuntu 26.04.1 x86_64 with this tree, Python 3.14.4, Ruby
-3.3.8, shellcheck 0.11.0 and clang 21.1.8. 107 of its 108 sections passed. The one failure was
-`script/citations --ratchet` asking for glosses in this file, since given. Ruby parsed all 26
+3.3.8, shellcheck 0.11.0 and clang 21.1.8, and all 108 of its sections passed. Ruby parsed all 26
 workflow files and the issue forms; shellcheck passed 146 scripts with no warnings. That host had
 no `dtc`, so the `.dtb` check skipped; run separately with Ubuntu 26.04's `dtc` 1.7.2, it compared
 33 pairs and all matched. A Python 3.14 change that could bite, the `tarfile` extraction default,
