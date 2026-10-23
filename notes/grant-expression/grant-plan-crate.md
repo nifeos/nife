@@ -50,3 +50,33 @@ details of the splitter are recorded here.
   was a missing feature.
 - Quoting makes an operator an ordinary byte, and nothing puts one back. A quoted redirection name
   is exempt from `Refusal::PatternInRedirect`: `> "*.txt"` writes a file called `*.txt`.
+
+## The `std` region (`manifest.rs`)
+
+`STD_REGION_PAGES` is the region the progenitor builds a `std` program in and then hands it as its
+heap. The shell prints it in `caps` and the progenitor spends it, so it lives in this crate, where
+both read it.
+
+It is one region rather than a heap beside a job, and the reason is the reap. A region that has been
+`SPLIT` cannot be `DESTROY`ed until its children are. A heap split off the job's region would stop
+`job_undertaker` reclaiming the job, and a heap split off the pool beside it would be a second region
+nothing reclaims at all. So the child's address space, image, stack and TCB come out of the region
+first. The same region, narrowed to `WRITE`, is the budget its allocator maps from, so its heap is
+what the build left and one reclaim returns all of it.
+
+The size is the 256 pages of heap the kernel test harness gives every `std` program (`BUDGET_PAGES`
+in `system_tests/src/user/std_service.rs`, the budget `std_exerciser`'s transcript is proven under).
+Another 128 pages cover the build: about 40 of image, 32 of stack, the page tables for the windows a
+`std` child touches, and a caretaker if a directory grant rides along. It is not a measurement of any
+program's high-water mark, and it is nowhere near what `rg` over a real tree needs. A budget a person
+sizes at the prompt would take `--mem`'s shape, which no `std` manifest declares: §170 (how a foreign
+program is told what to do) gave a `std` program its words and not a budget.
+
+A program that declares `installer` gets one package's worth more (`named_std_region_pages`). A
+package manager reads a whole package before it sends it, because it checks the digest first. What
+it sends are frames of its own: it maps one run of pages, reads the package into it, and hands the
+progenitor a page of that run at a time (`abi::page_frame::SLICE`). So the run is both its buffer and
+its frames. It lives in the program's own region, built from the progenitor's image pool rather than
+the job pool, because what it holds is a package's bytes, exactly what that pool is sized for. The
+progenitor's copy of the same package is carved beside it. The shell's own staging pages are left for
+a file run by its path.
