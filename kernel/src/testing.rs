@@ -49,13 +49,14 @@ pub fn run_was_filtered() -> bool {
 const FILTER_COUNTED_ACROSS_IMAGES: bool = !env!("NIFE_TEST_FILTER_ACROSS_IMAGES").is_empty();
 
 /// **How many times the runner repeats the filtered tests in one boot**, from `NIFE_TEST_REPEAT`
-/// (name provisional), which `cargo xtask test --repeat` and `uefi-test --repeat` set. Empty means
-/// once. Parsed at compile time, so a value that is not a whole number of at least 1 fails the
-/// build.
+/// (name provisional; empty means once, and a value that is not a whole number of at least 1 fails
+/// the build). The first failing iteration ends the boot, and [`note_repeat_failure`] names it.
+/// See notes/kernel-test-harness.md.
 ///
-/// The first failing iteration ends the boot as a single run's failure does, and
-/// [`note_repeat_failure`] says which it was; a run of N that passes says "no failure in N". A
-/// repeat is refused without a filter. notes/kernel-test-harness.md has why, and its BUGS.
+/// # BUGS
+///
+/// - A repeat is refused without a filter: the suite keeps services for the boot.
+/// - The leak check sees frames and the runner's slots, not every table.
 const TEST_REPEAT: u32 = parse_repeat(env!("NIFE_TEST_REPEAT"));
 
 const fn parse_repeat(text: &str) -> u32 {
@@ -260,14 +261,14 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 
 /// **What the whole suite may leave unreturned, in frames**, checked once at the end of the run.
 ///
-/// Not zero: a boot keeps what its tests built on purpose, which
-/// [notes/frame-budget.md](../../notes/frame-budget.md) prices, with the conventions a change to
-/// this number follows. It sits just above the measured total, so a test that keeps its memory
-/// fails here, naming itself, rather than later as `OutOfPageFrames` in something innocent.
+/// Not zero: [notes/frame-budget.md](../../notes/frame-budget.md) prices what a boot keeps on
+/// purpose. Just above the measured total, so a test that keeps its memory fails here, naming
+/// itself, rather than later as `OutOfPageFrames` in something innocent.
 ///
 /// # BUGS
 ///
-/// Some tests still keep memory for the boot; notes/kernel-test-harness.md lists them.
+/// - Two test sites keep their endpoints for the boot on purpose (notes/kernel-test-harness.md).
+/// - The kernel's `user::*_service` wiring still uses the never-freed pool, once per test.
 const SUITE_PAGE_FRAME_BUDGET: usize = 24_322;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.

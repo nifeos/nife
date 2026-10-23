@@ -3,7 +3,17 @@
 //! The second rung of milestone 268 (every architecture boots the same way): every check runs on
 //! every architecture, a failure prints and the boot carries on, and a program reads the verdict
 //! (`boot_ladder::SELF_TEST`, matched by `crates/serial_console`). notes/boot-ladder.md has the
-//! verdict's contract, and notes/self-test-checks.md each check's design and this module's BUGS.
+//! verdict's contract, and notes/self-test-checks.md each check's design and the full account of
+//! the BUGS below.
+
+//! # BUGS
+//!
+//! - Nothing proves an architecture ran the right set; review guards the list.
+//! - The checks cost time on every boot, about a quarter of a second plus up to three process spawns.
+//! - [`blockdev`]'s driver is left running, holding disk 0.
+//! - [`budget`]'s helper thread can be left parked if the process never reports.
+//! - [`budget`] brackets the machine's used-frame count, sound only while nothing else allocates.
+//! - A check whose operation never returns still hangs the boot; that needs a watchdog.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 

@@ -102,14 +102,13 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
 
 /// `MemoryRegion::RETYPE`: retype `requested` pages (`0` meaning one) into one `PageFrame`
 /// capability over the run (§102 (a Frame names a run of pages)), mapped nowhere yet. Returns the
-/// slot; `OutOfMemory` when the region or the table is full.
-///
-/// The frame carries the budget's rights and no others (milestone 824 (a retype mints no right
+/// slot; `OutOfMemory` when the region or the table is full. The frame carries the budget's rights and no others (milestone 824 (a retype mints no right
 /// its budget lacks)), so `GRANT` is delegated down the budget tree and never minted at a leaf.
 ///
 /// # BUGS
 ///
-/// A full capability table leaves the run retyped and unnamed until the region is destroyed.
+/// - A full capability table leaves the run retyped and unnamed until the region is destroyed.
+/// - `RETYPE_OBJ`'s arms have the same shape: an object nobody can name.
 #[inline(never)]
 pub(super) fn memory_region_retype(
     capability: Capability,
