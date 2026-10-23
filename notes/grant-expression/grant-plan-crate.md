@@ -80,3 +80,33 @@ its frames. It lives in the program's own region, built from the progenitor's im
 the job pool, because what it holds is a package's bytes, exactly what that pool is sized for. The
 progenitor's copy of the same package is carved beside it. The shell's own staging pages are left for
 a file run by its path.
+
+## Navigation (`nav.rs`)
+
+[`notes/shell-navigation.md`](../shell-navigation.md) has why `cd`, `pwd` and `ls` are builtins,
+why `/` is the root of your own namespace, and why `..` stops there. This section covers the two
+structures that compose more than one root.
+
+`TwoRoots` composes the two directory capabilities a process holds under two labels (milestone 154
+(a process that holds two directory capabilities)). It is the smallest structure that answers that
+milestone's question: does `/a/x` reach grant A and `/b/y` reach grant B, with neither able to name
+the other's parent? A label selects one grant's root by an exact match on an absolute path's first
+component. Nothing after the first component can re-select a grant, so a later name that collides
+with the other label is an ordinary step inside the grant already chosen. Past the label a path
+resolves the way a single `Cwd` does, so `..` stops at that grant's own root and never at an unheld
+root above both. That is what makes `/a/../b` refused: the first component commits to grant A, and
+`..` from A's root has nothing to pop. No new check was needed, since `Cwd::apply` already had the
+property.
+
+A relative token is refused, as `.` alone is, because a holder of two roots has no reason to prefer
+either. That is the shadowing question milestone 47 (navigation and naming) leaves open.
+`TwoRoots::resolve_from` gives a two-grant shell its single moving position (DECISIONS §126 (a
+process holding two directory capabilities gets a real, single, moving `cwd`)).
+
+`Bindings` is `bind`'s namespace. A bound entry is a value, a `Cwd` under a name: no capability
+slot, no handle to leak, no lifetime. It reuses `Cwd::apply`'s depth bound and root clamp, so a
+bound name cannot reach deeper or higher than a direct walk to the same place. It is not an ordered
+union. There is one entry per name, and a name already bound refuses a second bind rather than
+shadowing it. Milestone 47's open `PATH` questions (shadowing across several sources at one name,
+enumeration, the gap between a compile-time set and a runtime lookup, and whether `$PATH` survives as
+a string) are not answered here.
