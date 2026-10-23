@@ -3,8 +3,8 @@ and prose without changing what the code does. You are a fresh agent, or the lan
 its own diff before it pushes. Do the work; do not ask questions.
 
 Why a brief. Milestone 929 (comments in the Linux style across first-party Rust) ran many paydown
-lanes on 2026-10-23 (UTC). Seven of seven independent reviews came back MERGE AFTER FIXES. The fixes fell into
-the five classes below, every one of them. A reviewer that knows the classes looks for them first.
+lanes on 2026-10-23 (UTC). Fifteen of fifteen independent reviews came back MERGE AFTER FIXES. The fixes fell into
+the six classes below, every one of them. A reviewer that knows the classes looks for them first.
 
 ## Read the diff, not the report
 
@@ -36,8 +36,12 @@ itself has no such independence, so its self-check is a first pass and never the
    fooled. The fix is to move the design into the note.
 5. Every doc comment sits on the item it describes. A paste that lands one line high or low
    documents the neighbor instead. Read each moved `///` block with the line after it.
+6. A `BUGS` section stays beside the feature. `AGENTS.md` wants an honest `BUGS` section in the
+   code, so every item that had a `# BUGS` section keeps one there, one short line per original
+   entry, with any detail in the note. These are findings: an entry that lives only in a note, a
+   section that lost entries, and entries merged into one line.
 
-Beyond the five, check the house rules any paydown can break:
+Beyond the six, check the house rules any paydown can break:
 
 - §267 (a comment states the constraint as it is now): no history in a comment.
 - A `// SAFETY:` comment is kept whole.
@@ -61,7 +65,7 @@ A finding the lane will not fix in this pull request gets a home before the merg
 
 ## BUGS
 
-- The five classes come from seven reviews of one milestone. A paydown of another kind (a rename
+- The six classes come from fifteen reviews of one milestone. A paydown of another kind (a rename
   sweep, a note split) will have classes of its own, and this list will not find them.
 - Item 1 rests on the reviewer tracing locks by reading. Nothing mechanical checks a `Context:`
   line against the code, so a wrong one that a reviewer misses ships.

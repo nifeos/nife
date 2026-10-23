@@ -17,13 +17,12 @@ one.
 
 - Agents. The session ran up to 20 concurrent agents, lanes and reviewers together, and reached
   its harness's cap of 20 concurrent agents.
-- The host. It was not the limit. Load sat between about 13 and 21 on 80 CPUs, about 85% idle,
-  with memory mostly free. A lane spends most of its time waiting on the model and on CI, and CI
+- The host. It was not the limit. The host's CPUs sat about 85% idle, with memory mostly free. A lane spends most of its time waiting on the model and on CI, and CI
   runs off the host.
 - The binding constraint. It was the maintainer's own loop per pull request: cut the lane, read a
   long report, file its findings, launch a reviewer, read the verdict, relay the fixes, watch CI,
   merge. That is about eight steps and two long reads per pull request, all through one context.
-- Review. Every independent review came back MERGE AFTER FIXES, seven of seven when this was
+- Review. Every independent review came back MERGE AFTER FIXES, 15 of 15 when this was
   written. The fixes repeated by class (the checklist in `briefs/review-a-paydown.md`). The
   reviewers were fresh agents that read only the diff, never the lane's report, and that
   independence is what caught them.
@@ -144,6 +143,22 @@ A failure every lane meets is fixed once, in the tree, by one lane, and the rest
   mid-run (#2614). The tell is one check red on many pull requests whose diffs cannot have caused it.
   Brief one lane on the cause, and hold the rest: no lane fixes it in its own diff.
 
+When `main` itself fails the check, the merge queue fails with it. Every merge group fails, and the
+fix queues behind the pull requests it would unblock, so it never lands. In this run the remedy that
+worked had three steps:
+
+1. Dequeue every other pull request and turn off its auto-merge (`gh pr merge <N> --disable-auto`).
+2. Let the fix land alone.
+3. Have each branch merge `origin/main` and requeue.
+
+## Arm as soon as the last fix is pushed
+
+A wide run arms a pull request (`gh pr merge <N> --auto --merge`) as soon as its review's fixes are
+pushed, not after CI goes green. Auto-merge waits for the required checks itself, so a maintainer
+who waits on green before arming adds a delay of their own to every pull request. This departs from
+`briefs/gate-in-ci.md`'s Step 4 for a wide run, and its other half still binds: push nothing after
+arming, because a push to a queued branch cancels its auto-merge.
+
 How a run notices the second kind early is not built. `helpers/trunk-health.sh` watches `main`,
 not the open pull requests, and a pipeline that sees the same red check on three lanes at once
 should raise it as one exception rather than three.
@@ -153,7 +168,7 @@ should raise it as one exception rather than three.
 - Every number above is from one run, of one milestone, whose diffs were comment-only and whose CI
   therefore skipped the heavy jobs. A milestone that changes code spends far longer in CI per round
   and may find the host or runner concurrency binding before the maintainer's loop.
-- Seven reviews is a small sample. The claim that a self-check raises the first-pass MERGE rate is
+- Fifteen reviews of one milestone is a small sample. The claim that a self-check raises the first-pass MERGE rate is
   unmeasured; the number that settles it is the share of independent reviews returning MERGE with
   and without the self-check.
 - Nothing here measures how many concurrent sessions the merge queue absorbs before its group
