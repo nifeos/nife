@@ -65,8 +65,8 @@ it, and the capability table past that. `get` and `get_mut` narrow the page poin
 over `size_of::<Thread>()` bytes, so the register file and the table are reached from the stored
 page pointer (`Threads::pointer`, `thread::capability_table_of`), never from a `&Thread`, which
 would reach outside its own provenance. The two inserts initialize the register file and the table
-in place, because `kmem` pages are not zeroed and the register file's `live` flag must be written
-before anything reads it; that is a fact about a place, so it is not in a `Thread` constructor.
+in place, because the register file's `live` flag must be written before anything reads it
+(`thread::init_fp_state`); that is a fact about a place, so it is not in a `Thread` constructor.
 `insert_at_in_place` hands `build` the destination rather than returning a `Thread`, because a
 `Thread` is large and a debug build copies it at every hop.
 

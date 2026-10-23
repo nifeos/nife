@@ -179,8 +179,8 @@ impl Threads {
         let name = self.table.insert_with(|tid| {
             built = build(tid, ptr);
             if built {
-                // In place, not in a constructor: `kmem` pages are not zeroed, so the register
-                // file's `live` flag must be written before anything reads it.
+                // In place, not in a constructor: this is a fact about the page, and the register
+                // file's `live` flag must be written before anything reads it (`init_fp_state`).
                 //
                 // SAFETY: `ptr` is the start of a page this insert exclusively owns, and `build`
                 // has just written a live `Thread` at it.
