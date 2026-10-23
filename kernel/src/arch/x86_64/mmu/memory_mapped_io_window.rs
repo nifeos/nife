@@ -48,8 +48,9 @@ pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u6
 ///
 /// # BUGS
 ///
-/// A gap in the firmware's map only means firmware did not call it RAM, not that nothing decodes
-/// there; windows no table names are a residual risk.
+/// A gap in the map means only that firmware did not call it RAM; unnamed windows are a risk.
+///
+/// Name: provisional (milestone 256, beside [`memory_mapped_io_window`]).
 pub(super) fn firmware_mmio_hole(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> (u64, u64) {
     let floor = firmware_fill_ceiling(&mut spans);
     let mut ceiling = FOUR_GIB;
@@ -71,6 +72,8 @@ const FOUR_GIB: u64 = 0x1_0000_0000;
 /// multiple of it. `avoid` is scanned once per candidate, quadratic in a list of at most five
 /// entries; each step moves the candidate past something it collided with, so the loop runs at
 /// most once per entry plus one.
+///
+/// Name: provisional (milestone 256, beside [`memory_mapped_io_window`]).
 pub(super) fn window_in_hole(
     lo: u64,
     hi: u64,
@@ -144,20 +147,20 @@ impl core::fmt::Display for MemoryMappedIoWindowError {
 /// [`firmware_mmio_hole`] and the host bridge's `TOLUD` must agree, or this returns
 /// [`MemoryMappedIoWindowError::Disagreement`]. See notes/x86-port/kernel-page-tables.md.
 ///
-/// **Name ratified 2026-09-05 (calef).** The lane shipped `bar_window`, on the grounds that it was
-/// the vocabulary the retired `PCI_BAR_PHYS` used for the thing in its own first line. calef asked
-/// what BAR stood for, which settled it: an argument from this project's own history is not an
-/// argument that a reader knows the word. **BAR is base address register**, a PCI term, and the
-/// window is where the blocks those registers point at appear in the physical address space.
+/// Name: ratified 2026-09-05 (calef). Refused `bar_window`, which the lane shipped on the grounds
+/// that it was the vocabulary the retired `PCI_BAR_PHYS` used for the thing in its own first line;
+/// calef asked what BAR stood for, which settled it: an argument from this project's own history
+/// is not an argument that a reader knows the word. BAR is base address register, a PCI term, and
+/// the window is where the blocks those registers point at appear in the physical address space.
+/// Refused `device_register_window`, for accuracy: a base address register can map a framebuffer
+/// or a memory aperture as well as a register block, so the plainer name would have been slightly
+/// narrower than the truth. Refused `mmio_window`, under the naming rule calef set the same day: an
+/// acronym is spelled out unless its expansion teaches nothing, and a reader who knows the term
+/// recognizes the expansion instantly, so spelling it out costs the expert nothing. `io` stays,
+/// because nobody bounces off it.
 ///
-/// `memory_mapped_io_window` was chosen over `device_register_window` **for accuracy**: a base
-/// address register can map a framebuffer or a memory aperture as well as a register block, so the
-/// plainer name would have been slightly narrower than the truth. `mmio_window` was refused under
-/// the naming rule calef set the same day: an acronym is spelled out unless its expansion teaches
-/// nothing, and a reader who knows the term recognises the expansion instantly, so spelling it out
-/// costs the expert nothing. `io` stays, because nobody bounces off it.
-///
-/// [`firmware_mmio_hole`], [`window_in_hole`] and [`top_of_low_dram`] are still provisional.
+/// [`top_of_low_dram`] is still provisional; [`firmware_mmio_hole`] and [`window_in_hole`] carry
+/// their own `Name:` lines.
 pub fn memory_mapped_io_window(ecam: (u64, u64)) -> Result<(u64, u64), MemoryMappedIoWindowError> {
     let Some(info) = super::machine::boot_info(crate::DTB.load(Ordering::Relaxed)) else {
         return Err(MemoryMappedIoWindowError::NoMemoryMap);

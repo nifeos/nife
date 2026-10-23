@@ -6,7 +6,19 @@
 //! [`scope_of`] says so.
 //!
 //! This is also `x86_64`'s IOMMU front door: every public entry point hands the call to
-//! [`super::amd_vi`] when an AMD-Vi unit is up. See notes/iommu.md, which holds the BUGS.
+//! [`super::amd_vi`] when an AMD-Vi unit is up. See notes/iommu.md, which holds the design and
+//! the detail of each BUGS entry.
+
+//! # BUGS
+//!
+//! - Only PCI segment 0 is brought up; a unit elsewhere is reported and refused.
+//! - A unit whose scope names only absent devices is still brought up, and may panic at `init`.
+//! - An RMRR naming a bridge is mapped only once the device below it is confined.
+//! - The graphics unit translates with only its RMRR mapped; scanout needs the RMRR to cover it.
+//! - No interrupt remapping: `ECAP.IR` is only reported, and no `IRTE` is ever written.
+//! - Invalidation is always global, which is correct and expensive with many devices.
+//! - `RWBF` and protected-memory disabling have never run, because QEMU sets neither.
+//! - One Fault Recording Register per unit is read, so one device's faults can hide another's.
 
 use machine_discovery::acpi::{
     DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAX_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
@@ -381,7 +393,8 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
 /// 2. Every device an RMRR names is confined to a domain that is exactly its reserved regions.
 /// 3. Translation turns on unit by unit, and protected memory regions firmware left are disabled.
 ///
-/// Then every device a running unit owns faults until `attach` writes its context entry.
+/// Then every device a running unit owns faults until `attach` writes its context entry (or, for
+/// an RMRR device, anywhere outside its reserved regions).
 pub fn init(dmar: &DmarUnits) {
     *DMAR.lock() = Some(*dmar);
     {

@@ -4,10 +4,11 @@
 //! `CR0.TS`, written per thread, is the enable bit: set, the next FP or SSE instruction raises
 //! `#NM`. It never defers a restore (the `LazyFP` scheme of CVE-2018-3665), so the registers hold
 //! the running thread's values or [`FpState::INITIAL`]. See notes/x86-port/cpu-state.md.
-//!
+
 //! # BUGS
 //!
 //! - `fxsave`, not `xsave`, so AVX state is never moved; safe only while `CR4.OSXSAVE` is clear.
+//! - `xsave`'s init optimization is not used, which would save far less for a light FP user.
 
 use super::instructions::{self, read_cr0, read_cr4};
 

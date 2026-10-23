@@ -5,7 +5,19 @@
 //!
 //! Default deny: `init` fills every device table entry with [`blocked_dte`] before enabling the
 //! unit, and the same entry is the quarantine of §163 (where a confined device's IOMMU fault is
-//! delivered). See notes/amd-vi.md, which holds the design, QEMU's differences and the BUGS.
+//! delivered). See notes/amd-vi.md, which holds the design, QEMU's differences and the detail
+//! of each BUGS entry.
+
+//! # BUGS
+//! - QEMU confines nothing without `dma-remap=on`, writes no fault address, and drops the bus.
+//! - At enable, a stale cached entry can be used until the invalidations run, as on Linux.
+//! - Interrupt remapping is never enabled, and no fault interrupt exists; only tests drain the log.
+//! - A type 20h IVMD joins every domain but pre-attaches no device; no IVMD has ever run.
+//! - Domain ids are never reused; past 65,535 attaches a boot panics.
+//! - Nothing revokes a device's domain in production, and a re-attach leaks the old tables.
+//! - The exclusion clear is half proved under QEMU, which ignores those registers.
+//! - Two devices behind one alias cannot both work, and at most [`MAX_ALIASES`] are tracked.
+//! - The root is checked against the 52-bit field, not the unit's real address width.
 
 use machine_discovery::acpi::ivrs::{IvrsUnits, MAX_IVHDS};
 

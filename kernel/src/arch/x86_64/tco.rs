@@ -6,7 +6,15 @@
 //! [`Tco::arm`] takes the time to the reset and does the halving. `SECOND_TO_STS` survives that
 //! reset, so the next boot reports how the last one ended. [`find`] returns a [`Tco`] value, and
 //! nothing here keeps a static. See notes/x86-port/tco-watchdog.md, which holds the register map,
-//! its sources and the BUGS.
+//! its sources and the detail of each BUGS entry.
+
+//! # BUGS
+//!
+//! - The version 4 path (xenon's PCH) has never run.
+//! - Firmware can hold `NO_REBOOT` set, and the read-back that checks it is not proof.
+//! - `TCO_EN` in `SMI_EN` is left as firmware set it, so its SMI handler could pet the timer.
+//! - Nothing halts the timer at boot; a firmware that leaves it counting resets an unarmed kernel.
+//! - The ACPI `WDAT` table, where firmware describes a watchdog for the OS, is not read.
 
 use core::fmt;
 

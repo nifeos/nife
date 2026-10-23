@@ -4,10 +4,13 @@
 //! Three routes, strongest first, each announced first since a reset that works never returns: the
 //! FADT's reset register, port `0xCF9` written `0x02` then `0x0E` (full reset, so cold), then the
 //! 8042's `0xFE` pulse, a tenth of a second each. See notes/board-reboot.md.
-//!
+
 //! # BUGS
 //!
 //! - A memory-space FADT reset register is not attempted; it is logged and skipped.
+//! - Only the first route has ever reset anything: the `0xCF9` and 8042 fallbacks never ran.
+//! - Proven under QEMU `q35` only; xenon's first bench reboot is the first test on firmware.
+//! - Nothing here quiesces devices first; `reboot` syncs the writable filesystem before calling.
 
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 

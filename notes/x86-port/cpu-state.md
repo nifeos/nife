@@ -93,9 +93,7 @@ closures on 2026-10-04 (UTC). The load runs on every lock, unlock and current-th
 ## The thread pointer
 
 The `FS` base is each thread's thread pointer. `CR4.FSGSBASE` stays off (§269 (how threads share a
-process) fork 4), so `wrfsbase` faults and there is no `arch_prctl`. The reason is the `GS` half of
-the same bit. With it on, a user could choose a `GS` base that the kernel's entry path then trusts
-across the NMI exit window in `trap.s`.
+process) fork 4), so `wrfsbase` faults and there is no `arch_prctl`. §269 fork 4 keeps it off.
 
 The write is lazy. `wrmsr` to `IA32_FS_BASE` is serializing and far dearer than a compare, and most
 switches are between threads that both hold zero, or between a thread and a kernel thread. Every
