@@ -60,7 +60,7 @@ cannot do.
 ```sh
 git clone https://github.com/nifeos/nife
 cd nife
-script/setup     # installs the pinned Rust toolchain, QEMU, python3 and gh, then builds
+script/setup     # installs the pinned Rust toolchain, QEMU, python3, gh and ruby, then builds
 script/test      # host crates, then the kernel under QEMU on all three ISAs
 ```
 
