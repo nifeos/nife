@@ -139,8 +139,8 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 
 /// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
 /// stack that [`user_pc`] reads, so a blocked or trapped thread gets a result word beyond the five
-/// its syscall path writes. The death message's label uses register 5 (DECISIONS §148 (a
-/// supervisor restarts by asking)).
+/// its syscall path writes. The death message's label uses register 5: DECISIONS §148 (resolves
+/// by asking the kernel), as amended 2026-10-04.
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap

@@ -113,7 +113,8 @@ pub fn is_cycle_counter_grantable() -> bool {
 /// # BUGS
 ///
 /// **Under HVF, closing does not close**: the ungranted half of the EL0 grant test fails on an
-/// Apple core, likely answered by the hypervisor without consulting this register.
+/// Apple core, likely answered by the hypervisor without consulting this register. Under TCG it
+/// passes; silicon is untested.
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(granted: bool) {
     let cpu = cpu::id();

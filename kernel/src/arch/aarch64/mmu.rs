@@ -66,7 +66,7 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
     phys_to_virt(pa) as *mut PageTable
 }
 
-/// Build the kernel's page tables and turn the MMU on.
+/// Build the kernel's fine page tables and switch TTBR1 to them.
 ///
 /// Replaces boot.s's coarse map with the fine one in TTBR1, verified first, and points TTBR0 at
 /// the empty reserved table. Called already running at high virtual addresses.
@@ -601,8 +601,8 @@ pub fn current_user_root() -> u64 {
 /// Unmap one page at `va` from the user address space rooted at `root`, discharging the TLB
 /// obligation. Returns the physical frame it pointed at, or `None` if nothing was mapped there.
 ///
-/// Revocation (§13 (capability revocation)) calls it for every holder's space, so `root` is explicit; the registry forgets
-/// a root before its tables are freed, so it is always live.
+/// Revocation (§13 (capability revocation)) calls it for every holder's space, so `root` is
+/// explicit; the registry forgets a root before its tables are freed, so it is always live.
 pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
     // SAFETY: `root` is a live L0 table built with `Half::Low`; the direct map makes `phys_to_ptr`
     // valid; `unmap` allocates nothing.

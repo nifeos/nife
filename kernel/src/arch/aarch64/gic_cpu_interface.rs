@@ -1,10 +1,11 @@
-//! The GICv3 CPU interface: system registers, `ICC_*_EL1`. The distributor and redistributors
-//! are `drivers/gicv3.rs`. The registers and the barrier sequence (Linux v6.16's, cited at each
-//! site) are in notes/aarch64-port.md, "The GICv3 CPU interface".
+//! The GICv3 CPU interface, `ICC_*_EL1`; the rest of the GIC is `drivers/gicv3.rs`. Registers and
+//! barriers (Linux v6.16's): notes/aarch64-port.md, "The GICv3 CPU interface".
 //!
 //! # BUGS
 //!
-//! - **Only `ICC_AP1R0_EL1` is cleared**; Linux also clears `AP1R1`-`AP1R3` past five priority bits.
+//! - **Only `ICC_AP1R0_EL1` is cleared**; Linux also clears `AP1R1`-`AP1R3` past five priority
+//!   bits. Firmware here took no interrupts, those registers matter only past 32 active priority
+//!   levels, and no write rests on an untested `PRIbits` read.
 //! - **Aff0 above 15 needs `ICC_CTLR_EL1.RSS`.** [`send_sgi`] refuses one; `smp.rs` seats none.
 //!
 //! Name: provisional (`gic_cpu_interface`), named for the GIC architecture's own term for this half

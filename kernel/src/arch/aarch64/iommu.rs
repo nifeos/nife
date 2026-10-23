@@ -471,8 +471,9 @@ mod proofs {
 
     /// **No stream can reach another stream's tables.**
     ///
-    /// `table_offset`'s `assert!` is all that stands between a device-supplied 16-bit `StreamID`
-    /// and a raw write. Proves everything it admits fits the frame and no two ids overlap.
+    /// `table_offset`'s `assert!` is all that stands between a 16-bit `StreamID` from the device
+    /// tree's `iommu-map` and a raw write. Proves everything it admits fits the frame and no two
+    /// ids overlap.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.aarch64.iommu.proofs.no_stream_can_reach_another_streams_tables.patch`
     #[kani::proof]
