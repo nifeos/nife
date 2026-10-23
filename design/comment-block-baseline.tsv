@@ -221,12 +221,6 @@ kernel/src/testing.rs:268	23
 kernel/src/testing.rs:370	40
 kernel/src/testing.rs:772	36
 kernel/src/testing.rs:1247	23
-kernel/src/thread.rs:1	25
-kernel/src/thread.rs:37	23
-kernel/src/thread.rs:391	27
-kernel/src/thread.rs:588	21
-kernel/src/thread.rs:612	22
-kernel/src/thread.rs:1018	29
 kernel/src/trust.rs:1	29
 kernel/src/user.rs:1	38
 kernel/src/user.rs:173	23
