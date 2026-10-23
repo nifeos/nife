@@ -8,6 +8,8 @@ detail its prose budget has no room for.
   user-entry frame placement that was wrong on RISC-V for a year.
 - [`bring-up-log.md`](bring-up-log.md): the six steps of the port, each with the boot line that
   proved it and the bugs it surfaced.
+- [`timer.md`](timer.md): the SBI timer, its software deadline grid, `scounteren`, and the tests.
+- [`traps.md`](traps.md): the trap entry, the frames it builds, dispatch, first FP use and faults.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
@@ -16,3 +18,5 @@ Each stem below is named for its content, and calef names files.
 
 - `hal-leaks` Name: provisional.
 - `bring-up-log` Name: provisional. After the brief's own example of a name for content.
+- `timer` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.
+- `traps` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.
