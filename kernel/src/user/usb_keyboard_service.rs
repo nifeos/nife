@@ -1,46 +1,14 @@
-//! **Wiring for the USB keyboard driver** (milestone 242 (USB host and HID, because on commodity
-//! hardware the keyboard is not a UART); notes/usb.md).
+//! Wiring for the USB keyboard driver: what the process driving the xHCI controller the kernel
+//! found, took from the firmware and confined is handed. The confinement claim is the [`Spawn`]
+//! literal: the interrupt, an attach endpoint, a report endpoint, the register pages
+//! [`extensible_host_controller_interface::register_window`] chose and the DMA work pages. See
+//! notes/usb.md, "What the driver holds".
 //!
-//! `kernel/src/extensible_host_controller_interface.rs` found the controller, took it from the
-//! firmware, drew the register window and confined the DMA region; this file decides what the
-//! process that drives it is handed, and the whole of the confinement claim is in the [`Spawn`]
-//! literal below. It is `non_volatile_memory_express_service`'s shape, one device over.
-//!
-//! # What the driver holds, and what it is denied
-//!
-//! Held:
-//!
-//! - slot 0, the controller's **interrupt** (`Irq`, WAIT and ACK);
-//! - slot 1, an **attach** endpoint (READ): the one message it ever receives there carries the
-//!   endpoint its keystrokes go to, delegated by the progenitor once the line discipline exists.
-//!   It is how a driver the kernel starts before the progenitor ends up holding `WRITE` on an
-//!   endpoint the progenitor creates, without the kernel ever naming that endpoint;
-//! - slot 2, a **report** endpoint (WRITE): one bring-up report, which the kernel waits for;
-//! - mapped: **the register pages** [`extensible_host_controller_interface::register_window`]
-//!   chose, device-typed: every page of BAR0 but the MSI-X table's and pending-bit array's;
-//! - mapped: **the work pages of its DMA region** (`dma::WORK_PAGES`), normal memory.
-//!
-//! Denied, each a decision:
-//!
-//! - **The MSI-X pages.** Whoever writes the table aims the interrupt message, and with interrupt
-//!   remapping off an aimed message is any vector on any CPU.
-//! - **The scratchpad pages.** They are the controller's private memory; the driver writes their
-//!   addresses and never their contents.
-//! - **PCI configuration space.** It cannot turn bus mastering on or off, move a BAR, or touch MSI.
-//! - **Any physical memory outside its region, by DMA.** The IOMMU confines the controller to the
-//!   region before the driver starts, and [`crate::extensible_host_controller_interface::bring_up`]
-//!   refuses to start one at all where it cannot.
-//! - **Every endpoint but three.** No budget, no filesystem, no console, no clock.
-//!
-
 //! # BUGS
 //!
-//! - **The attach handshake is a blocking send.** If the driver died between its report and its
-//!   first receive on the attach endpoint, the progenitor's `SEND_CAP` there would block the boot.
-//!   The driver receives on it immediately after reporting and does nothing else first, so the
-//!   window is one system call wide; it is a window.
-//! - **Enumeration after the report is silent.** A keyboard plugged in later is found and works,
-//!   but a device refused later has nobody to say so to: the report endpoint has one message.
+//! - The attach handshake is a blocking send: a driver that died between its report and its first
+//!   receive there would block the progenitor's `SEND_CAP`, and the boot.
+//! - A device refused after the report is refused silently: the report endpoint has one message.
 //!
 //! Name: provisional. A `<program>_service`, as `non_volatile_memory_express_service` is, so its
 //! name is the program's plus the suffix and carries no decision of its own.
@@ -58,10 +26,8 @@ const REGS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
 /// Where the driver's DMA work pages are mapped. Must match `components/src/usb_keyboard_driver.rs`.
 const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 
-/// **Stack pages beyond the one every loaded program gets.** Enumeration is a call chain six
-/// frames deep (attach, configure, transfer, wait, poll, the descriptor walk), and a debug build
-/// spends more than one page on it: the first boot of this driver died with a data abort eight
-/// words below its only stack page. Three more, mapped below it as ordinary frames, give it 16 KiB.
+/// Stack pages beyond the one every loaded program gets. Enumeration is a call chain six frames
+/// deep, and in a debug build one page overflowed by eight words; three more give it 16 KiB.
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
@@ -77,7 +43,7 @@ pub(crate) struct Wiring {
     pub attach: RendezvousId,
 }
 
-/// **Find, confine and hand over the xHCI controller, and wait for the driver's report.** `Err`
+/// Find, confine and hand over the xHCI controller, and wait for the driver's report. `Err`
 /// with [`crate::extensible_host_controller_interface::Absent::NoController`] on a machine with no
 /// controller, which the caller says nothing about.
 pub(crate) fn start(
@@ -88,12 +54,9 @@ pub(crate) fn start(
 
     let irq_ep = crate::sched::create_rendezvous();
     crate::sched::bind_irq(found.intid, irq_ep);
-    // Enabled through the arch layer on all three, which is what the `Irq` capability's ACK uses
-    // too: on riscv64 that is the source's stable round-robin hart (`target_context`), and a
-    // source enabled on the boot hart's context instead would be moved by its first ACK. Measured,
-    // not reasoned: pinned to `boot_s_context` the way the virtio-rng grant is, the riscv64 boot
-    // took the first interrupt and no keystroke after it; `keyboard_service::wire_device` enables
-    // this way and its keys arrive.
+    // Through the arch layer, as the `Irq` capability's ACK is: on riscv64 a source enabled on
+    // the boot hart's context instead is moved by its first ACK, and no keystroke after the first
+    // arrives (measured). See notes/usb.md, "What the driver holds".
     crate::arch::irq::enable(found.intid);
 
     let attach = crate::sched::create_rendezvous();
@@ -165,7 +128,7 @@ pub(crate) fn start(
     })
 }
 
-/// **The boot line for a report**, printed by the caller: one sentence a person at the bench can
+/// Print the boot line for report `w`: one sentence a person at the bench can
 /// act on, in the `  usb       :` column every boot line here uses.
 pub(crate) fn describe(w: &[u64; 5]) {
     match w[0] {
