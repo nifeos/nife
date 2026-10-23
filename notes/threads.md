@@ -165,6 +165,16 @@ it.
 calls `schedule()`. The next thread reaps it, once we are safely off it. Every kernel has
 something called a reaper, and this is why.
 
+## A brand-new thread unmasks its own interrupts
+
+A resumed thread gets its interrupt state back from the exception return, which restores
+`SPSR_EL1` on aarch64. A thread that has never run has no saved state to restore. So
+`thread_entry` unmasks interrupts itself, after `finish_switch` and never before it: a tick taken
+before `finish_switch` would overwrite `switched_from` and strand the predecessor
+(`arch/aarch64/context.s` has that hang). Without the unmask, the first thread spawned could never
+be preempted, and the scheduler would be cooperative with extra steps. `a_thread_that_never_yields_is_preempted_anyway` spawns a thread whose whole body is
+`loop { count += 1 }`, with no yield, no syscall and no call, and it is preempted anyway.
+
 ## The address-space leak that hid behind a two-frame test failure
 
 The reaper test failed with two frames leaked, not thirty-two. So the stacks *were* being
