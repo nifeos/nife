@@ -209,3 +209,29 @@ every BAR before nife exists is what made them answerable at a desk at all:
 
 Neither is silicon, and neither is a Dell. What they are is two fewer things an evening at the bench
 has to establish before it can look at the third. See notes/x86-uefi-boot.md.
+
+## What `machine.rs` reads, and the numbers behind its bounds
+
+`arch::x86_64::machine` keeps each item's contract in its doc comment. The measurements behind
+three of them live here.
+
+The boot map's 4 GiB bound is what the ACPI walk runs under. Firmware places its tables just under
+the top of RAM. At QEMU's `-m 256M` the RSDP lands at `0x0fb7e014`; at `-m 2048` under OVMF it
+lands at `0x7fb7e014`. A 1 GiB bound passes the first and refuses every table on the second, and
+every real x86 machine has more than 1 GiB.
+
+The boot line prints the MCFG's ECAM base beside q35's default, `arch::mmu::PCI_ECAM_PHYS`, and
+names q35 because the two are expected to differ. Firmware places this window. They agree under
+SeaBIOS on q35; OVMF puts it at `0xe000_0000`, and xenon's MCFG says `0xf000_0000`. On aarch64 and
+riscv64 the same constant is an equality invariant, because both boot QEMU `virt`.
+[Milestone 314 (an ECAM second witness)](../../design/roadmap/0314-ecam-second-witness.md) has the
+case.
+
+`top_of_low_dram` reads Intel's `TOLUD` at `0xbc`. The older 82G33/Q35-era chipsets put a 16-bit
+`TOLUD` at `0xb0`, and a register that means something else there would answer with a plausible
+address, so only `0xbc` is read. QEMU models neither offset (both read zero, measured 2026-09-04 on
+QEMU 11.1.1 under PVH and OVMF), so under emulation the firmware memory map is the only source.
+Zero reads as "not reported", since a running machine has DRAM below the hole. `TOLUD` is a
+configuration register, not AML, which is why the legacy ports reach it without an interpreter.
+[Milestone 256 (a BAR window the machine agreed to)](../../design/roadmap/0256-a-bar-window-the-machine-agreed-to.md)
+has the design and `arch::x86_64::mmu::memory_mapped_io_window` the consumer.

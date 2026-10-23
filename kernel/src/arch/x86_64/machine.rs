@@ -1,19 +1,13 @@
-//! **Reading what the loader said**, `x86_64`: the kernel side of
-//! `machine_discovery::x86_64`.
+//! Reading what the loader said, `x86_64`: the kernel side of `machine_discovery::x86_64`.
 //!
-//! Deliberately thin. Everything that decides what a byte means is in the crate, host-tested; what
-//! is here is the part that cannot be: turning the physical address the loader put in `ebx` into
-//! bytes this kernel can look at, through the direct map. That is the same division `console.rs`
-//! and `memory.rs` make with `crates/device_tree_blob` on the other two architectures.
-//!
-//! `memory::init` reaches this file through `arch::x86_64::discovery`, which owns the order: the
-//! handoff, the ACPI walk, the device windows, PCI, then [`bring_up_memory`].
+//! The crate decides what each byte means, host-tested; this file turns the physical address the
+//! loader put in `ebx` into bytes through the direct map, as `console.rs` and `memory.rs` do with
+//! `crates/device_tree_blob`. `memory::init` reaches it through `arch::x86_64::discovery`, which
+//! owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
 //! # BUGS
-//!
-//! - **The CMOS RTC crosses no seam**: it is not memory-mapped (two fixed I/O ports, not a page),
-//!   so `memory::RTC_REGION`'s `Option<(u64, u64, u64)>` shape has nowhere to put it. See
-//!   notes/x86-port/acpi-and-pci.md and `kernel/src/arch/x86_64/port.rs`'s own doc comment.
+//! - The CMOS RTC crosses no seam: it is two I/O ports, not a page, so `memory::RTC_REGION` has
+//!   nowhere to put it. See notes/x86-port/acpi-and-pci.md and `port.rs`'s doc comment.
 
 use machine_discovery::framebuffer::Framebuffer;
 use machine_discovery::x86_64::{
@@ -52,16 +46,11 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 /// one. `Framebuffer::MAX_LEN` is the only thing written there today and is well under this.
 const MAX_CMDLINE: usize = 256;
 
-/// **The boot command line the loader wrote**, or `None` when this boot chain did not write one.
+/// The boot command line the loader wrote, or `None` when this boot chain did not write one.
 ///
-/// Factored out of [`attach_screen`] when a second token joined the first: the line carries the
-/// screen (milestone 243 (a machine with no serial port has no way to say anything, and no gate
-/// can read it)) and, on an installed machine, which boot slot started this image
-/// ([`boot_slot`]). One reader, so a machine with no framebuffer still gets its slot number, which
-/// is the bug that shape of the code would otherwise have had.
-///
-/// `None` is the ordinary case for every boot that is not `uefi_loader`'s: QEMU's PVH loader
-/// writes a zero command line, so `script/test --arch x86_64` takes this path.
+/// One reader for every token: the screen ([`attach_screen`], milestone 243) and, on an installed
+/// machine, the boot slot ([`boot_slot`]), so a machine with no framebuffer still gets its slot.
+/// QEMU's PVH loader writes a zero command line, so `script/test --arch x86_64` gets `None`.
 fn cmdline(info: &BootInfo) -> Option<&'static str> {
     if info.cmdline == 0 {
         return None;
@@ -91,31 +80,21 @@ fn boot_slot(info: &BootInfo) -> Option<u8> {
     boot_slot::cmdline::parse(cmdline(info)?)
 }
 
-/// **Put the boot tour on a screen, if the boot handoff described one** (milestone 243).
+/// Put the boot tour on a screen, if the boot handoff described one (milestone 243): read the
+/// command line, find the framebuffer token, record the aperture so the fine map carries it, and
+/// hand the console its direct-map address.
 ///
-/// The whole of the x86 side of that milestone's kernel half, in one function, because it is one
-/// sentence: read the command line the loader wrote, find the framebuffer token in it, record the
-/// aperture so the fine map will carry it, and hand the console its address in the direct map.
-///
-/// Returns what was found and the grid it produced, for the caller's boot line. `None` means the
-/// machine said nothing about a screen, which is the ordinary case for every boot that is not
-/// `uefi_loader`'s: QEMU's PVH loader writes a zero command line, so `script/test --arch x86_64`
-/// takes this path and nothing about it changes.
-///
-/// **It must run before `arch::mmu::init`**, and it does, by a wide margin: it is the first thing
-/// the boot tour does. See `memory::record_framebuffer`.
+/// Returns what was found and the grid it produced, for the boot line; `None` when the machine said
+/// nothing about a screen, as under QEMU's PVH loader. Must run before `arch::mmu::init`, and runs
+/// first in the tour; see `memory::record_framebuffer`.
 pub(crate) fn attach_screen(at: usize) -> Option<(Framebuffer, u32, u32)> {
     let info = boot_info(at)?;
     let cmdline = cmdline(&info)?;
     let found = Framebuffer::parse(cmdline)?;
     let span = found.span()? as u64;
 
-    // **The screen-hold handshake, when a gate asked for it**: milestone 445 (the screen check
-    // stops sampling and starts asking), on the same command line, one more word, read here
-    // because this is where the line is already in hand. Armed only
-    // once a screen has been found, so the wait is structurally impossible on a machine that has
-    // none. See `console::hold_screen_at_handover`, which says what it costs an ordinary boot
-    // (nothing) and what it is for.
+    // The screen-hold handshake a gate may ask for (milestone 445), armed only once a screen is
+    // found, so a machine with none cannot wait. See `console::hold_screen_at_handover`.
     if machine_discovery::framebuffer::has_screen_hold(cmdline) {
         crate::console::hold_screen_at_handover();
     }
@@ -145,19 +124,12 @@ pub(crate) fn memory_map_entry(info: &BootInfo, index: usize) -> Option<MemoryEn
     memory_entry(bytes, 0)
 }
 
-/// **The initial ramdisk, if the loader put one in RAM** (milestone 161 (the `x86_64` kernel
-/// port)): x86's answer to the device tree's `/chosen/linux,initrd-start`, which is what both other
-/// architectures read.
+/// The initial ramdisk, if the loader put one in RAM: x86's `/chosen/linux,initrd-start`.
 ///
-/// QEMU's PVH loader turns `-initrd FILE` into one entry in the module list `hvm_start_info` points
-/// at, and `uefi_loader` writes the same entry. **Module 0 is the archive**, and it has been since
-/// milestone 87 (the bare-metal machine).
-///
-/// **There is a module 1 now**, read by [`boot_file`]: milestone 198 (a package manager, and the
-/// trivial install that makes a second customer possible)'s rung 2a has the loader hand over a copy
-/// of its own file. The old text here said a second module would be "left in RAM, unreserved and
-/// unread"; that is what changed, and the order is now a contract stated at both ends (see
-/// `uefi_loader/src/arch/x86_64/mod.rs`'s `hand_over`). A third module is still ignored.
+/// QEMU's PVH loader turns `-initrd FILE` into an entry in the module list `hvm_start_info` points
+/// at, and `uefi_loader` writes the same. Module 0 is the archive and module 1 the boot file
+/// ([`boot_file`]), an order both ends state (`uefi_loader/src/arch/x86_64/mod.rs`'s `hand_over`).
+/// A third module is ignored.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the boundary
@@ -166,20 +138,13 @@ pub fn initial_ramdisk(info: &BootInfo) -> Option<Module> {
     nth_module(info, 0)
 }
 
-/// **A copy of the file this machine was booted from**, if the loader could read one back.
+/// A copy of the file this machine was booted from, if the loader could read one back: module 1.
 ///
-/// Module 1, by the contract above. This is what lets an installer put `\EFI\BOOT\BOOTX64.EFI`
-/// on a disk's EFI system partition: the running system does not otherwise have its own file,
-/// because the loader placed the kernel's segments, handed the archive over, and then the PE file
-/// that contained both was gone.
-///
-/// **It carries the kernel and the archive as a set**, which is the property that matters most
-/// here: they are sealed together inside this one file at build time
-/// (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), so an installer cannot copy one without
-/// the other and produce a disk that halts at `MEASURED BOOT REFUSED`.
-///
-/// `None` on every boot that did not come from a file a loader could re-read, which includes
-/// QEMU's own `-kernel` PVH path.
+/// An installer writes it to `\EFI\BOOT\BOOTX64.EFI` on a disk's EFI system partition; nothing else
+/// keeps the PE file once the loader has placed its contents. The kernel and archive are sealed in
+/// it as a set (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), so an installer cannot copy
+/// one without the other and halt at `MEASURED BOOT REFUSED`. `None` on a boot no loader can
+/// re-read, QEMU's `-kernel` PVH path included.
 pub(crate) fn boot_file(info: &BootInfo) -> Option<Module> {
     nth_module(info, 1)
 }
@@ -355,52 +320,27 @@ unsafe fn phys_slice<'a>(at: u64, len: usize) -> &'a [u8] {
     unsafe { core::slice::from_raw_parts(phys_to_virt(at) as *const u8, len) }
 }
 
-/// **How far the boot page tables' direct map reaches: the low 4 GiB.**
+/// How far the boot page tables' direct map reaches: the low 4 GiB.
 ///
-/// `boot.s` builds 2048 page-directory entries of 2 MiB each, hangs them off a four-entry PDPT,
-/// and points both PML4[0] (identity) and PML4[273] (the direct map `phys_to_virt` names) at that
-/// same PDPT. Everything the ACPI walk reads happens before `mmu::init` installs the fine tables,
-/// so this, and not the fine map, is the bound that applies.
-///
-/// **This constant was `0x4000_0000` (1 GiB) until 2026-09-02, and the 4x was not a rounding
-/// error, it was a machine that could not boot.** The comment claimed the boot map "aliases only
-/// the low gigabyte", which `boot.s` has not done since it was written: its own comment says 4 GiB
-/// "because everything x86 talks to early is above 1 GiB and below 4". Nothing caught the
-/// disagreement because both QEMU runners pass `-m 256M`, and firmware puts its tables just under
-/// the top of RAM: at 256 MiB the RSDP lands at `0x0fb7e014` and passes a 1 GiB test. Booted with
-/// `-m 2048` under OVMF it lands at `0x7fb7e014`, every table was refused as unreachable, and the
-/// kernel came up with no MADT, no MCFG and no DMAR: no APIC, no timer, no PCI, no VT-d, on a
-/// machine that had described all four. Every real x86 machine has more than 1 GiB of RAM, so this
-/// was unconditional on hardware and invisible in the suite. `cargo xtask uefi-boot` now boots at
-/// [`crate::arch::x86_64::machine`]'s witness size instead; see `uefi_boot`'s own gate.
+/// `boot.s` builds 2048 2 MiB page-directory entries under a four-entry PDPT that both PML4[0]
+/// (identity) and PML4[273] (the direct map `phys_to_virt` names) point at. The ACPI walk runs
+/// before `mmu::init`, so this bound, not the fine map's, applies. Firmware puts its tables near
+/// the top of RAM, which the suite's `-m 256M` does not exercise; see notes/x86-port/acpi-and-pci.md.
 const BOOT_DIRECT_MAP_LIMIT: u64 = 0x1_0000_0000;
 
-/// Is the direct map able to reach this physical address? Anything above
-/// [`BOOT_DIRECT_MAP_LIMIT`] would compute an address that is arithmetically right and not mapped,
-/// which faults a long way from here. Checked rather than assumed because these addresses come
-/// from firmware.
+/// Is the direct map able to reach this physical address? Firmware supplies these addresses, and
+/// one above [`BOOT_DIRECT_MAP_LIMIT`] computes an address that is right and unmapped.
 ///
-/// **A refusal here is not a table this kernel may ignore**, which is what the bug above cost: an
-/// unreachable ACPI table is a machine whose APICs, PCIe window and IOMMU are all undiscoverable,
-/// so `read_acpi` says so per table rather than skipping quietly. A machine that puts its tables
-/// above 4 GiB (none seen; firmware keeps ACPI in low memory precisely so 32-bit loaders can read
-/// it) needs the boot map widened, not this loosened.
+/// A refusal is not ignorable: an unreachable table hides the APICs, PCIe window and IOMMU, so
+/// `read_acpi` reports each one. Tables above 4 GiB (none seen) need the boot map widened, not this
+/// loosened.
 fn is_reachable(at: u64, len: usize) -> bool {
     at != 0 && at.saturating_add(len as u64) <= BOOT_DIRECT_MAP_LIMIT
 }
 
-/// **Find the ACPI root pointer.**
-///
-/// Three places, in the order the specification and reality dictate:
-///
-/// 1. **What the loader said**, if anything. PVH has a field for it. QEMU leaves that field **zero**
-///    (measured, 2026-08-23), which is exactly why the other two are not optional.
-/// 2. **The first kilobyte of the EBDA**, whose segment is a 16-bit word in the BIOS Data Area.
-/// 3. **`0xe0000..0x100000`**, the BIOS area.
-///
-/// 2 and 3 are a scan for an eight-byte string, so the checksum inside `parse_rsdp` is the only
-/// thing separating a real hit from a coincidence. That is why nothing here does its own comparison
-/// and calls it found.
+/// Find the ACPI root pointer: where the loader said (PVH has a field, which QEMU leaves zero),
+/// then the first kilobyte of the EBDA, then the BIOS area `0xe0000..0x100000`. The last two scan
+/// for an eight-byte string, so `parse_rsdp`'s checksum is all that separates a hit from chance.
 pub(crate) fn find_rsdp(hint: u64) -> Option<(u64, Rsdp)> {
     if is_reachable(hint, 36)
         // SAFETY: `reachable` checked the range is in the direct map, and firmware places this
@@ -447,10 +387,8 @@ fn scan_for_rsdp(range: core::ops::Range<u64>) -> Option<(u64, Rsdp)> {
 /// reading: a corrupt MADT would hand out an APIC address, and there is nothing downstream that
 /// could notice it was wrong.
 fn table_at(at: u64) -> Option<(SdtHeader, &'static [u8])> {
-    // Out of the boot map's reach is said out loud, and separately from a bad checksum, because
-    // the two ask for opposite things from whoever reads the line: a checksum failure is a table
-    // to distrust, an unreachable address is a boot map to widen. Conflating them is what let the
-    // 1 GiB bound above sit unnoticed.
+    // Out of reach is reported apart from a bad checksum: one is a table to distrust, the other a
+    // boot map to widen.
     if !is_reachable(at, acpi::SDT_HEADER_LEN) {
         crate::println!(
             "                {at:#012x}  outside the boot map's low {} GiB, cannot be read",
@@ -579,11 +517,9 @@ fn read_mcfg(body: &[u8], into: &mut Acpi) {
 }
 
 fn read_dmar(body: &[u8], into: &mut Acpi) {
-    // The fixed part's host address width is decoded and not kept: `arch::x86_64::iommu::init`
-    // reads `CAP_REG` itself for the one fact it needs (48-bit/4-level second-level translation
-    // support) rather than trusting a value carried this far. Its `INTR_REMAP` flag is kept, in
-    // `DmarUnits::platform_interrupt_remapping`, for the `iommu` line. Parsing it here is what
-    // proves the table is well-formed before the structure list is trusted.
+    // The host address width is not kept (`iommu::init` reads `CAP_REG` itself); `INTR_REMAP` is,
+    // in `DmarUnits::platform_interrupt_remapping`. Parsing the fixed part proves the table
+    // well-formed before its structure list is trusted.
     if parse_dmar(body).is_err() {
         return;
     }
@@ -635,41 +571,14 @@ fn pciexbar_length_bits(bus_count: u32) -> Option<u32> {
     }
 }
 
-/// **Turn the MCFG's ECAM window on, unless something already has.**
+/// Turn the MCFG's ECAM window on, unless something already has.
 ///
-/// A real BIOS or UEFI programs the host bridge's `PCIEXBAR` register (base address, length,
-/// enable bit) before it ever hands control to an OS, which is why a device-tree machine's port of
-/// this kernel never has to think about this: firmware already turned the decode on, `virt`'s
-/// `pci-host-ecam-generic` binding just states where. PVH is a hypervisor entry protocol rather
-/// than firmware, so this port cannot assume the same and asks.
-///
-/// **It reads before it writes, and that is the difference between the two machines this has to
-/// work on.** The version written on 2026-08-24 wrote unconditionally, reasoning that rewriting
-/// the same base under real firmware "should be a no-op". It is a no-op only if the length field
-/// agrees too, and firmware is free to choose 128 or 64 MiB where that wrote 256. On a machine
-/// that had chosen a smaller window an unconditional write **widens the chipset's decode over
-/// whatever physical addresses sit above it**, which on the Dell `OptiPlex` (milestone 87's xenon)
-/// would be discovered at a null modem. Some chipsets also lock the register once firmware has written it,
-/// in which case the write is dropped and the value read back is the only thing that would say so.
-///
-/// **And the complication that write was introduced for does not reproduce**, which is worth
-/// stating precisely because the original measurement is quoted in milestone 165's block. That
-/// block records QEMU's monitor answering "Cannot access memory" at the MCFG's base before the
-/// kernel ran, read as the chipset's ECAM decode being off under PVH. Re-measured 2026-09-02 on
-/// QEMU 11.1.1, from inside the guest, which is the side that matters: this register reads
-/// `0xb0000001` on the PVH path **before anything writes it**, so the decode arrives on, and the
-/// suite's PCI tests (the MCFG witness, NVMe, both userspace PCIe driver tests) all pass with this
-/// function writing nothing at all. The monitor still answers "Cannot access memory" on the same
-/// boot, so the monitor and the guest disagree and the guest is the one being served. Either QEMU
-/// changed under the original measurement or the monitor was never evidence about the guest's
-/// decode; nothing here needs to know which, because the register is asked rather than assumed.
-///
-/// The write stays for the machine that genuinely arrives with the decode off. It is therefore
-/// **unexercised on both paths this kernel boots today**, which is recorded rather than hidden:
-/// see notes/x86-port/acpi-and-pci.md.
-///
-/// Uses the legacy configuration mechanism rather than the ECAM window itself, which is the only
-/// way to bootstrap: nothing can read the ECAM window to turn the ECAM window on.
+/// Firmware programs the host bridge's `PCIEXBAR` (base, length, enable) before an OS runs; PVH is
+/// not firmware, so this port asks. It reads before it writes: the same base with another length
+/// widens the chipset's decode over whatever sits above, and a locked register drops the write.
+/// Both boot paths arrive with the decode on, so the write is unexercised
+/// (notes/x86-port/acpi-and-pci.md). The legacy configuration ports are the only way in: nothing
+/// can read the ECAM window to turn it on.
 pub(crate) fn enable_pcie_ecam(base: u64, bus_count: u32) -> EcamDecode {
     // SAFETY: 0xcf8/0xcfc are the legacy PCI configuration ports, present on every PC-compatible
     // machine independent of ECAM, and reading the host bridge's own configuration space through
@@ -718,17 +627,9 @@ pub(crate) fn print_acpi_summary(found: &Acpi) {
     }
     print_isa_overrides(found);
     match found.ecam {
-        // **The parenthetical names q35, not the constant, and the wording is the whole point.**
-        // `PCI_ECAM_PHYS` is a second witness (see its doc), never the source of truth: `base` is
-        // the MCFG's own answer and is what gets mapped. On aarch64 and riscv64 the second witness
-        // is an equality invariant, because both boot QEMU `virt` and a test holds the two equal.
-        // Here it cannot be: firmware places this window, so the two agree under SeaBIOS on q35 and
-        // nowhere else measured. OVMF relocates it to 0xe000_0000 (both real-firmware boots in
-        // `script/test --arch x86_64`), and xenon's MCFG says 0xf000_0000. The old wording,
-        // "mmu::PCI_ECAM_PHYS says ...", therefore read as a discrepancy report on two of every
-        // three boots in our own gate, and a maintainer duly reported xenon's first boot as a
-        // defect. Naming the machine the number belongs to says what is being compared instead of
-        // implying something is wrong.
+        // The parenthetical names q35: `PCI_ECAM_PHYS` is q35's default, a second witness and not
+        // the source of truth. `base` is the MCFG's answer and is what gets mapped, and firmware
+        // places the window, so a different number is not a defect (notes/x86-port/acpi-and-pci.md).
         Some((base, lo, hi)) => crate::println!(
             "                pcie ecam {base:#x}, buses {lo}..={hi} (q35's default is {:#x})",
             super::mmu::PCI_ECAM_PHYS,
@@ -901,17 +802,9 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
         count += 1;
     }
 
-    // Three reservations now, and all three would be catastrophic to miss. The kernel image is the
-    // code running right now, plus the boot page tables the CPU is walking (they live in
-    // `.boot_scratch`, which the linker script puts inside the image bounds precisely so that this
-    // one entry covers them). The initial ramdisk is the archive every user program is read out of,
-    // sitting in ordinary RAM the loader did not mark reserved, so without this entry the first
-    // process built would very likely be built on top of its own ELF. The low megabyte is clipped
-    // above rather than listed here.
-    //
-    // **The count is what the array is sliced to**, rather than the array being sized to the worst
-    // case and passed whole: an all-zero `Region` is a reservation of nothing at address zero, and
-    // `bring_up_page_frames` would dutifully take it.
+    // Each reservation is fatal to miss: the image includes the boot page tables the CPU walks
+    // (`.boot_scratch` lies inside its bounds), and the ramdisk sits in RAM the loader left
+    // unreserved. The array is sliced to its count, since a zero `Region` would also be taken.
     let mut forbidden = [device_tree_blob::Region { start: 0, size: 0 }; 3];
     forbidden[0] = device_tree_blob::Region {
         start: crate::memory::image_start(),
@@ -926,10 +819,8 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
         forbidden_count += 1;
         crate::memory::record_initial_ramdisk(m.addr, m.size);
     }
-    // The same pair of lines, one module along, and for the same reason: the frame allocator would
-    // otherwise hand out the bytes an installer is going to write to a disk. The loader asked for
-    // `LOADER_DATA`, which `handoff::e820_kind` reports as reserved, so this is belt and braces on
-    // the UEFI path and the whole of the reservation if a future loader is less careful.
+    // The boot file, which an installer will write to a disk. `handoff::e820_kind` already reports
+    // the UEFI loader's `LOADER_DATA` as reserved; this covers a less careful loader.
     if let Some(m) = boot_file(info) {
         forbidden[forbidden_count] = device_tree_blob::Region {
             start: m.addr,
@@ -938,11 +829,8 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
         forbidden_count += 1;
         crate::memory::record_boot_file(m.addr, m.size);
     }
-    // **And which slot started this image**, which is a fact about the boot rather than a region
-    // to reserve, recorded here because this is where the handoff is already in hand and it is
-    // before `mmu::init` swaps the boot page tables out from under the direct map the reader uses.
-    // `user::install_service::confirm` is the one consumer; a boot no chooser started records
-    // nothing and confirms nothing.
+    // Which slot started this image, recorded before `mmu::init` replaces the boot map this
+    // reader uses. `user::install_service::confirm` is its one consumer.
     crate::memory::record_boot_slot(boot_slot(info));
     // And whether the boot came from the NVMe disk, the one fact that lets the internal disk be
     // mounted at all (`boot_slot::medium`; calef's ruling on PR #1652, 2026-10-04 UTC).
@@ -967,45 +855,18 @@ const TOLUD_CONFIG_ADDRESS: u32 = 0x8000_00bc;
 /// PCI's vendor id for Intel, which is whose register [`top_of_low_dram`] reads.
 const INTEL_VENDOR: u32 = 0x8086;
 
-/// **Where the machine says its low DRAM stops, or `None` when it does not say** (milestone 256).
+/// Where the machine says its low DRAM stops, or `None` when it does not say (milestone 256).
 ///
-/// `TOLUD` (top of low usable DRAM) is the host bridge's own statement of the boundary between
-/// DRAM and the 32-bit MMIO hole above it: memory below it is answered by the memory controller,
-/// and addresses above it are routed to the buses. That is exactly the number a PCI BAR window has
-/// to start at, and unlike the `_CRS` object that describes the same window in ACPI it is a
-/// configuration-space register rather than AML, so this kernel can read it with the ports it
-/// already drives (milestone 165 refused an AML interpreter and milestone 256 does not reopen it).
-///
-/// Bits 31:20 carry the address; bit 0 is a lock bit and the rest are reserved, so the value is
-/// masked rather than used whole.
+/// `TOLUD`, the host bridge's boundary between DRAM and the 32-bit MMIO hole, where a PCI BAR window
+/// starts; a register the legacy ports reach, not AML. Bits 31:20; zero reads as not reported.
 ///
 /// # BUGS
-///
-/// - **`TOLUD` is Intel's register, not the architecture's**, and this function does not pretend
-///   otherwise: it checks the host bridge's vendor id and answers `None` for anyone else. A
-///   non-Intel host bridge (AMD, VIA, a hypervisor's own model) states the same fact in a
-///   different register or in no register at all, and guessing that its `0xbc` means the same
-///   thing would produce a confident wrong address rather than an absent one. The machine this
-///   port owns (xenon, a Dell `OptiPlex` 7050) is Intel, which is why this is the right source
-///   for it and not a portable one.
-///
-/// - **The offset is the modern one, and Intel has moved it.** `0xbc` is where every Core-era
-///   host bridge puts `TOLUD`; the older 82G33/Q35-era chipsets put a 16-bit `TOLUD` at `0xb0`.
-///   Only `0xbc` is read, deliberately: a register that is something else entirely on an older
-///   chipset would answer with a plausible-looking address, and `None` is the better answer than
-///   a number nobody checked. QEMU's `q35` models neither (both offsets read zero, measured
-///   2026-09-04 on QEMU 11.1.1 under PVH *and* under OVMF), so under emulation this is always
-///   `None` and the firmware memory map is the only source. See [`super::mmu::memory_mapped_io_window`].
+/// - Intel's register only: another vendor's host bridge answers `None`.
+/// - Only Core-era `0xbc`, not older chipsets' `0xb0`; q35 models neither, so emulation gets `None`.
 ///
 /// Name: provisional. calef names the functions, and this one was minted by a lane. It is the
 /// register's own expansion spelled out (`TOLUD` is "top of low usable DRAM"), on the same
 /// reasoning that keeps `elf` and `pci` spelled the way the field already spells them.
-///
-/// - **Zero is read as "not reported", not as "low DRAM is empty."** A machine executing this code
-///   has DRAM below the hole by construction, so zero cannot be a truthful `TOLUD`; it is what an
-///   unimplemented configuration-space register reads as. Values that are not 1 MiB aligned are
-///   refused for the same reason: the register cannot express one, so a value that is not aligned
-///   is not this register.
 pub fn top_of_low_dram() -> Option<u64> {
     // SAFETY: 0xcf8/0xcfc are the legacy PCI configuration ports, present on every PC-compatible
     // machine independent of ECAM (see `enable_pcie_ecam`), and reading the host bridge's own
