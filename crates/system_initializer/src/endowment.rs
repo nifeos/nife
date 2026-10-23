@@ -23,11 +23,11 @@ pub struct BootEndowment {
     /// manifest declares a clock and to the shell for `time`, so nothing spawned can set the time
     /// (DECISIONS §43 (reading the clock is a page, setting it is a page you may write)).
     pub clock_page: u64,
-    /// **The inert-configuration page** (DECISIONS §111 (inert configuration is a validated
-    /// page)): a `PageFrame` capability with `READ` alone, granted on every boot ahead of the
-    /// filesystem pair, like [`clock_page`](BootEndowment::clock_page). The kernel assembles the
-    /// boot's fixed defaults into it before the progenitor exists (`kernel::user::boot_config_page`).
-    /// Handed on, `READ` alone, only to a child whose manifest declares
+    /// **The inert-configuration page** (DECISIONS §111 (inert configuration is a validated page)):
+    /// a `PageFrame` capability with `READ` alone, granted on every boot ahead of the filesystem
+    /// pair, like [`clock_page`](BootEndowment::clock_page). The kernel assembles the boot's fixed
+    /// defaults into it before the progenitor exists (`kernel::user::boot_config_page`). Handed on,
+    /// `READ` alone, only to a child whose manifest declares
     /// [`grant_plan::Manifest::configuration`].
     pub config_page: u64,
     /// **The filesystem, when this boot has one** (milestone 50). The kernel wires the block server
@@ -67,8 +67,9 @@ pub struct BootEndowment {
     /// **The gpu's scanout, when this boot has a virtio-gpu**: one `PageFrame` capability naming
     /// the surface run, `READ | WRITE | GRANT`, which a `graphical_terminal` session's
     /// `display_terminal` is built on. It is the tail of [`gpu_dma`](BootEndowment::gpu_dma)'s run,
-    /// minted separately because nothing lets a holder narrow a run, and the terminal must not reach
-    /// the driver's rings in the first page. Absent with no GPU, like the rest of the gpu's four.
+    /// minted separately because nothing lets a holder narrow a run, and the terminal must not
+    /// reach the driver's rings in the first page. Absent with no GPU, like the rest of the gpu's
+    /// four.
     pub gpu_surface: u64,
     /// **A virtio-gpu, when this boot has one**: the confined transport, `WRITE | GRANT`, the
     /// [`virtio_rng`](BootEndowment::virtio_rng) trio's shape plus
@@ -95,11 +96,11 @@ pub struct BootEndowment {
     /// The keyboard's one DMA page, `READ | WRITE | GRANT`, carrying its own physical base at
     /// `abi::virtio::DMA_PHYS_OFFSET` as [`gpu_dma`](BootEndowment::gpu_dma) does.
     pub keyboard_dma: u64,
-    /// **A virtio-net device, when this boot has one.** The confined transport, `WRITE | GRANT`, the
-    /// [`virtio_rng`](BootEndowment::virtio_rng) trio's shape exactly: this process delegates it
-    /// into the `net_stack` it builds and keeps nothing. **Absent** on every real board today and
-    /// on any QEMU run with `NIFE_NET` unset, and [`boot`](crate::boot) probes for it the way it probes for the
-    /// rng.
+    /// **A virtio-net device, when this boot has one.** The confined transport, `WRITE | GRANT`,
+    /// the [`virtio_rng`](BootEndowment::virtio_rng) trio's shape exactly: this process delegates
+    /// it into the `net_stack` it builds and keeps nothing. **Absent** on every real board today
+    /// and on any QEMU run with `NIFE_NET` unset, and [`boot`](crate::boot) probes for it the way
+    /// it probes for the rng.
     pub virtio_net: u64,
     /// The network card's interrupt, `READ | GRANT`; see [`virtio_net`](BootEndowment::virtio_net)
     /// and, for why it arrives unenabled on riscv64, [`virtio_rng_irq`](BootEndowment::virtio_rng_irq).
@@ -164,8 +165,8 @@ pub struct BootEndowment {
     /// builds this server for `kernel::user::boot_usb_keyboard`'s reason (spawn-time mappings no
     /// capability names). **Never both** this and [`virtio_net`](BootEndowment::virtio_net).
     /// **Absent** on every `virt` boot, on a NIC with no link, and on a part no gate has driven,
-    /// such as the I219 that milestone 494 (a driver for the network card a PC actually has) is for.
-    /// [`boot`](crate::boot) probes.
+    /// such as the I219 that milestone 494 (a driver for the network card a PC actually has) is
+    /// for. [`boot`](crate::boot) probes.
     ///
     /// Name: provisional, milestone 198's lane, 2026-10-05 (UTC).
     pub net_stack_ep: u64,
@@ -190,11 +191,11 @@ pub struct BootEndowment {
     pub for_test_roles: &'static [u64],
 }
 
-/// **The shell's second mounted tree**: a second file service the kernel granted, which the boot shell
-/// holds at `grant_plan::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
+/// **The shell's second mounted tree**: a second file service the kernel granted, which the boot
+/// shell holds at `grant_plan::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
 /// (`grant_plan::spawnproto::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
-/// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole
-/// description and a boot without one passes `None`.
+/// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole description
+/// and a boot without one passes `None`.
 ///
 /// On the real boot it is the disk tree, the whole NVMe namespace as one read-only file served with
 /// no cache (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"), and both slots are empty on a

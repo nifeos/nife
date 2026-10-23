@@ -786,11 +786,11 @@ pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
 }
 
 /// Build the shell, not yet started, with its terminal, spawn channel, budget, filesystem, clock
-/// and configuration page. The file service is slot 4 when the boot has one; the clock is last,
-/// so the shell is told its slot. Clock and configuration are `READ` without `GRANT` (§43), and
-/// the configuration page is placed at [`grant_plan::SHELL_CONFIGURATION_SLOT`] after the build.
-/// Returns the child and the clock's slot. See notes/system-initializer.md, "The terminal stack
-/// and the shell".
+/// and configuration page. The file service is slot 4 when the boot has one; the clock is last, so
+/// the shell is told its slot. Clock and configuration are `READ` without `GRANT` (§43 (reading the
+/// clock is a page, setting it is a page you may write)), and the configuration page is placed at
+/// [`grant_plan::SHELL_CONFIGURATION_SLOT`] after the build. Returns the child and the clock's
+/// slot. See notes/system-initializer.md, "The terminal stack and the shell".
 #[inline(never)]
 pub(super) fn build_shell(
     w: &Wiring,
@@ -1289,7 +1289,8 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
         spawnproto::RUN_UNVOUCHED_SLOT,
     ));
 
-    // The job pool apart from our own budget, so its watermark moves for jobs only (§16's LIFO).
+    // The job pool apart from our own budget, so its watermark moves for jobs only: the LIFO
+    // return of §16 (object revocation: reclaim the objects a process built).
     let own_ut = must(memory_region_split(ut, PROGENITOR_RESERVED_PAGES));
     let jobs_ut = must(memory_region_split(ut, JOBS_BUDGET_PAGES));
     let images_ut = must(memory_region_split(ut, IMAGE_POOL_PAGES));

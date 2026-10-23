@@ -36,9 +36,10 @@ const _: () = assert!(
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
-/// (DECISIONS §170 (how a foreign program is told what to do), `spawnproto::PROGRAM_ARGUMENTS_BIT`).
-/// Returns the address, or `None` if the caller sent no frame or it would not map. The capability goes at once, as an image frame's does
-/// ([`take_frames`], [`stage_frames`]): the mapping outlives it, and the slot is what is scarce.
+/// (DECISIONS §170 (how a foreign program is told what to do),
+/// `spawnproto::PROGRAM_ARGUMENTS_BIT`). Returns the address, or `None` if the caller sent no frame
+/// or it would not map. The capability goes at once, as an image frame's does ([`take_frames`],
+/// [`stage_frames`]): the mapping outlives it, and the slot is what is scarce.
 ///
 /// The shell keeps its own mapping of this frame, so it is read once, by [`copy_args`], before the
 /// child exists; nothing reads it after.
@@ -442,8 +443,8 @@ pub(super) struct Frames {
 
 /// Where [`take_frames`] mapped each frame, for [`stage_frames`] to copy from: the page's index in
 /// `supervision_protocol::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
-/// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep this
-/// `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
+/// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep
+/// this `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
 static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAX_PAGES as usize] =
     [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAX_PAGES as usize];
 
@@ -459,8 +460,8 @@ fn scratch_page(i: u16) -> u64 {
 /// loader's scratch window and deleting its capability before the next is taken.
 ///
 /// Every frame is received whatever happens, so the grants sent next land in the `RECEIVE_CAP`s
-/// that expect them. Nothing is carved here: [`stage_frames`] copies later, because a carve may wait
-/// for a reap, which is sound only once the request has been read to its end. The views stay
+/// that expect them. Nothing is carved here: [`stage_frames`] copies later, because a carve may
+/// wait for a reap, which is sound only once the request has been read to its end. The views stay
 /// valid until the caller reclaims its frames, after its answer.
 pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> Frames {
     let pages = spawnproto::image_pages(len);
@@ -495,9 +496,9 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
 /// holding the copy, or `None` if it could not be staged. Every view is given up either way.
 ///
 /// A copy, because the caller keeps its mapping and could change the bytes between the hash and the
-/// build (§219: "the progenitor hashes its own copy"). Each staging page's capability is deleted
-/// once mapped, so an image of any size costs one slot. `stage` false (the request cannot be
-/// built anyway) only gives the views up.
+/// build (§219 (how the shell names an installed program to the spawner): "the progenitor hashes
+/// its own copy"). Each staging page's capability is deleted once mapped, so an image of any size
+/// costs one slot. `stage` false (the request cannot be built anyway) only gives the views up.
 pub(super) fn stage_frames(
     spawn: &mut SpawnEndpoint,
     f: &Frames,

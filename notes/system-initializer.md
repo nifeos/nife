@@ -176,7 +176,7 @@ The shell's slot 4 is the file service when the boot has one, `WRITE` without `G
 `>` and `<` need. Its clock is last whatever else is granted, so the shell is told the slot in its
 third start word. The clock and the configuration page are `READ` without `GRANT`: the shell can
 read them and hand them to nothing it spawns, so which children see them is decided by manifests
-(§43). The shell is built but not started, because the giveaway's negative control is printed
+(§43 (reading the clock is a page, setting it is a page you may write)). The shell is built but not started, because the giveaway's negative control is printed
 through its output page.
 
 ## The login stack
@@ -199,10 +199,10 @@ order is a chain of things that must exist before something waits on them.
 7. `login` is built. It holds `WRITE` on the file service's page and not `READ`, because the
    progenitor holds only `WRITE | GRANT` and a writable mapping checks `WRITE` alone.
 
-`login` holds the run-unvouched endpoint with `GRANT` and gives each session `WRITE` (§219 gate
+`login` holds the run-unvouched endpoint with `GRANT` and gives each session `WRITE` (§219 (how the shell names an installed program to the spawner), gate
 D2). The boot prompt holds it with `WRITE` alone, so the shell can present it and hand it to
 nothing. That one placement in `give_away_budget` makes the unauthenticated boot prompt the owner's
-console, which §221's ruling 1 decided. §221 as amended on 2026-10-06 (UTC) ends that console, and
+console, which ruling 1 of §221 (the boot prompt is the owner's console) decided. §221 as amended on 2026-10-06 (UTC) ends that console, and
 the amendment is unbuilt: milestone 806 (concurrent login sessions) lists it. BUGS below records the
 gap.
 
@@ -212,7 +212,7 @@ The progenitor carves three bounded budgets off the construction root and delete
 `PROGENITOR_RESERVED_PAGES` for itself, `JOBS_BUDGET_PAGES` for the prompt's jobs, and
 `IMAGE_POOL_PAGES` for images run by path. The job pool is separate so that its watermark moves for
 jobs only. A scratch page table carved between a job's split and its reap would sit above that job,
-and the LIFO return (§16) would find the job is not the top and give back nothing.
+and the LIFO return of §16 (object revocation: reclaim the objects a process built) would find the job is not the top and give back nothing.
 
 It then proves the root is gone from the inside, on the two primitives that build things. Both must
 answer `NoSuchSlot` (-1) rather than `NotPermitted` (-3): the capability is gone, not narrowed.

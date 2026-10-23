@@ -5,7 +5,7 @@ caretakers and `graphical_terminal` sessions, and how it takes their memory back
 
 A directory grant is delivered by a caretaker built in the client's own region, together with the
 two endpoints between them. The caretaker's serve loop never returns, so a region of its own would
-never come home, and §16's LIFO rule would pin every region above it. Inside the client's region,
+never come home, and the LIFO rule of §16 (object revocation: reclaim the objects a process built) would pin every region above it. Inside the client's region,
 the client's one reap ends both. The endpoints must come from that region too:
 `sched::reap_region_objects` sweeps a region's endpoints before its threads, and that sweep is what
 wakes a caretaker parked in `RECEIVE`.

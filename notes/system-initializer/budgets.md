@@ -25,8 +25,8 @@ build faulted below three on its first resolve (2026-10-06 UTC).
 ## Job regions
 
 `JOB_REGION_PAGES` is forty-eight: one spawned program's image, its stack, a thread control block,
-an address-space root, the intermediate tables for the windows a child touches, and §13's mapping
-records. Under the address-space map a child's image and stack sit in the second gigabyte and its
+an address-space root, the intermediate tables for the windows a child touches, and the mapping
+records of §13 (capability revocation and untyped reclamation). Under the address-space map a child's image and stack sit in the second gigabyte and its
 pair pages in the first, so a child with any window mapped walks two gigabyte-level tables. On
 `x86_64` every child also pays three tables for its timebase page, and `top`'s debug image is
 nineteen pages; at
@@ -66,7 +66,7 @@ cursor wraps inside `supervision_protocol::SCRATCH_WINDOW`, so those tables cost
 The other half builds `job_undertaker` (its image, twelve stack pages, tables, address space and
 thread) and the tables under `ACTIVATION_FS_VA` and `IMAGE_STAGING_VA`.
 
-`IMAGE_POOL_PAGES` holds the largest image twice, the progenitor's copy that §219 has it hash and the
+`IMAGE_POOL_PAGES` holds the largest image twice, the progenitor's copy that §219 (how the shell names an installed program to the spawner) has it hash and the
 child's pages, with a `std` program's heap beside it. It is apart from the job pool so that the job
 pool's gate keeps its meaning. Named programs never carve from it, and an image never carves from
 the job pool.

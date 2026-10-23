@@ -126,11 +126,11 @@ pub(super) fn build_caretaker(
 
 /// **Give a failed job's region back, retrying while something in it can still run.**
 ///
-/// A destroy of a region holding a live thread is refused with §16's kill armed, and one
-/// preemption later succeeds (`sched::reclaim_region`). The path is reached when a directory
-/// grant's caretaker was built and its program was not. Bounded and silent on failure, unlike
-/// `job_undertaker`: a trap here would take the prompt down over one command's memory. See
-/// notes/system-initializer/children.md.
+/// A destroy of a region holding a live thread is refused with the kill of §16 (object revocation:
+/// reclaim the objects a process built) armed, and one preemption later succeeds
+/// (`sched::reclaim_region`). The path is reached when a directory grant's caretaker was built and
+/// its program was not. Bounded and silent on failure, unlike `job_undertaker`: a trap here would
+/// take the prompt down over one command's memory. See notes/system-initializer/children.md.
 pub(super) fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
         if supervision_protocol::memory_region_destroy(region) {
@@ -795,11 +795,11 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
 /// `caps` is in `line_editor::component::supervisor`'s slot order after its budget, and is copied,
-/// not moved. `ut` is where the loader's tables come from and `budget` is the region the
-/// supervisor is made of: the same root at boot, `own_ut` and the job region in a session. No swap
-/// endpoint is passed, because nothing yet asks the supervisor to swap (§308 (the installer asks
-/// the terminal to swap) is ruled, milestone 694 builds it), so it gets `BUDGET_PAGES` and no copy
-/// of its own image.
+/// not moved. `ut` is where the loader's tables come from and `budget` is the region the supervisor
+/// is made of: the same root at boot, `own_ut` and the job region in a session. No swap endpoint is
+/// passed, because nothing yet asks the supervisor to swap (§308 (the installer asks the terminal
+/// to swap) is ruled, milestone 694 (the installer asks the terminal to swap) builds it), so it
+/// gets `BUDGET_PAGES` and no copy of its own image.
 pub(super) fn build_terminal(
     ut: u64,
     budget: u64,

@@ -56,7 +56,7 @@ pub(super) fn window_zero(fs: Fs) -> Option<Fs> {
 ///
 /// # BUGS
 ///
-/// - A window whose job `job_undertaker` never reaps is never free again (`grant_plan::job_windows`).
+/// - A window whose job is never reaped is never free again (`grant_plan::job_windows`).
 /// - A caretaker [`job_channel`] builds on a once-bound window gets `EBADF` on every request, since
 ///   `UNBIND` leaves the badge revoked; its grant is a refusal, never a widening.
 pub(super) const fn job_windows() -> Windows {

@@ -65,7 +65,8 @@ const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * supervision_protocol::SCR
 /// **One job's region**: everything a spawned program is made of, so a single reclaim frees all of
 /// it. Spent per live job, not per job ever run. Counted from the largest debug image the prompt
 /// spawns, [`CHILD_STACK_PAGES`], a TCB, an address-space root, the tables for the windows a child
-/// touches and §13's mapping records; see notes/system-initializer/budgets.md.
+/// touches and the mapping records of §13 (capability revocation and untyped reclamation); see
+/// notes/system-initializer/budgets.md.
 pub(super) const JOB_REGION_PAGES: u64 = 48;
 
 /// **One directory-granted job's region**: the program *and* the `fs_subtree_caretaker` that carries
@@ -93,20 +94,20 @@ pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_map::pair_page(0x0060_00
 pub(super) const NAMESET_PAGE_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
 /// **The job pool**: six live native jobs and one `std` program's region
-/// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs through
-/// it than it could hold without the regions coming back, so widening it silently retires that
-/// gate. See notes/system-initializer/budgets.md.
+/// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
+/// through it than it could hold without the regions coming back, so widening it silently retires
+/// that gate. See notes/system-initializer/budgets.md.
 pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION_PAGES;
 
-/// **The image pool**: where a file run by its path, or a package being installed, is staged and
-/// built. Room for the largest image twice (the copy §219 has this process hash, and the child's
-/// pages) and a `std` heap beside it, apart from [`JOBS_BUDGET_PAGES`]. Provisional name.
+/// **The image pool** (a provisional name), apart from [`JOBS_BUDGET_PAGES`], where an image run by
+/// path or installed is staged and built: the largest image twice (the child's pages, and the copy
+/// §219 (how the shell names an installed program to the spawner) has us hash) and a `std` heap.
 ///
 /// # BUGS
 ///
 /// - **The image is held three times while a child is built**: the shell's frames, this copy, and
-///   the child's pages. Hashing as the child is filled would halve the pool, but needs building
-///   from the caller's still-mapped frames and a loader that hashes as it fills.
+///   the child's pages. Hashing as the child is filled would halve the pool, but needs a loader
+///   that hashes as it fills from the caller's still-mapped frames.
 /// - **Reserved, not borrowed**, at boot, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
     spawnproto::IMAGE_MAX_PAGES,
