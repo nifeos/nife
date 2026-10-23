@@ -678,9 +678,8 @@ pub const JOB_FAULTED: u64 = u64::MAX - 1;
 ///
 /// Three words of a plain `SEND`, sent after the collect, so the region is already back: `w0` the
 /// label the progenitor put on the job's supervision capability (0 for none), which it keys on;
-/// `w1` the dead thread's id; `w2` zero. See notes/grant-expression/spawn-protocol.md.
-///
-/// Name: provisional.
+/// `w1` the dead thread's id; `w2` zero. See notes/grant-expression/spawn-protocol.md. Name:
+/// provisional.
 pub const UNDERTAKER_BADGE: u64 = 1;
 
 /// **The "reaped" message for job `label`, thread `tid`** ([`UNDERTAKER_BADGE`] has the layout).

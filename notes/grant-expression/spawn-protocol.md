@@ -58,7 +58,7 @@ but `components/src/swish.rs`'s `dir_grant` does not send it for `rm` yet.
 "the supervisor that performs a live swap and the thing that decides which version is active are
 the same authority". §219 (how the shell names an installed program to the spawner) already gave
 the progenitor the read half: it looks every image's digest up in the live generation. It holds the
-file service with `WRITE`, the image's catalogue in its archive, and the frame-staging path an image
+file service with `WRITE`, the image's catalog in its archive, and the frame-staging path an image
 request built. The client is `jig`, which sends on its installer endpoint, and the owner's console
 sends `vouch` on the spawn endpoint. An installer endpoint's answers go to the holder's own reply
 slot, because the shell is reading the result endpoint while the holder runs.
