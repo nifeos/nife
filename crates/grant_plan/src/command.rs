@@ -56,8 +56,9 @@ pub enum Command<'a> {
     /// (`filesystem_contract::fs::MKDIR` is descend-with-creation). Needs `CREATE` **and** `DESCEND`.
     Mkdir(&'a [u8]),
     /// `touch <path>` or `touch -t <RFC-3339-instant> <path>`: create an empty file if the name is
-    /// not there (a no-op if it already is), then set its modification time to now, or with `-t`
-    /// to a caller-chosen instant (DECISIONS §112: the ability to *lie about history*).
+    /// not there (a no-op if it already is), then set its modification time to now, or with `-t` to
+    /// a caller-chosen instant (DECISIONS §112 (`touch`'s two behaviors need two rights): the
+    /// ability to *lie about history*).
     ///
     /// A builtin in [`Mkdir`](Command::Mkdir)'s category: both forms take only the shell's own
     /// directory capability (`dir::WRITE`, and `dir::SETTIME` for `-t`). [`TouchOperands::at`]
@@ -104,9 +105,9 @@ pub enum Command<'a> {
     /// one. The tail is classified by [`job_operand`](crate::job_operand). Name: provisional.
     Wait(&'a [u8]),
     /// `kill [-9] %N`: **ask a background job to stop, or with `-9` tear it down.** The two tiers
-    /// are DECISIONS §24 (interrupting the foreground process)'s: the cooperative flag on the job's shared frame, and `DESTROY` of the
-    /// region the shell built it from. The tail is classified by [`kill_operands`](crate::kill_operands).
-    /// Name: provisional.
+    /// are DECISIONS §24 (interrupting the foreground process)'s: the cooperative flag on the job's
+    /// shared frame, and `DESTROY` of the region the shell built it from. The tail is classified by
+    /// [`kill_operands`](crate::kill_operands). Name: provisional.
     Kill(&'a [u8]),
     /// `fg [%N]`: **watch a background job in the foreground**, the most recent when no operand
     /// names one, under the same `^C` escalation a job started in the foreground gets. Nothing is

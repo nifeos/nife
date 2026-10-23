@@ -507,10 +507,10 @@ pub struct Manifest {
     /// path for it; a program that finishes in one step (`least_authority_demo`) declares `false` and is simply
     /// waited on. "Granted by default to interactive programs" is expressed here, per program.
     pub interruptible: bool,
-    /// **Endowed a read-only mapping of the wall clock** (milestone 51's wiring), with no object
-    /// through which to set or propose the time (DECISIONS §43). The first of the fields for what a
-    /// command line cannot designate; see notes/program-manifest.md ("What the line cannot name")
-    /// and notes/date.md.
+    /// **Endowed a read-only mapping of the wall clock** (milestone 51 (wall-clock time)), with no
+    /// object through which to set or propose the time (DECISIONS §43 (reading the clock is a
+    /// page)). The first of the fields for what a command line cannot designate; see
+    /// notes/program-manifest.md ("What the line cannot name") and notes/date.md.
     pub clock: bool,
     /// **Endowed a view over the supervision domain it is spawned into** (milestone 126,
     /// notes/process-view.md).
@@ -535,7 +535,8 @@ pub struct Manifest {
     /// [`ENTROPY_SLOT`] carrying `WRITE` alone, the right to `CALL`: no other client's request, and
     /// no `GRANT` to pass it on. Without it the first `CALL` fails and
     /// `entropy_contract::delivered` reports `None`. Ambient entropy would be ambient authority
-    /// (DECISIONS §44); see notes/program-manifest.md ("What the line cannot name").
+    /// (DECISIONS §44 (entropy is a capability)); see notes/program-manifest.md ("What the line
+    /// cannot name").
     pub entropy: bool,
     /// **Endowed a client view of the network stack** (milestone 590 (provisional), the booted
     /// system starts its network stack; `crates/socket_contract`, `components/src/net_stack.rs`).

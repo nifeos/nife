@@ -1,9 +1,9 @@
-//! **The job frame: the shell's shared-memory channel to a supervised foreground child** (m24).
+//! **The job frame: the shell's shared-memory channel to a supervised foreground child**.
 //!
-//! The cooperative interrupt tier (DECISIONS §24) signals a running child through one page the
-//! shell and the child both map, and the signal is a word the child reads with a plain load: a child
-//! busy computing cannot poll an endpoint, since there is no non-blocking receive. See
-//! notes/grant-expression.md ("The interrupt grant").
+//! The cooperative interrupt tier (DECISIONS §24 (interrupting the foreground process)) signals a
+//! running child through one page the shell and the child both map, and the signal is a word the
+//! child reads with a plain load: a child busy computing cannot poll an endpoint, since there is no
+//! non-blocking receive. See notes/grant-expression.md ("The interrupt grant").
 //!
 //! The layout is four `u64` words at the byte offsets below. The shell writes [`INTERRUPT`]; the
 //! child writes [`DONE`], [`STATUS`] and [`HEARTBEAT`]. One writer per word, so no locking is

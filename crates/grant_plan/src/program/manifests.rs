@@ -374,10 +374,10 @@ const fn mdr_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `ps`, [`Program::Ps`] (milestone 126): every designated grant `Forbidden`, so
-/// nothing typed widens what it sees, and its whole authority is `domain`. A second stream
-/// (DECISIONS §67) so that `ps > running.txt` without a domain leaves the file empty and puts the
-/// reason on the terminal.
+/// The manifest of `ps`, [`Program::Ps`] (milestone 126 (the `procps` package)): every designated
+/// grant `Forbidden`, so nothing typed widens what it sees, and its whole authority is `domain`. A
+/// second stream (DECISIONS §67) so that `ps > running.txt` without a domain leaves the file empty
+/// and puts the reason on the terminal.
 const fn ps_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -411,9 +411,9 @@ const fn ps_manifest() -> Manifest {
 
 /// The manifest of `pgrep`, [`Program::Pgrep`]: `ps`'s field for field, and the sameness is the
 /// claim. Finding a process grants nothing listing does; killing a live child is
-/// `MemoryRegion::DESTROY` on its region, held by whoever spawned it (DECISIONS §24).
-/// `ProgramArgumentDeclaration::Forbidden` as for `date`: the state mask register keeps its
-/// default, so it names every member (`crates/pgrep`'s `BUGS`).
+/// `MemoryRegion::DESTROY` on its region, held by whoever spawned it (DECISIONS §24 (interrupting
+/// the foreground process)). `ProgramArgumentDeclaration::Forbidden` as for `date`: the state mask
+/// register keeps its default, so it names every member (`crates/pgrep`'s `BUGS`).
 const fn pgrep_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -622,9 +622,10 @@ const fn unreachable_network_witness_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `uuid`, [`Program::Uuid`] (milestone 111): every designated grant `Forbidden`,
-/// and its whole authority `entropy`. Its one failure, no entropy capability, goes on the second
-/// stream (DECISIONS §67), so `uuid > id.txt` leaves the file empty rather than predictable.
+/// The manifest of `uuid`, [`Program::Uuid`] (milestone 111 (a shell that can endow a child with
+/// entropy)): every designated grant `Forbidden`, and its whole authority `entropy`. Its one
+/// failure, no entropy capability, goes on the second stream (DECISIONS §67), so `uuid > id.txt`
+/// leaves the file empty rather than predictable.
 const fn uuid_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,

@@ -517,8 +517,9 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     // `ls > out.txt`: the shell is the producer and no stage was spawned at all, so there is no
     // second process for it to deadlock against.
     assert_eq!(check_chain(true, &[None, None]), Ok(()));
-    // `mdr page.md > out.txt`: DECISIONS §106 only narrows the unredirected case. A `>` still
-    // comes back through this shell (DECISIONS §55: the file behind a `>` is the shell itself).
+    // `mdr page.md > out.txt`: DECISIONS §106 (take the `terminal_sink_caretaker` narrowing) only
+    // narrows the unredirected case. A `>` still comes back through this shell (DECISIONS §55 (the
+    // file behind a `>` is the shell itself)).
     let to_file = Streams {
         sink: line::Sink::File(
             FileGrant {

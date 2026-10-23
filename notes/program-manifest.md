@@ -134,14 +134,15 @@ the full refusal catalog.
 
 ## Why it lives in the shell, not the kernel
 
-The manifest is a userspace contract, checked by the party doing the granting. The kernel does
-not read it, does not enforce it, and does not need to. Even if the shell skipped the check and
-granted a program too little, the program would fault on an empty slot and die, harming only itself.
-That is because there is no ambient authority to fall back on. The manifest is not a security boundary; the
+The manifest is a userspace contract, checked by the party doing the granting. The kernel does not
+read it, does not enforce it, and does not need to. Even if the shell skipped the check and granted
+a program too little, the program would fault on an empty slot and die, harming only itself. That is
+because there is no ambient authority to fall back on. The manifest is not a security boundary; the
 capability model is. The manifest is a usability boundary, turning a deep mystery hang into a
 one-line refusal at the prompt. That is exactly the altitude SHILL's contracts sit at, and exactly
-what the components of milestone 23 (a capability-routed component OS) will formalize. A component declares the capabilities it needs,
-checked by whoever wires it up, so a bad wiring is caught at composition, not at runtime.
+what the components of milestone 23 (a capability-routed component OS) will formalize. A component
+declares the capabilities it needs, checked by whoever wires it up, so a bad wiring is caught at
+composition, not at runtime.
 
 ## What the line cannot name: authorities a manifest declares
 
@@ -154,13 +155,14 @@ and it tells a person reading `caps date` or `caps uuid` that the authority exis
 
 Ambient entropy would be ambient authority. A shell that handed every child a random source would
 make a program's dependence on randomness invisible, which is the one property the entropy service
-was built to have (DECISIONS §44). The same holds for each of the others.
+was built to have (DECISIONS §44 (entropy is a capability)). The same holds for each of the others.
 
 The rights are the narrowest that work:
 
 - A page is mapped read-only. A program declaring `clock` can read the time and has no object
-  through which it could set or propose one, which is DECISIONS §43's split. One declaring
-  `configuration` can read the three inert values and cannot change what a shell hands its children.
+  through which it could set or propose one, which is the split of DECISIONS §43 (reading the clock
+  is a page). One declaring `configuration` can read the three inert values and cannot change what a
+  shell hands its children.
 - An endpoint carries `WRITE` alone, the right to `CALL`. Without `READ` a client cannot take
   another client's request off the endpoint, and without `GRANT` it cannot hand the service to
   anything it spawns. The network endpoint reaches no other program's sockets, since each socket is a
@@ -174,20 +176,20 @@ The rights are the narrowest that work:
 An undeclared authority is an empty slot, and that difference is the feature. A program without the
 declaration finds the slot empty and the kernel refuses its call with `abi::Error::NoSuchSlot`. `ps`
 prints that refusal apart from an empty domain. `entropy_contract::delivered` reads it as `None`
-rather than as a short reply, which `disk_partitioner` turns into `R_NO_ENTROPY` instead of writing a
-GPT full of counter-derived ids. A session the owner withheld the machine page from (§225 grants it
-to every login by default) spawns programs that say they cannot see the machine, rather than show a
-machine of zero bytes.
+rather than as a short reply, which `disk_partitioner` turns into `R_NO_ENTROPY` instead of writing
+a GPT full of counter-derived ids. A session the owner withheld the machine page from (§225 (`free`
+sees the machine and your share) grants it to every login by default) spawns programs that say they
+cannot see the machine, rather than show a machine of zero bytes.
 
 Four of these are the owner's alone:
 
 - `reboot`. The kernel grants the progenitor the one reboot object there is, and exactly one program
-  declares it. It syncs nothing, and neither does the kernel (§251), so `reboot` also declares `sync`.
-  That is a capability badged and bound by `filesystem_contract::fs::BIND_SYNC`, which answers
-  `fs::SYNC` and refuses every other verb. A sync stalls every client's queue, so it goes only to the
-  program about to restart the machine. A boot with no writable filesystem leaves its slot empty.
-  A boot whose file server could not make one refuses the spawn rather than start `reboot` unable to
-  sync.
+  declares it. It syncs nothing, and neither does the kernel (§251 (restarting the machine is a
+  kernel object the progenitor hands out)), so `reboot` also declares `sync`. That is a capability
+  badged and bound by `filesystem_contract::fs::BIND_SYNC`, which answers `fs::SYNC` and refuses
+  every other verb. A sync stalls every client's queue, so it goes only to the program about to
+  restart the machine. A boot with no writable filesystem leaves its slot empty. A boot whose file
+  server could not make one refuses the spawn rather than start `reboot` unable to sync.
 - `installer`. It is the progenitor's spawn endpoint, badged for one job and narrowed to `WRITE`. On
   it the progenitor serves the activation request for install, remove and rollback, and refuses
   every other request, `vouch` and a spawn included. So the holder can change what is installed and
