@@ -29,7 +29,8 @@ pub(super) fn rendezvous_send(
     sched::ipc_send_badged(ep, words, badge);
     // An abort is a revoked endpoint (`Gone`, not `NoSuchSlot`: a pipe writer acts on the
     // difference, notes/sink-protocol.md) or an interrupt's endpoint refusing the deposit
-    // (`NotPermitted`, DECISIONS §101 (notification objects), ruling B). Asked only on abort.
+    // (`NotPermitted`, DECISIONS §101 (notification objects), the interrupt-endpoint amendment).
+    // Asked only on abort.
     if sched::take_ipc_aborted() {
         return Err(aborted_send_error());
     }
@@ -50,7 +51,9 @@ pub(super) fn rendezvous_receive(
     if sched::take_ipc_aborted() {
         return Err(Error::Gone); // endpoint revoked; the message is a placeholder
     }
-    // Word 0 is the result; the other four words of a message go straight to their registers.
+    // Word 0 is the result; the other four go straight to their registers. Ordinary IPC fills
+    // three words, a death message all five (§26 (the fault endpoint: thread death becomes a
+    // message a supervisor holds)).
     frame.set_arg(1, msg[1]);
     frame.set_arg(2, msg[2]);
     frame.set_arg(3, msg[3]);

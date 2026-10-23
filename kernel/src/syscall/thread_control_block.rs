@@ -107,7 +107,9 @@ fn thread_control_block_configure(
         thread_pointer,
     )?;
     // Consumed, not retired: a copy made first keeps naming the space (§249 (a running address
-    // space stays nameable)). A second bind through another copy is refused by the registry.
+    // space stays nameable)), and keeping one past `START` is retaining authority over the child
+    // (§142 (what a spawner retains over a child after `START`)). A second bind through another
+    // copy is refused by the registry.
     let _ = sched::delete_current_cap(aspace_slot);
     Ok(page as i64)
 }

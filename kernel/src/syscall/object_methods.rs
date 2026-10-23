@@ -43,8 +43,8 @@ pub(super) fn reply_other(
 
 /// **Which error an aborted `SEND`, `SEND_CAP` or `CALL` answers.** `NotPermitted` when the
 /// endpoint carries an interrupt and refused the deposit (DECISIONS §101 (notification objects),
-/// amended 2026-09-26, ruling B), `Gone` when it was stale or revoked. `#[cold]`, because the three
-/// arms that call it are on the IPC fastpath.
+/// its amendment "an endpoint bound to an interrupt refuses every send"), `Gone` when it was stale
+/// or revoked. `#[cold]`, because the three arms that call it are on the IPC fastpath.
 ///
 /// Name: provisional (milestone 603 (provisional)): calef names public items.
 #[cold]
@@ -243,7 +243,8 @@ pub(super) fn virtio_invoke(id: usize, method: u64, a0: u64, a1: u64) -> Result<
     }
 }
 
-/// `PortRange::REVOKE`: take the port range back from every other holder. Needs `GRANT`. The only
+/// `PortRange::REVOKE`: take the port range back from every other holder (DECISIONS §121 (what a
+/// device capability is when the device has no page: x86 port I/O)). Needs `GRANT`. The only
 /// method a port capability answers; enforcement is at the context switch (the TSS I/O bitmap).
 ///
 /// `#[cold]` as well as out of line, which keeps it out of the closure `script/fastpath-footprint`

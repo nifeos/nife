@@ -96,11 +96,12 @@ hold 137 free frames with no run of 128.
 - `SUITE_PAGE_FRAME_BUDGET` caps what the suite may keep. [frame-budget.md](frame-budget.md) prices
   what is kept on purpose and holds the conventions and history of the number.
 - `SUITE_MIN_FREE_RUN` is the floor on the longest free run at the end, because loading a program
-  takes a contiguous run.
+  takes a contiguous run. `redoxfs_server` and `net_stack` are the largest programs the boot loads,
+  a few hundred pages each with their page tables.
 - The thread, region and rendezvous peaks and the frame low-water print beside the ledger. They
   report and do not gate: what fills those tables is mostly services kept on purpose, so a rising
-  peak is usually a boot doing more. Each names the test during which the mark moved, where to start
-  reading. The region table once reached 252 of 256 in `timetable_tests`, from a leak many tests
+  peak is usually a boot doing more. The region and rendezvous peaks and the low-water each name the
+  test during which the mark moved, where to start reading. The region table once reached 252 of 256 in `timetable_tests`, from a leak many tests
   earlier. On 2026-09-26 no allocation was refused on any architecture, so a run that prints the
   refusal line has met the ceiling somewhere.
 
@@ -132,6 +133,8 @@ tick back, and `restore` delivers it.
 - Each window ends only once the tick is architecturally pending. The emulator raises the timer
   from its own loop, as late as 86 ms after the deadline, so a window ended on the clock alone could
   hold nothing ([load-sensitive-assertions.md](load-sensitive-assertions.md) has the measurement).
+- The tests spin on the wall clock rather than count instructions, so they hold under `-icount`
+  and under HVF alike.
 - `RAISE_BOUND_PERIODS` is a leak trap rather than a timing claim: a timer that never raises turns
   into a failure that says so rather than a hang.
 

@@ -37,7 +37,8 @@ pub(super) fn memory_region_retype_obj(
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)
         }
-        // The page becomes the root table, and the region backs the space's tables and records.
+        // The page becomes the root table, and the region backs the space's tables and records
+        // (design/init-and-granular-spawn.md).
         abi::objtype::ADDRESS_SPACE => {
             let name = crate::user::user_address_space_create(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::AddressSpace(name)))

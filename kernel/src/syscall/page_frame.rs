@@ -15,7 +15,8 @@ use crate::arch::mmu;
 /// [`MappingHold`](crate::revoke::MappingHold), which has the argument. A slot that no longer holds
 /// a `PageFrame` answers `NoSuchSlot`, what a `MAP` made at that instant would have found.
 ///
-/// Context: takes the mapping hold (`MAPPINGS`) for the frame read and the whole run.
+/// Context: takes the mapping hold (`MAPPINGS`) for the whole run; beneath it, the caller's
+/// capability table for the two slot reads and `MEMORY_REGION` for each page table retyped.
 #[inline(never)]
 pub(super) fn page_frame_map(
     slot: u64,

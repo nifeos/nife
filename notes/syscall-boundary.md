@@ -113,7 +113,7 @@ endpoint was revoked or reclaimed, and it is not `NoSuchSlot`: the slot holds a 
 a destroyed object. A pipe writer branches on that difference (milestone 50 (pipes and redirection:
 one sink protocol)), which is why the ABI grew a variant rather than the sink protocol a heartbeat.
 `NotPermitted` means the endpoint carries an interrupt, whose driver reads `w0 = 1` as "the device
-fired", so no program may deposit there (§101 (notification objects), ruling B of 2026-09-26). The
+fired", so no program may deposit there (§101 (notification objects), its amendment "an endpoint bound to an interrupt refuses every send"). The
 refusal is asked for only on the abort branch, so a send that went through pays nothing for it.
 
 ## Mapping a run of pages

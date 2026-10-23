@@ -4,7 +4,8 @@
 //! asked to give it up (DECISIONS §5 (preemptive threads with real stacks)). Three rules hold:
 //! release the run-queue lock before switching, keep interrupts masked across the switch, and
 //! have a brand-new thread unmask its own interrupts. notes/threads.md says why breaking each is a
-//! bug, and notes/scheduler.md covers the per-core queues, placement and stealing.
+//! bug (its "Three rules" and "A brand-new thread unmasks its own interrupts"), and
+//! notes/scheduler.md covers the per-core queues, placement and stealing.
 
 use core::sync::atomic::{AtomicPtr, AtomicU32, AtomicU64, Ordering};
 
@@ -20,6 +21,10 @@ use crate::thread::{
 // Each child is part of this module split across files (§271 (the scheduler file splits into
 // submodules of `sched`)), not a client of it: it takes `use super::*` to reach `IPC_TABLES` and
 // the thread table, and is re-exported whole, so every path outside `sched` is unchanged.
+//
+// BUGS: `script/fastpath-footprint` roots its closures at `schedule` and `finish_switch` by mangled
+// path, `kernel5sched` with an optional `rendezvous` or `capabilities` segment. Both now live in
+// `switch`, a segment that pattern does not name, so they may have fallen out of its roots.
 mod capabilities;
 mod configure;
 mod futex;

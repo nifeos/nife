@@ -114,7 +114,8 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
 /// and an empty slot is `NoSuchSlot` (there is nothing there), not a refusal. Then the object's
 /// rights checks, then the method. Returns the method's result word or its `abi::Error`.
 ///
-/// Public so kernel tests drive this path, not a copy of it. See notes/syscall-boundary.md.
+/// Public so kernel tests drive this path, not a copy of it (`user/reap_tests.rs` does). See
+/// notes/syscall-boundary.md.
 pub fn invoke(
     frame: &mut TrapFrame,
     slot: u64,
@@ -152,7 +153,8 @@ pub fn invoke(
         // §12 (Call/Reply IPC: a one-shot reply capability).
         Object::Reply(tid) => match method {
             abi::reply::REPLY => {
-                // Minted WRITE-only and without GRANT, so a narrowed copy cannot answer.
+                // Minted WRITE-only, so a narrowed copy cannot answer, and without GRANT, so it
+                // cannot have been delegated here.
                 if !cap.rights.allows(Rights::WRITE) {
                     return Err(Error::NotPermitted);
                 }

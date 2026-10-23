@@ -46,12 +46,12 @@ pub(super) fn address_space_invoke(
 /// `a2` for a `PageFrame` (`MAP_RW`, `MAP_CODE`, else read-only), device read/write for a
 /// `DeviceFrame`. The other half of [`page_frame_map`](super::page_frame::page_frame_map).
 ///
-/// Needs `WRITE` on the space and the shape's right on the frame. Maps the whole run or none of
-/// it: `BadPointer` for a run outside the user half or a space that does not resolve,
-/// `OutOfMemory` when page tables run out. See notes/syscall-boundary.md.
+/// Needs `WRITE` on the space and the shape's right on the frame. All or none: `BadPointer` for a
+/// run outside the user half or an unresolved space, `OutOfMemory` when page tables run out.
 ///
 /// Context: takes `USER_SPACES` (rank `ADDRESS_SPACES`), then the mapping hold (`MAPPINGS`), and
-/// keeps both from the frame read to the end of the run.
+/// keeps both to the end of the run; beneath them, the caller's capability table for the frame
+/// read and `MEMORY_REGION` for each page table retyped. Never `IPC_TABLES`.
 #[inline(never)]
 fn address_space_map_into(
     cap: crate::cap::Cap,

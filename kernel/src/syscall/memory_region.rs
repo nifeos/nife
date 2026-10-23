@@ -65,7 +65,8 @@ pub(super) fn memory_region_invoke(
 /// the region or the mapping record cannot be paid for.
 ///
 /// Context: takes the mapping hold ([`MappingHold`](crate::revoke::MappingHold), `MAPPINGS`) across
-/// the retype, the map and the record, so a `DESTROY` either refuses the retype or finds the record.
+/// the retype, the map and the record, so a `DESTROY` either refuses the retype or finds the
+/// record; beneath it, `MEMORY_REGION` for each page retyped.
 #[inline(never)]
 pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     // Before the retype, or each refused address spends a page of the caller's region. An

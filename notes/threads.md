@@ -172,7 +172,9 @@ A resumed thread gets its interrupt state back from the exception return, which 
 `thread_entry` unmasks interrupts itself, after `finish_switch` and never before it: a tick taken
 before `finish_switch` would overwrite `switched_from` and strand the predecessor
 (`arch/aarch64/context.s` has that hang). Without the unmask, the first thread spawned could never
-be preempted, and the scheduler would be cooperative with extra steps. `a_thread_that_never_yields_is_preempted_anyway` spawns a thread whose whole body is
+be preempted, and the scheduler would be cooperative with extra steps.
+
+`a_thread_that_never_yields_is_preempted_anyway` spawns a thread whose whole body is
 `loop { count += 1 }`, with no yield, no syscall and no call, and it is preempted anyway.
 
 ## The address-space leak that hid behind a two-frame test failure
