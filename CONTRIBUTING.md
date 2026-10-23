@@ -64,10 +64,11 @@ script/setup     # installs the pinned Rust toolchain, QEMU, python3 and gh, the
 script/test      # host crates, then the kernel under QEMU on all three ISAs
 ```
 
-**On Linux, `script/setup` stops at the QEMU check and tells you to run `script/ci-qemu` first.**
-That is the design working: no distribution ships a QEMU with `riscv-iommu-pci`, and the project
-refuses to drop the device because a confinement test that quietly stops testing is worse than a red
-build. Building the pinned QEMU takes about twelve minutes, once.
+**On Linux, the first `script/setup` builds this project's own QEMU, and says so before it starts.**
+No distribution ships a QEMU with `riscv-iommu-pci`, and the project refuses to drop the device
+because a confinement test that quietly stops testing is worse than a red build. So when
+`script/qemu-check` fails, `script/bootstrap` runs `script/ci-qemu` to build the pinned version.
+That takes about twelve minutes the first time and is cached afterwards.
 
 **Build through `script/*` or `cargo xtask`, never a bare `cargo build` at the root.** The workspace
 holds `no_std` programs that only build for the bare-metal targets, so `cargo build --workspace`
