@@ -1,17 +1,15 @@
-//! **The client windows** (milestone 599 (a frame per filesystem client channel)): the pool of file
+//! The client windows: the pool of file
 //! channels the service keeps side by side, one per live client, and the one `login` keeps for its
 //! durable sessions.
 //!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! See notes/a-frame-per-filesystem-client-channel.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
-/// **How many client channels this service keeps side by side** (milestone 599, provisional),
+/// How many client channels this service keeps side by side (provisional),
 /// straight from the contract so this wiring and the server agree. Window 0 is [`FILE_SHARED`], the
 /// unbadged default every legacy single-client path maps; windows 1.. are the pool [`claim_window`]
 /// hands out, one per additional live client, each its own frame and its own badge.
@@ -29,7 +27,7 @@ pub(super) static WINDOWS: [core::sync::atomic::AtomicU64; CLIENT_WINDOWS] =
 pub(super) static WINDOW_TAKEN: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(0);
 
-/// **Claim a free client-channel window** (milestone 599): returns its index (always `>= 1`, since
+/// Claim a free client-channel window: returns its index (always `>= 1`, since
 /// window 0 is the default) and the physical base of its frame run, or `None` when all
 /// [`CLIENT_WINDOWS`] are in use, which is this service's live-client ceiling. The badge a client is
 /// granted IS its window index, so the FS server reads the right frame for its request.
@@ -47,7 +45,7 @@ pub(super) fn claim_window() -> Option<(u64, u64)> {
     None
 }
 
-/// **The window `login` keeps for its durable sessions** (milestone 152, Fork 8 D):
+/// The window `login` keeps for its durable sessions:
 /// `login_contract::DURABLE_WINDOW`, claimed once and handed to every `login` this boot starts, the
 /// way the progenitor reserves it. The physical base of its frame run, or `None` when the service is
 /// not wired.
@@ -61,22 +59,19 @@ pub fn durable_window() -> Option<u64> {
     (phys != 0).then_some(phys)
 }
 
-/// [`release_window`] for a test that bound a grant and holds no program (milestone 606).
+/// [`release_window`] for a test that bound a grant and holds no program.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn release_window_after_test(w: u64) {
     release_window(w);
 }
 
-/// **Return a window to the pool** (milestone 599), the take-back half of [`claim_window`]. The
+/// Return a window to the pool, the take-back half of [`claim_window`]. The
 /// frame is not freed (it stays mapped in the FS server for the life of the service); it is zeroed
 /// so no client's staging survives into the next client that claims the slot, which is the same
 /// "no stale RAM across a share" rule [`file_channel`] applies at allocation.
 ///
-/// `allow(dead_code)` unconditionally, and it is the marked exception AGENTS.md's ladder allows: the
-/// caller is the production progenitor's reap, which is this milestone's outstanding piece (see the
-/// block's "What is left"). The harness witness claims windows and does not release them, because
-/// its clients run for the length of one test; the take-back is written here, beside its claim half,
-/// so the progenitor pool has the whole pool to build against rather than half of it.
+/// `allow(dead_code)` unconditionally, a marked exception: its production caller, the
+/// progenitor's reap, is not built yet, and the take-back stays beside its claim half for it.
 #[allow(dead_code)]
 pub(super) fn release_window(w: u64) {
     use core::sync::atomic::Ordering;
