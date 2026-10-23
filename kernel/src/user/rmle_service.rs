@@ -7,40 +7,32 @@ use crate::user::holding::Holding;
 const TERM_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_0080_0000);
 const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 
-/// Stack pages beyond the one `run` maps. `rmle`'s own `Editor` is a few kilobytes (32 rows of
-/// 100 bytes plus bookkeeping) and this program has no allocator, so it all lives on the stack;
-/// sized with the same "extra pages rather than exactly enough" margin `swish`'s own wiring uses.
+/// Stack pages beyond the one `run` maps. `rmle`'s `Editor` is a few kilobytes (32 rows of 100
+/// bytes plus bookkeeping) and it has no allocator, so it all lives on the stack, with margin.
 const RMLE_STACK_PAGES: usize = 4;
 
-/// The file channel's width, straight from the contract `rmle`'s FS calls speak, so this wiring
-/// cannot disagree with the program on the other end. `fs_service::FILE_PAGES` is the same value
-/// but private to that module; this is the source it is itself defined from.
+/// The file channel's width, straight from the contract `rmle`'s FS calls speak, the source
+/// `fs_service::FILE_PAGES` is defined from.
 const FILE_PAGES: usize = filesystem_contract::fs::TRANSFER_PAGES;
 
-/// A fresh, zeroed frame, for `rmle`'s own extra stack pages. The zeroing and its soundness
-/// argument now live once in [`crate::memory::alloc_zeroed`] (milestone 139 round 8); what stays
-/// here is this module's own "no frame for rmle's stack" panic message.
+/// A fresh, zeroed frame ([`crate::memory::alloc_zeroed`]) for `rmle`'s extra stack pages.
 fn page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for rmle's stack")
         .addr()
 }
 
-/// A running `rmle`, wired with a real terminal (`line_editor` and a fake console, exactly
-/// [`raw_mode_service::start`]'s wiring) and a real filesystem (a directory narrowed to `dir_name`
-/// under `fs_subtree_caretaker`, exactly [`fs_service::narrow_dir`]'s wiring). Composing the two is
-/// the only thing this module adds: `rmle` is the one program in this tree that needs both a
-/// terminal and a file at once, the same shape `swish`'s own wiring already has (milestone 50's
-/// redirection witness), so nothing here is a new pattern.
+/// A running `rmle`, wired with a real terminal ([`raw_mode_service::start`]'s wiring) and a real
+/// filesystem (a directory narrowed under `fs_subtree_caretaker`, [`fs_service::narrow_dir`]'s
+/// wiring). Composing the two is all this module adds.
 pub struct Wiring {
     /// The terminal endpoint, played by the fake console + real `line_editor` underneath. A test
     /// wanting to observe the screen reads [`Wiring::term_out_phys`] after driving keystrokes
     /// through the same input-driver role [`raw_mode_service`]'s own tests use.
     pub term: RendezvousId,
     pub term_out_phys: u64,
-    /// The narrowed directory `rmle` holds. A test may also call this directly (after `rmle` has
-    /// exited and stopped using its shared page) to read the file back as an independent witness,
-    /// exactly the two-witness discipline `c_seam`'s confiner tests use elsewhere.
+    /// The narrowed directory `rmle` holds. A test may call it directly once `rmle` has exited,
+    /// to read the file back as an independent witness.
     pub dir: RendezvousId,
     pub file_shared: u64,
     /// `rmle`'s one closing report: `(STATUS_QUIT | STATUS_OPEN_FAILED, dirty-or-errno, 0)`.
@@ -51,14 +43,12 @@ pub struct Wiring {
 /// [`filesystem_contract::dir::ALL`]) and `file_name` (the file inside it `rmle` edits, created if
 /// absent). `None` if there is no RedoxFS disk attached to this run.
 ///
-/// **Returns a [`Holding`] alongside the wiring, and a caller must release it.** The fake console
-/// and `line_editor` underneath `rmle`'s terminal both block forever, exactly
-/// [`raw_mode_service::start`]'s own case and for the same reason (see its doc comment): neither
-/// exits on its own, so `TERM`/`CONREQ`/`CONREP` are minted from a region the `Holding` carries
-/// rather than from `sched::create_rendezvous`'s kernel-global pool, and reclaiming that region is
-/// what actually wakes them. `rmle` itself is not in the `Holding`: the test drives it to a clean
-/// exit over `^Q` and reads its own report, so by the time a caller would release this holding
-/// `rmle`'s thread is already gone.
+/// Returns a [`Holding`] the caller must release, for [`raw_mode_service::start`]'s reason: the
+/// fake console and `line_editor` block forever. `rmle` is not in it; the test drives it to a clean
+/// exit over `^Q`.
+///
+/// BUGS: when the filesystem half refuses, the terminal half's two threads are already spawned and
+/// nothing releases them. It is unreachable in a run with a RedoxFS server.
 pub fn start(dir_name: &'static str, file_name: &str) -> Option<(Wiring, Holding)> {
     let image = program("rmle").expect("no rmle program in the initial ramdisk");
 
@@ -70,8 +60,6 @@ pub fn start(dir_name: &'static str, file_name: &str) -> Option<(Wiring, Holding
         line_editor_tid,
     } = start_terminal_half();
 
-    // The filesystem half: fs_service's own split, built for exactly this (a client that needs a
-    // directory *and* something else, milestone 50's own redirection witness).
     // `narrow_dir_held`'s holding ends the caretaker and returns its endpoints, `rmle`'s report
     // among them; the terminal half joins it below.
     let (dir_ep, file_shared, report, mut held) = fs_service::narrow_dir_held(
@@ -120,14 +108,10 @@ struct TerminalHalf {
 
 /// Mint the terminal's endpoints and pages, and spawn the fake console and `line_editor`.
 fn start_terminal_half() -> TerminalHalf {
-    // The terminal half: identical to raw_mode_service::start, duplicated rather than reused
-    // because that function's Wiring hands back a line_editor already wired to nobody; composing a
-    // *third* process's grants into a spawn that function does not perform would need it split the
-    // way fs_service::narrow_dir already is split from fs_service::start_granted_dir, and one
-    // wiring function is enough plumbing for a milestone that is not itself about wiring.
+    // raw_mode_service::start's terminal, duplicated: reusing it would mean splitting it as
+    // fs_service::narrow_dir is split from start_granted_dir.
     let term_img = program("line_editor").expect("no line_editor program in the initial ramdisk");
-    // Four pages for three endpoints, one page each and one spare: `virtio_service`'s own
-    // `wire_net_server` carves the same shape for the same reason (see `raw_mode_service::start`).
+    // One page per endpoint and one spare, so reclaiming the region wakes both threads to die.
     let ep_region = crate::memory_region::create(4).expect("no endpoint region for rmle_service");
     let term = sched::create_rendezvous_from(ep_region).expect("no TERM endpoint");
     let conreq = sched::create_rendezvous_from(ep_region).expect("no CONREQ endpoint");
@@ -241,12 +225,3 @@ fn spawn_rmle(
     })
     .expect("could not spawn rmle");
 }
-
-// BUGS: the console/line_editor terminal half is spawned before the two fallible calls below it
-// (`fs_service::fs_server_image()?`, `fs_service::narrow_dir_held(...)?`). If either ever refuses
-// (no RedoxFS disk attached to this run, the same condition `NO_FS_SERVER` skips a test for), this
-// function returns `None` with the terminal's two threads already spawned and no `Holding` to
-// release them: a real leak on that path, unreachable in any run where `fs_server_image` succeeds
-// (every run this fix was tested against). Not fixed here because it is orthogonal to the leak
-// this lane found and fixed (the *reachable* every-run case), and `raw_mode_service::start` has no
-// equivalent fallible step to compare it against.
