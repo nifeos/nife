@@ -1,8 +1,7 @@
-//! **The words the capability demonstrations agree on**, and nothing else. Each demonstration is a
-//! pair of user programs and an assertion in `kernel/src/user`, and what two programs share is a
-//! crate (AGENTS.md rule 7). Everything but [`process_composition`]'s verdict bits is a
-//! **sentinel**, a value chosen only to be recognised: none is a wire format, and changing one
-//! costs a rebuild, not a migration.
+//! **The words the capability demonstrations agree on**: each is a pair of user programs and a
+//! `kernel/src/user` assertion, and what two programs share is a crate (AGENTS.md rule 7). All but
+//! [`process_composition`]'s verdict bits are **sentinels**, values chosen only to be recognised:
+//! none is a wire format, and changing one costs a rebuild, not a migration.
 //!
 //! # Bugs
 //!
