@@ -171,7 +171,8 @@ pub(super) fn rendezvous_badge(
 }
 
 /// `Rendezvous::REAP`: collect the corpse of `tid`, a thread this rendezvous supervises (DECISIONS
-/// §32). The control half `rendezvous::SURVEY` is the view half of; the caller checked `READ`.
+/// §32 (a supervisor may collect a corpse without being able to build one)). The control half
+/// `rendezvous::SURVEY` is the view half of; the caller checked `READ`.
 #[inline(never)]
 pub(super) fn rendezvous_reap(ep: crate::sched::RendezvousId, tid: u64) -> Result<i64, Error> {
     sched::reap_supervised(ep, tid)?;
