@@ -176,11 +176,8 @@ kernel/src/revoke.rs:874	25
 kernel/src/revoke.rs:930	39
 kernel/src/sched.rs:1	34
 kernel/src/sched.rs:139	30
-kernel/src/sched/configure.rs:39	25
 kernel/src/sched/rendezvous.rs:730	25
 kernel/src/sched/rendezvous.rs:983	29
-kernel/src/sched/spawning.rs:15	33
-kernel/src/sched/spawning.rs:102	21
 kernel/src/sched/switch.rs:555	39
 kernel/src/sched/tests.rs:98	21
 kernel/src/sched/tests.rs:261	23
