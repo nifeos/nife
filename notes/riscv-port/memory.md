@@ -134,6 +134,11 @@ so no early return skips it. `unmap_user_pages` discharges every page with one `
 each was a translation with that tag; until it returns another core may hit a stale entry.
 `cut_user_table` flushes by ASID because the walk caches above the leaves must go too.
 
+Instruction memory has the same problem. `fence.i` orders only the local hart's fetch after its own
+stores, with no address range and no broadcast form, so `sync_icache` pushes it to every other
+online hart through RFENCE as well. TCG's icache is coherent and never shows the difference; on the
+U74, a freshly built child process hung without it.
+
 ## Walking the live tables
 
 `translate_user` builds its `Mapper` for the low half, so it answers `None` for any kernel address
