@@ -50,7 +50,7 @@ pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u6
 ///
 /// A gap in the map means only that firmware did not call it RAM; unnamed windows are a risk.
 ///
-/// Name: provisional (milestone 256, beside [`memory_mapped_io_window`]).
+/// Name: provisional (minted beside [`memory_mapped_io_window`]).
 pub(super) fn firmware_mmio_hole(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> (u64, u64) {
     let floor = firmware_fill_ceiling(&mut spans);
     let mut ceiling = FOUR_GIB;
@@ -73,7 +73,7 @@ const FOUR_GIB: u64 = 0x1_0000_0000;
 /// entries; each step moves the candidate past something it collided with, so the loop runs at
 /// most once per entry plus one.
 ///
-/// Name: provisional (milestone 256, beside [`memory_mapped_io_window`]).
+/// Name: provisional (minted beside [`memory_mapped_io_window`]).
 pub(super) fn window_in_hole(
     lo: u64,
     hi: u64,
