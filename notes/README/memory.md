@@ -3,6 +3,7 @@
 Part of [the notes index](../README.md), which says how to add a line.
 
 - [Physical memory](../physical-memory.md): the frame allocator, bitmap over free list.
+- [The machine statistics page](../machine-statistics.md): the frame `free`, `vmstat` and `top` read, and how the kernel writes it. Name provisional.
 - [The MMU](../mmu.md): virtual addresses, page tables, the TLB and page faults.
 - [aarch64 page tables](../page-tables.md): the descriptor format the MMU walks, and its traps.
 - [The higher-half kernel](../higher-half.md): why the kernel lives in TTBR1, and how it boots.
