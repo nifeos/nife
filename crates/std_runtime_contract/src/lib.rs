@@ -3,14 +3,12 @@
 //! Name: ratified 2026-10-18 (calef): "Yes". The suffix follows `environment_contract` and
 //! `clock_contract`, which the same PAL reads; the stem says which runtime.
 //!
-//! A native nife program is handed its capabilities in the order its spawner lists them, and
-//! reads them by position. A `std` program cannot work that way, because the code reading the
-//! slots is the standard library, written once for every program: `File::open` has to know where
-//! the directory is without the program saying. So a `std` program's slots are **fixed by
-//! number**, and an empty slot is how std learns it was not given that authority. `std::fs` on a
-//! program with slot 4 empty answers `Unsupported`, which is what "no ambient filesystem" looks
-//! like from inside.
-//!
+//! A native program reads its capabilities by position in its spawner's list. std is written once
+//! for every program and cannot, so a `std` program's slots are **fixed by number**, and an empty
+//! slot is how std learns it was not given that authority: `std::fs` with slot 4 empty answers
+//! `Unsupported`. This crate is the numbers, so the PAL, the progenitor and the kernel test harness
+//! cannot disagree; what each slot means to std is `rt.rs`'s documentation. See notes/std.md.
+
 //! ```text
 //!   slot 0  untyped     the heap's budget            always
 //!   slot 1  endpoint    stdout and stderr            always
@@ -33,23 +31,15 @@
 //! Slots 13 to 21 are not this contract's: `grant_plan` places the installer, its reply, the
 //! catalog and the index sources at 15 to 18 for `jig`, and the shell's configuration at 21.
 
-//! What each slot means to std, and what std does when it is empty, is `rt.rs`'s documentation.
-//! This crate is the numbers, so the PAL, the progenitor and the kernel test harness cannot disagree.
-//!
 //! **Generated verbatim into the PAL** by `cargo xtask std-src` (as `sys/pal/nife/runtimeproto.rs`),
-//! the same discipline as `abi` and every other contract the PAL reads, so this file must stay a
-//! valid non-root module: no crate attributes survive the copy, and neither does the test module.
-//!
+//! like `abi` and every contract the PAL reads, so this file stays a valid non-root module: no crate
+//! attributes survive the copy, and neither does the test module. Every address below is a row of
+//! `crates/address_space_map` (milestone 206 (a program image has under 896 KiB),
+//! DECISIONS §171 (where a program image starts) option D), restated as a number because the PAL
+//! has no crate to name; the test module pins each to its band, the shape `byte_sink_contract`
+//! uses for `abi`. A std program is linked at the map's `IMAGE_BASE` and its stack grows down from
+//! `STACK_TOP_PAGE`.
 
-//! # Where the addresses come from
-//!
-//! **Every address below is a row of `crates/address_space_map`** (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts)
-//! option D), restated as a number rather than named, because this file is copied into std's PAL
-//! where there is no crate to name. The test module (which does not travel) pins each one to its
-//! band, the shape `byte_sink_contract` uses for `abi`. The image and the stack are the map's own
-//! rows, `IMAGE_BASE` and `STACK_TOP_PAGE`; a std program is linked at the one and its stack grows
-//! down from the other like every other program's.
-//!
 //! # BUGS
 //!
 //! - **The numbers are restated, not derived.** A change to the map that moves the heap or the
@@ -118,11 +108,9 @@ pub const STDIN_READ_REQUEST: u64 = 10 << 56;
 
 /// **Standard input as a byte stream, with `READ`** (milestone 784 (reuse what the tree wrote),
 /// item (f2)'s prerequisite; calef, 2026-10-20 16:53 UTC, on #2461: "a"). Placed when the line gave
-/// the program an input: a file the shell streams (`prog file`, `prog < file`) or a pipe's read
-/// end (`a | prog`). It carries `byte_sink_contract` frames, the framing a native program's input
-/// carries, ending in that contract's EOF message. std's `Stdin::read` receives from it when it is
-/// held, and falls back to [`STDIN_SLOT`] when it is not: an input the line named wins over the
-/// console.
+/// the program an input, a file the shell streams (`prog file`, `prog < file`) or a pipe's read end
+/// (`a | prog`). It carries `byte_sink_contract` frames ending in that contract's EOF message.
+/// std's `Stdin::read` prefers it to [`STDIN_SLOT`]: an input the line named wins over the console.
 ///
 /// Thirty because this contract's numbers are 0 to 12 and 22 upward, and 13 to 21 are
 /// `grant_plan`'s; the next of this contract's own is the one past [`STDIN_SLOT`].
