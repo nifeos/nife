@@ -1,6 +1,6 @@
-//! The interrupt controller, `x86_64`, where aarch64 has a GIC and RISC-V a PLIC: the per-CPU local
-//! APIC (EOI, timer, IPIs, the INIT and STARTUP that start a secondary) and the IO APIC, which routes
-//! device lines to vectors. Also the 8259 mask, legacy routing and MSI; notes/x86-port/traps.md.
+//! The x86_64 interrupt controller (aarch64's GIC, RISC-V's PLIC): the per-CPU local APIC (EOI,
+//! timer, IPIs, the INIT and STARTUP that start a secondary) and the IO APIC, which routes device
+//! lines to vectors; also the 8259 mask, legacy routing, MSI. See notes/x86-port/traps.md.
 //!
 //! # BUGS
 //! - One IO APIC: [`route_gsi`] refuses a GSI a second owns (proved, unit-tested, never booted).
