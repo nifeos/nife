@@ -1,9 +1,8 @@
 //! The progenitor's stack gauge: how deep the first process's stack has ever been.
 //!
 //! [`paint_page`] paints each stack page as `boot_progenitor` maps it, and [`report_peak`], from
-//! the idle loop, prints the high-water once it has settled and fails `script/swish-check` below
-//! [`HEADROOM_FLOOR`]. The kernel reads the stack so the progenitor needs no code for it. See
-//! notes/stack/progenitor-stack.md.
+//! the idle loop, prints the settled high-water, which `script/swish-check` fails below
+//! [`HEADROOM_FLOOR`]. See notes/stack/progenitor-stack.md.
 //!
 //! # BUGS
 //!

@@ -35,8 +35,11 @@ to exactly the floor.
 
 On the physical core (the HVF leg) the 256 samples usually finish before that happens. There the
 median reads the true reach, 120 bytes shallower than the floor in the debug build, so an equality
-check fails on every HVF run. `kernel/src/ipc_stack_depth.rs` has the
-measurement at the check.
+check fails on every HVF run. Measured on 2026-09-24 (UTC): median 856 against a floor of 976. The
+instrument's own callees stop 392 bytes into the 512-byte margin, and the words above them keep the
+paint `KernelStack::new` laid down. Over three TCG runs the first 29 to 76 samples read the true
+reach (920 against a floor of 1040 on that build), and every sample after one trap frame read the
+floor. Whether that moment comes before sample 128 is timing, so equality was a timing assertion.
 
 That check found both of this lane's own mistakes. A single 512-byte margin put every release series
 exactly on its floor: the release IPC path is shallower than 512 bytes below the measuring frame.
