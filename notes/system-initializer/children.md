@@ -18,7 +18,9 @@ its reap ends them all.
 
 The progenitor has no second thread, so a receive that never completes is a prompt that never
 takes another command. The caretaker's readiness endpoint is what bounds the build: it answers
-`DESCENT_REFUSED` rather than trapping, so a mistyped directory costs a refusal. A session's
+`DESCENT_REFUSED` rather than trapping, so a mistyped directory costs a refusal. It does not cover a
+caretaker that faults before answering, because a corpse sends nothing and no receive has a
+deadline; `kernel::user::fs_service::wait_for_caretaker` has the same exposure. A session's
 one-time reports are taken in the order the drivers send them (`UP`, `TERM_UP`, the driver's
 `FLUSHED`, `KEYBOARD_UP`), because a report nobody receives parks its sender for ever.
 

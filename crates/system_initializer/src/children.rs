@@ -67,8 +67,7 @@ pub(super) fn build_grant(
 ///
 /// # BUGS
 ///
-/// A caretaker that dies before it answers parks the progenitor, since a corpse sends nothing and
-/// no receive has a deadline; `kernel::user::fs_service::wait_for_caretaker` carries the same.
+/// - A caretaker that dies before answering parks the progenitor: no receive has a deadline.
 pub(super) fn build_caretaker(
     own_ut: u64,
     region: u64,
@@ -145,9 +144,8 @@ pub(super) fn reclaim(region: u64) {
 ///
 /// # BUGS
 ///
-/// Sixty-four yields do not reliably cover one preemption under load, and a miss strands
-/// [`DIR_JOB_REGION_PAGES`] silently; never observed here. The measurement and the fix are in
-/// notes/system-initializer/children.md, "How many times `reclaim` retries".
+/// - Under load the count may miss the preemption and silently strand a region (the note's
+///   "How many times `reclaim` retries", notes/system-initializer/children.md).
 const RECLAIM_ATTEMPTS: usize = 64;
 
 /// **Build `net_stack` from the NIC trio and wait for its DHCP lease.** Returns `(stack, lease,
@@ -405,7 +403,7 @@ const SCREEN_IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
 ///
 /// # BUGS
 ///
-/// `x86_64` has no graphical leg, so its need is unmeasured and ungated.
+/// - On `x86_64` this is unmeasured and ungated: there is no graphical leg.
 pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 544;
 
 /// Drop every capability named, freeing the slots: a builder's means, spent once the children hold

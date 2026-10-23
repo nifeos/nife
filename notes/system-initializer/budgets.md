@@ -71,6 +71,11 @@ installed program to the spawner) has it hash. It is apart from the job pool so 
 pool's gate keeps its meaning. Named programs never carve from it, and an image never carves from
 the job pool.
 
+The image is held three times while a child is built: the shell's frames, the progenitor's copy,
+and the child's pages. Hashing each byte as the loader copies it into the child would drop the
+copy and halve the pool. That needs building the child from the caller's still-mapped frames and a
+loader that hashes as it fills, which is more work than the copy.
+
 Everything the job pool and the image pool can have built at once must fit in half of the scratch
 window. Every page the progenitor builds for a job stays mapped there until the job's region is
 destroyed. The other half is left for the boot servers' pages, which are never given back. Those

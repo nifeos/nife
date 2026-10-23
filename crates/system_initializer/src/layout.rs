@@ -36,8 +36,7 @@ pub(super) const CHILD_CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000
 ///
 /// # BUGS
 ///
-/// It decides for the boot prompt alone. Nothing hands the page to `login`, so a per-login policy
-/// does not exist yet.
+/// - It decides for the boot prompt alone; nothing hands the page to `login`.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
 pub const GRANT_MACHINE_PAGE: bool = true;
@@ -105,10 +104,8 @@ pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION
 ///
 /// # BUGS
 ///
-/// - **The image is held three times while a child is built**: the shell's frames, this copy, and
-///   the child's pages. Hashing as the child is filled would halve the pool, but needs a loader
-///   that hashes as it fills from the caller's still-mapped frames.
-/// - **Reserved, not borrowed**, at boot, whether or not an image ever runs.
+/// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
+/// - Reserved at boot, not borrowed, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
     spawnproto::IMAGE_MAX_PAGES,
     grant_plan::StartupContract::Std,
