@@ -85,13 +85,16 @@ pub enum Command<'a> {
     /// the owner's console)), so they run vouched, recorded under the path's last component. An
     /// activation request (`spawnproto::Activation::Vouch`) on the spawn endpoint, which `jig`'s
     /// installer endpoint refuses (milestone 809 (the package client becomes a program)), so a
-    /// vouch stays the owner's console's, and the tail is classified by [`vouch_verb`](crate::vouch_verb). Name:
-    /// provisional (2026-09-26).
+    /// vouch stays the owner's console's, and the tail is classified by [`vouch_verb`](crate::vouch_verb).
+    /// A builtin because it names no package: the bytes are what is vouched. Name: provisional
+    /// (2026-09-26).
     Vouch(&'a [u8]),
     /// `user suspend <name>` and `user resume <name>`: **the owner suspends or resumes an identity**
     /// (milestone 152 (durable delegation), calef's §108 (disabling credentials kills the durable session) ruling of 2026-09-26, names ratified), by
     /// editing the suspended list at the root of this shell's directory. The tail is classified by
-    /// [`user_verb`](crate::user_verb).
+    /// [`user_verb`](crate::user_verb). A builtin because that file is the owner's authority only
+    /// when this shell is the owner's console; a confined shell's root is its own subtree, where a
+    /// `suspended` file is one nothing reads.
     User(&'a [u8]),
     /// `jobs`: **list the background jobs this shell holds** (milestone 48 (job control), phase
     /// one). A builtin in `caps`'s category: a job is the capabilities the shell holds for it, so
