@@ -177,7 +177,7 @@ time.
 | Rust in the tree | code and comment lines, `kernel/src` apart from the rest | [proofs and coverage](register-of-measures/code-proofs-and-coverage.md) |
 | `BUGS` sections | markdown headings and Rust doc-comment headings; rising is good | [proofs and coverage](register-of-measures/code-proofs-and-coverage.md) |
 | coverage, and the lowest-covered file | the workspace aggregate, and the per-file minimum the floor acts on | [proofs and coverage](register-of-measures/code-proofs-and-coverage.md) |
-| ratchet debt | documents over a writing-standards limit, comment blocks over 40 lines, line-number citations | [ratchet debt](register-of-measures/ratchet-debt.md) |
+| ratchet debt | documents over a writing-standards limit, comment blocks over 40 lines and over each directory's cap, in-body comment lines, line-number citations | [ratchet debt](register-of-measures/ratchet-debt.md) |
 | unexplained benchmark drift | per architecture, the largest icount drift on `main` no record explains, and rows past 5%; a report, not a gate | [the drift report](project-metrics/baseline-drift.md), generated |
 | interface stability | public items of the contract and std ABI crates removed or changed, and added; syscall renumbers and renames, format bumps and amendments, co-change | [how stable the interface is](interface-stability.md) |
 | homes | packages by where their home stands and whether they have left; tracked files by the same | [package boundaries](package-boundaries.md) |

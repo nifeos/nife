@@ -414,6 +414,29 @@ HOMES_COLUMNS = ['packages_total', 'packages_home_undecided', 'packages_home_pro
                  'paths_home_undecided', 'paths_home_provisional', 'paths_home_ratified',
                  'paths_unclaimed']
 
+# Milestone 929 (comments in the Linux style across first-party Rust) charts its two counts one
+# series per directory: the five it stages by name, and every other directory holding Rust as one
+# series, `other`, because eighteen more would not fit the palette's eight slots. Column and chart
+# names provisional (comments/929-metrics-per-directory, 2026-10-23 UTC).
+COMMENT_DIRS = ('kernel', 'crates', 'components', 'system_tests', 'xtask')
+COMMENT_GROUPS = COMMENT_DIRS + ('other',)
+
+
+def comment_group(path):
+    top = path.split('/', 1)[0]
+    return top if top in COMMENT_DIRS else 'other'
+
+
+def comment_dir_columns():
+    """The `comment-by-directory` columns, in order. `other` has no ceiling column: its directories
+    start their stage one at a time, so a sum of some of their ceilings would sit under the whole
+    group's count and read as a breach."""
+    return ([prefix + g for prefix in ('comment_cap_', 'comment_blocks_over_cap_',
+                                       'comment_excess_lines_', 'comment_in_body_')
+             for g in COMMENT_GROUPS]
+            + ['comment_in_body_ceiling_' + g for g in COMMENT_DIRS])
+
+
 MEASURES = [
     ('weeks', ['commit', 'date']),
     ('milestones', [_col('milestones', s) for s in MILESTONE_STATUSES]
@@ -487,6 +510,9 @@ MEASURES = [
     ('writing-standards', ['writing_over_median', 'writing_over_longest', 'writing_over_bold']),
     ('comment-blocks', ['comment_block_files_over_cap', 'comment_blocks_over_cap',
                         'comment_block_excess_lines']),
+    # Milestone 929's counts, per directory, at the cap and ceiling that week's baseline holds
+    # (`comment_debt_by_directory` below).
+    ('comment-by-directory', comment_dir_columns()),
     # §277's ratchet the same way, through `line_citations.file_hits`, with the week's own ceiling.
     # File, column and chart names provisional (maintainer/line-citations-chart).
     ('line-citations', ['line_citations_code', 'line_citations_doc', 'line_citations_ceiling']),
@@ -1679,6 +1705,38 @@ def comment_block_debt(tree):
             'comment_block_excess_lines': excess}
 
 
+def comment_debt_by_directory(tree):
+    """Per directory, the blocks over the cap that week's baseline puts it at and their lines past
+    it, the plain comment lines inside function bodies, and the in-body ceiling, all by
+    `comment_block_ratchet`'s own `read_table`, `cap_of`, `blocks_over` and `in_body_lines`. A
+    week before a `cap` row is at 40 everywhere, as the gate was; a ceiling is blank until the
+    baseline holds an `in-body` row for exactly that directory. `comment_cap_other` is the lowest
+    cap any of its directories is at."""
+    baseline = comment_block_ratchet.BASELINE
+    _rows, caps, ceilings = comment_block_ratchet.read_table(
+        tree.read([baseline]).get(baseline, ''))
+    out = {'comment_cap_' + g: comment_block_ratchet.cap_of(g + '/', caps) for g in COMMENT_DIRS}
+    out['comment_cap_other'] = min([cap for prefix, cap in caps.items()
+                                    if comment_group(prefix) == 'other']
+                                   + [comment_block_ratchet.CEILING])
+    for g in COMMENT_GROUPS:
+        out['comment_blocks_over_cap_' + g] = 0
+        out['comment_excess_lines_' + g] = 0
+        out['comment_in_body_' + g] = 0
+    for path, text in tree.text.items():
+        if not comment_block_ratchet.in_scope(path):
+            continue
+        g = comment_group(path)
+        cap = comment_block_ratchet.cap_of(path, caps)
+        over = comment_block_ratchet.blocks_over(text, cap)
+        out['comment_blocks_over_cap_' + g] += len(over)
+        out['comment_excess_lines_' + g] += sum(size - cap for _first, size in over)
+        out['comment_in_body_' + g] += comment_block_ratchet.in_body_lines(text)
+    for g in COMMENT_DIRS:
+        out['comment_in_body_ceiling_' + g] = ceilings.get(g + '/', '')
+    return out
+
+
 _CODE_CEILING = re.compile(r'(?m)^CODE_CEILING = ([\d_]+)$')
 
 
@@ -1980,7 +2038,8 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
                  harnesses(tree),
                  unsafe_census(tree), unsafe_trust_census(tree),
                  fatal_risks_colors(tree), coe_action_counts(tree),
-                 writing_standards(tree), comment_block_debt(tree), line_citation_debt(tree),
+                 writing_standards(tree), comment_block_debt(tree),
+                 comment_debt_by_directory(tree), line_citation_debt(tree),
                  homes(tree), crate_release_cells(tree)):
         row.update(part)
     row.update(baseline_drift.series_cells(week))
@@ -2657,6 +2716,22 @@ def model_chart(kind, with_merge):
 # that week instead of leaving a gap a reader will read as a zero. Only the columns that can
 # genuinely be absent carry one, which is milestone 519's cost pair and coverage. `hues` is carried
 # by the one chart whose series name their own colours and is None for every slot-taking chart.
+def comment_series(prefix):
+    """[(label, column)] for one of milestone 929's per-directory charts, in COMMENT_GROUPS order."""
+    return [(g + '/' if g != 'other' else 'every other directory', prefix + g)
+            for g in COMMENT_GROUPS]
+
+
+def comment_caps_note(rows, weeks):
+    """The caps in force in the newest charted week, for the block charts' note line."""
+    row = rows[weeks[-1]]
+    if row.get('comment_cap_kernel', '') in ('', None):
+        return ''
+    caps = ', '.join('%s/ %s' % (g, _number(row['comment_cap_' + g])) for g in COMMENT_DIRS)
+    return 'caps in %s: %s, every other directory at most %s' % (
+        week_label(weeks[-1]), caps, _number(row['comment_cap_other']))
+
+
 CHARTS = [
     ('milestones.svg', 'Milestones by status, and proposals waiting for a number',
      'the blocks in design/roadmap/ (design/roadmap.md before the one-file-per-milestone split); '
@@ -2791,6 +2866,20 @@ CHARTS = [
      'file count',
      [('lines past the cap', 'comment_block_excess_lines')], 1000.0, None,
      'comment_block_excess_lines'),
+    # Milestone 929's two counts, one series per directory (COMMENT_GROUPS). The blocks stack,
+    # since no block is in two directories; the caps they are over are the note under the plot
+    # (NOTES). The in-body bars are grouped so each directory's bar stands beside its ceiling line.
+    ('comment-blocks-by-directory.svg', 'Comment blocks over their directory\'s cap',
+     'helpers/comment_block_ratchet.py\'s measure at the cap that week\'s baseline holds for '
+     'each file; a directory with no cap row is at 40',
+     comment_series('comment_blocks_over_cap_'), 1.0, None, 'comment_cap_kernel'),
+    ('comment-blocks-excess-by-directory.svg', 'Comment lines past their directory\'s cap',
+     'each over-cap block\'s lines beyond its cap, summed per directory',
+     comment_series('comment_excess_lines_'), 1.0, None, 'comment_cap_kernel'),
+    ('comment-in-body.svg', 'Plain comment lines inside function bodies',
+     'comment_block_ratchet.in_body_lines, // SAFETY: comments left out; a line is a directory\'s '
+     'ceiling, from the week\'s baseline',
+     comment_series('comment_in_body_'), 1.0, None, 'comment_cap_kernel'),
     # The ceiling moves when `--bank` lowers it, so it is a stored line (LINES), not `ceiling`.
     ('line-citations.svg', 'Line-number citations',
      'helpers/line_citations.py\'s measure; a marked citation counts, and the line is the week\'s '
@@ -3135,12 +3224,19 @@ def github_anchor(heading):
 # Charts whose series stand side by side rather than stacked, and charts that carry stored columns
 # as lines over the bars: [(legend label, column)]. The build chart's jobs run side by side, and
 # §213's limits overlap (one document can be over two), so neither may be summed.
-GROUPED = {'ci-jobs.svg', 'writing-standards.svg', 'unexplained-drift.svg'}
+GROUPED = {'ci-jobs.svg', 'writing-standards.svg', 'unexplained-drift.svg', 'comment-in-body.svg'}
 # Two lines, so the second is dotted with open markers: solid and dashed already mean a trailing
 # mean's full and short window on this page (TRENDS).
 LINES = {'ci-jobs.svg': [('median build', 'ci_build_median_minutes'),
                          ('p90 build', 'ci_build_p90_minutes')],
-         'line-citations.svg': [('code ceiling', 'line_citations_ceiling')]}
+         'line-citations.svg': [('code ceiling', 'line_citations_ceiling')],
+         # One per directory that can hold a ceiling; draw_charts leaves out a line with no point
+         # in the window, so a directory appears here the week its stage starts.
+         'comment-in-body.svg': [(g + '/ ceiling', 'comment_in_body_ceiling_' + g)
+                                 for g in COMMENT_DIRS]}
+# Charts whose note line is computed from the stored rows: chart -> function(rows, weeks).
+NOTES = {'comment-blocks-by-directory.svg': comment_caps_note,
+         'comment-blocks-excess-by-directory.svg': comment_caps_note}
 # Charts whose bars are read from a record when drawn rather than from stored columns:
 # chart -> function(weeks) returning (series, note), the note printed under the plot.
 SERIES_FROM = {'ci-jobs.svg': build_job_series}
@@ -3311,6 +3407,10 @@ def draw_charts(rows, only=None):
         if name in LINES:
             lines = [(label, [float(rows[w][field]) if rows[w].get(field) not in ('', None) else None
                               for w in weeks]) for label, field in LINES[name]]
+            lines = [(label, values) for label, values in lines
+                     if any(v is not None for v in values)] or None
+        if name in NOTES and not note:
+            note = NOTES[name](rows, weeks)
         if isinstance(ceiling, str):
             ceiling = [float(rows[w][ceiling]) if rows[w].get(ceiling) not in ('', None) else None
                        for w in weeks]
@@ -3461,6 +3561,14 @@ def _ratchet_debt_cases():
     at_cap = ''.join('// line %d\n' % k for k in range(40)) + 'fn g() {}\n'
     rust = tree({'a.rs': block + block, 'b.rs': at_cap,
                  'vendor/x.rs': block, 'notes/a.md': block})
+    # A 25-line block: over kernel/'s cap of 20, under everyone else's 40. `in_body` holds three
+    # plain lines and a SAFETY comment, which is not counted.
+    mid = ''.join('// line %d\n' % k for k in range(25)) + 'fn h() {}\n'
+    in_body = 'fn b() {\n    // one\n    // two\n    // SAFETY: held\n    let x = 1;\n    // three\n}\n'
+    by_dir = tree({'kernel/a.rs': mid + in_body, 'crates/c/a.rs': mid + 'fn c() {\n// x\n// y\n}\n',
+                   'helpers/a.rs': block, 'vendor/v.rs': block,
+                   comment_block_ratchet.BASELINE: 'cap\tkernel/\t20\nin-body\tkernel/\t9\n'
+                                                   'block\tlines\nkernel/a.rs:1\t25\n'})
     # Each citation is built from its parts, or the gate would count this fixture as one.
     def at(path, line):
         return '%s:%d' % (path, line)
@@ -3495,6 +3603,24 @@ def _ratchet_debt_cases():
          comment_block_debt(rust),
          {'comment_block_files_over_cap': 1, 'comment_blocks_over_cap': 2,
           'comment_block_excess_lines': 10}),
+        ('comment blocks by directory: each file at the cap its week\'s baseline holds, the rest '
+         'at 40, in-body lines and the ceiling per directory',
+         {k: v for k, v in comment_debt_by_directory(by_dir).items() if v not in (0, 40)},
+         {'comment_cap_kernel': 20, 'comment_blocks_over_cap_kernel': 1,
+          'comment_excess_lines_kernel': 5, 'comment_in_body_kernel': 3,
+          'comment_in_body_ceiling_kernel': 9, 'comment_blocks_over_cap_other': 1,
+          'comment_excess_lines_other': 5, 'comment_in_body_crates': 2,
+          'comment_in_body_ceiling_crates': '', 'comment_in_body_ceiling_components': '',
+          'comment_in_body_ceiling_system_tests': '', 'comment_in_body_ceiling_xtask': ''}),
+        ('comment blocks by directory: no baseline is 40 everywhere and no ceiling',
+         {k: v for k, v in comment_debt_by_directory(tree({'kernel/a.rs': mid})).items()
+          if v not in (0, '')},
+         {'comment_cap_' + g: 40 for g in COMMENT_GROUPS}),
+        ('the block charts\' note names the newest week\'s caps',
+         comment_caps_note({'2026W43': dict({'comment_cap_' + g: '40' for g in COMMENT_GROUPS},
+                                            comment_cap_kernel='20')}, ['2026W43']),
+         'caps in %s: kernel/ 20, crates/ 40, components/ 40, system_tests/ 40, xtask/ 40, every '
+         'other directory at most 40' % week_label('2026W43')),
     ]
 
 
