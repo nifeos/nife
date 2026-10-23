@@ -89,6 +89,25 @@ disappears, and a shell inside it goes home with a message (calef, 2026-09-26). 
 name and who receives a new device are deferred decisions. All of it is
 design/roadmap/0660-a-second-filesystem-mounts-in-the-boot-shell.md.
 
+## The disk tree's server
+
+`kernel/src/user/disk_tree_service.rs` starts the server behind `/disk` (calef, 2026-10-18 21:36
+UTC, "Yes, read-only at prompt"). It serves the whole NVMe namespace as one read-only file with no
+cache, so a program at the prompt measures the device. It is the NVMe server's second client beside
+the filesystem server, kept apart by its own transfer window (calef, 2026-10-18 23:06 UTC,
+"Per-client window").
+
+- Slot 0, the NVMe request endpoint (WRITE), badged with `DISK_TREE_WINDOW`.
+- Slot 1, its own request endpoint (READ), and slot 2, a report endpoint (WRITE).
+- Mapped read-only at the block channel's address: that window's pages. The controller fills them
+  by DMA, and the server only copies out of them.
+- Mapped read/write directly above: `fs::CLIENT_WINDOWS` client windows.
+
+Window 0 is the file service's own window 0 frame, not the pool's first window. The boot shell holds
+both trees and maps one page for both, which is sound because it has one `CALL` in flight. The pool's
+first window is never mapped. The progenitor is granted the request endpoint and the pool, as it is
+the filesystem server's, and slices one window per client.
+
 ## BUGS
 
 - `rm` under a mount point is refused at delivery. A program that hears words is granted its
