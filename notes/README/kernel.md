@@ -34,8 +34,9 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The timer](../timer.md): the object that ends a wait at a deadline.
 - [Can a userspace process hold a timer?](../timer-capability.md).
 - [Trusted init: measuring the boot program, and then everything the progenitor loads](../trusted-init.md).
-- [The system initializer](../system-initializer.md): why the progenitor builds the interactive system in the order it does.
 - [The progenitor, and loading a program from userspace](../progenitor-and-loading.md).
+- [The system initializer](../system-initializer.md): what the progenitor builds, how it measures
+  what it loads, and the spawn service.
 - [Auditing the hand-written arch assembly](../arch-audit.md): a by-hand audit of the least-verified TCB code.
 - [The L4 lessons, audited against this kernel](../l4-lessons.md): the kernel checked against L4's twenty-year retrospective.
 - [How the log service drains the kernel's ring](../kernel-ring-drain.md): milestone 342 (the kernel and the `console` server drive one UART)'s proposal, a read-only frame plus a notification against a read method on a new object, with the seven questions answered.

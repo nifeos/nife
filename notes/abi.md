@@ -29,14 +29,15 @@ One instruction, `svc #0`. The kernel reads the registers, does the work, and re
 | `x0` | first argument | the `i64` result |
 | `x1`–`x4` | further arguments | (see the specific syscall) |
 
-Four syscall numbers, and that is the whole width of the trap:
+Five syscall numbers <!--count:syscalls-->, and that is the whole width of the trap:
 
 | `x8` | name | meaning |
 |---|---|---|
-| 0 | `SYS_EXIT` | terminate this thread; the kernel reaps it and frees its address space. Never returns. |
+| 0 | `SYS_EXIT` | end the calling thread's process, every thread in it. Never returns. |
 | 1 | `SYS_YIELD` | give up the CPU voluntarily. |
 | 2 | `SYS_INVOKE` | invoke a capability. **This one carries the entire capability world** (see §2). |
 | 3 | `SYS_CAP_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
+| 4 | `SYS_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
 
 That narrowness is deliberate (DECISIONS rule 3: the syscall surface stays a boundary, not a habit).
 Everything a program can do to another object goes through the single `SYS_INVOKE` door; adding a

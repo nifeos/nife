@@ -33,31 +33,12 @@ pub mod record {
 
     /// **Which core the thread was placed on when it started**: a cpu id, or [`NO_CPU`].
     ///
-    /// The fact `sched::spawn_reporting_placement` has given the in-kernel job-mix supervisor
-    /// since milestone 240 (the soak reports what happened and not where) and that had no userspace
-    /// path, which is what kept that supervisor
-    /// in the kernel.
-    ///
-    /// **Placement, not "where it is running now"**, and the difference is deliberate rather
-    /// than an approximation nobody got around to sharpening. Tracking the current core means
-    /// a store in the context switch, which is the hottest line of the hottest function: the
-    /// kernel's `Thread::last_cpu` does exactly that and is behind a soak-build feature gate
-    /// because shipping it unconditionally cost 5.7% of `ipc_fastpath`'s footprint on aarch64,
-    /// over milestone 132 (the fast path's footprint, and a gate)'s 5% bound. Placement is written once, when the thread starts, so it
-    /// costs the IPC path nothing. A thread that was stolen onto another core, or woken onto
-    /// its waker's, still reports where it was placed. A reader wanting "now" does not have it
-    /// and must not read this as it.
-    ///
-    /// **The id is a name, not an index**, and this is the sentence that keeps a reader out of
-    /// the bug `cpu_set` exists to kill. The online set is not `0..n`: on the VisionFive 2 it
-    /// is `{1, 2, 3}`, because slot 0 is an M-mode monitor core with no MMU, and treating the
-    /// count as an index put `init` into a parked core's inbox for three boots. So key a
-    /// per-core tally by the id this record returns and never iterate a range. A census built
-    /// that way needs no online mask at all: the ids it observes are by construction a subset
-    /// of the online set, which is exactly what a placement census is asking about. A reader
-    /// that genuinely needs the machine's online set does **not** get it here, and has no path
-    /// to it today; that gap is stated where this record is documented rather than left for
-    /// somebody to paper over with a range.
+    /// **Placement, not where it runs now**: written once, at start, so it costs the IPC path
+    /// nothing, and a thread stolen onto another core or woken onto its waker's still reports where
+    /// it was placed. **The id is a name, not an index**: the online set need not be `0..n` (the
+    /// VisionFive 2's is `{1, 2, 3}`), so key a per-core tally by the ids this returns and never
+    /// iterate a range. The machine's online set is not available here; see
+    /// notes/abi/method-contracts.md.
     pub const PLACEMENT: u64 = 1;
 
     /// The [`PLACEMENT`] answer for a thread with no placement to report. `u64::MAX` rather
@@ -72,39 +53,15 @@ pub mod record {
     /// own `u8::MAX`.
     pub const NO_CPU: u64 = u64::MAX;
 
-    /// **How long the thread has been scheduled on a CPU, in milliseconds.** Scheduled
-    /// on-CPU time, which is what Linux's `utime`/`stime` and Zircon's
-    /// `zx_info_thread_stats_t::total_runtime` report, and what a reader who knows `top`
-    /// expects `%CPU` to be derived from. DECISIONS §150 (how does a thread's CPU time reach userspace?) refused the two cheaper
-    /// answers: wall-clock age reads identically for a thread that slept five minutes and one
-    /// that ran five minutes, and userspace sampling over `SURVEY` misses every thread that
-    /// runs between two samples.
+    /// **How long the thread has been scheduled on a CPU, in milliseconds**, as Linux's `utime`/
+    /// `stime` and Zircon's `total_runtime` report it (§150 (how does a thread's CPU time reach userspace?)).
     ///
-    /// **Milliseconds rather than ticks, and the unit is the wire contract.** A tick count
-    /// would oblige every reader to learn this kernel's `TICK_HZ` and would silently change
-    /// meaning the day that constant moved; a millisecond means the same thing in every build
-    /// and on every architecture. The granularity is nonetheless the tick, which is 10 ms on
-    /// all three architectures today, so this number moves in steps rather than smoothly.
-    ///
-    /// **It is sampled at the timer tick, not accumulated at the context switch**, which is
-    /// §150's sub-choice 1 and has a visible consequence rather than only an implementation
-    /// one: a thread that runs entirely between two ticks is charged **nothing**, and a thread
-    /// that happens to be on the CPU at every tick is charged for the whole of each one. That
-    /// is `jiffies`-based accounting, the bargain Linux also takes, and it is why a reader must
-    /// not treat two of these numbers that should have matched as a contradiction.
-    ///
-    /// **What a holder of [`rights::ENUMERATE`](crate::rights::ENUMERATE) learns, said plainly
-    /// because it is more than the record before it.** A run state is one of five values and
-    /// says only what a thread is doing at the instant of the call; this is a **continuous,
-    /// monotonic** signal about a thread the viewer may not otherwise be able to name, and two
-    /// reads of it measure how much work that thread did in between. A confined viewer holding
-    /// a supervision endpoint can therefore watch the shape of another thread's workload
-    /// without holding anything that lets it act on that thread. §150 weighed that and accepted
-    /// it, on the ground that `ENUMERATE` is already "the right to learn what exists, as
-    /// distinct from acting on it", and the leak is bounded by the domain: a survey never
-    /// reaches outside the supervision domain the caller was endowed. §204 (how userspace asks where a thread runs) records that
-    /// [`PLACEMENT`] is strictly less than this, which is the comparison that makes the
-    /// magnitude concrete rather than adjectival.
+    /// - Milliseconds are the wire contract, so no reader learns this kernel's `TICK_HZ`; the
+    ///   granularity is still the tick, 10 ms on all three architectures.
+    /// - **Sampled at the timer tick**, `jiffies`-style: a thread that runs entirely between two
+    ///   ticks is charged nothing, so two figures that should match may not.
+    /// - A holder of [`rights::ENUMERATE`](crate::rights::ENUMERATE) learns a continuous signal of
+    ///   another thread's workload inside its domain, which §150 accepted (notes/abi/method-contracts.md).
     ///
     /// Name: provisional. calef names public items.
     pub const CPU_TIME: u64 = 2;
