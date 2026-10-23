@@ -209,3 +209,35 @@ reader, and it goes once Kani's rustc is past 2026-02.
   `syscall` MSRs without re-reading `CPUID`. On a hybrid part (Intel's P-cores and E-cores differ in
   leaf 7) a per-core check would earn its cost. `machine_discovery::riscv64` already solves the
   RISC-V twin by intersecting over every hart.
+
+## The interrupt stack table
+
+Milestone 915 (NMI, double fault and machine check run on their own stacks) gives each of those
+three vectors (2, 8 and 18) a stack per core, named by the TSS's Interrupt Stack Table. None of the three can trust the `rsp` it interrupted. An
+NMI ignores `cli`, arrives on every TLB shootdown, and can land in the two instructions
+`x86_syscall_entry` runs on the user's `rsp`. A double fault usually means a stack could not be
+pushed to. A machine check promises nothing. A gate with a nonzero IST field makes the CPU load
+`rsp` from `TSS.ist[n - 1]` before it pushes anything, from either ring.
+
+Each stack is 16 KiB over a 4 KiB guard page that the fine map leaves unmapped, and the fine map's
+`verify` refuses a mapped guard. `TSS.ist` points `TOP_RESERVE` bytes below the top, and the top
+word holds the core's per-CPU pointer, so `isr_paranoid` finds the kernel's GS base at a fixed
+offset from its own `rsp` without trusting `gs` or the saved `CS`. `ist::install` runs once per core
+from `segments::init`. On the boot core it runs on the coarse boot map, which covers the region
+writable, and on a secondary on the fine map.
+
+Each vector has its own stack, so one interrupting another corrupts nothing. A double fault inside a
+double fault is a triple fault, and a machine check inside a machine check is a shutdown; neither
+handler returns anyway. A second NMI is held off until an `iretq`, and any `iretq` counts, including
+one from an exception taken inside the NMI handler. So the NMI handler takes no exception that
+returns. It serves the shootdown (an `invlpg` or a `CR3` reload, and atomics) and touches nothing
+else. Linux's nested-NMI frame copy exists because its NMI handlers can fault, and this kernel's
+cannot, so it is not built. `exceptions::x86_paranoid_dispatch` checks the rule on every NMI and
+panics if the interrupted `rsp` is on an NMI stack. [ring-3.md](ring-3.md) has the windows this
+closes.
+
+### BUGS
+
+- `script/stack-depth-check` does not measure these stacks. They are the size of the per-CPU
+  interrupt stack, which carries the same panic path and is measured.
+- They cost 3 x 20 KiB x `MAX_CPUS` (480 KiB) of address space whether or not the cores exist.
