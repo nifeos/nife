@@ -28,25 +28,17 @@ pub(crate) enum Event {
     /// delivered nothing (no message, no signal, no abort). The boot-8 gate firing; on a
     /// healthy boot this event never appears, so its presence in a bench dump is the finding.
     WakeRefused = 9,
-    /// This core switched into `tid`, and the core it last ran on was a different one
-    /// (milestone 219). **The cross-core handoff count**, and the only honest one: a rendezvous
-    /// wake makes its peer Ready on the *waker's* core, which is local by construction, so
-    /// [`Event::PlaceRemote`] misses every migration a pure IPC workload performs. `aux` is the
-    /// core it came from.
-    ///
-    /// Only ever recorded by a `soak` build, since the `last_cpu` comparison that produces it
-    /// is gated (it sits in `schedule()`'s switch and cost 5.7% of `ipc_fastpath` on aarch64
-    /// when it was not). The variant itself stays in every build: it is compile-time only, it
-    /// costs no bytes, and removing it would leave [`dump`]'s `11 => "moved"` arm naming a
-    /// number with nothing to point at.
+    /// This core switched into `tid`, and the core it last ran on was a different one: the
+    /// cross-core handoff count. [`Event::PlaceRemote`] misses every migration an IPC workload
+    /// makes, because a rendezvous wake readies its peer on the waker's core. `aux` is the core it
+    /// came from. Recorded only by a `soak` build, whose `last_cpu` comparison is gated off the
+    /// switch; the variant stays so [`dump`]'s `11 => "moved"` arm names something.
     #[cfg_attr(not(feature = "soak_test"), allow(dead_code))]
     Migrated = 11,
-    /// This core set `ipc_served` on `tid`: a delivery completed the thread's parked IPC.
-    /// `aux` names the delivering site (1 send, 2 receive-collect, 3 `send_cap`, 4 `receive_cap`-collect,
-    /// 5 call, 6 reply, 7 irq signal, 8 death message, 9 a notification signal to a waiter, 10 a
-    /// notification signal to its bound receiver), so a bench dump answers "who served
-    /// this thread" by reading the ring instead of inferring it from a frozen syscall count,
-    /// which is the inference boots 7 through 9 got wrong (notes/visionfive2.md, fifth stop).
+    /// This core set `ipc_served` on `tid`: a delivery completed its parked IPC. `aux` names the
+    /// delivering site (1 send, 2 receive-collect, 3 `send_cap`, 4 `receive_cap`-collect, 5 call,
+    /// 6 reply, 7 irq signal, 8 death message, 9 a notification signal to a waiter, 10 one to its
+    /// bound receiver), so a dump says who served a thread (notes/visionfive2.md, fifth stop).
     Served = 10,
 }
 
@@ -61,21 +53,10 @@ pub(crate) const KINDS: usize = 12;
 struct Ring {
     seq: AtomicU64,
     slots: [AtomicU64; DEPTH],
-    /// **A total per event kind, beside the ring** (milestone 219). The ring holds sixteen
-    /// events, which is the right depth for reading the final approach to a wedge and the
-    /// wrong one for a soak: a refused wake three hours into an eight-hour run has scrolled
-    /// out of it long before anyone looks. A counter cannot scroll.
-    ///
-    /// Per core, in the same cache line neighbourhood as that core's own ring, for the reason
-    /// the ring is per core: one shared counter array would put a contended atomic on the IPC
-    /// fastpath, and a soak whose instrument slows the thing it measures is measuring the
-    /// instrument. The reader sums across cores and accepts that the sum is a moment that
-    /// never quite existed, which is what [`counted`] says out loud.
-    ///
-    /// **Behind `feature = "soak_test"`.** Per-core rather than shared was not enough: the extra
-    /// load-add-store per event, on paths the IPC fastpath runs, is part of what pushed
-    /// `ipc_fastpath` 5.7% over milestone 132's bound on aarch64 when this shipped
-    /// unconditionally. Only a soak build reads these, so only a soak build carries them.
+    /// A total per event kind beside the ring, which a soak needs: a refused wake hours into a
+    /// run has long scrolled out of sixteen slots. Per core, as the ring is, so no shared atomic
+    /// sits on the IPC fastpath. `soak_test` only: the load-add-store per event was part of what
+    /// pushed `ipc_fastpath` 5.7% over its bound on aarch64.
     #[cfg(feature = "soak_test")]
     counts: [AtomicU64; KINDS],
 }
@@ -90,17 +71,14 @@ const EMPTY_RING: Ring = Ring {
 
 static RINGS: [Ring; crate::cpu::MAX_CPUS] = [EMPTY_RING; crate::cpu::MAX_CPUS];
 
-/// Record an event on the calling core's ring. Every call site runs with interrupts masked
-/// (under `IPC_TABLES` or in IRQ context), so the owning core cannot interleave with itself.
+/// Record an event on the calling core's ring.
 ///
-/// **`#[inline(never)]`, so the fast paths carry one copy rather than one per event** (milestone
-/// 758 (the IPC fast paths shrink back inside their band), provisional). Inlined, every site
-/// carried its own per-CPU read, `RINGS` bounds check and panic landing pad, sequence bump and
-/// packed store: measured on 2026-10-04 UTC, the ring index alone was the largest single line in
-/// `script/fastpath-footprint`'s closures on riscv64 and the third largest on aarch64 and x86_64,
-/// and an IPC round trip records two or three events in each of four or five functions. Out of
-/// line, a site is its argument moves and a call. The ring is a diagnostic nobody branches on,
-/// so the call's few instructions buy back several hundred bytes of every core's L1i.
+/// `#[inline(never)]`, so the fast paths carry one copy rather than a per-CPU read, bounds check,
+/// panic pad and packed store per site (milestone 758): inlined, the ring index was among the
+/// largest lines in `script/fastpath-footprint`'s closures on every architecture.
+///
+/// Context: every call site has interrupts masked (under `IPC_TABLES` or in interrupt context), so
+/// the owning core cannot interleave with itself.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -115,10 +93,8 @@ pub(crate) fn record(kind: Event, tid: u64, aux: u8) {
     // plenty to disambiguate in a dump.
     let entry = ((kind as u64) << 56) | ((aux as u64) << 48) | (tid & 0x0000_FFFF_FFFF_FFFF);
     ring.slots[(seq as usize) % DEPTH].store(entry, Ordering::Relaxed);
-    // The running total, on this core's own line. Relaxed and non-atomic-read-modify-write in
-    // effect (one writer per core), so it costs a load, an add and a store next to the two
-    // stores above it. **Soak builds only**, because those three instructions are on the IPC
-    // fastpath and nothing but a soak reads what they produce; see the field's own note.
+    // The running total, on this core's own line, one writer per core. Soak builds only: see the
+    // field.
     #[cfg(feature = "soak_test")]
     {
         let total = &ring.counts[kind as usize];
@@ -129,16 +105,11 @@ pub(crate) fn record(kind: Event, tid: u64, aux: u8) {
     }
 }
 
-/// **How many times `kind` has happened on this machine since boot**, summed over every core.
+/// How many times `kind` has happened on this machine since boot, summed over every core: a total
+/// rather than a window, so a soak's heartbeat still sees a refusal from hours ago.
 ///
-/// The one number the soak's heartbeat is actually watching is `WakeRefused`
-/// (`soak`), and the reason it can be watched at all is that this is a total rather than a
-/// window: a refusal at minute nine of an eight-hour run is still in this number at hour eight.
-///
-/// **The sum is racy and deliberately so.** Cores keep counting while it is read, so the value
-/// is not a snapshot of any single instant. Nothing here needs one: the soak asks "is this
-/// still zero" and "how much did it grow since the last beat", and both survive a reader that
-/// is a few events behind.
+/// The sum is racy on purpose: cores keep counting while it is read, and "is this still zero" and
+/// "how much did it grow" both survive a reader a few events behind.
 #[cfg(feature = "soak_test")]
 pub(crate) fn counted(kind: Event) -> u64 {
     let mut total = 0u64;
