@@ -4,7 +4,7 @@
 //! Its one method, [`abi::reboot::REBOOT`], runs [`prepare_reset_route`] then `arch::reboot`, and
 //! returns only if every route was refused, with one of four portable `abi::Error`s. It syncs no
 //! filesystem (`reboot` sends `SYNC` first) and quiesces no device. See notes/board-reboot.md.
-//!
+
 //! # BUGS
 //! - A firmware that accepts the call and hangs is indistinguishable from a slow reset.
 //! - The caller gets the portable reason, not the firmware's number, which only the console has.

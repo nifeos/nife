@@ -5,7 +5,7 @@
 //! under the allocator's lock. Before [`publish`] the writes land in a static sink, so a writer
 //! never tests whether the page exists. The layout is `crates/machine_statistics_contract`'s. See
 //! notes/machine-statistics.md.
-//!
+
 //! # BUGS
 //! - A counter written before [`publish`] is lost.
 //! - The switch count on the page is up to one tick old.

@@ -4,7 +4,7 @@
 //! The process (`net_stack`) is handed BAR0's two queue pages and the region; this file keeps what
 //! it must not do, on pages 0 and 5. A ring base shares a page with its tail, so the IOMMU domain
 //! is the whole DMA bound. Every offset and layout is `crates/e1000e`'s. See notes/e1000e.md.
-//!
+
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.

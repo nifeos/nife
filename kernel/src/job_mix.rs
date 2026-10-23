@@ -5,7 +5,7 @@
 //! subrun over [`job_mix::TASK_SWEEP`], prints each point, then [`job_mix::DONE`], and halts. The
 //! number feeds §96 (process kernel or event kernel, and how to decide it). See notes/job-mix.md
 //! and notes/job-mix/supervisor.md.
-//!
+
 //! # BUGS
 //! - A single boot's jobs-per-minute is not a result: placement spans the rate fifteenfold.
 //! - Each point is the median of [`job_mix::REPEATS`] repeats, with the spread beside it.

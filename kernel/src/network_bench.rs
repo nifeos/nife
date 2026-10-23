@@ -5,7 +5,7 @@
 //! preflights the condition that makes its numbers mean anything, waits for a DHCP lease, times one
 //! TCP transfer from the peer the image was built for, prints a `network-bench:` verdict and halts.
 //! See notes/bench-boots.md.
-//!
+
 //! # BUGS
 //! - The DHCP wait has no bound; a boot with no lease ends on the `waiting` line.
 //! - The peer is baked into the image (`NIFE_NETWORK_BENCH_PEER`); another peer is a rebuild.

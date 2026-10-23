@@ -4,7 +4,7 @@
 //! (`fixtures/src/soaker.rs`), prints a beat every [`BEAT_SECONDS`], and fails the run on a
 //! refusal, a wrong reply or a stall. [`signal_waiters`] makes it cross cores, §138 (how a
 //! saturated workload is made to hand threads across cores). See notes/soak.md.
-//!
+
 //! # BUGS
 //! - A green soak is never proof the concurrency is correct.
 //! - The round-trip total is sampled while workers write it.
