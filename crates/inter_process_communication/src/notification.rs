@@ -1,5 +1,6 @@
-//! The notification state machine of milestone 151 (notification objects), to §101's rules: a
-//! data word and a wait queue, and what a signal, a wait and a poll do with them.
+//! The notification state machine of milestone 151 (notification objects), to the rules of §101
+//! (notification objects): a data word and a wait queue, and what a signal, a wait and a poll do
+//! with them.
 //!
 //! A signaller ORs bits into the word and never blocks; a waiter takes whatever has accumulated. A
 //! non-zero word and a queued waiter never coexist. Whether the bound thread is parked in a
