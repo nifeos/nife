@@ -70,9 +70,8 @@ pub fn plan_stage(
 
 /// [`plan`]'s second half, against an **explicit** manifest rather than the static table.
 ///
-/// It exercises manifest shapes no shipped program declares (a program endowed a file), and it is
-/// the call a composer makes with a manifest that travels with a component (milestone 23 (a
-/// capability-routed component OS)).
+/// It exercises manifest shapes no shipped program declares, and it is the call a composer makes
+/// with a component's own manifest (milestone 23 (a capability-routed component OS)).
 ///
 /// **This is where the positional tokens acquire meaning**, in the order typed: the integer
 /// argument first if the manifest declares one, then the file. A token past the last declared slot
@@ -426,15 +425,13 @@ pub fn redirect_target(
     })
 }
 
-/// **Whether this program can be wired the way the line asks**, which is the whole of the operators'
-/// manifest check.
+/// **Whether this program can be wired the way the line asks**: the operators' manifest check.
 ///
 /// **Output**: a `Words` or `Silent` program has no bytes for `>` or `|` to substitute. **Input**:
 /// a program that reads a stream and is handed none would block forever, and one that reads nothing
 /// and is handed one would hold authority for no reason. A `2>` at a program declaring no second
 /// stream is [`Refusal::NoDiagnosticStream`] (DECISIONS §67 (a program's second stream is a
-/// declaration)). Returns where the second stream goes: `None` for a program declaring none, the
-/// shell's printing, or a file the line named.
+/// declaration)). Returns where the second stream goes: none, the shell's printing, or a file.
 fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Refusal> {
     if !matches!(streams.sink, Sink::Report) && !m.output.is_byte_stream() {
         return Err(Refusal::NotAByteStream);
@@ -460,14 +457,11 @@ fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Ref
 /// true when the first stage's input comes from this process: a `<`, an input operand, or a
 /// producing builtin at the head (`ls | wc`); when false, none of this applies.
 ///
-/// A process has one wait point, so a shell feeding a chain cannot also receive from it, and no
-/// schedule of sends and receives fixes that. The line runs if a stage declaring
-/// [`InputDeclaration::Required::writes_while_reading`] `false` absorbs the whole stream first, or
-/// if its unredirected tail goes to `terminal_sink_caretaker` (DECISIONS §106 (take the
-/// `terminal_sink_caretaker` narrowing)) rather than back to this shell; a tail redirected with `>`
-/// still comes back here (DECISIONS §55 (the file behind a `>` is the shell itself)), so it is
-/// refused. A line that spawns nothing (`ls > out.txt`) is always `Ok`. See
-/// notes/pipes/one-wait-point.md.
+/// A process has one wait point, so a shell feeding a chain cannot also receive from it. The line
+/// runs if a stage declaring [`InputDeclaration::Required::writes_while_reading`] `false` absorbs
+/// the stream first, or if its unredirected tail goes to `terminal_sink_caretaker` (DECISIONS §106
+/// (take the `terminal_sink_caretaker` narrowing)); a `>` tail comes back here (DECISIONS §55 (the
+/// file behind a `>` is the shell itself)) and is refused. See notes/pipes/one-wait-point.md.
 pub fn check_chain(shell_feeds_head: bool, plans: &[Option<Endowment>]) -> Result<(), Refusal> {
     if !shell_feeds_head {
         return Ok(());
