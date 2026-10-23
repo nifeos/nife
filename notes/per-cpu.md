@@ -6,7 +6,7 @@ Each core reaches its own private data in one instruction, through a pointer the
 keeps in a register for that purpose: `TPIDR_EL1` on aarch64, `tp` on RISC-V, `IA32_GS_BASE` on
 `x86_64`. That block is `kernel/src/cpu.rs`'s `PerCpu`. It is what lets the scheduler keep a run
 queue, a current thread and lock bookkeeping per core instead of one per machine
-([DECISIONS §11](../design/decisions/0011-per-cpu-run-queues.md)). This note says what holds the block's shape in
+([DECISIONS §11 (SMP: per-CPU run queues)](../design/decisions/0011-per-cpu-run-queues.md)). This note says what holds the block's shape in
 place. [scheduler.md](scheduler.md) says how the scheduler uses it.
 
 ## Who may touch a block
@@ -22,7 +22,7 @@ each says so:
   `work_steal_slot` crate's type, which loom searches on the host
   ([interleaving.md](interleaving.md)).
 - `runq_len`, `inbox_len` and `current` are read by other cores, relaxed and possibly stale. A
-  placer accepts a stale load reading on purpose (§28).
+  placer accepts a stale load reading on purpose (§28 (SMP placement)).
 
 `switched_from` names the thread this core just left, finished by the thread it switched to. Two
 things must not happen to a thread while a core is still switching off its stack: freeing it, and

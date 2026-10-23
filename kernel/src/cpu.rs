@@ -46,7 +46,7 @@ pub struct PerCpu {
     pub idle: AtomicU64,
 
     /// Set by this core's timer tick, read on this core's return from the IRQ, so one core's tick
-    /// cannot make another reschedule (DECISIONS §9's record-and-defer).
+    /// cannot make another reschedule (DECISIONS §9 (locking)'s record-and-defer).
     pub need_resched: AtomicBool,
 
     /// The thread this core just switched away from, finished by the thread it switched to
@@ -71,7 +71,7 @@ pub struct PerCpu {
     /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and `sched::drain_inbox`.
     pub inbox: IrqSafeMutex<Fifo<Thread>>,
 
-    /// This core's run-queue length, mirrored so other cores may read it (DECISIONS §28). Kept exact
+    /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)). Kept exact
     /// by the owner after every [`with_runq`](Self::with_runq); read relaxed and possibly stale, on
     /// purpose. The thread on the CPU is not counted.
     runq_len: AtomicUsize,

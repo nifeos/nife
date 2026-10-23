@@ -21,7 +21,7 @@ const CALIBRATION_ITERS: u64 = 1_000_000;
 
 /// Per-tick timing, recorded from the timer handler itself.
 ///
-/// Relaxed stores and read-modify-writes only, which is DECISIONS §9's rule for handlers. Compiled
+/// Relaxed stores and read-modify-writes only, which is §9 (locking)'s rule for handlers. Compiled
 /// in only under `icount`, so no other handler carries it. One set of counters: the boot runs
 /// `-smp 1`, and [`record`] drops any hart but the boot one.
 pub mod tick_trace {

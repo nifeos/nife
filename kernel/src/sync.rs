@@ -4,7 +4,7 @@
 //! Either other order leaves a window where this core holds the lock with interrupts live, and a
 //! handler that wants the same lock spins forever. The guard restores the interrupt state it found
 //! rather than enabling, so a lock released inside a handler does not unmask it. See
-//! notes/locking.md and DECISIONS §9 (IRQ-safe locking).
+//! notes/locking.md and DECISIONS §9 (locking).
 
 use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
@@ -55,7 +55,7 @@ pub mod rank {
     /// `KernelStack`'s `Drop` runs from the reaper.
     pub const STACK_VA: u32 = 55;
 
-    /// The revocation registry (§13): which address spaces live, and where their mapping logs are.
+    /// The revocation registry (§13 (capability revocation)): which address spaces live, and where their mapping logs are.
     /// Above `MEMORY_REGION`; never held with `IPC_TABLES` in either order.
     pub const MAPPINGS: u32 = 59;
 
