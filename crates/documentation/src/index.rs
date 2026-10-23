@@ -9,6 +9,15 @@
 //!   post_off          postings, 4 bytes each, 1024 per page, grouped by term
 //! ```
 
+//! # BUGS
+//!
+//! - A term is truncated to [`TERM_MAX`] bytes, so long identifiers can share a posting list.
+//! - Terms are ASCII-folded and split on any byte that is not a letter, digit or underscore join.
+//! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
+//! - A shard whose [`VERSION`] is not this reader's is refused, not migrated.
+//! - A search keeps [`RESULTS_MAX`] results and counts the rest ([`Ranked::offered`]).
+//! - A search answer names pages, never grants them ([`Found::location`]).
+
 /// The page size the whole layout is built around: the frame a client shares with the FS server.
 pub const PAGE: usize = 4096;
 
