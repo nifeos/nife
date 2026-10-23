@@ -1,8 +1,6 @@
 //! **The fixed sentences**: `pwd`, `help`, a refusal, the image and vouch sentences, the usage
 //! lines, and [`write_outcome`], what a spawn's answer reads as.
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
@@ -60,11 +58,7 @@ pub fn write_help(out: &mut dyn FnMut(&[u8])) {
     out(b"  user suspend <name>     the owner suspends an identity: its logins and schedule end\n");
     out(b"  user resume <name>      the owner lets a suspended identity back in\n");
     out(b"  rm [-rfv] <path>        a PROGRAM, granted the directory holding what you name\n");
-    // Two spaces rather than the column the rest of this block keeps: these two names run past the
-    // description column (26), so aligning them would leave no separator at all. Both were ratified
-    // after this table was laid out, `least_authority_demo` by milestone 175 and
-    // `memory_grant_depleter` on 2026-09-13, and a table that reflows every other line to suit two
-    // entries costs more than two columns of ragged edge.
+    // Two spaces rather than the column: these two names run past the description column (26).
     out(b"  least_authority_demo <n>  spawn a process that returns n*n\n");
     out(b"  memory_grant_depleter --mem N  grant a process N pages from this shell's budget\n");
     out(b"  date                    print the wall-clock time\n");
@@ -110,11 +104,9 @@ pub fn write_help(out: &mut dyn FnMut(&[u8])) {
 ///     String::from_utf8(s).unwrap()
 /// };
 ///
-/// // A name that resolved to nothing is worth repeating back. `cat` is a command a Unix hand
-/// // would reach for and this shell does not have, so the line reads as a fact about the name.
+/// // A name that resolved to nothing is worth repeating back.
 /// assert!(render(b"cat 7", Refusal::NoSuchProgram).starts_with("  cat: "));
 /// // A line of nothing but flags names no program, so the bare refusal is all there is to print.
-/// // An empty name followed by a colon would be worse.
 /// assert_eq!(
 ///     render(b"--mem 16", Refusal::NoSuchProgram),
 ///     "  no such program (try 'help' for the builtins)\n"
@@ -157,7 +149,7 @@ pub const FAULTED_SENTENCE: &[u8] = b"  that command faulted and was killed befo
 pub const UNVOUCHED_SENTENCE: &[u8] = b"  refused: those bytes are not among the installed programs, and running unvouched bytes needs a capability this session does not hold\n";
 
 /// **What the prompt says when a file's own manifest refuses the line** (milestone 597
-/// (a program carries its manifest in an ELF note), provisional), one sentence per
+/// (a program carries its manifest in an ELF note)), one sentence per
 /// [`grant_plan::ImageRefusal`]. The shell prints it at the prompt when it can tell before sending
 /// anything, and for the progenitor's [`spawnproto::SPAWN_REFUSED_BY_MANIFEST`] when it cannot.
 pub fn image_refusal_sentence(r: grant_plan::ImageRefusal) -> &'static [u8] {
@@ -183,10 +175,9 @@ pub fn image_refusal_sentence(r: grant_plan::ImageRefusal) -> &'static [u8] {
 pub const REFUSED_BY_MANIFEST_SENTENCE: &[u8] =
     b"  refused: the progenitor read those bytes' own manifest, and it does not allow this line\n";
 
-/// What the prompt says for [`spawnproto::SPAWN_NO_DISPLAY`] (milestone 715 (provisional)): the
-/// sentence milestone 632 (graphics on demand) printed before sending anything, when the shell
-/// could see from its own slots that it held no display. It holds none on any boot now, so the
-/// spawn service says it and this is the same sentence, word for word.
+/// What the prompt says for [`spawnproto::SPAWN_NO_DISPLAY`] (milestone 715 (the spawn service
+/// holds the display grants and the shell holds none)): the shell holds no display, so the spawn
+/// service decides this and the shell prints it.
 pub const NO_DISPLAY_SENTENCE: &[u8] =
     b"  no display on this boot; there is nothing to launch a graphical terminal session from\n";
 
@@ -194,8 +185,8 @@ pub const NO_DISPLAY_SENTENCE: &[u8] =
 /// owner's console)). `status` and `live` are the progenitor's reply
 /// (`spawnproto::activation_reply`). Every answer names the generation live afterwards, because
 /// after a refusal that is still the fact a person needs: nothing changed, and this is what is in
-/// force. Install, remove and rollback are `jig`'s since milestone 809 (the package client becomes
-/// a program), and it says them itself.
+/// force. Install, remove and rollback are `jig`'s (milestone 809 (the package client becomes a
+/// program)), and it says them itself.
 pub fn write_vouch(status: spawnproto::ActivationStatus, live: u64, out: &mut dyn FnMut(&[u8])) {
     use spawnproto::ActivationStatus as S;
     let said: &[u8] = match status {
@@ -254,10 +245,7 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
         out(NO_DISPLAY_SENTENCE);
         return;
     }
-    // **The job ran and the kernel killed it** (milestone 235). A different fact from the line
-    // above and worth different words: nothing ran there, something ran here. The sentence says
-    // "before it answered" because that is the whole reason this word exists; the kernel's own
-    // report of the killed thread carries the pc.
+    // The job ran and the kernel killed it (milestone 235): something ran, unlike the lines above.
     if answer == spawnproto::JOB_FAULTED {
         out(FAULTED_SENTENCE);
         return;
@@ -279,28 +267,16 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
             write_num(e.memory_grant_pages, out);
             out(b"-page budget you granted (the rest paid for its page tables)\n");
         }
-        // Milestone 632 (graphics on demand): the session's one word says it ended. It is always 0
-        // today (`components/src/graphical_terminal.rs`'s `end`), and the number is printed anyway
-        // so a future status has somewhere to show rather than a sentence that lies about it.
+        // Always 0 today (`components/src/graphical_terminal.rs`'s `end`); printed so a future
+        // status has somewhere to show.
         Program::GraphicalTerminal => {
             out(b"  the graphical terminal session ended, status ");
             write_num(answer, out);
             out(b"\n");
         }
-        // **Every other program answers somewhere else, so there is nothing to render here.** Only a
-        // program whose manifest says `OutputDeclaration::Words` answers in a register, and those are
-        // the arms above. Supervised jobs report through the job frame and the interruptible path;
-        // byte-stream programs (`date`, `wc`, `ps`, ...) are drained by the byte-stream reader
-        // before this is reached.
-        //
-        // **A wildcard, deliberately, since milestone 150.** This match used to name all thirteen
-        // programs so that adding one was a compile error here, and eleven times in thirteen the
-        // arm that error asked for was `=> {}`: an edit in a crate the person adding a byte-stream
-        // program had no reason to open, which nominally forced a decision and in practice forced
-        // a keystroke. The question the exhaustive match was really asking ("does your program
-        // answer in a register, and if so, how does it read?") is now asked of exactly the programs
-        // it applies to, by `every_program_that_answers_in_words_renders_its_answer` below, which
-        // fails for a `Words` program that falls through to this arm.
+        // Every other program answers somewhere else: only `OutputDeclaration::Words` programs
+        // answer in a register. `every_program_that_answers_in_words_renders_its_answer` fails for
+        // one that falls through to this wildcard.
         _ => {}
     }
 }

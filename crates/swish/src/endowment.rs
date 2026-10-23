@@ -1,8 +1,6 @@
 //! **The shell's own endowment**: [`write_holdings`] (what `caps` with no tail prints), the
 //! census of held slots, the `bind` rows and the configuration values.
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
@@ -14,9 +12,8 @@ use super::*;
 /// that reports the remainder. The caller passes its own constant and the row says "(initial)".
 ///
 /// `clock` is the slot holding this shell's read-only clock page, or `None` for a wiring that
-/// granted none (milestone 86). It is a slot number rather than a boolean because the number is not
-/// fixed: a shell wired without a filesystem has one fewer capability below it, and printing a
-/// number this shell did not actually get would make the table a story rather than a reading.
+/// granted none (milestone 86). A slot number rather than a boolean, because a shell wired without
+/// a filesystem has one fewer capability below it.
 pub fn write_holdings(
     budget_pages: u64,
     holdings: Holdings,
@@ -31,17 +28,15 @@ pub fn write_holdings(
     out(b"    cap 3  untyped   ");
     write_num(budget_pages, out);
     out(b" pages  the memory it grants with --mem (initial)\n");
-    // **The heap is mapped from that budget**, first, so it is part of what this row counts
-    // rather than a capability beside it (milestone 47 (navigation and naming), calef's ruling).
+    // The heap is mapped from that budget first, so this row counts it (milestone 47 (navigation
+    // and naming), calef's ruling).
     out(b"           the first ");
     write_num(HEAP_MAX_BYTES / 1024, out);
     out(b" KiB of them, and their page tables, are the shell's own heap\n");
     match (&holdings.mounted, holdings.directory) {
         (Some(sd), _) => {
-            // **Two rows, one tree**: the second capability is a row of its own, because it is one
-            // more thing this shell holds, and the namespace line says where it appears. Which
-            // tree serves a path is otherwise kept out of sight (calef, 2026-09-26); this table is
-            // the one place that says it.
+            // Two rows, one tree: which tree serves a path is otherwise kept out of sight (calef,
+            // 2026-09-26), and this table is the one place that says it.
             out(b"    cap 4  endpoint  directory  the files it can narrow into per-file grants\n");
             out(b"    cap ");
             write_num(grant_plan::spawnproto::MOUNTED_TREE_SLOT, out);
@@ -59,11 +54,9 @@ pub fn write_holdings(
             out(b"    (no directory capability: a name on the line has nothing to narrow)\n");
         }
     }
-    // **`bind`'s own rows** (milestone 47/154), beside whatever the match above printed: a bind is
-    // additive to the grant namespace, never a replacement for it, so its rows are a further
-    // section rather than a rewrite of one. The two-grant case already prints a `namespace:`
-    // header above; a one-grant shell with something bound gets one here, because otherwise a
-    // bound row would appear with no heading to explain it.
+    // `bind`'s rows are additive, a further section; a one-grant shell gets its `namespace:`
+    // header here so a bound row is never printed without one (milestone 154 (a process that
+    // holds two directory capabilities)).
     if holdings.binds.iter().next().is_some() {
         if holdings.mounted.is_none() {
             out(b"    namespace: names bound beside the one root ('bind', milestone 47)\n");
@@ -72,14 +65,8 @@ pub fn write_holdings(
             write_bind_row(entry, out);
         }
     }
-    // **The clock, and the rights row is the whole of it** (milestone 86). This shell reads the page
-    // and holds no `GRANT` on it, so `time` can measure a command and nothing typed here can hand a
-    // clock to a child: which processes can read the time is still decided by the manifests the progenitor
-    // reads (DECISIONS §43), and the shell's own reading authority does not widen that set by one.
-    //
-    // That distinction is why the row prints the rights rather than just the object. A reader who
-    // saw "clock" in this table and assumed the shell could pass it on would be wrong about the one
-    // thing the table exists to answer.
+    // The rights are the row: `READ` without `GRANT`, so nothing typed here hands a clock to a
+    // child (DECISIONS §43 (reading the clock is a page)).
     match clock {
         Some(slot) => {
             out(b"    cap ");
@@ -92,11 +79,8 @@ pub fn write_holdings(
             out(b"     granted none, so 'time' has nothing to measure with)\n");
         }
     }
-    // **The configuration page, when this shell holds a view of it** (milestone 47 (navigation and
-    // naming), DECISIONS §111 (inert configuration is a validated page)). The clock's rights and
-    // the clock's reason: `READ` without `GRANT`, so reading it here widens nothing about which
-    // children see it. No row when it is absent, because nothing this shell does needs it; only
-    // `caps <command>` reads it, and says there what it cannot show.
+    // The configuration page has the clock's rights for the clock's reason (DECISIONS §111 (inert
+    // configuration is a validated page)), and no row when absent.
     if let Some(page) = config {
         out(b"    cap ");
         write_num(grant_plan::SHELL_CONFIGURATION_SLOT, out);
@@ -107,13 +91,9 @@ pub fn write_holdings(
     out(b"  it can name no devices and no other process. authority is what it holds.\n");
 }
 
-/// **The census under the table** (milestone 715 (provisional)): every slot below `below` (the
-/// caller passes the reserved fault slot) that holds a capability, read from the kernel by the
-/// caller (`held`), not from what
-/// the rows above say this shell was given. The rows are the endowment as the shell understands
-/// it; this line is what is actually there, so a capability the rows do not name (the display
-/// devices the progenitor placed at `spawnproto::SHELL_GPU_SLOT` onward until milestone 715 moved
-/// them) shows up here even though no row describes it. `unreachable_network_witness`'s census is
+/// **The census under the table**: every slot below `below` (the caller passes the reserved fault
+/// slot) that holds a capability, as the kernel reports it through `held`, not as the rows above
+/// say. A capability no row names still shows up here. `unreachable_network_witness`'s census is
 /// the same line, one program over. Name: provisional.
 pub fn write_census(below: u64, held: &dyn Fn(u64) -> bool, out: &mut dyn FnMut(&[u8])) {
     out(b"  slots held:");

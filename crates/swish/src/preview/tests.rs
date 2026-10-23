@@ -11,11 +11,11 @@ use grant_plan::{FileGrantDeclaration, InputDeclaration, MemoryGrantDeclaration}
 use super::*;
 use crate::test_support::{endowment, listing, shown};
 
-/// **`caps <path>` tells the cases apart** (§219 D and D2, and the manifest note of milestone
-/// 597): vouched runs with its own manifest and names its generation; unvouched runs with the
-/// two pages only on a session that holds the capability, and prints what the note asked
-/// beside what it gets; a note that asks the line for more than unvouched bytes may hold is
-/// refused; otherwise it says it would be refused and grants nothing.
+/// **`caps <path>` tells the cases apart** (§219 D and D2, and milestone 597 (a program carries
+/// its manifest in an ELF note)): vouched runs with its own manifest and names its generation;
+/// unvouched runs with the two pages only on a session that holds the capability, and prints what
+/// the note asked beside what it gets; a note that asks the line for more than unvouched bytes may
+/// hold is refused; otherwise it says it would be refused and grants nothing.
 #[test]
 fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     use grant_plan::expand::Expansion;
@@ -75,9 +75,7 @@ fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     );
     assert!(vouched_clock.contains("its manifest note asks for: output bytes, the clock"));
 
-    // A note's `machine` and `share` are read from the note, not from the placeholder row
-    // (the 2026-10-03 security audit's follow-up, item (d)): before the fix both rows were
-    // missing for every packaged program, whatever its note asked.
+    // A note's `machine` and `share` are read from the note, not from the placeholder row.
     let asks_machine_and_share = Manifest {
         machine: true,
         share: true,
@@ -190,10 +188,7 @@ fn a_directory_grant_prints_every_name_and_says_whether_r_was_typed() {
 
 #[test]
 fn date_says_the_clock_is_not_on_the_line() {
-    // The preview must not let a reader believe the command line is the whole story: `date`'s
-    // clock is the progenitor's to endow, no token could designate it, and it is still a capability the
-    // child holds. So it is printed, and it is printed as read-only, which is the whole of why
-    // there is no `date -s`.
+    // No token designates `date`'s clock, and the child still holds it, read-only.
     let s = shown(|o| write_preview(&endowment(Program::Date), &Holdings::default(), None, o));
     assert!(s.contains("cap 1  frame     clock"), "{s}");
     assert!(s.contains("read the time and not set it"), "{s}");
@@ -206,9 +201,7 @@ fn date_says_the_clock_is_not_on_the_line() {
 
 #[test]
 fn printenv_says_the_config_page_is_not_on_the_line() {
-    // `clock`'s twin: the same preview claim for the same reason. `printenv`'s config page is
-    // the progenitor's to endow, no token on the line could designate it, and the preview says so before
-    // anything is spawned.
+    // `clock`'s twin: no token designates `printenv`'s config page either.
     let s = shown(|o| write_preview(&endowment(Program::Printenv), &Holdings::default(), None, o));
     assert!(s.contains("cap 1  frame     config"), "{s}");
     assert!(s.contains("read-only"), "{s}");
@@ -311,21 +304,14 @@ fn the_shells_config_view_is_one_row_and_it_cannot_pass_it_on() {
 
 #[test]
 fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
-    // `clock`'s family a fourth time, and the one member whose absence is otherwise invisible.
-    // A process that draws a key and a process that hardcodes one look identical from outside,
-    // so "does this program depend on unpredictable bytes" is a question no observation of a
-    // running system answers. This row answers it before anything is spawned.
+    // `clock`'s family again: entropy's use is invisible from outside, so only this row says it.
     let s = shown(|o| write_preview(&endowment(Program::Uuid), &Holdings::default(), None, o));
     assert!(s.contains("cap 9  endpoint  entropy"), "{s}");
-    // `WRITE`, and the word is the claim rather than decoration: it is the right to `CALL` the
-    // service and not the right to receive another client's request, nor to hand a random
-    // source to anything spawned. A preview naming a wider right would describe a grant that is
-    // not being made, which is the failure a `caps` output has available.
+    // `WRITE`: the right to `CALL`, and no wider right.
     assert!(s.contains("WRITE"), "{s}");
     // The half that carries the claim in English, for a reader who does not know the rights.
     assert!(s.contains("draws no randomness at all"), "{s}");
-    // And a program that declares no entropy is not given a row that says it has one. This is
-    // the refusal, in the one place a person meets it before anything runs.
+    // And a program that declares no entropy is not given a row that says it has one.
     assert!(
         !shown(|o| write_preview(&endowment(Program::Date), &Holdings::default(), None, o))
             .contains("entropy")
@@ -359,20 +345,9 @@ fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
 
 #[test]
 fn exactly_three_programs_declare_entropy() {
-    // The manifest table is the whole of who may draw random bytes at this prompt, so a count
-    // of it is a claim worth gating rather than a tautology: a program declaring `entropy`
-    // without anybody deciding to is exactly the drift toward ambient authority DECISIONS §44 (entropy is a capability)
-    // exists to prevent, and it would otherwise be visible only to whoever read the diff.
-    //
-    // **The second was decided in milestone 595 (provisional)**: `std_exerciser` asserts that
-    // two draws from `std::random::SystemRng` differ, which is `std`'s randomness working at
-    // the slot `std_runtime_contract` fixes, and that is half of what the program is at the
-    // prompt to prove. A `std` program that does not declare it still runs; its `SystemRng`
-    // panics rather than inventing bytes, and its `HashMap` seeds best-effort.
-    //
-    // **The third was decided in milestone 801 (packages over the internet), 2026-10-12 (UTC)**:
-    // `jig` speaks TLS to the index, and a handshake draws its key share and nonces from it. Only
-    // the verbs that reach the index hold it (`update`, `install`), by `grant_plan::verbs`.
+    // The manifest table is the whole of who may draw random bytes here (§44 (entropy is a
+    // capability)), so a new declaring program must change this count. `std_exerciser` checks
+    // `SystemRng`; `jig`'s TLS handshake draws its key share (notes/shell/caps-preview.md).
     let mut declared = 0;
     for &p in Program::ALL {
         if p.manifest().entropy {
@@ -388,8 +363,9 @@ fn exactly_three_programs_declare_entropy() {
 }
 
 /// **`caps` names the slots the progenitor will use, and for a `std` program those are
-/// `std_runtime_contract`'s** (milestone 595 (provisional)). A preview printing the native
-/// positions would put the output at slot 0, where a `std` child holds its heap.
+/// `std_runtime_contract`'s** (milestone 595 (the shell runs a `std` program)). A preview
+/// printing the native positions would put the output at slot 0, where a `std` child holds its
+/// heap.
 #[test]
 fn a_std_program_previews_its_fixed_slots() {
     let s = shown(|o| {
@@ -427,11 +403,9 @@ fn a_std_program_previews_its_fixed_slots() {
 
 #[test]
 fn exactly_two_programs_declare_the_network() {
-    // `exactly_one_program_declares_entropy`'s reason, one authority over: the manifest table is
-    // the whole of who may reach the network from this prompt (milestone 590 (provisional)), so
-    // another declaring program is a decision, and this is where it has to be made. The second
-    // is `jig` (milestone 809 (the package client becomes a program)), which fetches a package
-    // itself so the progenitor parses no network input.
+    // `exactly_three_programs_declare_entropy`'s reason, one authority over: a new program that
+    // reaches the network (milestone 590 (the booted system starts its network stack)) must
+    // change this list.
     let declaring: Vec<Program> = Program::ALL
         .iter()
         .copied()
@@ -453,7 +427,8 @@ fn the_preview_shows_the_network_only_where_it_is_declared() {
     assert!(jig.contains("cap 2  endpoint  network  WRITE"), "{jig}");
     assert!(jig.contains("cap 3  untyped   sockets"), "{jig}");
     assert!(jig.contains("cap 15 endpoint  installer  WRITE"), "{jig}");
-    // Milestone 892 (a std program at the prompt holds the network and a resolver): `jig` resolves any name (calef's Q5 on #1884), and nothing else resolves.
+    // Only `jig` resolves, and any name (milestone 892 (a std program at the prompt holds the
+    // network and a resolver), calef's Q5 on #1884).
     assert!(
         jig.contains("cap 9  endpoint  resolver  WRITE. it may look up the addresses of any name"),
         "{jig}"
@@ -477,8 +452,7 @@ fn the_preview_shows_the_network_only_where_it_is_declared() {
 
 #[test]
 fn every_preview_names_where_the_output_goes() {
-    // The demonstration milestone 50 owed: on Unix this question has no answer at this point,
-    // because fd 1 is whatever the shell's fd 1 happened to be.
+    // The output's destination is a capability, so `caps` can name it.
     for sink in [line::Sink::Report, line::Sink::Pipe] {
         let mut e = endowment(Program::Date);
         e.sink = sink;
@@ -528,22 +502,10 @@ fn caps_previews_every_stage_of_a_pipeline() {
     assert!(s.contains("the previous stage's output"), "{s}");
 }
 
-/// The preview's `arg` line must follow the manifest, for **every** program rather than for the
-/// one that happens to take an argument today.
-///
-/// This is written as a sweep over the whole enum on purpose. The line used to read
-/// `matches!(e.program, Program::LeastAuthorityDemo)`, which is correct for the tree as it stands (`LeastAuthorityDemo` is the
-/// only `ProgramArgumentDeclaration::Required` program) and silently wrong for the next one added: the shell would
-/// print `arg (none)` and then hand the argument over anyway. A test naming `LeastAuthorityDemo` would have
-/// passed against the bug. A test that asks the manifest cannot.
-///
-/// **And the line it types follows the rest of the manifest too** (milestone 150). It used to
-/// type `<name> 21` against `Holdings::default()` for every program, so a program that required
-/// an argument *and* an input was refused for the missing input before any table was printed,
-/// and the sweep went red on a manifest shape nothing had used yet (milestone 117's fifth
-/// stranger found it). Now the line supplies every operand the manifest asks for that the
-/// planner can resolve without a boot: a `--mem` at the declared minimum, and a file name for a
-/// declared input or file, against a shell holding a directory.
+/// The preview's `arg` line must follow the manifest for every program, so it is a sweep over the
+/// whole enum rather than a test naming the one program that takes an argument today. The line it
+/// types supplies every operand the manifest asks for that the planner can resolve without a boot:
+/// a `--mem` at the declared minimum, and a file name for a declared input or file.
 #[test]
 fn the_arg_line_follows_the_manifest_for_every_program() {
     let holdings = Holdings {

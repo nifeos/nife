@@ -2,20 +2,10 @@
 //! about them (milestone 47 (navigation and naming), DECISIONS §227 (how Tab reaches the shell)
 //! option D).
 //!
-//! The shell edits its own line, so a Tab reaches the process that holds the authority completion
-//! needs. Completion offers exactly what that authority can name, and nothing more:
-//!
-//! - In command position, a builtin ([`grant_plan::BUILTINS`]), a program the image names
-//!   ([`grant_plan::Program::ALL`]), or an installed program's bare name (§229 B2).
-//! - Anywhere else, or for a word with a `/` in it, an entry of the directory the word's lead
-//!   names, read the way `ls` reads it. That costs `ENUMERATE`, the same right `echo *` costs, so
-//!   a shell that cannot list a directory cannot complete in it either.
-//!
-//! Nothing here reads a directory. [`Matches`] is fed candidates by the program, twice when it
-//! must list them: once to decide, once to print. Holding no names is deliberate. The shell's
-//! stack has run out before (notes/pipes.md), and a listing streamed a second time costs one more
-//! `READDIR` walk rather than a buffer.
-//!
+//! In command position it offers builtins, image programs and installed bare names; anywhere else,
+//! entries of the directory the word's lead names, which costs `ENUMERATE` as `echo *` does.
+//! [`Matches`] holds no names: the program feeds it candidates, twice when it must list them. See
+//! notes/shell/the-swish-crate.md, "Completion".
 
 //! # EXAMPLES
 //!
@@ -44,16 +34,9 @@
 //!
 //! # BUGS
 //!
-//! - A quoted word is not completed. Tab inside `'...` does nothing, because a completion would
-//!   have to decide whether to close the quote, and nothing yet needs that.
-//! - A name with a space in it completes to text the parser splits in two, since nothing quotes
-//!   the insertion. Files here rarely have one; a completion that quoted would fix it.
-//! - Completing an argument does not ask the program's manifest what the argument is. `rm <Tab>`
-//!   offers directories and files alike. Manifest-aware completion is a proposed follow-on.
-//! - An installed program (§219 (how the shell names an installed program to the spawner)) is
-//!   offered by its bare name since §229 (how a bare name reaches an installed program) was built,
-//!   read from the live installed-programs table on each Tab. A name that is both the image's and installed
-//!   is offered once and refused when run.
+//! - A quoted word is not completed, and a name with a space in it is inserted unquoted.
+//! - Completing an argument does not ask the program's manifest what the argument is.
+//! - A name that is both the image's and installed is offered once and refused when run.
 //!
 //! Name: provisional (milestone 47, 2026-09-26).
 

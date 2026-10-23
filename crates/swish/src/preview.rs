@@ -1,8 +1,7 @@
 //! **The preview, which is the visibility surface**: [`write_capabilities`] over a whole line,
 //! [`write_preview`] for one stage, `caps <path>` for an image
-//! ([`write_image_capabilities`]), and the row writer all three share.
-//!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
+//! ([`write_image_capabilities`]), and the row writer all three share. Why each row is printed:
+//! notes/shell/caps-preview.md.
 //!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
@@ -21,23 +20,14 @@ pub struct Vouched {
     pub network_granted: bool,
 }
 
-/// **`caps <path>`: what running a file's bytes would grant, and on whose word**
-/// (DECISIONS §219 option D and gate D2, milestone 198 rung 3a; the manifest note, milestone 597,
-/// provisional).
+/// **`caps <path>`: what running a file's bytes would grant, and on whose word** (DECISIONS §219
+/// option D and gate D2; milestone 597 (a program carries its manifest in an ELF note)).
 ///
-/// The shell computes every input from the bytes it read and the installed-programs table it can read:
-/// `digest` is the file's SHA-256 in its text form, `sha256:<hex>` (`measured_boot::digest_text`), `vouched_by` is the live generation that lists
-/// that digest and whether that entry is the owner's own vouch (DECISIONS §221 (the boot prompt
-/// is the owner's console)), or `None`, `declared` is the manifest the file's note carries (`None` for no note),
-/// and `e` is the line bound against it. `holds` is whether this session holds the run-unvouched
-/// capability. The rows are the endowment the progenitor would build, decided by the same
-/// [`grant_plan::image_manifest`] it calls: a vouched file's own manifest (or
-/// [`grant_plan::NO_NOTE_MANIFEST`]'s when it carries none), and [`grant_plan::UNVOUCHED_MANIFEST`]'s
-/// three slots when not, or a refusal. **What the note asks is printed beside what is granted**,
-/// because for unvouched bytes the two differ and that difference is §219's rule made visible.
-///
-/// It is a preview, and it says so where it could be wrong: the progenitor hashes its own copy
-/// when the line runs, so a file changed in between is judged on what arrives then.
+/// `digest` is the file's `sha256:<hex>`, `vouched_by` the live generation that lists it (or
+/// `None`), `holds` whether this session holds the run-unvouched capability, `declared` the
+/// manifest its note carries, and `e` the line bound against it. The rows are what
+/// [`grant_plan::image_manifest`] would endow, beside what the note asks. See
+/// notes/shell/caps-preview.md, "`caps <path>`: what a file's bytes would be granted".
 ///
 /// # EXAMPLES
 ///
@@ -53,9 +43,7 @@ pub struct Vouched {
 /// assert!(said.contains("cap 1  page      clock"));
 /// assert!(said.contains("its manifest note asks for: output bytes, the network"));
 /// ```
-// Eight arguments since milestone 154 added `holdings`, which a directory grant's row needs to
-// print a path under a mount point. Each is one fact the caller already holds, and bundling them
-// into a struct used nowhere else would be more to read, not less.
+// Each argument is one fact the caller already holds; a struct used nowhere else would not help.
 #[allow(clippy::too_many_arguments)]
 pub fn write_image_capabilities(
     path: &[u8],
@@ -77,8 +65,7 @@ pub fn write_image_capabilities(
     out(b"  ");
     out(path);
     match verdict {
-        // **An unvouched `std` image is previewed from its manifest too** (milestone 205): its
-        // two pages sit at the `std` layout's slots, and its words at slot 8, so the native rows
+        // An unvouched `std` image's pages sit at the `std` layout's slots, so the native rows
         // below would name slots it does not get.
         Some(Ok(m)) if vouched || m.startup == grant_plan::StartupContract::Std => {
             out(b" would grant the new process, and nothing else:\n");
@@ -174,14 +161,9 @@ fn write_note_asks(declared: Option<grant_plan::Manifest>, out: &mut dyn FnMut(&
 
 /// **Preview what a command line would grant**, which is the whole of `caps <command>`.
 ///
-/// With an empty tail this is [`write_holdings`]. With a tail it is **a whole line, operators
-/// included** (milestone 50), because what a pipeline grants is not the sum of what its stages grant
-/// read one at a time: which slot holds what depends on where the stage is. Previewing the line the
-/// user would run is the only preview worth having.
-///
-/// Nothing here moves any authority. That is the point of it being reachable from a host test at
-/// all: the sentences a user reads before they decide to run something are checked without an
-/// emulator, and without a shell that holds anything.
+/// With an empty tail this is [`write_holdings`]. With a tail it is a whole line, operators
+/// included, because which slot holds what depends on where the stage is. Nothing here moves any
+/// authority. See notes/shell/caps-preview.md, "A whole line, not a stage at a time".
 pub fn write_capabilities(
     tail: &[u8],
     budget_pages: u64,
@@ -195,15 +177,8 @@ pub fn write_capabilities(
     if tail.is_empty() {
         return write_holdings(budget_pages, holdings, clock, config, out);
     }
-    // **`caps time <command>` previews the command**, because that is what would run and `time`
-    // moves no authority to it: the shell times with its own clock and the child is spawned with the
-    // endowment the tail names, unchanged. A preview that stopped at the prefix word would answer
-    // "this is not an invocation" about a line that is one, which is the drift between what you
-    // inspect and what you run that `caps` exists to close.
-    //
-    // A loop rather than a recursive call, because `caps time time time date` is a line a person can
-    // type and this function's frame carries a whole split `Line` by value. Bounded recursion on a
-    // shell stack is a bug waiting for a long line (notes/pipes.md has two of those already).
+    // `caps time <command>` previews the command. A loop, not recursion: this frame carries a
+    // whole split `Line` by value, and `caps time time time date` is a line a person can type.
     let mut timed = false;
     while let Command::Time(inner) = grant_plan::parse(tail) {
         timed = true;
@@ -259,9 +234,8 @@ pub fn write_capabilities(
         match grant_plan::plan_stage(&spec, holdings, expanded, streams) {
             Err(refusal) => return write_refusal(&spec, refusal, out),
             Ok(e) => {
-                // **Narrowed by the line's verb** (milestone 809 (the package client becomes a
-                // program), option V2): `caps jig list` shows what `jig list` would hold, which is
-                // what the progenitor will endow, reading the same word off the argv.
+                // Narrowed by the line's verb, as the progenitor narrows it reading the same word
+                // off the argv (milestone 809 (the package client becomes a program), option V2).
                 let mut verb = [0u8; grant_plan::MAX_VERB];
                 let verb = grant_plan::verb_of(stage, &mut verb);
                 let m = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
@@ -295,8 +269,8 @@ pub fn write_preview(
 }
 
 /// [`write_preview`]'s rows, for an endowment bound against `m`. Separate because a file run by its
-/// path (milestone 597, provisional) is bound against the manifest its note carries, and its
-/// endowment's row is a stand-in (`grant_plan::IMAGE_ROW`) that must not be read.
+/// path is bound against the manifest its note carries, and its endowment's row is a stand-in
+/// (`grant_plan::IMAGE_ROW`) that must not be read.
 fn write_preview_rows(
     e: &Endowment,
     m: &grant_plan::Manifest,
@@ -304,10 +278,7 @@ fn write_preview_rows(
     config: Option<ConfigPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    // **A `std` program's slots are fixed by its runtime, not by the order they are listed in**
-    // (milestone 595 (provisional), `crates/std_runtime_contract`). The same grants land somewhere
-    // else, and slot 0 is not even the same kind of object, so a preview that printed the native
-    // positions for one would be describing a child the progenitor does not build.
+    // A `std` program's slots are fixed by `crates/std_runtime_contract`, not by listing order.
     let std = m.startup == grant_plan::StartupContract::Std;
     write_result_and_memory_rows(e, m, std, out);
     write_file_and_directory_rows(e, m, holdings, std, out);
@@ -319,13 +290,7 @@ fn write_preview_rows(
     write_activation_rows(e, m, out);
     write_stream_rows(e, out);
     out(b"    arg    ");
-    // **Read the manifest, do not keep a second list of which programs take an argument.** This
-    // was `matches!(e.program, Program::LeastAuthorityDemo)` until 2026-08-16, so every other argument-taking program
-    // previewed `arg (none)` while the shell went on to hand it the argument anyway. That is the
-    // worst possible direction for this particular line to be wrong in: the next thing it prints is
-    // that reading the command is reading its whole authority, and a preview that under-reports
-    // authority is one a reader would trust. Found by someone adding their first program, who hit
-    // it because the manifest already knew the answer.
+    // From the manifest, never a second list: this line must not under-report an argument.
     if m.program_argument == ProgramArgumentDeclaration::Required {
         write_num(e.program_argument, out);
         out(b"\n");
@@ -381,7 +346,8 @@ fn write_result_and_memory_rows(
     }
 }
 
-/// The rows for what the line designated: a file, or a directory and its names.
+/// The rows for what the line designated: a file and its direction, or a directory, its names and
+/// whether `-r` grants the walk (notes/shell/caps-preview.md, "The rows, in the order they print").
 fn write_file_and_directory_rows(
     e: &Endowment,
     m: &grant_plan::Manifest,
@@ -389,10 +355,6 @@ fn write_file_and_directory_rows(
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    // A file endowment reads as one line naming the file and the direction, because that IS the
-    // whole authority: an endpoint served by a file caretaker that will answer for this name and no
-    // other. The direction comes from the program's manifest, not from anything typed, which is why
-    // it is worth printing: the line you typed plus this table is the child's complete authority.
     if let Some(g) = e.file {
         out(b"    cap 2  endpoint  file     ");
         out(g.name.as_bytes());
@@ -402,11 +364,6 @@ fn write_file_and_directory_rows(
             b"  (read-only, and nothing else on the disk)\n".as_slice()
         });
     }
-    // **A directory endowment is the subtree at risk, printed before anything happens**, which is
-    // the argument for `rm` being a program rather than a builtin: a builtin would have run with
-    // this shell's entire endowment and there would have been nothing to print. The `-r` line is
-    // the load-bearing half, because typing that option is what widens the capability from "may
-    // take a name out of this directory" to "may walk everything under it".
     if let Some(g) = e.directory {
         write_slot(
             if std {
@@ -420,10 +377,6 @@ fn write_file_and_directory_rows(
         let mut buf = [0u8; nav::RENDER_MAX];
         let n = holdings.place(g.which, &g.directory).render(&mut buf);
         out(&buf[..n]);
-        // **What a foreign program's words designated** (milestone 205): the names, or the whole
-        // directory for `.`, and what it may do with them, which is its manifest's word grant (the
-        // progenitor makes it read-only for bytes nobody vouched for, and says so in the manifest
-        // this preview was given).
         if let grant_plan::ProgramArgumentDeclaration::Words(w) = m.program_argument {
             if g.names.is_empty() {
                 out(b"  (this directory itself)\n");
@@ -445,10 +398,7 @@ fn write_file_and_directory_rows(
             });
         } else {
             out(b"  (the directory holding ");
-            // **The names, all of them, and this is the point of previewing a set at all.** `caps rm
-            // *.txt` prints exactly what `echo *.txt` prints, because both render the same
-            // expansion: the authority about to move is on the screen before anything moves it,
-            // which is a claim Unix cannot make about its own `rm`.
+            // All of them: the same expansion `echo *.txt` renders.
             write_set(&g.names, out);
             out(b")\n");
             if g.subtree {
@@ -460,18 +410,15 @@ fn write_file_and_directory_rows(
     }
 }
 
-/// The read-only pages the progenitor endows: the clock, the inert configuration, and the argv.
+/// The read-only pages the progenitor endows, which no token on the line designates: the clock,
+/// the inert configuration with its values (as §111 (inert configuration is a validated page)
+/// asks), and the argv, which is bytes and grants nothing (notes/shell/caps-preview.md).
 fn write_page_rows(
     m: &grant_plan::Manifest,
     config: Option<ConfigPage>,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    // **The clock, which no token on the line designates.** It is the progenitor's to endow rather than the
-    // shell's, and it is still part of this child's complete authority, so `caps` prints it: a
-    // reader who took the command line for the whole story would be wrong by exactly one capability.
-    // The row says *read-only* because that is the entire reason `date` cannot set the time
-    // (DECISIONS §43): there is no flag it could pass and no method it could call.
     if m.clock {
         write_slot(
             if std {
@@ -484,16 +431,8 @@ fn write_page_rows(
         out(b"frame     clock    read-only. it can read the time and not set it,\n");
         out(b"                              and no token on the line could have asked for more\n");
     }
-    // **The inert-configuration page, `clock`'s twin** (milestone 47, DECISIONS §111). No token on
-    // the line could designate it either, so it is the progenitor's to endow and this is where a
-    // reader learns the authority exists at all.
-    //
-    // **And its values, which is what §111 asked this preview for**: "print the actual values of
-    // declared inert config, not just the key names, so a misclassified value is visible to whoever
-    // is about to run something." They come from the shell's own read-only view of the *same frame*
-    // the child will be handed, never from a copy of the defaults, so the preview cannot drift from
-    // what the child reads. A shell given no view (a `login` session, a test role) says so rather
-    // than guessing.
+    // The values come from the shell's view of the same frame the child is handed, never a copy
+    // of the defaults, so the preview cannot drift from what the child reads.
     if m.configuration {
         write_slot(
             if std {
@@ -517,9 +456,6 @@ fn write_page_rows(
         out(b"                              nothing here can change what a shell hands\n");
         out(b"                              its children\n");
     }
-    // **The argv, which is bytes and not authority** (milestone 205, DECISIONS §170). Printed
-    // because it is a capability the child holds, and worded so nobody reads it as more: a path
-    // among these words reaches only what a directory row above already granted.
     if m.program_argument.hears_words() {
         write_slot(std_runtime_contract::ARGS_SLOT, out);
         out(b"frame     args     read-only. the words on the line, as bytes; they\n");
@@ -527,19 +463,9 @@ fn write_page_rows(
     }
 }
 
-/// The service endpoints a program may call: entropy, the network, and its supervision domain.
+/// The service endpoints a program may call: entropy, the network, and its supervision domain,
+/// each with the right it holds and what that right cannot do (notes/shell/caps-preview.md).
 fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&[u8])) {
-    // **The row milestone 111 exists to print, and it is the point of that milestone rather than a
-    // decoration on it.** Randomness is the one authority a program can hold whose use leaves no
-    // trace at all: a process that draws a key and a process that hardcodes one look identical from
-    // outside, run the same syscalls, and produce output of the same shape. So "does this program
-    // depend on unpredictable bytes" is a question no observation of a running system answers, and
-    // this line answers it before anything is spawned.
-    //
-    // `WRITE` is the whole grant, and on an endpoint that is the right to `CALL`: this child may
-    // ask the service for bytes. It may not receive another client's request (that would be `READ`,
-    // which the service holds and nothing else does), and it holds no `GRANT`, so it cannot pass
-    // randomness on to anything at all.
     if m.entropy {
         write_slot(
             if std {
@@ -557,18 +483,9 @@ fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&
         out(b"                              hand a random source to anything it spawns\n");
         out(b"                              a program without this row draws no randomness at all\n");
     }
-    // **The network, which no token on the line designates either** (milestone 590 (the booted
-    // system starts its network stack)).
-    // The entropy row's shape and its reason: whether a program can reach the network is a fact
-    // about what it holds, so a person reads it here before anything runs rather than learning it
-    // from a firewall afterward. The fourth line says what it does not reach: since milestone 649
-    // (every client of a network stack shares its socket numbers) each socket is its own capability
-    // (§255 (each socket is its own capability)), so one declaring program cannot reach another's
-    // sockets. Until then this line said the opposite, because it was true.
     if m.network {
         if std {
-            // The stack at slot 2 and, at slot 3, the region the program is built in, which the
-            // net PAL retypes each socket's shared page from (milestone 809).
+            // Slot 3 is the region the program is built in; the net PAL retypes sockets from it.
             write_slot(std_runtime_contract::STACK_SLOT, out);
             out(b"endpoint  network  WRITE. it may open outbound sockets through the network\n");
             write_slot(std_runtime_contract::NET_MEMORY_REGION_SLOT, out);
@@ -585,29 +502,16 @@ fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&
             b"                              a program without this row reaches no network at all\n",
         );
     }
-    // **The row this milestone exists to print.** On Linux there is nothing here to say: `ps` reads
-    // /proc and the answer is "every process on the machine", which no command line chose and no
-    // tool can narrow. Here the scope is a capability, so it is a line a person can read before
-    // anything is spawned, and a wider grant would be a different line rather than an invisible one.
     if m.domain {
-        // `ENUMERATE`, and the word is the point of the line rather than decoration: it is the
-        // right that lets this program *name* the domain's members and not the one that would let
-        // it receive their deaths or collect them. Printing `READ` here would describe a wider
-        // grant than the one being made, which is the failure a `caps` output has available.
+        // `ENUMERATE`, never `READ`, which would describe a wider grant than the one being made.
         out(b"    cap 7  endpoint  domain   ENUMERATE. the processes this shell's jobs are\n");
         out(b"                              supervised by, and no others. it can name them and\n");
         out(b"                              do nothing to them: not receive their deaths, not\n");
         out(
             b"                              collect them, and not learn anything about a process\n",
         );
-        // **The last line was an overclaim until 2026-08-17**, and the audit that found it
-        // (design/audit-reports/) fixed the sentence rather than the mechanism, on purpose. It read
-        // "and not learn that a process outside this domain exists", which is false: `SURVEY`
-        // returns a cursor that is a machine-wide thread-table slot index, and a tid whose low half
-        // is the same index, so a viewer with two members can subtract and count the threads
-        // created between them. It still cannot name one. Narrowing the claim to what the mechanism
-        // actually delivers is the honest half-step; scoping the cursor to the domain is a
-        // milestone, and notes/process-view.md's `BUGS` carries the disposition.
+        // Not "that it exists": `SURVEY`'s machine-wide cursor lets two members count the threads
+        // between them (notes/process-view.md's BUGS).
         out(b"                              outside this domain but that it exists\n");
     }
 }
@@ -639,17 +543,9 @@ fn write_resolver_row(
 }
 
 /// The machine-level grants: the statistics page, the budget view, reboot, sync, the installer
-/// and the catalog.
+/// and the catalog (notes/shell/caps-preview.md). `m` is the manifest the progenitor endows from.
 fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
-    // **The machine, and this prompt's share of it** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and your share)). Two rows
-    // because they are two grants and one can be held without the other: `vmstat` sees the machine
-    // and not the budget, `slabtop` the budget and not the machine, `free` both. The first says the
-    // owner's switch exists, because a person reading `caps free` on a machine whose owner withheld
-    // the page should learn why the program cannot see it.
-    // `m`, not `e.program.manifest()`: for an image run from a file `e.program` is the placeholder row
-    // and `m` is what its note declared, and the progenitor endows from the note. Reading the
-    // row here under-reported a packaged `free` as holding neither (the 2026-10-03 security
-    // audit's follow-up, item (d)).
+    // `m`, not `e.program.manifest()`: for an image run from a file, `e.program` is a placeholder.
     if m.machine {
         out(b"    cap 11 frame     machine  read-only. memory, run queue, interrupts, context\n");
         out(b"                              switches and busy time for the whole machine.\n");
@@ -659,10 +555,7 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
         out(b"    cap 12 region    share    ENUMERATE. this shell's job budget: how much is spent\n");
         out(b"                              and on what. it cannot spend, split or destroy it\n");
     }
-    // **The reboot object** (milestone 805 (`reboot` at the prompt), DECISIONS §251 (restarting the
-    // machine is a kernel object the progenitor hands out)): the row exit criterion 3 asks `caps
-    // reboot` to print. It names the authority and the sync it does first, because the
-    // second is what makes the first safe and neither shows anywhere else before the machine stops.
+    // The reboot row names the sync done first (milestone 805 (`reboot` at the prompt)).
     if m.reboot {
         out(b"    cap 13 reboot    WRITE. restart the machine (the kernel asks the firmware).\n");
     }
@@ -670,9 +563,8 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
         out(b"    cap 14 endpoint  sync   WRITE. the file server answers SYNC on it and refuses\n");
         out(b"                              everything else: it flushes the device, and reaches no file\n");
     }
-    // **The installer endpoint** (milestone 809 (the package client becomes a program), DECISIONS
-    // §270 (a package manager holds an installer endpoint, not the spawn endpoint)). Three lines
-    // for what it cannot do, because the endpoint it is a copy of can do all three.
+    // The installer endpoint is a copy of one that can do all three things these lines refuse
+    // (§270 (a package manager holds an installer endpoint, not the spawn endpoint)).
     if m.installer {
         write_slot(grant_plan::INSTALLER_SLOT, out);
         out(b"endpoint  installer  WRITE. it may ask the progenitor to install, remove or\n");
@@ -743,12 +635,9 @@ fn write_activation_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn 
     );
 }
 
-/// Where the output, the second stream and the input go.
+/// Where the output, the second stream and the input go: each a capability `caps` can name
+/// (notes/shell/caps-preview.md).
 fn write_stream_rows(e: &Endowment, out: &mut dyn FnMut(&[u8])) {
-    // **Where its output goes**, which is the demonstration milestone 50 owed: the destination is a
-    // capability rather than an integer with a convention attached, so `caps` can name it. On Unix
-    // the same question has no answer at this point, because fd 1 is whatever the shell's fd 1
-    // happened to be and nothing records what that was.
     match e.sink {
         line::Sink::Report => {
             out(
@@ -759,19 +648,13 @@ fn write_stream_rows(e: &Endowment, out: &mut dyn FnMut(&[u8])) {
             out(b"    output   an endpoint into the next stage. no file, no buffer, no object:\n");
             out(b"             the rendezvous IS the pipe\n");
         }
-        // The row names the file, and the parenthesis names what the program actually holds, which
-        // is not the file. Its slot 0 is this shell's result endpoint either way; `>` is where the
-        // shell puts the bytes, not something the child was handed. So a redirected program still
-        // cannot seek, truncate, re-read or stat, and this is where a reader can see why.
+        // The program holds this shell's result endpoint, not the file.
         line::Sink::File(g, mode) => {
             out(b"    output   ");
             out(g.name.as_bytes());
             out(b"  (this shell writes the bytes there; the program holds\n");
             out(b"             an endpoint and cannot seek, truncate, re-read or stat)\n");
-            // The one line where `>` and `>>` differ, and it is about the shell rather than about
-            // the child: whichever was typed, what the child holds is the same endpoint. Printed
-            // because it is the only visible consequence of the operator, and because a person
-            // about to overwrite a file should be able to see that from the preview.
+            // `>` and `>>` hand the child the same endpoint; only what the shell does differs.
             out(if matches!(mode, line::Mode::Append) {
                 b"             this shell keeps what is already in it and writes after it\n"
                     .as_slice()
@@ -780,10 +663,7 @@ fn write_stream_rows(e: &Endowment, out: &mut dyn FnMut(&[u8])) {
             });
         }
     }
-    // **The second stream, for a program that declares one** (DECISIONS §67). It is printed even
-    // when no `2>` is on the line, and that is the row worth having: a reader who took `date >
-    // when.txt` for "everything date says goes into when.txt" would be wrong, and this is where they
-    // can see it. A program that declares none gets no row, because it has no second stream to hide.
+    // Printed even with no `2>` on the line; no row for a program that declares no second stream.
     match e.diagnostics {
         line::Diagnostics::None => {}
         line::Diagnostics::Printed => {
