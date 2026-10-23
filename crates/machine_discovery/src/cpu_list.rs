@@ -89,8 +89,8 @@ pub struct Cpu {
 
 impl Cpu {
     /// Would this kernel start this core? Firmware calls it usable, its own ISA string does not
-    /// disclaim supervisor mode, and its `enable-method` is PSCI or unstated (the RISC-V binding has
-    /// none; SBI HSM is the only mechanism).
+    /// disclaim supervisor mode, and its `enable-method` is PSCI or unstated (the RISC-V binding
+    /// has none; SBI HSM is the only mechanism).
     ///
     /// `smp::read_cpu_list` applies this; it lives here so the board fixtures can hold it.
     pub fn is_startable(&self) -> bool {
@@ -222,9 +222,9 @@ fn hwid_from_reg(bytes: &[u8], cells: u32) -> Option<u64> {
     }
 }
 
-/// Is a `status` property one of the two spellings that mean "use this", `"okay"` or the
-/// deprecated `"ok"`? Every other value, recognised or not, reads as unusable: a core not started is
-/// a smaller machine, and a reserved core started is one running in someone else's memory.
+/// Is a `status` property one of the two spellings that mean "use this", `"okay"` or the deprecated
+/// `"ok"`? Every other value, recognized or not, reads as unusable: a core not started is a smaller
+/// machine, and a reserved core started is one running in someone else's memory.
 ///
 /// Shared with [`crate::riscv64::Isa::from_device_tree`], so the two walks agree on "disabled".
 pub(crate) fn is_okay(value: &[u8]) -> bool {

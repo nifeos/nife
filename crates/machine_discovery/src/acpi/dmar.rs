@@ -519,8 +519,8 @@ impl DmarUnits {
     /// Which unit owns PCI function `bus:dev.func` on `segment`, by the VT-d specification's rule
     /// (section 8.3): an explicit scope anywhere wins, then the segment's `INCLUDE_PCI_ALL` unit.
     /// `Ok(None)` is a machine where nothing translates this device's DMA; `Err(())` is a table
-    /// recorded only in part, where the missing part could be the answer. Unlike Linux's table-order
-    /// walk, this agrees with the rule even when the catch-all is not listed last.
+    /// recorded only in part, where the missing part could be the answer. Unlike Linux's
+    /// table-order walk, this agrees with the rule even when the catch-all is not listed last.
     ///
     /// `bridge` returns a bridge's `(secondary, subordinate)` bus numbers from the live bus, or
     /// `None` when `bus:dev.func` is not a bridge; only the live bus turns a path into a bus.

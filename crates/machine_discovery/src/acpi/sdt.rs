@@ -78,8 +78,8 @@ pub fn parse_sdt_header(bytes: &[u8]) -> Result<SdtHeader, AcpiError> {
     })
 }
 
-/// Machine-checked proofs over the table header (milestone 319). Why these tables carry harnesses is on
-/// `acpi::root`'s `verification`.
+/// Machine-checked proofs over the table header (milestone 319). Why these tables carry harnesses
+/// is on `acpi::root`'s `verification`.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.

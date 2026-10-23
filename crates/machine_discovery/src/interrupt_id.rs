@@ -12,7 +12,8 @@
 //! - Only the first `interrupts` entry is decoded, the convention every UART binding here follows.
 //! - Any other cell count answers `None`: a number read from the wrong cell would arm the wrong
 //!   source, which is the bug this module exists to end.
-//! - `interrupts-extended` on the device is not read; the PLIC's own use of it is [`crate::plic`]'s.
+//! - `interrupts-extended` on the device is not read; the PLIC's own use of it is
+//!   [`crate::plic`]'s.
 //!
 //! Name: provisional (`interrupt_id` for the module, following `cpu_list`'s pattern of a shared
 //! question beside the two arch records; the GIC spelling "INTID" is where the noun comes from).

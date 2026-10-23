@@ -3,8 +3,8 @@
 //! Every `x86_64` part this project runs on reports NX and `syscall`, so the refusal path is a
 //! branch no machine takes. Here the feature words are an argument, so the part that does not exist
 //! can be handed to the decision. A boot with `NIFE_CPU=max,nx=off` hides NX from a whole guest
-//! (milestone 524 (the three `x86_64` boot gates)), but cannot assert on the decision in isolation. No fixture file: a `CPUID` leaf is the fixture,
-//! four 32-bit words.
+//! (milestone 524 (the three `x86_64` boot gates)), but cannot assert on the decision in isolation.
+//! No fixture file: a `CPUID` leaf is the fixture, four 32-bit words.
 
 use machine_discovery::x86_64::*;
 

@@ -557,8 +557,8 @@ impl Isa {
         }
     }
 
-    /// Can this machine run us? The only verb here a call site branches on: say what is missing, and
-    /// stop.
+    /// Can this machine run us? The only verb here a call site branches on: say what is missing,
+    /// and stop.
     ///
     /// Silence is absence on x86, unlike on RISC-V: `CPUID` is the part describing itself, and a
     /// part that does not answer leaf `0x80000001` predates these features. On bare metal the
