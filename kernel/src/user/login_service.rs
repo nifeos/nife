@@ -23,7 +23,8 @@ const LOGIN_STACK_PAGES: u64 = 16;
 ///
 /// The credential halves are `credential_contract::fixture`'s indices, not named again here.
 pub const LOGIN: u64 = 0;
-/// §117's per-identity subtree proof, writing the identity it was handed; see the same
+/// §117 (a principal's subtree is named by its identity string)'s proof, writing the identity it
+/// was handed; see the same
 /// file's module docs.
 pub const WRITE_MARKER: u64 = 1;
 /// Reads that marker back, in an independent channel.
@@ -104,8 +105,8 @@ pub const F_STORED: u64 = 1 << 19;
 /// The plan in the page granted the job no report endpoint.
 pub const F_NO_REPORT: u64 = 1 << 20;
 
-/// The ceiling, in microseconds, on [`LOGOUT`]'s wait for §16's armed kill to land on the caretaker
-/// region's `MemoryRegion::DESTROY`.
+/// The ceiling, in microseconds, on [`LOGOUT`]'s wait for §16 (object revocation)'s armed kill to
+/// land on the caretaker region's `MemoryRegion::DESTROY`.
 ///
 /// [`LOGOUT`]'s third report word is that wait (`waited_micros`), not an identity hint, so a failure
 /// can say whether the host was slow or the caretaker never died. Must match

@@ -73,9 +73,10 @@ pub fn start(image: &'static [u8]) -> Option<RendezvousId> {
     start_role(image, ROLE_VIRTIO_BLK)
 }
 
-/// Start the same driver binary against the PCIe disk (§18): enumeration by kernel/src/pci.rs,
-/// INTx through the interrupt controller, and the same confinement, backed by the IOMMU when the
-/// machine has one (§20). The driver cannot tell which bus it is on.
+/// Start the same driver binary against the PCIe disk (§18 (the PCIe transport: one driver, two
+/// buses)): enumeration by kernel/src/pci.rs, INTx through the interrupt controller, and the same
+/// confinement, backed by the IOMMU when the machine has one (§20 (IOMMU-backed DMA isolation)).
+/// The driver cannot tell which bus it is on.
 pub fn start_pci(image: &'static [u8]) -> Option<RendezvousId> {
     start_role_pci(image, ROLE_VIRTIO_BLK)
 }
@@ -191,8 +192,8 @@ fn wire_net_server(
 
     // The endpoints come out of a region of their own, or the service cannot be ended: `net_stack`
     // blocks in `receive_cap(STACK)` forever, a `Blocked` thread never reaches the `schedule()` that
-    // spends an armed kill (§16), and only reclaiming this region aborts the waiter. Six pages:
-    // three endpoints, the timer and its notification, and one spare.
+    // spends an armed kill (§16 (object revocation)), and only reclaiming this region aborts the
+    // waiter. Six pages: three endpoints, the timer and its notification, and one spare.
     let ep_region = crate::memory_region::create(6).expect("no endpoint region for net_stack");
     let irq_ep = crate::sched::create_rendezvous_from(ep_region).expect("no irq endpoint");
     crate::sched::bind_irq(intid, irq_ep);

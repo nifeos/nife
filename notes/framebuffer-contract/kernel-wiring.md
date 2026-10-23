@@ -50,7 +50,8 @@ address, and `gpu_driver` cannot tell it from the client that draws a test patte
 framebuffer contract carries text unchanged, and the spawn literal is the evidence.
 
 What the terminal adds belongs to the terminal contract: an endpoint it serves, and a page an
-application writes bytes into (§10's control by message, bulk by shared page).
+application writes bytes into. That is §10 (process model: capability-based, microkernel)'s split:
+control by message, bulk by shared page.
 
 A caller of `start_terminal` or `start_driver` must take every blocking report. The driver sends
 `UP`, then `FLUSHED` from inside its serving loop once the first flush is served. A caller that

@@ -319,7 +319,7 @@ pub struct TerminalWiring {
 ///
 /// The terminal holds exactly `painter`'s authority (a report endpoint, the display endpoint, the
 /// surface) plus the terminal contract's two additions: an endpoint it serves and a page an
-/// application writes bytes into (§10).
+/// application writes bytes into (§10 (process model: capability-based, microkernel)).
 ///
 /// The caller must receive three blocking reports, or the screen freezes after one frame: `UP` and
 /// then `FLUSHED` on `driver_report`, and `TERM_UP` on `term_report`. The tests read `FLUSHED`'s
