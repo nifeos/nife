@@ -5,14 +5,14 @@ caretakers and `graphical_terminal` sessions, and how it takes their memory back
 
 A directory grant is delivered by a caretaker built in the client's own region, together with the
 two endpoints between them. The caretaker's serve loop never returns, so a region of its own would
-never come home, and the LIFO rule of §16 (object revocation: reclaim the objects a process built) would pin every region above it. Inside the client's region,
-the client's one reap ends both. The endpoints must come from that region too:
-`sched::reap_region_objects` sweeps a region's endpoints before its threads, and that sweep is what
-wakes a caretaker parked in `RECEIVE`.
+never come home. The LIFO rule of §16 (object revocation: reclaim the objects a process built) would
+pin every region above it. Inside the client's region, the client's one reap ends both. The
+endpoints must come from that region too: `sched::reap_region_objects` sweeps a region's endpoints
+before its threads, and that sweep is what wakes a caretaker parked in `RECEIVE`.
 
-The caretaker is built with no fault slot. Its region is collected by the client's reap, and a
-second death message for a thread that reap already took would have `job_undertaker` collect a tid
-the scheduler no longer knows, which it traps on. A `graphical_terminal` session's drivers and line
+The caretaker is built with no fault slot. Its region is collected by the client's reap. A second
+death message for a thread that reap already took would have `job_undertaker` collect a tid the
+scheduler no longer knows, which it traps on. A `graphical_terminal` session's drivers and line
 discipline are unsupervised for the same reason; the session program alone is born on `deaths`, and
 its reap ends them all.
 
@@ -37,12 +37,12 @@ session cannot `OPERATION_BYTES` a line that the boot shell would then run with 
 `RECLAIM_ATTEMPTS` is sixty-four yields, and that count does not reliably cover one preemption.
 `login_test_client` carried the same loop over the same refusal and measured it on 2026-08-27 (UTC);
 see its `destroy_with_retry` and [load-sensitive-assertions.md](../load-sensitive-assertions.md). A
-`yield_now` that finds work on its core returns in about 130 us, so sixty-four can pass in 8 ms,
-while the preemption being waited for is a 10 ms tick away. At about twice oversubscribed, the count
-stopped covering the tick in about one run in three. That client now waits on the property with a
-clock. Here the failure has never been observed, and it would be invisible: `reclaim` gives up
-quietly and strands `DIR_JOB_REGION_PAGES` until the machine stops. The fix is the same
-clock-bounded wait and a way to notice when it expires.
+`yield_now` that finds work on its core returns in about 130 us, so sixty-four can pass in 8 ms. The
+preemption being waited for is a 10 ms tick away. At about twice oversubscribed, the count stopped
+covering the tick in about one run in three. That client now waits on the property with a clock.
+Here the failure has never been observed, and it would be invisible: `reclaim` gives up quietly and
+strands `DIR_JOB_REGION_PAGES` until the machine stops. The fix is the same clock-bounded wait and a
+way to notice when it expires.
 
 ## The spawn endpoint's senders
 
@@ -54,9 +54,9 @@ and a message from a sender the loop is not serving is always that sender's firs
 takes reaped messages out of the way, and keeps another sender's first message to serve next.
 
 A request that finds a pool short waits for the reaps it is owed instead of counting yields. It
-waits only once the request in hand has been read to its end, when the shell is parked on the
-result endpoint and only the undertaker can send, and only while a finished job's reap is due. A
-due reap is one whose job the shell has had the whole answer from, which an exiting program
-follows at once. A job that blocks after answering is never reaped, and a request waiting on it
-waits with it; `^C` cannot help, because the shell is parked. Image frames are mapped when they
-arrive and copied only later, for the same reason: the copy's carve may wait.
+waits only once the request in hand has been read to its end, when the shell is parked on the result
+endpoint and only the undertaker can send. It waits only while a finished job's reap is due. A due
+reap is one whose job the shell has had the whole answer from, which an exiting program follows at
+once. A job that blocks after answering is never reaped, and a request waiting on it waits with it;
+`^C` cannot help, because the shell is parked. Image frames are mapped when they arrive and copied
+only later, for the same reason: the copy's carve may wait.

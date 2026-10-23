@@ -2,13 +2,12 @@
 
 `crates/system_initializer` is everything the progenitor does after its kernel starts it: it reads
 and measures the archive, builds the boot components, gives its construction budget away and then
-serves spawns for the life of the boot. The crate's own head comment says what it builds and what
-it refuses. This note holds the reasons behind the order and the wiring, which the doc comments
-link to. Measurement, the chain the kernel's trust root starts, is in
-[trusted-init.md](trusted-init.md); supervision and reaping are in [supervision.md](supervision.md).
-The page budgets and how each was counted are in [the budgets appendix](system-initializer/budgets.md),
-and the builders the spawn service calls after the boot are in
-[the children appendix](system-initializer/children.md).
+serves spawns for the life of the boot. The crate's own head comment says what it builds and what it
+refuses. This note holds the reasons behind the order and the wiring, which the doc comments link
+to. Measurement, the chain the kernel's trust root starts, is in [trusted-init.md](trusted-init.md);
+supervision and reaping are in [supervision.md](supervision.md). The page budgets and how each was
+counted are in [the budgets appendix](system-initializer/budgets.md), and the builders the spawn
+service calls after the boot are in [the children appendix](system-initializer/children.md).
 
 ## The boot order is the capability table's budget
 
@@ -71,10 +70,10 @@ cost no slots: `supervision_protocol`'s `fill_and_map` holds one frame capabilit
 
 ## The stack the boot runs on
 
-`boot`'s frame is live for the whole boot, because the spawn service runs inside it. The progenitor's
-stack is `PROGENITOR_STACK_PAGES` (`kernel/src/user/progenitor_boot.rs`), and it has overflowed
-when the boot held more locals. So every step is `#[inline(never)]`, and its temporaries are gone
-before the spawn service starts.
+`boot`'s frame is live for the whole boot, because the spawn service runs inside it. The
+progenitor's stack is `PROGENITOR_STACK_PAGES` (`kernel/src/user/progenitor_boot.rs`), and it has
+overflowed when the boot held more locals. So every step is `#[inline(never)]`, and its temporaries
+are gone before the spawn service starts.
 
 The graphical stack's programs are measured inside `graphical_terminal_grants` and the builders, not
 in the measured pass, for the same reason: three more `elf::Elf`s in `boot`'s frame overflowed it
@@ -162,13 +161,13 @@ ids, and serves nobody until the spawn service grants a job a zone.
 
 On aarch64 and riscv64 the UART is a page, so the console and `input` map it. On x86 COM1 is a port
 range with nothing to map: each holds it as a `PortRange` capability, which the kernel's TSS I/O
-bitmap reads, and neither invokes it by slot. With a screen beside the UART, the console's slot 2
-is the screen terminal's endpoint and slots 3 and 4 are its batching pair, a notification and a
-timer. The notification is bound to the console's thread between `build_child` and `start_child`,
-because a running thread cannot bind itself. The pair lets the console paint once per window rather
-than once per write, and the console degrades to one paint per write without it. The console's endowment is built as arrays with a count, because the screen is a runtime fact and
-the port range a compile-time one, and one literal per case would be one more place to get the slot
-order wrong.
+bitmap reads, and neither invokes it by slot. With a screen beside the UART, the console's slot 2 is
+the screen terminal's endpoint and slots 3 and 4 are its batching pair, a notification and a timer.
+The notification is bound to the console's thread between `build_child` and `start_child`, because a
+running thread cannot bind itself. The pair lets the console paint once per window rather than once
+per write, and the console degrades to one paint per write without it. The console's endowment is
+built as arrays with a count. The screen is a runtime fact and the port range a compile-time one, so
+one literal per case would be one more place to get the slot order wrong.
 
 `system_log` is built right after the console, because until it attaches the kernel prints for
 itself and can splice with the console's bytes. Its ring grants are deleted whether or not it was
@@ -177,9 +176,10 @@ built, so none is carried across the login block.
 The shell's slot 4 is the file service when the boot has one, `WRITE` without `GRANT`, which is all
 `>` and `<` need. Its clock is last whatever else is granted, so the shell is told the slot in its
 third start word. The clock and the configuration page are `READ` without `GRANT`: the shell can
-read them and hand them to nothing it spawns, so which children see them is decided by manifests
-(§43 (reading the clock is a page, setting it is a page you may write)). The shell is built but not started, because the giveaway's negative control is printed
-through its output page.
+read them and hand them to nothing it spawns. So manifests decide which children see them, as §43
+(reading the clock is a page, setting it is a page you may write) has it for the clock. The shell
+is built but not started, because the giveaway's negative control is printed through its output
+page.
 
 ## The login stack
 
@@ -201,11 +201,12 @@ order is a chain of things that must exist before something waits on them.
 7. `login` is built. It holds `WRITE` on the file service's page and not `READ`, because the
    progenitor holds only `WRITE | GRANT` and a writable mapping checks `WRITE` alone.
 
-`login` holds the run-unvouched endpoint with `GRANT` and gives each session `WRITE` (§219 (how the shell names an installed program to the spawner), gate
-D2). The boot prompt holds it with `WRITE` alone, so the shell can present it and hand it to
-nothing. That one placement in `give_away_budget` makes the unauthenticated boot prompt the owner's
-console, which ruling 1 of §221 (the boot prompt is the owner's console) decided. §221 as amended on 2026-10-06 (UTC) ends that console, and
-the amendment is unbuilt: milestone 806 (concurrent login sessions) lists it. BUGS below records the
+`login` holds the run-unvouched endpoint with `GRANT` and gives each session `WRITE` (§219 (how the
+shell names an installed program to the spawner), gate D2). The boot prompt holds it with `WRITE`
+alone, so the shell can present it and hand it to nothing. That one placement in `give_away_budget`
+makes the unauthenticated boot prompt the owner's console. Ruling 1 of §221 (the boot prompt is the
+owner's console) decided it. §221 as amended on 2026-10-06 (UTC) ends that console, and the
+amendment is unbuilt: milestone 806 (concurrent login sessions) lists it. BUGS below records the
 gap.
 
 ## The giveaway
@@ -213,8 +214,9 @@ gap.
 The progenitor carves three bounded budgets off the construction root and deletes the root:
 `PROGENITOR_RESERVED_PAGES` for itself, `JOBS_BUDGET_PAGES` for the prompt's jobs, and
 `IMAGE_POOL_PAGES` for images run by path. The job pool is separate so that its watermark moves for
-jobs only. A scratch page table carved between a job's split and its reap would sit above that job,
-and the LIFO return of §16 (object revocation: reclaim the objects a process built) would find the job is not the top and give back nothing.
+jobs only. A scratch page table carved between a job's split and its reap would sit above that job.
+The LIFO return of §16 (object revocation: reclaim the objects a process built) would then find
+the job is not the top and give back nothing.
 
 It then proves the root is gone from the inside, on the two primitives that build things. Both must
 answer `NoSuchSlot` (-1) rather than `NotPermitted` (-3): the capability is gone, not narrowed.
@@ -224,5 +226,5 @@ after that line, because `PageFrame::REVOKE` would take it from the shell too.
 ## BUGS
 
 - The boot prompt holds the run-unvouched capability without a login. §221 as amended on 2026-10-06
-  (UTC) says no console is the owner's unauthenticated, and nothing here builds that yet; milestone
-  806 (concurrent login sessions) carries it.
+  (UTC) says no console is the owner's without one. Nothing here builds that yet; milestone 806
+  carries it.
