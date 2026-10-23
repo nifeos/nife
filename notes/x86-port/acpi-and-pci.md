@@ -233,5 +233,5 @@ address, so only `0xbc` is read. QEMU models neither offset (both read zero, mea
 QEMU 11.1.1 under PVH and OVMF), so under emulation the firmware memory map is the only source.
 Zero reads as "not reported", since a running machine has DRAM below the hole. `TOLUD` is a
 configuration register, not AML, which is why the legacy ports reach it without an interpreter.
-[Milestone 256 (a BAR window the machine agreed to)](../../design/roadmap/0256-a-bar-window-the-machine-agreed-to.md)
+[Milestone 256 (x86_64 places PCI BARs in a hardcoded window)](../../design/roadmap/0256-a-bar-window-the-machine-agreed-to.md)
 has the design and `arch::x86_64::mmu::memory_mapped_io_window` the consumer.
