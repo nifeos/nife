@@ -99,6 +99,73 @@ both boards keep their working mmio paths alongside. The DMA
 confinement is unchanged in spirit and in code; what PCIe adds to the trust story is Bus-Master
 Enable, the bus-level DMA switch the kernel now controls explicitly.
 
+## Placing BARs, and routing interrupts
+
+This is the design behind `kernel/src/pci.rs`.
+
+The windows come from the machine. Both `virt` boards fill `memory::pci_regions()` from the
+`pci-host-ecam-generic` node. `x86_64` has no device tree, so it fills the same static from ACPI's
+MCFG (`arch::x86_64::machine::enable_pcie_ecam`, called once from `main.rs`). One cursor places
+every BAR the kernel assigns, the virtio devices' and on riscv the IOMMU's, because two bump
+allocators would hand out one address twice. Its limit is the window base plus `PCI_BAR_MAPPED`,
+the clamp `map_everything` maps.
+
+`place_bars` has three arms. A BAR already inside the window the kernel mapped is left alone. A
+nonzero BAR outside it is adopted where it stands. Anything else is placed from the cursor. A
+nonzero BAR is not evidence of a mapped one. Under `x86_64`'s PVH boot nothing runs firmware, yet
+QEMU's `-device nvme` resets with a live BAR0 (`0xfebd4000`) outside the kernel's window, and
+trusting it faulted on first touch. A UEFI machine's firmware picks its own addresses too.
+
+Adoption honours firmware's placement because firmware read the host bridge's `_CRS`, which this
+kernel cannot: `_CRS` is AML. Relocating a real machine's bus is the wrong answer. On xenon 13 of
+15 functions carried a BAR outside the kernel's 2 MiB window, which would have been exhausted by
+the first function that wanted a megabyte. On the device-tree boards every BAR arrives zero and
+adoption is unreachable.
+
+`adopt` asks one safety question, the weakest that suffices: does the BAR overlap usable RAM? A
+device mapped over RAM answers at addresses the frame allocator hands out. Whether the address also
+decodes to the bus is the machine's claim, made by writing the BAR. It also refuses a BAR with a
+page that cannot be mapped, since a half-mapped BAR faults on first touch. `AlreadyMapped` is
+success there and nowhere else in the tree. Two BARs of one function share a page, or a BAR sits
+inside the window mapped up front; either way it is one page mapped device-typed twice with the
+same flags.
+
+`bar_census` counts functions and stranded ones. A function is stranded when a
+memory BAR is nonzero, outside the kernel's window and on top of RAM, which is what stops
+adoption. Zero is the passing answer. It reads raw BAR registers, because sizing writes all-ones
+and a census must write nothing. Unsized, it checks a BAR's first page only, and `adopt` refuses a
+BAR that runs into RAM on a span it has sized. Counting functions is not bringing them up either:
+`count_block_devices` and the NVMe count read config space only, since bring-up would disturb
+whichever driver owns the function.
+
+How a function interrupts is the machine's answer. `arch::irq::alloc_msi_vector` is asked first. On `x86_64`
+it reserves a local APIC vector and the kernel programs the function's MSI-X table. A legacy pin
+on `q35` goes through a PIRQ router only ACPI's `_PRT` describes, and `_PRT` is AML. A hardcoded
+swizzle that matches `q35` may not match a real board. MSI-X has no board-specific routing: the
+device is handed an address and a value, and only the interrupt controller's own message format
+must be right. Both `virt` boards answer `None` and use the INTx swizzle onto the PLIC (sources
+32..35) on riscv and GIC SPIs (INTIDs 35..38) on aarch64; host-run witnesses hold it against each
+machine's tree.
+
+A machine that answered `Some` has no INTx route, so a function with no MSI-X is refused rather
+than swizzled. There `PCI_IRQ_BASE` is 0, and the swizzle would resolve to the PIT's line and arm a
+driver on the timer. A function with MSI and no MSI-X, such as the xHCI on an Intel PCH, takes
+plain MSI when its caller allows it. Virtio functions do not, because a virtio queue names its
+vector by MSI-X table index. That vector travels with the transport: the queue is told it at
+setup time with the queue selected, in `virtio::setup_queue`, and a device reset clears it.
+
+The kernel programs entry 0 only, since every device attached uses a single queue's completion.
+The entry is written before MSI-X Enable, with its per-entry mask cleared last, so nothing is live
+half-written. Function Mask is cleared explicitly: some parts set it at reset, and a masked function
+never interrupts. The table lives in a BAR, so it is programmed after `place_bars`.
+
+A virtio-gpu is PCIe only, because no configuration attached puts one
+on either `virt` machine's mmio bus. The keyboard rides PCIe by choice, though both machines offer
+`virtio-keyboard-device` over mmio. It sits behind the same IOMMU domain as the GPU, and its
+buffers are where every keystroke lands. The RNG exists on both buses, and an RNG's buffer is the
+one place in memory whose contents must not be guessable. On `q35`, which has no virtio-mmio bus,
+`find_block_device_n` answers "the second disk".
+
 ## More than one bus (milestone 320)
 
 The kernel enumerates every bus behind a bridge, not bus 0 alone. QEMU's `virt` is flat, but on

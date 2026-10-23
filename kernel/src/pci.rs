@@ -1,28 +1,13 @@
-//! PCIe **enumeration and virtio-pci bring-up**. Not a driver.
+//! PCIe enumeration and virtio-pci bring-up. Not a driver.
 //!
-//! The PCIe analog of virtio.rs's discovery half, and the same division of labor: the kernel
-//! walks the bus (a bootstrap role), finds the block device, brings its register blocks up, and
-//! hands a userspace driver a confined transport capability. The decode logic (ECAM addressing,
-//! BAR sizing, capability parsing) lives in the host-tested `pci` crate; this module supplies
-//! only the volatile accessors into the mapped ECAM window and the policy: which device to pick,
-//! where BARs go, which command bits to set. See notes/pcie.md and notes/pcie-transport-scope.md.
-//!
-//! Portable: everything here except the `arch::mmu` policy/irq constants is architecture-
-//! neutral, and every window this module reads comes through one seam, `memory::pci_regions()`.
-//! Both `virt` boards fill it from the `pci-host-ecam-generic` node their device tree states;
-//! `x86_64` fills the same static from ACPI's MCFG (`arch::x86_64::machine::enable_pcie_ecam`,
-//! called once from `main.rs`), since it has no device tree to read a node from. A machine that
-//! names no window at all (the JH7110's tree, or a machine with no MCFG) answers every probe
-//! here with "nobody home", no MMIO touched.
-//!
-//! **How a function's interrupt reaches a driver is the machine's answer, not this module's**
-//! (milestone 215, `x86_64` PCI interrupt routing). `arch::irq::alloc_msi_vector` is asked first: on
-//! `x86_64` it reserves a local APIC vector and this module programs it into the function's MSI-X
-//! table, because a legacy pin on `q35` goes through a PIRQ router only ACPI's `_PRT` describes
-//! and `_PRT` is AML. Both `virt` boards answer `None` and keep the INTx swizzle they have always
-//! used: the PLIC (sources 32..35) on riscv, GIC SPIs (INTIDs 35..38) on aarch64. Each arch's
-//! constants say so, and host-run witnesses hold the device-tree architectures' swizzle against
-//! the machine's own tree.
+//! The kernel walks the bus, finds a device, brings its register blocks up and hands a userspace
+//! driver a confined transport capability. The decode logic (ECAM addressing, BAR sizing,
+//! capability parsing) lives in the host-tested `pci` crate; this module supplies the volatile
+//! accessors into the mapped ECAM window and the policy: which device, where BARs go, which command
+//! bits to set. Every window comes through `memory::pci_regions()`, and a machine that names none
+//! answers every probe with "nobody home", no MMIO touched. How a function's interrupt is chosen
+//! is the machine's answer (notes/pcie.md, "Placing BARs, and routing interrupts"). See
+//! notes/pcie.md and notes/pcie-transport-scope.md.
 
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
@@ -34,14 +19,10 @@ use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_IRQ_BASE};
 /// One bus of ECAM configuration space: 32 devices of 8 functions of 4 KiB.
 const BUS_BYTES: u64 = 0x10_0000;
 
-/// **How many buses of configuration space this kernel has mapped, and may therefore read.** Zero
+/// How many buses of configuration space this kernel has mapped, and may therefore read. Zero
 /// means no survey has run and [`ecam_buses`] answers the architecture's compiled-in default.
-///
-/// It is a runtime value rather than a constant because the answer is the machine's (milestone
-/// 320). `arch::mmu::PCI_ECAM_BUSES` is 1 on all three architectures and was right for a year,
-/// because QEMU hangs every device off the root complex on every board this tree boots. A machine
-/// whose firmware put a controller behind a PCIe root port needs the bus behind that port mapped
-/// before anything can read it, and nothing compiled in can know which bus that is.
+/// A runtime value because a controller behind a root port needs the bus behind that port mapped,
+/// and nothing compiled in knows which bus that is (notes/pcie.md, "More than one bus").
 static ECAM_BUSES: AtomicU16 = AtomicU16::new(0);
 
 /// The ECAM window's physical base, cached from `memory::pci_regions` by
@@ -51,12 +32,9 @@ static ECAM_BUSES: AtomicU16 = AtomicU16::new(0);
 static ECAM_BASE: AtomicU64 = AtomicU64::new(0);
 
 /// The shared bump cursor for kernel-assigned BARs, starting at the discovered 32-bit memory
-/// window's base. With `-bios default` the kernel is the PCI firmware (OpenSBI does no PCI
-/// setup), so every BAR arrives zero and the kernel places it. More than one function needs
-/// placing: the virtio disk, and on riscv the IOMMU (itself a PCI function, milestone 16b). Two
-/// independent bump allocators would hand out the same address twice, so the cursor is one shared
-/// value that only ever advances. Enumeration runs on the boot hart alone; the atomics here are
-/// for correctness of the shared state, not contention.
+/// window's base. One cursor that only advances, because every function the kernel places (the
+/// virtio devices, and on riscv the IOMMU) draws from it and two cursors would hand out one address
+/// twice. Enumeration runs on the boot hart alone; the atomics are not for contention.
 static BAR_NEXT: AtomicU64 = AtomicU64::new(0);
 
 /// One past the last byte a BAR may occupy: the discovered window base plus the mapped slice
@@ -64,12 +42,11 @@ static BAR_NEXT: AtomicU64 = AtomicU64::new(0);
 /// what is addressable).
 static BAR_LIMIT: AtomicU64 = AtomicU64::new(0);
 
-/// **The exclusive bus-number bound every walk in this module passes to `pci::walk`**: how many
-/// buses of configuration space are mapped, so how many can be read without faulting.
+/// The exclusive bus-number bound every walk in this module passes to `pci::walk`: how many buses
+/// of configuration space are mapped, so how many can be read without faulting.
 ///
-/// The compiled-in `PCI_ECAM_BUSES` until [`survey`] has run, and what the survey found afterwards.
-/// On both `virt` boards no survey runs and this is 1 forever, which is the truth there: their
-/// device trees describe a flat bus and QEMU puts nothing behind a bridge.
+/// Returns the compiled-in `PCI_ECAM_BUSES` until [`survey`] has run, and what the survey found
+/// afterwards. On both `virt` boards no survey runs and this is 1.
 pub(crate) fn ecam_buses() -> u16 {
     match ECAM_BUSES.load(Ordering::Relaxed) {
         0 => PCI_ECAM_BUSES,
@@ -77,12 +54,10 @@ pub(crate) fn ecam_buses() -> u16 {
     }
 }
 
-/// **Bytes of ECAM the direct map must cover**, for each architecture's `map_everything`.
+/// Bytes of ECAM the direct map must cover, for each architecture's `map_everything`.
 ///
-/// One seam rather than three copies of `PCI_ECAM_MAPPED.min(ecam_size)`, so that the day a
-/// device-tree machine grows a root port there is one place that already knows the answer. The
-/// caller still clamps against the window the machine actually described: a survey cannot report a
-/// bus outside it, but `PCI_ECAM_BUSES` on a machine that describes less than one bus could.
+/// The caller still clamps against the window the machine described: a survey cannot report a bus
+/// outside it, but `PCI_ECAM_BUSES` on a machine that describes less than one bus could.
 ///
 /// Name: provisional (milestone 320 (every PCI bus the machine has)), every name listed here: this,
 /// [`ecam_buses`], [`survey`] and `NIFE_PCIE_ROOT_PORT` in `helpers/qemu-runner-x86_64.sh`. calef
@@ -91,37 +66,13 @@ pub fn ecam_bytes() -> u64 {
     u64::from(ecam_buses()) * BUS_BYTES
 }
 
-/// **Print every function on every bus the machine has, and record how many buses that is**
-/// (milestone 320). Returns the number of functions found.
+/// Print every function on every bus the machine has, and record how many buses that is.
+/// Returns the number of functions found.
 ///
-/// # Why this exists, and why it is a print rather than a count
-///
-/// The kernel mapped one megabyte of configuration space and enumerated bus 0, while ACPI's MCFG
-/// described a hundred and twenty-eight buses. Both facts were printed by every `x86_64` boot, two
-/// lines apart, for a year. On QEMU's `q35` the two agree in effect, because everything is on bus
-/// 0. On xenon the NVMe controller is behind a PCIe root port, so [`find_nvme_device`] searched a
-/// bus the disk was never on and `non_volatile_memory_express_tests` **skipped** with QEMU's explanation for an absence
-/// that had an entirely different cause.
-///
-/// A count would not have caught that and did not: `bar_census` printed "15 function(s) on the bus"
-/// and fifteen functions is a perfectly ordinary number for a machine whose disk is missing. What
-/// was needed was the list, because the finding is in *which* functions those were.
-///
-/// # When it must run
-///
-/// **Before the fine map replaces the boot map**, which is the whole reason this is possible
-/// without lazy mapping machinery. On `x86_64` the boot tables cover the low 4 GiB
-/// indiscriminately, so at this point in boot every bus the MCFG describes is already readable and
-/// the survey costs no mapping at all; `arch::mmu::map_everything` then maps exactly the buses the
-/// survey found. Called later it would read its way straight off the end of the mapped window.
-///
-/// # What it cannot do, and this is a real limit rather than a caveat
-///
-/// It maps **bus 0 through the highest bus it found, contiguously**, not the set of buses it found.
-/// A machine whose firmware numbers a root port's subtree 0x60 pays sixty-one buses of page tables
-/// for two buses of devices. Nothing measured yet does that (see `BUGS` in notes/pcie.md), and the
-/// cost is bounded by what a flat map of the whole MCFG window would have cost anyway, so the set
-/// version is not built until a machine asks for it.
+/// Runs before the fine map replaces the boot map, while every bus the MCFG describes is readable;
+/// called later it would read off the end of the mapped window. It prints the list rather than a
+/// count, because a missing disk hides in an ordinary count. The bus range it records is
+/// contiguous from 0, not the set found (notes/pcie.md, "More than one bus", and its `BUGS`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) fn survey() -> usize {
     if !is_host_bridge_present() {
@@ -179,12 +130,10 @@ pub(crate) fn survey() -> usize {
 }
 
 /// True when `memory::pci_regions()` named a host bridge, caching its windows on first call.
-/// Every public entry point checks this before touching config space, so on a machine with
-/// nothing recorded there (the JH7110's tree has no generic-ECAM node; an x86 machine's ACPI has
-/// no MCFG) every probe reports nobody home without a single MMIO access, the same degradation
-/// as an absent virtio-mmio device. Single-hart boot-path code (see `BAR_NEXT`); the store order
-/// (cursor and limit before the base that stands for "present") is documentation, not
-/// synchronization.
+/// Every public entry point checks this before touching config space, so a machine with nothing
+/// recorded (the JH7110's tree, an x86 machine with no MCFG) reports nobody home with no MMIO
+/// access. Single-hart boot-path code (see `BAR_NEXT`); the store order (cursor and limit before
+/// the base that stands for "present") is documentation, not synchronization.
 fn is_host_bridge_present() -> bool {
     if ECAM_BASE.load(Ordering::Relaxed) != 0 {
         return true;
@@ -200,41 +149,15 @@ fn is_host_bridge_present() -> bool {
 
 /// Place every unassigned BAR of `bdf` at a size-aligned address drawn from the shared cursor,
 /// writing the config-space BAR registers. Returns false (after saying so) if the window is
-/// exhausted. A BAR that already carries an address **inside the window `mmu::map_everything`
-/// actually mapped** is left alone; one that carries an address the machine chose and that is not
-/// memory is **adopted** where it stands ([`adopt`]); only a BAR that is unassigned, or assigned
-/// somewhere this kernel cannot honour, is moved.
+/// exhausted.
 ///
-/// **The adoption arm is milestone 256's, and it exists because relocating a real machine's whole
-/// bus is the wrong answer rather than a slow one.** QEMU hands this kernel BARs that are
-/// unassigned, so for a year every BAR it met wanted placing and the code that placed them was
-/// never wrong. Real firmware hands over BARs it has already put somewhere, having read the host
-/// bridge's `_CRS` that this kernel cannot: on xenon's second boot the census read **13 of 15
-/// functions** carrying a BAR outside the kernel's window, and moving thirteen functions into a
-/// 2 MiB window would have exhausted it after the first one that wanted a megabyte. Firmware's
-/// placement is better evidence about where the bus decodes than anything this kernel can derive,
-/// so where it is honourable it is honoured.
-///
-/// **The "leave a nonzero BAR alone" half of that rule is not enough on its own**, found here
-/// 2026-08-25 (decisions §86's VT-d/NVMe data point). The comment this replaced assumed a nonzero
-/// BAR means "firmware (or a previous boot stage) already placed it," and therefore already
-/// mapped: true on the two device-tree architectures, where nothing runs before this kernel to
-/// place one. It is false on `x86_64`'s PVH boot: nothing here runs any firmware either, yet
-/// QEMU's `-device nvme`, attached directly to the root complex, resets with a live, working BAR0
-/// already assigned (`0xfebd4000` on this boot) that has no relationship to the kernel's own
-/// mapped window. Trusting it produced a controller whose registers page
-/// fault on first touch, because nothing in `mmu::map_everything` maps wherever QEMU chose. The
-/// same gap would bite a real UEFI machine too (milestone 87): firmware there also picks its own
-/// addresses, unrelated to this kernel's hardcoded window, so "nonzero" was never sufficient
-/// evidence of "mapped" on this architecture. Checking against the window this kernel actually
-/// mapped, rather than against zero, is correct in both cases and a no-op on the other two
-/// architectures (their BARs still always arrive at 0).
+/// A BAR already inside the window `mmu::map_everything` mapped is left alone; a nonzero one
+/// outside it is adopted where it stands ([`adopt`]); only one that is unassigned, or assigned
+/// somewhere this kernel cannot honour, is moved. Nonzero alone is not evidence of mapped: see
+/// notes/pcie.md, "Placing BARs, and routing interrupts".
 fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
-    // The window `mmu::map_everything` actually mapped: `memory::pci_regions()`'s mem32 half for
-    // the lower bound (immutable once `is_host_bridge_present` caches it), `BAR_LIMIT` for the
-    // upper (the same `PCI_BAR_MAPPED.min(bar_size)` clamp that call computed, so this always
-    // agrees with what is really mapped even on the two architectures whose device tree describes a
-    // PCIe memory window larger than `PCI_BAR_MAPPED`).
+    // The window `mmu::map_everything` mapped. `BAR_LIMIT` is the same `PCI_BAR_MAPPED` clamp that
+    // call computed, so it agrees even where the tree describes a larger window.
     let mapped_lo = crate::memory::pci_regions().map(|(_, (base, _))| base);
     let mapped_hi = BAR_LIMIT.load(Ordering::Relaxed);
 
@@ -247,14 +170,11 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         {
             continue; // already placed, and inside memory this kernel actually mapped
         }
-        // **Adopt what the machine placed, when the machine placed it somewhere that is not
-        // memory** (milestone 256). Mapping it is what makes adoption real: the fine map was built
-        // before this ran and covers the kernel's own window, not wherever firmware put this one.
+        // The fine map covers only the kernel's own window, so adoption must map the BAR itself.
         if bar.base != 0 && adopt(bdf, i, bar) {
             continue;
         }
-        // A BAR's address must be aligned to its size (the writable-bits mask encodes that). Reserve
-        // size-aligned space from the shared cursor.
+        // A BAR's address must be aligned to its size (the writable-bits mask encodes that).
         let align = bar.size.max(0x10);
         let base = loop {
             let cur = BAR_NEXT.load(Ordering::Relaxed);
@@ -280,33 +200,19 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
     true
 }
 
-/// **Does `lo..hi` overlap any region the machine called usable RAM?**
-///
-/// The one safety question adoption turns on, and deliberately the weakest one that is sufficient:
-/// a device window this kernel maps over RAM is a device answering at addresses the frame
-/// allocator hands out, which is the corruption milestone 256 exists to prevent. Whether the
-/// address *also* decodes to the bus is the machine's claim to make and it has already made it by
-/// writing the BAR.
+/// Does `lo..hi` overlap any region the machine called usable RAM? The one safety question
+/// adoption turns on (notes/pcie.md, "Placing BARs, and routing interrupts").
 fn overlaps_ram(lo: u64, hi: u64) -> bool {
     crate::memory::ram_regions().any(|(start, size)| lo < start + size && hi > start)
 }
 
-/// **Take a BAR the machine already placed, and map it where it stands** (milestone 256). True
-/// when it was adopted, false when the caller must place it instead.
+/// Take a BAR the machine already placed, and map it where it stands. True when it was adopted,
+/// false when the caller must place it instead.
 ///
-/// Refused, and the BAR moved instead, when the address the machine chose overlaps RAM: that is
-/// not a window firmware meant this kernel to drive through, whatever wrote it, and mapping device
-/// registers over memory the allocator owns is the failure this whole milestone is about. It is
-/// also refused when a page of it cannot be mapped for any reason other than being mapped
-/// already, since a half-mapped BAR faults on first touch and is worse than a moved one.
-///
-/// **`AlreadyMapped` is success here and is not treated as success anywhere else in this tree.**
-/// Two BARs of the same function routinely share a page, and a BAR may sit inside the window
-/// `mmu::map_everything` mapped up front; both are the same page mapped device-typed twice with
-/// the same flags, which is the one shape where the second mapping asks for nothing new.
-///
-/// On the two device-tree architectures this is unreachable: every BAR there arrives zero, so the
-/// caller never asks.
+/// Refuses a BAR that overlaps RAM, and one with a page that fails to map for any reason other than
+/// `AlreadyMapped`, which is success here and nowhere else in this tree. Unreachable on the
+/// device-tree architectures, where every BAR arrives zero. See notes/pcie.md, "Placing BARs, and
+/// routing interrupts".
 fn adopt(bdf: Bdf, index: usize, bar: &pci::Bar) -> bool {
     let lo = bar.base & !(PAGE_SIZE - 1);
     let hi = (bar.base + bar.size).next_multiple_of(PAGE_SIZE);
@@ -372,7 +278,7 @@ pub(crate) fn bridge_bus_range(bus: u8, dev: u8, func: u8) -> Option<(u8, u8)> {
     Some((b.secondary, b.subordinate))
 }
 
-/// **Bench diagnostic for fatal risk 6's CompletionTimeout on xenon (2026-10-04).** The command
+/// Bench diagnostic for fatal risk 6's CompletionTimeout on xenon (2026-10-04). The command
 /// and status words of the NVMe function `rid` and of every bridge on bus 0 whose range holds its
 /// bus. A root port with Bus-Master clear forwards no upstream DMA, and this kernel sets
 /// Bus-Master on the endpoint only; status bits name an abort the endpoint saw. Two short lines,
@@ -441,36 +347,28 @@ pub(crate) struct PciVirtioDevice {
     pub notify_mult: u32,
     /// The ISR byte (read-to-ack), physical.
     pub isr: u64,
-    /// **The interrupt a driver binds and waits on**, whichever way this machine delivers it: the
-    /// PLIC/GIC input the INTx pin swizzles to (see `pci::intx_irq`) on the two device-tree
-    /// boards, and the MSI-X vector `arch::irq::alloc_msi_vector` reserved on `x86_64`. Which of the
-    /// two happened is [`msix_vector`](Self::msix_vector), and nothing above this module needs to
-    /// know: an `Irq` capability names an intid and the arch layer resolves it.
+    /// The interrupt a driver binds and waits on: the PLIC/GIC input the INTx pin swizzles to (see
+    /// `pci::intx_irq`) on the two device-tree boards, the MSI-X vector
+    /// `arch::irq::alloc_msi_vector` reserved on `x86_64`. An `Irq` capability names it and the arch
+    /// layer resolves it.
     pub intid: u32,
-    /// **Which MSI-X table entry [`intid`](Self::intid) was programmed into**, or
-    /// `pci::VIRTIO_MSIX_NO_VECTOR` when this function delivers INTx instead (both `virt` boards).
-    ///
-    /// It has to travel with the transport rather than being consumed here, because a virtio queue
-    /// is told which vector to raise **at queue-setup time, with that queue selected**, and the
-    /// queue is set up later, by `virtio::setup_queue`, on the driver's request. A device reset
-    /// (which every driver does on the way in) puts the field back to `NO_VECTOR`, so it cannot be
-    /// programmed once here and left.
+    /// Which MSI-X table entry [`intid`](Self::intid) was programmed into, or
+    /// `pci::VIRTIO_MSIX_NO_VECTOR` when this function delivers INTx (both `virt` boards). It
+    /// travels with the transport because a virtio queue is told its vector at queue-setup time, in
+    /// `virtio::setup_queue`, and a device reset clears it.
     pub msix_vector: u16,
     /// The PCIe requester id (`bus:8 | dev:5 | fn:3`), the id the IOMMU keys its per-device tables
     /// on (milestone 16b). Carried through to `virtio::register` so the device is confined to its
     /// DMA region in hardware.
     pub rid: u32,
-    /// The **virtio device type** (2 = block, 1 = net, 16 = gpu), recovered from the PCI device id
-    /// (`0x1040 + type`). PCI config space has no `DeviceID` register in the virtio-mmio sense, so
-    /// the transport answers a driver's `DeviceID` read from this instead of a hardcoded value; a
-    /// GPU driver that sanity-checks what it is talking to then gets the truth on either bus.
+    /// The virtio device type (2 = block, 1 = net, 16 = gpu), recovered from the PCI device id
+    /// (`0x1040 + type`). The transport answers a driver's `DeviceID` read from it, since PCI config
+    /// space has no such register.
     pub device_type: u32,
-    /// The **device-specific config region** (virtio spec 4.1.4.4's `DEVICE_CFG` vendor
-    /// capability), resolved to a physical address like the blocks above, when the function
-    /// carries one. A blk function keeps its capacity there (eight bytes at offset 0), which is
-    /// what `blk::SIZE` answers from; net, rng and console have no device-specific config and
-    /// carry `None`. The mmio transport never needed this carried: its config area sits at a
-    /// fixed offset (0x100) inside the one register block everything else already reaches.
+    /// The device-specific config region (virtio spec 4.1.4.4's `DEVICE_CFG` capability), physical,
+    /// when the function carries one. A blk function keeps its capacity there (eight bytes at
+    /// offset 0, what `blk::SIZE` answers from); net, rng and console carry `None`. The mmio
+    /// transport's config area is at a fixed offset (0x100) instead.
     pub device_config: Option<u64>,
 }
 
@@ -485,17 +383,12 @@ pub(crate) fn find_block_device() -> Option<PciVirtioDevice> {
     bring_up(bdf, pci::VIRTIO_TYPE_BLOCK)
 }
 
-/// **Find the `n`-th (0-based) modern virtio-blk function on the bus and bring it up**, in
+/// Find the `n`-th (0-based) modern virtio-blk function on the bus and bring it up, in
 /// bus:device.function order. `None` if the bus has no such function.
 ///
-/// The PCI half of [`crate::virtio::find_block_device_n`]'s ordering, and the reason it exists is
-/// `q35`: that machine has no virtio-mmio bus, so every block device a wiring can ask for on `x86_64`
-/// is a PCI function and "the second disk" has to be answerable here (milestone 303). On both
-/// `virt` boards the mmio half answers every ordinal any wiring asks for and this is never reached.
-///
-/// [`find_block_device`] is `n = 0` and is kept rather than folded into this, because the PCIe
-/// transport tests (`virtio_service::start_role_pci`) want "the PCI disk" rather than an ordinal
-/// into an ordering that spans a bus they are deliberately not on.
+/// The PCI half of [`crate::virtio::find_block_device_n`]'s ordering, for `q35`, which has no
+/// virtio-mmio bus. [`find_block_device`] stays separate because the PCIe transport tests
+/// (`virtio_service::start_role_pci`) want "the PCI disk", not an ordinal across both buses.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the mmio half answers first on both virt boards
 pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtioDevice> {
     if !is_host_bridge_present() {
@@ -533,11 +426,8 @@ pub(crate) fn find_net_device() -> Option<PciVirtioDevice> {
 /// Find the first modern virtio-gpu function on the bus and bring it up (milestone 29, the display
 /// ladder's first rung). `None` if there is no PCI GPU.
 ///
-/// **PCIe only, on purpose and on both boards.** A virtio-gpu is not on either `virt` machine's
-/// virtio-mmio bus in any configuration we attach, so unlike the disk and the NIC there is no mmio
-/// twin to prove parity over; the parity that matters here is aarch64 `virt` and riscv `virt`, both
-/// of which carry `virtio-gpu-pci` over the §18 transport. Same bring-up as the disk, and the same
-/// hardware confinement: the device is entered behind the IOMMU at `virtio::register`.
+/// PCIe only: no configuration we attach puts a virtio-gpu on either `virt` machine's mmio bus.
+/// Same bring-up and IOMMU confinement as the disk.
 pub(crate) fn find_gpu_device() -> Option<PciVirtioDevice> {
     // No transitional twin exists for virtio-gpu (the legacy id range predates the device), so this
     // asks for the modern id and nothing else rather than warning about a legacy device that cannot
@@ -549,11 +439,8 @@ pub(crate) fn find_gpu_device() -> Option<PciVirtioDevice> {
 /// Find the first modern virtio-input function on the bus and bring it up (milestone 29's keyboard).
 /// `None` if there is no PCI input device.
 ///
-/// PCIe only, and here that **is** a choice rather than a constraint: unlike the GPU, both `virt`
-/// machines do offer a `virtio-keyboard-device` on the virtio-mmio bus. The keyboard rides PCIe
-/// anyway so it sits behind the same IOMMU domain the GPU does and the display's two devices are
-/// confined the same way. A keyboard is the one device whose DMA a user would least like
-/// unconfined: its buffers are where every keystroke lands.
+/// PCIe only by choice, so the keyboard sits behind the IOMMU the way the GPU does (notes/pcie.md,
+/// "Placing BARs, and routing interrupts").
 pub(crate) fn find_input_device() -> Option<PciVirtioDevice> {
     let bdf = find_virtio_bdf(pci::VIRTIO_INPUT_MODERN, None, "virtio-input")?;
     bring_up(bdf, pci::VIRTIO_TYPE_INPUT)
@@ -562,11 +449,8 @@ pub(crate) fn find_input_device() -> Option<PciVirtioDevice> {
 /// Find the first modern virtio-rng function on the bus and bring it up (milestone 56's entropy
 /// source). `None` if there is no PCI RNG.
 ///
-/// The mmio twin is [`crate::virtio::find_entropy_device`], and both exist because both machines
-/// offer both: the entropy service is wired over whichever one the wiring asked for, and the
-/// milestone-56 test runs it over each in turn. An RNG behind the IOMMU is worth having for the
-/// same reason a keyboard is: its buffer is the one place in memory whose contents must not be
-/// guessable, and an unconfined device could write it anywhere and read the rest.
+/// The mmio twin is [`crate::virtio::find_entropy_device`]; the entropy service is wired over
+/// whichever the wiring asks for, and the milestone-56 test runs each.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // entropy_service is the caller, and the m56 tests drive it
 pub(crate) fn find_rng_device() -> Option<PciVirtioDevice> {
     let bdf = find_virtio_bdf(
@@ -579,11 +463,8 @@ pub(crate) fn find_rng_device() -> Option<PciVirtioDevice> {
 
 /// How many modern virtio-blk functions are on the bus (milestone 57's roster).
 ///
-/// **Counting is not bringing up.** [`find_block_device`] resolves a transport, which means sizing
-/// and assigning BARs and enabling memory decoding: side effects a *listing* has no business
-/// causing, and ones that would disturb whichever driver already owns the function. This reads
-/// config space and nothing else, which is all a roster is entitled to know
-/// (`crates/block_roster`).
+/// Reads config space and nothing else: bring-up sizes BARs and enables decoding, which would
+/// disturb whichever driver owns the function (`crates/block_roster`).
 pub fn count_block_devices() -> usize {
     if !is_host_bridge_present() {
         return 0;
@@ -601,43 +482,13 @@ pub fn count_block_devices() -> usize {
     n
 }
 
-/// **A read-only census of what the machine left on the bus**, provisional name (milestone 165).
+/// A read-only census of what the machine left on the bus, provisional name.
 ///
-/// Returns `(functions, stranded)`: how many functions answer at all, and how many carry at least
-/// one memory BAR this kernel can **neither use where it is nor adopt** (milestone 256), which is
-/// the pair of numbers that says whether the BAR window this port derived is adequate on the
-/// machine it is running on.
-///
-/// **The second number changed meaning on 2026-09-04 and got smaller for a good reason.** It used
-/// to count every BAR outside the kernel's own window, which was the right question while
-/// [`place_bars`] moved all of them: each one was a relocation, and a relocation onto a hardcoded
-/// window nobody had checked against this machine was the risk being measured. Since that window
-/// is derived from the machine and a BAR the machine placed outside it is adopted rather than
-/// moved, "outside the window" stopped being a problem and "outside the window **and** on top of
-/// RAM" became the whole of it. That is the count here, and **zero is the passing answer**: it
-/// means every function on the bus is reachable exactly where the machine left it or in a window
-/// the machine agreed to.
-///
-/// **Why this is worth a boot line rather than a comment.** [`place_bars`] leaves a nonzero BAR
-/// alone only when it already lies inside that window, and **moves it** otherwise. That arm is
-/// exercised and correct (its own doc records the `-device nvme` case that found it), so the open
-/// question is not whether the move works but **how much of the machine it moves and whether the
-/// place it moves things to is free.** That window was a hardcoded `0xc000_0000` until milestone
-/// 256, checked once against QEMU's `info mtree` and against nothing else, because the window a
-/// real machine wants BARs in is in its host bridge's `_CRS` and `_CRS` is AML.
-///
-/// **What the old number measured, kept because it is the evidence for the change.** Under the
-/// relocate-everything rule it read 5 of 8 under PVH and 3 of 6 under OVMF on the bare tour
-/// machine (2026-09-02), and on xenon's second boot, on real firmware, **13 of 15**. That last one
-/// is the measurement milestone 256 was minted from: thirteen functions of fifteen were about to
-/// be moved out of windows the machine's own firmware had chosen, into a 2 MiB hardcoded window
-/// that was RAM on that machine.
-///
-/// Counting only, like [`count_block_devices`] and for the same reason: no sizing writes, no
-/// command-register changes, nothing a function's existing owner could notice.
-// The x86 boot tour is the only caller, for the reason its own comment gives: on both `virt`
-// boards every BAR arrives zero and there would be nothing to report. The function itself is
-// arch-neutral and stays here rather than in `arch/`, so this allow is the cost of that.
+/// Returns `(functions, stranded)`: how many functions answer, and how many carry a memory BAR this
+/// kernel can neither use where it is nor adopt. Zero stranded is the passing answer. Counting
+/// only, like [`count_block_devices`] and for its reason. See notes/pcie.md, "Placing BARs, and
+/// routing interrupts".
+// The x86 boot tour is the only caller: on both `virt` boards every BAR arrives zero.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) fn bar_census() -> (usize, usize) {
     if !is_host_bridge_present() {
@@ -651,16 +502,8 @@ pub(crate) fn bar_census() -> (usize, usize) {
         &mut |b, o| cfg_read32(b, o),
         &mut |bdf, _, _| {
             functions += 1;
-            // The raw BAR registers, not `pci::read_bars`, which sizes them by writing all-ones:
-            // this runs on every function on the bus, including ones nothing will ever drive, and
-            // a census that wrote to them would not be a census. Counting only, like
-            // `count_block_devices` and for the same reason.
-            //
-            // A BAR is stranded when it is nonzero, is a memory BAR (bit 0 clear), sits outside
-            // the window this kernel places into, and is on top of RAM, which is what stops
-            // `place_bars` adopting it. Its length is unknown without sizing, so this asks about
-            // its first page only; a BAR that starts clear of RAM and runs into it is
-            // `place_bars`' problem and is refused there, on a span it has sized.
+            // The raw BAR registers, not `pci::read_bars`, which sizes them by writing all-ones.
+            // Unsized, so only a BAR's first page is checked against RAM; `adopt` refuses the rest.
             let stuck = (0..6).any(|i| {
                 let raw = cfg_read32(bdf, pci::BAR0 + i * 4);
                 let base = u64::from(raw & !0xf);
@@ -709,8 +552,7 @@ fn find_virtio_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Option
     found
 }
 
-/// Bring an enumerated virtio function up and resolve its transport. Bring-up order matters and is
-/// deliberate:
+/// Bring an enumerated virtio function up and resolve its transport, in this order:
 /// 1. size BARs while memory decoding is off (the sizing dance writes the BARs);
 /// 2. assign addresses to unassigned BARs (with `-bios default`, OpenSBI has done no PCI setup,
 ///    so every BAR arrives zero and the kernel is the firmware here);
@@ -718,8 +560,6 @@ fn find_virtio_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Option
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
 fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
-    // Size every BAR, then place the unassigned ones from the shared cursor (the IOMMU function
-    // draws from the same cursor on riscv, so the two cannot overlap).
     let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
         cfg_write32(b, o, v);
     });
@@ -727,8 +567,6 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         return None;
     }
 
-    // The virtio vendor capabilities name (bar, offset) pairs; resolve them to physical
-    // addresses against the now-assigned BARs.
     let resolve = |bars: &[Option<Bar>; 6], capability: &VirtioCap| -> Option<u64> {
         let bar = bars.get(capability.bar as usize)?.as_ref()?;
         (u64::from(capability.offset) + u64::from(capability.length) <= bar.size)
@@ -746,9 +584,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
                 notify_mult = capability.notify_off_multiplier;
             }
             pci::VIRTIO_CAP_ISR if isr.is_none() => isr = resolve(&bars, &capability),
-            // Optional per the spec: only some device types have a config region to describe
-            // (blk's capacity, the gpu's). Absent stays `None` rather than failing bring-up, so
-            // a function with nothing to say there still comes up.
+            // Optional per the spec; absent stays `None` rather than failing bring-up.
             pci::VIRTIO_CAP_DEVICE if device_config.is_none() => {
                 device_config = resolve(&bars, &capability);
             }
@@ -757,9 +593,8 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
     );
     let (common, notify_base, isr) = (common?, notify_base?, isr?);
 
-    // Memory-Space Enable so the BARs decode; Bus-Master Enable so the device may DMA at all.
-    // The upper half of this dword is the STATUS register, whose error bits are write-1-to-clear,
-    // so it is written as zero: clearing nothing, changing nothing.
+    // The upper half of this dword is STATUS, whose error bits are write-1-to-clear, so it is
+    // written as zero.
     let cmd = cfg_read32(bdf, pci::COMMAND) as u16;
     cfg_write32(
         bdf,
@@ -783,26 +618,18 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
     })
 }
 
-/// **How this function's interrupt reaches a driver**: `(intid, msix_vector)`, and the machine
-/// decides rather than this module. `arch::irq::alloc_msi_vector` answers `Some` only where the
-/// machine wants message-signalled interrupts; both `virt` boards answer `None` and fall through to
-/// the INTx swizzle they have always used. See milestone 215 (a PCI function's interrupt on
-/// x86_64) for why x86_64 differs.
+/// How this function's interrupt reaches a driver: `(intid, msix_vector)`. MSI-X where
+/// `arch::irq::alloc_msi_vector` answers `Some`, the INTx swizzle where it answers `None`.
 ///
-/// `msi_fallback` lets a function with **MSI and no MSI-X** take plain MSI (milestone 242 (USB
-/// host and HID)): the xHCI on an Intel PCH, xenon's USB controller, is one. The virtio functions
-/// pass `false`, because every one of them has MSI-X and a virtio queue names its vector by MSI-X
-/// table index, which MSI has no equivalent of. `msix_vector` is
-/// `pci::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X.
+/// `msi_fallback` lets a function with MSI and no MSI-X (the xHCI on an Intel PCH) take plain MSI;
+/// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
+/// `msix_vector` is `pci::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
+/// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
     match crate::arch::irq::alloc_msi_vector() {
         Some((intid, target)) => {
-            // **A refusal rather than a fallback to INTx**, and the reason is the bug milestone
-            // 215 exists to fix. A machine that answered `Some` has no other way to deliver a PCI
-            // interrupt, so falling back to `intx_intid` here would compute
-            // `intx_irq(PCI_IRQ_BASE, ..)` with a base that is 0 and admits it, hand back an
-            // intid that resolves to the PIT's line, and produce a driver armed on the timer with
-            // nothing anywhere saying so. That is precisely what milestone 164's lane measured.
+            // No fallback to INTx: on a machine that answered `Some`, `PCI_IRQ_BASE` is 0 and the
+            // swizzle would resolve to the PIT's line, arming the driver on the timer.
             if msi_fallback
                 && pci::msix_cap(bdf, &mut |b, o| cfg_read32(b, o)).is_none()
                 && program_msi(bdf, target)
@@ -816,8 +643,8 @@ fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> 
     }
 }
 
-/// **Point this function's one MSI vector at `target` and enable it** (milestone 242 (USB host and
-/// HID)). `false`, having touched nothing, when the function has no MSI capability.
+/// Point this function's one MSI vector at `target` and enable it. `false`, having touched
+/// nothing, when the function has no MSI capability.
 ///
 /// Address and data first, enable last, so no half-written message is ever live; one vector
 /// (Multiple Message Enable left 0), because one is what every driver here asks for.
@@ -866,32 +693,13 @@ fn intx_intid(bdf: Bdf) -> Option<u32> {
     Some(pci::intx_irq(PCI_IRQ_BASE, bdf.dev, pin))
 }
 
-/// **Point one of this function's MSI-X vectors at `target` and arm it** (milestone 215). Returns
-/// the table index the device must be told to raise, or `None` (loudly) when the function has no
-/// usable MSI-X table.
+/// Point entry 0 of this function's MSI-X table at `target` and arm it. Returns the table index
+/// the device must be told to raise, or `None` (loudly) when the function has no usable table.
 ///
-/// # Why this and not the legacy pin, on the machine that needed a choice
-///
-/// `x86_64` had no working answer at all: `arch::mmu::PCI_IRQ_BASE` was `0` and said so, because a
-/// function's INTx pin goes through a PIRQ router that only ACPI's `_PRT` describes, and `_PRT` is
-/// AML. The two ways out were an AML interpreter (a project) or a hardcoded swizzle that matches
-/// QEMU's `q35` and may not match a Dell `OptiPlex`, which is the failure milestone 87 would have to
-/// discover at a null modem. **MSI-X has no board-specific routing to be wrong about**: the device
-/// is handed the address and the value, so the only thing that has to be right is the interrupt
-/// controller's own message format, which this kernel already programs directly. See milestone 215
-/// for the full refusal.
-///
-/// # What is written, in what order
-///
-/// The entry is written **before** MSI-X Enable is set, and the per-entry mask is cleared last of
-/// the four words, so no configuration is ever live half-written. The Function Mask bit is cleared
-/// explicitly rather than assumed clear, because it is set at reset on some parts and a
-/// function-masked device is one that never interrupts with nothing anywhere saying why.
-///
-/// **The entry lives in a BAR, not in config space**, which is why this takes the placed `bars`:
-/// the table's BIR names one of them, and until `place_bars` has run there is no address to write
-/// through. A table that names an unplaced or out-of-range BAR is refused rather than written to a
-/// guessed address.
+/// `bars` are the placed BARs: the table lives in the one its BIR names, and one that is unplaced
+/// or too small is refused. The entry is written before MSI-X Enable, its mask cleared last, and
+/// Function Mask cleared explicitly because some parts set it at reset. See notes/pcie.md,
+/// "Placing BARs, and routing interrupts".
 fn program_msix(bdf: Bdf, bars: &[Option<Bar>; 6], target: pci::MsiTarget) -> Option<u16> {
     let Some(cap) = pci::msix_cap(bdf, &mut |b, o| cfg_read32(b, o)) else {
         crate::println!(
@@ -904,9 +712,7 @@ fn program_msix(bdf: Bdf, bars: &[Option<Bar>; 6], target: pci::MsiTarget) -> Op
         return None;
     };
 
-    // Entry 0. One vector per function is all any driver here asks for: every device this tree
-    // attaches uses a single queue's completion, and handing out more would be table entries
-    // nothing raises.
+    // Entry 0: every device this tree attaches uses a single queue's completion.
     let bar = bars.get(cap.table_bar as usize)?.as_ref()?;
     let entry = u64::from(cap.table_offset);
     if entry + pci::MSIX_ENTRY_BYTES > bar.size {
@@ -1027,7 +833,7 @@ pub(crate) fn find_nvme_device() -> Option<PciNvmeDevice> {
     })
 }
 
-/// **An enumerated, brought-up xHCI controller** (milestone 242 (USB host and HID)): its register
+/// An enumerated, brought-up xHCI controller: its register
 /// file placed and decoding, bus mastering on, its interrupt resolved, and the byte ranges of BAR0
 /// its MSI-X structures occupy, which the driver must never be mapped.
 #[derive(Debug, Clone, Copy)]
@@ -1045,7 +851,7 @@ pub(crate) struct PciXhciDevice {
     pub withheld: [(u64, u64); 2],
 }
 
-/// **Find the first xHCI controller on the bus and bring its transport up**, the
+/// Find the first xHCI controller on the bus and bring its transport up, the
 /// [`find_nvme_device`] shape plus an interrupt: size and place the BARs, enable memory decoding and
 /// bus mastering, resolve how its interrupt arrives. `None` if no function carries the xHCI class
 /// code, or one does and has no BAR0 or no interrupt this machine can route.
@@ -1139,9 +945,8 @@ impl PciE1000eDevice {
 /// [`find_nvme_device`]'s order and for its reasons: BARs placed, then memory decoding and bus
 /// mastering last. `None` if no such function is on the bus.
 ///
-/// **The same shape as `find_nvme_device` with a different predicate**, and a third copy is where
-/// a shared `find_function(predicate)` should be lifted rather than written (milestone 242 (USB host and a keyboard that is not a UART)'s xHCI
-/// lane is in the same position). Not lifted here, so this lane does not edit the NVMe path.
+/// The same shape as `find_nvme_device` with a different predicate; a shared
+/// `find_function(predicate)` would replace the copies.
 pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
     if !is_host_bridge_present() {
         return None;
@@ -1189,14 +994,10 @@ const IOMMU_VENDOR: u16 = 0x1b36;
 #[cfg(target_arch = "riscv64")]
 const IOMMU_DEVICE: u16 = 0x0014;
 
-/// **Bring up the RISC-V IOMMU, if the machine has one** (milestone 16b). Unlike the aarch64
-/// SMMUv3 (a platform device the kernel finds in the device tree), the ratified RISC-V IOMMU is
-/// itself a PCI function: the kernel enumerates it, places its BAR0 (the register file) from the
-/// same shared cursor as every other BAR, enables memory-space decoding, and hands the base to the
-/// arch driver's `init`. No such function on the bus (a plain `virt` boot, or aarch64), no-op.
-///
-/// Its own registers are reached by the CPU as MMIO, so it needs Memory-Space Enable but not
-/// Bus-Master: the IOMMU is not a DMA initiator, it is the thing that polices them.
+/// Bring up the RISC-V IOMMU, if the machine has one. The ratified RISC-V IOMMU is a PCI function:
+/// the kernel places its BAR0 (the register file) from the shared cursor, enables memory-space
+/// decoding and hands the base to the arch driver's `init`. No such function on the bus, no-op.
+/// No Bus-Master: the IOMMU polices DMA and does not initiate it.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn init_iommu() {
     if !is_host_bridge_present() {
@@ -1226,8 +1027,6 @@ pub(crate) fn init_iommu() {
         return;
     };
 
-    // Memory-Space Enable so BAR0 decodes and the register reads below land. No Bus-Master: the
-    // IOMMU does not itself DMA.
     let cmd = cfg_read32(bdf, pci::COMMAND) as u16;
     cfg_write32(bdf, pci::COMMAND, (cmd | pci::CMD_MEMORY_SPACE) as u32);
 
@@ -1239,26 +1038,16 @@ mod tests {
     #[cfg(target_arch = "x86_64")]
     use super::*;
 
-    /// **The discovered PCIe windows are the machine's own, and on this machine they equal the
-    /// constants they replaced.** A fresh parse of the live DTB must agree with what
-    /// `memory::init` recorded, which proves the boot-path read end to end; and on QEMU `virt`
-    /// (the machine every merge boots) the values must be the old `PCI_ECAM_BASE` and
-    /// `PCI_BAR_BASE` hardcodes, which is the whole regression claim: same machine, same
-    /// windows, different provenance. The JH7110's different answer (no generic-ECAM node at
-    /// all, so `pci_regions()` is None and no window is mapped) is witnessed on the host, where
-    /// that tree exists (`crates/pci/tests/qemu_virt_dtb.rs`). Same shape as the PLIC-context
-    /// test in arch/riscv64/irq.rs, for the same §43 reason.
-    ///
-    /// **Not on `x86_64`**: there is no device tree to cross-check against (`crate::DTB` stays zero
-    /// on this architecture; see [`acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge`]
-    /// for the ACPI-sourced equivalent).
+    /// The discovered PCIe windows are the machine's own, and on QEMU `virt` they equal the old
+    /// `PCI_ECAM_BASE` and `PCI_BAR_BASE` constants. A fresh parse of the live DTB must agree with
+    /// what `memory::init` recorded. The JH7110's answer (no generic-ECAM node, no window) is
+    /// witnessed on the host (`crates/pci/tests/qemu_virt_dtb.rs`). Not on `x86_64`, which has no
+    /// device tree; see [`acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge`].
     #[cfg(not(target_arch = "x86_64"))]
     #[test_case]
     fn the_discovered_pci_windows_are_the_machines_own_and_match_the_old_constants() {
         let Some((ecam, mem32)) = crate::memory::pci_regions() else {
-            // The JH7110 has no generic-ECAM node at all (comment above); milestone 145 gives
-            // this the same treatment as non_volatile_memory_express.rs rather than a panic the doc comment already
-            // predicted.
+            // The JH7110 has no generic-ECAM node at all (comment above).
             crate::testing::skip!(
                 "no pci-host-ecam-generic bridge in the device tree (expected on the JH7110)"
             );
@@ -1297,20 +1086,11 @@ mod tests {
         }
     }
 
-    /// **`x86_64`'s version of the same claim, over ACPI instead of a device tree.** There is no
-    /// `_CRS` reader here (no AML interpreter), so this cannot cross-check a second parse the way
-    /// the device-tree test does; what it can prove, and does, is that the window ACPI's MCFG
-    /// named actually decodes real PCI configuration space once
-    /// `arch::x86_64::machine::enable_pcie_ecam` has run.
-    ///
-    /// The host bridge (bus 0, device 0, function 0) is the chipset's own function and is on the
-    /// bus on every x86_64 machine, emulated or not, regardless of what `-device` flags
-    /// `helpers/qemu-runner-x86_64.sh` does or does not pass, which is what makes this a real
-    /// read rather than a hope: before
-    /// `enable_pcie_ecam` runs, this exact physical address **faults** (measured against QEMU's
-    /// monitor, 2026-08-24: `xp` answers "Cannot access memory") rather than reading the
-    /// all-ones an absent *device*'s config space would, so a wrong address or a skipped enable
-    /// step would show up here as "nothing found," not as a false pass.
+    /// The window ACPI's MCFG named decodes real PCI configuration space once
+    /// `arch::x86_64::machine::enable_pcie_ecam` has run. The host bridge (0:0.0) is on every
+    /// x86_64 machine whatever `-device` flags are passed, and before `enable_pcie_ecam` its
+    /// address faults (QEMU's monitor, 2026-08-24) rather than reading all-ones, so a wrong address
+    /// or a skipped enable reads as "nothing found", not a false pass.
     #[cfg(target_arch = "x86_64")]
     #[test_case]
     fn acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge() {
@@ -1327,19 +1107,8 @@ mod tests {
             &mut |bdf, vendor, device| {
                 count += 1;
                 if bdf.bus == 0 && bdf.dev == 0 && bdf.func == 0 {
-                    // **The ids are a diagnostic, not a pass condition**, and this is the one
-                    // thing xenon changed about this test. An earlier version asserted
-                    // `0x29c0`, q35's host bridge, which is a claim about which chipset is
-                    // being *emulated* rather than about whether ECAM reads reach config
-                    // space. It panicked on the first real machine it ever met (2026-09-17,
-                    // an OptiPlex 7050, whose Kaby Lake bridge answers a different id), and
-                    // it halted the suite before the NVMe test the boot was for.
-                    //
-                    // What this test claims is in its own doc comment: the window MCFG named
-                    // decodes real configuration space. The evidence for that is that 0:0.0
-                    // answers *something a device answers*, because an address outside a
-                    // decoded window reads back all-ones and one that is not decoded at all
-                    // faults. A specific id adds nothing to it.
+                    // The ids are a diagnostic, not a pass condition: a real machine's bridge
+                    // answers an id other than q35's.
                     assert_ne!(
                         vendor, 0xffff,
                         "bus 0 device 0 function 0 read back all-ones, which is what an absent \
@@ -1366,33 +1135,20 @@ mod tests {
         );
     }
 
-    /// **A controller behind a PCIe root port is found on the bus behind it** (milestone 320).
+    /// A controller behind a PCIe root port is found on the bus behind it.
     ///
-    /// The bug this pins is the one xenon exposed: the kernel mapped one megabyte of configuration
-    /// space, enumerated bus 0, and reported a machine whose NVMe was behind a root port as having
-    /// no NVMe at all. What made it expensive to find is that nothing failed. `non_volatile_memory_express_tests`
-    /// **skipped**, with QEMU's explanation ("`NIFE_NVME` not set on this leg?") for an absence that
-    /// had an entirely different cause, and a skip reads like a fact about the run.
-    ///
-    /// So this test asserts the whole chain rather than the endpoint: the survey recorded more than
-    /// one bus, a bridge on bus 0 states a subtree, and the controller is on the bus that bridge
-    /// named. Asserting only "an NVMe was found" would pass on the flat machine too.
-    ///
-    /// **It does not bring the controller up, and that is a property of the machine rather than a
-    /// gap in the test.** A PCI-to-PCI bridge forwards memory only inside the window its own
-    /// base/limit registers describe, and this machine boots PVH with no firmware to have written
-    /// them, so the controller's BAR does not decode however correctly it is placed. On xenon
-    /// firmware wrote both the bus numbers and the windows and `place_bars` adopts what it finds
-    /// (milestone 256). See `design/roadmap/proposals/a-bridge-window-the-kernel-programs-itself.md`.
+    /// Asserts the whole chain, since "an NVMe was found" passes on a flat machine too: the survey
+    /// recorded more than one bus, a bridge states a subtree, and the controller is on a bus a
+    /// bridge named. It does not bring the controller up: under PVH nothing programs the bridge's
+    /// memory window (notes/pcie.md, "More than one bus", `BUGS`; and
+    /// `design/roadmap/proposals/a-bridge-window-the-kernel-programs-itself.md`).
     #[cfg(target_arch = "x86_64")]
     #[test_case]
     fn a_controller_behind_a_bridge_is_found_on_the_bus_behind_it() {
         assert!(is_host_bridge_present(), "no ECAM window on this machine");
 
         // Every bridge's secondary bus, not just the first: the AMD-Vi leg also carries an empty
-        // `pci-bridge` for its alias tests (provisional milestone 767 (AMD-Vi hardening before the
-        // first AMD boot)), and taking the first bridge found picked that one, with the NVMe
-        // controller on bus 0 of an otherwise flat machine.
+        // `pci-bridge` for its alias tests.
         let (mut secondaries, mut bridges) = ([0u8; 8], 0usize);
         let mut controller_on = None;
         pci::walk(ecam_buses(), &mut |b, o| cfg_read32(b, o), &mut |f| {
@@ -1410,9 +1166,7 @@ mod tests {
         let secondaries = &secondaries[..bridges];
 
         if secondaries.is_empty() {
-            // The flat `q35` every other leg boots, which is the honest answer here and names the
-            // knob rather than leaving a reader to guess, the way the skip this milestone came from
-            // did not.
+            // The flat `q35` every other leg boots; the skip names the knob.
             crate::testing::skip!(
                 "no configured PCI bridge on this machine: q35 is a flat root complex unless \
                  NIFE_PCIE_ROOT_PORT=1 puts the NVMe controller behind a root port, which \
