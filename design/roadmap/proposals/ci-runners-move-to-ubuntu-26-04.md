@@ -91,23 +91,26 @@ about 90 lines. They fall into three kinds.
 
 ### Milestone 193's warning, and why it is about the architecture
 
-The last `Recorded.` bullet of `design/roadmap/0193-kernel-kani-reachable.md`'s follow-on says the `kernel` row works "because every
-job in `verify.yml` runs on `ubuntu-24.04-arm`. A change to that runner label breaks the row". The
-mechanism, in `notes/kernel-proofs.md`, was `kernel/Cargo.toml` depending on `aarch64-cpu`
-unconditionally. Kani compiles for the host, so an x86_64 host failed to build the kernel crate.
+Milestone 193 (put `kernel/src` within reach of the prover) ends its follow-on with a
+`Recorded.` bullet: the `kernel` row works "because every job in `verify.yml` runs on
+`ubuntu-24.04-arm`. A change to that runner label breaks the row". The mechanism, in
+`notes/kernel-proofs.md`, was `kernel/Cargo.toml` depending on `aarch64-cpu` unconditionally. Kani
+compiles for the host, so an x86_64 host failed to build the kernel crate.
 
-That dependency is about the host's architecture, not the Ubuntu release, and it is gone.
-Commit `1cab1aab9` (2026-08-31) target-gated `aarch64-cpu`. Milestone 304 then proved the `kernel`
-row on both architectures, and since milestone 587 `verify.yml`'s `prove` shards run on x86_64.
-Moving `ubuntu-24.04-arm` to `ubuntu-26.04-arm` keeps the architecture, so it breaks nothing here.
-The bullet and its source paragraph (`notes/kernel-proofs.md`, near line 278) are stale today.
+That dependency is about the host's architecture, not the Ubuntu release, and it is gone. Commit
+`1cab1aab9` (2026-08-31) target-gated `aarch64-cpu`. Milestone 304 (`cargo kani -p kernel` only
+ever compiled one architecture) then proved the `kernel` row on both, and since milestone 587
+`verify.yml`'s `prove` shards run on x86_64. Moving `ubuntu-24.04-arm` to `ubuntu-26.04-arm` keeps
+the architecture, so it breaks nothing here. The bullet and its source paragraph
+(`notes/kernel-proofs.md`, near line 278) are stale today.
 
 ### Dated observations, which stay true
 
-Milestones 126, 304, 310, 428, 587, 589, 627, 635, 755, 861, 870, 914 and 920, and the notes under
+Milestones 304, 310, 428, 587, 589, 627, 635, 755, 861, 870, 914 and 920, and the notes under
 `notes/kani-upstream/` and `notes/net/`, record what was measured on a 24.04 host on a stated day.
-Milestone 126's `procps 2:4.0.4-4ubuntu3.2` is one. A move does not falsify a dated measurement, so
-none needs an edit.
+Milestone 126 (the `procps` package, now `process-tools`) is one: it records `procps
+2:4.0.4-4ubuntu3.2` from a 24.04 container. A move does not falsify a dated measurement, so none
+needs an edit.
 
 ### Present-tense claims the move makes false, or that are false already
 
@@ -122,8 +125,8 @@ none needs an edit.
 - Current descriptions of CI: `helpers/workflow_parses.py`, `notes/kernel-proofs.md`'s host table,
   `notes/scripts/build-test-and-gate.md`, `script/lint`'s host-pass comment, `script/effort`, the
   Containerfile and `script/runner-container`.
-- Milestone 288's BUGS says "No host in CI is anything but aarch64". It has been false since
-  milestone 587 put jobs on x86_64 on 2026-09-24.
+- Milestone 288 (host tests that assume the host is aarch64) says in its BUGS "No host in CI is
+  anything but aarch64". It has been false since milestone 587 put jobs on x86_64 on 2026-09-24.
 
 ## What changes in 26.04
 
@@ -139,8 +142,8 @@ checked out. Nothing was run on an arm64 26.04 host.
 | Python | 3.12.3 | 3.14.4 | `script/lint` needs 3.11+ | verified: lint run under 3.14.4 |
 | Ruby | 3.2.3 | 3.3.8, on both images | two lint checks run `ruby -ryaml` | verified: lint run under 3.3.8 |
 | shellcheck | 0.9.0 | 0.11.0 | new warnings could fail lint | verified: lint run under 0.11.0 |
-| default clang | 18 | 21 | builds `c_shim` | guess: no gate counts its instructions |
-| dtc | 1.7.0 | 1.7.2 | lint compares committed `.dtb` files | guess: not run here, no dtc on the host |
+| default clang | 18 | 21 | builds `c_shim` | verified it builds; instruction counts unmeasured |
+| dtc | 1.7.0 | 1.7.2 | lint compares committed `.dtb` files | verified: 33 pairs match |
 | Kani 0.68.0, CBMC 6.11.0 | bundle | same bundle | runs on glibc 2.43 | verified x86_64, a one-harness crate; arm64 a guess |
 | `/tmp` | root disk | RAM-backed tmpfs | builds in temp | read from GitHub's issue, below |
 
@@ -239,8 +242,8 @@ present-tense records, and a published `bench` number if the counts were to move
 
 - `bench` instruction counts move. QEMU and the Rust toolchain are pinned and unchanged, so they
   should not, but the C shim's clang changes. The canary decides it.
-- A `shellcheck` 0.11.0 or `dtc` 1.7.2 difference fails `lint`. The shellcheck half is already
-  clean on 26.04 (lint result below). dtc was not run.
+- An apt tool on the x86_64 image differs from the one measured here. `lint` installs
+  `shellcheck`, `dtc` and `clang` unpinned, and the image's weekly update can move them.
 - arm64 26.04 is unverified everywhere in this proposal. The arm64 canary is the measurement.
 - The runner-images team reverses or delays the `/tmp` fix. The mask step covers that.
 - The image changes weekly under a fixed label, on 24.04 as on 26.04. A pin fixes the release, not
@@ -267,7 +270,14 @@ These are an architect's, and nothing above decides them.
 
 ## Lint on 26.04, measured
 
-LINT_RESULT
+On 2026-10-23, `script/lint` ran on Ubuntu 26.04.1 x86_64 with this tree, Python 3.14.4, Ruby
+3.3.8, shellcheck 0.11.0 and clang 21.1.8. 107 of its 108 sections passed. The one failure was
+`script/citations --ratchet` asking for glosses in this file, since given. Ruby parsed all 26
+workflow files and the issue forms; shellcheck passed 146 scripts with no warnings. That host had
+no `dtc`, so the `.dtb` check skipped; run separately with Ubuntu 26.04's `dtc` 1.7.2, it compared
+33 pairs and all matched. A Python 3.14 change that could bite, the `tarfile` extraction default,
+does not: the tree's one `extractall` (`script/vendor-verify`) passes `filter="data"` already, and
+nothing imports `multiprocessing`.
 
 ## Found while measuring
 
