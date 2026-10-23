@@ -64,3 +64,5 @@ area directories), ruled B). Appendices under
 `mapping-log.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `capability-objects.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
+
+`kernel-wired-services.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.

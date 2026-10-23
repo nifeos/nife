@@ -222,10 +222,6 @@ kernel/src/testing.rs:370	40
 kernel/src/testing.rs:772	36
 kernel/src/testing.rs:1247	23
 kernel/src/trust.rs:1	29
-kernel/src/user.rs:1	38
-kernel/src/user.rs:173	23
-kernel/src/user.rs:200	25
-kernel/src/user.rs:360	23
 kernel/src/user/address_space.rs:38	23
 kernel/src/user/address_space.rs:79	24
 kernel/src/user/address_space.rs:308	37

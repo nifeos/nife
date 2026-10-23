@@ -4,6 +4,7 @@ What runs at EL0: the std port, the shell, components, and the services they cal
 
 Part of [the notes index](../README.md), which says how to add a line.
 
+- [The services the kernel wires](../kernel-wired-services.md): the grant shape of each confined service `kernel/src/user.rs` wires, and why that shape is the isolation.
 - [Rust `std` on the native ABI](../std.md): std's platform layer implemented on the capability ABI.
 - [Somebody else's crate on nife](../crates-io-on-nife.md): fifty crates.io crates built against nife's `std`.
 - [`ripgrep` on nife](../ripgrep-on-nife.md): unmodified ripgrep builds and runs, and what stops it.
