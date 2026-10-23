@@ -246,7 +246,7 @@ mod tests {
     }
 
     /// The lock is IRQ-safe: the interrupt state around the call is restored, not merely enabled,
-    /// in both directions (§9 (locking: IrqSafeMutex, plus a discipline)). This proves what would
+    /// in both directions (§9 (locking: `IrqSafeMutex`, plus a discipline)). This proves what would
     /// turn the lock into a hang, not the mutual exclusion.
     #[test_case]
     fn the_enable_path_restores_the_interrupt_state_it_found() {
