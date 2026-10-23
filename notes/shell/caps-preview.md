@@ -124,8 +124,8 @@ machine row (the 2026-10-03 security audit's follow-up, item (d)).
   whose owner withheld the page learns why the program cannot see it.
 - The reboot object (milestone 805 (`reboot` at the prompt), §251 (restarting the machine is a
   kernel object the progenitor hands out)), the row its exit criterion 3 asks `caps reboot` to
-  print. It names the sync done first, because that is what makes the restart safe, and neither
-  shows anywhere else before the machine stops.
+  print. The reboot and sync rows come together, because the sync is what makes the restart safe,
+  and neither shows anywhere else before the machine stops.
 - The installer endpoint (milestone 809, §270 (a package manager holds an installer endpoint,
   not the spawn endpoint)). Three lines say what it cannot do, because the endpoint it is a copy of
   can do all three.

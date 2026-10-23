@@ -158,9 +158,9 @@ procs ------memory (KiB)------ --system-- -cpu-
     1     110592     131072    104     35   12  88
 ```
 
-There is no interval and no count. A program at the prompt holds no timer: milestone 106 (a wait
-that ends on either the interrupt or the deadline) built the kernel's timed wait, and only services
-are granted one. A repeating `vmstat` would be a yield-spin that counted itself as the busiest thing
+There is no interval and no count. A timer under milestone 106 (a wait that ends on either the
+interrupt or the deadline) is retyped from a process's own memory, as `swish` does for its own
+waits, and `vmstat`'s manifest declares `memory_grant: Forbidden`, so it has none. A repeating `vmstat` would be a yield-spin that counted itself as the busiest thing
 on the machine, the finding that cut [`watch`](watch.md). `busy` is `us` and `sy` together, and each
 figure is a word read a moment apart from the others, not one snapshot.
 

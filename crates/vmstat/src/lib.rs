@@ -2,11 +2,12 @@
 //!
 //! The logic of `components/src/vmstat.rs`: averages since boot, from the machine statistics page.
 //! Its columns: notes/process-view/the-machine-and-your-share.md, "`vmstat`'s columns".
-//!
+
 //! # BUGS
 //!
-//! No interval and no count (a prompt program holds no timer); `busy` is `us` and `sy` together;
-//! each figure is read a moment apart from the others.
+//! - No interval and no count: its manifest grants no memory, so it cannot retype a timer.
+//! - `busy` is `us` and `sy` together.
+//! - Each figure is a word read a moment apart from the others, not one snapshot.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table): upstream `procps`'s.
 

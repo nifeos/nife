@@ -104,9 +104,11 @@ pub fn write_help(out: &mut dyn FnMut(&[u8])) {
 ///     String::from_utf8(s).unwrap()
 /// };
 ///
-/// // A name that resolved to nothing is worth repeating back.
+/// // A name that resolved to nothing is worth repeating back. `cat` is a command a Unix hand
+/// // would reach for and this shell does not have, so the line reads as a fact about the name.
 /// assert!(render(b"cat 7", Refusal::NoSuchProgram).starts_with("  cat: "));
 /// // A line of nothing but flags names no program, so the bare refusal is all there is to print.
+/// // An empty name followed by a colon would be worse.
 /// assert_eq!(
 ///     render(b"--mem 16", Refusal::NoSuchProgram),
 ///     "  no such program (try 'help' for the builtins)\n"

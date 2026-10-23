@@ -2,12 +2,14 @@
 //! split of a typed line, above [`grant_plan::line::split`]: each segment is a whole command line,
 //! planned from scratch against what the shell holds. A `>` the shell backs (§55 (the file behind
 //! a `>` is the shell itself)) and a pipeline's region end with their segment; only a [`Status`]
-//! passes on. See notes/swish-language.md, "Sequencing splits outermost".
-//!
+//! passes on. See notes/swish-language.md, "Sequencing splits outermost, and that is a decision".
+
 //! # BUGS
 //!
-//! - No grouping, so `time a && b` times only `a`; a single `&` backgrounds only at a line's end
-//!   ([`background`]); a skipped segment leaves `$?` alone, as bash does.
+//! - No grouping: `a && b || c` runs left to right, and `time a && b` times only `a`.
+//! - A single `&` backgrounds only as a line's last byte, on a line with no connector
+//!   ([`background`]).
+//! - A skipped segment leaves `$?` alone, as bash does.
 
 use grant_plan::word::Cursor;
 use grant_plan::{Refusal, trim};

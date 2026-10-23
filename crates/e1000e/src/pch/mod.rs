@@ -44,13 +44,12 @@
 
 //! # BUGS
 //!
-//! - **It has run on silicon once, with no cable**; under QEMU only `sim` proves [`sequence`].
-//!   Each entry is argued in notes/e1000e/the-i219-port.md, "BUGS".
+//! - **It has run on silicon once, with no cable** (notes/e1000e/the-i219-port.md, "BUGS").
 //! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
 //!   up and then loses frames points here first.
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
-//! - **Two divergences from FreeBSD**: the transmit flush ([`flush::tail_after`]), and a failed
-//!   `CV_SMB_CTRL` read, which is not written back.
+//! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after`].
+//! - **A failed `CV_SMB_CTRL` read is not written back**, where FreeBSD writes a stale value.
 //! - **The license's second condition is not met by any binary this tree ships yet**.
 
 pub mod nvm;

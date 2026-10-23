@@ -10,7 +10,7 @@
 /// authority moved; [`Failed`](Status::Failed) is something attempted that did not work. It is the
 /// shell's own reading of the line and designates nothing. A per-program status is DECISIONS §301
 /// (exit status and output)'s, which milestone 172 (a capability-native subprocess primitive)
-/// builds. See notes/swish-language.md, "Exit status: a refusal is not an error".
+/// proposes and which is not built. See notes/swish-language.md, "Exit status: a refusal is not an error".
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Status {
     /// The command ran and the shell has nothing to report. `$?` is `0`.
@@ -51,8 +51,8 @@ impl Status {
     /// The number as bytes, which is `'static` because there are three of them.
     ///
     /// That is not a micro-optimization: a substituted word has to be a slice with the line's
-    /// lifetime, and a `'static` slice unifies with any of them. What keeps a substitution one word
-    /// is [`pieces`](crate::pieces).
+    /// lifetime, and a `'static` slice unifies with any of them. The shell has had a capped heap
+    /// since 2026-09-26, so what keeps a substitution one word is [`pieces`](crate::pieces).
     pub fn digits(self) -> &'static [u8] {
         match self {
             Status::Ran => b"0",

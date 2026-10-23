@@ -556,7 +556,7 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
         out(b"    cap 12 region    share    ENUMERATE. this shell's job budget: how much is spent\n");
         out(b"                              and on what. it cannot spend, split or destroy it\n");
     }
-    // The reboot row names the sync done first (milestone 805 (`reboot` at the prompt)).
+    // The reboot and sync rows come together (milestone 805 (`reboot` at the prompt)).
     if m.reboot {
         out(b"    cap 13 reboot    WRITE. restart the machine (the kernel asks the firmware).\n");
     }

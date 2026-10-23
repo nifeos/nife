@@ -3,7 +3,13 @@
 //! crate is everything it decides or renders with no capability in hand, so it is host-tested.
 //! Every renderer writes through `out: &mut dyn FnMut(&[u8])`, and a directory listing comes
 //! through a second callback, `expand`, so [`echo`] and [`expansion`] are testable end to end.
-//! See notes/shell.md, "The program and the crate", and notes/shell/the-swish-crate.md.
+//! See notes/shell.md, "The program and the crate (milestone 70)", and
+//! notes/shell/the-swish-crate.md.
+
+//! # BUGS
+//!
+//! - `builtin`, `dispatch_one`, `run` and `spawn` stay in the program: each is a capability
+//!   invocation or a print; [`route`] lifts the decision they sit under.
 //!
 //! Name: ratified 2026-08-01 (calef), replacing `shell`. Refused `shell` (a category), `capsh`
 //! (Linux's libcap ships one) and `sheesh` (dated, and an interjection). A swish goes through the

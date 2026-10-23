@@ -34,7 +34,8 @@
 //!
 //! # BUGS
 //!
-//! - A quoted word is not completed, and a name with a space in it is inserted unquoted.
+//! - A quoted word is not completed.
+//! - A name with a space in it is inserted unquoted, so the parser splits it in two.
 //! - Completing an argument does not ask the program's manifest what the argument is.
 //! - A name that is both the image's and installed is offered once and refused when run.
 //!
