@@ -400,7 +400,7 @@ mod verification {
 
     /// **The MADT walk terminates and never reads outside the body**, for every byte pattern. Each
     /// entry's length byte is firmware telling the parser how far to advance: zero never advances,
-    /// and too long reads the next entry out of this one. The unwind bound is what proves
+    /// and a length past the end reads the next entry out of the middle of this one. The unwind bound is what proves
     /// termination. `len < 1` for `len < 2`, or `>=` for `>` in the bound check, keeps every test
     /// green.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.madt.verification.the_madt_walk_terminates_and_stays_inside_the_body.patch`

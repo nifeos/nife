@@ -45,7 +45,9 @@ through either tree's lie). An unstated `enable-method` counts as startable on p
 CPU binding has no such property, so demanding it would refuse every RISC-V machine. `supervisor`
 is required because `status` can lie where a hart's own `riscv,isa` does not
 ([visionfive2.md](visionfive2.md), the second stop). One decoder reads `status` for both the core
-list and the RISC-V record, so the two walks cannot disagree about what "disabled" means.
+list and the RISC-V record, so the two walks cannot disagree about what "disabled" means. The
+specification defines `"okay"`, `"disabled"`, `"reserved"`, `"fail"` and `"fail-sss"`, and only the
+first means operational; `"ok"` is a deprecated spelling older firmware still emits.
 
 ## Interrupt ids
 
@@ -111,7 +113,9 @@ QEMU 11.1.1 writes the two bindings this way (`dumpdtb`, both versions of `virt`
 
 The kernel asks this question only on aarch64. On RISC-V a node named `interrupt-controller@...`
 is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel drives each version
-is in [interrupts.md](interrupts.md).
+is in [interrupts.md](interrupts.md). The binding allows several redistributor regions
+(`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
+only past 123 cores, and the kernel's `cpu::MAX_CPUS` is eight, so the decoder refuses more than one.
 
 ## The screen token
 
@@ -251,7 +255,12 @@ identity, that can issue DMA. The IVRS's type F0h entries are the same thing on 
 drives no such device, so none is confined. A machine where one matters needs ANDD and the type-5
 scope decoded on Intel, and F0h on AMD. Linux treats an exclusion-range IVMD as a read-write unity
 map too ("treat per-device exclusion ranges as r/w unity-mapped regions", recalled rather than
-re-read), and `amd_vi::set_up` clears the exclusion registers.
+re-read), and `amd_vi::set_up` clears the exclusion registers. A read-only IVMD is mapped
+read-only. QEMU writes no IVMD, so that path has run only in the host tests.
+
+The DMAR decoder skips IOAPIC, HPET and ACPI-namespace device scopes, and does not decode the ATSR,
+RHSA, ANDD, SATC or SIDP structures. A truncated decode answers an ownership question with
+"unknown" rather than a guess.
 
 
 ## How it is proved

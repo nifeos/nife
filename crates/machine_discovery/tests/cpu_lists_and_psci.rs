@@ -1,13 +1,13 @@
 //! What the machine says its cores are, and how to start them (milestone 100 (read the machine's
-//! PSCI and its CPU list)), on the host. Four trees, each a shape the others cannot show:
+//! PSCI and its CPU list)), on the host; the machine side is the kernel's own tests, the split §7
+//! (testing) asks for. Four trees, each a shape the others cannot show:
 //!
-//! * QEMU aarch64 `virt` at `-smp 4`, the machine `script/test` boots: `hvc`, `0xc4000003`, `0..4`.
-//! * QEMU aarch64 `virt` with `virtualization=on`, the only configuration here giving `smc`.
+//! * QEMU aarch64 `virt,gic-version=2,iommu=smmuv3`, `cortex-a72`, `-smp 4`, the machine
+//!   `script/test` boots: `hvc`, `0xc4000003`, and cores `0..4`.
+//! * QEMU aarch64 `virt` with `virtualization=on`, a real dump and the only `smc` here.
 //! * QEMU riscv64 `virt`, from `device_tree_blob`'s fixtures, for `timebase-frequency`.
 //! * A hand-written clustered tree: two address cells, a non-contiguous id, a disabled core, a
 //!   spin-table core, more cores than the ceiling, and PSCI 0.1 with its own function id.
-//!
-//! What happens on the machine is the kernel's own tests'; this is the split §7 (testing) asks for.
 
 use machine_discovery::aarch64::{Conduit, PSCI_CPU_ON_64, Psci};
 use machine_discovery::cpu_list::{CpuList, EnableMethod, MAX_CPU_NODES};
