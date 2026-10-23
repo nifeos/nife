@@ -3,6 +3,11 @@
 //! tool writes an image with [`write_image`] and the userspace filesystem server reads it with
 //! [`Fs::parse`], so one definition of the format serves both. Pure logic, host-tested, no `std`.
 //!
+//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAX_FILES`] entries. `start_block` is
+//! absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A name
+//! is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN` bytes and
+//! stop at the first NUL. See notes/nifefs.md.
+
 //! ```text
 //!   blocks 0..DIR_BLOCKS   the superblock and directory
 //!     magic   "CRKR0002"   (8 bytes)
@@ -11,29 +16,20 @@
 //!       name        NAME_LEN = 32 bytes, NUL-padded
 //!       start_block u32 LE  where the file's data begins (an absolute block number)
 //!       len         u32 LE  the file's length in bytes
-//!
 //!   blocks DIR_BLOCKS..     file data, each file block-aligned
 //! ```
-//!
-//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAX_FILES`] entries. `start_block` is
-//! absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A name
-//! is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN` bytes and
-//! stop at the first NUL.
-//!
+
 //! # BUGS
-//!
-//! - A name too long ([`Error::NameTooLong`]) or containing a NUL ([`Error::NameHasNul`]) is
-//!   refused, never truncated: two names agreeing in their first `NAME_LEN` bytes would become one.
-//! - A duplicate name is not an error, and the first wins; the disk tool's directory listing keeps
-//!   names unique, and nothing in the format does.
+//! - A name over [`NAME_LEN`] ([`Error::NameTooLong`]) or holding a NUL ([`Error::NameHasNul`]) is
+//!   refused, never truncated: two names agreeing up to the cut would become one.
+//! - A duplicate name is not an error, and the first wins; only the disk tool keeps names unique.
 //! - [`MAX_FILES`] grows with the suite, not the system, so a resize lands on whoever merges.
 //! - `a_short_image_is_refused_not_indexed`'s falsification takes tens of minutes and gigabytes of
-//!   solver memory: a length check against a wholly symbolic buffer, the same shape as
-//!   `package_archive`'s `a_short_file_is_refused`.
+//!   solver memory, the same shape as `package_archive`'s `a_short_file_is_refused`.
 //! - The EL0 blk driver (`crates/virtio`) buffers block 0 only, so it sees the first
-//!   [`ENTRIES_IN_FIRST_BLOCK`] files and no more, and nothing in the format says so.
+//!   [`ENTRIES_IN_FIRST_BLOCK`] files, and nothing in the format says so.
 //! - No directories, writes or permissions; the read-write filesystem is `redoxfs_server/`.
-//!
+
 //! Name: ratified 2026-08-01 as `crickerfs` (calef), renamed `nifefs` with the OS. Refused
 //! `cricker_fs` (`procfs` is the shape of a filesystem name; nobody writes `proc_fs`).
 
@@ -44,40 +40,19 @@ pub const BLOCK: usize = 512;
 
 /// Superblock magic. Version in the last four bytes, so a format change is legible.
 ///
-/// **Bumped `0001` to `0002` on 2026-08-01, when [`NAME_LEN`] went from 24 to 32.** The rule the
-/// milestone-24 change established is the one being followed here, not overturned: bump when a
-/// reader can tell. That change moved `DIR_BLOCKS` only, and `start_block` is absolute, so no
-/// reader could tell and bumping would have broken the blk driver's hardcoded check for nothing.
-/// A wider entry is the opposite case. A reader still striding 32 bytes finds a plausible name at
-/// the wrong offset and a start block cut out of the middle of one, and returns the wrong file
-/// instead of an error. The version byte exists to turn exactly that silence into
-/// [`Error::BadMagic`], and it is what makes a stale image left in `target/` fail loudly.
+/// Bump it when a reader can tell. A wider entry is such a change: a reader striding the old width
+/// would return the wrong file instead of [`Error::BadMagic`], and the bump also makes a stale image
+/// left in `target/` fail loudly. A move of [`DIR_BLOCKS`] is not, since `start_block` is absolute.
+/// See notes/nifefs.md.
 pub const MAGIC: [u8; 8] = *b"CRKR0002";
 
 /// How many blocks the superblock-and-directory occupies. File data starts after it.
 ///
-/// **14, which puts [`MAX_FILES`] at 178.** The kernel suite's archive packs every program the
-/// tree builds and, where `cargo xtask basalt-fetch` ran, the program of each basalt package its
-/// tests use. With ripgrep, ioping, hackbench and SQLite's `speedtest1` the x86_64 archive held 128
-/// entries against a ceiling of 127. The build failed loudly, which is the mechanism working:
-/// [`write_image`] refuses rather than truncating the directory.
-///
-/// **No magic bump**, following the rule [`MAGIC`] records for milestone 24's 4-to-6 move rather
-/// than the one it records for the wider entry: `start_block` is absolute, every reader finds the
-/// same data at the same offsets, and `ENTRIES_IN_FIRST_BLOCK` (the one bound a reader with a
-/// single buffered block cares about) is a function of [`NAME_LEN`] and does not move. Nothing can
-/// tell, so bumping would break the blk driver's hardcoded magic check for nothing.
-///
-/// **Fifty entries of headroom, not one.** [`MAX_FILES`]'s own note says this ceiling gets crossed
-/// by lanes that cannot see each other, and every basalt package a test uses adds an entry. The
-/// headroom costs 2 KB in an image of many megabytes; running out costs a lane's build failing on
-/// a change that has nothing to do with archives.
-///
-/// **The one cost that is not image bytes**: `a_short_image_is_refused_not_indexed` proves the
-/// boundary with a `kani::any()` array of `DIR_BLOCKS * BLOCK - 1` bytes, 7167 at 14 blocks. The
-/// path under it is trivial (`parse` compares the length and returns before touching a byte), so
-/// the solver should not care; a `prove` shard's total cannot show one harness's share, so the
-/// number to watch when this constant is raised is that harness's own time.
+/// 14, which puts [`MAX_FILES`] at 178: fifty entries clear of the x86_64 kernel-suite archive,
+/// because lanes that cannot see each other cross this ceiling. A raise needs no magic bump. Its
+/// one cost besides image bytes is `a_short_image_is_refused_not_indexed`, which proves over a
+/// symbolic array of `DIR_BLOCKS * BLOCK - 1` bytes; watch that harness's own time on a raise. See
+/// notes/nifefs.md.
 pub const DIR_BLOCKS: usize = 14;
 
 /// The magic plus the count, before the first entry.
@@ -85,16 +60,9 @@ pub const HEADER_LEN: usize = 12;
 
 /// The longest archive name, in bytes. A name that uses all of them has no NUL terminator.
 ///
-/// **32 since 2026-08-01, up from 24** (milestone 63's prerequisite). The names in this system are
-/// decided by what a program *does* (CLAUDE.md's naming tenet), and 24 had started deciding them
-/// instead: `fs_subtree_caretaker` is 20 bytes and `sub_server_supervisor` is 21, so a fourth
-/// qualifier would not have fit on either, and `os_primitives_benchmarker` is 25 and did not fit at
-/// all. 32 clears the longest settled name by 7 bytes.
-///
-/// **Not larger**, because the cost is per entry and the benefit is speculative: every extra 8 bytes
-/// of name is 8 bytes off every directory entry in every image, and no name anyone has argued for
-/// comes near 32. The next raise is as cheap as this one was (there is no data migration; every
-/// image regenerates from this crate), so buying headroom now buys nothing.
+/// 32, which clears the longest settled program name (`os_primitives_benchmarker`, 25) by 7 bytes.
+/// Not larger, because every extra byte is a byte off every directory entry in every image, and a
+/// raise costs no data migration: every image regenerates from this crate. See notes/nifefs.md.
 pub const NAME_LEN: usize = 32;
 
 /// One directory entry: the name, then `start_block` and `len` as `u32`s.
@@ -103,26 +71,14 @@ pub const ENTRY_LEN: usize = NAME_LEN + 8;
 /// How many entries fit **entirely inside block 0**, which is the bound for a reader that has only
 /// one block buffered. 12 at `NAME_LEN = 32`.
 ///
-/// Entries are packed from [`HEADER_LEN`] with no per-block padding, so an entry may straddle a
-/// block boundary. That costs nothing to a reader holding the whole image (the kernel, the FS
-/// server, `xtask`), and it is the whole limit for one that does not: the EL0 blk driver reads
-/// block 0 into a 512-byte DMA buffer and walks the directory there. Without this bound it would
-/// read the entry after the last complete one out of whatever follows the buffer.
+/// Entries pack from [`HEADER_LEN`] with no per-block padding, so one may straddle a block
+/// boundary. The EL0 blk driver walks the directory inside a 512-byte DMA buffer, and without this
+/// bound it would read the entry after the last complete one out of whatever follows the buffer.
 pub const ENTRIES_IN_FIRST_BLOCK: usize = (BLOCK - HEADER_LEN) / ENTRY_LEN;
 
 /// The most files an archive can hold: the directory blocks, past the header, in whole entries.
-/// **178 at `DIR_BLOCKS = 14` and `ENTRY_LEN = 40`.**
-///
-/// **`DIR_BLOCKS` moved from 4 to 6 with the wider entry, on purpose.** Widening alone would have
-/// dropped the ceiling from 63 files to 50, and the riscv64 initial ramdisk holds **exactly 50
-/// files today**, so the next program added to it would have failed the build. This ceiling is
-/// crossed by lanes that cannot see each other, which is how it was crossed last time. 6 blocks put
-/// it at 76 and cost 1 KB of image, once, in a multi-megabyte initial ramdisk.
-///
-/// **It costs no kernel stack, which is new.** It used to: [`Fs`] copied every entry into a fixed
-/// `[Entry; MAX_FILES]` and is a stack local on the boot and spawn paths, so 63 entries was ~2 KB of
-/// stack and raising the limit overflowed a 4-page kernel stack the day it was raised. That array is
-/// gone (see [`Fs`]), so the only price of a bigger directory now is image bytes.
+/// **178 at `DIR_BLOCKS = 14` and `ENTRY_LEN = 40`.** It costs image bytes and no kernel stack,
+/// because [`Fs`] holds no entry array.
 pub const MAX_FILES: usize = (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN;
 
 /// Why [`Fs::parse`] refused an image.
@@ -138,18 +94,9 @@ pub enum Error {
     NameTooLong,
     /// A name containing a NUL byte, which the format cannot represent.
     ///
-    /// **The same failure as [`Error::NameTooLong`], one byte wide instead of thirty-three.** A name
-    /// shorter than [`NAME_LEN`] is NUL-padded on disk and every reader stops at the first NUL, so a
-    /// name with one inside it comes back cut at that point: `"a\0b"` is written and reads back as
-    /// `"a"`, and `read("a\0b")` finds nothing at all. Two names agreeing up to their first NUL
-    /// become one entry, which is exactly the collision `NameTooLong` was introduced to stop.
-    ///
-    /// Refused rather than mangled, for the reason the crate's BUGS section gives for the other one:
-    /// an archive is a mapping, and a writer that silently changes a key has lost data.
-    ///
-    /// Found by `fuzz/fuzz_targets/nifefs_roundtrip` on 2026-08-02, in under a minute, from the
-    /// one-file input `[("\0", [])]`. The round-trip property is what saw it; no totality proof
-    /// could have, because nothing panicked.
+    /// Names are NUL-padded and every reader stops at the first NUL, so `"a\0b"` would read back as
+    /// `"a"` and `read("a\0b")` would find nothing: the same collision as [`Error::NameTooLong`],
+    /// refused for the same reason. `fuzz/fuzz_targets/nifefs_roundtrip` holds the property.
     NameHasNul,
     /// A file's data runs past the end of the image.
     OutOfBounds,
@@ -184,14 +131,9 @@ impl Entry {
 
 /// A parsed superblock. Borrows the whole image so file lookups can return slices into it.
 ///
-/// **Holds no entry array, deliberately, and that is what made the 2026-08-01 raise cheap.** It used
-/// to copy every directory entry into a fixed `[Entry; MAX_FILES]`, which made [`MAX_FILES`] a charge
-/// against the *kernel stack*: `Fs` is a stack local in the boot and spawn paths, and raising the
-/// limit from 31 to 63 entries on 2026-07-30 overflowed a 4-page kernel stack immediately, faulting
-/// on the guard page while parsing the initial ramdisk.
-/// Entries are decoded from the borrowed image on demand instead, which costs a few instructions per
-/// lookup on a path that runs a handful of times per boot, and retires the stack cost and the ceiling
-/// together. The image is already borrowed for exactly this reason.
+/// Holds no entry array: entries decode from the borrowed image on demand, so [`MAX_FILES`] costs
+/// no kernel stack, where `Fs` is a local on the boot and spawn paths. `fs_does_not_grow_with_max_files`
+/// keeps it that way. See notes/nifefs.md.
 pub struct Fs<'a> {
     image: &'a [u8],
     count: usize,
@@ -217,9 +159,7 @@ impl<'a> Fs<'a> {
             return Err(Error::TooManyFiles);
         }
 
-        // Validate every entry now, not while reading: a server should reject a corrupt image once,
-        // up front, rather than discover it mid-request. Decoding into a local costs no stack that
-        // survives the loop, which is the whole point of not keeping the array.
+        // Validate every entry now, so a server rejects a corrupt image once rather than mid-request.
         for i in 0..count {
             let e = Self::entry_at(image, i);
             Self::entry_bounds(image.len(), e.start_block, e.len)?;
@@ -259,13 +199,9 @@ impl<'a> Fs<'a> {
     /// Where entry `(start_block, len)` lies in an image of `image_len` bytes, as `start..end`,
     /// or [`Error::OutOfBounds`] if it does not fit.
     ///
-    /// **One expression, two callers, which is the point.** [`Fs::parse`] validates every entry
-    /// with this and [`Fs::read`] slices with it, so the check and the indexing cannot drift
-    /// apart. They used to be two copies of the same three lines in two functions, sound only
-    /// because a comment said they matched, and a proof of the copy is not a proof of either
-    /// (milestone 213). It also puts the arithmetic where a bounded model checker can quantify
-    /// over it without walking a symbolic directory, which is what `elf`'s
-    /// `check_segment_bounds` is for one crate over.
+    /// [`Fs::parse`] validates every entry with this and [`Fs::read`] slices with it, so the check
+    /// and the indexing cannot drift apart, and a model checker can quantify over it without a
+    /// symbolic directory (as `elf`'s `check_segment_bounds` does). See notes/nifefs.md.
     ///
     /// The name is **provisional**: calef names functions (AGENTS.md, milestone 160).
     fn entry_bounds(image_len: usize, start_block: u32, len: u32) -> Result<(usize, usize), Error> {
@@ -297,7 +233,7 @@ fn u32le(b: &[u8], at: usize) -> u32 {
 /// of bytes written. `out` must be large enough; the disk tool sizes it from [`image_size`].
 ///
 /// Not `no_std`-hostile, but only the disk-building tool calls it, on the host.
-///
+
 /// # Examples
 ///
 /// Pack two files and read one back:
@@ -317,14 +253,13 @@ pub fn write_image(files: &[(&str, &[u8])], out: &mut [u8]) -> Result<usize, Err
         return Err(Error::TooManyFiles);
     }
     // Every name is checked before a byte is written, so a rejected archive is not a half-written
-    // one. This used to truncate instead; see Error::NameTooLong for why that was the worse answer.
+    // one.
     for (name, _) in files {
         if name.len() > NAME_LEN {
             return Err(Error::NameTooLong);
         }
-        // The same argument as NameTooLong, one byte wide (found by fuzzing, 2026-08-02): a name
-        // holding a NUL is a name the format cannot store, because the padding IS a NUL and every
-        // reader stops at the first one. Writing it produced an entry `read` could never match.
+        // The padding is a NUL and every reader stops at the first one, so a name holding one would
+        // be an entry `read` could never match.
         if name.as_bytes().contains(&0) {
             return Err(Error::NameHasNul);
         }
@@ -388,9 +323,9 @@ mod tests {
         assert_eq!(fs.read("nope"), None);
     }
 
+    /// A file longer than one block pushes the next file to a later block.
     #[test]
     fn files_are_block_aligned() {
-        // A file longer than one block pushes the next file to a later block.
         let big = vec![0x41u8; 600]; // > 512, so 2 blocks
         let files: [(&str, &[u8]); 2] = [("big", &big), ("after", b"x")];
         let mut img = vec![0u8; image_size(&files)];
@@ -412,19 +347,16 @@ mod tests {
     /// are load-bearing outside this crate (the EL0 blk driver stops at `ENTRIES_IN_FIRST_BLOCK`;
     /// the initial ramdisk build fails at `MAX_FILES`), so a wrong one is a wrong bound in another
     /// program. A deliberate resize of `DIR_BLOCKS` or `ENTRY_LEN` updates this test in the same
-    /// commit.
+    /// commit. The values: `(512 - 12) / 40 = 12` and `(7168 - 12) / 40 = 178`.
     #[test]
     fn the_capacity_constants_are_the_documented_values() {
-        // (BLOCK - HEADER_LEN) / ENTRY_LEN = (512 - 12) / 40 = 12. The doc comment says 12.
-        // This one is a function of NAME_LEN alone and did not move when DIR_BLOCKS did.
         assert_eq!(ENTRIES_IN_FIRST_BLOCK, 12);
-        // (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN = (7168 - 12) / 40 = 7156 / 40 = 178.
         assert_eq!(MAX_FILES, 178);
     }
 
+    /// A full-directory-sized image, so the truncation guard passes and the magic check refuses it.
     #[test]
     fn bad_magic_is_refused() {
-        // A full-directory-sized image so the truncation guard passes and the magic check rejects it.
         let img = vec![0u8; DIR_BLOCKS * BLOCK];
         assert_eq!(Fs::parse(&img).err(), Some(Error::BadMagic));
     }
@@ -436,7 +368,7 @@ mod tests {
 
     /// **One byte under the directory span is `Truncated`, at the exact boundary.** The guard must
     /// compare against the full `DIR_BLOCKS * BLOCK` = 7168 bytes; the 10-byte test above is under
-    /// every plausible mis-computation of that span (a `+` slip gives 522), so only a
+    /// every plausible mis-computation of that span (a `+` slip gives 526), so only a
     /// just-under-the-line image proves the multiplication. A guard that let 7167 bytes through
     /// would report `BadMagic` here instead, and would let entry reads run off a short image.
     #[test]
@@ -449,7 +381,7 @@ mod tests {
     /// Both bounds checks are `end > len`, and every other test ends its data short of a block
     /// boundary, so the accept side of the exact-fit case was untested in both directions: a check
     /// hardened to `>=` would refuse a valid archive whose final file is block-sized. One block of
-    /// data after a 6-block directory ends at byte 3584 == image length exactly.
+    /// data after a 14-block directory ends at byte 7680 == image length exactly.
     #[test]
     fn a_file_ending_exactly_at_the_image_end_round_trips() {
         let body = vec![0x5au8; BLOCK];
@@ -478,12 +410,12 @@ mod tests {
         assert!(!Fs::parse(&img).unwrap().is_empty());
     }
 
+    /// One entry whose `start_block` (100) lies far past the image.
     #[test]
     fn a_file_pointing_past_the_end_is_refused() {
         let mut img = vec![0u8; DIR_BLOCKS * BLOCK];
         img[0..8].copy_from_slice(&MAGIC);
         img[8..12].copy_from_slice(&1u32.to_le_bytes());
-        // one entry, start_block 100 (way past the image)
         let off = HEADER_LEN;
         img[off + NAME_LEN..off + NAME_LEN + 4].copy_from_slice(&100u32.to_le_bytes());
         img[off + NAME_LEN + 4..off + NAME_LEN + 8].copy_from_slice(&1u32.to_le_bytes());
@@ -521,14 +453,15 @@ mod tests {
 
     /// **The longest settled program name fits, and one byte more is refused.** The limit exists to
     /// bound a name, and a name is what the reader will actually collide with, so the test names the
-    /// real one: `os_primitives_benchmarker` (25 bytes) is what forced the raise from 24.
+    /// real one: `os_primitives_benchmarker` (25 bytes) is what forced the raise from 24. A name
+    /// using every byte has no NUL terminator, the case `name_str` must handle, and one byte over
+    /// is an error rather than a truncation that would merge two names.
     #[test]
     fn a_name_is_bounded_by_name_len_and_a_longer_one_is_refused() {
         let data: &[u8] = b"y";
         let longest = "os_primitives_benchmarker";
         assert!(longest.len() <= NAME_LEN, "the name that forced the raise");
 
-        // A name using every byte has no NUL terminator, which is the case name_str must handle.
         let full = "x".repeat(NAME_LEN);
         let files: [(&str, &[u8]); 2] = [(longest, data), (full.as_str(), data)];
         let mut img = vec![0u8; image_size(&files)];
@@ -537,7 +470,6 @@ mod tests {
         assert_eq!(fs.read(longest), Some(data));
         assert_eq!(fs.read(&full), Some(data));
 
-        // One byte over is an error, not a truncation: truncating would have merged two names.
         let over = "x".repeat(NAME_LEN + 1);
         let files: [(&str, &[u8]); 1] = [(over.as_str(), data)];
         let mut img = vec![0u8; image_size(&files)];
@@ -547,16 +479,9 @@ mod tests {
         );
     }
 
-    /// **A name with a NUL in it is refused, not stored and then unfindable.**
-    ///
-    /// The regression for the bug `fuzz/fuzz_targets/nifefs_roundtrip` found on 2026-08-02, whose
-    /// minimal input was a single file named `"\0"` with no contents. That name was accepted, packed
-    /// into an entry that decoded back as the empty string, and then `read("\0")` answered `None`:
-    /// data written and not readable, with nothing panicking and no test noticing. Every name below
-    /// is one the writer used to take.
-    ///
-    /// It is the same failure as the truncation bug the crate already documents, which is the point.
-    /// A round-trip property catches the whole family; an example test catches the example.
+    /// **A name with a NUL in it is refused, not stored and then unfindable**, the regression for
+    /// what `fuzz/fuzz_targets/nifefs_roundtrip` found (notes/nifefs.md). The empty name stays
+    /// legal: it is representable (an all-NUL name field) and reads back as itself.
     #[test]
     fn a_name_with_a_nul_in_it_is_refused() {
         let data: &[u8] = b"z";
@@ -570,9 +495,6 @@ mod tests {
             );
         }
 
-        // The empty name is NOT in that list and is deliberately still legal: it is representable
-        // (an all-NUL name field), it reads back as itself, and refusing it would be a policy this
-        // format has no reason to hold.
         let files: [(&str, &[u8]); 1] = [("", data)];
         let mut img = vec![0u8; image_size(&files)];
         write_image(&files, &mut img).unwrap();
@@ -593,10 +515,10 @@ mod tests {
         assert_eq!(core::mem::size_of::<Entry>(), ENTRY_LEN);
     }
 
+    /// Exactly [`MAX_FILES`] files write and parse back, so the directory's last entry (offset
+    /// `12 + (MAX_FILES - 1) * 40`) is honored, not silently past the header's reach.
     #[test]
     fn a_full_directory_round_trips() {
-        // Exactly MAX_FILES files must write and parse back, so the two-block directory's last entry
-        // (offset 12 + (MAX_FILES-1)*32) is honored, not silently past the header's reach.
         let data: &[u8] = b"z";
         let names: vec::Vec<std::string::String> =
             (0..MAX_FILES).map(|i| std::format!("f{i}")).collect();
@@ -612,12 +534,10 @@ mod tests {
     /// `a_full_directory_round_trips` above proves the capacity boundary but writes identical bytes
     /// to every file, so a directory that mixed up `start_block`s would still read the same byte back
     /// and pass. This one gives every file its own contents and name and checks each reads back
-    /// byte-for-byte, the integrity guard for the multi-block directory. It is the case the riscv
-    /// initial ramdisk hit (its per-role driver binaries push it past fifteen).
+    /// byte-for-byte, the integrity guard for the multi-block directory. Twenty files, each longer
+    /// than a name, so a shifted or truncated directory could not accidentally match.
     #[test]
     fn a_directory_spanning_two_blocks_round_trips() {
-        // Twenty files, each with distinct contents longer than a name so a shifted or truncated
-        // directory could not accidentally match.
         let bodies: vec::Vec<vec::Vec<u8>> = (0..20u8)
             .map(|i| vec![i; (BLOCK + i as usize) % (2 * BLOCK) + 1])
             .collect();
@@ -656,21 +576,11 @@ mod tests {
 
 /// Machine-checked proofs (`script/verify`; notes/verification.md).
 ///
-/// The initial ramdisk is parsed by the KERNEL (`kernel::user::program`), which puts this parser
-/// inside the TCB on externally-supplied bytes, the same position the `device_tree_blob` parser is
-/// in. And the same wall: the first attempt proved the WHOLE parse over a symbolic image, on the
-/// theory that a 15-entry bounded loop is tractable; CBMC disagreed (20+ CPU-minutes and climbing),
-/// so as in `device_tree_blob` the proof is decomposed to what converges and carries the weight:
-///
-/// - the **validation-implies-safe-read** arithmetic, for every entry value and image length
-///   (no symbolic arrays; this is the kernel-facing guarantee), and
-/// - the **truncation guard** for every image under the directory span.
-///
-/// What is deliberately NOT proved: whole-parse totality (the wall above; the in-bounds
-/// indexing it would add is `u32le`/`copy_from_slice` at offsets statically under one block,
-/// which the `image.len() < DIR_BLOCKS * BLOCK` guard, proved below, makes sound), and `name_str` (its panic
-/// surface is a slice bounded by `position()`, and its UTF-8 half is `core`'s validator, which
-/// costs CBMC minutes to re-prove and is trusted everywhere else in the system).
+/// The kernel parses the initial ramdisk (`kernel::user::program`), so this parser is in the TCB
+/// on externally supplied bytes. A whole-parse proof did not converge, so two harnesses carry the
+/// weight: the validation-implies-safe-read arithmetic for every entry value and image length, and
+/// the truncation guard for every image under the directory span. Whole-parse totality and
+/// `name_str` are deliberately not proved; notes/nifefs.md says why.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -678,22 +588,10 @@ mod verification {
     /// **Parse's validation is sufficient for `read`: proved on the function both of them call.**
     /// For ANY `start_block`, `len`, and image length, an accepted entry yields
     /// `start <= end <= image_len`, so `read`'s indexing cannot panic and the bytes it returns
-    /// lie inside the image. This is the kernel-facing guarantee, free of any bound on the
-    /// image size.
-    ///
-    /// **It calls [`Fs::entry_bounds`] rather than restating it** (milestone 213). Until that
-    /// function existed this harness recomputed both `parse`'s acceptance condition and
-    /// `read`'s slice arithmetic inline, under two comments claiming each was "exactly" what
-    /// the code did, and proved a property of the copy: neither `parse` nor `read` appeared in
-    /// it, so rewriting `read` left it green. Measured, not asserted: making `read` slice from
-    /// `(start_block + DIR_BLOCKS) * BLOCK`, which indexes a whole directory span past what
-    /// `parse` checked, left the old phrasing verifying in 0.04 seconds.
-    ///
-    /// The two equalities below are the **format**, not the implementation: nifefs entries name
-    /// an absolute block and blocks are [`BLOCK`] bytes, which is a fact about the on-disk
-    /// layout the image writer and every reader share, and so is the one thing this function is
-    /// not free to choose. Stating them here is the same move `credential_contract`'s parse
-    /// harness makes with the request word's shifts.
+    /// lie inside the image. It calls [`Fs::entry_bounds`] rather than restating it, because a
+    /// proof of a copy is a proof of neither caller (milestone 213). The two equalities are the
+    /// format, not the implementation: an entry names an absolute block of [`BLOCK`] bytes. See
+    /// notes/nifefs.md.
     /// Falsification: replayable `crates/nifefs/falsifications/verification.the_validation_implies_reads_slice_is_in_bounds.patch`
     #[kani::proof]
     fn the_validation_implies_reads_slice_is_in_bounds() {
@@ -723,29 +621,14 @@ mod verification {
     /// entry reads, up to offset [`HEADER_LEN`] + [`MAX_FILES`] * [`ENTRY_LEN`] inside
     /// [`DIR_BLOCKS`], in bounds).
     ///
-    /// **Why this harness carries `#[kani::unwind(9)]`, and why it proves nothing less for it.**
-    /// Without a bound, a guard weakened enough to admit this one length got no verdict at all:
-    /// symbolic execution entered the entry loop, whose bound is a `count` read from symbolic
-    /// bytes, and CBMC unrolled it without end (`< BLOCK` ran into CI's 45-minute timeout on #1156;
-    /// the off-by-one `< DIR_BLOCKS * BLOCK - 1` was killed at 420 s). On the correct tree no loop
-    /// is reachable, because the length is concrete and the guard returns before the magic compare,
-    /// so the bound adds no unwinding assertion and removes no path. Measured 2026-09-24, three runs
-    /// each, Kani 0.67.0 on patagonia: **before**, SUCCESSFUL, 0 of 164 checks failed (18
-    /// unreachable), 0.16 to 0.21 s; **after**, SUCCESSFUL, the same 0 of 164 (18 unreachable),
-    /// 0.16 to 0.29 s.
-    ///
-    /// **9 rather than a smaller bound**, because 9 is the least that lets the 8-byte magic compare
-    /// finish. At 3 the `< BLOCK` replay went red in 4.3 s, but its unwinding failure was in
-    /// `memcmp`, an artifact of the bound, and the only paths reaching the assertion were
-    /// `BadMagic` ones. At 9 it goes red in 19.6 s with the unwinding failure in `parse`'s own entry
-    /// loop and paths where a short image is actually accepted, which is the defect this harness is
-    /// named for.
-    ///
-    /// **BUGS: one record per harness.** §134 (a harness carries a machine-replayable falsification
-    /// record) spells its path `<module.path>.<harness>.patch`, so the weakened guard replaced the
-    /// reordering (magic before length) that #1217 recorded while the harness was unbounded. That
-    /// one still goes red under this bound (1.1 s, measured) and is what to reach for if this
-    /// record ever needs a cheaper replay.
+    /// `#[kani::unwind(9)]` lets a weakened guard reach a verdict instead of unrolling the entry
+    /// loop without end, and removes no path on the correct tree. 9 is the least bound that lets
+    /// the 8-byte magic compare finish. Measurements are in notes/nifefs.md.
+
+    /// # BUGS
+    /// - One record per harness (§134 (a harness carries a machine-replayable falsification
+    ///   record)), so this weakened guard replaced the magic-before-length reordering #1217
+    ///   recorded, which still goes red under this bound in 1.1 s and is the cheaper replay.
     /// Falsification: replayable `crates/nifefs/falsifications/verification.a_short_image_is_refused_not_indexed.patch`
     #[kani::proof]
     #[kani::unwind(9)]
