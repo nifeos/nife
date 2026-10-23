@@ -498,7 +498,8 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
 /// A copy, because the caller keeps its mapping and could change the bytes between the hash and the
 /// build (§219 (how the shell names an installed program to the spawner): "the progenitor hashes
 /// its own copy"). Each staging page's capability is deleted once mapped, so an image of any size
-/// costs one slot. `stage` false (the request cannot be built anyway) only gives the views up.
+/// costs one slot. `stage` false (no region for the child, or an interruptible image) only gives
+/// the views up.
 pub(super) fn stage_frames(
     spawn: &mut SpawnEndpoint,
     f: &Frames,
@@ -659,7 +660,7 @@ pub(super) fn endowed_image(
         Err(_) => return None,
     };
     // Installed bytes carrying a verb table are refused: endowing from the manifest alone would
-    // hand every line every verb's grants.
+    // hand every line every verb's grants. The image's own `jig` narrows by `grant_plan`'s table.
     if !matches!(
         elf.note(
             capability_manifest_note::OWNER,

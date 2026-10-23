@@ -166,7 +166,9 @@ bitmap reads, and neither invokes it by slot. With a screen beside the UART, the
 is the screen terminal's endpoint and slots 3 and 4 are its batching pair, a notification and a
 timer. The notification is bound to the console's thread between `build_child` and `start_child`,
 because a running thread cannot bind itself. The pair lets the console paint once per window rather
-than once per write, and the console degrades to one paint per write without it.
+than once per write, and the console degrades to one paint per write without it. The console's endowment is built as arrays with a count, because the screen is a runtime fact and
+the port range a compile-time one, and one literal per case would be one more place to get the slot
+order wrong.
 
 `system_log` is built right after the console, because until it attaches the kernel prints for
 itself and can splice with the console's bytes. Its ring grants are deleted whether or not it was

@@ -794,12 +794,13 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 }
 
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
-/// `caps` is in `line_editor::component::supervisor`'s slot order after its budget, and is copied,
-/// not moved. `ut` is where the loader's tables come from and `budget` is the region the supervisor
-/// is made of: the same root at boot, `own_ut` and the job region in a session. No swap endpoint is
-/// passed, because nothing yet asks the supervisor to swap (§308 (the installer asks the terminal
-/// to swap) is ruled, milestone 694 (the installer asks the terminal to swap) builds it), so it
-/// gets `BUDGET_PAGES` and no copy of its own image.
+/// `caps` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
+/// endpoint with every right, the output sink, the three pages, and the console's reply endpoint in
+/// console mode), and is copied, not moved. `ut` is where the loader's tables come from and
+/// `budget` is the region the supervisor is made of: the same root at boot, `own_ut` and the job
+/// region in a session. No swap endpoint is passed, because nothing yet asks the supervisor to swap
+/// (§308 (the installer asks the terminal to swap) is ruled, milestone 694 (the installer asks the
+/// terminal to swap) builds it), so it gets `BUDGET_PAGES` and no copy of its own image.
 pub(super) fn build_terminal(
     ut: u64,
     budget: u64,

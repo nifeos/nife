@@ -21,12 +21,14 @@ pub struct BootEndowment {
     /// of the filesystem pair so its slot never moves. With no clock service it is a zeroed page,
     /// which reads as `clock_contract::state::UNKNOWN`. Handed on, `READ` alone, to a child whose
     /// manifest declares a clock and to the shell for `time`, so nothing spawned can set the time
-    /// (DECISIONS §43 (reading the clock is a page, setting it is a page you may write)).
+    /// (DECISIONS §43 (reading the clock is a page, setting it is a page you may write)). The
+    /// shell's view is this frame handed on, not a second grant, so no board states the slot twice.
     pub clock_page: u64,
     /// **The inert-configuration page** (DECISIONS §111 (inert configuration is a validated page)):
     /// a `PageFrame` capability with `READ` alone, granted on every boot ahead of the filesystem
     /// pair, like [`clock_page`](BootEndowment::clock_page). The kernel assembles the boot's fixed
-    /// defaults into it before the progenitor exists (`kernel::user::boot_config_page`). Handed on,
+    /// defaults (`TZ=UTC`, `LANG=C`, `TERM=dumb`) into it before the progenitor exists
+    /// (`kernel::user::boot_config_page`). Handed on,
     /// `READ` alone, only to a child whose manifest declares
     /// [`grant_plan::Manifest::configuration`].
     pub config_page: u64,
