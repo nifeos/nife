@@ -3,7 +3,8 @@
 //! crate is everything it decides or renders with no capability in hand, so it is host-tested.
 //! Every renderer writes through `out: &mut dyn FnMut(&[u8])`, and a directory listing comes
 //! through a second callback, `expand`, so [`echo`] and [`expansion`] are testable end to end.
-//! See notes/shell.md, "The program and the crate (milestone 70)", and
+//! The split is milestone 70 (`swish`'s remaining logic in a crate, host-testable like its
+//! siblings). See notes/shell.md, "The program and the crate (milestone 70)", and
 //! notes/shell/the-swish-crate.md.
 
 //! # BUGS
