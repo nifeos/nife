@@ -124,9 +124,9 @@ formula in force, and the boot prints a line only when the machine differs from 
 description prints the context beside the PLIC address because it is the number that is not
 architectural.
 
-The boot hart's context is derived too, never fixed at 1: OpenSBI elects the boot hart by lottery,
-and a kernel that programs hart 0's context while running on hart 3 leaves every interrupt pending
-with all harts parked in `wfi`. The PLIC base is stored before `sie.SEIE` is set, so no claim goes
+The boot hart's context is derived too, never fixed at 1, because OpenSBI elects the boot hart by
+lottery. A kernel that programs hart 0's context while running on hart 3 leaves every interrupt
+pending, with all harts parked waiting for one. The PLIC base is stored before `sie.SEIE` is set, so no claim goes
 through a zero base, and every source stays disabled until `enable` routes it.
 
 Sources spread round-robin over the online harts, the twin of the GIC's `ITARGETSR`. The k-th
