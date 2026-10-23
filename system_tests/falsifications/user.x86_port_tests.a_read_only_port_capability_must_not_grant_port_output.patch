@@ -20,12 +20,12 @@ the same lines, moved out of `kernel/src/sched.rs` into `kernel/src/sched/thread
 the same and only the path and line numbers differ.
 
 diff --git a/kernel/src/sched/thread_control_block.rs b/kernel/src/sched/thread_control_block.rs
-index a2b41ef76..e8cda5ed7 100644
+index a251ed623..149e5ab53 100644
 --- a/kernel/src/sched/thread_control_block.rs
 +++ b/kernel/src/sched/thread_control_block.rs
-@@ -112,9 +112,7 @@ pub(super) fn thread_control_block_insert_from(
-     // without it opens none. The capability still lands in the table (REVOKE and delegation are
-     // unchanged); only the cached grant is withheld.
+@@ -89,9 +89,7 @@ pub(super) fn thread_control_block_insert_from(
+     // delegated later by `SEND_CAP` is not cached. A `PortRange` without `WRITE` grants nothing:
+     // the TSS bitmap cannot permit `in` without `out` (§121); the capability still lands.
      #[cfg(target_arch = "x86_64")]
 -    if let crate::cap::Object::PortRange(base, count) = capability.object
 -        && capability.rights.allows(crate::cap::Rights::WRITE)
