@@ -81,6 +81,59 @@ stops existing.
 You get one shot, and you cannot printf your way out of it. This is milestone 4, and it
 is where the GDB stub earns its keep.
 
+## What `kernel/src/arch/aarch64/mmu.rs` holds to
+
+`boot.s` turns the MMU on with a coarse map: two 1 GiB blocks, all of RAM executable, nothing
+read-only, enough to survive until Rust runs. `mmu::init` builds the fine map in `TTBR1_EL1`: the
+direct map of all RAM (read/write, never executable), the kernel image section by section at its
+linked addresses (W^X), every stack with its guard page left unmapped, and the device windows the
+device tree names, as device memory. It walks the tables in software before installing them,
+checking the code doing the switch, its stack and the UART are mapped and every guard page is not,
+because after the switch a wrong map is a machine that stops without a word. A secondary core starts
+on the coarse map and only repoints `TTBR1_EL1` at the same fine map, since its `TCR_EL1` and
+`MAIR_EL1` already match.
+
+The direct map puts RAM in the largest leaf that fits and device windows in 4 KiB pages. The mapper
+refuses to overwrite a mapping, which makes break-before-make the only way to change one: aarch64
+can raise a TLB conflict abort on a valid-to-valid change.
+
+**"Nobody is home" is a page table, not a control bit.** With no user space installed, `TTBR0_EL1`
+points at one zeroed L0 table, and a stray low address from EL1 takes a translation fault walking
+it. The alternative, `TCR_EL1.EPD0`, gives the same protection but would make every switch between a
+user thread and a kernel one a read-modify-write of the register that shapes translation itself.
+With the table, installing or removing a space is one `msr ttbr0_el1`. This is Linux's design.
+
+**The switch flushes nothing.** Every user mapping is `nG`, each space owns one ASID for life, and
+the ASID rides in `TTBR0_EL1[63:48]` with the root, so an old space's entries stop matching rather
+than being discarded ([address-space-identifiers.md](address-space-identifiers.md)).
+`switch_user_root` compares the composed value and returns early when it is unchanged, which skips
+two barriers. Invalidation happens at two places: revocation by VA across all ASIDs (`tlbi
+vaae1is`), and teardown or a batch by ASID (`tlbi aside1is`). Both lead with `dsb ishst`, so the
+other cores' table walkers see the page-table stores before the invalidate is broadcast; RISC-V's
+`sfence.vma` orders the hart's own writes by definition. A newly valid leaf needs no invalidate,
+only a barrier before the process touches it.
+
+**`switch_user_root` is an `unsafe fn` and not a type.** Its obligation is liveness: the root must
+outlive every EL0 instruction until the next `TTBR0_EL1` write, or the next user instruction runs in
+a stranger's pages. A newtype only `AddressSpace::ttbr0` and `reserved_root` could mint would be a
+`Copy` over a `u64`, and a copy outlives the `AddressSpace` whose frames get recycled. A borrow
+would express it, and the scheduler cannot hold one: `sched::switch` reads the root under
+`IPC_TABLES` and releases the lock before the switch, on purpose.
+
+`TCR_EL1` has one trap worth naming: 4 KiB is `0b00` for `TG0` and `0b10` for `TG1`. The
+`aarch64-cpu` crate spells both `KiB_4`. `IPS` comes from the ISA record, and `arch::isa::init`
+refuses a part with no 4 KiB granule, so `TG0` and `TG1` are a checked assumption.
+
+**Asking the silicon whether EL0 could read an address.** `AT S1E0R` translates an address as EL0
+would and reports a permission fault into `PAR_EL1`, so `user_can_read` never re-implements the
+permission model. `PAR_EL1` is one shared register, so interrupts are masked from the `at` to the
+`mrs`. No syscall in today's ABI dereferences a user pointer, so only the system tests call it, and
+they assert the silicon refuses a kernel address and allows the process's own text
+([capabilities.md](capabilities.md) has the confused deputy this answers).
+
+EL1 may read an EL0 page here because this kernel never sets `PSTATE.PAN`; RISC-V forbids it unless
+`sstatus.SUM` is set, which is why `permit_kernel_access_to_user_pages` exists as a no-op on aarch64.
+
 ## Aside: why some chips can't run this OS
 
 Microcontroller-class RISC-V and ARM parts (ESP32-C3, many Cortex-M) have no MMU.
