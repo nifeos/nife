@@ -252,10 +252,8 @@ kernel/src/user/address_space.rs:308	37
 kernel/src/user/address_space.rs:412	26
 kernel/src/user/address_space_registry.rs:10	23
 kernel/src/user/address_space_registry.rs:423	30
-kernel/src/user/designware_ethernet_service.rs:1	38
 kernel/src/user/device_starters.rs:140	39
 kernel/src/user/device_starters.rs:410	31
-kernel/src/user/disk_tree_service.rs:1	24
 kernel/src/user/entry.rs:79	28
 kernel/src/user/entry.rs:428	29
 kernel/src/user/entry.rs:492	24
@@ -265,7 +263,6 @@ kernel/src/user/loader.rs:69	24
 kernel/src/user/progenitor_boot.rs:22	21
 kernel/src/user/progenitor_boot.rs:48	37
 kernel/src/user/progenitor_boot.rs:451	21
-kernel/src/user/usb_keyboard_service.rs:1	34
 kernel/src/user/x86_programs.rs:1	38
 kernel/src/user/x86_programs.rs:99	21
 kernel/src/user/x86_programs.rs:239	29
