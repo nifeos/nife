@@ -58,7 +58,7 @@ three architectures.
 
 ## The machine description: the same questions, not the same lines
 
-`kernel/src/main.rs`'s `print_machine_description` answers eight questions on every architecture:
+`kernel/src/machine_description.rs`'s `print_machine_description` answers eight questions on every architecture:
 **processors, memory, console, interrupt controller, timer rate, initrd, PCIe window, IOMMU.** One
 of these machines has ACPI and two have a device tree, so each answers in its own vocabulary: a
 GICv2's distributor and CPU interface, a PLIC and this hart's S-mode context, a local-APIC/IO-APIC
