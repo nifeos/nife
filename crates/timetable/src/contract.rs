@@ -37,7 +37,7 @@
 //! - `a1` ([`ARG_ARCHIVE_LEN`]): the length of the archive mapped read-only at
 //!   `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, holding its jobs' programs.
 //! - `a2` ([`ARG_REGISTRATION_PAGE`]): where a writable registration page is mapped, or `0`.
-//!
+
 //! # How the document arrives
 //!
 //! With `a2 == 0` it is the compiled-in `components/timetable.conf`, and everything the timetable

@@ -16,14 +16,13 @@
 
 //! # The page
 //!
-//! Control is a sequence word in the page, not a message as §10 (the capability-based microkernel
-//! process model) would have it: a timetable yield-polls its clock from its one blocking wait
-//! point, so a `RECEIVE` would stop it watching. Eight words of header, then bytes. The registrar
-//! writes the document at [`BODY`] and its length at [`LEN`], then, **last** and with release
-//! ordering, a new [`REQUEST`] word, and reads nothing but [`REPLY`] until that matches. The
-//! timetable answers with [`STATUS`], [`DETAIL`], [`VERDICTS`] and the plan at [`BODY`]
-//! ([`PLAN_LEN`]), then, last, [`REPLY`] set to the request's sequence number. With a page it says
-//! nothing down its output endpoint ([`crate::contract`]), and it leaves its exit code at [`EXIT`].
+//! Control is a sequence word here, not a message as §10 (the capability-based microkernel
+//! process model) has it: a timetable yield-polls its clock from its one blocking wait point.
+//! Eight header words, then bytes. The registrar writes the document at [`BODY`], its length at
+//! [`LEN`], then, **last** with release ordering, a new [`REQUEST`]; it reads only [`REPLY`] until
+//! that matches. The timetable answers [`STATUS`], [`DETAIL`], [`VERDICTS`] and the plan at
+//! [`BODY`] ([`PLAN_LEN`]), then, last, [`REPLY`] set to the request's sequence number. With a page
+//! it is silent on its output endpoint ([`crate::contract`]) and leaves its exit code at [`EXIT`].
 //! See notes/scheduled-execution/the-crate.md, "The page".
 
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module,
