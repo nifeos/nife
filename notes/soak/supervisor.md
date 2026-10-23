@@ -106,6 +106,7 @@ never fires.
 
 ## BUGS
 
+- The round-trip total is sampled while workers write it (`soak_page`'s `BUGS`).
 - A panicked worker is reported "stalled", not "died", and is not restarted.
 - The tick route skips the interrupt controller's claim, mask and complete, so a run with it on is a
   different soak, comparable only with the same build.

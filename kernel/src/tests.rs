@@ -41,7 +41,7 @@ fn stack_pointer_is_16_byte_aligned() {
 ///
 /// We run at EL1, whether the machine started us there or at EL2 and `boot.s` dropped down
 /// (`virt,virtualization=on`, or U-Boot on a board; `arch::entry_el` records which). See
-/// notes/boot-protocol.md.
+/// notes/aarch64.md.
 ///
 /// RISC-V has no twin: S-mode cannot read its own privilege level, and
 /// `arch::riscv64::exceptions`'s `breakpoint_is_caught_and_execution_resumes` proves it sideways,

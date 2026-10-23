@@ -92,6 +92,7 @@ pub(super) fn ctx_switch_el0() {
 
 /// IPC round-trip latency, measured from EL0 (lmbench's `lat_pipe`): a server and a client that
 /// self-times SEND-then-RECEIVE. The server is spawned first so a request meets a waiting receiver.
+/// Its gap to `ipc_rtt` is roughly the four `svc` traps per round trip.
 pub(super) fn ipc_rtt_el0() {
     let Some(image) = crate::trust::require_program("os_primitives_benchmarker") else {
         println!("bench: ipc_rtt skipped (no os_primitives_benchmarker in the initial ramdisk)");

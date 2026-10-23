@@ -2,10 +2,11 @@
 //! (radon's cold reboot dies in OpenSBI's PMIC write): write bytes to a 7-bit address, optionally
 //! read bytes back, one transfer.
 //!
-//! It programs the timing itself (`jh7110_clock_and_reset::standard_mode_100k`), following vendor
-//! U-Boot's `drivers/i2c/designware_i2c.{c,h}` at `starfive-tech/u-boot` `1539c1fb5a49`. Every
-//! wait is bounded, because on the way to a reset the next route beats a hang; it takes no
-//! interrupt, lock or global. See design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
+//! It programs the timing itself (`jh7110_clock_and_reset::standard_mode_100k`). Every register
+//! offset and bit is vendor U-Boot's `drivers/i2c/designware_i2c.{c,h}` at `starfive-tech/u-boot`
+//! `1539c1fb5a49`, and the sequence mirrors its `__dw_i2c_init`, `i2c_xfer_init`, `__dw_i2c_write`,
+//! `__dw_i2c_read` and `i2c_xfer_finish`. Every wait is bounded, since on the way to a reset the
+//! next route beats a hang; it takes no interrupt, lock or global. See roadmap 0592.
 //!
 //! Name: provisional (milestone 592, 2026-10-10): calef names public items.
 
@@ -151,8 +152,9 @@ impl DesignWareI2c {
     /// Write `write` then read `read` back to the 7-bit `target`, one transaction, standard mode
     /// at `mode`'s timing; returns the [`Failure`] if it did not end well.
     ///
-    /// Reads are `READ_CMD`s pushed into the transmit FIFO, as the IP requires, and STOP goes on
-    /// the last command of all, whichever half it ends in.
+    /// The steps: disable, program, set the target address, enable, wait for the bus to be free,
+    /// push the commands (reads are `READ_CMD`s in the transmit FIFO, as the IP requires) with STOP
+    /// on the last of all, whichever half it ends in, wait for `STOP_DET`, disable.
     pub(crate) fn write_read(
         &self,
         mode: &jh7110_clock_and_reset::StandardMode,

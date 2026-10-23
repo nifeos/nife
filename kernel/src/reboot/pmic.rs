@@ -80,8 +80,8 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
     let Some((i2c, mode, address)) = pmic_bus(marker) else {
         return;
     };
-    // Read first, so the write sets the reset bit alone and never the power-off bit 7 that
-    // radon's OpenSBI sets.
+    // Read first, so the write sets the reset bit alone and leaves every other bit as found,
+    // unlike radon's OpenSBI, which also sets power-off bit 7.
     let mut current = [0u8; 1];
     if let Err(failure) = i2c.write_read(&mode, address, &[PMIC_RESET_REG], &mut current) {
         println!(
@@ -116,7 +116,8 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
 /// A reset that prints nothing leaves no trace on the system-on-chip side, and the PMIC keeps its
 /// own. Prints Linux's `axp20x.h` registers: startup source (`0x00`), PWROK and power-off (`0x1f`),
 /// wake and shutdown sequence (`0x31`, `0x32`), interrupt enables (`0x40`, `0x41`) and latched
-/// status (`0x48`, `0x49`), cleared after, so each boot reports only what happened since the last.
+/// status (`0x48`, `0x49`), cleared after (write-one-to-clear), so each boot reports only what
+/// happened since the last.
 /// Name: provisional.
 #[cfg(all(target_arch = "riscv64", feature = "reboot_soak_test"))]
 pub(crate) fn pmic_report(marker: &str) {

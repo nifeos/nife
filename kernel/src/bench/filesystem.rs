@@ -108,7 +108,8 @@ pub(super) fn fs_throughput() {
 /// milestone 121 (`ripgrep` on nife: enumeration as a capability) behind a caretaker.
 ///
 /// The row is the median warm walk; probes split it by call. `bench/host/run_linux_walk.sh` prices
-/// Linux alike. `--real --smp` only; skips without the RedoxFS disk or `std_exerciser`.
+/// Linux alike. It is the release-kernel figure the debug kernel suite cannot give. `--real --smp`
+/// only; skips without the RedoxFS disk or `std_exerciser`.
 ///
 /// # BUGS
 /// Warm only: the first walk fills the FS server's memo, as a repeated `rg` or `find` finds it. A
