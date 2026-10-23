@@ -41,10 +41,10 @@ delivered through a second IO APIC, and nothing in this tree does. `irq.rs`'s mo
 so where a reader meets the feature.
 
 diff --git a/kernel/src/arch/x86_64/irq.rs b/kernel/src/arch/x86_64/irq.rs
-index cfa51dada..9d56b0fc6 100644
+index 81d1c50f4..4f2dc4881 100644
 --- a/kernel/src/arch/x86_64/irq.rs
 +++ b/kernel/src/arch/x86_64/irq.rs
-@@ -512,7 +512,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
+@@ -513,7 +513,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
          index < MAX_REDIRECTION_ENTRIES,
          "redirection index {index} is outside the vector band the entry-count cap reserves"
      );

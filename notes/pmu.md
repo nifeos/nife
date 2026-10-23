@@ -144,7 +144,7 @@ part. The TSC is invariant, a good clock and not a cycle counter.
 
 The MSRs are from the Intel SDM Volume 3B, "Architectural Performance Monitoring". `CPUID` leaf
 `0x0A` gives the version (fixed counters from 2) and the fixed counters' count and width.
-`IA32_FIXED_CTR_CTRL` (`0x38D`) enables counter 1 for ring 0 and ring 3. `IA32_PERF_GLOBAL_CTRL`
+`IA32_FIXED_CTR_CTRL` (`0x38D`) enables counter 1 for ring 0 and ring > 0 (the SDM's OS and USR bits). `IA32_PERF_GLOBAL_CTRL`
 (`0x38F`) is the master switch, and a counter enabled in only one of the two counts nothing.
 `IA32_PERF_FIXED_CTR1` (`0x30A`) is the counter. Both control registers are read, modified and
 written, so firmware's bits survive.

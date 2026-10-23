@@ -471,7 +471,8 @@ const _: () = {
 /// re-entered before it has a stack. `TF` (8) would single-step the kernel for a user debugger.
 /// `DF` (10) must be clear on entry to a System V function. `IOPL` (13:12) inherited from ring 3 is
 /// not the kernel's choice. `NT` (14) changes what `iret` means. `RF` (16) suppresses instruction
-/// breakpoints. `AC` (18) faults unaligned kernel accesses, a known privilege-escalation lever.
+/// breakpoints. `AC` (18) suspends SMAP for ring-0 accesses, a known privilege-escalation lever
+/// (this kernel leaves SMAP off; `cpu_init.rs`).
 const SYSCALL_FLAG_MASK: u64 = (1 << 8)      // TF
     | (1 << 9)                               // IF
     | (1 << 10)                              // DF
@@ -856,8 +857,7 @@ fn user_fault(frame: &TrapFrame, vector: u64) -> ! {
 /// root: whether the live `CR3` was another space's, or where the thread's tables lost the entry.
 /// Each table says whether its frame is allocated now, so one freed while linked shows. The own
 /// root is a `system_tests` build's only (`sched::thread_space_root`). Cold, so the trap path pays
-/// nothing until a thread dies. See "A user thread can lose the translation of its own text" in
-/// `notes/riscv-tlb-shootdown.md`.
+/// nothing until a thread dies.
 #[cold]
 #[inline(never)]
 fn report_walk(address: u64) {

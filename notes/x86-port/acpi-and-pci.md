@@ -218,7 +218,10 @@ three of them live here.
 The boot map's 4 GiB bound is what the ACPI walk runs under. Firmware places its tables just under
 the top of RAM. At QEMU's `-m 256M` the RSDP lands at `0x0fb7e014`; at `-m 2048` under OVMF it
 lands at `0x7fb7e014`. A 1 GiB bound passes the first and refuses every table on the second, and
-every real x86 machine has more than 1 GiB.
+every real x86 machine has more than 1 GiB. So `cargo xtask uefi-boot` boots at 2 GiB
+(`helpers/qemu-uefi-x86_64.sh`; `NIFE_MEM` sets it back), which puts firmware's tables above 1 GiB.
+Its gate asserts a PCIe window whose base came from a table read at that height, so the whole walk
+is checked as one chain.
 
 The boot line prints the MCFG's ECAM base beside q35's default, `arch::mmu::PCI_ECAM_PHYS`, and
 names q35 because the two are expected to differ. Firmware places this window. They agree under

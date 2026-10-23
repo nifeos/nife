@@ -184,6 +184,10 @@ update finished, not that the next will not start before the first port read. So
 two full snapshots, each after its own UIP wait, and retries until they agree. A real BIOS RTC
 driver does the same (the `OSDev` wiki's CMOS page documents it).
 
+The driver leaves daylight saving and the alarm and periodic-interrupt registers alone. The kernel
+reads the clock once; after that, `clock_contract`'s wall clock is the counter plus an offset, so
+nothing needs an alarm, a periodic tick or status B's DST bit.
+
 ### The century
 
 Most firmware exposes a non-standard century byte at a chipset-specific index (`0x32` on many; the

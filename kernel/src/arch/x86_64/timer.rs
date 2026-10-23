@@ -1,8 +1,8 @@
-//! The timer, `x86_64`: the TSC, measured with the APIC timer against the 8254 PIT in polled
+//! The timer, `x86_64`: the TSC and the APIC timer, each measured against the 8254 PIT in polled
 //! 10 ms windows (smallest wins), and the APIC timer for the tick. See notes/tsc-under-tcg.md.
 //!
 //! # BUGS
-//! - The TSC is assumed invariant; `isa::init` refuses a bare-metal part that says otherwise.
+//! - The TSC is assumed invariant: `isa::init` refuses a part saying otherwise, or warns in a VM.
 //! - Min-of-N filters a fought host rather than bounding it; the boot line prints the worst window.
 //! - Under `-icount shift=0,sleep=off` (`script/bench --x86`'s default) the TSC is not wall time.
 //! - `now()` is this core's TSC; nothing measures or corrects skew between cores (QEMU has none).

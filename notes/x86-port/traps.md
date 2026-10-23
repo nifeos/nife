@@ -200,7 +200,7 @@ body out of the IPC fastpath's hot footprint for the price of a call and a compa
 Revocation must reach other cores. A revoked holder can be running elsewhere when its capability is
 deleted, and clearing the cached grant under `sched::IPC_TABLES` tells no hardware. At `NIFE_SMP=2`,
 `user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write` measured that window: red
-in 7 of 12 full runs, each time with the revoker on one core and the grant installed on the other.
+in 7 of 12 full runs and 5 of 30 filtered ones, each time with the revoker on one core and the grant installed on the other.
 `revoke_port_grant_everywhere` resets this core first and sends the rest an NMI.
 
 `PortRange::REVOKE` deletes the range from every table but the invoker's, and the invoker is the

@@ -310,15 +310,15 @@ unsafe fn write_range_bits(iomap: *mut u8, base: u16, count: u16, deny: bool) {
 }
 
 /// Install a thread's port grant into this core's TSS, lazily (milestone 299, §121).
-/// `sched::schedule` calls this on switch-in with the incoming thread's `(base, count)`, or `None`.
+/// `sched::install_port_grant` calls this on switch-in with the incoming thread's `(base, count)`.
 ///
 /// An unchanged grant returns after one comparison, as on nearly every switch. A change writes only
-/// the bits that move, re-denying the outgoing range and permitting the incoming one, then points
-/// `iomap_base` at the bitmap or past the limit. The CPU reads the TSS on each `in`/`out`, so no
-/// `ltr` is needed. `#[cold]` keeps the body out of the IPC fastpath's instruction footprint
-/// (`script/fastpath-footprint`). See notes/x86-port/traps.md.
+/// the bits that move, then points `iomap_base` at the bitmap or past the limit; the CPU reads the
+/// TSS on each `in`/`out`, so no `ltr` is needed. `#[cold]` keeps the body out of the IPC
+/// fastpath's footprint (`script/fastpath-footprint`). See notes/x86-port/traps.md.
 ///
-/// Context: interrupts masked (the switch path); touches only this core's TSS.
+/// Context: interrupts masked and `sched::IPC_TABLES` held (the switch path; the single-hart bench
+/// boot calls it bare); touches only this core's TSS.
 #[cold]
 pub fn set_port_range_grant(grant: Option<(u16, u16)>) {
     set_port_range_grant_on(crate::cpu::id(), grant);

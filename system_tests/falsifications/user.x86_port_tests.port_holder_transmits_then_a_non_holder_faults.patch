@@ -55,11 +55,11 @@ after that change: red on both legs at `system_tests/src/user/x86_port_tests.rs:
 4, the firmware boot on try 1.
 
 diff --git a/kernel/src/arch/x86_64/segments.rs b/kernel/src/arch/x86_64/segments.rs
-index 709d0bb33..545ddacd1 100644
+index 954687100..8487f9359 100644
 --- a/kernel/src/arch/x86_64/segments.rs
 +++ b/kernel/src/arch/x86_64/segments.rs
-@@ -320,6 +320,10 @@ unsafe fn write_range_bits(iomap: *mut u8, base: u16, count: u16, deny: bool) {
- /// Context: interrupts masked (the switch path); touches only this core's TSS.
+@@ -321,6 +321,10 @@ unsafe fn write_range_bits(iomap: *mut u8, base: u16, count: u16, deny: bool) {
+ /// boot calls it bare); touches only this core's TSS.
  #[cold]
  pub fn set_port_range_grant(grant: Option<(u16, u16)>) {
 +    // A thread with no port capability needs nothing installed for it.
