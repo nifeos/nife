@@ -31,19 +31,16 @@ pub fn exit() -> ! {
     }
 }
 
-/// **Die where the mistake was.** Raise a breakpoint the kernel turns into a fault, so the process
-/// is killed rather than allowed to limp on. Unlike [`exit`] (`EVENT_EXIT`), this reports
-/// `EVENT_FAULT` to a supervisor (§26 (the fault endpoint)), so a panic must take this path:
-/// `brk #0`, `ebreak` or `ud2`. The trailing spin only satisfies `-> !`; calling `exit` would make
-/// an impossible return look like a clean death.
+/// **Die where the mistake was.** Raise a breakpoint (`brk #0`, `ebreak`, `ud2`) the kernel turns
+/// into a fault, which reports `EVENT_FAULT` to a supervisor where [`exit`] reports `EVENT_EXIT`
+/// (§26 (the fault endpoint)), so a panic must take this path. The trailing spin only satisfies
+/// `-> !`; calling `exit` would make an impossible return look like a clean death.
+///
+/// A verb, like `send`, `receive`, `reap` and `exit`: the naming tenet's noun rule is about crates,
+/// programs and modules, not the things they do.
 ///
 /// # BUGS
-/// - Every trap in a program prints the same fault line, since its `pc` is this one instruction;
-///   notes/user-mode-runtime.md has the fix and the workaround.
-///
-/// Name: a verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all
-/// verbs, and the naming tenet's noun rule is about crates, programs and modules rather than about
-/// the things they do.
+/// - Every trap prints the same fault line (one `pc`); notes/user-mode-runtime.md has the fix.
 pub fn trap() -> ! {
     #[cfg(target_arch = "aarch64")]
     // SAFETY: `brk` traps; the kernel turns a trap from userspace into a kill. The options promise

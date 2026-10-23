@@ -192,8 +192,8 @@ cursor is a block drawn by swapping the cell's two colors, not an overlay, so a 
 the screen predicts the cursor too. It is not drawn while scrolled back, where its `(col, row)`
 names a live cell that is not on screen.
 
-`Attr::colours` resolves a rendition in a fixed order. Bold changes no color, since it is a face.
-Dim moves the foreground halfway to the background per channel in sRGB; the midpoint is xterm's
+`Attr`'s color resolution takes a rendition in a fixed order. Bold changes no color, since it is
+a face. Dim moves the foreground halfway to the background per channel in sRGB; the midpoint is xterm's
 amount. sRGB rather than linear light is deliberate: dim asks for half the apparent brightness, and
 the linear-light midpoint of white and black is sRGB 188, which reads as barely dimmed. Linear light
 is right for anti-aliased coverage, where the question is how much light a partly covered pixel

@@ -62,19 +62,15 @@ pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
     unsafe { super::invoke(virtio_slot, abi::virtio::NOTIFY, queue, 0, 0) }
 }
 
-/// **Order this driver's normal-memory accesses to a virtqueue against the device's.** Call it
-/// between publishing a descriptor and bumping the available index that advertises it, between
-/// that index and the notify, and between reading a used index and the payload that index gates.
+/// **Order this driver's normal-memory accesses to a virtqueue against the device's**: a descriptor
+/// before its available index, that index before the notify, a used index before its payload.
 ///
-/// `dmb ish` on aarch64 and `fence` on riscv64, both weakly ordered. On `x86_64`, TSO already gives
-/// the store-store and load-load orders asked for, and every notify leaves through a serializing
-/// syscall, so a compiler fence is the whole answer. A fourth architecture fails to build. See
-/// notes/user-mode-runtime.md and notes/architecture-list-sweep.md, finding 9.
+/// `dmb ish` on aarch64, `fence` on riscv64; on `x86_64`, TSO and a serializing syscall leave only a
+/// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
+/// and notes/architecture-list-sweep.md, finding 9.
 ///
-/// Name: **provisional** (a lane's, not ratified): it sits in this module beside the four
-/// capability wrappers and took the `virtio_` prefix they then carried. calef's ruling of
-/// 2026-10-08 (UTC), #1842, dropped that prefix from those four ([`read_register`] and its
-/// siblings); whether this one follows is not yet ruled.
+/// Name is **provisional**: calef's 2026-10-08 (UTC) ruling on #1842 dropped the `virtio_` prefix
+/// from [`read_register`] and its siblings, and whether this one follows is not yet ruled.
 ///
 /// Name: provisional, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11

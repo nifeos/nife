@@ -36,7 +36,7 @@ something.
 
 - The defaults are ANSI 7 on ANSI 0, `base2` on `base02`: a pale cream on the dark highlight
   color, not Solarized Dark's `base0` on `base03`. The fix is to point `DEFAULT_FG` and
-  `DEFAULT_BG` at 12 and 8. A rendition color is a full `Colour::Indexed(u8)`, so the rendition
+  `DEFAULT_BG` at 12 and 8. A rendition color is a full indexed color, `Indexed(u8)`, so the rendition
   can name 8.
 - The properties guard the sixteen, not every color a cell can hold. A 256-color or 24-bit color
   can land a swapped channel on a legal color, and the pixel-exact scanout comparison carries that
