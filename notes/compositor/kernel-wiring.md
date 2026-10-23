@@ -15,10 +15,10 @@ exactly the identity the compositor does not have.
 ## One run for every client
 
 Every client's control page and surface come from one contiguous allocation. That puts a client's
-neighbour's pixels in the frames physically after its own grant, so the neighbour attack aims at
+neighbor's pixels in the frames physically after its own grant, so the neighbor attack aims at
 memory that really is there. An attack on a scattered allocation would prove only that the attacker
-could not find its neighbour. `neighbour_probe_va` names the address two pages past the end of a
-client's surface, past the neighbour's control page, so the test can assert on the exact faulting
+could not find its neighbor. `neighbour_probe_va` names the address two pages past the end of a
+client's surface, past the neighbor's control page, so the test can assert on the exact faulting
 address.
 
 ## The screen is one capability
