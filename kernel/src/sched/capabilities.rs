@@ -9,7 +9,8 @@
 use super::*;
 
 /// Delete every `PageFrame` capability naming exactly the run `(phys, count)` from every thread's
-/// table and hand-off slot, the caller's included: `PageFrame::REVOKE`'s sweep (§13, §102).
+/// table and hand-off slot, the caller's included: `PageFrame::REVOKE`'s sweep (§13 (capability
+/// revocation and untyped reclamation), §102 (a frame names a run of pages)).
 ///
 /// Matches by object equality: a narrowed copy matches, a different sub-range of the same memory
 /// does not. A `count` of 0 deletes nothing. Reclamation wants
@@ -65,9 +66,9 @@ pub(super) fn delete_page_frame_caps_where(matches: impl Fn(&crate::cap::Object)
     }
 }
 
-/// Delete every `DeviceFrame` capability naming `phys` from every table and hand-off slot except the
-/// calling thread's (§41). The caller keeps its own: this takes a device back to hand on.
-/// [`crate::revoke::revoke_device_from_others`] has the reasoning.
+/// Delete every `DeviceFrame` capability naming `phys` from every table and hand-off slot except
+/// the calling thread's (§41 (the endpoint is the broker)). The caller keeps its own: this takes a
+/// device back to hand on. [`crate::revoke::revoke_device_from_others`] has the reasoning.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
 pub(crate) fn delete_device_frame_caps_from_others(phys: u64) {
@@ -163,7 +164,7 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
 }
 
 /// Remove the capability in `slot` from the current thread's table. This is how a one-shot `Reply`
-/// is consumed the instant it is invoked (§12).
+/// is consumed the instant it is invoked (§12 (call/reply IPC)).
 ///
 /// Takes only the thread's own table lock. On `x86_64`, deleting the `PortRange` behind the
 /// thread's cached port grant also drops the grant and resets this core's TSS bitmap. Returns the
@@ -207,7 +208,8 @@ pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
 /// running thread's own table lock, not `IPC_TABLES`.
 ///
 /// `#[inline(never)]` because `script/fastpath-footprint` counts it once as a root and
-/// `syscall::dispatch` flat (milestone 758); inlined, it lands on aarch64's `syscall_entry`.
+/// `syscall::dispatch` flat (milestone 758 (the IPC fast paths shrink back inside their band));
+/// inlined, it lands on aarch64's `syscall_entry`.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -248,9 +250,9 @@ pub fn current_capability_slots() -> (usize, usize) {
 
 /// Hand the current thread a capability at an explicit `slot`, leaving lower slots empty.
 ///
-/// [`grant`] fills the first free slot. Some conventions (notes/abi.md §4) name a fixed slot whose
-/// lower neighbors' emptiness is meaningful: a std program holding slot 4 with 2 and 3 empty has
-/// no network. The kernel's counterpart of `ThreadControlBlock::CAP_INSERT`.
+/// [`grant`] fills the first free slot. Some conventions (notes/abi.md, section 4) name a fixed
+/// slot whose lower neighbors' emptiness is meaningful: a std program holding slot 4 with 2 and 3
+/// empty has no network. The kernel's counterpart of `ThreadControlBlock::CAP_INSERT`.
 pub fn grant_at(slot: u64, capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
     current_capabilities().map_or(Err(crate::cap::Error::NoFreeSlot), |mut t| {
         t.insert_at(slot, capability)
@@ -301,7 +303,8 @@ pub(crate) struct Delegation {
 
 impl Delegation {
     /// **The delegation rule**: the source exists, its holder was trusted to pass it on (`GRANT`),
-    /// and the copy only narrows. Applied to a table the caller holds under a lock every sweep takes.
+    /// and the copy only narrows. Applied to a table the caller holds under a lock every sweep
+    /// takes.
     pub(super) fn derive(
         self,
         table: &crate::cap::CapabilityTable,

@@ -12,7 +12,8 @@ use super::*;
 /// a thread still on its CPU has its wake parked for its own core's `finish_switch` to complete
 /// once its context is saved (notes/intrusive-queues.md).
 ///
-/// Context: caller holds `IPC_TABLES`. In the pinned hot section (milestone 796).
+/// Context: caller holds `IPC_TABLES`. In the pinned hot section (milestone 796 (pin the hot trap
+/// path's placement)).
 #[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.sched.wake"))]
 pub(super) fn wake(sched: &mut IpcTables, tid: ThreadId) {
     if let Some(t) = sched.threads.get_mut(tid) {

@@ -14,10 +14,11 @@ use super::*;
 /// A synchronous IPC rendezvous point: the two wait queues and the pending-signal count.
 ///
 /// The state machine is the `inter_process_communication` crate, which proves its one invariant,
-/// "at most one wait queue is ever non-empty" (§14, notes/verification.md); the kernel's IPC
-/// functions add only the bookkeeping the queues cannot express. A wait-queue entry is the TCB
-/// itself, threaded through the run queues' link, so blocking cannot allocate and a thread waits
-/// on one rendezvous at a time. The pointers' contract is at [`thread_control_block_ptr`].
+/// "at most one wait queue is ever non-empty" (§14 (the project's direction),
+/// notes/verification.md); the kernel's IPC functions add only the bookkeeping the queues cannot
+/// express. A wait-queue entry is the TCB itself, threaded through the run queues' link, so
+/// blocking cannot allocate and a thread waits on one rendezvous at a time. The pointers' contract
+/// is at [`thread_control_block_ptr`].
 pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 
 /// The most threads that can be alive at once, whole machine: a documented limit of the image, so
@@ -103,8 +104,8 @@ pub(super) const MAX_KERNEL_EP_CHUNKS: usize =
 /// The lock over every table in [`IpcTables`].
 ///
 /// Ranked above the allocators, because the reaper (`finish_switch`) drops a dead `Thread` while
-/// holding it and that drop frees through the kernel MMU lock. Nothing under it allocates, so §9's
-/// no-allocation-in-IRQ rule holds. See notes/ipc-tables-lock-inventory.md.
+/// holding it and that drop frees through the kernel MMU lock. Nothing under it allocates, so §9
+/// (locking)'s no-allocation-in-IRQ rule holds. See notes/ipc-tables-lock-inventory.md.
 pub(super) static IPC_TABLES: IrqSafeMutex<Option<IpcTables>> =
     IrqSafeMutex::new(rank::IPC_TABLES, None);
 

@@ -8,8 +8,9 @@
 use super::*;
 
 /// The most notifications that can exist at once, whole machine: a registry bound like
-/// [`MAX_RENDEZVOUS`], and half of it, since §101's consumers want about one per thread or service.
-/// It bounds only the name table, 16 bytes a slot; the pages come from the creators' regions.
+/// [`MAX_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about one
+/// per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from the
+/// creators' regions.
 pub(super) const MAX_NOTIFICATIONS: usize = 256;
 
 /// A notification's name: a generational name over the notification registry, what an
@@ -103,7 +104,8 @@ pub(super) fn bound_receiver(
 /// queue (a drain and repush), fill its mailbox with [`bound_delivery`], and record the delivery.
 /// The caller wakes it.
 ///
-/// Context: caller holds `IPC_TABLES`, and got `(tid, ep)` from [`bound_receiver`] in the same hold.
+/// Context: caller holds `IPC_TABLES`, and got `(tid, ep)` from [`bound_receiver`] in the same
+/// hold.
 pub(super) fn deliver_bound(sched: &mut IpcTables, tid: ThreadId, ep: RendezvousId, word: u64) {
     let ptr = thread_control_block_ptr(sched, tid);
     // `ptr` is only compared by the remove; the token it hands back goes home to the thread.
@@ -125,8 +127,8 @@ pub(super) fn deliver_bound(sched: &mut IpcTables, tid: ThreadId, ep: Rendezvous
 }
 
 /// Where a notification wake queues the thread it woke: a thread's signal is a local [`wake`], and
-/// a signal from interrupt context is [`wake_load_aware`] (§28 step 2), because an interrupt or a
-/// timer expiry carries no locality.
+/// a signal from interrupt context is [`wake_load_aware`] (§28 (SMP placement) step 2), because an
+/// interrupt or a timer expiry carries no locality.
 #[derive(Clone, Copy)]
 pub(super) enum WakePlacement {
     Local,

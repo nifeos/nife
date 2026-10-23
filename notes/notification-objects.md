@@ -149,7 +149,7 @@ decided driver by driver.
 ### Who counts as a bound receiver
 
 The crate's `signal` takes one boolean on trust: whether the bound thread is parked in a receive.
-`bound_receiver` decides it, as `Blocked` on a rendezvous as a `Receiver` with nothing delivered yet.
+`bound_receiver` decides it: `Blocked` on a rendezvous as a `Receiver` with nothing delivered yet.
 The last clause matters. A receiver a sender has already served stays `Blocked` with its `wait_on`
 intact until the wake completes, which can be a whole context switch later (a wake deferred behind
 `on_cpu` finishes in `finish_switch`). Its mailbox is full, and a notification delivered there would
@@ -170,11 +170,11 @@ FIFO. A server's endpoint usually holds one receiver, itself.
 `signal_locked` serves a thread's `SIGNAL` and a kernel-originated signal alike. They differ only in
 where the woken thread is placed. A thread's signal wakes locally, because the pair is often a
 conversation and the signaling core is warm. A signal from interrupt context (the timer expiry walk)
-wakes load-aware (§28 step 2), because an interrupt carries no locality. Everything in it is legal in
-interrupt context for `irq_notify`'s reason: `IPC_TABLES` masks interrupts while held, a wake is an
-enqueue rather than a switch, and nothing allocates. The timer expiry walk calls it directly, under
-one hold, for several timers. `signal_notification_from_interrupt` is the one-at-a-time entry,
-exercised by a kernel test and otherwise uncalled.
+wakes load-aware (§28 (SMP placement) step 2), because an interrupt carries no locality. Everything
+in it is legal in interrupt context for `irq_notify`'s reason: `IPC_TABLES` masks interrupts while
+held, a wake is an enqueue rather than a switch, and nothing allocates. The timer expiry walk calls
+it directly, under one hold, for several timers. `signal_notification_from_interrupt` is the
+one-at-a-time entry, exercised by a kernel test and otherwise uncalled.
 
 ### Binding, and a word already waiting
 

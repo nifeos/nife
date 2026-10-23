@@ -181,7 +181,8 @@ reaches userspace. `kernel::user::revocation_in_flight_tests` is the falsificati
 `delete_page_frame_caps(phys, count)` is `PageFrame::REVOKE`'s. It deletes every capability naming
 exactly that run. A narrowed copy goes, since `derive` never changes the object. A different
 sub-range of the same memory stays (§102 (a frame names a run)); whether a revoke should take an
-overlapping holder's capability is §132's open question.
+overlapping holder's capability is the open question of §132 (what `PageFrame::REVOKE` owes an
+overlapping run).
 
 `delete_page_frame_caps_overlapping(base, size)` is reclamation's. The allocator is about to reuse
 the range, so any capability naming any page of it goes. Equality would miss a run capability,
@@ -243,8 +244,8 @@ on use (§16 (object revocation)).
   that let a caller name a sub-range would open it (`notes/confinement-outsider-pass-8.md`, near
   miss 1).
 - Deleting one of two copies of a `PortRange` disturbs the other. The grant is one `Option` on the
-  thread, so a thread holding the range in two slots loses `in`/`out` when it deletes either. §12's
-  "dropping one capability does not disturb the others"
+  thread, so a thread holding the range in two slots loses `in`/`out` when it deletes either. §12
+  (call/reply IPC)'s "dropping one capability does not disturb the others"
   ([notes/confinement-claims.md](confinement-claims.md) row 5) is false for this object on `x86_64`.
   It fails safe and no consumer holds a range twice; a count or a scan on delete would close it.
 

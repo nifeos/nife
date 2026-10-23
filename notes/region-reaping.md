@@ -16,9 +16,10 @@ is in
 2. `reap_region_objects` runs under `IPC_TABLES`. It is the caller-driven half of revocation and
    must run outside any teardown `Drop`.
 3. `user::reap_address_spaces_in_region` takes the registry's lock, which takes `IPC_TABLES` beneath
-   it to ask about bound threads. The registry owns bound spaces (§249 (a running address space stays
-   nameable)), so this step also collects the space of every thread step 2 removed, and a corpse's
-   space whose root is in the region. A space whose thread can still run was refused in step 2.
+   it to ask about bound threads. The registry owns bound spaces (§249 (a running address space
+   stays nameable)), so this step also collects the space of every thread step 2 removed, and a
+   corpse's space whose root is in the region. A space whose thread can still run was refused in
+   step 2.
 4. `memory_region::unpin` and `memory_region::destroy`, neither of which takes `IPC_TABLES`. That is
    why the reaper's `Drop` to `destroy` path cannot deadlock against step 2.
 
@@ -32,9 +33,10 @@ thread pointer translated back to a physical address is the whole test.
 
 1. **Rendezvous.** Every rendezvous in the region is removed, refusal or not. Removing one drains
    its wait queues, marks each waiter's IPC aborted and wakes it. A resident parked in `RECEIVE` on
-   the region's own rendezvous becomes schedulable, so the kill the refuse phase arms can land on it.
-   `strand_callers_awaiting` then frees the callers the drain cannot reach: a `CALL` whose request
-   was taken has left the sender queue, and only its `wait_on` records that it awaits a reply here.
+   the region's own rendezvous becomes schedulable, so the kill the refuse phase arms can land on
+   it. `strand_callers_awaiting` then frees the callers the drain cannot reach: a `CALL` whose
+   request was taken has left the sender queue, and only its `wait_on` records that it awaits a
+   reply here.
 2. **Notifications, timers, processes.** Notifications get the same sweep, for the same reason. An
    armed timer has no waiter to abort and simply never fires. A process in the region is ended, its
    embryo members detached, and forgotten once empty.
@@ -51,16 +53,17 @@ thread pointer translated back to a physical address is the whole test.
 ### One at a time, by rescan
 
 Each phase that removes finds one victim, removes it and rescans, rather than collecting the victims
-into an array first. `remove` mutates the table, so a collect-then-remove shape needs a scratch array
-of `MAX_RENDEZVOUS` or `MAX_THREADS` names, and this is one of the deepest frames in the kernel. A
-`[u64; 512]` is 4 KiB of a 24 KiB kernel thread stack ([notes/stack-high-water.md](stack-high-water.md)
-has the frame's measured size). Rescanning costs O(live objects) per removal, on a teardown path that
-removes a handful. Each pass changes the victim so it no longer matches, so each loop terminates.
+into an array first. `remove` mutates the table, so a collect-then-remove shape needs a scratch
+array of `MAX_RENDEZVOUS` or `MAX_THREADS` names, and this is one of the deepest frames in the
+kernel. A `[u64; 512]` is 4 KiB of a 24 KiB kernel thread stack
+([notes/stack-high-water.md](stack-high-water.md) has the frame's measured size). Rescanning costs
+O(live objects) per removal, on a teardown path that removes a handful. Each pass changes the victim
+so it no longer matches, so each loop terminates.
 
 The rendezvous drain wakes inside its callback for the same reason. That is safe because
 `Rendezvous::drain_waiters` pops an entry before calling back, so the thread's one intrusive link is
-free for `wake` to push it onto a run queue. And `rendezvous_of` returns a `'static` reference, which
-does not hold the `sched` borrow the callback needs.
+free for `wake` to push it onto a run queue. And `rendezvous_of` returns a `'static` reference,
+which does not hold the `sched` borrow the callback needs.
 
 ## The verdict on one resident
 
@@ -78,16 +81,18 @@ questions.
 
 `standing` is `handshake.on_cpu` or'd with `Thread::being_reaped`. `on_cpu` is cleared by the core's
 successor in `finish_switch`. `depart` marks a supervised thread `Dead`, delivers its death message,
-releases `IPC_TABLES` and only then switches away, so a supervisor on another core can ask for a reap
-inside that window. `being_reaped` marks a thread whose stack and space the reaper is freeing outside
-`IPC_TABLES`; reaping it now would let its owner reuse memory the dying thread has not given back.
-Both conditions clear by themselves, so the refusal arms nothing and the owner's retry succeeds.
+releases `IPC_TABLES` and only then switches away, so a supervisor on another core can ask for a
+reap inside that window. `being_reaped` marks a thread whose stack and space the reaper is freeing
+outside `IPC_TABLES`; reaping it now would let its owner reuse memory the dying thread has not given
+back. Both conditions clear by themselves, so the refusal arms nothing and the owner's retry
+succeeds.
 
-A `Blocked` thread is not armed because the arm cannot reach it. `schedule()` spends a kill only for a
-thread whose state is `Running`, and a thread blocked on a rendezvous nobody will serve never becomes
-`Running` again. The finish phase is calef's proposal A of milestone 133 (2026-09-03): the holder of
-the untyped capability could already end every runnable thread in the region, and now it can also
-finish a blocked one. Nothing is added to the syscall surface.
+A `Blocked` thread is not armed because the arm cannot reach it. `schedule()` spends a kill only for
+a thread whose state is `Running`, and a thread blocked on a rendezvous nobody will serve never
+becomes `Running` again. The finish phase is calef's proposal A, ruled 2026-09-03, of milestone 133
+(ending a permanently blocked thread). The holder of the untyped capability could already end every
+runnable thread in the region, and now it can also finish a blocked one. Nothing is added to the
+syscall surface.
 
 A `Dead` corpse never runs again, so it is reapable exactly like an `Embryo` or a `Finished` thread;
 that is what §26 (the fault endpoint) means by reaped with §16 revocation.
@@ -107,9 +112,9 @@ retry by an owner that already has a retry loop.
   pass `ipc_reply`'s role check and answer the wrong conversation. A `Finished` thread makes no
   second `CALL`.
 - The reply capabilities are swept anyway, through `delete_reply_caps_naming`, the function
-  `strand_reply_caller` runs before its wake. Both keep one invariant: no unconsumed reply capability
-  names a thread that has left its park. A `Reply` outliving its thread would otherwise go stale only
-  on its next use, through a slot generation nobody reading `ipc_reply` sees.
+  `strand_reply_caller` runs before its wake. Both keep one invariant: no unconsumed reply
+  capability names a thread that has left its park. A `Reply` outliving its thread would otherwise
+  go stale only on its next use, through a slot generation nobody reading `ipc_reply` sees.
 - The role does not say which queue holds the thread. `ipc_call`'s `Send::Blocked` arm records an
   unserved caller as `WaitRole::Reply` while it sits on the sender queue. So both queues are asked;
   each remove compares pointers, and asking the wrong one costs a drain and repush of a short queue.
@@ -119,8 +124,8 @@ retry by an owner that already has a retry loop.
   queue. A thread in `AddressSpace::WAIT` is removed from the futex table under its key, where a
   later `WAKE` would otherwise walk a freed TCB. A suspended thread (§300 (the paused state)) is on
   no queue and holds its own token.
-- `killed` is set as well as the state, so the flag keeps one meaning: a thread this teardown doomed.
-  `wait_on` is cleared, because a hang dump reads `Some` as still waiting.
+- `killed` is set as well as the state, so the flag keeps one meaning: a thread this teardown
+  doomed. `wait_on` is cleared, because a hang dump reads `Some` as still waiting.
 
 ## Why dropping a resident's space is safe
 
@@ -140,8 +145,8 @@ recycled tid resolves to nothing and reads as unsupervised.
 
 The reclaim is then `reclaim_region` on the region the TCB was retyped from, the name the owner
 would pass to `MemoryRegion::DESTROY`, so the two paths cannot drift. The pages go back to the
-region's owner under §13, the builder, so a supervisor frees a child's memory without being able
-to spend it.
+region's owner under §13 (capability revocation and untyped reclamation), the builder, so a
+supervisor frees a child's memory without being able to spend it.
 
 A corpse whose core has not switched away yet is waited for, not refused. `reclaim_region` refuses
 it, and that refusal reaches userspace as `NotPermitted`, which the ABI gives another meaning and
@@ -153,7 +158,7 @@ as "not yet".
 
 `ReclaimRefusal` and `last_reclaim_refusal` (system tests only) record why the last refusal
 happened, because every refusal reaches userspace as one `NotPermitted`. The failure they were built
-for (milestone 321) happened about once in a thousand runs.
+for (milestone 321 (a corpse that did not park)) happened about once in a thousand runs.
 
 ## The survey
 
@@ -181,11 +186,12 @@ meets it.
   thread arms the kill on every live thread in the region, so `reclaim_region(r).is_err()` cannot be
   asked as a question: asking it dooms the answer. No call asks whether a region is busy without
   ending what is in it. `user::tests::reclaim_frees_a_started_then_exited_childs_regions` lost a
-  wakeup to a test that probed this way (milestone 72).
+  wakeup to a test that probed this way (milestone 72 (a lost wakeup that a hundred leaked threads
+  may be causing)).
 - `Ok` is destructive too. A `Blocked` resident is ended by the call that succeeded, without
   returning from its syscall. The peer it was queued beside on somebody else's rendezvous sees a
-  caller that never arrived, which it cannot tell from one that never called. §24's `^C`
-  escalation depends on this.
+  caller that never arrived, which it cannot tell from one that never called. §24 (interrupting the
+  foreground process)'s `^C` escalation depends on this.
 - **It reaches outside the region.** Tearing down a rendezvous aborts every waiter wherever it
   lives, and frees every caller reply-parked on it or named by a reply capability in a thread this
   reclaim reaps. Those callers see `abi::Error::Gone` from a `CALL` to somebody else's rendezvous.

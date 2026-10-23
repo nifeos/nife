@@ -74,8 +74,9 @@ static RINGS: [Ring; crate::cpu::MAX_CPUS] = [EMPTY_RING; crate::cpu::MAX_CPUS];
 /// Record an event on the calling core's ring.
 ///
 /// `#[inline(never)]`, so the fast paths carry one copy rather than a per-CPU read, bounds check,
-/// panic pad and packed store per site (milestone 758): inlined, the ring index was among the
-/// largest lines in `script/fastpath-footprint`'s closures on every architecture.
+/// panic pad and packed store per site (milestone 758 (the IPC fast paths shrink back inside their
+/// band)): inlined, the ring index was among the largest lines in `script/fastpath-footprint`'s
+/// closures on every architecture.
 ///
 /// Context: every call site has interrupts masked (under `IPC_TABLES` or in interrupt context), so
 /// the owning core cannot interleave with itself.

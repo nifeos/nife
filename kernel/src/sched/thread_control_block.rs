@@ -20,7 +20,8 @@ pub fn create_thread_control_block(region: u64) -> Option<ThreadId> {
     let name = sched.threads.insert_from_page(page, |tid| {
         let mut t = Thread::embryo();
         t.id = tid;
-        // The region that paid, which a rendezvous reap reclaims (§32); only here is it known.
+        // The region that paid, which a rendezvous reap reclaims (§32 (a supervisor may collect a
+        // corpse without being able to build one)); only here is it known.
         t.thread_control_block_region = Some(region);
         t
     });
@@ -85,9 +86,10 @@ pub(super) fn thread_control_block_insert_from(
     }
     .map_err(|_| abi::Error::OutOfMemory)?;
     // The one place a port capability enters a thread, so the context switch reads one field, not
-    // the table. Only the last of several ranges is kept (no consumer holds two), and one
-    // delegated later by `SEND_CAP` is not cached. A `PortRange` without `WRITE` grants nothing:
-    // the TSS bitmap cannot permit `in` without `out` (§121); the capability still lands.
+    // the table. Only the last of several ranges is kept (no consumer holds two), and one delegated
+    // later by `SEND_CAP` is not cached. A `PortRange` without `WRITE` grants nothing: the TSS
+    // bitmap cannot permit `in` without `out` (§121 (what a device capability is when the device
+    // has no page)); the capability still lands.
     #[cfg(target_arch = "x86_64")]
     if let crate::cap::Object::PortRange(base, count) = capability.object
         && capability.rights.allows(crate::cap::Rights::WRITE)
@@ -129,9 +131,10 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
         return Err(abi::Error::NotPermitted); // configure it first
     }
 
-    // The spawn-slot convention (§26): a `Rendezvous` capability in the reserved fault slot makes
-    // this thread supervised, fixed here for life. The slot is consumed, so the child cannot forge
-    // fault messages, and its badge, the child's label (§148), reaches only the supervisor.
+    // The spawn-slot convention (§26 (the fault endpoint)): a `Rendezvous` capability in the
+    // reserved fault slot makes this thread supervised, fixed here for life. The slot is consumed,
+    // so the child cannot forge fault messages, and its badge, the child's label (§148 (milestone
+    // 105's two forks)), reaches only the supervisor.
     let mut table = capabilities.lock();
     if let Ok(fault_cap) = table.get(abi::fault::FAULT_EP_SLOT)
         && let crate::cap::Object::Rendezvous(ep, label) = fault_cap.object
@@ -148,8 +151,8 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
     };
     t.arm_for_start(stack);
     t.handshake.state = State::Ready;
-    // Placement, decided once under the lock (§28): asking `target != cpu::id()` again after the
-    // guard drops can disagree once this thread is stolen (see `place_on`).
+    // Placement, decided once under the lock (§28 (SMP placement)): asking `target != cpu::id()`
+    // again after the guard drops can disagree once this thread is stolen (see `place_on`).
     let target = pick_spawn_target();
     // Recorded for `abi::survey::record::PLACEMENT`, before `take_token` re-borrows `sched`.
     t.placement = target as u8;
@@ -167,9 +170,10 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
 
 /// Hand the current thread the address space `space`, and install it.
 ///
-/// The space goes into the registry bound to this thread (§249), and the thread keeps the copy the
-/// context switch reads; the reaper drops it when the thread dies. Returns the space's name, which
-/// an address-space capability carries (`user::run_with_own_space`).
+/// The space goes into the registry bound to this thread (§249 (a running address space stays
+/// nameable)), and the thread keeps the copy the context switch reads; the reaper drops it when the
+/// thread dies. Returns the space's name, which an address-space capability carries
+/// (`user::run_with_own_space`).
 pub fn adopt_address_space(space: crate::user::AddressSpace) -> u64 {
     let current = current_thread_id();
     // Before `IPC_TABLES`: the registry's lock ranks above it. The thread is live and running, so

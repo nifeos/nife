@@ -39,10 +39,10 @@ pub(super) fn set_ipc_aborted(sched: &mut IpcTables, tid: ThreadId) {
     }
 }
 
-/// Refuse thread `tid`'s send, because the rendezvous carries an interrupt (§101 ruling B): an
-/// abort, so the common path pays only the existing `take_ipc_aborted` branch, plus the reason
-/// that branch reads ([`take_ipc_refused`]). The sender never parked, so the boot-8 gate is not
-/// weakened. `#[cold]` for [`set_ipc_aborted`]'s reason.
+/// Refuse thread `tid`'s send, because the rendezvous carries an interrupt (§101 (notification
+/// objects) ruling B): an abort, so the common path pays only the existing `take_ipc_aborted`
+/// branch, plus the reason that branch reads ([`take_ipc_refused`]). The sender never parked, so
+/// the boot-8 gate is not weakened. `#[cold]` for [`set_ipc_aborted`]'s reason.
 ///
 /// Context: caller holds `IPC_TABLES`.
 ///

@@ -74,7 +74,7 @@ The rank sits above the allocators. The reaper (`finish_switch`) drops a dead `T
 holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back through the kernel MMU
 lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
 under the lock allocates from a heap. A TCB page comes from a region or from `kmem`'s fixed pool,
-and the queues are intrusive, so a queue operation is a few pointer writes. §9's
+and the queues are intrusive, so a queue operation is a few pointer writes. §9 (locking)'s
 no-allocation-in-IRQ rule holds by construction.
 
 ### `MAX_THREADS`

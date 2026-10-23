@@ -237,8 +237,9 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
             .map(|t| t.id);
         let Some(tid) = doomed else { break };
         // A supervised corpse nobody received from is parked on its supervisor's rendezvous,
-        // outside this region (§26 implementation note 2). Unlink it before freeing the TCB, or the
-        // supervisor's next `RECEIVE` follows a pointer into a recycled page.
+        // outside this region (§26 (the fault endpoint) implementation note 2). Unlink it before
+        // freeing the TCB, or the supervisor's next `RECEIVE` follows a pointer into a recycled
+        // page.
         let parked = sched
             .threads
             .get(tid)
@@ -525,12 +526,12 @@ mod tests {
         run.assert_returned("reclaim must return every one of the region's own frames");
     }
 
-    /// **`MemoryRegion` SPLIT returns a child's pages to the parent on reclaim (LIFO), so a split parent is
-    /// not committed for its lifetime.** Carve a region into two children; the parent refuses reclaim
-    /// while they live. Reclaiming a child out of order (not the top of the watermark) leaves a hole;
-    /// reclaiming the top child un-bumps the parent, so its budget is re-splittable. Either way a
-    /// child's pages go back to the *parent*, not the allocator, so the free-frame count does not move
-    /// until the parent itself, now childless, is destroyed.
+    /// **`MemoryRegion` SPLIT returns a child's pages to the parent on reclaim (LIFO), so a split
+    /// parent is not committed for its lifetime.** Carve a region into two children; the parent
+    /// refuses reclaim while they live. Reclaiming a child out of order (not the top of the
+    /// watermark) leaves a hole; reclaiming the top child un-bumps the parent, so its budget is
+    /// re-splittable. Either way a child's pages go back to the *parent*, not the allocator, so the
+    /// free-frame count does not move until the parent itself, now childless, is destroyed.
     #[test_case]
     fn split_returns_child_pages_to_the_parent() {
         let parent = crate::memory_region::create(8).expect("parent region");

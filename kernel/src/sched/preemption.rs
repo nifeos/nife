@@ -12,8 +12,8 @@ pub(super) static PREEMPTIONS: AtomicU64 = AtomicU64::new(0);
 ///
 /// Its own array rather than a `cpu::PerCpu` field: `PerCpu` is held to 128 bytes so `PERCPU[id]`
 /// indexes with a shift, and one more field cost riscv64's `ipc_send_receive` closure 150 bytes,
-/// over `script/fastpath-footprint`'s bound (the assertion is beside `cpu::PERCPU`). Written only by
-/// the owning core, in [`count_preemption`], on the timer path; read by anyone.
+/// over `script/fastpath-footprint`'s bound (the assertion is beside `cpu::PERCPU`). Written only
+/// by the owning core, in [`count_preemption`], on the timer path; read by anyone.
 pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAX_CPUS] =
     [const { AtomicU64::new(0) }; cpu::MAX_CPUS];
 
@@ -27,17 +27,20 @@ pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAX_CPUS] =
 #[inline(never)]
 pub fn on_tick() {
     cpu::current().need_resched.store(true, Ordering::Relaxed);
-    // Charge this tick to whatever is on this CPU (§150); see [`CPU_TICKS`].
+    // Charge this tick to whatever is on this CPU (§150 (how does a thread's CPU time reach
+    // userspace)); see [`CPU_TICKS`].
     charge_tick();
-    // The machine's own view of the tick, for `vmstat` and `top`'s summary (§225).
+    // The machine's own view of the tick, for `vmstat` and `top`'s summary (§225 (`free` sees the
+    // machine and your share)).
     count_tick();
     // The corruption tripwire, one relaxed load when unarmed. Its println is safe here because the
     // console's `IrqSafeMutex` masks interrupts; its answer is ignored, because a sampling
     // instrument may skip a beat and the tick must never spin in interrupt context.
     let _ = canary::check();
 
-    // Timer expiry (§147): only a due tick takes `IPC_TABLES`, so idle ticks on every core do not
-    // contend for it (notes/timed-wait.md priced this check).
+    // Timer expiry (§147 (a timer a userspace service cannot hold)): only a due tick takes
+    // `IPC_TABLES`, so idle ticks on every core do not contend for it (notes/timed-wait.md priced
+    // this check).
     if inter_process_communication::timer::is_due(
         EARLIEST_DEADLINE.load(Ordering::Relaxed),
         crate::arch::timer::now(),
@@ -46,7 +49,8 @@ pub fn on_tick() {
     }
 
     // A soak build signals a rendezvous from the tick, the one event a saturated workload cannot
-    // starve, so its waiters cross cores through `irq_notify` (§138 option D; kernel/src/soak.rs).
+    // starve, so its waiters cross cores through `irq_notify` (§138 (how a saturated workload is
+    // made to hand threads across cores) option D; kernel/src/soak.rs).
     #[cfg(feature = "soak_test")]
     crate::soak::signal_waiters();
 

@@ -53,7 +53,7 @@ pub const RESCHED_SGI: u32 = 0;
 /// Drain this core's migration inbox into its run queue, and request a reschedule.
 ///
 /// Context: the reschedule-SGI handler, in interrupt context with interrupts masked, which
-/// `with_runq` needs. Takes only this core's inbox lock (§11).
+/// `with_runq` needs. Takes only this core's inbox lock (§11 (SMP)).
 pub fn drain_inbox() {
     // Every caller is a cross-core interrupt arm, so the machine statistics page counts it here.
     crate::machine_statistics::interrupt();
@@ -64,7 +64,8 @@ pub fn drain_inbox() {
         cpu::current().with_runq(|q| q.push_back(thread));
         moved += 1;
     }
-    // Mirror the empty inbox under its lock (§28); the run queue's mirror moved by the same count.
+    // Mirror the empty inbox under its lock (§28 (SMP placement)); the run queue's mirror moved by
+    // the same count.
     cpu::current().note_inbox_len(inbox.len());
     // The one place a remote placement arrives on this core.
     cpu::current().note_adopted(moved);
@@ -84,7 +85,7 @@ pub fn drain_inbox() {
 /// and a skipped SGI strands the thread in an inbox nothing drains. See
 /// notes/scheduler/missed-reschedule-poke.md.
 ///
-/// Context: caller holds `IPC_TABLES` (interrupts masked); takes the target's inbox lock beneath it.
+/// Context: caller holds `IPC_TABLES` (interrupts masked); takes the target's inbox lock.
 pub(super) fn place_on(target: usize, thread: Unqueued<Thread>) -> Option<usize> {
     // A remote parked core's inbox is drained by nothing (notes/visionfive2.md, third stop).
     // Placing onto oneself is exempt: a secondary's bring-up probe spawns onto its own core one
@@ -191,8 +192,9 @@ pub(super) fn try_initiate_steal() {
 /// tries to steal (§28), parks in `wfi` until an interrupt, then yields to whatever arrived. Never
 /// returns, and never sits in a run queue.
 ///
-/// It does not drain its own inbox before parking (§133): a missed reschedule SGI then wedges
-/// loudly, with a watchdog dump naming the stranded thread, instead of starting threads late. See
+/// It does not drain its own inbox before parking (§133 (whether an idle core should drain its own
+/// inbox before parking)): a missed reschedule SGI then wedges loudly, with a watchdog dump naming
+/// the stranded thread, instead of starting threads late. See
 /// notes/scheduler/missed-reschedule-poke.md.
 pub fn run_idle() -> ! {
     loop {

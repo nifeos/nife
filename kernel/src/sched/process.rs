@@ -26,9 +26,9 @@ pub type ProcessId = u64;
 pub(super) const MAX_PROCESSES: usize = super::MAX_THREADS;
 
 /// **What lives at the start of a process's page.** The capability table follows it, at
-/// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a member
-/// reads the table under its own lock while another core may hold `IPC_TABLES` and a `&mut` to
-/// this.
+/// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a
+/// member reads the table under its own lock while another core may hold `IPC_TABLES` and a `&mut`
+/// to this.
 pub(super) struct ProcessPage {
     /// The copy each member takes as its own `Thread::space`; `None` once released.
     space: Option<BoundSpace>,
@@ -69,9 +69,9 @@ fn process_of(sched: &IpcTables, pid: ProcessId) -> Option<&'static mut ProcessP
     Some(unsafe { &mut *page_at(phys) })
 }
 
-/// **`RETYPE_OBJ` of `objtype::PROCESS`**: a process in `region`'s memory, holding the space `space`
-/// names. `WrongObject` if the space already has a holder, `NoSuchSlot` if it does not resolve,
-/// `OutOfMemory` if the region or the registry is full.
+/// **`RETYPE_OBJ` of `objtype::PROCESS`**: a process in `region`'s memory, holding the space
+/// `space` names. `WrongObject` if the space already has a holder, `NoSuchSlot` if it does not
+/// resolve, `OutOfMemory` if the region or the registry is full.
 pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Error> {
     let mut created = None;
     crate::user::bind_user_address_space(space, |bound| {
@@ -272,10 +272,11 @@ pub(super) fn on_killed(sched: &mut IpcTables, tid: ThreadId) {
     }
 }
 
-/// **The calling member departs**, by `exit` (`whole`), a fault (`whole`), or `exit_thread`. Decides
-/// whether the process ends with it: always for `exit` and a fault, and for `exit_thread` only when
-/// no other member runs. Ending it ends every other member. Returns the supervision this departure
-/// reports to: the thread's own, which a process gives its first member. Caller holds `IPC_TABLES`.
+/// **The calling member departs**, by `exit` (`whole`), a fault (`whole`), or `exit_thread`.
+/// Decides whether the process ends with it: always for `exit` and a fault, and for `exit_thread`
+/// only when no other member runs. Ending it ends every other member. Returns the supervision this
+/// departure reports to: the thread's own, which a process gives its first member. Caller holds
+/// `IPC_TABLES`.
 pub(super) fn depart(
     sched: &mut IpcTables,
     current: ThreadId,
@@ -349,9 +350,10 @@ pub(super) fn reap_corpse(
     drop(stack);
     #[cfg(feature = "lock_wait")]
     crate::lock_wait::stack_freed(crate::arch::timer::now() - t0);
-    // The thread kept a copy; the registry owns the space (§249). `None` means the region sweep
-    // took it first. Taken and dropped as two statements so the registry's lock is released before
-    // the `Drop`, which takes the revocation, region and ASID locks.
+    // The thread kept a copy; the registry owns the space (§249 (a running address space stays
+    // nameable)). `None` means the region sweep took it first. Taken and dropped as two statements
+    // so the registry's lock is released before the `Drop`, which takes the revocation, region and
+    // ASID locks.
     if let Some((name, slot)) = page {
         crate::user::give_back_thread_page(name, slot); // milestone 812: the slot is free again
     }
@@ -556,8 +558,8 @@ pub fn process_state(pid: ProcessId) -> Option<(u32, bool)> {
     process_of(sched, pid).map(|p| (p.members, p.ended))
 }
 
-/// **How many threads `pid` has ever started**, for a test: [`ProcessPage::started`]. Readable after
-/// the process has ended and every member has left, until its region is reclaimed.
+/// **How many threads `pid` has ever started**, for a test: [`ProcessPage::started`]. Readable
+/// after the process has ended and every member has left, until its region is reclaimed.
 ///
 /// Name: provisional, lane milestone/121-rg-threads (#2016), 2026-10-12 (UTC).
 /// The pull request records no other name considered.

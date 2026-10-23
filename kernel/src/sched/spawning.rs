@@ -48,8 +48,9 @@ pub fn spawn_on<F: FnOnce() + Send + 'static>(target: usize, f: F) -> Option<Thr
     Some(id)
 }
 
-/// Spawn a thread running `f` on the lighter of two randomly sampled online cores (§28), carried
-/// there by [`spawn_on`]. Returns its id, or `None` if the table or the kernel budget is full.
+/// Spawn a thread running `f` on the lighter of two randomly sampled online cores (§28 (SMP
+/// placement)), carried there by [`spawn_on`]. Returns its id, or `None` if the table or the kernel
+/// budget is full.
 pub fn spawn<F: FnOnce() + Send + 'static>(f: F) -> Option<ThreadId> {
     spawn_on(pick_spawn_target(), f)
 }
@@ -61,7 +62,8 @@ pub fn spawn<F: FnOnce() + Send + 'static>(f: F) -> Option<ThreadId> {
 /// out of memory, which the caller need not tell apart: either way it must degrade, not panic.
 ///
 /// No caller: a userspace process spawns out of its own untyped budget, which is its quota. Kept as
-/// the bound for kernel threads, allowed unconditionally (§38, disposition 3). See notes/quotas.md.
+/// the bound for kernel threads, allowed unconditionally (§38 (a suppression is scoped to an item
+/// and carries a reason), disposition 3). See notes/quotas.md.
 #[allow(dead_code)]
 pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
     budget: &'static AtomicU32,
@@ -107,10 +109,10 @@ pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
 
 /// Hold off an armed kill while the current kernel thread builds a user address space.
 ///
-/// `schedule` ends a killed thread wherever it finds it running, and a spawn closure holds the space
-/// it is loading as a local until [`adopt_address_space`] gives it to the registry, so a kill in
-/// between would lose the image and its page tables for the boot. Pair it with [`allow_kill`] right
-/// after the space is adopted; nothing in between may block. See notes/frames.md.
+/// `schedule` ends a killed thread wherever it finds it running, and a spawn closure holds the
+/// space it is loading as a local until [`adopt_address_space`] gives it to the registry, so a kill
+/// in between would lose the image and its page tables for the boot. Pair it with [`allow_kill`]
+/// right after the space is adopted; nothing in between may block. See notes/frames.md.
 ///
 /// Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
 pub fn defer_kill() {

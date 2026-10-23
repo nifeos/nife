@@ -1,5 +1,6 @@
 //! Reading the scheduler's state from outside it: the soak counters, the accessors other kernel
-//! modules call, the hooks `system_tests` drives, and `dump_threads` (notes/scheduler/thread-dump.md).
+//! modules call, the hooks `system_tests` drives, and `dump_threads`
+//! (notes/scheduler/thread-dump.md).
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -12,8 +13,8 @@ use crate::cap::Object;
 /// delivering anything. Sums the per-core counters `trace::record` keeps ([`trace::counted`] says
 /// why the racy sum is fine). Never fired in the field, so a nonzero here on a board is a finding.
 ///
-/// The soak counters are the kernel's numbers for its own soak supervisor and are not reachable from
-/// userspace: a workload that could read its own tripwire is one step from clearing it.
+/// The soak counters are the kernel's numbers for its own soak supervisor and are not reachable
+/// from userspace: a workload that could read its own tripwire is one step from clearing it.
 ///
 /// Names provisional (this lane's, 2026-09-01; public function names are an architect's call,
 /// DECISIONS naming tenet as extended on 2026-08-23).
@@ -43,7 +44,8 @@ pub(crate) fn remote_placements() -> u64 {
 
 /// How many times a thread ran on a different core than the one it last ran on: the cross-core
 /// handoff number a soak reports. [`remote_placements`] is not it, because a rendezvous wake queues
-/// its peer on the waker's own core (§28.2); see [`crate::thread::Thread::last_cpu`].
+/// its peer on the waker's own core (§28 (SMP placement), part 2);
+/// see [`crate::thread::Thread::last_cpu`].
 // Soak builds only, as `wake_refusals`.
 #[cfg(feature = "soak_test")]
 pub(crate) fn migrations() -> u64 {
@@ -61,8 +63,9 @@ pub(crate) fn steals_served() -> u64 {
 /// Spawn a thread exactly as [`spawn`] would, and return its id with the core it landed on.
 ///
 /// The placement is [`pick_spawn_target`]'s, so this reports the policy and offers no lever to
-/// steer it (affinity is an open question; §138 declined a rebalancer). Soak and job-mix builds
-/// only: a workload number from real silicon needs the arrangement that produced it.
+/// steer it (affinity is an open question; §138 (how a saturated workload is made to hand threads
+/// across cores) declined a rebalancer). Soak and job-mix builds only: a workload number from real
+/// silicon needs the arrangement that produced it.
 ///
 /// Name: provisional (milestone 240 (the soak reports what happened and not where)): calef names
 /// public items.
@@ -105,8 +108,8 @@ pub fn current_cpu_ticks() -> u64 {
 /// The top of the current thread's kernel stack, where its `TrapFrame` belongs; `None` for the boot
 /// thread, which runs on the stack `boot.s` set up.
 ///
-/// A user thread's `TrapFrame` must sit exactly where the vector table's `SAVE_CONTEXT` rebuilds it,
-/// because `eret` leaves `SP_EL1` just past it.
+/// A user thread's `TrapFrame` must sit exactly where the vector table's `SAVE_CONTEXT` rebuilds
+/// it, because `eret` leaves `SP_EL1` just past it.
 pub(crate) fn current_kernel_stack_top() -> Option<u64> {
     let guard = IPC_TABLES.lock();
     let sched = guard.as_ref()?;
@@ -123,8 +126,9 @@ pub fn current() -> ThreadId {
 }
 
 /// The user PC recorded in `tid`'s trap frame, at the top of its kernel stack: [`dump_threads`]'s
-/// lookup, for a test (milestone 71). `None` if the name does not resolve or the thread has no
-/// kernel stack. A zero means nothing wrote a frame where the trap path will look.
+/// lookup, for a test (milestone 71 (the thread-start fault)). `None` if the name does not resolve
+/// or the thread has no kernel stack. A zero means nothing wrote a frame where the trap path will
+/// look.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_pc_of(tid: ThreadId) -> Option<u64> {
     let guard = IPC_TABLES.lock();
@@ -135,8 +139,9 @@ pub fn user_pc_of(tid: ThreadId) -> Option<u64> {
         .map(|s| crate::arch::exceptions::user_pc(s.top()))
 }
 
-/// A corpse's retained five-word §26 fault or exit message, which a `Dead` thread keeps until its
-/// supervisor reaps it (test support). `None` if the name does not resolve or it is not a corpse.
+/// A corpse's retained five-word §26 (the fault endpoint) fault or exit message, which a `Dead`
+/// thread keeps until its supervisor reaps it (test support). `None` if the name does not resolve
+/// or it is not a corpse.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn corpse_fault_msg(tid: ThreadId) -> Option<[u64; 5]> {
     let guard = IPC_TABLES.lock();
@@ -310,10 +315,10 @@ pub fn is_thread_present(tid: ThreadId) -> bool {
 /// Arm a kill on the thread `tid` (test support), the single-thread form of what
 /// [`reap_region_objects`] does to a region.
 ///
-/// A bare thread spawned with [`spawn`] around `user::run` belongs to no region, so this is the only
-/// way a test takes back one that never exits. Sets `killed`, §16's armed kill: the thread becomes
-/// a corpse at its next preemption, so a caller that needs it gone waits for
-/// [`is_thread_present`] to go false. Returns `false` if the name does not resolve, which for a
+/// A bare thread spawned with [`spawn`] around `user::run` belongs to no region, so this is the
+/// only way a test takes back one that never exits. Sets `killed`, §16 (object revocation)'s armed
+/// kill: the thread becomes a corpse at its next preemption, so a caller that needs it gone waits
+/// for [`is_thread_present`] to go false. Returns `false` if the name does not resolve, which for a
 /// generational name means already gone.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn kill_thread(tid: ThreadId) -> bool {
@@ -505,8 +510,8 @@ pub fn rendezvous_waiting_senders(ep: RendezvousId) -> usize {
 /// did not park, on four real cores)). Test support.
 ///
 /// `depart` publishes a death before the core switches away, a window too short for a test to aim
-/// at. With `hold`, sets `on_cpu` on a `Dead` thread whose core has already left it; without, clears
-/// it. `false` if there was no such corpse (not `Dead`, gone, or still standing, whose own
+/// at. With `hold`, sets `on_cpu` on a `Dead` thread whose core has already left it; without,
+/// clears it. `false` if there was no such corpse (not `Dead`, gone, or still standing, whose own
 /// `finish_switch` would clear the mark under the test).
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
@@ -607,7 +612,8 @@ pub(crate) fn note_boot_stage(stage: u32) {
 }
 
 /// Read the tour stage back.
-// No caller since milestone 295; kept with the canary, for the reason written on `mod canary`.
+// No caller since milestone 295 (retire `components/src/builder.rs`); kept with the canary, for the
+// reason written on `mod canary`.
 #[allow(dead_code)]
 pub(crate) fn boot_stage() -> u32 {
     BOOT_STAGE.load(Ordering::Relaxed)
@@ -655,8 +661,8 @@ pub fn preemptions() -> u64 {
 }
 
 /// Preemptions taken on this core. A window with interrupts masked takes none, which is what
-/// `kernel/src/bench/spawn_map.rs`'s `map_new` is built on (milestone 541,
-/// `kernel/src/preemption_window_tests.rs`).
+/// `kernel/src/bench/spawn_map.rs`'s `map_new` is built on (milestone 541 (a timed window that
+/// excludes preemption), `kernel/src/preemption_window_tests.rs`).
 ///
 /// Its callers are only under `test` and `bench`; the counter is written unconditionally.
 #[cfg_attr(

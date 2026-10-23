@@ -51,11 +51,12 @@ pub fn irq_route(intid: u32) -> Option<RendezvousId> {
 /// never lost while the receiver is busy. A stale `ep` drops it.
 ///
 /// Context: interrupt context. Takes `IPC_TABLES`, which the interrupted code cannot hold, because
-/// `IrqSafeMutex` masks interrupts while held (§9); sends any SGI after releasing it.
+/// `IrqSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing it.
 pub fn irq_notify(ep: RendezvousId) {
     // Counted for `vmstat`'s `in` column.
     crate::machine_statistics::interrupt();
-    // Load-aware (§28.2): a remote placement owes an SGI, sent after `IPC_TABLES` is released.
+    // Load-aware (§28 (SMP placement), part 2): a remote placement owes an SGI, sent after
+    // `IPC_TABLES` is released.
     let remote = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");

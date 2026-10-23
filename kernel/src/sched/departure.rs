@@ -85,8 +85,9 @@ pub(super) fn depart(event: u64, pc: u64, addr: u64, whole: bool) -> ! {
 /// The ordinary synchronous send: a supervisor blocked in `RECEIVE` is handed the message and
 /// woken; otherwise the corpse joins the sender queue with the message in its mailbox, so it waits
 /// there, and `ipc_receive` leaves a `Dead` sender dead after taking it. A gone or interrupt-bound
-/// rendezvous drops the message. `label` is the badge on the child's supervision capability (§148),
-/// handed over by [`hand_over_label`] or collected later in [`collected_without_serving`].
+/// rendezvous drops the message. `label` is the badge on the child's supervision capability (§148
+/// (milestone 105's two forks)), handed over by [`hand_over_label`] or collected later in
+/// [`collected_without_serving`].
 ///
 /// Context: caller holds `IPC_TABLES`, with the corpse already `Dead` and `msg` in its mailbox.
 pub(super) fn deliver_death(
@@ -118,8 +119,9 @@ pub(super) fn deliver_death(
                 t.handshake.wait_on = Some(Wait::Rendezvous(ep, WaitRole::Sender));
             }
         }
-        // Interrupt-bound (§101 ruling B): dropped, because `EVENT_FAULT` is 1 and a driver would
-        // read it as its interrupt. Needs a `Rendezvous` capability no program is granted.
+        // Interrupt-bound (§101 (notification objects) ruling B): dropped, because `EVENT_FAULT` is
+        // 1 and a driver would read it as its interrupt. Needs a `Rendezvous` capability no program
+        // is granted.
         inter_process_communication::Send::Refused(me) => {
             hold_token(me);
         }
