@@ -1,47 +1,20 @@
-//! **`ramfb`: a screen on a board whose firmware never lit one**, milestone 243 (a machine with no serial port).
+//! `ramfb` over QEMU's `fw_cfg`: a screen on a board whose firmware never lit one. The guest owns
+//! the pixels and hands the device their physical address, and QEMU scans them out.
 //!
-//! On `x86_64` the boot tour reaches a monitor because UEFI already configured a display and told
-//! the loader where its aperture is. QEMU's `virt` boards have no such stage: they are entered from
-//! `-kernel` with the display, if there is one at all, dark. So the two remaining architectures had
-//! `machine_discovery::framebuffer` and `screen_console` in the tree, arch-neutral and unused, and
-//! a machine with no serial port would have been silent on both.
-//!
-//! `ramfb` closes that under the emulator. It inverts the UEFI arrangement: **the guest owns the
-//! pixels** and hands the device their physical address, after which QEMU scans them out exactly as
-//! it scans out a real adapter's aperture. So the `Framebuffer` this produces has the same five
-//! fields as the one the UEFI loader measures, and everything above it is unchanged.
-//!
-//! # This driver takes a base address and nothing else, per §4 (kernel shape, two cheap rules)
-//!
-//! It reaches no kernel global. The register block, a scratch region, and that scratch region's
-//! **physical** address are all arguments, because the translation from one to the other is the
-//! caller's architecture's business and not a device's. `crate::screen` is the one caller and owns
-//! the buffer.
-//!
-//! # The window this runs in, which is narrow on purpose
-//!
-//! Twice, before `arch::mmu::init`: once to walk the file directory and once to write the
-//! configuration. The register block is reached through the coarse boot map, which covers every
-//! device window on both boards, so nothing has to be mapped for it and nothing keeps a mapping
-//! afterwards. **The fine map does not cover `fw_cfg`**, which is correct rather than an oversight:
-//! after boot there is nothing more to say to it, and a window nobody can reach is a window nobody
-//! can be wrong about.
+//! It reaches no kernel global (§4): the register block, a scratch region and that region's
+//! physical address are all arguments, from `crate::screen`. It runs only before `arch::mmu::init`,
+//! through the coarse boot map; the fine map does not cover `fw_cfg`. See
+//! notes/serial-less-output/ramfb.md.
 //!
 
 //! # BUGS
 //!
-//! - **It polls, and the bound is a spin count rather than a clock.** Nothing this early has a
-//!   timer. QEMU completes a DMA transfer inside the register write that starts it, so the first
-//!   read of the control word is already the answer on every machine this has run on; the loop
-//!   exists for the machine where that is not true and its bound is arbitrary.
-//! - **No cache maintenance.** The device reads guest RAM directly while the guest has it mapped
-//!   cacheable, so on real silicon with a real device this would need a clean before the write and
-//!   an invalidate after. `ramfb` is QEMU's and QEMU has no cache to be stale, which is the whole
-//!   reason this shortcut is allowed; it is also the reason this driver must not be pointed at
-//!   anything that is not an emulator.
-//! - **A screen this brings up is guest RAM, not an aperture**, so unlike the UEFI one it cannot be
-//!   handed to a userspace terminal: see `crate::user::display_service`'s refusal, which checks
-//!   exactly that.
+//! - It polls with an arbitrary spin bound, since nothing this early has a timer; QEMU completes a
+//!   transfer inside the write that starts it.
+//! - No cache maintenance, safe only because QEMU has no cache to be stale. It must not be pointed
+//!   at anything that is not an emulator.
+//! - A screen this brings up is guest RAM, not an aperture, so it cannot be handed to a userspace
+//!   terminal (`crate::screen::is_kernel_memory`).
 
 use firmware_configuration::{
     COMMAND_LEN, DIRECTORY_KEY, DirectoryEntry, DmaCommand, ENTRY_LEN, RAMFB, RAMFB_LEN,
@@ -103,10 +76,8 @@ impl FirmwareConfiguration {
     ///
     /// `registers` must name a mapped `fw_cfg` MMIO block (QEMU's `qemu,fw-cfg-mmio`), and
     /// `scratch`/`scratch_physical` must name one region of at least [`SCRATCH_LEN`] bytes that is
-    /// writable by this kernel and readable by the device. **No alignment is required**: every
-    /// access here is a byte, deliberately, so that the caller's region is the caller's business.
-    /// Nothing here can check any of this: the device tree asserted the first and the caller's own
-    /// address arithmetic the second.
+    /// writable by this kernel and readable by the device. No alignment is required; every access
+    /// here is a byte. Nothing here can check either.
     #[must_use]
     pub const unsafe fn new(registers: u64, scratch: *mut u8, scratch_physical: u64) -> Self {
         Self {
@@ -133,17 +104,10 @@ impl FirmwareConfiguration {
         // SAFETY: the register block, by this type's contract. The high half is written first and
         // the device begins the transfer on the low one, which is this interface's own convention.
         unsafe {
-            // **The barrier the ordering needs** (rule 4, notes/memory-ordering.md). The command
-            // bytes above are normal memory and the register below is device memory; on a weakly
-            // ordered machine the store that starts the transfer may be observed before the stores
-            // that say what the transfer is, and the device would then read a stale or half-written
-            // command. Nothing else in this kernel orders the two, because nothing else writes a
-            // structure a device reads without going through the virtio ring's own barriers.
-            // PAIR: none in this tree, and none possible. The other half is QEMU's `fw_cfg`
-            // device model reading guest memory, which is host code with no fence a lint could
-            // find. This is the device-facing leg of the same shape `components/src/compositor.rs`
-            // `flush` has (a fence whose partner is a driver-to-device write), one step further
-            // out: there the partner is our own driver, here it is the emulator.
+            // The command bytes (normal memory) must be visible before the register write
+            // (device memory) that starts the transfer, or the device reads a stale command
+            // (notes/memory-ordering.md).
+            // PAIR: none in this tree, and none possible: the reader is QEMU's `fw_cfg` model.
             core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
             let high = ((address >> 32) as u32).to_be();
             let low = ((address & 0xffff_ffff) as u32).to_be();
@@ -230,13 +194,9 @@ impl FirmwareConfiguration {
         Err(Error::NoSuchFile)
     }
 
-    /// **Point the `ramfb` at `screen`**, whose `base` must be the **physical** address of memory
-    /// this kernel owns and will keep owning for the life of the machine.
-    ///
-    /// After this returns the emulator is scanning those bytes out continuously, so the caller may
-    /// paint into them and see the result with no flush, no doorbell and no interrupt. That is the
-    /// property that makes this worth having as the *console's* screen rather than a display
-    /// device: there is nothing between a `println!` and the picture.
+    /// Point the `ramfb` at `screen`, whose `base` must be the physical address of memory this
+    /// kernel owns for the life of the machine. From then the emulator scans those bytes out
+    /// continuously, with no flush, doorbell or interrupt.
     ///
     /// # Errors
     ///
