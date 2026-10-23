@@ -282,7 +282,7 @@ pub fn ticks() -> u64 {
 }
 
 /// Ticks since boot on `hart`, so a test whose thread may migrate between two reads compares one
-/// counter (DECISIONS §28.3 (SMP placement)). See notes/load-sensitive-assertions.md.
+/// counter (DECISIONS §28 (SMP placement), part 3). See notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(hart: usize) -> u64 {
     TICKS[hart].load(Ordering::Relaxed)
