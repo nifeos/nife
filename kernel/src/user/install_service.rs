@@ -2,6 +2,7 @@
 //! asked before the capability to destroy the disk exists; a person must type [`CONFIRMATION`] in
 //! time. Nothing here writes a byte to a disk. See notes/installing.md.
 //!
+
 //! # BUGS
 //!
 //! - x86_64 only (design/roadmap/0568): the kernel reads the UART to ask, before the input driver.

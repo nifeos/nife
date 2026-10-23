@@ -4,6 +4,7 @@
 //! Its only physical address is the data plane's (`DATA_PLANE_PAGE`, not page 0); it holds no
 //! controller registers, admin pages or interrupt. See notes/non-volatile-memory-express.md.
 //!
+
 //! # BUGS
 //!
 //! - The server can aim DMA anywhere in its region, its own admin rings included.
