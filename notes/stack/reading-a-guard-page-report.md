@@ -31,7 +31,7 @@ overflow. Thousands of bytes means a single frame jumped most of the way across 
 the case where the next such frame jumps clean over it.
 
 A `None` from `guard_page_at` does not mean the stack is fine. The guard is one page. A frame
-larger than that can put `sp` below the guard without touching it and write into the neighbouring
+larger than that can put `sp` below the guard without touching it and write into the neighboring
 slot's top page, which is mapped and in use. That corrupts silently, and no lookup by address can
 see it. `script/stack-frame-check` holds every frame to 4096 bytes for this reason, and
 [stack-frame-sizes.md](../stack-high-water/stack-frame-sizes.md) has the frame that broke it.
@@ -54,7 +54,7 @@ aarch64 computes it from the frame's own address; RISC-V reads the frame's saved
 One reading of "slot N-1" is a trap of its own. aarch64 has no double fault. If the vector's own
 `SAVE_CONTEXT` store lands in a guard page, it re-enters the same vector with `sp` another 272 bytes
 lower, again and again, until the frame fits. That leaves `sp` in the slot below and `FAR_EL1`
-holding the first failing address, the same picture a store past a neighbour's top makes. The fault
+holding the first failing address, the same picture a store past a neighbor's top makes. The fault
 PC separates them: inside the vector table means the walk, ordinary Rust means the store.
 [guard-page-faults-2026-08-16.md](guard-page-faults-2026-08-16.md) worked this out on real dumps.
 

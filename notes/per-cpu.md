@@ -52,7 +52,7 @@ bytes off each of `x86_64`'s IPC closures for 96 bytes of BSS per core.
 
 A second assertion holds every block to an alignment of at least `FALSE_SHARING_SPAN`, 128 bytes,
 so no two cores' blocks share a cache line. Each core writes `held_rank` twice per lock it takes,
-and other cores write a neighbour's `inbox` and `steal_request` when they place work.
+and other cores write a neighbor's `inbox` and `steal_request` when they place work.
 
 The span is 128 on every architecture, not 64. Apple's cores have a 128-byte line, and common
 64-byte parts often prefetch lines in adjacent pairs (Intel's spatial prefetcher; recalled, not
