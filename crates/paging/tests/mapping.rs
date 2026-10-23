@@ -165,7 +165,7 @@ fn unmapped_addresses_translate_to_nothing() {
     assert_eq!(m.translate(0xffff_0000_0000_0000), None);
 }
 
-/// The entire point of the exercise, and what milestone 4 step 4 depends on.
+/// The entire point of the exercise, and what milestone 4 (MMU on: page tables, the kernel heap, the high half) step 4 depends on.
 #[test]
 fn a_virtual_address_can_differ_from_its_physical_one() {
     let _tables = TableGuard;
