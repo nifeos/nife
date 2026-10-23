@@ -21,7 +21,7 @@ const MODE_INSTRUCTION: u64 = 1;
 ///
 /// `Instruction` and `Jh7110` are not buses. They are variants so that one type picks what
 /// `ensure` wires, indexes the once-per-boot state and names the source a failure came from.
-/// Name: provisional, flagged for an architect.
+/// Provisional; flagged for an architect.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Bus {
     Mmio,
