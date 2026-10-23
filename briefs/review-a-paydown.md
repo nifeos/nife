@@ -2,8 +2,8 @@
 and prose without changing what the code does. You are a fresh agent, or the lane itself checking
 its own diff before it pushes. Do the work; do not ask questions.
 
-Why a brief. On 2026-10-23 (UTC) seven of seven independent reviews of milestone 929 (comments in
-the Linux style across first-party Rust) paydowns came back MERGE AFTER FIXES. The fixes fell into
+Why a brief. Milestone 929 (comments in the Linux style across first-party Rust) ran many paydown
+lanes on 2026-10-23 (UTC). Seven of seven independent reviews came back MERGE AFTER FIXES. The fixes fell into
 the five classes below, every one of them. A reviewer that knows the classes looks for them first.
 
 ## Read the diff, not the report
@@ -37,9 +37,12 @@ itself has no such independence, so its self-check is a first pass and never the
 5. Every doc comment sits on the item it describes. A paste that lands one line high or low
    documents the neighbor instead. Read each moved `///` block with the line after it.
 
-Beyond the five, check the house rules any paydown can break: §267 (a comment states the
-constraint as it is now), so no history in a comment; a `// SAFETY:` comment kept whole; a `Name:`
-block left as `design/naming.md` shapes it; and a diff that changes no token outside comments.
+Beyond the five, check the house rules any paydown can break:
+
+- §267 (a comment states the constraint as it is now): no history in a comment.
+- A `// SAFETY:` comment is kept whole.
+- A `Name:` block is left as `design/naming.md` shapes it.
+- The diff changes no token outside comments.
 
 ## The verdict
 
