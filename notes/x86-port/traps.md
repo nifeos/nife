@@ -190,9 +190,9 @@ guard byte. A set bit denies the port. While no port-holding thread runs, `iomap
 the TSS limit and every ring-3 `in`/`out` faults.
 
 `set_port_range_grant` installs a grant on switch-in, lazily. When the grant is unchanged, which is
-nearly every switch on nearly every machine, it costs a load and a branch. That is the property
-The refinement of §121 (x86 port I/O) found the naive always-write threw away (about 2,682 ns per switch). When the
-grant changes, only the moving bits are written: for a 16550's eight ports, one byte and the
+nearly every switch on nearly every machine, it costs a load and a branch. The refinement of §121
+(x86 port I/O) found that the naive always-write threw that property away, at about 2,682 ns per
+switch. When the grant changes, only the moving bits are written: for a 16550's eight ports, one byte and the
 `iomap_base` word. The function is `#[cold]` because its effect is rare though it is called on every
 switch. `script/fastpath-footprint` follows non-cold calls out of `schedule()`, and cold keeps this
 body out of the IPC fastpath's hot footprint for the price of a call and a compare.
