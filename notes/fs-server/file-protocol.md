@@ -119,8 +119,7 @@ are unordered, and the sync covers what the server had acknowledged when it ran.
 Every other block verb answers 0 for "done", and `FLUSH` does not. "The device was told" is a claim
 a caller cannot otherwise check, and a stub would satisfy it just as well. A count that strictly
 increases across each successful call is falsifiable. Two syncs that return the same number mean the
-second did not reach the device. Milestone 55 (Time Machine) has its gate observe this, and it costs
-one `u64` the server was incrementing anyway.
+second did not reach the device. It costs one `u64` the server was incrementing anyway.
 
 The `EOPNOTSUPP` case is the one a silent zero would ruin. A server that answered "done" there would
 tell a backup client its data is on the platter when nothing asked the platter anything.
