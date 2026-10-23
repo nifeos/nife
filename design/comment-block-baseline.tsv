@@ -106,12 +106,6 @@ kernel/src/bench/filesystem.rs:13	38
 kernel/src/bench/filesystem.rs:88	22
 kernel/src/bench/smp_throughput.rs:13	37
 kernel/src/bench/spawn_map.rs:49	26
-kernel/src/cap.rs:60	27
-kernel/src/cap.rs:155	26
-kernel/src/cap.rs:204	21
-kernel/src/cap.rs:263	23
-kernel/src/cap.rs:392	22
-kernel/src/cap.rs:564	21
 kernel/src/console.rs:368	32
 kernel/src/console.rs:408	30
 kernel/src/cpu.rs:27	23

@@ -17,6 +17,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Memory ordering, and the fences with no partner](../memory-ordering.md): every fence and ordered atomic, adjudicated.
 - [The IPC_TABLES lock inventory](../ipc-tables-lock-inventory.md): what the one remaining IPC lock protects, by heat.
 - [Capabilities, and why the kernel has no `open()`](../capabilities.md): capabilities, the confused deputy, first syscalls and IPC.
+- [What a capability can name](../capability-objects.md): each kernel object a capability names and why it is there, the table's size and peak, and the rights checks.
 - [Who does IPC name?](../ipc-naming.md): IPC names a rendezvous, never the peer.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
