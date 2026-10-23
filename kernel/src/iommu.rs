@@ -1,31 +1,15 @@
-//! **The portable IOMMU seam** (milestone 16b; DECISIONS §20, notes/iommu.md).
+//! The portable IOMMU seam (§20): builds a device's DMA domain with the format-generic
+//! `paging::domain::build_identity_domain` and hands its root to whichever arch driver is compiled
+//! in (`crate::arch::iommu`). Everything ISA-specific lives under `arch/`.
 //!
-//! One IOMMU confines a device by translating every address it emits through page tables the
-//! kernel programs, in the CPU's own page-table format. aarch64 has an SMMUv3 that walks
-//! VMSAv8-64; riscv has the ratified RISC-V IOMMU (v1.0.1) that walks Sv39. Those are the two
-//! formats the `paging` crate already builds for process address spaces, so a device's DMA domain
-//! is not a new kind of table (`paging::domain::build_identity_domain`). This module is the thin,
-//! architecture-neutral layer that ties that portable domain builder to whichever arch IOMMU
-//! driver is compiled in (`crate::arch::iommu`): pick the frame allocator and the format, build
-//! the domain, hand its root to the driver's `attach`. Everything ISA-specific (the register file,
-//! the stream/device table, the command and fault queues) lives under `arch/`, per rule #1.
-//!
-//! # What "confine" does, and why it fails closed
-//!
-//! `confine(rid, regions)` builds an identity map (IOVA == PA) over exactly `regions` and nothing
-//! else, then attaches the device whose requester id is `rid` to it. From that point the device
-//! reaches precisely the frames in `regions`; any other address it emits has no mapping, so the
-//! IOMMU faults instead of touching memory. Before `confine` runs for a device, the driver's
-//! `init` has already installed an all-invalid stream table / device directory, so an unattached
-//! device is denied by default. The window between "the bus grants Bus-Master Enable" and "the
-//! kernel confines the device" is therefore closed by the hardware, not by careful ordering.
+//! [`confine`] maps exactly the regions it is given, identity (IOVA == PA), so any other address
+//! the device emits faults. Each driver's `init` denies every unattached device, so the window
+//! between Bus-Master Enable and `confine` is closed by the hardware. See notes/iommu.md.
 
 use paging::domain::{DmaRegion, build_identity_domain};
 
-// The fault-reporting surface, re-exported as the portable interface. `take_fault` is drained by
-// the confinement test (kernel/src/virtio.rs); `Fault` is its public return type. Neither is used
-// by a production fault handler yet (that routing is future work), and the test reads the fault's
-// fields without ever naming the type, so both re-exports are allowed to be locally unused.
+// The fault-reporting surface. Only the confinement tests drain it, without naming `Fault`, so
+// both re-exports may be locally unused.
 #[allow(unused_imports)]
 pub use crate::arch::iommu::{Fault, take_fault};
 use crate::arch::mmu::phys_to_virt;
@@ -151,14 +135,10 @@ fn zeroed_page_frame() -> u64 {
 /// board's device tree gives an identity `iommu-map`). The caller must have checked [`is_active`];
 /// attaching before the driver's `init` panics.
 pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) {
-    // **The grant, plus every region the firmware reserved for this device** (milestone 594). On
-    // VT-d an RMRR is memory the firmware keeps DMA-ing into (USB legacy emulation, a UMA GPU's
-    // stolen memory), and VT-d 4.1 section 3.16 asks for it identity-mapped in whatever domain
-    // the device uses; a domain built without it would fault the firmware the moment it was
-    // attached. The other two architectures report none. A region that overlaps the grant is
-    // left out rather than mapped twice, which would fail the whole build: the grant already
-    // covers those pages, and a firmware region overlapping kernel-allocated memory is a firmware
-    // bug the boot print names.
+    // The grant plus the firmware's reserved regions for this device: VT-d 4.1 section 3.16 wants
+    // an RMRR identity-mapped in its device's domain, or the firmware's own DMA faults. One that
+    // overlaps the grant is skipped, since mapping a page twice fails the build. See
+    // notes/iommu.md, "Reserved regions".
     let mut all = [DmaRegion {
         base: 0,
         size: 0,
@@ -220,13 +200,9 @@ pub(crate) fn build_identity<F: paging::PageFormat>(regions: &[DmaRegion]) -> u6
 /// available ring the device actually reads). Both are frame-granular. See notes/dma.md for why the
 /// device reads a shadow the driver cannot write.
 ///
-/// **The shadow page is read-only to the device** (provisional milestone 767 (AMD-Vi hardening
-/// before the first AMD boot)). A split virtqueue's descriptor table and available ring are the
-/// driver's half: the device reads them and never writes either (virtio 1.2, section 2.7; the
-/// device's writes go to the used ring, which lives in the driver's region). So write permission on
-/// the shadow was authority the device never needed, over the one page whose whole purpose is that
-/// nothing but the kernel shapes it. `virtio::tests::a_device_write_to_the_read_only_shadow_is_refused`
-/// is the proof, on every architecture's IOMMU.
+/// The shadow page is read-only to the device, which only reads a split virtqueue's descriptor
+/// table and available ring (virtio 1.2, section 2.7).
+/// `virtio::tests::a_device_write_to_the_read_only_shadow_is_refused` holds it on every IOMMU.
 pub(crate) fn virtio_regions(
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
