@@ -82,9 +82,8 @@ aarch64 and riscv64.
 
 ## A death message's label
 
-A supervisor receiving a death message gets the dead thread's label (milestone 105 (the two forks
-milestone 22 left), §148 (a supervisor restarts by asking), ruling R3) in argument register 5 of its
-saved user frame: `x5`, `a5` or `r9`. It sits beside the mailbox, not in it, because word 3 already
+A supervisor receiving a death message gets the dead thread's label (milestone 105 (the two forks),
+§148 (a supervisor restarts by asking), ruling R3) in argument register 5 of its saved user frame: `x5`, `a5` or `r9`. It sits beside the mailbox, not in it, because word 3 already
 carries the fault address and word 4 is reserved for §26.4's resume protocol; a six-word mailbox
 would make every delivery store one more word, and here only a death pays. Only a plain `RECEIVE`
 gets it, since `RECEIVE_CAP` lays out its result differently and §26 names `RECEIVE` as the death
