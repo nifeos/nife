@@ -36,7 +36,7 @@ is `add [rax], al`, which faults rather than falling off the end quietly.
 ## The ABI
 
 `rax` carries the syscall number, and `rdi`, `rsi`, `rdx`, `r10`, `r8` and `r9` the arguments
-(`arch::x86_64::exceptions::TrapFrame::syscall_nr`). That is DECISIONS §124. These programs were the
+(`arch::x86_64::exceptions::TrapFrame::syscall_nr`). That is DECISIONS §124 (ratify the x86_64 syscall ABI). These programs were the
 first things in the tree to speak it from ring 3 through a scheduler.
 
 Immediates use the 32-bit forms. Writing `eax` zeroes the top half of `rax`, so `mov eax, imm32`
@@ -114,11 +114,11 @@ faults differ by pc, so "landed on the wrong core, try again" is never read as "
 ## The blocking residents
 
 `receive` and `call` are the two shapes of a resident that blocks forever, for the force-kill and
-supervision tests. DECISIONS §16's kill is armed by a refusal and spent by `schedule()`, which a
+supervision tests. DECISIONS §16 (object revocation)'s kill is armed by a refusal and spent by `schedule()`, which a
 thread parked in RECEIVE never reaches. A `CALL` caller whose request a server has collected is on
 no queue at all: it left the sender queue, and only the one-shot `Reply` capability the server holds
 can wake it. Its teardown has to sweep that `Reply` out of the server's capability table, or a
-forgeable answer is left behind (milestone 133).
+forgeable answer is left behind (milestone 133 (ending a permanently blocked thread)).
 
 ## BUGS
 

@@ -58,16 +58,17 @@ pub const DELEGATED_TEST_INTERRUPT: u32 = 3;
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 #[cfg(target_arch = "riscv64")]
 pub const DELEGATED_TEST_INTERRUPT: u32 = 10;
-/// `x86_64` (milestone 161): **the local APIC's self-IPI test vector**. The local APIC delivers a
-/// vector to its own CPU on demand through the ICR (`arch::x86_64::irq::raise_self_interrupt`), so
-/// this ISA is on aarch64's side of the split. The intid for such a source is its vector, hence
-/// 0x22; see `arch::x86_64::exceptions::x86_trap_body`'s self-IPI arm.
+/// `x86_64` (milestone 161 (the x86_64 kernel port)): **the local APIC's self-IPI test vector**.
+/// The local APIC delivers a vector to its own CPU on demand through the ICR
+/// (`arch::x86_64::irq::raise_self_interrupt`), so this ISA is on aarch64's side of the split. The
+/// intid for such a source is its vector, hence 0x22; see
+/// `arch::x86_64::exceptions::x86_trap_body`'s self-IPI arm.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(target_arch = "x86_64")]
 pub const DELEGATED_TEST_INTERRUPT: u32 = crate::arch::irq::SELF_TEST_VECTOR as u32;
 
 /// **Spawn one of the ELF child builders**, the archive entry `entry`, in the bare world every
-/// builder gets (milestone 19d.2c).
+/// builder gets (19d.2c, in milestone 19d (run a real workload)).
 ///
 /// `image` is the initial ramdisk and `report` the endpoint granted at slot 1. `entry` must be in
 /// the archive and in the trust root (`sealed_pair::BOOT_PROGRAMS`): otherwise this panics or halts,
@@ -104,8 +105,9 @@ pub fn spawn_elf_child_builder(
     }
 
     // Measured before the thread exists, so the check decides whether one is created at all
-    // (milestone 22 phase B.1); `trust::require` halts on a mismatch. The measurement table too
-    // (milestone 104), because the whole archive is mapped into the builder.
+    // (milestone 22 (trusted init) phase B.1); `trust::require` halts on a mismatch. The
+    // measurement table too (milestone 104 (the measurement continues past init)), because the
+    // whole archive is mapped into the builder.
     let boot_fs = match nifefs::Fs::parse(image) {
         Ok(fs) => fs,
         Err(e) => {

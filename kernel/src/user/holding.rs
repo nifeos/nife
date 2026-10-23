@@ -2,9 +2,10 @@
 //!
 //! A test boot has one pool of frames, and a service a test builds keeps every frame it was given
 //! until the machine stops unless something hands them back. A [`Holding`] remembers the threads
-//! and regions the kernel handed a service, and spends DECISIONS §16's existing verbs on them in
-//! the order that works: arm the kill, reclaim the regions, wait for the threads. It adds no
-//! syscall and no kernel object. See notes/frames.md and notes/user-address-spaces.md.
+//! and regions the kernel handed a service, and spends the existing verbs of DECISIONS §16 (object
+//! revocation) on them in the order that works: arm the kill, reclaim the regions, wait for the
+//! threads. It adds no syscall and no kernel object. See notes/frames.md and
+//! notes/user-address-spaces.md.
 //!
 
 //! # BUGS

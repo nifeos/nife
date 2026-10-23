@@ -5,21 +5,21 @@ that names every one of them is `kernel/src/user/address_space_registry.rs`. `ke
 builds a space from an ELF. This note carries the design those files' doc comments link to: who
 owns a space's memory, what a mapped window costs, the pages every process gets, and how a space
 leaves the registry. [The address-space map](address-space-map.md) has where each band of a process
-sits, and [naming a running address space](naming-a-running-address-space.md) has §249's
+sits, and [naming a running address space](naming-a-running-address-space.md) has §249 (a running address space stays nameable)'s
 background.
 
 ## One region, and who frees it
 
-Every page a space owns comes from one untyped region (milestone 14 phase B.4): the root table, the
+Every page a space owns comes from one untyped region (milestone 14 (kernel objects from untyped) phase B.4): the root table, the
 intermediate tables and every owned leaf. The region is the record of what the space owns, so
-there is no frame list. Teardown is one `memory_region::destroy`, made safe by §13 revocation. A
+there is no frame list. Teardown is one `memory_region::destroy`, made safe by §13 (capability revocation and untyped reclamation) revocation. A
 space dies all at once, so the kernel never unmaps a space page by page to tear it down, and the
 leak of a leaf unmapped with its tables left standing cannot happen.
 
 A space is built two ways, and they differ in who frees that region. `AddressSpace::new` carves its
 own region out of the frame allocator, so nobody else has a name for it, and its `Drop` is the only
 thing that can free it. `user_address_space_create` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine,
-milestone 19b) is lent a region whose `MemoryRegion` capability the caller holds, and that caller
+milestone 19b (run a real workload)) is lent a region whose `MemoryRegion` capability the caller holds, and that caller
 reclaims it with `DESTROY`. A lent region has two names for one run of memory, and only one of them
 may free it.
 
@@ -35,7 +35,7 @@ space on the caller's budget. Only freeing is restricted.
 
 ## The TLB tag
 
-Every space takes an ASID at creation (milestone 15, `crates/address_space_identifier`). Every user
+Every space takes an ASID at creation (milestone 15 (tagged address spaces), `crates/address_space_identifier`). Every user
 mapping is non-global, so its TLB entries carry the tag and a context switch flushes nothing: the
 other spaces' entries stop matching. The tag is taken before the space joins the revocation
 registry, because the registry records it and a revoke that cuts a table out flushes by it. `Drop`
@@ -47,7 +47,7 @@ reads points at memory the allocator has handed to somebody else. That is about 
 TLB: neither ISA flushes on a root switch, and cached translations are the `flush_asid` at the end.
 
 On RISC-V a process runs on one `satp` that must map both halves, so each new root gets copies of
-the kernel root's high-half entries (`mmu::share_kernel_half`, DECISIONS §17). On aarch64 the kernel
+the kernel root's high-half entries (`mmu::share_kernel_half`, DECISIONS §17 (the second architecture)). On aarch64 the kernel
 lives in `TTBR1` and the copy is a no-op.
 
 ## What a mapped window costs
@@ -123,7 +123,8 @@ a view, which keeps this out of Tock's necessarily-unsafe category ([the trusted
 The frame comes from the global frame allocator, not the space's region. A lent region is sized by
 whoever lent it, and spending one more page of it unconditionally breaks hand-sized regions. So
 `Drop` frees this frame by hand. A process's other threads get pages of their own in slots 1 and up
-(milestone 812, §269 fork 6), kept once made and reused by the next thread to take the slot. They
+(milestone 812 (`std::thread::spawn` runs real threads), §269 (how threads share a process) fork
+6). A slot's page is kept once made and reused by the next thread to take the slot. The pages
 are stored as bare physical addresses with a bitmap, because an `Option` per slot was 384 bytes in
 every `AddressSpace` and pushed `load`'s frame past the 4 KiB guard page on riscv64.
 
@@ -167,7 +168,7 @@ an entry and a 4-byte generation each. Nothing walks the empty slots, because
 
 A space has at most one holder: a thread configured with it directly, or a process whose members run
 in it (milestone 812). Threads share a space by joining its process (`BIND`), and a second holder is
-refused. calef ruled this on pull request #1892, retiring §249's amendment (b) and the §105 refusal
+refused. calef ruled this on pull request #1892, retiring §249's amendment (b) and the §105 (`std::thread::spawn` stays declined) refusal
 of `std::thread::spawn` that rested on it.
 
 A bound thread keeps a `BoundSpace`: the registry's name, the root, the composed root register and
@@ -201,9 +202,10 @@ When a region is destroyed, the sweep takes three kinds of entry:
    a corpse kept a root the region had given back, and its later drop forgot the revocation records
    of whoever got that page next.
 
-A bound space whose thread can still run is left alone, root in the region or not. Milestone 765
-closes that hole by making `reap_region_objects` refuse and kill such a thread first; until then it
-is recorded at `revoke::revoke_region`. A corpse still standing on its stack counts as runnable,
+A bound space whose thread can still run is left alone, root in the region or not. Milestone 765 (a
+destroyed region cannot free the root a running thread walks) closes that hole. It makes
+`reap_region_objects` refuse and kill such a thread first; until then the hole is recorded at
+`revoke::revoke_region`. A corpse still standing on its stack counts as runnable,
 because a core still has its root installed.
 
 ## Asking the hardware about a space
@@ -226,7 +228,7 @@ core, carry their own arguments in `system_tests::user::tests`.
 
 A test boot has one pool of frames, and the aarch64 suite builds a service, proves something with
 it, and moves on. `user::holding::Holding` gives back what the kernel handed such a service
-([frames](frames.md) has the ledger that found the leak). It is bookkeeping over DECISIONS §16's
+([frames](frames.md) has the ledger that found the leak). It is bookkeeping over DECISIONS §16 (object revocation)'s
 existing verbs, in the order that works:
 
 1. Arm the kill on every thread first, so a thread the reclaim wakes is already doomed and cannot
@@ -238,13 +240,13 @@ existing verbs, in the order that works:
    are freed by the `Drop` chain at reap, and the ledger reads right after.
 4. Only then reclaim the regions a live thread was standing on, such as a process's stack.
 
-The deadline is two seconds of wall clock rather than a yield count, for DECISIONS §28's reason: a
-killed thread is converted by its own core's next tick, and a hundred yields here can finish inside
-one tick there.
+The deadline is two seconds of wall clock rather than a yield count, for the reason in DECISIONS §28
+(SMP placement). A killed thread is converted by its own core's next tick, and a hundred yields here
+can finish inside one tick there.
 
 What a holding cannot end is a service blocked for good. The armed kill is spent by `schedule()`,
 which a blocked thread never reaches. Reclaiming a region removes the endpoints inside it and wakes
 their waiters with an aborted IPC, so a service blocked on an endpoint its own budget paid for does
 die. One blocked on an endpoint from somewhere else does not, and `release` returns `false` rather
-than pretending (milestone 133's question). A caller parked in `CALL` is a different case: it is
-freed the moment its server can no longer answer, wherever the caller lives (milestone 254).
+than pretending (milestone 133 (ending a permanently blocked thread)'s question). A caller parked in `CALL` is a different case: it is
+freed the moment its server can no longer answer, wherever the caller lives (milestone 254 (a caller stranded by a server that died)).

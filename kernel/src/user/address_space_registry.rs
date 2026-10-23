@@ -352,12 +352,12 @@ pub fn take_user_address_space(name: u64) -> Option<AddressSpace> {
 }
 
 /// **Tear down every space a region's destruction ends** (object revocation, the address-space
-/// case). Each removed space drops here; its region's memory comes back at the enclosing
-/// `reclaim_region`, which unpins after this.
+/// case). Each removed space drops here; its memory comes back at the enclosing `reclaim_region`.
 ///
 /// It takes an unbound space rooted in `[base, end)`, a bound space whose holder is gone, and a
 /// bound space rooted in the span whose thread is a corpse no core stands on. A bound space whose
-/// thread can still run is left alone (milestone 765). See notes/user-address-spaces.md.
+/// thread can still run is left alone (milestone 765 (a destroyed region cannot free the root a
+/// running thread walks)). See notes/user-address-spaces.md.
 ///
 /// Context: takes the registry lock and, under it, `IPC_TABLES` once per scan (61 then 60). Never
 /// drops an `AddressSpace` under either.

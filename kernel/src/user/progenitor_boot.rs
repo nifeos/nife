@@ -8,7 +8,7 @@ use super::*;
 use crate::cap::{Rights, page_frame_cap, page_frame_run_cap, page_frame_run_len, rendezvous_cap};
 
 /// **The archive entry the kernel enters as the first process**, on every architecture: one name,
-/// one binary, one program (milestone 266).
+/// one binary, one program (milestone 266 (one progenitor, on all three architectures)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PROGENITOR_ENTRY: &str = "progenitor";
 
@@ -99,9 +99,9 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     grant_graphics(tid, gpu.as_ref(), keyboard.as_ref());
     let virtio_net = grant_virtio_net(tid);
     grant_kernel_network_stack(tid, virtio_net.is_none());
-    // Say that this boot worked, if a chooser started it (milestone 198's rung 2b). Here and no
-    // earlier: the filesystem server above has mounted the installed disk and reported ready, the
-    // latest criterion this system can evaluate without a person.
+    // Say that this boot worked, if a chooser started it (milestone 198 (a package manager)'s rung
+    // 2b). Here and no earlier: the filesystem server above has mounted the installed disk and
+    // reported ready, the latest criterion this system can evaluate without a person.
     #[cfg(target_arch = "x86_64")]
     if fs_rights != 0 {
         install_service::confirm();
@@ -141,9 +141,10 @@ fn measured_progenitor(archive: &'static [u8]) -> Result<Elf<'static>, LoadError
         .read(PROGENITOR_ENTRY)
         .unwrap_or_else(|| panic!("archive has no '{PROGENITOR_ENTRY}' program"));
     // The progenitor is this board's boot program, so it is in the trust root under its own name
-    // and checked before its address space is built (milestone 22 phase B.1).
+    // and checked before its address space is built (milestone 22 (trusted init) phase B.1).
     crate::trust::require(PROGENITOR_ENTRY, init_bytes);
-    // And the table it measures every program it loads against (milestone 104).
+    // And the table it measures every program it loads against (milestone 104 (the measurement
+    // continues past init)).
     crate::trust::require_program_measurements(&fs);
     Elf::parse(init_bytes).map_err(LoadError::NotLoadable)
 }
@@ -201,8 +202,9 @@ fn progenitor_address_space(
 ///
 /// The budget carries `GRANT` so the progenitor can split budgets off for its children. The console
 /// device is the UART's register page on aarch64 and riscv64 and a `PortRange` over COM1's eight
-/// ports on `x86_64`. The clock and configuration pages are `READ | GRANT` (DECISIONS §43, §111)
-/// and sit ahead of the conditional file-service pair, so their slots never move.
+/// ports on `x86_64`. The clock and configuration pages are `READ | GRANT` (DECISIONS §43 (reading
+/// the clock is a page), §111 (inert configuration is a read-only page)) and sit ahead of the
+/// conditional file-service pair, so their slots never move.
 fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_irq: u32) {
     let s0 = crate::sched::thread_control_block_insert_cap(
         tid,
@@ -246,12 +248,12 @@ fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_irq: u
 }
 
 /// Slots 5 and 6, the file service and its client-window pool, when this boot has a filesystem
-/// (milestone 50).
+/// (milestone 50 (pipes and redirection)).
 ///
-/// Both carry `GRANT`: the progenitor narrows the endpoint into the shell, and slices one window per
-/// client out of the pool with `abi::page_frame::SLICE` (milestone 599). Returns the endpoint's
-/// rights, which `a2` tells the progenitor (0 for no file service, the ordinary case with no RedoxFS
-/// disk attached), and the pool's physical base.
+/// Both carry `GRANT`: the progenitor narrows the endpoint into the shell, and slices one window
+/// per client out of the pool with `abi::page_frame::SLICE` (milestone 599 (a frame per filesystem
+/// client channel)). Returns the endpoint's rights, which `a2` tells the progenitor (0 for no file
+/// service, the ordinary case with no RedoxFS disk attached), and the pool's physical base.
 fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
     match program("redoxfs_server").and_then(|redoxfs_server| {
         fs_service::root_directory(fs_service::blk_server_image(), redoxfs_server)
@@ -335,11 +337,11 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
 
 /// Wire the virtio-gpu and virtio keyboard when present, and say what this boot has.
 ///
-/// Nothing is built from them at boot (milestone 632): the progenitor hands the grants to the
-/// shell, and a `graphical_terminal` launch builds the drivers. No gpu is wired without `gpu_driver`
-/// and `display_terminal` in the archive, and no keyboard without a gpu beside it; a graphical
-/// session's keystrokes then come over the UART (milestone 192's option A). See
-/// notes/progenitor-boot.md.
+/// Nothing is built from them at boot (milestone 632 (graphics on demand)): the progenitor hands
+/// the grants to the shell, and a `graphical_terminal` launch builds the drivers. No gpu is wired
+/// without `gpu_driver` and `display_terminal` in the archive, and no keyboard without a gpu beside
+/// it; a graphical session's keystrokes then come over the UART (milestone 192 (a keyboard on real
+/// silicon)'s option A). See notes/progenitor-boot.md.
 fn wire_graphics() -> (
     Option<display_service::GpuDevice>,
     Option<keyboard_service::KeyboardDevice>,
@@ -370,11 +372,12 @@ fn wire_graphics() -> (
 /// Slots 23, 28 and 31, granted on every boot so they never move: the machine statistics page, the
 /// progenitor's own address space and the reboot object.
 ///
-/// The statistics page is `READ | GRANT` (DECISIONS §225). The address space is `WRITE` alone
-/// (§249), so the progenitor can `UNMAP` the scratch pages it filled for a child and can pass the
-/// right to nobody. The reboot object is `WRITE | GRANT` (DECISIONS §251): the progenitor never
-/// invokes it, but it must hold the `WRITE` it places in the one child whose manifest declares
-/// `reboot`. See notes/progenitor-boot.md.
+/// The statistics page is `READ | GRANT` (DECISIONS §225 (`free` sees the machine and your share)).
+/// The address space is `WRITE` alone (§249 (a running address space stays nameable)), so the
+/// progenitor can `UNMAP` the scratch pages it filled for a child and can pass the right to nobody.
+/// The reboot object is `WRITE | GRANT` (DECISIONS §251 (restarting the machine is a kernel
+/// object)): the progenitor never invokes it, but it must hold the `WRITE` it places in the one
+/// child whose manifest declares `reboot`. See notes/progenitor-boot.md.
 fn grant_machine_slots(tid: crate::thread::ThreadId, aspace_name: u64) {
     let s23 = crate::sched::thread_control_block_insert_cap(
         tid,
@@ -403,9 +406,9 @@ fn grant_machine_slots(tid: crate::thread::ThreadId, aspace_name: u64) {
 }
 
 /// Slots 32 and 33, the disk tree and its client-window pool, when this machine has an NVMe disk
-/// (milestone 834): the installed system's second mounted tree, read-only at the prompt.
-/// `WRITE | GRANT` on both, for the file service's reason at slots 5 and 6. Only beside a file
-/// service, whose window 0 the disk tree's window 0 becomes.
+/// (milestone 834 (ioping on nife and Linux)): the installed system's second mounted tree,
+/// read-only at the prompt. `WRITE | GRANT` on both, for the file service's reason at slots 5 and
+/// 6. Only beside a file service, whose window 0 the disk tree's window 0 becomes.
 fn grant_disk_tree(tid: crate::thread::ThreadId, fs_pool: Option<u64>) {
     let Some(tree) = fs_pool.and_then(super::disk_tree_service::start) else {
         return;
@@ -430,7 +433,8 @@ fn grant_disk_tree(tid: crate::thread::ThreadId, fs_pool: Option<u64>) {
     assert_eq!(s33, 33);
 }
 
-/// Slots 24 to 26: the kernel's log ring, its cursor page and its notification (milestone 342).
+/// Slots 24 to 26: the kernel's log ring, its cursor page and its notification (milestone 342 (one
+/// UART from two address spaces)).
 ///
 /// The ring is read-only, so the log service can copy kernel lines out and never write them; the
 /// cursor is read-write, so it can say how far it has read; the kernel signals the notification on
@@ -474,7 +478,8 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
     }
 }
 
-/// Slot 27: a USB keyboard's attach endpoint, when the kernel started one (milestone 242).
+/// Slot 27: a USB keyboard's attach endpoint, when the kernel started one (milestone 242 (USB host
+/// and HID)).
 ///
 /// `WRITE | GRANT`, so the progenitor can delegate the line discipline's endpoint through it and
 /// then delete its own copy. Empty with no controller, a refused one, or a driver that reported a
@@ -582,8 +587,8 @@ fn grant_graphics(
     }
 }
 
-/// Slots 13 to 15 for a virtio-net device (milestone 590); returns the grant for the interrupt
-/// arming after the start.
+/// Slots 13 to 15 for a virtio-net device (milestone 590 (the booted system starts its network
+/// stack)); returns the grant for the interrupt arming after the start.
 ///
 /// The virtio-rng trio's shape: explicit slots, and `GRANT` on all three because the progenitor
 /// delegates them into the `net_stack` it builds and deletes its own copies. Empty on every real
@@ -624,11 +629,11 @@ fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
 
 /// Slots 29 and 30: a network stack the kernel built itself, when there is no virtio-net NIC.
 ///
-/// On an `e1000e` (milestone 198's rung 3a), or on riscv64 on radon's Ethernet port (milestone 53,
-/// gated by `designware_ethernet_service::PROVEN_ON_SILICON`). The `Stack` endpoint carries every
-/// right, as the progenitor's own retype of it does on the virtio path, and the lease endpoint
-/// `READ`: the progenitor receives the lease itself, so both paths reach the prompt the same way.
-/// Never both. See [`boot_e1000e_network`].
+/// On an `e1000e` (milestone 198's rung 3a), or on riscv64 on radon's Ethernet port (milestone 53
+/// (the board's own peripherals), gated by `designware_ethernet_service::PROVEN_ON_SILICON`). The
+/// `Stack` endpoint carries every right, as the progenitor's own retype of it does on the virtio
+/// path, and the lease endpoint `READ`: the progenitor receives the lease itself, so both paths
+/// reach the prompt the same way. Never both. See [`boot_e1000e_network`].
 fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtio_net: bool) {
     let kernel_stack = if no_virtio_net {
         let e1000e = boot_e1000e_network().map(|w| (w.stack, w.report));

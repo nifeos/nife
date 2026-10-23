@@ -5,8 +5,10 @@ progenitor's slot layout, the rights on each grant, and which devices the kernel
 This directory carries what its prose budget has no room for.
 
 - [`child-builders.md`](child-builders.md): the bare world the test suite's ELF child builders get.
+- [`device-details.md`](device-details.md): the instruction entropy refusal and the screen handover's order.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
 - `child-builders` Name: provisional. For the six builders in `fixtures/`. calef names files.
+- `device-details` Name: provisional. For what two device starters must get right. calef names files.

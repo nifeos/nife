@@ -59,9 +59,9 @@ pub struct AddressSpace {
 ///
 /// [`AddressSpace::new`] carves its own region, which nobody else can name, so its `Drop` frees it.
 /// [`user_address_space_create`] is lent a region its caller holds a `MemoryRegion` capability to
-/// and reclaims with `MemoryRegion::DESTROY` (milestone 19b). Two names for one run of memory, and
-/// only one may free it: a type, so no space can be built without saying which. See
-/// notes/user-address-spaces.md.
+/// and reclaims with `MemoryRegion::DESTROY` (milestone 19b (run a real workload)). Two names for
+/// one run of memory, and only one may free it: a type, so no space can be built without saying
+/// which. See notes/user-address-spaces.md.
 #[derive(Clone, Copy)]
 pub(super) enum Backing {
     /// The space carved this region itself and holds the only name for it. `Drop` frees it.
@@ -190,8 +190,8 @@ impl AddressSpace {
     /// switch, on the core doing the switching, which is the core the thread will execute on.
     ///
     /// One relaxed store; `current_cpu_contract` has the ordering argument. The context switch
-    /// reads [`BoundSpace::publish_current_cpu`] instead (§249); this form is the tests' way to make
-    /// the same write by hand.
+    /// reads [`BoundSpace::publish_current_cpu`] instead (§249 (a running address space stays
+    /// nameable)); this form is the tests' way to make the same write by hand.
     #[cfg(any(test, feature = "system_tests"))]
     #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
     #[inline]
@@ -244,8 +244,8 @@ impl AddressSpace {
     ///
     /// The page is not this space's to free (device registers, or a page shared with another
     /// space), but the mapping is recorded, because one revocation cannot see is the DECISIONS §13
-    /// use-after-free; an unrecordable mapping is unmapped and refused as `OutOfPageFrames`. See
-    /// notes/user-address-spaces.md.
+    /// (capability revocation and untyped reclamation) use-after-free; an unrecordable mapping is
+    /// unmapped and refused as `OutOfPageFrames`. See notes/user-address-spaces.md.
     ///
     /// # BUGS
     /// [`Self::map_new`] does not record: its frames die with this space's region and no capability

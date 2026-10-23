@@ -40,12 +40,13 @@ pub(super) fn boot_usb_keyboard() -> Option<usb_keyboard_service::Wiring> {
     }
 }
 
-/// **The clock page the interactive boot hands the progenitor** (milestone 51), and what a machine
-/// with no clock looks like.
+/// **The clock page the interactive boot hands the progenitor** (milestone 51 (wall-clock time)),
+/// and what a machine with no clock looks like.
 ///
 /// Always granted: with no `clock` program in the archive the page is zeroed, which reads as
 /// `clock_contract::state::UNKNOWN`, so the progenitor's slot numbering never depends on the
-/// machine. The progenitor gets `READ` only (DECISIONS §43), so nothing it builds can set the time.
+/// machine. The progenitor gets `READ` only (DECISIONS §43 (reading the clock is a page)), so
+/// nothing it builds can set the time.
 pub(super) fn boot_clock_page() -> u64 {
     match program("clock") {
         Some(image) => {
@@ -83,9 +84,10 @@ pub(super) struct VirtioBootGrant {
     pub(super) dma: u64,
 }
 
-/// **Discover and wire a virtio-rng device on the MMIO bus, for the interactive boot**
-/// (DECISIONS §120's 2026-08-26 amendment). `None` on a boot with none (real hardware, or a run
-/// with `NIFE_RNG` unset), which the caller treats as an absence rather than a failure.
+/// **Discover and wire a virtio-rng device on the MMIO bus, for the interactive boot** (DECISIONS
+/// §120 (a QEMU-only virtio-rng stopgap)'s 2026-08-26 amendment). `None` on a boot with none (real
+/// hardware, or a run with `NIFE_RNG` unset), which the caller treats as an absence rather than a
+/// failure.
 ///
 /// The MMIO transport only, not PCIe. It does `entropy_service::start`'s kernel-side setup and then
 /// hands the three capabilities back, because on this boot the progenitor builds the entropy
@@ -95,13 +97,14 @@ pub(super) fn boot_virtio_rng_device() -> Option<VirtioBootGrant> {
 }
 
 /// **An entropy service on the CPU's own seed instruction, for a boot with no virtio-rng**
-/// (milestone 595). Returns its request endpoint, which [`boot_progenitor`] grants at slot 16, or
-/// `None`, said on the console.
+/// (milestone 595 (the shell runs a `std` program)). Returns its request endpoint, which
+/// [`boot_progenitor`] grants at slot 16, or `None`, said on the console.
 ///
 /// The kernel confirms the instruction and builds the service, so detection stays in `arch/` and
 /// works on aarch64 too. No instruction, or an all-zero first draw, is a refusal with no fallback
-/// generator (DECISIONS §137 option A). On `x86_64` the installer may already have taken the
-/// readiness report. See notes/progenitor-boot.md.
+/// generator (DECISIONS §137 (a hardware TRNG with no published health-test claim) option A). On
+/// `x86_64` the installer may already have taken the readiness report. See
+/// notes/progenitor-boot.md.
 pub(super) fn boot_instruction_entropy() -> Option<crate::sched::RendezvousId> {
     let image = program("entropy")?;
     let Some(w) = entropy_service::ensure(image, entropy_service::Bus::Instruction) else {
@@ -125,19 +128,21 @@ pub(super) fn boot_instruction_entropy() -> Option<crate::sched::RendezvousId> {
     Some(w.request)
 }
 
-/// **The same for the network card** (milestone 590). `None` with no virtio-net device on the MMIO
-/// bus: every real board, and every QEMU run with `NIFE_NET` unset. The progenitor builds
-/// `net_stack` from these three and nothing else.
+/// **The same for the network card** (milestone 590 (the booted system starts its network stack)).
+/// `None` with no virtio-net device on the MMIO bus: every real board, and every QEMU run with
+/// `NIFE_NET` unset. The progenitor builds `net_stack` from these three and nothing else.
 ///
 /// The MMIO NIC has no IOMMU in front of it, so its DMA is confined by the transport's shadow-ring
-/// validator alone, not the SMMU of DECISIONS §20; the PCIe NIC sits unclaimed on this boot.
+/// validator alone, not the SMMU of DECISIONS §20 (IOMMU-backed DMA isolation); the PCIe NIC sits
+/// unclaimed on this boot.
 pub(super) fn boot_virtio_net_device() -> Option<VirtioBootGrant> {
     boot_virtio_mmio_device(crate::virtio::find_net_device()?)
 }
 
-/// **A network stack over an `e1000e`, when this boot has one and no virtio-net** (milestone 198's
-/// rung 3a, on milestone 494's driver). `None`, having said why, for an unproven part, a link that
-/// was down or a refused bring-up; `None` silently with no such NIC, which is every `virt` boot.
+/// **A network stack over an `e1000e`, when this boot has one and no virtio-net** (milestone 198 (a
+/// package manager)'s rung 3a, on milestone 494 (a driver for the network card a PC actually has)'s
+/// driver). `None`, having said why, for an unproven part, a link that was down or a refused
+/// bring-up; `None` silently with no such NIC, which is every `virt` boot.
 ///
 /// The kernel builds it, for [`boot_usb_keyboard`]'s reason, and it is the wiring every `e1000e`
 /// gate already runs. See notes/progenitor-boot.md.
@@ -275,8 +280,9 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
     })
 }
 
-/// **The inert-configuration page the interactive boot hands the progenitor** (milestone 47,
-/// DECISIONS §111): [`boot_clock_page`]'s twin, minus the service.
+/// **The inert-configuration page the interactive boot hands the progenitor** (milestone 47
+/// (navigation and naming), DECISIONS §111 (inert configuration is a read-only page)):
+/// [`boot_clock_page`]'s twin, minus the service.
 ///
 /// Always granted, for the clock page's reason. The page is assembled once, into a frame nothing
 /// else can see, and only then handed over, so it needs no seqlock (`environment_contract`). The
@@ -312,10 +318,10 @@ pub(super) fn boot_config_page() -> u64 {
 /// server needs to write every byte there as well as to the UART.
 ///
 /// The order is the handover: the programs are found, [`crate::console::yield_screen`] stops the
-/// kernel painting, and only then is the driver spawned, so there are never two painters. A
-/// refusal after the yield leaves the screen blank and the boot on the UART. `None` on aarch64 and
-/// riscv64 until milestone 157 tells the console about a screen. See notes/progenitor-boot.md.
-/// **Name provisional.**
+/// kernel painting, and only then is the driver spawned, so there are never two painters. A refusal
+/// after the yield leaves the screen blank and the boot on the UART. `None` on aarch64 and riscv64
+/// until milestone 157 (real display output on the board) tells the console about a screen. See
+/// notes/progenitor-boot.md. **Name provisional.**
 pub(super) fn boot_screen_terminal() -> Option<display_service::TerminalWiring> {
     let driver = program("framebuffer_driver")?;
     let terminal = program("display_terminal")?;

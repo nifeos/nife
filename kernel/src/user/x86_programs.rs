@@ -1,8 +1,8 @@
 //! **Hand-assembled `x86_64` user programs**: the tests' fixtures and the boot tour's ring-3 process.
 //!
-//! `x86_64` has no compiled user program yet, so each program is a byte listing packed into the
-//! `&[u32]` words `sched`'s child builders take. They speak §124's syscall ABI: `rax` carries the
-//! number and `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9` the arguments. See notes/x86-user-programs.md.
+//! `x86_64` has no compiled user program yet, so each is a byte listing packed into the `&[u32]`
+//! words `sched`'s child builders take. They speak §124 (ratify the x86_64 syscall ABI): `rax`
+//! the number, `rdi` to `r9` the arguments. See notes/x86-user-programs.md.
 //!
 //! # BUGS
 //!
@@ -242,7 +242,7 @@ pub const PORT_OUT_ON_CPU_PC_OFFSET: u64 = 13 + PORT_OUT_PC_OFFSET;
 pub const PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET: u64 = 29;
 
 /// **A child that deletes its own capability in `slot`, then writes a byte to a port, then exits**
-/// (milestone 313's audit).
+/// (milestone 313 (the security audit that was due since August)'s audit).
 ///
 /// A holder of the `PortRange` capability naming `port` runs `SYS_CAP_DELETE` on its slot, a plain
 /// syscall with the slot in `edi`, and the `out` that follows must take a general protection fault
@@ -368,7 +368,7 @@ pub const TWO_CAPABILITY_DELETES_THEN_PORT_OUT_PC_OFFSET: u64 = 24 + PORT_OUT_PC
 pub const RECEIVE_THEN_PORT_OUT_PC_OFFSET: u64 = 25 + PORT_OUT_PC_OFFSET;
 
 /// **A child that blocks in RECEIVE on slot 1, then writes a byte to a port, then exits**
-/// (milestone 299).
+/// (milestone 299 (the x86 port-range capability)).
 ///
 /// The revocation fixture. The test revokes the port range while the child is parked and then wakes
 /// it, so the `out` takes a general protection fault at [`RECEIVE_THEN_PORT_OUT_PC_OFFSET`] and the
@@ -398,17 +398,18 @@ pub const fn receive_then_port_out(port: u16, val: u8) -> [u32; 10] {
 
 /// **A child that blocks in RECEIVE on the endpoint capability in slot 0, forever.**
 ///
-/// A thread parked in RECEIVE never reaches `schedule()`, which is where DECISIONS §16's armed kill
-/// is spent, so this is the resident only a region's teardown can end.
+/// A thread parked in RECEIVE never reaches `schedule()`, where the armed kill of DECISIONS §16
+/// (object revocation) is spent, so this is the resident only a region's teardown can end.
 pub const fn receive() -> [u32; 8] {
     invoke_then_exit(abi::rendezvous::RECEIVE as u32)
 }
 
 /// **A child that blocks in `CALL` on the endpoint capability in slot 0, and is never replied to.**
 ///
-/// Milestone 133's second shape. A caller whose request a server has collected is on no queue, and
-/// only the one-shot `Reply` the server holds can wake it, so its teardown has to sweep that `Reply`
-/// out of the server's table. [`receive`] with a different method word.
+/// The second shape of milestone 133 (ending a permanently blocked thread). A caller whose request
+/// a server has collected is on no queue, and only the one-shot `Reply` the server holds can wake
+/// it, so its teardown has to sweep that `Reply` out of the server's table. [`receive`] with a
+/// different method word.
 pub const fn call() -> [u32; 8] {
     invoke_then_exit(abi::rendezvous::CALL as u32)
 }
