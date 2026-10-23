@@ -1,14 +1,7 @@
-//! PL011 UART driver.
+//! PL011 UART driver, aarch64's console.
 //!
-//! The serial port: ancient, and beautifully dumb. Write a byte to a magic address
-//! and it goes out a wire, one bit at a time. It is the simplest way a computer can
-//! say anything at all, which is why it is the first thing every kernel learns to
-//! do. See notes/qemu.md.
-//!
-//! Note the rule from DECISIONS §4: **this driver reaches into no globals.** It
-//! is constructed with a base address and knows nothing about the rest of the
-//! kernel. Whoever owns it decides where it lives. (Compare NetBSD's `bus_space`,
-//! notes/portability.md.)
+//! Constructed with a base address, it reaches into no globals (§4); whoever owns it decides
+//! where it lives. See notes/uart.md and notes/portability.md.
 
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
@@ -167,17 +160,10 @@ impl Pl011 {
         r.DR.set(byte as u32);
     }
 
-    /// **Wait until every byte written has left the wire.** Polls `FR::BUSY`, which the PL011 holds
-    /// set while anything (FIFO or shift register) is still transmitting; where
-    /// [`write_byte`](Self::write_byte) only waits for room, so returning from a print says nothing
-    /// about the bytes having been sent.
-    ///
-    /// The riscv64 twin (`Ns16550::drain_transmitter`, same name on purpose) was built for the
-    /// defect the 2026-10-09 radon bench caught: a reset called microseconds after a print drops
-    /// power with the UART mid-line, and the line is lost. aarch64 takes this through
-    /// `arch::reboot`'s PSCI call for the same reason. The bound is the same size as the ns16550's
-    /// for the same reason: the drain is milliseconds, the bound only trips on dead silicon, and
-    /// the caller is about to reset the machine, where proceeding beats hanging.
+    /// Wait until every byte written has left the wire: polls `FR::BUSY` (FIFO or shift register
+    /// still transmitting), where [`write_byte`](Self::write_byte) only waits for room. The twin of
+    /// `Ns16550::drain_transmitter`, bounded the same way, for `arch::reboot`'s PSCI call
+    /// (notes/kernel-console.md, "Escapes from the ring").
     ///
     /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
     /// 2026-10-10: calef names public items.

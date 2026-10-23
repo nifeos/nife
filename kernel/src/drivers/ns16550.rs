@@ -1,38 +1,10 @@
-//! NS16550 UART driver (RISC-V console).
+//! NS16550 UART driver: the RISC-V console, and `x86_64`'s COM1.
 //!
-//! The other ancient, beautifully dumb serial port. Where aarch64's `virt` machine has a PL011,
-//! RISC-V's has an NS16550 (a 16550-compatible 8250) at `0x1000_0000`. Same idea, different
-//! register block: eight registers, and the transmit-ready flag lives in the Line Status Register
-//! instead of a Flag Register.
-//!
-//! **The register block's shape is the board's, not the architecture's**, and since the
-//! VisionFive 2 prep (notes/visionfive2.md) this driver carries it as data ([`Shape`]) instead of
-//! assuming QEMU's. QEMU `virt` wires byte-wide registers at consecutive addresses; the JH7110's
-//! UART0 is a Synopsys `DesignWare` `DW_apb_uart`, an 8250 whose registers sit **four bytes apart**
-//! (`reg-shift = <2>`), want **32-bit accesses** (`reg-io-width = <4>`), and run from a **24 MHz**
-//! clock, so the old byte read of LSR at offset 5 landed in the middle of the IER word and the
-//! transmit poll would spin on garbage forever. The shape comes from the device tree
-//! (`console::configure_from_dtb`); until that runs, [`Shape::QEMU_VIRT`] keeps the behavior this
-//! driver always had, byte for byte.
-//!
-//! This one uses plain volatile access rather than `tock_registers` register blocks: the register
-//! *indices* are what the 16550 defines, and the stride between them is a runtime value no static
-//! layout macro can express. Named offsets and bit masks are clearer for a device this small.
-//!
-//! **The register block need not be in memory at all** (milestone 161). The same 16550 that QEMU's
-//! RISC-V `virt` puts at physical `0x1000_0000` is, on every x86 machine including the `OptiPlex`
-//! milestone 87 tracks, at **I/O port** `0x3f8`: a separate address space reached only by the `in`
-//! and `out` instructions, with no page tables in front of it. That is a difference in how the
-//! eight registers are *reached* and in nothing else, so it is a type parameter
-//! ([`RegisterSpace`]) rather than a second driver. The parameter defaults to [`Mmio`], so every
-//! existing use of `Ns16550` means exactly what it always did.
-//!
-//! Splitting the access out this way is also what keeps rule #1: `in`/`out` are instructions, so
-//! the port-space implementation lives under `arch/x86_64/`, not here.
-//!
-//! Same rule as every driver here (DECISIONS §4): **it reaches into no globals.** It is
-//! constructed with a base address and a shape and knows nothing else. It is the sibling of
-//! `pl011.rs`, selected by the console at compile time. See notes/riscv-port.md.
+//! The register block's shape is the board's ([`Shape`]): QEMU `virt` wires byte registers at
+//! consecutive addresses, the JH7110's `DW_apb_uart` four bytes apart with 32-bit accesses. How the
+//! registers are reached is a type parameter ([`RegisterSpace`]): memory by default, I/O ports on
+//! x86 (`arch/x86_64/port.rs`). It reaches into no globals (§4). See notes/uart.md, "The NS16550
+//! driver", and notes/visionfive2.md.
 
 // Register indices from the UART base (multiply by the stride, `1 << reg_shift`, for the byte
 // offset: index 5 is byte offset 5 on QEMU `virt` and byte offset 0x14 on the JH7110).
@@ -55,24 +27,11 @@ const LSR_THRE: u8 = 0b0010_0000;
 // quirk's precondition: a DW_apb_uart ignores an LCR write while it is busy, so LCR is only
 // touched once the transmitter is completely idle.
 const LSR_TEMT: u8 = 0b0100_0000;
-// Line Status bit: Data Ready. Set while at least one byte sits unread in the receive buffer or
-// FIFO, and cleared only by *reading* that byte out of RBR. Nothing else clears it: it is not a
-// write-one-to-clear latch and it does not time out. That is what makes it usable as a mailbox
-// rather than as an event, which is the whole of milestone 249's escape: the kernel polls it once
-// every five seconds and a keypress that arrived at any moment in between is still there to be
-// found. Only the rebooting soak reads it; the console is otherwise transmit-only, and the
-// receive interrupt is the user-level input driver's to arm.
-//
-// Milestone 445 (the screen check stops sampling and starts asking) gave it a second reader with
-// the same shape: the screen-hold handshake polls it to
-// learn that a host has finished photographing the framebuffer. That is why it is no longer behind
-// `reboot_soak_test`, and why the two methods below are not either.
+// Line Status bit: Data Ready. Cleared only by reading the byte out of RBR, never by time or a
+// write, so it is a mailbox a slow poll cannot miss (the soak's stop button, the screen hold).
 const LSR_DR: u8 = 0b0000_0001;
 // Interrupt Enable bit: Enable Transmitter Holding Register Empty Interrupt. Asserts as soon as it is
-// set if LSR.THRE is already set, which on a polling console it always is. See `enable_tx_interrupt`.
-// Test builds only, because that is where its only caller is; the crate-wide removal in
-// milestone 41 (dead code: triage the suppressions) of the
-// riscv `allow(dead_code)` means an unused constant here is a build error, which is the point.
+// set if LSR.THRE is already set. See `enable_tx_interrupt`. Test builds only, its one caller's.
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; a unit-test boot on some ISAs does not
 const IER_ETBEI: u8 = 0b0000_0010;
@@ -81,7 +40,7 @@ const IER_ETBEI: u8 = 0b0000_0010;
 /// care; the VisionFive 2's serial header is documented at 115200 8N1).
 const BAUD: u32 = 115_200;
 
-/// **How this particular 16550 is wired**: the facts the device tree states about the register
+/// How this particular 16550 is wired: the facts the device tree states about the register
 /// block, plus what to program the divisor to. One struct so the console can swap all of it in a
 /// single call, and `const`-constructible so the pre-device-tree default costs nothing.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -94,10 +53,9 @@ pub(crate) struct Shape {
     /// any other combination falls back to byte access, which is also what a width this driver
     /// does not know (2, 8) gets.
     pub reg_io_width: u8,
-    /// What to program the baud divisor to, or **0 to leave the divisor and line controls alone**
-    /// and trust whatever firmware programmed. Zero is the honest choice when the tree states no
-    /// `clock-frequency`: a wrong guess is 1.5 Mbaud garbage at the far terminal (divisor 1 at
-    /// 24 MHz), while U-Boot has already set 115200 8N1 on any board that showed a prompt.
+    /// What to program the baud divisor to, or 0 to leave the divisor and line controls as
+    /// firmware programmed them, which is right when the tree states no `clock-frequency`: a wrong
+    /// guess is 1.5 Mbaud garbage (divisor 1 at 24 MHz).
     pub divisor: u16,
     /// The `DesignWare` busy quirk (`snps,dw-apb-uart`): the part ignores an LCR write while the
     /// transmitter is busy and latches a "busy" interrupt. When set, `init` drains the transmitter
@@ -131,12 +89,9 @@ const _: () = {
     assert!(Shape::divisor_for(3_686_400) == 2);
 };
 
-/// **How this 16550's eight registers are reached**: memory, or the x86 I/O port space.
-///
-/// A trait rather than a runtime flag because the choice is fixed per architecture at compile time
-/// and there is no call site that could want either, so a branch on every register access would buy
-/// nothing. Two implementations exist: [`Mmio`] below, and the port-space one in
-/// `arch/x86_64/port.rs`, which lives there because `in` and `out` are instructions (rule #1).
+/// How this 16550's eight registers are reached: memory ([`Mmio`]), or the x86 I/O port space
+/// (`arch/x86_64/port.rs`, since `in` and `out` are instructions). A trait, fixed per architecture
+/// at compile time, so no register access pays a branch.
 ///
 /// # Safety
 /// An implementation performs raw accesses at addresses the caller supplies. Implementing it is a
@@ -269,20 +224,16 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// Configure the UART: FIFOs on, interrupts off (this is a polling console), and, when the
     /// divisor is known, 8N1 at [`BAUD`].
     ///
-    /// A shape with `divisor == 0` deliberately touches neither LCR nor the divisor latch: it
-    /// means the input clock is unstated, and reprogramming against a guessed clock is how a
-    /// working firmware console turns to garbage (the Shape field's doc has the arithmetic). On
-    /// the DW part the busy quirk is honored first: LCR writes are ignored while the transmitter
-    /// is busy, so it is drained, bounded, before being touched.
+    /// A shape with `divisor == 0` touches neither LCR nor the divisor latch (see
+    /// [`Shape::divisor`]). On the DW part the transmitter is drained, bounded, before LCR is
+    /// written, since the part ignores LCR writes while busy.
     pub fn init(&self) {
         self.write(IER, 0x00); // interrupts off: the console polls LSR
 
         if self.shape.divisor != 0 {
             if self.shape.dw_busy_quirk {
-                // Drain the transmitter so the LCR writes below take. Bounded: at 115200 the
-                // FIFO and shift register drain in low milliseconds, so a bound this size only
-                // ever trips on silicon that is not answering, and then skipping the reprogram
-                // (firmware's settings stay) beats hanging a console nobody can see yet.
+                // Bounded: it trips only on silicon not answering, and then firmware's settings
+                // stay rather than the console hanging.
                 let mut spins = 1_000_000u32;
                 while self.read(LSR) & LSR_TEMT == 0 && spins > 0 {
                     core::hint::spin_loop();
@@ -307,16 +258,9 @@ impl<S: RegisterSpace> Ns16550<S> {
         self.write(THR, byte);
     }
 
-    /// **Wait until every byte written has left the wire.** Polls `LSR_TEMT`, the transmitter-empty
-    /// bit that says the FIFO *and* the shift register are idle, where [`write_byte`](Self::write_byte)
-    /// only waits for room, so returning from a print says nothing about the bytes having been sent.
-    ///
-    /// This is the fix for a defect the 2026-10-09 radon bench caught: `arch::reboot` printed its
-    /// line and called SBI SRST in the next microseconds, and the reset dropped power with the
-    /// UART mid-line, so neither the `soak-test-reboot:` detail nor `rebooting now` ever reached
-    /// the console log. The bound is `init`'s bound for `init`'s reason: at 115200 the drain takes
-    /// low milliseconds, a bound this size only trips on silicon that is not answering, and the
-    /// caller is about to reset the machine, where proceeding beats hanging.
+    /// Wait until every byte written has left the wire: polls `LSR_TEMT` (FIFO and shift register
+    /// idle), where [`write_byte`](Self::write_byte) only waits for room. Bounded like `init`'s
+    /// drain; the caller is about to reset the machine, where proceeding beats hanging.
     ///
     /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
     /// 2026-10-10: calef names public items.
@@ -328,17 +272,8 @@ impl<S: RegisterSpace> Ns16550<S> {
         }
     }
 
-    /// **Is a byte waiting to be read?** Reads LSR and consumes nothing, so the answer stays true
-    /// until [`discard_rx`](Self::discard_rx) takes the byte.
-    ///
-    /// This is milestone 249's escape from a self-rebooting soak, and the two properties that make
-    /// it the right mechanism are both in `LSR_DR`'s comment above: it is sticky, so a poll every
-    /// five seconds cannot miss a keypress, and it needs no interrupt, no PLIC route and no
-    /// userspace driver, so it works in a soak boot where the console has no reader at all.
-    ///
-    /// It cannot tell *which* byte arrived and deliberately does not try. Any byte stops the loop,
-    /// which means nothing has to agree on a magic character: a person mashing a key in `screen`
-    /// and a script writing one byte to the port are the same event.
+    /// Is a byte waiting to be read? Reads LSR and consumes nothing, so the answer stays true
+    /// until [`discard_rx`](Self::discard_rx) takes the byte. Any byte counts; needs no interrupt.
     ///
     /// Name: ratified 2026-09-24 (calef, #1255 review), provisional from milestone 249 (the boot
     /// lottery is sampled by a person walking to the board) until then.
@@ -347,41 +282,22 @@ impl<S: RegisterSpace> Ns16550<S> {
         self.read(LSR) & LSR_DR != 0
     }
 
-    /// **Take the byte, if one is waiting.** [`is_byte_waiting`](Self::is_byte_waiting) with the
-    /// read that consumes it, which is the pair milestone 41 deleted when the input path left the
-    /// kernel and milestone 198 (a package manager, and the trivial install that makes a second
-    /// customer possible)'s rung 2a needed back.
-    ///
-    /// **There is exactly one caller and it runs before userspace exists**: an installer's
-    /// confirmation, asked on the console the kernel is still the only holder of
-    /// (`kernel::console::read_line`). Once the progenitor has handed the UART to the input driver
-    /// this must not be called, because two readers of one FIFO lose bytes between them and neither
-    /// can tell.
+    /// Take the byte, if one is waiting. The one caller, `kernel::console::read_line`, runs before
+    /// userspace exists; once the progenitor has handed the UART to the input driver this must not
+    /// be called, because two readers of one FIFO lose bytes.
     ///
     /// Name: provisional (milestone 198's rung 2a): calef names public items.
     ///
-    /// Dead on riscv64, which shares this driver and has no install offer: `install_service` is
-    /// `x86_64` only for the reasons stated at its declaration. Allowed rather than `cfg`-ed, so
-    /// the method still compiles in every configuration; a receive path that only type-checks where
-    /// it is called is one that rots everywhere else.
+    /// Dead on riscv64, which has no install offer; allowed rather than `cfg`-ed, so it still
+    /// compiles there.
     #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
     pub fn read_byte(&self) -> Option<u8> {
         (self.read(LSR) & LSR_DR != 0).then(|| self.read(THR)) // THR on write is RBR on read.
     }
 
-    /// **Throw away everything currently in the receive buffer**, so that what arrives after this
-    /// call is what [`is_byte_waiting`](Self::is_byte_waiting) reports.
-    ///
-    /// Called once, when a rebooting soak arms itself. Without it the first check would fire on
-    /// U-Boot's leftovers rather than on a person: this board's firmware prints an autoboot
-    /// countdown that anything typed at it interrupts, so a console that has been sitting in front
-    /// of a human is a plausible source of a stray byte, and a stop that fires on boot 1 of 50 is a
-    /// silent way to get no distribution at all. It fails safe either way, which is why it is a
-    /// convenience rather than a correctness fix.
-    ///
-    /// Bounded, because an unbounded drain on a wire that is being written to continuously would
-    /// never return. Sixteen is the 16550's FIFO depth; four times that is slack for a part with a
-    /// deeper one and is still a fixed number of register reads.
+    /// Throw away everything in the receive buffer, so that what arrives after this call is what
+    /// [`is_byte_waiting`](Self::is_byte_waiting) reports (U-Boot's leftovers, for a soak arming).
+    /// Bounded at 64 reads, four times the FIFO depth, so a busy wire cannot hold it forever.
     ///
     /// Name: provisional since milestone 249 (the boot lottery is sampled by a person walking to
     /// the board), flagged again 2026-09-25 by the lane that re-derived the x86 port falsifications
@@ -396,32 +312,13 @@ impl<S: RegisterSpace> Ns16550<S> {
         }
     }
 
-    /// Turn on the transmit-holding-register-empty interrupt, and turn it off again.
+    /// Raise this UART's interrupt line: set `IER.ETBEI` with `LSR.THRE` set, which asserts at
+    /// once on a polling console. For the RISC-V interrupt-delivery tests, which have no SGI
+    /// (notes/interrupts.md, "Testing it on RISC-V, which has no SGI"). Test builds only.
     ///
-    /// A 16550 asserts its line the moment `IER.ETBEI` is set while `LSR.THRE` is already set, and
-    /// on a console that has just finished printing THRE is *always* set. So this pair is a way to
-    /// raise and lower this device's interrupt line with two register writes, no transfer, no
-    /// external stimulus and nothing to read back. That is what `kernel::sched`'s RISC-V
-    /// interrupt-delivery tests use in place of aarch64's SGI, which RISC-V has no equivalent of
-    /// (notes/interrupts.md, "Testing it on RISC-V, which has no SGI").
-    ///
-    /// It is 16550 architecture, not a QEMU behaviour, so it should carry to any 16550-compatible
-    /// part (the VisionFive 2's UART is a `DesignWare` 8250). Nothing in this kernel drives transmit
-    /// by interrupt (the console polls `LSR`), so an asserted THRE line has no other consumer.
-    ///
-    /// Test builds only: a production caller would be a transmit-interrupt console, which this is
-    /// deliberately not.
-    ///
-    /// **Waits for `LSR.THRE` first** (bench, 2026-08-21, VisionFive 2). A real 16550's
-    /// THRE-interrupt is edge-triggered inside the chip: setting `ETBEI` while THRE is *already*
-    /// 1 asserts at once, exactly as this function's doc above assumed, but setting it while THRE
-    /// is still 0 only arms the interrupt for the *next* 0->1 transition, which may not come for a
-    /// polling console with nothing queued to send. QEMU's model has no transmission latency, so
-    /// THRE reads back 1 the instant the previous byte's write instruction retires and the race
-    /// window this closes never opens there; real serial hardware still shifting out the boot
-    /// banner (or, on this board, this very driver's own diagnostic prints) can have THRE at 0 for
-    /// real time. Bounded the same way `init`'s busy-quirk drain is: a spin this size only ever
-    /// trips on silicon not answering at all.
+    /// Waits, bounded, for `LSR.THRE` first: on real silicon setting `ETBEI` while THRE is 0 only
+    /// arms the interrupt for the next 0-to-1 edge, which a polling console may never make. QEMU
+    /// has no transmit latency and never shows it. See notes/uart.md, "The NS16550 driver".
     ///
     /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
     /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
