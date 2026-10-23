@@ -90,11 +90,11 @@ The callers are the rebooting soak (`soak::watch`, behind `--features reboot_soa
 only after the escape in `console::is_byte_waiting` has been checked twice) and the reboot object's
 method, `kernel::reboot::restart`, in every build. Under QEMU `virt` OpenSBI implements type 1
 through the `sifive_test` device, and `script/soak-test --reboot --arch riscv64` proves it. radon's
-OpenSBI accepts type 1, and then its reset fails in the PMIC write ([milestone 249 (the boot lottery
-is sampled by a person walking to the
-board)](../../design/roadmap/0249-the-boot-lottery-is-sampled-by-a-person-walking-to-the-board.md);
+OpenSBI accepts type 1, and then its reset fails in the PMIC write. That is recorded in
+milestone 249 (the boot lottery is sampled by a person walking to the board),
+`design/roadmap/0249-the-boot-lottery-is-sampled-by-a-person-walking-to-the-board.md`, and in
 [notes/soak/rebooting-soak.md](../soak/rebooting-soak.md), "Verifying the reset before anything is
-left unattended").
+left unattended".
 
 ## BUGS
 
