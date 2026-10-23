@@ -13,7 +13,7 @@
 cap	kernel/	20
 in-body	kernel/	5289
 block	lines
-kernel/build.rs:142	23
+kernel/build.rs:144	23
 kernel/src/arch/aarch64/fp.rs:1	37
 kernel/src/arch/aarch64/gic_cpu_interface.rs:21	34
 kernel/src/arch/aarch64/instructions.rs:1	28
@@ -212,9 +212,6 @@ kernel/src/smp.rs:611	37
 kernel/src/smp.rs:950	38
 kernel/src/smp.rs:1112	31
 kernel/src/smp.rs:1222	22
-kernel/src/soak.rs:1	40
-kernel/src/soak.rs:419	21
-kernel/src/soak.rs:885	30
 kernel/src/stack.rs:1	28
 kernel/src/stack.rs:166	34
 kernel/src/stack.rs:293	28
