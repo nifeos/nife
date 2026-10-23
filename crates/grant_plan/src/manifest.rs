@@ -2,9 +2,8 @@
 //! the slots the progenitor endows at, `Manifest`, `StartupContract`, and the region a `std` image is built
 //! in.
 //!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
+//! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 

@@ -1,9 +1,8 @@
 //! **What each program is granted**: `Program::verbs` and `Program::manifest`, one arm per program.
 //! A child file of `program`, not a module of its own, for the reason that module's header gives.
 //!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
+//! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 

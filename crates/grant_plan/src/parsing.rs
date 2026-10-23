@@ -2,9 +2,8 @@
 //! and `ParsedInvocation`. `parse_run` is the only thing that builds a `ParsedInvocation`, so its fields stay private
 //! here (§272, fork 3).
 //!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
+//! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 

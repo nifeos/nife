@@ -2,42 +2,14 @@
 //! frame per filesystem client channel), milestone 685 (a job is finished when its memory is
 //! back)).
 //!
-//! The progenitor gives every directory-granted job a window of its own: a page of the file
-//! service's pool and the service's endpoint badged with the window's number. A window shared by
-//! two live jobs is the shared-channel race the pool exists to close, and worse once the window is
-//! bound (confinement claim 24 in `notes/confinement-claims.md`): the older job's badge resolves to
-//! the newer job's directory. So a window must not go to a new job while its last holder lives.
-//!
-//! This is the pool's bookkeeping alone, pure logic so the rule is tested on the host. The
-//! progenitor (`crates/system_initializer`) owns the capabilities and the binding.
+//! Every directory-granted job gets a window of its own: a page of the file service's pool and the
+//! service's endpoint badged with the window's number. [`Windows::take`] hands a window out only
+//! once its last holder has been reaped and its badge unbound, so no two live jobs share one
+//! (confinement claim 24). [`ReapsDue`] names the finished jobs whose reap is on its way. Pure
+//! logic, tested on the host; the progenitor (`crates/system_initializer`) owns the capabilities
+//! and the binding. See notes/bound-grants-in-the-progenitor.md, including its BUGS.
 //!
 //! Name: provisional (milestone 685's lane).
-//!
-//! The rule, since milestone 685: [`Windows::take`] hands a window only to a job when the job that
-//! last held it has been reaped, which the progenitor learns from `job_undertaker`'s "reaped"
-//! message (`crate::spawnproto::UNDERTAKER_BADGE`). Calef's ruling of 2026-10-06 (UTC), option A of
-//! `design/roadmap/0685-a-job-is-finished-when-its-memory-is-back.md`.
-//!
-//! [`ReapsDue`] is the other half of that message's use: which finished jobs the progenitor may
-//! wait for, when a pool is short, because their reap is on its way.
-//!
-//! **A bound window is unbound at its holder's reap, never at its reuse** (milestone 606 (a
-//! directory walk costs what it does on Linux), ruling D's "UNBIND at reap"). [`Windows::take`]
-//! skips a window whose bound bit is set, so the progenitor's `UNBIND`, at [`Windows::reaped`] or
-//! [`Windows::release`], has to have run before the window can go to anyone else.
-//!
-//! # BUGS
-//!
-//! - **A window whose `UNBIND` fails is never handed out again.** Its bound bit stays set and
-//!   [`Windows::take`] skips it for the life of the boot. The progenitor is the only caller allowed
-//!   `UNBIND` and it names a window it bound, so the file server has no reason to refuse it.
-//!   Leaking is the safe direction, as below.
-//! - **A window is only as free as the reaps that reach the progenitor.** A job that is never
-//!   reaped by `job_undertaker` keeps its window for the life of the boot. A screen-narrowed job
-//!   (DECISIONS §106 (the `terminal_sink_caretaker` narrowing)) is reaped by the shell, not the
-//!   undertaker, so one behind a directory grant would; no manifest in the tree is both today
-//!   (`mdr`, the one program that writes while it reads, forbids a directory). Leaking is the safe
-//!   direction: the pool refuses spawns, it never shares a window.
 
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.
@@ -139,11 +111,9 @@ pub const MAX_DUE: usize = 8;
 /// **The finished jobs whose reap is on its way** (milestone 685): jobs whose whole answer went to
 /// the shell's result endpoint, supervised by `job_undertaker`, not yet reaped.
 ///
-/// The shell reads such a job's answer to the end before it sends another request, so by the time
-/// any later request finds a pool short, that job has finished or is finishing, and waiting for its
-/// reap is waiting for an event that will come. A job whose output went elsewhere (a pipeline stage
-/// with a sink) may still be running and waiting on a stage the request in hand has not built yet,
-/// so it is not recorded here: waiting for it could wait forever.
+/// Waiting for such a reap waits for an event that will come; a job whose output went elsewhere
+/// may be waiting on a stage not yet built, so it is not recorded. See
+/// notes/bound-grants-in-the-progenitor.md.
 ///
 /// Name: provisional.
 pub struct ReapsDue {

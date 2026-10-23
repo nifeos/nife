@@ -1,46 +1,13 @@
 //! **`grant_plan`: the grant-expression logic of the capability shell** (milestone 31, phase 1).
 //!
 //! On a nife command line *designation is authorization* (Mark Miller's principle): naming a
-//! resource in a command is how you grant it, and a program that names nothing gets nothing beyond
-//! the report channel every spawn carries. The failure when a program needs something the command
-//! did not grant is legible ("you hold no such capability"), not a Unix-flavored EPERM.
-//!
-//! It performs no IO and makes no syscalls. It turns a line of bytes into a [`Command`], and for a
-//! program invocation an [`Endowment`] (exactly what to grant the child) or a typed [`Refusal`] the
-//! shell prints at the prompt, host-tested (DECISIONS §7 (testing: QEMU harness + host-testable
-//! crates)). See notes/grant-expression.md and notes/program-manifest.md.
-//!
-//! # The grammar
-//!
-//! ```text
-//! <prog> [-abc] [--mem N] [token ...]
-//! caps [command]
-//! time <command>
-//! help
-//! echo <text>
-//! ```
-//!
-//! `caps` and `time` are **prefix words**: their operand is a whole command line, operators
-//! included, kept unsplit for the shell to act on. Short options are checked against the program's
-//! [`Manifest`] at the prompt, because one of them can **widen a grant**: `rm -r logs` hands over
-//! the subtree that `rm logs` does not. A bare program name spawns it, and a bare token in a file
-//! position designates the file; read or write lives in the [`Manifest`].
-//!
-
-//! # The moving parts
-//!
-//! - [`parse`] tokenizes a command line into a [`Command`]. A first word that is not a builtin is a
-//!   program invocation, and everything after it is the `--mem N` budget grant plus **unclassified
-//!   positional tokens**: which token is the argument and which the file is the manifest's job.
-//! - A [`Manifest`] is a program's declared endowment: does it take an argument, does it require
-//!   (or forbid) a memory grant, may it be granted a file and in which direction, does it report
-//!   back. [`Program::manifest`] is the static table.
-//! - [`plan`] checks a parsed invocation against the named program's manifest, **placing the
-//!   positional tokens into the slots the manifest declares**, and yields an [`Endowment`] or a
-//!   [`Refusal`], at the prompt, before anything is spawned.
-//! - [`spawnproto`] is the word layout for the shell-to-progenitor spawn protocol, a userspace
-//!   protocol (DECISIONS §21 (the terminal is a userspace component)): the kernel routes the words and
-//!   never reads them.
+//! resource in a command is how you grant it. The crate performs no IO and makes no syscalls.
+//! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan`] places
+//! its tokens into the slots the program's [`Manifest`] declares ([`Program::manifest`]) and yields
+//! an [`Endowment`], exactly what to grant the child, or a typed [`Refusal`] the shell prints at the
+//! prompt. [`spawnproto`] is the word layout of the shell-to-progenitor spawn protocol. See
+//! notes/grant-expression/grant-plan-crate.md, notes/grant-expression.md and
+//! notes/program-manifest.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `capsh`. Refused `capsh` (Linux's
 //! `capsh(1)` is a different tool). Refused `designation`, `designate` and `designator` (the user

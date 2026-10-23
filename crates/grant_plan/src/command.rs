@@ -1,10 +1,7 @@
 //! **What a parsed line is, and what a grant holds**: `Command`, `Endowment`, the file and
 //! directory grants, `rm`'s option bits, and the shell's `Holdings`. `ParsedInvocation` is in `parsing`,
-//! beside the one function that builds it (§272, fork 3).
-//!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! beside the one function that builds it (§272 (the grant-plan crate root splits into private
+//! modules), fork 3). The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -28,31 +25,17 @@ pub enum Command<'a> {
     Caps(&'a [u8]),
     /// `time <command>`: run that command exactly as typed and say how long it took.
     ///
-    /// **The second prefix word, and it carries a whole command line for [`Caps`](Command::Caps)'s
-    /// reason**: `time date | wc` must time the pipeline, so the tail keeps its operators and the
-    /// shell re-dispatches it down the path it would have taken untimed. What you time is what you
-    /// run, the same way `caps` inspects what you would run.
-    ///
-    /// **It grants nothing.** The tail's endowment is the tail's; the *timing* is done with the
-    /// shell's own clock, so a child holding no clock at all can still be timed and no authority
-    /// moves because the word is on the line. That is what makes it a prefix word rather than a
-    /// program: a `time` program would have to be handed the thing it timed.
+    /// A prefix word, carrying a whole command line for [`Caps`](Command::Caps)'s reason: `time
+    /// date | wc` times the pipeline, so the tail keeps its operators and the shell re-dispatches
+    /// it as it would untimed. It grants nothing: the shell times the tail with its own clock, so a
+    /// child holding no clock can be timed. See notes/time-command.md.
     Time(&'a [u8]),
     /// `xargs <command>`: run that command once per **batch** of what its pattern matched
-    /// (milestone 109). The name is provisional.
+    /// (milestone 109 (`xargs`: batching a grant too large to hand over)). The name is provisional.
     ///
-    /// **The third prefix word, and it is a prefix word for the same reason the other two are**: its
-    /// operand is a whole command line, and what it changes is how the shell *runs* the line rather
-    /// than anything any program does. It grants nothing itself, which is the test [`Command::Time`] states:
-    /// a batching *program* would have to be handed the union of every batch, and there is no
-    /// carrier for that union. That is the premise of the whole milestone, so a program in the
-    /// middle could only hold the **directory**, which is milestone 47's rejected
-    /// "directory plus a name list" answer wearing a different hat.
-    ///
-    /// Unix can make `xargs` a program precisely because its `xargs` holds *nothing*: names in a
-    /// pipe are text, and `rm`'s authority comes from its uid. Here a name in a pipe is still text,
-    /// so a `find | xargs rm` analogue would spawn an `rm` holding no authority at all. The pipe
-    /// cannot carry the thing that has to be batched.
+    /// A prefix word that grants nothing, as [`Command::Time`] is. A batching program would have to
+    /// hold the whole directory, since nothing carries the union of the batches, and a name in a
+    /// pipe is text that grants a program nothing. See notes/glob-grant.md.
     Xargs(&'a [u8]),
     /// `cd [path]`: rebind the shell's position inside the directory capability it already holds.
     /// **A builtin, in the same category as `caps`**: it spawns nothing, grants nothing, and confers
@@ -73,50 +56,30 @@ pub enum Command<'a> {
     /// (`filesystem_contract::fs::MKDIR` is descend-with-creation). Needs `CREATE` **and** `DESCEND`.
     Mkdir(&'a [u8]),
     /// `touch <path>` or `touch -t <RFC-3339-instant> <path>`: create an empty file if the name is
-    /// not there (a no-op if it already is), then bump its modification time. Bare `touch` sets it
-    /// to now; `-t` asserts a caller-chosen instant (DECISIONS §112: the ability to *lie about
-    /// history*). **A builtin, in [`Mkdir`](Command::Mkdir)'s category rather than [`Program::Rm`]'s**:
-    /// even the `-t` half takes no more than this shell's own directory capability
-    /// (`filesystem_contract::dir::WRITE` for the bare form, `dir::WRITE | dir::SETTIME` for `-t`),
-    /// which `mkdir` and the create half already established as the model, so there is nothing to
-    /// attenuate and nothing gained by confining it to a program.
+    /// not there (a no-op if it already is), then set its modification time to now, or with `-t`
+    /// to a caller-chosen instant (DECISIONS §112: the ability to *lie about history*).
     ///
-    /// **This parser does not interpret the `-t` text.** [`TouchOperands::at`] carries the token
-    /// exactly as typed; `date`'s own `FMT_RFC3339` output is a valid input to it, so
-    /// `touch -t "$(date)" name` (RFC 3339 mode) round-trips through this shell without either
-    /// side inventing a format. Converting it to a Unix-seconds value is `calendar`'s job and
-    /// happens where the grant is made (`components/src/swish.rs`'s `touch`), the same layering `date`
-    /// itself uses: this crate classifies tokens, it does not do calendar arithmetic.
-    ///
-    /// See notes/touch.md for what is still not built (Unix's compact `[[CC]YY]MMDDhhmm[.ss]`
-    /// `-t` format is not accepted, only RFC 3339) and the wire verbs this dispatches to.
+    /// A builtin in [`Mkdir`](Command::Mkdir)'s category: both forms take only the shell's own
+    /// directory capability (`dir::WRITE`, and `dir::SETTIME` for `-t`). [`TouchOperands::at`]
+    /// carries the `-t` text unparsed; `calendar` reads it where the grant is made (`Nav::touch` in
+    /// `components/src/swish/navigation.rs`). See notes/touch.md.
     Touch(TouchOperands<'a>),
     /// `bind <target> <name>`: name a position this shell already reached some other way, so
-    /// `/<name>/...` reaches it too (milestone 47, "`bind` is not blocked on a mount table. It
-    /// is blocked on a second grant"; milestone 154 supplied the second grant, [`nav::Bindings`]
-    /// is the mechanism it unblocked). **A builtin, [`Mkdir`](Command::Mkdir)'s category**: it
-    /// mints no capability and spawns nothing, it only records a value this shell already
-    /// resolved, under a name.
+    /// `/<name>/...` reaches it too ([`nav::Bindings`]). A builtin in [`Mkdir`](Command::Mkdir)'s
+    /// category: it mints no capability and spawns nothing.
     ///
-    /// `target` is resolved exactly as any other operand is, at bind time, against wherever this
-    /// shell stands; `name` is the single component the bound entry is filed under. Neither is
-    /// tokenized further, the same "one opaque trailing blob" rule [`Command::Cd`] and
-    /// [`Command::Mkdir`] already take their one path operand as.
+    /// `target` is resolved at bind time against wherever this shell stands, as any operand is;
+    /// `name` is the single component the entry is filed under. Neither is tokenized further, as
+    /// [`Command::Cd`]'s and [`Command::Mkdir`]'s one path operand is not.
     Bind(&'a [u8], &'a [u8]),
-    /// `apropos <term>`: **name the installed pages that mention a word** (milestone 40 phase 2).
-    /// The operand is one word, folded the way the host builder folded the text it indexed.
+    /// `apropos <term>`: **name the installed pages that mention a word** (milestone 40 (documentation
+    /// as a system service) phase 2). The operand is one word, folded the way the host builder
+    /// folded the text it indexed.
     ///
-    /// **A builtin, in [`Ls`](Command::Ls)'s category rather than [`Program::Rm`]'s**, and the
-    /// argument is the one that milestone's own note reached: search *is* enumeration, the shell
-    /// already holds enumeration over what it can see, and a searching *program* would have to be
-    /// handed a capability to the whole documentation store in order to read every shard in it.
-    /// That is a wider grant than the answer needs and a new principal holding it, for a command
-    /// that moves no authority at all.
-    ///
-    /// **What it produces is names, never capabilities.** A result is a store location a person can
-    /// then type at `mdr`, and *that* line is where the grant happens, resolved against the
-    /// directory the shell holds exactly as any other designation is. So search cannot widen what
-    /// its caller could already reach, which is the property `mdr notes/ipc-naming.md` rests on.
+    /// A builtin in [`Ls`](Command::Ls)'s category: search is enumeration the shell already holds,
+    /// and a searching program would need the whole documentation store. It yields names, never
+    /// capabilities, so a grant happens only when a person types a result at a program. See
+    /// notes/documentation/apropos-builtin.md.
     Apropos(&'a [u8]),
     /// `vouch <path>`: **the owner vouches for a file's bytes** (DECISIONS §221 (the boot prompt is
     /// the owner's console)), so they run vouched, recorded under the path's last component. An
@@ -188,11 +151,9 @@ pub const MAX_SHORT_OPTIONS: usize = 8;
 /// Reading this is reading the whole endowment, which is §14's "one literal tells you a process's
 /// authority" made concrete.
 ///
-/// **It borrows nothing from the command line**, and that stopped being an accident with milestone
-/// 47's globbing lane: a name a pattern produced comes out of a directory listing rather than out of
-/// the line, so the grant has to own it. What falls out is the rule the rest of a grant already
-/// followed by hand ([`FileGrant::directory`] is a value, not a pointer at the shell): once an endowment
-/// is planned, nothing that happens afterwards can change what it means.
+/// **It borrows nothing from the command line**: a name a pattern produced comes out of a directory
+/// listing rather than out of the line, so the grant owns it. With [`FileGrant::directory`] a
+/// value, not a pointer at the shell, nothing after planning can change what an endowment means.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
     pub program: Program,
@@ -249,17 +210,10 @@ pub struct Endowment {
 /// authority; `filesystem_contract::grant` packs the name and the direction into the file caretaker's start
 /// arguments, and the directory is which capability the caretaker is handed to narrow.
 ///
-/// # The cwd stops at the process boundary, and this value is where that is true
-///
-/// `wc report.txt` resolves the name against the shell's position **at the moment the grant is
-/// made**, and this is that moment: [`plan_against`](crate::plan_against) walks any leading path once, here, and records
-/// where it landed. The child receives a capability to that one file. It has no cwd, inherits
-/// nothing, and cannot re-resolve anything, which is the point: a child that could re-resolve a name
-/// later would have ambient authority smuggled in through a string.
-///
-/// That [`dir`](FileGrant::directory) is a **value** rather than a reference to the shell's position is
-/// what makes it structural instead of a promise. A `cd` after this grant is planned cannot change
-/// what the grant means, because there is nothing here that points at the shell any more.
+/// [`directory`](FileGrant::directory) is where [`plan_against`](crate::plan_against) resolved
+/// the operand's leading path, held as a value, so a `cd` after planning cannot change what the
+/// grant means and the child has no cwd to re-resolve against. See notes/shell-navigation.md ("The
+/// cwd stops at the process boundary").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FileGrant {
     /// **Which of the shell's trees `dir` is in**, since milestone 154 (a process that holds two
@@ -280,33 +234,15 @@ pub struct FileGrant {
     pub writable: bool,
 }
 
-/// One resolved **directory** grant (milestone 47's `rm -r`, generalized by its globbing lane): the
-/// directory the child is handed a capability to, the **set of names** in it the program was told to
-/// act on, and whether that capability must reach below the directory or only name what is directly
-/// in it.
+/// One resolved **directory** grant: the directory the child is handed a capability to, the
+/// **set of names** in it the program was told to act on, and whether that capability must reach
+/// below the directory or only name what is directly in it. These three are the whole authority,
+/// which is what `caps rm -r logs` prints before anything happens.
 ///
-/// It is [`FileGrant`]'s shape one rung up, and the same rule holds for the same reason: `dir` is
-/// **where the operand's leading path landed, fixed at plan time**, as a value rather than a pointer
-/// at the shell, so a later `cd` cannot change what an already-planned grant means. The child holds
-/// a capability to that directory, has no cwd, and cannot re-resolve anything.
-///
-/// # Why the name is a set
-///
-/// `rm old.txt` designates one name and `rm *.txt` designates five hundred, and the roadmap's four
-/// candidate answers to what the second grants have one survivor: **a directory capability
-/// attenuated to a name set**. Five hundred file capabilities exhausts capability slots; the
-/// directory plus a name list over-grants catastrophically (the program could touch anything in that
-/// directory, which is the thing this model refuses); making `rm` a builtin dodges the question and
-/// costs `rm` as a program.
-///
-/// So [`names`](DirectoryGrant::names) is a set, a literal operand is the set of one, and the
-/// generalization is smaller than it looks: `fs_file_caretaker` already serves a namespace of
-/// exactly one name, and `components/src/fs_nameset_caretaker.rs` serves the same protocol over a wider
-/// one. **Nothing new in the kernel.**
-///
-/// **These three together are the whole authority**, which is what makes `caps rm -r logs` worth
-/// typing: the names at risk are printed before anything happens, and a bug in the program's
-/// recursion can only reach what this designates.
+/// It is [`FileGrant`]'s shape one rung up: the directory is fixed at plan time as a value. The
+/// names are a set because `rm *.txt` designates many, and a directory capability attenuated to
+/// a name set (`components/src/fs_nameset_caretaker.rs`) is the one answer that neither exhausts
+/// slots nor over-grants. A literal operand is the set of one. See notes/glob-grant.md.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -347,8 +283,7 @@ pub mod rmopt {
 /// This is why it is a parameter rather than a constant. "You hold no such capability" must be a
 /// statement about the shell's actual capability table, not a hardcoded era: the same command line is a
 /// refusal in a shell that was granted no directory and a real grant in one that was, and neither
-/// the parser nor the manifest can tell them apart. Phase 1 hardcoded the refusal, which was true
-/// then and would have quietly become a lie.
+/// the parser nor the manifest can tell them apart.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Holdings {
     /// The shell holds a directory capability it can narrow into a per-file grant.
