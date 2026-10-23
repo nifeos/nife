@@ -537,11 +537,11 @@ pub fn init(ivrs: &IvrsUnits) {
     let mut done = 0u32;
     for r in ivrs.unity_regions() {
         if r.first == 0 && r.last == 0xffff {
-            continue; // type 20h: see notes/amd-vi.md's BUGS
+            continue; // type 20h: see the BUGS in the AMD-Vi note
         }
         for id in r.first..=r.last {
             if done == 256 {
-                break; // a bound, not a rule: see notes/amd-vi.md's BUGS on IVMDs
+                break; // a bound, not a rule: see the AMD-Vi note's BUGS on IVMDs
             }
             if let Ok(Some((i, _))) = ivrs.owner_index(id) {
                 crate::iommu::confine(id as u32, &[]);

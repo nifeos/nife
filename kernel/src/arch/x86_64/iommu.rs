@@ -405,7 +405,7 @@ pub fn init(dmar: &DmarUnits) {
     for s in &dmar.rmrr_scopes[..dmar.rmrr_scope_count] {
         let region = dmar.rmrrs[s.unit as usize];
         if region.segment != 0 || s.kind != SCOPE_PCI_ENDPOINT {
-            continue; // see notes/iommu.md's BUGS on sub-hierarchy RMRR scopes
+            continue; // see the VT-d BUGS in the IOMMU note on sub-hierarchy RMRR scopes
         }
         let Some((bus, dev, func)) = s.resolve(&mut crate::pci::bridge_bus_range) else {
             continue; // the path names hardware that is not on this machine
