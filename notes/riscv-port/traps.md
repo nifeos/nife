@@ -82,6 +82,35 @@ back on the way out. `crate::fp::enable_for_current` has just loaded a register 
 gets Dirty. The arm serves S-mode too: milestone 447's concurrency proof runs as kernel threads,
 because every userspace target is soft-float.
 
+### `sstatus.FS`, and the quarter of it this kernel uses
+
+aarch64 has an on/off switch and x86 a one-bit "somebody else owns this". RISC-V has a four-state
+field in `sstatus[14:13]`, designed with context switching in mind:
+
+| value | name | meaning |
+|---|---|---|
+| `0b00` | Off | FP instructions raise an illegal-instruction trap |
+| `0b01` | Initial | the registers hold their initial values |
+| `0b10` | Clean | the registers match the copy in memory |
+| `0b11` | Dirty | the hardware set this because something wrote an FP register |
+
+Dirty is a hardware-maintained dirty bit. A kernel that keeps a thread's saved copy in a stable
+place could ask whether the registers were written since it loaded them, and skip the save if not.
+This kernel asks the coarser question anyway, using Off against everything else as a plain enable,
+because `crate::fp`'s rule is uniform across three ISAs and no workload yet measures the difference.
+That is a deliberate cost, recorded in that module's BUGS.
+
+Only the first-use handler has to set the frame's copy as well. Every later switch sets the live CSR
+from `crate::fp::hand_over` to match the incoming thread, whose frame carries the same value because
+it was captured while the same flag held.
+
+`fp::init` also turns off `sstatus.VS`, the vector unit's enable, because nothing saves vector
+state; a hart arriving from firmware with it open would let a thread keep vector state nobody saves
+or scrubs. The C906 and C910 implement vector 0.7.1 and keep its enable at bits 24:23 instead, so on
+a T-Head hart those are cleared too. Elsewhere they are reserved and the kernel does not write
+them. `fp::init` runs per hart from `sched::init` and `sched::adopt_secondary_idle`, because the
+RISC-V boot installs `stvec` directly and never passes through `arch::init`.
+
 ## Breakpoints and faults
 
 A breakpoint from S-mode is the trap self-test: counted and stepped over, by 2 bytes for the
@@ -159,3 +188,9 @@ hand-over, and the `blockdev` check's driver when a disk is attached.
   the page in that gap turns a permission fault into a translation fault, and a concurrent map does
   the reverse. Nothing unmaps a live user page today, and the tests fault a thread that owns its
   space alone, but no care here closes the gap.
+- A hart without D cannot run FP code. `sstatus.FS` is hardwired to zero there, so `fp::enable` does
+  not take, and the first-use trap becomes an ordinary fault: the thread dies with an illegal
+  instruction, which is the truth. Nothing tests it, because every machine in the matrix has D.
+- F without D is not handled. Such a part has 32-bit registers where `fp.s` writes 64, so the save
+  would be wrong rather than refused. `arch::isa` reads the ISA string and is where the check
+  belongs.
