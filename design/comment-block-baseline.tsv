@@ -154,8 +154,6 @@ kernel/src/pci.rs:604	34
 kernel/src/pci.rs:869	26
 kernel/src/preemption_window_tests.rs:1	32
 kernel/src/progenitor_stack.rs:1	40
-kernel/src/reboot.rs:1	32
-kernel/src/reboot/designware_i2c.rs:1	22
 kernel/src/retype_fault.rs:1	36
 kernel/src/revoke.rs:1	40
 kernel/src/revoke.rs:45	33

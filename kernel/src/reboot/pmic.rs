@@ -69,15 +69,19 @@ fn pmic_bus(
     ))
 }
 
+/// The AXP15060 direct-write route, on the machines that have the plan for it.
+///
+/// A no-op with no output everywhere else, including every machine CI boots. Returns only to say
+/// the attempt failed and the firmware route is next; a write the PMIC honors never comes back.
+/// See design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 #[cfg(target_arch = "riscv64")]
 pub(super) fn pmic_reset_attempt(marker: &str) {
     use jh7110_clock_and_reset::{PMIC_RESET_BIT, PMIC_RESET_REG};
     let Some((i2c, mode, address)) = pmic_bus(marker) else {
         return;
     };
-    // The register is read first so the write sets the reset bit alone and the PMIC's other bits
-    // keep whatever they hold, which is the difference between option B and the power-off bit 7
-    // radon's OpenSBI sets unconditionally.
+    // Read first, so the write sets the reset bit alone and never the power-off bit 7 that
+    // radon's OpenSBI sets.
     let mut current = [0u8; 1];
     if let Err(failure) = i2c.write_read(&mode, address, &[PMIC_RESET_REG], &mut current) {
         println!(
@@ -92,14 +96,11 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
          {PMIC_RESET_BIT} set, every other bit as found); this line is the last if the PMIC honors it",
         current[0],
     );
-    // The line above is the one the 2026-10-09 bench lost, so it goes out on the wire before the
-    // byte that may cut power behind it.
+    // Drained before the byte that may cut power, or the line above is lost.
     crate::console::drain();
     match i2c.write_read(&mode, address, &[PMIC_RESET_REG, value], &mut []) {
         Ok(()) => {
-            // The write completed and the board is still up: the PMIC acknowledged a byte it did
-            // not act on, or acts slower than the controller's stop. Say so and let the firmware
-            // route run rather than deciding the PMIC's timing from one round trip.
+            // Still up: the PMIC ignored the byte or is slower than the stop. The firmware is next.
             println!(
                 "{marker} AXP15060: write completed without a reset; the firmware route is next"
             );
@@ -110,20 +111,18 @@ pub(super) fn pmic_reset_attempt(marker: &str) {
     }
 }
 
-/// **What the PMIC remembers about the last power event**, printed and then cleared (milestone 225
-/// (run the soak on radon, argon and xenon)). A reset that prints nothing from the kernel, as E27's
-/// did, leaves no trace on the SoC side; the AXP15060 keeps its own. The registers are Linux's
-/// `axp20x.h` names: the startup source (`0x00`), the PWROK and power-off control (`0x1f`), the
-/// wake and shutdown-sequence controls (`0x31`, `0x32`), the interrupt enables (`0x40`, `0x41`) and
-/// the latched interrupt status (`0x48`, `0x49`: die temperature, DCDC under-voltage, the power key).
-/// The status is cleared after it is printed (write one to clear), so each boot reports only what
-/// happened since the boot before it. Name: provisional.
+/// Print what the AXP15060 remembers about the last power event, then clear its latched status.
+///
+/// A reset that prints nothing leaves no trace on the SoC side, and the PMIC keeps its own. Prints
+/// Linux's `axp20x.h` registers: startup source (`0x00`), PWROK and power-off (`0x1f`), wake and
+/// shutdown sequence (`0x31`, `0x32`), interrupt enables (`0x40`, `0x41`) and latched status
+/// (`0x48`, `0x49`), cleared after, so each boot reports only what happened since the last.
+/// Name: provisional.
 #[cfg(all(target_arch = "riscv64", feature = "reboot_soak_test"))]
 pub(crate) fn pmic_report(marker: &str) {
     const SHOWN: [u8; 8] = [0x00, 0x1f, 0x31, 0x32, 0x40, 0x41, 0x48, 0x49];
     const STATUS: [u8; 2] = [0x48, 0x49];
-    // The PMIC's I2C controller comes out of the firmware gated and held in reset; the reset route
-    // ungates it the same way before it speaks to the PMIC.
+    // The controller comes out of the firmware gated and in reset; ungate it as the reset does.
     super::prepare_reset_route(marker);
     let Some((i2c, mode, address)) = pmic_bus(marker) else {
         println!("{marker} AXP15060 report: this tree names no PMIC bus");
@@ -153,7 +152,8 @@ pub(crate) fn pmic_report(marker: &str) {
 }
 
 /// The aarch64 and x86_64 halves have no PMIC route: their firmware interfaces (PSCI, the FADT
-/// register) are the whole story, so [`cold_reset`](super::cold_reset) goes straight to `arch::reboot`.
+/// register) are the whole story, so [`cold_reset`](super::cold_reset) goes straight to
+/// `arch::reboot`.
 #[cfg(not(target_arch = "riscv64"))]
 pub(super) fn pmic_reset_attempt(marker: &str) {
     let _ = marker;
