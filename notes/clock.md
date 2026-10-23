@@ -153,6 +153,44 @@ the machine said rather than from `target_arch`. That is not fastidiousness: the
 riscv64 and has neither of these devices, so an ISA-keyed driver would compile clean and read
 garbage on the first real board.
 
+## The x86 CMOS RTC, read by the kernel
+
+x86's real-time clock is the CMOS RTC behind two fixed I/O ports, `0x70` (index) and `0x71`
+(data). There is no page, so no device capability can map it. §121 keeps every x86 legacy port
+kernel-side rather than paying a port-range capability's measured 1.5 to 2.7 us per context switch
+for a device a boot reads once. So, unlike the PL031 and Goldfish drivers above, nothing in
+userspace touches it: `arch::x86_64::rtc` reads it once per clock-service spawn and the service
+receives the converted reading as a `Spawn` argument (`clock_contract::rtc::CMOS`).
+
+| register | what it holds |
+|---|---|
+| `0x00` | seconds |
+| `0x02` | minutes |
+| `0x04` | hours, bit 7 the PM flag in 12-hour mode |
+| `0x07` | day of month |
+| `0x08` | month |
+| `0x09` | year, two digits, no century |
+| `0x0A` | status A; bit 7 is Update In Progress (UIP) |
+| `0x0B` | status B; bit 2 binary (1) or BCD (0), bit 1 24-hour (1) or 12-hour (0) |
+
+Every field but status B may be BCD. Status B says which, so it is read after the six date and
+time registers.
+
+### Tearing
+
+The update cycle rewrites the time and date bytes about once a second. A read that lands mid-update
+can pair a minute of 59 with an hour that already rolled over. UIP going low promises the previous
+update finished, not that the next will not start before the first port read. So the driver takes
+two full snapshots, each after its own UIP wait, and retries until they agree. A real BIOS RTC
+driver does the same (the `OSDev` wiki's CMOS page documents it).
+
+### The century
+
+Most firmware exposes a non-standard century byte at a chipset-specific index (`0x32` on many; the
+FADT names it when it exists). The driver does not read it. Every machine able to run this kernel
+is past 2000, so the year decodes as `2000 + value`. Linux's `drivers/rtc/rtc-cmos.c` makes the
+same assumption.
+
 ## Where the interactive boot puts it (milestone 51's wiring)
 
 Both ISAs' interactive boots start the clock service before the progenitor exists and grant the progenitor the

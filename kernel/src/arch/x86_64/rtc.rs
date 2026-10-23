@@ -1,65 +1,13 @@
-//! **The CMOS real-time clock**, kernel-resident by construction (DECISIONS §121, §130;
-//! milestone 176's piece 2).
-//!
-//! Two fixed I/O ports, `0x70` (index) and `0x71` (data), is all there is: no page, so no device
-//! capability could ever map it, and §121's current recommendation keeps every x86 legacy port
-//! kernel-side rather than paying a port-range capability's measured ~1.5-2.7 us per-context-switch
-//! cost for a device a boot reads exactly once. So unlike `components/src/clock.rs`'s PL031 and Goldfish
-//! drivers, which map their device and poll it themselves, nothing in userspace ever touches this
-//! one: the kernel reads it here, once per clock-service spawn, and
-//! `kernel::user::clock_service::start` hands the already-converted reading across as a plain
-//! `Spawn` argument (`clock_contract::rtc::CMOS`). Same shape as `arch::x86_64::timer`'s PIT
-//! calibration: kernel-side, boot-time, `in`/`out` only, sub-microsecond.
-//!
-//! # The register map
-//!
-//! | Register | What it holds |
-//! |---|---|
-//! | `0x00` | seconds |
-//! | `0x02` | minutes |
-//! | `0x04` | hours, with bit 7 the PM flag in 12-hour mode |
-//! | `0x07` | day of month |
-//! | `0x08` | month |
-//! | `0x09` | year, two digits, no century (see below) |
-//! | `0x0A` | status register A; bit 7 is Update In Progress (UIP) |
-//! | `0x0B` | status register B; bit 2 is binary(1)/BCD(0), bit 1 is 24-hour(1)/12-hour(0) |
-//!
-//! Every field but status register B may be BCD (packed decimal, one digit per nibble) rather than
-//! binary; which one this machine uses is itself a CMOS field, read *after* the six date/time
-//! registers precisely because it says how to interpret them.
-//!
-
-//! # Tearing: UIP is necessary and not sufficient
-//!
-//! The RTC's update cycle rewrites all ten time/date bytes roughly once a second, and a read that
-//! lands mid-update can see some old bytes and some new ones (a minute of 59 paired with an hour
-//! that already rolled over, for instance). UIP going low promises the *previous* update has
-//! finished; it does not promise the *next* one will not begin between that check and this file's
-//! first port read, so a single poll-then-read is not enough. This driver takes two full snapshots,
-//! each preceded by its own UIP wait, and retries if they disagree: the standard shape (the
-//! `OSDev` wiki's CMOS page documents the same double-read-and-compare a real BIOS RTC driver
-//! uses).
-//!
-//! # The century, which this machine does not tell you
-//!
-//! Most PC firmware exposes an eleventh, non-standard byte for the century, at a port that varies by
-//! chipset (`0x32` on many, and ACPI's FADT names whichever one a given machine actually uses when
-//! it does at all). This driver does not read it: every machine capable of running this kernel is
-//! past the year 2000, so the CMOS year is decoded as `2000 + value` rather than located and
-//! trusted. Linux's own RTC driver (`drivers/rtc/rtc-cmos.c`) makes the identical assumption for the
-//! identical reason.
+//! The CMOS real-time clock, read by the kernel (§121, §130; milestone 176's piece 2): two fixed
+//! I/O ports and no page, so no device capability maps it. It is read once per clock-service spawn,
+//! and `kernel::user::clock_service::start` passes the reading as a `Spawn` argument
+//! (`clock_contract::rtc::CMOS`). Two snapshots, each after its own UIP wait, must agree. See
+//! notes/clock.md for the register map, tearing and the century.
 //!
 //! # BUGS
-//!
-//! - **No century byte, so a date before 2000 or after 2099 cannot be represented.** Not the failure
-//!   mode this file is built for; see above.
-//! - **Daylight saving and the alarm/periodic-interrupt registers are untouched.** This kernel reads
-//!   the clock once and never again (`clock_contract`'s wall clock is counter-plus-offset from then
-//!   on), so nothing here needs an alarm, a periodic tick, or status register B's DST bit.
-//! - **Not proven against real hardware.** QEMU's CMOS is a straightforward MC146818A model seeded
-//!   from the host clock; a real board's chipset (milestone 87's `OptiPlex`) may exercise a branch
-//!   this never observed in testing, though every branch here is the documented behavior of the
-//!   standard part.
+//! - No century byte: the year is `2000 + value`, so dates outside 2000..=2099 cannot be read.
+//! - Daylight saving and the alarm and periodic-interrupt registers are untouched.
+//! - Not proven against real hardware, only QEMU's MC146818A model.
 
 use super::port::{in8, out8};
 
@@ -154,8 +102,8 @@ pub(crate) fn read_unix_nanos() -> Option<u64> {
         if first == second {
             break first;
         }
-        // The two snapshots disagree: an update began between them. Loop and take two more; see
-        // the module doc's "Tearing" section for why one UIP wait alone is not enough.
+        // An update began between the snapshots; one UIP wait alone is not enough
+        // (notes/clock.md, "Tearing").
     };
 
     let status_b = read(REG_STATUS_B);
@@ -190,7 +138,7 @@ pub(crate) fn read_unix_nanos() -> Option<u64> {
         (false, false, h) => h,
     };
 
-    // No century byte; see the module doc's "The century" section.
+    // No century byte; see notes/clock.md.
     let year = 2000 + i32::from(year);
 
     let civil = calendar::Civil::new(year, month, day, hour, minute, second).ok()?;
