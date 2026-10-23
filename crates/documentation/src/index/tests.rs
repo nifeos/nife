@@ -1,9 +1,9 @@
 use super::*;
 
+/// The one property that makes a lookup possible at all: the builder's tokeniser and the
+/// reader's query normaliser must agree, byte for byte, on what a term is.
 #[test]
 fn a_query_folds_the_way_the_text_did() {
-    // The one property that makes a lookup possible at all: the builder's tokeniser and the
-    // reader's query normaliser must agree, byte for byte, on what a term is.
     let mut buf = [0u8; TERM_MAX];
     let n = normalize(b"Capability!", &mut buf);
     assert_eq!(&buf[..n], b"capability");
@@ -25,13 +25,11 @@ fn a_query_folds_the_way_the_text_did() {
     assert_eq!(&seen[1][..lens[1]], b"frame");
 }
 
+/// **The underscore case of the test above.** `normalize` drops every non-alphanumeric byte, so
+/// a reader typing `line_editor` looks up `lineeditor`, and the tokeniser must have written that
+/// term. See notes/documentation/underscore-terms.md.
 #[test]
 fn an_underscore_name_is_searchable_as_itself() {
-    // **The case the test above asserted and did not check.** `normalize` drops every
-    // non-alphanumeric byte, so a reader typing `line_editor` looks up `lineeditor`; until
-    // 2026-08-18 the tokeniser only ever wrote `line` and `editor`, so that lookup could not
-    // match however many pages said the name. In a repository whose prose is full of
-    // `snake_case` identifiers, that is most of what anybody would search for.
     let mut key = [0u8; TERM_MAX];
     let n = normalize(b"line_editor", &mut key);
     assert_eq!(&key[..n], b"lineeditor");
@@ -72,10 +70,10 @@ fn a_header_that_is_not_one_is_refused() {
     assert_eq!(Header::parse(&[0u8; 8]), Err(Error::Truncated));
 }
 
+/// A reader that ignored the version would go on to binary-search a term table whose record
+/// size it is guessing.
 #[test]
 fn a_shard_from_another_version_is_refused_rather_than_read() {
-    // The field the builder has always written and nothing read until phase 2. A reader that
-    // ignored it would go on to binary-search a term table whose record size it is guessing.
     let mut first = [0u8; 64];
     first[..8].copy_from_slice(&MAGIC);
     first[8..12].copy_from_slice(&VERSION.to_le_bytes());
@@ -140,11 +138,11 @@ fn every_term_the_builder_wrote_is_found_by_the_reader() {
     assert!(lookup(&h, b"absent", &mut src).is_none());
 }
 
+/// The property the whole layout exists for: a reader that holds one page never sees half a
+/// record. It is a claim about the offsets, so it is checked on the offsets.
 #[cfg(feature = "builder")]
 #[test]
 fn a_record_never_straddles_a_page() {
-    // The property the whole layout exists for: a reader that holds one page never sees half a
-    // record. It is a claim about the offsets, so it is checked on the offsets.
     let bytes = build(&[Source {
         path: "a",
         title: "A",
@@ -160,13 +158,13 @@ fn a_record_never_straddles_a_page() {
     assert_eq!(h.total as usize, bytes.len());
 }
 
+/// Two bundles, as the store really has: each is built and searched on its own, and the
+/// answer is the merge. This is the roadmap's "the index is a merge of shards", and it is
+/// also the property that makes installing a component make its documentation searchable
+/// without a reindex pass.
 #[cfg(feature = "builder")]
 #[test]
 fn a_search_merges_two_shards_and_ranks_them_by_count() {
-    // Two bundles, as the store really has: each is built and searched on its own, and the
-    // answer is the merge. This is the roadmap's "the index is a merge of shards", and it is
-    // also the property that makes installing a component make its documentation searchable
-    // without a reindex pass.
     let swish = build(&[Source {
         path: "notes/pipes.md",
         title: "Pipes and redirection",
@@ -204,12 +202,12 @@ fn a_search_merges_two_shards_and_ranks_them_by_count() {
     assert_eq!(none.offered(), 0);
 }
 
+/// The bound that lets the shell run this in `.bss`: more matching pages than the table
+/// holds, kept in count order, with the total still reported so the caller does not imply a
+/// complete answer.
 #[cfg(feature = "builder")]
 #[test]
 fn a_search_keeps_the_best_sixteen_and_counts_the_rest() {
-    // The bound that lets the shell run this in `.bss`: more matching pages than the table
-    // holds, kept in count order, with the total still reported so the caller does not imply a
-    // complete answer.
     use alloc::string::String;
     use alloc::vec::Vec;
 
@@ -252,12 +250,12 @@ fn a_search_keeps_the_best_sixteen_and_counts_the_rest() {
     }
 }
 
+/// The property `notes/documentation.md`'s "where this goes next" named and priced: a short page
+/// where a term is dense outranks a long page where the same term is only mentioned in
+/// passing, even though the long page's raw occurrence count is higher.
 #[cfg(feature = "builder")]
 #[test]
 fn ranking_divides_by_page_length() {
-    // The property `notes/documentation.md`'s "where this goes next" named and priced: a short page
-    // where a term is dense outranks a long page where the same term is only mentioned in
-    // passing, even though the long page's raw occurrence count is higher.
     let short = build(&[Source {
         path: "short.md",
         title: "Short",
@@ -300,19 +298,16 @@ fn ranking_divides_by_page_length() {
     assert_eq!(out[1].location(), b"doc/b/long.md");
 }
 
-// ---- milestone 280: what the mutation sweep found nothing asserting ---------------------
+// ---- what the mutation sweep found nothing asserting -----------------------------------
 //
-// Each of these was written against a surviving mutant. Half this crate's index tests need the
-// `builder` feature to make an index to read, and until milestone 280 `cargo test -p
-// documentation` did not have it, so the sweep scored the reader against a suite missing them.
-// These are the gaps that were left once it did. See notes/mutation-testing.md.
+// Each of these kills a mutant that survived the rest of the suite. See notes/mutation-testing.md.
 
+/// Both of the tokeniser's buffers are exactly `TERM_MAX` and both are written by index, so
+/// the bound is the difference between a truncated term and a panic in a `no_std` reader.
+/// `normalize` had this test and `tokens` did not, and the two write different buffers: the
+/// second is the underscore-joined compound, which overflows on a shorter source word.
 #[test]
 fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past() {
-    // Both of the tokeniser's buffers are exactly `TERM_MAX` and both are written by index, so
-    // the bound is the difference between a truncated term and a panic in a `no_std` reader.
-    // `normalize` had this test and `tokens` did not, and the two write different buffers: the
-    // second is the underscore-joined compound, which overflows on a shorter source word.
     let mut seen = [[0u8; TERM_MAX]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
@@ -338,11 +333,11 @@ fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past()
     );
 }
 
+/// The tokeniser emits the compound when a separator ends the name; a name that ends the
+/// TEXT reaches the tail block instead, which is a second copy of the same three tests. A
+/// page whose last word is an identifier is ordinary, and nothing exercised that path.
 #[test]
 fn an_underscore_name_at_the_end_of_the_text_is_still_joined() {
-    // The tokeniser emits the compound when a separator ends the name; a name that ends the
-    // TEXT reaches the tail block instead, which is a second copy of the same three tests. A
-    // page whose last word is an identifier is ordinary, and nothing exercised that path.
     let mut seen = [[0u8; TERM_MAX]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
@@ -361,12 +356,12 @@ fn an_underscore_name_at_the_end_of_the_text_is_still_joined() {
     assert!(has(b"grant") && has(b"plan"));
 }
 
+/// The part counter is what stops an ordinary word being offered twice as its own compound,
+/// and it only counts runs that had characters in them. A pair of separators (`", "`, which
+/// this repository's prose is full of) increments nothing, and a trailing underscore is the
+/// same test in the tail block.
 #[test]
 fn a_word_is_offered_once_however_much_punctuation_precedes_it() {
-    // The part counter is what stops an ordinary word being offered twice as its own compound,
-    // and it only counts runs that had characters in them. A pair of separators (`", "`, which
-    // this repository's prose is full of) increments nothing, and a trailing underscore is the
-    // same test in the tail block.
     let count = |text: &'static [u8], want: &[u8]| {
         let mut n = 0;
         tokens(text, |t| {
@@ -380,13 +375,13 @@ fn a_word_is_offered_once_however_much_punctuation_precedes_it() {
     assert_eq!(count(b"ab_", b"ab"), 1);
 }
 
+/// Two refusals that share one `if`, so a test for either alone leaves the other's mutant
+/// alive: a query that folds to no term at all, and a well-formed query against a shard with
+/// no terms in it. Both are `None`, and neither may reach the binary search, which would be
+/// comparing against a key of no bytes or probing a table that is not there.
 #[cfg(feature = "builder")]
 #[test]
 fn a_query_that_names_nothing_is_answered_rather_than_searched() {
-    // Two refusals that share one `if`, so a test for either alone leaves the other's mutant
-    // alive: a query that folds to no term at all, and a well-formed query against a shard with
-    // no terms in it. Both are `None`, and neither may reach the binary search, which would be
-    // comparing against a key of no bytes or probing a table that is not there.
     let bytes = build(&[Source {
         path: "a.md",
         title: "A",
@@ -408,13 +403,13 @@ fn a_query_that_names_nothing_is_answered_rather_than_searched() {
     assert!(lookup(&eh, b"one", &mut Slice(&empty)).is_none());
 }
 
+/// The binary search is over pages, and its last page is `(terms - 1) / per`. Every arity
+/// the other tests use hides the `- 1`: it only changes the answer when the record count is
+/// an exact multiple of the 128 records a page holds, which is where the table ends flush
+/// with a page boundary and a search that rounded up would probe past it.
 #[cfg(feature = "builder")]
 #[test]
 fn a_term_table_that_exactly_fills_a_page_is_searched_to_its_last_record() {
-    // The binary search is over pages, and its last page is `(terms - 1) / per`. Every arity
-    // the other tests use hides the `- 1`: it only changes the answer when the record count is
-    // an exact multiple of the 128 records a page holds, which is where the table ends flush
-    // with a page boundary and a search that rounded up would probe past it.
     let per = PAGE / TERM_REC;
     let mut text = alloc::string::String::new();
     let mut want: alloc::vec::Vec<alloc::string::String> = alloc::vec::Vec::new();
@@ -443,13 +438,13 @@ fn a_term_table_that_exactly_fills_a_page_is_searched_to_its_last_record() {
     }
 }
 
+/// Both sections are paged and both divisions were exercised only in their first page. A
+/// page record is 128 bytes, so 32 fit a page; a posting is 4 bytes, so 1024 do. This corpus
+/// is past both, which is what makes `i / per` and `i % per` different from `i` and makes
+/// the postings loop cross a page boundary mid-term.
 #[cfg(feature = "builder")]
 #[test]
 fn a_store_with_more_pages_and_postings_than_fit_one_page_reads_them_all() {
-    // Both sections are paged and both divisions were exercised only in their first page. A
-    // page record is 128 bytes, so 32 fit a page; a posting is 4 bytes, so 1024 do. This corpus
-    // is past both, which is what makes `i / per` and `i % per` different from `i` and makes
-    // the postings loop cross a page boundary mid-term.
     use alloc::string::String;
     use alloc::vec::Vec;
     let n = PAGE / POST_REC + 40;
@@ -496,12 +491,12 @@ fn a_store_with_more_pages_and_postings_than_fit_one_page_reads_them_all() {
     assert!(seen.iter().all(|&b| b), "a page record was never reached");
 }
 
+/// `Found::is_truncated` had no test at all, in either direction, so both of its mutants
+/// survived. It is the same promise the renderer makes about a long line: losing text is
+/// allowed, losing it silently is not.
 #[cfg(feature = "builder")]
 #[test]
 fn a_location_too_long_for_the_field_is_truncated_and_says_so() {
-    // `Found::is_truncated` had no test at all, in either direction, so both of its mutants
-    // survived. It is the same promise the renderer makes about a long line: losing text is
-    // allowed, losing it silently is not.
     let long_name = "a".repeat(60);
     let path = alloc::format!("notes/{long_name}.md");
     let bytes = build(&[Source {
@@ -531,12 +526,12 @@ fn a_location_too_long_for_the_field_is_truncated_and_says_so() {
     assert!(fits.results()[0].location().starts_with(b"doc/swish/"));
 }
 
+/// Every existing merge test offers its results strongest first, so nothing ever moved: the
+/// shift that makes room for a late strong result had no test, and neither did the walk
+/// running the full length of a full table. `offer` takes fields rather than a record for
+/// exactly this reason, so neither needs a shard.
 #[test]
 fn the_merge_shifts_what_a_stronger_result_displaces() {
-    // Every existing merge test offers its results strongest first, so nothing ever moved: the
-    // shift that makes room for a late strong result had no test, and neither did the walk
-    // running the full length of a full table. `offer` takes fields rather than a record for
-    // exactly this reason, so neither needs a shard.
     let mut r = Ranked::new();
     // Weak first, then strong: the second has to displace the first rather than land after it.
     r.offer(b"b", b"weak.md", b"Weak", 1, 100);
@@ -561,14 +556,14 @@ fn the_merge_shifts_what_a_stronger_result_displaces() {
     assert_eq!(full.results()[0].count as usize, RESULTS_MAX + 4);
 }
 
+/// The truncation flag is a single comparison over a sum of five terms, and a location far
+/// over the limit says the same thing as one a byte over: every mutant of that sum still
+/// lands above it. The two sides of the boundary are what tell them apart, so they are what
+/// this asserts. `offer` takes the fields rather than a record, which is why no shard is
+/// needed to build a path of an exact length.
+/// `doc/` and `/` are the two separators, so a location is 3 + 1 + bundle + 1 + base.
 #[test]
 fn a_location_exactly_as_long_as_the_field_is_not_truncated() {
-    // The truncation flag is a single comparison over a sum of five terms, and a location far
-    // over the limit says the same thing as one a byte over: every mutant of that sum still
-    // lands above it. The two sides of the boundary are what tell them apart, so they are what
-    // this asserts. `offer` takes the fields rather than a record, which is why no shard is
-    // needed to build a path of an exact length.
-    // `doc/` and `/` are the two separators, so a location is 3 + 1 + bundle + 1 + base.
     let base = "a".repeat(40);
     let exact = "b".repeat(LOCATION_MAX - STORE_DIR.len() - 2 - base.len());
     let mut r = Ranked::new();
@@ -597,12 +592,12 @@ fn a_location_exactly_as_long_as_the_field_is_not_truncated() {
     );
 }
 
+/// The part counter again, on the case the first test could not reach: a separator that is
+/// an underscore does NOT reset the compound, so two of them in a row leave the counter
+/// where a mutant that counts empty runs would have moved it. `__rust_alloc` is how this
+/// repository writes the symbol, so a leading pair is ordinary prose here.
 #[test]
 fn a_word_preceded_by_underscores_is_still_offered_once() {
-    // The part counter again, on the case the first test could not reach: a separator that is
-    // an underscore does NOT reset the compound, so two of them in a row leave the counter
-    // where a mutant that counts empty runs would have moved it. `__rust_alloc` is how this
-    // repository writes the symbol, so a leading pair is ordinary prose here.
     let mut n = 0;
     tokens(b"see __alloc", |t| {
         if t == b"alloc" {
@@ -612,14 +607,14 @@ fn a_word_preceded_by_underscores_is_still_offered_once() {
     assert_eq!(n, 1);
 }
 
+/// The narrowest arity in the layout: one record more than a page holds, so the last page
+/// carries exactly one term and the count of records to search there is exactly one. Every
+/// other size in these tests leaves that count comfortably large, which is what let an
+/// arithmetic mutant that drives it to zero survive; here a term that is really there is
+/// simply not found.
 #[cfg(feature = "builder")]
 #[test]
 fn a_term_on_the_last_page_of_a_table_that_just_spilled_is_still_found() {
-    // The narrowest arity in the layout: one record more than a page holds, so the last page
-    // carries exactly one term and the count of records to search there is exactly one. Every
-    // other size in these tests leaves that count comfortably large, which is what let an
-    // arithmetic mutant that drives it to zero survive; here a term that is really there is
-    // simply not found.
     let per = PAGE / TERM_REC;
     let mut text = alloc::string::String::new();
     for i in 0..per + 1 {
@@ -639,15 +634,15 @@ fn a_term_on_the_last_page_of_a_table_that_just_spilled_is_still_found() {
     );
 }
 
+/// `notes/documentation.md` prices page alignment at a four-page floor (16 KiB) under every
+/// bundle however small: the header, the page records, the terms and the postings, one page
+/// each. It is the cost that decided bundle granularity, and nothing asserted it, so a
+/// mutant that multiplied the section offsets instead of adding them produced a
+/// sixteen-megabyte shard that every other test read back perfectly, because the reader
+/// takes its offsets from the same header the builder wrote.
 #[cfg(feature = "builder")]
 #[test]
 fn a_small_bundle_is_the_four_page_floor_and_not_a_megabyte() {
-    // `notes/documentation.md` prices page alignment at a four-page floor (16 KiB) under every
-    // bundle however small: the header, the page records, the terms and the postings, one page
-    // each. It is the cost that decided bundle granularity, and nothing asserted it, so a
-    // mutant that multiplied the section offsets instead of adding them produced a
-    // sixteen-megabyte shard that every other test read back perfectly, because the reader
-    // takes its offsets from the same header the builder wrote.
     let bytes = build(&[Source {
         path: "a.md",
         title: "A",

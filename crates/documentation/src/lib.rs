@@ -1,23 +1,12 @@
 //! **The documentation crate**: markdown in, styled terminal bytes out, and the index that says
-//! what exists. It is the pure half of the documentation service: a renderer (`render`, behind the
-//! `markdown` feature), the byte layout of a search index ([`index`]), and the query that reads one.
-//! No IO, syscall or endpoint is in it; `mdr/` is the program. The crate and program names differ on
-//! purpose: the crate is a superset of what the program does.
-//!
-//! The parser is `pulldown-cmark`, so the input is CommonMark with tables and strikethrough. What a
-//! page looks like on a terminal is this crate's: wrapped paragraphs at a two-column margin,
-//! capitalised level-one headings, hanging list items, block quotes ruled with `|`, verbatim code
-//! blocks, link and image destinations shown beside their text, and aligned tables.
+//! what exists. It holds a renderer (`render`, feature `markdown`), the search index's byte layout
+//! and its query ([`index`]), and no IO; `mdr/` is the program. See notes/documentation.md.
 //!
 //! # BUGS
-//!
 //! - Width counts characters, not columns, so a wide CJK character counts as one.
-//! - A table wider than the terminal shrinks its widest column, and a shrunk cell loses its tail on
-//!   screen. Nothing wraps a cell.
-//! - HTML is shown as the text it is, and a link reference definition (`[x]: url`) prints nothing of
-//!   its own: its destination appears beside each link that uses it.
-//! - An ordered list is numbered `1.` style whatever its source used, since the parser does not
-//!   report whether the author wrote `1)`.
+//! - A table wider than the terminal shrinks its widest column, and a shrunk cell loses its tail.
+//! - HTML is shown as text, a link reference definition (`[x]: url`) prints nothing of its own, and
+//!   an ordered list is numbered `1.` whatever its source used.
 //!
 //! Name: ratified 2026-09-13 (calef). Refused `manual`, `doc`, `documentation_system`, `markdown`.
 

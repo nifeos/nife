@@ -1,16 +1,10 @@
 //! The terminal renderer: markdown in, styled terminal bytes out.
 //!
-//! **`pulldown-cmark` parses and this lays out.** The parser turns the document into a stream of
-//! events (a paragraph starts, some text, a code span, the paragraph ends), which is the CommonMark
-//! grammar with tables and strikethrough added. Everything that decides what a page looks like on
-//! a terminal is this file's: the two-column body margin, level-one headings in capitals, list items
-//! that hang under their text, a `|` rule per block-quote level, code blocks verbatim and never
-//! wrapped, a link's destination shown beside its text, and tables aligned to their widest cell and
-//! shrunk to fit the width.
-//!
-//! The whole document is in memory before a byte is drawn, because CommonMark's grammar needs it
-//! (a link's destination can be defined at the foot of the page). That is why `mdr` is a `std`
-//! program with a heap rather than the streaming `no_std` one it was.
+//! `pulldown-cmark` parses CommonMark, with tables and strikethrough, into events, and this lays
+//! them out: a two-column margin, level-one headings in capitals, hanging list items, a `|` rule
+//! per quote level, verbatim code, link destinations beside their text, and tables fitted to the
+//! width. The whole document is in memory before a byte is drawn, because a link's destination
+//! can be defined at the foot of the page; that is why `mdr` is a `std` program with a heap.
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -58,9 +52,8 @@ impl Style {
 
 /// A run of output that shares one terminal attribute.
 ///
-/// Every sequence here is one `video_terminal` draws: bold and the eight colours from the start,
-/// and since milestone 142 (a text display good enough that people use it instead of a GUI)'s
-/// 2026-09-26 pass the underline [`Attr::Emph`] uses and the strikethrough [`Attr::Strike`] uses.
+/// Every sequence here is one `video_terminal` draws: bold, the eight colours, the underline
+/// [`Attr::Emph`] uses and the strikethrough [`Attr::Strike`] uses.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Attr {
     /// Body text.
@@ -447,6 +440,8 @@ impl Layout {
         self.open_block(out);
     }
 
+    /// Open a heading. Level one is the page's own name and is uppercased, as a man page does, so
+    /// a reader scanning a screenful finds the title; lower levels are sentences and keep their case.
     fn heading(&mut self, level: HeadingLevel, out: &mut impl Sink) {
         let level = level as usize;
         self.item_fresh = false;
@@ -457,10 +452,6 @@ impl Layout {
         } else {
             BODY + 2 * (level - 3)
         };
-        // Level one is the page's own name and is uppercased, which is the one thing this borrows
-        // from a man page's layout: a reader scanning a screenful finds the title without reading
-        // it. Levels below it keep their case, because they are sentences here and shouting them
-        // costs more than it buys.
         self.upper_on = level == 1;
         self.attrs.push(Attr::Heading);
     }
@@ -479,7 +470,8 @@ impl Layout {
         self.gap = true;
     }
 
-    /// One line of a code block.
+    /// One line of a code block, verbatim: its line breaks are its meaning, so it is never wrapped
+    /// or re-spaced, and a line wider than the terminal runs over as it does in every pager.
     fn code_line(&mut self, line: &[u8], out: &mut impl Sink) {
         if self.code_first {
             self.code_first = false;
@@ -487,9 +479,6 @@ impl Layout {
         }
         self.line_start(out);
         self.set(Attr::Fence, out);
-        // Verbatim: a code block is the one thing in a document whose line breaks are its meaning,
-        // so it is never wrapped and never re-spaced. A line wider than the terminal runs over,
-        // which is what every pager does with code too.
         out.put(line);
         self.col += visible(line);
         // `newline` rather than `close_line`: an empty line inside a code block is a line of the
@@ -497,6 +486,8 @@ impl Layout {
         self.newline(out);
     }
 
+    /// Open a list item. A bullet is written `-` whichever of `-`, `*` and `+` the author typed, so
+    /// one thing has one spelling on screen, and continuation lines hang under the item's text.
     fn item(&mut self, out: &mut impl Sink) {
         self.item_fresh = false;
         self.open_block(out);
@@ -513,20 +504,18 @@ impl Layout {
                 *n += 1;
                 s
             }
-            // A bullet is written `-` whichever of `-`, `*` and `+` the author typed, because three
-            // spellings of one thing on one screen reads as three different things.
             _ => String::from("- "),
         };
         out.put(marker.as_bytes());
         self.col += marker.len();
-        // Continuation lines align under the item's text, not under its bullet, which is what makes
-        // a wrapped list item readable as one item.
         self.hang = Some(margin + marker.len());
         self.start = self.col;
         self.space = false;
         self.item_fresh = true;
     }
 
+    /// Close a link or image and show its destination: a terminal cannot follow a link or draw a
+    /// picture, so the path is the only thing its reader can act on.
     fn end_link(&mut self, out: &mut impl Sink) {
         let Some(link) = self.links.pop() else {
             return;
@@ -544,9 +533,6 @@ impl Layout {
         if link.image {
             self.unit(b"]", Attr::Marker, out);
         }
-        // The destination is shown rather than hidden, because a terminal has no way to follow a
-        // link and a reader who cannot see where one points has been given a worse document than
-        // the source. An image's too: the path is the only thing a terminal reader can act on.
         if link.show && !link.dest.is_empty() {
             self.space = true;
             self.unit_wrapped(link.dest.as_bytes(), Attr::Link, out);
@@ -675,11 +661,9 @@ impl Layout {
     }
 
     /// A table's column widths: each column's natural width, then the widest shrunk until a row
-    /// fits the page.
+    /// fits the page. Shrinking the widest keeps a table of one prose column and short labels
+    /// readable: the prose loses characters and the labels do not.
     fn table_widths(&self, t: &Table, ncols: usize) -> Vec<usize> {
-        // Natural widths first, then shrink the widest column until the row fits. Shrinking the
-        // widest is the rule that keeps a table of one long prose column and three short ones
-        // readable: the prose loses characters and the labels do not.
         let mut w = alloc::vec![0usize; ncols];
         for row in &t.rows {
             for (c, cell) in row.iter().enumerate() {
@@ -716,9 +700,7 @@ impl Layout {
         align: Align,
         out: &mut impl Sink,
     ) {
-        // How many characters of the cell will be emitted, counted before any of them goes out,
-        // because a right- or centre-aligned cell has to know how much space to put in FRONT of
-        // its text.
+        // Counted before any character goes out: a right- or centre-aligned cell pads in front.
         let mut n = 0;
         let mut end = 0;
         while end < text.len() && n < width {
