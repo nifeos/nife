@@ -153,7 +153,9 @@ file name for a declared input or file, so a manifest shape nothing has used yet
 
 The counts are gates on purpose. Exactly three programs declare entropy: `uuid`, `std_exerciser`
 (whose two draws from `std::random::SystemRng` must differ) and `jig`, whose TLS handshake draws
-its key share and nonces, and only in the verbs that reach the index. Exactly two reach the
+its key share and nonces. Only `jig`'s verbs that reach the index hold it (`update`, `install`),
+by `grant_plan::verbs`. A `std` program that does not declare entropy still runs: its `SystemRng`
+panics rather than inventing bytes, and its `HashMap` seeds best-effort. Exactly two reach the
 network: `network_echo_client` and `jig`, which fetches packages itself so the progenitor parses no
 network input. Only `jig` resolves names (calef's Q5 on #1884). A new program declaring any of
 these is a decision, and the count is where it has to be made.
