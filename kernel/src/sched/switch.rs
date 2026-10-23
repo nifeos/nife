@@ -140,7 +140,7 @@ pub(super) fn hold_token_reading_order(token: Unqueued<Thread>) -> (ThreadId, bo
 }
 
 /// Install the incoming thread's cycle-counter grant (`granted`) on this core, right after its
-/// address-space root (DECISIONS §139 option 4).
+/// address-space root (DECISIONS §139 (who may read the cycle counter) option 4).
 ///
 /// Built only under `test`, `system_tests` or `cycle_counter_grant`. The read in `schedule` and
 /// this install are `#[cfg]`-gated rather than carried through the switch tuple, because the debug
@@ -204,9 +204,9 @@ pub fn schedule() {
 
         let current = current_thread_id();
 
-        // A killed thread (DECISIONS §16 amendment) never runs again, and a suspension order
-        // (§300 (the paused state, a TCB verb, silent)) parks a running one. Both are carried out
-        // before the pick, so every path below sees them, "keep current" included.
+        // A killed thread (DECISIONS §16 (object revocation) amendment) never runs again, and a
+        // suspension order (§300 (the paused state, a TCB verb, silent)) parks a running one. Both
+        // are carried out before the pick, so every path below sees them, "keep current" included.
         if sched
             .threads
             .get(current)
@@ -374,7 +374,8 @@ pub(super) fn heal_self_pop(sched: &mut IpcTables, current: ThreadId) {
 ///
 /// The safe half of the two-part reaper, run on the incoming thread once the outgoing one is off
 /// its stack. Called from `schedule()` and from `thread_entry`, the two ways a thread resumes,
-/// both on the core that recorded `switched_from`. See DECISIONS §11 and notes/scheduler/switch.md.
+/// both on the core that recorded `switched_from`. See DECISIONS §11 (per-CPU run queues) and
+/// notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES`; interrupts are masked on both callers' paths.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).

@@ -117,7 +117,7 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
     }
 }
 
-// --- Notifications (milestone 151, DECISIONS §101) --------------------------------------------
+// --- Notifications (milestone 151, DECISIONS §101 (notification objects)) -------------------
 //
 // The asynchronous half of IPC: a word a signaller ORs into and a waiter takes. The decision core
 // (what a signal, a wait and a poll do) is `inter_process_communication::notification`, proved
@@ -126,9 +126,9 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
 
 /// Widen a three-word IPC message `m` into the five-word mailbox, with `badge` (the badge on the
 /// endpoint capability the sender invoked, 0 when unbadged) in word 3 and zero in word 4. Only a
-/// fault or exit message (DECISIONS §26) fills the top two otherwise, so the fault path reuses the
-/// rendezvous machinery. A plain `SEND` carries its badge because §242 (a system log) stamps every
-/// record from it; see notes/scheduler/rendezvous.md.
+/// fault or exit message (DECISIONS §26 (the fault endpoint)) fills the top two otherwise, so the
+/// fault path reuses the rendezvous machinery. A plain `SEND` carries its badge because §242 (a
+/// system log) stamps every record from it; see notes/scheduler/rendezvous.md.
 pub(super) fn wide(m: [u64; 3], badge: u64) -> [u64; 5] {
     [m[0], m[1], m[2], badge, 0]
 }
@@ -387,11 +387,11 @@ pub(super) fn collected_without_serving(sched: &mut IpcTables, sender: ThreadId)
 }
 
 /// **Hand a death message's `label` to the supervisor `receiver`**, in argument register 5 of
-/// its saved user frame (`x5`, `a5` or `r9`; DECISIONS §148, ruling R3).
+/// its saved user frame (`x5`, `a5` or `r9`; DECISIONS §148 (a supervisor restarts by asking),
+/// ruling R3).
 ///
-/// Beside the mailbox, not in it, so only a death pays for the sixth word. Only a plain `RECEIVE`
-/// by a user thread gets it; a `RECEIVE_CAP` receiver or a kernel thread is left alone. An ordinary
-/// message writes nothing here, so a supervisor zeroes it first and a child cannot forge it. See
+/// Beside the mailbox, so only a death pays for the sixth word. Only a plain `RECEIVE` by a user
+/// thread gets it, and no ordinary message writes it, so a child cannot forge one. See
 /// notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`.
@@ -676,7 +676,7 @@ pub fn ipc_receive_cap(ep: RendezvousId) -> [u64; 5] {
 /// # BUGS
 /// - A live server that never replies, or had no room for the Reply, blocks its caller forever:
 ///   a `CALL` has no deadline. One that can no longer answer frees it ([`strand_reply_caller`]).
-/// - A Reply names a thread, not a call (milestone 371); see notes/scheduler/rendezvous.md.
+/// - A Reply names a thread, not a call (milestone 371 (a reply capability that names a call)).
 // Inlined so the unbadged fastpath (`ipc_call_reply`, the shape real services run and the one
 // `script/icount` measures) gains no call frame: this forwards to `ipc_call_badged` with badge 0,
 // which writes the same mailbox word 3 it always did.
