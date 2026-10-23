@@ -63,10 +63,11 @@ const _: () = {
 impl TrapFrame {
     /// The syscall number the caller passed: `rax`, following Linux.
     ///
-    /// The arguments are `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`, argument 0 doubling as the return:
-    /// the tree's one number register plus six (aarch64 `x8` + `x0`..`x5`, RISC-V `a7` + `a0`..`a5`).
-    /// `r10` stands in for `rcx` because `syscall` overwrites `rcx` with the return address and `r11`
-    /// with RFLAGS. The ABI is §124 (the x86-64 syscall ABI); see notes/x86-port/traps.md.
+    /// The arguments are `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`, argument 0 doubling as the
+    /// return: the tree's one number register plus six (aarch64 `x8` + `x0`..`x5`, RISC-V `a7` +
+    /// `a0`..`a5`). `r10` stands in for `rcx` because `syscall` overwrites `rcx` with the return
+    /// address and `r11` with RFLAGS. The ABI is §124 (the x86-64 syscall ABI); see
+    /// notes/x86-port/traps.md.
     pub(crate) fn syscall_nr(&self) -> u64 {
         self.rax
     }
@@ -102,11 +103,11 @@ impl TrapFrame {
     /// Build the frame that drops a brand-new thread to ring 3 at `entry` on `user_sp`, with `args`
     /// in the first three argument registers.
     ///
-    /// The selectors carry the privilege change: `iretq` returns to the ring in the low two bits of
-    /// the CS it pops (the GDT layout in `segments.rs`). `rflags` is `IF | 0x2`: bit 1 always reads
-    /// as one, and `IF` keeps a looping user thread preemptible. `IOPL` stays 0, so ring 3 reaches a
-    /// port only through the TSS's I/O permission bitmap, which a port capability fills (§121, the
-    /// port I/O capability; `segments.rs`).
+    /// The selectors carry the privilege change: `iretq` returns to the ring in the low two bits
+    /// of the CS it pops (the GDT layout in `segments.rs`). `rflags` is `IF | 0x2`: bit 1 always
+    /// reads as one, and `IF` keeps a looping user thread preemptible. `IOPL` stays 0, so ring 3
+    /// reaches a port only through the TSS's I/O permission bitmap, which a port capability fills
+    /// (§121, the port I/O capability; `segments.rs`).
     #[allow(dead_code)]
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         const RFLAGS_IF: u64 = 1 << 9;
@@ -771,8 +772,8 @@ fn fatal_exception(frame: &TrapFrame, vector: u64) -> ! {
 /// The NMI, double fault and machine check land here on their own IST stacks, from `isr_paranoid`
 /// with the kernel's GS base loaded (trap.s has how, `super::ist` why these three).
 ///
-/// None may reach the deferred `schedule()`: an NMI often lands in a critical section, the other two
-/// never return, and a switch from an IST stack parks a per-core address in a thread. A machine
+/// None may reach the deferred `schedule()`: an NMI often lands in a critical section, the other
+/// two never return, and a switch from an IST stack parks a per-core address in a thread. A machine
 /// check is fatal from either ring, being the hardware's failure; recovery is not built.
 ///
 /// # Safety

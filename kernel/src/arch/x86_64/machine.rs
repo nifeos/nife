@@ -325,7 +325,8 @@ unsafe fn phys_slice<'a>(at: u64, len: usize) -> &'a [u8] {
 /// `boot.s` builds 2048 2 MiB page-directory entries under a four-entry PDPT that both PML4[0]
 /// (identity) and PML4[273] (the direct map `phys_to_virt` names) point at. The ACPI walk runs
 /// before `mmu::init`, so this bound, not the fine map's, applies. Firmware puts its tables near
-/// the top of RAM, which the suite's `-m 256M` does not exercise; see notes/x86-port/acpi-and-pci.md.
+/// the top of RAM, which the suite's `-m 256M` does not exercise; see
+/// notes/x86-port/acpi-and-pci.md.
 const BOOT_DIRECT_MAP_LIMIT: u64 = 0x1_0000_0000;
 
 /// Is the direct map able to reach this physical address? Firmware supplies these addresses, and
@@ -629,7 +630,7 @@ pub(crate) fn print_acpi_summary(found: &Acpi) {
     match found.ecam {
         // The parenthetical names q35: `PCI_ECAM_PHYS` is q35's default, a second witness and not
         // the source of truth. `base` is the MCFG's answer and is what gets mapped, and firmware
-        // places the window, so a different number is not a defect (notes/x86-port/acpi-and-pci.md).
+        // places the window, so a different number is no defect (notes/x86-port/acpi-and-pci.md).
         Some((base, lo, hi)) => crate::println!(
             "                pcie ecam {base:#x}, buses {lo}..={hi} (q35's default is {:#x})",
             super::mmu::PCI_ECAM_PHYS,
@@ -857,12 +858,12 @@ const INTEL_VENDOR: u32 = 0x8086;
 
 /// Where the machine says its low DRAM stops, or `None` when it does not say (milestone 256).
 ///
-/// `TOLUD`, the host bridge's boundary between DRAM and the 32-bit MMIO hole, where a PCI BAR window
-/// starts; a register the legacy ports reach, not AML. Bits 31:20; zero reads as not reported.
+/// `TOLUD` is the host bridge's boundary between DRAM and the 32-bit MMIO hole, where a PCI BAR
+/// window starts: a register the legacy ports reach, not AML. Bits 31:20; zero is not reported.
 ///
 /// # BUGS
 /// - Intel's register only: another vendor's host bridge answers `None`.
-/// - Only Core-era `0xbc`, not older chipsets' `0xb0`; q35 models neither, so emulation gets `None`.
+/// - Only Core-era `0xbc` is read, not older chipsets' `0xb0`; q35 models neither (`None`).
 ///
 /// Name: provisional. calef names the functions, and this one was minted by a lane. It is the
 /// register's own expansion spelled out (`TOLUD` is "top of low usable DRAM"), on the same
