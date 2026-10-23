@@ -89,7 +89,7 @@ diagnostic rather than the fact. The kernel asks both queues and believes neithe
 
 A notification is the asynchronous half of IPC, built by milestone 151 (notification objects:
 async multiplexing without wait-any) to §101's rules. A rendezvous is a meeting: a sender blocks
-until a receiver takes its words. A notification is a doorbell: a signaller ORs bits into a word
+until a receiver takes its words. A notification is a doorbell: a signaler ORs bits into a word
 and never blocks, and a waiter takes whatever has accumulated. Two signals before anyone waits
 are one wake carrying both sets of bits. A notification says what happened since you last looked,
 not how many times. The word is a bitfield of binary semaphores, as seL4's is.

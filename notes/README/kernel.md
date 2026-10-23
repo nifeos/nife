@@ -21,6 +21,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
 - [The thread pointer, and the one asymmetry below its ABI](../thread-pointer.md): each thread's own `TPIDR_EL0`, `tp` or `FS` base, set by the kernel.
+- [The IPC decision core](../inter-process-communication.md): the rendezvous, notification, timer and futex state machines the kernel wraps, and how their proofs are shaped. Name provisional.
 - [Notification objects](../notification-objects.md): a doorbell bound to a thread, and why the receive tag lives in `w4`.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.

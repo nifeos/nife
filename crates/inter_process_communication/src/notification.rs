@@ -2,7 +2,7 @@
 //! (notification objects): a data word and a wait queue, and what a signal, a wait and a poll do
 //! with them.
 //!
-//! A signaller ORs bits into the word and never blocks; a waiter takes whatever has accumulated. A
+//! A signaler ORs bits into the word and never blocks; a waiter takes whatever has accumulated. A
 //! non-zero word and a queued waiter never coexist. Whether the bound thread is parked in a
 //! receive is the kernel's to decide, and [`Notification::signal`] takes it as a boolean. See
 //! `notes/inter-process-communication.md` ("The notification").
@@ -164,10 +164,11 @@ impl<T: Node> Notification<T> {
         (self.waiters.len(), self.word)
     }
 
-    /// A signal arrives carrying `bits`. Never blocks, never queues the signaller, never loses a
+    /// A signal arrives carrying `bits`. Never blocks, never queues the signaler, never loses a
     /// bit. In §101's order: a thread waiting here takes the bits ([`Signal::Woke`]); otherwise, if
     /// `bound_receiving` says the bound thread is parked in a receive, it takes the whole word
-    /// ([`Signal::ToBound`]); otherwise the bits are ORed into the word ([`Signal::Counted`]).
+    /// ([`Signal::ToBound`]); otherwise the bits are merged into the word by OR
+    /// ([`Signal::Counted`]).
     ///
     /// Zero bits is [`Signal::Empty`] and changes nothing, for the reason
     /// `notes/notification-objects.md` gives.
