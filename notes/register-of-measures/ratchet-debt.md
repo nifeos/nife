@@ -76,5 +76,7 @@ would have found then. That is every row's rule here, and it is why no week is b
 - `other` has no ceiling column, and a ceiling on a prefix that is not one of the five named
   directories (`kernel/src/`, `helpers/`) is not charted. Its directories would start their stages
   one at a time, so a partial sum would sit under the group's count and read as a breach.
+- A change to a gate's measure restates nothing. `--update` rewrites the current week and the
+  missing ones, so a series reads two definitions until someone runs `--backfill-measure`.
 - None of these sees quality. A shorter sentence can be worse, and a comment block cut to 40 lines
   can lose a fact; §267's remedy is to move history to the commit message, not to delete it.
