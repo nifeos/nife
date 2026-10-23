@@ -98,13 +98,6 @@ kernel/src/arch/x86_64/timer.rs:52	35
 kernel/src/arch/x86_64/timer.rs:534	22
 kernel/src/arch/x86_64/timer_calibration_tests.rs:1	39
 kernel/src/arch/x86_64/tsc_probe.rs:1	39
-kernel/src/bench.rs:1	35
-kernel/src/bench/app_displacement.rs:173	22
-kernel/src/bench/cycle_probe.rs:13	39
-kernel/src/bench/filesystem.rs:13	38
-kernel/src/bench/filesystem.rs:88	22
-kernel/src/bench/smp_throughput.rs:13	37
-kernel/src/bench/spawn_map.rs:49	26
 kernel/src/cap.rs:60	27
 kernel/src/cap.rs:155	26
 kernel/src/cap.rs:204	21

@@ -1,9 +1,5 @@
 //! **The iteration counts and the timed window** every kernel-thread benchmark shares.
 //!
-//! Cut out of `bench.rs` unchanged by lane `maintainer/last-three-over-2000`, which left the
-//! parent an index (§282 (when a file is split, the parent becomes an index)) and under §266 (a
-//! Rust source file stays under 2,000 lines).
-//!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
@@ -33,30 +29,17 @@ pub(super) fn timed(name: &str, iters: u64, f: impl FnOnce()) {
 /// [`TickWindow`] already and must do something between opening it and timing: `map_new` masks
 /// interrupts there, and a window cannot wait for a tick with interrupts masked.
 pub(super) fn measure(name: &str, iters: u64, f: impl FnOnce()) {
-    // The monotonic counter, through the arch abstraction: CNTVCT_EL0 on aarch64, `rdtime` on
-    // RISC-V. `frequency()` (printed by `run` as `cntfrq`) turns ticks into seconds.
     let t0 = crate::arch::timer::now();
     f();
     let t1 = crate::arch::timer::now();
     println!("bench: {name} {} {iters}", t1 - t0);
 }
 
-/// **A stretch of a bench run that no preemption tick lands in, and the check that fails loudly if
-/// one does** (milestone 939 (the icount bench runs without a preemption tick in its windows)).
+/// A stretch of a bench run that no preemption tick lands in, and the check that fails if one does.
+///
 /// [`open`](Self::open) waits for this core's next tick and [`close`](Self::close) panics if
-/// another arrived since, so no row reads where the tick fell as its cost.
-///
-/// A ping-pong row (`ipc_rtt`, `ipc_rtt_el0`) is bimodal: each receive either finds its message
-/// waiting or blocks for it, and a tick inside the window can flip the loop between the two. Under
-/// a free-running tick an unrelated change moves those rows by whole percent. At the bench build's
-/// `TICK_HZ` of 1, a window that opens on a tick has a full second before the next, and the close
-/// proves on every run that the row fit. The opening tick also fixes a ping-pong's starting mode.
-///
-/// `yield_switch` and `spawn_reap` still do not mask interrupts, the rule of milestone 541 (a timed
-/// window that excludes preemption); this only moves where involuntary switches fall.
-///
-/// Ticks are counted per core, so a thread that changes cores inside the window cannot be checked.
-/// Under `-icount` the bench boots one hart; a `--real --smp` run prints a probe line instead.
+/// another arrived since. Ticks are counted per core, so a `--real --smp` run, whose thread may
+/// change cores, prints a probe line instead. See notes/benchmarks/kernel-bench-harness.md.
 ///
 /// Name: provisional (milestone 939, 2026-10-22 UTC).
 #[must_use = "a window that is never closed checks nothing"]
@@ -67,8 +50,8 @@ pub(super) struct TickWindow<'a> {
 }
 
 impl<'a> TickWindow<'a> {
-    /// Wait for this core's next preemption tick, then open the window for the row `name`. Interrupts
-    /// must be on: the tick is what ends the wait.
+    /// Wait for this core's next preemption tick, then open the window for the row `name`.
+    /// Interrupts must be on: the tick is what ends the wait.
     pub(super) fn open(name: &'a str) -> Self {
         let cpu = crate::cpu::id();
         let seen = crate::arch::timer::ticks_on(cpu);
