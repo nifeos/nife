@@ -3,8 +3,7 @@
 //! (`0x1000` to `0x1fff`), device-typed; the MAC page and an interrupt are withheld. See
 //! notes/designware-ethernet.md, "The confinement, stated plainly".
 //!
-//! # BUGS
-//!
+//! BUGS:
 //! - The DMA page holds both ring bases and the controller's reset bit, and the JH7110 has no
 //!   IOMMU here, so the server can aim the device's DMA anywhere and reset the MAC.
 //! - One wiring at a time, for `e1000e_service`'s reason. Proved by one radon bench boot

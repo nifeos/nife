@@ -187,17 +187,11 @@ pub(crate) const GPU_SURFACE_RUN: NonZeroU64 = SURFACE_RUN;
 pub(crate) fn wire_device() -> Option<GpuDevice> {
     let d = crate::pci::find_gpu_device()?;
 
-    // The DMA region: contiguous, because the surface must be one run of physical frames for the
-    // device's backing to be a single memory entry and for the IOMMU domain to cover it as one
-    // range. Zeroed, so neither a stale descriptor nor a stale pixel is ever visible to the
-    // device or to the client.
+    // Contiguous, so the device's backing is one memory entry and the IOMMU domain one range.
     let dma = crate::memory::alloc_contiguous_zeroed(DMA_PAGE_FRAMES as usize)
         .expect("no contiguous DMA region for the GPU driver")
         .addr();
-    // The region says where it is, in the tail of its first page, which `gpu_driver`'s rings and
-    // control buffers end well short of (`abi::virtio::DMA_PHYS_OFFSET`). A driver the progenitor
-    // builds has no other way to learn it: the progenitor holds the run as a capability and knows
-    // no physical address either.
+    // A progenitor-built driver has no other way to learn the region's physical base.
     super::write_dma_phys(dma);
     let surface = dma + FRAME_SIZE; // page 1 onward: the frames the client also maps
 
@@ -263,9 +257,7 @@ fn wire_driver(
             driver_image,
             Spawn {
                 arg0: role, // 0 = the GPU driver; 1 = the escape attempt
-                // No physical address: the region's first page carries it
-                // (`abi::virtio::DMA_PHYS_OFFSET`), the same place the progenitor-built driver
-                // reads it from, so the harness and the boot hand the driver one world.
+                // The region's first page carries its address, as for a progenitor-built driver.
                 arg1: 0,
                 arg2,        // the escape role's victim frame; unused (0) by the GPU driver
                 grants: &[], // every one of them is placed above, at its own slot
@@ -328,10 +320,8 @@ pub fn start_terminal(
     driver_image: &'static [u8],
     term_image: &'static [u8],
 ) -> Option<TerminalWiring> {
-    // A scanout with no room for a character has nothing to show. It does **not** have to be a
-    // whole number of them: a strip no cell covers is painted as background on the terminal's
-    // first frame (see `components/src/display_terminal.rs`) and `Vt::pixel` answers for it,
-    // which is what keeps the picture a total function of the state.
+    // At least one character cell, not a whole number: a strip no cell covers is painted as
+    // background and `Vt::pixel` answers for it, so the picture is a function of the state.
     const _: () = assert!(
         graphics_contract::WIDTH >= video_terminal::CELL_W
             && graphics_contract::HEIGHT >= video_terminal::CELL_H,

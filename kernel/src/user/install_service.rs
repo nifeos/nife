@@ -5,9 +5,8 @@
 //!
 //! # BUGS
 //!
-//! - x86_64 only (design/roadmap/0568). The disk is named by size, not model (0569). It checks for
-//!   nife only (0570), and a disk carrying nife, even half-installed, is never offered again
-//!   (0572).
+//! - x86_64 only (design/roadmap/0568); the disk is named by size, not model (0569); it checks
+//!   for nife only (0570); a disk carrying nife is never offered again (0572).
 //! - Not crash-atomic: a power cut between the partitioner and `mkfs` leaves an unmountable disk.
 
 use super::*;
