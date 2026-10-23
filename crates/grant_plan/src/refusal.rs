@@ -21,9 +21,9 @@ pub enum Refusal {
     NoSuchCapability(CapabilityKind),
     /// The program takes no file, but a token was left over that nothing else could be. The
     /// milestone's inversion cuts both ways: a name the program has no use for is authority the user
-    /// did not mean to move, so it is refused rather than granted-and-ignored. **This is the refusal
-    /// the `file:` prefix was wrongly credited with**: `least_authority_demo 5 extra` stops here because `least_authority_demo`'s
-    /// manifest says `FileGrantDeclaration::Forbidden`, which is what refused it before the prefix went away.
+    /// did not mean to move, so it is refused rather than granted-and-ignored:
+    /// `least_authority_demo 5 extra` stops here because its manifest says
+    /// `FileGrantDeclaration::Forbidden`.
     FileForbidden,
     /// The program is endowed a file and the command named none. Naming it on the line is the only
     /// way it can get one, so this is caught at the prompt rather than as an empty slot at runtime.
