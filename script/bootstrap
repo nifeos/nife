@@ -158,6 +158,44 @@ else
     esac
 fi
 
+# Ruby, for the YAML parser of two `script/lint` checks: every workflow file parses
+# (helpers/workflow_parses.py) and every issue form renders (helpers/issue_forms.py). Both run
+# `ruby -ryaml`, so the check is that command rather than `command -v`, and both fail rather than
+# skip without it, which on Linux also blocks every push through the pre-push hook. It sits beside
+# ShellCheck and outside NIFE_SKIP_LINT_TOOLS for the same reason: one apt package, seconds to
+# install. On Debian and Ubuntu the `ruby` package brings Psych (psych.so, in libruby, linked to
+# libyaml). The ubuntu-24.04 runner images ship Ruby, so in CI this branch prints "present".
+#
+# macOS has shipped /usr/bin/ruby (2.6, with Psych) on every release so far, which is what a Mac
+# normally finds here. Apple has called it deprecated since 10.15, so it is not guaranteed. When it
+# is gone, Homebrew's ruby is installed, but that formula is keg-only (it would shadow the system
+# one), so nothing puts it on PATH and bootstrap says which directory to add.
+if ruby -ryaml -e '' >/dev/null 2>&1; then
+    echo "==> Ruby present: $(ruby --version)"
+else
+    echo "==> Installing Ruby"
+    case "$os" in
+    Darwin)
+        if ! command -v brew >/dev/null 2>&1; then
+            echo "bootstrap: Homebrew not found; install it from https://brew.sh, then re-run." >&2
+            exit 1
+        fi
+        brew install ruby
+        if ! ruby -ryaml -e '' >/dev/null 2>&1; then
+            echo "==> Homebrew's ruby is keg-only. Put $(brew --prefix ruby)/bin on PATH for script/lint."
+        fi
+        ;;
+    Linux)
+        $SUDO apt-get update
+        $SUDO apt-get install -y ruby
+        ;;
+    *)
+        echo "bootstrap: unknown OS '$os'; install a ruby that can run \`ruby -ryaml\` by hand." >&2
+        exit 1
+        ;;
+    esac
+fi
+
 # **NIFE_SKIP_LINT_TOOLS=1 skips cargo-machete and typos**, the two tools only `script/lint` runs. On
 # Linux both are source builds, about 85 s per job on the arm64 runners (measured on #1778), and six
 # CI jobs (test, cpu-matrix, bench, boot-check, swish-check, swish-check-x86_64) never lint. Unset,

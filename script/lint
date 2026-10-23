@@ -3040,8 +3040,8 @@ python3 "$(dirname "$0")/../helpers/workflow_swallows.py"
 #     line-wrap slip passes every text gate here: the pin and swallow checks match their regexes
 #     and wave the rest through. GitHub does not wave it through; the file never starts a run, and
 #     for ci.yml and verify.yml that is every pull request waiting on a required check nothing can
-#     post. The parser is `ruby -ryaml`, which the runner image and this macOS both carry; the
-#     helper's header says what it cannot see. Fixtures first, because a green run looks the same
+#     post. The parser is `ruby -ryaml`, which the runner image and this macOS both carry and
+#     `script/bootstrap` installs where it is missing; the helper's header says what it cannot see. Fixtures first, because a green run looks the same
 #     as a parser that cannot fire.
 echo "==> every workflow file parses"
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
