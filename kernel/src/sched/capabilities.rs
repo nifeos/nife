@@ -164,14 +164,14 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
 }
 
 /// Remove the capability in `slot` from the current thread's table. This is how a one-shot `Reply`
-/// is consumed the instant it is invoked (§12 (call/reply IPC)).
+/// is consumed the instant it is invoked (§12 (call/reply IPC)). On `x86_64`, deleting the
+/// `PortRange` behind the thread's cached grant also drops the grant and resets this core's TSS
+/// bitmap. Returns the table's error for an empty slot. See notes/capability-lifecycle.md.
 ///
-/// Takes only the thread's own table lock. On `x86_64`, deleting the `PortRange` behind the
-/// thread's cached port grant also drops the grant and resets this core's TSS bitmap. Returns the
-/// table's error for an empty slot. See notes/capability-lifecycle.md ("Deleting your own").
+/// Context: takes the thread's own table lock; on `x86_64` a deleted `PortRange` then takes
+/// `IPC_TABLES`.
 ///
 /// # BUGS
-///
 /// Deleting one of two copies of one `PortRange` drops the grant both name (fails safe).
 pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
     // Read before the delete, under the same hold: a deleted slot names nothing.

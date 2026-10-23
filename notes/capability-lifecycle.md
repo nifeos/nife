@@ -171,10 +171,11 @@ Each holds `IPC_TABLES` for its whole walk and takes each table's lock beneath i
 Every sweep clears the hand-off slot too. A capability sent to a rendezvous nobody is receiving
 on yet sits in the sender's `Thread::outgoing_cap`, in no table, until a `RECEIVE_CAP` files it. A
 sweep that read tables alone would leave a live capability there, and `MemoryRegion::DESTROY` would
-return its pages while it was still on its way (§13 (frame revocation)'s use-after-free).
-`delete_reply_caps_naming` applies the same rule to `Reply`. The send is not failed: the data word
-still arrives and the receiver sees `NO_CAP`, as it does when its table is full, so no new error
-reaches userspace. `kernel::user::revocation_in_flight_tests` is the falsification.
+return its pages while it was still on its way (the use-after-free of §13 (capability revocation
+and untyped reclamation)). `delete_reply_caps_naming` applies the same rule to `Reply`. The send
+is not failed: the data word still arrives and the receiver sees `NO_CAP`, as it does when its
+table is full, so no new error reaches userspace. `kernel::user::revocation_in_flight_tests` is the
+falsification.
 
 ### Two `PageFrame` sweeps, for two questions
 
@@ -194,7 +195,7 @@ removes all access.
 
 ### Take-back sweeps, and port ranges
 
-`delete_device_frame_caps_from_others` (§41 (an endpoint as broker)) and `PortRange::REVOKE`'s
+`delete_device_frame_caps_from_others` (§41 (the endpoint is the broker)) and `PortRange::REVOKE`'s
 `delete_port_range_caps_from_others` spare the invoker's own capability. That is the difference
 between reclaiming a page and taking a device back to hand on, and
 `revoke::revoke_device_from_others` has the reasoning. The kernel mints a port capability once, at

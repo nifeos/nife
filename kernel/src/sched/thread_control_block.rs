@@ -1,7 +1,6 @@
 //! Thread control blocks: creating one from a region, inserting capabilities before it starts,
 //! starting it, and the binders that name what a thread is bound to. Configuring an embryo is
 //! [`configure`]. See notes/thread-control-block.md.
-//! Cut out of `sched.rs` unchanged by milestone 840 (the scheduler file is split along its seams).
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -219,7 +218,8 @@ pub enum Binder {
 /// since the sweep asks about every bound space on every scan. A scheduler not yet built answers
 /// `CanRun`, so nothing is freed on a guess.
 ///
-/// Context: called under the address-space registry's lock (61 above 60); takes `IPC_TABLES`.
+/// Context: takes `IPC_TABLES`. The region sweep's `process::with_holders` asks under the
+/// address-space registry's lock (61 above 60); this entry's callers are system tests.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the region sweep uses `with_holders`
 pub fn with_binders<R>(f: impl FnOnce(&dyn Fn(ThreadId) -> Binder) -> R) -> R {
     let guard = IPC_TABLES.lock();

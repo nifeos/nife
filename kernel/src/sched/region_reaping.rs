@@ -1,8 +1,6 @@
-//! **Region reaping**: what a region's destruction does to every thread, rendezvous, notification
-//! and timer it pinned, `reclaim_region`, and the supervised reap and survey built on them (§271
-//! part 3).
-//!
-//! Cut out of `sched.rs` unchanged by milestone 840 (the scheduler file is split along its seams).
+//! Region reaping: what a region's destruction does to every thread, rendezvous, notification and
+//! timer it pinned, `reclaim_region`, and the supervised reap and survey built on them (§271 part
+//! 3). See notes/region-reaping.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -176,8 +174,8 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
     // Processes: ended, embryo members detached, forgotten once empty.
     process::reap_region(sched, base, end);
 
-    // Finish phase: end each resident blocked on a rendezvous outside the region, which an armed
-    // kill would never reach. Each pass writes one to `Finished`, so the rescan terminates.
+    // Finish phase: end each resident still `Blocked` and off its core, which an armed kill would
+    // never reach. Each pass writes one to `Finished`, so the rescan terminates.
     loop {
         let doomed = sched
             .threads
@@ -327,7 +325,7 @@ pub fn last_reclaim_refusal() -> Option<ReclaimRefusal> {
 /// memory. `Err` if it has children, its name is stale or a resident refuses
 /// (`last_reclaim_refusal` says which). See notes/region-reaping.md ("The order of a reclaim").
 ///
-/// Context: takes `IPC_TABLES`, so it must run outside any `Drop`.
+/// Context: takes `IPC_TABLES`, then the address-space registry's lock; never inside a `Drop`.
 ///
 /// # BUGS
 /// `Err` and `Ok` both end what they find, and it reaches outside the region (the note's BUGS).

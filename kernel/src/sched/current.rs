@@ -35,10 +35,10 @@ pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAX_CPUS] =
 
 /// Make `tid` this core's running thread: its name in `PerCpu::current` and its capability table in
 /// [`CURRENT_CAPABILITIES`]. The only writer of either, so a lookup never finds one thread's name
-/// beside another's table.
+/// beside another's table. Forced inline on riscv64 and `x86_64` and given a `.text.hot` section on
+/// aarch64, so it lands beside its IPC callers whatever LLVM decides.
 ///
-/// Context: caller holds `IPC_TABLES`. Forced inline on riscv64 and `x86_64` and given a
-/// `.text.hot` section on aarch64, so it lands beside its IPC callers whatever LLVM decides.
+/// Context: caller holds `IPC_TABLES`.
 ///
 /// # Safety
 ///

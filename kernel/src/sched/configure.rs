@@ -13,7 +13,8 @@ use super::{IPC_TABLES, State, ThreadId, current_thread_id};
 /// The space stays in the registry and keeps its name; the thread keeps a copy of what the context
 /// switch reads, and the registry records the holder, which refuses a second one (`WrongObject`).
 /// Threads share a space by joining its process instead. Refuses anything but an `Embryo` with
-/// `WrongObject`, checked before a stale space name answers `NoSuchSlot` and again under both locks.
+/// `WrongObject`, so a running thread is never reconfigured under itself; checked before a stale
+/// space name answers `NoSuchSlot`, and again under both locks.
 pub fn configure_thread_control_block(
     tid: ThreadId,
     entry: u64,

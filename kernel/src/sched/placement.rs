@@ -76,14 +76,13 @@ pub fn drain_inbox() {
     }
 }
 
-/// Put an already-created thread onto core `target`'s run queue: locally onto this core's own, or
-/// into the target's inbox.
-///
-/// Returns the core that owes a reschedule SGI (`Some(target)` for a remote inbox), which the
-/// caller sends after releasing `IPC_TABLES`. The caller must act on this answer and never compare
+/// Put an already-created thread onto core `target`'s run queue: this core's own, or the target's
+/// inbox. Returns the core that owes a reschedule SGI (`Some(target)` for a remote inbox), which
+/// the caller sends after releasing `IPC_TABLES`. The caller must act on this answer and never compare
 /// `target` with [`cpu::id()`] again: outside the lock it can be stolen to another core in between,
-/// and a skipped SGI strands the thread in an inbox nothing drains. See
-/// notes/scheduler/missed-reschedule-poke.md.
+/// and a skipped SGI strands the thread in an inbox nothing drains. The inbox lock's
+/// release/acquire orders the caller's thread-table insert before the target's drain (§11 (SMP)).
+/// See notes/scheduler/missed-reschedule-poke.md.
 ///
 /// Context: caller holds `IPC_TABLES` (interrupts masked); takes the target's inbox lock.
 pub(super) fn place_on(target: usize, thread: Unqueued<Thread>) -> Option<usize> {
@@ -138,7 +137,8 @@ pub(super) fn pick_spawn_target() -> usize {
 /// run queue, never the running one, and poke it. An empty queue gives nothing, and the requester
 /// asks again next tick.
 ///
-/// Context: a scheduler entry with interrupts masked; takes the requester's inbox lock.
+/// Context: interrupt context (the reschedule-SGI handler), interrupts masked; takes the
+/// requester's inbox lock.
 pub fn serve_steal_request() {
     // The acquire/release pairing and the read-and-clear are in `steal_request`, where loom checks
     // them (notes/interleaving.md).

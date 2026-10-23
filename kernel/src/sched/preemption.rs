@@ -12,8 +12,9 @@ pub(super) static PREEMPTIONS: AtomicU64 = AtomicU64::new(0);
 ///
 /// Its own array rather than a `cpu::PerCpu` field: `PerCpu` is held to 128 bytes so `PERCPU[id]`
 /// indexes with a shift, and one more field cost riscv64's `ipc_send_receive` closure 150 bytes,
-/// over `script/fastpath-footprint`'s bound (the assertion is beside `cpu::PERCPU`). Written only
-/// by the owning core, in [`count_preemption`], on the timer path; read by anyone.
+/// over `script/fastpath-footprint`'s bound (the assertion is beside `cpu::PERCPU`), and nothing on
+/// the IPC fastpath reads this. Written only by the owning core, in [`count_preemption`], on the
+/// timer path; read by anyone.
 pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAX_CPUS] =
     [const { AtomicU64::new(0) }; cpu::MAX_CPUS];
 

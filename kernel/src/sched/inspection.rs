@@ -155,8 +155,9 @@ pub fn corpse_fault_msg(tid: ThreadId) -> Option<[u64; 5]> {
 /// `tid`'s capability table, lent to `read` in place (test support, milestone 757 (a test kernel
 /// fails a process on its Nth retype), provisional name). `None` for a name that does not resolve.
 ///
-/// Lent rather than copied, because a copy is a 2 KiB array in every frame that holds it. A retype
-/// sweep reads it before and after each run, since a missed `cap_delete` shows up only here.
+/// Lent rather than copied: a copy is a 2 KiB array in every frame that holds it, which put the
+/// caller over the guard page. A retype sweep reads it before and after each run, since a missed
+/// `cap_delete` shows up only here.
 ///
 /// Context: `read` runs under `IPC_TABLES`, so it must not call back into `sched`.
 #[cfg(feature = "system_tests")]

@@ -10,10 +10,10 @@ use super::*;
 /// (notes/interleaving.md); this is the queue push and the trace ring. A wake whose critical
 /// section delivered nothing is refused (the undelivered-wake gate, recorded as `refuse:tid`), and
 /// a thread still on its CPU has its wake parked for its own core's `finish_switch` to complete
-/// once its context is saved (notes/intrusive-queues.md).
+/// once its context is saved (notes/intrusive-queues.md). In the pinned hot section (milestone 796
+/// (pin the hot trap path's placement)).
 ///
-/// Context: caller holds `IPC_TABLES`. In the pinned hot section (milestone 796 (pin the hot trap
-/// path's placement)).
+/// Context: caller holds `IPC_TABLES`.
 #[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.sched.wake"))]
 pub(super) fn wake(sched: &mut IpcTables, tid: ThreadId) {
     if let Some(t) = sched.threads.get_mut(tid) {
