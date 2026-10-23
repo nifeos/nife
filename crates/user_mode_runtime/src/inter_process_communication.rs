@@ -2,9 +2,7 @@
 //! shapes, notifications, timers and sleeping, supervision's reap, survey and list, and handing a
 //! capability over.
 //!
-//! Cut out of `lib.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/files-over-1500, for §282
-//! (when a file is split, the parent becomes an index); the crate root re-exports every public
-//! item, so each keeps its path.
+//! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
 //! Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates, for the
 //! module and the file. Named for the calls it holds, one module per seam of the old crate root.
@@ -34,36 +32,24 @@ pub fn reap(slot: u64, tid: u64) -> i64 {
 }
 
 /// **Read one entry of the domain this supervision endpoint supervises** (milestone 126,
-/// `rendezvous::SURVEY`). Returns `(next_cursor, tid, state)`: start at `cursor = 0`, feed each
+/// `rendezvous::SURVEY`): [`survey_record`] with [`abi::survey::record::STATE`], the run state
+/// every caller wants. Returns `(next_cursor, tid, state)`: start at `cursor = 0`, feed each
 /// `next_cursor` back, and stop when [`abi::survey::DONE`] comes back.
 ///
-/// A negative first word is an [`abi::Error`], and the one that matters is `NotPermitted`: this
-/// endpoint capability does not carry `READ`, so the holder may send here but not look. **That is
-/// a refusal and not an empty domain**, and a caller must print it as one.
-///
-/// Three words out of one `invoke`, so it is written like [`receive`] rather than through the
-/// single-value helper.
-///
-/// This is [`survey_record`] with [`abi::survey::record::STATE`], kept as its own function because
-/// the run state is what every caller in the tree wants and none of them should have to name a
-/// selector to ask for it.
+/// A negative first word is an [`abi::Error`]. `NotPermitted` means this endpoint capability does
+/// not carry `ENUMERATE`: a refusal, not an empty domain, and a caller must print it as one.
 pub fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     survey_record(slot, cursor, abi::survey::record::STATE)
 }
 
 /// **Read one entry of a supervised domain, asking for a specific record** (`rendezvous::SURVEY`,
-/// calef's 2026-09-21 selector ruling). Returns `(next_cursor, tid, word)`, walked exactly as
-/// [`survey`] is: start at `cursor = 0`, feed each `next_cursor` back, stop at
-/// [`abi::survey::DONE`].
+/// §204 (how userspace asks where a thread runs)). Returns `(next_cursor, tid, word)`, walked as
+/// [`survey`] is. `record` picks which per-thread fact lands in the third word (see
+/// [`abi::survey::record`]); a caller wanting two facts walks twice and joins on the tid.
 ///
-/// `record` picks which per-thread fact lands in the third word; see [`abi::survey::record`] for
-/// the values and what each one means. The cursor and the tid do not depend on it, so a caller that
-/// wants two facts about one domain walks it twice and joins the two walks on the tid.
-///
-/// A negative first word is an [`abi::Error`]. Two matter. `NotPermitted` is the endpoint
-/// capability not carrying `ENUMERATE`, which is a refusal and **not** an empty domain, and a
-/// caller must print it as one. `BadMethod` is a record this kernel does not answer, which is what
-/// a program built against a later kernel gets, and it is likewise not an empty domain.
+/// A negative first word is an [`abi::Error`], and two are not an empty domain: `NotPermitted`
+/// (the capability lacks `ENUMERATE`) and `BadMethod` (a record this kernel does not answer, as a
+/// program built against a later kernel gets). A caller must print either as a refusal.
 ///
 /// Name: provisional. calef names public items.
 pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
@@ -88,7 +74,7 @@ pub fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
 
 /// `RECEIVE` three words on the endpoint capability in `slot`. Blocks until a sender arrives; returns
 /// the three words the sender passed in `x0`, `x1`, `x2`.
-///
+
 /// # Examples
 ///
 /// A pipeline stage. There is no `open` and no path: nothing that was not handed over can be named.
@@ -145,23 +131,13 @@ pub fn receive_badged_bound(slot: u64) -> Result<(u64, u64, u64, u64), u64> {
     }
 }
 
-/// `RECEIVE` **all five words** on the endpoint capability in `slot`: `(w0, w1, w2, w3, w4)`.
+/// `RECEIVE` **all six words** on the endpoint capability in `slot`: `(w0, w1, w2, w3, w4, w5)`.
 ///
-/// The same `RECEIVE` [`receive`] makes, read to its full width. `RECEIVE` has returned five registers since
-/// milestone 22 phase A (the kernel writes `w1..w4` directly; DECISIONS §26 implementation note 4),
-/// because a fault notification is five words: `(event, tid, pc, addr, reserved)`. Ordinary
-/// three-word IPC leaves the top two zero, which is why [`receive`] can keep ignoring them.
-///
-/// This exists for a **supervisor**, and it is the first thing in userspace to read `w3`: a
-/// restart policy needs the event and the tid, but a *checker* needs the faulting address, which is
-/// the only word that says where the dead thread actually pointed. No new syscall and no new method
-/// (§26's whole surface claim): just the rest of a result that was already being returned.
-///
-/// **The sixth word is the dead child's label** (milestone 105, DECISIONS §148 as amended
-/// 2026-10-04): the badge its builder put on the supervision capability before inserting it in
-/// `abi::fault::FAULT_EP_SLOT`, so a supervisor of several children can tell which one died without
-/// asking anybody. `0` when the capability was unbadged, and `0` for any message the kernel did not
-/// stamp, because [`invoke6`] zeroes the register on the way in. See `abi::fault`.
+/// A fault notification is five words, `(event, tid, pc, addr, reserved)` (§26 implementation note
+/// 4); ordinary three-word IPC leaves the top two zero. A checking supervisor reads `w3`, the
+/// faulting address. The sixth word is the dead child's label (§148, as amended 2026-10-04): the
+/// badge its builder put on the supervision capability in `abi::fault::FAULT_EP_SLOT`, or `0` when
+/// unbadged or unstamped, because [`invoke6`] zeroes the register on the way in. See `abi::fault`.
 pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from `invoke6`'s contract.
     unsafe { invoke6(slot, abi::rendezvous::RECEIVE, 0, 0, 0) }
@@ -349,7 +325,7 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// `CALL` on the endpoint capability in `slot`: send two words and block until the server
 /// replies through the one-shot Reply capability the kernel mints (milestone 12). Returns the
 /// two reply words. The atomic send-and-wait that makes a request unmistakably answerable.
-///
+
 /// # Examples
 ///
 /// The client never names the server and the server never names the client:

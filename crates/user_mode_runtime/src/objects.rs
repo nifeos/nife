@@ -1,9 +1,7 @@
 //! **Kernel objects**: page frames and memory regions retyped, sliced, mapped and revoked,
 //! address-space mappings, thread control blocks configured and started, and deleting a capability.
 //!
-//! Cut out of `lib.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/files-over-1500, for §282
-//! (when a file is split, the parent becomes an index); the crate root re-exports every public
-//! item, so each keeps its path.
+//! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
 //! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
@@ -14,11 +12,9 @@ use crate::syscall::{invoke, trap6};
 /// **Map the `PageFrame` capability in `frame_slot` at `va`**, drawing the page tables from the untyped
 /// in `memory_region_slot`. `true` if the page is now there.
 ///
-/// The verb a process that *holds* a page uses to put it in its own address space (milestone 108).
-/// It replaces a page the kernel wired into the process at spawn, and the difference is not
-/// cosmetic: a spawn-time mapping has no capability behind it, so nobody can narrow it, hand it on,
-/// or take it back, while a frame the process mapped itself is recorded in the revocation database
-/// and can be pulled out from under it by `PageFrame::REVOKE`. See notes/frames.md.
+/// The verb a process that holds a page uses to put it in its own address space (milestone 108).
+/// Unlike a page wired in at spawn, the mapping is in the revocation database, so
+/// `PageFrame::REVOKE` can take it back. See notes/frames.md.
 ///
 /// `writable` needs `WRITE` on the frame; a read-only mapping needs `READ`. A caller handed a
 /// narrowed view that asks for more than it holds gets `false` and no mapping, which is the rights
@@ -187,14 +183,10 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 /// `va`, per `mode` (`abi::address_space::MAP_RO`/`MAP_RW`/`MAP_CODE`). `0` on success; a negative
 /// `abi::Error`.
 ///
-/// The same obligation [`map_page_frame`] already carries, one address space over: milestone 134's
-/// census flagged this method as carrying "real" per-call risk because it can perturb an address
-/// space out from under code that assumed a mapping was fixed, but that is exactly the risk
-/// `map_page_frame` already accepted for the caller's *own* space, and the kernel discharges the
-/// same checks here (the address-space capability's `WRITE`, the frame's rights against `mode`,
-/// the address) before it touches a page table. A caller aliasing or racing what this call changes
-/// is a correctness question for the caller's own code, not a Rust-safety obligation this wrapper
-/// could check and the raw `invoke` site could not.
+/// Safe for the reason [`map_page_frame`] is: the kernel checks the address-space capability's
+/// `WRITE`, the frame's rights against `mode`, and the address before it touches a page table. A
+/// caller racing what this changes has a bug in its own code, not a Rust-safety obligation. See
+/// notes/user-mode-runtime.md.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify `retype_kernel_object` `address_space_map_into`." Refused
