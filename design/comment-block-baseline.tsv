@@ -189,8 +189,6 @@ kernel/src/sched/tests.rs:261	23
 kernel/src/sched/tests.rs:500	35
 kernel/src/sched/tests.rs:584	22
 kernel/src/sched/tests.rs:650	21
-kernel/src/sched/thread_table.rs:31	38
-kernel/src/sched/thread_table.rs:311	22
 kernel/src/screen.rs:1	21
 kernel/src/screen.rs:23	23
 kernel/src/self_test.rs:1	34
