@@ -8,12 +8,13 @@
 
 //! # BUGS
 //!
-//! - **Nothing here has run on silicon**, and the did-it-move check cannot tell a real counter from
-//!   QEMU's, which drives it from the instruction count under `-icount` (a round ratio is the tell).
+//! - **Nothing here has run on silicon.**
+//! - **The did-it-move check cannot tell a real counter from QEMU's**, which under `-icount` is the
+//!   instruction count (a round ratio is the tell).
 //! - **A trap here is a hang or a fault before the banner**: with `MDCR_EL3.TPM` set every PMU
 //!   access traps to EL3, first the `PMUSERENR_EL0` write in `timer::init`.
-//! - **Each core's counter is its own.** A caller of [`cycles`] that cannot rule out migration checks
-//!   the core did not change. The counter is never stopped.
+//! - **Each core's counter is its own**: a caller of [`cycles`] that may migrate checks the core.
+//! - **The counter is never stopped.**
 
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
