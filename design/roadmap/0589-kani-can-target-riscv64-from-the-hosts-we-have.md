@@ -265,9 +265,11 @@ Warm: 45 s, 3 s of it proving. On patagonia a cold build took 244 to 621 s by lo
 ## Follow-on
 
 - **Outstanding.** The upstream half is [kani#4913](https://github.com/model-checking/kani/pull/4913),
-  a draft since 2026-09-30 (UTC), whose CI awaits a maintainer's approval.
-  `notes/kani-upstream/pull-request-4913-before-ready.md` holds a retest, a patch, body edits and calef's
-  checklist, all unposted. Then review, the `kani_lib.c` follow-up, and dropping our patch.
+  open and out of draft. feliperodri requested changes on 2026-10-05 (UTC); calef answered every
+  thread and asked for re-review. Upstream `main` was merged in on 2026-10-22 (UTC), and `c264c6929`
+  makes `--export-json` report the verification target. The pull request waits on a maintainer
+  approving the fork's CI run, then on re-review. The `kani_lib.c` precompiled object and the
+  before-ready fixes are in it (`notes/kani-upstream/README.md`). Then dropping our patch.
 - **Done.** The stub half of containment landed as #1302. Its three riscv64 `satp` proofs run
   only in this job.
 - **Milestone 536.** `design/fatal-risks/README.md` risk 2 ("Only riscv64 is unreachable, and nobody here

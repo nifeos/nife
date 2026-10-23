@@ -1,8 +1,8 @@
 # model-checking/kani#4913: what stands between the draft and "ready for review"
 
-*Name: provisional. The parent note is [kani-upstream.md](../kani-upstream.md). Nothing here is
-posted. calef reads and posts every upstream word; nothing here was pushed to calef/kani or written
-on GitHub outside nifeos/nife.*
+*Name: provisional. The parent note is [kani-upstream.md](../kani-upstream.md). The pull request is
+out of draft and carries the patch (`450cbc2`) and all four body edits. The tables record the
+state of 2026-10-03 (UTC), when the retest was run. calef reads and posts every upstream word.*
 
 ## The premise was stale
 
