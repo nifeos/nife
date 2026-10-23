@@ -1,40 +1,13 @@
-//! **A thread's floating-point and SSE registers, `x86_64`.** The register file, the control-register
-//! bits that decide who may touch it, and nothing else: the policy is [`crate::fp`]'s.
+//! **A thread's floating-point and SSE registers, `x86_64`.** The register file and the
+//! control-register bits that decide who may touch it; the policy is [`crate::fp`]'s.
 //!
-//! # Four bits, and one of them has a CVE
-//!
-//! - **`CR4.OSFXSR`** says the operating system knows about `fxsave`/`fxrstor` and about the `xmm`
-//!   registers. Clear, every SSE instruction raises `#UD`, which is why this kernel's `-sse`
-//!   userspace has been safe until now without any of this existing.
-//! - **`CR4.OSXMMEXCPT`** says an unmasked SIMD floating-point exception should arrive as `#XM`
-//!   (vector 19) rather than as `#UD`. Set together with `OSFXSR`; a kernel that sets one without
-//!   the other reports arithmetic as a bad opcode.
-//! - **`CR0.EM` and `CR0.MP`** are the 80387 emulation pair. `EM` must be **clear** or SSE raises
-//!   `#UD` instead of the `#NM` this module wants, and `MP` is set so that `wait`/`fwait` respects
-//!   `TS` like everything else.
-//! - **`CR0.TS`** is the one that matters: set, the next FP or SSE instruction raises `#NM` (vector
-//!   7, "device not available"). It is the enable bit here, written per thread.
-//!
-//! **`TS` is also the mechanism behind `LazyFP`, CVE-2018-3665**, and this module is why
-//! [`crate::fp`]'s header says what it says. The vulnerability was not `TS` itself: it was using
-//! `TS` to defer the *restore*, so that one thread ran with another thread's `xmm` registers still
-//! in the file and the `#NM` as the only thing between them. Speculative execution reads them
-//! before the fault is delivered. Here `TS` answers "has this thread ever wanted the unit", which is
-//! a performance question, and the registers are always either the running thread's or
-//! [`FpState::INITIAL`], so there is nothing behind the trap to speculate at.
+//! `CR0.TS`, written per thread, is the enable bit: set, the next FP or SSE instruction raises
+//! `#NM`. It never defers a restore (the `LazyFP` scheme of CVE-2018-3665), so the registers hold
+//! the running thread's values or [`FpState::INITIAL`]. See notes/x86-port/cpu-state.md.
 //!
 //! # BUGS
 //!
-//! - **`fxsave`, not `xsave`.** This saves the 512-byte legacy area: x87, `MXCSR`, and
-//!   `xmm0`-`xmm15`. A thread that used **AVX** would have `ymm` upper halves that this does not
-//!   move, and AVX-512's `zmm` likewise. That is safe today only because `CR4.OSXSAVE` is clear, so
-//!   `xgetbv` and every VEX-encoded instruction raise `#UD` and no thread can get into that state;
-//!   the day this kernel enables `XCR0`, this file has to grow an `xsave` path with it, and that
-//!   coupling is stated here because nothing enforces it.
-//! - **`xsave`'s init optimisation is left on the table.** `xsave` records in `XSTATE_BV` which
-//!   components are actually in use and skips the rest, which would make the save of a thread that
-//!   touched one `xmm` register much cheaper than 512 bytes. `fxsave` has no such thing. Worth
-//!   revisiting with the `XCR0` work above rather than before it.
+//! - `fxsave`, not `xsave`, so AVX state is never moved; safe only while `CR4.OSXSAVE` is clear.
 
 use super::instructions::{self, read_cr0, read_cr4};
 
@@ -254,19 +227,16 @@ impl FpState {
     }
 }
 
-/// Proofs of the `CR0`/`CR4` edits, reachable since 2026-09-25 because the control-register accesses
-/// they make are functions in [`instructions`] that a harness can stub.
+/// Proofs of the `CR0`/`CR4` edits, which stub the control-register accesses in [`instructions`].
 ///
-/// # What the stubs assume
+/// The stubs model `CR0` and `CR4` as plain 64-bit registers: a write is visible to the next read,
+/// and `clts` clears bit 3 of `CR0` and nothing else (Intel SDM vol. 2A, `CLTS`). Real parts
+/// reserve bits and fault on writing them; the model does not, so these proofs say only that the
+/// code writes back every bit it did not mean to change. See
+/// notes/kernel-proofs/stubbing-an-instruction.md.
 ///
-/// `CR0` and `CR4` are modelled as plain 64-bit registers: a write is visible to the next read,
-/// exactly, and `clts` clears bit 3 of `CR0` and nothing else (Intel SDM vol. 2A, `CLTS`). Real
-/// parts reserve bits and fault on writing them; the model does not, so these proofs say only that
-/// the code writes back every bit it did not mean to change, which is the property a reserved bit
-/// needs. See notes/kernel-proofs/stubbing-an-instruction.md.
-///
-/// **Proved on the `x86_64` verify host only.** Kani compiles for its host, and this file is
-/// `x86_64`'s, so the aarch64 dev machine never compiles it; CI's `prove` shards run on x86_64.
+/// Proved on an `x86_64` host only: Kani compiles for its host, and CI's `prove` shards run on
+/// x86_64.
 #[cfg(kani)]
 mod proofs {
     use core::sync::atomic::AtomicU64;
@@ -315,14 +285,8 @@ mod proofs {
     }
 
     /// **Every FP edit of `CR0` and `CR4` changes exactly the bits it names, and [`is_enabled`]
-    /// reads back what the last one did.**
-    ///
-    /// `CR0` carries `PG` and `WP` beside the four FP bits, and `CR4` carries `PAE`, `SMEP` and the
-    /// paging controls beside the two SSE enables. A mask one bit wide of its mark here turns off
-    /// write protection or paging on the core that runs it, and on QEMU most such mistakes land on a
-    /// bit that happens to be clear already. [`init`] is also the only thing that establishes `TS`
-    /// set before the first thread runs, which is this module's whole guarantee. Checked for every
-    /// starting value of both registers.
+    /// reads back what the last one did**, from every starting value. A mask one bit wide of its
+    /// mark would turn off paging or write protection, which QEMU mostly does not show.
     ///
     /// Falsification: attested 2026-10-05. `kernel/falsifications/arch.x86_64.fp.proofs.every_fp_edit_changes_exactly_the_bits_it_names.patch`
     /// First replayed by run 37368707083 of that workflow. It makes `disable` store `CR0_TS` alone, which is the harness's second named mutation. The record

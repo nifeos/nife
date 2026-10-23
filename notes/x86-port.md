@@ -119,6 +119,8 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 | [user-mode-runtime.md](x86-port/user-mode-runtime.md) | The ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door that was closed, and `cntfrq()`. |
 | [userspace.md](x86-port/userspace.md) | How the archive arrives as a PVH module, the suite's skips by cause, and four latent bugs userspace found. |
 | [what-does-not-fit.md](x86-port/what-does-not-fit.md) | The four places the `arch/` seam did not stretch, the segment-base bug, the SMP counting bug, and where TSO pays out. |
+| [cpu-state.md](x86-port/cpu-state.md) | The control-register bits each core sets (PAT, SMEP, `PCE`), the port I/O gate, the boot CPU's id and the per-CPU pointer, the thread pointer, the FP and SSE unit, and the `CPUID` boot gates. |
+| [smp-bring-up.md](x86-port/smp-bring-up.md) | INIT-SIPI-SIPI, the one trampoline page every secondary shares, and the timing of the wait for each core. |
 
 ## BUGS
 

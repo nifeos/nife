@@ -6,22 +6,11 @@
 use super::*;
 
 /// **The local APIC id of the CPU the kernel booted on**, recorded once by `boot.s`'s `_start_high`
-/// (just after it zeroes `.bss`, and before it calls `kernel_main`) from `CPUID` leaf 1's
-/// `EBX[31:24]`, "Initial APIC ID".
+/// (after it zeroes `.bss`, before `kernel_main`) from `CPUID` leaf 1's `EBX[31:24]`.
 ///
-/// **Recorded rather than recomputed, and that distinction is the whole point** (milestone 316,
-/// `ap_boot.rs`'s BUGS #3). `CPUID` answers *"which core am I"*. Every caller of [`boot_cpu_id`]
-/// wants *"which core booted"*, and the two are the same number only while there is one core. Once
-/// a secondary is online, a caller that §28's placement has migrated onto it read its own id and
-/// called it the boot core's, which made `smp::tests::every_secondary_runs_scheduled_work` wait
-/// forever for a mark the real boot core never sets, and made `stack::report_high_water` scan a
-/// never-painted slot and report it at 65536/65536. Reading a value stamped by code that runs
-/// exactly once, on exactly the boot processor, cannot say that whoever asks later.
-///
-/// This is riscv64's `BOOT_HARTID` in x86 clothing. The difference is only in where the number
-/// comes from: OpenSBI hands RISC-V the hart id in `a0` and it would be lost if boot.s did not
-/// catch it, whereas `CPUID` remains readable forever, which is exactly what made the recomputing
-/// version look correct. aarch64 needs no static at all because its boot core is architecturally 0.
+/// Recorded, not recomputed: `CPUID` answers "which core am I", every caller of [`boot_cpu_id`]
+/// asks "which core booted", and the two differ once a secondary is online. riscv64's
+/// `BOOT_HARTID` is the same shape; see notes/x86-port/cpu-state.md.
 ///
 /// The name is **provisional** (an architect names things): it mirrors `BOOT_HARTID` on the
 /// architecture that already had this shape.
@@ -31,19 +20,11 @@ pub(super) static BOOT_CPU_ID: core::sync::atomic::AtomicUsize =
 
 /// The logical id of the CPU the kernel boots on.
 ///
-/// **Read from a boot-time record, not recomputed** (milestone 316; it was a live `CPUID` read from
-/// milestone 161 until then, and `BOOT_CPU_ID`'s own doc has why that was wrong and what it broke).
-/// Before 161 it was the constant 0, on the reasoning that the boot processor is selected by
-/// hardware rather than by firmware choice the way RISC-V's boot hart is. That is true and beside
-/// the point: the number this returns has to agree with the *roster's* seating
-/// (`smp::seat_cpus_from_acpi`, which seats every core, boot core included, at the slot its own
-/// local APIC id names, the same logical-id-equals-hardware-id invariant `read_cpu_list` gives the
-/// other two architectures), and nothing guarantees the boot CPU's local APIC id is 0 in general,
-/// only that it usually is on QEMU.
-///
-/// Still callable from the kernel's very first Rust statement, which is what
+/// Read from [`BOOT_CPU_ID`]. It must agree with the roster's seating (`smp::seat_cpus_from_acpi`
+/// seats every core at the slot its local APIC id names), and nothing guarantees the boot CPU's
+/// local APIC id is 0. Callable from the kernel's first Rust statement, as
 /// `cpu::init_this_cpu(arch::boot_cpu_id())` needs: `boot.s` stamps the record before it calls
-/// `kernel_main`, so there is no window in which this reads the `AtomicUsize`'s zero default.
+/// `kernel_main`, so this never reads the zero default.
 pub(crate) fn boot_cpu_id() -> usize {
     BOOT_CPU_ID.load(core::sync::atomic::Ordering::Relaxed)
 }
@@ -72,16 +53,11 @@ pub(crate) fn set_percpu(ptr: usize) {
 
 /// Read this CPU's per-CPU pointer (the value last handed to [`set_percpu`]).
 ///
-/// **One `gs`-relative load, not `rdmsr IA32_GS_BASE`** (milestone 758 (the IPC fast paths shrink
-/// back inside their band), provisional). The two answer the same question, since `gs`'s base IS
-/// that MSR, but `rdmsr` is a microcoded, serialising instruction that clobbers `rax`, `rdx` and
-/// `rcx`, and this runs several times per syscall: every lock, unlock and current-thread read.
-/// Inlined, it was the largest single line in x86_64's IPC fast-path closures on 2026-10-04 UTC.
-///
-/// It reads through `gs`, so in the windows where `IA32_GS_BASE` holds the user's value (around
-/// the `swapgs` at `syscall` entry and before `iretq`, `trap.s`) it would be a load from a user
-/// address. Nothing ordinary runs there: interrupts are masked, and the NMI, double fault and
-/// machine check enter through `isr_paranoid`, which puts the kernel's GS base in place first.
+/// One `gs`-relative load rather than `rdmsr IA32_GS_BASE`, which is microcoded, serializing and
+/// clobbers `rax`, `rdx` and `rcx`; this runs on every lock, unlock and current-thread read. Where
+/// `IA32_GS_BASE` holds the user's value (around the `swapgs`es in `trap.s`) it would load from a
+/// user address. Nothing ordinary runs there: interrupts are masked, and the NMI, double fault and
+/// machine check enter through `isr_paranoid`, which installs the kernel's GS base first.
 pub fn percpu() -> usize {
     let p: usize;
     // SAFETY: after `set_percpu` on this core, `gs:[PERCPU_SELF_OFF]` is this core's own
