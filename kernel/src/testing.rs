@@ -5,8 +5,9 @@
 //! to exit with a status code via semihosting. Cargo reads that status and calls it
 //! a pass or a failure.
 //!
-//! Set up on day one on purpose. The alternative is debugging by `println!` for a
-//! year (DECISIONS §7).
+//! Set up on day one, per DECISIONS §7 (testing: QEMU harness + host-testable crates, from commit
+//! one). The watchdogs, the frame ledger, skips, filters and repeats are in
+//! notes/kernel-test-harness.md.
 
 use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 
@@ -17,57 +18,18 @@ use test_times::budget_secs_for;
 use crate::arch::semihosting;
 use crate::{print, println};
 
-// The hang watchdog: **two independent mechanisms, because there are two ways a test never
-// finishes.** Both run off the timer IRQ, so they cost a couple of atomic loads per tick and cannot
-// perturb the scheduling they watch. Either one firing fails the run with a thread dump.
-//
-// **1. The no-progress heartbeat (a lost wakeup).** [`note_progress`] bumps a counter on every
-// observable kernel step: a completed IPC rendezvous or device-IRQ wake (`sched::wake` /
-// `wake_load_aware`) and every line of console output (`console::_print`, which covers each test's
-// "ok"). Progress is also credited when any online core is running a real, non-idle thread
-// ([`any_cpu_running_real_work`]), so a CPU-bound userspace poll with no wake and no output counts.
-// If none of that happens for ~60 s the run fails: every thread `Blocked`, every core idle.
-//
-// **2. The per-test wall-clock ceiling (a livelock).** The heartbeat above cannot see a livelock that
-// *makes progress* (a loop spinning while still doing IPC resets it on every rendezvous).
-// [`Testable::run`] stamps a start time and a budget per test, and this fails the run when the
-// budget is exceeded **even though progress is being made**.
-//
-// What each can and cannot see, stated plainly:
-//
-//   - The heartbeat catches a total stall (deadlock, lost wakeup) fast, and catches it wherever it
-//     happens, including before any test starts. It is blind to any loop that keeps doing IPC.
-//   - The ceiling catches any test that does not terminate, livelock included, regardless of how busy
-//     it looks. It cannot fire faster than the budget, so it is a backstop, not a diagnostic.
-//   - Neither can tell a livelock from slow-but-correct work *while it is running*; only the budget,
-//     which is a human declaration of expected cost, separates them. That is the honest limit.
-//   - **The heartbeat credits work by ANY thread, including leftovers from earlier tests**, so a
-//     test whose server died can look busy; the kernel cannot attribute a thread to a test. The
-//     defense is the ceiling, plus reading the thread dump's **address-space roots** rather than
-//     its program counters, which tells a leftover spinner from the process under test.
-//   - **A ceiling failure reports the ceiling, not the cost.** "ran 900 s" against a 900 s budget
-//     says nothing about how long the work would take, and raising a budget returns only the new
-//     budget.
-//   - Both run off the boot core's timer IRQ, so a kernel that loses it loses both. The backstop
-//     for that is xtask's host watchdog (`time_record::HOST_GRACE_SECS`, notes/scheduler.md), which
-//     kills QEMU at the test's budget plus a grace. This ceiling still fires first; its dump says more.
-/// **Which tests this binary runs** (milestone 210): a substring of the full test path, or empty
-/// for the whole suite.
-///
-/// Baked in by `kernel/build.rs` from `NIFE_TEST_FILTER`, which `cargo xtask test --test <s>` sets.
-/// It is a compile-time constant rather than a boot argument because that is the only channel
-/// identical on all three architectures: two of them boot with a device tree this kernel does not
-/// parse, and the third boots through PVH with no device tree at all. The cost is a kernel relink
-/// per filter change (about 2.3 s), against the ~53 s of aarch64 suite it replaces.
+// The hang watchdog: a no-progress heartbeat for a lost wakeup and a per-test wall-clock ceiling
+// for a livelock, both off the boot core's timer IRQ. notes/kernel-test-harness.md has what each
+// can and cannot see.
+/// **Which tests this binary runs**: a substring of the full test path, or empty for the whole
+/// suite. Baked in by `kernel/build.rs` from `NIFE_TEST_FILTER`, which `cargo xtask test --test`
+/// sets; a compile-time constant because that is the one channel identical on all three
+/// architectures. A filter change costs a kernel relink.
 ///
 /// # BUGS
 ///
-/// A filtered run **is not the suite**, and nothing here says so twice. Tests are not independent:
-/// the frame ledger's kept-frames ceiling, the thread peak and the stack high-water are all
-/// whole-suite numbers, and a one-test run's readings are far under them, so they cannot fail here
-/// and a filtered run proves nothing about them. Order coupling runs the other way too: a test that
-/// only passes because an earlier one wired a service will fail alone, which is a true finding
-/// about the test rather than about the code, and is worth reading as one.
+/// A filtered run is not the suite: whole-suite ceilings cannot fail in it, and a test that passes
+/// only after another can fail alone. See notes/kernel-test-harness.md.
 const TEST_FILTER: &str = env!("NIFE_TEST_FILTER");
 
 /// **Did this run name a test by filter?** For the few tests too expensive for the whole suite,
@@ -86,38 +48,14 @@ pub fn run_was_filtered() -> bool {
 /// the leg if the images together selected nothing. Unset, the rule below holds per image.
 const FILTER_COUNTED_ACROSS_IMAGES: bool = !env!("NIFE_TEST_FILTER_ACROSS_IMAGES").is_empty();
 
-/// **How many times the runner repeats the filtered tests in one boot**, baked in by
-/// `kernel/build.rs` from `NIFE_TEST_REPEAT` (name provisional), which `cargo xtask test --repeat`
-/// and `cargo xtask uefi-test --repeat` set. Empty means once, and then nothing about the run's
-/// output changes.
+/// **How many times the runner repeats the filtered tests in one boot**, from `NIFE_TEST_REPEAT`
+/// (name provisional), which `cargo xtask test --repeat` and `uefi-test --repeat` set. Empty means
+/// once. Parsed at compile time, so a value that is not a whole number of at least 1 fails the
+/// build.
 ///
-/// It exists for a failure that shows once in many boots on a bench where each boot costs a
-/// person a trip with a USB stick (milestone 321 (a corpse that did not park, on four real
-/// cores)). A frequency is the finding there, and two hundred runs in one boot measure it where
-/// two hundred boots would not be attempted.
-///
-/// Parsed at compile time, so a value that is not a whole number of at least 1 is a build error
-/// rather than a run that quietly repeats once.
-///
-/// # A failure stops the run
-///
-/// The first failing iteration ends the boot exactly as a single run's failure does: the panic
-/// handler or the watchdog prints its message and its dump, and [`note_repeat_failure`] adds which
-/// iteration it was and how many passed before it. Continuing and counting would need the kernel
-/// to survive a failed invariant and a test's half-built state, which is what the panic handler
-/// exists to refuse, and a second failure read after the first could be the first one's wreckage.
-/// So a frequency comes from the iteration the first failure lands on, and a run of N that passes
-/// says "no failure in N".
-///
-/// # BUGS
-///
-/// - **A repeat is refused without a filter.** The whole suite keeps services it built for the
-///   boot (the frame ledger's `SUITE_PAGE_FRAME_BUDGET` prices them), so repeating it measures that
-///   residue rather than the tests.
-/// - **The leak check sees frames and the runner's own capability slots, not every table.** A
-///   test that leaks a rendezvous or a thread table entry per run fails in whichever iteration
-///   runs out, and its message will read as the test's own. The per-iteration line prints the
-///   live thread count so the trend is at least on the page.
+/// The first failing iteration ends the boot as a single run's failure does, and
+/// [`note_repeat_failure`] says which it was; a run of N that passes says "no failure in N". A
+/// repeat is refused without a filter. notes/kernel-test-harness.md has why, and its BUGS.
 const TEST_REPEAT: u32 = parse_repeat(env!("NIFE_TEST_REPEAT"));
 
 const fn parse_repeat(text: &str) -> u32 {
@@ -242,22 +180,9 @@ static TEST_BUDGET: AtomicU64 = AtomicU64::new(0);
 static TEST_NAME_PTR: AtomicPtr<u8> = AtomicPtr::new(core::ptr::null_mut());
 static TEST_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 
-/// **A test's fixture is not there, on this machine, and that is not this test's fault.**
-///
-/// Milestone 145: the on-board test-suite exit (milestone 16a) ran the `#[test_case]` suite on
-/// the VisionFive 2 for the first time, and found roughly thirty tests that correctly expect a
-/// synthetic device only `xtask`'s QEMU runners attach (virtio-rng, virtio-gpu, an NVMe
-/// controller, ...). None of them was wrong; none of them had ever needed to run anywhere else.
-/// `Testable::run` had no way to record a third outcome besides pass (return) and fail (panic),
-/// so a test with no fixture had exactly one honest option: crash the whole suite, which is what
-/// `non_volatile_memory_express.rs`'s end-to-end test did.
-///
-/// The boot tour already has the shape this borrows: `main.rs` prints "skipped (no 'outlaw'
-/// program in the initial ramdisk)" instead of asserting a fixture that may not be there. `skip!()`
-/// is the same move inside a `#[test_case]`: call it where the old code called `.expect(...)`, and
-/// it prints the same message a passing test would have, tagged `skipped` instead of `ok`, then
-/// returns from the calling function. The macro (not a function) is what makes the early return
-/// reach the test: a function can only return `()` and hand back control, not unwind its caller.
+/// **The current test's skip reason**, set by [`skip!`] when the fixture a test needs is not on
+/// this machine: a third outcome beside pass (return) and fail (panic). `skip!` is a macro so its
+/// `return` leaves the test itself. See notes/kernel-test-harness.md.
 pub static SKIP_REASON: AtomicPtr<u8> = AtomicPtr::new(core::ptr::null_mut());
 pub static SKIP_REASON_LEN: AtomicUsize = AtomicUsize::new(0);
 /// **A test printed the word "skip" while it was running**, set by the console writer and read
@@ -265,29 +190,11 @@ pub static SKIP_REASON_LEN: AtomicUsize = AtomicUsize::new(0);
 #[cfg(any(test, feature = "system_tests"))]
 static PRINTED_A_SKIP_WORD: AtomicBool = AtomicBool::new(false);
 
-/// **The mechanism that keeps [`skip!`] from being optional**, from milestone 214
-/// (design/roadmap/0214-print-and-return-skips.md), on a test that prints "skipping" and returns
-/// being counted as passed.
-///
-/// `skip!()` existed and was one macro away, and eighty-odd `#[test_case]`s reached for
-/// `println!("... skipping)"); return;` instead. That is indistinguishable from a pass to
-/// everything that reads the counts, which is the only thing anyone reads: milestone 164 watched
-/// `x86_64` go from "200 passed, 55 skipped" to "211 passed, 44 skipped" without a single test
-/// running that had not run before.
-///
-/// So the console tells the harness what a test said. Every fragment written while a test is
-/// running is checked for `skip`, and a test that says the word and then returns **without** a
-/// skip reason fails the run. It is not a lint over the source: it fires on what was actually
-/// printed, at the moment the machine printed it, which is why it needs no allow-list and cannot
-/// be defeated by a format string the source does not show whole.
-///
-/// **What it costs and what it can get wrong.** One `str::contains` on each console fragment in
-/// test builds only. It fires on a test that prints "skip" for some other reason and then passes,
-/// which is a false positive; the whole tree today has none (measured, all three architectures),
-/// and a test that genuinely wants the word can print it in a message it also asserts on, or fail
-/// loudly rather than returning. The other direction is silent: a test that returns early having
-/// proved nothing and printed nothing is invisible to this, which is why the sweep also went
-/// looking for early returns with no line at all.
+/// **Note a console fragment written while a test runs**, so a test that prints "skip" and then
+/// returns without a skip reason fails rather than counting as a pass (milestone 214 (a test that
+/// prints "skipping" and returns is counted as passed)). It reads what was printed, so it needs no
+/// allow-list. A test that prints "skip" for another reason and passes is a false positive; the
+/// tree has none. See notes/kernel-test-harness.md.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_printed(fragment: &str) {
     if fragment.contains("skip") {
@@ -307,9 +214,8 @@ static SKIPPED: AtomicUsize = AtomicUsize::new(0);
 /// test did not run. Must be called from directly inside a `#[test_case]` function (it returns
 /// from its caller); calling it from a nested helper returns out of the helper instead, which
 /// is a bug at the call site, not in the macro.
-// Exported (milestone 609 (the system tests leave the kernel crate)) because most of its callers now
-// live in `system_tests/`, and its statics are named at the crate root for the same reason: from
-// another crate, `$crate::testing` is a private module.
+// Exported, with its statics at the crate root, because most callers are in `system_tests/`,
+// where `$crate::testing` is a private module.
 #[cfg(any(test, feature = "system_tests"))]
 #[allow(unused_macros)]
 #[macro_export]
@@ -328,23 +234,8 @@ macro_rules! skip {
 #[allow(unused_imports)]
 pub use crate::skip;
 
-// ---------------------------------------------------------------------------------------------
-// The frame ledger.
-//
-// **A boot has one pool of physical frames and no test gives an account of what it took.** That is
-// how the aarch64 suite spent its way to `Unmappable(OutOfPageFrames)` in whatever test happened to
-// spawn last, one run in three, three milestones in a row blaming the wrong code (notes/frames.md).
-// The instrument that settled it in milestone 107 was four lines in `memory_region::create`, thrown away
-// after one run; this is the same idea kept, so the next person reads a number instead of building
-// one.
-//
-// Two numbers per test, because they answer different questions and only the second fails a boot:
-// how many frames the test never gave back, and the longest run still allocatable afterwards. A
-// suite can hold a comfortable free total and refuse a 128-page request; 137 free with no run of
-// 128 is the measured case.
-//
-// Costs one bitmap scan per test (O(total), ~32k frames), between tests, off every hot path.
-// ---------------------------------------------------------------------------------------------
+// The frame ledger: what each test never gave back, and the longest run still free at the end.
+// One bitmap scan per test, between tests. See notes/kernel-test-harness.md.
 
 /// Free frames when the first test started: the ledger's opening balance.
 static FRAMES_AT_START: AtomicUsize = AtomicUsize::new(0);
@@ -369,74 +260,30 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 
 /// **What the whole suite may leave unreturned, in frames**, checked once at the end of the run.
 ///
-/// Not zero, and the difference is accounted rather than shrugged at. A boot keeps some of what
-/// its tests built on purpose: the shared services, `root_supervisor`'s unreclaimable budget, a
-/// page per kernel endpoint, a current-CPU page per live address space, the logins and credential
-/// stores, the file servers' windows and heaps, the terminals and compositors tests leave running.
-/// [notes/frame-budget.md](../../notes/frame-budget.md) prices each one and holds the history of
-/// the number; [notes/frames.md](../../notes/frames.md) lists the objects.
-///
-/// What must not *grow* is the per-test residue, and this ceiling sits just above the measured
-/// total so that a new service-shaped test which forgets to hand its memory back fails **here**,
-/// naming itself, instead of three tests later as `OutOfPageFrames` in something innocent.
-///
-/// The conventions every change follows, each with its story in the note: measure the merged
-/// tree's real run, never sum two branches; the tighter architecture carries the headroom; the
-/// +32 covers a measured two-frame local-against-CI divergence; and raising or lowering the
-/// number is a decision, so read the `[that test kept N frames]` lines and be able to say why.
-///
-/// Current: `24_322`, the +32 over the 24,290 the riscv64 suite keeps (aarch64 24,267; CI run
-/// 39450063569, 2026-10-20 UTC, with milestone 142 (a text display good enough that people use it
-/// instead of a GUI)'s four faces). Part of that residue is program image size rather than any
-/// test's memory. Each of `c_seam_tests`' three confiner spawns keeps a space sized by
-/// `c_confiner`'s loadable segments, 15 pages in a debug build. Spaces that map the whole initial
-/// ramdisk keep revocation-log pages sized by it, so a larger archive moves this number too. A
-/// change that grows a program can therefore move it by a few frames with no leak behind it; the
-/// `[that test kept N frames]` lines and the programs' segment pages tell the two apart.
+/// Not zero: a boot keeps what its tests built on purpose, which
+/// [notes/frame-budget.md](../../notes/frame-budget.md) prices, with the conventions a change to
+/// this number follows. It sits just above the measured total, so a test that keeps its memory
+/// fails here, naming itself, rather than later as `OutOfPageFrames` in something innocent.
 ///
 /// # BUGS
 ///
-/// - **Two test sites still keep their endpoints for the boot, deliberately.** `pipeline_service`
-///   (its `spawn_service_stub` is a kernel thread that loops forever) and `user::tests`'
-///   `a_user_client_moves_data_through_shared_memory` (a client that spins forever): reclaiming
-///   either would leave a thread spinning on a stale endpoint. Each takes its pages from a region
-///   of its own, so the cost is charged to that test and not to a later one.
-/// - **The kernel's own `user::*_service` wiring still uses the never-freed pool**, and much of it
-///   is called once per test rather than once per boot (`fs_service`, `ntp_service`,
-///   `display_service`, among others), so those tests still move this ledger in +32 steps.
-///   `create_rendezvous` being `pub(crate)` does not reach them, because they are in this crate.
-///   Milestone 670 (test helpers give their clients a region to retype from) and milestone 671
-///   (tests retype their rendezvous from their own region) are that work.
+/// Some tests still keep memory for the boot; notes/kernel-test-harness.md lists them.
 const SUITE_PAGE_FRAME_BUDGET: usize = 24_322;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///
-/// The other half of the gate, and the half that names the actual failure. Loading any program calls
-/// `AddressSpace::new`, which calls `memory_region::create`, which calls `alloc_contiguous`: what a boot
-/// runs out of is not memory, it is a **contiguous run**, and the two can be far apart. Milestone
-/// 107 measured 137 frames free with no run of 128; the boot this gate was written for ended with
-/// 216 free and no run longer than **117**, so any test loading a program bigger than that failed as
-/// `Unmappable(OutOfPageFrames)`, in whichever test happened to be next rather than in the one that
-/// spent the memory. [`SUITE_PAGE_FRAME_BUDGET`] alone would not have caught that, because a suite can
-/// pass a residue ceiling and still be fragmented into uselessness.
-///
-/// 1024 frames is 4 MiB, comfortably more than the largest program this boot loads (`redoxfs_server` and
-/// `net_stack` are the big ones, a few hundred pages with their page tables) and comfortably under
-/// the 14080 measured after reclamation. It is a floor with room, not a target.
+/// Loading a program needs a contiguous run, and a suite can pass the residue ceiling while
+/// fragmented: one boot ended with 216 free and no run longer than 117, and every larger program
+/// failed to load in whichever test came next. 1024 frames (4 MiB) is well above the largest
+/// program this boot loads and well under the 14,080 measured after reclamation.
 const SUITE_MIN_FREE_RUN: usize = 1024;
 
 /// **Charge the test that just finished, and open an account for the one about to start.**
 ///
-/// Called at the top of every test, and once more from the ledger, so the readings **partition the
-/// run**: what a test is charged is the drop between its own reading and the next one, and every
-/// frame lost between the first test and the last is charged to exactly one test. That matters more
-/// than it sounds. Reading free frames before and after the test body instead attributes only what
-/// the test spent *while it was running*, and a test that spawns a service and returns as soon as it
-/// has its report leaves the service still mapping its heap: on the first measured aarch64 boot that
-/// under-attribution was **17362 of the 29091 frames**, a clear majority landing nowhere.
-///
-/// The cost is a one-test lag in the transcript, which is why the line is printed after the previous
-/// test's `ok` rather than on it.
+/// The readings partition the run: a test is charged the drop from its own reading to the next
+/// one, so every frame lost between the first test and the last lands on exactly one test.
+/// Reading around the body instead misses a service left running, which on the first measured
+/// aarch64 boot was 17,362 of 29,091 frames. The cost is a one-test lag in the transcript.
 fn charge_previous(now: usize, next: &'static str) {
     let prev_ptr = PREV_NAME_PTR.load(Ordering::Relaxed);
     if !prev_ptr.is_null() {
@@ -516,19 +363,9 @@ fn report_page_frame_ledger() {
 
 /// **How close the boot came to the thread table's ceiling**, printed beside the frame ledger.
 ///
-/// The same posture as that ledger and deliberately one rung weaker: it reports and does not gate.
-/// A frame budget can be gated because a suite that keeps more frames than it accounts for has a
-/// leak, and the number the gate compares against is the tree's own claim about what is permanent.
-/// A thread peak is not that. What fills this table is the services earlier tests started and
-/// meant to keep (`notes/frames.md`'s "held" list), so a peak that climbs is usually a boot doing
-/// more rather than a boot doing something wrong, and a gate here would fire on every milestone
-/// that adds a service. `sched::thread_leak_police` is the check that does catch the wrong kind of
-/// growth, and it is a different question (runnable spinners, not occupancy).
-///
-/// What this buys instead is that nobody has to instrument the kernel to learn the number again.
-/// It was invisible until a spawn was refused, and then the investigation cost two full runs. See
-/// `sched::MAX_THREADS`, whose doc comment reads these lines the way the frame budget's reads the
-/// `[that test kept N frames]` ones.
+/// It reports and does not gate: what fills the table is the services earlier tests meant to keep,
+/// so a climbing peak is usually a boot doing more, and `sched::thread_leak_police` catches the
+/// wrong kind of growth. See `sched::MAX_THREADS`.
 fn report_thread_peak() {
     let peak = crate::sched::peak_thread_count();
     let max = crate::sched::MAX_THREADS;
@@ -545,18 +382,10 @@ fn report_thread_peak() {
 static REGION_PEAK_NAME_PTR: AtomicPtr<u8> = AtomicPtr::new(core::ptr::null_mut());
 static REGION_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 
-/// **How close the boot came to the region table's ceiling**, printed beside the thread peak.
-///
-/// [`report_thread_peak`]'s twin, one rung weaker than the frame ledger for its reason: what fills
-/// this table is mostly the services earlier tests left running on purpose, one region for each
-/// address space and more for each spawner's `SPLIT`, so a peak that climbs is usually a boot doing
-/// more. It adds one thing the thread line does not have, **the test during which the peak was
-/// set**, because that is the question the lane of milestone 152 (durable delegation) had to
-/// answer with a temporary print: the table reached 252 of 256 in `timetable_tests`, and the cause
-/// was a leak many tests earlier that no single test's behaviour showed. The name says where to start reading, not who is to
-/// blame; the ledger at `memory_region::MAX_REGIONS` says who holds what.
-///
-/// Reports and does not gate, and the reason is recorded at `MAX_REGIONS` rather than here.
+/// **How close the boot came to the region table's ceiling**, and the test during which the peak
+/// was set: where to start reading, not who is to blame, since a leak many tests earlier can set
+/// it. Reports and does not gate, for [`report_thread_peak`]'s reason; `memory_region::MAX_REGIONS`
+/// says who holds what.
 fn report_region_peak() {
     let peak = crate::memory_region::peak_region_count();
     let max = crate::memory_region::MAX_REGIONS;
@@ -608,21 +437,10 @@ fn stored_name(ptr: &AtomicPtr<u8>, len: &AtomicUsize) -> Option<&'static str> {
     unsafe { core::str::from_utf8(core::slice::from_raw_parts(ptr, len)).ok() }
 }
 
-/// **The fewest frames that were free at any moment, and what the allocator refused**, printed
-/// beside the region peak.
-///
-/// The frame ledger above reads the allocator at the first test and the last. Both its gates are
-/// about that end state, so a run that dips to nothing in the middle and recovers passes them, and
-/// the test that meets the dip fails with `Unmappable(OutOfPageFrames)` or hangs far from whoever
-/// spent the memory. That is what the lane of milestone 198 (a package manager) hit: two more
-/// login tests, and aarch64's `std_net` and riscv64's CPU matrix fell over. This line is the
-/// reading that says how close the run came (`memory::FREE_LOW_WATER`) and, when it went over,
-/// where it went over first.
-///
-/// Reports and does not gate, for [`report_thread_peak`]'s reason. On 2026-09-26 no allocation was
-/// refused on any of the three architectures, so the refusal line normally does not print, and a
-/// run where it does has met the ceiling somewhere; the named test is where to start reading.
-/// `memory::FREE_LOW_WATER` carries the ledger.
+/// **The fewest frames free at any moment, and what the allocator refused**, printed beside the
+/// region peak. The ledger reads only the run's ends, so a dip to nothing in the middle passes it
+/// while a later test fails far from the spender; this names the test the low came in. Reports and
+/// does not gate. `memory::FREE_LOW_WATER` carries the ledger.
 fn report_frame_pressure() {
     let (low, refused, largest) = crate::memory::allocation_pressure();
     if low == usize::MAX {
@@ -677,9 +495,8 @@ pub(crate) fn note_progress() {
 /// poll) always has one running. Read-only across the per-CPU blocks; racy by nature, which a
 /// heartbeat sampled once per tick tolerates.
 fn any_cpu_running_real_work() -> bool {
-    // The online set, not `0..count` (first-silicon sweep, 2026-08-14): with the VisionFive 2's
-    // {1,2,3} online, the count-as-index scan read parked slot 0's statics and never looked at
-    // cpu 3, so a suite whose only live work sat on cpu 3 would read as hung.
+    // The online set, not `0..count`: an online set of {1,2,3} has no core 0, and a count-as-index
+    // scan would never look at core 3.
     crate::smp::online_cpus().any(|c| {
         let pc = crate::cpu::of(c);
         let cur = pc.current.load(Ordering::Relaxed);
@@ -769,30 +586,11 @@ fn current_test_name() -> Option<&'static str> {
     }
 }
 
-/// **A budget denominated in timer ticks delivered to this core, for a test that has to wait.**
+/// **A budget in timer ticks delivered to this core, for a test that has to wait.**
 ///
-/// The unit is the whole point (milestone 62). A `timer::now()` deadline keeps running whether the
-/// guest executes an instruction or not, so on a contended host a wall-clock budget shrinks in the
-/// only currency a test cares about, which is guest work. Delivered ticks move the other way: a
-/// descheduled emulator misses deadlines, so **fewer** ticks arrive over the same stretch of wall
-/// clock and the budget stretches under exactly the conditions that made the wall-clock one wrong.
-/// This is the same move the drift twins made in `arch/*/timer.rs` (assert the law, not the rate),
-/// spent on a wait instead of on a clock.
-///
-/// It is a budget rather than a wait loop because the two callers poll differently and both are
-/// right to. `sched::tests::within_ticks` must not yield, since the thing it waits for is a
-/// preemption. `smp::tests::a_migrated_kernel_thread_keeps_its_hart_pointer` must yield, because it
-/// is draining workers that share its core, and it checks a *second* assertion on every turn, so it
-/// cannot be written as a condition handed to somebody else's loop. What the two share is the
-/// budget's arithmetic, and that is all this holds.
-///
-/// **A change of core re-anchors instead of subtracting.** `timer::ticks()` is per core (§11) and a
-/// steal can move this thread between two reads (§28.3), so comparing the counters either side of a
-/// migration compares two unrelated numbers. Re-anchoring is also the honest reading: the budget is
-/// "how many preemption opportunities this core gave me", and after a migration the answer starts
-/// again. The cost is that a thread migrating repeatedly could stretch the budget without bound,
-/// which is why nothing here is the last line of defence: the harness's per-test wall-clock ceiling
-/// is (see the module note, mechanism 2), and it fails the run whatever the ticks say.
+/// A descheduled emulator misses deadlines, so on a busy host fewer ticks arrive and the budget
+/// stretches with the guest's work, where a wall-clock one would shrink. A change of core
+/// re-anchors, since tick counts are per core. See notes/kernel-test-harness.md.
 ///
 /// # EXAMPLES
 ///
@@ -864,10 +662,8 @@ impl<T: Fn()> Testable for T {
     fn run(&self) {
         let name = self.name();
 
-        // The frame ledger, before this test's name is printed: the reading closes the *previous*
-        // test's account (and prints its charge under its own `ok` line) and opens this one's. The
-        // opening balance is taken at the first test rather than at boot, because what the kernel
-        // spends coming up is not a test's doing and is not what this measures.
+        // Before the name is printed: this closes the previous test's account under its own `ok`
+        // line. The opening balance is the first test's, since boot is not a test's doing.
         let frames_now = crate::memory::free_page_frames();
         if !FRAMES_STAMPED.swap(true, Ordering::Relaxed) {
             FRAMES_AT_START.store(frames_now, Ordering::Relaxed);
@@ -954,10 +750,7 @@ impl<T: Fn()> Testable for T {
             return;
         }
 
-        // **The test said "skip" and then returned as a pass.** That is milestone 214's defect
-        // and there is no honest reading of it: either the test skipped, in which case the branch
-        // above should have run, or it did not, in which case it printed something misleading
-        // about itself. Fail the run rather than let the final line carry it.
+        // A test that said "skip" and returned without a reason misreports itself (milestone 214).
         #[cfg(any(test, feature = "system_tests"))]
         if PRINTED_A_SKIP_WORD.swap(false, Ordering::Relaxed) {
             panic!(
@@ -968,14 +761,8 @@ impl<T: Fn()> Testable for T {
             );
         }
 
-        // Report what a test actually cost, if it cost anything worth knowing. The ceiling already
-        // needs a start time, so this is free, and it closes a real gap: a SLOW_TESTS budget is a
-        // human declaration of expected cost, and until now there was no way to learn the cost except
-        // by setting a budget too low on purpose and reading the failure. That is a bad way to find
-        // out, and it is exactly the position I was in when std_fs tripped the 90 s ceiling with no
-        // number attached. Anything under the threshold stays silent on the `ok` line; every figure,
-        // this one included, goes to the record block the runner prints after the suite (milestone
-        // 807), which is where a reader asking "what did each test cost" looks.
+        // Every figure goes to the record the runner prints after the suite; only a slow one shows
+        // on the `ok` line.
         let ticks = crate::arch::timer::now().saturating_sub(start);
         record_milliseconds(ticks);
         let elapsed = ticks / crate::arch::timer::frequency();
@@ -983,11 +770,7 @@ impl<T: Fn()> Testable for T {
             print!("[{elapsed} s] ");
         }
 
-        // A test that overflows the stack corrupts the kernel and then fails somewhere
-        // else entirely, often in a *later* test, or by hanging with no output at all.
-        // Checking here pins the blame on the test that actually did it.
-        //
-        // This is not hypothetical. It is how milestone 3 went. See notes/stack.md.
+        // Here, so an overflow is blamed on the test that did it, not a later one (notes/stack.md).
         assert!(
             crate::stack::is_intact(),
             "this test smashed the stack (headroom: {})",
@@ -1029,22 +812,16 @@ fn report_test_times(tests: &[&dyn Testable], filter: &str) {
     }
 }
 
-/// **The livelock probe** (feature `watchdog_probe`, EXPECTED TO FAIL the run). Proof that the
-/// per-test ceiling catches what the no-progress heartbeat cannot: this loops forever while doing a
-/// full IPC rendezvous every iteration, so [`note_progress`] fires constantly and the heartbeat sees
-/// a perfectly healthy kernel. That is the shape of the RedoxFS repeat-write livelock (spinning in an
-/// allocator commit while still serving blk IPC), which turned a loud 60 s watchdog trip into an
-/// infinite silent hang at ~400% CPU.
-///
-/// Run it with:
+/// **The livelock probe** (feature `watchdog_probe`, EXPECTED TO FAIL the run): it loops forever
+/// doing a full IPC rendezvous each pass, so the heartbeat sees a healthy kernel and only the
+/// per-test ceiling can catch it.
 ///
 /// ```text
 /// helpers/qemu-bounded.sh 200 cargo test -p kernel \
 ///     --features watchdog_probe --target aarch64-unknown-none-softfloat
 /// ```
 ///
-/// Expected: the run FAILS after this test's 90 s default budget, naming the test and its runtime.
-/// Without the ceiling it hangs until the outer bound kills it, which is the regression this guards.
+/// Expected: the run fails after the 90 s default budget, naming this test.
 #[cfg(all(any(test, feature = "system_tests"), feature = "watchdog_probe"))]
 #[test_case]
 fn a_livelock_that_keeps_doing_ipc_trips_the_per_test_ceiling() {
@@ -1071,14 +848,8 @@ fn a_livelock_that_keeps_doing_ipc_trips_the_per_test_ceiling() {
 /// assertion terminates the run. Crude, but a kernel with a failed invariant has no
 /// business continuing anyway.
 pub fn runner(tests: &[&dyn Testable]) {
-    // **The filter** (milestone 210), baked in at compile time by `kernel/build.rs` from
-    // `NIFE_TEST_FILTER`. Empty means the whole suite, which is the default and the only thing CI
-    // and `script/test` ever produce.
-    //
-    // The match is a substring of the test's full path, the same shape `cargo test <name>` uses, so
-    // `--test frames` selects a module's worth and
-    // `--test kernel::memory::tests::frames_are_zeroed` selects exactly one. There is no `--exact`
-    // here because there is nothing to disambiguate: a full path is already unique.
+    // A substring of the full path, as `cargo test <name>` matches; a full path is already unique,
+    // so there is no `--exact`.
     let filter = TEST_FILTER;
     let selected = if filter.is_empty() {
         tests.len()
@@ -1097,31 +868,23 @@ pub fn runner(tests: &[&dyn Testable]) {
     }
     println!();
 
-    // **A filter that selects nothing fails the run.** Reporting "ok. 0 passed" for a typo would be
-    // a green result that proves nothing, which is exactly the manufactured fact the `skip!()`
-    // accounting and the NIFE_DISK check elsewhere in this tree exist to refuse.
+    // A filter that selects nothing fails the run: "ok. 0 passed" for a typo would prove nothing.
     if selected == 0 && FILTER_COUNTED_ACROSS_IMAGES {
-        // Not a verdict on its own: the other image in this leg may carry the test, and
-        // `cargo xtask test` adds the `running` lines up. The result line keeps the shape every
-        // reader of these transcripts (the HVF leg, `script/falsifications`) already parses.
+        // Not a verdict: another image in this leg may hold the test, and `cargo xtask test` sums
+        // the `running` lines. The result line keeps the shape its readers parse.
         println!("no test in this image matches the filter `{filter}`; the harness counts the leg");
         println!("test result: ok. 0 passed");
         semihosting::exit(semihosting::EXIT_SUCCESS)
     }
     if selected == 0 {
         println!("no test matches the filter `{filter}`");
-        // The likeliest cause on a multi-leg run, named here because the reader is looking at one
-        // leg's transcript and cannot see that another leg passed. `--test` selects tests, not
-        // architectures (DECISIONS §19), so a filter naming an aarch64-only test runs the riscv64
-        // and x86_64 legs too and lands here on both. Say `--arch` as well when that is what you
-        // meant.
+        // `--test` selects tests, not architectures (DECISIONS §19 (architectural parity is a
+        // tenet)), so an aarch64-only test lands here on the other legs.
         println!("  (a test only this architecture lacks? `--test` runs every leg; add `--arch`)");
         semihosting::exit(semihosting::EXIT_FAILURE)
     }
 
-    // **The time record's table must hold every test, or the run fails before it starts** (milestone
-    // 807). A record with a hole in it would read as a test that cost nothing, and `xtask`'s gap
-    // check would then fail the leg at the end of a whole suite for a reason this line knows now.
+    // Fail now rather than print a record with a hole that `xtask` fails at the suite's end.
     assert!(
         tests.len() <= TIME_RECORD_CAPACITY,
         "this image has {} tests and the per-test time record holds {TIME_RECORD_CAPACITY}; \
@@ -1145,10 +908,8 @@ pub fn runner(tests: &[&dyn Testable]) {
     report_test_times(tests, filter);
 
     println!();
-    // "passed" counts only the tests that actually ran to an "ok"; a skipped test (skip!(), no
-    // fixture on this boot) is not a pass, and rolling it into either bucket silently would hide
-    // exactly the fact milestone 145 exists to keep visible. A board run says "244 passed, 31
-    // skipped" rather than a bare 275 that looks identical to QEMU's full count.
+    // A skipped test is not a pass, and the result line keeps the two apart (milestone 145 (a test
+    // that needs hardware the boot doesn't have can say so)).
     let skipped = SKIPPED.load(Ordering::Relaxed);
     if skipped > 0 {
         println!(
@@ -1244,28 +1005,13 @@ fn announce_repeat_run(iteration: u32, previous_frames: Option<usize>) -> Repeat
     now
 }
 
-/// **A root region's run of frames, named while the region is alive.**
+/// **A root region's run of frames, named while the region is alive**, so a frame-return test asks
+/// whether those frames came back rather than whether nothing else in the machine allocated.
 ///
-/// The instrument the frame-return tests in `sched.rs`, `user/child_thread_tests.rs` and
-/// `user/force_kill_tests.rs` ask their question through, and it exists because the question they
-/// used to ask was wider than the property. `memory::free_page_frames()` counts every free frame in
-/// the machine, so bracketing it across a reclaim asserts that *nothing else in the kernel
-/// allocated or freed* for the length of the window. No test in this suite has any business making
-/// that claim: the windows contain child threads, remote-core reaps and a neighbouring test's late
-/// teardown, and two of them were proved wrong on CI before this type existed (pull requests #1101
-/// and #1120, notes/load-sensitive-assertions.md).
-///
-/// A root region's pages come from the frame allocator and go back to it
-/// (`memory_region::destroy`), so every frame in the run is marked used from `create` until the
-/// reclaim and free afterwards. Those bits are the property itself, and nothing outside the region
-/// can move them. `memory_region::usage` is the sibling instrument, for a *child* region whose
-/// pages return to a parent rather than to the allocator, and whose frames therefore stay used
-/// either way.
-///
-/// **Leak sensitivity is sharper, not merely preserved.** A frame a reclaim never returned stays
-/// marked used forever, so the defect fails on every run rather than on the runs where the
-/// arithmetic happens to be visible, and it can no longer be masked by somebody else freeing the
-/// same number of frames in the same window.
+/// A root region's pages come from the frame allocator and go back to it, so their used bits are
+/// the property itself, and nothing outside the region moves them. A frame a reclaim never
+/// returned stays used, so a leak fails every run. `memory_region::usage` is the instrument for a
+/// child region. See notes/kernel-test-harness.md.
 ///
 /// Name: provisional (this lane; calef names the interfaces).
 pub struct RegionRun {

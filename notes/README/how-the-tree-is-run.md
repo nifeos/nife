@@ -37,6 +37,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [How stable the interface is](../interface-stability.md): what the interface is, the weekly counts of what broke and what grew, the proposed threshold, and what the counts cannot see. Names provisional.
 - [The violation ledger](../rule-violations.md): counting how often each written rule is broken. Name provisional.
 - [Load-sensitive assertions](../load-sensitive-assertions.md): the register of assertions that fail under host load, how to fix one, and each site's status. Appendix names provisional.
+- [The kernel test harness](../kernel-test-harness.md): the two hang watchdogs, skips, filters and repeats, the frame ledger, tick budgets, and the preemption window tests.
 - [The `uefi-test` exit-1-after-green rate](../uefi-test-exit-rate.md): the measured rate, the exit-path protocol the failure message now names, and why the VT-d lines are expected. Name provisional.
 - [The `uefi-boot` two-core rate at `-smp 2`](../uefi-boot-two-core-rate.md): the dedicated rate the UEFI gate's two-core assertion was owed, zero in 42 across a load gradient, and which stale records the fix left behind. Name provisional.
 - [The CI log baseline](../ci-log-baseline.md): which check failed each CI job, from expiring logs. Names provisional.
