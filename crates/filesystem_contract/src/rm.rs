@@ -1,30 +1,11 @@
-//! **What the `rm` program reports, and how a diagnostic is told from the verdict**
-//! (milestone 47 (navigation and naming)'s `rm -r`, `components/src/rm.rs`).
+//! **What the `rm` program reports** (`components/src/rm.rs`), on its report endpoint under the
+//! sink contract: lines of text, then the verdict, told apart by the first word.
 //!
-//! **Where these two words travel** (corrected 2026-08-17). `rm` declares the sink contract
-//! (`grant_plan::OutputDeclaration::Bytes`), so its report is framed text and then `byte_sink_contract`'s
-//! `OPERATION_EOF`; the status and the removal count ride in the two words that end-of-stream message
-//! leaves free. They used to ride on `filesystem_fixture::VERDICT`, a word the sink contract has no
-//! meaning for, which no reader but a guest test could have decoded.
-//!
-//! `rm` is a **program**, not a shell builtin, so it holds a report endpoint and nothing that
-//! names a terminal. Two kinds of message go out on it, and they are told apart by the first
-//! word, which is what makes "silent on success" checkable from the far end:
-//!
-//! - **A line of text**, framed exactly as every std program's stdout is (`w0` = the byte count,
-//!   at most 16, and the bytes little-endian in `w1`|`w2`). Diagnostics always go out this way;
-//!   `-v` adds one line per name removed.
-//! - **The verdict**, once, last: `w0` = `filesystem_fixture::VERDICT` (the test crate's verdict
-//!   word), `w1` = the exit status, `w2` = how many names were removed.
-//!
-//! A byte count is at most 16 and the verdict word is far larger, so the two never collide. A
-//! receiver that takes the verdict as its **first** message therefore knows the run printed
-//! nothing, which is `rm(1)`'s default behaviour asserted rather than assumed: a `SEND` blocks
-//! until somebody receives it, so a line that was emitted cannot be missed by looking later.
-//!
-//! This module stayed in the protocol crate when the rest of the fixture moved out (milestone 886
-//! (the filesystem test fixture moves to its own crate), calef's ruling): the exit-status
-//! convention is words shipping programs send each other, not test data.
+//! - A line is framed as std's stdout is: `w0` = the byte count (at most 16), the bytes
+//!   little-endian in `w1`|`w2`. Diagnostics always go out this way; `-v` adds one per name removed.
+//! - The verdict, once and last: `w0` = `byte_sink_contract::eof()`, `w1` = the exit status, `w2` =
+//!   how many names were removed. A receiver whose first message is the verdict knows the run
+//!   printed nothing, since a `SEND` blocks until it is received. See notes/rm.md.
 
 /// The exit status of a run in which everything named was removed. `rm(1)`: "exits 0 if all
 /// of the named files or file hierarchies were removed".
