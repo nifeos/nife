@@ -5,9 +5,8 @@
 //! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan`] places
 //! its tokens into the slots the program's [`Manifest`] declares ([`Program::manifest`]) and yields
 //! an [`Endowment`], exactly what to grant the child, or a typed [`Refusal`] the shell prints at the
-//! prompt. [`spawnproto`] is the word layout of the shell-to-progenitor spawn protocol. See
-//! notes/grant-expression/grant-plan-crate.md, notes/grant-expression.md and
-//! notes/program-manifest.md.
+//! prompt. [`spawnproto`] is the spawn protocol's word layout. See notes/grant-expression.md, its
+//! appendix grant-expression/grant-plan-crate.md, and notes/program-manifest.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `capsh`. Refused `capsh` (Linux's
 //! `capsh(1)` is a different tool). Refused `designation`, `designate` and `designator` (the user

@@ -6,8 +6,7 @@
 //! take one call at a time, and after each call checks that it reached nothing it was not granted.
 //! Both binaries need the same slot layout, the same two conductor words and the same report-page
 //! layout, so those live here (AGENTS.md rule 7: anything two binaries agree on is a crate).
-//!
-//! Every name in this crate is provisional, the crate's included.
+//! Every name in this crate but the crate's own is provisional.
 //!
 //! Name: ratified 2026-10-18 (calef): "ratify `confined_syscall_fuzzer_contract`". It matches the
 //! fixture program it serves, `confined_syscall_fuzzer`.

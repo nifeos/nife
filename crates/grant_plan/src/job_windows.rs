@@ -1,6 +1,5 @@
-//! **The file service's client windows, as the progenitor hands them to jobs** (milestone 599 (a
-//! frame per filesystem client channel), milestone 685 (a job is finished when its memory is
-//! back)).
+//! **The file service's client windows, as the progenitor hands them to jobs** (milestones 599 (a
+//! frame per filesystem client channel) and 685 (a job is finished when its memory is back)).
 //!
 //! Every directory-granted job gets a window of its own: a page of the file service's pool and the
 //! service's endpoint badged with the window's number. [`Windows::take`] hands a window out only
