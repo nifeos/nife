@@ -46,16 +46,12 @@ pub struct Held {
     pub report: bool,
 }
 
-/// **What the shipped `components/src/timetable.rs` actually holds**, and the one `Held` value it and
-/// this crate's own host test both use, so the two cannot drift the way [`Registry::register`](crate::Registry::register)'s
-/// module doc already warns a document and a spawn site can. `PLANNED_PROGRAMS` in
-/// `system_tests/src/user/timetable_tests.rs` is the same idea applied to the archive; this is it applied
-/// to what the scheduler holds.
+/// **What the shipped `components/src/timetable.rs` actually holds**, and the one `Held` value it
+/// and this crate's own host test both use, so the two cannot drift. `PLANNED_PROGRAMS` in
+/// `system_tests/src/user/timetable_tests.rs` is the same idea applied to the archive.
 ///
-/// Four pages: enough to admit one `at-boot memory_grant_depleter --mem 4` line as this milestone's proof that a
-/// grant can be backed at all, and small on purpose. Nothing about the mechanism needs a bigger
-/// number; picking one only because it looks more impressive would be gold-plating a demonstration
-/// that already makes its point at four.
+/// Four pages: enough to admit one `at-boot memory_grant_depleter --mem 4` line, the proof that a
+/// grant can be backed at all, and small on purpose, since nothing about the mechanism needs more.
 pub const SHIPPED_HELD: Held = Held {
     mem_pages: 4,
     clock: false,
