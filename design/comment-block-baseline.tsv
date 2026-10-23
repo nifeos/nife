@@ -182,15 +182,9 @@ kernel/src/sched/capabilities.rs:230	33
 kernel/src/sched/capabilities.rs:398	30
 kernel/src/sched/configure.rs:39	25
 kernel/src/sched/inspection.rs:381	23
-kernel/src/sched/inspection.rs:633	35
+kernel/src/sched/inspection.rs:660	35
 kernel/src/sched/ipc_tables.rs:32	31
 kernel/src/sched/ipc_tables.rs:130	24
-kernel/src/sched/region_reaping.rs:12	28
-kernel/src/sched/region_reaping.rs:98	35
-kernel/src/sched/region_reaping.rs:210	34
-kernel/src/sched/region_reaping.rs:288	27
-kernel/src/sched/region_reaping.rs:455	30
-kernel/src/sched/region_reaping.rs:547	27
 kernel/src/sched/rendezvous.rs:730	25
 kernel/src/sched/rendezvous.rs:983	29
 kernel/src/sched/spawning.rs:15	33
