@@ -161,7 +161,6 @@ kernel/src/pci.rs:94	31
 kernel/src/pci.rs:201	31
 kernel/src/pci.rs:604	34
 kernel/src/pci.rs:869	26
-kernel/src/preemption_window_tests.rs:1	32
 kernel/src/progenitor_stack.rs:1	40
 kernel/src/reboot.rs:1	32
 kernel/src/reboot/designware_i2c.rs:1	22
@@ -174,8 +173,6 @@ kernel/src/revoke.rs:792	29
 kernel/src/revoke.rs:829	38
 kernel/src/revoke.rs:874	25
 kernel/src/revoke.rs:930	39
-kernel/src/sched.rs:1	34
-kernel/src/sched.rs:139	30
 kernel/src/sched/capabilities.rs:37	22
 kernel/src/sched/capabilities.rs:203	22
 kernel/src/sched/capabilities.rs:230	33
@@ -205,8 +202,6 @@ kernel/src/sched/thread_table.rs:31	38
 kernel/src/sched/thread_table.rs:311	22
 kernel/src/screen.rs:1	21
 kernel/src/screen.rs:23	23
-kernel/src/self_test.rs:1	34
-kernel/src/self_test.rs:36	26
 kernel/src/smp.rs:394	32
 kernel/src/smp.rs:611	37
 kernel/src/smp.rs:950	38
@@ -224,17 +219,6 @@ kernel/src/storage_bench.rs:1	39
 kernel/src/sync.rs:1	34
 kernel/src/sync.rs:53	40
 kernel/src/sync.rs:124	22
-kernel/src/syscall.rs:1	34
-kernel/src/syscall.rs:354	25
-kernel/src/syscall/proofs.rs:47	23
-kernel/src/syscall/rendezvous.rs:1	22
-kernel/src/syscall/rendezvous.rs:185	39
-kernel/src/testing.rs:20	34
-kernel/src/testing.rs:89	32
-kernel/src/testing.rs:268	23
-kernel/src/testing.rs:370	40
-kernel/src/testing.rs:772	36
-kernel/src/testing.rs:1247	23
 kernel/src/thread.rs:1	25
 kernel/src/thread.rs:37	23
 kernel/src/thread.rs:391	27
