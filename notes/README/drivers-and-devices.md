@@ -15,6 +15,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Confining DMA with an IOMMU](../iommu.md): hardware DMA confinement with SMMUv3 and the RISC-V IOMMU.
 - [AMD-Vi](../amd-vi.md): confining DMA on an AMD machine, where the IOMMU is in the IVRS rather than the DMAR, and where QEMU's model differs from the specification.
 - [Block devices: what is attached, and what holding one means](../block-devices.md).
+- [The kernel console](../kernel-console.md): `print!`, its one lock over the UART and the screen, the screen hold, and the escapes from the ring.
 - [A machine with no serial port](../serial-less-output.md): screen output for machines without a UART.
 - [The framebuffer contract](../framebuffer-contract.md): how a confined client gets pixels onto a screen.
 - [The compositor](../compositor.md): one screen shared among clients that distrust each other.

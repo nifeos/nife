@@ -1,8 +1,8 @@
 //! The kernel console, and `print!` / `println!`.
 //!
-//! There is deliberately no global mutable state here. A `Pl011` handle is just a
-//! pointer, so we mint a fresh one per call rather than keeping a
-//! `static mut CONSOLE`. The real state lives in the hardware, not in our memory.
+//! One `IrqSafeMutex` holds the console UART and, where the machine has one, the screen, so a
+//! `print!` from an interrupt handler cannot splice into another writer's line. See
+//! notes/kernel-console.md.
 
 use core::fmt::Write;
 
@@ -55,58 +55,34 @@ pub(crate) const UART_NODE: &[u8] = crate::arch::machine::CONSOLE_UART_NODE;
 #[cfg(target_arch = "x86_64")]
 pub(crate) const UART_NODE: &[u8] = b"";
 
-/// The console UART's address, as the kernel sees it.
+/// The console UART's address, as the kernel sees it: a virtual address in the direct map at
+/// `pa | KERNEL_VA_BASE`, which aarch64's boot.s maps before any Rust runs.
 ///
-/// **Hardcoded on purpose, and it should stay that way.** Not a TODO.
-///
-/// Everywhere else we insist the machine tell us what it is rather than guessing
-/// (notes/device-tree.md). The console is the one place we can't, and the reason is a
-/// chicken-and-egg: the device tree parser is the code most likely to have a bug, and
-/// `println!` is how you would debug it. So the console has to come up *before* the
-/// device tree is parsed, which means the console cannot depend on it.
-///
-/// A new board needs a different constant here, and that is the correct shape: a per-board
-/// early-console address, chosen at compile time, that gets us far enough to read the tree that
-/// tells us everything else.
-///
-/// **This is a virtual address.** It lives in the kernel's direct map at `pa | KERNEL_VA_BASE`; on
-/// aarch64 boot.s maps it before any Rust runs and `mmu::init` preserves it. On RISC-V the kernel
-/// currently runs bare (identity map), so `phys_to_virt` is the identity until the Sv39 step.
+/// Hardcoded on purpose, not a TODO: the console must come up before the device tree parser it
+/// exists to debug, so a new board needs a new constant here (notes/kernel-console.md).
 #[cfg(not(target_arch = "x86_64"))]
 const UART_BASE: usize = crate::arch::mmu::phys_to_virt(UART_PHYS) as usize;
 /// `x86_64`'s console base is a port number and needs no translation; see [`UART_PORT`].
 #[cfg(target_arch = "x86_64")]
 const UART_BASE: usize = UART_PORT;
 
-/// **The screen half of the console** (milestone 243), when the machine has one.
-///
-/// A framebuffer this kernel was told about by whoever booted it, plus the cursor walking across
-/// it. Held here, inside [`KernelConsole`], rather than under a lock of its own, and that is the
-/// whole reason this struct exists: **the UART lock is what serialises the screen too.** A second
-/// mutex would need a rank below `rank::CONSOLE` and would be taken on every `print!` for no
-/// benefit, and `force_unlock` (the panic path) would then have two locks to break instead of one.
+/// The screen half of the console, when the machine has one: a framebuffer this kernel was told
+/// about by whoever booted it, plus the cursor walking across it. Held inside [`KernelConsole`],
+/// so the UART lock serialises the screen too and the panic path has one lock to break.
 struct Screen {
     /// The cursor and the geometry. Holds no pixels; see the `screen_console` crate.
     console: ScreenConsole,
     /// Who paints it now. See [`Painter`].
     painter: Painter,
-    /// The framebuffer's address **in the kernel's direct map**, and its length in bytes.
-    ///
-    /// A raw address rather than a `&'static mut [u8]`, because a slice would be a live mutable
-    /// borrow of device memory sitting in a `static` for the life of the machine. It is turned into
-    /// a slice for the duration of one write and no longer.
+    /// The framebuffer's address in the kernel's direct map, and its length in bytes. A raw
+    /// address, turned into a slice for one write at a time, so no mutable borrow of device memory
+    /// lives in a `static`.
     pixels: usize,
     len: usize,
 }
 
-/// **Who paints the screen** (the shell on the firmware screen, milestone 198's rung 1b).
-///
-/// One aperture, and at any moment exactly one process that writes it. Two painters on one
-/// framebuffer interleave the way milestone 230 found two UART writers did, except that on a
-/// screen the splice is pixels and nobody can read either message. So the handover is a state
-/// here rather than a convention somewhere else: [`KernelConsole::write_str`] paints only while
-/// this says [`Painter::Kernel`], and [`yield_screen`] is the one way out of it, which it takes
-/// once.
+/// Who paints the screen. Exactly one writer at a time: [`KernelConsole::write_str`] paints only
+/// while this says [`Painter::Kernel`], and [`yield_screen`] is the one way out of it, taken once.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Painter {
     /// `print!` tees into it: the boot tour, milestone 243.
@@ -117,22 +93,15 @@ enum Painter {
     Terminal,
 }
 
-/// The kernel console: a UART, and since milestone 243 (a machine with no serial port) optionally a
-/// screen.
-///
-/// **Both, not either.** A machine with a serial port and a monitor should say the same thing on
-/// both, because the person at the bench and the gate reading the wire are looking for the same
-/// line, and a console that chose one of them would be a console somebody has to configure.
+/// The kernel console: a UART and, where the machine has one, a screen. Both say the same thing,
+/// since the person at the bench and the gate reading the wire want the same line.
 struct KernelConsole {
     uart: ConsoleUart,
     screen: Option<Screen>,
-    /// What the screen says, one byte a cell, which is what a scroll redraws from so that nothing
-    /// ever reads the aperture back (see `screen_console::PixelSink`). **Here rather than inside
-    /// [`Screen`]** because it is 36,000 bytes: as a field of this `static` it is laid down at
-    /// compile time, where inside `Screen` it would be built on the 64 KiB boot stack by
-    /// [`attach_screen`] and moved, which is the shape of the 16 KiB-array incident in
-    /// `notes/stack.md`. It costs the same 36,000 bytes of image on every architecture, whether
-    /// or not the machine has a screen.
+    /// What the screen says, one byte a cell, which a scroll redraws from so nothing reads the
+    /// aperture back (see `screen_console::PixelSink`). Outside [`Screen`] because it is 36,000
+    /// bytes: here it is laid down at compile time rather than built on the 64 KiB boot stack
+    /// (`notes/stack.md`), at that cost on every architecture.
     cells: Cells,
     /// The line being assembled for the kernel's ring (milestone 342 (the kernel and the
     /// `console` server drive one UART from two address spaces)): see [`crate::kernel_log`].
@@ -159,10 +128,8 @@ fn write_wire(
         let bytes =
             unsafe { core::slice::from_raw_parts_mut(screen.pixels as *mut u8, screen.len) };
         screen.console.write(cells, &mut PixelSink::new(bytes), s);
-        // The aperture is write-combining on `x86_64` (`arch::x86_64::mmu`), so the last few
-        // stores of this line can sit in a combining buffer rather than on the screen. A fence
-        // drains them, which matters exactly once: the panic path halts after its last line with
-        // interrupts off, and nothing else would ever push those pixels out.
+        // The aperture is write-combining on `x86_64`, so a line's last stores can sit in a
+        // combining buffer. The fence drains them before the panic path halts.
         crate::arch::direct_memory_access_write_barrier();
     }
     Ok(())
@@ -174,13 +141,8 @@ impl core::fmt::Write for KernelConsole {
     }
 }
 
-/// The console.
-///
-/// It used to be lock-free: we minted a fresh handle per `print!`, since the handle is just a
-/// pointer and the real state lives in the hardware. That was fine with no interrupts. It stops
-/// being fine the moment an interrupt handler can print in the middle of somebody else's
-/// `write_str`, because the UART is written **one byte at a time** and the two writers would splice
-/// into each other mid-word.
+/// The console. Locked because the UART is written one byte at a time, and an interrupt handler
+/// printing inside another writer's `write_str` would splice into it mid-word.
 ///
 /// SAFETY: `UART_BASE` is the documented UART address on QEMU `virt`, and nothing else in the kernel
 /// touches it.
@@ -188,9 +150,7 @@ static CONSOLE: IrqSafeMutex<KernelConsole> = IrqSafeMutex::new(
     rank::CONSOLE,
     KernelConsole {
         // SAFETY: `UART_BASE` is the documented console address on every machine this kernel is
-        // built for (see its own doc comment), and nothing else in the kernel touches it. This is
-        // the static's initializer; it moved inside a struct in milestone 243 and the reason it is
-        // `unsafe` did not change.
+        // built for (see its own doc comment), and nothing else in the kernel touches it.
         uart: unsafe { ConsoleUart::new(UART_BASE) },
         screen: None,
         cells: Cells::new(),
@@ -202,33 +162,18 @@ pub fn init() {
     CONSOLE.lock().uart.init();
 }
 
-/// **This machine's console, for the machine description** (milestone 268).
-///
-/// One of the eight questions the description answers on every architecture, and the one that
-/// answers itself: a reader who can see this line is reading it through the device it names. That
-/// is not a joke at the line's expense, it is what makes it worth printing. The address here is the
-/// **compile-time** constant this kernel came up on (see [`UART_BASE`]'s own doc for why the
-/// console cannot ask the machine where it is), so a board whose real UART is somewhere else
-/// prints nothing at all, and a board whose UART is here but whose *tree* disagrees is a board
-/// where this line and the interrupt line below it are the diagnosis.
-///
-/// **The screen half is printed too, or its absence is** (milestone 243). A machine with a
-/// framebuffer says the same thing on both surfaces, and `xenon` is why: at first light there was
-/// no serial console this project could read, so the description *was* the transcript, photographed
-/// off a monitor.
-// The machine description and the boot self-test are the only callers, and both are
-// `#[cfg(not(any(test, feature = "bench")))]`: a test boot exits through semihosting and a bench
-// boot diverges into `bench::run`, so neither reads a bring-up transcript. Same treatment
-// `memory::print_summary` already carries, and for the same reason.
+/// Print this machine's console for the machine description: the compile-time UART address and
+/// interrupt line, then the screen or its absence. A board whose tree disagrees with the address
+/// shows it here.
+// The machine description and the boot self-test are the only callers, and neither is built for
+// a test or bench boot.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)
 )]
 pub(crate) fn print_summary() {
     let irq = crate::memory::uart_irq();
-    // The screen is read through the same lock the UART is, which is the point of `KernelConsole`:
-    // one lock serialises both surfaces. Copied out and released before printing, because printing
-    // takes that lock again.
+    // Copied out and released before printing, because printing takes the lock again.
     let screen = CONSOLE.lock().screen.as_ref().map(|s| (s.pixels, s.len));
 
     #[cfg(target_arch = "x86_64")]
@@ -237,9 +182,7 @@ pub(crate) fn print_summary() {
     crate::print!("  console         : {CONSOLE_KIND} at {UART_BASE:#018x}");
     match irq {
         Some(line) => crate::print!(", interrupt line {line}"),
-        // Not a failure: the x86 console is polled and nothing routes its line yet, and a device
-        // tree that names no `interrupts` property for the UART is a tree this kernel still boots
-        // on. Saying which is the diagnosis a blank would not be.
+        // Not a failure: the x86 console is polled, and a tree may name no UART interrupt.
         None => crate::print!(", no interrupt line recorded"),
     }
     crate::println!();
@@ -266,26 +209,17 @@ const CONSOLE_KIND: &str = "PL011";
 #[cfg(target_arch = "riscv64")]
 const CONSOLE_KIND: &str = "NS16550";
 
-/// **Start printing to a screen as well as to the UART** (milestone 243).
+/// Start printing to a screen as well as to the UART, and clear it.
 ///
-/// `found` is what the boot stage before this kernel measured and wrote into the boot handoff;
-/// `virt` is where that physical framebuffer is readable, which on every caller so far is the
-/// direct map. Returns the grid it came up with, in character cells, or `None` when the geometry
-/// cannot hold one.
-///
-/// **It clears the screen**, which is the one visible side effect and is deliberate: whatever the
-/// firmware left there (a vendor logo, a boot menu, the loader's own four lines) is not this
-/// kernel's, and a boot tour written over a splash is a boot tour nobody can read. The cost is that
-/// the loader's lines are gone by the time the kernel's first line appears, so a machine that
-/// clears its screen and then says nothing has failed *between* the two, which is itself a reading.
+/// `found` is what the previous boot stage measured and wrote into the boot handoff; `virt` is
+/// where that framebuffer is readable (the direct map). Returns the grid in character cells, or
+/// `None` when the geometry cannot hold one. The clear removes whatever firmware left there.
 ///
 /// # Safety
 ///
-/// `virt` must name `found.span()` bytes of mapped, writable memory that is a framebuffer and not
-/// anything else, for the life of the kernel. Nothing here can check that: a physical address out
-/// of a boot handoff is an assertion by a previous stage, on the same footing as the memory map.
-// Dead on the other two architectures until milestone 157's U-Boot framebuffer handoff gives them a
-// caller. The console half is arch-neutral deliberately; what they are missing is the discovery.
+/// `virt` must name `found.span()` bytes of mapped, writable framebuffer memory for the life of
+/// the kernel, a previous stage's assertion that nothing here can check.
+// Dead on the other two architectures until a framebuffer handoff gives them a caller.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) unsafe fn attach_screen(found: Framebuffer, virt: u64) -> Option<(u32, u32)> {
     let mut console = ScreenConsole::new(found)?;
@@ -304,14 +238,9 @@ pub(crate) unsafe fn attach_screen(found: Framebuffer, virt: u64) -> Option<(u32
     Some(size)
 }
 
-/// **Which screen this console has, without taking it** (milestone 243).
-///
-/// [`yield_screen`] answers the same question and takes the screen in the same breath, which is
-/// right for its one caller and wrong for a caller that has to decide *whether* to take it: a
-/// refusal after the yield leaves a cleared screen nobody is painting. So the question is separable
-/// and this is the separation.
-///
-/// `None` when there is no screen, or when a userspace terminal already has it.
+/// Which screen this console has, without taking it, for a caller that must decide whether to
+/// take it ([`yield_screen`] takes it too). `None` when there is no screen, or when a userspace
+/// terminal already has it.
 pub(crate) fn peek_screen() -> Option<Framebuffer> {
     let guard = CONSOLE.lock();
     let screen = guard.screen.as_ref()?;
@@ -321,23 +250,14 @@ pub(crate) fn peek_screen() -> Option<Framebuffer> {
     Some(screen.console.screen())
 }
 
-/// **Stop painting the screen and say which screen it was** (the shell on the firmware screen,
-/// milestone 198's rung 1b), for the one caller that hands it to a userspace terminal.
-///
-/// The screen is cleared first, under the same lock every `print!` takes, so the driver that paints
-/// next starts from black rather than from the boot tour's last page, and so no kernel line can land
-/// between the clear and the handover. After this returns the kernel writes its own lines to the
+/// Stop painting the screen and say which screen it was, for the one caller that hands it to a
+/// userspace terminal. Clears it under the console lock first, then writes kernel lines to the
 /// UART alone.
 ///
-/// `None` when there is no screen, and **also when it has already been yielded**: a second caller
-/// gets nothing, which is what makes two userspace painters unrepresentable rather than merely
-/// unlikely. The caller must spawn nothing that paints the aperture until this has returned
-/// `Some`.
+/// `None` when there is no screen or it was already yielded, so a second painter gets nothing.
+/// The caller must spawn nothing that paints the aperture until this has returned `Some`.
 pub(crate) fn yield_screen() -> Option<Framebuffer> {
-    // **The handshake, when a host asked for one** (milestone 445). Off unless the boot command
-    // line carried `machine_discovery::framebuffer::SCREEN_HOLD`, and then this is one relaxed load
-    // on a path taken once per boot. See [`hold_screen_for_host`] for why the wait is out here
-    // rather than inside the lock below.
+    // Outside the lock below: see [`hold_screen_for_host`].
     if HOLD_AT_HANDOVER.load(core::sync::atomic::Ordering::Relaxed) {
         hold_screen_for_host();
     }
@@ -357,95 +277,40 @@ pub(crate) fn yield_screen() -> Option<Framebuffer> {
     Some(screen.console.screen())
 }
 
-/// **Whether [`yield_screen`] stops and asks before it clears the screen** (milestone 445).
-///
-/// False on every machine anybody boots for its own sake, and there is no way to set it but
-/// [`hold_screen_at_handover`], which one caller reaches only when the boot command line carried
-/// `machine_discovery::framebuffer::SCREEN_HOLD`. An ordinary boot pays one relaxed load, once.
+/// Whether [`yield_screen`] stops and asks before it clears the screen. Set only by
+/// [`hold_screen_at_handover`], when the boot command line carried
+/// `machine_discovery::framebuffer::SCREEN_HOLD`.
 static HOLD_AT_HANDOVER: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-/// **Ask [`yield_screen`] to hold the screen for a host before it clears it**
-/// (milestone 445 (the screen check stops sampling and starts asking)), ruled in
-/// §199 (the screen check asks instead of sampling).
+/// Ask [`yield_screen`] to hold the screen for a host before it clears it, as §199 (the screen
+/// check asks instead of sampling) rules. A debugging affordance: the one caller is the
+/// boot-command-line reader, and the token it looks for is written by a gate. Called from the boot
+/// tour while the kernel is single-threaded. Only `x86_64` arms it; see notes/kernel-console.md,
+/// "The screen hold".
 ///
 /// Name: provisional (`AGENTS.md`: calef names public items).
-///
-/// **A debugging affordance, and the doc comment says so where a reader meets it.** Nothing in a
-/// boot anybody performs calls this: the one caller is the boot-command-line reader, and the token
-/// it looks for is written by a gate. Called before the handover, from the boot tour, while the
-/// kernel is still single-threaded.
-///
-/// # Scope: one architecture arms this, and the other two have nothing to arm it for
-///
-/// §19 (architectural parity is a tenet; the targets are aarch64, riscv64, and `x86_64`) makes parity
-/// a gate, so the gap is stated rather than left to be discovered. The
-/// *mechanism* is arch-neutral: [`yield_screen`] consults the flag on all three, the wait is the
-/// same code, and both console UARTs grew the receive half it needs. What is x86-only is the
-/// **arming**, in `arch::x86_64::machine::attach_screen`, because that is the only architecture
-/// whose boot chain hands a command line over at all.
-///
-/// **And the other two do not need it yet, which is the part worth checking rather than assuming.**
-/// The race this exists to remove is the window between the tour being painted and [`yield_screen`]
-/// clearing it. On aarch64 and riscv64 the only screen is `crate::screen`'s `ramfb`, whose pixels
-/// are this kernel's own `.bss`, and `user::boot_screen_terminal` refuses to hand that to a
-/// userspace driver (`screen::is_kernel_memory`) rather than grant a process a window onto kernel
-/// statics. So [`yield_screen`] is never reached there, nothing ever clears the tour, and
-/// `cargo xtask screen-boot` photographs a screen that will still be showing the same thing an hour
-/// later. There is no window to close.
-///
-/// That changes when milestone 157 (real display output on the board) gives those two a firmware
-/// aperture outside the kernel image: the refusal stops firing, the handover starts happening, and
-/// the window appears. What is needed then is a reader for `/chosen/bootargs`, which this kernel
-/// does not parse today (`kernel/build.rs` says so), and one call to this function beside it.
-// Dead on the other two architectures for exactly the reason above, and the attribute is the same
-// one `arch::x86_64::machine::attach_screen`'s aarch64/riscv64 twin carries in `console.rs`.
+// Dead on the other two architectures: nothing arms it there.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub fn hold_screen_at_handover() {
     HOLD_AT_HANDOVER.store(true, core::sync::atomic::Ordering::Relaxed);
 }
 
-/// **Say on the serial line that the screen still holds the tour, and wait for a byte back**
-/// (milestone 445).
+/// Say on the serial line that the screen still holds the tour, and wait for a byte back.
 ///
-/// The problem this replaces is a race nobody could win from outside. `cargo xtask uefi-boot`
-/// asserts milestone 243's claim (a machine with no serial port shows its boot on its screen) by
-/// photographing the framebuffer through QEMU's monitor, and every line of the tour is on that
-/// framebuffer only until something replaces it: the next page of the tour scrolling up, and then
-/// [`yield_screen`]'s clear. Both of those close in **guest** time, so no host-side deadline widens
-/// them: on 2026-09-20 a loaded `script/test` run caught zero rows where the same leg run a minute
-/// later caught 56. Sampling a transient state and hoping is rung four of `AGENTS.md`'s ladder;
-/// being told when to look is rung one, because the state is no longer transient.
-///
-/// **The wait is bounded, and that is not optional.** A knob that can wedge a machine forever is a
-/// worse defect than the one it fixes, so there are two bounds and either one ends the wait:
-///
-/// - `HOLD_TICKS`, ten seconds of scheduler ticks, which is the bound that means something. The
-///   host's round trip is a monitor command, an asynchronous PPM write, a read and a glyph decode,
-///   measured at about 50 ms on an idle machine; ten seconds is two orders of magnitude of headroom
-///   for the loaded machine that broke the old gate, and short enough that a knob set by mistake on
-///   a bench is a pause somebody waits out rather than a machine somebody power-cycles.
-/// - `HOLD_POLLS`, a flat count of register reads, which is the backstop for a machine whose
-///   timer is not ticking at all. Ticks come from the timer interrupt, and a clock that has stopped
-///   would otherwise turn the first bound into no bound. Two bounds rather than one is the price of
-///   not trusting a clock inside the mechanism that exists so nothing hangs.
-///
-/// **Outside the console lock, on purpose.** [`yield_screen`]'s lock is an `IrqSafeMutex`: holding
-/// it for seconds would hold interrupts off for seconds, and the `println!` below would deadlock
-/// against it. So the announcement and the wait happen first, and the clear follows the moment the
-/// host answers, with nothing able to paint in between (the kernel is the only painter until
-/// [`yield_screen`] says otherwise, and no other kernel line is printed here).
+/// Bounded twice, and either bound ends the wait: `HOLD_TICKS` (ten seconds of ticks) and
+/// `HOLD_POLLS` (register reads, for a machine whose timer is not ticking). Runs outside the
+/// console lock, an `IrqSafeMutex`, which it takes per poll: holding it for seconds would hold
+/// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
+/// screen hold".
 fn hold_screen_for_host() {
     /// Ten seconds, in scheduler ticks at whatever `TICK_HZ` the build has.
     const HOLD_TICKS: u64 = 10 * crate::arch::timer::TICK_HZ;
-    /// The flat backstop, paid down only while the tick counter has not yet moved. Large enough
-    /// that it is never the bound that fires on a machine whose timer works, and finite so that a
-    /// machine whose timer does not still boots. Roughly a second of spinning on the dev Mac under
-    /// TCG, measured at about five million iterations per ten seconds of held boot.
+    /// The flat backstop, paid down only while the tick counter has not yet moved: about a second
+    /// of spinning under TCG on the dev Mac.
     const HOLD_POLLS: u32 = 1_000_000;
 
-    // Whatever was already on the wire is not an answer to a question nobody had asked yet. One
-    // drain, before the announcement, so the byte this waits for is one somebody sent on purpose.
+    // Drained before the announcement, so the byte this waits for was sent in answer to it.
     CONSOLE.lock().uart.discard_rx();
     crate::println!(
         "{}send any byte on this line to release it",
@@ -459,19 +324,9 @@ fn hold_screen_for_host() {
         if CONSOLE.lock().uart.is_byte_waiting() {
             break;
         }
-        // **Park the core between polls rather than spinning, once the clock has proved itself.**
-        //
-        // This is measured rather than tidy. A guest spinning flat out starves the emulator's own
-        // main loop, which is the thread that serves the QEMU monitor: with `spin_loop` here, every
-        // `screendump` taken during the ten-second hold came back a half-written file that would not
-        // decode, and the gate failed for a reason that had nothing to do with the kernel. Parking
-        // gives the host the core back and the dumps decode first time.
-        //
-        // **Only after the tick counter has moved**, which is the whole point of `clock_alive`:
-        // `wait_for_interrupt` sleeps until an interrupt arrives, so entering it on a machine whose
-        // timer is dead would be the unbounded wait this function exists not to be. Until the clock
-        // has demonstrated itself, this spins and pays `HOLD_POLLS` down, which is the bound that
-        // covers exactly that machine.
+        // Park rather than spin: a spinning guest starves QEMU's main loop, and the monitor's
+        // `screendump` comes back half-written. Only once the tick counter has moved, since a
+        // dead timer would make `wait_for_interrupt` an unbounded wait.
         if !clock_alive && crate::arch::timer::ticks() != start {
             clock_alive = true;
         }
@@ -482,23 +337,17 @@ fn hold_screen_for_host() {
             core::hint::spin_loop();
         }
     }
-    // The answering byte is taken rather than left, or the line editor that comes up on this same
-    // wire a moment later would find a keystroke nobody typed at it and echo it at the prompt.
+    // Taken, or the line editor on this wire would echo it at the prompt.
     CONSOLE.lock().uart.discard_rx();
 }
 
-/// **Take the screen back to say why the kernel is dying.** Panic path only.
+/// Take the screen back to say why the kernel is dying. Panic path only; call after
+/// `force_unlock`, before printing.
 ///
-/// On a machine with no serial port the screen is the only place a panic can be read, and a panic
-/// after the shell came up would otherwise be written to a UART that is not there. So the dying
-/// kernel clears the screen and paints again, and the cost is recorded rather than avoided: the
-/// panic halts only the core that panicked, so a flush already in progress on another core, or one
-/// a still-running shell asks for afterwards, can paint the terminal's corner of the screen over
-/// the top of the panic text. That is a garbled panic where there would otherwise be none at all,
-/// and the UART copy is unaffected. Stopping the other cores is the panic path's job and it does
-/// not do it yet.
+/// # BUGS
 ///
-/// Call after `force_unlock`, before printing.
+/// - Another core's terminal flush can still paint over the panic text, since a panic halts only
+///   its own core. The UART copy is unaffected (notes/kernel-console.md).
 pub(crate) fn reclaim_screen_for_panic() {
     let mut guard = CONSOLE.lock();
     let kernel = &mut *guard;
@@ -517,26 +366,15 @@ pub(crate) fn reclaim_screen_for_panic() {
     screen.painter = Painter::Kernel;
 }
 
-/// **Re-shape the console UART from the device tree** (RISC-V; the VisionFive 2 prep,
-/// notes/visionfive2.md). The JH7110's UART0 sits at QEMU's address with different silicon behind
-/// it: a `DesignWare` 8250 with registers four bytes apart, 32-bit accesses, a 24 MHz clock, and the
-/// DW busy quirk. Those four facts come from the serial node's `reg-shift`, `reg-io-width`,
-/// `clock-frequency` and `compatible`, read here and handed to the driver in one piece.
+/// Re-shape the console UART from the device tree (RISC-V): the serial node's `reg-shift`,
+/// `reg-io-width`, `clock-frequency` and `compatible`, handed to the driver in one piece. The
+/// address stays the compile-time constant. An absent property keeps its default, and a missing
+/// node or unreadable tree changes nothing. An unstated clock yields divisor 0, leaving U-Boot's
+/// divisor and line controls.
 ///
-/// **Called immediately after [`init`], before the first `println!`**, so no output is ever
-/// produced with a stale stride; on the board, a byte read of LSR at unshifted offset 5 lands in
-/// the IER word and the transmit poll spins forever, which is why the ordering matters. Between
-/// `init` and this call the console is misconfigured *for the board* and correct for QEMU; nothing
-/// prints in that window, and a panic inside it is one of the fault paths that were always dark
-/// before the UART worked at all.
-///
-/// The **address** stays the compile-time constant above, deliberately (see `UART_BASE`): parsing
-/// the tree for the address would make the console depend on the parser it exists to debug. This
-/// function reads only the *shape*, fails toward the defaults on any absent property, and a tree
-/// without the node (or an unreadable tree) changes nothing, so QEMU `virt` behaves as it always
-/// has. An unstated `clock-frequency` (mainline JH7110 trees express the clock as a phandle)
-/// yields divisor 0: leave the divisor and line controls exactly as U-Boot programmed them, which
-/// is the correct move on a board whose firmware just printed a prompt at 115200.
+/// Must run immediately after [`init`], before the first `println!`: on the JH7110 a byte read of
+/// LSR at the unshifted offset lands in the IER word and the transmit poll spins forever. See
+/// notes/kernel-console.md and notes/visionfive2.md.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn configure_from_dtb() {
     use crate::drivers::ns16550::Shape;
@@ -571,7 +409,7 @@ pub(crate) fn configure_from_dtb() {
     CONSOLE.lock().uart.configure(shape);
 }
 
-/// **The register shape the userspace console and input drivers must use** (milestone 890 (riscv64 and `x86_64` join the shared boot path)): they
+/// The register shape the userspace console and input drivers must use: they
 /// map this same UART and read no device tree, so `boot_progenitor` passes this as the
 /// progenitor's first start word and the progenitor hands it to both. See `abi::uart`.
 #[cfg(target_arch = "riscv64")]
@@ -586,25 +424,14 @@ pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
     abi::uart::RegisterShape::BYTES
 }
 
-/// **Has anyone typed at the console?** (Milestone 249.) True while a byte sits unread in the
-/// console UART's receive buffer; reads nothing, so the answer stays true until [`discard_rx`]
-/// takes it.
+/// Has anyone typed at the console? True while a byte sits unread in the console UART's receive
+/// buffer; reads nothing, so the answer stays true until [`discard_rx`] takes it.
 ///
-/// This exists for exactly one caller, `soak::watch`, and it is the escape from a self-rebooting
-/// soak. The board is running a workload with no console reader, so there is no shell to type a
-/// command at and no input driver holding the device; what there is, on every bench run, is a
-/// serial cable and a terminal. Polling LSR turns that cable into a stop button that costs one
-/// register read every five seconds and needs nothing else to be wired up.
-///
-/// Every architecture, since the rebooting soak reached aarch64 and `x86_64` (milestone 249 (the
-/// boot lottery is sampled by a person walking to the board)'s parity half): the console is a PL011
-/// on the first and a port-I/O 16550 on the second, and both drivers already carried the same sticky
-/// data-ready read for milestone 445's screen hold.
+/// The stop button of a self-rebooting soak (`soak::watch`), and of the watchdog soak: a serial
+/// cable and one LSR read every five seconds, on every architecture.
 ///
 /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `rx_waiting` and `is_rx_waiting` (`rx`
 /// is a decoder for "receive").
-///
-/// The watchdog soak (milestone 593 (a wedged kernel resets itself), number provisional) reads the same byte to halt its watchdog.
 #[cfg(any(feature = "reboot_soak_test", soak_watchdog))]
 pub fn is_byte_waiting() -> bool {
     CONSOLE.lock().uart.is_byte_waiting()
@@ -623,22 +450,12 @@ pub fn discard_rx() {
     CONSOLE.lock().uart.discard_rx();
 }
 
-/// **Raise and lower the console UART's own interrupt line, for the RISC-V interrupt-delivery
-/// tests.** Test builds only.
+/// Raise the console UART's own interrupt line, for the RISC-V interrupt-delivery tests. Test
+/// builds only.
 ///
-/// aarch64 raises a test interrupt with a GIC SGI, which needs no device at all. RISC-V has no SGI:
-/// the only software-raised interrupt it has is the SBI's IPI, which arrives as a *software*
-/// interrupt (`scause` = 1) down a different arm of the trap dispatcher than a device's, so it would
-/// not exercise the PLIC claim/route/complete path at all. What it has instead is a device whose
-/// line software can assert without any transfer or external stimulus: setting the 16550's
-/// transmit-empty interrupt enable makes it interrupt at once, because the transmitter of a polling
-/// console is always empty. Two register writes up, one down.
-///
-/// The console is the right device for it precisely because the kernel does not drive it by
-/// interrupt: transmit is polled (`write_byte` spins on `LSR`), so an asserted transmit line has no
-/// other consumer to disturb, and lowering it restores exactly the state `init` left.
-///
-/// See `kernel::sched::tests` and notes/interrupts.md.
+/// RISC-V has no SGI, and its IPI arrives as a software interrupt that skips the PLIC path. The
+/// 16550's transmit-empty enable interrupts at once on a polled console, with no other consumer
+/// to disturb. See notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "riscv64"))]
 pub(crate) fn raise_uart_interrupt() {
     CONSOLE.lock().uart.enable_tx_interrupt();
@@ -650,22 +467,13 @@ pub(crate) fn quiet_uart_interrupt() {
     CONSOLE.lock().uart.disable_interrupts();
 }
 
-/// **Read one line typed at the console**, echoing it, and answer how many bytes it holds.
+/// Read one line typed at the console into `out`, echoing it. Returns how many bytes it holds, or
+/// `None` when no line arrives within `patience` (measured against the counter), so an unattended
+/// boot reaches the prompt.
 ///
-/// Milestone 198 (a package manager, and the trivial install that makes a second customer
-/// possible)'s rung 2a, and its one caller is `user::install_service`: an installer has to ask
-/// before it wipes a disk, and at the point in the boot where that question belongs the kernel is
-/// still the only holder of the console. After the progenitor hands the UART to the input driver
-/// this must not be called, because two readers of one FIFO lose bytes between them.
-///
-/// **It is bounded in time, and that is what makes it safe to put on the boot path.** A stick
-/// booted on a machine with nobody watching must reach the prompt rather than wait forever for an
-/// answer that is not coming, so a line that has not arrived within `patience` returns `None` and
-/// the caller carries on. The bound is a duration measured against the counter, not a spin count.
-///
-/// `\r` and `\n` both end the line; backspace and delete rub one byte out; anything that does not
-/// fit in `out` is dropped rather than wrapping. Nothing here is a line editor and nothing should
-/// grow into one: `crates/line_editor` is that, at EL0, where it belongs.
+/// `\r` and `\n` end the line, backspace and delete rub one byte out, and bytes past `out` are
+/// dropped. The one caller is `user::install_service`. It must not be called once the progenitor
+/// has handed the UART to the input driver: two readers of one FIFO lose bytes.
 ///
 /// Name: provisional (milestone 198's rung 2a): calef names public items.
 #[cfg(target_arch = "x86_64")]
@@ -718,9 +526,9 @@ pub(crate) unsafe fn force_unlock() {
     unsafe { CONSOLE.force_unlock() }
 }
 
-/// **The panic's escape from the ring** (milestone 342, §175 (where the kernel's own output
-/// goes)'s "a panic writes the UART
-/// directly"). Every later line goes straight to the UART, and the lines a drainer had not yet
+/// The panic's escape from the ring, as §175 (where the kernel's own output goes) rules: "a panic
+/// writes the UART directly". Every later line goes straight to the UART, and the lines a drainer
+/// had not yet
 /// printed go first, so the panic message is never the only thing a reader sees of what led to it.
 /// Call after [`force_unlock`].
 pub fn enter_panic() {
@@ -732,19 +540,14 @@ pub fn enter_panic() {
     });
 }
 
-/// **A reset's escape from the ring** (milestone 805 (`reboot` at the prompt)): [`enter_panic`]'s
-/// move for the same reason. A reset stops the machine as surely as a panic does, so a line left in
-/// the ring for the drainer is a line nobody reads, and the reset's own lines are the only record
-/// of which route was tried. Everything the drainer had not printed goes out first, then every
-/// later line is direct. Unlike a panic it takes the lock the ordinary way: the caller is a
-/// syscall, which holds nothing.
+/// A reset's escape from the ring, [`enter_panic`]'s move: a line left for the drainer is one
+/// nobody reads once the machine stops. What the drainer had not printed goes out first, then
+/// every later line is direct. Takes the lock the ordinary way; the caller is a syscall.
 ///
 /// # BUGS
 ///
-/// - **One way.** A firmware that refuses leaves the kernel printing direct for the rest of the
-///   boot, beside the console server's own output, as the detached control does. Handing the ring
-///   back would need the drainer's cursor moved past what was caught up here, and a machine whose
-///   firmware refused a reset has a bigger problem than a spliced line.
+/// - One way. A firmware that refuses the reset leaves the kernel printing direct for the rest of
+///   the boot, beside the console server's own output.
 pub(crate) fn enter_reset() {
     let mut guard = CONSOLE.lock();
     let con = &mut *guard;
@@ -754,20 +557,12 @@ pub(crate) fn enter_reset() {
     });
 }
 
-/// **Wait for every printed byte to leave the machine**, for milestone 592 (radon's cold reboot
-/// dies in OpenSBI's PMIC write), found 2026-10-10.
+/// Wait for every printed byte to leave the machine. Every arch reset and the board exit call it
+/// before the instruction that may never return.
 ///
-/// Two halves, because kernel output has two places to be caught:
-/// [`kernel_log::flush`](crate::kernel_log::flush) moves what an attached drainer has not printed
-/// from the ring to the wire, and the driver's
-/// `drain_transmitter` then waits out the 115200-bit gap between the FIFO and the wire. `write_byte`
-/// returns when the FIFO has *room*, not when bytes are sent, so code that prints and then kills the
-/// machine loses the tail of its own last lines without both.
-///
-/// The 2026-10-09 radon bench caught it live: `arch::reboot` printed its line, called SBI SRST in
-/// the next microseconds, and the PMIC dropped power mid-line, so the reset's own transcript never
-/// reached the console log. Every arch reset and the board exit drain through this before the
-/// instruction that may never return.
+/// [`kernel_log::flush`](crate::kernel_log::flush) moves what a drainer has not printed from the
+/// ring to the wire, then the driver's `drain_transmitter` waits for the FIFO to empty: `write_byte`
+/// returns when the FIFO has room, not when bytes are sent.
 ///
 /// Name: provisional (milestone 592, 2026-10-10): calef names public items.
 pub fn drain() {
@@ -780,7 +575,7 @@ pub fn drain() {
     wire.uart.drain_transmitter();
 }
 
-/// **The ring's unread lines, written by the kernel because its drainer stopped** (milestone 890):
+/// The ring's unread lines, written by the kernel because its drainer stopped:
 /// `kernel_log::stall_tick`'s half under the console lock.
 pub(crate) fn catch_up_stalled_ring() {
     let mut guard = CONSOLE.lock();
@@ -790,24 +585,14 @@ pub(crate) fn catch_up_stalled_ring() {
     });
 }
 
-/// **Bytes handed to the console transmitter since boot** (first-silicon diagnostics, 2026-08-15).
-///
-/// Counted after each `write_str` completes, so a count here means the driver's bounded world has
-/// already accepted the bytes: `write_byte`'s THRE poll is unbounded, so a wedged transmitter
-/// shows as a *hanging* print, never as a count with no wire bytes behind it. The point is the
-/// contrapositive at a bench: VisionFive 2 boots 7 through 9 ended with kernel state proving the
-/// tour's printing steps ran while the serial record showed none of their lines, and nothing
-/// could say whether the bytes were ever emitted. The riscv diag line prints this counter, so
-/// boot 11's dumps carry "how much output has the kernel pushed" beside "what the wire showed".
+/// Bytes handed to the console transmitter since boot, counted after each `write_str` completes.
+/// `write_byte`'s THRE poll is unbounded, so a wedged transmitter shows as a hanging print, never
+/// as a count with no wire bytes behind it.
 static TX_BYTES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
 /// The [`TX_BYTES`] counter. Diagnostic; racy reads are fine.
 ///
-/// **No reader since milestone 295.** The riscv diag line printed it, and that line lived inside
-/// `kernel::user::riscv_initial_ramdisk_demo`'s hang watcher, which went with the program it
-/// loaded. The counter is still incremented on every print, so it is still true and still free to
-/// read; what is gone is the thing that read it. Kept for the same reason `sched::canary` is,
-/// written there.
+/// No reader; the counter is still kept true on every print, for the reason `sched::canary` is.
 ///
 /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
 /// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
@@ -845,7 +630,7 @@ impl core::fmt::Write for Wire<'_> {
     }
 }
 
-/// **Route each fragment through the kernel's ring** (milestone 342): [`crate::kernel_log::route`]
+/// Route each fragment through the kernel's ring: [`crate::kernel_log::route`]
 /// decides whether it reaches the UART now, later, or by way of the log service.
 struct Routed<'a>(&'a mut KernelConsole);
 
@@ -866,9 +651,7 @@ impl core::fmt::Write for CountedWrites<'_, '_> {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         self.0.write_str(s)?;
         TX_BYTES.fetch_add(s.len() as u64, core::sync::atomic::Ordering::Relaxed);
-        // What a test says about itself is evidence the harness can act on: a test that announces
-        // a skip and then returns is counted as a pass, and this is where that becomes visible.
-        // Test builds only. See testing::note_printed.
+        // A test that announces a skip is seen here. See testing::note_printed.
         #[cfg(any(test, feature = "system_tests"))]
         crate::testing::note_printed(s);
         Ok(())
