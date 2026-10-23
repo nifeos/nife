@@ -319,16 +319,15 @@ pub fn last_reclaim_refusal() -> Option<ReclaimRefusal> {
     *LAST_REFUSAL.lock()
 }
 
-/// Reclaim an untyped region and every object retyped from it (§16 (object revocation)).
-///
-/// Tears down the objects in `region`, reaps the address spaces it ends, unpins it and returns its
-/// memory. `Err` if it has children, its name is stale or a resident refuses
-/// (`last_reclaim_refusal` says which). See notes/region-reaping.md ("The order of a reclaim").
+/// Reclaim an untyped region and every object retyped from it (§16 (object revocation)): tear down
+/// the objects in `region`, reap the address spaces it ends, unpin it and return its memory. `Err`
+/// if it has children, its name is stale or a resident refuses (`last_reclaim_refusal` says which).
 ///
 /// Context: takes `IPC_TABLES`, then the address-space registry's lock; never inside a `Drop`.
 ///
-/// # BUGS
-/// `Err` and `Ok` both end what they find, and it reaches outside the region (the note's BUGS).
+/// # BUGS (in full in notes/region-reaping.md)
+/// - `Err` and `Ok` both end what they find, so `reclaim_region(r).is_err()` dooms the answer.
+/// - It reaches outside the region: callers of its rendezvous and of reaped threads get `Gone`.
 pub fn reclaim_region(region: u64) -> Result<(), ()> {
     // Refuse before any teardown, so a refused reclaim leaves the region as it was.
     if crate::memory_region::has_children(region) {
