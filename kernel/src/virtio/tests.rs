@@ -124,20 +124,15 @@ fn the_validator_refuses_a_descriptor_that_escapes_the_dma_region() {
     free_regions(driver, shadow);
 }
 
-/// **The shadow ring closes the time-of-check/time-of-use race.**
+/// The shadow ring closes the time-of-check/time-of-use race: after validation copies a good
+/// chain into the shadow, mutating the driver's descriptor leaves the shadow the device reads
+/// holding the validated address.
 ///
-/// Validate a good chain (which copies it into the shadow), then mutate the DRIVER's descriptor
-/// to point at kernel memory, exactly as a device fetching descriptors asynchronously would let
-/// a driver do after the check. The device reads the SHADOW, so the shadow must still hold the
-/// validated, in-region address: the mutation touched only the driver's own copy, which nothing
-/// reads. This is the whole reason the shadow ring exists.
+/// # BUGS
 ///
-/// BUGS: the driver's frame and the shadow are separate allocations, so reading the shadow back
-/// after writing the driver's copy cannot fail whatever the code does. The line the claim rests
-/// on, that the device's queue registers are programmed with the shadow's address and never the
-/// driver's, is asserted nowhere. Found by milestone 633 (an outside agent attacks the confinement claim)'s third outsider pass (2026-10-06 UTC),
-/// by read; it is the structural disposition `notes/confinement-claims.md` gives row 17, with
-/// the register programming named as the missing check.
+/// - The two are separate allocations, so this cannot fail whatever the code does. That the
+///   device's queue registers get the shadow's address, never the driver's, is asserted nowhere
+///   (`notes/confinement-claims.md`, row 17).
 #[test_case]
 fn the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation() {
     let (driver, shadow, size) = two_regions();
@@ -180,12 +175,8 @@ fn the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation() {
     free_regions(driver, shadow);
 }
 
-/// **An indirect descriptor is refused even when it points inside the region.**
-///
-/// A descriptor flagged `INDIRECT` points at a *table* of further descriptors we do not copy
-/// into the shadow, so the device would follow it out of the region. A wholly in-region
-/// indirect descriptor still has to be refused, because it is not the descriptor the device
-/// ultimately acts on.
+/// An indirect descriptor is refused even when it points inside the region: the table it names
+/// is never copied into the shadow, so it is not what the device ultimately acts on.
 #[test_case]
 fn the_validator_refuses_an_indirect_descriptor() {
     let (driver, shadow, size) = two_regions();
@@ -206,12 +197,8 @@ fn the_validator_refuses_an_indirect_descriptor() {
     free_regions(driver, shadow);
 }
 
-/// **Feature negotiation strips the ring-layout features the validator cannot police.**
-///
-/// A driver that asks for `INDIRECT_DESC` (bit 28) or `RING_PACKED` (bit 34) gets that bit
-/// cleared before the device sees it, so the device never honours a descriptor format the
-/// validator does not understand. Every other bit passes through untouched, so real device
-/// features still negotiate.
+/// Feature negotiation strips `INDIRECT_DESC` (bit 28) and `RING_PACKED` (bit 34), which the
+/// validator cannot police, and passes every other bit through.
 #[test_case]
 fn feature_negotiation_strips_indirect_and_packed() {
     // Low word (sel 0): INDIRECT_DESC at bit 28 is cleared; unrelated bits survive.
@@ -227,20 +214,9 @@ fn feature_negotiation_strips_indirect_and_packed() {
     assert_eq!(got_hi & 1, 1, "VERSION_1 must survive negotiation");
 }
 
-/// **`VIRTIO_BLK_F_FLUSH` survives negotiation** (milestone 55), which is the one feature bit
-/// whose loss would be silent and expensive.
-///
-/// The block server asks for feature bit 9 and treats the answer as the truth about whether the
-/// device can be flushed at all. If a future filter cleared it here, the block server would see
-/// a device with no flush, `filesystem_contract::fs::SYNC` would start answering `EOPNOTSUPP`, and any
-/// server would stop being able to back the `VOLUME_FULL_SYNC` bit it advertises to macOS. That
-/// chain is long enough that the failure would surface as "Time Machine stopped working" rather
-/// than as anything pointing here, so the bit gets its own assertion next to the two that *are*
-/// stripped on purpose.
-///
-/// It is deliberately not folded into the test above: that one is about the ring-layout
-/// features, and this one is about a device feature something depends on. Same function, two
-/// different claims.
+/// `VIRTIO_BLK_F_FLUSH` (bit 9) survives negotiation. Its loss would be silent: the block server
+/// would see no flush, `filesystem_contract::fs::SYNC` would answer `EOPNOTSUPP`, and no server
+/// could back the `VOLUME_FULL_SYNC` bit it advertises to macOS.
 #[test_case]
 fn feature_negotiation_leaves_the_blk_flush_bit_alone() {
     const F_FLUSH_LO: u32 = 1 << 9; // VIRTIO_BLK_F_FLUSH
@@ -250,28 +226,18 @@ fn feature_negotiation_leaves_the_blk_flush_bit_alone() {
         "VIRTIO_BLK_F_FLUSH must reach the device: the block server's whole durability answer \
          is whether it was negotiated (crates/virtio's F_FLUSH_LO)"
     );
-    // And it must survive alongside the bit that is stripped, because that is how the honest
-    // driver and the indirect attacker differ: one asks for flush, the other for indirect.
+    // And alongside the bit that is stripped.
     assert_eq!(
         sanitize_driver_features(0, F_FLUSH_LO | (1 << 28)),
         F_FLUSH_LO
     );
 }
 
-/// **A PCI queue in range but never set up has no doorbell, and ringing it would leave the
-/// BAR** (milestone 112).
+/// A PCI queue in range but never set up has no doorbell, so `notify` refuses it rather than
+/// write through `phys_to_virt(0)`.
 ///
-/// `notify(id, queue)` checked `queue < MAX_QUEUES` and nothing else, so a userspace driver
-/// holding a virtio capability could `NOTIFY` a queue it had never `SETUP_QUEUE`d. On the PCI
-/// transport `notify_addr[queue]` is zero until `setup_queue` resolves it from
-/// `queue_notify_off`, so the ring became a `write_volatile` of a `u16` through
-/// `phys_to_virt(0)`: a kernel store, at a physical address inside no BAR, at a moment the
-/// driver chose.
-///
-/// This is a **unit test of the predicate, not of the syscall**, and deliberately so: it builds
-/// the two transport values by hand and touches no device, so it runs on both ISAs and in the
-/// mmio-only configurations where no PCI virtio device exists at all. Reaching the real syscall
-/// path would need a live PCI function, which only one of the boot configurations has.
+/// A unit test of the predicate, not the syscall: it builds both transports by hand and touches
+/// no device, so it runs in configurations with no PCI virtio function.
 #[test_case]
 fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
     // Plausible-looking BAR addresses. Nothing here is ever dereferenced: `is_doorbell_ready`
@@ -315,13 +281,9 @@ fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
     );
 }
 
-/// **A jump in `avail.idx` larger than the ring is refused, not walked.**
-///
-/// The available ring holds only `QSIZE` slots, so at most `QSIZE` descriptors can be newly
-/// available between notifies. A hostile driver that advances `avail.idx` by tens of thousands
-/// would otherwise make the walk loop that many times, under the `DEVICES` lock with interrupts
-/// masked. Every descriptor and ring slot here is individually valid, so the ONLY thing that can
-/// refuse the oversized batch is the jump-size guard.
+/// A jump in `avail.idx` larger than the ring is refused, not walked: otherwise a hostile driver
+/// spins the walk under the `DEVICES` lock with interrupts masked. Every entry here is valid, so
+/// only the jump-size guard can refuse.
 #[test_case]
 fn the_validator_refuses_more_new_entries_than_the_ring_can_hold() {
     let (driver, shadow, size) = two_regions();
@@ -350,15 +312,9 @@ fn the_validator_refuses_more_new_entries_than_the_ring_can_hold() {
     free_regions(driver, shadow);
 }
 
-/// **The receive direction is confined: a device-WRITABLE descriptor aimed outside the region is
-/// refused** (milestone 30, the multi-queue confinement's second, proved direction). virtio-net's
-/// receive queue is the direction where the *device writes into* the driver's memory: the driver
-/// posts an empty buffer and the device fills it with a packet. A hostile driver posts a receive
-/// buffer pointing at kernel memory and lets the device write a packet over the kernel image. The
-/// validator bounds the address whether the device reads or writes it, so this is refused before
-/// the device is rung; the in-region receive buffer that validates first proves the refusal is
-/// about the address, not the direction flag. This is the same property milestone 32's write path
-/// relied on, now asserted for the direction where the device is the writer.
+/// The receive direction is confined: a device-writable descriptor aimed outside the region is
+/// refused, so a device cannot write a received packet over the kernel. The in-region buffer that
+/// validates first shows the refusal is about the address, not the direction flag.
 #[test_case]
 fn the_validator_refuses_an_rx_descriptor_that_escapes_the_region() {
     let (driver, shadow, size) = two_regions();
@@ -386,12 +342,8 @@ fn the_validator_refuses_an_rx_descriptor_that_escapes_the_region() {
     free_regions(driver, shadow);
 }
 
-/// **A second queue validates on its own ring block, independent of queue 0** (milestone 30). A
-/// virtio-net device drives receive on queue 0 and transmit on queue 1; each queue's rings live
-/// at `queue * RING_BLOCK` in both the driver region and the shadow, so a submit on one queue
-/// never reads or writes the other's shadow. Validate a good chain on queue 1, confirm it landed
-/// in queue 1's shadow block while a sentinel in queue 0's shadow block stayed put, then confirm
-/// an escape on queue 1 is refused the same as on queue 0.
+/// A second queue validates on its own ring block: a good chain on queue 1 lands in queue 1's
+/// shadow block, a sentinel in queue 0's stays put, and an escape on queue 1 is refused.
 #[test_case]
 fn a_second_queue_validates_on_its_own_block() {
     let (driver, shadow, size) = two_regions();
@@ -437,23 +389,13 @@ fn a_second_queue_validates_on_its_own_block() {
     free_regions(driver, shadow);
 }
 
-/// **The IOMMU faults a DMA that escapes the domain, in hardware** (milestone 16b, both ISAs).
+/// The IOMMU faults a DMA that escapes the domain, in hardware, even with the shadow ring
+/// bypassed (see `provoke_iommu_escape`). With translation absent the read would land silently and
+/// no fault appear, so this fails rather than passing. Skipped only with no PCIe disk; an absent
+/// IOMMU beside a disk asserts.
 ///
-/// The shadow ring proves the *software* refuses an out-of-region descriptor before the device
-/// is rung; this proves the *hardware* would stop the device even if that software were bypassed.
-/// Confine the PCIe disk to its domain, then point its available ring at a frame the domain does
-/// not map and kick it. The device reads that ring at an out-of-domain IOVA, the IOMMU faults,
-/// and the fault turns up in the fault/event queue. A pass here also means the IOMMU is really in
-/// force: if translation were absent (a missing `iommu=smmuv3` / `riscv-iommu-pci`, or the
-/// `iommu_platform=on` that puts the device behind it), the escaping read would succeed silently
-/// and no fault would appear, so the assertion fails loudly rather than passing on a fiction.
-///
-/// Skipped only when there is no PCIe disk on the bus (nothing to confine). An IOMMU that is
-/// absent while a disk *is* present is the failure this test exists to catch, so that path
-/// asserts rather than skips.
-///
-/// The record below is AMD-Vi's (lane `amd-vi`), replayed on the `NIFE_IOMMU=amd` machine; the
-/// other three units carry this claim without one.
+/// The record below is AMD-Vi's, replayed on the `NIFE_IOMMU=amd` machine; the other three units
+/// carry this claim without one.
 /// Falsification: replayable `kernel/falsifications/virtio.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`
 #[test_case]
 fn the_iommu_faults_a_dma_that_escapes_the_domain() {
@@ -471,22 +413,10 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
          (is iommu=smmuv3 / -device riscv-iommu-pci missing from the runner?)",
     );
 
-    // **Quiesce every OTHER block device the runner attaches** (found 2026-09-27, x86_64
-    // only, but harmless and cheap everywhere: DECISIONS-adjacent, see the BUGS entry this
-    // replaces in `arch/x86_64/iommu.rs`). This test's runners attach a second disk, the
-    // RedoxFS fixture from milestone 303 (`x86_64`'s FS service has a server and no disk it can
-    // find), that no code in this filtered boot ever registers, so
-    // it never gets a VT-d context entry. Traced under QEMU's `-d trace:vtd_*`: the moment
-    // THIS test's own `confine` below runs its context-cache/IOTLB invalidation, that
-    // *other*, unconfined device attempts a real access of its own and correctly faults
-    // default-deny (reason 0x2) -- nothing is unconfined in the security sense, the fault
-    // fires exactly as it should. But `CAP.NFR` reports one fault-recording register, and
-    // that unrelated device keeps refaulting the same address on every retry, so it can win
-    // the single slot every time and starve the fault this test provokes on device `d`. A
-    // plain virtio reset (`STATUS = 0`) on every other block device stops its DMA outright,
-    // the same way `provoke_iommu_escape`'s own reset stops a queue THIS device was left
-    // running by an earlier test. Bounded at 8: no runner this tree has attaches more than
-    // two block devices, and a bound turns a discovery bug into a fast loop instead of a hang.
+    // Quiesce every other block device. On VT-d a disk nothing registered faults default-deny
+    // when `confine` invalidates, and refaults every retry; with one fault-recording register
+    // (`CAP.NFR`) it can starve the fault this test provokes. A virtio reset stops its DMA. Bounded
+    // at 8 so a discovery bug is a fast loop, not a hang.
     for n in 0..8 {
         let Some(mut other) = find_block_device_n(n) else {
             break;
@@ -538,12 +468,9 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
             f.code,
             f.rid,
         ),
-        // **AMD-Vi under QEMU 11.1.1 reports no address** (`arch/x86_64/iommu.rs`'s
-        // `Fault::addr` says why). The fault is then tied to this device by its requester id
-        // and nothing more, which is weaker: it says the device was refused something, not
-        // that it was refused the victim. What still makes it falsifiable on that machine is
-        // the record above this test: with translation off in the device table entry, the
-        // escape lands and no fault is recorded at all.
+        // AMD-Vi under QEMU 11.1.1 reports no address (`arch/x86_64/iommu.rs`'s `Fault::addr`),
+        // so only the requester id ties the fault to this device. The falsification record keeps
+        // it falsifiable there.
         None => assert_eq!(
             f.rid, d.rid,
             "the IOMMU faulted (code {:#x}) for requester {:#x}, not this disk",
@@ -552,15 +479,9 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
     }
 }
 
-/// **A device cannot write the shadow page it reads its rings from** (provisional milestone 767
-/// (AMD-Vi hardening before the first AMD boot); every IOMMU this tree drives).
-///
-/// The shadow page is the one frame in a virtio device's domain whose whole purpose is that
-/// only the kernel shapes it, and the device's job there is to read. Until 767 every page of
-/// every domain was mapped read-write, so the device could have rewritten the descriptors the
-/// kernel had validated. This points the device's used ring (the one structure it writes) into
-/// the shadow page and kicks it, and the write must not land: `provoke_write_to_shadow` says
-/// why the word is a canary and why no fault record is asked for.
+/// A device cannot write the shadow page it reads its rings from, on every IOMMU this tree drives.
+/// The device's used ring is pointed into the shadow page and kicked, and the write must not land
+/// (`provoke_write_to_shadow` says why the word is a canary and no fault record is asked for).
 ///
 /// Falsification: replayable `kernel/falsifications/virtio.tests.a_device_write_to_the_read_only_shadow_is_refused.patch`
 #[test_case]
@@ -597,8 +518,8 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
     while crate::iommu::take_fault().is_some() {}
 }
 
-/// **A register read cannot leave the device's slot.** The mmio arm reads `slot base + off`
-/// through the direct map, so before this bound a `Virtio` capability read any physical address.
+/// A register read cannot leave the device's slot. The mmio arm reads `slot base + off` through
+/// the direct map, so without the bound a `Virtio` capability would read any physical address.
 #[test_case]
 fn a_register_read_outside_the_slot_is_refused() {
     assert!(register_in_slot(0));
