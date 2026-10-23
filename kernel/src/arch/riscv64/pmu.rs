@@ -5,7 +5,16 @@
 //! CSR directly. This is cycles, not the fixed-rate `time` tick (notes/pmu.md). Nothing here has
 //! run on silicon.
 //!
-//! See notes/riscv-cycle-counters.md, including its BUGS.
+//! See notes/riscv-cycle-counters.md.
+
+//! # BUGS
+//!
+//! - Nothing here has run on silicon; under QEMU-TCG a green test proves the plumbing only.
+//! - The boot hart only: SBI PMU counters are per hart, and [`init`] runs on the boot hart.
+//! - A firmware counter is refused, since reading one costs an `ecall` per read.
+//! - `counter_stop` is never called on the happy path; only [`stop`]'s test calls it.
+//!
+//! Details in notes/riscv-cycle-counters.md, BUGS.
 
 use core::arch::asm;
 use core::sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering};

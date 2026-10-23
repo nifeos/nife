@@ -4,10 +4,13 @@
 //! This kernel uses `FS` as a plain enable, Off against everything else, though it has four states.
 //! `sstatus` travels in the trap frame, so the first-use handler sets the frame's copy too. See
 //! notes/riscv-port/traps.md.
-//!
+
 //! # BUGS
 //!
-//! F without D is not handled; a hart without D is untested (notes/riscv-port/traps.md, BUGS).
+//! - A hart with no D extension cannot run FP code; the first-use trap becomes a fault. Untested.
+//! - F without D is not handled: the save would write 64-bit registers a part has as 32-bit.
+//!
+//! Details in notes/riscv-port/traps.md, BUGS.
 
 use super::instructions;
 

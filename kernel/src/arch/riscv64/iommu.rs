@@ -5,8 +5,15 @@
 //! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20
 //! (IOMMU-backed DMA isolation)).
 //!
-//! See notes/iommu.md and notes/riscv-port/iommu.md, whose BUGS cover the unused MSI page table
-//! and the untested base context format.
+//! See notes/iommu.md and notes/riscv-port/iommu.md.
+
+//! # BUGS
+//!
+//! - The MSI page table is offered and deliberately unused: [`attach`] writes `msiptp.MODE = Off`.
+//! - Untestable on owned silicon: no board ships the ratified IOMMU, so the base context format
+//!   has never run, and what `MODE = Off` does to an MSI-shaped write is a reading of the spec.
+//!
+//! Details in notes/riscv-port/iommu.md, BUGS.
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{IrqSafeMutex, rank};

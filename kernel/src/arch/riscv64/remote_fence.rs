@@ -52,16 +52,15 @@ pub fn sbi_remote_sfence_vma(hart_mask: usize, start: usize, size: usize) {
     };
 }
 
-/// Discard every translation tagged `asid` on the harts in `hart_mask`: the remote half of
-/// `mmu::flush_asid`. Each target runs `sfence.vma x0, asid`.
-///
-/// Returns once every target has drained it, because OpenSBI's RFENCE is synchronous; that return
-/// lets the ASID tag another space. Targets service it even with S-mode interrupts masked.
+/// Discard every translation tagged `asid` on the harts in `hart_mask` (`sfence.vma x0, asid`),
+/// the remote half of `mmu::flush_asid`. Returns once every target has drained it, since OpenSBI's
+/// RFENCE is synchronous, which lets the ASID tag another space; targets service it with S-mode
+/// interrupts masked. See notes/riscv-tlb-shootdown.md.
 ///
 /// # BUGS
 ///
-/// Asynchronous firmware would break this silently, and `hart_mask` reaches harts 0..63 only. See
-/// notes/riscv-tlb-shootdown.md, BUGS.
+/// - A firmware that implemented RFENCE asynchronously would break this silently.
+/// - `hart_mask` is relative to base 0, so it reaches harts 0..63 only.
 pub fn sbi_remote_sfence_vma_asid(hart_mask: usize, asid: u16) {
     const SBI_REMOTE_SFENCE_VMA_ASID_FID: usize = 2;
     #[cfg(feature = "bench")]
