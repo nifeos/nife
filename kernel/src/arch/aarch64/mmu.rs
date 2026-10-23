@@ -1,37 +1,14 @@
-//! Turning the MMU on.
+//! The kernel's page tables, the user address-space switch, and TLB maintenance.
 //!
-//! # The sketchiest moment in the kernel
-//!
-//! The instant we set `SCTLR_EL1.M`, **the very next instruction is fetched through the
-//! MMU.** If the page currently executing isn't mapped, the CPU tries to fetch from an
-//! address that no longer means anything and the machine simply stops existing.
-//!
-//! There is no fault. There is no message. `println!` cannot help, because the UART's
-//! address is also now a virtual address, and if *that* isn't mapped either, there is
-//! nowhere for the bytes to go.
-//!
-//! You get one shot. `cargo xtask gdb` is the tool that exists for this.
-//!
-//! # Why an identity map first
-//!
-//! We map every physical address to *itself*: VA == PA. So the instruction after the one
-//! that enables the MMU is at the same address it was before, and execution continues as
-//! though nothing happened.
-//!
-//! That is not a stepping stone we throw away. It is **how every kernel on earth survives
-//! this transition**, including the ones that end up higher-half. You build a map that
-//! contains the code you are currently running, flip the bit, and only *then* jump
-//! somewhere else.
-//!
-//! See notes/mmu.md and notes/page-tables.md.
+//! The instruction after a table switch is fetched through the new tables, so a map that misses
+//! the running code stops the machine without a message; `verify` walks the tables first.
+//! `cargo xtask gdb` is the tool for this moment. See notes/mmu.md, "What
+//! `kernel/src/arch/aarch64/mmu.rs` holds to", notes/page-tables.md and notes/higher-half.md.
 
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use aarch64_cpu::asm::barrier;
-// `ID_AA64MMFR0_EL1` used to be read right here, for `TCR_EL1.IPS`. It is read once at boot now,
-// into the ISA record (milestone 60), which also checks the two fields beside `PARange` that this
-// file was assuming.
 use aarch64_cpu::registers::{MAIR_EL1, SCTLR_EL1, TCR_EL1, TTBR0_EL1, TTBR1_EL1};
 use paging::aarch64::mair;
 use paging::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
@@ -46,16 +23,9 @@ use tock_registers::interfaces::{Readable, Writeable};
 
 /// Where the kernel lives, virtually.
 ///
-/// Chosen so it touches only bits 63:48, which are **not translated** (see
-/// notes/page-tables.md). Three things fall out of that, and all three are load-bearing:
-///
-/// 1. `VA = PA | KERNEL_VA_BASE` is exact, and reversible by masking. No arithmetic, no
-///    overflow, no per-region offset table.
-/// 2. A kernel virtual address has the **same page-table indices** as its physical address,
-///    which is why boot.s can point TTBR0 and TTBR1 at *one* table and have it serve as both
-///    the identity map and the high-half map.
-/// 3. The kernel gets the whole top half, and userspace gets the whole bottom half, with no
-///    negotiation between them.
+/// Only bits 63:48, which are not translated: `VA = PA | KERNEL_VA_BASE` is exact and reversible,
+/// and a kernel address has its physical address's table indices, so boot.s can point both TTBRs
+/// at one table. See notes/higher-half.md.
 pub const KERNEL_VA_BASE: u64 = 0xffff_0000_0000_0000;
 
 /// **Where kernel thread stacks live, virtually** (`thread.rs`'s `STACK_AREA`).
@@ -72,10 +42,7 @@ pub const THREAD_STACK_AREA: u64 = KERNEL_VA_BASE | 0x0000_0010_0000_0000;
 
 /// A physical address, as the kernel names it.
 ///
-/// This is the **direct map**: every byte of physical memory is visible at `pa |
-/// KERNEL_VA_BASE`, permanently. It is how the kernel touches a frame the allocator just
-/// handed it. Without it, a physical address the kernel cannot *name* is a physical address
-/// it cannot use.
+/// The direct map: every byte of physical memory at `pa | KERNEL_VA_BASE`, permanently.
 pub const fn phys_to_virt(pa: u64) -> u64 {
     pa | KERNEL_VA_BASE
 }
@@ -86,32 +53,23 @@ pub const fn virt_to_phys(va: u64) -> u64 {
 
 /// The PL011. Mapped as **device** memory, and that word is load-bearing.
 ///
-/// Map MMIO as *normal* memory and the CPU may cache it, reorder writes to it, merge two
-/// writes into one, and speculatively read it. Speculatively reading a UART FIFO register
-/// **consumes the byte**. See notes/page-tables.md.
+/// As normal memory the CPU may speculatively read it, and reading a FIFO register consumes the
+/// byte. See notes/page-tables.md.
 const UART_BASE: u64 = 0x0900_0000;
 const UART_SIZE: u64 = 0x1000;
 
 /// How the kernel turns a physical address into something it can dereference.
 ///
-/// The direct map. boot.s already established it (both TTBRs pointing at one table), and the
-/// fine-grained tables we build below preserve it, so this is valid from the first
-/// instruction of Rust to the last.
+/// The direct map, valid from the first instruction of Rust: boot.s established it and the fine
+/// tables preserve it.
 pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
     phys_to_virt(pa) as *mut PageTable
 }
 
 /// Build the kernel's page tables and turn the MMU on.
 ///
-/// After this returns, every address in the kernel is a *virtual* address. They happen to
-/// equal the physical ones, for now.
-/// Replace boot.s's crude map with a fine-grained one, and free TTBR0 for userspace.
-///
-/// boot.s got us here with two 1 GiB blocks and permissions that would make a security
-/// engineer weep: all of RAM executable, nothing read-only. It exists to survive twenty
-/// instructions. This is where we build the real thing.
-///
-/// We are already running at high virtual addresses when this is called.
+/// Replaces boot.s's coarse map with the fine one in TTBR1, verified first, and points TTBR0 at
+/// the empty reserved table. Called already running at high virtual addresses.
 pub fn init() {
     let root = memory::alloc()
         .expect("no frame for the root page table")
@@ -139,17 +97,13 @@ pub fn init() {
 
     map_everything(&mut mapper).expect("failed to build the kernel page tables");
 
-    // Prove the tables say what we think before we bet the machine on them. This walk is
-    // the software version of what the hardware is about to do in silicon, and it is the
-    // last chance to find out we are wrong while we can still print.
+    // The last chance to find a wrong map while we can still print.
     verify(&mapper);
 
     // SAFETY: the map covers this function's code, its stack, and the UART. We checked.
     unsafe { install(root) };
 
-    // Remember the kernel's root so a secondary core can adopt the *same* fine map instead of
-    // running forever on the coarse boot map (which covers only the first 2 GiB of the high half,
-    // not the 64-GiB-up thread-stack area). See `init_secondary` and DECISIONS §11.
+    // For `init_secondary`: the coarse boot map does not reach the thread-stack area.
     KERNEL_ROOT.store(root, Ordering::Relaxed);
 
     // And give TTBR0 an empty table to walk, so a stray low address faults.
@@ -162,18 +116,12 @@ static KERNEL_ROOT: AtomicU64 = AtomicU64::new(0);
 /// Bring a secondary core onto the kernel's own tables: the shared fine TTBR1 map, and the shared
 /// empty TTBR0 so a stray low address faults. The boot core must have run [`init`] first.
 ///
-/// A secondary comes up (in `secondary_boot`) on the coarse boot map, which is enough to execute
-/// kernel code and reach its `.bss` boot stack and the UART, but **not** the thread-stack area far
-/// up the high half. This switches it to the same fine map the boot core built and verified, so all
-/// cores translate identically (W^X, the guard pages, the full direct map).
+/// A secondary starts on the coarse boot map, which does not reach the thread-stack area.
 pub(crate) fn init_secondary() {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
     debug_assert!(root != 0, "init_secondary before init");
 
-    // A secondary already has a working MMU: `secondary_boot` turned it on with the coarse boot map
-    // and a TCR/MAIR compatible with the fine map (same 4 KiB granule, same 48-bit VAs, same MAIR
-    // slots). So we do NOT re-run `install`, which rewrites TCR mid-execution and does more than a
-    // secondary needs. We only **repoint TTBR1** at the shared fine map and flush this core's TLB.
+    // Not `install`: this core's TCR and MAIR already match the fine map, so only TTBR1 moves.
     //
     // SAFETY: the fine map covers this core's current code (kernel `.text`), its boot stack (in
     // `.bss`), and the UART. The `isb` after the TTBR write makes it effective before the next
@@ -190,9 +138,7 @@ pub(crate) fn init_secondary() {
         );
     }
 
-    // Point this core's TTBR0 at the shared empty table, matching the boot core: no user space is
-    // active on it yet, so any low address must fault rather than hit the coarse identity map that
-    // `secondary_boot` left in TTBR0.
+    // TTBR0 still holds `secondary_boot`'s identity map; a low address must fault instead.
     // SAFETY: RESERVED_TTBR0 is a zeroed L0 table the boot core allocated in `install_reserved_ttbr0`.
     unsafe { set_ttbr0(ttbr0_value(RESERVED_TTBR0.load(Ordering::Relaxed), 0)) };
 }
@@ -204,16 +150,8 @@ where
     A: FnMut() -> Option<u64>,
     P: Fn(u64) -> *mut PageTable,
 {
-    // 1. THE DIRECT MAP: all of physical RAM, visible at `pa | KERNEL_VA_BASE`, read/write,
-    //    never executable.
-    //
-    // The kernel must be able to touch any frame the allocator hands it (to zero a new page
-    // table, to fill a new user page). With paging on, a physical address it cannot *name*
-    // is a physical address it cannot use.
-    //
-    // We skip the kernel image, whose sections get tighter permissions below. The mapper
-    // deliberately refuses to overwrite an existing mapping, which turns an ordering mistake
-    // here into an error instead of a silently-wrong permission.
+    // 1. The direct map, never executable, skipping the kernel image. The mapper refuses to
+    //    overwrite, so an ordering mistake is an error rather than a wrong permission.
     let image_lo = virt_to_phys(image_start());
     let image_hi = virt_to_phys(image_end());
 
@@ -229,58 +167,36 @@ where
     map_range(m, data_start(), bss_end(), Flags::kernel_data())?;
 
     // 3. THE GUARD PAGE IS NOT MAPPED. That is its entire job.
-    //
-    // The stack grows down into it and the MMU faults on the first byte past the end,
-    // precisely, before any damage. Compare milestone 3, where a stack overflow wrote
-    // through .bss and .data into .text and the kernel executed its own corrupted code, and
-    // hung with no output for 150 seconds. See notes/stack.md.
-    //
-    // We simply skip [__stack_guard, __stack_guard + 4096) and carry on above it.
+    // See notes/stack.md.
 
     // 4. The stack.
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
 
-    // 4b. THE PER-CPU SECONDARY STACKS, one slot at a time, so that the page at the bottom of each
-    // slot stays a hole (milestone 90). This is the same trick as step 3, one per core: the loop
-    // maps only `[bottom, top)` and never names the guard.
-    //
-    // It has to be a loop over slots rather than one range, and that is why the stacks left `.bss`.
-    // Step 2 maps `.data`..`__bss_end` in a single call, so while the stacks lived there the guards
-    // could not exist; a secondary that ran deep did not fault, it wrote over whatever `.bss` sat
-    // below it. See notes/stack-high-water.md.
+    // 4b. The secondary stacks, slot by slot so each slot's bottom page stays a guard. They are
+    // outside `.bss` because step 2 maps that in one range. See notes/stack-high-water.md.
     for id in 0..crate::cpu::MAX_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
-    // 4c. THE PER-CPU INTERRUPT STACKS (milestone 124), the same slot-at-a-time loop as 4b and for
-    // the same reason: each slot's bottom page must stay a hole. These are where a trap taken on
-    // kernel code builds its handler frames, so that a preemption is not charged to the thread it
-    // interrupted. See kernel/src/interrupt_stack.rs.
+    // 4c. The interrupt stacks, slot by slot as in 4b. See kernel/src/interrupt_stack.rs.
     for id in 0..crate::cpu::MAX_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
-    // 5. The UART, as device memory, in the direct map. Without this the machine goes silent
-    // the instant we switch tables, and a silent kernel cannot tell you why it is silent.
+    // 5. The UART, as device memory.
     direct_map(m, UART_BASE, UART_BASE + UART_SIZE, Flags::device())?;
 
-    // 6. The interrupt controller, also device memory, and its address comes from the device
-    // tree rather than a constant. Both blocks: the machine-wide distributor, and then either a
-    // GICv2's per-core CPU interface or a GICv3's redistributor array (milestone 227), mapped at
-    // its full length because which frame belongs to which core is read from the frames. A GICv3's
-    // CPU interface is system registers and needs no mapping.
+    // 6. The GIC's two blocks from the device tree, at full length: a GICv3's redistributor
+    // frames say which core owns each.
     if let Some(found) = memory::gic_regions() {
         let (gicd, second) = (found.distributor(), found.second_region());
         direct_map(m, gicd.start, gicd.start + gicd.size, Flags::device())?;
         direct_map(m, second.start, second.start + second.size, Flags::device())?;
     }
 
-    // 7. The virtio-mmio window, as device memory. **The kernel maps it only to ENUMERATE it**
-    // (read each slot's standardized ID registers and route the block device to its driver); it
-    // does not operate any device. That enumeration is a legitimate kernel/bootstrap role, the
-    // way firmware walks a PCI bus. The driver gets its own mapping of just its slot. See
+    // 7. The virtio-mmio window, mapped only to enumerate it; a driver gets its own slot. See
     // kernel/src/virtio.rs.
     direct_map(
         m,
@@ -289,13 +205,8 @@ where
         Flags::device(),
     )?;
 
-    // 8. The PCIe windows (the PCIe transport, DECISIONS §18): bus 0's ECAM config space and the
-    // slice of the 32-bit PCI memory window the kernel assigns BARs from, both straight from the
-    // device tree (memory::init read the `pci-host-ecam-generic` node; no node, no mapping).
-    // Device memory both; an absent *device* reads all-ones in ECAM, so mapping the windows is
-    // harmless without a PCI device. The gate is the riscv fix carried across for parity (§19):
-    // QEMU's constants collided with the JH7110's DRAM base on the first VisionFive 2 boot, and
-    // an aarch64 board without a generic-ECAM bridge would have died the same way here.
+    // 8. Bus 0's ECAM and the BAR slice of the PCI window (DECISIONS §18), from the device tree's
+    // `pci-host-ecam-generic` node: no node, no mapping (§19, §43).
     if let Some(((ecam, ecam_size), (bar, bar_size))) = memory::pci_regions() {
         direct_map(
             m,
@@ -306,9 +217,7 @@ where
         direct_map(m, bar, bar + PCI_BAR_MAPPED.min(bar_size), Flags::device())?;
     }
 
-    // 9. The SMMUv3's registers (milestone 16b), only when the device tree says the machine has
-    // one. Gating on the node keeps a plain `virt` boot from mapping (and later touching) MMIO
-    // that is not there.
+    // 9. The SMMUv3's registers, only when the device tree has the node.
     if let Some((smmu, smmu_size)) = memory::smmu_region() {
         direct_map(m, smmu, smmu + smmu_size, Flags::device())?;
     }
@@ -332,16 +241,9 @@ pub(crate) const fn virtio_slots() -> u64 {
     VIRTIO_SLOTS
 }
 
-/// How much of the PCIe ECAM window the kernel maps: bus 0 only (4 KB per function, 1 MB per
-/// bus). The window itself comes from the device tree (`memory::pci_regions`), which on QEMU's
-/// aarch64 `virt` is the **highmem** ECAM at `0x40_1000_0000`: the node is `pcie@10000000` (the
-/// low MMIO base) but its `reg` is the high window, and trusting a name over the `reg` is the
-/// mistake the fixture witness exists to catch. As on riscv we map (and enumerate) bus 0 only;
-/// QEMU `virt` is a flat root complex, and widening is one constant. The base was `PCI_ECAM_BASE`
-/// here until the first VisionFive 2 boot showed what a QEMU constant costs (DECISIONS §43).
-/// **The floor, not the answer, since milestone 320.** `pci::ecam_buses()` is what the kernel maps
-/// and reads: this value until a survey has run, and the machine's own topology afterwards. On this
-/// architecture no survey runs, so it stays 1 and is the truth here.
+/// How many ECAM buses the kernel maps: bus 0, 1 MB. The window comes from the device tree's
+/// `reg`, which on QEMU's `virt` is the highmem ECAM at `0x40_1000_0000` whatever the node's name
+/// says. `pci::ecam_buses()` is what the kernel reads; no survey runs here, so it stays 1.
 pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 
 /// How much of the 32-bit PCI memory window the kernel maps and assigns BARs from; the window
@@ -378,11 +280,7 @@ where
 
 /// Map a range of *physical* addresses into the direct map at `pa | KERNEL_VA_BASE`.
 ///
-/// **Memory in blocks, devices in pages** (milestone 161). RAM goes in the largest leaf that fits
-/// (`paging::Mapper::map_span` puts a 2 MiB or 1 GiB leaf only where it lies wholly inside the
-/// range, so exactly the same pages are mapped, in a fraction of the table frames). Device windows
-/// stay in 4 KiB pages: they are a handful of pages each, and keeping them small is the same
-/// choice the x86 port makes for its own reasons (`arch/x86_64/mmu.rs`'s BUGS on the MTRRs).
+/// RAM in the largest leaf that fits wholly inside the range; device windows in 4 KiB pages.
 fn direct_map<A, P>(
     m: &mut Mapper<A, P, Aarch64>,
     pa_start: u64,
@@ -407,9 +305,7 @@ where
 
 /// Walk the tables in software and check the things that would kill us.
 ///
-/// The hardware is about to do exactly this walk, in silicon, for every memory access
-/// forever. Doing it once ourselves, while we can still print, is the difference between a
-/// legible failure and a machine that vanishes.
+/// Panics, while it can still print, on a map the switch would not survive.
 fn verify<A, P>(m: &Mapper<A, P, Aarch64>)
 where
     A: FnMut() -> Option<u64>,
@@ -445,18 +341,11 @@ where
     assert_eq!(pa, UART_BASE);
     assert!(flags.is_writable());
 
-    // The guard page must NOT be mapped. If it is, we've silently lost the protection and
-    // would only find out during the next stack overflow, which is exactly when we can least
-    // afford to be surprised.
     assert!(
         m.translate(stack_guard()).is_none(),
         "the guard page IS mapped: stack overflow protection is off"
     );
 
-    // And the same for every secondary's guard page (milestone 90). Checked here, before the
-    // switch, for the reason the boot stack's is: a protection you discover is missing during an
-    // overflow is no protection at all. The suite checks it again against the live tables
-    // (`every_secondary_stack_sits_on_a_guard_page`), which is the release build's blind spot.
     for id in 0..crate::cpu::MAX_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
@@ -464,9 +353,6 @@ where
         );
     }
 
-    // And every core's interrupt-stack guard page (milestone 124), on the same grounds: a stack
-    // whose guard is mapped has silently lost its protection, and the next thing to find out would
-    // be a handler running off the bottom into whatever the linker put below.
     for id in 0..crate::cpu::MAX_CPUS {
         assert!(
             m.translate(crate::interrupt_stack::guard(id)).is_none(),
@@ -477,72 +363,29 @@ where
 
 /// Switch TTBR1 to the new tables, and take TTBR0 away.
 ///
-/// The MMU is already on (boot.s did that). What changes here is *which* tables it walks, and
-/// the switch is live: the instruction after `msr ttbr1_el1` is fetched through the new
-/// tables. They had better map it.
-///
-/// Disabling TTBR0 is the point of the whole exercise. **The kernel now lives entirely in
-/// TTBR1**, which means TTBR0 can be swapped per-process at milestone 7 without unmapping the
-/// kernel out from under itself. Until then, any access to a low address faults, which is
-/// exactly what we want: there is no userspace yet, so there is nothing legitimate down
-/// there.
+/// The switch is live: the instruction after `msr ttbr1_el1` is fetched through the new tables.
 ///
 /// # Safety
 ///
 /// The tables at `root` must map, at minimum: the code executing this function, its stack,
 /// and the UART. `verify` checks all three.
 unsafe fn install(root: u64) {
-    // Every write we made to the page tables must be visible to the page-table walker before
-    // it can possibly walk them. The walker is a separate observer; ordinary program order
-    // does not bind it.
+    // The table walker is a separate observer: the table stores must reach it first.
     barrier::dsb(barrier::SY);
 
-    // What the eight MAIR slots MEAN. boot.s already set this to the same value; we set it
-    // again because this file owns the definition and a silent disagreement between the two
-    // would map the UART as cacheable normal memory and make the machine behave like it is
-    // haunted.
+    // boot.s set the same value; this file owns the definition, and a disagreement would map the
+    // UART as cacheable.
     MAIR_EL1.set(mair::VALUE);
 
-    // How to walk. The traps here:
-    //
-    //   T0SZ = 16      -> 64 - 16 = 48-bit virtual addresses.
-    //
-    //   TG0 vs TG1     -> **THE ENCODINGS ARE DIFFERENT.** 4 KiB is 0b00 for TG0 and 0b10
-    //                     for TG1. The `aarch64-cpu` crate spells both `KiB_4`, which is
-    //                     exactly the kind of thing we pay a crate to get right.
-    //
-    //   EPD1 = disable -> we have no TTBR1 tables yet. If we left TTBR1 walks enabled, any
-    //                     stray access to a high address would walk whatever garbage is in
-    //                     TTBR1_EL1 and follow it. Better to fault.
-    //
-    //   IPS            -> how many physical address bits this CPU actually has. Read it
-    //                     from the hardware rather than guessing; a value larger than the
-    //                     implementation supports is UNPREDICTABLE. It comes from the ISA
-    //                     record now (milestone 60), which read `ID_AA64MMFR0_EL1` once at
-    //                     boot; this was the only field of that register anyone was reading,
-    //                     while the 4 KiB granule below and the ASID width were assumed out
-    //                     of the same word. `arch::isa::init` refuses the boot if the granule
-    //                     is absent, so `TG0`/`TG1` below are a checked assumption now.
+    // TG0 and TG1 encode 4 KiB differently (0b00, 0b10), both spelled `KiB_4` by the crate. IPS
+    // larger than the part supports is UNPREDICTABLE, so it is the part's own `PARange`.
     TCR_EL1.write(
         TCR_EL1::T0SZ.val(16)
             + TCR_EL1::TG0::KiB_4
             + TCR_EL1::SH0::Inner
             + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
             + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            // TTBR0 walks stay ENABLED, and TTBR0 points at an EMPTY table (see
-            // `RESERVED_TTBR0` below). We used to set EPD0 and disable walks entirely, which
-            // gave the same protection by a different route.
-            //
-            // The change is Linux's design, and the reason is milestone 7. A user address
-            // space is installed by writing TTBR0_EL1, and it is uninstalled by writing it
-            // back to the empty table. If protection came from EPD0 we would have to
-            // read-modify-write TCR_EL1 on **every context switch between a user thread and a
-            // kernel one**, and TCR is a register that controls the shape of translation
-            // itself. Poking it on a hot path to express "nobody is home" is a bad trade for a
-            // frame of memory.
-            //
-            // The guarantee is unchanged: a stray low address from EL1 walks a table full of
-            // zeroes and takes a translation fault. There is a test.
+            // Enabled: TTBR0 points at an empty table, so no switch rewrites TCR (RESERVED_TTBR0).
             + TCR_EL1::EPD0::EnableTTBR0Walks
             + TCR_EL1::T1SZ.val(16)
             + TCR_EL1::TG1::KiB_4
@@ -558,10 +401,6 @@ unsafe fn install(root: u64) {
     // The system register writes must take effect before the TLB work below.
     barrier::isb(barrier::SY);
 
-    // Throw away every cached translation. There should not be any (the MMU has been off),
-    // but "should not be any" is not a guarantee, and a single stale entry here maps some
-    // address to somewhere we have never heard of.
-    //
     // SAFETY: TLB maintenance is always sound.
     unsafe {
         core::arch::asm!(
@@ -572,27 +411,18 @@ unsafe fn install(root: u64) {
         );
     }
 
-    // Make the CPU forget everything it knew. The old boot tables are still sitting in .bss
-    // and the TLB may hold translations from them; a single stale entry maps some address to
-    // somewhere we have never heard of.
+    // The TLB may hold translations from the boot tables still in .bss.
     //
     // SAFETY: TLB maintenance is always sound.
     unsafe {
         core::arch::asm!("tlbi vmalle1", "dsb ish", "isb", options(nostack),);
     }
-
-    // If you are reading this line's output, we survived. The kernel is now running out of
-    // TTBR1, and TTBR0 is free.
 }
 
 /// An empty L0 table, installed in `TTBR0_EL1` whenever no user address space is active.
 ///
-/// **"Nobody is home" is a page table, not a control bit.** A low address from EL1 walks this,
-/// finds a zeroed descriptor, and takes a translation fault, which is exactly the protection
-/// we want while there is no userspace. And swapping a user address space in or out is then a
-/// single `msr ttbr0_el1`, with no read-modify-write of `TCR_EL1` on the context-switch path.
-///
-/// One frame, spent once, to keep `TCR_EL1` out of the hot path forever.
+/// A low address from EL1 walks it and faults; swapping a user space is one `msr ttbr0_el1`. See
+/// notes/mmu.md.
 static RESERVED_TTBR0: AtomicU64 = AtomicU64::new(0);
 
 /// Allocate and install the empty TTBR0 root. Called at the end of `init`.
@@ -630,12 +460,8 @@ pub fn asid_of(ttbr: u64) -> u16 {
 /// **Test-only: let EL1 load and store through pages marked EL0-accessible.** A no-op here, and the
 /// no-op is the finding.
 ///
-/// EL1 may already read an EL0 page: `PAN` (Privileged Access Never) is the feature that would
-/// forbid it and this kernel never sets `PSTATE.PAN`, so there is nothing to permit. **RISC-V is the
-/// other way round**, forbidding it unless `sstatus.SUM` is set, which is why this function exists
-/// at all: without it, a test that reads through a user VA to see what the TLB holds compiles on
-/// both ISAs and faults on one. Nothing in the tree recorded that difference until milestone 58 hit
-/// it. The RISC-V twin carries the full explanation.
+/// EL1 may already read an EL0 page, because this kernel never sets `PSTATE.PAN`; RISC-V needs
+/// `sstatus.SUM`, and its twin carries the explanation.
 ///
 /// Returns the previous state (always `true`) so the two arch modules have one signature.
 #[cfg(feature = "system_tests")]
@@ -651,26 +477,14 @@ pub(crate) fn share_kernel_half(_root: u64) {}
 
 /// Point `TTBR0_EL1` at a composed root-plus-ASID value ([`ttbr0_value`]). **No TLB flush.**
 ///
-/// # Where the sledgehammer went (milestone 15)
-///
-/// This used to end in `tlbi vmalle1is`: every EL1 translation, every core, the kernel's
-/// included, on every context switch. It had to, because every address space ran as ASID 0 and
-/// the TLB could not tell one process's `0x40_0000` from another's; a stale entry would hand a
-/// new process the previous one's memory: the privilege boundary, not a performance bug.
-///
-/// Now every user mapping is `nG` (tagged with the ASID that created it; see paging), each
-/// address space owns one ASID for life (`crates/address_space_identifier`), and the tag rides in here with the
-/// root. The old space's entries stop *matching* instead of being discarded, the kernel's
-/// global entries were never in danger, and the switch flushes nothing. Invalidation happens at
-/// exactly two other places: revocation flushes by VA across all ASIDs, and address-space
-/// teardown flushes its ASID (`flush_asid`) before the number can be reused.
+/// Every user mapping is tagged with its space's ASID, so the old space's entries stop matching.
+/// See notes/address-space-identifiers.md.
 ///
 /// # Safety
 /// The root inside `ttbr` must be a page-aligned L0 table whose descriptors are all valid or
 /// all zero, and the ASID must be the one that owns those mappings.
 unsafe fn set_ttbr0(ttbr: u64) {
-    // Our writes to the table must be visible to the page-table walker, which is a separate
-    // observer and is not bound by program order.
+    // The table walker is a separate observer: the table stores must reach it first.
     barrier::dsb(barrier::SY);
 
     TTBR0_EL1.set(ttbr);
@@ -680,14 +494,8 @@ unsafe fn set_ttbr0(ttbr: u64) {
 /// Discard every TLB entry tagged with `asid`, on every core. The teardown half of the ASID
 /// contract (`crates/address_space_identifier`): after this, and only after this, the number may tag someone else.
 ///
-/// The **leading** `dsb ishst` is the half that was missing until milestone 58. The trailing pair
-/// makes the invalidation complete before we return; the leading one makes our earlier page-table
-/// stores visible to the other cores' table walkers *before* the invalidate is broadcast, which is
-/// what the architecture requires of any `tlbi` that publishes a table change. At the teardown site
-/// this function was written for, nothing was published (the tables are about to be freed), so its
-/// absence never bit; a caller using this to announce a mapping change would have found otherwise.
-/// RISC-V's twin gets the same ordering for free, because `sfence.vma` is defined to order the
-/// executing hart's own page-table writes.
+/// The leading `dsb ishst` makes earlier table stores visible to every walker before the
+/// invalidate is broadcast; the trailing pair completes it before return.
 pub fn flush_asid(asid: u16) {
     let arg = (asid as u64) << 48; // tlbi aside1is takes the ASID in bits 63:48
     // SAFETY: TLB maintenance is always sound.
@@ -705,11 +513,7 @@ pub fn flush_asid(asid: u16) {
 
 /// Install a user address space. The low half of memory now means *that process*.
 ///
-/// The running kernel does not call this: it installs address spaces through the context switch,
-/// which goes via [`switch_user_root`] so it can skip the barriers when the process has not
-/// changed. This is the unconditional install, which is what a test wants when it is asserting
-/// about a *specific* address space rather than about scheduling. All three architectures offer
-/// it, and on all three the system tests are its callers.
+/// The unconditional install, for the system tests; the context switch uses [`switch_user_root`].
 ///
 /// # Safety
 /// `ttbr` must compose ([`ttbr0_value`]) a live L0 table built by a `Mapper` with `Half::Low`
@@ -731,43 +535,9 @@ pub fn deactivate_user() {
     unsafe { set_ttbr0(ttbr0_value(reserved, 0)) };
 }
 
-/// **Could EL0 read this address?** Not "can the kernel", which is a different question with a
-/// different answer, and confusing the two is how a kernel leaks itself.
-///
-/// # The confused deputy, in our own kernel
-///
-/// A user program calls `write(console, ptr, len)`. `ptr` is a number *it chose*. It passes
-/// `0xffff_0000_4008_0000`, which is the kernel's own `.text`.
-///
-/// The kernel can read that address. It reads it all day. So if it simply dereferences the
-/// pointer, it will happily print its own memory **on the user's behalf, using its own
-/// authority**, and the user, who could not read one byte of it, gets all of it.
-///
-/// That is the compiler service overwriting the billing log (notes/capabilities.md). The deputy
-/// was confused about *whose authority it was acting under*, and no capability check catches it,
-/// because the capability to the console is perfectly genuine. **The authority that leaked was
-/// not the console's. It was the kernel's own.**
-///
-/// # And the hardware will just tell us
-///
-/// `AT S1E0R` means: *do the stage-1 translation of this address **as EL0 would**, for a read.*
-/// One instruction. The MMU picks `TTBR1` for a high address, walks the kernel's own tables,
-/// reads the `AP` bits, and reports a permission fault into `PAR_EL1`: the same "no" the
-/// hardware would have given the user program itself.
-///
-/// So we do not re-implement the permission model in software and hope it agrees with the
-/// silicon. **We ask the silicon.**
-///
-/// # Why this has no caller in the running kernel
-///
-/// **No syscall in today's ABI dereferences a user pointer** (data moves through shared memory),
-/// a property of the narrow surface (§4 (kernel shape) rule 3) rather than an accident.
-///
-/// It is kept, not speculative, and it is **proved rather than merely allowed**:
-/// `system_tests::user::tests::the_hardware_says_el0_cannot_read_the_kernels_memory` asserts the
-/// silicon says no to a kernel address and yes to the process's own text, so the technique
-/// notes/capabilities.md leans on is exercised on every system-test run. Hence the `cfg_attr`
-/// below names the one configuration with no caller, instead of blanket-suppressing a function.
+/// **Could EL0 read this address?** Asked of the silicon with `AT S1E0R`, not of the kernel's own
+/// permission model. Only the system tests call it: no syscall dereferences a user pointer. See
+/// notes/mmu.md, "Asking the silicon whether EL0 could read an address".
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_can_read(va: u64) -> bool {
     // SAFETY: address translation has no side effects beyond PAR_EL1.
@@ -782,18 +552,15 @@ pub fn user_can_write(va: u64) -> bool {
 }
 
 /// # Safety
-/// Sound for any address. The result is advisory only in the sense that the mapping could change
-/// afterwards; (the old `syscall::user_slice` reader that relied on this was removed in milestone 8).
+/// Sound for any address. The mapping may change after the answer.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-question-shapes, as the
 /// yes-or-no worklist recommended.
 /// Refused `translate_as_el0` (named for the `AT` instruction it issues, where the answer is about
 /// access).
 unsafe fn can_el0_access(va: u64, write: bool) -> bool {
-    // PAR_EL1 IS A SINGLE SHARED REGISTER, and between the `at` and the `mrs` we could be
-    // preempted by the timer, switched to another thread, and switched back with somebody else's
-    // translation result sitting in it. Masking interrupts for two instructions closes that, and
-    // it is the kind of window that produces a bug you would never reproduce.
+    // PAR_EL1 is one shared register: a switch between the `at` and the `mrs` could leave another
+    // thread's result in it.
     let was_enabled = crate::arch::interrupts::disable();
 
     let par: u64;
@@ -822,8 +589,7 @@ unsafe fn can_el0_access(va: u64, write: bool) -> bool {
 
     crate::arch::interrupts::restore(was_enabled);
 
-    // PAR_EL1.F: bit 0. Set means the translation FAULTED, which is the hardware saying
-    // "EL0 could not have done this."
+    // PAR_EL1.F, bit 0: the translation faulted.
     par & 1 == 0
 }
 
@@ -835,10 +601,8 @@ pub fn current_user_root() -> u64 {
 /// Unmap one page at `va` from the user address space rooted at `root`, discharging the TLB
 /// obligation. Returns the physical frame it pointed at, or `None` if nothing was mapped there.
 ///
-/// Revocation (§13) uses this to pull a shared page out of *every* holder's address space, which is
-/// why it takes an explicit `root` rather than the installed one: the holder is usually some other
-/// process. The database that drives it forgets a root before its `AddressSpace` frees its tables,
-/// so `root` here is always a live low-half table.
+/// Revocation (§13) calls it for every holder's space, so `root` is explicit; the registry forgets
+/// a root before its tables are freed, so it is always live.
 pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
     // SAFETY: `root` is a live L0 table built with `Half::Low`; the direct map makes `phys_to_ptr`
     // valid; `unmap` allocates nothing.
@@ -853,11 +617,8 @@ pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
 /// calls it once per address; pages not mapped are skipped. Name provisional (lane 2451, 2026-10-20
 /// UTC).
 ///
-/// [`unmap_user_at`] once per page costs a by-address invalidate per page, and here that is a
-/// broadcast `tlbi` and its barriers per page, 683 of them for the scanout. One
-/// [`flush_asid`] after the last unmap discharges every page's obligation, because each of them is
-/// a translation tagged `asid`. Until it runs another core may still hit a stale entry, so the
-/// caller must not hand any of these frames back before this returns.
+/// One [`flush_asid`] after the last unmap replaces a broadcast `tlbi` per page (683 for the
+/// scanout). The caller must not hand any frame back before this returns.
 pub(crate) fn unmap_user_pages(root: u64, asid: u16, each: impl FnOnce(&mut dyn FnMut(u64))) {
     // SAFETY: as `unmap_user_at`.
     let mut mapper = unsafe { Mapper::<_, _, Aarch64>::new(root, Half::Low, || None, phys_to_ptr) };
@@ -905,10 +666,8 @@ pub fn translate_at(root: u64, va: u64) -> Option<(u64, Flags)> {
 /// **Map a run of user pages into the current space and invalidate once, when the batch drops**,
 /// for `PageFrame::MAP`. Name provisional (lane 2451, 2026-10-20 UTC).
 ///
-/// [`map_current_user_page_frame`] flushes after every page, and which here
-/// is a barrier, not an invalidate: a newly valid leaf needs none on aarch64. The batch issues that
-/// barrier once. The flush is in `Drop`, so
-/// neither the end of a run nor an early return out of one can skip it.
+/// A newly valid leaf needs a barrier, not an invalidate; the batch issues it once, in `Drop`, so
+/// no early return skips it.
 pub(crate) struct UserMapBatch {
     lo: u64,
     hi: u64,
@@ -986,30 +745,14 @@ pub(crate) fn reserved_root() -> u64 {
 
 /// Install `ttbr` (a composed root + ASID) as the live low half, **unless already installed**.
 ///
-/// Called from the context switch, on every switch. The early return compares the raw
-/// register, which carries the ASID too, so "same process" is one comparison; and since
-/// milestone 15 even the switch that does happen flushes nothing (see `set_ttbr0`), the early
-/// return is now about skipping two barriers rather than dodging a catastrophe.
+/// Called on every switch. The register carries the ASID, so "same process" is one comparison
+/// and skips two barriers; a switch that happens flushes nothing.
 ///
 /// # Safety
 /// `ttbr` must be a value [`ttbr0_value`] composed over a **live** `AddressSpace`'s L0 root and the
 /// ASID that owns its mappings, or [`reserved_root`]. The table must outlive every instruction
-/// executed at EL0 until some later write to `TTBR0_EL1` replaces it: this is the register that
-/// decides whose memory the low half means, so a freed root hands the next user instruction a
-/// stranger's pages.
-///
-/// # Why this is a contract and not a type (milestone 112)
-///
-/// It was a safe fn until milestone 112, carrying a `// SAFETY:` comment that discharged its
-/// obligation onto "the caller" while the signature (`u64`) imposed it on nobody. The obvious repair
-/// is a newtype only `AddressSpace::ttbr0` and [`reserved_root`] can mint, which would make the
-/// function honestly safe. **It does not work, and the reason is worth keeping**: the dangerous half
-/// of the obligation is *liveness*, and a `Copy` newtype over a `u64` launders exactly that. An
-/// `AddressSpace` can be dropped and its frames recycled while a copy of its composed value lives
-/// on. A borrow would express it, and the scheduler cannot hold one: `sched::switch` reads the root
-/// out from under the `IPC_TABLES` lock *on purpose*, so that the lock is released before the context
-/// switch, and a lifetime tied to the `AddressSpace` cannot survive that drop. So the obligation
-/// stays a sentence, and `unsafe fn` is what puts it in front of a caller.
+/// executed at EL0 until some later write to `TTBR0_EL1` replaces it. Why this is a contract and
+/// not a type is in notes/mmu.md.
 pub(crate) unsafe fn switch_user_root(ttbr: u64) {
     if TTBR0_EL1.get() == ttbr {
         return;
@@ -1022,11 +765,8 @@ pub(crate) unsafe fn switch_user_root(ttbr: u64) {
 
 /// Serializes mutation of the kernel's page tables across cores.
 ///
-/// `kernel_mapper()` reads and writes the shared TTBR1 tables (walk, and read-modify-write to
-/// allocate an intermediate table on the way down). On one core the callers never raced; on SMP two
-/// cores spawning threads both map into these tables at once, which would corrupt them. This lock
-/// makes `map_page`/`unmap_page` mutually exclusive. See `sync::rank::KERNEL_MMU` for its place in the
-/// order (below `IPC_TABLES`, above the allocators it calls).
+/// Two cores spawning threads map into the shared TTBR1 tables at once. Ranked below `IPC_TABLES`
+/// and above the allocators it calls (`sync::rank::KERNEL_MMU`).
 static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
     crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
@@ -1076,16 +816,8 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 
 /// Invalidate the TLB entry for one virtual address.
 ///
-/// This is what discharges a `paging::TlbFlush`. The `paging` crate is pure logic and emits no
-/// instructions; the architecture supplies this.
-///
-///   `tlbi vaae1is` : invalidate by **VA**, **A**ll ASIDs, **E1**, **I**nner **S**hareable.
-///
-/// The operand is the address shifted right by 12: the TLB is indexed by page, not by byte.
-///
-/// `dsb ish` afterwards because **TLB maintenance is not synchronous**. Without it, the next
-/// instruction may still be using the translation you just told the CPU to forget. And `isb`
-/// because instruction fetch may have already prefetched through the old mapping.
+/// Discharges a `paging::TlbFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
+/// the page number. TLB maintenance is not synchronous, hence the `dsb ish` and `isb` after.
 pub(crate) fn flush_tlb(va: u64) {
     // SAFETY: TLB maintenance is always sound. Getting it wrong means a stale translation, not
     // memory unsafety in the Rust sense; but a stale translation IS memory unsafety in the
@@ -1108,13 +840,7 @@ pub(crate) fn is_enabled() -> bool {
 
 /// Ask the live **kernel** page tables what a high virtual address maps to.
 ///
-/// Reads `TTBR1_EL1` back out of the hardware, so this is the truth the CPU is using, not a
-/// copy of what we intended. That distinction is the point: it lets the tests check the tables
-/// the machine is actually walking.
-///
-/// (The doc comment here used to say `TTBR0_EL1`, which the code has never read. Recorded
-/// rather than quietly fixed, per the house rule: the machine overrules the documentation, and
-/// it overrules us.)
+/// Reads `TTBR1_EL1` back out of the hardware, so tests check the tables the CPU walks.
 pub fn translate(va: u64) -> Option<(u64, Flags)> {
     let root = TTBR1_EL1.get_baddr();
 
@@ -1168,11 +894,7 @@ pub(crate) fn print_summary() {
     );
 }
 
-// --- what the linker told us ---
-//
-// Each of these is a section boundary, page-aligned by link-aarch64.ld precisely so that each can
-// carry its own MMU permissions. Permissions are per-page: a section that shares a page with
-// another section cannot have its own.
+// Section boundaries, page-aligned by link-aarch64.ld so each section carries its own permissions.
 
 macro_rules! linker_symbol {
     ($name:ident, $sym:ident) => {
@@ -1212,9 +934,7 @@ mod tests {
 
     /// The kernel is running at high virtual addresses, out of TTBR1.
     ///
-    /// This is what makes milestone 7 possible: TTBR0 can be swapped per-process without
-    /// unmapping the kernel out from under itself. If the kernel lived in TTBR0, the first
-    /// context switch into a user process would delete the kernel.
+    /// So TTBR0 can be swapped per process without unmapping the kernel.
     #[test_case]
     fn the_kernel_lives_in_the_high_half() {
         use crate::arch::mmu::KERNEL_VA_BASE;
@@ -1235,8 +955,7 @@ mod tests {
             "the stack is at {sp:#x}, not in the high half"
         );
 
-        // And a static. (This used to check a heap allocation too; the heap left at milestone
-        // 14, and statics were always the other kernel-owned memory worth the assertion.)
+        // And a static.
         static IN_BSS: u64 = 0;
         let addr = (&raw const IN_BSS) as u64;
         assert!(
@@ -1247,14 +966,7 @@ mod tests {
 
     /// **TTBR0 is free.** Nothing of ours lives at a low address any more.
     ///
-    /// The point of the whole exercise, and it is what makes milestone 7 possible: a user
-    /// address space can be installed and removed without unmapping the kernel out from under
-    /// itself.
-    ///
-    /// This asserts the **property** (a low address does not translate), not the *mechanism*.
-    /// It used to assert `EPD0 == 1`, and milestone 7a changed the mechanism to an empty
-    /// reserved table. A test written against the mechanism would have failed for no reason;
-    /// one written against the property still holds, and still catches a stale identity map.
+    /// Asserts the property, a low address does not translate, not the mechanism that provides it.
     #[test_case]
     fn a_low_address_does_not_translate_when_no_process_is_running() {
         use crate::arch::mmu::translate_user;
@@ -1269,8 +981,6 @@ mod tests {
 
     /// The direct map: every physical address is nameable at `pa | KERNEL_VA_BASE`.
     ///
-    /// This is how the kernel touches a frame the allocator just handed it. Without it, a
-    /// physical address the kernel cannot NAME is a physical address it cannot use.
     #[test_case]
     fn the_direct_map_reaches_physical_memory() {
         use crate::arch::mmu::{phys_to_virt, virt_to_phys};
@@ -1303,11 +1013,7 @@ mod tests {
 
     /// **The guard page must not be mapped.** That is its entire job.
     ///
-    /// Verified at boot too (`mmu::verify` panics if it's mapped), but stated here as well
-    /// because it is the thing that closes the milestone 3 incident, and a protection you
-    /// only discover is missing *during* a stack overflow is no protection at all.
-    ///
-    /// Proven by deliberate overflow: `FAR_EL1` comes back as exactly this address.
+    /// Also checked at boot by `mmu::verify`. See notes/stack.md.
     #[test_case]
     fn the_guard_page_is_a_hole() {
         use crate::arch::mmu;
@@ -1331,8 +1037,7 @@ mod tests {
 
     /// W^X, checked against the tables the hardware is actually walking.
     ///
-    /// Not a copy of what we intended: `translate` reads `TTBR0_EL1` back out of the CPU and
-    /// walks from there.
+    /// `translate` reads `TTBR1_EL1` back out of the CPU and walks from there.
     #[test_case]
     fn kernel_text_is_executable_and_not_writable() {
         use crate::arch::mmu;
@@ -1374,21 +1079,15 @@ mod tests {
 
     /// The UART is device-typed.
     ///
-    /// Map MMIO as normal memory and the CPU may cache it, reorder writes to it, merge two
-    /// writes into one, and speculatively read it. Speculatively reading a UART FIFO
-    /// register CONSUMES THE BYTE. See notes/page-tables.md.
+    /// See `UART_BASE` and notes/page-tables.md.
     #[test_case]
     fn the_uart_is_mapped_as_device_memory() {
         use crate::arch::mmu;
 
-        // The UART lives in the direct map, like every other physical address the kernel
-        // names. Its raw physical address no longer exists as far as the CPU is concerned:
-        // TTBR0 is off.
         let (_, flags) =
             mmu::translate(mmu::phys_to_virt(0x0900_0000)).expect("the UART is not mapped");
 
-        // The UART must be device-typed (the aarch64 MAIR-slot encoding is checked in
-        // paging::aarch64; here we assert the portable property the kernel cares about).
+        // The MAIR-slot encoding is checked in paging::aarch64; this is the portable property.
         assert!(flags.is_device(), "the UART is not device memory");
 
         assert!(flags.is_writable(), "we do need to write to it");
@@ -1397,10 +1096,7 @@ mod tests {
 
     /// A frame from the allocator is still real, writable memory *through the MMU*.
     ///
-    /// Before, this proved the bookkeeping matched physical RAM. Now it also proves the
-    /// identity map covers everything the allocator can hand out, which is a different and
-    /// newly-necessary claim: with paging on, a physical address the kernel cannot NAME is a
-    /// physical address it cannot use.
+    /// The direct map covers everything the allocator can hand out.
     #[test_case]
     fn an_allocated_frame_is_reachable_through_the_mmu() {
         use crate::arch::mmu;
@@ -1418,21 +1114,8 @@ mod tests {
 
     /// **Prove the TLB is actually invalidated on unmap.**
     ///
-    /// This is the test for the landmine. Change a mapping without a `tlbi` and the CPU keeps
-    /// using the *cached* translation: memory reads back as the previous owner's data. It is a
-    /// security hole, and it is close to undebuggable, because the page tables **in memory are
-    /// correct**: the lie lives in a CPU cache you cannot inspect.
-    ///
-    /// So we make it observable:
-    ///
-    ///   1. map a spare VA to frame A, which holds 0xAAAA...
-    ///   2. **read it**, which is what populates the TLB
-    ///   3. unmap, and invalidate
-    ///   4. map the *same VA* to frame B, which holds 0xBBBB...
-    ///   5. read it again
-    ///
-    /// If step 5 returns 0xAAAA, the TLB is stale and we have exactly the bug. It must return
-    /// 0xBBBB.
+    /// Maps a VA to frame A and reads it into the TLB, unmaps, maps the same VA to frame B and
+    /// reads again. A stale TLB returns A's data while the tables in memory are correct.
     #[test_case]
     fn unmap_invalidates_the_tlb() {
         use paging::Flags;

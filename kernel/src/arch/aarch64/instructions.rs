@@ -1,31 +1,13 @@
 //! **One function per instruction**: the aarch64 `asm!` that logic calls, kept out of the logic so a
-//! proof can replace it. The aarch64 twin of `arch/riscv64/instructions.rs`, which has the full
-//! reasoning; this header keeps only what differs.
+//! proof can replace it. The twin of `arch/riscv64/instructions.rs`, which has the reasoning.
 //!
 //! *Name provisional (a lane minted it 2026-09-25, matching the riscv64 file; names are calef's).*
 //!
-//! # What is here and what is not
-//!
-//! Most of this architecture's system registers are reached through the `aarch64-cpu` crate
-//! (`TTBR0_EL1.set`, `CNTV_CVAL_EL0.get` and the rest), whose `asm!` lives in that crate. Those are
-//! not moved here; a harness that reaches one still fails, and stubbing a trait method on a register
-//! type is a different mechanism from the one this file exists for. What is here is every `asm!` this
-//! tree wrote itself around logic: the two read-modify-writes (`CPACR_EL1`, `ICC_SRE_EL1`) that used
-//! to do their arithmetic inside the `asm!` block, and the single instructions beside them.
-//!
-//! What stays `asm!` outside this file, each a fixed sequence with no Rust logic inside it: the TLB
-//! maintenance sequences in `mmu.rs` (barrier, `tlbi`, barrier, `isb`), the `at` + `par_el1`
-//! translation probes, the cache-maintenance loops in `sync_icache`, the PSCI conduit call (its
-//! instruction must be a literal), the GIC CPU-interface bring-up and acknowledge sequences, the PMU
-//! start sequence, `fp::touch`, the register-preservation trap test, and `timer::calibration_loop`.
-//!
-//! # A stub is an assumption about the hardware
-//!
-//! A model that replaces a function here is a claim about the silicon, from the Arm ARM, unchecked
-//! against any core. Each function's documentation says what a model must honour.
-//! notes/kernel-proofs/stubbing-an-instruction.md has the pattern and its caveat.
-//!
-//! Every function is `#[inline(always)]` and carries its call site's `options` unchanged.
+//! Here is every `asm!` this tree wrote around logic. Registers reached through `aarch64-cpu`, and
+//! fixed sequences with no Rust logic inside (TLB and cache maintenance, `at` probes, the PSCI call,
+//! the GIC and PMU sequences), stay at their sites. A model of a function here is an unchecked claim about the silicon; each function says what a
+//! model must honour (notes/kernel-proofs/stubbing-an-instruction.md). Every function is
+//! `#[inline(always)]` and carries its call site's `options` unchanged.
 
 use core::arch::asm;
 

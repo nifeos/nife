@@ -1,9 +1,7 @@
 //! aarch64 support.
 //!
-//! Assembly, system registers, and CPU-specific behaviour live here and nowhere
-//! else. When the Raspberry Pi port happens, this is the module that gets a
-//! sibling, and everything above `arch::` should be untouched. See
-//! notes/portability.md and DECISIONS §4.
+//! Assembly, system registers, and CPU-specific behaviour live here and nowhere else (DECISIONS
+//! §4). See notes/aarch64-port.md and notes/portability.md.
 
 use core::arch::global_asm;
 

@@ -1,16 +1,7 @@
 //! Exception handling.
 //!
-//! One mechanism serves three purposes on aarch64, and it is worth seeing that they
-//! are the same thing before we build the other two:
-//!
-//!   - a **fault** (bad memory access, illegal instruction)  <- milestone 2, here
-//!   - an **interrupt** (the timer, the UART)                <- milestone 5
-//!   - a **syscall** (`svc` from userspace)                  <- milestone 7
-//!
-//! All three suspend the current instruction stream, switch to EL1, and jump to an
-//! address the kernel chose. Only the reason differs. Build the plumbing once.
-//!
-//! See notes/exceptions.md.
+//! One mechanism serves faults, interrupts and syscalls: each switches to EL1 and jumps to the
+//! vector table the kernel installed. See notes/exceptions.md, "The dispatcher's arms".
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
@@ -35,10 +26,7 @@ pub struct TrapFrame {
 
     /// Where the interrupted code will resume.
     ///
-    /// **Writable, and that matters.** Advancing this is how we step past a `brk`.
-    /// Milestone 7 will use it to skip past an `svc`. The hardware reloads the program
-    /// counter from here on `eret`, so whatever we leave in this field is where the
-    /// world continues.
+    /// Writable: `eret` resumes here, which is how a `brk` is stepped over.
     pub elr: u64,
 
     /// The processor state (condition flags, exception level, interrupt masks) the
@@ -48,17 +36,8 @@ pub struct TrapFrame {
     /// **The user's stack pointer.** `SP_EL0`, which is a different register from the
     /// `sp` the kernel is using.
     ///
-    /// At EL1 we run with `SPSel=1`, so `sp` means `SP_EL1`, the thread's kernel stack.
-    /// Taking an exception from EL0 switches the hardware to `SP_EL1` and leaves `SP_EL0`
-    /// alone, so the user's stack pointer is simply still sitting there. It survives the
-    /// exception on its own.
-    ///
-    /// What it does **not** survive is a context switch to another *user* thread, which
-    /// would spend `SP_EL0` on its own stack and never give it back. So it travels in the
-    /// frame, with the thread.
-    ///
-    /// It cost nothing to add: it landed in the padding word the frame already had, which is
-    /// why the size assertion below is unchanged at 272.
+    /// An exception from EL0 leaves `SP_EL0` alone, but a switch to another user thread would
+    /// spend it, so it travels in the frame. It fills what would otherwise be the frame's padding.
     pub sp_el0: u64,
 }
 
@@ -67,14 +46,6 @@ pub struct TrapFrame {
 const _: () = assert!(size_of::<TrapFrame>() == 272);
 
 impl TrapFrame {
-    /// Build the frame that drops a brand-new thread to EL0 at `entry` on `user_sp`, with `args` in
-    /// `x0`..`x2`. The arch side of the userspace-entry seam (notes/riscv-port.md, leak #3):
-    /// portable `user.rs` asks for "a user-entry frame" and never names `elr`/`spsr`/`sp_el0`.
-    ///
-    /// `spsr = 0` is the `SPSR_EL1` value for "return to `EL0t`, AArch64, interrupts unmasked":
-    /// `M[4]=0` (AArch64), `M[3:0]=0` (`EL0t`, the only stack EL0 has), `DAIF=0` (IRQs on the moment we
-    /// land, so a tight-loop user thread is still preemptible, per DECISIONS §5). Zero looks like a
-    /// bug and is not.
     /// The syscall number the caller passed. aarch64 ABI: register `x8` (DECISIONS §10). The
     /// portable syscall dispatcher reads it through here so it never names a register directly.
     pub(crate) fn syscall_nr(&self) -> u64 {
@@ -92,6 +63,12 @@ impl TrapFrame {
         self.x[i] = v;
     }
 
+    /// Build the frame that drops a brand-new thread to EL0 at `entry` on `user_sp`, with `args` in
+    /// `x0`..`x2`, so portable `user.rs` never names `elr`, `spsr` or `sp_el0` (notes/riscv-port.md,
+    /// leak #3).
+    ///
+    /// `spsr = 0` returns to `EL0t`, AArch64, with IRQs unmasked, so a tight-loop user thread is
+    /// still preemptible (DECISIONS §5). Zero looks like a bug and is not.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         let mut x = [0u64; 31];
         x[0] = args[0]; // _start's first argument (AAPCS64 puts it in x0)
@@ -112,35 +89,15 @@ unsafe extern "C" {
     fn enter_userspace(frame: *mut TrapFrame) -> !;
 }
 
-/// Drop to EL0 by loading `frame` and returning from the exception into it. The arch side of the
-/// userspace-entry seam; the portable caller builds the frame with [`TrapFrame::for_user_entry`],
-/// places it at the top of the current thread's kernel stack, and calls this.
-///
-/// **`#[inline(always)]` is load-bearing, not cosmetic.** The frame sits at the *top of the caller's
-/// own kernel stack*, overlapping the caller's live call frames (see `user::enter_frame`). It is
-/// intact only until `enter_userspace` does `mov sp, x0`, and only if nothing pushes onto the stack
-/// in between. A real call here would push a return address and prologue into exactly that region and
-/// corrupt the frame (observed as a child thread getting `sp_el0 = 0`). Inlining makes the caller
-/// tail-call `enter_userspace` directly, with no push, which is what the pre-seam direct call did.
+/// Drop to EL0 by returning from the exception into `frame`, built by
+/// [`TrapFrame::for_user_entry`]. `#[inline(always)]` is load-bearing, and a frame with `elr == 0`
+/// is refused. See notes/exceptions.md, "Entering EL0 for the first time".
 ///
 /// # Safety
 /// `frame` must be a correctly-built, writable `TrapFrame` at the top of the current thread's kernel
 /// stack, with EL0's code and stack mapped and `TTBR0` installed.
 #[inline(always)]
 pub unsafe fn enter_user(frame: *mut TrapFrame) -> ! {
-    // **Refuse to enter EL0 with no entry point**, the twin of the riscv64 check (DECISIONS §19:
-    // a capability ships on every architecture or a scope note records the gap, and a diagnostic
-    // that exists on one ISA would report the bug only where it happens to be looked for).
-    //
-    // A thread entered with `elr == 0` fetches its first instruction from address 0 and dies, and
-    // whatever it served never answers, so the run ends in the lost-wakeup watchdog far from the
-    // cause. The paragraph above already records this shape on this ISA: a real call frame pushed
-    // over the trap frame was "observed as a child thread getting `sp_el0 = 0`". That was fixed by
-    // the `#[inline(always)]`; this catches the same corruption arriving by any other route.
-    //
-    // A load and a branch on a frame this function already touches, so nothing is pushed over the
-    // frame and the inlining property above is preserved.
-    //
     // SAFETY: the caller owns the frame's validity, as documented.
     let elr = unsafe { (*frame).elr };
     if elr == 0 {
@@ -180,10 +137,8 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 }
 
 /// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
-/// stack that [`user_pc`] reads. The thread's return to user mode restores it from there, so this is
-/// how the kernel hands a blocked or trapped user thread a result word that is not one of the five
-/// its syscall path writes. The death message's label uses it, in argument register 5, so that only
-/// the death path pays: DECISIONS §148 (resolves by asking the kernel), as amended 2026-10-04.
+/// stack that [`user_pc`] reads, so a blocked or trapped thread gets a result word beyond the five
+/// its syscall path writes. The death message's label uses register 5 (DECISIONS §148).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -204,22 +159,11 @@ pub unsafe fn set_user_arg(stack_top: u64, i: usize, v: u64) {
 /// that we didn't crash.
 pub(crate) static BRK_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-/// **Prove the trap path works end to end: execute a breakpoint and return** (milestone 268).
+/// **Prove the trap path works end to end: execute a breakpoint and return**, the twin of the
+/// riscv64 and `x86_64` `self_test`.
 ///
-/// The twin of `arch::riscv64::exceptions::self_test` and `arch::x86_64::exceptions::self_test`,
-/// which both architectures have had since their ports were written and which
-/// `notes/riscv-port.md` already calls "a boot self-test". aarch64 had every part of it except the
-/// function: [`BRK_COUNT`], a handler arm for `ec::BRK64`, and a test that fires a `brk` and reads
-/// the counter back. Milestone 268 collected the three into the same shape the other two have, so
-/// that `self_test::run` can call one name on all three.
-///
-/// If the vector is wired, the handler catches EC `0x3c`, advances `ELR_EL1` past the `brk` (the
-/// hardware does **not** do that for a `brk`, unlike a data abort), and the `eret` lands on the
-/// line after this one. If it is not wired, this never returns, which is the same exposure the
-/// other two carry and is why the caller's own doc says a self-test can hang a boot.
-///
-/// Returns how many breakpoints were caught during the call, so the caller can tell "the handler
-/// ran" from "we survived somehow".
+/// Returns how many breakpoints were caught during the call. If the vector is not wired, this
+/// never returns.
 // The machine description and the boot self-test are the only callers, and both are
 // `#[cfg(not(any(test, feature = "bench")))]`: a test boot exits through semihosting and a bench
 // boot diverges into `bench::run`, so neither reads a bring-up transcript. Same treatment
@@ -238,15 +182,12 @@ pub(crate) fn self_test() -> usize {
 
 /// Exception Class: `ESR_EL1` bits 31:26.
 ///
-/// The single most useful field in the machine when something has gone wrong. It says
-/// *what kind* of thing happened, and everything else is detail.
+/// What kind of exception happened; the rest of `ESR_EL1` is detail.
 mod ec {
     pub(crate) const UNKNOWN: u64 = 0x00;
     pub(crate) const TRAPPED_WFI_WFE: u64 = 0x01;
     /// Access to SVE, Advanced SIMD or floating-point functionality, trapped by
-    /// `CPACR_EL1.FPEN`. The first-use trap milestone 447 (a thread's vector registers are its
-    /// own) turns into an enable; see
-    /// `arch::aarch64::fp`.
+    /// `CPACR_EL1.FPEN`: the first-use trap. See `arch::aarch64::fp`.
     pub(crate) const FP_SIMD_ACCESS: u64 = 0x07;
     pub(crate) const ILLEGAL_EXECUTION_STATE: u64 = 0x0e;
     pub(crate) const SVC64: u64 = 0x15;
@@ -316,21 +257,11 @@ pub fn init() {
     let base = (&raw const exception_vectors) as u64;
     VBAR_EL1.set(base);
 
-    // An Instruction Synchronization Barrier makes the CPU discard everything it has
-    // already fetched or speculated past this point and start again.
-    //
-    // Without it, the write to VBAR_EL1 is not architecturally guaranteed to be in
-    // effect for the *very next instruction*. And "the very next instruction" is
-    // exactly when a fault might arrive. This is one line, it is easy to leave out,
-    // and leaving it out produces a bug that appears only under timing you cannot
-    // reproduce.
+    // Without the `isb` the VBAR_EL1 write need not be in effect for the next instruction, which is
+    // when a fault might arrive. See notes/exceptions.md, "The ISB that is easy to forget".
     barrier::isb(barrier::SY);
 }
 
-/// Called from every vector entry, with the saved state and which slot fired.
-///
-/// `extern "C"` because assembly calls it: `frame` arrives in `x0`, `index` in `x1`,
-/// per AAPCS64. See notes/registers.md.
 /// Vector slot 5: Current EL, `SP_ELx`, IRQ. **The kernel being interrupted.**
 const VECTOR_IRQ_CURRENT: u64 = 5;
 /// Vector slot 9: Lower EL, AArch64, IRQ. Userspace being interrupted. Milestone 7.
@@ -342,26 +273,20 @@ unsafe extern "C" {
     fn dispatch_on_interrupt_stack(frame: &mut TrapFrame, index: u64, top: u64) -> bool;
 }
 
-/// **The outer half of the trap path, and the half that stays on the interrupted stack.**
+/// **The outer half of the trap path, on the interrupted stack**, called from every vector entry
+/// with the saved state and which slot fired (`x0`, `x1`, per AAPCS64; notes/registers.md).
 ///
-/// It does exactly two things the inner half must not: it picks the stack the handler runs on, and
-/// it runs the deferred `schedule()` afterwards. The second is the reason the split exists.
-/// `schedule()` parks this thread's `sp` in its `Context` and resumes it there later, so it may only
-/// ever be called on a stack that belongs to the thread. Calling it from the interrupt stack would
-/// park a per-core address in a thread, and the thread would resume on bytes the next interrupt had
-/// already spent. See `kernel/src/interrupt_stack.rs`, which holds the whole rule and its
-/// mechanisms.
+/// It picks the stack the handler runs on, and runs any deferred `schedule()` afterwards, which may
+/// run only on a stack the thread owns. See `kernel/src/interrupt_stack.rs` and notes/exceptions.md,
+/// "The split around the interrupt stack".
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[unsafe(link_section = ".text.hot.exception_dispatch")]
 extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
     let top = crate::interrupt_stack::top_for_trap(is_from_lower_el(index));
     let deferred_switch = if top == 0 {
-        // **The common case, and it must not pay for the uncommon one.** Every syscall arrives here
-        // (a trap from EL0 never switches), and routing it through the trampoline anyway cost 8.6
-        // instructions per `null_syscall` in the debug build the icount tripwire measures, for a
-        // stack move that does not happen. So the branch is taken in Rust and the assembly is
-        // reached only when there is something for it to do.
+        // Every syscall: branched in Rust, because the debug build the icount gate measures pays
+        // for a trampoline call that moves no stack.
         exception_body(frame, index)
     } else {
         // SAFETY: `top` is this core's own interrupt-stack top, from the module that owns the
@@ -378,21 +303,12 @@ extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
 
 /// The trap handler proper: everything that runs on the interrupt stack when there is one.
 ///
-/// Returns whether the caller owes a deferred `schedule()`, which is true for an IRQ and false for
-/// everything else. It used to *be* the switch, at the bottom of `handle_irq`; what changed is that
-/// the decision travels out to a frame that is provably on the interrupted thread's own stack.
+/// Returns whether the caller owes a deferred `schedule()`: true for an IRQ, false otherwise.
 #[unsafe(no_mangle)]
 extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
-    // IRQ is dispatched by SLOT, not by ESR.
-    //
-    // ESR_EL1 describes a *synchronous* exception: what instruction did what wrong. An IRQ is
-    // asynchronous. It has nothing to do with the instruction it interrupted, and ESR_EL1 holds
-    // whatever the last synchronous exception left there. Reading it here would be reading a
-    // stale answer to a question nobody asked.
+    // By slot, not by ESR: ESR_EL1 describes the last synchronous exception, not an IRQ.
     if index == VECTOR_IRQ_CURRENT || index == VECTOR_IRQ_LOWER {
         handle_irq(frame);
-        // The one arm that owes a reschedule check, and the caller runs it on the interrupted
-        // stack. `handle_irq` used to end with the check itself.
         return true;
     }
 
@@ -400,107 +316,51 @@ extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
     let class = (esr >> 26) & 0x3f;
 
     match class {
-        // NOTE THE GUARD. Without it, a `brk` from EL0 would be *stepped over* as if it were
-        // one of ours, and a user program could park a `brk` in a loop and burn the kernel's
-        // time forever, immortal. A breakpoint is a debugging affordance for code we trust.
-        // From EL0 it is a fault, and it falls through to `user_fault` below.
+        // From EL1 only: a `brk` from EL0 is a fault, or a program could loop on one forever.
         ec::BRK64 if !is_from_lower_el(index) => {
-            // `brk` is a deliberate trap: a breakpoint the program asked for.
-            //
-            // The subtlety: ELR_EL1 points AT the `brk` instruction, not past it.
-            // (Compare `svc`, where the hardware already advances it for you.) So if
-            // we just `eret`, we execute the `brk` again, forever.
-            //
-            // Stepping over it means advancing ELR by one instruction, and every
-            // aarch64 instruction is exactly 4 bytes. That fixed-width design we
-            // liked in notes/aarch64.md is what makes this a `+= 4` instead of a
-            // decode.
+            // ELR_EL1 points at the `brk`, not past it; every instruction is 4 bytes.
             BRK_COUNT.fetch_add(1, Ordering::Relaxed);
             frame.elr += 4;
         }
 
-        // **A thread asked for the FP unit for the first time** (milestone 447).
-        //
-        // `CPACR_EL1.FPEN` is `0b00` for every thread until it executes an FP or SIMD instruction,
-        // which is what produces this class. Enabling is the whole handler: `elr` is not advanced,
-        // so the `eret` below re-executes the instruction that trapped, this time with the unit
-        // open and a defined initial register file under it.
-        //
-        // **It serves EL1 as well as EL0, deliberately.** The kernel is built `softfloat` and emits
-        // no FP of its own, so nothing in a shipping build reaches this from EL1; what does is a
-        // kernel thread that asked for the unit on purpose, which is how milestone 447's
-        // concurrency proof is written and is the only honest way to exercise the save path while
-        // every userspace target in `targets/` is soft-float. Refusing EL1 here would have meant a
-        // mechanism whose test had to be a different mechanism.
-        //
-        // `enable_for_current` returning false means there is no thread to record the fact
-        // against, and returning from the trap would retake it forever. Fall through: from EL0 that
-        // kills the thread, from EL1 it is `fatal`, and both are better than a livelock.
+        // FP first use, from EL0 or EL1: `elr` is not advanced, so the instruction re-executes
+        // with the unit open. False (no thread to record against) falls through rather than
+        // retaking the trap forever.
         ec::FP_SIMD_ACCESS if crate::fp::enable_for_current() => {}
 
-        // `svc` from EL0. **The syscall.**
-        //
-        // At 7a this arm did nothing but count, deliberately, because DECISIONS §8 said "if we
-        // find ourselves hacking in a syscall without having had that conversation, the plan has
-        // failed." We had the conversation (§10), chose capabilities, and 7d designed the whole
-        // surface at once against a capability table. It is four calls. See syscall.rs.
-        //
-        // Note ELR already points PAST the `svc`: the hardware advances it for us. Compare
-        // `brk` above, where it points AT the instruction and we must step over it by hand.
-        //
-        // `dispatch` writes the result into `frame.x[0]`, and RESTORE_CONTEXT pops that into the
-        // register the user program is waiting on. **Writing to the trap frame is writing to the
-        // user's registers.**
+        // The syscall. ELR already points past the `svc`, and `dispatch` writes its result into
+        // the frame, which RESTORE_CONTEXT returns to the user's registers.
         ec::SVC64 if is_from_lower_el(index) => {
             #[cfg(any(test, feature = "system_tests"))]
             SVC_COUNT.fetch_add(1, Ordering::Relaxed);
             crate::syscall::dispatch(frame);
         }
 
-        // Anything else from EL0 is the user program being wrong.
-        //
-        // **It dies. The kernel does not.** That is the whole promise of a privilege boundary,
-        // and this is the first moment in the project's life that we can keep it.
+        // Anything else from EL0 kills the thread, not the kernel.
         _ if is_from_lower_el(index) => user_fault(frame, esr),
 
-        // Everything else is a KERNEL bug, and fatal. As the kernel grows, cases move out of
-        // `fatal` and into real handlers: IRQs at milestone 5, `svc` here, and data aborts
-        // become page faults if we ever do demand paging.
+        // Everything else is a kernel bug.
         _ => fatal(frame, index, esr),
     }
 
-    // A synchronous exception has already done whatever it was going to do (stepped over a `brk`,
-    // run a syscall, killed a thread). Nothing is deferred, so nothing is owed.
     false
 }
 
 /// Did this exception come from a lower exception level, i.e. from EL0?
 ///
-/// Slots 8-11 are "Lower EL, AArch64" (see `VECTOR_NAMES`). The distinction carries enormous
-/// weight: the **same** exception class means "a bug in the kernel, halt the machine" when it
-/// arrives at slot 4, and "a bug in the user program, kill it" when it arrives at slot 8.
-///
-/// `#[inline(always)]` because a debug build inlines nothing and this is now asked once per trap
-/// before the dispatch as well as inside it: as a call it is a frame and a `RangeInclusive` for
-/// three instructions' worth of work, and the icount tripwire measures a debug build.
+/// Slots 8-11 are "Lower EL, AArch64" (see `VECTOR_NAMES`). `#[inline(always)]` and two written-out
+/// comparisons because the icount gate measures a debug build; see notes/exceptions.md, "Costs the
+/// debug build pays".
 #[inline(always)]
-// clippy wants `(8..=11).contains(&index)` here and it is right about the reading; the `allow` is a
-// measured exception rather than a preference, for the reason the body gives.
+// A measured exception to clippy's `(8..=11).contains(&index)`, for the reason above.
 #[allow(clippy::manual_range_contains)]
 fn is_from_lower_el(index: u64) -> bool {
-    // Two comparisons, written out. `(8..=11).contains(&index)` is the same thing and reads better,
-    // and in a debug build it is a real call into `RangeInclusive::<u64>::contains::<u64>` on **every
-    // trap**, which the icount tripwire priced at about a tick per `null_syscall` iteration once
-    // milestone 124 started asking this question one more time per trap. The generic machinery is
-    // free at `-O` and is not free in the build the gate measures.
     index >= 8 && index <= 11
 }
 
 /// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
-/// proves a program reached user mode and came back by watching it rise). Every syscall on every
-/// core bumps this one line, so it is compiled out of every other build: until 2026-10-04 it was
-/// in all of them, and it was one of two shared writes on the cheapest syscall's path
-/// (notes/job-mix/null-syscall-under-load.md).
+/// watches it rise). Compiled out of every other build: it is a shared write on the cheapest
+/// syscall's path (notes/job-mix/null-syscall-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -513,10 +373,7 @@ pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
 /// The most recent user fault, [`UserFault::encode`]d, and the address it named. Two relaxed
 /// stores on a path that is already killing a thread; read back through [`last_user_fault`].
 ///
-/// **Private on purpose.** They used to be a public `LAST_USER_FAULT_ESR`/`FAR` pair, which meant
-/// every test that wanted to say "that was a permission fault at exactly this address" had to
-/// decode `ESR_EL1` inline, and that is aarch64 spelling sitting in a test we want to run on two
-/// ISAs. The accessor below is the same fact in words RISC-V can also say. See [`UserFault`].
+/// Private, so a test reads the fault in words both ISAs can say ([`UserFault`]), not as `ESR_EL1`.
 static LAST_USER_FAULT: AtomicU64 = AtomicU64::new(0);
 static LAST_USER_FAULT_ADDR: AtomicU64 = AtomicU64::new(0);
 
@@ -524,14 +381,8 @@ static LAST_USER_FAULT_ADDR: AtomicU64 = AtomicU64::new(0);
 /// yet. The RISC-V twin is `arch::riscv64::exceptions::last_user_fault`.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn last_user_fault() -> Option<(UserFault, u64)> {
-    // Pairs with the `Release` on `USER_FAULTS` in [`user_fault`]. A caller that has already seen
-    // the counter rise (every one of them has; that is how they know to look) reads the record the
-    // faulting core wrote and not something older. We are on ARM, so this is not free ordering we
-    // can assume: the two relaxed stores below the counter's release are exactly the reordering the
-    // architecture permits.
-    //
-    // PAIR: `USER_FAULTS.fetch_add(1, Ordering::Release)` in [`user_fault`], below in this file.
-    // Both halves are here and both are load-bearing; the riscv64 twin is the same pair.
+    // PAIR: `USER_FAULTS.fetch_add(1, Ordering::Release)` in [`user_fault`]. A caller that saw the
+    // counter rise reads the record that core wrote, not an older one.
     core::sync::atomic::fence(Ordering::Acquire);
     let kind = UserFault::decode(LAST_USER_FAULT.load(Ordering::Relaxed))?;
     Some((kind, LAST_USER_FAULT_ADDR.load(Ordering::Relaxed)))
@@ -539,10 +390,8 @@ pub fn last_user_fault() -> Option<(UserFault, u64)> {
 
 /// Read `ESR_EL1` as a [`UserFault`].
 ///
-/// **aarch64 is told the answer.** The fault status code in `ESR_EL1[5:0]` distinguishes a
-/// permission fault (`0b0011LL`) from a translation fault (`0b0001LL`) in silicon, at the instant
-/// of the fault, with the walk level in the low two bits. Nothing here is inferred; contrast the
-/// RISC-V twin, which must derive the same distinction because `scause` does not carry it.
+/// The fault status code in `ESR_EL1[5:0]` says permission (`0b0011LL`) or translation
+/// (`0b0001LL`) outright, with the walk level in the low two bits.
 fn classify(esr: u64) -> UserFault {
     /// EC for an instruction abort taken from a lower EL: a failed *fetch*.
     const EC_INSTRUCTION_ABORT_LOWER: u64 = 0x20;
@@ -571,31 +420,14 @@ fn classify(esr: u64) -> UserFault {
 
 /// A user thread did something it is not allowed to do. Kill it.
 ///
-/// # Why this can simply call `sched::exit()`
-///
-/// We are inside the exception handler, standing on the faulting thread's **kernel** stack,
-/// with its `TrapFrame` just below us. `exit()` marks the thread `Finished` and calls
-/// `schedule()`, which switches to somebody else and **never comes back**. `exception_restore`
-/// is never reached, the `eret` never happens, and the user program is simply not resumed.
-///
-/// The kernel stack we are standing on right now is freed by the **next** thread, which is
-/// precisely the reaper that milestone 6 built for a completely unrelated reason: a thread
-/// cannot free the stack it is standing on. See notes/threads.md.
-///
-/// So the mechanism behind "a driver bug is a crashed process, not a dead machine"
-/// (DECISIONS §10) was already sitting here, finished, before we knew we needed it.
+/// Records the fault, then hands the thread to `sched::fault`, which does not return. See
+/// notes/exceptions.md, "A user fault is published, then counted".
 fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
     let class = (esr >> 26) & 0x3f;
     let far = FAR_EL1.get();
 
-    // **The record first, the counter last, and the counter's store is the release.** Every test
-    // that reads this record finds it by watching `USER_FAULTS` rise and then calling
-    // [`last_user_fault`], so the counter is the publication flag for the record and must be
-    // written after it. It was written first, and that is a race a test cannot see when it passes:
-    // the reader either gets the record left by an *earlier* fault (an assertion satisfied by the
-    // wrong evidence) or, if it is the first fault of the boot, a zero that reads as "no user
-    // thread has faulted". Found by breaking `a_user_program_cannot_read_a_kernel_address` on
-    // purpose and running it alone, where "the first fault of the boot" is the only case there is.
+    // The record first, the counter last, as the release: PAIR with the fence in
+    // [`last_user_fault`].
     LAST_USER_FAULT_ADDR.store(far, Ordering::Relaxed);
     LAST_USER_FAULT.store(classify(esr).encode(), Ordering::Relaxed);
     USER_FAULTS.fetch_add(1, Ordering::Release);
@@ -615,25 +447,19 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
     );
     crate::println!("  the kernel is fine.");
 
-    // Deliver the fault to a supervisor if this thread had one, and become a corpse; otherwise this
-    // is `exit`'s unsupervised path (Finished, reaped by the next thread). See DECISIONS §26 and
-    // sched::depart. `frame.elr` is the faulting pc, `far` the faulting address.
+    // To a supervisor if there is one, else `exit`'s path (DECISIONS §26).
     crate::sched::fault(frame.elr, far);
 }
 
 /// Service one hardware interrupt.
 ///
-/// **This runs with interrupts masked** (the hardware masks IRQ on entry to the vector), and it
-/// runs on whatever stack the interrupted code was using. DECISIONS §9 is the law here:
-/// **record and defer, do not do work.** Everything below is either an MMIO write or an atomic
-/// increment. Nothing allocates. Nothing takes a lock above rank GIC.
+/// Context: interrupt context, IRQs masked by the vector. Records and defers (DECISIONS §9):
+/// allocates nothing and takes no lock above rank GIC.
 fn handle_irq(_frame: &mut TrapFrame) {
-    // Reading IAR is what ACKNOWLEDGES the interrupt. It has a side effect, so exactly once.
+    // The acknowledge has a side effect: exactly once.
     let intid = irq::acknowledge();
 
-    // 1023: the GIC changed its mind between raising the line and us getting here. Do nothing,
-    // and in particular do NOT signal end-of-interrupt: completing an interrupt we never took
-    // corrupts the GIC's priority stack.
+    // Spurious: no end-of-interrupt, which would corrupt the GIC's priority stack.
     if intid == irq::SPURIOUS {
         SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
         return;
@@ -642,28 +468,17 @@ fn handle_irq(_frame: &mut TrapFrame) {
     match intid {
         timer::TIMER_INTID => {
             timer::tick();
-            // RECORD. Do not switch here: we still hold nothing, but we are mid-handler and
-            // the GIC has not been told we are done. DECISIONS §9: handlers record and
-            // defer. The deferral happens at the bottom of this function.
+            // Record only: the GIC has not had its end-of-interrupt yet.
             crate::sched::on_tick();
         }
         crate::sched::RESCHED_SGI => {
-            // Another core poked us for one of two reasons (SMP 3c, DECISIONS §28). It may have
-            // handed us a thread via our inbox: drain it onto our run queue and reschedule (the
-            // deferral at the bottom runs schedule()). Or an idle core asked us for work: serve the
-            // steal by handing one queued thread back. The same SGI carries both; we do both.
+            // One SGI carries both an inbox hand-off and a steal request (DECISIONS §28).
             crate::sched::drain_inbox();
             crate::sched::serve_steal_request();
         }
         other => {
-            // Is this interrupt routed to a userspace driver? If so, **it becomes a message.**
-            //
-            // Mask it at the distributor first, then deliver the notification. A level-triggered
-            // device holds its interrupt line asserted until the driver quiets it, so if we left
-            // it enabled it would re-fire the instant we EOI, in an unbreakable storm. The driver
-            // re-enables it (its `Irq` capability's `ACK`) once it has serviced the device. This
-            // is exactly seL4's IRQHandler protocol, and it is what lets a driver that owns no
-            // privilege still own an interrupt. See notes/interrupts.md.
+            // Masked before the notification, or a level-triggered line re-fires on the EOI; the
+            // driver's ACK re-enables it. See notes/interrupts.md.
             if let Some(ep) = crate::sched::irq_route(other) {
                 ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
                 irq::disable(other);
@@ -675,23 +490,9 @@ fn handle_irq(_frame: &mut TrapFrame) {
         }
     }
 
-    // Until this is written, the GIC will not deliver another interrupt of equal or lower
-    // priority. Forget it and the timer fires exactly once and then never again.
+    // Before the deferred switch in `exception_dispatch`: until it is written the GIC delivers
+    // nothing of equal or lower priority, to this thread or the one switched to.
     irq::end_of_interrupt(intid);
-
-    // --- and preemption used to be here ---
-    //
-    // It is now four frames out, in `exception_dispatch`, and the move is milestone 124's
-    // structural fix rather than tidying. This function may be running on **this core's interrupt
-    // stack**, and `schedule()` parks the running `sp` in the outgoing thread's `Context`: park a
-    // per-core address there and the thread resumes on bytes the next interrupt has spent. So the
-    // handler returns first, back onto the interrupted thread's own stack, and the caller runs
-    // `sched::preempt_if_needed` there. See kernel/src/interrupt_stack.rs.
-    //
-    // The EOI above still has to come first, for the reason it always did: switching away with the
-    // interrupt unacknowledged would leave the GIC refusing to deliver anything of equal or lower
-    // priority to the thread we switch *to*. Returning from here does not change that ordering,
-    // because nothing between here and the deferred switch touches the GIC.
 }
 
 /// Interrupts the GIC raised and then withdrew. Not an error; worth counting.
@@ -702,8 +503,7 @@ pub(crate) static UNEXPECTED_IRQS: AtomicUsize = AtomicUsize::new(0);
 
 /// Print everything we know and stop.
 ///
-/// A kernel with a violated invariant has no business continuing, so this does not
-/// return. But it prints first, because a silent death teaches you nothing.
+/// Does not return.
 fn fatal(frame: &TrapFrame, index: u64, esr: u64) -> ! {
     // SAFETY: same reasoning as the panic handler. A fault taken mid-`println!` would
     // otherwise deadlock on the console lock and we would print nothing at all.
@@ -726,9 +526,7 @@ fn fatal(frame: &TrapFrame, index: u64, esr: u64) -> ! {
     println!();
     println!("  ESR_EL1   {esr:#018x}   what happened");
 
-    // FAR_EL1 only holds a meaningful address for aborts and alignment faults. For
-    // anything else it is stale garbage from an earlier fault, and printing it as if
-    // it meant something would be a lie.
+    // FAR_EL1 holds an address only for aborts and PC alignment faults; otherwise it is stale.
     let far_is_meaningful = matches!(
         class,
         ec::INSTRUCTION_ABORT_LOWER_EL
@@ -742,13 +540,8 @@ fn fatal(frame: &TrapFrame, index: u64, esr: u64) -> ! {
             "  FAR_EL1   {:#018x}   the address that faulted",
             FAR_EL1.get()
         );
-        // And say whether that address is a guard page, which decides what everything below means.
-        // Only here: for a class where FAR is stale garbage the classifier would be reading a
-        // previous fault's address and could name a stack at random. See the riscv64 twin.
-        // The interrupted `SP_EL1`, computed rather than read: `SAVE_CONTEXT` built this frame at
-        // the live `sp` minus its own size, so the frame's own address plus that size IS the `sp`
-        // the trap interrupted. Reading the live one here would name the interrupt stack this
-        // handler is standing on (milestone 124), which has nothing to do with the fault.
+        // The interrupted `SP_EL1` is the frame's address plus its size; the live `sp` may be the
+        // interrupt stack.
         let trapped_sp = frame as *const TrapFrame as u64 + size_of::<TrapFrame>() as u64;
         crate::stack::warn_if_guard_page(FAR_EL1.get(), trapped_sp);
     } else {
@@ -792,17 +585,13 @@ fn print_reg_row(frame: &TrapFrame, first: usize) {
 mod tests {
     //! Tests for exception handling.
     //!
-    //! `registers_survive_an_exception` is the load-bearing one. The `TrapFrame` layout is a
-    //! contract with assembly that the compiler cannot check, and a wrong offset would scramble a
-    //! register while still returning happily to the right address: corrupting a caller's state
-    //! and blaming innocent code thousands of instructions later.
+    //! `registers_survive_an_exception` is the load-bearing one: a wrong `TrapFrame` offset
+    //! scrambles a register and still returns to the right address.
 
     /// Proves the vector table is installed, and that the hardware's alignment rule
     /// is satisfied.
     ///
-    /// The 2048-byte alignment is not a style preference. The CPU computes the target
-    /// of an exception as `VBAR_EL1 + offset`, and it assumes the low 11 bits of the
-    /// base are zero. A misaligned table sends every exception to a wrong address.
+    /// The CPU computes `VBAR_EL1 + offset` assuming the low 11 bits are zero.
     #[test_case]
     fn vbar_el1_points_at_our_vector_table() {
         use aarch64_cpu::registers::VBAR_EL1;
@@ -819,16 +608,8 @@ mod tests {
 
     /// The real one: take an exception and come back from it.
     ///
-    /// `brk #0` raises a synchronous exception. To reach the line after it, every
-    /// single piece of milestone 2 has to be correct: the vector table is where
-    /// `VBAR_EL1` says, slot 4 (Current EL, `SP_ELx`, Synchronous) fires, `SAVE_CONTEXT`
-    /// writes a frame that matches `TrapFrame`, Rust decodes `ESR_EL1` and recognizes
-    /// EC 0x3c, it advances ELR past the `brk` (which the hardware does NOT do for
-    /// us, unlike `svc`), `RESTORE_CONTEXT` puts the machine back, and `eret` returns
-    /// to exactly the right address.
-    ///
-    /// Get any of that wrong and you don't get a failing assertion. You get an
-    /// infinite loop, or a crash. So arriving here at all is most of the test.
+    /// Reaching the line after `brk #0` needs the table, slot 4, `SAVE_CONTEXT`, the decode, the
+    /// ELR step and `RESTORE_CONTEXT` all right; a failure is a hang or a crash, not an assertion.
     #[test_case]
     fn breakpoint_is_caught_and_execution_resumes() {
         use core::sync::atomic::Ordering;
@@ -849,15 +630,8 @@ mod tests {
 
     /// Proves the trap frame actually round-trips a register.
     ///
-    /// The previous test proves we *return*. This proves we return with the machine
-    /// intact, which is a different claim. Put a known value in a register, take an
-    /// exception, read it back.
-    ///
-    /// A bug in `SAVE_CONTEXT/RESTORE_CONTEXT` (a wrong offset, a swapped pair) would
-    /// scramble registers while still returning perfectly happily to the right
-    /// address. That is the nastiest possible failure: it corrupts a caller's state
-    /// and blames a completely innocent piece of code, thousands of instructions
-    /// later. This is the test that catches it.
+    /// A wrong offset or a swapped pair in `SAVE_CONTEXT`/`RESTORE_CONTEXT` would still return to
+    /// the right address, so put a known value in a register, trap, and read it back.
     #[test_case]
     fn registers_survive_an_exception() {
         let sent: u64 = 0xdead_beef_cafe_f00d;

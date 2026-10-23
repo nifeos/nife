@@ -1,36 +1,13 @@
 //! The SMMUv3 driver: aarch64's IOMMU, in front of the PCIe bus.
 //!
-//! Milestone 16b (DECISIONS §20, notes/iommu.md). The SMMU sits between PCIe devices and memory
-//! and translates every address a device emits through per-stream tables the kernel programs. The
-//! tables themselves are ordinary VMSAv8-64 page tables built by the portable seam
-//! (`paging::domain` via `crate::iommu`); this module owns everything architecture-specific: the
-//! register file, the stream table, the context descriptor, and the two in-memory queues the
-//! SMMU is driven by (commands in, fault events out).
+//! The SMMU translates every address a PCIe device emits through per-stream tables the kernel
+//! programs (DECISIONS §20). The page tables are VMSAv8-64, built by the portable seam
+//! (`paging::domain` via `crate::iommu`); this module owns the register file, the stream table,
+//! the context descriptors, and the command and event queues the SMMU is driven by.
 //!
-//! # The shape of the hardware
-//!
-//! Software talks to an SMMUv3 almost entirely through **memory**, not registers:
-//!
-//! - The **stream table** maps a `StreamID` (for PCIe: the requester id, bus/dev/fn) to a Stream
-//!   Table Entry. The STE says what happens to that device's transactions: abort, bypass, or
-//!   translate via a **context descriptor**.
-//! - The **context descriptor** (CD) is the SMMU's copy of what `TTBR0_EL1` + `TCR_EL1` + `MAIR_EL1`
-//!   are to the CPU: the table root, the size/granule geometry, the ASID, the memory-attribute
-//!   palette. Stage-1 translation through a CD walks the same descriptor format the CPU walks,
-//!   which is why the `paging` crate builds the tables.
-//! - The **command queue** is how configuration changes take effect: the SMMU caches STEs, CDs
-//!   and TLB entries, and software pushes invalidation commands (then a sync) to make it re-read.
-//! - The **event queue** is where the SMMU reports faults: a device that emitted an address its
-//!   domain does not map lands here as an `F_TRANSLATION` event instead of touching memory.
-//!
-//! # Default deny
-//!
-//! `init` sets `GBPA.ABORT` (so traffic aborts even in the window before the SMMU is enabled),
-//! points the SMMU at an all-invalid stream table, and only then sets `SMMUEN`. From that moment
-//! every stream aborts until `attach` writes its STE. A device the kernel never attached cannot
-//! DMA at all, which is the loud version of "a device without `iommu_platform=on` silently
-//! bypasses": the bypass hole is closed on the QEMU side per device, and the abort default is
-//! what the kernel can enforce from its side. See notes/iommu.md for the honest limits.
+//! Default deny: `init` sets `GBPA.ABORT`, installs an all-invalid stream table and only then sets
+//! `SMMUEN`, so every stream aborts until `attach` writes its STE. See notes/iommu.md, "The two
+//! arch drivers, structural twins", and its honest limits.
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{IrqSafeMutex, rank};
@@ -81,9 +58,8 @@ const CMD_CFGI_CD: u32 = 0x05;
 const CMD_TLBI_NSNH_ALL: u32 = 0x30;
 const CMD_SYNC: u32 = 0x46;
 
-/// One recorded fault, in portable terms. `code` is the SMMU event type (0x10 is `F_TRANSLATION`,
-/// the "no mapping for that IOVA" event the confinement test expects). Read today only by the
-/// confinement test; a production fault handler is future work, hence dead outside the test build.
+/// One recorded fault, in portable terms. `code` is the SMMU event type (0x10 is `F_TRANSLATION`).
+/// Read only by the confinement test.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[derive(Debug, Clone, Copy)]
 pub struct Fault {
@@ -218,13 +194,9 @@ pub fn init(base: u64) {
     });
 }
 
-/// Is the SMMU up? The portable seam asks this to decide whether attaching is possible.
 /// **This machine's IOMMU, for the machine description** (milestone 268).
 ///
-/// One of the eight questions the description answers on every architecture. The vocabulary is this
-/// architecture's, because that is what parity means here: the same question, answered in the terms
-/// of the hardware that answers it. A machine with no IOMMU says so plainly rather than printing a
-/// blank, because a blank is indistinguishable from a line nobody wrote.
+/// In this architecture's vocabulary; a machine with no IOMMU says so rather than printing a blank.
 // The machine description and the boot self-test are the only callers, and both are
 // `#[cfg(not(any(test, feature = "bench")))]`: a test boot exits through semihosting and a bench
 // boot diverges into `bench::run`, so neither reads a bring-up transcript. Same treatment
@@ -253,6 +225,7 @@ pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
     crate::iommu::build_identity::<paging::Aarch64>(regions)
 }
 
+/// Is the SMMU up? The portable seam asks this to decide whether attaching is possible.
 pub fn is_active() -> bool {
     SMMU.lock().is_some()
 }
@@ -309,14 +282,9 @@ fn cmd_push(s: &mut Smmu, cmd: [u32; 4]) {
 
 /// **Where stream `rid`'s two tables sit**, as a byte offset into the frame that holds them.
 ///
-/// One function for both, because the stream table and the context-descriptor frame are indexed
-/// by the same number with the same 64-byte stride, and two copies of that arithmetic is two
-/// places for it to disagree. A disagreement here is not a crash: it is stream A's STE landing on
-/// stream B's, which points one device at another device's page tables and is a confinement
-/// failure no test on this board would see.
-///
-/// The bound is asserted here rather than at the call site so that the assertion and the
-/// arithmetic it protects cannot drift apart. See `mod proofs`.
+/// One function for both tables, which share the index and the 64-byte stride, so the two cannot
+/// disagree and land one stream's entry on another's. Panics past the linear table; `mod proofs`
+/// holds the bound against the stride.
 fn table_offset(rid: u32) -> u64 {
     assert!(
         (rid as u64) < (1 << STRTAB_LOG2),
@@ -328,14 +296,9 @@ fn table_offset(rid: u32) -> u64 {
 /// **The context descriptor for one stream**: the SMMU's `TTBR0_EL1` + `TCR_EL1` + `MAIR_EL1`,
 /// as the eight 32-bit words the hardware reads out of memory.
 ///
-/// Geometry mirrors the CPU's `TCR_EL1` exactly (T0SZ=16 so IOVAs are 48-bit, 4 KiB granule,
-/// TTB1 walks disabled): the domain is built by the same paging code as a process address space,
-/// so it must be described the same.
-///
-/// `ttb` occupies dword 1 (words 2 and 3) as TTB0, bits `[51:4]`. Splitting a 64-bit physical
-/// address across two 32-bit words is the part worth proving rather than reading: on this board
-/// every table root is below 4 GiB, so the high word is zero and dropping it entirely would pass
-/// every test in the tree.
+/// Geometry mirrors the CPU's `TCR_EL1` (48-bit IOVAs, 4 KiB granule, no TTB1), because the same
+/// paging code builds the domain. `ttb` is TTB0 `[51:4]` in dword 1, split across two words; the
+/// high word is zero on this board, which is why `mod proofs` checks it.
 const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
     [
         16                           // T0SZ: 48-bit IOVA space, matching Aarch64::SPLIT_SHIFT
@@ -363,11 +326,8 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
 /// **The stream table entry for one stream**: valid, stage-1 translate, one linear context
 /// descriptor at `ctxptr`, as the sixteen 32-bit words the hardware reads.
 ///
-/// Word 0 carries V (bit 0), CONFIG (bits `[3:1]`), S1FMT (bits `[5:4]`) and the low half of
-/// `S1ContextPtr` in the same 32 bits, so an unaligned or oversized `ctxptr` would not merely be
-/// truncated: its low bits would land on the control field and could clear V or turn CONFIG into
-/// bypass, which is translation switched off rather than pointed somewhere wrong. `S1CDMAX` stays
-/// 0: exactly one CD, no substreams.
+/// Word 0 holds V, CONFIG, S1FMT and the low half of `S1ContextPtr`, so a misaligned `ctxptr`
+/// could turn CONFIG into bypass. `S1CDMAX` is 0: one CD, no substreams.
 const fn stream_table_entry(ctxptr: u64) -> [u32; 16] {
     let mut ste = [0u32; 16];
     ste[0] = 1 | (0b101 << 1) | (ctxptr as u32 & 0xffff_ffc0);
@@ -443,35 +403,13 @@ pub fn take_fault() -> Option<Fault> {
     })
 }
 
-/// **The first proofs over `kernel/src/arch/`** (milestone 255).
+/// **Proofs over the word-building that decides which physical addresses a device may touch**
+/// (`design/fatal-risks/README.md` risk 7).
 ///
-/// Milestone 193 put `kernel/src` within the prover's reach and said in its own `BUGS` that
-/// `kernel/src/arch/` stayed outside it, because Kani cannot model `asm!`. That is true of the
-/// directory and false of a quarter of its lines: this file contains no `asm!` at all, and the
-/// three functions above are integer arithmetic that decides which physical addresses a device may
-/// touch. `design/fatal-risks/README.md` risk 7 (the confinement claim is false) rests on them.
-///
-/// **The stubs, and they are the ones notes/kernel-proofs.md enumerates**, plus one this module
-/// adds:
-///
-/// - **Everything in this file that touches the SMMU is invisible here.** `r32`/`w32`/`w64`
-///   dereference `phys_to_virt(base + off)`, which under a model checker is a raw pointer to
-///   nothing, so `init`, `cmd_push`, `attach` and `take_fault` are all unreachable to a harness.
-///   What is proved is the word-building the hardware then reads, not the writing of it.
-/// - **The register-file offsets and bit constants are unproved and unprovable here.** Nothing in
-///   this tree can check `CR0_SMMUEN` against Arm IHI 0070; a harness asserting the constant it
-///   was given is a tautology. The bit positions the harnesses below read the fields back out of
-///   are taken from that document, and if the document was misread both the code and the proof
-///   are wrong together. That is the honest limit of this and it is why the boot-time confinement
-///   test in `kernel/src/virtio.rs` is not made redundant by it.
-/// - **A proof here says nothing about the RISC-V IOMMU or VT-d.** The three drivers are
-///   structural siblings and not identical: `riscv64/iommu.rs` writes its device context in
-///   64-bit stores with no split at all, so the property below has no counterpart there. Reading
-///   this as covering `arch/*/iommu.rs` would be exactly the overclaim milestone 255 exists to
-///   remove.
-/// - The rest of the boundary (global asm skipped, the absent panic handler, the absent link
-///   sections, `--ignore-global-asm`) is in notes/kernel-proofs.md, "The stub boundary,
-///   enumerated", and applies unchanged.
+/// The register accessors are unreachable to a harness, so `init`, `cmd_push`, `attach` and
+/// `take_fault` are unproved; so are the register offsets and bit constants, which only Arm IHI
+/// 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See notes/iommu.md, "What is proved,
+/// as against tested", and notes/kernel-proofs.md, "The stub boundary, enumerated".
 #[cfg(kani)]
 mod proofs {
     use super::*;
@@ -482,25 +420,10 @@ mod proofs {
 
     /// **The SMMU is handed exactly the tables the kernel built, and nothing else.**
     ///
-    /// Both of these entries split a 64-bit physical address across two 32-bit words, and both
-    /// share the low word with control bits: the CD's TTB0 starts at bit 4, the STE's
-    /// `S1ContextPtr` at bit 6, above V, CONFIG and S1FMT. Two things can go wrong and only one of
-    /// them is a truncation. The address can lose its high half, in which case the SMMU walks some
-    /// other table; or an address bit can land on a control bit, in which case CONFIG stops being
-    /// `0b101` and the stream is set to **bypass**, which is translation switched off rather than
-    /// pointed somewhere wrong. The second is the worse failure and the harder one to notice.
-    ///
-    /// **No test in this tree can see either.** QEMU's `virt` board puts RAM at `0x4000_0000`, so
-    /// every table root the confinement test ever produces is below 4 GiB and both high words are
-    /// zero; deleting `cd[3]` and `ste[1]` outright would leave the whole suite green. A board
-    /// with memory above 4 GiB, which is most of them, would silently point every device at the
-    /// wrong page tables.
-    ///
-    /// The claim is stated by reading each field back out at the bit positions Arm IHI 0070 gives
-    /// it, across the word boundary the implementation splits on, and comparing against the whole
-    /// 64-bit input. The assumptions are the two facts `attach`'s callers establish and neither
-    /// function checks: a table root is a page frame, and a context descriptor sits at a 64-byte
-    /// stride inside one.
+    /// Both entries split an address across two words and share the low word with control bits:
+    /// a lost high half walks another table, and an address bit on CONFIG sets the stream to
+    /// bypass. QEMU's RAM is below 4 GiB, so no test sees either. Assumes a page-frame root and a
+    /// 64-byte-aligned descriptor, which `attach`'s callers establish.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.aarch64.iommu.proofs.the_smmu_is_handed_exactly_the_tables_the_kernel_built.patch`
     #[kani::proof]
@@ -519,19 +442,14 @@ mod proofs {
         let cd = context_descriptor(ttb, asid);
         let ste = stream_table_entry(ctxptr);
 
-        // CD dword 1 (words 2 and 3) is TTB0[51:4] and every other bit in it is reserved zero
-        // here, so the whole dword must equal the address. Stating it over the entire 64 bits
-        // rather than over the masked field is what makes this more than a read-back: a bit
-        // gained is as much a failure as a bit lost.
+        // Over the whole dword, so a bit gained fails as surely as a bit lost.
         let ttb_dword = ((cd[3] as u64) << 32) | cd[2] as u64;
         assert!(
             ttb_dword == ttb,
             "the CD's TTB0 is the table root entire, high half included"
         );
 
-        // STE dword 0 is S1ContextPtr[51:6] over V, CONFIG and S1FMT. Split the two claims: the
-        // pointer survives, and the control field is what it was written as rather than what an
-        // overlapping address bit made it.
+        // The pointer survives, and no address bit reached V, CONFIG or S1FMT.
         let ste_dword = ((ste[1] as u64) << 32) | ste[0] as u64;
         assert!(
             ste_dword & 0x000f_ffff_ffff_ffc0 == ctxptr,
@@ -542,8 +460,6 @@ mod proofs {
             "V is set, CONFIG is stage-1 translate, S1FMT is linear: no address bit reached them"
         );
 
-        // The CD's own control half, for the same reason: `asid` is 16 bits and shifts to bit 16,
-        // so it cannot reach the fault-reporting bits below it, and V must survive.
         assert!(cd[0] >> 31 == 1, "the context descriptor is valid");
         assert!(cd[0] & 0x3f == 16, "T0SZ: a 48-bit IOVA space");
         assert!((cd[0] >> 6) & 0b11 == 0, "TG0: a 4 KiB granule");
@@ -555,17 +471,8 @@ mod proofs {
 
     /// **No stream can reach another stream's tables.**
     ///
-    /// `table_offset` is the whole of the addressing for both the stream table and the
-    /// context-descriptor frame, and its `assert!` is the only thing between a `StreamID` and a
-    /// raw write. Two failures live here. An offset past `FRAME_SIZE` writes off the end of a
-    /// kernel-allocated frame into whatever follows it; a stride that disagrees with the bound
-    /// lands stream A's entry on stream B's, which points one device at another device's page
-    /// tables. Both are confinement failures and neither is a fault the hardware would report.
-    ///
-    /// `rid` is the PCIe requester id, so it is a 16-bit number arriving from the device tree's
-    /// `iommu-map` rather than a kernel-chosen index, which is why the bound is asserted rather
-    /// than assumed. The harness takes it symbolic over that whole range and proves the assert is
-    /// exactly strong enough: everything it admits fits, and no two admitted ids overlap.
+    /// `table_offset`'s `assert!` is all that stands between a device-supplied 16-bit `StreamID`
+    /// and a raw write. Proves everything it admits fits the frame and no two ids overlap.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.aarch64.iommu.proofs.no_stream_can_reach_another_streams_tables.patch`
     #[kani::proof]
