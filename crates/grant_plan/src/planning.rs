@@ -20,12 +20,9 @@ use crate::{
 /// `Ok`, the shell grants precisely what the `Endowment` names and the child can reach nothing
 /// else.
 ///
-/// The program is resolved first, because "there is no such program" is a fact about the system and
-/// everything else is a fact about a program that exists.
-/// **`expanded` is why the shell expands before it plans.** A pattern designates the names it
-/// matched, so the endowment *is* the set, and the planner must see the set rather than the pattern.
-/// [`Expansion::none`] is the answer for a line with no pattern on it, which is every line the shell
-/// could plan before milestone 47's globbing lane.
+/// The program is resolved first, because "there is no such program" is a fact about the system.
+/// `expanded` is what the line's patterns matched, since the endowment is the set;
+/// [`Expansion::none`] for a line with no pattern. See notes/glob-grant.md.
 pub fn plan(
     run: &ParsedInvocation<'_>,
     holds: Holdings,
@@ -73,30 +70,14 @@ pub fn plan_stage(
 
 /// [`plan`]'s second half, against an **explicit** manifest rather than the static table.
 ///
-/// Split out for two reasons, and the first is immediate: it is the only way to exercise a manifest
-/// shape no shipped program declares yet (a program endowed a file), so `FileGrantDeclaration::Required` is live,
-/// tested logic instead of a branch nothing reaches. The second is milestone 23, where a manifest
-/// travels *with* a component rather than living in this table, and the composer checks a program it
-/// did not write. That is the same call with a different source of the manifest.
+/// It exercises manifest shapes no shipped program declares (a program endowed a file), and it is
+/// the call a composer makes with a manifest that travels with a component (milestone 23).
 ///
-/// **This is where the positional tokens acquire meaning**, and the order is the order they are
-/// typed in: the integer argument first if the manifest declares one, then the file if it declares
-/// one. A token past the last declared slot is unplaceable, and unplaceable is a refusal.
-///
-/// # What globbing changed here, and why it had to
-///
-/// The slots used to be filled by splitting a slice, which was enough while a token was a name. A
-/// token can now be a **pattern**, and a pattern designates the set the shell expanded it into, so
-/// the placement is by **index** and the [`Expansion`] is keyed to that index. The alternative was
-/// to let the planner infer which slot the expansion belonged to, which would have been the parser
-/// classifying tokens again, one layer down and less visibly.
-///
-/// Two guards fall out of that, and both exist so authority cannot move silently:
-///
-/// - a pattern with no expansion behind it is [`Refusal::Unexpanded`], never a grant of a name with
-///   a `*` in it;
-/// - a token with **no** magic never consults the expansion at all, so a name that was typed always
-///   designates itself.
+/// **This is where the positional tokens acquire meaning**, in the order typed: the integer
+/// argument first if the manifest declares one, then the file. A token past the last declared slot
+/// is a refusal. Placement is by index, and the [`Expansion`] is keyed to it: a pattern with no
+/// expansion is [`Refusal::Unexpanded`], and a token with no magic never consults the expansion.
+/// See notes/glob-grant.md ("The shell expands before it plans").
 pub fn plan_against(
     run: &ParsedInvocation<'_>,
     prog: Program,
@@ -172,39 +153,11 @@ pub fn plan_against_with(
     // turns into rights and the progenitor clamps to the manifest it endows.
     let dir = words_directory_grant(&m, &holds, expanded, dir)?;
 
-    // **The input operand: `wc report.txt` is `wc < report.txt` with the operator left out.**
-    //
-    // This is milestone 47's move applied to the other direction. The `file:` prefix came out on the
-    // finding that the manifest was doing all the work, and it is doing all of it here too: a
-    // program that declares `InputDeclaration::Required` reads a stream and nothing else, so a bare name in
-    // the position after its declared grants can only be the thing feeding it. There is nothing for
-    // the parser to classify and no ambiguity to resolve, because a manifest declaring an input
-    // never also declares a file (a program that wanted both would need positional arity, which is
-    // the same widening `ProgramArgumentDeclaration` is waiting on; `no_program_declares_both_a_file_and_an_input`
-    // holds every manifest to it since milestone 150).
-    //
-    // **That widening is `FileGrantDeclaration` + `InputDeclaration`'s problem, not `ProgramArgumentDeclaration` + `InputDeclaration`'s.** An
-    // argument is numeric-shaped and `arg` above already claims a fixed earlier position, so a
-    // manifest declaring both `ProgramArgumentDeclaration::Required` and `InputDeclaration::Required` has nothing left to
-    // disambiguate: `arg` takes position 0, `input`'s fallback takes whatever bare name is left,
-    // exactly as `arg` and `file` already compose for [`STAMPS_A_FILE`] below. No shipped program
-    // has declared the combination, and whether one should is an open question for an architect
-    // (design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md), but the
-    // absence is unclaimed headroom rather than a refusal here; see
-    // `an_argument_and_an_input_stream_compose_by_the_same_fixed_order` in this module's tests.
-    //
-    // **What the child ends up holding is narrower than a file capability**, and that is worth being
-    // exact about rather than claiming the headline. The shell opens the name and streams it, so the
-    // program is handed an endpoint carrying the bytes of that one file: it cannot seek, re-read,
-    // stat, or name a second thing, and it cannot tell a file from a pipe from a builtin. Typing the
-    // name is still what moves the authority (`wc` alone is refused at the prompt, before anything
-    // is spawned), which is designation-is-authorization; what it is *not* is the per-file capability
-    // `FileGrantDeclaration::Required` describes, because `wc` deliberately does not speak the filesystem
-    // contract at all (milestone 50: "a `wc` that could open the file it counts would be a `wc` that
-    // could open any file").
-    //
-    // An explicit `<` wins, because it is the same designation said out loud: a line carrying both
-    // has named its input twice, and the operand then has nowhere to go and is unplaceable below.
+    // The input operand: `wc report.txt` is `wc < report.txt` with the operator left out, which is
+    // unambiguous because no manifest declares both a file and an input
+    // (`no_program_declares_both_a_file_and_an_input`). An argument and an input compose by fixed
+    // order. An explicit `<` wins, and the operand is then unplaceable below. See
+    // notes/grant-expression/per-file-grants.md ("`wc report.txt`: the input operand").
     let mut streams = streams;
     plan_input_operand(&m, &mut streams, pos, &mut next, &holds, expanded)?;
 
@@ -452,10 +405,8 @@ fn plan_memory_grant(run: &ParsedInvocation<'_>, m: &Manifest) -> Result<u64, Re
 /// is `designate` with the pattern case taken out, because [`line::split`] has already refused a
 /// pattern here.
 ///
-/// `writable` comes from the operator rather than from a manifest, and that is the one place this
-/// shell reads a direction off the line. It is not the exception it looks like: the program is not
-/// being granted a file at all. It is being handed a **sink**, which appends and can do nothing
-/// else, and the direction is a property of which end of the pipe the shell is building.
+/// `writable` comes from the operator, the one direction this shell reads off the line: the program
+/// is handed a sink or a source, not a file, and the direction is which end the shell builds.
 pub fn redirect_target(
     token: &[u8],
     holds: Holdings,
@@ -477,19 +428,11 @@ pub fn redirect_target(
 /// **Whether this program can be wired the way the line asks**, which is the whole of the operators'
 /// manifest check.
 ///
-/// Two questions, and they are not symmetric because the two directions are not. **Output**: has
-/// this program got bytes to redirect at all? A `Words` program answers with a number in a register
-/// and a `Silent` one holds no output capability, so in both cases there is nothing for `>` or `|`
-/// to substitute and the honest answer is that the line asked for something that does not exist.
-/// **Input**: a program that reads a stream and is handed none blocks forever, and a program that
-/// reads nothing and is handed one has been given authority for no reason. Both are refusals, and
-/// the first one is the one Unix cannot make.
-///
-/// **Output is now two questions**, and the second is `2>`'s (DECISIONS §67): the manifest says
-/// whether this program has a second stream at all, so a `2>` aimed at one that does not is
-/// [`Refusal::NoDiagnosticStream`] at the prompt with nothing spawned. What comes back is where the
-/// second stream goes, which is `None` for a program that declares none, the shell's own printing
-/// for one that does, and a file when the line named one.
+/// **Output**: a `Words` or `Silent` program has no bytes for `>` or `|` to substitute. **Input**: a
+/// program that reads a stream and is handed none would block forever, and one that reads nothing
+/// and is handed one would hold authority for no reason. A `2>` at a program declaring no second
+/// stream is [`Refusal::NoDiagnosticStream`] (DECISIONS §67). Returns where the second stream goes:
+/// `None` for a program declaring none, the shell's printing, or a file the line named.
 fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Refusal> {
     if !matches!(streams.sink, Sink::Report) && !m.output.is_byte_stream() {
         return Err(Refusal::NotAByteStream);
@@ -511,45 +454,16 @@ fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Ref
     }
 }
 
-/// **Whether this shell can be at both ends of the chain it just planned**, which is the one
-/// question the operators cannot answer stage by stage.
+/// **Whether this shell can be at both ends of the chain it just planned.** `shell_feeds_head` is
+/// true when the first stage's input comes from this process: a `<`, an input operand, or a
+/// producing builtin at the head (`ls | wc`); when false, none of this applies.
 ///
-/// `shell_feeds_head` is true when the bytes going into the first stage come from *this process*: a
-/// `<`, an input operand (`wc report.txt`), or a producing builtin at the head (`ls | wc`). When it
-/// is false there is a separate process on the far end of the head's input and none of this applies.
-///
-/// # The constraint, which is the kernel's and not the shell's
-///
-/// A process has **one wait point**. `SEND` blocks until a receiver takes the message, `RECEIVE` blocks
-/// until one arrives, and there is no select and no poll (a timer and a bound notification can end a
-/// receive since milestones 106 and 151, but not a `SEND`). So a shell that is feeding a chain cannot also be
-/// receiving from it, and the two blocked processes have nothing that could wake either.
-///
-/// **No interleaving schedule fixes this**, which is worth stating because it is the first thing
-/// anybody reaches for. Alternating one send with one receive deadlocks whenever the stage reads
-/// twice before it writes; alternating the other way deadlocks whenever it writes twice before it
-/// reads. The shell cannot know which, because the whole point of the sink contract is that neither
-/// end knows anything about the other.
-///
-/// # What makes a line runnable anyway: one barrier
-///
-/// A stage that declares [`InputDeclaration::Required::writes_while_reading`] `false` absorbs the whole
-/// stream before it answers. One of those anywhere in the chain is enough: everything upstream of it
-/// can stream freely, the shell's feed completes, and only then does anything travel back. So
-/// `mdr page.md | wc` runs and `mdr page.md` is refused, with `| wc` being the fix the message names.
-///
-/// A line whose head is a builtin and which spawns nothing at all (`ls > out.txt`) is not a chain
-/// and is always `Ok`: there is no second process to deadlock against.
-///
-/// # DECISIONS §106's exception
-///
-/// A chain with no absorbing barrier used to be refused outright, because the tail's answer always
-/// came back to this shell over its own result endpoint and this shell was already busy feeding the
-/// head. That is no longer universally true: an unredirected tail (`Sink::Report`) whose program's
-/// output is a byte stream is delegated to `terminal_sink_caretaker` by default instead, so the
-/// shell never becomes this chain's reader at all. A tail the line redirected with `>`
-/// (`Sink::File`) still comes back through this shell (DECISIONS §55: the file behind a `>` is the
-/// shell itself), so that shape is still refused exactly as before.
+/// A process has one wait point, so a shell feeding a chain cannot also receive from it, and no
+/// schedule of sends and receives fixes that. The line runs if a stage declaring
+/// [`InputDeclaration::Required::writes_while_reading`] `false` absorbs the whole stream first, or
+/// if its unredirected tail goes to `terminal_sink_caretaker` (DECISIONS §106) rather than back to
+/// this shell; a tail redirected with `>` still comes back here (DECISIONS §55), so it is refused.
+/// A line that spawns nothing (`ls > out.txt`) is always `Ok`. See notes/pipes/one-wait-point.md.
 pub fn check_chain(shell_feeds_head: bool, plans: &[Option<Endowment>]) -> Result<(), Refusal> {
     if !shell_feeds_head {
         return Ok(());
@@ -565,17 +479,10 @@ pub fn check_chain(shell_feeds_head: bool, plans: &[Option<Endowment>]) -> Resul
         // Nothing was spawned: the shell is the sole producer (a head builtin backed by a file) and
         // there is no second process to deadlock against.
         None => Ok(()),
-        // **The tail's own output goes to the terminal's sink adapter, not back to this shell.**
-        //
-        // This trusts that `writes_while_reading` never rides on anything but a byte-stream output,
-        // rather than re-checking `is_byte_stream` here off `e.program.manifest()`: `e` may have been
-        // planned against an explicit manifest that differs from `e.program`'s real one
-        // ([`plan_against_with`]'s whole reason to exist), so re-deriving from `e.program` would answer
-        // a question about the wrong manifest. No shipped program declares
-        // `writes_while_reading: true` next to anything but `OutputDeclaration::Bytes` today, and a
-        // filter's whole shape (writing before it has read to the end) presupposes the streaming
-        // sink contract; a manifest that paired the two would be declaring a filter with no stream
-        // to filter into.
+        // The tail's output goes to the terminal's sink adapter, not back to this shell. This
+        // trusts that `writes_while_reading` rides only on a byte-stream output rather than
+        // re-checking `e.program.manifest()`, because `e` may have been planned against a different
+        // manifest ([`plan_against_with`]).
         Some(e) if matches!(e.sink, Sink::Report) => Ok(()),
         Some(_) => Err(Refusal::NoReaderButThisShell),
     }
@@ -602,19 +509,10 @@ fn designate(
     let (lead, last) = parsed
         .split_last_component()
         .ok_or(Refusal::FileNotNameable)?;
-    // **The lead resolves exactly as `cd` would resolve it** ([`Holdings::anchor`]): a
-    // relative one from where the shell stands, an absolute one from a bound name or the root.
-    // [`Holdings::locate`] then says which tree serves it. Everything downstream re-walks the
-    // recorded `(which, dir)` from that tree's own root (`swish::open_at`), so the position is all
-    // a grant carries.
-    //
-    // Before milestone 154 this rooted every absolute token at the sole root literally, so
-    // `wc /recent/x` with `recent` bound walked a directory named `recent` while `ls /recent`
-    // walked the bind. One resolver for both is what closed that.
-    //
-    // The anchor and the apply are spelled out here rather than through `resolve_steps` because
-    // this runs on the shell's planning path, on a debug build's few pages of stack, and one frame
-    // fewer is the margin `glob_grant_tests` records.
+    // The lead resolves exactly as `cd` resolves it ([`Holdings::anchor`]), and
+    // [`Holdings::locate`] says which tree serves it. The anchor and the apply are spelled out
+    // rather than through `resolve_steps` because this runs on the shell's planning path on a few
+    // pages of stack, and one frame fewer is the margin `glob_grant_tests` records.
     let mut place = nav::Cwd::root();
     let rest = holds.anchor(parsed.is_from_root(), lead, &mut place);
     place.apply(rest).map_err(nav_refusal)?;

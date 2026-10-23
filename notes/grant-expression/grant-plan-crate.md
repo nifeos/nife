@@ -110,3 +110,22 @@ union. There is one entry per name, and a name already bound refuses a second bi
 shadowing it. Milestone 47's open `PATH` questions (shadowing across several sources at one name,
 enumeration, the gap between a compile-time set and a runtime lookup, and whether `$PATH` survives as
 a string) are not answered here.
+
+## Planning (`planning.rs`)
+
+The planner places a line's positional tokens in the order they are typed: the integer argument
+first if the manifest declares one, then the file, then an input operand. An argument and an input
+stream compose by that fixed order, as an argument and a file already do. An argument is
+numeric-shaped and claims position 0, so the input operand takes whatever bare name is left. No
+shipped program declares both. Whether one should is milestone 498 (whether a program may take an
+argument and an input stream), and the test
+`an_argument_and_an_input_stream_compose_by_the_same_fixed_order` holds the planner to the
+composition meanwhile. A file and an input together would need positional arity, so
+`no_program_declares_both_a_file_and_an_input` holds every manifest to having at most one.
+
+`check_chain` lets an unredirected tail stage that writes while it reads go to the terminal's sink
+adapter. It trusts that `writes_while_reading` rides only on a byte-stream output. It does not
+re-check through `e.program.manifest()`, because a stage may have been planned against an explicit
+manifest that differs from its program's (`plan_against_with`). No shipped program declares
+`writes_while_reading` at all, and a filter writes before it has read to the end, which presupposes
+the streaming sink contract.
