@@ -1,31 +1,21 @@
 //! **The methods of the smaller objects**: `Notification`, `Reboot`, `Timer`, `Process`, the
 //! interrupt and virtio capabilities, `PortRange`, the rendezvous badge and reap, and the two helpers
-//! [`invoke`](super::invoke) leaves its rare Reply and abort paths to.
-//!
-//! Cut out of `syscall.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits,
-//! so the parent stays under §266 (a Rust source file stays under 2,000 lines) and moves toward
-//! §282 (when a file is split, the parent becomes an index). Each method keeps its
-//! `#[inline(never)]`, so [`invoke`](super::invoke) reaches it through one call, as before, and
-//! `script/fastpath-footprint` measures the same code under a longer symbol name. `pub(super)`
-//! is the visibility a private item of `syscall` had: `syscall` and its children.
+//! [`invoke`](super::invoke) leaves its rare Reply and abort paths to. Each is out of line; see
+//! notes/syscall-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
 use super::*;
 
-/// **A Reply method other than `REPLY`.** One exists: **`REPLY_CAPABILITY`, `REPLY` plus one
-/// capability**, `carried` its slot in our table (§255 (each socket is its own capability)). `GRANT` on the carried capability is checked under the hold that
-/// files it, and a refused source consumes nothing, so the caller still waits and this Reply can
-/// still answer it. `Ok(1)` when the answer went but the copy did not reach the caller (a full
-/// table, or a caller no longer waiting), so the server can undo what it minted it for.
+/// **A Reply method other than `REPLY`**: `REPLY_CAPABILITY` answers with `a0`, `a1` and the
+/// capability in our slot `carried` (§255 (each socket is its own capability)). `GRANT` on it is
+/// checked under the hold that files it, and a refused source consumes nothing, so this Reply can
+/// still answer. Returns 0, or 1 when the answer went but the copy did not reach the caller (a full
+/// table, or a caller no longer waiting), so the server can undo what it minted.
 ///
-/// Out of line on purpose, and handed the syscall's own registers so the call site is a jump. It
-/// looks the Reply up again rather than taking it from [`invoke`](super::invoke), which costs a
-/// cold method one table read. [`invoke`](super::invoke) inlines into `syscall::dispatch`, which
-/// `script/fastpath-footprint` counts flat as `syscall_entry`; with this arm folded in, x86_64's
-/// entry grew 144 bytes (8.6%) on every syscall for a method only the network stack uses. Plain
-/// `REPLY` stays inline.
+/// Out of line, handed the syscall's own registers, and looking the Reply up again, so the arm in
+/// [`invoke`](super::invoke) is a jump; plain `REPLY` stays inline.
 #[inline(never)]
 pub(super) fn reply_other(
     slot: u64,
@@ -51,10 +41,10 @@ pub(super) fn reply_other(
     Ok(if filed { 0 } else { 1 })
 }
 
-/// **Which error an aborted `SEND`, `SEND_CAP` or `CALL` answers** (milestone 603 (provisional)).
-/// `NotPermitted` when the endpoint carries an interrupt and refused the deposit (DECISIONS §101,
-/// ruling B), `Gone` when it was stale or revoked. Out of line and `#[cold]`, because it runs only
-/// on an abort and the three arms that call it are on the IPC fastpath.
+/// **Which error an aborted `SEND`, `SEND_CAP` or `CALL` answers.** `NotPermitted` when the
+/// endpoint carries an interrupt and refused the deposit (DECISIONS §101 (notification objects),
+/// amended 2026-09-26, ruling B), `Gone` when it was stale or revoked. `#[cold]`, because the three
+/// arms that call it are on the IPC fastpath.
 ///
 /// Name: provisional (milestone 603 (provisional)): calef names public items.
 #[cold]
@@ -115,8 +105,9 @@ pub(super) fn notification_invoke(
     }
 }
 
-/// `Reboot::REBOOT` (milestone 805, DECISIONS §251): restart the machine, or answer why not, one of
-/// the four `abi::Error::Reset…` reasons. See kernel/src/reboot.rs.
+/// `Reboot::REBOOT` (DECISIONS §251 (restarting the machine is a kernel object the progenitor
+/// hands out)): restart the machine, or answer one of the four `abi::Error::Reset…` reasons for
+/// not. See kernel/src/reboot.rs.
 #[inline(never)]
 pub(super) fn reboot_invoke(method: u64) -> Result<i64, Error> {
     match method {
@@ -157,16 +148,13 @@ pub(super) fn timer_invoke(
     }
 }
 
-/// `Rendezvous::BADGE`: **mint a badged copy of an endpoint** (milestone 599 (a frame per
-/// filesystem client channel), provisional). The new capability names the same endpoint `ep` with
-/// the holder's own `rights`, plus `new_badge`, in a free slot of the caller's table, and the slot
-/// is the result, the way `RETYPE_OBJ` answers with the slot it minted.
+/// `Rendezvous::BADGE`: **mint a badged copy of an endpoint**. The copy names `ep` with the
+/// holder's own `rights` and `new_badge`, in a free slot of the caller's table, and returns the
+/// slot; `OutOfMemory` when the table is full.
 ///
-/// GRANT-gated, because minting a delegatable view is a delegation-class power (the gate `SEND_CAP`
-/// and `CAP_INSERT` use), and refused for a zero badge (the unbadged value) or an already-badged
-/// source (`held_badge != 0`), so a badge is set once and never changed: seL4's rule, and what lets
-/// a server trust the badge it is delivered. Out of line for `memory_region_map`'s reason: it is
-/// spawn-time administration, and `script/fastpath-footprint` measures `invoke`'s own bytes.
+/// `NotPermitted` without `GRANT` (minting a delegatable view is delegation, the gate `SEND_CAP`
+/// uses), for a zero badge, or for an already-badged source: a badge is set once and never
+/// changed, seL4's rule, so a server can trust the badge it is delivered.
 #[inline(never)]
 pub(super) fn rendezvous_badge(
     ep: sched::RendezvousId,
@@ -182,11 +170,8 @@ pub(super) fn rendezvous_badge(
     Ok(slot as i64)
 }
 
-/// `Rendezvous::REAP`: collect a corpse this rendezvous supervises (DECISIONS §32), the control
-/// half `rendezvous::SURVEY` is the view half of. Administrative, not the IPC round trip: rare
-/// enough (one call per child death, not per message) that it moves out of `invoke`'s own bytes
-/// with the rest of this arm's non-fastpath methods. `#[inline(never)]` for the reason
-/// `memory_region_map` gives.
+/// `Rendezvous::REAP`: collect the corpse of `tid`, a thread this rendezvous supervises (DECISIONS
+/// §32). The control half `rendezvous::SURVEY` is the view half of; the caller checked `READ`.
 #[inline(never)]
 pub(super) fn rendezvous_reap(ep: crate::sched::RendezvousId, tid: u64) -> Result<i64, Error> {
     sched::reap_supervised(ep, tid)?;
@@ -212,36 +197,29 @@ pub(super) fn process_invoke(
     }
 }
 
-/// `Irq::WAIT`: block on the endpoint the kernel routed this interrupt to. The interrupt arrives
-/// as a message (`sched::irq_notify`), exactly like any other. `#[inline(never)]` for the reason
-/// `memory_region_map` gives.
+/// `Irq::WAIT`: block on the endpoint the kernel routed this interrupt to; the interrupt arrives
+/// as a message (`sched::irq_notify`). `WrongObject` when the line has no route.
 #[inline(never)]
 pub(super) fn irq_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, Error> {
     let ep = sched::irq_route(intid).ok_or(Error::WrongObject)?;
     let m = sched::ipc_receive(ep);
-    // A driver with a bound notification (milestone 151) is woken here by either the interrupt
-    // (`1` in x0, x1 and x4 zero) or the notification (`abi::notification::BOUND` in x0 and x4, the
-    // word in x1). This is what lets a driver wait on its device and a deadline at once, which is
-    // the complaint milestone 106 (a wait that ends on either the interrupt or the deadline) makes about `net_stack`. Unconditional stores: an interrupt's mailbox has
-    // zeros in both, so a driver that never bound anything reads the same zeros it would have.
+    // Unconditional: a bound notification's wake carries `BOUND` and its word here, and an
+    // interrupt's mailbox has zeros in both, which an unbound driver reads as before.
     frame.set_arg(1, m[1]);
     frame.set_arg(4, m[4]);
     Ok(m[0] as i64)
 }
 
-/// `Irq::ACK`: re-enable the interrupt at the controller. The kernel masked it when it fired; now
-/// that the driver has serviced the device, it is safe to let it fire again. This names
-/// `arch::irq`, not a specific controller: the GIC on aarch64, the PLIC on RISC-V.
-/// `#[inline(never)]` for the reason `memory_region_map` gives.
+/// `Irq::ACK`: unmask the interrupt at the controller, which masked it when it fired, once the
+/// driver has serviced the device.
 #[inline(never)]
 pub(super) fn irq_ack(intid: u32) -> Result<i64, Error> {
     crate::arch::irq::enable(intid);
     Ok(0)
 }
 
-/// `Virtio`'s four register-level methods (`READ_REGISTER`, `WRITE_REGISTER`, `SETUP_QUEUE`, `NOTIFY`): a
-/// driver's transport-level plumbing, not a step of the IPC round trip. `#[inline(never)]` for
-/// the reason `memory_region_map` gives.
+/// `Virtio`'s four register-level methods (`READ_REGISTER`, `WRITE_REGISTER`, `SETUP_QUEUE`,
+/// `NOTIFY`). `DeviceRefused` for a DMA address outside the device's confinement.
 #[inline(never)]
 pub(super) fn virtio_invoke(id: usize, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {
     use crate::virtio::TransportError;
@@ -264,14 +242,11 @@ pub(super) fn virtio_invoke(id: usize, method: u64, a0: u64, a1: u64) -> Result<
     }
 }
 
-/// `PortRange::REVOKE` (milestone 299): take the port range back from every other holder. The only
-/// method a port capability answers; enforcement is at the switch, not here.
+/// `PortRange::REVOKE`: take the port range back from every other holder. Needs `GRANT`. The only
+/// method a port capability answers; enforcement is at the context switch (the TSS I/O bitmap).
 ///
-/// **`#[cold]`, not just `#[inline(never)]`.** A live-driver-replacement take-back is among the
-/// rarest things a program does, and `syscall_entry`'s footprint bound is measured over the
-/// *non-cold* calls reachable from the dispatcher (`script/fastpath-footprint`). Marking this cold
-/// keeps it and `revoke_port_range_from_others` out of that closure, so a new capability method does
-/// not spend the IPC round trip's L1i budget on a path the round trip never takes.
+/// `#[cold]` as well as out of line, which keeps it out of the closure `script/fastpath-footprint`
+/// measures (notes/syscall-boundary.md).
 #[cfg(target_arch = "x86_64")]
 #[cold]
 #[inline(never)]

@@ -30,7 +30,7 @@ re-cut, at the headline assertion.
 diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_region.rs
 --- a/kernel/src/syscall/memory_region.rs
 +++ b/kernel/src/syscall/memory_region.rs
-@@ -45,8 +45,6 @@
+@@ -73,8 +73,6 @@
      if !paging::is_user_page_va::<crate::arch::mmu::Format>(va) {
          return Err(Error::BadPointer);
      }
@@ -38,8 +38,8 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 -    crate::delegation_pause::here(); // no lock held
      let mut hold = crate::revoke::hold();
      let root = mmu::current_user_root();
-     // The leaf first, then the tables, recorded as tables as they are retyped: the region pays
-@@ -55,9 +53,14 @@
+     // The leaf, then the tables, each table recorded as it is retyped: `DESTROY` must find the
+@@ -82,9 +80,14 @@
      let Some(phys) = crate::memory_region::retype_page(region) else {
          return Err(Error::OutOfMemory);
      };
@@ -54,5 +54,5 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 +    let mut hold = crate::revoke::hold();
 +    match mapped {
          Ok(()) => {
-             // Record the mapping so it can be revoked before the region is ever reclaimed (§13).
-             // MemoryRegion::MAP pages are process-private, but they still must be unmapped before
+             // No record, no mapping: an unrecorded mapping is invisible to revocation (§13
+             // (capability revocation and untyped reclamation)). No capability names the page.
