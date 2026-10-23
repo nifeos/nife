@@ -124,7 +124,7 @@ caller stranded by a server that died stayed blocked for the life of the machine
 region nobody could reclaim. QNX Neutrino has not allowed that since the 1990s ("if the server
 thread fails, exits, or disappears, the client thread becomes READY, with `MsgSend()` indicating an
 error"). Proposal C of [notes/blocked-thread-teardown.md](../blocked-thread-teardown.md) is the
-design; milestone 254 (a caller stranded by a dead server) built it.
+design; milestone 254 (a caller stranded by a server that died) built it.
 
 `strand_reply_caller` sweeps capabilities before it wakes. `cap::reply_cap` mints
 `Object::Reply(tid)` with a generational thread name and no call identity, and `ipc_reply`'s guard

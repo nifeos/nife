@@ -117,7 +117,7 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
     }
 }
 
-// --- Notifications (milestone 151, DECISIONS §101 (notification objects)) -------------------
+// --- Notifications: milestone 151 (notification objects), DECISIONS §101 (notification objects)
 //
 // The asynchronous half of IPC: a word a signaller ORs into and a waiter takes. The decision core
 // (what a signal, a wait and a poll do) is `inter_process_communication::notification`, proved
