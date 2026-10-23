@@ -99,9 +99,9 @@ table to search.
 If that ever becomes expensive, the fix is a per-region allocator. It isn't expensive yet.
 
 The span is RAM's **widened by whatever the forbidden list reaches past it**. On `x86_64`, QEMU's
-PVH loader places the initial ramdisk at a fixed offset below the top of guest memory, and a boot
-whose ACPI tables grow (VT-d plus NVMe) moves e820's usable-RAM boundary down past the ramdisk's
-last few hundred bytes. The x86 front end still claims the whole ramdisk as forbidden, so the
+PVH loader places the initial ramdisk at a fixed offset below the top of guest memory. A boot whose
+ACPI tables grow (VT-d plus NVMe) moves e820's usable-RAM boundary down past the ramdisk's last few
+hundred bytes. The x86 front end still claims the whole ramdisk as forbidden, so the
 bitmap has to reach it, or `is_used` on those frames answers `None` (out of range) instead of
 `Some(true)`, and the claim is silently clamped away. The extra frames start used and are never
 freed, because they are not in RAM. The top is rounded up to a whole frame, since a forbidden region
@@ -112,12 +112,12 @@ on the other two architectures, leaves the span unchanged.
 
 `memory::init` is a front end per description: a device tree on aarch64 and riscv64, PVH and ACPI
 on `x86_64` (`arch::discovery::init`). Both end in `bring_up_page_frames(ram, forbidden)`, which
-does not care where the description came from. What crosses the seam is RAM and reservations; the
+does not care where the description came from. What crosses the seam is RAM and reservations. The
 device windows the device-tree front end also discovers (the interrupt controller, the RTC, the
-UART's interrupt line, the PCIe ECAM range) are stored in `memory`'s statics, which stay `None` on
-a machine with no tree, and `x86_64` fills them through `record_*` calls instead (see
+UART's interrupt line, the PCIe ECAM range) are stored in `memory`'s statics. They stay `None` on a
+machine with no tree, and `x86_64` fills them through `record_*` calls instead (see
 [x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)). The `record_*` calls for facts the front end
-also reserves (the initial ramdisk, the boot file) store and do not reserve: the caller is already
+also reserves (the initial ramdisk, the boot file) store and do not reserve. The caller is already
 building the forbidden list, and reserving in both places would double-reserve or let each side
 assume the other did it.
 

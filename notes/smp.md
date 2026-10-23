@@ -8,9 +8,9 @@ stealing.
 
 ## How a secondary starts
 
-The boot core reads the roster ([below](#the-roster-is-seated-by-hardware-id)), then calls the
+The boot core reads the roster ([below](#the-roster-is-seated-by-hardware-id)). Then it calls the
 architecture's start mechanism (`arch::cpu_start`: PSCI `CPU_ON` on aarch64, SBI HSM on riscv64)
-once per startable core, handing it a physical entry point (`secondary_boot` in boot.s) and the top
+once per startable core. Each gets a physical entry point (`secondary_boot` in boot.s) and the top
 of its own stack. The secondary starts with its MMU off, replays the MMU-enable, and lands in
 `secondary_main`, which in order:
 
@@ -30,9 +30,9 @@ that core set up. The mask is set before the count so that a TLB shootdown issue
 core is counted also targets it.
 
 The entry point is computed only after `arch::can_start_secondaries` says the machine can be asked
-at all. On `x86_64` it is not converted from virtual to physical: `secondary_boot` is linked at the
-fixed low address it executes from (`AP_TRAMPOLINE_PHYS`, below 1 MiB because a STARTUP IPI can
-only name such a page), so its virtual address already is its physical one, and `virt_to_phys`
+at all. On `x86_64` it is not converted from virtual to physical. There `secondary_boot` is linked
+at the fixed low address it executes from (`AP_TRAMPOLINE_PHYS`, below 1 MiB because a STARTUP IPI
+can only name such a page), so its virtual address already is its physical one. `virt_to_phys`
 would underflow subtracting the direct-map base. `arch::secondary_boot_entry` is the identity
 function for that reason, kept as a function so the reasoning sits beside the one call site.
 
@@ -51,7 +51,7 @@ kernel thread's guard. `verify` refuses to install a map in which a guard transl
 
 The stacks live in their own `.secondary_stacks` section for two reasons.
 
-- **Writable.** An immutable `static` of plain arrays lands in `.rodata`, which the fine kernel map
+- Writable: an immutable `static` of plain arrays lands in `.rodata`, which the fine kernel map
   makes read-only (W^X). The `UnsafeCell` keeps it out. The failure is invisible on the coarse boot
   map, where `.rodata` is writable, and fires the instant a secondary adopts the fine map.
 - **Holes.** `map_everything` maps `.data` through `__bss_end` as one range, which leaves nowhere
@@ -75,10 +75,10 @@ from the walk `memory::init` kept (`seat_cpus_from_acpi`).
 
 A core's "id" is whatever the start call names it by: an `MPIDR_EL1[39:0]` affinity value on
 aarch64, a hart id on riscv64, a local APIC id on `x86_64`. Each described core is seated **at the
-slot its own hardware id names**. Everywhere the kernel indexes hardware it uses the logical id:
-`cpu::PERCPU`, the secondary stacks and the RISC-V trap stashes are arrays indexed by it; the GICv2
-targets an SPI by CPU-interface number and `send_sgi` uses the same number; the PLIC's S-mode
-context table is indexed by hart id; the SBI IPI mask is a bitmap of hart ids. Seating by id makes
+slot its own hardware id names**. Everywhere the kernel indexes hardware it uses the logical id.
+`cpu::PERCPU`, the secondary stacks and the RISC-V trap stashes are arrays indexed by it. The GICv2
+targets an SPI by CPU-interface number, and `send_sgi` uses the same number. The PLIC's S-mode
+context table is indexed by hart id, and the SBI IPI mask is a bitmap of hart ids. Seating by id makes
 logical id equal hardware id by construction, so none of those has to translate.
 
 Two consequences follow.
@@ -98,7 +98,7 @@ colliding with the real hart 0) keep the first.
 A core is **startable** unless firmware marked it `status = "disabled"`, its own `riscv,isa`
 disclaims supervisor mode, or its `enable-method` is one this kernel does not speak (`spin-table`, a
 per-SoC method). The supervisor rule is the one that matters on the VisionFive 2's vendor tree,
-whose S7 node claims a schedulable core in both `status` and `mmu-type`; handing that hart to SBI
+whose S7 node claims a schedulable core in both `status` and `mmu-type`. Handing that hart to SBI
 `hart_start` crashes vendor OpenSBI, and the roster line naming it is the only place its exclusion
 is visible. The predicate is `machine_discovery::cpu_list::Cpu::is_startable`, host-tested against
 both JH7110 fixtures. On `x86_64` the MADT's `enabled` flag is the whole answer: a present but
@@ -132,7 +132,7 @@ watchdog (`DEFAULT_BUDGET_SECS`, 90 s) still catches a dead secondary; staying u
 failure names the subsystem rather than reading as a generic livelock. See
 [load-sensitive-assertions.md](load-sensitive-assertions.md).
 
-**The probes are placed with `spawn_on`, not `spawn`.** `spawn` places by DECISIONS §28's two
+The probes are placed with `spawn_on`, not `spawn`. `spawn` places by DECISIONS §28's two
 random choices, deliberately not on the spawner's core, so each secondary's probe would land on a
 random core and the cores nobody sampled would never set their slot. That wait is for a condition
 that cannot become true, and a longer deadline does not fix an unreachable condition.
@@ -152,7 +152,7 @@ on its own queue, and `a_batch_of_cpu_bound_work_reaches_every_cpu` proves place
 fills the machine. To test this core as a target, the placement has to come from another core, or it
 is not the cross-core path (`place_on` puts a local target straight onto the local queue).
 
-**The migration tests.** RISC-V keeps the kernel per-CPU pointer in `tp`, a general register the
+The migration tests: RISC-V keeps the kernel per-CPU pointer in `tp`, a general register the
 trap frame saves and restores. A kernel thread preempted on one hart carries that hart's `tp` in its
 frame, and if an idle hart steals it and resumes it with the stale `tp`, it reads and corrupts the
 origin hart's scheduler state. aarch64's pointer is `TPIDR_EL1`, which no frame carries, so there
@@ -173,9 +173,10 @@ reading it takes two steps (the per-CPU register into a general register, then t
 between them that moves the thread leaves the load reading the first core's `current`, which by then
 names another thread. `sched::adopt_address_space` asks from the kernel thread every `user::run`
 spawn starts on, so a split read there gives the new space to another thread. Three choices in the
-test are measured: staggered lives keep cores draining and stealing through every wave; the clock is
-read once per 256 reads because TCG takes an interrupt only between translation blocks; and 24
-waves, because the two-core `x86_64` leg moved a worker only four or five times per run at fewer.
+test are measured. Staggered lives keep cores draining and stealing through every wave. The clock
+is read once per 256 reads, because TCG takes an interrupt only between translation blocks. And
+there are 24 waves, because the two-core `x86_64` leg moved a worker only four or five times per
+run at fewer.
 With all three, every run on every ISA failed against a split read.
 
 ## BUGS

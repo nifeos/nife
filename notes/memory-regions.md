@@ -88,8 +88,8 @@ cost of a region per networked job and a reclaim that must destroy the child fir
 ## Where the boundary sits
 
 Both the memory a process asks for and the memory it is made of come from regions.
-`MemoryRegion::MAP` pages are retyped from the caller's region, and `exec` carves one region per
-process from which the address space's root, its tables and its image pages are all retyped, so
+`MemoryRegion::MAP` pages are retyped from the caller's region. `exec` carves one region per
+process, from which the address space's root, its tables and its image pages are all retyped, so
 teardown is `memory_region::destroy` and the whole budget returns in one call. The kernel's own
 objects draw from the kernel's own budget (`kmem`, [kernel-budget.md](kernel-budget.md)), and an
 object a process creates is retyped from its creator's region
@@ -119,8 +119,8 @@ root that owns it.
 `RegionTable::claim_for_destroy` decides and removes the name in one borrow, so at most one caller
 reaches the free loop for a region. Two callers can hold a name for one region (an owner's
 `MemoryRegion::DESTROY` and a supervisor's `rendezvous::REAP`, both landing in
-`sched::reclaim_region`); with a gap between the check and the removal, each would pass the refusal
-check and free the same pages ([object-revocation.md](object-revocation.md)).
+`sched::reclaim_region`). With a gap between the check and the removal, each would pass the
+refusal check and free the same pages ([object-revocation.md](object-revocation.md)).
 
 Two lock orders hold this together. `REGIONS` is released before the revoke, because revocation
 takes `IPC_TABLES`, a higher rank. And `unpin` is separate from `destroy`: tearing down a region's

@@ -65,9 +65,9 @@ because the progenitor is its creator: one principle, two payers.
 
 The size is a sum, not a ratio. A thread costs 7 pages here, six of stack and one of TCB, so
 `sched::MAX_THREADS` (256) takes 1792; endpoints take about 60 across a full test run; that leaves
-196 of slack. A carve sized by doubling an older number would be a guess, and one left too small
-moves the thread ceiling from the thread table down to here, one level lower and no easier to
-diagnose: exhaustion surfaces as `kmem::page()` returning `None` and an unrelated test's spawn
+196 of slack. A carve sized by doubling an older number would be a guess. One left too small moves
+the thread ceiling from the thread table down to here, one level lower and no easier to diagnose.
+Exhaustion surfaces as `kmem::page()` returning `None` and an unrelated test's spawn
 failing with "no memory to wire one". It fails cleanly, the same contract as every budget, and
 raising the constant is the fix when the image legitimately needs more. The carve's region is
 pinned as `ObjectKind::KernelPool` on its first page, so nothing can ever destroy it.
