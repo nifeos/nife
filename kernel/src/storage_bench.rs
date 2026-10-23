@@ -1,42 +1,11 @@
-//! **Milestone 53 (the board's own peripherals: network and storage on real silicon)'s storage
-//! bench boot**, behind the `storage_bench` feature, riscv64 only, name provisional.
+//! radon's storage bench boot, behind the `storage_bench` feature, riscv64 only (name
+//! provisional).
 //!
-//! Nothing emulates radon's SD/MMC controller, so the first time this driver meets the part is a
-//! boot on the bench, and the boot has to say everything at once: what the firmware left, what the
-//! controller is, what card answered, what the card holds, and how fast it reads. Every line is
-//! prefixed `storage-bench:` so a serial capture and a photograph of a screen read the same way.
-//!
-//! In order, for the microSD slot (slot 1) and then the eMMC socket (slot 0):
-//!
-//! 1. the slot as the tree describes it;
-//! 2. its clocks and reset as found, walked through `SDIO_BRING_UP` (every step idempotent);
-//! 3. the controller's identity (`VERID`, `HCON`, the FIFO, `CDETECT`) and the five registers the
-//!    firmware's driver last wrote, read before anything is written;
-//! 4. the read-only probe (`designware_mobile_storage::bench::read_only`): identification, the CID,
-//!    the capacity, sector 0's partition table, the first partition's boot sector, and an 8 MiB
-//!    sequential read from the start of that partition, timed;
-//! 5. **only on the microSD slot and only in a build made with `NIFE_STORAGE_BENCH_WRITE=scratch`**,
-//!    the scratch write test (`bench::scratch_write`): up to eight sectors before the first
-//!    partition, read, overwritten with a pattern, read back, restored, read back;
-//! 6. the same reads through the IDMAC (`through_idmac`), and in a write build the write test;
-//! 7. on the microSD slot, the same card through the EL0 block server
-//!    (`components/src/designware_mobile_storage.rs`), called the way the FS server calls a block
-//!    server: over the first partition, read-only, in a read-only build (block 0 must be the boot
-//!    sector, `WRITE` must be `EROFS`, a block past the window `EINVAL`); over the scratch range,
-//!    writable, in a write build (one block read, overwritten, read back, restored).
-//!
-//! Then one verdict line about the microSD slot, and a halt.
-//!
-//! # BUGS
-//!
-//! - **The booted system has no block device on radon yet.** This boot proves the EL0 server on
-//!   a window it picks for the test; which window the booted system serves is an architect's
-//!   call, in the 53 block.
-//! - **It re-initializes the card U-Boot booted from.** `CMD0` puts the card back to idle, which
-//!   is harmless (the next power-on does the same) and means this boot cannot hand the card back
-//!   to anything that expected it selected. It halts instead.
-//! - **The eMMC socket is probed read-only, always.** Whether radon has a module fitted is a bench
-//!   fact this boot reports rather than assumes, and nothing here writes to one.
+//! [`run`] replaces the hand-over: for the microSD slot and then the eMMC socket it reports the
+//! clocks, the controller and the card as found, runs the read-only probe and a timed read (and,
+//! only in a `NIFE_STORAGE_BENCH_WRITE=scratch` build, the scratch write test on the microSD slot),
+//! repeats them through the IDMAC and the EL0 block server, prints a `storage-bench:` verdict and
+//! halts. See notes/bench-boots.md and notes/designware-mobile-storage.md.
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
@@ -239,10 +208,10 @@ macro_rules! say {
     };
 }
 
-/// **Bring the slot's card clock to the tree's rate, and answer the rate it really runs at**, the
-/// number the driver divides for the card. Without the SYS syscon (the PLL2 words, mapped only
-/// where the tree names the PMIC's bus) the rate cannot be computed, and the tree's is used and
-/// said to be unchecked.
+/// Bring the slot's card clock to the tree's rate, and return the rate it really runs at.
+///
+/// Without the SYS syscon (mapped only where the tree names the PMIC's bus) the rate cannot be
+/// computed, so the tree's is returned and printed as unchecked.
 fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
     if crate::memory::jh7110_pmic_bus().is_none() {
         say!(
@@ -426,13 +395,10 @@ enum El0 {
     Wrong(&'static str, i64),
 }
 
-/// **The same card, through the EL0 block server, the way the FS server would use it.**
+/// The same card through the EL0 block server, called the way the FS server calls one.
 ///
-/// The window is the first partition, read-only, in a read-only build: block 0 must come back as
-/// the boot sector the kernel read, a `WRITE` must be refused with `EROFS`, and a block past the
-/// window must be refused with `EINVAL`. In a write build the window is instead the eight-sector
-/// scratch range, writable, and its one block is read, overwritten, read back and restored through
-/// the server.
+/// A read-only build serves the first partition and checks block 0, `EROFS` and `EINVAL`; a
+/// `write` build serves the scratch range and round-trips one block. See notes/bench-boots.md.
 fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
     use filesystem_contract::blk;
 
@@ -669,11 +635,10 @@ fn kib_per_s(blocks: u64, us: u64) -> u64 {
         / 1024
 }
 
-/// **The same card through the IDMAC**: the polled host reads the partition's first 64 KiB as the
-/// reference, gives its controller to the IDMAC, and `bench::idmac_read` reads those blocks again
-/// and the same 8 MiB. In a write build the scratch write test then runs through the IDMAC. The
-/// region is one descriptor page and `READ_PAGES` data pages, so a command moves what the polled
-/// timed read's did.
+/// The same card through the IDMAC: the polled host reads the partition's first 64 KiB as the
+/// reference, then `bench::idmac_read` reads those blocks and the same 8 MiB, and a write build
+/// runs the scratch write test. One descriptor page and `READ_PAGES` data pages, as the polled
+/// read.
 fn through_idmac(
     slot: &Slot,
     mut host: Host<Window>,
@@ -754,12 +719,10 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
     Some(unsafe { core::slice::from_raw_parts_mut(va, count * 4096) })
 }
 
-/// **Milestone 53 (the board's own peripherals)'s multi-block read diagnosis**: the same `CMD18`
-/// at each card clock and length (`bench::read_matrix`), once with the tree's FIFO depth and once
-/// trusting `STATUS` up to 128 words, the fill radon's controller reported at the failure. Each
-/// row says how full the FIFO got, which is the question: does the polled CPU fall behind the
-/// card, and is a full FIFO what ends in a data CRC error? Read-only. Runs after the probe, whose
-/// clock bring-up it relies on.
+/// The multi-block read diagnosis: the same `CMD18` at each card clock and length
+/// (`bench::read_matrix`), with the tree's FIFO depth and again trusting `STATUS` up to 128 words.
+/// Each row says how full the FIFO got, to tell whether a full FIFO is what ends in a data CRC
+/// error. Read-only, after the probe, whose clock bring-up it relies on.
 #[cfg(feature = "storage_read_matrix")]
 fn read_matrix(slot: &Slot) {
     use designware_mobile_storage::bench::Watch;

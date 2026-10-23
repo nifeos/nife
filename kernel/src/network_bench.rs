@@ -1,50 +1,10 @@
-//! **Milestone 494 (a driver for the network card a PC actually has)'s bench boot**, behind the
-//! `network_bench` feature (name provisional; notes/e1000e.md has the evening it is for).
+//! The network bench boot, behind the `network_bench` feature (name provisional), for exit
+//! criterion 2 of milestone 494 (a driver for the network card a PC actually has).
 //!
-//! Exit criterion 2 asks for three things on xenon, photographed: the PCI survey line naming the
-//! card, a DHCP lease from the house router, and a measured transfer from a host on the LAN. The
-//! tour already prints the survey. This boot replaces the hand-over with the other two, through
-//! exactly the code the QEMU gates prove (`e1000e_service`, `net_stack`, `socket_test_client`), and
-//! prints them in the order they can fail, every line prefixed `network-bench:` so a photograph and
-//! a serial capture read the same way:
-//!
-//! 1. `nic`: the device id and model, its requester id, whether the link came up, the MAC address;
-//! 2. `phy`: the PHY's identifier, read over MDIO by the kernel at bring-up (`0x01410cb0` under
-//!    QEMU; on an I219 the line is preceded by the bring-up's own `e1000e:` lines);
-//! 3. `preflight dmar scope : PASS|FAIL`, which IOMMU unit owns the NIC, the condition milestone
-//!    261 (the NVMe driver leaves the kernel)'s bench evening named for the NVMe applied to this
-//!    device;
-//! 4. `dhcp`: the leased address, after a line saying it is waiting, so a boot that never gets one
-//!    ends on that line rather than on silence;
-//! 5. `transfer`: bytes, time and rate from the peer the image was built for;
-//! 6. `verdict LEASED-AND-MEASURED | UNCONFINED | NO-PEER | FAILED`, and `done, halting.`
-//!
-//! # What the number counts
-//!
-//! One TCP stream into `net_stack` through a 16 KiB window, received by a client one `RECEIVE`
-//! per chunk, a polled NIC watched while frames flow (`socket_contract::polled_wait`). **That
-//! measures this stack as built, not the I219 or radon's port**: the window bounds the rate to
-//! 16 KiB per round trip. It is the number a package download gets today, which is what rung 3
-//! needs to know.
-//!
-//! # On radon
-//!
-//! A riscv64 machine whose tree names a JH7110 Ethernet port (milestone 53 (the board's own
-//! peripherals: network and storage on real silicon)) runs the same boot over
-//! `designware_ethernet_service` instead, with the bring-up's own account first: the clock and
-//! reset words before and after, the syscon select, the controller and PHY identities, where the
-//! station address came from, both reset times, the **coherence probe's verdict** with the words it
-//! was judged on, and the link. Its preflight line is `coherence`, where xenon's is `dmar scope`:
-//! each is the one condition that decides whether the numbers after it mean anything on that
-//! machine. notes/designware-ethernet.md has the runbook and what each ending means.
-//!
-
-//! # BUGS
-//!
-//! - **The DHCP wait has no bound.** `net_stack` retries DISCOVER forever and the kernel blocks on
-//!   its report. A boot with no lease ends on the `waiting` line, which is the diagnosis.
-//! - **The peer is baked into the image** at build time (`NIFE_NETWORK_BENCH_PEER`), because this
-//!   boot has no way to be told one. A different peer is a rebuild.
+//! [`run`] replaces the hand-over: it brings up the NIC (or, on a JH7110, the Ethernet port),
+//! preflights the condition that makes its numbers mean anything, waits for a DHCP lease, times one
+//! TCP transfer from the peer the image was built for, prints a `network-bench:` verdict and halts.
+//! See notes/bench-boots.md.
 
 use crate::user::e1000e_service::{self as service, Absent};
 use crate::{arch, println};
@@ -188,9 +148,8 @@ fn parse_peer(s: &str) -> Option<u64> {
     (n == 4).then_some(word << 16 | u64::from(port))
 }
 
-/// **The radon arm** (milestone 53 (the board's own peripherals: network and storage on real
-/// silicon)): the same boot over the JH7110's Ethernet port. The lines a bench reader compares are
-/// spelled as the `e1000e` arm spells them; the bring-up lines before them are this port's own.
+/// The radon arm: the same boot over the JH7110's Ethernet port, its compared lines spelled as the
+/// `e1000e` arm spells them.
 #[cfg(target_arch = "riscv64")]
 mod radon {
     use ::designware_ethernet::coherence::Verdict;
