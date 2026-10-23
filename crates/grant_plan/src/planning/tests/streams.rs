@@ -97,14 +97,10 @@ fn a_reader_with_nothing_to_read_is_refused_at_the_prompt() {
 /// **`wc report.txt` is `wc < report.txt` with the operator left out**, and typing the name is
 /// what moves the authority: the same command with no name is refused at the prompt, above.
 ///
-/// The manifest does all the work, exactly as it does for the `file:` prefix milestone 47
-/// deleted. `wc` declares that it reads a stream and declares no file and no directory, so a
-/// bare name after its declared grants can only be the thing feeding it.
-///
-/// **What the child ends up holding is narrower than a file capability**, and the assertion is
-/// written to say so: the plan puts the name in the *source*, not in `Endowment::file`. The
-/// shell opens it and streams the bytes, so `wc` gets an endpoint it cannot seek, re-read, stat
-/// or point at a second name, and cannot tell from a pipe.
+/// `wc` declares a stream and no file or directory, so a bare name can only be what feeds it. The
+/// assertion puts the name in the *source*, not in `Endowment::file`: `wc` gets an endpoint
+/// carrying the bytes, narrower than a file capability. See
+/// notes/grant-expression/per-file-grants.md.
 #[test]
 fn naming_a_file_to_a_reader_is_the_operator_left_out() {
     let e = plan_line(b"wc report.txt", WITH_DIRECTORY).unwrap().0[0].unwrap();
@@ -117,8 +113,8 @@ fn naming_a_file_to_a_reader_is_the_operator_left_out() {
         e.file.is_none(),
         "this is a stream, not the per-file capability FileGrantDeclaration describes",
     );
-    // The same line against a shell that holds no directory is the milestone's headline
-    // refusal, and it is a statement about a capability table rather than about the calendar.
+    // The same line against a shell that holds no directory is refused: a statement about its
+    // capability table.
     assert_eq!(
         plan_line(b"wc report.txt", Holdings::default()),
         Err((0, Refusal::NoSuchCapability(CapabilityKind::File))),
@@ -284,7 +280,7 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
         .expect("date declares a second stream");
     assert_eq!(slot, DIAGNOSTICS_SLOT);
     // Four is the most ordinary grants any manifest here asks for (output, clock, input,
-    // budget), and fifteen is `abi::fault::FAULT_EP_SLOT`. This has to sit between them.
+    // budget); fifteen keeps it well under `abi::fault::FAULT_EP_SLOT`, the table's last slot.
     assert!(slot > 4 && slot < 15, "slot {slot} is not out of the way");
     // And every other program declares none, so nothing else needs the slot at all.
     for p in [
@@ -514,17 +510,15 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
         check_chain(true, &[Some(renderer_piped), Some(counter)]),
         Ok(()),
     );
-    // `wc page.md`: the barrier is the only stage, which is why this worked all along and why
-    // nobody noticed the rule until a second reader existed.
+    // `wc page.md`: the barrier is the only stage.
     assert_eq!(check_chain(true, &[Some(counter)]), Ok(()));
     // `something | doc`: a chain this shell does not feed is somebody else's rendezvous.
     assert_eq!(check_chain(false, &[Some(renderer)]), Ok(()));
     // `ls > out.txt`: the shell is the producer and no stage was spawned at all, so there is no
     // second process for it to deadlock against.
     assert_eq!(check_chain(true, &[None, None]), Ok(()));
-    // `mdr page.md > out.txt`: DECISIONS §106 only narrows the unredirected case
-    // (`Sink::Report`). A `>` still comes back through this shell (DECISIONS §55: the file
-    // behind a `>` is the shell itself), so this shape is refused exactly as it always was.
+    // `mdr page.md > out.txt`: DECISIONS §106 only narrows the unredirected case. A `>` still
+    // comes back through this shell (DECISIONS §55: the file behind a `>` is the shell itself).
     let to_file = Streams {
         sink: line::Sink::File(
             FileGrant {
