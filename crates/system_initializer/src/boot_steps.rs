@@ -3,7 +3,7 @@
 //! giveaway, with the password helpers the login stack calls. Each step is never inlined, so its
 //! temporaries stay out of `boot`'s frame, which is live for the whole boot because the spawn
 //! service runs inside it. The order of the steps is the capability table's budget; see
-//! notes/system-initializer.md.
+//! notes/system-initializer/the-boot-order.md.
 //!
 //! Name: provisional (long-function paydown lane, 2026-10-12 UTC).
 
@@ -151,7 +151,7 @@ pub(super) struct Kept {
 
 /// Borrow the archive the kernel mapped, give back the loader's scratch pages, and read the
 /// measurement table. Returns the archive and the table, which is empty, and so vouches for
-/// nothing, when its bytes are not UTF-8. See notes/system-initializer.md.
+/// nothing, when its bytes are not UTF-8. See notes/system-initializer/the-boot-order.md.
 #[inline(never)]
 pub(super) fn open_archive(
     g: &BootEndowment,
@@ -182,7 +182,8 @@ pub(super) fn open_archive(
 
 /// The measured pass: every boot component, the package catalog, the index sources, and the blobs
 /// `login` is handed, read and checked against `table` while the archive is still ours. An entry
-/// the table refuses reads as absent. What each absence costs is in notes/system-initializer.md.
+/// the table refuses reads as absent. What each absence costs is in
+/// notes/system-initializer/the-boot-order.md.
 #[inline(never)]
 pub(super) fn read_boot_programs(fs: &nifefs::Fs<'static>, table: &str) -> BootPrograms {
     // What `package install` checks a digest against; empty vouches for no package.
@@ -299,8 +300,8 @@ pub(super) fn measure_spawnable(fs: &nifefs::Fs<'static>, table: &str) -> Spawna
 
 /// Free the test roles' grants, then settle every kernel-granted device before the terminal
 /// plumbing's peak: the display verdict, the firmware screen, entropy, the network and the name
-/// resolver. Every device trio is released here, built or not. See notes/system-initializer.md,
-/// "The boot order is the capability table's budget".
+/// resolver. Every device trio is released here, built or not. See
+/// notes/system-initializer/the-boot-order.md, "The boot order is the capability table's budget".
 #[inline(never)]
 pub(super) fn start_device_services(
     g: &BootEndowment,
@@ -339,7 +340,7 @@ pub(super) fn start_device_services(
 /// CPU's seed instruction. Neither is a failure when absent. Returns whether entropy is ready,
 /// whether it came from the instruction, and the request endpoint, which is kept for the life of
 /// the boot: `credentialer` and every child declaring [`grant_plan::Manifest::entropy`] get a view
-/// of it. See notes/system-initializer.md, "The device services".
+/// of it. See notes/system-initializer/the-boot-order.md, "The device services".
 #[inline(never)]
 fn start_entropy(
     g: &BootEndowment,
@@ -444,7 +445,7 @@ fn start_virtio_entropy(
 /// Build `net_stack` on a granted virtio-net device, or take the stack the kernel built on an
 /// `e1000e`, and wait for its DHCP lease, which blocks the boot. `Some((endpoint, lease, name
 /// server))` when the boot has a network. The NIC trio is released on every path. See
-/// notes/system-initializer.md, "The device services".
+/// notes/system-initializer/the-boot-order.md, "The device services".
 #[inline(never)]
 fn start_network(
     g: &BootEndowment,
@@ -539,8 +540,8 @@ pub(super) fn start_terminal_stack(
 /// batching pair (a notification and a timer) beside it when `has_screen`. The UART is mapped on
 /// aarch64 and riscv64 and held as COM1's port range on x86. Slot 2 is the screen's endpoint and
 /// slots 3 and 4 the batching pair; the port range lands after them. The screen pair and the
-/// batching pair are deleted here once the console holds them. See notes/system-initializer.md,
-/// "The terminal stack and the shell".
+/// batching pair are deleted here once the console holds them. See
+/// notes/system-initializer/the-boot-order.md, "The terminal stack and the shell".
 #[inline(never)]
 fn start_console(
     g: &BootEndowment,
@@ -719,7 +720,7 @@ pub(super) fn refuse_unvouched(
 /// Build the keystroke sources: the input driver on the UART receive interrupt, and `WRITE` on
 /// `term_ep` sent to a USB keyboard driver when the kernel started one. Both feed one line
 /// discipline. Then the UART's device and interrupt are deleted, since no later child may get
-/// them. See notes/system-initializer.md, "The terminal stack and the shell".
+/// them. See notes/system-initializer/the-boot-order.md, "The terminal stack and the shell".
 #[inline(never)]
 pub(super) fn start_keystroke_sources(
     g: &BootEndowment,
@@ -790,7 +791,7 @@ pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
 /// the shell is told its slot. Clock and configuration are `READ` without `GRANT` (§43 (reading the
 /// clock is a page, setting it is a page you may write)), and the configuration page is placed at
 /// [`grant_plan::SHELL_CONFIGURATION_SLOT`] after the build. Returns the child and the clock's
-/// slot. See notes/system-initializer.md, "The terminal stack and the shell".
+/// slot. See notes/system-initializer/the-boot-order.md, "The terminal stack and the shell".
 #[inline(never)]
 pub(super) fn build_shell(
     w: &Wiring,
@@ -907,7 +908,7 @@ pub(super) fn finish_shell_endowment(
 /// contract (notes/sink-protocol.md), so a child can be given a place to put bytes without the
 /// terminal endpoint, which would also be the keyboard. After the shell, whose build is a peak,
 /// and before the giveaway, because it is a system component. Returns the sink endpoint, retyped
-/// whether or not an adapter serves it. See notes/system-initializer.md.
+/// whether or not an adapter serves it. See notes/system-initializer/the-boot-order.md.
 #[inline(never)]
 pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>>) -> u64 {
     let (ut, term_ep) = (w.ut, w.term.ep);
@@ -936,7 +937,7 @@ pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>
 /// a generated password, `credentialer`, the provisioned identity, and `login`. Returns whether
 /// login is ready, the password to announce, and the run-unvouched endpoint if `login` was given
 /// one. Skipped, not faulted, when anything is missing. The order is in
-/// notes/system-initializer.md, "The login stack".
+/// notes/system-initializer/the-boot-order.md, "The login stack".
 #[inline(never)]
 pub(super) fn start_login_stack(
     w: &Wiring,
@@ -1276,7 +1277,7 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
 /// bounded budgets, give the root away and prove it is gone, aloud. Returns the endpoint and the
 /// three budgets. The shell's placement is what makes the boot prompt the owner's console (§221
 /// (the boot prompt is the owner's console)), and deleting it makes the prompt refuse every
-/// unvouched image. See notes/system-initializer.md, "The giveaway".
+/// unvouched image. See notes/system-initializer/the-boot-order.md, "The giveaway".
 #[inline(never)]
 pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option<u64>) -> Kept {
     let (ut, term_ep) = (w.ut, w.term.ep);

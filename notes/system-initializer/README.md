@@ -8,6 +8,11 @@ leaves for them.
   request's protocol order, images, `graphical_terminal`, a normal job's grants and the tidy-up.
 - [`the-child-layouts.md`](the-child-layouts.md): the native and `std` layouts of a spawned child's
   capability table, with the right each slot carries.
+- [`the-boot-order.md`](the-boot-order.md): why the boot steps run in the order they do (the
+  capability table's peaks, the stack), what a refused component costs, and each step's wiring.
+- [`budgets.md`](budgets.md): each page budget the progenitor hands out, and how it was counted.
+- [`children.md`](children.md): caretakers, `graphical_terminal` sessions, `reclaim` and the spawn
+  endpoint's senders.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
