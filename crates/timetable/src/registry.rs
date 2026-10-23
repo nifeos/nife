@@ -91,9 +91,9 @@ const NO_GENERATION: u64 = u64::MAX;
 impl<'a> Registry<'a> {
     /// **Check every entry against its program's manifest and against what this scheduler holds.**
     ///
-    /// The security boundary milestone 129's block names: each endowment is planned here by
-    /// `grant_plan` from the program's own manifest, so whoever can write a line can make its
-    /// grants periodic and **nothing more**. It fires nothing and touches no clock;
+    /// The security boundary the block of milestone 129 (scheduled execution) names: each endowment
+    /// is planned here by `grant_plan` from the program's own manifest, so whoever can write a line
+    /// can make its grants periodic and **nothing more**. It fires nothing and touches no clock;
     /// [`arm`](Registry::arm) is separate, so a caller can print the plan and never arm it.
     ///
     /// # Examples
