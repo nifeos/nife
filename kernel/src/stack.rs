@@ -217,8 +217,11 @@ pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
 ///
 /// A conservative backtrace, because this kernel keeps no frame pointers: read the hits as
 /// candidates for `llvm-addr2line`. Asks the page tables before each page and reports unmapped
-/// bytes instead of reading them, since a freed slot is unmapped. Thread and interrupt stacks only.
-/// See notes/stack/reading-a-guard-page-report.md.
+/// bytes instead of reading them. See notes/stack/reading-a-guard-page-report.md.
+///
+/// # BUGS
+///
+/// - Thread and interrupt stacks only; the boot and secondary stacks get no scan.
 fn print_text_words(bottom: u64, top: u64) {
     const CAP: usize = 40;
     let text = crate::arch::mmu::text_start()..crate::arch::mmu::text_end();
