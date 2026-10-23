@@ -563,18 +563,42 @@ def check_container_runs(scratch, key):
     runs = [argv for argv in read_calls('FAKE_PODMAN_CALLS') if argv[:1] == ['run']]
     assert runs, 'no container ran'
     for argv in runs:
-        assert argv[:2] == ['run', '--rm'], argv
-        mounts = [argv[i + 1] for i, flag in enumerate(argv) if flag == '-v']
-        assert mounts == ['%s/nife:/pass/nife' % scratch, '%s/results:/pass/results' % scratch,
-                          'nife-pass-%s:/cache:z' % os.path.basename(scratch)], mounts
-        variables = [argv[i + 1] for i, flag in enumerate(argv) if flag == '-e']
-        assert variables == [key, 'IS_SANDBOX=1', 'DISABLE_AUTOUPDATER=1'], variables
-        assert argv[argv.index('-w') + 2] == 'sha256:fakeimage', 'not the digest the record holds'
-        options = argv[:argv.index('-w') + 2]
-        assert not FORBIDDEN_FLAGS.intersection(o.split('=')[0] for o in options), options
-        assert SECRET not in ' '.join(argv), 'the key is on the command line'
-        assert os.path.expanduser('~') not in ' '.join(options), 'the home directory is mounted'
+        check_container_argv(argv, scratch, key)
     return runs
+
+
+def check_container_argv(argv, scratch, key):
+    """One `podman run`: the three pinned mounts, the three pinned variables, and nothing of $HOME.
+
+    The scratch mounts are pinned exactly, so a scratch under $HOME (a TMPDIR there) is allowed;
+    every other option is searched for the home path, which catches a mount spelled any other way.
+    """
+    assert argv[:2] == ['run', '--rm'], argv
+    mounts = [i + 1 for i, flag in enumerate(argv) if flag == '-v']
+    assert [argv[i] for i in mounts] == [
+        '%s/nife:/pass/nife' % scratch, '%s/results:/pass/results' % scratch,
+        'nife-pass-%s:/cache:z' % os.path.basename(scratch)], [argv[i] for i in mounts]
+    variables = [argv[i + 1] for i, flag in enumerate(argv) if flag == '-e']
+    assert variables == [key, 'IS_SANDBOX=1', 'DISABLE_AUTOUPDATER=1'], variables
+    assert argv[argv.index('-w') + 2] == 'sha256:fakeimage', 'not the digest the record holds'
+    end = argv.index('-w') + 2
+    options = argv[:end]
+    assert not FORBIDDEN_FLAGS.intersection(o.split('=')[0] for o in options), options
+    assert SECRET not in ' '.join(argv), 'the key is on the command line'
+    home = os.path.expanduser('~')
+    others = [o for i, o in enumerate(options) if i not in mounts]
+    assert not any(home in o for o in others), 'the home directory is given to the container'
+
+
+def selftest_home_refused(argv, scratch, key):
+    """A run that also mounts $HOME fails the check, however the mount is spelled."""
+    home = os.path.expanduser('~')
+    for extra in (['-v', '%s:/home' % home], ['-v=%s:/home' % home]):
+        try:
+            check_container_argv(argv[:2] + extra + argv[2:], scratch, key)
+        except AssertionError:
+            continue
+        raise AssertionError('a run mounting $HOME with %r passed the check' % extra)
 
 
 def selftest_launch(tree, tmp, reviewer, served, commit):
@@ -670,7 +694,8 @@ def selftest():
         args = argparse.Namespace(complete=path, short_rows=rows)
         reset_calls()
         assert complete(args) == 0
-        check_container_runs(os.path.dirname(path), 'ANTHROPIC_API_KEY')
+        runs = check_container_runs(os.path.dirname(path), 'ANTHROPIC_API_KEY')
+        selftest_home_refused(runs[0], os.path.dirname(path), 'ANTHROPIC_API_KEY')
         assert any('--resume' in c and record['session_id'] in c for c in read_calls('FAKE_CALLS'))
         expect_refusal(lambda: complete(args), 'already had its completion round')
     print('launch-pass: selftest passed')
