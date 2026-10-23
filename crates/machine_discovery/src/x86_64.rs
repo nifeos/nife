@@ -1,63 +1,17 @@
-//! **What the machine told us on the way in, `x86_64`**: the PVH `hvm_start_info` structure, and
-//! what the CPU says about itself when asked.
+//! What the machine told us on the way in, `x86_64`: the PVH `hvm_start_info` structure, and what
+//! the CPU says about itself when asked.
 //!
-//! Milestone 161 (the `x86_64` kernel port). The handoff half is the third answer to the question
-//! the other two modules in this crate answer, and it is a *fourth* tier the crate's header does
-//! not list, because x86 has all three of the others and needs a different one for this fact.
-//!
-//! The [`Isa`] half at the bottom of this file is the ordinary third answer, added by
-//! milestone 524 (the three `x86_64` boot gates). It arrived late for a reason worth stating,
-//! because the reason was wrong: asking x86 what it is takes one instruction, so there is no
-//! format to parse, so it looked like there was nothing here for a host test to hold. **Reading the
-//! answer is trivial and deciding what it means is not**, because `CPUID` has no way to say "I do
-//! not implement that leaf" other than answering with a different leaf's bits, and the rule for
-//! telling those apart is the thing that can be wrong.
-//!
-//! The other two architectures learn where RAM is from the device tree, which the firmware hands
-//! them as a single pointer. x86 has no device tree. What it has is a boot protocol, and the
-//! protocol this kernel uses (PVH, see `kernel/src/arch/x86_64/boot.s` for why not multiboot) hands
-//! over one pointer to a structure carrying the memory map, the ACPI root pointer, the command line
-//! and any loaded modules. So the *shape* is identical to the device-tree handoff, one pointer to
-//! everything, and only the format differs.
-//!
-//! # Why the decoding is here and not in `arch/x86_64/`
-//!
-//! Because it is a parser, and a parser proved only inside a booting kernel is a parser proved by
-//! nothing that runs in milliseconds. Same reason `crates/device_tree_blob` exists rather than a
-//! device-tree reader living in `arch/aarch64/`: this file compiles for the host, its tests run
-//! without an emulator, and the kernel side is reduced to reading a pointer through the direct map.
-//!
+//! PVH hands over one pointer to a structure carrying the memory map, the ACPI root pointer, the
+//! command line and any loaded modules, the same shape as the device-tree handoff in another
+//! format. [`BootInfo::parse`] reads the memory-map fields only when the version says they are
+//! there (version 0 stops at offset 40). [`Isa`] decides what a `CPUID` answer means, which is the
+//! part that can be wrong. See `notes/machine-discovery.md` ("x86_64") and
+//! `notes/x86-port/acpi-and-pci.md`.
 
-//! # The structure, from Xen's `start_info.h`
-//!
-//! ```text
-//! struct hvm_start_info {          offset  size
-//!     uint32_t magic;                   0     4   0x336ec578, "xEn3" little-endian
-//!     uint32_t version;                 4     4
-//!     uint32_t flags;                   8     4
-//!     uint32_t nr_modules;             12     4
-//!     uint64_t modlist_paddr;          16     8
-//!     uint64_t cmdline_paddr;          24     8
-//!     uint64_t rsdp_paddr;             32     8   the ACPI root pointer
-//!     /* version >= 1 only: */
-//!     uint64_t memmap_paddr;           40     8
-//!     uint32_t memmap_entries;         48     4
-//!     uint32_t reserved;               52     4
-//! };
-//! ```
-//!
-//! Version 0 stops at offset 40, which is why [`BootInfo::parse`] reads the memory-map fields only
-//! when the version says they are there and reports zero entries otherwise. A caller that finds no
-//! entries has to fall back to the legacy E820 call, which this kernel cannot make (it needs real
-//! mode), so in practice a version-0 handoff means "this kernel cannot find its RAM here"; the
-//! caller decides what to do about it and this module only reports what is true.
-//!
 //! # BUGS
 //!
-//! - **Nothing checks that the map is sorted or non-overlapping.** The specification does not
-//!   promise either, and every implementation this has been run against produces a sorted map. A
-//!   frame allocator built over an unsorted or overlapping map would double-count, so the consumer
-//!   is where that check belongs.
+//! - Nothing checks that the memory map is sorted or non-overlapping. The specification promises
+//!   neither, and the frame allocator that consumes it is where that check belongs.
 
 /// The magic word at offset 0 of `hvm_start_info`, and the same value the boot CPU is handed in
 /// `eax`. "xEn3" read little-endian.
@@ -251,18 +205,10 @@ pub fn memory_entry(bytes: &[u8], index: usize) -> Option<MemoryEntry> {
 /// The size of one `hvm_modlist_entry`.
 pub const MODULE_ENTRY_LEN: usize = 32;
 
-/// **A module the loader put in RAM for the kernel**, which on this system means the initial
-/// ramdisk.
-///
-/// This is x86's answer to `/chosen/linux,initrd-start`, and the analogy is close enough to be
-/// worth stating: on both other architectures the loader writes the archive's bounds into the
-/// device tree and `memory::init` reads them out; here it writes them into a list of these, and
-/// [`BootInfo::modules`] says where the list is. The only real difference is that a module carries
-/// a command line of its own, which nothing here uses.
-///
-/// PVH allows several. QEMU's loader produces exactly one per `-initrd`, and one is what this
-/// kernel wants; a caller taking the first is not making an assumption so much as declining to
-/// invent a policy for a case the machine does not produce.
+/// A module the loader put in RAM for the kernel, which on this system means the initial ramdisk:
+/// x86's answer to `/chosen/linux,initrd-start`. Each carries a command line of its own, which
+/// nothing here uses. PVH allows several; QEMU writes one per `-initrd`, and the kernel takes the
+/// first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Module {
     /// Where the module's bytes are, physically.
@@ -310,13 +256,9 @@ fn u64(bytes: &[u8], at: usize) -> u64 {
     u64::from_le_bytes(w)
 }
 
-/// Machine-checked proofs over the PVH handoff and the `CPUID` decode. DECISIONS
-/// §14 (a verified-Rust capability microkernel) is why a parser here is proved rather than only
-/// tested, and milestone 319 (the crate that parses firmware) is where the first of these landed.
-///
-/// This is the first structure the x86 kernel reads through a pointer somebody else chose, and the
-/// module header already argues that a parser proved only inside a booting kernel is proved by
-/// nothing that runs in milliseconds. These are the leaves that argument earns.
+/// Machine-checked proofs over the PVH handoff and the `CPUID` decode (milestone 319 (the crate
+/// that parses firmware)): the first structure the x86 kernel reads through a pointer somebody
+/// else chose.
 ///
 /// Names: provisional (milestone 319).
 #[cfg(kani)]
@@ -326,17 +268,12 @@ mod verification;
 // What the CPU itself is, and whether it can run this kernel.
 // ---------------------------------------------------------------------------------------------
 
-/// **What the boot does about a feature the part does not report.**
+/// What the boot does about a feature the part does not report.
 ///
-/// The other two architectures' tables carry a `required: bool` here, and two values were enough
-/// for them. x86 needed a third, and the third one is the interesting one: it exists because a
-/// feature this kernel is genuinely built on can be one **a hypervisor declines to promise on the
-/// guest's behalf**, and there is no honest way to spell that as either a yes or a no.
-///
-/// Collapsing it into `required: false` would file a load-bearing assumption next to `RDSEED`, an
-/// optional convenience. Collapsing it into `required: true` would refuse every boot under QEMU's
-/// TCG, which never reports the invariant TSC. So the row says which machine it refuses, and the
-/// decision reads the hypervisor bit beside the feature bits.
+/// Three values where the other architectures need two, because a feature this kernel is built
+/// on can be one a hypervisor declines to promise on the guest's behalf: QEMU's TCG never reports
+/// the invariant TSC. So the row says which machine it refuses, and the decision reads the
+/// hypervisor bit beside the feature bits.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Gate {
     /// The boot refuses without it, on every machine. [`REQUIRED`] is exactly these rows.
@@ -620,20 +557,13 @@ impl Isa {
         }
     }
 
-    /// **Can this machine run us?** The only verb here a call site is meant to branch on, and it is
-    /// meant to branch exactly one way: say what is missing, and stop.
+    /// Can this machine run us? The only verb here a call site branches on: say what is missing, and
+    /// stop.
     ///
-    /// **Silence is absence on x86, unlike on RISC-V**, and the difference is worth stating because
-    /// the two look like the same check. A device tree that does not mention an extension is
-    /// firmware being terse about a machine that is nonetheless executing the kernel, so
-    /// [`riscv64::Isa::missing_requirements`](crate::riscv64::Isa::missing_requirements) treats it
-    /// as unknown. `CPUID` is the part describing itself, and a part that does not answer leaf
-    /// `0x80000001` at all is a part from before these features existed. There is nobody in
-    /// between to be terse.
-    ///
-    /// On bare metal the [`Gate::RefuseUnlessHypervisor`] rows count as required. Under a
-    /// hypervisor they move to [`unpromised`](Isa::unpromised) instead, so every absent row of
-    /// either gate lands in exactly one of the two.
+    /// Silence is absence on x86, unlike on RISC-V: `CPUID` is the part describing itself, and a
+    /// part that does not answer leaf `0x80000001` predates these features. On bare metal the
+    /// [`Gate::RefuseUnlessHypervisor`] rows count as required; under a hypervisor they move to
+    /// [`unpromised`](Isa::unpromised), so every absent row lands in exactly one of the two.
     pub fn missing_requirements(&self) -> Missing {
         let required = if self.under_hypervisor {
             REQUIRED

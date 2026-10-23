@@ -1,23 +1,12 @@
-//! **Which Arm interrupt controller is this, and does the hardware agree?** The GIC's device tree
-//! node, read by its binding, and a cross-check of what the silicon says about itself.
+//! Which Arm interrupt controller is this, and does the hardware agree? The GIC's device-tree node,
+//! read by its binding, and a cross-check of what the silicon says about itself (milestone 227 (a
+//! GICv3 driver)).
 //!
-//! Milestone 227 (design/roadmap/0227-gicv3-driver.md). Taking the first two `reg` blocks as
-//! "distributor, CPU interface" is true of a GICv2 and false of a GICv3, whose second block is the
-//! **redistributor** array: GICv2 CPU-interface writes land in a redistributor frame, do nothing,
-//! and the kernel boots and takes zero interrupts with nothing faulting.
-//!
-//! So this module answers two questions, and the second is the one that makes the first safe:
-//!
-//! 1. [`discover`]: **what the firmware claims.** The node is found by `compatible`, never by its
-//!    label, and the version is read from which binding matched. A node the old prefix would have
-//!    matched but whose binding this kernel does not drive is a [`Refusal`], not a guess.
-//! 2. [`Gic::confirm`]: **what the hardware says.** The architecture revision the controller
-//!    reports about itself, read by the kernel and handed over as a raw word (this crate reads no
-//!    registers, the same split as [`crate::aarch64::Isa::decode`]): `GICD_PIDR2.ArchRev` for a
-//!    GICv3, `GICC_IIDR.ArchitectureVersion` for a GICv2, the latter read from the very block the
-//!    tree calls the CPU interface. A tree that says one version while the hardware is another
-//!    fails here, loudly, at boot.
-//!
+//! [`discover`] reports what the firmware claims, found by `compatible` and never by label; a node
+//! whose binding this kernel does not drive is a [`Refusal`]. [`Gic::confirm`] checks it against
+//! the architecture revision the kernel read from the hardware (`GICD_PIDR2.ArchRev` for a GICv3,
+//! `GICC_IIDR.ArchitectureVersion` for a GICv2), so a tree that names the wrong version fails at
+//! boot. See `notes/machine-discovery.md` ("The GIC") and `notes/interrupts.md`.
 
 //! # Why `ID_AA64PFR0_EL1.GIC` is not one of the facts
 //!
@@ -30,31 +19,14 @@
 //! whether the registers exist to be touched at all.
 //!
 
-//! # The two bindings, as QEMU 11.1.1 writes them (`dumpdtb`, both versions of `virt`)
-//!
-//! | | `gic-version=2` | `gic-version=3` |
-//! |---|---|---|
-//! | `compatible` | `arm,cortex-a15-gic` | `arm,gic-v3` |
-//! | `reg[0]` | GICD, `0x8000000 + 0x10000` | GICD, `0x8000000 + 0x10000` |
-//! | `reg[1]` | GICC, `0x8010000 + 0x10000` | GICR, `0x80a0000 + 0xf60000` |
-//! | MSI child | `v2m@8020000` | `its@8080000` under TCG, **`v2m@8020000` under HVF** |
-//!
-//! The fixtures in `tests/fixtures/` are those dumps, round-tripped through `dtc`.
-//!
 //! # BUGS
 //!
-//! - **One redistributor region.** The binding allows several (`#redistributor-regions`), for
-//!   machines whose redistributor frames are not contiguous; QEMU `virt` needs a second only past
-//!   123 cores, and this kernel's `cpu::MAX_CPUS` is eight. A tree stating more than one is a
-//!   [`Refusal::SeveralRedistributorRegions`] rather than a partial answer.
-//! - **The GICv2 binding list is the three strings an aarch64 GICv2 actually carries**
-//!   (`arm,gic-400`, `arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's
-//!   `drivers/irqchip/irq-gic.c` `IRQCHIP_DECLARE` table at v6.16; the version-1 parts it also
-//!   lists exist only on 32-bit machines.
-//! - **The ITS is not read.** A GICv3's MSI translation service is a child node and a separate
-//!   device; milestone 317 records why interrupt remapping wants it and nothing drives it yet.
-//! - **This is aarch64's question.** On RISC-V a node named `interrupt-controller@...` is the PLIC
-//!   and a child of every `cpu@` node is a `riscv,cpu-intc`; the kernel asks this only on aarch64.
+//! - One redistributor region. A tree stating several is a
+//!   [`Refusal::SeveralRedistributorRegions`]; QEMU `virt` needs a second only past 123 cores.
+//! - The GICv2 list is the three strings an aarch64 GICv2 carries, checked against Linux's
+//!   `irq-gic.c` at v6.16; its version-1 parts exist only on 32-bit machines.
+//! - The ITS is not read; milestone 317 (the interrupt-remapping flags) records why remapping
+//!   wants it.
 //!
 //! Name: provisional (`gic` for the module, `Gic` for the record, `Refusal` and `Mismatch` for the
 //! two ways it says no), named for the controller whose binding it reads, the same pattern as

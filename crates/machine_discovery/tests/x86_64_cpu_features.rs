@@ -1,20 +1,10 @@
 //! Deciding what a `CPUID` answer means, on the host, including the answers that refuse the boot.
 //!
-//! **This file exists because the refusal path is unreachable on every machine this project can
-//! run on.** Every `x86_64` part made since about 2004 has NX and `syscall`, and every QEMU model
-//! reports both, so a boot gate written against those bits is a branch that has never been taken.
-//! A gate that has never refused is a gate nobody has tested. Here the feature words are an
-//! argument, so the part that does not exist can be handed to the decision and the refusal can be
-//! watched happening.
-//!
-//! (The refusal *has* since been watched happening on a real boot too, by hiding NX from the guest
-//! with `NIFE_CPU=max,nx=off`. That is the stronger test and it is recorded in
-//! `design/roadmap/0524-the-three-x86-64-boot-gates.md`. It is not a substitute for this file: QEMU
-//! can hide a feature, but only from a whole boot, so each case costs a minute of emulator and
-//! cannot assert on the decision in isolation.)
-//!
-//! There is no fixture file, for the same reason `aarch64_id_registers.rs` beside it has none: a
-//! `CPUID` leaf *is* the fixture, four 32-bit words.
+//! Every `x86_64` part this project runs on reports NX and `syscall`, so the refusal path is a
+//! branch no machine takes. Here the feature words are an argument, so the part that does not exist
+//! can be handed to the decision. A boot with `NIFE_CPU=max,nx=off` hides NX from a whole guest,
+//! but cannot assert on the decision in isolation. No fixture file: a `CPUID` leaf is the fixture,
+//! four 32-bit words.
 
 use machine_discovery::x86_64::*;
 

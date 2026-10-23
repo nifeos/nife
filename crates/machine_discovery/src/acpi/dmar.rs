@@ -1,10 +1,6 @@
 //! **The DMAR**: where VT-d is, which unit owns which PCI device, and which firmware memory each
 //! device still needs. AMD's counterpart is [`ivrs`].
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
@@ -20,10 +16,8 @@ pub struct Dmar {
     ///
     /// **A `u16` for a value no machine puts above 64**, because the byte the table holds ranges
     /// over `0..=255` and the width it names therefore ranges over `1..=256`. Narrower than the
-    /// field plus one is not a smaller type, it is an addition that can overflow, and firmware
-    /// writing `0xff` here panicked this parser on the boot path until milestone 319's
-    /// `verification::the_dmar_fixed_part_decodes_without_arithmetic_overflow` found it. Widening
-    /// makes the wrong state unrepresentable rather than guarded.
+    /// field plus one is not a smaller type, it is an addition that can overflow on a firmware
+    /// byte of `0xff`. Widening makes the wrong state unrepresentable rather than guarded.
     pub host_address_width: u16,
     /// Bit 0 is `INTR_REMAP`: the platform also supports interrupt remapping. Reported and not
     /// acted on, the same posture the MADT's `PCAT_COMPAT` bit takes; interrupt remapping is not
@@ -522,19 +516,14 @@ impl DmarUnits {
         &self.rmrrs[..self.rmrr_count]
     }
 
-    /// **Which unit owns PCI function `bus:dev.func` on `segment`**, by the VT-d specification's
-    /// rule (section 8.3): an explicit scope anywhere wins, then the segment's `INCLUDE_PCI_ALL`
-    /// unit. `Ok(None)` is a machine where nothing translates this device's DMA. `Err(())` is a
-    /// table this decoder recorded only part of, where the missing part could be the answer.
+    /// Which unit owns PCI function `bus:dev.func` on `segment`, by the VT-d specification's rule
+    /// (section 8.3): an explicit scope anywhere wins, then the segment's `INCLUDE_PCI_ALL` unit.
+    /// `Ok(None)` is a machine where nothing translates this device's DMA; `Err(())` is a table
+    /// recorded only in part, where the missing part could be the answer. Unlike Linux's table-order
+    /// walk, this agrees with the rule even when the catch-all is not listed last.
     ///
-    /// Linux's `dmar_find_matched_drhd_unit` walks the units in table order and takes the
-    /// catch-all the moment it reaches it; the specification requires the catch-all to be listed
-    /// last on its segment, so the two agree on every table that obeys it, and this one also
-    /// agrees on a table that does not.
-    ///
-    /// `bridge` returns a bridge's `(secondary, subordinate)` bus numbers, or `None` when
-    /// `bus:dev.func` is not a bridge. It is the live bus, which is the only thing that can turn a
-    /// firmware path into a bus number.
+    /// `bridge` returns a bridge's `(secondary, subordinate)` bus numbers from the live bus, or
+    /// `None` when `bus:dev.func` is not a bridge; only the live bus turns a path into a bus.
     #[allow(clippy::result_unit_err)]
     pub fn owner(
         &self,
@@ -610,10 +599,8 @@ impl DmarUnits {
     }
 }
 
-/// Machine-checked proofs over the DMAR (milestone 319).
-///
-/// Why these tables carry harnesses, and what is deliberately left unproved, is on
-/// `acpi::root`'s `verification`, beside the RSDP's.
+/// Machine-checked proofs over the DMAR (milestone 319). Why these tables carry harnesses is on
+/// `acpi::root`'s `verification`.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.
@@ -625,17 +612,10 @@ mod verification {
     /// harness here is linear in this, so it is the whole cost knob.
     const N: usize = 36;
 
-    /// **The DMAR walk terminates and never reads outside the body**, the same claim one table over.
-    ///
-    /// Not a restatement of the MADT walk's proof and not shareable with it: these are two separate
-    /// `Iterator` implementations over two different encodings (a one-byte length with a minimum of
-    /// two against a little-endian `u16` length with a minimum of four), written months apart. A
-    /// property that held for one and silently not the other is precisely the parity failure
-    /// AGENTS.md rule 5 names, and the only way to know is to state it twice.
-    ///
-    /// Could plausibly have been false: `len < 2` copied across from the MADT, which is the minimum
-    /// for the *other* encoding and lets a four-byte header with a claimed length of two re-read its
-    /// own first half forever.
+    /// **The DMAR walk terminates and never reads outside the body**, the MADT walk's claim one
+    /// table over. Stated twice because the two walks are separate encodings: a one-byte length of
+    /// at least two against a `u16` length of at least four. `len < 2` copied from the MADT lets a
+    /// four-byte header claiming two re-read its own first half forever.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.dmar.verification.the_dmar_walk_terminates_and_stays_inside_the_body.patch`
     #[kani::proof]
     #[kani::unwind(12)]
@@ -653,19 +633,10 @@ mod verification {
         assert!(seen <= N / 4);
     }
 
-    /// **The DMAR's fixed part decodes without arithmetic overflow.**
-    ///
-    /// **This harness was false when it was written, and the defect was on the boot path.**
-    /// `host_address_width` was `body[0] + 1` into a `u8`, so a DMAR whose `HostAddressWidth` byte
-    /// is `0xff` panicked `read_dmar` in `kernel/src/arch/x86_64/machine.rs`, which calls
-    /// [`parse_dmar`] directly on firmware bytes. It is the same defect `device_tree_blob::be32`'s
-    /// unchecked `at + 4` was, one table over: a field widened by one with no room for the
-    /// widening. Fixed by making [`Dmar::host_address_width`] a `u16`, so the addition cannot
-    /// overflow at all rather than being guarded against.
-    ///
-    /// Could plausibly have been false, and was: every DMAR this parser had ever seen came from
-    /// QEMU's `build_dmar_q35`, which writes 38. Nothing in the encoding stops a vendor writing
-    /// anything else, and xenon is the reminder that vendors do.
+    /// **The DMAR's fixed part decodes without arithmetic overflow**, for every `HostAddressWidth`
+    /// byte. `kernel/src/arch/x86_64/machine.rs` calls [`parse_dmar`] directly on firmware bytes,
+    /// and QEMU always writes 38, so no table a test copies reaches the edge. Milestone 319 records
+    /// the defect this found.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.dmar.verification.the_dmar_fixed_part_decodes_without_arithmetic_overflow.patch`
     #[kani::proof]
     fn the_dmar_fixed_part_decodes_without_arithmetic_overflow() {

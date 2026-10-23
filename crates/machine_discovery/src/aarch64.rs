@@ -1,51 +1,16 @@
-//! **What aarch64 machine is this?** Decoded from the ID registers, because the CPU says so itself.
+//! What aarch64 machine is this? Decoded from the ID registers, because the CPU says so itself.
 //!
-//! This half of the crate is deliberately much shorter than [`riscv64`](crate::riscv64), and the
-//! asymmetry is the finding rather than a gap. ARM never removed the CPU's self-description:
-//! `MIDR_EL1` names the part, and the `ID_AA64*` space is architected, mandatory, and readable at
-//! EL1, so the answer comes from the silicon in front of you with no firmware in the path. There is
-//! nothing here to parse and nothing to disbelieve.
-//!
-//! So the aarch64 record is a **decoder**, not a parser: the kernel reads three registers and hands
-//! the raw words here, and everything below is shifts, masks and the ARM ARM's encodings.
-//!
-//! # Except for one thing the silicon cannot tell you, which is [`Psci`]
-//!
-//! Milestone 100 added the one aarch64 fact that is *not* in an ID register, and could not be:
-//! whether a firmware call leaves the kernel at `hvc` or at `smc` depends on what is running above
-//! EL1, which is a property of the boot arrangement rather than of the part. So [`Psci`] is a
-//! parser, like the whole RISC-V half, and it reads `/psci`.
-//!
-//! # What the kernel already did, and what changed
-//!
-//! One field was read before this milestone: `TCR_EL1.IPS` is written from
-//! `ID_AA64MMFR0_EL1.PARange`, with a comment saying "read it from the hardware rather than
-//! guessing; a value larger than the implementation supports is UNPREDICTABLE". That was the whole
-//! of ISA discovery on this ISA, and it was right. This module gives it a record to live in and
-//! three neighbours that were being assumed:
-//!
-//! * the **4 KiB granule**, which the page tables are built on and which `TGran4` may refuse,
-//! * the **ASID width**, which `crates/address_space_identifier` is built on and which RISC-V had to measure,
-//! * the **VA range**, the direct twin of RISC-V's `mmu-type`.
-//!
+//! The kernel reads the registers and hands the raw words here, so this half is a decoder, not a
+//! parser. The one exception is [`Psci`], which parses `/psci`: the firmware conduit depends on
+//! what runs above EL1, which no ID register can say. The three granule fields spend their
+//! encodings three different ways, so each is decoded on its own line. See
+//! `notes/isa-discovery.md` and `notes/machine-discovery.md` ("aarch64").
 
 //! # BUGS
 //!
-//! - **`VARange` reporting 52 does not mean the kernel could use 52.** ARMv8.2-LVA needs a 64 KiB
-//!   granule and ARMv8.7-LPA2 is a separate feature bit this record does not read. The field is
-//!   reported because it is what the machine says; acting on it is a milestone, not a branch.
-//! - **`TGran4` has two "yes" encodings, and until 2026-09-19 this decoder knew one.** Arm's
-//!   `ID_AA64MMFR0_EL1` page defines `0b0001` as "4KB granule supports 52-bit input addresses and
-//!   can describe 52-bit output addresses", present with `FEAT_LPA2`, so it is a *stronger* yes than
-//!   `0b0000`. Reading it as reserved refused the boot on QEMU's `-cpu max` and on any real part
-//!   with `FEAT_LPA2` (found by milestone 74's aarch64 lane). Fixed, and kept here as a record
-//!   because the three granule fields spend their encodings three different ways (`TGran64` has
-//!   no LPA2 value at all), so a reader tidying the three lines below into one would bring this
-//!   bug or the next one back.
-//! - **`TGran16`'s encoding is inverted relative to its siblings.** `TGran4` and `TGran64` spell
-//!   "supported" as `0b0000` and "not supported" as `0b1111`; `TGran16` spells them `0b0001` and
-//!   `0b0000`. A decoder that treats the three uniformly reports 16 KiB backwards on every part in
-//!   existence, which is why each has its own line below.
+//! - `VARange` reporting 52 does not mean the kernel could use 52. ARMv8.2-LVA needs a 64 KiB
+//!   granule and ARMv8.7-LPA2 is a feature bit this record does not read; the field is reported
+//!   because it is what the machine says.
 
 /// Which translation granules the machine supports at stage 1.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -136,11 +101,10 @@ impl Isa {
                 // 0b0000 supported, 0b0001 supported with 52-bit input and output addresses
                 // (FEAT_LPA2), 0b1111 not. The LPA2 value is a stronger yes, not a different
                 // answer: this kernel's 4 KiB, 48-bit tables work on it unchanged. Any other value
-                // is reserved and read as absent. Until 2026-09-19 this read `== 0b0000` and
-                // refused every FEAT_LPA2 part, QEMU's `-cpu max` included.
+                // is reserved and read as absent.
                 k4: matches!(f(mmfr0_el1, 28), 0b0000 | 0b0001),
-                // 0b0001 supported, 0b0010 supported with FEAT_LPA2, 0b0000 not. The inverted one;
-                // see the module BUGS.
+                // 0b0001 supported, 0b0010 supported with FEAT_LPA2, 0b0000 not: inverted against
+                // its two siblings.
                 k16: matches!(f(mmfr0_el1, 20), 0b0001 | 0b0010),
                 // 0b0000 supported, 0b1111 not. No LPA2 value: 64 KiB reaches 52 bits through
                 // FEAT_LVA and FEAT_LPA, which this field does not report.
@@ -205,18 +169,11 @@ pub struct Implementer {
     pub name: &'static str,
 }
 
-/// **The vendor codes ARM has published**, from the registry in the ARM ARM's `MIDR_EL1` section.
+/// The vendor codes ARM has published, from the registry in the ARM ARM's `MIDR_EL1` section.
 ///
-/// A table rather than a `match`, for the same reason [`crate::riscv64::TABLE`] is one: a duplicated
-/// key in a `match` is legal, silent, and makes the second arm unreachable forever, while a
-/// duplicate here is the compile error asserted below. The lookup is a loop over data, so a test can
-/// walk the rows instead of restating them, which is the difference between checking a table and
-/// copying it into a test file.
-///
-/// Most of these are the ASCII of the vendor's initial (`0x41` is `A` for Arm) and enough are not
-/// (`0x50`, `0x56`, `0xc0`) that deriving them would be a rule with more exceptions than cases.
-/// Contrast [`crate::riscv64::EID_TIME`], where deriving from the tag *is* honest and removes the
-/// only thing anyone can get wrong.
+/// A table rather than a `match`, so a duplicated key is the compile error asserted below rather
+/// than a silently unreachable arm, and a test can walk the rows. The codes are not derivable from
+/// the vendors' initials (`0x50`, `0x56`, `0xc0` are not), so they are written out.
 pub const IMPLEMENTERS: [Implementer; 14] = [
     Implementer {
         code: 0x41,
@@ -364,16 +321,10 @@ pub struct Psci {
 }
 
 impl Psci {
-    /// **Read `/psci`.**
+    /// Read `/psci`, found by name at the root as the binding places it.
     ///
-    /// `Ok(None)` when the tree has no PSCI node. That is a legitimate machine (spin-table bring-up,
-    /// or a uniprocessor), and one on which starting a second core is not merely unimplemented but
-    /// impossible. It is a different answer from a node this decoder could not make sense of, which
-    /// comes back as `Ok(Some(..))` with `None` fields, and a caller wants to say different things
-    /// about the two.
-    ///
-    /// The node is found by name. The binding places it at the root and names it `psci`, and unlike
-    /// a device there is no `reg` and nothing to match `compatible` against until you have found it.
+    /// Returns `Ok(None)` when the tree has no PSCI node (spin-table bring-up, or a uniprocessor),
+    /// and `Ok(Some(..))` with `None` fields for a node this decoder could not make sense of.
     ///
     /// # Examples
     ///

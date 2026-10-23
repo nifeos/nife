@@ -21,12 +21,12 @@ Expected to fail: the bounds check inside `encode`'s `put` closure, on a base ne
 diff --git a/crates/machine_discovery/src/framebuffer.rs b/crates/machine_discovery/src/framebuffer.rs
 --- a/crates/machine_discovery/src/framebuffer.rs
 +++ b/crates/machine_discovery/src/framebuffer.rs
-@@ -154,7 +154,7 @@ impl Framebuffer {
-     /// One byte of headroom is not slack, it is a trap for whoever adds a field, and a wire format
-     /// that overflows its own buffer fails at the boundary between two programs where it is hardest
-     /// to see. Raised in the same change as the rename rather than left for the next person.
+@@ -84,7 +84,7 @@ impl Framebuffer {
+     /// The worst case is 63 bytes: `screen=`, `0x` and sixteen hex digits, three ten-digit decimals
+     /// with their commas, and a four-character order. Rounded up with room to spare, because a
+     /// token that overflows its own buffer fails between two programs, where it is hardest to see.
 -    pub const MAX_LEN: usize = 72;
 +    pub const MAX_LEN: usize = 62;
  
-     /// How many bytes one row of pixels occupies, and the last byte the console may touch.
+     /// How many bytes the console may touch: `stride * height`.
      ///

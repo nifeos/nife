@@ -1,10 +1,6 @@
 //! **What every table shares**: the System Description Table header, the checksum, and
 //! [`AcpiError`], the one error every parser here returns.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
@@ -82,10 +78,8 @@ pub fn parse_sdt_header(bytes: &[u8]) -> Result<SdtHeader, AcpiError> {
     })
 }
 
-/// Machine-checked proofs over the table header (milestone 319).
-///
-/// Why these tables carry harnesses, and what is deliberately left unproved, is on
-/// `acpi::root`'s `verification`, beside the RSDP's.
+/// Machine-checked proofs over the table header (milestone 319). Why these tables carry harnesses is on
+/// `acpi::root`'s `verification`.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.
