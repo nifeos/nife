@@ -9,7 +9,7 @@
 //! # BUGS
 //!
 //! - Nothing proves an architecture ran the right set; review guards the list.
-//! - The checks cost time on every boot, about a quarter of a second plus up to three process spawns.
+//! - The checks cost time on every boot: about a quarter of a second, and up to three spawns.
 //! - [`blockdev`]'s driver is left running, holding disk 0.
 //! - [`budget`]'s helper thread can be left parked if the process never reports.
 //! - [`budget`] brackets the machine's used-frame count, sound only while nothing else allocates.
@@ -47,7 +47,8 @@ const CHECKS: usize = boot_ladder::SELF_TEST_CHECKS.len();
 /// --inject` builds with this on and asserts the gate goes red.
 ///
 /// It also stops the counter the checks read (this module's `timer::now`), so every injected run
-/// proves the waits are bounded. A `cfg!` rather than `#[cfg]`, so both arms compile on every build.
+/// proves the waits are bounded. A `cfg!` rather than `#[cfg]`, so both arms compile on every
+/// build.
 ///
 /// Name: provisional (milestone 268 (every architecture boots the same way)).
 const INJECT: bool = cfg!(feature = "self_test_injection");
@@ -720,8 +721,8 @@ fn budget(tally: &mut Tally) {
 ///
 /// The driver gets the registers, a DMA page and the interrupt by grant, parses nifefs itself and
 /// reports `motd`'s first eight bytes; the kernel issues no virtio command. Disk 0, MMIO first,
-/// else the PCIe virtio-blk. Absent on a machine with no virtio disk, which is every boot
-/// `boot-check` makes and every board.
+/// else the PCIe virtio-blk; the file service, installer and surveyor use disks of their own.
+/// Absent on a machine with no virtio disk, which is every boot `boot-check` makes and every board.
 fn blockdev(tally: &mut Tally) {
     use crate::user;
 

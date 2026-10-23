@@ -41,10 +41,11 @@ fn the_run_end_is_exact_and_refuses_exactly_what_does_not_fit() {
 /// **Checking the two ends of a run is enough to check every page in it.**
 ///
 /// Both mapping paths (`page_frame_map` and `MAP_INTO`) guard `va` and `run_end_va(va, count)`,
-/// then walk the pages between with no check of their own. That is sound only because the user
-/// half is a contiguous prefix of the address space. `k` is the solver's, so every page of every
-/// run is covered without an unwind bound. The guard below models the two call sites, and
-/// nothing keeps it faithful to them; see notes/syscall-boundary.md.
+/// then walk the pages between unchecked, sound because the user half is a contiguous prefix. `k`
+/// is the solver's, so every page of every run is covered without an unwind bound.
+///
+/// # BUGS
+/// - The guard below models the two call sites, and it can go stale: nothing keeps it faithful.
 ///
 /// Falsification: replayable `kernel/falsifications/syscall.proofs.every_page_between_the_checked_ends_is_itself_a_user_page.patch`
 #[kani::proof]

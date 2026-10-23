@@ -68,8 +68,8 @@ pub(super) fn thread_control_block_invoke(
 
 /// `ThreadControlBlock::CONFIGURE`: give the embryo `tid` its `entry`, `stack`, thread pointer and
 /// address space. `aspace_slot` names an `AddressSpace` with `WRITE`, which is consumed (the space
-/// keeps its name), or a `Process` with `BIND`, which the thread joins and which stays. Returns
-/// the thread's current-CPU page.
+/// keeps its name), or a `Process` with `BIND`, which the thread joins and which stays (calef's
+/// ruling (b) on #1892). Returns the thread's current-CPU page (question 2 on #1892).
 #[inline(never)]
 fn thread_control_block_configure(
     tid: crate::thread::ThreadId,

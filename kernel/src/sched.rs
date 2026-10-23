@@ -21,10 +21,6 @@ use crate::thread::{
 // Each child is part of this module split across files (§271 (the scheduler file splits into
 // submodules of `sched`)), not a client of it: it takes `use super::*` to reach `IPC_TABLES` and
 // the thread table, and is re-exported whole, so every path outside `sched` is unchanged.
-//
-// BUGS: `script/fastpath-footprint` roots its closures at `schedule` and `finish_switch` by mangled
-// path, `kernel5sched` with an optional `rendezvous` or `capabilities` segment. Both now live in
-// `switch`, a segment that pattern does not name, so they may have fallen out of its roots.
 mod capabilities;
 mod configure;
 mod futex;
@@ -92,6 +88,10 @@ mod trace;
 /// re-reads the thread table and the rendezvous registry on each tick and prints every byte that
 /// changed. It shows rather than judges. Unarmed it costs one relaxed load per tick; compiled out
 /// of `--features bench` builds. See notes/scheduler-instruments.md.
+///
+/// # BUGS
+///
+/// - Nothing calls it, so nothing outside its own kernel test exercises arming it.
 #[cfg(not(feature = "bench"))]
 // An exception, marked as AGENTS.md asks: nothing arms this today, and it is kept because it is
 // how a board hang gets diagnosed. notes/scheduler-instruments.md has the case for keeping it.

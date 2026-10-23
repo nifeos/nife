@@ -100,7 +100,7 @@ IPC in it.
 `STAT.R256` says whether the TRNG gives 256-bit answers. In 128-bit mode only `RAND0..RAND3` carry
 one, so a driver assembling all eight words serves 16 real bytes in 32. The driver sets
 `MODE.R256` because the width a JH7110 resets to is a build-time parameter of the silicon, and the
-read-back says whether it took. An all-zero `STAT` is a register window that answered nothing,
+read-back says whether it took; nothing has ever read it on hardware. An all-zero `STAT` is a register window that answered nothing,
 which the `clock` line explains.
 
 ## BUGS

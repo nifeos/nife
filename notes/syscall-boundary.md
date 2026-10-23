@@ -44,11 +44,15 @@ every method body is a measurement decision, and there are three placements.
   can move 12% into it) records the pattern. The attribute also stands on its own: the dispatcher is
   a large match run once per syscall, not worth copying into a handler that also serves faults.
 - The round trip's arms are `#[inline(always)]`: `SEND`, `RECEIVE`, `SEND_CAP`, `RECEIVE_CAP`,
-  `CALL` and `SURVEY` in `rendezvous.rs`, and the `MemoryRegion` decoder arm. The release profile
+  `CALL` and `SURVEY` in `rendezvous.rs`. The release profile
   builds the kernel in several codegen units without LTO. A child module can land in another unit
   than its parent, where a plain private function is not inlined at all. The round trip would pay a
   call, and its bytes would leave `syscall_entry` under a symbol the gate does not count. `SURVEY`
   is not on the round trip, and stays inline because it was inline before the arms moved out.
+- The `MemoryRegion` decoder arm is `#[inline(always)]` too, for a different reason. It is decoder
+  code, and its rights checks are counted inside `syscall_entry`. Out of line, it would leave the
+  measured set and read as a shrink nothing on the syscall path earned. Its method bodies are out
+  of line like the rest.
 - Every other method is `#[inline(never)]`, out of line, the rule of milestone 156
   (`syscall_entry`'s measured size is every method combined; extract the rest and ratchet both
   ways). None of them is a step of the round trip, so each costs the entry one call. `PortRange`'s
