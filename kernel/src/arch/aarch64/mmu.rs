@@ -537,7 +537,7 @@ pub fn deactivate_user() {
 
 /// **Could EL0 read this address?** Asked of the silicon with `AT S1E0R`, not of the kernel's own
 /// permission model. Only the system tests call it: no syscall dereferences a user pointer. See
-/// notes/mmu.md, "Asking the silicon whether EL0 could read an address".
+/// notes/mmu.md, "What `kernel/src/arch/aarch64/mmu.rs` holds to".
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_can_read(va: u64) -> bool {
     // SAFETY: address translation has no side effects beyond PAR_EL1.

@@ -43,9 +43,9 @@ rather than every tick after it. When the next deadline is already past, the han
 missed tick and re-anchors to now instead of firing in a loop. The measurement that chose `CVAL`
 over `TVAL` is in interrupts.md, "The bug we shipped and then measured".
 
-The tick is per core, a banked PPI, and so is its count. A test that reads the count either side
-of a wait names the core (`ticks_on`), because a kernel thread can be stolen by an idle core at any
-preemption point (§28 (SMP placement)) and two reads on two cores compare unrelated counters.
+The tick is per core, a banked PPI, and so is its count. A kernel thread can be stolen by an idle
+core at any preemption point (§28 (SMP placement)), and two reads on two cores compare unrelated
+counters. So a test that reads the count either side of a wait names the core (`ticks_on`).
 
 ### The counter's rate is checked against the device tree
 
@@ -211,7 +211,3 @@ page tables use, the ASID width `crates/address_space_identifier` relies on, and
 
 One aarch64 fact is in no ID register and could not be: the PSCI conduit, which depends on what
 runs above the kernel. That is the one thing `isa::init` reads from the device tree.
-
----
-
-*Name: provisional. Named for its siblings `riscv-port.md` and `x86-port.md`.*

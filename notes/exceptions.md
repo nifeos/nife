@@ -246,17 +246,17 @@ it.
 `ESR_EL1`'s class. Slots 8 to 11 are "Lower EL, AArch64": the same class is a kernel bug that halts
 the machine at slot 4 and a user bug that kills one thread at slot 8.
 
-- **`brk` from EL1** is stepped over by advancing `ELR_EL1` by 4. From EL0 it is a fault: stepping
+- `brk` from EL1 is stepped over by advancing `ELR_EL1` by 4. From EL0 it is a fault: stepping
   over a user's `brk` would let a program loop on one and burn kernel time forever.
-- **The FP first-use trap** (`CPACR_EL1.FPEN` at `0b00`) opens the unit and returns without
+- The FP first-use trap (`CPACR_EL1.FPEN` at `0b00`) opens the unit and returns without
   advancing `ELR_EL1`, so the instruction re-executes with the unit open. It serves EL1 as well as
   EL0, for the reason in [aarch64-port.md](aarch64-port.md), "Floating point and SIMD". When there
   is no thread to record against, the arm falls through, because returning would retake the trap
   forever.
-- **`svc` from EL0** is the syscall. The dispatcher writes its result into `frame.x[0]`, and
+- `svc` from EL0 is the syscall. The dispatcher writes its result into `frame.x[0]`, and
   `RESTORE_CONTEXT` puts it in the register the program is waiting on: writing the trap frame is
   writing the user's registers.
-- **Anything else from EL0** kills the thread and leaves the kernel running. Anything else from
+- Anything else from EL0 kills the thread and leaves the kernel running. Anything else from
   EL1 is `fatal`, which prints `FAR_EL1` only for the classes where it holds an address.
 
 ### A user fault is published, then counted
