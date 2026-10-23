@@ -23,20 +23,15 @@ use super::*;
 pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<ThreadId> {
     let state = sched.threads.get(current).map(|t| t.handshake.state);
 
-    // **Only a still-Running thread goes back on the ready queue.** A thread that reached
-    // here after marking itself `Blocked` (it is waiting for IPC), `Finished`, or `Dead` (a
-    // supervised corpse) must not be rescheduled, and this one line is what makes blocking work:
-    // `schedule()` can be called from the timer IRQ *while* a thread is mid-way through blocking
-    // itself, and it must not undo that by helpfully requeueing it.
+    // Only a `Running` thread is requeued: the timer can run `schedule` while a thread is
+    // blocking itself.
     let runnable = state == Some(State::Running);
 
     let idle_tid = cpu::current().idle.load(Ordering::Relaxed);
 
-    // The popped token goes home to its thread, which holds it while it runs, and the id is what
-    // everything below uses. **A popped thread carrying a suspension order is parked rather than
-    // run** (DECISIONS §300 (the paused state, a TCB verb, silent)) and the pick goes on: this is
-    // the one place a queued thread reaches a CPU, whichever wake or placement queued it, so an
-    // order given while it waited is kept here.
+    // A popped thread carrying a suspension order (DECISIONS §300 (the paused state, a TCB verb,
+    // silent)) is parked and the pick goes on: the pop is the one place a queued thread reaches
+    // a CPU.
     let popped = match cpu::current().with_runq(|q| q.pop_front()) {
         None => None,
         Some(token) => match hold_token_reading_order(token) {
@@ -48,17 +43,12 @@ pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<Th
         Some(id) => id,
         None => {
             if runnable {
-                // Keep it. A thread yielding into an empty run queue simply carries on. (The
-                // idle thread lands here too: nothing to do, so it wfi's again.) No switch.
+                // A thread yielding into an empty queue, the idle thread included, carries on.
                 return None;
             }
-            // Current is Blocked or Finished and the ready queue is empty. This is NOT a
-            // deadlock: a thread blocked on a device interrupt is waiting for an event that
-            // will arrive. Fall back to the idle thread, which wfi's until it does.
+            // Nothing to run and current cannot: the idle thread waits for the interrupt.
             if idle_tid == u64::MAX || current == idle_tid {
-                // No idle thread yet (before init finished), or the idle thread itself is
-                // somehow not runnable, which cannot happen. Either way there is genuinely
-                // nothing to run.
+                // No idle thread yet, or the idle thread itself cannot run.
                 match state {
                     Some(State::Finished) => {
                         panic!("the last thread exited; nothing left to run")
@@ -77,14 +67,11 @@ pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<Th
         return None;
     }
 
-    // Requeue the outgoing thread if it can still run, but never the idle thread, which lives
-    // outside the ready queue. A killed thread is already `Finished` (`schedule` handled it), so it
-    // is not runnable here and is reaped by `finish_switch` after the switch, no queue surgery.
+    // Never requeue the idle thread, which lives outside the ready queue. A killed thread is
+    // already `Finished`, so `finish_switch` reaps it.
     if runnable && current != idle_tid {
-        // `preempt` marks Ready and deliberately leaves `on_cpu` set: the thread is in a
-        // queue AND still standing on this core until finish_switch runs, which is the one
-        // legal overlap and the reason only this core may pop its own queue (the extracted
-        // protocol's steal-vs-switch-out rule; see crates/wake_handshake).
+        // `preempt` leaves `on_cpu` set until `finish_switch`, so only this core may pop its own
+        // queue (`crates/thread_wake_handshake`'s steal-versus-switch-out rule).
         let t = sched.threads.get_mut(current).unwrap();
         t.handshake.preempt();
         // The token a running thread holds on its own TCB. Round robin: the back.

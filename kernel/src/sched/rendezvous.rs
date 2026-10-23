@@ -70,7 +70,8 @@ pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
 /// freed, so a test endpoint made here would cost the boot a page for good. A test carves from a
 /// region it owns with [`create_rendezvous_from`]. See notes/scheduler/rendezvous.md.
 ///
-/// Context: takes `IPC_TABLES`, never across the carve.
+/// Context: takes `IPC_TABLES` (a new chunk is carved under it) and releases it before
+/// `try_create_rendezvous_from` takes it again.
 pub(crate) fn create_rendezvous() -> RendezvousId {
     loop {
         // Take, or lazily carve, the current chunk.
@@ -689,7 +690,8 @@ pub fn ipc_call(ep: RendezvousId, msg: [u64; 2]) -> [u64; 3] {
 /// [`ipc_receive_cap`] in word 3; a plain [`ipc_call`] passes 0. A separate name, so the many
 /// `ipc_call(ep, msg)` sites and the fastpath's shape are unchanged.
 ///
-/// Context: takes `IPC_TABLES`; blocks.
+/// Context: takes `IPC_TABLES`, and the server's capability-table lock beneath it. Blocks until
+/// replied, unless the call is refused or aborted.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
     target_os = "none",
@@ -886,7 +888,7 @@ pub(super) fn delete_reply_caps_naming(sched: &mut IpcTables, caller: ThreadId) 
 /// returns whether this did anything. `#[cold]` because every caller is a teardown, one of them
 /// the top of [`schedule`]. See notes/scheduler/rendezvous.md and notes/blocked-thread-teardown.md.
 ///
-/// Context: caller holds `IPC_TABLES`.
+/// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_reply_caller(sched: &mut IpcTables, caller: ThreadId) -> bool {
@@ -912,7 +914,7 @@ pub(super) fn strand_reply_caller(sched: &mut IpcTables, caller: ThreadId) -> bo
 /// Reads the table once into an array of [`crate::cap::CAPABILITY_TABLE_SLOTS`] victims in this
 /// `#[inline(never)]` frame, then acts. See notes/scheduler/rendezvous.md.
 ///
-/// Context: caller holds `IPC_TABLES`; takes `tid`'s capability-table lock beneath it.
+/// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
@@ -950,7 +952,7 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
 /// would grow the deepest frame in the kernel. The scan ends on the abort flag, not on `wait_on`,
 /// which a wake deferred behind `on_cpu` leaves in place. See notes/scheduler/rendezvous.md.
 ///
-/// Context: caller holds `IPC_TABLES`.
+/// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]
 #[inline(never)]
 pub(super) fn strand_callers_awaiting(sched: &mut IpcTables, ep: RendezvousId) {

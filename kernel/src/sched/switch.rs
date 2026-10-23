@@ -12,7 +12,7 @@ use super::*;
 /// writes one. Panics if a fresh table refuses an insert or the idle thread cannot be built. See
 /// notes/scheduler/switch.md.
 ///
-/// Context: takes `IPC_TABLES` twice, never across the spawn.
+/// Context: takes `IPC_TABLES` twice. The idle thread is built in place under the second hold.
 pub fn init() {
     // The FP unit is shut before any thread exists: a core that starts with it open never takes
     // the first-use trap that marks a thread `live`. Here, not in `arch::init`, because RISC-V's
@@ -309,7 +309,8 @@ pub fn schedule() {
 /// thread never reaches `depart`, so this is the one place its callers are freed before its
 /// capability table goes. See notes/scheduler/switch.md.
 ///
-/// Context: caller holds `IPC_TABLES`; `current` is killed, and running or parked.
+/// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it. `current` is
+/// killed, and running or parked.
 #[cold]
 #[inline(never)]
 pub(super) fn finish_killed_current(sched: &mut IpcTables, current: ThreadId) {
@@ -373,11 +374,12 @@ pub(super) fn heal_self_pop(sched: &mut IpcTables, current: ThreadId) {
 /// deferred wake, or clear its `on_cpu`.
 ///
 /// The safe half of the two-part reaper, run on the incoming thread once the outgoing one is off
-/// its stack. Called from `schedule()` and from `thread_entry`, the two ways a thread resumes,
-/// both on the core that recorded `switched_from`. See DECISIONS §11 (per-CPU run queues) and
-/// notes/scheduler/switch.md.
+/// its stack. Called from `schedule()` and from the thread entry points (`thread_entry`,
+/// `user_thread_entry`), the two ways a thread resumes, on the core that recorded
+/// `switched_from`. See DECISIONS §11 (per-CPU run queues) and notes/scheduler/switch.md.
 ///
-/// Context: takes `IPC_TABLES`; interrupts are masked on both callers' paths.
+/// Context: called with interrupts masked; takes `IPC_TABLES`. The reap arm releases it while
+/// the stack and address space are freed, then takes it again.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
     target_os = "none",
