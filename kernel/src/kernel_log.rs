@@ -1,41 +1,21 @@
-//! **The kernel's ring, and where each of its lines goes** (milestone 342 (the kernel and the
-//! `console` server drive one UART from two address spaces); §175 (where the kernel's own output
-//! goes once userspace owns the console), ruled B with a panic escape and a fallback; the drain
-//! shape is calef's ruling F of 2026-10-03 UTC, recorded in `notes/kernel-ring-drain.md`).
+//! The kernel's ring, and where each of its lines goes, as §175 (where the kernel's own output
+//! goes once userspace owns the console) rules, with the drain shape in
+//! `notes/kernel-ring-drain.md`.
 //!
-//! Every line the kernel prints becomes one F3 record in a ring of frames (the layout is
-//! `system_log_contract::kernel_ring`, shared with the log service). What changes is whether the
-//! kernel also writes the line to the UART itself:
+//! Every line becomes one record in a ring of frames (`system_log_contract::kernel_ring`, shared
+//! with the log service). The kernel also writes it to the UART with no drainer, with a stalled
+//! one ([`STALL_NANOS`]) and on a panic ([`enter_panic`]), flagging it `DIRECT`; a drainer that
+//! keeps up forwards it whole. Signalling is deferred to [`signal_if_safe`], since `println!` runs
+//! under arbitrary locks. See notes/kernel-console.md, "The kernel's ring".
 //!
-//! - **No drainer yet** (all of boot, and every boot that never starts one): yes, byte by byte as
-//!   it always has, and the record is flagged `DIRECT` so the service will not print it again.
-//! - **A drainer that keeps up**: no. The line waits in the ring, the kernel signals the service,
-//!   and the service forwards it whole to the console, which puts it on a line of its own.
-//! - **A drainer that has stopped keeping up** (more than half the ring unread, or the oldest
-//!   unread line older than [`STALL_NANOS`]): yes, with every unread line before it, each counted
-//!   in the ring's fallback count and flagged `DIRECT`. A torn line while the service is down is
-//!   cheaper than a line nobody sees (calef's addition to §242 (a system log)).
-//! - **A panic**: yes, always. [`enter_panic`] flushes the unread lines first and then stops
-//!   holding anything back; it takes no lock beyond the console's, which the panic path has
-//!   already broken open.
-//!
-//! **Signalling is deferred**, because the console lock is the leaf of the lock order (it takes
-//! nothing) and `println!` runs under arbitrary locks, `IPC_TABLES` among them. A held line sets a
-//! flag; [`signal_if_safe`] signals once this core holds no lock, which is the end of `_print` or,
-//! failing that, the next timer tick (`sched::on_tick`). A drained line is therefore up to one
-//! tick late, and never early.
-//!
+
 //! # BUGS
 //!
-//! - **A line held just before the drainer dies waits up to a second longer than the stall test
-//!   needs.** The timer tick runs the test once every [`STALL_POLL_TICKS`] on core 0
-//!   ([`stall_tick`]), as well as every kernel line.
-//! - **A fallback can print a line the service is forwarding at the same moment**, so the line
-//!   appears twice. The kernel flags it `DIRECT` before printing, but a service that read it just
-//!   before has no reason to look again.
-//! - **Between the console server starting and the log service attaching**, kernel lines still go
-//!   straight to the UART and can splice with the console's. The progenitor starts the service
-//!   right after the console to keep that window to the build of one program.
+//! - A line held just before the drainer dies can wait up to a second longer than the stall test
+//!   needs ([`STALL_POLL_TICKS`], [`stall_tick`]).
+//! - A fallback can print a line the service is forwarding at that moment, so it appears twice.
+//! - Between the console server starting and the log service attaching, kernel lines can splice
+//!   with the console's.
 //!
 //! Name: provisional (milestone 342's lane, 2026-10-03 UTC).
 

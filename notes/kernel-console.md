@@ -108,6 +108,30 @@ reached there and the tour stays on screen. A firmware aperture outside the kern
 the window; arming the hold there needs a reader for `/chosen/bootargs`, which the kernel does not
 parse (`kernel/build.rs`).
 
+## The kernel's ring
+
+`kernel/src/kernel_log.rs` turns every line the kernel prints into one record in a ring of frames,
+whose layout is `system_log_contract::kernel_ring`, shared with the log service. §175 (where the
+kernel's own output goes once userspace owns the console) rules where each line goes, and the
+drain's shape is calef's ruling F of 2026-10-03 (UTC), in notes/kernel-ring-drain.md. What changes
+is whether the kernel also writes the line to the UART itself:
+
+- With no drainer yet, which is all of boot, it does, byte by byte, and flags the record `DIRECT`
+  so the service does not print it again.
+- With a drainer that keeps up, it does not. The line waits in the ring, the kernel signals the
+  service, and the service forwards it whole, on a line of its own.
+- With a drainer that has stopped (more than half the ring unread, or the oldest unread line older
+  than `STALL_NANOS`), it does, after every unread line before it, each counted in the ring's
+  fallback count and flagged `DIRECT`. A torn line while the service is down is cheaper than a line
+  nobody sees, calef's addition to §242 (a system log).
+- On a panic it always does, as the next section says.
+
+Signalling is deferred. The console lock is the leaf of the lock order, and `println!` runs under
+arbitrary locks, `IPC_TABLES` among them. A held line sets a flag, and `signal_if_safe` signals once
+this core holds no lock: at the end of `_print` or, failing that, at the next timer tick. A drained
+line is up to one tick late, and never early. The stall test runs on every kernel line and once
+every `STALL_POLL_TICKS` on core 0.
+
 ## Escapes from the ring
 
 Kernel lines normally go through the ring in `kernel_log`, which a drainer in the console server
