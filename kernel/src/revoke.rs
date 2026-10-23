@@ -3,9 +3,9 @@
 //! Every mapping of an untyped-derived page is recorded with the capability it was made under, in
 //! log pages retyped from the mapping space's own region. Reclamation (`memory_region::destroy`)
 //! unmaps a page from every space, whoever mapped it; `PageFrame::REVOKE` unmaps only what the
-//! revoked capability's derivation family mapped. Semantics are in
-//! design/decisions/0013-frame-revocation.md and
-//! design/decisions/0132-overlapping-page-frame-runs.md; the design is notes/mapping-log.md.
+//! revoked capability's derivation family mapped. The semantics are §13 (capability revocation and
+//! untyped reclamation) and §132 (what `PageFrame::REVOKE` owes an overlapping run); the design is
+//! notes/mapping-log.md.
 
 use crate::arch::mmu;
 use crate::sync::{IrqSafeGuard, IrqSafeMutex, rank};
