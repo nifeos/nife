@@ -30,12 +30,9 @@ impl Program {
     /// dotted text, empty for the root zone, which is every name. `None` for every program that
     /// resolves nothing, which is every program but one.
     ///
-    /// On this table rather than in [`Manifest`], so installed bytes can never carry one: an image
-    /// has no `Program`, and its note has no field to ask with. Whether a zone is a manifest's word or
-    /// the owner's is milestone 892's open fork for every other program.
-    ///
-    /// `jig` holds the root zone, calef's ruling Q5 on #1884 (2026-10-10 UTC): it reaches whatever
-    /// host an owner's repository or a listed location names.
+    /// On this table rather than in [`Manifest`], so installed bytes, which have no `Program`, can
+    /// never carry one; whether a zone is a manifest's word or the owner's is milestone 892's open
+    /// fork. `jig` holds the root zone (calef's ruling Q5 on #1884, 2026-10-10 UTC).
     ///
     /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
@@ -213,19 +210,11 @@ const fn interrupt_ignorer_manifest() -> Manifest {
     }
 }
 
-// `date` declares an empty grant expression, and that is the interesting part: its
-// authority (a read-only mapping of the clock page) is not something the command line
-// can hand over, so there is nothing to type and nothing to forbid getting wrong.
-// `FileGrantDeclaration::Forbidden` and `MemoryGrantDeclaration::Forbidden` are the load-bearing half: a clock
-// reader has no use for either, so naming one is refused rather than granted-and-
-// ignored. It reports through the shared result endpoint, one framed line of text.
-//
-// `ProgramArgumentDeclaration::Forbidden` is a **deliberate under-declaration**: `date` reads three
-// registers (format, UTC offset, provenance), and a manifest that could express that
-// needs positional arity, which milestone 47 explicitly defers. So the shell spawns it
-// with the defaults (`Human`, UTC, no provenance line), which is the `date` a person
-// typing `date` wants; the selectors arrive when `ProgramArgumentDeclaration` grows.
-/// The manifest of `date`, [`Program::Date`].
+/// The manifest of `date`, [`Program::Date`]: an empty grant expression, since its authority (the
+/// clock page) is not something the line can hand over, so naming a file or memory is refused.
+/// `ProgramArgumentDeclaration::Forbidden` is a deliberate under-declaration: `date` reads three
+/// registers (format, UTC offset, provenance), which would need positional arity, so the shell
+/// spawns it with the defaults (`Human`, UTC, no provenance line).
 const fn date_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -233,18 +222,9 @@ const fn date_manifest() -> Manifest {
         file: FileGrantDeclaration::Forbidden,
         directory: DirectoryGrantDeclaration::Forbidden,
         short_options: NO_SHORT_OPTIONS,
-        // **`date` was speaking the sink contract before the contract existed**, because
-        // its hand-rolled framing is bit for bit a `BYTES` message (notes/sink-protocol.md
-        // on why `OPERATION_BYTES` is zero). So it is the first program that can be piped, and it
-        // needed one change to be one: an end-of-stream message, without which a reader
-        // waits forever on a producer that has already exited.
-        //
-        // **And the first program to declare a second stream** (DECISIONS §67), because it
-        // is the program whose loss motivated the decision: "the time is unknown" is a
-        // complaint about the run and it travelled on the same endpoint as the answer, so
-        // `date > when.txt` on a clockless machine wrote it into the file. Declaring the
-        // second output is what lets `2>` name where it goes, and what makes the default
-        // (the shell prints it) a different place from where the answer went.
+        // Its framing is a sink-contract `BYTES` message ending in end-of-stream
+        // (notes/sink-protocol.md). The second stream (DECISIONS §67) carries "the time is
+        // unknown", so `date > when.txt` on a clockless machine leaves the file without it.
         output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
         },
@@ -394,18 +374,10 @@ const fn mdr_manifest() -> Manifest {
     }
 }
 
-// **`ps`: a stream out, a domain in, and nothing else** (milestone 126).
-//
-// Every designated grant is `Forbidden`, which is the row worth reading: there is no
-// file, no directory, no memory and no argument, so nothing a person could type widens
-// what this program sees. Its whole authority is `domain`, which the progenitor endows and the
-// command line cannot name, exactly as `date`'s clock is.
-//
-// `OutputDeclaration::BytesAndDiagnostics` because a refusal and a listing must not travel on
-// the same stream: `ps > running.txt` on a domain it was not granted has to leave the
-// file empty and put the reason on the terminal, which is the whole of DECISIONS §67
-// applied to a monitor. `InputDeclaration::Forbidden` because a snapshot reads nothing.
-/// The manifest of `ps`, [`Program::Ps`].
+/// The manifest of `ps`, [`Program::Ps`] (milestone 126): every designated grant `Forbidden`, so
+/// nothing typed widens what it sees, and its whole authority is `domain`. A second stream
+/// (DECISIONS §67) so that `ps > running.txt` without a domain leaves the file empty and puts the
+/// reason on the terminal.
 const fn ps_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -437,21 +409,11 @@ const fn ps_manifest() -> Manifest {
     }
 }
 
-// **`pgrep`: `ps`'s manifest, field for field, and the sameness is the claim.**
-//
-// A reader comparing these two blocks should find nothing to compare, because the
-// program that *finds* a process is granted exactly what the program that *lists* them
-// is: one supervision endpoint, `ENUMERATE`, and no way to name anything outside the
-// domain. On Unix `pgrep` and `pkill` differ only in what they do with the answer, and
-// there is no such pair here: a tid is a name, and killing a live child is
-// `MemoryRegion::DESTROY` on its region, held by whoever spawned it (DECISIONS §24).
-//
-// `ProgramArgumentDeclaration::Forbidden` is `date`'s deliberate under-declaration, not an oversight.
-// `pgrep` reads a state mask out of the integer-argument register, and a *pattern* is
-// bytes, which nothing in this system carries from a command line to a program. So the
-// prompt sends the default and `pgrep` names every member; see `crates/pgrep`'s `BUGS`
-// for why that is a property of the boundary rather than of this program.
-/// The manifest of `pgrep`, [`Program::Pgrep`].
+/// The manifest of `pgrep`, [`Program::Pgrep`]: `ps`'s field for field, and the sameness is the
+/// claim. Finding a process grants nothing listing does; killing a live child is
+/// `MemoryRegion::DESTROY` on its region, held by whoever spawned it (DECISIONS §24).
+/// `ProgramArgumentDeclaration::Forbidden` as for `date`: the state mask register keeps its
+/// default, so it names every member (`crates/pgrep`'s `BUGS`).
 const fn pgrep_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -660,19 +622,9 @@ const fn unreachable_network_witness_manifest() -> Manifest {
     }
 }
 
-// **The one program in this table that declares the entropy service** (milestone 111).
-// `printenv`'s block one authority over, and `ps`'s output shape: every designated
-// grant is `Forbidden`, so nothing a person could type widens what this program
-// reaches, and its whole authority is `entropy`, which the progenitor endows and the command line
-// cannot name.
-//
-// `OutputDeclaration::BytesAndDiagnostics` is load-bearing rather than copied. `uuid` has
-// exactly one way to fail (it was spawned holding no entropy capability), and the
-// failure must not travel on the byte stream: `uuid > id.txt` on a boot with no entropy
-// service has to leave the file empty and put the reason on the terminal, because a
-// predictable identifier written into a file is worse than an empty file. That is
-// DECISIONS §67 applied to a program whose whole product is unpredictability.
-/// The manifest of `uuid`, [`Program::Uuid`].
+/// The manifest of `uuid`, [`Program::Uuid`] (milestone 111): every designated grant `Forbidden`,
+/// and its whole authority `entropy`. Its one failure, no entropy capability, goes on the second
+/// stream (DECISIONS §67), so `uuid > id.txt` leaves the file empty rather than predictable.
 const fn uuid_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
