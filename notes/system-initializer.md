@@ -99,7 +99,7 @@ decided by what the program was for.
 | component | absent or refused |
 |---|---|
 | `console`, `line_editor`, `terminal_supervisor` | the boot traps, before anything can print |
-| `input`, `swish`, `job_undertaker` | `refuse_unvouched` says so through the console, then halts |
+| `input`, `swish`, `job_undertaker` | refused: `refuse_unvouched` says so, then halts; absent: the boot traps |
 | `system_log` | the kernel keeps printing for itself |
 | `terminal_sink_caretaker` | a second stream finds an empty slot |
 | `entropy`, `net_stack`, `domain_name_resolver` | no random source, network or name resolution |
