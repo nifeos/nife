@@ -157,7 +157,8 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
 /// instance maps at its `VERIFY_VA` (`credential_service::Wiring::verify_page_frame`), passed rather
 /// than looked up because a boot may wire more than one. `fs_ep` and `fs_page_frame` are the file
 /// service's root directory and shared page (`fs_service::root_directory`). After
-/// `construction_pages` is spent every login is answered [`login_contract::DENIED`]. `schedule`
+/// `construction_pages` is spent every login is answered [`login_contract::DENIED`], since nothing
+/// reclaims a caretaker's region (`components/src/login.rs`'s BUGS). `schedule`
 /// maps the durable-session programs. See notes/login.md, "The kernel's test harness".
 pub fn start(
     image: &'static [u8],

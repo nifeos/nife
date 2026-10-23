@@ -1,9 +1,9 @@
-//! Wiring for the USB keyboard driver. Its [`Spawn`] literal is the confinement claim: the
-//! interrupt, attach and report endpoints, the register pages
-//! [`extensible_host_controller_interface::register_window`] chose, and the DMA work pages. See
-//! notes/usb.md, "What the driver holds".
+//! Wiring for the USB keyboard driver, whose [`Spawn`] literal is the confinement claim: the
+//! interrupt, attach and report endpoints, the register pages `register_window` chose, and the DMA
+//! work pages. See notes/usb.md, "What the driver holds".
 //!
-//! BUGS:
+//! # BUGS
+//!
 //! - The attach handshake is a blocking send: a driver that died between its report and its first
 //!   receive there would block the progenitor's `SEND_CAP`, and the boot.
 //! - A device refused after the report is refused silently: the report endpoint has one message.

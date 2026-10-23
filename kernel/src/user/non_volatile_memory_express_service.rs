@@ -1,11 +1,15 @@
-//! Wiring for the EL0 NVMe block server, §86 (whether an NVMe driver can leave the kernel)'s option
-//! 2a. The [`Spawn`] literal is what the process driving the controller's I/O queue pair holds: the
-//! request endpoint (`filesystem_contract::blk`), a readiness endpoint, BAR0's doorbell page and
-//! the DMA region's data plane, with one transfer window per client ([`Wiring::client_capability`],
-//! [`Wiring::window_phys`]). Readiness is sent once the first command has round-tripped, so a
-//! bring-up hang is told apart from a first-read hang. No controller registers, admin pages,
-//! interrupt or frame capability, and no physical address but the data plane's (`DATA_PLANE_PAGE`,
-//! not page 0). Its BUGS are notes/non-volatile-memory-express.md's.
+//! Wiring for the EL0 NVMe block server (§86 (whether an NVMe driver can leave the kernel), option
+//! 2a): the request endpoint, a readiness endpoint sent once the first command round-trips, BAR0's
+//! doorbell page, and the data plane with one window per client ([`Wiring::client_capability`]).
+//! Its only physical address is the data plane's (`DATA_PLANE_PAGE`, not page 0); it holds no
+//! controller registers, admin pages or interrupt. See notes/non-volatile-memory-express.md.
+//!
+//! # BUGS
+//!
+//! - The server can aim DMA anywhere in its region, its own admin rings included.
+//! - With `CAP.DSTRD` 0 the doorbell page carries the admin doorbells too.
+//! - It cannot read `CSTS`, so a hung controller presents as a timeout, not `CSTS.CFS`.
+//! - One command in flight, so throughput measured against it is a lower bound.
 //!
 //! Name: recorded (crates/non_volatile_memory_express), renamed 2026-09-18 under DECISIONS §154
 //! (the acronym test is whether the phrase is spoken). A `<program>_service` like

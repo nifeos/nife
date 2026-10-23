@@ -1,13 +1,13 @@
-//! Wiring for `net_stack` over the JH7110's Ethernet port: `e1000e_service`'s shape for radon.
-//! The server holds `e1000e_service`'s slots, the DMA region, and the controller's DMA page
-//! (`0x1000` to `0x1fff`), device-typed; the MAC page and an interrupt are withheld. See
-//! notes/designware-ethernet.md, "The confinement, stated plainly".
+//! Wiring for `net_stack` over the JH7110's Ethernet port: `e1000e_service`'s slots, the DMA
+//! region and the controller's DMA page (`0x1000` to `0x1fff`), without the MAC page or an
+//! interrupt. See notes/designware-ethernet.md, "The confinement, stated plainly".
 //!
-//! BUGS:
+//! # BUGS
+//!
 //! - The DMA page holds both ring bases and the controller's reset bit, and the JH7110 has no
 //!   IOMMU here, so the server can aim the device's DMA anywhere and reset the MAC.
-//! - One wiring at a time: a second bring-up resets the device under the first. Proved by one radon
-//!   bench boot ([`PROVEN_ON_SILICON`]), at a rate notes/designware-ethernet.md's `BUGS` records.
+//! - One wiring at a time: a second bring-up resets the device under the first.
+//! - Proved by one radon bench boot ([`PROVEN_ON_SILICON`]), at a rate its note's `BUGS` records.
 
 use ::designware_ethernet::process::{DATA_PLANE_VA, DMA_PAGE_VA};
 

@@ -1,12 +1,13 @@
-//! The offer a booted stick makes to install itself, and the confined programs that carry it out.
-//! The offer needs a boot from a readable file, an NVMe disk not already carrying nife, and a
-//! person typing [`CONFIRMATION`] in time; it is asked before the capability to destroy the disk
-//! exists, and nothing here writes a byte to a disk. See notes/installing.md.
+//! The offer a booted stick makes to install itself onto an NVMe disk not already carrying nife,
+//! asked before the capability to destroy the disk exists; a person must type [`CONFIRMATION`] in
+//! time. Nothing here writes a byte to a disk. See notes/installing.md.
 //!
 //! # BUGS
 //!
-//! - x86_64 only (design/roadmap/0568); the disk is named by size, not model (0569); it checks
-//!   for nife only (0570); a disk carrying nife is never offered again (0572).
+//! - x86_64 only (design/roadmap/0568): the kernel reads the UART to ask, before the input driver.
+//! - The disk is named by size, not model (design/roadmap/0569).
+//! - It checks for nife and nothing else, so a disk holding Windows looks empty (0570).
+//! - A disk already carrying nife, even half-installed, is never offered again (0572).
 //! - Not crash-atomic: a power cut between the partitioner and `mkfs` leaves an unmountable disk.
 
 use super::*;
