@@ -3,11 +3,9 @@
 //! id, and its owner decides who touches it. `std` gives each thread one, and
 //! `cargo xtask std-src` generates this file into `std` as `sys/alloc/nife/allocation_cache.rs`.
 //!
-//! One thread owns a cache, never a CPU, so no operation needs an atomic; `notes/std/allocation.md`
-//! has the argument and the measurement. A class is a block size on a 16-byte grid ([`GRID`]), up
-//! to [`LARGEST`], for requests aligned to at most the grid. Every block of a class comes from and
-//! returns to the heap under one layout, [`class_layout`], so any block serves any request of its
-//! class, provided the owner sends the heap cached sizes only under [`heap_layout`].
+//! A class is a block size on a 16-byte grid ([`GRID`]) up to [`LARGEST`], under one heap layout,
+//! [`class_layout`]; the owner sends the heap cached sizes only under [`heap_layout`]. See
+//! `notes/std/allocation.md` for why one thread owns a cache and why blocks of a class are fungible.
 //!
 //! # Examples
 //!

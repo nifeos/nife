@@ -136,11 +136,14 @@ pub const REMOVEXATTR: u64 = 17;
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
 /// shared page filled ([`super::statfs::LEN`]) with the [`super::statfs`] record, or an error;
 /// `EBADF` for a handle the server did not mint. See notes/fs-server/statfs.md.
-///
+
 /// # BUGS
 ///
-/// - It answers about the whole image, so two subtrees on one image can signal through the free
-///   count (notes/fs-server/file-protocol.md). It is a forecast: `ENOSPC` at write time decides.
+/// - It answers about the whole image, never a subtree; there are no quotas, so no smaller number
+///   would be true.
+/// - Two subtrees on one image can signal through the free count; isolation needs two images
+///   (notes/fs-server/file-protocol.md).
+/// - The numbers are a forecast: the store's `ENOSPC` at write time decides.
 pub const STATFS: u64 = 18;
 
 /// **Make everything this server has acknowledged durable** (milestone 55 (Time Machine)).
@@ -150,8 +153,15 @@ pub const STATFS: u64 = 18;
 ///
 /// The FS server commits each write before replying, so after a successful `SYNC` every
 /// acknowledged write is on the medium the device calls durable. Needs [`super::dir::WRITE`], else
-/// [`super::dir::EROFS`]. The block server's `EOPNOTSUPP` passes through unchanged. It syncs the
-/// whole device and does not fence. See notes/fs-server/file-protocol.md.
+/// [`super::dir::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
+/// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged. See
+/// notes/fs-server/file-protocol.md.
+
+/// # BUGS
+///
+/// - It syncs the whole device, never a subtree or a file.
+/// - It does not fence: a write and a sync issued at once on two handles are unordered.
+/// - The count is a fact about the device, so two clients of one image can watch each other sync.
 pub const SYNC: u64 = 19;
 
 /// **The modification time of `name`, in Unix seconds** (DECISIONS §112 (`touch`'s two behaviors
@@ -172,7 +182,8 @@ pub const GETMTIME: u64 = 20;
 /// "Now" is this server's own advancing logical clock, the one that stamps every [`WRITE`], not
 /// the wall clock, so two `touch`es in order see increasing mtimes. Needs [`super::dir::WRITE`],
 /// else [`super::dir::EROFS`], checked before the name is resolved: the value is one the server
-/// observed, so recording it needs no more than writing the file. See notes/touch.md.
+/// observed, so recording it needs no more than writing the file. See notes/touch.md, whose BUGS
+/// has the missing wall clock.
 ///
 /// Name: provisional (milestone 47's mtime lane, 2026-08-24); an architect's to ratify.
 pub const SETMTIME: u64 = 21;

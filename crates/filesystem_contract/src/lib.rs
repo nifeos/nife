@@ -111,11 +111,12 @@ pub mod dirent;
 /// Three little-endian `u64`s, in order: the allocation unit in bytes, the volume's size in those
 /// units, and how many are free. The unit is a field, not [`PAGE`]. The reply's length is the
 /// version: a client reads the fields it knows when `r0 >= LEN` ([`statfs::decode`]), so there is
-/// no version word. There is no inode count. See notes/fs-server/statfs.md.
-///
+/// no version word. See notes/fs-server/statfs.md.
+
 /// # BUGS
 ///
-/// - Free space is a forecast, not a reservation: the store's `ENOSPC` at write time decides.
+/// - Free space is a forecast, not a reservation; see [`fs::STATFS`]'s BUGS.
+/// - There is no inode count: SMB's volume classes carry none, so nothing above has asked.
 pub mod statfs;
 
 /// **The per-file grant**: holding one file rather than a directory, and how the narrowing travels.
