@@ -11,11 +11,11 @@
 
 //! # BUGS
 //!
-//! - Only [`RADON`] has been checked against a machine, [`XENON`]'s empty prologue rests on one
-//!   capture, argon has no profile, and nothing gates a profile against its board beyond review
-//!   and a capture per asserted rung; notes/board-console/limitations.md, "Board profiles".
-//! - The default is [`RADON`], so an unconfigured session says it expected a VisionFive 2. The
-//!   QEMU callers in `xtask` (`boot-check`, `soak-test`) name [`EMULATOR`].
+//! - Only [`RADON`] has been checked against a machine (notes/board-console/limitations.md).
+//! - [`XENON`]'s empty prologue rests on one capture; a firmware failure there names nothing.
+//! - argon has no profile until it prints something on a wire.
+//! - Nothing gates a profile against its board beyond review and a capture per asserted rung.
+//! - The default is [`RADON`]; the QEMU callers `boot-check` and `soak-test` name [`EMULATOR`].
 //! - A [`Rung`] compares by depth alone, so rung 2 of one profile equals rung 2 of another. A
 //!   session has exactly one profile, chosen before any byte is read, so they never meet.
 //!

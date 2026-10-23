@@ -10,14 +10,14 @@
 
 //! # BUGS
 //!
-//! - A promised message a caller withholds hangs the progenitor: claiming
-//!   [`Wiring::run_unvouched`] without holding [`RUN_UNVOUCHED_SLOT`], or a shell that cannot
-//!   retype a frame mid-request. Nothing lets either side abandon a half-sent request.
+//! - A withheld promised message hangs the progenitor ([`Wiring::run_unvouched`] claimed without
+//!   [`RUN_UNVOUCHED_SLOT`], a frame not retyped); nothing can abandon a half-sent request.
 //! - An image's manifest note reaches only what these words carry, and [`crate::image_can_carry`]
 //!   refuses the rest; its [`crate::Endowment`] names the stand-in row [`crate::IMAGE_ROW`].
+//! - The shell reads an image's note twice and the progenitor refuses a misfit with
+//!   [`SPAWN_REFUSED_BY_MANIFEST`]; only a plain line runs an image, never interruptibly.
 //! - Every activation verb, [`Activation::Vouch`] included, is open to any spawn-endpoint holder,
 //!   safe only while the owner's boot prompt is the one (§221).
-//!   notes/grant-expression/spawn-protocol.md lists all of them.
 
 /// The interruptible bit, packed into the high half of the page-count word so one `SEND` still
 /// carries the whole request. `mem_pages` is a small count (`memory_grant_depleter`'s ceiling is
