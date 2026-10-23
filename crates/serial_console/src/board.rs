@@ -18,6 +18,7 @@
 //!   QEMU callers in `xtask` (`boot-check`, `soak-test`) name [`EMULATOR`].
 //! - A [`Rung`] compares by depth alone, so rung 2 of one profile equals rung 2 of another. A
 //!   session has exactly one profile, chosen before any byte is read, so they never meet.
+//!
 
 //! Names provisional, this lane's coinage (2026-09-19, milestone 324 part 3). `Profile` is the word
 //! calef's own ruling used (*"a board profile"*); `Rung` is `crates/boot_ladder`'s word for the
