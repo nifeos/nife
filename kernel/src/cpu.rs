@@ -1,9 +1,10 @@
 //! Per-CPU state: each core's private block, reached in one instruction.
 //!
 //! The architecture keeps a pointer to this core's [`PerCpu`] in a register
-//! ([`crate::arch::set_percpu`]). Only the owning core touches its block, with interrupts masked;
-//! the inbox and the steal request are the parts other cores reach. See notes/per-cpu.md and
-//! DECISIONS §11 (per-CPU run queues).
+//! ([`crate::arch::set_percpu`]). Most fields are touched only by the owning core, with interrupts
+//! masked. Other cores lock the inbox, use the steal request, and read `current`, `runq_len` and
+//! `inbox_len`; `rng_next`'s BUGS is the one unmasked writer. See notes/per-cpu.md and DECISIONS
+//! §11 (per-CPU run queues).
 
 use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
@@ -267,7 +268,7 @@ const _: () = assert!(
      this assertion for the 150 bytes of IPC fastpath the last violation cost",
 );
 
-/// The span within which one core's writes slow another core's reads of a neighbouring word, and
+/// The span within which one core's writes slow another core's reads of a neighboring word, and
 /// the unit [`PerCpu`] is aligned to.
 ///
 /// 128 on every architecture: Apple's line, and a pair of lines on 64-byte parts that prefetch in

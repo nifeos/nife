@@ -188,7 +188,7 @@ able to take while held and by what holds it.
 | 60 | `IPC_TABLES` | Above everything that frees, because the reaper drops a dead thread's kernel stack while holding it. Nothing under it allocates (intrusive queues, a static TCB pool), so `schedule()` is safe from the timer interrupt. |
 | 59 | `INBOX` | Placing a thread on a remote core happens under `IPC_TABLES`. A core locks at most one inbox at a time, the target's. |
 | 59 | `KMEM` | It carves and retypes from its region while held, and a kernel stack's `new` and `Drop` run from spawn and the reaper, under `IPC_TABLES`. |
-| 59 | `MAPPINGS` | Recording a mapping retypes a log page from the payer's region while held. Never held with `IPC_TABLES` in either order: the capability sweep and the unmap sweep run one after the other. |
+| 59 | `MAPPINGS` | Recording a mapping retypes a log page from the payer's region while held. Never held with `IPC_TABLES` in either order: the capability sweep and the unmap sweep run one after the other, and the reaper drops address spaces outside `IPC_TABLES` (`finish_switch`). |
 | 58 | `MEMORY_REGION` | Below the 59s, and below `IPC_TABLES` so a syscall with no thread-table business can take it alone. |
 | 57 | `CAPABILITY_TABLE` | One lock per thread, in its TCB page. The order is below. |
 | 56 | `VIRTIO` | Taken from a syscall with no other lock held. The rank records where that syscall sits, not a nesting need. |

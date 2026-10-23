@@ -106,11 +106,11 @@ pub fn init() {
 /// `from_user` says whether the trap came from user mode. Returns this core's interrupt-stack top,
 /// or 0 to stay: before [`init`], for a trap from user mode, and when already on an interrupt
 /// stack, where resetting `sp` would drop a nested fault through the frames of the handler it hit.
-/// `#[inline(always)]` because a debug build, which the icount tripwire measures, would otherwise
-/// add a call to every syscall. See notes/stack/interrupt-stack.md.
+/// The cheap tests come first because `cpu::id()` is a real division in a debug build, and the
+/// nesting test asks about the whole region because a core only ever stands on its own slot.
+/// `#[inline(always)]` so the debug build the icount tripwire measures adds no call per syscall.
 ///
-/// Context: each architecture's trap dispatcher, on every trap, interrupts included; takes no
-/// lock.
+/// Context: every trap, from each architecture's dispatcher, interrupts included; no lock.
 #[inline(always)]
 pub(crate) fn top_for_trap(from_user: bool) -> u64 {
     if from_user || !ARMED.load(Ordering::Acquire) {

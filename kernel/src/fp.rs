@@ -20,16 +20,14 @@ use crate::arch::fp::FpState;
 /// registers are its own)).
 pub(crate) static ENABLES: AtomicUsize = AtomicUsize::new(0);
 
-/// Move the register file from the outgoing thread to the incoming one.
-///
-/// From a live thread to a non-live one it saves, scrubs to [`FpState::INITIAL`] and disables;
-/// two non-live threads cost two loads and two branches. Milestone 447 has all four cases.
+/// Move the register file between threads; live to non-live scrubs to [`FpState::INITIAL`].
 ///
 /// Context: just before `arch::switch_to`; interrupts masked, `IPC_TABLES` released.
 ///
 /// # Safety
 /// `prev` and `next` must name live, distinct `FpState`s of the outgoing and incoming threads,
-/// pinned as `sched::schedule` pins its contexts (running, and `Running` with `on_cpu` set).
+/// pinned as `sched::schedule` pins its contexts (running, and `Running` with `on_cpu` set),
+/// interrupts are masked, and nothing can reap either.
 #[inline(always)]
 pub(crate) unsafe fn hand_over(prev: *mut FpState, next: *const FpState) {
     // SAFETY: the caller's, forwarded. Both reads are of one `u64` in a pinned allocation.
@@ -114,7 +112,7 @@ pub(crate) fn enable_for_current() -> bool {
 }
 
 /// A distinct 64-bit value for register `index` under `seed`, so a test can tell one thread's
-/// file from another's and from a scrubbed one. Neighbouring seeds and indices land far apart, so
+/// file from another's and from a scrubbed one. Neighboring seeds and indices land far apart, so
 /// a save to the wrong offset fails.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn register_pattern(seed: u64, index: usize) -> u64 {

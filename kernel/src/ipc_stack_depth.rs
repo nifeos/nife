@@ -18,7 +18,7 @@ use crate::{println, sched};
 /// Bytes between the arming frame's `sp` and the top of the painted region.
 ///
 /// It covers the frames that run below [`arm`] while it paints and the scan's frame afterwards. A
-/// series whose median reads at or above its floor never went below the margin, and [`report`]
+/// series whose median reads at or below its floor never went below the margin, and [`report`]
 /// refuses it. Larger in debug, where the paint loop keeps real calls; 512 put every release series
 /// at its floor. The `null` series checks the value on every run.
 #[cfg(debug_assertions)]

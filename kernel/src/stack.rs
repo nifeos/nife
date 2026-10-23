@@ -68,7 +68,7 @@ pub(crate) enum GuardPage {
 /// # BUGS
 ///
 /// A `None` does not mean the stack is fine: a frame larger than the one-page guard can step over
-/// it into the neighbouring slot without faulting (notes/load-sensitive-assertions.md).
+/// it into the neighboring slot without faulting (notes/load-sensitive-assertions.md).
 pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
     const PAGE: u64 = 4096;
 

@@ -56,7 +56,8 @@ pub mod rank {
     pub const STACK_VA: u32 = 55;
 
     /// The revocation registry (§13 (capability revocation)): which address spaces live, and where
-    /// their mapping logs are. Above `MEMORY_REGION`; never held with `IPC_TABLES` in either order.
+    /// their mapping logs are. Above `MEMORY_REGION`. Never held with `IPC_TABLES` in either order:
+    /// the reaper drops address spaces outside `IPC_TABLES` (`finish_switch`).
     pub const MAPPINGS: u32 = 59;
 
     /// The kernel's own page tables (`mmu::map_page` / `unmap_page`), shared by every core. Below
