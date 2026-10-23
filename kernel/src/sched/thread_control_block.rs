@@ -133,8 +133,8 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
 
     // The spawn-slot convention (§26 (the fault endpoint)): a `Rendezvous` capability in the
     // reserved fault slot makes this thread supervised, fixed here for life. The slot is consumed,
-    // so the child cannot forge fault messages, and its badge, the child's label (§148 (milestone
-    // 105's two forks)), reaches only the supervisor.
+    // so the child cannot forge fault messages, and its badge, the child's label (§148 (a
+    // supervisor restarts by asking)), reaches only the supervisor.
     let mut table = capabilities.lock();
     if let Ok(fault_cap) = table.get(abi::fault::FAULT_EP_SLOT)
         && let crate::cap::Object::Rendezvous(ep, label) = fault_cap.object

@@ -86,7 +86,7 @@ pub(super) fn depart(event: u64, pc: u64, addr: u64, whole: bool) -> ! {
 /// woken; otherwise the corpse joins the sender queue with the message in its mailbox, so it waits
 /// there, and `ipc_receive` leaves a `Dead` sender dead after taking it. A gone or interrupt-bound
 /// rendezvous drops the message. `label` is the badge on the child's supervision capability (§148
-/// (milestone 105's two forks)), handed over by [`hand_over_label`] or collected later in
+/// (a supervisor restarts by asking)), handed over by [`hand_over_label`] or collected later in
 /// [`collected_without_serving`].
 ///
 /// Context: caller holds `IPC_TABLES`, with the corpse already `Dead` and `msg` in its mailbox.
