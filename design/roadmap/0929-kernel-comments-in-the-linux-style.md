@@ -115,15 +115,21 @@ most two in the queue:
 | 3 `system_tests/`, `xtask/`, the rest | 818 | 7,825 | 2,517 | 10,342 | 11 to 21 |
 | total | 3,078 | 31,134 | 9,765 | 40,899 | 42 to 83 |
 
-- CI: a paydown pull request runs the full suite unless the classifier has a comment-only class.
-  `helpers/prose_only.py` skips the heavy jobs only for Markdown under `notes/`, `design/`,
-  `briefs/` or the root that no code reads. A `.rs` file is never prose to it, so a diff that
-  changes only comments runs everything. Its comment stripping decides only whether a file
-  *reads* a note, not whether a changed file is prose. `ci.yml` alone took 119 to 129
-  runner-minutes over 26 jobs in three merge-group runs on 2026-10-22 (UTC), of which the gate,
-  `lint` and `rustfmt` were 7; `verify.yml`'s Kani shards come on top. A comment-only class
-  (#2546) would leave a paydown pull request the gate, `rustfmt`, `lint` (clippy and rustdoc) and
-  the host tests of the crates it touches.
+- CI: a paydown pull request that changes only comments skips the heavy jobs of `ci.yml`,
+  `verify.yml` and `codeql.yml`. `helpers/prose_only.py` counts a changed `.rs` file as
+  comment-only when its tokens at the base and the head are equal with every comment removed
+  (COMMENT-ONLY RUST in its header). Such a pull request runs the gate, `rustfmt` and `lint`.
+  `lint` runs clippy and rustdoc, then `cargo test` for each package that holds a changed file or
+  Rust that reads one, if the package builds on the host; a bare-metal package such as `kernel` or
+  `system_tests` gets clippy and rustdoc only. Three kinds of file still run everything. One is a
+  file a falsification patch rewrites: 39 of 259 in `kernel/` and 82 of 499 under `crates/` on
+  2026-10-22 (UTC). Another is a file outside the root workspace: on 2026-10-23 (UTC), 134 `.rs`
+  files in stage 3's directories, among them `fuzz/`, `tools/` and `redoxfs_server/`. The third is
+  an added, deleted or renamed file. A pull request that also changes code runs everything too,
+  which is why a rule-3 conversion goes in its own pull request. The full suite is the cost
+  avoided: `ci.yml` alone took 119 to 129 runner-minutes over 26 jobs in three merge-group runs on
+  2026-10-22 (UTC), of which the gate, `lint` and `rustfmt` were 7, and `verify.yml`'s Kani shards
+  come on top.
 - The return: comments are 57% of the bytes in this tree's Rust, and every agent that opens a file
   reads all of them. The sweep moves `kernel/` from 0.84 comment lines per code line to about 0.6,
   and the essays it moves are read only by an agent that follows the link.
