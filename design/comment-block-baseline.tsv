@@ -111,7 +111,6 @@ kernel/src/console.rs:408	30
 kernel/src/cpu.rs:27	23
 kernel/src/cpu.rs:363	27
 kernel/src/cpu.rs:486	22
-kernel/src/delegation_pause.rs:1	39
 kernel/src/designware_ethernet.rs:1	39
 kernel/src/disk_throughput.rs:1	38
 kernel/src/drivers/gic.rs:1	39
@@ -159,7 +158,6 @@ kernel/src/preemption_window_tests.rs:1	32
 kernel/src/progenitor_stack.rs:1	40
 kernel/src/reboot.rs:1	32
 kernel/src/reboot/designware_i2c.rs:1	22
-kernel/src/retype_fault.rs:1	36
 kernel/src/sched.rs:1	34
 kernel/src/sched.rs:139	30
 kernel/src/sched/capabilities.rs:37	22
@@ -221,7 +219,6 @@ kernel/src/testing.rs:268	23
 kernel/src/testing.rs:370	40
 kernel/src/testing.rs:772	36
 kernel/src/testing.rs:1247	23
-kernel/src/trust.rs:1	29
 kernel/src/user/address_space.rs:38	23
 kernel/src/user/address_space.rs:79	24
 kernel/src/user/address_space.rs:308	37

@@ -70,6 +70,24 @@ And a name the table does not mention is a refusal, not a pass, for the same rea
 through. A table that is missing, or arrives as bytes that are not UTF-8, becomes the empty table,
 which vouches for nothing, so the console is refused and the boot stops.
 
+## Boots that replace the hand-over
+
+A soak, job-mix, bench or disk-throughput boot replaces the hand-over with its own workload, so
+nothing calls `trust::require` and the progenitor measures nothing. `trust::require_program` runs
+the chain an ordinary boot runs, two links long. `require_program_measurements` vouches for the
+archive's table against this kernel image, and the table vouches for the program's bytes through
+`measured_boot::verify_in_manifest`, the check the progenitor runs on every load.
+
+Using the trust root this way is also what keeps a release build from dropping `TRUST_ROOT` as dead
+code. Without a use, `uefi_loader`'s build reported every soak kernel as `NOT SEALED`. A `#[used]`
+would seal a check nobody makes, which is the inverse case `crates/sealed_pair`'s `BUGS` warns
+about.
+
+`None` means the archive does not have the program, or the boot has no archive at all (`x86_64`'s
+QEMU bench leg attaches none). That is `measured_boot::verdict`'s split: an absent program is a
+packaging fact the caller reports in its own words, while bytes the table will not vouch for are a
+substitution, and those halt with `MEASURED BOOT REFUSED`.
+
 ## EXAMPLES
 
 A healthy boot says so, which matters as much as the refusals. The natural bug in a measured boot is

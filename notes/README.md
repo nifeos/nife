@@ -66,3 +66,5 @@ area directories), ruled B). Appendices under
 `capability-objects.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `kernel-wired-services.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
+
+`test-kernel-seams.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.

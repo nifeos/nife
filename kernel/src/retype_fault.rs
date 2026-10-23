@@ -1,52 +1,13 @@
-//! **The test kernel fails one thread's Nth retype** (milestone 757 (a test kernel fails a process
-//! on its Nth retype), provisional). Names here are provisional: the module, [`arm`], [`disarm`],
-//! [`Tally`] and [`fails_now`]. calef names things.
+//! The test kernel fails one thread's Nth retype, answering exactly as a region with nothing left
+//! would: the spending function returns `None` with the region untouched, and the syscall returns
+//! `OutOfMemory` (milestone 757 (a test kernel fails a process on its Nth retype)). Sweeping N from
+//! 1 fails a program at every allocation it makes, in order. Names provisional: the module,
+//! [`arm`], [`disarm`], [`Tally`] and [`fails_now`].
 //!
-//! A system test names a thread and a number N. From then on, every time that thread makes the
-//! kernel spend a page of one of its regions, the count goes up by one, and the Nth time the kernel
-//! answers exactly as it would for a region with nothing left: the spending function returns `None`
-//! with the region untouched, and the syscall above it returns `OutOfMemory`. Sweeping N from 1
-//! until a run never reaches N fails a program at every allocation it makes, in order, which is the
-//! only way to run the cleanup paths `notes/untested-error-paths.md` counted and no test reached.
-//!
-//! **What counts as one retype** is one call into the three functions of `memory_region` that take
-//! pages out of a region: `split`, `retype_run` (which `retype_page` is) and `retype_object_page`.
-//! So `MemoryRegion::SPLIT`, `RETYPE` and `RETYPE_OBJ` each count once, and a `MAP`,
-//! `PageFrame::MAP` or `AddressSpace::MAP_INTO` counts once per page table it has to build. The
-//! last kind is the point of hooking here rather than at the syscall: a mapping that fails after it
-//! has built one table runs the kernel's own unwind, not only the program's.
-//!
-//! **The target is a thread, read from the core's current-thread word**, because that is what the
-//! kernel knows at a spending function without taking a lock. A kernel-built service (the test
-//! harness spawning it, as `login_service::start` does) spends from the harness's thread, so its
-//! construction is never counted; only what the service asks for itself is.
-//!
-//! # Why a shipping kernel cannot contain this
-//!
-//! The module is declared under `cfg(feature = "system_tests")`, and so is every call into it
-//! (`memory_region.rs`). In any other build the module does not exist, so a hook written without
-//! that `cfg` fails to compile rather than shipping, and a hook written with it compiles to nothing.
-//! The feature itself cannot reach a bootable kernel: a kernel *binary* built with `system_tests`
-//! fails to link, on purpose (`lib.rs`, `system_tests_main`). That is the first rung of
-//! `CLAUDE.md`'s ladder (the shipping binary has no code that could fire), held up by the second (a
-//! loud link failure if someone turns the feature on where it does not belong). There is no
-//! separate cargo feature for this knob: a second feature would be a second thing to keep out of
-//! shipping builds, and it would buy nothing, because an unarmed hook costs one relaxed load on a
-//! path that is never the IPC round trip.
-//!
-
-//! # BUGS
-//!
-//! - **One thread, not a process.** A process with two threads that both spend is counted on the
-//!   named one only. Every program this has been pointed at is single-threaded; a multi-threaded
-//!   target wants a process identity at the spending function, which the kernel does not keep
-//!   there today.
-//! - **Only the Nth fails, not the Nth and every one after.** A real exhaustion keeps failing; this
-//!   fails once and then lets the program carry on, which is what makes a sweep cheap (each N is
-//!   one run) and what lets the test check the program is still healthy afterwards. A program whose
-//!   cleanup itself allocates is therefore tested with that allocation succeeding.
-//! - **One target at a time.** Arming again replaces the earlier target. Nothing in the suite runs
-//!   two sweeps at once.
+//! One retype is one call into `memory_region::split`, `retype_run` or `retype_object_page`, so a
+//! `MAP` counts once per page table it builds. The target is a thread, read from the core's
+//! current-thread word. Only the test kernel has it (`cfg(feature = "system_tests")`). See
+//! notes/test-kernel-seams.md, which has the reasoning and the `BUGS`.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
