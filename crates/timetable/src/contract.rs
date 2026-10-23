@@ -1,10 +1,13 @@
 //! **How a timetable is spawned: its slots, its arguments, and how its document arrives**
 //! (milestone 129 (scheduled execution), §222 (who holds a user's schedule)).
 //!
-//! Two kinds of spawner start a timetable: the boot-time test, which uses the compiled-in
-//! document, and a durable session (milestone 152 (durable delegation)), which registers its
-//! user's schedule. Both read this module rather than a copy of it (AGENTS.md rule 7).
-//!
+//! The boot-time test spawns one with the compiled-in document, and a durable session (milestone
+//! 152 (durable delegation)) to register its user's schedule; both read this module rather than a
+//! copy (AGENTS.md rule 7). Never hand one the run-unvouched capability
+//! (`grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`): a timetable holding it runs nothing and exits
+//! with [`E_UNVOUCHED`], so a scheduled job stays within reach of §220 (signed builds, and trusting
+//! a key is scoped).
+
 //! # Slots
 //!
 //! | slot | constant | rights | what |
@@ -16,25 +19,17 @@
 //! | 4 | [`CLOCK_SLOT`] | `READ`, `GRANT`, optional | the clock page (§43 (reading the clock is a page)), also mapped read-only at [`CLOCK_VA`] |
 //! | 5 | [`ACTIVATION_SLOT`] | `WRITE` | the store's `activation/` directory, read-only; store mode only |
 //! | 6 | [`PACKAGES_SLOT`] | `WRITE` | the store's `packages/` directory, read-only; store mode only |
-//!
-//! Slot 4 is the one optional grant. With it, `Held::clock` is true: calendar entries can keep a
-//! time of day, and a job whose manifest declares a clock gets the page too, read-only, at its own
-//! slot 1 and [`CLOCK_VA`], as the progenitor gives `date` one. Without it, every calendar line is
-//! `Unbacked::WallClock`. The spawn site must map the page before the timetable starts, and the
-//! timetable probes the slot at `_start` for `swish`'s reason: later, a region it split could land
-//! there.
-//!
-//! **Store mode** (milestone 152 (durable delegation)) is a timetable holding [`ACTIVATION_SLOT`].
-//! It is handed no archive (`a1` is 0): each job's program is the live activation generation's
-//! entry for the name, resolved at registration and checked again at every fire. Slots 5 and 6 are
-//! endpoints to caretakers serving those directories read-only, over a file-service channel whose
-//! page the spawn site maps at [`STORE_PAGE_VA`]. A registrar is required. A durable session grants
+
+//! Slot 4 is the one optional grant. With it `Held::clock` is true: calendar entries keep a time of
+//! day, and a job whose manifest declares a clock gets the page read-only at its own slot 1 and
+//! [`CLOCK_VA`], as the progenitor gives `date` one; without it every calendar line is
+//! `Unbacked::WallClock`. The spawn site must map the page before the timetable starts; the
+//! timetable probes the slot at `_start`, for `swish`'s reason: a region it splits later could land
+//! there. **Store mode** (milestone 152) is a timetable holding [`ACTIVATION_SLOT`]: no archive
+//! (`a1` is 0), each job's program the live activation generation's entry for its name, resolved at
+//! registration and checked at every fire, slots 5 and 6 read-only caretakers over a file-service
+//! channel whose page is at [`STORE_PAGE_VA`], and a registrar required. A durable session grants
 //! no clock yet (`components/src/user_timetable_keeper.rs`'s BUGS).
-//!
-//! Never the run-unvouched capability (`grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`): a timetable
-//! holding it runs nothing and exits with [`E_UNVOUCHED`], because a scheduled job must stay within
-//! reach of §220 (signed builds, and trusting a key is scoped).
-//!
 
 //! # Arguments
 //!
@@ -45,18 +40,13 @@
 //!
 //! # How the document arrives
 //!
-//! With `a2 == 0` the document is the compiled-in `components/timetable.conf`, and everything the
-//! timetable says goes down [`OUT_SLOT`].
-//!
-//! With a page, the timetable starts with an empty document and the registrar sends the first one
-//! with `REPLACE` (see [`crate::registration`]), typically the user's stored schedule. It is then
-//! **silent on [`OUT_SLOT`]**: a session supervising it is blocked on supervision and cannot drain
-//! a stream, and a `SEND` nobody takes would stop the timetable. Everything a registrar needs is in
-//! the page: each reply's status, verdicts and printed plan, and, once the timetable has stopped,
-//! its exit code at [`crate::registration::EXIT`]. Slot 0 may be left empty, and so may slot 2: a
-//! timetable that holds no report endpoint hands its jobs none (`crate::Held::report`); a durable
-//! session leaves it empty.
-//!
+//! With `a2 == 0` it is the compiled-in `components/timetable.conf`, and everything the timetable
+//! says goes down [`OUT_SLOT`]. With a page, it starts empty and the registrar sends the first
+//! document with `REPLACE` ([`crate::registration`]). It is then **silent on [`OUT_SLOT`]**: a
+//! session blocked on supervision cannot drain a stream, and a `SEND` nobody takes would stop the
+//! timetable. The page carries each reply's status, verdicts and plan, and once it has stopped its
+//! exit code at [`crate::registration::EXIT`]. Slots 0 and 2 may then be empty: a timetable holding
+//! no report endpoint hands its jobs none (`crate::Held::report`), as a durable session's does.
 
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module and every
 //! constant here. Naming is calef's.
@@ -87,16 +77,10 @@ pub const PACKAGES_SLOT: u64 = 6;
 pub const STORE_PAGE_VA: u64 = 0x0610_0000;
 /// **The largest program a store-mode timetable loads**, in bytes: its staging buffer. A job's
 /// segments, stack and tables must fit an instance's 48 pages (192 KiB), and this bounds the file,
-/// which carries a symbol table the instance never maps.
-///
-/// **Raised 64 -> 128 KiB on 2026-10-02 (UTC), a correction.** This used to say 64 KiB was never
-/// the binding limit. The machine said otherwise: the suite's installed fixture,
-/// `least_authority_demo`'s bytes as the archive packs them (`--strip-debug`, so the symbol table
-/// stays), is 71,664 bytes on aarch64 and 12,184 on riscv64. Store mode refused it on aarch64 as
-/// `registration::STATUS_NO_IMAGE`, so `login`'s start-up pass ended bob's re-derived session
-/// at once and `a_durable_session_is_re_derived_at_start_up_unless_suspended` failed there while
-/// riscv64 passed. 128 KiB is still under an instance, and costs 16 more pages of `.bss`
-/// (`user_timetable_keeper.rs`'s `TIMETABLE_REGION_PAGES`).
+/// which carries a symbol table the instance never maps. It must hold the suite's installed
+/// fixture, `least_authority_demo` as the archive packs it (`--strip-debug`, so the symbol table
+/// stays): 71,664 bytes on aarch64 and 12,184 on riscv64. 128 KiB costs 16 pages of `.bss` more
+/// than 64 KiB did (`user_timetable_keeper.rs`'s `TIMETABLE_REGION_PAGES`).
 pub const STAGING_BYTES: usize = 128 << 10;
 
 /// Which start argument carries the fire count.
@@ -107,18 +91,12 @@ pub const ARG_ARCHIVE_LEN: usize = 1;
 pub const ARG_REGISTRATION_PAGE: usize = 2;
 
 /// Stack pages a timetable needs. Its working set is the plan, a kilobyte per entry, and a
-/// replacement holds two plans at once; eight pages died with a stack overflow in 2026-08.
-///
-/// **Raised 32 -> 48 on 2026-09-30**, when the store-mode registration chain overflowed 32 pages on
-/// both ISAs after `main` grew `grant_plan`'s planning path underneath this branch (milestone 205
-/// (how a foreign program is told what to do)'s designate and stage planning). The debug-build
-/// frames, measured with `-Z emit-stack-sizes`:
-/// `replace_if_asked` 48.0 KiB, `Registry::register` 21.2 KiB, `_start` 20.0 KiB,
-/// `plan_against_with` 13.4 KiB, the resolve closures 11.2 and 10.0 KiB, `register_installed`
-/// 9.8 KiB, `admit_installed` 5.6 KiB, and the store's `resolve_installed` -> `load_current` ->
-/// `store::load` another 11.0 KiB, which chains to about 125 KiB against the 128 KiB 32 pages gave.
-/// 48 pages is that with roughly half again; the growth was `main`'s, not this crate's, and the
-/// bound is a size rather than an assertion, so raising it is the fix rather than a workaround.
+/// replacement holds two plans at once. The store-mode registration chain's debug-build frames
+/// (`-Z emit-stack-sizes`) sum to about 125 KiB: `replace_if_asked` 48.0 KiB, `Registry::register`
+/// 21.2, `_start` 20.0, `plan_against_with` 13.4, the resolve closures 11.2 and 10.0,
+/// `register_installed` 9.8, `admit_installed` 5.6, and `resolve_installed` -> `load_current` ->
+/// `store::load` 11.0. 48 pages is that with roughly half again; the bound is a size rather than an
+/// assertion, so growth in `grant_plan`'s planning path is met by raising it.
 pub const STACK_PAGES: u64 = 48;
 
 /// Exit codes, the verdict word on [`OUT_SLOT`] or the page's exit word. A clean finish is `0`.

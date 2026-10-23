@@ -2,9 +2,8 @@
 //! reading the wall clock, replacing a document while keeping its beats, and the fire arithmetic
 //! the Kani proofs in `proofs.rs` cover.
 //!
-//! Moved out of the crate root unchanged by milestone 877 (the timetable crate root is split along
-//! its seams), as §294 (the timetable crate root splits into private modules) lays out; the root
-//! re-exports every public item at its old path.
+//! The crate root re-exports every public item, as §294 (the timetable crate root splits into
+//! private modules) lays out.
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
@@ -92,13 +91,10 @@ const NO_GENERATION: u64 = u64::MAX;
 impl<'a> Registry<'a> {
     /// **Check every entry against its program's manifest and against what this scheduler holds.**
     ///
-    /// This is the security boundary milestone 129's block names. Whoever can put a line in this
-    /// document can make that line's grants periodic and **nothing more**: the endowment is planned
-    /// here, by `grant_plan`, out of the program's own published manifest, and an authority the
-    /// scheduler does not hold cannot appear in it however the line is written.
-    ///
-    /// It fires nothing and touches no clock. [`arm`](Registry::arm) is a separate call so that a
-    /// caller can print the whole plan, decide it is wrong, and never arm anything.
+    /// The security boundary milestone 129's block names: each endowment is planned here by
+    /// `grant_plan` from the program's own manifest, so whoever can write a line can make its
+    /// grants periodic and **nothing more**. It fires nothing and touches no clock;
+    /// [`arm`](Registry::arm) is separate, so a caller can print the plan and never arm it.
     ///
     /// # Examples
     ///
@@ -213,11 +209,9 @@ impl<'a> Registry<'a> {
 
     /// **The programs this timetable will ever build**, as a bitmask over `Program::id`.
     ///
-    /// The point of it being computable at registration: reading the printed plan tells you the
-    /// complete set of programs this process will ever start, and a Kani-free host test can hold
-    /// that against the document. It is what makes the honest caveat in
-    /// `components/src/timetable.rs`'s `BUGS` (the program is handed the whole initial ramdisk
-    /// archive, which is wider than its plan) a *stated* residual rather than an unbounded one.
+    /// Computable at registration, so the printed plan names every program this process will ever
+    /// start, a host test holds that against the document, and a spawn site can narrow the archive
+    /// it hands over to this set. See notes/scheduled-execution/archive-narrowing.md.
     pub fn programs(&self) -> u64 {
         let mut set = 0u64;
         for r in self.rows() {
@@ -231,10 +225,9 @@ impl<'a> Registry<'a> {
     /// Arm every admitted row against a monotonic reading. `at-boot` entries become due
     /// immediately; interval entries become due one interval later.
     ///
-    /// **One interval later, not immediately**, and that is a decision rather than an
-    /// implementation detail: `every 30s` said at a prompt means "thirty seconds from now", and a
-    /// scheduler that also ran everything once at startup would make a boot the busiest moment the
-    /// machine ever has. An entry that wants both says both, on two lines, which is legible.
+    /// **One interval later, not immediately**: `every 30s` means "thirty seconds from now", and
+    /// running everything once at startup would make a boot the machine's busiest moment. An entry
+    /// that wants both says both, on two lines.
     pub fn arm(&mut self, now: u64) {
         for r in self.rows.iter_mut().take(self.n) {
             if r.endowment().is_none() {
@@ -254,10 +247,9 @@ impl<'a> Registry<'a> {
 
     /// **Read the wall clock into the registry**, once per pass, before [`due`](Registry::due).
     ///
-    /// This is S3 with the `SET` fix, as ruled with G5 (notes/scheduled-execution/calendar-grammar-g5.md):
+    /// S3 with the `SET` fix, as ruled with G5 (notes/scheduled-execution/calendar-grammar-g5.md):
     ///
-    /// - An unknown clock (`None`) leaves every calendar row dormant: nothing is armed and nothing
-    ///   fires, because a machine that does not know the date should not guess it.
+    /// - An unknown clock (`None`) leaves every calendar row dormant: nothing arms or fires.
     /// - A new generation is a step, or the first known reading. Every calendar row is re-armed to
     ///   its first occurrence after both the clock and its stamp, so a forward step fires a row at
     ///   most once and a backward step never fires one twice.
@@ -305,10 +297,9 @@ impl<'a> Registry<'a> {
     /// entry whose text is byte-identical to one in force keeps that entry's beat, and every other
     /// admitted entry arms fresh against `now`, exactly as [`arm`](Registry::arm) would.
     ///
-    /// Byte-identical means the schedule and the command both match. An `at-boot` entry that has
-    /// already fired therefore stays fired: resending a document is not a reboot. Duplicates pair
-    /// off in document order, each old row lending its beat at most once, so a document that adds
-    /// a second copy of a line gets one kept beat and one fresh one.
+    /// Byte-identical is schedule and command both, so a fired `at-boot` entry stays fired:
+    /// resending a document is not a reboot. Duplicates pair off in document order, each old row
+    /// lending its beat at most once, so an added second copy of a line arms fresh.
     ///
     /// Returns a mask, bit `i` set when entry `i` kept its beat. The rows it pairs are both
     /// admitted; a line that was refused before and is admitted now has no beat to keep.
@@ -341,15 +332,11 @@ impl<'a> Registry<'a> {
 
     /// **Take one row that is due at `now`, advancing it past `now`.** `None` when nothing is due.
     ///
-    /// Call it in a loop until it answers `None`: several entries can come due in one pass, and
-    /// answering one at a time is what lets the caller fire each one (which takes real time, and
-    /// can block waiting for memory) without holding a borrow of the whole table.
-    ///
-    /// The row it returns has **already been advanced**, so a caller that fails to build the child
-    /// has missed that occurrence rather than retrying it forever. That is the same skip-rather-
-    /// than-catch-up rule [`next_after`] states, applied to the failure path, and for the same
-    /// reason: an entry that cannot be built now will not be buildable a microsecond from now, and
-    /// a retry loop against a full budget is a spin with extra steps.
+    /// Call it in a loop until `None`: several entries can come due in one pass, and one at a time
+    /// lets the caller fire each (which takes real time, and can block on memory) without a borrow
+    /// of the whole table. The row returned is **already advanced**, so a child that fails to build
+    /// misses that occurrence rather than retrying forever: [`next_after`]'s skip rule, since a
+    /// retry against a full budget is a spin.
     pub fn due(&mut self, now: u64) -> Option<usize> {
         let wall = self.wall;
         for i in 0..self.n {
@@ -382,11 +369,11 @@ impl<'a> Registry<'a> {
 
     /// The earliest reading at which anything fires, or `None` if nothing ever will.
     ///
-    /// What a timed wait would block until, if this kernel had one. It does not (milestone 106 is
-    /// `NOT-STARTED` and gated on a decision), so `components/src/timetable.rs` yield-polls instead and
-    /// this is the number that says how long it will spin. Computing it anyway is deliberate: when
-    /// the timed wait lands, the scheduler's loop changes by one line and this function is already
-    /// the argument to it.
+    /// What a timed wait would block until. `components/src/timetable.rs` has not adopted milestone
+    /// 106 (a wait that ends on either the interrupt or the deadline)'s timer and yield-polls, so
+    /// this says how long it will spin; adopting it, milestone 674 (the last yield-spinners sleep
+    /// on a timer), changes the loop by one line with this as the argument. Covers counter rows
+    /// only, not calendar rows.
     pub fn next_deadline(&self) -> Option<u64> {
         self.rows().iter().filter_map(|r| r.next_fire()).min()
     }
@@ -398,26 +385,13 @@ impl<'a> Registry<'a> {
 
 /// **The next fire after `now`, given the one that was scheduled at `prev` and a period.**
 ///
-/// Three properties, and the third is the decision:
-///
-/// - it is **strictly after `now`**, so a fire never repeats within one pass of a polling loop;
-/// - it keeps the **phase**: the result is congruent to `prev` modulo `period`, so an entry that
-///   drifted late because the machine was busy comes back onto its original beat instead of
-///   inheriting the delay forever;
-/// - it **skips rather than catches up**. If the scheduler was away for an hour, an entry that
-///   should have fired two hundred times fires **once** and then resumes. Vixie cron does the same
-///   thing for the same reason, and the reason is worth writing down: catching up turns a stall
-///   into a stampede, and a housekeeping job that runs two hundred times back to back on a machine
-///   that was already struggling is how a slow morning becomes an outage. The cost is stated rather
-///   than hidden: occurrences are genuinely lost, and an entry whose work must not be skipped
-///   wants a durable queue rather than a scheduler.
-///
-/// `period == 0` answers [`u64::MAX`] (never), which no caller reaches because [`parse`](crate::parse) refuses a
-/// zero interval; it is here so the function is total rather than a panic waiting for a caller that
-/// did not read this line.
-///
-/// Three of those four are machine-checked; the phase one is host-tested, and `src/proofs.rs` says
-/// why in the place a reader of the proofs would look for it.
+/// The result is **strictly after `now`**, so a fire never repeats within a polling pass; keeps the
+/// **phase** (congruent to `prev` modulo `period`), so a late entry returns to its beat; and
+/// **skips rather than catches up**, as Vixie cron does: an entry that missed two hundred fires
+/// fires once, because catching up turns a stall into a stampede. Skipped occurrences are lost;
+/// work that must not be wants a durable queue. `period == 0` answers [`u64::MAX`] (never), so the
+/// function is total, though [`parse`](crate::parse) refuses a zero interval. All but the phase are
+/// machine-checked (`src/proofs.rs`). See notes/scheduled-execution/next-after-proofs.md.
 ///
 /// # Examples
 ///
@@ -441,16 +415,10 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
     if first > now {
         return first;
     }
-    // Past the first candidate, so snap `now` back onto the beat and add one period. Reaching the
-    // answer this way rather than by counting the periods that went by (`first + (gap / period + 1)
-    // * period`) is what makes it provable in seconds instead of hours: **there is no
-    // multiplication here**, and a 64-by-64 multiplier is an enormous thing to hand a SAT solver.
-    // The counting form was written first, and Kani was still grinding on one harness after ten
-    // minutes; this form proves in well under one. Same answer, and the tests that pin the answer
-    // did not change.
-    //
-    // `now >= first > prev`, so the subtraction cannot wrap, and `r < period`, so `now - r` cannot
-    // either.
+    // Snap `now` back onto the beat and add one period, rather than counting the periods that went
+    // by: no multiplication, which keeps the Kani harnesses to seconds
+    // (notes/scheduled-execution/next-after-proofs.md).
+    // `now >= first > prev`, so the subtraction cannot wrap, and `r < period`, so `now - r` cannot.
     let r = (now - prev) % period;
     (now - r).saturating_add(period)
 }
