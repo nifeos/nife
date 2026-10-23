@@ -245,7 +245,8 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
         out(NO_DISPLAY_SENTENCE);
         return;
     }
-    // The job ran and the kernel killed it (milestone 235): something ran, unlike the lines above.
+    // The job ran and the kernel killed it (milestone 235 (a command that faults hangs the
+    // prompt)): something ran, unlike the lines above.
     if answer == spawnproto::JOB_FAULTED {
         out(FAULTED_SENTENCE);
         return;

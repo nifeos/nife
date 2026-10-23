@@ -12,8 +12,8 @@ use super::*;
 /// that reports the remainder. The caller passes its own constant and the row says "(initial)".
 ///
 /// `clock` is the slot holding this shell's read-only clock page, or `None` for a wiring that
-/// granted none (milestone 86). A slot number rather than a boolean, because a shell wired without
-/// a filesystem has one fewer capability below it.
+/// granted none (milestone 86 (`time`: the shell times a command)). A slot number rather than a
+/// boolean, because a shell wired without a filesystem has one fewer capability below it.
 pub fn write_holdings(
     budget_pages: u64,
     holdings: Holdings,

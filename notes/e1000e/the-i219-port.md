@@ -120,8 +120,8 @@ It comes from the SPT branches of `e1000_ich8lan.c`:
   link-change interrupt this driver does not take (`e1000_check_for_copper_link_ich8lan`). That
   covers the EMI receive configuration, the PLL clock gate, the 776.20 pointer gap at 1000 Mb/s,
   the beacon duration, LTR and OBFF. A link that comes up and then loses frames, especially at 10
-  or 100 Mb/s, points here first. It is about 250 lines of FreeBSD, proposed in milestone 494's
-  Follow-on.
+  or 100 Mb/s, points here first. It is about 250 lines of FreeBSD, proposed in milestone 494 (a
+  driver for the network card a PC actually has)'s Follow-on.
 - Flow control is not configured, so it is not advertised. FreeBSD advertises symmetric pause and
   programs the watermarks to match (`e1000_set_fc_watermarks_generic`). This driver does neither
   (`sequence::setup_copper_link`).

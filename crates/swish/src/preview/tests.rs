@@ -11,11 +11,12 @@ use grant_plan::{FileGrantDeclaration, InputDeclaration, MemoryGrantDeclaration}
 use super::*;
 use crate::test_support::{endowment, listing, shown};
 
-/// **`caps <path>` tells the cases apart** (§219 D and D2, and milestone 597 (a program carries
-/// its manifest in an ELF note)): vouched runs with its own manifest and names its generation;
-/// unvouched runs with the two pages only on a session that holds the capability, and prints what
-/// the note asked beside what it gets; a note that asks the line for more than unvouched bytes may
-/// hold is refused; otherwise it says it would be refused and grants nothing.
+/// **`caps <path>` tells the cases apart** (§219 (how the shell names an installed program to the
+/// spawner) D and D2, and milestone 597 (a program carries its manifest in an ELF note)): vouched
+/// runs with its own manifest and names its generation; unvouched runs with the two pages only on a
+/// session that holds the capability, and prints what the note asked beside what it gets; a note
+/// that asks the line for more than unvouched bytes may hold is refused; otherwise it says it would
+/// be refused and grants nothing.
 #[test]
 fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     use grant_plan::expand::Expansion;

@@ -21,7 +21,8 @@ pub struct Vouched {
 }
 
 /// **`caps <path>`: what running a file's bytes would grant, and on whose word** (DECISIONS §219
-/// option D and gate D2; milestone 597 (a program carries its manifest in an ELF note)).
+/// (how the shell names an installed program to the spawner) option D and gate D2; milestone 597
+/// (a program carries its manifest in an ELF note)).
 ///
 /// `digest` is the file's `sha256:<hex>`, `vouched_by` the live generation that lists it (or
 /// `None`), `holds` whether this session holds the run-unvouched capability, `declared` the

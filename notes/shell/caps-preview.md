@@ -30,8 +30,8 @@ progenitor endows, reading the same word off the argv.
 ## `caps <path>`: what a file's bytes would be granted, and on whose word
 
 This is §219 (how the shell names an installed program to the spawner), option D and gate D2, and
-milestone 198's rung 3a. The manifest a file carries in its note is milestone 597 (a program carries
-its manifest in an ELF note).
+milestone 198 (a package manager)'s rung 3a. The manifest a file carries in its note is
+milestone 597 (a program carries its manifest in an ELF note).
 
 The shell computes every input from the bytes it read and the installed-programs table it can read.
 The digest is the file's SHA-256 in its text form, `sha256:<hex>`. The vouch is the live generation
@@ -100,7 +100,8 @@ machine row (the 2026-10-03 security audit's follow-up, item (d)).
 - The network (milestone 590 (the booted system starts its network stack)), in the entropy
   row's shape and for its reason: a person reads it before anything runs rather than learning it
   from a firewall afterward. Each socket is its own capability (§255 (each socket is its own
-  capability), milestone 649), so one declaring program cannot reach another's sockets. A `std`
+  capability), milestone 649 (every client of a network stack shares its socket numbers)), so
+  one declaring program cannot reach another's sockets. A `std`
   program holds the stack and, beside it, the region it is built in, which the net PAL retypes each
   socket's shared page from.
 - The supervision domain, `ps`'s row. On Linux `ps` reads `/proc` and the answer is every

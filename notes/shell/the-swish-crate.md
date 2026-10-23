@@ -153,7 +153,7 @@ one directory grant at the current directory. Every word after the program's nam
   says "here";
 - otherwise its first component is looked up with the shell's directory read. A name that is here
   is designated. One that is not is inert bytes (a pattern, a count), unless the program may
-  create, which is §170's clause 3.
+  create, which is §170 (how a foreign program is told what to do)'s clause 3.
 
 So `rg needle src/main.rs` designates `src`, and the program can read all of `src`, not only
 `main.rs`. The caretaker filters at this directory and nowhere below, as milestone 205's BUGS
