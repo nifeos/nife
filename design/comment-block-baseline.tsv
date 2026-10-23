@@ -176,10 +176,6 @@ kernel/src/revoke.rs:874	25
 kernel/src/revoke.rs:930	39
 kernel/src/sched.rs:1	34
 kernel/src/sched.rs:139	30
-kernel/src/sched/capabilities.rs:37	22
-kernel/src/sched/capabilities.rs:203	22
-kernel/src/sched/capabilities.rs:230	33
-kernel/src/sched/capabilities.rs:398	30
 kernel/src/sched/configure.rs:39	25
 kernel/src/sched/inspection.rs:381	23
 kernel/src/sched/inspection.rs:660	35
