@@ -177,9 +177,9 @@ An undeclared authority is an empty slot, and that difference is the feature. A 
 declaration finds the slot empty and the kernel refuses its call with `abi::Error::NoSuchSlot`. `ps`
 prints that refusal apart from an empty domain. `entropy_contract::delivered` reads it as `None`
 rather than as a short reply, which `disk_partitioner` turns into `R_NO_ENTROPY` instead of writing
-a GPT full of counter-derived ids. A session the owner withheld the machine page from (§225 (`free`
-sees the machine and your share) grants it to every login by default) spawns programs that say they
-cannot see the machine, rather than show a machine of zero bytes.
+a GPT full of counter-derived ids. §225 (`free` sees the machine and your share) grants the machine page
+to every login by default. A session the owner withheld it from spawns programs that say they cannot
+see the machine, rather than show a machine of zero bytes.
 
 Four of these are the owner's alone:
 
