@@ -51,7 +51,7 @@ distinguish sequences this engine swallows anyway.
 
 The string state earns its place. `ESC ]` (OSC), `ESC P` (DCS) and `ESC X`, `ESC ^`, `ESC _`
 carry arbitrary text, so a parser without the state prints the window title onto the screen. The
-engine once did exactly that, and the test feeds a title-setting sequence for that reason. A
+test feeds a title-setting sequence to hold this. A
 string ends at BEL (xterm's terminator) or at `ESC \` (ST); an `ESC` followed by anything else is
 part of the string. A two-byte escape the engine does not speak consumes its final byte too, so
 it cannot leave a stray letter on the screen.

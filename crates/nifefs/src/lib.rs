@@ -621,9 +621,9 @@ mod verification {
     ///
     /// `#[kani::unwind(9)]` lets a weakened guard reach a verdict and removes no path on the correct
     /// tree; 9 lets the 8-byte magic compare finish. Measurements are in notes/nifefs.md.
-    ///
     /// BUGS: one record per harness (§134 (a harness carries a machine-replayable falsification
-    /// record)), so #1217's magic-before-length reordering, red in 1.1 s, is the cheaper replay.
+    /// record)), so the weakened guard replaced #1217's magic-before-length reordering, which
+    /// still goes red under this bound (1.1 s) and is the cheaper replay if one is needed.
     /// Falsification: replayable `crates/nifefs/falsifications/verification.a_short_image_is_refused_not_indexed.patch`
     #[kani::proof]
     #[kani::unwind(9)]

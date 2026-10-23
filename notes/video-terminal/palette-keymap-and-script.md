@@ -100,10 +100,10 @@ compositor's authority is memory, not messages) made visible.
 
 The scroller feeds 48 lines, one `OPERATION_WRITE` each, then a five-line tail in one write. Five
 rows are in use when it starts, so it scrolls a 24-row grid 34 times, both per present and several
-within one. Until it existed no pixel-exact witness pushed a picture past its own height, so the
-scroll path, where the `x86_64` swish leg spends most of its time, had no end-to-end witness. Each
+within one. It is the only pixel-exact witness that pushes a picture past its own height, so it is
+the end-to-end witness for the scroll path, where the `x86_64` swish leg spends most of its time. Each
 line carries its own index, so a picture scrolled by the wrong count disagrees at every digit. The
 windows scroll seven lines each, which runs the `MODE_WINDOW` present path's scroll publishing. One
-function hands the writes to every witness because the call sites drifted once: the firmware-screen
-witness wrote only the per-line half, and its oracle ended five scrolls ahead of its screen.
+function hands the writes to every witness, so no witness can feed only the per-line half and end
+scrolls ahead of its screen.
 

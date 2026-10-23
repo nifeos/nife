@@ -41,9 +41,9 @@ pub fn exit() -> ! {
 /// - Every trap in a program prints the same fault line, since its `pc` is this one instruction;
 ///   notes/user-mode-runtime.md has the fix and the workaround.
 ///
-/// Name: a verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all verbs, and
-/// the naming tenet's noun rule is about crates, programs and modules rather than about the things
-/// they do.
+/// Name: a verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all
+/// verbs, and the naming tenet's noun rule is about crates, programs and modules rather than about
+/// the things they do.
 pub fn trap() -> ! {
     #[cfg(target_arch = "aarch64")]
     // SAFETY: `brk` traps; the kernel turns a trap from userspace into a kill. The options promise
@@ -84,10 +84,9 @@ pub fn trap() -> ! {
     }
 }
 
-/// Require that `ok` holds, or die on the line that does not.
-///
-/// The one way a nife program says "no": there is no error value to return, and limping past a
-/// failed check turns a detected mistake into an undetected one, so this [`trap`]s at the call.
+/// Require that `ok` holds, or die on the line that does not. The one way a nife program says
+/// "no": there is no error value to return, and limping past a failed check turns a detected
+/// mistake into an undetected one, so this [`trap`]s at the call.
 ///
 /// # Examples
 /// ```ignore
