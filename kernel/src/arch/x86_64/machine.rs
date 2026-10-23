@@ -861,11 +861,12 @@ const INTEL_VENDOR: u32 = 0x8086;
 /// Where the machine says its low DRAM stops, or `None` when it does not say (milestone 256).
 ///
 /// `TOLUD` is the host bridge's boundary between DRAM and the 32-bit MMIO hole, where a PCI BAR
-/// window starts: a register the legacy ports reach, not AML. Bits 31:20; zero is not reported.
+/// window starts: a register the legacy ports reach, not AML. Bits 31:20 carry the address.
 ///
 /// # BUGS
 /// - Intel's register only: another vendor's host bridge answers `None`.
 /// - Only Core-era `0xbc` is read, not older chipsets' `0xb0`; q35 models neither (`None`).
+/// - Zero is read as "not reported", never as "low DRAM is empty".
 ///
 /// Name: provisional. calef names the functions, and this one was minted by a lane. It is the
 /// register's own expansion spelled out (`TOLUD` is "top of low usable DRAM"), on the same

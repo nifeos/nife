@@ -1,13 +1,13 @@
-//! Unhalted core cycles, `x86_64`: `IA32_PERF_FIXED_CTR1` (`CPU_CLK_UNHALTED.CORE`), the cycles the
-//! core ran at its own frequency, as aarch64's `PMCCNTR_EL0` gives; not the TSC, which
-//! [`super::timer::now()`] is. Read by `rdmsr` in ring 0 with `CR4.PCE` clear, so it grants nothing
-//! (§139 (who may read the cycle counter)). A stuck counter or one in step with the TSC is refused,
-//! never replaced by the TSC: [`cycles`] answers `None`. See notes/pmu.md.
+//! Unhalted core cycles, `x86_64`: `IA32_PERF_FIXED_CTR1`, not the TSC ([`super::timer::now()`]).
+//! Read by `rdmsr` in ring 0 with `CR4.PCE` clear (§139 (who may read the cycle counter)); a stuck
+//! or TSC-aliased counter is refused, and [`cycles`] answers `None`. See notes/pmu.md.
 //!
 //! # BUGS
 //! - Never read on silicon (design/roadmap/0309-x86-64-core-cycles.md).
 //! - The in-step check is exact: a hypervisor aliasing the two with an offset passes as `1.00`.
 //! - Boot CPU only: a secondary that never ran [`init`] reads zero.
+//! - The counter runs for the whole boot, read only as a difference.
+//! - `IA32_PERF_GLOBAL_CTRL` is read-modify-written, preserving firmware's bits.
 
 use core::sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering};
 
