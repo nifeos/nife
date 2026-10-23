@@ -1,43 +1,13 @@
-//! **The block-device roster and the disk surveyor** (milestone 57, notes/block-devices.md).
+//! The block-device roster, the disk surveyor, and the blank disk's partitioner and `mkfs`.
 //!
-//! The kernel's whole part in "what drives are attached" is here, and it is deliberately two
-//! separate acts:
+//! The kernel's part is two separate authorities. It writes one roster page (`block_roster`) that
+//! lists every block device and is handed out read-only, a listing and not a handle. It hands one
+//! device to one process: a block server owns one disk's DMA and transport
+//! (`fs_service::spawn_block_server`), and a client holds an endpoint to it and a page they share.
+//! The kernel never reads a partition table.
 //!
-//! 1. **Write the roster.** One page, laid out by `block_roster`, listing every block device the
-//!    kernel's own scans found, and mapped **read-only** into whichever program was granted it. It
-//!    carries no capacity and no address, because a listing is not a handle.
-//! 2. **Hand one device to one process.** The block server owns the DMA and the transport for
-//!    exactly one disk (`fs_service::spawn_block_server`, unchanged); the surveyor holds an
-//!    endpoint to it and a page they share.
-//!
-//! Those two authorities are what milestone 57 is about. `parted /dev/sda` as root holds both at
-//! once and can reach any disk in the machine; here the program with the listing cannot open
-//! anything from it, and the program with the disk was handed exactly one.
-//!
-//! The kernel never reads a partition table. It finds a device, confines it, and hands over
-//! endpoints; every byte of GPT judgement happens in userspace, in a crate whose tests run on the
-//! host against tables `sgdisk` and macOS `diskutil` wrote
-//! (notes/globally-unique-identifier-partition-table.md).
-//!
-//! # The pages are capabilities now (milestone 108, notes/frames.md)
-//!
-//! Both of those pages used to arrive as `Spawn::maps` entries: the kernel wrote them into the new
-//! address space before the program's first instruction, at an address the kernel picked, with
-//! permissions the kernel picked. Nothing in the program's capability table said they were there.
-//!
-//! They are `PageFrame` capabilities now, and the program maps them itself with `PageFrame::MAP`, spending
-//! page tables out of an untyped it also holds. Four things change and none of them are cosmetic:
-//! the rights are **attenuable** (`READ` on the roster is refused a writable mapping before a page
-//! table is touched, rather than being caught by a permission bit afterwards), the frame is
-//! **delegable** onward, the mapping is **recorded** so `PageFrame::REVOKE` can pull it back
-//! (`disk_tests::the_roster_can_be_revoked_out_from_under_its_holder` is that claim), and the
-//! authority is **legible**: reading this file's `grant_at` calls tells you the whole of what the
-//! surveyor can reach, which is what CLAUDE.md means by a process's authority being readable in its
-//! spawn literal.
-//!
-//! What stays wired at spawn is the **stack**, and that is a floor rather than an omission: a
-//! program cannot map its own stack, because it needs a stack before it can make the syscall that
-//! would map one.
+//! Every page is a `PageFrame` capability the program maps itself, out of a budget it also holds;
+//! only the stack is wired at spawn. See notes/block-devices.md.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -50,32 +20,19 @@ use crate::sched::RendezvousId;
 /// `helpers/qemu-runner-*.sh`, which explain why command-line order is reversed.
 const GPT_DISK: usize = 3;
 
-/// Which mmio block device the **write half** is given: the FIFTH, a 64 MiB image of zeros that the
-/// runner regenerates every boot. Its own disk for milestone 37's reason (DECISIONS §27): a test
-/// that writes a partition table and then a filesystem cannot be pointed at an image other tests
-/// read, or every one of their results becomes a function of whether this one ran first.
+/// Which mmio block device the write half is given: the fifth, a 64 MiB image of zeros the runner
+/// regenerates every boot and no other test reads (§27 (the filesystem service)).
 const BLANK_DISK: usize = 4;
 
-/// Where the surveyor puts the roster in its own address space.
-///
-/// **The kernel does not decide this any more** (milestone 108). It hands over a `PageFrame` and the
-/// program maps it where it likes; this constant exists only because the negative-control probe
-/// reports the address back and then writes to it, and the test asserts the fault landed exactly
-/// here. An attack on an address nobody uses would prove nothing. The address the surveyor uses for
-/// the page it shares with its block server is not here at all, for the same reason: nothing on
-/// this side needs to know it.
+/// Where the surveyor maps the roster in its own address space. The program chooses it; the
+/// kernel names it only so the probe's test can assert its fault landed exactly here.
 pub const ROSTER_VA: u64 = address_space_map::service_window(0x5001_0000);
 
-/// **The budget every program on this path draws its page tables from** (milestone 108).
+/// The budget, in pages, every program on this path draws its page tables from.
 ///
-/// A `PageFrame` the process maps itself costs it the tables to reach the address, because
-/// `PageFrame::MAP` retypes them out of an untyped the caller names and the kernel allocates nothing.
-/// Two mappings 64 KiB apart share an L3, so the real cost here is one L3 plus the levels above it;
-/// eight pages is the same generous number `page_frame_service` uses for one frame and its tables, and
-/// 32 KiB is nothing beside the 1.5 MiB budget `mkfs` already takes.
-///
-/// It is a **reservation**, not a spend: see [`MAKER_BUDGET_PAGES`] for what happens on this
-/// machine when reservations accumulate.
+/// `PageFrame::MAP` retypes tables out of the caller's untyped. Two mappings 64 KiB apart share an
+/// L3, so the cost is one L3 plus the levels above it; eight pages is `page_frame_service`'s number.
+/// It is a reservation, like [`MAKER_BUDGET_PAGES`].
 const MAP_BUDGET_PAGES: u64 = 8;
 
 // The roles, in `a0`. Must match components/src/disk_surveyor.rs.
@@ -83,12 +40,8 @@ const ROLE_SURVEY: u64 = 0;
 const ROLE_PROBE: u64 = 1;
 const ROLE_HOLDER: u64 = 2;
 
-// The surveyor's capability table, **one layout for both roles**. Must match components/src/disk_surveyor.rs.
-//
-// The probe holds neither a disk nor the page that goes with one, and those are holes rather than a
-// shorter list: `grant_at` places each capability at its own number, so the roster is slot 4 in both
-// roles and the binary has one slot map instead of two. Same move as [`start_maker`]'s, and the same
-// reason: a missing capability that renumbers the ones above it is a different program.
+// The surveyor's capability table, one layout for every role. Must match
+// components/src/disk_surveyor.rs. A role that lacks a capability leaves its slot empty.
 const SURVEY_SLOT_REPORT: u64 = 0;
 const SURVEY_SLOT_BLK: u64 = 1;
 const SURVEY_SLOT_BUDGET: u64 = 2;
@@ -96,14 +49,9 @@ const SURVEY_SLOT_BLK_PAGE: u64 = 3;
 const SURVEY_SLOT_ROSTER: u64 = 4;
 const SURVEY_SLOT_RESUME: u64 = 5;
 
-/// Stack pages **below** the single one `run` maps, for the survey role.
-///
-/// A measurement rather than a guess, and the same lesson `spawn_fs_client` records: with none the
-/// surveyor overflowed by about 200 bytes, which presented as a data abort on its own `sp` and then
-/// as the 60-second lost-wakeup watchdog, because the test was still waiting for a report from a
-/// process that had died. `GloballyUniqueIdentifierPartitionTable::parse` walks 128 entries and a
-/// debug-build `Entry` is 128 bytes by value; `check_backup` decodes a second header beside the
-/// first. Four pages is comfortably over what it used and still small.
+/// Stack pages below the single one `run` maps, for the survey role. With none the surveyor
+/// overflowed by about 200 bytes: `GloballyUniqueIdentifierPartitionTable::parse` walks 128
+/// entries of 128 bytes each in a debug build, and `check_backup` decodes a second header.
 const SURVEY_EXTRA_STACK: usize = 4;
 
 /// What the surveyor was wired with, so a test can take its reports.
@@ -120,17 +68,12 @@ pub struct Wiring {
     pub devices: usize,
 }
 
-/// Every block device the kernel can see, in the order the roster lists them.
+/// Every block device the kernel can see, in roster order, and how many there are.
 ///
-/// mmio first, in slot order, then virtio-blk functions on PCIe, then NVMe controllers. That
-/// ordering is a promise to the roster's reader: an mmio device's `ordinal` is the same number
-/// `virtio::find_block_device_n` counts by, and an NVMe controller's is its place in the same walk
-/// `pci::find_nvme_device` takes the first of, so a listing and a wiring cannot disagree about
-/// which disk is which. NVMe comes last so that adding it moved no virtio entry.
-///
-/// An NVMe entry is listed whether or not `non_volatile_memory_express_service` has wired a
-/// server for it, the same terms the virtio entries are on: the roster says a disk exists, and
-/// which program holds its endpoint is decided at wiring time and nowhere in this page.
+/// mmio first in slot order, then virtio-blk on PCIe, then NVMe controllers. Each `ordinal` is the
+/// number the matching finder counts by (`virtio::find_block_device_n`, the walk
+/// `pci::find_nvme_device` takes), so a listing and a wiring agree on which disk is which. A device
+/// is listed whether or not a server has been wired for it.
 fn devices() -> (
     [block_roster::Device; block_roster::capacity_of(FRAME_SIZE as usize)],
     usize,
@@ -202,9 +145,8 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the surveyor");
 
     crate::sched::spawn(move || {
-        // **Only the stack is wired at spawn now** (milestone 108). A process cannot map its own
-        // stack, because it needs one before it can make the syscall that would map it; everything
-        // else it uses is a `PageFrame` it holds and maps for itself, out of the budget in slot 2.
+        // The stack is wired at spawn: a process needs one before it can make the syscall that
+        // would map it.
         let mut stack = [Mapping {
             va: 0,
             phys: 0,
@@ -218,24 +160,17 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
         }
         crate::sched::grant_at(SURVEY_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
             .expect("surveyor slot 0 was occupied");
-        // ONE disk, and no way to name another.
         crate::sched::grant_at(SURVEY_SLOT_BLK, rendezvous_cap(blk_ep, Rights::WRITE))
             .expect("surveyor slot 1 was occupied");
         crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_cap(budget))
             .expect("surveyor slot 2 was occupied");
-        // The page it shares with its block server: `WRITE` because a read is a round trip through
-        // that page in both directions.
+        // `WRITE`, because a read is a round trip through the shared page in both directions.
         crate::sched::grant_at(
             SURVEY_SLOT_BLK_PAGE,
             page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),
         )
         .expect("surveyor slot 3 was occupied");
-        // **`READ` alone, and that is the enumeration authority.** The surveyor may see what
-        // devices exist and may not change the list, add itself a device, or turn an entry into a
-        // handle. Under milestone 108 the confinement is in the *capability* rather than in a page
-        // permission the kernel chose: `PageFrame::MAP` refuses a writable mapping of a frame held
-        // `READ`, so the surveyor cannot even ask for a window it could scribble through.
-        // `start_probe` is the proof.
+        // `READ` alone: `PageFrame::MAP` refuses a writable mapping of it ([`start_probe`]).
         crate::sched::grant_at(
             SURVEY_SLOT_ROSTER,
             page_frame_cap(roster_phys, Rights::READ),
@@ -262,18 +197,11 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
     })
 }
 
-/// The negative control: the same binary, the same roster frame, and no disk at all. It asks for a
-/// writable mapping (refused), maps the page read-only instead, announces the address, and writes.
+/// Spawn the negative control and return its report endpoint: the same binary and roster frame,
+/// held `READ`, and no disk, so the claim is about the page alone.
 ///
-/// It gets no block endpoint on purpose. The claim under test is about the *page*, and a process
-/// holding a disk as well would leave open the reading that something about the disk mattered.
-///
-/// **Two rungs since milestone 108, where there used to be one.** The old wiring handed the probe a
-/// read-only *mapping*, so the only thing it could do wrong was write through it. Now it holds the
-/// frame itself, with `READ` and nothing else, so the refusal happens one step earlier: it cannot
-/// obtain a writable window at all, and the fault on the read-only one is the second line of
-/// defence rather than the only one. A capability that is checked before the page table is written
-/// is what the spawn-time mapping had no room for.
+/// It asks for a writable mapping (refused before a page table is written), maps the page
+/// read-only instead, announces the address, and writes (a fault). See notes/block-devices.md.
 pub fn start_probe(surveyor_image: &'static [u8]) -> RendezvousId {
     let (roster_phys, _) = roster_page();
     let report = crate::sched::create_rendezvous();
@@ -281,8 +209,6 @@ pub fn start_probe(surveyor_image: &'static [u8]) -> RendezvousId {
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the probe");
 
     crate::sched::spawn(move || {
-        // Slots 1 and 3 stay empty: no disk, and no page shared with one. The numbering is the
-        // surveyor's, holes and all, so both roles read one slot map.
         crate::sched::grant_at(SURVEY_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
             .expect("probe slot 0 was occupied");
         crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_cap(budget))
@@ -319,17 +245,11 @@ pub struct HolderWiring {
     pub roster_phys: u64,
 }
 
-/// **Wire a program that holds the roster as a `PageFrame` and is about to lose it** (milestone 108).
+/// Spawn a program that holds the roster as a `PageFrame` and is about to lose it to
+/// `PageFrame::REVOKE`, which reaches it because the mapping is recorded.
 ///
-/// The point of the whole migration in one spawn: this program's roster page is a capability, so
-/// `PageFrame::REVOKE` reaches it. Before the migration the same page arrived through `Spawn::maps`,
-/// which records nothing in the mapping database (`user::run` maps and moves on), so a revoke
-/// walked straight past it and the page stayed mapped forever. **There was no way to un-share a
-/// page a program was handed at birth.**
-///
-/// It gets no disk and no shared block page, the same way [`start_probe`] does not: the claim is
-/// about the roster frame, and a process holding a disk as well would leave room to argue that
-/// something about the disk mattered.
+/// It gets no disk and no shared block page, as [`start_probe`] does not. See
+/// notes/block-devices.md.
 pub fn start_holder(surveyor_image: &'static [u8]) -> HolderWiring {
     let (roster_phys, _) = roster_page();
     let report = crate::sched::create_rendezvous();
@@ -379,14 +299,11 @@ impl HolderWiring {
 }
 
 // =============================================================================================
-// Milestone 57's write half: partitioning and formatting the blank disk
+// The write half: partitioning and formatting the blank disk
 // =============================================================================================
 
-/// Stack pages **below** the single one `run` maps, for the partitioner.
-///
-/// The same four the surveyor needs and for the same measured reason:
-/// `GloballyUniqueIdentifierPartitionTable::parse` walks 128 entries and a debug-build `Entry` is
-/// 128 bytes by value. The write path adds a 512-byte block of scratch on top of that.
+/// Stack pages below the single one `run` maps, for the partitioner: the surveyor's four, for the
+/// same parse, plus room for a 512-byte block of scratch.
 const PARTITION_EXTRA_STACK: usize = 4;
 
 // The partitioner's capability table. Must match components/src/disk_partitioner.rs. Slot 2 is the hole the
@@ -405,36 +322,23 @@ const MAKER_SLOT_ENTROPY: u64 = 2;
 const MAKER_SLOT_REPORT: u64 = 3;
 const MAKER_SLOT_BLK_PAGE: u64 = 4;
 
-/// Stack pages for `mkfs`. **The engine's number, not this program's**: RedoxFS recurses
-/// through its tree and htree and commits transactions on the stack, and one page overflows on the
-/// first `open`.
+/// Stack pages for `mkfs`, sized for RedoxFS, which recurses and commits transactions on the stack.
 ///
-/// Half the FS server's 96, and taken from the same measurement rather than trimmed until it fit:
-/// the instrumented high-water of a *full* server workload (mount, reads, writes, a create, two
-/// truncates) is 135,824 bytes on the deeper of the two ISAs, which is 34 pages
-/// (`fs_service::fs_stack_used`, notes/fs-server.md). 48 gives 40% headroom over that, and creating
-/// one filesystem with one file in it walks strictly less of the tree than the workload measured.
-///
-/// It matters that this is not simply 96: a boot runs five of these processes and their stacks are
-/// not freed when they die, so the difference is 1.5 MiB on a 128 MiB machine, and the first symptom
-/// of spending it is an unrelated test failing to get a budget several tests later. That happened
-/// with 96 (2026-08-03) and is why the number is here rather than borrowed.
+/// A full file-server workload peaks at 34 pages (`fs_service::fs_stack_used`), so 48 is 40%
+/// headroom. It is not the server's 96 because a boot runs five of these and never frees their
+/// stacks. See notes/block-devices.md, "The kernel's wiring".
 const MAKER_STACK_PAGES: u64 = 48;
 
-/// The untyped budget every `mkfs` process draws its heap from, **including the two that are
-/// meant to be refused**. Identical on purpose: the only thing that differs between the three runs
-/// is the capability under test, so a refusal cannot be explained by a smaller budget.
+/// The untyped budget every `mkfs` process draws its heap from, the same for the runs meant to be
+/// refused, so a refusal cannot be explained by a smaller budget.
 ///
-/// 1.5 MiB is four times the 352 KiB high-water a real mount reaches under this allocator
-/// (DECISIONS §27), and creation touches less than a mount. It is deliberately far below
-/// `fs_service::FS_BUDGET_PAGES`, because an untyped is a **reservation**: three 8 MiB ones do not
-/// fit beside everything else a test boot builds in 128 MiB, and the first symptom of trying is
-/// the progenitor failing to get its own budget several tests later.
+/// 1.5 MiB is four times a real mount's 352 KiB high-water (§27). It is far below
+/// `fs_service::FS_BUDGET_PAGES` because an untyped is a reservation, and three 8 MiB ones do not
+/// fit in a 128 MiB test boot.
 const MAKER_BUDGET_PAGES: u64 = 384;
 
-/// The blank disk's block server, wired once per boot. A second server on the same device would
-/// reset its queue out from under the first, so the partitioner, the verifier and `mkfs` are
-/// four processes sharing one; they run in sequence, which is what makes one shared page safe.
+/// The blank disk's block server, wired once per boot, since a second server on the device would
+/// reset its queue under the first. Its clients run in sequence, which makes one shared page safe.
 static BLANK_WIRED: AtomicBool = AtomicBool::new(false);
 static BLANK_BLK_EP: AtomicU64 = AtomicU64::new(0);
 static BLANK_SHARED: AtomicU64 = AtomicU64::new(0);
@@ -476,12 +380,11 @@ pub fn blank_disk(blk_image: &'static [u8]) -> Option<BlankDisk> {
     })
 }
 
-/// Spawn the partitioner over the blank disk in `role`, with an entropy endpoint or **without one**.
+/// Spawn the partitioner over the blank disk in `role`, and return its report endpoint.
 ///
-/// `entropy` is the whole experiment. `Some(ep)` and the program can draw the unique ids a GPT
-/// requires; `None` leaves slot 2 empty and its first `CALL` there comes back as a kernel error,
-/// which `entropy_contract::delivered` reports as "no entropy" rather than as a short reply. Same
-/// binary, same role, same disk, same everything else.
+/// `entropy` is the experiment: `Some(ep)` lets the program draw a GPT's unique ids, and `None`
+/// leaves slot 2 empty, so its first `CALL` there is a kernel error that
+/// `entropy_contract::delivered` reports as "no entropy". Nothing else differs.
 pub fn start_partitioner(
     image: &'static [u8],
     disk: &BlankDisk,
@@ -493,8 +396,6 @@ pub fn start_partitioner(
     let blk_shared = disk.blk_shared;
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the partitioner");
-    // Only read when `entropy` is `Some`; the endpoint id is copied out here so the closure below
-    // captures a plain `u64` rather than the `Option` twice.
     let ep = entropy.unwrap_or_default();
 
     crate::sched::spawn(move || {
@@ -509,16 +410,11 @@ pub fn start_partitioner(
                 .expect("no frame for the partitioner's stack")
                 .addr();
         }
-        // **The capability table IS the experiment**: slot 2 is filled or it is empty, and nothing else
-        // differs. It used to be the last of a shorter list, which said the same thing as long as
-        // nothing was ever added after it; milestone 108 added two things, so the hole is explicit
-        // now and the entropy run and the entropy-less run stay the same program.
         crate::sched::grant_at(PARTITION_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
             .expect("partitioner slot 0 was occupied");
         crate::sched::grant_at(PARTITION_SLOT_BLK, rendezvous_cap(blk_ep, Rights::WRITE))
             .expect("partitioner slot 1 was occupied");
         if entropy.is_some() {
-            // Randomness, and no way to reach the RNG.
             crate::sched::grant_at(PARTITION_SLOT_ENTROPY, rendezvous_cap(ep, Rights::WRITE))
                 .expect("partitioner slot 2 was occupied");
         }
@@ -545,11 +441,11 @@ pub fn start_partitioner(
     report
 }
 
-/// Spawn `mkfs` over the blank disk, with or without either half of the pair it needs.
+/// Spawn `mkfs` over the blank disk in `role`, with or without either half of the pair it needs
+/// (`entropy`, `with_disk`), and return its report endpoint.
 ///
-/// Three wirings, one binary: both capabilities, no entropy, no disk. The budget, the stack and the
-/// shared page are identical in all three, so the only thing that can explain a refusal is the
-/// capability that is missing.
+/// The budget, the stack and the shared page are the same in every wiring, so only the missing
+/// capability can explain a refusal.
 pub fn start_maker(
     image: &'static [u8],
     disk: &BlankDisk,
@@ -558,12 +454,8 @@ pub fn start_maker(
     with_disk: bool,
 ) -> RendezvousId {
     let report = crate::sched::create_rendezvous();
-    // **Give the previous run's reservation back before taking another.** An untyped is a
-    // reservation rather than a cap, and this test starts five of these processes; holding all five
-    // at once costs 7.5 MiB of a 128 MiB machine and the symptom is an unrelated test failing to get
-    // its own budget much later ("no building budget for init", 2026-08-03). The previous process
-    // reported and exited a whole round trip ago, so `destroy` revokes nothing that is live; a
-    // region it refuses (something still pinned) is simply left alone, which is the old behaviour.
+    // Give the previous run's reservation back first: five at once cost 7.5 MiB of a 128 MiB
+    // machine. That run has exited, so `destroy` revokes nothing live; a region it refuses is left.
     let previous = LAST_BUDGET.swap(0, Ordering::Relaxed);
     if previous != 0 {
         crate::memory_region::destroy(previous);
@@ -594,13 +486,8 @@ pub fn start_maker(
                 flags: Flags::user_data(),
             };
         }
-        // **Every slot placed explicitly, because the HOLE is the experiment.** A missing
-        // capability here is not the last entry of a shorter list (the disk is slot 1 and the
-        // verdict is slot 3), so `run`'s fill-in-order grants cannot express it: they would
-        // renumber everything above the gap and the program would find its report endpoint where
-        // it looked for a disk. `grant_at` leaves the slot genuinely empty, which is what the
-        // program's first `CALL` there meets, and it is the same move `std_service` makes for a
-        // std program that holds a directory and no network (notes/abi.md §4).
+        // Every slot placed with `grant_at`, so a withheld capability leaves a hole rather than
+        // renumbering the slots above it (notes/abi.md §4).
         crate::sched::grant_at(MAKER_SLOT_BUDGET, memory_region_cap(budget))
             .expect("mkfs slot 0 was occupied");
         if with_disk {
@@ -613,11 +500,8 @@ pub fn start_maker(
         }
         crate::sched::grant_at(MAKER_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
             .expect("mkfs slot 3 was occupied");
-        // **The page goes in with the disk that needs it, in every run** (milestone 108). It is
-        // granted even to the two runs that are meant to be refused, for the reason the whole
-        // wiring is identical: a refusal explained by a missing page would not be a refusal
-        // explained by the missing capability. The tables to map it come out of slot 0, which is
-        // this program's own heap budget, so mapping its shared page costs it its own memory.
+        // Granted in every run, even those meant to be refused, so a missing page cannot explain a
+        // refusal. Its tables come out of slot 0, the program's own heap budget.
         crate::sched::grant_at(
             MAKER_SLOT_BLK_PAGE,
             page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),

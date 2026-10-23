@@ -255,7 +255,6 @@ kernel/src/user/address_space_registry.rs:423	30
 kernel/src/user/designware_ethernet_service.rs:1	38
 kernel/src/user/device_starters.rs:140	39
 kernel/src/user/device_starters.rs:410	31
-kernel/src/user/disk_service.rs:1	40
 kernel/src/user/disk_tree_service.rs:1	24
 kernel/src/user/e1000e_service.rs:1	36
 kernel/src/user/entry.rs:79	28
