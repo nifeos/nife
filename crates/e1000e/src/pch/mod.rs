@@ -1,38 +1,13 @@
 //! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code** (milestone 494 (a driver
-//! for the network card a PC actually has), after calef's amendment of 2026-10-04 to §46 (thin
-//! primitives or whole subsystems): outside the kernel and the Kani-proved crates, take or adapt
-//! first).
+//! for the network card a PC actually has)).
 //!
-//! The I219 is not a PCIe NIC in the 82574L's sense. It is a MAC inside the platform controller hub
-//! (PCH) talking to a separate PHY, shared with the Management Engine, and it carries workarounds
-//! that only field exposure finds. FreeBSD's Intel shared code (BSD-3-Clause, notice below) is the
-//! only source this tree reads for them; Linux's `e1000e` is GPL and was not consulted for any of
-//! it. Each item names the FreeBSD function it comes from, read from `sys/dev/e1000/` on FreeBSD's
-//! `main`, on 2026-10-04 for the first three and 2026-10-05 for the rest:
-//!
-//! - [`ulp`]: leaving ultra-low-power mode through the Management Engine, from
-//!   `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`), its ME branch.
-//! - [`flush`]: the descriptor-ring flush SPT parts need before a reset, from `em_flush_desc_rings`,
-//!   `em_flush_tx_ring` and `em_flush_rx_ring` (`if_em.c`).
-//! - [`reset`]: the MAC-register constants around the global reset, from `e1000_reset_hw_ich8lan`
-//!   (`e1000_ich8lan.c`) and `e1000_disable_pcie_master_generic` (`e1000_mac.c`).
-//! - [`phy`]: MDIO through `MDIC`, the software/firmware semaphore, and the PCH PHY's paged
-//!   registers.
-//! - [`nvm`]: reading the `GbE` region of the flash through BAR0, as Sunrise Point does it.
-//! - [`sequence`]: the bring-up itself, in FreeBSD's order: the PHY workarounds at attach
-//!   (`e1000_init_phy_workarounds_pchlan`, which holds the ULP exit without an ME, the
-//!   `SMBus`-to-PCIe switch and the `LANPHYPC` power cycle), the global reset with the PHY
-//!   (`e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`), and the hardware and copper-link
-//!   setup (`e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt`).
-//!
-//! Every sequence is generic over [`Hw`], so it runs on the host against a simulated I219 (this
-//! module's `sim`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-//! [`sequence`]; it does reach [`phy::id_at`], which shares [`phy::read_mdic`] with everything
-//! here, so the MDIO primitive is the one piece the QEMU gates prove.
-//!
-//! The constants are facts about the hardware; the sequences are FreeBSD's, adapted, and carry
-//! Intel's licence below as its first condition requires.
-//!
+//! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
+//! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) is the only
+//! source read for it: [`ulp`], [`flush`], [`reset`], [`phy`], [`nvm`] and [`sequence`] each name
+//! the FreeBSD functions they follow. Every sequence is generic over [`Hw`], so it runs on the host
+//! against a simulated I219 (`sim`) as well as in the kernel. The constants are facts about the
+//! hardware; the sequences are FreeBSD's, adapted, and carry Intel's license below as its first
+//! condition requires. See notes/e1000e/the-i219-port.md.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -66,32 +41,17 @@
 //! ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
-//!
 
 //! # BUGS
 //!
-//! - **None of it has run on silicon.** QEMU's 82574L is not a PCH part, so [`sequence`] is
-//!   skipped under the gates ([`is_pch`] is false for it) and is proved only against `sim`, which
-//!   is this crate's reading of FreeBSD and not the device. xenon's bench boot is its first
-//!   execution (notes/e1000e.md).
-//! - **The link-up half is not ported.** FreeBSD reconfigures the PHY each time link comes up
-//!   (`e1000_check_for_copper_link_ich8lan`: the EMI receive configuration, the PLL clock gate,
-//!   the 776.20 pointer gap at 1000 Mb/s, the beacon duration, LTR and OBFF), from a link-change
-//!   interrupt this driver does not take. A link that comes up and then loses frames, especially
-//!   at 10 or 100 Mb/s, points here first. About 250 lines of FreeBSD; proposed in milestone 494's
-//!   Follow-on.
-//! - **Flow control is not configured, so it is not advertised.** FreeBSD advertises symmetric
-//!   pause and programs the watermarks to match (`e1000_set_fc_watermarks_generic`); this driver
-//!   programs neither, and advertises neither ([`sequence::setup_copper_link`]).
-//! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after`].
-//! - **One read in FreeBSD's `SMBus` unforce is not mirrored.** In `e1000_phy_is_accessible_pchlan`,
-//!   a failed read of `CV_SMB_CTRL` leaves the previous register's value in the variable that is
-//!   then written back with one bit cleared. This port writes only when the read succeeded.
-//! - **The licence's second condition is not met by any binary this tree ships yet.** A binary
-//!   redistribution must reproduce Intel's notice "in the documentation and/or other materials".
-//!   The source carries it here and in each adapted file; nothing that ships an image (the stick, a
-//!   package) carries a third-party notices file, and none exists in the tree. Milestone 494's
-//!   block records it.
+//! - **It has run on silicon once, with no cable**; under QEMU only `sim` proves [`sequence`].
+//!   Each entry is argued in notes/e1000e/the-i219-port.md, "BUGS".
+//! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
+//!   up and then loses frames points here first.
+//! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
+//! - **Two divergences from FreeBSD**: the transmit flush ([`flush::tail_after`]), and a failed
+//!   `CV_SMB_CTRL` read, which is not written back.
+//! - **The license's second condition is not met by any binary this tree ships yet**.
 
 pub mod nvm;
 pub mod phy;
