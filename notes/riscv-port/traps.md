@@ -110,6 +110,49 @@ moved the codegen-unit split and grew riscv64's `syscall_entry` from 2,010 to 2,
 An exception from S-mode is a kernel bug and panics. It first says whether `stval` is a guard page,
 using the interrupted `sp` from `x[2]`, since the live `sp` may be this hart's interrupt stack.
 
+## The PLIC adapter
+
+`irq.rs` is the arch side of the portable `arch::irq` surface, the twin of aarch64's GIC adapter,
+and thin by design: `drivers::plic` does the work.
+
+Each hart's S-mode PLIC context comes from the device tree's `interrupts-extended`, held in a
+table indexed by hart id. `2*hart + 1` is QEMU `virt`'s layout and not a law. The JH7110's disabled
+S7 core (hart 0) contributes only an M context, so there hart h's S context is `2h`. A kernel using
+the formula programs its neighbor's context: enables, claims and completes all land one over, and
+every external interrupt sits pending forever. A tree that does not state the layout leaves the
+formula in force, and the boot prints a line only when the machine differs from it. The machine
+description prints the context beside the PLIC address because it is the number that is not
+architectural.
+
+The boot hart's context is derived too, never fixed at 1: OpenSBI elects the boot hart by lottery,
+and a kernel that programs hart 0's context while running on hart 3 leaves every interrupt pending
+with all harts parked in `wfi`. The PLIC base is stored before `sie.SEIE` is set, so no claim goes
+through a zero base, and every source stays disabled until `enable` routes it.
+
+Sources spread round-robin over the online harts, the twin of the GIC's `ITARGETSR`. The k-th
+online hart is chosen, not hart k: the VisionFive 2's online set is {1,2,3}, and an index would
+route a source to parked hart 0. Each source's target is assigned once and kept, with the first
+writer winning a race, so a claim and its completion always meet on one context. The boot hart
+opens the target's threshold before the first source lands, which it can because threshold
+registers are global MMIO. Every hart sets `SEIE` as it joins the scheduler, which delivers nothing
+until a source is routed to it.
+
+A claim's context is recorded until the driver's ACK, which completes on that context. A source can
+be enabled on more than one context, because the hand-over pins the console's to the boot hart, and
+only a context that enables a source may complete it. An ACK with no claim outstanding arms the
+source at its target instead.
+
+PCI functions on QEMU `virt` raise INTx through the standard swizzle onto PLIC inputs 32 to 35,
+which the machine's device tree states and `crates/pci`'s fixture test holds the formula against.
+So `alloc_msi_vector` answers `None` and `kernel/src/pci.rs` falls back to INTx. That is not "MSI is
+unsupported on RISC-V": the AIA's IMSIC is the same mechanism, and a board with one would implement
+it there. Nothing here needs it, and a routing path with no consumer cannot be known to work
+([milestone 215](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86_64 differs).
+
+No device here interrupts at bring-up without input or a disk, so the self-test's `deviceirq` check
+reports itself absent. A device line is proved where one exists: the user-level input driver at the
+hand-over, and the `blockdev` check's driver when a disk is attached.
+
 ## BUGS
 
 - `classify` walks the tables after the fault, a few hundred cycles late. Another hart unmapping
