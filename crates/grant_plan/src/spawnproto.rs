@@ -44,7 +44,7 @@ const DIAG_BIT: u64 = 1 << 35;
 /// when the shell decided this stage both writes and reads, and the line named neither `>` nor `|`
 /// for its output: its primary output defaults to `terminal_sink_caretaker`, and what follows is a
 /// fresh endpoint the shell minted and kept a copy of. The progenitor installs it as the child's
-/// DECISIONS §26 fault target, so the shell `RECEIVE`s the child's exit there as its completion
+/// DECISIONS §26 (the fault endpoint) fault target, so the shell `RECEIVE`s the child's exit there as its completion
 /// signal instead of draining bytes it no longer sees.
 const SCREEN_BIT: u64 = 1 << 37;
 
