@@ -1,39 +1,11 @@
 //! **Expansion: what a pattern on the command line designates** (milestone 47's globbing lane).
 //!
-//! `crates/glob` answers "does this pattern match this name", and nothing else: it is a total
-//! function on two byte strings with no filesystem in it. This module is the layer that turns that
-//! into an **authority**, because on this system a glob is not a convenience for typing fewer
-//! characters.
-//!
-//! # The property the whole lane exists for
-//!
-//! **The expansion you see is the grant.** `echo *.txt` prints literally the authority that `rm
-//! *.txt` would transfer, because the matched set *is* the namespace the caretaker will serve. Unix
-//! cannot make that claim: `rm`'s authority never came from the command line at all, and the glob
-//! only told it which of its existing powers to use.
-//!
-//! That claim is only worth anything if the two go through **one** expander, which is what
-//! [`Expander`] is for: `echo` drives it and so does the grant planner ([`crate::plan`]), over the
-//! same directory listing, and neither can be talked into a different answer. The shell's guest test
-//! runs both and compares.
-//!
-//! # Why the names are owned
-//!
-//! A name a pattern produced is **not a slice of the command line**. It comes out of a directory
-//! listing the shell reads in rounds into one reused buffer, so a borrow would dangle at the second
-//! round. [`Name`] and [`NameSet`] therefore own their bytes, and the consequence is worth naming
-//! because it is the same rule the rest of a grant already follows: an [`crate::Endowment`] carries
-//! values, not pointers back at the shell, so nothing that happens after a grant is planned can
-//! change what it means.
-//!
-//! # What is not here
-//!
-//! No `**`, no qualifiers, no expansion of anything but the **last component** of a token. All
-//! three are notes/glob.md's boundaries and none of them is a scheduling excuse: `**` is a
-//! *traversal* feature (descending means holding a capability for the directory below), and a
-//! qualifier like `*(.)` needs type, mtime and size per candidate, which turns one enumeration into
-//! N `FSTAT`s and needs a read right beyond enumerate. Both are authority questions wearing matching
-//! costumes, so they do not get answered inside a matcher.
+//! `crates/glob` answers whether a pattern matches a name; this module turns that into an
+//! authority. The expansion you see is the grant: `echo *.txt` prints the authority `rm *.txt`
+//! would transfer, because both drive one [`Expander`] over the same listing. [`Name`] and
+//! [`NameSet`] own their bytes, since a matched name comes out of a listing read into a reused
+//! buffer, not out of the line. Only a token's last component expands; `**` and qualifiers are
+//! out (notes/glob.md). See notes/glob-grant.md.
 
 use crate::Refusal;
 use crate::nav::{self, Step};
@@ -41,24 +13,12 @@ use crate::nav::{self, Step};
 /// The longest name a grant can carry, which is [`crate::MAX_FILE_NAME`].
 pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 
-/// **The most names one expansion may grant**, and the point where Unix's `ARG_MAX` reappears as a
-/// *capability* limit rather than a buffer limit.
-///
-/// Unix refuses "argument list too long" because a fixed-size buffer ran out, which is why `xargs`
-/// exists. Here the ceiling is that **you cannot hand a child a capability it can neither hold nor
-/// show**: the set travels in a frame the caretaker keeps whole in a local (it has no allocator),
-/// and the shell carries it through planning on the stack it has.
-///
-/// **Eight, measured rather than chosen.** Sixteen was the first answer and the machine refused it:
-/// a set travels by value through the expander, the [`Expansion`], `designate`'s return and the
-/// [`crate::Endowment`], four frames a debug build does not collapse, and the shell ran off the
-/// bottom of its stack planning one grant. Eight names of sixteen bytes is 152 bytes a copy. It
-/// matches `filesystem_contract::nameset::MAX_NAMES`, pinned by a host test.
-///
-/// The number matters less than the failure's shape: exceeding it is [`Refusal::TooManyNames`], a
-/// refusal **at the prompt with nothing spawned**, never a truncation. A glob that quietly granted a
-/// prefix of what it matched would be the worst thing this lane could produce, because the printed
-/// preview and the actual transfer would disagree and only the printed one is checkable.
+/// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
+/// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
+/// stack, and sixteen ran the shell off its stack. It matches
+/// `filesystem_contract::nameset::MAX_NAMES`, pinned by a host test. Exceeding it is
+/// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
+/// ("Why the bound is eight").
 pub const MAX_NAMES: usize = 8;
 
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
@@ -185,14 +145,10 @@ impl NameSet {
     /// **Keep the [`MAX_NAMES`] smallest names offered**, in ascending byte order, which is how one
     /// [`Batch`] is selected out of a match too large to hand over at once.
     ///
-    /// Returns whether the set had **room before this name**. `false` says a batch's worth of names
-    /// has already been seen and at least one more matched, which is exactly [`Batch::more`]: the
-    /// name still goes in when it sorts below the largest held, displacing that one, so what comes
-    /// out is the smallest prefix of the ordering rather than the first names the directory happened
-    /// to yield.
-    ///
-    /// The caller has already established that `name` can travel in a grant, which is why this takes
-    /// a [`Name`] rather than bytes.
+    /// Returns whether the set had **room before this name**; `false` is [`Batch::more`]. The name
+    /// still goes in when it sorts below the largest held, displacing it, so what comes out is the
+    /// smallest prefix of the ordering, not the first names the directory yielded. It takes a
+    /// [`Name`] because the caller has established that `name` can travel in a grant.
     fn keep_smallest(&mut self, name: Name, is_directory: bool) -> bool {
         // Where it belongs: the first slot holding a name that sorts after it.
         let at = (0..self.n)
@@ -263,17 +219,11 @@ pub struct Expander<'a> {
 /// **Where a batch starts**: at the beginning, or immediately after the last name of the batch
 /// before it.
 ///
-/// The resume point is a **name**, not a directory cursor, and that is the decision the rest of
-/// batching hangs on. A cursor into a listing is invalidated by the very thing a batched command is
-/// usually doing: `rm` takes eight names away, and every entry after them shifts. notes/glob-grant.md
-/// already records that hazard from the other end (`rm`'s namespace sweep re-reads from cursor 0
-/// because a set namespace is fixed and a real directory is not).
-///
-/// A name is stable under both removal and insertion, so the rule "the [`MAX_NAMES`] smallest
-/// matches strictly greater than this" terminates whether the command destroys what it was handed or
-/// leaves it alone. That is the case Unix never has to think about, because its `xargs` reads names
-/// out of a pipe that was materialized before the first child ran. This shell does not materialize
-/// a match: its heap is capped at 32 KiB, far under a large directory's names.
+/// The resume point is a **name**, not a directory cursor, which `rm` taking names away would
+/// shift. A name is stable under removal and insertion, so "the [`MAX_NAMES`] smallest matches
+/// strictly greater than this" terminates whatever the command does to what it was handed, and the
+/// shell never materializes a whole match. See notes/glob-grant/xargs.md ("The resume point is a
+/// name, not a cursor").
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Resume {
     #[default]
@@ -312,10 +262,8 @@ impl<'a> Expander<'a> {
     /// `resume` and reports that the rest exist. Membership is decided once, in [`Expander::offer`],
     /// so a batched line and an unbatched one cannot disagree about what a pattern designates.
     ///
-    /// The two collection policies are deliberately *not* one. An unbatched line means "hand this
-    /// over", and a ninth match makes that impossible, so it is refused loudly with nothing spawned;
-    /// a batched line means "hand this over in as many pieces as it takes", and a ninth match is the
-    /// reason it was typed.
+    /// The policies differ on purpose: an unbatched line refuses a ninth match, and a batched line
+    /// exists for it.
     pub fn batch(pattern: &'a [u8], resume: Resume) -> Self {
         Expander {
             pattern,
@@ -337,11 +285,8 @@ impl<'a> Expander<'a> {
             return;
         }
         if !crate::file_name_fits(name) {
-            // It matched and it cannot travel in a grant. Refusing is the only honest answer: a
-            // grant missing a name the command matched is a grant that does not mean what the line
-            // said. **Batching does not soften this**, and that is the point of deciding it here
-            // rather than in either collector: a name a batch would have to drop is exactly the
-            // silent prefix the whole mechanism exists to refuse.
+            // It matched and cannot travel in a grant, so refuse here, before either collector: a
+            // batch may not drop it either, which would be the silent prefix this exists to refuse.
             self.refused.get_or_insert(Refusal::MatchNotNameable);
             return;
         }
@@ -366,26 +311,10 @@ impl<'a> Expander<'a> {
 
     /// The set, or the refusal to print.
     ///
-    /// **A pattern that matched nothing is a refusal**, which is zsh's default rather than bash's
-    /// (bash passes the pattern through as a literal word).
-    ///
-    /// **The obvious argument for it is wrong, and it is worth recording which one.** The plausible
-    /// version is that passing the pattern through is harmless because a name containing `*` would
-    /// be refused further along. It would not: neither [`crate::file_name_fits`] nor the FS server's
-    /// own `check_component` rejects `*` (they refuse the empty name, `.`, `..`, `/`, `\`, `:` and
-    /// NUL, and nothing else), so `*.rs` is a perfectly well-formed component. Checked, not
-    /// remembered.
-    ///
-    /// What that leaves is the real argument, and it is worse than the one it replaces. Passing the
-    /// pattern through would build a **grant whose namespace is a name nobody has**, which is
-    /// useless today and live tomorrow: the moment anything creates a file called `*.rs`, a command
-    /// somebody typed months ago starts designating it. A grant should not be able to acquire a
-    /// referent after it is written.
-    ///
-    /// And the model forces the same answer from the other side. **The expansion is the grant**, so
-    /// an empty expansion is an empty grant, and running the command would be running it with an
-    /// authority nobody named. Saying so at the prompt is the same rule that makes an unplaceable
-    /// token a refusal instead of a shrug.
+    /// **A pattern that matched nothing is a refusal**, zsh's default rather than bash's. Nothing
+    /// refuses `*` in a name, so passing the pattern through would build a grant for a name nobody
+    /// has, which a later file called `*.rs` would make live; and an empty expansion is an empty
+    /// grant. See notes/glob-grant.md ("A pattern that matched nothing").
     pub fn finish(self) -> Result<NameSet, Refusal> {
         debug_assert!(
             self.resume.is_none(),
@@ -468,16 +397,14 @@ pub fn magic_component(token: &[u8]) -> Result<bool, Refusal> {
 }
 
 /// **Which of a line's words name something here, for a program that hears words** (milestone
-/// 205 (how a foreign program is told what to do), DECISIONS §170 (how a foreign program is told
-/// what to do) clauses 2 to 5). The shell builds it before it plans, as it builds an
-/// [`Expansion`], because only the shell can ask the directory; the planner turns it into one
-/// [`crate::DirectoryGrant`] at the shell's current directory.
+/// 205, DECISIONS §170 (how a foreign program is told what to do) clauses 2 to 5). The shell
+/// builds it before it plans, as it builds an [`Expansion`], because only the shell can ask the
+/// directory; the planner turns it into one [`crate::DirectoryGrant`] at the current directory.
 ///
-/// Two shapes. **Names**: each word whose first component names an entry here, and for a program
-/// that may create ([`crate::WordGrant::Create`]) each word that names nothing yet. **Here**: a word
-/// that is `.`, which designates the current directory itself (calef's N1 ruling, 2026-09-27T06:27Z:
-/// "to search here you type `rg pattern .`"). Neither: the line designated nothing and grants
-/// nothing, which is N1 too.
+/// **Names**: each word whose first component names an entry here, and for a program that may
+/// create ([`crate::WordGrant::Create`]) each word that names nothing yet. **Here**: a word that is
+/// `.` (calef's N1 ruling, 2026-09-27T06:27Z: "to search here you type `rg pattern .`"). Neither:
+/// the line designated nothing and grants nothing.
 ///
 /// Name: provisional (2026-09-27).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -640,10 +567,8 @@ mod tests {
     fn a_pattern_that_matched_nothing_refuses_rather_than_passing_itself_through() {
         assert_eq!(expand(b"*.rs", &DIRECTORY_LISTING), Err(Refusal::NoMatch));
         assert!(!Refusal::NoMatch.message().contains("denied"));
-        // **And this is why bash's answer is not merely untidy here.** A pattern is a perfectly
-        // well-formed component: nothing in this system refuses `*` in a name. So passing it
-        // through would build a grant whose namespace is a name nobody has, and which starts
-        // designating a real file the moment anything creates one called `*.rs`.
+        // A pattern is a well-formed component, so bash's pass-through would grant a name nobody
+        // has yet.
         assert!(
             crate::file_name_fits(b"*.rs"),
             "if this ever becomes false, the refusal above is still right for the other reason",
