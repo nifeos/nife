@@ -147,19 +147,18 @@ itself, and it is counted. The figure reports and does not gate, for `sched::MAX
 the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent part to
 account.
 
-## What we don't have
+## No heap, and an interrupt-safe lock
 
-No heap. No `Vec`, no `Box`. The regions coming out of the device tree go into fixed-size
-arrays, because a fixed-size array is what you use when there is no allocator. `Vec` arrives at
-milestone 4, on top of this ([no-std.md](no-std.md)).
+The kernel has no heap: no `Vec` and no `Box` (`kmem` is a fixed carve, see
+[kernel-budget.md](kernel-budget.md)). The regions coming out of the device tree go into
+fixed-size arrays of `MAX_REGIONS` entries, because a fixed-size array is what you use when there
+is no allocator.
 
-No guard page. See [stack.md](stack.md), and the incident that produced that note.
-
-No interrupt-safe locking. `ALLOCATOR` is a `spin::Mutex`, which is a formality on one core
-with no interrupts. The moment an interrupt handler wants a frame while the interrupted code
-holds the lock, we deadlock instantly and permanently: the handler spins for a lock only the
-code it interrupted can release. We need a written-down locking discipline before milestone
-5, not after it.
+`ALLOCATOR` is an `IrqSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)), not a
+bare spinlock. An interrupt handler that tried to allocate while the interrupted code held a bare
+spinlock would spin forever for a lock only the code it interrupted can release. The discipline
+that goes with it: interrupt handlers do not allocate. They record what happened and defer the
+work.
 
 ---
 
