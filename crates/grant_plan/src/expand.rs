@@ -222,8 +222,8 @@ pub struct Expander<'a> {
 /// The resume point is a **name**, not a directory cursor, which `rm` taking names away would
 /// shift. A name is stable under removal and insertion, so "the [`MAX_NAMES`] smallest matches
 /// strictly greater than this" terminates whatever the command does to what it was handed, and the
-/// shell never materializes a whole match. See notes/glob-grant/xargs.md ("The resume point is a
-/// name, not a cursor").
+/// shell, whose heap is capped at 32 KiB, never materializes a whole match. See
+/// notes/glob-grant/xargs.md ("The resume point is a name, not a cursor").
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Resume {
     #[default]

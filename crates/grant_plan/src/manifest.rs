@@ -369,10 +369,10 @@ impl ProgramArgumentDeclaration {
 /// to do) clause 2, and clause 3's create): §170's `words`, carried inside
 /// [`ProgramArgumentDeclaration::Words`] so a program that hears no words cannot declare one.
 ///
-/// Every variant grants the named names and nothing else in their directory, with the walk below a
-/// named directory (`DESCEND`). An unvouched program gets [`WordGrant::ReadOnly`] whatever it
-/// declares (clause 4); a mark that widens a word is unruled and unbuilt. §170's "the file's
-/// directory" is not a variant: a line names the directory, `.` included (calef's N1 ruling,
+/// Every variant grants the named names and nothing else, with the walk below a named directory
+/// (`DESCEND`), since a program handed `src` means to read what is in it. An unvouched program gets
+/// [`WordGrant::ReadOnly`] whatever it declares (clause 4); a widening mark is unruled and unbuilt.
+/// "The file's directory" is not a variant: a line names it, `.` included (calef's N1 ruling,
 /// 2026-09-27T06:27Z: `rg pattern .`).
 ///
 /// Name: provisional (2026-09-27).

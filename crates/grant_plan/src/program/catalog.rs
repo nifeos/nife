@@ -307,9 +307,10 @@ programs! {
         /// `components/` or `fixtures/`, which is why it is in an archive only when `cargo xtask
         /// std-exerciser` ran first (`script/test` does).
         ///
-        /// It proves the progenitor's [`StartupContract::Std`](crate::StartupContract::Std) layout at
-        /// the real prompt: its transcript asserts the heap, the clock, randomness and the
-        /// configuration page each arrived at the slot `std_runtime_contract` fixes.
+        /// It proves the [`StartupContract::Std`](crate::StartupContract::Std) layout at the prompt:
+        /// its transcript asserts the heap, clock, randomness and configuration page each arrived at
+        /// its fixed slot. Listing it here settles nothing about §219 (how the shell names an
+        /// installed program to the spawner).
         StdExerciser { id: 16, name: "std_exerciser" },
         /// **How much memory the machine has, and how much of this prompt's budget is spent**
         /// (milestone 126, DECISIONS §225 (`free` sees the machine and your share), `components/src/free.rs`, `crates/free`).
