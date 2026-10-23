@@ -1,8 +1,8 @@
 //! The interrupt controller, RISC-V: the PLIC.
 //!
 //! The arch side of the portable `arch::irq` surface, the twin of aarch64's GIC adapter, resolving
-//! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4). See
-//! notes/riscv-port/traps.md.
+//! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
+//! monolithic, deferred)). See notes/riscv-port/traps.md.
 
 use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 

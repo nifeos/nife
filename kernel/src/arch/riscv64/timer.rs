@@ -76,8 +76,8 @@ const STIE: u64 = 1 << 5;
 
 /// Ticks since boot, per hart, maintained by [`tick`].
 ///
-/// Per hart because masking `sstatus.SIE` masks one hart's timer (DECISIONS §11): only a per-hart
-/// count shows that holding a lock stopped this hart's ticks.
+/// Per hart because masking `sstatus.SIE` masks one hart's timer (DECISIONS §11 (SMP: per-CPU run
+/// queues)): only a per-hart count shows that holding a lock stopped this hart's ticks.
 static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// Deadlines already past when this hart re-armed, per hart. Nonzero means a whole tick period
@@ -225,7 +225,8 @@ fn rearm() {
 
     if next <= now {
         MISSED_TICKS[id].fetch_add(1, Ordering::Relaxed);
-        // Trap context: record, never print (DECISIONS §9).
+        // Trap context: record, never print (DECISIONS §9 (locking: IrqSafeMutex, plus a
+        // discipline)).
         #[cfg(any(test, feature = "system_tests"))]
         miss_detail::record(now, next);
         next = now + interval();
@@ -281,7 +282,7 @@ pub fn ticks() -> u64 {
 }
 
 /// Ticks since boot on `hart`, so a test whose thread may migrate between two reads compares one
-/// counter (DECISIONS §28.3). See notes/load-sensitive-assertions.md.
+/// counter (DECISIONS §28.3 (SMP placement)). See notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(hart: usize) -> u64 {
     TICKS[hart].load(Ordering::Relaxed)
@@ -496,7 +497,8 @@ mod tests {
         };
 
         // A window holding a miss proves nothing, since a miss re-anchors the grid: retry it. Out
-        // of attempts is a skip, not a failure, and the budget does not widen (DECISIONS §61).
+        // of attempts is a skip, not a failure, and the budget does not widen (DECISIONS §61 (a
+        // lint is adopted on evidence)).
         const ATTEMPTS: u32 = 8;
         let mut attempts = 0;
         let measured = loop {
@@ -529,7 +531,8 @@ mod tests {
                 now.saturating_sub(next),
                 timer::interval(),
             );
-            // A test that measured nothing is a skip, not a pass (milestone 214).
+            // A test that measured nothing is a skip, not a pass (milestone 214 (a test that prints
+            // "skipping" and returns)).
             crate::testing::skip!(
                 "no miss-free window in which to measure the re-arm law this run"
             );

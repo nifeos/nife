@@ -1,7 +1,8 @@
 //! Tests for the Sv39 MMU: the live page tables, W^X, the guard page, and TLB invalidation.
 //!
-//! The twins of aarch64's, against the same properties (DECISIONS §19). `translate` walks the live
-//! kernel root, so they inspect the tables the hardware walks. See notes/riscv-port/memory.md.
+//! The twins of aarch64's, against the same properties (DECISIONS §19 (architectural parity is a
+//! tenet)). `translate` walks the live kernel root, so they inspect the tables the hardware walks.
+//! See notes/riscv-port/memory.md.
 
 /// A physical address one gigabyte above the top of every RAM region this machine described, for
 /// tests that need a spare page outside the direct map. Read from the machine, since a fixed

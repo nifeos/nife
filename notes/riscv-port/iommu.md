@@ -47,10 +47,10 @@ allocated. The machine description reports the capability bit, kept apart from t
 implies: one is a capability and the other a layout.
 
 MSI confinement lives in a different place on each architecture. On x86_64 it is a separate IOMMU
-feature (`ECAP.IR`), because VT-d intercepts writes to the MSI address range, so DMA remapping
-alone does not cover them. On aarch64 it is a separate device, the GICv3 ITS, which this tree's
-GICv2 machine lacks. Here it is one mode field in a context this driver already writes
-([milestone 317](../../design/roadmap/0317-interrupt-remapping-flags/riscv64.md)).
+feature (`ECAP.IR`), because VT-d intercepts writes to the MSI address range, so DMA remapping alone
+does not cover them. On aarch64 it is a separate device, the GICv3 ITS, which this tree's GICv2
+machine lacks. Here it is one mode field in a context this driver already writes ([milestone 317
+(the interrupt-remapping flags)](../../design/roadmap/0317-interrupt-remapping-flags/riscv64.md)).
 
 ## What the proofs cover
 
@@ -88,8 +88,8 @@ entries. It would matter once invalidation narrows to one PSCID.
   measurement. It says MSI address translation is not performed and the write is translated as an
   ordinary memory access, which would keep an MSI-shaped write inside the `iosatp` domain. No boot
   here has tested it, and nothing forges an MSI.
-- No board ships the ratified RISC-V IOMMU (milestone 143, silicon IOMMU), and the JH7110 has none.
-  So the base 32-byte context format, for silicon without MSI support, has run zero times. This
-  architecture is confined in the emulated case only, with no second witness, where x86_64 has
-  xenon.
+- No board ships the ratified RISC-V IOMMU (milestone 143 (silicon IOMMU), silicon IOMMU), and the
+  JH7110 has none. So the base 32-byte context format, for silicon without MSI support, has run zero
+  times. This architecture is confined in the emulated case only, with no second witness, where
+  x86_64 has xenon.
 - `take_fault` is drained only by the confinement test; no production fault handler exists.

@@ -37,7 +37,7 @@ const _: () = assert!(size_of::<TrapFrame>() == 288);
 
 impl TrapFrame {
     /// The syscall number the caller passed, in `a7` (`x17`), so the portable dispatcher names no
-    /// register (DECISIONS §17).
+    /// register (DECISIONS §17 (the second architecture: RISC-V)).
     pub(crate) fn syscall_nr(&self) -> u64 {
         self.x[17] // a7
     }
@@ -82,9 +82,10 @@ impl TrapFrame {
         x[11] = args[1]; // a1
         x[12] = args[2]; // a2
         x[2] = user_sp; // sp
-        // tp is the thread's own pointer (§269 fork 4), zero if it has none, never the kernel's
-        // per-hart one. Read now, while the frame is a value: once written at the stack top no call
-        // may run (`enter_user`). See notes/riscv-port.md, the per-hart `tp` hazard.
+        // tp is the thread's own pointer (§269 (how threads share a process) fork 4), zero if it
+        // has none, never the kernel's per-hart one. Read now, while the frame is a value: once
+        // written at the stack top no call may run (`enter_user`). See notes/riscv-port.md, the
+        // per-hart `tp` hazard.
         x[4] = crate::sched::current_thread_pointer();
         TrapFrame {
             x,
@@ -153,8 +154,9 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
     unsafe { core::ptr::read_volatile(&raw const (*frame).sepc) }
 }
 
-/// Write `v` to argument register `i` of the user frame at `stack_top`, which the return to
-/// U-mode restores: a result word the syscall path does not write, like the death label (§148).
+/// Write `v` to argument register `i` of the user frame at `stack_top`, which the return to U-mode
+/// restores: a result word the syscall path does not write, like the death label (§148 (a
+/// supervisor resolves by asking the kernel)).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -311,7 +313,7 @@ unsafe extern "C" {
 /// The outer half of the trap path, which stays on the interrupted stack.
 ///
 /// Picks the stack [`riscv_trap_body`] runs on, then runs any deferred `schedule()` on the
-/// interrupted thread's own stack. See kernel/src/interrupt_stack.rs.
+/// interrupted thread's own stack. See `kernel/src/interrupt_stack.rs`.
 ///
 /// Context: interrupt context, with interrupts masked.
 #[unsafe(no_mangle)]
@@ -353,7 +355,8 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
     if scause & INTERRUPT != 0 {
         let code = scause & 0xff;
         match code as u32 {
-            // Record that a reschedule is due; the switch happens at the deferral (DECISIONS §9).
+            // Record that a reschedule is due; the switch happens at the deferral (DECISIONS §9
+            // (locking: IrqSafeMutex, plus a discipline)).
             super::timer::TIMER_INTID => {
                 super::timer::tick();
                 crate::sched::on_tick();
@@ -379,7 +382,8 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
             // A reschedule IPI: clear `sip.SSIP` before draining, or it re-fires.
             S_SOFTWARE => {
                 clear_software_interrupt();
-                // One IPI carries both (DECISIONS §28): a handed thread and a steal request.
+                // One IPI carries both (DECISIONS §28 (SMP placement)): a handed thread and a steal
+                // request.
                 crate::sched::drain_inbox();
                 crate::sched::serve_steal_request();
             }
@@ -389,7 +393,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
         }
 
         // Preemption runs in `riscv_trap_dispatch`, on the interrupted thread's stack, never on
-        // the interrupt stack this may be on (DECISIONS §5).
+        // the interrupt stack this may be on (DECISIONS §5 (execution model: preemptive threads)).
         return true;
     }
 
@@ -470,7 +474,8 @@ fn report_translation(stval: u64) {
 /// the machine.
 ///
 /// Records the fault for [`last_user_fault`], prints the kill report, and hands the thread to
-/// `sched::fault`, which delivers it to a supervisor or retires it (DECISIONS §26). Never returns.
+/// `sched::fault`, which delivers it to a supervisor or retires it (DECISIONS §26 (the fault
+/// endpoint)). Never returns.
 fn user_fault(frame: &TrapFrame, scause: u64, code: u64) -> ! {
     // Classify first, while this thread's space is still installed.
     //

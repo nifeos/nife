@@ -23,7 +23,8 @@ Each stem below is named for its content, and calef names files.
 
 - `hal-leaks` Name: provisional.
 - `bring-up-log` Name: provisional. After the brief's own example of a name for content.
-- `timer` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.
+- `timer` Name: provisional, minted 2026-10-23 (UTC) by milestone 929 (comments in the Linux
+  style)'s riscv64 lane.
 - `firmware` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.
 - `iommu` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.
 - `memory` Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.

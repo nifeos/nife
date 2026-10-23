@@ -2,7 +2,8 @@
 //!
 //! A device directory keyed by requester id holds each device's context, whose `iosatp` names an
 //! Sv39 domain the portable seam built. A command queue carries invalidations and a fault queue
-//! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20).
+//! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20
+//! (IOMMU-backed DMA isolation)).
 //!
 //! See notes/iommu.md and notes/riscv-port/iommu.md, whose BUGS cover the unused MSI page table
 //! and the untested base context format.

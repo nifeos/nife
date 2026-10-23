@@ -88,11 +88,11 @@ slot, so every slot's bottom page stays an unmapped guard. `verify` asserts each
 before the switch.
 
 Every device window beyond the UART is mapped only when the device tree names the device. That
-refusal to overwrite is why (DECISIONS §43). QEMU's BAR window at `0x4000_0000` is the
-JH7110's DRAM base, and its virtio window at `0x1000_1000` is TH1520 DRAM and a JH7110 UART. Mapping
-either from QEMU's constants ends the boot at the overwrite. `virtio_slots` reads whether the
-virtio window was mapped, so the probe never reads one that is not. The `sifive_test` finisher is
-QEMU's alone and is not mapped under the `board` feature.
+refusal to overwrite is why ([notes/visionfive2.md](../visionfive2.md)). QEMU's BAR window at
+`0x4000_0000` is the JH7110's DRAM base, and its virtio window at `0x1000_1000` is TH1520 DRAM and a
+JH7110 UART. Mapping either from QEMU's constants ends the boot at the overwrite. `virtio_slots`
+reads whether the virtio window was mapped, so the probe never reads one that is not. The
+`sifive_test` finisher is QEMU's alone and is not mapped under the `board` feature.
 
 The ECAM mapping is bus 0 only before a survey (`pci::ecam_buses()`), 4 KB per function and 1 MB
 per bus. QEMU `virt` is a flat root complex, and a 4 KB-page map of all 256 buses would cost 64K

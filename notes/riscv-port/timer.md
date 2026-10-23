@@ -33,7 +33,7 @@ is cheaper in trap context than a ring buffer.
 
 `TICKS`, `MISSED_TICKS` and `DEADLINE` are all per hart. Masking `sstatus.SIE` masks one hart's
 timer, so a single shared count would advance on the other harts' ticks while this one held a
-lock (DECISIONS §11).
+lock (DECISIONS §11 (SMP: per-CPU run queues)).
 
 ## The counter rate comes from the device tree
 
@@ -96,7 +96,7 @@ something a syscall fetches. When LLVM folds `tick` in, its bytes land inside `r
 the flat entry-set sum counts them. That happened once from an unrelated change in `sched.rs`, and
 moved the sum 12.1% (1,870 to 2,096 bytes) against a 5% bound. `#[inline(never)]` keeps the number
 measuring what it names, and one `jal` per 10 ms tick costs nothing worth having. The gate's own
-limit is milestone 368 (a flat entry set counts bytes no syscall fetches).
+limit is milestone 368 (`script/fastpath-footprint`'s entry set is flat).
 
 ## The instruction-count bounds
 
@@ -113,9 +113,9 @@ the span. A miss is this span exceeding one tick period, 10,000,000 instructions
 100 Hz. `rearm` records the instrument after the SBI call for the same reason: the round trip is
 the one cost aarch64 does not pay, and stopping short of it would compare different spans.
 
-`calibration_loop` lives here rather than in `icount.rs` because DECISIONS §3 puts every `asm!`
-under `arch/`. Its `addi`/`bnez` pair may be assembled compressed on `riscv64imac`, which changes
-the encoding and not the count, since `-icount` counts instructions retired.
+`calibration_loop` lives here rather than in `icount.rs` because the codebase's first rule puts
+every `asm!` under `arch/`. Its `addi`/`bnez` pair may be assembled compressed on `riscv64imac`,
+which changes the encoding and not the count, since `-icount` counts instructions retired.
 
 ## The tests
 
@@ -129,10 +129,10 @@ slip the grid is a counted miss, and the window is retried.
 Eight windows with a miss in each is a skip, printed with `miss_detail`'s numbers, not a failure.
 Whether those misses are a contended host or a slow handler is the one question a wall clock cannot
 answer from inside the guest. Widening the budget changes how often anyone notices, not what is
-measured, which DECISIONS §61 forbids. `script/icount` asserts the handler's speed with no host
-term in it: the handler bound, zero missed ticks, and the re-arm law. CI runs it on every change
-that is not documentation only. So no test here asserts that the handler keeps up with no lock
-held ([notes/load-sensitive-assertions.md](../load-sensitive-assertions.md)).
+measured, which DECISIONS §61 (a lint is adopted on evidence) forbids. `script/icount` asserts the
+handler's speed with no host term in it: the handler bound, zero missed ticks, and the re-arm law.
+CI runs it on every change that is not documentation only. So no test here asserts that the handler
+keeps up with no lock held ([notes/load-sensitive-assertions.md](../load-sensitive-assertions.md)).
 
 The waits on a tick being raised or delivered are bounded waits, never fixed spins. QEMU raises the
 timer from its main loop, late by as much as 86 ms on `sifive-u54`

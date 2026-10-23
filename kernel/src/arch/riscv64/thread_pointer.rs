@@ -1,4 +1,5 @@
-//! The riscv64 register half of each thread's own thread pointer, `tp` (§269 fork 4).
+//! The riscv64 register half of each thread's own thread pointer, `tp` (§269 (how threads share a
+//! process) fork 4).
 //!
 //! `tp` is a general register, so it travels in the trap frame and the context switch moves
 //! nothing. The kernel's copy matters only at the first entry to U-mode and when a thread sets its

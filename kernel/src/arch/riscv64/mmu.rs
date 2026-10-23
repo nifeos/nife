@@ -1,8 +1,9 @@
 //! RISC-V virtual memory: the Sv39 half of the `arch` page-table contract.
 //!
-//! The descriptor format is `paging::Sv39` (DECISIONS §17). This module composes `satp`, builds the
-//! kernel's W^X tables, maps user pages through `Mapper<_, _, Sv39>`, shares the kernel half into
-//! every process root, and does TLB maintenance with `sfence.vma`.
+//! The descriptor format is `paging::Sv39` (DECISIONS §17 (the second architecture: RISC-V)). This
+//! module composes `satp`, builds the kernel's W^X tables, maps user pages through `Mapper<_, _,
+//! Sv39>`, shares the kernel half into every process root, and does TLB maintenance with
+//! `sfence.vma`.
 //!
 //! See notes/riscv-port/memory.md.
 
@@ -485,7 +486,7 @@ where
     direct_map(m, 0x10_0000, 0x10_1000, Flags::device())?;
 
     // 8. The virtio-mmio window, only where the device tree names the bus: elsewhere that address
-    //    may be RAM already mapped in step 1 (DECISIONS §43).
+    //    may be RAM already mapped in step 1 (notes/visionfive2.md).
     let named = crate::device_tree().is_ok_and(|dt| {
         let mut slot = [device_tree_blob::Region { start: 0, size: 0 }; 1];
         matches!(dt.node_reg_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)

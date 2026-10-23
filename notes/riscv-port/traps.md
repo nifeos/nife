@@ -21,8 +21,9 @@ address. It corrupts a caller's state and blames innocent code thousands of inst
 which `registers_survive_a_trap` exists to catch.
 
 The portable syscall dispatcher names no register. It reads `a7` and `a0`..`a5` through
-`TrapFrame::{syscall_nr, arg, set_arg}`, where aarch64 maps `x8` and `x0`..`x5` (DECISIONS §17).
-`sepc` points at the `ecall`, which the hardware does not step past, so the handler adds 4.
+`TrapFrame::{syscall_nr, arg, set_arg}`, where aarch64 maps `x8` and `x0`..`x5` (DECISIONS §17 (the
+second architecture: RISC-V)). `sepc` points at the `ecall`, which the hardware does not step past,
+so the handler adds 4.
 
 ## A fabricated frame for the first entry to U-mode
 
@@ -38,10 +39,11 @@ live interrupt enable beside the staged fields, so a frame with SIE = 1 would re
 just after `sepc` is staged. A real trap cannot carry it, because the hardware clears SIE on entry.
 aarch64 needs no such check: its staged `SPSR_EL1` is a different register from PSTATE.
 
-`tp` is the thread's own thread pointer (§269 fork 4), zero for a thread nobody gave one. RISC-V's
-`tp` is a general register, so the kernel's per-hart pointer must not ride into U-mode; trap.s
-restores it from the per-hart stash through `sscratch` on the way in. The frame reads it while
-still a value, because once the frame sits at the top of the kernel stack no call may run.
+`tp` is the thread's own thread pointer (§269 (how threads share a process) fork 4), zero for a
+thread nobody gave one. RISC-V's `tp` is a general register, so the kernel's per-hart pointer must
+not ride into U-mode; trap.s restores it from the per-hart stash through `sscratch` on the way in.
+The frame reads it while still a value, because once the frame sits at the top of the kernel stack
+no call may run.
 
 `enter_user` is `#[inline(always)]` for the same reason: a pushed call frame would overwrite the
 trap frame before `user_return`'s `mv sp, a0`. It refuses `sepc == 0` with a load and a branch. A
@@ -59,13 +61,13 @@ common case calls `riscv_trap_body` directly; on aarch64, routing every `ecall` 
 trampoline cost 8.6 instructions per `null_syscall`. Preemption happens after the body returns,
 on the interrupted thread's stack, because `schedule()` may run only on a stack that thread owns
 (`kernel/src/interrupt_stack.rs`). The switch returns through `trap_return` to exactly the
-interrupted instruction (DECISIONS §5).
+interrupted instruction (DECISIONS §5 (execution model: preemptive threads)).
 
 A device interrupt is claimed against this hart's own PLIC context, since affinity may route a
 source to any hart. The claim is the mask until the routed driver's completion, and the source
 stays enabled; `kernel/src/drivers/plic.rs` says why. A reschedule IPI pends `sip.SSIP`, which must
 be cleared or it re-fires the moment interrupts reopen. One IPI carries both reasons a hart pokes
-another (DECISIONS §28): a thread handed over, and a steal request.
+another (DECISIONS §28 (SMP placement)): a thread handed over, and a steal request.
 
 ## First use of the FP unit
 
@@ -79,8 +81,8 @@ may be zero for this cause, and seven major opcodes plus the compressed forms.
 
 The handler sets the frame's `FS`, not only the live CSR, because trap.s writes the frame's copy
 back on the way out. `crate::fp::enable_for_current` has just loaded a register file, so the frame
-gets Dirty. The arm serves S-mode too: milestone 447's concurrency proof runs as kernel threads,
-because every userspace target is soft-float.
+gets Dirty. The arm serves S-mode too: milestone 447 (a thread's vector registers are its own)'s
+concurrency proof runs as kernel threads, because every userspace target is soft-float.
 
 ### `sstatus.FS`, and the quarter of it this kernel uses
 
@@ -155,8 +157,8 @@ architectural.
 
 The boot hart's context is derived too, never fixed at 1, because OpenSBI elects the boot hart by
 lottery. A kernel that programs hart 0's context while running on hart 3 leaves every interrupt
-pending, with all harts parked waiting for one. The PLIC base is stored before `sie.SEIE` is set, so no claim goes
-through a zero base, and every source stays disabled until `enable` routes it.
+pending, with all harts parked waiting for one. The PLIC base is stored before `sie.SEIE` is set, so
+no claim goes through a zero base, and every source stays disabled until `enable` routes it.
 
 Sources spread round-robin over the online harts, the twin of the GIC's `ITARGETSR`. The k-th
 online hart is chosen, not hart k: the VisionFive 2's online set is {1,2,3}, and an index would
@@ -172,11 +174,12 @@ only a context that enables a source may complete it. An ACK with no claim outst
 source at its target instead.
 
 PCI functions on QEMU `virt` raise INTx through the standard swizzle onto PLIC inputs 32 to 35,
-which the machine's device tree states and `crates/pci`'s fixture test holds the formula against.
-So `alloc_msi_vector` answers `None` and `kernel/src/pci.rs` falls back to INTx. That is not "MSI is
+which the machine's device tree states and `crates/pci`'s fixture test holds the formula against. So
+`alloc_msi_vector` answers `None` and `kernel/src/pci.rs` falls back to INTx. That is not "MSI is
 unsupported on RISC-V": the AIA's IMSIC is the same mechanism, and a board with one would implement
 it there. Nothing here needs it, and a routing path with no consumer cannot be known to work
-([milestone 215](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86_64 differs).
+([milestone 215 (a PCI function's interrupt reaches nothing on
+x86_64)](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86_64 differs).
 
 No device here interrupts at bring-up without input or a disk, so the self-test's `deviceirq` check
 reports itself absent. A device line is proved where one exists: the user-level input driver at the

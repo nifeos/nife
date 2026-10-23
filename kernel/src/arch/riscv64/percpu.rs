@@ -113,8 +113,8 @@ pub fn read_current_thread() -> u64 {
 /// Whether `tp` names the hart this runs on, checked against `sscratch`, which never migrates. Test
 /// builds only.
 ///
-/// A mismatch is a thread carrying its origin hart's `tp` (DECISIONS §28). Both reads run masked,
-/// so a preemption cannot split them across harts.
+/// A mismatch is a thread carrying its origin hart's `tp` (DECISIONS §28 (SMP placement)). Both
+/// reads run masked, so a preemption cannot split them across harts.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn percpu_matches_hart() -> bool {
     let was_enabled = crate::arch::interrupts::disable();
