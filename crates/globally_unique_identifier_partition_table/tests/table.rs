@@ -251,21 +251,11 @@ fn the_entry_array_buffer_sets_the_entry_count() {
 /// byte of the entry array, crossed with all 255 other values each could have held: 261,120 cases,
 /// and every one of them must be rejected.
 ///
-/// This is the small-table twin of the sweeps in `real_disks.rs`, and the reason it exists as well
-/// as those is cost. A four-entry array is 512 bytes rather than 16 KiB, so the complete cross
-/// product is 130 MB of CRC instead of 68 GB, and runs in the time a test should take. The
-/// real-disk version proves the same thing about bytes a real tool wrote.
-///
-/// Enumeration is the right tool at this size and it is *stronger* than a solver result, which is
-/// the point `network_time_protocol` made and this crate inherits: a model checker is for domains too big to
-/// count. The symbolic form of this property (any buffer, not this one) is the Kani harness
-/// `a_single_byte_change_always_changes_the_crc`.
-///
-/// Skipped under Miri like its real-disk twins: "runs in the time a test should take" is a claim
-/// about silicon, and under an interpreter the 261,120 parses dominate the whole workspace run
-/// while proving a CRC-completeness claim that is not a memory property. The clean create, write,
-/// and parse at the top of this test are what Miri needs, and every other test in this file walks
-/// them (notes/undefined-behavior.md).
+/// The small-table twin of `real_disks.rs`'s sweeps: a four-entry array is 512 bytes, so the
+/// complete cross product is 130 MB of CRC rather than 68 GB. The symbolic form is the Kani harness
+/// `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the parses would
+/// dominate the workspace run; every other test here walks the clean paths
+/// (notes/undefined-behavior.md).
 #[test]
 #[cfg_attr(
     miri,
@@ -644,7 +634,7 @@ fn the_usable_range_stops_before_the_backup_array() {
         parse_patched(|b| set_u64(b, LAST_USABLE_LBA, BACKUP_ARRAY_FIRST - 1)).err(),
         None
     );
-    // Equal to the backup array's first block: refused, since the fix.
+    // Equal to the backup array's first block: refused.
     assert_eq!(
         parse_patched(|b| set_u64(b, LAST_USABLE_LBA, BACKUP_ARRAY_FIRST)).err(),
         Some(Error::TableOverlapsUsable)
