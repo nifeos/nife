@@ -3567,8 +3567,7 @@ def _ratchet_debt_cases():
     in_body = 'fn b() {\n    // one\n    // two\n    // SAFETY: held\n    let x = 1;\n    // three\n}\n'
     by_dir = tree({'kernel/a.rs': mid + in_body, 'crates/c/a.rs': mid + 'fn c() {\n// x\n// y\n}\n',
                    'helpers/a.rs': block, 'vendor/v.rs': block,
-                   comment_block_ratchet.BASELINE: 'cap\tkernel/\t20\nin-body\tkernel/\t9\n'
-                                                   'block\tlines\nkernel/a.rs:1\t25\n'})
+                   comment_block_ratchet.BASELINE: 'cap\tkernel/\t20\nin-body\tkernel/\t9\n'})
     # Each citation is built from its parts, or the gate would count this fixture as one.
     def at(path, line):
         return '%s:%d' % (path, line)

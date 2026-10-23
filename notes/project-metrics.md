@@ -290,7 +290,7 @@ The 40-line comment-block cap: files holding a longer block, then the lines past
 
 ![Plain comment lines inside function bodies](project-metrics/comment-in-body.svg)
 
-Milestone 929's two counts, one series per directory, each week at the caps and in-body ceilings
+Milestone 929 (comments in the Linux style across first-party Rust): its two counts, one series per directory, each week at the caps and in-body ceilings
 its own `design/comment-block-baseline.tsv` holds. A cap step reads as a jump in the first two.
 
 ## Line-number citations
