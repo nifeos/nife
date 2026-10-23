@@ -14,9 +14,7 @@ use super::*;
 /// does not depend on a race. `shared` puts both on one window, the witness's negative control.
 ///
 /// Returns `(readiness, victim_report, held)`, or `None` when no RedoxFS disk is attached or the
-/// pool has no free window.
-///
-/// Provisional name; an architect names functions.
+/// pool has no free window. Provisional name; an architect names functions.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_shared_frame_witness(
     blk_image: &'static [u8],

@@ -6,8 +6,8 @@
 //! BUGS:
 //! - The DMA page holds both ring bases and the controller's reset bit, and the JH7110 has no
 //!   IOMMU here, so the server can aim the device's DMA anywhere and reset the MAC.
-//! - One wiring at a time, for `e1000e_service`'s reason. Proved by one radon bench boot
-//!   ([`PROVEN_ON_SILICON`]), at a rate notes/designware-ethernet.md's `BUGS` records.
+//! - One wiring at a time: a second bring-up resets the device under the first. Proved by one radon
+//!   bench boot ([`PROVEN_ON_SILICON`]), at a rate notes/designware-ethernet.md's `BUGS` records.
 
 use ::designware_ethernet::process::{DATA_PLANE_VA, DMA_PAGE_VA};
 

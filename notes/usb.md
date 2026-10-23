@@ -66,9 +66,8 @@ never their contents. It cannot reach PCI configuration space, so it cannot chan
 move a BAR or touch MSI. It holds no budget, filesystem, console or clock.
 
 The kernel enables the interrupt through the arch layer, as the `Irq` capability's ACK does. On
-riscv64 that is the source's stable round-robin hart (`target_context`). Pinned to the boot hart's
-context instead, as the virtio-rng grant is, the first ACK moved the source, and the riscv64 boot
-took one interrupt and no keystroke after it.
+riscv64 that is the source's stable round-robin hart (`target_context`). A source enabled on the
+boot hart's context instead is moved by its first ACK, and no keystroke after the first arrives.
 
 ## Proving it
 

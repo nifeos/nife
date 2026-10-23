@@ -1,11 +1,11 @@
 //! Wiring for the EL0 NVMe block server, §86 (whether an NVMe driver can leave the kernel)'s option
-//! 2a.
-//!
-//! The [`Spawn`] literal is what the process driving the controller's I/O queue pair holds: the
+//! 2a. The [`Spawn`] literal is what the process driving the controller's I/O queue pair holds: the
 //! request endpoint (`filesystem_contract::blk`), a readiness endpoint, BAR0's doorbell page and
-//! the DMA region's data plane, with one transfer window per client
-//! ([`Wiring::client_capability`], [`Wiring::window_phys`]). No controller registers, admin pages,
-//! interrupt or frame capability. Its BUGS are notes/non-volatile-memory-express.md's.
+//! the DMA region's data plane, with one transfer window per client ([`Wiring::client_capability`],
+//! [`Wiring::window_phys`]). Readiness is sent once the first command has round-tripped, so a
+//! bring-up hang is told apart from a first-read hang. No controller registers, admin pages,
+//! interrupt or frame capability, and no physical address but the data plane's (`DATA_PLANE_PAGE`,
+//! not page 0). Its BUGS are notes/non-volatile-memory-express.md's.
 //!
 //! Name: recorded (crates/non_volatile_memory_express), renamed 2026-09-18 under DECISIONS §154
 //! (the acronym test is whether the phrase is spoken). A `<program>_service` like
@@ -268,7 +268,8 @@ impl DmaEscape {
 /// The storage twin of `display_service::start_backing_escape`: the attacker gets exactly the
 /// honest server's world and differs only in the physical address it writes into a PRP. The kernel
 /// picks the victim frame and plants its canary, and only [`DmaEscape::release`] frees it, after
-/// the controller is disabled. See notes/framebuffer-contract/kernel-wiring.md for why.
+/// the controller is disabled. The kernel picks it because a server guessing "the frame past my
+/// region" may guess a frame inside the domain; see notes/dma.md for the use-after-free.
 #[cfg(feature = "system_tests")]
 pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
     // The victim, outside any region bring_up will confine the controller to. Planted with the

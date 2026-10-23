@@ -16,9 +16,20 @@ would:
 
 The caretaker holds the directory capability. The program holds an endpoint to the caretaker and
 nothing that names the FS server. So "it cannot reach a second file" is a fact of its capability
-table, not a check it is trusted to pass. A directory grant has the same shape
-with `fs_subtree_caretaker`, and a set grant with `fs_nameset_caretaker`, which answers only for
-the names in a set.
+table, not a check it is trusted to pass. A directory grant has the same shape with
+`fs_subtree_caretaker`:
+
+```text
+  FS server ──file IPC──► fs_subtree_caretaker ──narrowed file IPC──► the confined program
+           (the image root)         (one subtree, one rights set)
+```
+
+A set grant uses `fs_nameset_caretaker`, which answers only for the names in a set:
+
+```text
+  FS server ──file IPC──► fs_nameset_caretaker ──narrowed file IPC──► the confined program
+           (the image root)         (one directory, and only the names in the set)
+```
 
 All three processes share one frame. Every request on both hops is a blocking `CALL`. So the client
 is parked in its own call while the caretaker uses the page. A second frame would
@@ -28,9 +39,8 @@ That argument fails at startup, and the ordering in `wait_for_caretaker` is the 
 stages its granted name in the shared page and then blocks in a `CALL` to the FS server. When the
 same call wired the service, the FS server is still parked in its readiness `SEND`. That `CALL`
 waits until the sentinel is drained. A client that already existed had that whole window to write
-its own first name over the page. The caretaker then died, since it will not serve a hole. Its client
-blocked forever: a userspace `ebreak`, then the 60-second lost-wakeup watchdog. It passed
-on aarch64 and failed on riscv64. So the wiring drains the service, waits for the caretaker's own
+its own first name over the page, and the caretaker, which will not serve a hole, would die and
+leave its client blocked forever. So the wiring drains the service, waits for the caretaker's own
 sentinel, and only then spawns the program.
 
 A set does not fit in `START` registers, so the set grant encodes it into a frame of its own,
@@ -40,8 +50,18 @@ needs none of the ordering above. `ARG_MAX` returns here as the size of a capabi
 
 ## Two directories for one program
 
-`start_granted_two_dirs` starts two subtree caretakers for one program. Which directory is which is
-the capability table slot: slot 0 is always the first grant and slot 1 the second. How the shell
+`start_granted_two_dirs` starts two subtree caretakers for one program:
+
+```text
+  FS server ──file IPC──► fs_subtree_caretaker A ──narrowed file IPC──►
+           (the image root)      (subtree A, one rights set)          the confined program
+                      └────────► fs_subtree_caretaker B ──narrowed file IPC──►  (slot 0: A
+                                 (subtree B, one rights set)                     slot 1: B
+                                                                                  slot 2: report)
+```
+
+Which directory is which is the capability table slot: slot 0 is always the first grant, slot 1
+the second, and slot 2 the report. How the shell
 would encode a second directory grant to the progenitor is left open for whoever wires this into
 the shell. Both caretakers map the same file-channel frame. That is safe, because the program is one
 thread with at most one `CALL` in flight.

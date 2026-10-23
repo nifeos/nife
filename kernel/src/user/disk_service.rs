@@ -72,8 +72,9 @@ pub struct Wiring {
 ///
 /// mmio first in slot order, then virtio-blk on PCIe, then NVMe controllers. Each `ordinal` is the
 /// number the matching finder counts by (`virtio::find_block_device_n`, the walk
-/// `pci::find_nvme_device` takes), so a listing and a wiring agree on which disk is which. A device
-/// is listed whether or not a server has been wired for it.
+/// `pci::find_nvme_device` takes), so a listing and a wiring agree on which disk is which. NVMe
+/// comes last so that adding it moved no virtio entry. A device is listed whether or not a server
+/// has been wired for it.
 fn devices() -> (
     [block_roster::Device; block_roster::capacity_of(FRAME_SIZE as usize)],
     usize,

@@ -91,8 +91,8 @@ pub(crate) fn offer() {
     };
     disk.wait_for_ready();
 
-    // Look before asking, or every installed machine (which boots from a file too) would be asked
-    // to wipe itself on every boot. The survey holds no entropy, so it writes no table.
+    // Look before asking, or every installed machine would be asked to wipe itself on every boot.
+    // The survey holds no entropy, so it can write no table anything reads back.
     let report = spawn_system_installer(system_installer, &disk, None, ROLE_SURVEY, 0, 0);
     if crate::sched::ipc_receive(report)[0] == R_ALREADY {
         return; // nife is already on this disk. See BUGS: there is no reinstall.
@@ -166,15 +166,15 @@ pub(crate) fn offer() {
     crate::println!("  install     : DONE. Remove the installation medium and reboot.");
 }
 
-/// Say that this boot worked, so an upgrade that came up is not rolled back once its tries run
-/// out. A no-op on a boot no chooser started.
-///
-/// It is called once the filesystem server has mounted the installed disk and the progenitor is
-/// built: as late as a machine with no person can check. The write is `system_installer`'s
-/// [`ROLE_CONFIRM`], holding the report endpoint, the disk's `blk` endpoint badged with its own
-/// transfer window (`non_volatile_memory_express::INSTALLER_WINDOW`), that window, and a map
-/// budget; no entropy and no boot file. A `blk` endpoint is the whole disk, as
-/// `system_installer`'s `BUGS` records. See notes/boot-slots.md.
+/// Say that this boot worked, so an upgrade that came up is not rolled back once its tries run out;
+/// a no-op on a boot no chooser started. It is called once the filesystem server has mounted the
+/// installed disk and the progenitor is built: as late as a machine with no person can check. The
+/// write is `system_installer`'s [`ROLE_CONFIRM`], holding the report endpoint, the disk's `blk`
+/// endpoint badged with its own transfer window (`non_volatile_memory_express::INSTALLER_WINDOW`),
+/// that window, and a map budget; no entropy and no boot file. A `blk` endpoint is the whole disk,
+/// as `system_installer`'s `BUGS` records. What it writes is the partition table, which the
+/// filesystem server never reads after mounting, so the two never contend for a block. See
+/// notes/boot-slots.md.
 pub(crate) fn confirm() {
     let Some(slot) = crate::memory::boot_slot() else {
         return; // No chooser started this boot: there is nothing to confirm.
