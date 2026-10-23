@@ -1,10 +1,10 @@
 //! CRC-32 as GPT uses it, and the bitwise definition it is proved against.
 //!
 //! The IEEE 802.3 / zlib / PNG variant: reflected, polynomial `0x04C11DB7` written reversed as
-//! `0xEDB88320`, initialised to all ones and complemented at the end. UEFI 2.10 §5.3.2 specifies it
-//! by reference to "the 32-bit CRC algorithm". Four CRCs guard a GPT: each header's, over the size
-//! it declares (92 bytes in practice), and each copy of the entry array's. [`crc32`] is
-//! table-driven for the exhaustive tests; `crc32_bitwise` keeps the definition, and
+//! `0xEDB88320`, initialised to all ones and complemented at the end. UEFI 2.10 section 5.3.2
+//! specifies it by reference to "the 32-bit CRC algorithm". Four CRCs guard a GPT: each header's,
+//! over the size it declares (92 bytes in practice), and each copy of the entry array's. [`crc32`]
+//! is table-driven for the exhaustive tests; `crc32_bitwise` keeps the definition, and
 //! `verification::crc32_matches_its_bitwise_definition` proves the two agree up to a bound. See
 //! notes/globally-unique-identifier-partition-table/the-modules.md, "CRC-32".
 

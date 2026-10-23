@@ -83,7 +83,7 @@ impl Header {
     /// `block` is one block, 512 to 4096 bytes and a power of two; its length is the block size.
     /// Refuses a bad block size, a wrong signature, a revision other than [`REVISION`], a declared
     /// header size outside `92 ..= block_size` (the spec's bound), a non-zero reserved word at
-    /// offset 20 or non-zero byte after the header (UEFI 2.10 §5.3.2 requires both zero; the
+    /// offset 20 or non-zero byte after the header (UEFI 2.10 section 5.3.2 requires both zero; the
     /// strictest check here), and a header CRC that does not match over `header_size` bytes with
     /// the CRC field taken as zero. A size over 92 is accepted, as the spec asks of a reader that
     /// does not know a later revision; see notes/globally-unique-identifier-partition-table.md.

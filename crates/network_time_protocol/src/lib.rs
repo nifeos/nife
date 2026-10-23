@@ -181,10 +181,10 @@ impl Timestamp {
     /// **An NTP timestamp to Unix seconds and nanoseconds.** Total: every one of the 2<sup>64</sup>
     /// bit patterns decodes to some instant, because on the wire every one of them is one.
     ///
-    /// The 32-bit seconds field rolls over every 136 years, so RFC 5905 §6's era rule is a fixed
-    /// pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>) is era
-    /// 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is era 1,
-    /// counted from the rollover (to 26 February 2104). The window is
+    /// The 32-bit seconds field rolls over every 136 years, so RFC 5905 section 6's era rule is a
+    /// fixed pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>)
+    /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
+    /// era 1, counted from the rollover (to 26 February 2104). The window is
     /// [`UNIX_MIN`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned are
     /// unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
     /// nearest-era rule is worse.
@@ -207,8 +207,8 @@ impl Timestamp {
     /// timestamp of a request.
     ///
     /// [`Query::accept`] requires the reply's origin to match it exactly, so it is all an off-path
-    /// attacker has to guess, and RFC 5905 §3 says to randomise its low-order bits. How many are
-    /// random is the clock's precision, which the caller knows and this crate does not: a
+    /// attacker has to guess, and RFC 5905 section 3 says to randomise its low-order bits. How many
+    /// are random is the clock's precision, which the caller knows and this crate does not: a
     /// microsecond clock leaves about 12, which is 4096 guesses. `bits >= 32` randomises the whole
     /// fraction. With a real random source, prefer [`Query::with_nonce`] and its 64 random bits.
     pub const fn randomise_low(self, bits: u32, random: u32) -> Timestamp {

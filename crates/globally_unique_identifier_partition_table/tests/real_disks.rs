@@ -83,8 +83,9 @@ fn sgdisk_writes_a_table_we_accept_whole() {
     // that has never heard of it. This is the recovery story in one assertion.
     assert_eq!(parts[2].1.type_guid, types::NIFE_DATA);
     assert_eq!(types::name(parts[2].1.type_guid), Some("nife data"));
-    // The fixture's label is "cricker data", from before the milestone 120 rename, on purpose: a
-    // pre-rename disk is the recovery case, and the GUID, not the label, is what is recognised.
+    // The fixture's label is "cricker data", from before milestone 120 (the rename: the OS becomes
+    // `nife`), on purpose: a pre-rename disk is the recovery case, and the GUID, not the label, is
+    // what is recognised.
     assert_eq!(name_of(&parts[2].1), "cricker data");
     assert_eq!(parts[2].1.last_lba, table.last_usable_lba());
 }
