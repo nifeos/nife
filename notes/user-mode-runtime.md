@@ -44,12 +44,12 @@ the trap. A yield comes back with `x0 = 0`, and a retry loop that kept its argum
 one sent the wrong call (notes/job-mix/spawn-job-miscompiled-yield.md). `helpers/syscall_asm.py`
 gates every userspace trap.
 
-For `SYS_INVOKE`, the capability, the method and three arguments go in the first five registers,
-and the reply comes back in the same five. The sixth register is an output and goes in as zero.
-The kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it delivers
-a death message to a plain `RECEIVE`, and leaves it alone otherwise (§148, resolves by asking the
-kernel, as amended 2026-10-04). Declared as an input only, LLVM would keep a live value in it across
-the trap. Zero in makes `receive_fault` read `0` for anything the kernel did not stamp.
+For `SYS_INVOKE`, the capability, the method and three arguments go in the first five registers, and
+the reply comes back in the same five. The sixth register is an output and goes in as zero. The
+kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it delivers a
+death message to a plain `RECEIVE`, and leaves it alone otherwise (§148 (resolves by asking the
+kernel), as amended 2026-10-04). Declared as an input only, LLVM would keep a live value in it
+across the trap. Zero in makes `receive_fault` read `0` for anything the kernel did not stamp.
 
 On `x86_64`, two operands have no counterpart on the other architectures, and both are forced by
 the instruction. `syscall` writes the return address into `rcx` and the caller's `RFLAGS` into
@@ -66,9 +66,9 @@ can express.
 ## Ending a process
 
 `exit` and `trap` are the two ways a program ends, and they report differently. `exit` reports
-`EVENT_EXIT` to a supervisor and `trap` reports `EVENT_FAULT` (`kernel/src/sched.rs`, §26). A
-supervised child that traps is therefore legible as having failed, and one that exits is not. A
-panic must take the trap path, or it misreports what happened.
+`EVENT_EXIT` to a supervisor and `trap` reports `EVENT_FAULT` (`kernel/src/sched.rs`, §26 (the fault
+endpoint)). A supervised child that traps is therefore legible as having failed, and one that exits
+is not. A panic must take the trap path, or it misreports what happened.
 
 The trap instruction is `brk #0` on aarch64, `ebreak` on riscv64 and `ud2` on `x86_64`. The
 `x86_64` arm's `SAFETY` comment says why `int3` cannot be used from ring 3 here. Both functions end
@@ -171,7 +171,7 @@ the host pass.
 
 ## Clients of services
 
-`entropy::fill` is the client half of `entropy_contract` (§44, entropy is a capability;
+`entropy::fill` is the client half of `entropy_contract` (§44 (entropy is a capability),
 notes/entropy.md). The contract holds the request and reply encodings, pure and dependency-free, and
 the kernel's entropy service and the std PAL build on it. A fill function has to `CALL` an endpoint,
 so putting it in the contract would make the contract depend on this runtime. The loop, where the
@@ -189,8 +189,8 @@ bounds-checked against the DMA region and its high-water mark.
 `child_stub::SEND_THEN_EXIT` is the smallest whole program, hand-assembled per architecture. It
 sends one word on slot 0, then exits. A parent copies it into a frame it maps writable in its own
 space, then aliases that frame as `MAP_CODE` into each child, and the kernel makes the I-cache
-coherent at that map. `fixtures/src/os_primitives_benchmarker.rs` and milestone 168's `SPAWN` job
-share the one copy.
+coherent at that map. `fixtures/src/os_primitives_benchmarker.rs` and milestone 168 (a multi-tasking
+workload benchmark)'s `SPAWN` job share the one copy.
 
 The `x86_64` stub is bytes, because x86 instructions are not a fixed width. Each immediate uses the
 32-bit form, `mov r32, imm32`, which zeroes the upper half of the register and is the only encoding

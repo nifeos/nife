@@ -32,9 +32,10 @@ pub fn exit() -> ! {
 }
 
 /// **Die where the mistake was.** Raise a breakpoint the kernel turns into a fault, so the process
-/// is killed rather than allowed to limp on. Unlike [`exit`] (`EVENT_EXIT`), this reports `EVENT_FAULT` to a supervisor (§26), so a panic
-/// must take this path: `brk #0`, `ebreak` or `ud2`. The trailing spin only satisfies `-> !`;
-/// calling `exit` would make an impossible return look like a clean death.
+/// is killed rather than allowed to limp on. Unlike [`exit`] (`EVENT_EXIT`), this reports
+/// `EVENT_FAULT` to a supervisor (§26 (the fault endpoint)), so a panic must take this path:
+/// `brk #0`, `ebreak` or `ud2`. The trailing spin only satisfies `-> !`; calling `exit` would make
+/// an impossible return look like a clean death.
 ///
 /// # BUGS
 /// - Every trap in a program prints the same fault line, since its `pc` is this one instruction;

@@ -132,11 +132,12 @@ pub fn receive_badged_bound(slot: u64) -> Result<(u64, u64, u64, u64), u64> {
 
 /// `RECEIVE` **all six words** on the endpoint capability in `slot`: `(w0, w1, w2, w3, w4, w5)`.
 ///
-/// A fault notification is five words, `(event, tid, pc, addr, reserved)` (§26 implementation note
-/// 4); ordinary three-word IPC leaves the top two zero. A checking supervisor reads `w3`, the
-/// faulting address. The sixth word is the dead child's label (§148, as amended 2026-10-04): the
-/// badge its builder put on the supervision capability in `abi::fault::FAULT_EP_SLOT`, or `0` when
-/// unbadged or unstamped, because [`invoke6`] zeroes the register on the way in. See `abi::fault`.
+/// A fault notification is five words, `(event, tid, pc, addr, reserved)` (§26 (the fault
+/// endpoint) implementation note 4); ordinary three-word IPC leaves the top two zero. A checking
+/// supervisor reads `w3`, the faulting address. The sixth word is the dead child's label (§148
+/// (resolves by asking the kernel), as amended 2026-10-04): the badge its builder put on the
+/// supervision capability in `abi::fault::FAULT_EP_SLOT`, or `0` when unbadged or unstamped,
+/// because [`invoke6`] zeroes the register on the way in. See `abi::fault`.
 pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from `invoke6`'s contract.
     unsafe { invoke6(slot, abi::rendezvous::RECEIVE, 0, 0, 0) }

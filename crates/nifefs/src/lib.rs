@@ -587,11 +587,10 @@ mod verification {
 
     /// **Parse's validation is sufficient for `read`: proved on the function both of them call.**
     /// For ANY `start_block`, `len`, and image length, an accepted entry yields
-    /// `start <= end <= image_len`, so `read`'s indexing cannot panic and the bytes it returns
-    /// lie inside the image. It calls [`Fs::entry_bounds`] rather than restating it, because a
-    /// proof of a copy is a proof of neither caller (milestone 213). The two equalities are the
-    /// format, not the implementation: an entry names an absolute block of [`BLOCK`] bytes. See
-    /// notes/nifefs.md.
+    /// `start <= end <= image_len`, so `read`'s indexing cannot panic. It calls
+    /// [`Fs::entry_bounds`] rather than restating it: milestone 213 (a harness that re-implements
+    /// the code instead of calling it proves nothing about the code). The two equalities are the
+    /// format: an entry names an absolute block of [`BLOCK`] bytes. See notes/nifefs.md.
     /// Falsification: replayable `crates/nifefs/falsifications/verification.the_validation_implies_reads_slice_is_in_bounds.patch`
     #[kani::proof]
     fn the_validation_implies_reads_slice_is_in_bounds() {

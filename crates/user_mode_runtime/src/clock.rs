@@ -187,7 +187,7 @@ pub struct CycleReading {
 ///
 /// # BUGS
 /// - No manifest field grants the counter yet, so only the kernel's own test may call this on
-///   aarch64 or riscv64 (milestone 75's work).
+///   aarch64 or riscv64 (milestone 75 (who may read the cycle counter, and by what authority)).
 /// - riscv64's `cycle` is `mcycle`, and the kernel's probe may hold `hpmcounter3` (milestone 856
 ///   (a program asks whether it may read the cycle counter)).
 /// - Under QEMU every count is emulator time, never a measurement of a core.

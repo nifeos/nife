@@ -32,10 +32,10 @@ its memory. `kernel::arch::riscv64::timer::init_frequency` reads it on the boot 
 4 MHz, so no constant could stand in for it.
 
 x86 has no architected rate a ring-3 program can ask for. `CPUID` leaf `0x15` is absent on many
-parts, and calibrating against the 8254 PIT needs port I/O, which §121 (what a device capability
-is when the device has no page: x86 port I/O) keeps from userspace. `arch::x86_64::timer::init_frequency`
-reads the leaf or calibrates, and every kernel path that builds a top-level address space maps the
-page (`kernel::user::map_x86_timebase_page`).
+parts, and calibrating against the 8254 PIT needs port I/O, which §121 (what a device capability is
+when the device has no page: x86 port I/O) keeps from userspace.
+`arch::x86_64::timer::init_frequency` reads the leaf or calibrates, and every kernel path that
+builds a top-level address space maps the page (`kernel::user::map_x86_timebase_page`).
 
 Both publish the rate on the timebase page, mapped read-only into every process at
 `counter_frequency_contract::PAGE_VA`. `supervision_protocol::build_child_space` fills a child's
@@ -67,9 +67,9 @@ both were taken on the same core, because the aarch64 and riscv64 counters are p
 different times.
 
 On aarch64 and riscv64 the instruction traps unless the kernel opened `PMUSERENR_EL0` or
-`scounteren.CY` for the thread (milestone 229, build the cycle-counter grant DECISIONS 139 decided),
-and an ungranted thread is killed. §139 (who may read the cycle counter, and by what authority)
-option 4 chose a grant that keeps the read a single instruction with no syscall.
+`scounteren.CY` for the thread (milestone 229 (build the cycle-counter grant DECISIONS 139
+decided)), and an ungranted thread is killed. §139 (who may read the cycle counter, and by what
+authority) option 4 chose a grant that keeps the read a single instruction with no syscall.
 
 On `x86_64` the TSC is both the coarse and the fine counter. `CR4.TSD` is clear at reset and never
 written, so every ring-3 program holds a sub-nanosecond timing instrument it was never granted.
@@ -83,9 +83,9 @@ monotonic page first, the move §43 (reading the clock is a page) made one axis 
 
 `current_cpu` is a plain load from a per-thread page. §204 (how userspace asks where a thread runs)
 gives a thread observing itself a page and a thread observing another a selector. The consumer is a
-memory allocator keeping a per-CPU cache, which asks once per allocation, and a crossing at that rate
-cannot be amortized away. `crates/current_cpu_contract` carries the layout, the ordering argument and
-why this is not a register on any of the three targets.
+memory allocator keeping a per-CPU cache, which asks once per allocation, and a crossing at that
+rate cannot be amortized away. `crates/current_cpu_contract` carries the layout, the ordering
+argument and why this is not a register on any of the three targets.
 
 The answer can be stale before it is used, because the kernel may migrate the thread the instruction
 after the load. A per-CPU cache built on it must be correct when the answer is the previous core's,
@@ -95,6 +95,6 @@ online set is `{1, 2, 3}`, so a per-CPU array sized by a core count misses a cor
 `current_cpu_contract::CPU_ID_BOUND`.
 
 Every space that runs a thread gets the page: `kernel::user::AddressSpace::new` maps it for the
-kernel-built spaces and `kernel::sched::configure_thread_control_block` for the userspace-built ones.
-The space with no page is one with no thread in it, which has nothing to ask.
+kernel-built spaces and `kernel::sched::configure_thread_control_block` for the userspace-built
+ones. The space with no page is one with no thread in it, which has nothing to ask.
 

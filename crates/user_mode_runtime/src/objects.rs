@@ -12,9 +12,9 @@ use crate::syscall::{invoke, trap6};
 /// **Map the `PageFrame` capability in `frame_slot` at `va`**, drawing the page tables from the untyped
 /// in `memory_region_slot`. `true` if the page is now there.
 ///
-/// The verb a process that holds a page uses to put it in its own address space (milestone 108).
-/// Unlike a page wired in at spawn, the mapping is in the revocation database, so
-/// `PageFrame::REVOKE` can take it back. See notes/frames.md.
+/// The verb a process that holds a page uses to put it in its own address space (milestone 108
+/// (the drivers move onto frame capabilities)). Unlike a page wired in at spawn, the mapping is in
+/// the revocation database, so `PageFrame::REVOKE` can take it back. See notes/frames.md.
 ///
 /// `writable` needs `WRITE` on the frame; a read-only mapping needs `READ`. A caller handed a
 /// narrowed view that asks for more than it holds gets `false` and no mapping, which is the rights
