@@ -132,7 +132,7 @@ pub fn spawn_elf_child_builder(
                 crate::sched::exit();
             }
         };
-    // The builder's segments, the archive's page tables and mapping log, a deep stack, and slack.
+        // The builder's segments, the archive's page tables and mapping log, a deep stack, and slack.
         let content: u64 = elf
             .segments()
             .map(|seg| {
@@ -148,8 +148,8 @@ pub fn spawn_elf_child_builder(
         crate::sched::defer_kill();
         let mut space = AddressSpace::new(content).expect("no memory for the builder");
         map_segments(&mut space, &elf).expect("could not lay out the builder");
-    // A builder's loader and parser have deep call chains, so one page overflows. The entry sp
-    // stays USER_STACK_TOP.
+        // A builder's loader and parser have deep call chains, so one page overflows. The entry sp
+        // stays USER_STACK_TOP.
         for k in 0..PROGENITOR_STACK_PAGES {
             space
                 .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
@@ -158,7 +158,7 @@ pub fn spawn_elf_child_builder(
         #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
         map_timebase_page(&mut space).expect("could not map the builder's timebase page");
 
-    // Reserved RAM the frame allocator does not own, so mapped rather than allocated.
+        // Reserved RAM the frame allocator does not own, so mapped rather than allocated.
         for i in 0..initial_ramdisk_pages {
             space
                 .map_physical(
@@ -172,7 +172,7 @@ pub fn spawn_elf_child_builder(
 
         crate::sched::adopt_address_space(space);
         crate::sched::allow_kill();
-    // Slots 0 to 4 in order: `grant` takes the next free slot, and builders name them by number.
+        // Slots 0 to 4 in order: `grant` takes the next free slot, and builders name them by number.
         crate::sched::grant(crate::cap::memory_region_root_cap(build_region))
             .expect("grant untyped");
         crate::sched::grant(crate::cap::rendezvous_cap(

@@ -111,12 +111,13 @@ impl Holding {
         *slot = Some(region);
     }
 
-/// Remember a region that may only be reclaimed **once every thread is gone**: memory a live
-/// thread is standing on, such as a process's stack.
-///
-/// Stack pages arrive through `Spawn::maps`, and freeing their region while the thread still runs
-/// hands its live stack to the allocator: a use-after-free with a window of one timer tick, not a
-/// fault.
+    /// Remember a region that may only be reclaimed **once every thread is gone**: memory a live
+    /// thread is standing on, such as a process's stack.
+    ///
+    /// Stack pages arrive through `Spawn::maps`, and freeing their region while the thread still runs
+    /// hands its live stack to the allocator: a use-after-free with a window of one timer tick, not a
+    /// fault.
+    ///
     /// # Panics
     /// If more than [`MAX_REGIONS`] are added; see [`add_thread`](Self::add_thread).
     pub fn add_region_after_death(&mut self, region: u64) {
