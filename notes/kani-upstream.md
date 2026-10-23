@@ -13,10 +13,14 @@ texts calef posts under his own account. The research behind it is the proposal
 ## Where it is
 
 - Pull request: [model-checking/kani#4913](https://github.com/model-checking/kani/pull/4913),
-  opened as a draft 2026-09-30 (UTC) from [calef/kani
-  `riscv64-target`](https://github.com/calef/kani/tree/riscv64-target).
-- On 2026-10-03 (UTC) the branch was rebased onto Kani `main` at `1640445da`, and the first review
-  was folded in. "Review, 2026-09-30" below has what changed.
+  open and out of draft, from [calef/kani
+  `riscv64-target`](https://github.com/calef/kani/tree/riscv64-target). feliperodri requested
+  changes on 2026-10-05 (UTC); calef answered every thread and asked for re-review. It waits on a
+  maintainer approving the fork's CI run, then on re-review.
+- Upstream `main` was merged into the branch on 2026-10-22 (UTC) (`3b698421a`; the conflicts came
+  from upstream #4941, which rewrote `--export-json` to the RFC 0015 shape). `c264c6929` makes the
+  export report the verification target and updates RFC 0015's field table.
+- "Review, 2026-09-30" below has what tautschnig's first review changed.
 - The pull request body as first posted: [kani-upstream/pull-request-4913-body.md](kani-upstream/pull-request-4913-body.md).
 - Comment for #2402: [kani-upstream/issue-2402-comment.md](kani-upstream/issue-2402-comment.md).
 
@@ -134,15 +138,13 @@ nife, so it stays a limitation.
 
 ## Where this lane stopped
 
-The pull request is open and the review is answered in code. Waiting on calef:
+The pull request is open and the review is answered in code. Open:
 
-1. The `kani_lib.c` link fix, promised on #4913 as a follow-up pull request. Milestone 635
+1. The `kani_lib.c` link fix is in #4913 (`1eaa2d9`), measured in
+   [kani-upstream/kani-lib-link-order.md](kani-upstream/kani-lib-link-order.md). Milestone 635
    (riscv64 proofs check against the riscv64 model) carries it in nife's patch
-   ([its block](../design/roadmap/0635-riscv64-proofs-check-against-the-riscv64-model.md)) and gates it in `script/verify-riscv64`. The upstream pull request is drafted in
-   [kani-upstream/kani-lib-link-order.md](kani-upstream/kani-lib-link-order.md), and nobody posts it
-   before calef has read it. In CI the old link gave `arm64`/`linux`, so `arch` was the only field
+   ([its block](../design/roadmap/0635-riscv64-proofs-check-against-the-riscv64-model.md)) and gates it in `script/verify-riscv64`. In CI the old link gave `arm64`/`linux`, so `arch` was the only field
    Kani wrote that changed there; no verdict changed for the seven harnesses that exist.
-2. The pull request body's "Something I noticed" paragraph, if it still gives the old cause.
-3. Still open from before: the `coverage` suite was not rerun. `verify_std_cmd`, undiagnosed in
+2. Still open from before: the `coverage` suite was not rerun. `verify_std_cmd`, undiagnosed in
    September, passed on 2026-10-03 (UTC), so that failure was the loaded machine or a baseline
    since fixed.

@@ -1,9 +1,10 @@
 # Draft: the `kani_lib.c` link-order follow-up to model-checking/kani#4913
 
 *Name: provisional, for milestone 635 (riscv64 proofs check against the riscv64 model). The parent
-note is [kani-upstream.md](../kani-upstream.md). **Not posted.** calef reads every upstream word
-before anything goes to model-checking/kani, and nothing here has been pushed to calef/kani.
-Measured 2026-10-03 (UTC).*
+note is [kani-upstream.md](../kani-upstream.md). **In force:** the change is in
+model-checking/kani#4913 (`1eaa2d9`, with the Apple `char` fix in `9b72fa016`), per the ruling
+below; no separate pull request is opened, and the branch plan below is not used. calef reads
+every upstream word before anything goes to model-checking/kani. Measured 2026-10-03 (UTC).*
 
 This is the pull request promised in calef's reply to tautschnig on #4913
 ([discussion_r4172069063](https://github.com/model-checking/kani/pull/4913#discussion_r4172069063)):
