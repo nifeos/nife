@@ -844,15 +844,15 @@ mod tests {
         assert_eq!(memory_grant_pages(w2), 0);
     }
 
-    /// **The fourteen flags are independent of each other and of the page count** (milestone 50
-    /// (pipes and redirection), §67 (a program's second stream is a declaration)'s fourth,
-    /// milestone 31 (a capability shell) phase 3's fifth, DECISIONS §106 (the
-    /// `terminal_sink_caretaker` narrowing)'s sixth, milestone 154 (a process that holds two
-    /// directory capabilities)'s seventh, §219's image and its gate D2, §170's argv and name set,
-    /// milestone 126's machine page, and milestone 632 (provisional)'s gpu and keyboard). They
-    /// share one word, and what the progenitor reads next off the endpoint depends on all of them,
-    /// so a bit that bled into another would make the progenitor take a capability for a data word
-    /// (or the reverse) and hang rather than fail.
+    /// **The fourteen flags are independent of each other and of the page count** (milestone 50 (pipes
+    /// and redirection), §67 (a program's second stream is a declaration)'s fourth, milestone 31 (a
+    /// capability shell) phase 3's fifth, DECISIONS §106 (the `terminal_sink_caretaker` narrowing)'s
+    /// sixth, milestone 154 (a process that holds two directory capabilities)'s seventh, §219's
+    /// image and its gate D2, §170's argv and name set, milestone 126's machine page, and
+    /// milestone 632 (provisional)'s gpu and keyboard). They
+    /// share one word, and what the progenitor reads
+    /// next off the endpoint depends on all of them, so a bit that bled into another would make the
+    /// progenitor take a capability for a data word (or the reverse) and hang rather than fail.
     #[test]
     fn the_wiring_flags_do_not_collide() {
         for m in 0u32..1 << 14 {
