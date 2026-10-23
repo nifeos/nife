@@ -1,17 +1,12 @@
-//! **The process object** (milestone 812 (`std::thread::spawn` runs real threads in one address
-//! space); §269 (how threads share a process) forks 1, 3 and 5, as calef ruled them on pull request
-//! #1892). A page retyped from its creator's region, holding what its threads share: the capability
-//! table, the address space, the count of its members, and how it ended. `abi::process` is the
-//! contract; `notes/processes.md` has the argument and the limits.
+//! The process object (§269 (how threads share a process) forks 1, 3 and 5): a page retyped from
+//! its creator's region, holding what its threads share, the capability table, the address space,
+//! the count of its members, and how it ended. `abi::process` is the contract; `notes/processes.md`
+//! has the argument and the limits.
 //!
-//! **Membership is counted, and the count is what keeps every pointer here sound.** A member's
-//! `Thread::capability_table` points into this page and its `space` copy names this page's space.
-//! The page is reclaimed only when no thread is a member ([`reap_region`]), and the space is
-//! released only once the process has ended with no member left ([`leave`], [`destroy`]).
-//!
-//! **A process ends when its last member leaves**, as well as by `exit`, a fault, `DESTROY` or its
-//! region. So a table no thread can reach is never joined again: the revocation sweeps walk tables
-//! through threads, and a table with no member and a future would be one they missed.
+//! Membership is counted, and the count keeps every pointer here sound: the page is reclaimed only
+//! when no thread is a member ([`reap_region`]), and the space released only once the process has
+//! ended with no member left ([`leave`], [`destroy`]). A process ends when its last member leaves,
+//! so no table the revocation sweeps cannot reach through a thread is ever joined again.
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
@@ -41,10 +36,8 @@ pub(super) struct ProcessPage {
     space_name: u64,
     /// Threads whose `process` is this one and that are still in the thread table.
     members: u32,
-    /// **Members that have ever been started**, which only grows. `members` falls back to zero as
-    /// threads leave, so it cannot say afterwards how many threads a finished program ran; this
-    /// can. It is how milestone 121 (`ripgrep` on nife) proves that `ripgrep`'s parallel walker ran on more than one
-    /// thread, from the kernel's side, with nothing in the program asked to say so.
+    /// Members that have ever been started, which only grows: how a finished program proves, from
+    /// the kernel's side, how many threads it ran.
     started: u32,
     /// No thread may join or start here any more, and every member has been ended.
     ended: bool,
@@ -343,8 +336,7 @@ pub(super) fn reap_corpse(
         }
         None => return,
     };
-    // A member of a process does not hold its space; the process does, and gives it up when its
-    // last member leaves (milestone 812).
+    // A member of a process does not hold its space; the process gives it up with its last member.
     let space = if sched.threads.get(prev).is_some_and(|t| t.process.is_some()) {
         leave(sched, prev)
     } else {
@@ -357,10 +349,9 @@ pub(super) fn reap_corpse(
     drop(stack);
     #[cfg(feature = "lock_wait")]
     crate::lock_wait::stack_freed(crate::arch::timer::now() - t0);
-    // The thread kept a copy; the registry owns the space (§249). `None` here means the region
-    // sweep already took it from under this corpse, which is the take-once removal working, not a
-    // leak. Taken and dropped as two statements so the registry's lock is released before the
-    // `Drop`, which takes the revocation, region and ASID locks.
+    // The thread kept a copy; the registry owns the space (§249). `None` means the region sweep
+    // took it first. Taken and dropped as two statements so the registry's lock is released before
+    // the `Drop`, which takes the revocation, region and ASID locks.
     if let Some((name, slot)) = page {
         crate::user::give_back_thread_page(name, slot); // milestone 812: the slot is free again
     }
