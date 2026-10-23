@@ -189,7 +189,6 @@ fn page_frame() -> u64 {
         .addr()
 }
 
-
 /// Unpack the `k`th reply code from a `credentialer_test_client` report's second word. One byte per code; see
 /// `fixtures/src/credentialer_test_client.rs` `Codes`.
 pub const fn nth(packed: u64, k: u32) -> u64 {
