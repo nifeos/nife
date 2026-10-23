@@ -96,8 +96,8 @@ pub struct PerCpu {
     pub switches: AtomicU64,
 
     /// This core's placement PRNG for §28's two choices: xorshift32, seeded in [`init_this_cpu`].
-    /// Advanced only by this core, with interrupts masked. Deterministic, so the icount instrument
-    /// is reproducible.
+    /// Advanced by [`rng_next`](Self::rng_next) through `cpu::current()`. Deterministic, so the
+    /// icount instrument is reproducible.
     rng: AtomicU32,
 
     /// `x86_64` only: this core's trap-entry scratch, which `trap.s` reaches `gs`-relative at
@@ -228,7 +228,10 @@ impl PerCpu {
 
     /// Advance this core's placement PRNG and return the next value.
     ///
-    /// Context: the owning core's spawn path, with interrupts masked.
+    /// # BUGS
+    ///
+    /// `sched::spawn` calls it with interrupts enabled, so a preemption between the load and the
+    /// store can lose an update or store into a block the thread has left. Neither breaks placement.
     pub(crate) fn rng_next(&self) -> u32 {
         let mut x = self.rng.load(Ordering::Relaxed);
         x ^= x << 13;
