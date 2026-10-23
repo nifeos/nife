@@ -2,10 +2,11 @@
 
 `sched::reclaim_region` is how a region's owner gets its memory back (§16 (object revocation)). It
 tears down every kernel object retyped from the region, unpins it and returns the pages. The code is
-`kernel/src/sched/region_reaping.rs`. The supervisor's way in, `rendezvous::REAP` (§32 (reap without
-build)), and the survey beside it are built on the same pass. The stale-reply hazard the pass is
-shaped around is argued in [notes/blocked-thread-teardown.md](blocked-thread-teardown.md), and the
-`on_cpu` refusal's evidence is in
+`kernel/src/sched/region_reaping.rs`. The supervisor's way in, `rendezvous::REAP` (§32 (a supervisor
+may collect a corpse without being able to build one)), and the survey beside it are built on the
+same pass. The stale-reply hazard the pass is shaped around is argued in
+[notes/blocked-thread-teardown.md](blocked-thread-teardown.md), and the `on_cpu` refusal's evidence
+is in
 [notes/stack/kernel-stack-freed-under-its-owner.md](stack/kernel-stack-freed-under-its-owner.md).
 
 ## The order of a reclaim
@@ -42,8 +43,8 @@ thread pointer translated back to a physical address is the whole test.
    its own kernel stack refuses the pass without arming.
 5. **Removal.** Every thread in the region is `Embryo`, `Finished` or `Dead`, and each is removed.
    A supervised corpse whose death message nobody received is still parked on its supervisor's
-   rendezvous, which is outside the region, so it is unlinked first; freeing it while linked would
-   leave a pointer the supervisor's next `RECEIVE` follows into a recycled page.
+   rendezvous, outside the region, so it is unlinked first. Freed while linked, it would leave a
+   pointer the supervisor's next `RECEIVE` follows into a recycled page.
    `strand_callers_of` frees the callers named by reply capabilities the thread collected. `depart`
    and the kill conversion in `schedule` do the same for threads that ran.
 
@@ -58,7 +59,7 @@ removes a handful. Each pass changes the victim so it no longer matches, so each
 
 The rendezvous drain wakes inside its callback for the same reason. That is safe because
 `Rendezvous::drain_waiters` pops an entry before calling back, so the thread's one intrusive link is
-free for `wake` to push it onto a run queue, and `rendezvous_of` returns a `'static` reference that
+free for `wake` to push it onto a run queue. And `rendezvous_of` returns a `'static` reference, which
 does not hold the `sched` borrow the callback needs.
 
 ## The verdict on one resident
@@ -100,16 +101,16 @@ retry by an owner that already has a retry loop.
 `finish_blocked_resident` unlinks the thread from whatever queue holds it, deletes every outstanding
 `Reply` capability naming it, and writes it to `Finished` without waking it.
 
-- **It never wakes the victim, and that is the security half.** `Object::Reply(tid)` carries a
+- It never wakes the victim, and that is the security half. `Object::Reply(tid)` carries a
   generational thread name and no call identity. Waking a reply-parked caller with `Gone` would let
   it call a second server while a hung server's `Reply` still names it, and that stale reply would
   pass `ipc_reply`'s role check and answer the wrong conversation. A `Finished` thread makes no
   second `CALL`.
-- **The reply capabilities are swept anyway**, through `delete_reply_caps_naming`, the function
+- The reply capabilities are swept anyway, through `delete_reply_caps_naming`, the function
   `strand_reply_caller` runs before its wake. Both keep one invariant: no unconsumed reply capability
   names a thread that has left its park. A `Reply` outliving its thread would otherwise go stale only
   on its next use, through a slot generation nobody reading `ipc_reply` sees.
-- **The role does not say which queue holds the thread.** `ipc_call`'s `Send::Blocked` arm records an
+- The role does not say which queue holds the thread. `ipc_call`'s `Send::Blocked` arm records an
   unserved caller as `WaitRole::Reply` while it sits on the sender queue. So both queues are asked;
   each remove compares pointers, and asking the wrong one costs a drain and repush of a short queue.
   The rendezvous name in `wait_on` is still taken on trust, and a stale one would leave a dangling
@@ -181,12 +182,10 @@ meets it.
   asked as a question: asking it dooms the answer. No call asks whether a region is busy without
   ending what is in it. `user::tests::reclaim_frees_a_started_then_exited_childs_regions` lost a
   wakeup to a test that probed this way (milestone 72).
-- **`Ok` is destructive too.** A `Blocked` resident is ended by the call that succeeded, without
-  returning from its syscall, and the peer it was queued beside on somebody else's rendezvous sees
-  a caller that never arrived, which it cannot tell from one that never called. §24's `^C`
+- `Ok` is destructive too. A `Blocked` resident is ended by the call that succeeded, without
+  returning from its syscall. The peer it was queued beside on somebody else's rendezvous sees a
+  caller that never arrived, which it cannot tell from one that never called. §24's `^C`
   escalation depends on this.
 - **It reaches outside the region.** Tearing down a rendezvous aborts every waiter wherever it
   lives, and frees every caller reply-parked on it or named by a reply capability in a thread this
   reclaim reaps. Those callers see `abi::Error::Gone` from a `CALL` to somebody else's rendezvous.
-
-*Name: provisional. The note is named for the file it documents.*

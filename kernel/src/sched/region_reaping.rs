@@ -349,8 +349,8 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
     Ok(())
 }
 
-/// Collect a corpse a supervision rendezvous supervises (§32 (reap without build),
-/// `rendezvous::REAP`).
+/// Collect a corpse a supervision rendezvous supervises (§32 (a supervisor may collect a
+/// corpse without being able to build one), `rendezvous::REAP`).
 ///
 /// `ep` is the invoked rendezvous and `tid` the id on the death message. Authorized when the
 /// thread's `fault_ep` is `ep` (`capability::reap_decision`), it reclaims the region the TCB came

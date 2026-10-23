@@ -45,5 +45,3 @@ It takes `IPC_TABLES`, which is free when the hang is a blocked thread rather th
 - The header repeats `BOOT_STAGE`, the boot tour's last-reached stage. A serial line printed once can
   go missing from a bench log; a dump that fires every couple of seconds restates it each time. The
   riscv tour bumps it at each step, and the number-to-step table is beside the tour in `main.rs`.
-
-*Name: provisional. Named for the function it documents.*

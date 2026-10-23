@@ -284,12 +284,13 @@ pub(crate) fn grant_from(
 }
 
 /// A copy of a capability the running thread holds, narrowed, about to be filed somewhere: the
-/// source `slot` and the `rights` the copy keeps. [`Delegation::derive`] is the rule. Name
-/// provisional.
+/// source `slot` and the `rights` the copy keeps. [`Delegation::derive`] is the rule.
 ///
 /// The source is a slot, not a capability, so it is read in the same critical section that files
 /// the copy, which excludes every revocation sweep. See notes/capability-lifecycle.md
 /// ("Delegation reads its source in the critical section that files the copy").
+///
+/// Name: provisional, minted 2026-10-04 (UTC) by lane/revocation-race.
 #[derive(Clone, Copy)]
 pub(crate) struct Delegation {
     /// The source's slot in the running thread's table.
@@ -322,7 +323,8 @@ impl Delegation {
 /// File, in the running thread's own table, a capability derived from the one in `slot`, reading
 /// the source and filing the copy under one hold of that table's lock ([`Delegation`] has why).
 /// `Err` is `derive`'s answer, `NoSuchSlot` for an empty slot, or `OutOfMemory` for a full table.
-/// Name provisional.
+///
+/// Name: provisional, minted 2026-10-04 (UTC) by lane/revocation-race.
 pub(crate) fn grant_derived(
     slot: u64,
     derive: impl FnOnce(crate::cap::Cap) -> Result<crate::cap::Cap, abi::Error>,

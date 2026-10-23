@@ -168,7 +168,7 @@ until something puts a capability in it. That is the whole of §10, seen from th
 `kernel/src/sched/capabilities.rs` holds the deleters that walk every thread's capability table.
 Each holds `IPC_TABLES` for its whole walk and takes each table's lock beneath it.
 
-**Every sweep clears the hand-off slot too.** A capability sent to a rendezvous nobody is receiving
+Every sweep clears the hand-off slot too. A capability sent to a rendezvous nobody is receiving
 on yet sits in the sender's `Thread::outgoing_cap`, in no table, until a `RECEIVE_CAP` files it. A
 sweep that read tables alone would leave a live capability there, and `MemoryRegion::DESTROY` would
 return its pages while it was still on its way (§13 (frame revocation)'s use-after-free).
@@ -176,58 +176,60 @@ return its pages while it was still on its way (§13 (frame revocation)'s use-af
 still arrives and the receiver sees `NO_CAP`, as it does when its table is full, so no new error
 reaches userspace. `kernel::user::revocation_in_flight_tests` is the falsification.
 
-**Two `PageFrame` sweeps, for two questions.** `delete_page_frame_caps(phys, count)` is
-`PageFrame::REVOKE`'s: it deletes every capability naming exactly that run, so a narrowed copy
-(rights alone differ, since `derive` never changes the object) goes and a different sub-range of
-the same memory stays (§102 (a frame names a run); whether a revoke should take an overlapping
-holder's capability is §132's open question). `delete_page_frame_caps_overlapping(base, size)` is
-reclamation's: the allocator is about to reuse the range, so any capability naming any page of it
-goes. Equality would miss a run capability, since `PageFrame(base, 311)` equals no `PageFrame(p, 1)`
-inside it. The range sweep does not consult the mapping log, so a retyped frame that was never
-mapped loses its capability too. Its end saturates, and saturating to `u64::MAX` overlaps
-everything, which is the safe direction for a sweep whose failure mode is missing a holder. The
-caller's own capability goes in both: a revoke removes all access.
+### Two `PageFrame` sweeps, for two questions
 
-**The take-back sweeps spare the caller.** `delete_device_frame_caps_from_others` (§41 (an endpoint
-as broker)) and `PortRange::REVOKE`'s `delete_port_range_caps_from_others` keep the invoker's own
-capability, which is the difference between reclaiming a page and taking a device back to hand on
-(`revoke::revoke_device_from_others` has the reasoning). The kernel mints a port capability once, at
+`delete_page_frame_caps(phys, count)` is `PageFrame::REVOKE`'s. It deletes every capability naming
+exactly that run. A narrowed copy goes, since `derive` never changes the object. A different
+sub-range of the same memory stays (§102 (a frame names a run)); whether a revoke should take an
+overlapping holder's capability is §132's open question.
+
+`delete_page_frame_caps_overlapping(base, size)` is reclamation's. The allocator is about to reuse
+the range, so any capability naming any page of it goes. Equality would miss a run capability,
+since `PageFrame(base, 311)` equals no `PageFrame(p, 1)` inside it. The range sweep does not consult
+the mapping log, so a retyped frame that was never mapped loses its capability too. Its end
+saturates, and saturating to `u64::MAX` overlaps everything, which is the safe direction for a sweep
+whose failure mode is missing a holder. In both sweeps the caller's own capability goes: a revoke
+removes all access.
+
+### Take-back sweeps, and port ranges
+
+`delete_device_frame_caps_from_others` (§41 (an endpoint as broker)) and `PortRange::REVOKE`'s
+`delete_port_range_caps_from_others` spare the invoker's own capability. That is the difference
+between reclaiming a page and taking a device back to hand on, and
+`revoke::revoke_device_from_others` has the reasoning. The kernel mints a port capability once, at
 boot. `delete_port_range_caps`, which spares nobody, is for the kernel's tests.
 
-**A revoked port range is enforced on every core before the lock is released.** On `x86_64` a port
-range is enforced by `Thread::port_range_grant` and the TSS bitmap the context switch installs from
-it, not by the table. Clearing the cached grant is not enough on more than one core: a holder
-running elsewhere keeps its core's bitmap until its next switch. So the sweep ends with
-`segments::revoke_port_grant_everywhere`, inside `IPC_TABLES`. The far end writes a core's TSS from
-an NMI, at an arbitrary instruction boundary; holding the lock across the send guarantees no core is
-inside `install_port_grant` then, and none can install a grant the sweep already cleared behind the
-broadcast. `schedule`'s install runs under the lock for this reason, and
-`segments::set_port_range_grant_on` states the rule at the writer. The NMI is forced: it is the only
-message an x86 core takes while it spins for this lock with interrupts masked
-([notes/x86-tlb-shootdown.md](x86-tlb-shootdown.md)). With an invoker, its own core is spared,
-because the bitmap there is the invoker's own grant.
+On `x86_64` a port range is enforced by `Thread::port_range_grant` and the TSS bitmap the context
+switch installs from it, not by the table. Clearing the cached grant is not enough on more than one
+core, because a holder running elsewhere keeps its core's bitmap until its next switch. So the sweep
+ends with `segments::revoke_port_grant_everywhere`, inside `IPC_TABLES`. The far end writes a core's
+TSS from an NMI, at an arbitrary instruction boundary. Holding the lock across the send means no
+core is inside `install_port_grant` then, and none can install a grant the sweep already cleared.
+`schedule`'s install runs under the lock for this reason, and `segments::set_port_range_grant_on`
+states the rule at the writer. The NMI is forced: it is the only message an x86 core takes while it
+spins for this lock with interrupts masked ([notes/x86-tlb-shootdown.md](x86-tlb-shootdown.md)).
+With an invoker, its own core is spared, because the bitmap there is the invoker's own grant.
 
-**Deleting your own capability.** `delete_current_cap` takes only the running thread's table lock,
-so the one-shot `Reply` every `REPLY` consumes costs no `IPC_TABLES`. On `x86_64`, deleting the
-`PortRange` behind the thread's cached grant also drops the grant and resets this core's bitmap at
-once, so the ports fault on the next access; otherwise the table would say the authority was gone
-while the switch kept installing it. `system_initializer` deletes its console port capability on
-every boot. That step takes `IPC_TABLES`, like every TSS bitmap writer. No broadcast is owed: a
-core's bitmap permits a range only for the thread running on it, and that thread is the caller.
+`delete_current_cap` takes only the running thread's table lock, so the one-shot `Reply` every
+`REPLY` consumes costs no `IPC_TABLES`. On `x86_64`, deleting the `PortRange` behind the thread's
+cached grant also drops the grant and resets this core's bitmap at once. Otherwise the table would
+say the authority was gone while the switch kept installing it, and `system_initializer` deletes its
+console port capability on every boot. That step takes `IPC_TABLES`, like every TSS bitmap writer.
+No broadcast is owed: a core's bitmap permits a range only for the thread running on it, which is
+the caller.
 
 ### Delegation reads its source in the critical section that files the copy
 
-A `Delegation` names a source slot and the rights the copy keeps, not a capability. A sweep
-deletes under the locks above, so a copy is safe only if its source is read in the same critical
-section that files it, and that critical section excludes every sweep. A delegation into another
-thread holds `IPC_TABLES` across both (`ipc_delegate_cap`, `thread_control_block_delegate_cap`); a
-derivation into the running thread's own table (`grant_derived`) holds that table's lock across
-both. A sweep then falls wholly before (the source is gone and the delegation answers
-`NoSuchSlot`) or wholly after (the copy is in a table it walks). A copy read in one critical section
-and filed in another could be filed after a sweep passed, and a `PageFrame` has no generation to
-make it inert. `system_tests::user::revocation_window_tests` drives a sweep into that window on
-`SEND_CAP`, `CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive
-through.
+A `Delegation` names a source slot and the rights the copy keeps, not a capability. A copy is safe
+only if its source is read in the same critical section that files it, and that critical section
+excludes every sweep. A delegation into another thread holds `IPC_TABLES` across both
+(`ipc_delegate_cap`, `thread_control_block_delegate_cap`). A derivation into the running thread's
+own table (`grant_derived`) holds that table's lock across both. A sweep then falls wholly before
+(the source is gone, and the delegation answers `NoSuchSlot`) or wholly after (the copy is in a
+table it walks). A copy read in one critical section and filed in another could be filed after a
+sweep passed, and a `PageFrame` has no generation to make it inert.
+`system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAP`,
+`CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
 
 Objects with generational names do not need this. `Rendezvous::BADGE` and `MemoryRegion::SPLIT`
 still read, then grant, and a copy minted after its object died names a dead generation and fails
@@ -235,14 +237,14 @@ on use (§16 (object revocation)).
 
 ### BUGS
 
-- **A port range revoke matches by object equality, not overlap.** A capability naming a wider or
+- A port range revoke matches by object equality, not overlap. A capability naming a wider or
   narrower range over the same ports keeps its capability and its cached grant. No syscall reaches
-  that, because `PortRange::REVOKE` takes `(base, count)` from the invoker's own capability; a change
+  that, because `PortRange::REVOKE` takes `(base, count)` from the invoker's own capability. A change
   that let a caller name a sub-range would open it (`notes/confinement-outsider-pass-8.md`, near
   miss 1).
-- **Deleting one of two copies of a `PortRange` disturbs the other.** The grant is one `Option` on
-  the thread, so a thread holding the range in two slots loses `in`/`out` when it deletes either,
-  and §12's "dropping one capability does not disturb the others"
+- Deleting one of two copies of a `PortRange` disturbs the other. The grant is one `Option` on the
+  thread, so a thread holding the range in two slots loses `in`/`out` when it deletes either. §12's
+  "dropping one capability does not disturb the others"
   ([notes/confinement-claims.md](confinement-claims.md) row 5) is false for this object on `x86_64`.
   It fails safe and no consumer holds a range twice; a count or a scan on delete would close it.
 

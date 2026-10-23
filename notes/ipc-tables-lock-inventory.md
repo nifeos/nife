@@ -65,17 +65,21 @@ a cross-core operation under the global lock is hot for everyone else.
 
 `kernel/src/sched/ipc_tables.rs` defines the tables and their limits. Each object registry
 (rendezvous, notifications, timers, processes) maps a generational name to the physical address of
-the page the object lives at the start of, retyped from some region that stays pinned while the
-object lives. The name is what a capability carries, so a stale one fails safely.
+the page the object lives at the start of. The page is retyped from some region that stays pinned
+while the object lives. The name is what a capability carries, so a stale one fails safely.
 
-**The lock's rank sits above the allocators.** The reaper (`finish_switch`) drops a dead `Thread`
-while holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back through the kernel
-MMU lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
-under the lock allocates from a heap: a TCB page comes from a region or from `kmem`'s fixed pool, and
-the queues are intrusive, so a queue operation is a few pointer writes and §9's no-allocation-in-IRQ
-rule holds by construction.
+### The lock's rank
 
-**`MAX_THREADS` is 256**, a documented limit of the image, so a spawn past it fails cleanly. The boot
+The rank sits above the allocators. The reaper (`finish_switch`) drops a dead `Thread` while
+holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back through the kernel MMU
+lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
+under the lock allocates from a heap. A TCB page comes from a region or from `kmem`'s fixed pool,
+and the queues are intrusive, so a queue operation is a few pointer writes. §9's
+no-allocation-in-IRQ rule holds by construction.
+
+### `MAX_THREADS`
+
+`MAX_THREADS` is 256, a documented limit of the image, so a spawn past it fails cleanly. The boot
 keeps many services alive for its whole life (notes/frames.md's "held" list), so every milestone
 that adds one spends some of it. `PEAK_THREADS` and `kernel::testing`'s closing `threads:` line print
 the demand on every run; when the limit was set the peaks were 130 (aarch64), 129 (riscv64) and 57
@@ -90,13 +94,15 @@ spawn far from its cause. What scales with it, each checked at 256:
 - `revoke::MAX_SPACES` and `thread::FreeAddressSpace`, derived from it.
 
 Nothing on the `spawn_el0` benchmark scales with it, because the revocation scans are bounded by
-live occupancy ([notes/benchmarks.md](benchmarks.md)), and no `[u64; MAX_THREADS]` scratch array
-sits on a stack ([notes/region-reaping.md](region-reaping.md)).
+live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAX_THREADS]` scratch array sits
+on a stack ([notes/region-reaping.md](region-reaping.md)).
 
-**`MAX_RENDEZVOUS` is 512 live at once.** Tearing down a region removes its rendezvous and frees
-their slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and
-`KERNEL_CHUNK_RENDEZVOUS` report the peak and how many of those sat on the kernel's own chunks,
-updated at the one insert under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
+### `MAX_RENDEZVOUS`, and the kernel's chunks
+
+`MAX_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees their
+slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and `KERNEL_CHUNK_RENDEZVOUS`
+report the peak and how many of those sat on the kernel's own chunks, updated at the one insert
+under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
 
 | architecture | peak | spare | on kernel chunks |
 |---|---|---|---|
@@ -111,18 +117,20 @@ tests. The fix is to retype the endpoint from the run's own region
 (`design/roadmap/0670-test-helpers-give-their-clients-a-region-to-retype-from.md`). It reports and
 does not gate.
 
-**The kernel's rendezvous come from chunks that grow.** `create_rendezvous` retypes from the current
-chunk of `KERNEL_EP_CHUNK_PAGES` (32 pages), carved lazily and replaced when it fills, so the kernel's
-supply is not a compile-time guess: a fixed ceiling grew with the test suite, and the union of
-parallel branches' boots crossed it at merge, where no branch could see it coming. A normal boot
-carves one chunk. A filled chunk's handle is forgotten; its pages stay pinned and its endpoints live,
-and no path tears a kernel chunk down (if one should, the handle becomes an array).
-`MAX_KERNEL_EP_CHUNKS` is derived so chunks can host `MAX_RENDEZVOUS` one-page endpoints, which makes
-the registry, never the page supply, the limit that refuses.
+`create_rendezvous` retypes the kernel's own rendezvous from a chunk of `KERNEL_EP_CHUNK_PAGES` (32
+pages). The chunk is carved lazily and replaced when it fills, so the kernel's supply is not a
+compile-time guess. A fixed ceiling grew with the test suite, and the union of parallel branches'
+boots crossed it at merge, where no branch could see it coming. A normal boot carves one chunk. A
+filled chunk's handle is forgotten; its pages stay pinned and its endpoints live. No path tears a
+kernel chunk down, and if one should, the handle becomes an array. `MAX_KERNEL_EP_CHUNKS` is derived
+so chunks can host `MAX_RENDEZVOUS` one-page endpoints, which makes the registry, never the page
+supply, the limit that refuses.
 
-**`FUTEX_BUCKETS` is 64.** A wake walks one bucket, so that is four waiters a bucket on average with
-the machine full, at 24 bytes a bucket. The futex queues are under this lock for the reason every
-wait queue is: the check of the word, the park and a waker's take must be one order.
+### `FUTEX_BUCKETS`
+
+`FUTEX_BUCKETS` is 64. A wake walks one bucket, so that is four waiters a bucket on average with the
+machine full, at 24 bytes a bucket. The futex queues are under this lock for the reason every wait
+queue is: the check of the word, the park and a waker's take must be one order.
 
 ## BUGS
 
