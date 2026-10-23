@@ -1,54 +1,19 @@
 //! **What a test-boot service holds, and the one call that hands it back.**
 //!
-//! # The problem this exists for
-//!
-//! A boot has one pool of physical frames. The aarch64 test suite builds a service, proves
-//! something with it, and moves on; the service is still there when the next test starts, and every
-//! frame it was given is spoken for until the machine stops. Measured on 2026-08-16, the suite
-//! finished a boot with **216 free frames of the 29307 it started with, and no free run longer than
-//! 106**, which is why an ordinary allocation began failing as `Unmappable(OutOfPageFrames)` in
-//! whichever test happened to spawn last, about one run in three. Three milestones were misled by
-//! that symptom, because the test that reports the failure is never the test that caused it.
-//! notes/frames.md carries the ledger.
-//!
-//! # No new mechanism, and that is the point
-//!
-//! Everything here is DECISIONS §16 object revocation, already built and already proved:
-//!
-//! - [`crate::sched::kill_thread`] arms §16's kill on a thread by name (what `MemoryRegion::DESTROY`
-//!   does to a whole region, for one thread).
-//! - [`crate::sched::reclaim_region`] tears every kernel object out of an untyped region, unpins it,
-//!   and returns the memory. A first call that finds a live thread in the region **arms the kill on
-//!   it and refuses**; the retry reclaims. `force_kill_tests` proves that loop on a runaway.
-//! - A dead thread's address space dies with it (the `Drop` chain), which returns the region behind
-//!   it without anyone naming that region at all.
-//!
-//! So a `Holding` is bookkeeping: remember what was handed out, and spend the existing verbs on it in
-//! the order that works. There is no new syscall and no new kernel object.
+//! A test boot has one pool of frames, and a service a test builds keeps every frame it was given
+//! until the machine stops unless something hands them back. A [`Holding`] remembers the threads
+//! and regions the kernel handed a service, and spends DECISIONS §16's existing verbs on them in
+//! the order that works: arm the kill, reclaim the regions, wait for the threads. It adds no
+//! syscall and no kernel object. See notes/frames.md and notes/user-address-spaces.md.
 //!
 
 //! # BUGS
 //!
-//! - **A thread that only ever blocks cannot be reclaimed this way**, and the limit is §16's rather
-//!   than this type's. The armed kill is spent by `schedule()`, which a `Blocked` thread never
-//!   reaches, so [`Holding::release`](crate::user::holding::Holding::release) can end a thread that
-//!   runs and cannot end one parked in `RECEIVE` for good. What rescues the common case is that reclaiming a region **removes the endpoints
-//!   inside it and wakes their waiters with an aborted IPC**, so a service blocked on an endpoint
-//!   its own budget paid for does die. A service blocked on an endpoint from somewhere else does
-//!   not, and [`Holding::release`](crate::user::holding::Holding::release) returns `false` rather than pretending: see
-//!   `reap_region_objects`'s own note ("the cooperative tier's job").
-//!   **A thread blocked in `CALL` rather than `RECEIVE` is a different case and milestone 254 (a caller stranded by a server that died) fixed
-//!   it**: a caller parked awaiting a reply is freed the moment its server stops being able to
-//!   answer (it exits, faults, is killed, is reaped, or its rendezvous goes), wherever that caller
-//!   lives. So the leak this bullet describes no longer compounds one region per caller in flight.
-//!   What is unchanged is the *server*: a service parked in `RECEIVE` on somebody else's rendezvous
-//!   still cannot be ended, which is milestone 133's question.
-//! - **`release` is destructive and cannot be used as a question.** Its first `reclaim_region` arms
-//!   kills, so calling it to find out whether a service is idle ends the service. That is
-//!   `reclaim_region`'s recorded BUGS entry, inherited here.
-//! - **A holding names what the kernel handed out, not what the process built.** A process that
-//!   retypes objects out of its own budget is covered (they are in the region); one that reaches
-//!   memory some other way is not, and nothing here can see the difference.
+//! - A service parked in `RECEIVE` on an endpoint outside every region it names cannot be ended:
+//!   §16's kill is spent by `schedule()`, which a blocked thread never reaches. `release` says so.
+//! - `release` is destructive: its first `reclaim_region` arms kills, so it cannot ask whether a
+//!   service is idle.
+//! - A holding names what the kernel handed out, not memory the process reached another way.
 //!
 //! Name: provisional (this lane, 2026-08-16). `Holding` is a noun and says what the thing is:
 //! what a service holds. It is deliberately *not* `Lease`, which reads better in the abstract and
@@ -59,23 +24,14 @@
 use crate::sched;
 use crate::thread::ThreadId;
 
-/// The most threads one holding covers. The widest service this boot builds is now **two**: a
-/// `net_stack` and its socket client. It was four until 2026-08-30, when the SMB adapter went with
-/// the rest of the SMB implementation (notes/smb.md), and three until 2026-09-15, when milestone 298
-/// retired the multicast DNS responder (notes/mdns.md), so this number carries two slots of margin. **The bound is kept at four
-/// deliberately**: it is a panic rather than a silent drop, and lowering it to the current width
-/// would buy nothing and make the next client a build failure for no reason. A fifth client still
-/// panics here, which is the intended behaviour and worth knowing before adding one: raise this and
-/// [`MAX_REGIONS`] together, since each client costs one thread, one region and two after it.
+/// The most threads one holding covers. The widest service this boot builds holds two (a
+/// `net_stack` and its socket client), and four keeps margin. A fifth panics rather than dropping
+/// one silently; raise this and [`MAX_REGIONS`] together.
 const MAX_THREADS: usize = 4;
 
-/// The most untyped regions one holding covers, in **each** phase. The widest service this boot
-/// builds is `net_stack` with **one** client, which is two endpoint regions before death and four
-/// budget-and-stack regions after it. It was three clients until 2026-08-30, when the SMB adapter
-/// left (notes/smb.md), and two until 2026-09-15, when the multicast DNS responder was retired
-/// (milestone 298, notes/mdns.md). This number is kept at the eight the three-client width needed: it is the same deliberate margin
-/// [`MAX_THREADS`] keeps, and the next client added must raise both together. Failing the build is
-/// the point; dropping one silently would leak memory that looks reclaimed.
+/// The most untyped regions one holding covers, in **each** phase. The widest service holds two
+/// endpoint regions before death and four after it, and eight keeps [`MAX_THREADS`]'s margin. A
+/// ninth panics rather than leaking memory that looks reclaimed.
 const MAX_REGIONS: usize = 8;
 
 /// How long [`Holding::release`] waits for a teardown to land, in seconds of wall clock.
@@ -104,13 +60,9 @@ fn reclaim(region: u64, deadline: u64) -> bool {
 
 /// A service's memory, remembered so it can be handed back. See the module note.
 ///
-/// **The `add_*` methods mutate rather than consuming and returning `self`**, and that is a measured
-/// choice rather than a taste. A `Holding` is about 320 bytes of fixed arrays, and a consuming
-/// builder materialises a fresh copy per link at `opt-level=0`, which is what this kernel's test and
-/// tour binaries are built at: five chained calls in `start_net_std` put its frame at **5264 bytes**,
-/// past the 4096-byte guard page under every kernel thread stack, and `script/stack-frame-check`
-/// failed the build. A frame that big can step over the guard in one move and land in the
-/// neighbouring thread's stack with no fault at all. See notes/stack-high-water.md.
+/// The `add_*` methods mutate rather than consuming and returning `self`: a consuming builder copies
+/// this 320-byte value per link at `opt-level=0`, which put `start_net_std`'s frame past the 4 KiB
+/// guard page under every kernel thread stack (notes/stack-high-water.md).
 pub struct Holding {
     threads: [Option<ThreadId>; MAX_THREADS],
     regions: [Option<u64>; MAX_REGIONS],
@@ -159,17 +111,12 @@ impl Holding {
         *slot = Some(region);
     }
 
-    /// Remember a region that may only be reclaimed **once every thread is gone**: memory a live
-    /// thread is standing on.
-    ///
-    /// The case that forces the distinction is a process's **stack**. Stack pages arrive through
-    /// `Spawn::maps`, which is `AddressSpace::map_physical`, which deliberately does not record the
-    /// mapping (the page is shared or a device's, and the address space does not own it; see
-    /// notes/frames.md). So §13's `revoke_region` cannot unmap them, and freeing that region while
-    /// the thread is still executing hands its live stack back to the allocator: a use-after-free
-    /// with a window as long as one timer tick, which is exactly long enough for another process to
-    /// be handed the page.
-    ///
+/// Remember a region that may only be reclaimed **once every thread is gone**: memory a live
+/// thread is standing on, such as a process's stack.
+///
+/// Stack pages arrive through `Spawn::maps`, and freeing their region while the thread still runs
+/// hands its live stack to the allocator: a use-after-free with a window of one timer tick, not a
+/// fault.
     /// # Panics
     /// If more than [`MAX_REGIONS`] are added; see [`add_thread`](Self::add_thread).
     pub fn add_region_after_death(&mut self, region: u64) {
@@ -216,9 +163,7 @@ impl Holding {
             all &= gone;
         }
 
-        // And only now the memory a live thread was standing on. See `region_after_death`: a stack
-        // is not a recorded mapping, so revocation cannot pull it, and freeing it under a thread that
-        // is still running is a use-after-free rather than a fault.
+        // And only now the memory a live thread was standing on (`add_region_after_death`).
         for region in self.after.iter().flatten() {
             all &= reclaim(*region, deadline);
         }

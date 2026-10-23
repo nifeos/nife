@@ -7,6 +7,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [aarch64 page tables](../page-tables.md): the descriptor format the MMU walks, and its traps.
 - [The higher-half kernel](../higher-half.md): why the kernel lives in TTBR1, and how it boots.
 - [The user address-space map](../address-space-map.md): which band of a process holds what, and where a new page goes.
+- [User address spaces in the kernel](../user-address-spaces.md): who frees a space's region, what a window costs, the registry, and handing a test service's memory back.
 - [Tearing down an address space](../teardown.md): how the kernel reclaims a dead address space's frames.
 - [Memory regions: the kernel stops allocating](../memory-regions.md): processes spend pages from their own memory capability.
 - [A split refused for a full region table](../region-split-on-a-full-table.md): PROPOSED; why a refused split holds its parent forever, and the options.
