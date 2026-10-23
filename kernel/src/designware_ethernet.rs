@@ -1,42 +1,27 @@
-//! **The JH7110 Ethernet controller's control plane** (milestone 53 (the board's own peripherals:
-//! network and storage on real silicon); notes/designware-ethernet.md).
+//! The JH7110 Ethernet controller's control plane, `kernel/src/e1000e.rs`'s shape on radon's first
+//! port: clocks and resets, RGMII, the YT8531 PHY, the controller reset, a DMA coherence probe
+//! before any descriptor is trusted, both rings, the link and the start. Then a process
+//! (`net_stack`) fills descriptors. Every offset, bit and sequence comes from
+//! `crates/designware_ethernet`; every window from `memory::jh7110_ethernet` (rule 2). See
+//! notes/designware-ethernet.md.
 //!
-//! `kernel/src/e1000e.rs`'s shape, applied to radon's first port. This file ungates the port's
-//! clocks and releases its resets, selects RGMII at the syscon, configures the YT8531 PHY, resets
-//! the controller, **measures whether device DMA is coherent with the caches** before trusting a
-//! single descriptor, programs both rings, negotiates a link and starts the DMA. Then
-//! `kernel/src/user/designware_ethernet_service.rs` hands a process the controller's DMA page and
-//! the region, and that process (`net_stack`, through
-//! `components/src/designware_ethernet_transport.rs`) fills descriptors and moves the tails.
-//! Every offset, bit, sequence and verdict here comes from `crates/designware_ethernet`; this file
-//! is the volatile accesses the crate cannot make.
-//!
-//! Rule 2 holds in the way the clock driver states it: nothing below reaches a base address of
-//! its own. Every window comes from `memory::jh7110_ethernet`, which read them out of the device
-//! tree (or the constant both published trees agree on, and says which).
-//!
+
 //! # Scope note (rule 5, architectural parity)
 //!
-//! **This is a board driver for one chip, and it is riscv64-only on purpose.** The JH7110 is a
-//! riscv64 part; no aarch64 or x86_64 machine nife runs on has this controller. What the rule asks
-//! to be shared is shared: the network stack above it (`net_stack`, smoltcp, the socket contract)
-//! is the same code on all three architectures, and this driver reaches it through the same
-//! `Handoff` shape `e1000e` uses. The gap is recorded here and in milestone 53's block, with the
-//! plan: a second board with Synopsys's Ethernet `QoS` controller (the RK3568 and RK3588 OpenBSD's `dwqe`
-//! also drives are aarch64) would reuse the crate whole and need only its own glue beside
-//! `designware_ethernet::jh7110`.
+//! riscv64-only on purpose: no aarch64 or x86_64 machine nife runs on has this controller. The
+//! network stack above it is shared, through `e1000e`'s `Handoff` shape. A second board with
+//! Synopsys's Ethernet `QoS` controller (the RK3568 and RK3588 are aarch64) would reuse the crate
+//! whole and add its own glue beside `designware_ethernet::jh7110`.
 //!
+
 //! # BUGS
 //!
-//! - **None of this has run on silicon.** The crate's tests run against its simulation; the
-//!   bench runbook in notes/designware-ethernet.md is the first run of any of it.
-//! - **Waiting for a link is a bounded spin at bring-up**, up to [`LINK_WAIT_MS`], as `e1000e`'s
-//!   is, holding a core once per wiring.
-//! - **The DMA region is allocated once per boot and never returned**, like `e1000e`'s.
-//! - **A non-coherent verdict refuses the port** rather than driving it with cache maintenance,
-//!   because this tree has none for this machine yet (milestone 655 (DMA on a non-coherent RISC-V
-//!   machine)). An inconclusive verdict does not refuse: the reading says coherent, and the
-//!   bring-up says which it was.
+//! - One board: it has run on radon (three boots), and everything else runs against the crate's
+//!   simulation (notes/designware-ethernet.md, `BUGS`).
+//! - Waiting for a link is a bounded spin at bring-up, up to [`LINK_WAIT_MS`], holding a core.
+//! - The DMA region is allocated once per boot and never returned.
+//! - A non-coherent verdict refuses the port, since this tree has no cache maintenance for this
+//!   machine (milestone 655). An inconclusive verdict does not refuse, and the bring-up says so.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 

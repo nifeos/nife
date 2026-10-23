@@ -44,6 +44,15 @@ The kernel refuses to start the driver at all on a machine whose IOMMU does not 
 controller, because a process holding an xHCI register file names every physical address the
 controller reads.
 
+The kernel keeps less of an xHCI than of an NVMe controller, on purpose. NVMe kept its admin
+plane at EL1 (§86 (whether an NVMe driver can leave the kernel), option 2a), because creating a
+queue is where a ring's physical address is named. An xHCI names physical addresses everywhere: the
+slot array, the command ring, the event ring, every transfer ring and every input context. Its
+enumeration means reading what a device chose to send, the last thing to do at EL1. So the kernel
+keeps only what is not the driver's: the USB Legacy Support handshake that stops a PC's BIOS
+answering SMIs for the keyboard, the register window, and the DMA confinement. NVMe runs unconfined
+on a machine with no IOMMU, and this driver does not run at all, because it names every ring.
+
 ## Proving it
 
 `script/swish-check` boots each architecture a fourth time with `qemu-xhci` and `usb-kbd` attached
