@@ -43,3 +43,20 @@ stopped covering the tick in about one run in three. That client now waits on th
 clock. Here the failure has never been observed, and it would be invisible: `reclaim` gives up
 quietly and strands `DIR_JOB_REGION_PAGES` until the machine stops. The fix is the same
 clock-bounded wait and a way to notice when it expires.
+
+## The spawn endpoint's senders
+
+Three kinds of sender share the spawn endpoint: the boot shell, unbadged; `job_undertaker`, which
+reports each collect under `spawnproto::UNDERTAKER_BADGE`; and a program holding an installer
+endpoint, under `spawnproto::installer_badge` of its job's label. Each sender's next `SEND` waits
+until its last is taken. So a reaped message can arrive between any two of the shell's messages,
+and a message from a sender the loop is not serving is always that sender's first. Every receive
+takes reaped messages out of the way, and keeps another sender's first message to serve next.
+
+A request that finds a pool short waits for the reaps it is owed instead of counting yields. It
+waits only once the request in hand has been read to its end, when the shell is parked on the
+result endpoint and only the undertaker can send, and only while a finished job's reap is due. A
+due reap is one whose job the shell has had the whole answer from, which an exiting program
+follows at once. A job that blocks after answering is never reaped, and a request waiting on it
+waits with it; `^C` cannot help, because the shell is parked. Image frames are mapped when they
+arrive and copied only later, for the same reason: the copy's carve may wait.

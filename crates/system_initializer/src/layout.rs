@@ -148,7 +148,7 @@ pub(super) const RNG_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090
 pub(super) const RNG_MODE_VIRTIO: u64 = 0;
 
 // -------------------------------------------------------------------------------------------
-// The network stack (milestone 590 (provisional), the booted system starts its network stack).
+// The network stack (milestone 590 (the booted system starts its network stack)).
 // -------------------------------------------------------------------------------------------
 
 /// Where this process briefly maps the network card's DMA page to read [`VIRTIO_DMA_PHYS_OFFSET`]

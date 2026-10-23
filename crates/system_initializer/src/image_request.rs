@@ -1,7 +1,5 @@
 //! An image request: the executable's bytes as frames the caller owns, the spawn endpoint that
-//! carries them, and the vouching that decides whether they run. Moved out of `lib.rs` unchanged
-//! but for visibility by milestone 843 (the system-initializer crate root is split along its
-//! seams), under §279 (the system-initializer crate root splits into private modules).
+//! carries them, and the vouching that decides whether they run.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -12,42 +10,41 @@ use super::*;
 // ruled 2026-09-26; milestone 198 (a package manager) rung 3a).
 // -------------------------------------------------------------------------------------------
 
-/// Where the progenitor maps the file service's shared page to read the installed-programs table. Mapped
-/// once, on the first image request, with page tables from its own budget. Clear of every other
-/// window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS` and the three peek pages below it, and the loader's
-/// scratch window, `supervision_protocol::SCRATCH_WINDOW`, which starts at `0x1000_0000`).
+/// Where the progenitor maps the file service's client-window pool to read and write the
+/// installed-programs table. Mapped once, on first use, with page tables from its own budget.
+/// Clear of every other window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`, the
+/// peek pages below it, and `supervision_protocol::SCRATCH_WINDOW` at `0x1000_0000`).
 pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_0000);
 
-/// **Where the progenitor maps the second mounted tree's client-window pool** (milestone 834 (ioping on nife and Linux)), to
-/// zero a window between two jobs. Past [`ACTIVATION_FS_VA`]'s pool, which is the same size, and
+/// **Where the progenitor maps the second mounted tree's client-window pool**, to zero a window
+/// between two jobs. Past [`ACTIVATION_FS_VA`]'s pool, which is the same size, and
 /// below [`IMAGE_STAGING_VA`].
 pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_map::pair_page(0x0f50_0000);
 
 /// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAX_PAGES`] pages
-/// at most. A fixed window rather than more of the loader's scratch window, because every page mapped
-/// here comes from a staging region *this process* destroys once the child is built, and a destroy
-/// revokes the mapping (DECISIONS §13 (frame revocation)), so the next request finds the window empty again. The page
+/// at most. A fixed window, because every page mapped here comes from a staging region this process
+/// destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
+/// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
 /// tables behind it come from `own_ut` and are reused.
 const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);
 
 // The largest image's copy stays inside the pair band, clear of the loader's scratch window at its
-// top (milestone 595 raised [`spawnproto::IMAGE_MAX_PAGES`] to 1024, which is 4 of the 8 MiB here).
+// top.
 const _: () = assert!(
     IMAGE_STAGING_VA + spawnproto::IMAGE_MAX_PAGES * spawnproto::IMAGE_PAGE
         <= address_space_map::PAIR_PAGES.end
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
-/// (milestone 205 (how a foreign program is told what to do), DECISIONS §170 (how a foreign program is told what to do); `spawnproto::PROGRAM_ARGUMENTS_BIT`). Returns the address, or `None` if the
-/// caller sent no frame or it would not map. The capability goes at once, as an image frame's does
+/// (DECISIONS §170 (how a foreign program is told what to do), `spawnproto::PROGRAM_ARGUMENTS_BIT`).
+/// Returns the address, or `None` if the caller sent no frame or it would not map. The capability goes at once, as an image frame's does
 /// ([`take_frames`], [`stage_frames`]): the mapping outlives it, and the slot is what is scarce.
 ///
 /// The shell keeps its own mapping of this frame, so it is read once, by [`copy_args`], before the
 /// child exists; nothing reads it after.
 pub(super) fn receive_args(spawn: &mut SpawnEndpoint, own_ut: u64) -> Option<u64> {
     let frame = opt_cap(spawn.receive_cap().1)?;
-    // The loader's scratch window, revoked when the shell reclaims its frame and reused on a later
-    // lap (milestone 604 (the builder's scratch cursor is bounded)).
+    // Revoked when the shell reclaims its frame; the scratch window reuses the page on a later lap.
     let theirs = supervision_protocol::map_scratch(frame, false, own_ut).ok();
     cap_delete(frame);
     theirs
@@ -94,39 +91,16 @@ pub(super) fn copy_args(
     Some(page)
 }
 
-/// **The spawn endpoint, as the spawn loop reads it** (milestone 685 (a job is finished when its
-/// memory is back), calef's ruling of 2026-10-06 UTC, option A).
-///
-/// Two senders share the endpoint: the boot shell, whose requests are unbadged, and
-/// `job_undertaker`, which sends `spawnproto::reaped` through a copy badged
-/// [`spawnproto::UNDERTAKER_BADGE`] after every collect. A reaped message can arrive in the middle
-/// of a request, between any two of the shell's messages, because the shell's next `SEND` is
-/// issued only once its last one is taken. So every receive here takes reaped messages out of the
-/// way before it returns the shell's next message: [`receive`](SpawnEndpoint::receive) and
-/// [`receive_cap`](SpawnEndpoint::receive_cap) are the only way the loop reads this endpoint.
-///
-/// A reap frees the job's file-service window ([`Windows`]) and settles any wait for it
-/// ([`ReapsDue`]). **A pool that is short waits for the reaps it is owed** rather than counting
-/// yields ([`split`](SpawnEndpoint::split)): it waits only once the request in hand has been read
-/// to its end, when the shell is parked on the result endpoint and only the undertaker can send,
-/// and only while a finished job's reap is due.
+/// **The spawn endpoint, as the spawn loop reads it.** The shell sends unbadged, `job_undertaker`
+/// sends `spawnproto::reaped` under [`spawnproto::UNDERTAKER_BADGE`], and an installer holder under
+/// [`spawnproto::installer_badge`]. Every receive takes reaped messages out of the way and keeps
+/// another sender's first message, and a short pool waits for the reaps it is owed
+/// ([`split`](SpawnEndpoint::split)); see notes/system-initializer/children.md.
 ///
 /// # BUGS
 ///
-/// - **A job that sends its answer and then does not exit holds the wait.** A due reap is one the
-///   shell has had the job's whole answer for, which an exiting program follows at once; one that
-///   blocks instead is never reaped, and a request that finds a pool short while it is due waits
-///   with it, where until milestone 685 it was refused after 1,024 yields. `^C` does not reach it:
-///   the shell is parked on the result endpoint.
-/// - **A sender other than the one being served is held to one message.** Since milestone 809 (the
-///   package client becomes a program) a third kind of sender exists: a program holding an
-///   installer endpoint, a copy badged [`spawnproto::installer_badge`] of its job's label. A message
-///   from a sender this loop is not serving is a first message (each sender's next `SEND` waits
-///   for its last to be taken), so it is kept ([`stashed`](SpawnEndpoint::stashed)) and served
-///   next. [`STASHED`] of them at once; one more is dropped, and its sender's follow-ups then read
-///   as requests of their own and are refused. Only a pipeline of that many installer holders
-///   reaches it. A wait for a reap gives up while anything is kept, and the request in hand is
-///   refused.
+/// - A job that answers and then does not exit holds that wait, and `^C` cannot reach it.
+/// - [`STASHED`] first messages at once; one more is dropped, and its sender's follow-ups refused.
 pub(super) struct SpawnEndpoint {
     ep: u64,
     /// The file service's unbadged endpoint, which a reap's `UNBIND` goes to, or `None` on a boot
@@ -411,7 +385,8 @@ impl SpawnEndpoint {
 
     /// **Wait for one reap.** Only between the end of one request and the next, when the shell is
     /// parked on the result endpoint. `false` if what arrived was a request instead, which is kept
-    /// for [`request`](SpawnEndpoint::request).
+    /// for [`request`](SpawnEndpoint::request). Gives up at once while a first message is kept,
+    /// and the request in hand is then refused.
     fn await_reap(&mut self) -> bool {
         if self.any_stashed() {
             return false;
@@ -466,12 +441,9 @@ pub(super) struct Frames {
 }
 
 /// Where [`take_frames`] mapped each frame, for [`stage_frames`] to copy from: the page's index in
-/// `supervision_protocol::SCRATCH_WINDOW`, which is where every view lands. One entry per page of
-/// the largest image; the progenitor has one thread, so `Relaxed` is all the ordering there is.
-///
-/// An index and not an address because this is `.bss` in every progenitor ever built: two bytes an
-/// entry is 2 KiB, where eight was two whole pages more per instance, and the kernel suite's frame
-/// ledger counts every progenitor a test leaves standing.
+/// `supervision_protocol::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
+/// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep this
+/// `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
 static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAX_PAGES as usize] =
     [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAX_PAGES as usize];
 
@@ -486,15 +458,10 @@ fn scratch_page(i: u16) -> u64 {
 /// **Take an image request's frames off the spawn endpoint**, mapping each read-only in the
 /// loader's scratch window and deleting its capability before the next is taken.
 ///
-/// Every one of the frames is received whatever happens, because the caller has already committed
-/// to sending them and the grants it sends next must land in the `RECEIVE_CAP`s that expect them.
-///
-/// **Mapped now, copied later** ([`stage_frames`]), and that split is milestone 685's. The copy
-/// needs a staging region and the child's own region carved from the image pool, and a carve that
-/// finds the pool short waits for a reap ([`SpawnEndpoint::split`]). That wait is sound only once
-/// the request has been read to its end: until then the shell's next message, not the undertaker's,
-/// is first in line. So nothing is carved here. The views stay valid until the caller reclaims its
-/// frames, which it does only once its answer is in, after [`stage_frames`] has given every view up.
+/// Every frame is received whatever happens, so the grants sent next land in the `RECEIVE_CAP`s
+/// that expect them. Nothing is carved here: [`stage_frames`] copies later, because a carve may wait
+/// for a reap, which is sound only once the request has been read to its end. The views stay
+/// valid until the caller reclaims its frames, after its answer.
 pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> Frames {
     let pages = spawnproto::image_pages(len);
     let mut f = Frames {
@@ -508,8 +475,6 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
             continue;
         };
         if f.ok {
-            // A page of the loader's scratch window, the same rule as every page this process maps
-            // (milestone 604 (the builder's scratch cursor is bounded)).
             match supervision_protocol::map_scratch(frame, false, own_ut) {
                 Ok(va) => {
                     let i = (va - supervision_protocol::SCRATCH_WINDOW.start)
@@ -529,16 +494,10 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
 /// **Copy the frames [`take_frames`] mapped into pages of our own**, and return the staging region
 /// holding the copy, or `None` if it could not be staged. Every view is given up either way.
 ///
-/// # Why a copy, and why one slot
-///
-/// The caller keeps its own mapping of these frames, so hashing them in place would let it change
-/// the bytes between the hash and the build (§219: "the progenitor hashes its own copy"). So each
-/// frame is copied into a page retyped from the staging region, and the hash and the build read
-/// that. The staging page's own capability is deleted as soon as it is mapped, and every frame's
-/// was deleted in [`take_frames`]: an image of any size costs the staging region's slot.
-///
-/// `stage` is false when the request cannot be built anyway (no region for the child, or an
-/// interruptible image), and then this only gives the views up.
+/// A copy, because the caller keeps its mapping and could change the bytes between the hash and the
+/// build (§219: "the progenitor hashes its own copy"). Each staging page's capability is deleted
+/// once mapped, so an image of any size costs one slot. `stage` false (the request cannot be
+/// built anyway) only gives the views up.
 pub(super) fn stage_frames(
     spawn: &mut SpawnEndpoint,
     f: &Frames,
@@ -575,8 +534,6 @@ pub(super) fn stage_frames(
                 }
             }
         }
-        // Copied (or abandoned): our view of the caller's frame is no longer needed (milestone 95
-        // (an unmap primitive), §249 (a running address space stays nameable)).
         supervision_protocol::give_up_own_page(theirs);
     }
     match (staging, ok) {
@@ -599,18 +556,11 @@ pub(super) fn staged_image(len: u64) -> &'static [u8] {
 }
 
 /// **Is this image vouched for, and was it granted the network?** Its SHA-256, looked up in the
-/// live generation of the activation set on the file service (`installed_programs`), with the
-/// generation's `grant` lines for that digest (`installed_programs::network_granted`, milestone 892).
-/// [`grant_plan::Vouch::Unvouched`] on a miss, and on every way of failing to
-/// read the table: no disk, no `activation` directory, a `current` that does not parse, a
-/// generation that is malformed or larger than a page. A table that cannot be read vouches for
-/// nothing, which is `measured_boot`'s rule one table over.
-///
-/// The digest comes back too, for [`granted_zones`].
-///
-/// The file page is the one the shell and every caretaker share with the server. That is sound for
-/// the reason `build_caretaker` gives: the shell is parked in its `RECEIVE` on the result endpoint for
-/// the whole of a spawn, so nothing else is mid-request on it.
+/// live generation of the activation set (`installed_programs`), with that generation's `grant`
+/// lines. [`grant_plan::Vouch::Unvouched`] on a miss and on every failure to read the table, which
+/// then vouches for nothing. The digest comes back too, for [`granted_zones`]. The page used is
+/// window 0, the shell's, sound because the shell is parked on the result endpoint for the whole
+/// of a spawn.
 pub(super) fn vouched(
     bytes: &[u8],
     fs: Option<Fs>,
@@ -632,7 +582,7 @@ pub(super) fn vouched(
 }
 
 /// **Each resolver zone the live generation grants the bytes with `digest`, and their note asks
-/// for** (milestone 892 (a std program at the prompt holds the network and a resolver)), handed to
+/// for**, handed to
 /// `each` as dotted text, empty for the root zone, in the table's order. A grant gives nothing the
 /// note did not ask for, so a `grant` line for a zone the bytes never asked is skipped. A table that
 /// cannot be read grants none.
@@ -686,8 +636,8 @@ fn with_live_table<R>(
     answer
 }
 
-/// **The manifest a file's bytes are endowed with, or `None` to refuse them** (milestone 597,
-/// provisional). Their note is read with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
+/// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
+/// with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
 /// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
@@ -707,10 +657,8 @@ pub(super) fn endowed_image(
         Ok(Some(d)) => Some(capability_manifest_note::decode(d).ok()?),
         Err(_) => return None,
     };
-    // **A verb table is not honored for installed bytes yet** (milestone 809 (the package client
-    // becomes a program), `capability_manifest_note::VERBS`): endowing from the manifest alone would hand
-    // every line every verb's grants, so bytes carrying one are refused instead. The image's own
-    // `jig` narrows by `grant_plan`'s table, and nothing installed carries the note.
+    // Installed bytes carrying a verb table are refused: endowing from the manifest alone would
+    // hand every line every verb's grants.
     if !matches!(
         elf.note(
             capability_manifest_note::OWNER,
