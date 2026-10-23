@@ -186,7 +186,9 @@ Linux's `native_calibrate_tsc` falls back on a model-to-crystal table, which thi
 carry. Whichever path answers, the rate is a constant only because of the invariant-TSC gate.
 
 `RDSEED` is reported and never gated. It is an entropy source, and a machine without it boots
-with a different backend (`kernel/src/user/entropy_service.rs`).
+with a different backend (`kernel/src/user/entropy_service.rs`). `isa::draw_random_seed` retries 100
+times, the high end of Intel's "between 1 and 100" for an asynchronous caller, because it is a
+one-shot boot-tour probe rather than a service under load.
 
 The record is `None` until `isa::init` writes it, so a read before discovery panics with this
 file's name. A zeroed record would decode as a machine that should have been refused, which is the

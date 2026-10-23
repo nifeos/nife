@@ -112,7 +112,7 @@ live there, so `share_kernel_half` shares the image, the direct map and every de
 copy. The entries point at kernel intermediate tables, so the map itself is shared rather than a
 snapshot of it.
 
-PCID, the ASID equivalent, lives in `CR3[11:0]` and is honoured only with `CR4.PCIDE` set. It is off,
+PCID, the ASID equivalent, lives in `CR3[11:0]` and is honored only with `CR4.PCIDE` set. It is off,
 so bits 11:5 and 2:0 are reserved-zero and a tag cannot be written at all. `ttbr0_value` drops the
 ASID, and `flush_asid` flushes the whole non-global TLB on every core, which is the only
 implementation that keeps `crates/address_space_identifier`'s reuse contract. With PCIDE on,
