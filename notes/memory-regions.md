@@ -109,7 +109,7 @@ bumped, so every `MemoryRegion` capability minted for it stops resolving, and th
 the next `create` or `split` ([generational-names.md](generational-names.md)).
 
 Returning retyped pages is safe because `destroy` first revokes every mapped page in the region
-(`revoke.rs`, §13): each is unmapped from every address space that held it, and every `PageFrame`
+(`revoke.rs`, §13 (capability revocation and untyped reclamation)): each is unmapped from every address space that held it, and every `PageFrame`
 capability to it is deleted. No live mapping survives, so a peer cannot be left mapping memory the
 allocator hands out again ([capability-lifecycle.md](capability-lifecycle.md),
 [teardown.md](teardown.md)). A root region's pages go back to the frame allocator; a child's go back
@@ -155,7 +155,7 @@ usually a boot doing more, and a gate needs a held list like the frame ledger's
   `MAX_REGIONS` is exhausted; `RETYPE_OBJ` collapses a different pair the same way (each method's
   doc comment in `crates/abi`). The first two are facts about the caller; the third is a fact about
   every other live region on the machine, which the caller did not cause and cannot fix. Declined
-  for want of a customer (DECISIONS §119), which records non-binding guidance for whoever has one:
+  for want of a customer (DECISIONS §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer)), which records non-binding guidance for whoever has one:
   cause-specific `Error` variants, the shape of `crates/timetable`'s `Unbacked`/`Refusal` split and
   POSIX's `EMFILE`/`ENFILE`.
 - **A split refused for a full table still bumps the parent**, which can then never be reclaimed.

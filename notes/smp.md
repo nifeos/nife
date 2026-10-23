@@ -1,8 +1,10 @@
 # Bringing up the other cores
 
 `kernel/src/smp.rs` reads which cores the machine has, starts the ones it can, and turns each into
-a scheduler participant. DECISIONS §11 is the design; §28 is the load balancing that runs on top of
-it, and [the scheduler note](scheduler.md) covers placement and stealing.
+a scheduler participant. DECISIONS §11 (SMP: per-CPU run queues, message-based migration) is the
+design; §28 (SMP placement: two random choices at spawn, message-shaped stealing) is the load
+balancing that runs on top of it, and [the scheduler note](scheduler.md) covers placement and
+stealing.
 
 ## How a secondary starts
 

@@ -182,7 +182,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     }
 
     // The RTC, by `compatible`: no node-name prefix finds both `virt` boards' (`pl031@9010000`,
-    // `rtc@101000`). None means the clock service says it does not know the time (DECISIONS §42).
+    // `rtc@101000`). None means the clock service says it does not know the time.
     {
         let mut rtc = [Region { start: 0, size: 0 }; 1];
         for (compat, kind) in [
@@ -208,7 +208,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
     // non-prefetchable `ranges` entry the BAR window (`pci::mem32_window`). It must come from the
-    // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node (DECISIONS §43).
+    // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
         if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
@@ -477,7 +477,8 @@ pub(crate) fn alloc_contiguous(count: usize) -> Option<PageFrame> {
 /// A freshly allocated frame, zeroed.
 ///
 /// The argument that writing over a fresh frame is sound is made once, in `zero_frames`, rather
-/// than at every caller (DECISIONS §94). Callers who want the bytes left alone call [`alloc`].
+/// than at every caller (DECISIONS §94 (what may live in a userspace library, and what must be
+/// per-binary)). Callers who want the bytes left alone call [`alloc`].
 /// Zeroing is a `FRAME_SIZE` memory touch, done after the allocator lock is released.
 pub fn alloc_zeroed() -> Option<PageFrame> {
     let frame = alloc()?;
@@ -805,7 +806,7 @@ pub(crate) fn record_framebuffer(base: u64, size: u64) {
 /// The kind travels with the address on purpose. The clock service picks its register layout from
 /// what the machine said, not from `target_arch`, because the VisionFive 2 is riscv64 and has
 /// neither of these devices; an ISA-keyed driver would compile clean and read garbage on the first
-/// real board (DECISIONS §43).
+/// real board (DECISIONS §43 (reading the clock is a page)).
 pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
     *RTC_REGION.lock()
 }
@@ -844,7 +845,8 @@ pub(crate) fn record_uart_irq(irq: u32) {
 /// hands it (to zero a new page table, to fill a new user page).
 pub(crate) fn ram_regions() -> impl Iterator<Item = (u64, u64)> {
     // Copy the whole map (256 bytes) out under ONE lock acquisition, so no kernel lock is held,
-    // interrupts masked, across the caller's iteration (DECISIONS §9).
+    // interrupts masked, across the caller's iteration (DECISIONS §9 (locking: IrqSafeMutex, plus
+    // a discipline)).
     let map = *RAM.lock();
     (0..map.count).map(move |i| map.regions[i])
 }

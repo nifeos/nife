@@ -18,10 +18,11 @@ pub static DTB: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsiz
 
 /// **The boot device tree, parsed**, or the parse error if this machine did not hand us one.
 ///
-/// The argument that the pointer is real is made once, here (DECISIONS §94). Returns `Err` rather
-/// than panicking: the early RISC-V console continues without a tree, and on `x86_64` [`DTB`] holds
-/// a PVH `hvm_start_info` pointer, which `from_ptr`'s magic check refuses. Callers that cannot
-/// continue keep their own `expect`.
+/// The argument that the pointer is real is made once, here (DECISIONS §94 (what may live in a
+/// userspace library, and what must be per-binary)). Returns `Err` rather than panicking: the early
+/// RISC-V console continues without a tree, and on `x86_64` [`DTB`] holds a PVH `hvm_start_info`
+/// pointer, which `from_ptr`'s magic check refuses. Callers that cannot continue keep their own
+/// `expect`.
 pub fn device_tree() -> Result<device_tree_blob::DeviceTreeBlob<'static>, device_tree_blob::Error> {
     let phys = DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
     // SAFETY: `kernel_main` stores the boot pointer here as its first statement, before any of

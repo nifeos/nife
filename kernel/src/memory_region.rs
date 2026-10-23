@@ -1,13 +1,12 @@
-//! Memory regions: untyped memory a process holds a capability to and retypes (milestone 11).
-//!
-//! The kernel owns no pool to hand out from. A process holds a `MemoryRegion` capability and
-//! retypes part of it into the page or object it wants; the kernel advances a watermark and hands
-//! back a physical address, so its free-frame count does not move while a process allocates. The
-//! table and its decisions are `crates/memory_regions`; this module is the I/O: the frame
-//! allocator, the direct map, the revoke and the lock. See notes/memory-regions.md.
+//! Memory regions (milestone 11 (untyped memory, and the number that proves the kernel stops
+//! allocating)): a process retypes its own region into the pages and objects it wants, so the
+//! kernel's free-frame count does not move while it allocates. The table and its decisions are
+//! `crates/memory_regions`; this module is the I/O: the frame allocator, the direct map, the
+//! revoke and the lock. See notes/memory-regions.md.
 //!
 //! # BUGS
-//! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119); see the note.
+//! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
+//! `OutOfMemory`'s three causes is declined for want of a customer)); see the note.
 
 pub use memory_regions::ObjectKind;
 use memory_regions::{PageUse, RegionTable};
@@ -81,8 +80,8 @@ pub fn create(pages: u64) -> Option<u64> {
 /// The parent's watermark advances and it cannot be destroyed while the child lives. `None` if the
 /// parent is unknown or exhausted, `pages` is zero, or the region table is full.
 ///
-/// A child destroyed at the top of the parent's watermark gives its pages back (DECISIONS §16); one
-/// freed out of order leaves a hole until no child above it is live.
+/// A child destroyed at the top of the parent's watermark gives its pages back (DECISIONS §16
+/// (object revocation)); one freed out of order leaves a hole until no child above it is live.
 ///
 /// **A split refused for a full table still bumps the parent**, and the parent can then never be
 /// reclaimed: `RegionTable::split`'s `# BUGS` entry has the consequence and a reproduction, and
@@ -221,7 +220,8 @@ pub fn unpin(region: u64) {
 /// its parent. The name goes with it, and its slot is reused by the next `create` or [`split`].
 ///
 /// Refused, doing nothing, for a pinned region, one with live children, or a name another caller
-/// already claimed. Every mapped page is revoked first (§13), so no peer is left mapping a returned
+/// already claimed. Every mapped page is revoked first (§13 (capability revocation and untyped
+/// reclamation)), so no peer is left mapping a returned
 /// page. `RegionTable::claim_for_destroy` decides and removes the name in one borrow, so at most
 /// one caller frees a region's pages. Takes `REGIONS`, releasing it before the revoke takes
 /// `IPC_TABLES`. See notes/memory-regions.md.

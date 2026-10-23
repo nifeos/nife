@@ -1,12 +1,11 @@
-//! Bringing the other cores online, and the roster of which cores exist (DECISIONS §11).
+//! Bringing the other cores online, and the roster of which cores exist (DECISIONS §11 (SMP:
+//! per-CPU run queues, message-based migration)).
 //!
-//! The boot core reads the machine's core list ([`read_cpu_list`]), then starts each secondary
-//! ([`bring_up_secondaries`]) at a physical entry point (`secondary_boot` in boot.s) on its own
-//! stack. The secondary replays the MMU-enable and lands in [`secondary_main`], which makes it a
-//! full scheduler participant. Cross-core placement goes through a core's inbox and the reschedule
-//! IPI (`sched::spawn_on`); load balancing is `sched::spawn`'s (DECISIONS §28).
-//!
-//! See notes/smp.md.
+//! The boot core reads the core list ([`read_cpu_list`]), then starts each secondary
+//! ([`bring_up_secondaries`]) at a physical entry point on its own stack; the secondary lands in
+//! [`secondary_main`], which makes it a scheduler participant. Load balancing is `sched::spawn`'s
+//! (DECISIONS §28 (SMP placement: two random choices at spawn, message-shaped stealing)). See
+//! notes/smp.md.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
