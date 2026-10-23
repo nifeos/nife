@@ -72,6 +72,11 @@ which vouches for nothing, so the console is refused and the boot stops.
 
 ## Boots that replace the hand-over
 
+The kernel itself loads one program, `progenitor`, on every architecture. The six ELF child
+builders are in the trust root too. `spawn_elf_child_builder` enters them directly for the tests
+of milestone 19d (run a real workload) and 19e, and `trust::require` refuses an entry the root does
+not name, so the root grew (`xtask`'s `boot_programs`) rather than the check being relaxed.
+
 A soak, job-mix, bench or disk-throughput boot replaces the hand-over with its own workload, so
 nothing calls `trust::require` and the progenitor measures nothing. `trust::require_program` runs
 the chain an ordinary boot runs, two links long. `require_program_measurements` vouches for the

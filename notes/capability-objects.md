@@ -60,7 +60,8 @@ A `PageFrame` count is `NonZeroU64`. Every dispatch path derives an end address 
 `page_frame_map`'s tail check computes `(count - 1) * PAGE_SIZE`, so a zero would underflow: a
 debug build panics and a release build wraps. The type removes the branch at no cost, since the
 niche keeps `Option<Object>` the same size. `page_frame_run_len` is `const`, so a caller passing a
-literal gets the refusal at compile time. §102 (a Frame names a run of pages) is the ruling.
+literal gets the refusal at compile time. The count rides on the capability, not on `MAP`'s
+arguments, so the syscall's argument shape is the same for a run as for one page. §102 (a Frame names a run of pages) is the ruling.
 
 ## What a slot costs
 
@@ -73,7 +74,8 @@ with.
 
 The table is 64 slots, calef's ruling of 2026-10-04 (UTC) for milestone 754 (the capability table
 grows to 64 slots), chosen over moving holdings into a new process after a gpu-and-keyboard boot
-reached 31 of 32. The table lives in its thread's TCB page and costs no static memory; the page-fit
+reached 31 of 32. The table lives in its thread's TCB page, cost 1,032 bytes a thread more than 32 slots, and no
+static memory; the page-fit
 assertion in `crate::thread` is the check. The free-slot word is a `u64`, so 64 is also the ceiling
 the type allows; going further needs a wider word or a second one. Sizing a table per process is
 milestone 778 (capability tables sized per process).
@@ -141,7 +143,9 @@ object comes from: the progenitor's processes need `BIND` to hand a `std` progra
 only narrow below the root: a `SPLIT` child inherits its parent's, through the `mint_child` the
 `split_never_widens_rights` proof covers, and `CAP_INSERT` narrows again. `ENUMERATE` flows down
 every split, so the progenitor can hand a job budget's holder a view narrowed to `ENUMERATE` alone,
-which is `free`'s "yours" line.
+which is `free`'s "yours" line. A holder that could already spend, split and destroy the region
+learns nothing new by asking what it spent, the argument §114 (`pmap` gets its listing) made for
+the address-space object.
 
 ## BUGS
 

@@ -85,7 +85,8 @@ written at the rank in `kernel/src/sync.rs`.
   per creation is free where a store per switch was not.
 - `port_range_grant` makes the TSS I/O bitmap lazy. An always-write cost about 2,682 ns a switch.
   Rewriting only when the incoming thread's grant differs costs one compare on nearly every switch,
-  since one process ever holds a port capability.
+  since one process ever holds a port capability. This lazy form is §121 (x86 port I/O)'s refinement of
+  2026-08-25 (UTC), and binds here.
 - `cycle_counter_grant` costs `sched::schedule` 192 bytes for an instrument nothing can request yet,
   so the whole mechanism is a measurement build, like the soak.
 - `own_token` holds the thread's queue token while no queue does. It deviates from ruling C's

@@ -437,8 +437,9 @@ pub struct Thread {
     /// thread-local storage hangs off. `CONFIGURE` gives the first value,
     /// `ThreadControlBlock::SET_THREAD_POINTER` changes it, and `sched::schedule` installs it at
     /// every switch in through `arch::thread_pointer::hand_over`. A user address or zero, which
-    /// every writer checks. Where userspace can write the register itself, this copy can lag while
-    /// the thread runs; `arch::thread_pointer` says which copy is live. Field name provisional.
+    /// every writer checks, because `x86_64`'s `wrmsr` faults on a non-canonical value. Where
+    /// userspace can write the register itself, this copy can lag while the thread runs;
+    /// `arch::thread_pointer` says which copy is live. Field name provisional.
     pub(crate) thread_pointer: u64,
 
     /// **The process this thread joined**, or `None` for a thread that is a process of its own
@@ -496,11 +497,11 @@ pub struct Thread {
     /// faults or exits, the kernel delivers a five-word message here and the corpse goes `Dead`
     /// until reaped; a thread with `None` dies and is reaped immediately, today's behavior.
     pub(crate) fault_ep: Option<crate::sched::RendezvousId>,
-    /// The label the builder set on this thread's supervision capability, or `0` (§148 (a
-    /// supervisor restarts by asking)). Read at `START` from the badge in the reserved fault slot,
+    /// The label the builder set on this thread's supervision capability, or `0` (§148 (resolves by
+    /// asking the kernel), ruling R3). Read at `START` from the badge in the reserved fault slot,
     /// which is consumed then, so the child never learns it. It travels only with the death
     /// message: `depart` hands it to the supervisor in argument register 5 of a plain `RECEIVE`,
-    /// beside the mailbox words.
+    /// beside the mailbox words, so ordinary IPC stores nothing more (§148's benchmark condition).
     ///
     /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Chosen to sit beside `fault_ep` and `fault_msg`;
     /// `fault_badge` was considered and set aside, because §148 calls the word a label.

@@ -110,6 +110,20 @@ A page table is recorded before the mapper links it, under the same hold. `revok
 pass takes the same registry, so it runs either before the retype, when the region is claimed and
 the retype fails, or after the link, when the record finds the table.
 
+## Unmapping under the registry
+
+The sweeps unmap, TLB broadcast included, with the registry held. There is no heap to lift the
+victims out to first, and the accounting is acceptable. Revocation is rare. The lock is contended
+only by mapping syscalls, and a `MappingHold` spans one, which can afford to wait. A `tlbi`
+completes in hardware regardless of who spins.
+
+`AddressSpace::UNMAP` tombstones a record by address alone, because it names a window and the
+caller may hold no capability for the page. The progenitor, the case §162 (whether a holder can
+give up a mapping) was decided for, deletes its frame capabilities as each page is mapped. The
+falsification of
+`kernel::user::unmap_tests::an_unmapped_va_remapped_to_another_frame_survives_the_old_frames_revoke`
+removes that tombstoning.
+
 ## Listing what a space maps
 
 `abi::address_space::LIST` answers from the log rather than from the page tables, the way `ps`
