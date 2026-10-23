@@ -48,7 +48,7 @@ pub struct Spawn<'a> {
 /// has no software-generated interrupt a test can raise on itself (the SBI IPI arrives down the
 /// software-interrupt arm, never touching `irq_route`), so it names the console UART's own line,
 /// the same number as [`UART_RX_INTID`] there; [`spawn_elf_child_builder`] binds that route once
-/// and grants two capabilities naming it.
+/// and grants two capabilities naming it. `sched::tests`' `DELIVERY_IRQ` reaches the same answer.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names. It is
 /// an SGI only on aarch64, which the name no longer claims.

@@ -13,7 +13,7 @@
 //! - A service parked in `RECEIVE` on an endpoint outside every region it names cannot be ended:
 //!   §16's kill is spent by `schedule()`, which a blocked thread never reaches. `release` says so.
 //! - `release` is destructive: its first `reclaim_region` arms kills, so it cannot ask whether a
-//!   service is idle.
+//!   service is idle (`reclaim_region`'s own BUGS).
 //! - A holding names what the kernel handed out, not memory the process reached another way.
 //!
 //! Name: provisional (this lane, 2026-08-16). `Holding` is a noun and says what the thing is:

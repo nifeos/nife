@@ -134,7 +134,8 @@ every `AddressSpace` and pushed `load`'s frame past the 4 KiB guard page on risc
 kernel opens to EL0. `x86_64` measures it and riscv64 reads it from the device tree, which a process
 cannot reach, so on those two the kernel writes one frame and maps it read-only into every process.
 The rate does not change while the machine runs, so one frame is correct. If the rate has not
-resolved, the frame stays zeroed and reads as unknown, which keeps every process's layout the same
+resolved (never observed: `init_frequency` runs early in both boot tours), the frame stays zeroed
+and reads as unknown, which keeps every process's layout the same
 regardless of boot order.
 
 `load` maps it for the processes it builds. Several kernel paths build a process's space by hand
@@ -159,7 +160,9 @@ gone. Deleting one removes nothing (§249's amendment (a)).
 `MAX_USER_SPACES` is `crate::revoke::MAX_SPACES`. Every space registers with the revocation registry
 when it is built and leaves only when it drops, and holds one entry here, so this table cannot fill
 while a space that wants an entry exists. That is why `register_bound_address_space` panics on a
-full table rather than handing every kernel spawn path an error it could never act on. At 288
+full table rather than handing every kernel spawn path an error it could never act on. The
+revocation registry's own constant is the thread ceiling plus headroom, so the argument follows the
+thread ceiling when it moves. At 288
 slots the table is 21,904 bytes of `.bss` on all three architectures (`registry_footprint`): 72 bytes
 an entry and a 4-byte generation each. Nothing walks the empty slots, because
 `generational_table::Table` bounds every sweep by its highest live slot.

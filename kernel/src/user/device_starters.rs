@@ -134,7 +134,7 @@ pub(super) fn boot_instruction_entropy() -> Option<crate::sched::RendezvousId> {
 ///
 /// The MMIO NIC has no IOMMU in front of it, so its DMA is confined by the transport's shadow-ring
 /// validator alone, not the SMMU of DECISIONS §20 (IOMMU-backed DMA isolation); the PCIe NIC sits
-/// unclaimed on this boot.
+/// unclaimed on this boot, for the reason milestone 590's block records.
 pub(super) fn boot_virtio_net_device() -> Option<VirtioBootGrant> {
     boot_virtio_mmio_device(crate::virtio::find_net_device()?)
 }

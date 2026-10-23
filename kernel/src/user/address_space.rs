@@ -189,7 +189,9 @@ impl AddressSpace {
     /// **Publish the core this space's thread is about to run on.** Called from the context
     /// switch, on the core doing the switching, which is the core the thread will execute on.
     ///
-    /// One relaxed store; `current_cpu_contract` has the ordering argument. The context switch
+    /// One relaxed store: writer and reader are the same hardware thread, and two successive
+    /// writers are ordered by the scheduler's own release/acquire handoff (`current_cpu_contract`
+    /// has the argument). The context switch
     /// reads [`BoundSpace::publish_current_cpu`] instead (§249 (a running address space stays
     /// nameable)); this form is the tests' way to make the same write by hand.
     #[cfg(any(test, feature = "system_tests"))]

@@ -120,6 +120,7 @@ design/roadmap/0047-navigation-and-naming/environment.md's "inheritance with vis
   because nothing else is ever handed authority over the progenitor's memory. It has no `ENUMERATE`,
   because nothing it does lists itself. The capability names a space `CONFIGURE` does not retire
   (§249's option A), so it resolves while the progenitor runs and dies when its thread is reaped.
+  The progenitor's field for it, `own_space`, is a provisional name, and so is `reboot` below.
 - The kernel-built network stack's `Stack` endpoint carries every right, as the progenitor's own
   retype of it does on the virtio path. Its lease endpoint is `READ`. The progenitor receives the
   lease itself, exactly as from a stack it built, so both paths reach the prompt through one line of
