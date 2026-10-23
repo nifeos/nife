@@ -56,10 +56,8 @@ kernel/src/arch/riscv64/semihosting.rs:126	22
 kernel/src/arch/riscv64/timer.rs:180	34
 kernel/src/arch/riscv64/timer.rs:259	21
 kernel/src/arch/riscv64/timer.rs:673	23
-kernel/src/arch/x86_64/amd_vi.rs:1	39
 kernel/src/arch/x86_64/exceptions.rs:425	21
 kernel/src/arch/x86_64/exceptions.rs:1090	21
-kernel/src/arch/x86_64/iommu.rs:1	40
 kernel/src/arch/x86_64/irq.rs:1	33
 kernel/src/arch/x86_64/irq.rs:386	34
 kernel/src/arch/x86_64/irq.rs:859	33

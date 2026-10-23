@@ -1,43 +1,12 @@
-//! **The VT-d driver: Intel's IOMMU, in front of the PCIe bus.** The register
-//! file, the root and context tables, and register-based invalidation live here; the translation
-//! tables are the portable seam's, built in [`paging::x86_64::Vtd`], not the CPU's
-//! [`paging::x86_64::Ia32e`]. See notes/iommu.md. Unlike SMMUv3 and the RISC-V IOMMU, VT-d's legacy interface, which every unit supports, is
-//! driven through registers: invalidation is a register write-and-poll and faults land in Fault
-//! Recording Registers, with no command or fault queue. The root table (one entry per bus) points
-//! at per-bus context tables (one entry per device/function), each naming a domain and the
-//! second-level root [`crate::iommu::confine`] built. Both are allocated lazily and default
-//! absent, and `init` points `RTADDR_REG` at an all-absent root before setting `GCMD.TE`, so no
-//! device is ever unconstrained by omission.
+//! **The VT-d driver: Intel's IOMMU, in front of the PCIe bus.** The register file, the root and
+//! context tables and register-based invalidation; the translation tables are the portable seam's,
+//! built in [`paging::x86_64::Vtd`]. Every DRHD the DMAR names gets its own root table, all-absent
+//! before `GCMD.TE` is set so no device is unconstrained by omission, and `attach` goes to the
+//! unit the DMAR says owns the device. A device no unit owns gets no context entry, and
+//! [`scope_of`] says so.
 //!
-//! Every DRHD the DMAR names gets its own root table, and `attach` goes to the unit the DMAR says
-//! owns the device (`machine_discovery::acpi::DmarUnits::owner_index`, VT-d 4.1 section 8.3).
-//! `GCMD` is written per section 11.4.4 (read `GSTS`, clear the one-shot bits, change one bit).
-//! RMRRs are identity-mapped for their devices before any unit translates, and stay in every
-//! domain those devices join (section 3.16). A device no unit owns gets no context entry and
-//! [`scope_of`] answers `Elsewhere { owner: None, .. }`, as Linux leaves it untranslated; refusing
-//! its bus mastering would confine nothing and silence the preflight that reports the gap.
-//!
-//! This file is also `x86_64`'s IOMMU front door: every public entry point first hands the call to
-//! [`super::amd_vi`] if an AMD-Vi unit is up. It stays here because the tree cites this path as
-//! where `x86_64`'s IOMMU lives, §163 (where a confined device's IOMMU fault is delivered) among
-//! them.
-//!
-//! # BUGS
-//!
-//! - Only PCI segment 0 is brought up; a unit elsewhere is reported and refused.
-//! - A unit whose scope names only absent devices is still brought up, and `init` panics on its
-//!   first status poll if its register file is not really there (Linux ignores such a unit).
-//! - An RMRR naming a bridge is mapped only when the device below is confined; until then that
-//!   device's firmware DMA faults.
-//! - The graphics unit translates with only its RMRR mapped, so scanout survives only if the RMRR
-//!   covers it; unread on xenon (notes/risk-6-bench-evening.md).
-//! - No interrupt remapping: `ECAP.IR` is only reported ([`interrupt_remapping_available`]); no
-//!   `IRTE` is ever written (`design/roadmap/0317-interrupt-remapping-flags.md`).
-//! - Invalidation is always global, correct and expensive with many devices.
-//! - `RWBF` and protected-memory disabling have never run: QEMU sets neither.
-//! - One Fault Recording Register per unit is read, shared by every requester, so a repeating
-//!   fault from one device can hide another's and a burst past it is lost (`FSTS.PFO`). A caller
-//!   reading one device's faults must first quiesce every other device on the bus.
+//! This is also `x86_64`'s IOMMU front door: every public entry point hands the call to
+//! [`super::amd_vi`] when an AMD-Vi unit is up. See notes/iommu.md, which holds the BUGS.
 
 use machine_discovery::acpi::{
     DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAX_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
@@ -72,7 +41,7 @@ const GSTS_WBFS: u32 = 1 << 27;
 const GSTS_ONE_SHOT_MASK: u32 = 0x96FF_FFFF;
 // IRES: interrupt remapping is ENABLED. Read only by the test that asserts it is clear; this
 // driver has no `GCMD_IRE` constant to pair it with, deliberately, because there is nothing here
-// that should be one typo away from turning interrupt remapping on. See this module's BUGS.
+// that should be one typo away from turning interrupt remapping on. See notes/iommu.md's BUGS.
 #[cfg(any(test, feature = "system_tests"))]
 const GSTS_IRES: u32 = 1 << 25;
 
@@ -96,11 +65,10 @@ const CAP_FRO_MASK: u64 = 0x3ff;
 const ECAP_IRO_SHIFT: u64 = 8; // 10-bit field, in 16-byte units
 const ECAP_IRO_MASK: u64 = 0x3ff;
 
-// ECAP.IR (bit 3): the unit supports interrupt remapping. Read to REPORT, never to act on
-// (this driver does not set `GCMD.IRE`; see BUGS). It is here because milestone 317 needed the
-// machine's own answer to "is interrupt remapping present" to be visible from inside the guest:
-// `-device intel-iommu,intremap=on` is a host-side string, and a boot that cannot tell the two
-// machines apart cannot claim to have exercised either. `print_summary` is where it surfaces.
+// ECAP.IR (bit 3): the unit supports interrupt remapping. Read to report, never to act on (this
+// driver does not set `GCMD.IRE`; see notes/iommu.md's BUGS). A boot must show the machine's own
+// answer, because `-device intel-iommu,intremap=on` is a host-side string. `print_summary` prints
+// it.
 const ECAP_IR: u64 = 1 << 3;
 
 // ECAP.C (bit 0): the unit's table walks snoop the processor caches. Clear means the hardware reads
@@ -170,7 +138,7 @@ struct Unit {
     /// The IOTLB invalidate register's offset, from `ECAP.IRO` (not fixed by the specification).
     iotlb: u64,
     /// `ECAP.IR`: does this unit offer interrupt remapping? Recorded, never acted on. See the
-    /// constant's comment and this module's BUGS for why a read-only field earns its place.
+    /// constant's comment and notes/iommu.md's BUGS for why a read-only field earns its place.
     interrupt_remapping: bool,
     /// The next domain id to hand out, and the largest `CAP.ND` allows. See [`Unit::domain_id`].
     next_did: u32,
@@ -191,20 +159,12 @@ fn mfence() {
 }
 
 impl Unit {
-    /// **Write the lines `pa..pa + len` back to memory, if this unit cannot see the CPU caches**
-    /// (fixed 2026-10-04, xenon, milestone 261). VT-d 4.1 section 6.1 (`ECAP.C`, from the field's
-    /// definition, not re-read tonight) leaves cache maintenance of the remapping structures to
-    /// software when C is clear. Before this the driver wrote every table through the cache and
-    /// never flushed, which QEMU cannot show (it reads guest memory directly whatever C says).
-    /// xenon's catch-all unit reports `ecap 0xf050da`, C=0, and its first fault was reason 0x01
-    /// (root entry not present) on the NVMe's admin queue, with the root entry present in the
-    /// CPU's view: the unit read DRAM the cache had not yet reached.
-    ///
-    /// `clflush` per line, not `wbinvd`. The other choice writes back and invalidates every cache
-    /// in the package, uninterruptibly, for a few bytes of table; this costs one instruction per
-    /// 64 bytes actually written. Linux does the same (`__iommu_flush_cache`, from memory). The
+    /// **Write the lines `pa..pa + len` back to memory, if this unit cannot see the CPU caches.**
+    /// VT-d 4.1 section 6.1 leaves cache maintenance of the remapping structures to software when
+    /// `ECAP.C` is clear, as on xenon's catch-all unit. `clflush` per 64-byte line rather than
+    /// `wbinvd`, which would write back every cache in the package for a few bytes of table. The
     /// caller fences (`mfence`) once after its last flush and before any register write that makes
-    /// the unit read.
+    /// the unit read. See notes/iommu.md.
     fn publish(&self, pa: u64, len: u64) {
         if self.coherent {
             return;
@@ -413,18 +373,15 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
     Ok(unit)
 }
 
-/// **Bring every VT-d unit up, each translating the devices it owns** (milestone 594, provisional
-/// number; VT-d 4.1 sections 3.16, 8.3 and 8.4). Three steps, in an order that is the point:
+/// **Bring every VT-d unit up, each translating the devices it owns** (milestone 594 (every VT-d
+/// unit translates its own devices), provisional number; VT-d 4.1 sections 3.16, 8.3 and 8.4), in
+/// three steps whose order is the point:
 ///
 /// 1. Every unit gets an all-absent root table, with translation still off.
-/// 2. Every device an RMRR names is attached, through [`crate::iommu::confine`] with no grant of
-///    its own, to a domain that is exactly its reserved regions. So a USB controller's legacy
-///    buffers and the GPU's stolen memory are mapped before anything could fault them.
-/// 3. Translation turns on, unit by unit, and any protected memory region firmware left enabled
-///    is switched off.
+/// 2. Every device an RMRR names is confined to a domain that is exactly its reserved regions.
+/// 3. Translation turns on unit by unit, and protected memory regions firmware left are disabled.
 ///
-/// From then every device a running unit owns faults until `attach` writes its context entry
-/// (or, for an RMRR device, anywhere outside its reserved regions). One `vt-d` line per unit.
+/// Then every device a running unit owns faults until `attach` writes its context entry.
 pub fn init(dmar: &DmarUnits) {
     *DMAR.lock() = Some(*dmar);
     {
@@ -448,7 +405,7 @@ pub fn init(dmar: &DmarUnits) {
     for s in &dmar.rmrr_scopes[..dmar.rmrr_scope_count] {
         let region = dmar.rmrrs[s.unit as usize];
         if region.segment != 0 || s.kind != SCOPE_PCI_ENDPOINT {
-            continue; // see this module's BUGS on sub-hierarchy RMRR scopes
+            continue; // see notes/iommu.md's BUGS on sub-hierarchy RMRR scopes
         }
         let Some((bus, dev, func)) = s.resolve(&mut crate::pci::bridge_bus_range) else {
             continue; // the path names hardware that is not on this machine
@@ -699,7 +656,7 @@ pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
 
 /// Register-based, global invalidation: the context cache first (a stale context entry would
 /// still point translation at the previous domain), then the IOTLB, each a write-and-poll on its
-/// own register. Both use global granularity; see this module's BUGS for the cost.
+/// own register. Both use global granularity; see notes/iommu.md's BUGS for the cost.
 fn invalidate_all(s: &Unit) {
     if s.rwbf {
         global_command(s.base, GCMD_WBF, true);
@@ -722,17 +679,11 @@ fn invalidate_all(s: &Unit) {
 }
 
 /// Point device `rid` (the PCIe requester id: bus in bits 15:8, device/function in bits 7:0) at
-/// the domain rooted at `root` (a [`Vtd`]-format table the portable seam built), **in the unit
-/// the DMAR says owns it**, then invalidate that unit so it drops anything cached for the previous
-/// state of this device.
-///
-/// `_tag` is the portable seam's cache tag (an ASID on aarch64, a PSCID on riscv64). VT-d's tag is
-/// the domain id, and this unit hands out its own, because the requester id the seam passes does
-/// not fit the domain-id width a real unit implements; see [`Unit::domain_id`].
-///
-/// **A device no running unit owns gets no context entry**, because there is no root table its
-/// DMA would be looked up in: see this module's "A device no unit owns". [`scope_of`] is how a
-/// caller learns that, and every caller that claims confinement asks it.
+/// the domain rooted at `root` (a [`Vtd`]-format table the portable seam built) **in the unit the
+/// DMAR says owns it**, then invalidate that unit. `_tag` is unused: VT-d's tag is the domain id,
+/// which the unit hands out itself because the requester id does not fit a real unit's domain-id
+/// width ([`Unit::domain_id`]). A device no running unit owns gets no context entry; [`scope_of`]
+/// is how a caller learns that.
 pub fn attach(rid: u32, root: u64, _tag: u16) {
     if super::amd_vi::is_active() {
         return super::amd_vi::attach(rid, root);
@@ -814,11 +765,8 @@ pub fn take_fault() -> Option<Fault> {
     let g = IOMMU.lock();
     for slot in g.iter() {
         let Slot::Up(s) = slot else { continue };
-        // **An overflow blinds the unit until it is cleared** (found 2026-09-27 by milestone 609 (the
-        // system tests leave the kernel crate), which changed which tests share a boot). A device
-        // still running a queue from an earlier registration faulted until its one record was full;
-        // QEMU then set PFO and dropped every later fault, including the one the confinement test
-        // provoked, so the test read a stale record. Clearing PFO here makes the next fault land.
+        // An overflow blinds the unit until it is cleared: with PFO set, QEMU drops every later
+        // fault, so clearing it here is what lets the next fault land.
         if r32(s.base, FSTS) & FSTS_PFO != 0 {
             w32(s.base, FSTS, FSTS_PFO);
         }
@@ -829,7 +777,7 @@ pub fn take_fault() -> Option<Fault> {
         let hi = r64(s.base, s.frcd + 8);
         if hi & (1 << 63) == 0 {
             // PPF was set but this record's own F bit is not: nothing to report from the one
-            // register this driver reads. See this module's BUGS on why only one is ever read.
+            // register this driver reads. See notes/iommu.md's BUGS on why only one is ever read.
             continue;
         }
         // Write-1-to-clear: writing back exactly what was read clears the F bit (bit 63 of `hi`)
@@ -974,21 +922,12 @@ mod tests {
 
     /// **The unit's interrupt-remapping capability is reported, and remapping is still off.**
     ///
-    /// Two assertions, and the second is the one with teeth. The first says the machine answered
-    /// at all: a `None` here on a runner that always attaches `-device intel-iommu` would mean the
-    /// DRHD was never found, which every other VT-d test would also fail on, so it is a guard
-    /// rather than a claim.
-    ///
-    /// The second states a limit, the shape notes/confinement-claims.md asks for: whatever
-    /// `ECAP.IR` says, `GSTS.IRES` is clear, because this driver never sets `GCMD.IRE`. **That is
-    /// what keeps `NIFE_INTREMAP` honest.** Booting a machine that offers remapping and watching
-    /// the suite stay green would otherwise prove nothing; this fails the day somebody enables
-    /// remapping without also retiring the claim in
-    /// design/roadmap/0317-interrupt-remapping-flags.md that nothing in this kernel remaps an
-    /// interrupt.
-    ///
-    /// It runs identically with the flag and without it, on purpose. A test that only ran under
-    /// the flag would be a test nobody runs.
+    /// The first assertion is a guard: on a runner that attaches `-device intel-iommu`, a `None`
+    /// means the DRHD was never found. The second states a limit (notes/confinement-claims.md's
+    /// shape): whatever `ECAP.IR` says, `GSTS.IRES` is clear, because this driver never sets
+    /// `GCMD.IRE`. It fails the day remapping is enabled without retiring the claim in
+    /// design/roadmap/0317-interrupt-remapping-flags.md, and it runs with `NIFE_INTREMAP` and
+    /// without, since a test that only ran under the flag would be one nobody runs.
     #[test_case]
     fn interrupt_remapping_is_reported_and_never_enabled() {
         let Some(offered) = interrupt_remapping_available() else {
