@@ -455,8 +455,8 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
 
 /// Service one hardware interrupt.
 ///
-/// Context: interrupt context, IRQs masked by the vector. Records and defers (§9 (locking:
-/// IrqSafeMutex, plus a discipline)): allocates nothing and takes no lock above rank GIC.
+/// Context: interrupt context, IRQs masked by the vector. Records and defers, per §9 (locking):
+/// allocates nothing and takes no lock above rank GIC.
 fn handle_irq(_frame: &mut TrapFrame) {
     // The acknowledge has a side effect: exactly once.
     let intid = irq::acknowledge();
