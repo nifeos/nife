@@ -58,8 +58,8 @@ pub(crate) const UART_NODE: &[u8] = b"";
 /// The console UART's address, as the kernel sees it: a virtual address in the direct map at
 /// `pa | KERNEL_VA_BASE`, which aarch64's boot.s maps before any Rust runs.
 ///
-/// Hardcoded on purpose, not a TODO: the console must come up before the device tree parser it
-/// exists to debug, so a new board needs a new constant here (notes/kernel-console.md).
+/// Hardcoded on purpose, and not unfinished: the console must come up before the device tree parser
+/// it exists to debug, so a new board needs a new constant here (notes/kernel-console.md).
 #[cfg(not(target_arch = "x86_64"))]
 const UART_BASE: usize = crate::arch::mmu::phys_to_virt(UART_PHYS) as usize;
 /// `x86_64`'s console base is a port number and needs no translation; see [`UART_PORT`].
@@ -561,8 +561,8 @@ pub(crate) fn enter_reset() {
 /// before the instruction that may never return.
 ///
 /// [`kernel_log::flush`](crate::kernel_log::flush) moves what a drainer has not printed from the
-/// ring to the wire, then the driver's `drain_transmitter` waits for the FIFO to empty: `write_byte`
-/// returns when the FIFO has room, not when bytes are sent.
+/// ring to the wire, then the driver's `drain_transmitter` waits for the FIFO to empty:
+/// `write_byte` returns when the FIFO has room, not when bytes are sent.
 ///
 /// Name: provisional (milestone 592, 2026-10-10): calef names public items.
 pub fn drain() {

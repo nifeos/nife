@@ -138,7 +138,7 @@ has ever wired. The test suite spawns a driver per gate, and tests share a trans
 a net service hands its frames back (notes/frames.md). The fix is reuse on driver death, which needs
 a generational name so a stale `Object::Virtio` capability cannot resolve to a different device. That
 changes what a capability means, a design fork under §16 (object revocation), and it meets
-`entropy_service::ensure`'s one-service-per-device rule. Milestone 647 proposes it.
+`entropy_service::ensure`'s one-service-per-device rule. Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
 
 Two test hooks go around the shadow ring to reach the hardware. `provoke_iommu_escape` points queue
 0's available ring at a frame the IOMMU domain does not include and kicks; the device's first read

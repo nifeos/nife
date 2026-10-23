@@ -29,7 +29,7 @@ Three things change from GICv2, and two of them are `gicv3.rs`:
 | per-core private state (SGIs, PPIs) | banked inside the distributor | a redistributor frame per core, each at its own address | `gicv3.rs` |
 | CPU interface | banked MMIO, `GICC_*` | system registers, `ICC_*` | `arch/aarch64/gic_cpu_interface.rs` |
 
-The split follows §4's first rule: `msr` and `mrs` are architecture code, so the CPU interface lives
+The split follows the first rule of §4 (kernel shape: monolithic, deferred, with two cheap rules): `msr` and `mrs` are architecture code, so the CPU interface lives
 under `arch/`, and everything reached through a pointer stays a driver handed its addresses.
 `arch::irq` holds both and decides which version the machine has. design/roadmap/0227-gicv3-driver.md
 has the placement and what lost.
@@ -43,7 +43,7 @@ the last frame says so. A redistributor is asleep out of reset and forwards noth
 
 A GICv3 delivers an interrupt only if its group is enabled at the CPU interface. This kernel runs at
 non-secure EL1 and enables Group 1, so every interrupt it uses is Group 1 (`IGROUPR` all ones). One
-left in Group 0 is signalled as an FIQ, which this kernel does not take.
+left in Group 0 is signaled as an FIQ, which this kernel does not take.
 
 Distributor and redistributor writes are Device-nGnRE stores, which reach one device in program
 order, so no barrier sits between them. What is needed is `RWP`, register write pending: a write to
@@ -88,7 +88,7 @@ reachable: `enable` runs in thread context on any hart, and affinity puts severa
 context. The GIC needs no such lock, because its set-enable and clear-enable registers are
 write-1-to-set and write-1-to-clear. The lock is an `IrqSafeMutex` though no handler takes it: the
 section is two MMIO accesses, so masking costs nothing, and a handler that took a plain spinlock
-here would be §9's deadlock. Its rank is `IRQ_CONTROLLER`, the GIC's, and it is a leaf taken holding
+here would be the deadlock §9 (locking: IrqSafeMutex, plus a discipline) forbids. Its rank is `IRQ_CONTROLLER`, the GIC's, and it is a leaf taken holding
 nothing; `bind_irq` and `create_rendezvous` drop `IPC_TABLES` before they call. It guards `()`
 rather than the base, so claim and complete, the hot path, never take it.
 

@@ -349,8 +349,8 @@ pub(crate) struct PciVirtioDevice {
     pub isr: u64,
     /// The interrupt a driver binds and waits on: the PLIC/GIC input the INTx pin swizzles to (see
     /// `pci::intx_irq`) on the two device-tree boards, the MSI-X vector
-    /// `arch::irq::alloc_msi_vector` reserved on `x86_64`. An `Irq` capability names it and the arch
-    /// layer resolves it.
+    /// `arch::irq::alloc_msi_vector` reserved on `x86_64`. An `Irq` capability names it and the
+    /// arch layer resolves it.
     pub intid: u32,
     /// Which MSI-X table entry [`intid`](Self::intid) was programmed into, or
     /// `pci::VIRTIO_MSIX_NO_VECTOR` when this function delivers INTx (both `virt` boards). It
@@ -362,8 +362,8 @@ pub(crate) struct PciVirtioDevice {
     /// DMA region in hardware.
     pub rid: u32,
     /// The virtio device type (2 = block, 1 = net, 16 = gpu), recovered from the PCI device id
-    /// (`0x1040 + type`). The transport answers a driver's `DeviceID` read from it, since PCI config
-    /// space has no such register.
+    /// (`0x1040 + type`). The transport answers a driver's `DeviceID` read from it, since PCI
+    /// config space has no such register.
     pub device_type: u32,
     /// The device-specific config region (virtio spec 4.1.4.4's `DEVICE_CFG` capability), physical,
     /// when the function carries one. A blk function keeps its capacity there (eight bytes at

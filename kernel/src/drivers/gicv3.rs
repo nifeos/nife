@@ -8,7 +8,8 @@
 
 //! # BUGS
 //!
-//! - No ITS, so no LPIs or message-signalled interrupts (milestone 317 wants them).
+//! - No ITS, so no LPIs or message-signaled interrupts (milestone 317 (the interrupt-remapping
+//!   flags, and where MSI confinement actually lives) wants them).
 //! - No extended SPI or PPI ranges; [`enable`] refuses an INTID past 1019.
 //! - No redistributor power-down; nothing in this kernel powers a core off.
 //! - The frame stride is inferred from `VLPIS`. A board that pads its frames and states a

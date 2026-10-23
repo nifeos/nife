@@ -1,7 +1,8 @@
 //! PL011 UART driver, aarch64's console.
 //!
-//! Constructed with a base address, it reaches into no globals (§4); whoever owns it decides
-//! where it lives. See notes/uart.md and notes/portability.md.
+//! Constructed with a base address, it reaches into no globals (§4 (kernel shape: monolithic,
+//! deferred, with two cheap rules)); whoever owns it decides where it lives. See notes/uart.md and
+//! notes/portability.md.
 
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};

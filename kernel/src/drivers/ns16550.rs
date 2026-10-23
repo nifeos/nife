@@ -3,8 +3,8 @@
 //! The register block's shape is the board's ([`Shape`]): QEMU `virt` wires byte registers at
 //! consecutive addresses, the JH7110's `DW_apb_uart` four bytes apart with 32-bit accesses. How the
 //! registers are reached is a type parameter ([`RegisterSpace`]): memory by default, I/O ports on
-//! x86 (`arch/x86_64/port.rs`). It reaches into no globals (§4). See notes/uart.md, "The NS16550
-//! driver", and notes/visionfive2.md.
+//! x86 (`arch/x86_64/port.rs`). It reaches into no globals (§4 (kernel shape: monolithic, deferred,
+//! with two cheap rules)). See notes/uart.md, "The NS16550 driver", and notes/visionfive2.md.
 
 // Register indices from the UART base (multiply by the stride, `1 << reg_shift`, for the byte
 // offset: index 5 is byte offset 5 on QEMU `virt` and byte offset 0x14 on the JH7110).

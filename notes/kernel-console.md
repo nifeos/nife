@@ -126,7 +126,7 @@ is whether the kernel also writes the line to the UART itself:
   nobody sees, calef's addition to §242 (a system log).
 - On a panic it always does, as the next section says.
 
-Signalling is deferred. The console lock is the leaf of the lock order, and `println!` runs under
+Signaling is deferred. The console lock is the leaf of the lock order, and `println!` runs under
 arbitrary locks, `IPC_TABLES` among them. A held line sets a flag, and `signal_if_safe` signals once
 this core holds no lock: at the end of `_print` or, failing that, at the next timer tick. A drained
 line is up to one tick late, and never early. The stall test runs on every kernel line and once

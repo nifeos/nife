@@ -1,6 +1,7 @@
-//! The portable IOMMU seam (§20): builds a device's DMA domain with the format-generic
-//! `paging::domain::build_identity_domain` and hands its root to whichever arch driver is compiled
-//! in (`crate::arch::iommu`). Everything ISA-specific lives under `arch/`.
+//! The portable IOMMU seam (§20 (IOMMU-backed DMA isolation: one seam, two arch drivers)): builds a
+//! device's DMA domain with the format-generic `paging::domain::build_identity_domain` and hands
+//! its root to whichever arch driver is compiled in (`crate::arch::iommu`). Everything ISA-specific
+//! lives under `arch/`.
 //!
 //! [`confine`] maps exactly the regions it is given, identity (IOVA == PA), so any other address
 //! the device emits faults. Each driver's `init` denies every unattached device, so the window

@@ -2,10 +2,10 @@
 //!
 //! `crates/jh7110_clock_and_reset` owns the offsets, bit positions, bring-up plan and device-tree
 //! query, host-tested and pointer-free. This walks a plan it is handed against a base it is handed
-//! and reports what the hardware said. It reaches into no kernel global (§4). It is in the kernel
-//! because the window is shared by USB, PCIe, DMA and the security block, so granting it would
-//! widen a driver's authority (notes/jh7110-clock-and-reset.md, "Where it lives, and who may drive
-//! it").
+//! and reports what the hardware said. It reaches into no kernel global (§4 (kernel shape:
+//! monolithic, deferred, with two cheap rules)). It is in the kernel because the window is shared
+//! by USB, PCIe, DMA and the security block, so granting it would widen a driver's authority
+//! (notes/jh7110-clock-and-reset.md, "Where it lives, and who may drive it").
 //!
 
 //! # SAFETY

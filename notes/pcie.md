@@ -116,7 +116,7 @@ nonzero BAR is not evidence of a mapped one. Under `x86_64`'s PVH boot nothing r
 QEMU's `-device nvme` resets with a live BAR0 (`0xfebd4000`) outside the kernel's window, and
 trusting it faulted on first touch. A UEFI machine's firmware picks its own addresses too.
 
-Adoption honours firmware's placement because firmware read the host bridge's `_CRS`, which this
+Adoption honors firmware's placement because firmware read the host bridge's `_CRS`, which this
 kernel cannot: `_CRS` is AML. Relocating a real machine's bus is the wrong answer. On xenon 13 of
 15 functions carried a BAR outside the kernel's 2 MiB window, which would have been exhausted by
 the first function that wanted a megabyte. On the device-tree boards every BAR arrives zero and

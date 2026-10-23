@@ -21,7 +21,8 @@
 //! - Waiting for a link is a bounded spin at bring-up, up to [`LINK_WAIT_MS`], holding a core.
 //! - The DMA region is allocated once per boot and never returned.
 //! - A non-coherent verdict refuses the port, since this tree has no cache maintenance for this
-//!   machine (milestone 655). An inconclusive verdict does not refuse, and the bring-up says so.
+//!   machine (milestone 655 (DMA on a non-coherent RISC-V machine)). An inconclusive verdict does
+//!   not refuse, and the bring-up says so.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 

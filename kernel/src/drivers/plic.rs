@@ -3,7 +3,8 @@
 //! The PLIC routes a device's wire to a context (a hart at a privilege level) as a supervisor
 //! external interrupt. Between a claim and its completion the source's gateway forwards nothing
 //! more, the only mask the interrupt path uses. A completion counts only on a context that enables
-//! the source, so the interrupt path never disables one. See notes/interrupts/controller-drivers.md.
+//! the source, so the interrupt path never disables one. See
+//! notes/interrupts/controller-drivers.md.
 //!
 
 //! The register model, all 32-bit MMIO at fixed offsets from the base (from the device tree):
@@ -18,9 +19,10 @@
 //!
 
 //! A context's number is the board's, from the device tree via `arch::irq`; this driver is handed
-//! one and never derives it. It reaches into no kernel globals (§4): [`init`] is handed the base
-//! and the context. Only the enable words, a read-modify-write shared by 32 sources, take a lock
-//! ([`ENABLE_BITS`]); claim/complete is the lock-free hot path.
+//! one and never derives it. It reaches into no kernel globals (§4 (kernel shape: monolithic,
+//! deferred, with two cheap rules)): [`init`] is handed the base and the context. Only the enable
+//! words, a read-modify-write shared by 32 sources, take a lock ([`ENABLE_BITS`]); claim/complete
+//! is the lock-free hot path.
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
@@ -244,8 +246,8 @@ mod tests {
     }
 
     /// The lock is IRQ-safe: the interrupt state around the call is restored, not merely enabled,
-    /// in both directions (§9). This proves what would turn the lock into a hang, not the mutual
-    /// exclusion.
+    /// in both directions (§9 (locking: IrqSafeMutex, plus a discipline)). This proves what would
+    /// turn the lock into a hang, not the mutual exclusion.
     #[test_case]
     fn the_enable_path_restores_the_interrupt_state_it_found() {
         use crate::arch::interrupts;

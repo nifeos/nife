@@ -95,7 +95,8 @@ pub(crate) fn find_net_device() -> Option<VirtioMmioDevice> {
 }
 
 /// Scan the bus for the first virtio entropy source. `None` if there is no RNG attached. The PCIe
-/// twin is [`crate::pci::find_rng_device`], and the tests run the entropy service over each (§18).
+/// twin is [`crate::pci::find_rng_device`], and the tests run the entropy service over each (§18
+/// (the PCIe transport: one driver, two buses, the seam in the kernel)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // entropy_service is the caller, and the m56 tests drive it
 pub(crate) fn find_entropy_device() -> Option<VirtioMmioDevice> {
     find_by_device_id(DEVICE_ID_ENTROPY)
@@ -395,8 +396,8 @@ impl Transport {
     }
 
     /// Is queue `q`'s doorbell a real address yet? On PCI it is zero until
-    /// [`Transport::setup_queue`], and ringing it would write through `phys_to_virt(0)`. Always true
-    /// on mmio, whose one notify register takes the queue number. [`notify`] checks it.
+    /// [`Transport::setup_queue`], and ringing it would write through `phys_to_virt(0)`. Always
+    /// true on mmio, whose one notify register takes the queue number. [`notify`] checks it.
     fn is_doorbell_ready(&self, q: u16) -> bool {
         match self {
             Transport::Mmio { .. } => true,

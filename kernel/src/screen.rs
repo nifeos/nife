@@ -1,6 +1,7 @@
 //! A screen on aarch64 and riscv64 under QEMU, whose firmware never lights one: a
 //! [`ramfb`](crate::drivers::ramfb) over static pixels, handed to `console::attach_screen` as the
-//! same [`Framebuffer`] `x86_64` produces. A real board's display is milestone 157.
+//! same [`Framebuffer`] `x86_64` produces. A real board's display is milestone 157 (real display
+//! output on the board).
 //!
 //! *Module name provisional (AGENTS.md: an architect names modules).*
 //!
@@ -68,9 +69,10 @@ static SCRATCH: SyncUnsafeCell<Scratch> = SyncUnsafeCell::new(Scratch([0; SCRATC
 /// [`ramfb::Error`].
 pub(crate) type Why = &'static str;
 
-/// Bring up a `ramfb` and give it to the console. Returns the framebuffer and its character
-/// grid, for the caller's boot line. Must run before `arch::mmu::init`: only the coarse boot map reaches `fw_cfg`. The pixels are
-/// `.bss`, mapped at the same address by both maps, so the console keeps its pointer.
+/// Bring up a `ramfb` and give it to the console. Returns the framebuffer and its character grid,
+/// for the caller's boot line. Must run before `arch::mmu::init`: only the coarse boot map reaches
+/// `fw_cfg`. The pixels are `.bss`, mapped at the same address by both maps, so the console keeps
+/// its pointer.
 ///
 /// # Errors
 ///
