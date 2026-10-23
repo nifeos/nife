@@ -1140,8 +1140,7 @@ mod tests {
     /// Asserts the whole chain, since "an NVMe was found" passes on a flat machine too: the survey
     /// recorded more than one bus, a bridge states a subtree, and the controller is on a bus a
     /// bridge named. It does not bring the controller up: under PVH nothing programs the bridge's
-    /// memory window (notes/pcie.md, "More than one bus", `BUGS`; and
-    /// `design/roadmap/proposals/a-bridge-window-the-kernel-programs-itself.md`).
+    /// memory window (notes/pcie.md, "More than one bus", `BUGS`).
     #[cfg(target_arch = "x86_64")]
     #[test_case]
     fn a_controller_behind_a_bridge_is_found_on_the_bus_behind_it() {

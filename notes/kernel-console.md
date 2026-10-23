@@ -36,12 +36,12 @@ the port goes through no `phys_to_virt`. The machine description prints the comp
 A board whose real UART is elsewhere prints nothing at all, and a board whose tree disagrees with
 the constant shows the disagreement on that line.
 
-The shape comes from the tree, though the address does not. On RISC-V, `configure_from_dtb` reads the
-serial node's `reg-shift`, `reg-io-width`, `clock-frequency` and `compatible`. The JH7110's UART0 sits
-at QEMU's address with different silicon behind it: a DesignWare 8250 with registers four bytes
-apart, 32-bit accesses, a 24 MHz clock and the DW busy quirk. It runs immediately after `init` and
-before the first `println!`. On the board a byte read of LSR at the unshifted offset 5 lands in the
-IER word, and the transmit poll spins forever. Between the two calls the console is correct for
+The shape comes from the tree, though the address does not. On RISC-V, `configure_from_dtb` reads
+the serial node's `reg-shift`, `reg-io-width`, `clock-frequency` and `compatible`. The JH7110's
+UART0 sits at QEMU's address with different silicon behind it: a DesignWare 8250 with registers four
+bytes apart, 32-bit accesses, a 24 MHz clock and the DW busy quirk. It runs immediately after `init`
+and before the first `println!`. On the board a byte read of LSR at the unshifted offset 5 lands in
+the IER word, and the transmit poll spins forever. Between the two calls the console is correct for
 QEMU and wrong for the board, and nothing prints. Mainline JH7110 trees give the clock as a phandle
 rather than a frequency, which yields divisor 0. The kernel then leaves the divisor and line
 controls as U-Boot programmed them, on a board whose firmware just printed a prompt at 115200.
@@ -62,16 +62,16 @@ the two, which is itself a reading.
 
 A panic takes the screen back (`reclaim_screen_for_panic`). On a machine with no serial port the
 screen is the only place a panic can be read. A panic halts only its own core, so a flush already
-running on another core, or one a live shell asks for afterwards, can paint over the panic text. That
-is a garbled panic where there would otherwise be none, and the UART copy is unaffected. Stopping the
-other cores is the panic path's job, and it does not do it yet.
+running on another core, or one a live shell asks for afterwards, can paint over the panic text.
+That is a garbled panic where there would otherwise be none, and the UART copy is unaffected.
+Stopping the other cores is the panic path's job, and it does not do it yet.
 
 ## The screen hold
 
 `cargo xtask uefi-boot` checks that a machine with no serial port shows its boot on its screen by
 photographing the framebuffer through QEMU's monitor. Each line of the tour is on the framebuffer
-only until the next page scrolls it away and then `yield_screen` clears it. Both close in guest time,
-so no host-side deadline widens them. Sampling a transient state is rung four of the ladder in
+only until the next page scrolls it away and then `yield_screen` clears it. Both close in guest
+time, so no host-side deadline widens them. Sampling a transient state is rung four of the ladder in
 `AGENTS.md`; being told when to look is rung one. §199 (the screen check asks instead of sampling)
 rules the handshake.
 
@@ -102,11 +102,11 @@ otherwise.
 Only `x86_64` arms the hold, in `arch::x86_64::machine::attach_screen`, because only its boot chain
 hands over a command line. The mechanism is arch-neutral, and both console UARTs carry the receive
 half it needs. aarch64 and riscv64 have no window to close yet: their only screen is
-`crate::screen`'s `ramfb`, whose pixels are the kernel's own `.bss`, and `user::boot_screen_terminal`
-refuses to hand kernel memory to a process (`screen::is_kernel_memory`). So `yield_screen` is never
-reached there and the tour stays on screen. A firmware aperture outside the kernel image would open
-the window; arming the hold there needs a reader for `/chosen/bootargs`, which the kernel does not
-parse (`kernel/build.rs`).
+`crate::screen`'s `ramfb`, whose pixels are the kernel's own `.bss`, and
+`user::boot_screen_terminal` refuses to hand kernel memory to a process
+(`screen::is_kernel_memory`). So `yield_screen` is never reached there and the tour stays on screen.
+A firmware aperture outside the kernel image would open the window; arming the hold there needs a
+reader for `/chosen/bootargs`, which the kernel does not parse (`kernel/build.rs`).
 
 ## The kernel's ring
 

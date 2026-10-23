@@ -16,8 +16,8 @@
 
 //! # BUGS
 //!
-//! - One board: it has run on radon (three boots), and everything else runs against the crate's
-//!   simulation (notes/designware-ethernet.md, `BUGS`).
+//! - One board: radon is the only silicon it has run on (notes/designware-ethernet.md, Results);
+//!   everything else runs against the crate's simulation.
 //! - Waiting for a link is a bounded spin at bring-up, up to [`LINK_WAIT_MS`], holding a core.
 //! - The DMA region is allocated once per boot and never returned.
 //! - A non-coherent verdict refuses the port, since this tree has no cache maintenance for this

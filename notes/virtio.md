@@ -134,11 +134,12 @@ it, so `notify` refuses a queue whose doorbell is not ready rather than write th
 
 `MAX_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a boot
 has ever wired. The test suite spawns a driver per gate, and tests share a transport where they can
-(the genuine and tampered package fetches share one `net_stack`). Memory is not the binding limit;
-a net service hands its frames back (notes/frames.md). The fix is reuse on driver death, which needs
-a generational name so a stale `Object::Virtio` capability cannot resolve to a different device. That
+(the genuine and tampered package fetches share one `net_stack`). Memory is not the binding limit; a
+net service hands its frames back (notes/frames.md). The fix is reuse on driver death, which needs a
+generational name so a stale `Object::Virtio` capability cannot resolve to a different device. That
 changes what a capability means, a design fork under §16 (object revocation), and it meets
-`entropy_service::ensure`'s one-service-per-device rule. Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
+`entropy_service::ensure`'s one-service-per-device rule. Milestone 647 (a virtio slot should come
+back when its driver dies) proposes it.
 
 Two test hooks go around the shadow ring to reach the hardware. `provoke_iommu_escape` points queue
 0's available ring at a frame the IOMMU domain does not include and kicks; the device's first read

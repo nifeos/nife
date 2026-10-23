@@ -19,7 +19,6 @@
 //!     Err(why) => println!("  screen      : none ({why})"),
 //! }
 //! ```
-
 //!
 //! `cargo xtask test --arch aarch64` takes a `screendump` and decodes it back into text with
 //! `serial_console::screen`, proving the glyphs and not merely the boot line.

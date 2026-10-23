@@ -73,11 +73,12 @@ echo 'sendkey e' | nc -U /tmp/mon.sock
 
 ## The keystroke stall: the PLIC enable is written first
 
-`plic::enable`, which is also the driver's ACK, writes the enable bit before the priority. QEMU's
-PLIC re-evaluates delivery on a priority, threshold or completion write and on a rising line, never
-on an enable write. Written the other way round, an xHCI event raised while the driver is draining
-is stranded until another device's line rises, a UART byte for instance. On riscv64 that stalls the
-echo of `echo hello` mid-line about one boot in thirty, until a typed byte releases the held keys.
+`plic::enable`, which is the driver's ACK when no claim is outstanding, writes the enable bit before
+the priority. QEMU's PLIC re-evaluates delivery on a priority, threshold or completion write and on
+a rising line, never on an enable write. Written the other way round, an xHCI event raised while the
+driver is draining is stranded until another device's line rises, a UART byte for instance. On
+riscv64 that stalls the echo of `echo hello` mid-line about one boot in thirty, until a typed byte
+releases the held keys.
 
 It looks like a lost wakeup of `line_editor` across harts, and it is not one. A thread dump at the
 stall shows nobody sending to `line_editor`; the driver sits in `Irq::WAIT`, and its PLIC source is

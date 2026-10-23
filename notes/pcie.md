@@ -138,14 +138,14 @@ BAR that runs into RAM on a span it has sized. Counting functions is not bringin
 `count_block_devices` and the NVMe count read config space only, since bring-up would disturb
 whichever driver owns the function.
 
-How a function interrupts is the machine's answer. `arch::irq::alloc_msi_vector` is asked first. On `x86_64`
-it reserves a local APIC vector and the kernel programs the function's MSI-X table. A legacy pin
-on `q35` goes through a PIRQ router only ACPI's `_PRT` describes, and `_PRT` is AML. A hardcoded
-swizzle that matches `q35` may not match a real board. MSI-X has no board-specific routing: the
-device is handed an address and a value, and only the interrupt controller's own message format
-must be right. Both `virt` boards answer `None` and use the INTx swizzle onto the PLIC (sources
-32..35) on riscv and GIC SPIs (INTIDs 35..38) on aarch64; host-run witnesses hold it against each
-machine's tree.
+How a function interrupts is the machine's answer. `arch::irq::alloc_msi_vector` is asked first. On
+`x86_64` it reserves a local APIC vector and the kernel programs the function's MSI-X table. A
+legacy pin on `q35` goes through a PIRQ router only ACPI's `_PRT` describes, and `_PRT` is AML. A
+hardcoded swizzle that matches `q35` may not match a real board. MSI-X has no board-specific
+routing: the device is handed an address and a value, and only the interrupt controller's own
+message format must be right. Both `virt` boards answer `None` and use the INTx swizzle onto the
+PLIC (sources 32..35) on riscv and GIC SPIs (INTIDs 35..38) on aarch64; host-run witnesses hold it
+against each machine's tree.
 
 A machine that answered `Some` has no INTx route, so a function with no MSI-X is refused rather
 than swizzled. There `PCI_IRQ_BASE` is 0, and the swizzle would resolve to the PIT's line and arm a

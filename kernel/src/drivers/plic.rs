@@ -3,8 +3,8 @@
 //! The PLIC routes a device's wire to a context (a hart at a privilege level) as a supervisor
 //! external interrupt. Between a claim and its completion the source's gateway forwards nothing
 //! more, the only mask the interrupt path uses. A completion counts only on a context that enables
-//! the source, so the interrupt path never disables one. See
-//! notes/interrupts/controller-drivers.md.
+//! the source, so the interrupt path never disables one. Only the enable words take a lock
+//! ([`ENABLE_BITS`]). See notes/interrupts/controller-drivers.md.
 //!
 
 //! The register model, all 32-bit MMIO at fixed offsets from the base (from the device tree):
@@ -16,13 +16,6 @@
 //!   base + 0x20_0000 + 0x1000*context per-context priority threshold (interrupt if prio > threshold)
 //!   base + 0x20_0004 + 0x1000*context per-context claim (read) / complete (write)
 //! ```
-//!
-
-//! A context's number is the board's, from the device tree via `arch::irq`; this driver is handed
-//! one and never derives it. It reaches into no kernel globals (§4 (kernel shape: monolithic,
-//! deferred, with two cheap rules)): [`init`] is handed the base and the context. Only the enable
-//! words, a read-modify-write shared by 32 sources, take a lock ([`ENABLE_BITS`]); claim/complete
-//! is the lock-free hot path.
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 

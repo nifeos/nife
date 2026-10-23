@@ -88,9 +88,10 @@ PL011 needs them, and the Raspberry Pi will.
 
 ## The NS16550 driver
 
-RISC-V's `virt` has an NS16550, a 16550-compatible 8250, at `0x1000_0000`, and `kernel/src/drivers/ns16550.rs`
-drives it. Same idea as the PL011, different register block: eight registers, with the
-transmit-ready flag in the Line Status Register (LSR) instead of a flag register.
+RISC-V's `virt` has an NS16550, a 16550-compatible 8250, at `0x1000_0000`, and
+`kernel/src/drivers/ns16550.rs` drives it. Same idea as the PL011, different register block: eight
+registers, with the transmit-ready flag in the Line Status Register (LSR) instead of a flag
+register.
 
 The register block's shape is the board's, not the architecture's, so the driver carries it as data
 (`Shape`). QEMU wires byte-wide registers at consecutive addresses. The JH7110's UART0 is a Synopsys
