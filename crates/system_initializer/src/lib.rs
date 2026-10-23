@@ -21,6 +21,8 @@
 //! - A kernel that grants no slot 28 leaves every scratch window mapped.
 //! - A boot with a NIC waits for DHCP before the prompt, with no console to say why.
 //! - Exhausting the capability table inside `build_child` halts in silence.
+//! - A screen-narrowed child is outside `deaths`'s domain, so a concurrent `ps` does not show it.
+//! - Native slot 1 is the source or the `--mem` budget, safe only while no manifest has both.
 //!
 //! Name: ratified 2026-08-04 (calef). `BootEndowment` ratified the same day.
 

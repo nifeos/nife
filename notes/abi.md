@@ -179,9 +179,9 @@ five-word message to its supervision endpoint, taken by a plain `RECEIVE`:
 ```
 
 `RECEIVE` returns `w0` in the syscall's result register and `w1..w4` in the next four argument
-registers (`x1..x4` on aarch64, `a1..a4` on riscv). Ordinary three-word IPC leaves `w3` and `w4`
-zero, so a supervisor is the only receiver that reads the top two, and no other program's `RECEIVE`
-changes. The tid is trustworthy because the kernel is the only sender on this path. A sixth word,
+registers (`x1..x4` on aarch64, `a1..a4` on riscv). On an ordinary message `w3` carries the badge of
+the sender's capability (milestone 613 (a system log service)), and `w4` is written only by the
+kernel, so a death is told apart by its first word. The tid is trustworthy because the kernel is the only sender on this path. A sixth word,
 the child's label, rides in argument register 5; notes/supervision.md has it (milestone 105 (the
 two forks)).
 

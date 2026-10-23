@@ -24,7 +24,9 @@ pub const SYS_YIELD: u64 = 1;
 /// use abi::{SYS_EXIT, SYS_INVOKE, SYS_YIELD, rendezvous};
 ///
 /// assert_eq!([SYS_EXIT, SYS_YIELD, SYS_INVOKE], [0, 1, 2]);
-/// // A new operation is a method number; a new syscall is a design fork (§10).
+///
+/// // Sending on a rendezvous is a method number, not a syscall number. Adding an operation to the
+/// // system is a new method here; adding a *syscall* is a design fork (§10).
 /// assert_eq!(rendezvous::SEND, 0);
 /// ```
 pub const SYS_INVOKE: u64 = 2;
@@ -247,9 +249,19 @@ pub mod uart;
 /// # Examples
 /// ```
 /// use abi::Error;
+///
+/// // "There is nothing there" and "there was something there and it is gone" are different facts,
+/// // and a writer branches on them in **opposite** directions: a program never granted a stdout
+/// // keeps running and prints into the void; a program whose reader has exited must end. Both used
+/// // to arrive as NoSuchSlot, so the only available behaviour was the wrong one for a pipeline.
 /// assert_ne!(Error::NoSuchSlot, Error::Gone);
 /// assert_eq!(Error::NoSuchSlot as i64, -1);
 /// assert_eq!(Error::Gone as i64, -11);
+///
+/// // And the one that is deliberately NOT split: "gone" and "not yours" are one error, because
+/// // telling them apart would let a supervisor probe the tid space of children it has no
+/// // relationship with. `Gone` can be told apart for the opposite reason: the capability is
+/// // already in the caller's own capability table, so its death reveals nothing new.
 /// assert_eq!(Error::NotSupervised as i64, -10);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -336,10 +348,17 @@ impl Error {
     /// # Examples
     /// ```
     /// use abi::Error;
+    ///
+    /// // A successful `invoke` returning a handle, a count, or nothing.
     /// assert_eq!(Error::from_ret(0), None);
     /// assert_eq!(Error::from_ret(4096), None);
+    ///
+    /// // A refusal, decoded on the userspace side of the boundary.
     /// assert_eq!(Error::from_ret(-1), Some(Error::NoSuchSlot));
     /// assert_eq!(Error::from_ret(-4), Some(Error::BadPointer));
+    ///
+    /// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
+    /// // wire contract layered on top (`entropy_contract`, `credential_contract`) tell "no capability" from "no".
     /// assert_eq!(Error::from_ret(-99), None);
     /// ```
     pub fn from_ret(v: i64) -> Option<Error> {
