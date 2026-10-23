@@ -206,6 +206,13 @@ and the lost work matched the stranded placements exactly.
 The general lesson: a decision made under a lock and re-derived outside it is two decisions. The
 trace-ring diagnosis, the fix, why a strand usually goes unnoticed and the proof are in
 [scheduler/missed-reschedule-poke.md](scheduler/missed-reschedule-poke.md).
+
+## The switch and the rendezvous paths
+
+`schedule`, its locked pick and the reaper's far side are in
+[scheduler/switch.md](scheduler/switch.md). Send, receive, call and reply, and how a caller its
+server can no longer answer is freed, are in [scheduler/rendezvous.md](scheduler/rendezvous.md).
+
 ## Tests that guard this
 
 - `smp::a_batch_of_cpu_bound_work_reaches_every_core`, `smp::work_can_be_placed_on_every_core`:
