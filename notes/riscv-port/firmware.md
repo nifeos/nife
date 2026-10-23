@@ -86,13 +86,15 @@ PMIC's power cut took the undrained tail of these lines. The refusal prints afte
 firmware's own `sbiret.error`, so a firmware that says no is read off a console rather than
 assumed. The board exit drains its marker for the same reason.
 
-The callers are the rebooting soak (`soak::watch`, behind `--features reboot_soak_test`) and the
-reboot object's method, `kernel::reboot::restart`, in every build. Under QEMU `virt` OpenSBI
-implements type 1 through the `sifive_test` device, and `script/soak-test --reboot --arch riscv64`
-proves it. radon's OpenSBI accepts type 1, and then its reset fails in the PMIC write ([milestone
-249 (the boot lottery is sampled by a person walking to the
+The callers are the rebooting soak (`soak::watch`, behind `--features reboot_soak_test`, reached
+only after the escape in `console::is_byte_waiting` has been checked twice) and the reboot object's
+method, `kernel::reboot::restart`, in every build. Under QEMU `virt` OpenSBI implements type 1
+through the `sifive_test` device, and `script/soak-test --reboot --arch riscv64` proves it. radon's
+OpenSBI accepts type 1, and then its reset fails in the PMIC write ([milestone 249 (the boot lottery
+is sampled by a person walking to the
 board)](../../design/roadmap/0249-the-boot-lottery-is-sampled-by-a-person-walking-to-the-board.md);
-[notes/soak.md](../soak.md), "Verifying the reset before anything is left unattended").
+[notes/soak/rebooting-soak.md](../soak/rebooting-soak.md), "Verifying the reset before anything is
+left unattended").
 
 ## BUGS
 

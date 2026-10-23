@@ -65,7 +65,8 @@ pub(crate) fn this_s_context() -> usize {
 }
 
 /// Each source's target PLIC context, or [`CTX_UNASSIGNED`] until the first `enable` chooses one.
-/// Assigned once and stable, so a claim and its completion land on one context.
+/// Assigned once and stable, so a claim and its completion land on one context. Indexed by source
+/// number; QEMU `virt`'s are small (the UART is 10, virtio-mmio 1..8).
 const CTX_UNASSIGNED: u16 = u16::MAX;
 const MAX_SOURCES: usize = 128;
 static SOURCE_CTX: [AtomicU16; MAX_SOURCES] =

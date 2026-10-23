@@ -13,12 +13,13 @@ entry would select vectored mode without a word of warning, so trap.s aligns `tr
 test asserts both the base and the mode. aarch64's twin test checks `VBAR_EL1`'s 2,048-byte
 alignment, the same class of rule at another scale.
 
-`TrapFrame` is 288 bytes, and trap.s spells that number by hand in four places. A `const` assertion
-holds the Rust side to it. The frame lives at `stack_top - 288` on first entry and on every trap
-after it, as on aarch64, so `user_pc` can read where a wedged thread is for the watchdog dump. A
-wrong offset in trap.s's save and restore scrambles a register while still returning to the right
-address. It corrupts a caller's state and blames innocent code thousands of instructions later,
-which `registers_survive_a_trap` exists to catch.
+`TrapFrame` is 288 bytes, spelled by hand in trap.s (`addi sp, sp, -288` in `trap_entry`, `addi t1,
+sp, 288` in `trap_return`) and in context.s (`user_entry_trampoline`'s frame reservation). A `const`
+assertion holds the Rust side to it. The frame lives at `stack_top - 288` on first entry and on
+every trap after it, as on aarch64, so `user_pc` can read where a wedged thread is for the watchdog
+dump. A wrong offset in trap.s's save and restore scrambles a register while still returning to the
+right address. It corrupts a caller's state and blames innocent code thousands of instructions
+later, which `registers_survive_a_trap` exists to catch.
 
 The portable syscall dispatcher names no register. It reads `a7` and `a0`..`a5` through
 `TrapFrame::{syscall_nr, arg, set_arg}`, where aarch64 maps `x8` and `x0`..`x5` (DECISIONS §17 (the

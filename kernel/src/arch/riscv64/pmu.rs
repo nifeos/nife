@@ -173,7 +173,8 @@ fn stop_counter(idx: usize) {
     let _ = sbi_call(FID_COUNTER_STOP, [idx, 1, 0, 0, 0]);
 }
 
-/// The cycle count on the boot hart, or `None` when no hardware cycle counter was found.
+/// The cycle count on this hart (meaningful only on the boot hart), or `None` when no hardware
+/// cycle counter was found.
 ///
 /// One CSR read, no `ecall`. Meaningful only as a difference: the cycles may vary in frequency and
 /// stop when the clock halts, so a count is not a duration.

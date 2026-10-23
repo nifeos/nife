@@ -31,8 +31,8 @@ pub struct TrapFrame {
     pub sstatus: u64,
 }
 
-// trap.s spells 288 by hand: both `addi sp, sp, -288` in `trap_entry`, `addi sp, sp, 288` in
-// `trap_return`, and the frame reservation in `user_entry_trampoline`.
+// 288 is spelled by hand in trap.s (`addi sp, sp, -288` in `trap_entry`, `addi t1, sp, 288` in
+// `trap_return`) and in context.s (`user_entry_trampoline`'s frame reservation).
 const _: () = assert!(size_of::<TrapFrame>() == 288);
 
 impl TrapFrame {
@@ -177,8 +177,8 @@ pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
 /// Interrupts taken with no source enabled or routed to explain them.
 pub(crate) static SPURIOUS_IRQS: AtomicUsize = AtomicUsize::new(0);
 
-/// System calls served, in test builds only: every syscall on every core writes this one line
-/// (notes/job-mix/null-syscall-under-load.md).
+/// System calls served, in test builds only, for `system_tests/src/user/el0_boundary_tests.rs`:
+/// every syscall on every core writes this one line (notes/job-mix/null-syscall-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -325,7 +325,7 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
     let from_user = frame.sstatus & SPP == 0;
     let top = crate::interrupt_stack::top_for_trap(from_user);
     let deferred_switch = if top == 0 {
-        // The common case calls directly: the trampoline costs every `ecall` instructions.
+        // The common case calls directly: the trampoline would cost every `ecall` instructions.
         riscv_trap_body(frame)
     } else {
         // SAFETY: `top` is this hart's own interrupt-stack top, from the module that owns the
@@ -345,7 +345,8 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
 ///
 /// Returns whether the caller owes a deferred `schedule()`: true for an interrupt, else false.
 ///
-/// Context: interrupt context, with interrupts masked; it may not call `schedule()`.
+/// Context: interrupt context, with interrupts masked; it may not call `schedule()` when on the
+/// interrupt stack (a trap from S-mode).
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[unsafe(link_section = ".text.hot.riscv_trap_body")]
@@ -379,7 +380,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
                     }
                 }
             }
-            // A reschedule IPI: clear `sip.SSIP` before draining, or it re-fires.
+            // A reschedule IPI: clear `sip.SSIP`, or it re-fires as soon as interrupts reopen.
             S_SOFTWARE => {
                 clear_software_interrupt();
                 // One IPI carries both (DECISIONS §28 (SMP placement)): a handed thread and a steal

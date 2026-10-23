@@ -340,7 +340,9 @@ const SATP_ASID_WIDTH: u32 = 16;
 /// needs to be at least [`ASID_BITS_NEEDED`].
 ///
 /// `satp.ASID` is WARL and may be zero bits wide. The probe writes ones into the live `satp`'s ASID
-/// field, reads back what stuck, and restores `satp` exactly; only the tag moves. `mod proofs`
+/// field, reads back what stuck, and restores `satp` exactly; only the tag moves. Code the compiler
+/// places between the writes runs on the same root under another tag, and none of the five
+/// wrappers is `nomem`, so no memory access moves past the closing `sfence.vma`. `mod proofs`
 /// proves both promises. See notes/riscv-tlb-shootdown.md and notes/riscv-port/memory.md.
 fn probe_asid_bits() -> usize {
     let original = read_satp();
@@ -910,6 +912,8 @@ fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTa
 }
 
 /// Map one page into the kernel's own (high-half) address space.
+///
+/// Context: takes [`KERNEL_MMU`].
 pub(crate) fn map_page(va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
     let _guard = KERNEL_MMU.lock(); // exclusive: two harts must not mutate the tables at once
     kernel_mapper().map(va, pa, flags)
@@ -947,6 +951,8 @@ pub(crate) fn is_enabled() -> bool {
 }
 
 /// Translate a kernel virtual address through the live kernel tables.
+///
+/// Context: takes [`KERNEL_MMU`].
 pub fn translate(va: u64) -> Option<(u64, Flags)> {
     let _guard = KERNEL_MMU.lock();
     kernel_mapper().translate(va)

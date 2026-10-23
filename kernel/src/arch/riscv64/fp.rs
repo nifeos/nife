@@ -7,7 +7,7 @@
 //!
 //! # BUGS
 //!
-//! A hart without D, or with F only, is not handled correctly (notes/riscv-port/traps.md, BUGS).
+//! F without D is not handled; a hart without D is untested (notes/riscv-port/traps.md, BUGS).
 
 use super::instructions;
 

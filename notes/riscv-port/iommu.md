@@ -88,7 +88,7 @@ entries. It would matter once invalidation narrows to one PSCID.
   measurement. It says MSI address translation is not performed and the write is translated as an
   ordinary memory access, which would keep an MSI-shaped write inside the `iosatp` domain. No boot
   here has tested it, and nothing forges an MSI.
-- No board ships the ratified RISC-V IOMMU (milestone 143 (silicon IOMMU), silicon IOMMU), and the
+- No board ships the ratified RISC-V IOMMU (milestone 143 (silicon IOMMU)), and the
   JH7110 has none. So the base 32-byte context format, for silicon without MSI support, has run zero
   times. This architecture is confined in the emulated case only, with no second witness, where
   x86_64 has xenon.
