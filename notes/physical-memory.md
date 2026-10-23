@@ -110,12 +110,13 @@ on the other two architectures, leaves the span unchanged.
 
 ## The seam with the machine description
 
-`memory::init` is a front end per description: a device tree on aarch64 and riscv64, PVH and ACPI
-on `x86_64` (`arch::discovery::init`). Both end in `bring_up_page_frames(ram, forbidden)`, which
-does not care where the description came from. What crosses the seam is RAM and reservations. The
-device windows the device-tree front end also discovers (the interrupt controller, the RTC, the
-UART's interrupt line, the PCIe ECAM range) are stored in `memory`'s statics. They stay `None` on a
-machine with no tree, and `x86_64` fills them through `record_*` calls instead (see
+`memory::init` is a front end per description: a device tree on aarch64 and riscv64, PVH and ACPI on
+`x86_64` (`arch::discovery::init`). Both end in `bring_up_page_frames(ram, forbidden)`, which does
+not care where the description came from. What crosses the seam is RAM and reservations. The device
+windows the device-tree front end also discovers (the interrupt controller, the RTC, the UART's
+interrupt line, the PCIe ECAM range) are stored in `memory`'s statics. They stay `None` on a machine
+with no tree. `x86_64` records its own through `record_*` calls: the UART's interrupt line, the PCIe
+windows, each VT-d or AMD-Vi unit and the framebuffer; it records no RTC and no GIC or PLIC (see
 [x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)). The `record_*` calls for facts the front end
 also reserves (the initial ramdisk, the boot file) store and do not reserve. The caller is already
 building the forbidden list, and reserving in both places would double-reserve or let each side
@@ -160,13 +161,13 @@ spinlock would spin forever for a lock only the code it interrupted can release.
 that goes with it: interrupt handlers do not allocate. They record what happened and defer the
 work.
 
----
-
-*Add to this file as new memory concepts come up.*
-
 ## BUGS
 
 - The seam's type is still `device_tree_blob::Region`, a plain `{ start, size }` pair, so a machine
   with no device tree names a device-tree type. Moving it belongs with widening the seam.
 - At most `MAX_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three. A
   caller with more must decide what to drop.
+
+---
+
+*Add to this file as new memory concepts come up.*

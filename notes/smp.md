@@ -78,8 +78,8 @@ aarch64, a hart id on riscv64, a local APIC id on `x86_64`. Each described core 
 slot its own hardware id names**. Everywhere the kernel indexes hardware it uses the logical id.
 `cpu::PERCPU`, the secondary stacks and the RISC-V trap stashes are arrays indexed by it. The GICv2
 targets an SPI by CPU-interface number, and `send_sgi` uses the same number. The PLIC's S-mode
-context table is indexed by hart id, and the SBI IPI mask is a bitmap of hart ids. Seating by id makes
-logical id equal hardware id by construction, so none of those has to translate.
+context table is indexed by hart id, and the SBI IPI mask is a bitmap of hart ids. Seating by id
+makes logical id equal hardware id by construction, so none of those has to translate.
 
 Two consequences follow.
 
@@ -122,15 +122,15 @@ boot is host-tested.
 ## How the SMP tests wait
 
 **Bounded by the clock, at 60 seconds.** A yield count is not a duration: on a CI runner emulating
-four cores under TCG, this core can burn millions of cheap yields before a secondary is scheduled
-at all. The bound is 60 seconds rather than 10 because on a shared host the guest's vCPU threads
-are starved of host CPU, so guest wall clock advances while the secondaries do not run. Ten seconds
-failed on unmodified `main` about one run in six under synthetic load, on a different RISC-V model
-each time, which is a statement about the host rather than the ISA. Widening is honest here because
-the condition waited on is exactly the property under test, not a proxy for it. The suite's own
-watchdog (`DEFAULT_BUDGET_SECS`, 90 s) still catches a dead secondary; staying under it means the
-failure names the subsystem rather than reading as a generic livelock. See
-[load-sensitive-assertions.md](load-sensitive-assertions.md).
+four cores under TCG, this core can burn millions of cheap yields before a secondary is scheduled at
+all. The bound is 60 seconds rather than 10 because on a shared host the guest's vCPU threads are
+starved of host CPU, so guest wall clock advances while the secondaries do not run. Ten seconds
+failed on unmodified `main` about one run in six under synthetic load. On 2026-08-02 it failed three
+pull requests in a row, each on a different RISC-V CPU model, which is a statement about the host
+rather than the ISA. Widening is honest here because the condition waited on is exactly the property
+under test, not a proxy for it. The suite's own watchdog (`DEFAULT_BUDGET_SECS`, 90 s) still catches
+a dead secondary; staying under it means the failure names the subsystem rather than reading as a
+generic livelock. See [load-sensitive-assertions.md](load-sensitive-assertions.md).
 
 The probes are placed with `spawn_on`, not `spawn`. `spawn` places by DECISIONS §28's two
 random choices, deliberately not on the spawner's core, so each secondary's probe would land on a
@@ -173,11 +173,13 @@ reading it takes two steps (the per-CPU register into a general register, then t
 between them that moves the thread leaves the load reading the first core's `current`, which by then
 names another thread. `sched::adopt_address_space` asks from the kernel thread every `user::run`
 spawn starts on, so a split read there gives the new space to another thread. Three choices in the
-test are measured. Staggered lives keep cores draining and stealing through every wave. The clock
-is read once per 256 reads, because TCG takes an interrupt only between translation blocks. And
-there are 24 waves, because the two-core `x86_64` leg moved a worker only four or five times per
-run at fewer.
-With all three, every run on every ISA failed against a split read.
+test are measured. An idle core steals only from a backlog, so the workers' lives are staggered to
+keep cores draining, and stealing, through every wave; six even waves moved a worker about six
+times per run. The clock is read once per 256 reads, because TCG takes an interrupt only between
+translation blocks, and a read on every pass put most interrupts outside the name read. And there
+are 24 waves, because the `x86_64` leg boots two cores and moves a worker four or five times per
+run at that count. With all three, every run on every ISA failed against a split read (nine of nine,
+2026-10-14 UTC).
 
 ## BUGS
 

@@ -283,7 +283,8 @@ fn bring_up_machine(boot_info_pointer: usize) {
 
     // The interrupt contexts and the counter's rate, on the two ports with no `CNTFRQ_EL0`, from
     // the same window: both before `pmu::init` times itself and `interrupts_init` arms a deadline.
-    // On `x86_64` the rate is measured against the PIT through the local APIC, so contexts first.
+    // On riscv64 the rate is a `/cpus` property `timer::init_frequency` reads. On `x86_64` the TSC
+    // and the local APIC's own counter are each measured against the PIT, so the APIC comes first.
     #[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
     {
         arch::irq::init_contexts(boot_info_pointer);
@@ -308,12 +309,14 @@ fn bring_up_machine(boot_info_pointer: usize) {
     }
 
     // The SMMUv3, if present, after `mmu::init` mapped its block: default-deny, so every PCIe
-    // stream aborts until `virtio::register` confines its device. See notes/iommu.md.
+    // stream aborts until `virtio::register` confines its device. The CPU's own ECAM and BAR reads
+    // are not DMA, so PCI enumeration below is unaffected. See notes/iommu.md.
     #[cfg(not(target_arch = "x86_64"))]
     if let Some((smmu_base, _)) = memory::smmu_region() {
         arch::iommu::init(smmu_base);
     }
-    // `x86_64`'s, at the same point: every VT-d or AMD-Vi unit the tables name.
+    // `x86_64`'s, at the same point: every VT-d or AMD-Vi unit the tables name, and a machine
+    // with neither DMAR nor IVRS says so loudly.
     #[cfg(target_arch = "x86_64")]
     arch::discovery::bring_up_iommus();
     // The RISC-V IOMMU, a PCI function, here for the SMMUv3's reason: before any path confines a

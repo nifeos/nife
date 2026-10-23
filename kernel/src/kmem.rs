@@ -2,8 +2,9 @@
 //! kernel-owned object draws from (kernel endpoints, kernel thread stacks, kernel TCB pages).
 //!
 //! After the carve the kernel cannot spend beyond it, so the frame allocator's count does not move
-//! when kernel threads come and go. Dead object pages go on a fixed free-stack and are reused page
-//! for page: a budget with reuse, not an allocator. See notes/kernel-budget.md.
+//! when kernel threads come and go, and a steady-state test asserts exactly zero. Dead object pages
+//! go on a fixed free-stack and are reused page for page: a budget with reuse, not an allocator.
+//! See notes/kernel-budget.md.
 
 use page_frames::FRAME_SIZE;
 
@@ -11,8 +12,8 @@ use crate::sync::{IrqSafeMutex, rank};
 
 /// The carve: 2048 pages (8 MiB). A thread costs 7 pages here (six of stack, see thread.rs
 /// `STACK_PAGES`, and one of TCB), so `sched::MAX_THREADS` (256) takes 1792, endpoints about 60,
-/// and 196 are slack. Exhaustion fails the spawn or create cleanly; raising this is the fix when the
-/// image legitimately needs more. See notes/kernel-budget.md.
+/// and 196 are slack. Exhaustion fails the spawn or create cleanly; raising this is the fix when
+/// the image legitimately needs more. See notes/kernel-budget.md.
 const KERNEL_OBJ_PAGES: u64 = 2048;
 
 struct Pool {
