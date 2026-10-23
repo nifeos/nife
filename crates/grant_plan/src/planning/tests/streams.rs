@@ -280,7 +280,7 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
         .expect("date declares a second stream");
     assert_eq!(slot, DIAGNOSTICS_SLOT);
     // Four is the most ordinary grants any manifest here asks for (output, clock, input,
-    // budget); fifteen keeps it well under `abi::fault::FAULT_EP_SLOT`, the table's last slot.
+    // budget). The upper bound of fifteen is arbitrary; `abi::fault::FAULT_EP_SLOT` is 63.
     assert!(slot > 4 && slot < 15, "slot {slot} is not out of the way");
     // And every other program declares none, so nothing else needs the slot at all.
     for p in [

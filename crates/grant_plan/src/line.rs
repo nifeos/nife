@@ -7,7 +7,14 @@
 //! target ([`Refusal::PatternInRedirect`]). `2>` names where a declared second stream goes (§67 (a
 //! program's second stream is a declaration)); planning refuses it for a program declaring none
 //! ([`Refusal::NoDiagnosticStream`]). See notes/pipes.md, and
-//! notes/grant-expression/grant-plan-crate.md for the rest, including its BUGS.
+//! notes/grant-expression/grant-plan-crate.md for the rest.
+
+//! # BUGS
+//!
+//! - A line has one diagnostic stream, so `2>` on a pipeline where only some stages declare one is
+//!   refused.
+//! - `<<` is refused as [`Refusal::NoRedirectTarget`], about a missing name, not a missing feature.
+//! - A quoted operator stays a byte, so `> "*.txt"` writes a file named `*.txt`.
 
 use crate::{Refusal, word};
 

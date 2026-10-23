@@ -6,9 +6,15 @@
 //! once its last holder has been reaped and its badge unbound, so no two live jobs share one
 //! (confinement claim 24). [`ReapsDue`] names the finished jobs whose reap is on its way. Pure
 //! logic, tested on the host; the progenitor (`crates/system_initializer`) owns the capabilities
-//! and the binding. See notes/bound-grants-in-the-progenitor.md, including its BUGS.
+//! and the binding. See notes/bound-grants-in-the-progenitor.md ("The window pool").
 //!
 //! Name: provisional (milestone 685's lane).
+
+//! # BUGS
+//!
+//! - A window whose `UNBIND` fails is never handed out again: it leaks for the life of the boot.
+//! - A window is only as free as the reaps that reach the progenitor: a job `job_undertaker` never
+//!   reaps, such as a screen-narrowed one behind a directory grant, keeps its window for the boot.
 
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.

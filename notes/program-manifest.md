@@ -181,32 +181,34 @@ a GPT full of counter-derived ids. §225 (`free` sees the machine and your share
 to every login by default. A session the owner withheld it from spawns programs that say they cannot
 see the machine, rather than show a machine of zero bytes.
 
-Four of these are the owner's alone:
+`reboot` and `sync` go to any spawn whose manifest declares them, and exactly one program does. The
+kernel grants the progenitor the one reboot object there is. It syncs nothing, and neither does the
+kernel (§251 (restarting the machine is a kernel object the progenitor hands out)), so `reboot` also
+declares `sync`. That is a capability badged and bound by `filesystem_contract::fs::BIND_SYNC`, which
+answers `fs::SYNC` and refuses every other verb. A sync stalls every client's queue, so it goes only
+to the program about to restart the machine. A boot with no writable filesystem leaves its slot
+empty. A boot whose file server could not make one refuses the spawn rather than start `reboot`
+unable to sync.
 
-- `reboot`. The kernel grants the progenitor the one reboot object there is, and exactly one program
-  declares it. It syncs nothing, and neither does the kernel (§251 (restarting the machine is a
-  kernel object the progenitor hands out)), so `reboot` also declares `sync`. That is a capability
-  badged and bound by `filesystem_contract::fs::BIND_SYNC`, which answers `fs::SYNC` and refuses
-  every other verb. A sync stalls every client's queue, so it goes only to the program about to
-  restart the machine. A boot with no writable filesystem leaves its slot empty. A boot whose file
-  server could not make one refuses the spawn rather than start `reboot` unable to sync.
+Three are the owner's alone, placed only for a request on the unbadged spawn endpoint, which the boot
+prompt alone holds (DECISIONS §221 (the boot prompt is the owner's console)):
+
 - `installer`. It is the progenitor's spawn endpoint, badged for one job and narrowed to `WRITE`. On
   it the progenitor serves the activation request for install, remove and rollback, and refuses
   every other request, `vouch` and a spawn included. So the holder can change what is installed and
-  cannot run anything. The progenitor places it only for a request that arrived on the unbadged spawn
-  endpoint, which the boot prompt alone holds (DECISIONS §221 (the boot prompt is the owner's
-  console)). Its answers come back on an endpoint of the holder's own, because the shell is reading
-  its result endpoint while the program runs.
+  cannot run anything. Its answers come back on an endpoint of the holder's own, because the shell is
+  reading its result endpoint while the program runs.
 - `indexes`. The progenitor installs from the index copy a package manager writes, trusting it
   because it sits in a directory only the owner's console grants (ruling I2 of 2026-10-06, calef: "I
   would think jig"). The `std` layout has one directory slot, so a line that designates a directory
   of its own is given that one instead.
-- `activation_directory` and `console_input`. The first is read only, knowledge rather than
-  authority, but what is installed is the owner's to show. The second is the console's input, which
-  only the owner's console hands out.
+- `activation_directory`. Read only, knowledge rather than authority, but what is installed is the
+  owner's to show.
 
-No image may declare any of the four (`grant_plan::image_can_carry`), so "only one program can
-restart the machine" is a fact about the table rather than about what somebody installed.
+`console_input`, the console's input, goes only to a program in the table. No image may declare
+`console_input`, the three above, `reboot` or `sync` (`grant_plan::image_can_carry`), so "only one
+program can restart the machine" is a fact about the table rather than about what somebody
+installed.
 
 ### The named slots
 
