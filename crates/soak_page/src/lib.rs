@@ -1,13 +1,13 @@
 //! **The one page the soak workload and the kernel share**, and the arithmetic they both do to it
 //! (milestone 219).
 //!
-//! The workload's progress is a fact only the workload knows, and the kernel reads it every
-//! heartbeat without asking, at the cost of one store per round trip. The kernel's `soak` module
-//! only reads and each worker writes only its own slots, so each `u64` has one writer, and an
-//! aligned `u64` store does not tear on any of the three architectures: no lock is needed. The
-//! wakes array (milestone 221) is kept apart from the round-trip total because the two are
-//! different quantities. The anomaly counters are the kernel's and stay in `sched`'s per-core trace
-//! counters, out of the subject's reach. See notes/soak.md, "The shape".
+//! The kernel reads the workload's progress every heartbeat without asking, for one store per
+//! round trip. The kernel's `soak` module only reads and each worker writes only its own slots, so
+//! each `u64` has one writer, and an aligned `u64` store does not tear on any of the three
+//! architectures: no lock is needed. The wakes array (milestone 221 (the soak never crosses cores,
+//! so build the hook that makes it)) stands apart from the round-trip total, a different quantity.
+//! The anomaly counters are the kernel's and stay in `sched`'s per-core trace counters, out of the
+//! subject's reach. See notes/soak.md, "The shape".
 
 //! # BUGS
 //!

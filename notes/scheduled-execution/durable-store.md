@@ -2,7 +2,8 @@
 
 An appendix to [notes/scheduled-execution.md](../scheduled-execution.md), which explains the
 scheduler and its grants. This file holds how boot-time re-derivation finds the schedules it must
-restore, which `crates/timetable_store` defines (milestone 152).
+restore, which `crates/timetable_store` defines (milestone 152 (durable delegation: authority that
+outlives the session that requested it)).
 
 ## One file per identity, and a manifest that lists them
 
