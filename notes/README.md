@@ -64,3 +64,5 @@ area directories), ruled B). Appendices under
 `bench-boots.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-bench-rest.
 
 `machine-statistics.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-bench-rest.
+
+`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
