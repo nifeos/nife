@@ -17,11 +17,11 @@ pass, because `fill` is untouched.
 **Re-cut 2026-10-04 (UTC) for milestone 754 (the capability table grows to 64 slots):** the free-slot word is a `u64` now, so the context moved; the defect is unchanged. Replayed under Kani the same day: the clean tree verifies, the patched tree fails.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index 6bf16a921..78c7b33ac 100644
+index d65bed7d..b63811ae 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -400,7 +400,6 @@ mod storage {
-         /// milestone 230 (`script/shell-check` is red on `main`) needed and could not get.
+@@ -342,7 +342,6 @@ mod storage {
+         /// what a boot holds, not what it reached.
          pub(super) fn empty(&mut self, slot: usize) -> Option<Cap<O>> {
              let cap = self.slots.get_mut(slot)?.take()?;
 -            self.free |= 1u64 << slot;

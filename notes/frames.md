@@ -213,6 +213,29 @@ Read a large per-test charge as "the first test to need that service", not as an
 ledger attributes by the running test. The tables, the fix in full, the itemized residue and the
 ledger's own BUGS are in [the page frame budget](frames/page-frame-budget.md).
 
+## Page tables a region paid for
+
+`PageFrame::MAP` and `MemoryRegion::MAP` build the intermediate page tables a mapping needs out of a
+region the caller names. A table that region paid for is recorded in the space's mapping log beside
+the leaves. `revoke_region` cuts each recorded table out of the walk that reaches it before the
+pages go back. The space keeps running and loses whatever hung beneath the table, as it already
+loses a leaf the region paid for. Without the record, `MemoryRegion::DESTROY` would hand back a page
+the space still links as a table, and its next owner would be writing that space's translations. A
+page table is the one page whose contents are authority.
+
+`system_tests/src/user/page_table_region_tests.rs` drives it. Each round maps once with tables from
+a region `R`, destroys `R` through the real `DESTROY` syscall, and looks at the space three ways.
+Does the first page still translate? Does the log still list it? Does a second map beside it, with
+tables from a second region `R2`, build fresh tables or descend into a page `R` gave back? The last
+names the use-after-free: a map that spends nothing from `R2` on tables wrote its leaf into a freed
+one. It is a kernel test because a program cannot see its own page tables. It reads the walk with
+`translate_at`, and the region's spend and the space's log, from inside the kernel.
+
+The rounds run once per path, because the two differ in what the leaf is. `PageFrame::MAP`'s leaf
+is another region's page and survives the destroy, so without the record the first page would still
+translate. `MemoryRegion::MAP`'s leaf is `R`'s own and is always unmapped, so only the second map can
+tell.
+
 ## BUGS
 
 Each entry is in full, with its measurements and history, in [frames/limitations.md](frames/limitations.md).

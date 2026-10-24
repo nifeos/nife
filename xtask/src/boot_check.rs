@@ -9,30 +9,24 @@ use crate::archive::{
 use crate::host::{flag_value, run};
 use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 
-/// **Boot every architecture's default kernel and fail if it does not climb the whole ladder.**
+/// **Boot every architecture's default kernel and fail if it does not climb the whole ladder**:
+/// the configuration `cargo xtask run` gives a person (nothing else in CI boots the default riscv64
+/// or `x86_64` kernel), through the machine description (`Stage::Machine`), every boot self-test's
+/// printed verdict, and up to the `swish` prompt. `--inject` rebuilds with `--features
+/// self_test_injection`, which fails one check, and requires red: a gate only seen green is untested.
 ///
-/// It asserts that the kernel boots on all three architectures in the configuration `cargo xtask
-/// run` gives a person (nothing else in CI boots the default riscv64 or `x86_64` kernel), that the
-/// machine description printed to its end (`Stage::Machine`), that every boot self-test passed, read
-/// from the verdict the kernel printed (a default boot never exits), and that the `swish` prompt,
-/// the ladder's top rung, came up on all three. **`--inject` asserts the opposite**: it rebuilds
-/// with `--features self_test_injection`, which makes one check fail, and requires red. A gate only
-/// ever seen green is a gate nobody has tested.
-///
-/// It attaches the archive (the progenitor loads the console, line discipline, input driver and
-/// `swish` from it) but no disk: nothing here types, so `<` and `>` are `cargo xtask
-/// swish-check`'s. The archive costs about six seconds of the gate, the boot itself nothing. On
-/// `x86_64` it boots PVH `-kernel`, not the UEFI image `swish-check` pays minutes for under OVMF:
-/// the prompt arrives on COM1 either way, and this is a pre-push gate.
+/// It attaches the archive but no disk: nothing here types, so `<` and `>` are `swish-check`'s. The
+/// archive costs about six seconds; `x86_64` boots PVH `-kernel`, not the UEFI image `swish-check`
+/// pays minutes for under OVMF, since the prompt reaches COM1 either way. See notes/boot-ladder.md.
 ///
 /// # BUGS
 ///
-/// - `quiet_after` is suppressed from `Stage::Tour` up, which on riscv64 is below the prompt, so a
-///   riscv64 boot that wedges after its tour is caught by the 180-second cap, not the quiet window.
-/// - The prompt rung is the shell's banner, not the `$ ` (`boot_ladder::PROMPT`'s `BUGS`): it
-///   proves `swish` started, not that anything could be typed; `swish-check` types.
-/// - An emulator has once been found orphaned after many `x86_64` boots, cause unknown. After a
-///   session, `pgrep -l qemu` and walk `ps -o pid,ppid` before killing anything.
+/// - `quiet_after` is off from `Stage::Tour` up, below the prompt on riscv64, so a wedge there
+///   waits for the 180-second cap.
+/// - The prompt rung is the shell's banner, not `$ ` (`boot_ladder::PROMPT`'s `BUGS`): it proves
+///   `swish` started, not that it takes input; `swish-check` types.
+/// - An emulator was once found orphaned after many `x86_64` boots, cause unknown; after a session,
+///   `pgrep -l qemu` and walk `ps -o pid,ppid` before killing anything.
 /// - A red verdict ends the watch early, so the report names the first failure, not the worst.
 /// - Name provisional; calef has not ruled on `boot-check`.
 pub(crate) fn boot_check() -> bool {
@@ -59,11 +53,9 @@ pub(crate) fn boot_check() -> bool {
     unsafe { std::env::remove_var("NIFE_ACCEL") };
 
     let mut ok = true;
-    // The archive packer per architecture, and where it writes. Both halves are needed: the
-    // packer has to run **before** the kernel build, because it writes the measurement manifest
-    // `kernel/build.rs` reads, at phase B.1 of milestone 22 (trusted init), and a kernel built
-    // against a stale one
-    // refuses to load the progenitor and never reaches a prompt.
+    // The archive packer per architecture, and where it writes. The packer runs before the kernel
+    // build: it writes the measurement manifest `kernel/build.rs` reads (milestone 22 (trusted
+    // init) phase B.1), and a kernel built against a stale one refuses to load the progenitor.
     for (i, (arch, target, runner, pack, archive)) in [
         (
             "aarch64",
@@ -208,18 +200,10 @@ fn start_boot_check_leg(
     // exists about.
     let mut cmd = Command::new(runner);
     cmd.arg(format!("target/{target}/{}/kernel", profile_dir()));
-    // **The archive, which is the one thing a prompt cannot be reached without**, and nothing else:
-    // no disk, because this gate types nothing and so needs no filesystem.
-    //
-    // The two removals are not tidiness. `host::cargo` sets `NIFE_INITIAL_RAMDISK`, `NIFE_DISK` and
-    // `NIFE_NET` **in this process's own environment** for every cargo invocation it makes, and
-    // the archive packers above go through it, so by the time the runner is spawned it would
-    // inherit a `NIFE_DISK` naming a file `mkdisk` may never have written. The aarch64 and
-    // `x86_64` runners treat a set-but-missing `NIFE_DISK` as fatal (`does not exist (run mkdisk
-    // first)`) and the riscv64 one ignores it, so this gate went red on two of three legs the
-    // first time it packed an archive. Setting the environment a child is spawned with, here,
-    // beats inheriting whatever a sibling left behind; it also means an exported `NIFE_DISK` in a
-    // developer's shell cannot change what this gate boots.
+    // Only the archive: this gate types nothing, so no disk. `host::cargo` exports `NIFE_DISK` and
+    // `NIFE_NET` into this process for every cargo call, and the aarch64 and `x86_64` runners treat
+    // a `NIFE_DISK` naming a missing file as fatal, so the child's environment is set here rather
+    // than inherited; an exported `NIFE_DISK` in a shell cannot change what this boots either.
     cmd.env("NIFE_INITIAL_RAMDISK", archive());
     cmd.env_remove("NIFE_DISK");
     cmd.env_remove("NIFE_NET");

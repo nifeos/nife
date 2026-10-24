@@ -148,7 +148,7 @@ holding the TCB budget, a child holding its own space).
    not a reason to prefer C.
 
 Options only were given, because this is on the irreversible list. calef chose A. B lost because a
-runaway borrower would pin the region forever, which is the shape §16's milestone 22 (trusted init) amendment
+runaway borrower would pin the region forever, which is the shape §16's milestone 28 (a solid terminal: the line discipline as a component) amendment
 removed. C lost because it adds a refusal to `CONFIGURE` and forbids a split a loader may want; A
 plus C lost because once A exists, C buys no safety and still costs the new refusal.
 

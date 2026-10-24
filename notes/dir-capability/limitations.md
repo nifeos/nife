@@ -1,5 +1,8 @@
 # The directory capability: the BUGS list in full
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, after
+`notes/soak/limitations.md` and `notes/frames/limitations.md`.*
+
 An appendix to [notes/dir-capability.md](../dir-capability.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). The main page lists each limitation in a line; this is each one in
 full. Known limitations, next to the feature rather than only in a tracker.

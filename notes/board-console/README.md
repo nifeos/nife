@@ -18,11 +18,4 @@ a one-line BUGS list. These files carry the detail its prose budget has no room 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `markers` Name: provisional.
-- `design` Name: provisional.
-- `limitations` Name: provisional, after `notes/soak/limitations.md` and
-  `notes/frames/limitations.md`.
-- `job-mix-examples` Name: provisional, for the parent's job-mix EXAMPLES.
-- `modules` Name: provisional, for the crate's modules whose comments link it.
+Each stem here is named for its content, and calef names files.

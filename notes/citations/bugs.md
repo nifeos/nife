@@ -1,5 +1,7 @@
 # Citations: the full BUGS entries
 
+*Name: provisional.*
+
 An appendix to [`notes/citations.md`](../citations.md), whose `BUGS` section states each limit in
 one sentence. These are the entries in full, with how each was found.
 

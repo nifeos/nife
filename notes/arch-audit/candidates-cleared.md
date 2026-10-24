@@ -1,5 +1,7 @@
 # The arch audit: candidates cleared, and why each is safe
 
+*Name: provisional. After the parent's own heading.*
+
 An appendix to [`notes/arch-audit.md`](../arch-audit.md), from the audit of 2026-07-29 (UTC).
 
 Recorded because "we looked and it is fine" is the other half of an audit, and because each of these

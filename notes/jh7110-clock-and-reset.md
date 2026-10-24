@@ -69,6 +69,10 @@ The rebase arithmetic is a host test (`the_two_trees_agree_on_the_identifiers`) 
 paragraph, so a renumbering upstream fails the build instead of surprising somebody at the bench.
 Every URL and fetch date is in `crates/jh7110_clock_and_reset/src/lib.rs`'s header.
 
+All three identifiers are STG-domain, so `TRNG_BRING_UP` means nothing without `STG`, and that
+coupling is why `Step` has no domain field. A second device in a second domain carries its own plan
+and its own domain beside it; that is the time to decide whether the pair wants a type.
+
 Two mechanics worth knowing, both transcribed rather than inferred:
 
 - A clock is one 32-bit word per index, at `base + 4 * index`, and bit 31 turns it on
@@ -129,6 +133,15 @@ from a comment:
   boot on a machine nobody would think to blame a clock driver for.
 - The boot tour prints which source the address came from, in words, so a transcript can never
   be read as confirmation of an address nobody on that machine confirmed.
+
+### How a window is found
+
+`discover`, `discover_aon` and `discover_sys` try three spellings, mainline's first, as
+`jh7110_entropy::discover` does. A tree that carries the standardized binding is describing itself
+in that binding's language, so it is the one to believe. The two vendor nodes carry several windows
+and are indexed by `reg-names` rather than by position, because a position that happens to be right
+today is a fact nobody wrote down. `pmic_bus` reads the same way, and one id bound serves both
+trees there because the vendor providers number every domain in one flat space with SYS first.
 
 ## The bench: bringing the TRNG's clocks up on radon
 

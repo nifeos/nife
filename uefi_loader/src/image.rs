@@ -1,62 +1,35 @@
 //! **Placing a validated ELF by its *physical* addresses**, which is the one thing a boot loader
 //! needs and an ordinary program loader never does.
 //!
-//! # This used to be a second ELF reader, and it is not one any more
-//!
-//! Until milestone 208 this module carried its own forty-line header walk, with its own `Error`
-//! enum, because `elf::Segment` exposed no `p_paddr` and there was nothing to subtract: the kernel
-//! image is linked high with `AT()`, so `.text` is `p_vaddr` `0xffffffff8010a000` against `p_paddr`
-//! `0x10a000` while `.ap_trampoline` is `p_vaddr` `0x8000` against `p_paddr` `0x166000`, a
-//! completely different relationship in the same file.
-//!
-//! Milestone 196 (a physical address on `elf::Segment`) added the field. That was necessary and it
-//! was not sufficient: `Elf::parse` still **refused this kernel outright**, with
-//! `Error::WritableAndExecutable`, because `kernel/link-x86_64.ld` folded the 32-bit trampoline's
-//! code and data into one output section and shipped them as a single `RWX` `PT_LOAD`. Milestone
-//! 208 split that section, and with the image W^X clean the tree's own parser accepts it, so the
-//! duplicate could go. Two readers of one format agreeing by comment rather than by type is
-//! AGENTS.md rule 7's exact target.
-//!
-//! **What this module lost by the change is nothing and what it gained is validation.** The old
-//! reader deliberately did not validate, on the argument that this kernel comes from the same build
-//! that produced this loader. That argument was always weaker than it looked, because it makes the
-//! loader the one place in the tree where an ELF is trusted rather than checked, and it is now moot:
-//! `Elf::parse` runs the whole battery (bounds, overlap, W^X, the entry point inside an executable
-//! segment) in the same call that reads the header. So a kernel image that regressed to `RWX` would
-//! now fail to boot on real firmware with a printed reason, which is a second mechanism behind
-//! `script/image-permissions` and the one that runs on the machine a person is standing at.
-//!
+//! The kernel is linked high with `AT()`, so `p_vaddr` and `p_paddr` are unrelated even within one
+//! file (`.text` at `p_vaddr` `0xffffffff8010a000` and `p_paddr` `0x10a000`, `.ap_trampoline` at
+//! `0x8000` and `0x166000`). The headers are read by `elf::Elf::parse`, with `elf::Segment::paddr`
+//! (milestone 196 (a physical address on `elf::Segment`)), which validates as it reads: bounds,
+//! overlap, W^X, and the entry inside an executable segment. So a kernel that regressed to an `RWX`
+//! segment fails to boot on real firmware with a printed reason, a second mechanism behind
+//! `script/image-permissions`. See notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!
-//! - **Segments must not overlap the loader's own image**, and nothing checks it. The kernel's
-//!   `p_paddr` span is fixed by `kernel/link-x86_64.ld`'s `PHYS_START` and the firmware is asked
-//!   for exactly that range with `AllocateAddress`, so a conflict surfaces as an allocation failure
-//!   with the range and the descriptors in the way printed, rather than as corruption. That is the
-//!   check, and it is the firmware's rather than this module's.
-//! - **`Elf::parse`'s overlap check is over `p_vaddr`, not `p_paddr`.** For a program that is the
-//!   same question; for this image the two differ, so nothing rejects a linker script that made two
-//!   segments' *physical* ranges collide. The single `AllocateAddress` call above would still
-//!   succeed, and the later segment would quietly overwrite the earlier one. No linker script in
-//!   this tree can produce that (one script, one contiguous physical layout), which is why it is
-//!   recorded here rather than checked.
+//! - **Segments must not overlap the loader's own image**, and nothing here checks it: the firmware
+//!   is asked for exactly the kernel's `p_paddr` span (`kernel/link-x86_64.ld`'s `PHYS_START`) with
+//!   `AllocateAddress`, so a conflict is an allocation failure with the range and the descriptors
+//!   in the way printed, not corruption. That check is the firmware's.
+//! - **`Elf::parse`'s overlap check is over `p_vaddr`, not `p_paddr`**, so a linker script that
+//!   made two segments' physical ranges collide would pass, and the later would overwrite the
+//!   earlier. No linker script in this tree can produce that (one script, one contiguous physical
+//!   layout).
 
 use elf::{Elf, Segment};
 
 /// The `[first, last)` physical range every `PT_LOAD` falls in, page-aligned outwards.
 ///
-/// This is what the firmware is asked for in one `AllocatePages(AllocateAddress)` call rather than
-/// segment by segment: the segments are contiguous by construction (one linker script), and asking
-/// once means one failure to report instead of thirteen.
-///
-/// `None` when there is not a single `PT_LOAD`, which `Elf::parse` cannot actually produce (an
-/// image with no executable segment has no entry point and is refused before this runs). It is a
-/// return value rather than an `unwrap` because this function is public and must be panic-free on
-/// its own terms.
-///
-/// **Over `paddr`, not `vaddr`**, which is the whole reason this function exists rather than a
-/// method on `Elf`: a program loader maps at `p_vaddr` and a firmware loader places at `p_paddr`,
-/// and on this image those are unrelated. See `elf::Segment::paddr`.
+/// The firmware is asked for it in one `AllocatePages(AllocateAddress)` call: the segments are
+/// contiguous by construction (one linker script), and one call is one failure to report instead
+/// of thirteen. **Over `paddr`, not `vaddr`**: a program loader maps at `p_vaddr` and a firmware
+/// loader places at `p_paddr`, and on this image they are unrelated (`elf::Segment::paddr`). `None`
+/// when there is no `PT_LOAD`, which `Elf::parse` cannot produce; a return value rather than an
+/// `unwrap`, because this function is public and must be panic-free on its own terms.
 pub fn physical_span<'a>(
     segments: impl Iterator<Item = Segment<'a>>,
     page_size: u64,
@@ -81,15 +54,13 @@ pub fn physical_span<'a>(
 /// **The physical address the firmware should jump to**: `e_entry` translated through the segment
 /// that contains it.
 ///
-/// On `x86_64` this is the identity, because `_start` lives in `.boot`, which is linked where it
-/// is loaded. On aarch64 and riscv64 it is not: both kernels are linked in the high half with
-/// `AT()` placing them low (`kernel/link-aarch64.ld`, `kernel/link-riscv64.ld`), so `e_entry` is a
-/// virtual address nothing maps yet, and the jump has to go to where `_start`'s bytes actually are.
-/// QEMU's `-kernel` and U-Boot's `booti` both enter at the load address for the same reason.
+/// On `x86_64` this is the identity, because `_start` lives in `.boot`, linked where it is loaded.
+/// The aarch64 and riscv64 kernels are linked in the high half with `AT()` placing them low
+/// (`kernel/link-aarch64.ld`, `kernel/link-riscv64.ld`), so `e_entry` is a virtual address nothing
+/// maps yet and the jump goes to `_start`'s bytes, as QEMU's `-kernel` and U-Boot's `booti` do.
 ///
 /// `None` when no segment contains the entry, which `Elf::parse` refuses before this runs
-/// (`EntryNotExecutable`); a return value rather than a panic for the reason [`physical_span`]
-/// gives.
+/// (`EntryNotExecutable`); a return value rather than a panic for [`physical_span`]'s reason.
 pub fn physical_entry<'a>(entry: u64, segments: impl Iterator<Item = Segment<'a>>) -> Option<u64> {
     segments
         .filter(|s| entry >= s.vaddr && entry - s.vaddr < s.memsz)
@@ -100,14 +71,11 @@ pub fn physical_entry<'a>(entry: u64, segments: impl Iterator<Item = Segment<'a>
 /// A sentence for the firmware console, for every way [`Elf::parse`] can refuse the kernel this
 /// binary was built around.
 ///
-/// The wording is this loader's rather than the crate's, because the audience is somebody standing
-/// at a machine that will not boot rather than a program handling an error. Every one of these means
-/// **the build is wrong**, not that a hostile file arrived: the only ELF this loader ever sees is
-/// the kernel `build.rs` embedded in it.
-///
-/// Exhaustive on purpose, with no `_` arm. `elf::Error` is a shared definition, so growing it should
-/// break this build rather than silently print the wrong sentence; that is rung one of AGENTS.md's
-/// ladder for the price of a match.
+/// Worded for somebody standing at a machine that will not boot: every one means **the build is
+/// wrong**, not that a hostile file arrived, since the only ELF this loader sees is the kernel
+/// `build.rs` embedded in it. Exhaustive on purpose, with no `_` arm: `elf::Error` is a shared
+/// definition, so growing it should break this build rather than silently print the wrong sentence
+/// (rung one of AGENTS.md's ladder, for the price of a match).
 pub const fn refusal(error: elf::Error) -> &'static str {
     use elf::Error::*;
     match error {
@@ -137,15 +105,12 @@ pub const fn refusal(error: elf::Error) -> &'static str {
 /// the section table cannot be read, because "could not prove it stripped" must not read as
 /// "stripped".
 ///
-/// This is what makes a debug image unable to be installed (calef's ruling of 2026-10-03 UTC on
-/// the install boot slots: a slot holds a release image). The loader refuses to hand the installer
-/// its own file when this is true, so the stick of a debug build offers no install at all. A debug
-/// kernel is about 7.5 MB of which 5.8 MB is DWARF, and a slot is a fixed 64 MiB (`BOOT_FILE_MAX`).
-///
-/// `crates/elf` reads program headers only, so this reads the section headers itself: ELF64,
-/// little-endian, the only kind any target here produces. `--strip-debug` (what
-/// `cargo xtask`'s release path applies to the kernel before the loader embeds it) removes every
-/// `.debug_*` section and leaves the symbol table.
+/// A debug image cannot be installed (calef's ruling of 2026-10-03 UTC on the install boot slots: a
+/// slot holds a release image), so the stick of a debug build offers no install. A debug kernel is
+/// about 7.5 MB of which 5.8 MB is DWARF, and a slot is a fixed 64 MiB (`BOOT_FILE_MAX`).
+/// `crates/elf` reads program headers only, so this reads the section headers itself (ELF64,
+/// little-endian). `cargo xtask`'s release path strips with `--strip-debug`, which removes every
+/// `.debug_*` section and keeps the symbol table.
 pub fn carries_debug_info(elf: &[u8]) -> bool {
     fn u16_at(b: &[u8], at: usize) -> Option<usize> {
         Some(u16::from_le_bytes(b.get(at..at.checked_add(2)?)?.try_into().ok()?) as usize)

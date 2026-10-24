@@ -1,5 +1,7 @@
 # The ordered atomics in detail
 
+*Name: provisional.*
+
 Four adjudications behind the protocol table in [`notes/memory-ordering.md`](../memory-ordering.md).
 Two sites are sound for a reason nobody had written down. One publication order has no reader that
 depends on it yet. And one question was worth asking of the `Relaxed` sites.

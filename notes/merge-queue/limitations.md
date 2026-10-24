@@ -1,5 +1,7 @@
 # The merge queue's limitations, in full
 
+*Name: provisional.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md), whose BUGS section keeps the short list.
 This is every entry as it was written, sentence-split for the prose limits.
 
@@ -98,9 +100,9 @@ then found a defect in the committed tip. The fixed commit could not be pushed.
 `Not Found`. What worked was waiting for the group build to evict the branch, then pushing and
 re-arming.
 
-The order that avoids it: gate, then arm. An armed pull request is one whose content you have stopped
-editing. That sounds obvious, and is exactly what a maintainer fixing a gloss at the last moment
-forgets.
+The order that avoids it: push the last commit, then arm. An armed pull request is one whose
+content you have stopped editing. That sounds obvious, and is exactly what a maintainer fixing a
+gloss at the last moment forgets.
 
 ## `Blocked-by:`
 

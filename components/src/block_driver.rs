@@ -1,21 +1,12 @@
 //! The virtio-blk driver as its own binary (parity C).
 //!
-//! The 19f pattern: the whole driver logic is the shared `virtio` module, and this file is only the
-//! skeleton a dedicated binary needs (an `_start` that dispatches the role, a panic handler, the
-//! runtime re-exports).
-//!
-//! **This was the portable analog of seven roles of `hello` until milestone 291, and those seven
-//! were this file's code.** aarch64 reached the identical `crates/virtio` through the `hello`
-//! multiplexer, because `initial_ramdisk_aarch64`'s table never packed this binary; 291 packed it
-//! and deleted the roles. Every architecture spawns this program now, with the same role numbers
-//! and the same capability slots, so the kernel side was byte-identical across the two shapes and
-//! is now simply one shape.
-//!
-//! The roles are the honest driver, the block server, the net driver, the write path, and the two
-//! attackers the DMA-confinement tests spawn (a descriptor aimed at kernel memory, and the
-//! indirect-descriptor escape). The attackers ride in the same binary deliberately: they differ
-//! from the honest driver by one descriptor, and sharing the setup code is what makes the attack a
-//! fair test rather than a straw man.
+//! The driver logic is the shared `virtio` module; this file is only the skeleton a dedicated
+//! binary needs (`_start` dispatching the role, a panic handler, runtime re-exports). Every
+//! architecture spawns it with the same role numbers and capability slots. The roles are the honest
+//! driver, the block server, the net driver, the write path, and the two attackers the
+//! DMA-confinement tests spawn (a descriptor aimed at kernel memory, and the indirect-descriptor
+//! escape). The attackers share this binary on purpose: they differ from the honest driver by one
+//! descriptor, so the attack is a fair test. See notes/virtio.md and notes/dma/shadow-ring.md.
 //!
 //! Name: ratified 2026-08-27 (calef). Renamed from `blk` to `block_driver`, matching the
 //! `<device>_driver` shape given to `gpu_driver` and `keyboard_driver` in the same pass. Not

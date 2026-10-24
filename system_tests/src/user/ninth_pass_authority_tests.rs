@@ -2,24 +2,11 @@
 //! the confinement claim, claim 23; DECISIONS §26 (the fault endpoint), §12 (call/reply IPC: a
 //! one-shot reply capability)).
 //!
-//! `authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again` boots the real
-//! `root_supervisor` program, which deletes its untyped and reports that a later build answered
-//! `NoSuchSlot`. That end-to-end test needs the initial ramdisk. This comes at the same claim
-//! through the dispatcher, with no program: a thread holds an untyped budget carrying `Rights::ALL`
-//! (the construction authority the progenitor is handed), *uses* it to build (the positive control:
-//! a `RETYPE` and a `SPLIT` both succeed), deletes the budget capability (the drop the progenitor
-//! performs on itself), and then issues the identical build operations again. Both answer
-//! `NoSuchSlot`: the slot is empty, not merely restricted, so there is no authority left to rebuild
-//! from. A capability-model system where "drop your authority" left a usable handle behind would be
-//! a progenitor that could rebuild the world after promising it had thrown the key away.
-//!
-//! This is the mechanism `authority_tests` exercises end to end, driven one layer down so it runs
-//! on every architecture without a ramdisk: `SYS_CAP_DELETE` is what the progenitor's self-drop
-//! calls, and `RETYPE`/`SPLIT` through an empty slot is what its later build hits.
-//!
-//! Nothing here blocks (no `SEND`/`RECEIVE`/`CALL` with no peer), so a regression is red at an
-//! assertion rather than a watchdog hang, and each capability and region is reclaimed, so the
-//! suite's ledgers are flat across the module.
+//! `authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again`
+//! proves this end to end through the real `root_supervisor`, which needs the initial ramdisk. This
+//! drives the same mechanism through the dispatcher with no program, so it runs on every
+//! architecture: `SYS_CAP_DELETE` is the progenitor's self-drop, and `RETYPE`/`SPLIT` through an
+//! empty slot is its later build. See notes/confinement-outsider-pass-9.md, "The kernel tests".
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: untyped retype and split and the capability table are portable kernel code
@@ -42,13 +29,11 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 
 /// **Dropping the construction authority leaves no handle to build from** (claim 23).
 ///
-/// The budget carries `Rights::ALL`, so it is a full construction authority: it can split itself and
-/// retype its pages into objects, which are the two powers a progenitor builds the system with. Both
-/// succeed first (the positive control: the authority is real and building works), and the products
-/// are torn down so the ledgers stay flat. Then the budget capability is deleted through the same
-/// path `SYS_CAP_DELETE` takes, and the identical `RETYPE` and `SPLIT` are issued at the now-empty
-/// slot. Both answer `NoSuchSlot`, the slot resolving to nothing, which is what "the authority was
-/// dropped" has to mean for the claim to hold.
+/// A budget carrying `Rights::ALL` is a full construction authority: it can `SPLIT` itself and
+/// `RETYPE` pages into objects, the two powers a progenitor builds with. Both succeed first (the
+/// positive control), and the products are torn down so the ledgers stay flat. The budget is then
+/// deleted on the `SYS_CAP_DELETE` path, and the identical calls answer `NoSuchSlot`: the slot
+/// resolves to nothing, which is what "the authority was dropped" has to mean for the claim.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil info -plist on the development Mac, 2026-09-19; trimmed to the keys stick_maker reads. The APFS container macOS synthesizes on the Seagate disk: virtual, but on the USB bus, so not a disk image. -->
+<!-- Shaped from a diskutil info -plist capture, 2026-09-19; trimmed to the keys stick_maker reads, with identifiers, names and sizes replaced by neutral values. Every flag, bus, content type and filesystem is as captured. The APFS container macOS synthesizes on that USB hard disk: virtual, but on the USB bus, so not a disk image. -->
 <plist version="1.0">
 <dict>
 	<key>BusProtocol</key>
 	<string>USB</string>
 	<key>DeviceIdentifier</key>
-	<string>disk5</string>
+	<string>disk3</string>
 	<key>Ejectable</key>
 	<true/>
 	<key>IORegistryEntryName</key>
@@ -14,7 +14,7 @@
 	<key>Internal</key>
 	<false/>
 	<key>MediaName</key>
-	<string>Portable</string>
+	<string>USB Disk</string>
 	<key>OSInternalMedia</key>
 	<false/>
 	<key>Removable</key>
@@ -24,9 +24,9 @@
 	<key>RemovableMediaOrExternalDevice</key>
 	<true/>
 	<key>Size</key>
-	<integer>2000189177856</integer>
+	<integer>999790284800</integer>
 	<key>TotalSize</key>
-	<integer>2000189177856</integer>
+	<integer>999790284800</integer>
 	<key>VirtualOrPhysical</key>
 	<string>Virtual</string>
 	<key>WholeDisk</key>

@@ -1,26 +1,12 @@
 //! **A client trying to upgrade itself into the server** (an eighth outsider pass at the
 //! confinement claim, claim 26).
 //!
-//! The cited tests stop a WRITE-only client at the rights gate (`confinement_attack_tests`) and at
-//! the live-swap usurper's `RECEIVE_CAP` (`live_swap_tests`). This module attacks the two roads
-//! around that gate a patient client would try next, both through the real dispatcher:
-//!
-//! - **Self-upgrade by delegation.** A client holding `WRITE | GRANT` on the endpoint (every right
-//!   a client can be trusted with: it may send and it may lend what it holds) asks `SEND_CAP` to
-//!   mint itself a copy carrying `READ` too, narrowed and widened in one word. The delegation rule
-//!   must refuse it: `READ` is not a subset of the source's rights, and no right can be minted out
-//!   of the `a1` register. If it succeeded, the client would receive on the next line and be the
-//!   server.
-//! - **Badging its way in.** `BADGE` is the one method a `GRANT`-holding client legitimately has:
-//!   it mints a badged copy of a capability it holds. A client that badges its own endpoint
-//!   capability and then tries `RECEIVE`, `RECEIVE_CAP`, `REAP` and `SURVEY` through the badged
-//!   copy must be refused each one all the same: the badge labels a sender, it is not a right, and
-//!   the badged copy carries exactly the source's rights.
-//!
-//! Nothing blocks: every refused path is shaped to answer promptly, and the positive control at
-//! the end proves the endpoint was live the whole time. Cross-ISA: `invoke`, the delegation rule,
-//! the badge rule and the rendezvous are portable kernel code (DECISIONS §19 (architectural
-//! parity is a tenet)).
+//! Past the rights gate (`confinement_attack_tests`) and the live-swap usurper (`live_swap_tests`),
+//! a client tries two roads through the real dispatcher. Holding `WRITE | GRANT`, it asks
+//! `SEND_CAP` for a copy of its own capability that adds `READ`, which the delegation rule refuses.
+//! A `BADGE`d copy is refused all four server methods, since a badge labels a sender and carries
+//! exactly the source's rights. Nothing blocks. Cross-ISA (DECISIONS §19 (architectural parity is
+//! a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
 
 use abi::Error;
 
@@ -43,12 +29,10 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// **A client with every right a client can hold cannot mint itself the server's right, and a
 /// badge is not one either.**
 ///
-/// A sender is parked on the endpoint for the whole test, so any method let through wrongly would
-/// be observed as a delivery and a falling waiting-sender count rather than a hang. The
-/// self-upgrade attempt, the badged copies and all four server methods are tried through the real
-/// dispatcher; each refusal leaves the parked sender exactly where it was. The positive control
-/// closes: a real `READ` capability receives the queued message, proving the endpoint, the sender
-/// and the dispatcher were all live, which is what makes the refusals the rights rule talking.
+/// A sender stays parked throughout, so a method let through wrongly shows as a delivery and a
+/// falling waiting-sender count, not a hang. The self-upgrade, the badged copies and all four
+/// server methods each leave it parked. A real `READ` capability then receives the queued message,
+/// the positive control that the endpoint, the sender and the dispatcher were live.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

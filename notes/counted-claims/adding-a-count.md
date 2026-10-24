@@ -1,5 +1,7 @@
 # Counted claims: adding a new marked count, worked through
 
+*Name: provisional. For the parent's worked example.*
+
 An appendix to [`notes/counted-claims.md`](../counted-claims.md), whose EXAMPLES keep the five
 steps in short under the cap of §212 (a prose budget).
 

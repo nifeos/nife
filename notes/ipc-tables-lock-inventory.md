@@ -61,6 +61,77 @@ thread's kernel stack is six TLB shootdowns that interrupt every core. The lesso
 a cross-core operation under the global lock is hot for everyone else.
 [`job-mix/null-syscall-under-load.md`](job-mix/null-syscall-under-load.md) has the numbers.
 
+## What the tables hold, and the limits that size them
+
+`kernel/src/sched/ipc_tables.rs` defines the tables and their limits. Each object registry
+(rendezvous, notifications, timers, processes) maps a generational name to the physical address of
+the page the object lives at the start of. The page is retyped from some region that stays pinned
+while the object lives. The name is what a capability carries, so a stale one fails safely.
+
+### The lock's rank
+
+The rank sits above the allocators. The reaper (`finish_switch`) drops a dead `Thread` while
+holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back through the kernel MMU
+lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
+under the lock allocates from a heap. A TCB page comes from a region or from `kmem`'s fixed pool,
+and the queues are intrusive, so a queue operation is a few pointer writes. §9 (locking)'s
+no-allocation-in-IRQ rule holds by construction.
+
+### `MAX_THREADS`
+
+`MAX_THREADS` is 256, a documented limit of the image, so a spawn past it fails cleanly. The boot
+keeps many services alive for its whole life (notes/frames.md's "held" list), so every milestone
+that adds one spends some of it. `PEAK_THREADS` and `kernel::testing`'s closing `threads:` line print
+the demand on every run; when the limit was set the peaks were 130 (aarch64), 129 (riscv64) and 57
+(`x86_64`). 256 is about twice the tightest, because the failure is an unrelated test refusing a
+spawn far from its cause. What scales with it, each checked at 256:
+
+- the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_TABLES` from `.rodata`
+  rather than building the tables on the boot stack, under `stack::report_high_water`'s gate;
+- `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page);
+- `ps::MAX_ROWS`, const-asserted `>= MAX_THREADS` in `kernel::user::survey_tests`, which sizes
+  stack-resident row arrays in `ps` and `pgrep` inside `system_initializer::CHILD_STACK_PAGES`;
+- `revoke::MAX_SPACES` and `thread::FreeAddressSpace`, derived from it.
+
+Nothing on the `spawn_el0` benchmark scales with it, because the revocation scans are bounded by
+live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAX_THREADS]` scratch array sits
+on a stack ([notes/region-reaping.md](region-reaping.md)).
+
+### `MAX_RENDEZVOUS`, and the kernel's chunks
+
+`MAX_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees their
+slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and `KERNEL_CHUNK_RENDEZVOUS`
+report the peak and how many of those sat on the kernel's own chunks, updated at the one insert
+under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
+
+| architecture | peak | spare | on kernel chunks |
+|---|---|---|---|
+| aarch64 | **269** | 243 | 188 |
+| riscv64 | **260** | 252 | 179 |
+| `x86_64` | **189** | 323 | 133 |
+
+A rendezvous on a kernel chunk lives for the whole boot, so every test that wires a service with
+`create_rendezvous` spends the registry until shutdown. On aarch64 the largest spenders are the
+compositor and display services, the disk service, and the credential, block-driver, clock and login
+tests. The fix is to retype the endpoint from the run's own region
+(`design/roadmap/0670-test-helpers-give-their-clients-a-region-to-retype-from.md`). It reports and
+does not gate.
+
+`create_rendezvous` retypes the kernel's own rendezvous from a chunk of `KERNEL_EP_CHUNK_PAGES` (32
+pages). The chunk is carved lazily and replaced when it fills, so the kernel's supply is not a
+compile-time guess. A fixed ceiling grew with the test suite, and the union of parallel branches'
+boots crossed it at merge, where no branch could see it coming. A normal boot carves one chunk. A
+filled chunk's handle is forgotten; its pages stay pinned and its endpoints live. No path tears a
+kernel chunk down, and if one should, the handle becomes an array. `MAX_KERNEL_EP_CHUNKS` is derived
+so chunks can host `MAX_RENDEZVOUS` one-page endpoints, which makes the registry, never the page
+supply, the limit that refuses.
+
+### `FUTEX_BUCKETS`
+
+`FUTEX_BUCKETS` is 64. A wake walks one bucket, so that is four waiters a bucket on average with the
+machine full, at 24 bytes a bucket. The futex queues are under this lock for the reason every wait
+queue is: the check of the word, the park and a waker's take must be one order.
+
 ## BUGS
 
 - The temperature classification is by reading call paths, not by counting acquisitions. There is

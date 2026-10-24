@@ -213,23 +213,14 @@ fn walk(mem: &ChainMem, head: u16) -> bool {
     )
 }
 
-/// **The main theorem: no descriptor chain can put out-of-region or indirect memory in front of
-/// the device.** Over a fully symbolic driver descriptor table (every descriptor's
-/// addr/len/flags/next unconstrained) and a symbolic region, walk a chain from any valid head with
-/// the real [`shadow_one_head`], the confinement core of [`validate_and_shadow`]. The shadow write
-/// closure asserts the confinement invariant on every descriptor *as it lands*, so a run that
-/// trips nothing proves the invariant for **every** input: the device only ever reads in-region,
-/// non-indirect descriptors. This covers both directions (symbolic flags include the
-/// device-writable RX bit), indirect descriptors, and any chain the queue can hold. The array
-/// indexing is symbolic-index-bounded, so it also proves the walk never reads or writes past the
-/// table.
-///
-/// One head, not a whole symbolic batch, and that loses no coverage: the write closure checks the
-/// invariant on *every* shadow write, and a single head's chain already writes up to `qsize` fully
-/// symbolic descriptors, so the per-write property is quantified over arbitrary descriptor content
-/// and position. The outer loop of [`validate_and_shadow`] only repeats this validated single-head
-/// processing for each further head (its bound proved by [`an_oversized_batch_is_refused`]), so it
-/// reaches no new descriptor state.
+/// The main theorem: no descriptor chain can put out-of-region or indirect memory in front of the
+/// device. Over a fully symbolic driver descriptor table and a symbolic region, walk a chain from
+/// any valid head with the real [`shadow_one_head`], the confinement core of
+/// [`validate_and_shadow`]; the shadow write closure asserts the invariant on every descriptor as
+/// it lands. That covers both directions (the symbolic flags include the device-writable RX bit),
+/// indirect descriptors, any chain the queue can hold, and no access past the table. One head loses
+/// no coverage, because the outer loop only repeats it per head, bounded by
+/// [`an_oversized_batch_is_refused`]. See notes/dma/validator.md.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.validate_and_shadow_confines_every_chain.patch`
 #[kani::proof]
 #[kani::unwind(10)]
@@ -273,27 +264,13 @@ fn an_oversized_batch_is_refused() {
     assert!(!ok, "an oversized batch was accepted instead of refused");
 }
 
-/// **A descriptor mutated after validation cannot reach the device.** The shadow ring's whole
-/// point, and it has two halves.
-///
-/// - **During the walk.** The driver's table is read through [`ChainMem::racing`], so every load
-///   returns a fresh symbolic value, as a driver rewriting its descriptors from another core
-///   would. The defect this catches is the classic double fetch: validating one read of a
-///   descriptor and copying a second read into the shadow. The second read is unconstrained, so
-///   the confinement invariant in [`ChainMem::write64`] fires the moment it lands. Code that reads
-///   each descriptor once into a local, validates the local and copies the local holds.
-/// - **After it.** If the walk succeeds, snapshot what the device will read from the shadow, then
-///   aim the driver's *own* copy at an arbitrary address. The device reads the shadow, which is
-///   unchanged: the mutation touched only the driver's copy, which nothing reads.
-///
-/// Until 2026-10-06 (UTC) this harness walked a fixed table, so a load returned the same value
-/// however often it was made, and the double fetch passed. It was recorded `unfalsifiable`, on
-/// the reasoning that no line of the crate can make the two arrays one array; that was true and
-/// was the wrong defect class. The racing model is what made it falsifiable.
-///
-/// What it still cannot see is the crate's `BUGS`: a device reading the shadow between the two
-/// `write64`s of one descriptor. The model checks a descriptor after both halves land and has no
-/// concurrent reader.
+/// A descriptor mutated after validation cannot reach the device. During the walk the driver's
+/// table is read through [`ChainMem::racing`], so every load is a fresh symbolic value, as from a
+/// driver rewriting descriptors on another core; a double fetch (validating one read, copying a
+/// second) trips the invariant in [`ChainMem::write64`]. After a successful walk the driver's own
+/// copy is aimed at an arbitrary address, and what the device reads from the shadow is unchanged.
+/// It cannot see the crate's `BUGS`, a device reading the shadow between the two `write64`s of one
+/// descriptor: the model has no concurrent reader. See notes/dma/validator.md.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.a_descriptor_mutated_after_validation_cannot_reach_the_device.patch`
 #[kani::proof]
 #[kani::unwind(10)]
@@ -341,26 +318,14 @@ fn a_descriptor_mutated_after_validation_cannot_reach_the_device() {
 const OUTER_BASE: u64 = 0x8000_0000;
 const OUTER_SIZE: u64 = 0x1000;
 
-/// **The outer walk stays inside both rings and terminates, for every index pair, wraparound
-/// included.** The confinement theorem above proves one head's chain; this proves the loop that
-/// feeds it. `avail.idx` is a `u16` that wraps, and the walk runs `from_idx .. to_idx` through
-/// that wrap (`from = 0xffff, to = 0x0002` is an ordinary three-entry batch), computing a ring
-/// slot as `idx % qsize` and `wrapping_add`ing. Both `from` and `to` are unconstrained here, so
-/// the wrapped case is covered rather than assumed away, and every closure asserts the address it
-/// is handed:
-///
-/// - a 16-bit read is exactly a `ring[slot]` load with `slot < qsize` (a read below the ring
-///   underflows the offset subtraction, which Kani flags, so "never reads outside the available
-///   ring" is proved in both directions);
-/// - a 16-bit write is either the `avail.idx` publish or a `ring[slot]` mirror with `slot <
-///   qsize`;
-/// - a 64-bit descriptor read or shadow write stays inside a `qsize`-entry table.
-///
-/// **Termination is proved, not assumed.** `#[kani::unwind(11)]` is one more than the walk can
-/// possibly need (the batch guard caps the outer loop at `qsize = 8` iterations, and each chain
-/// here is one descriptor), and Kani's unwinding assertion fails if a loop could run longer. So
-/// no index pair, wrapped or not, makes this loop spin: the property that keeps a hostile
-/// `avail.idx` from holding the `DEVICES` lock with interrupts masked.
+/// The outer walk stays inside both rings and terminates, for every index pair, wraparound
+/// included. `from` and `to` are unconstrained, so a wrapped batch (`from = 0xffff, to = 0x0002`)
+/// is covered, and every closure asserts its address: a 16-bit read is a `ring[slot]` load with
+/// `slot < qsize` (a read below the ring underflows, which Kani flags), a 16-bit write is the
+/// `avail.idx` publish or a `ring[slot]` mirror with `slot < qsize`, and a 64-bit access stays in
+/// a `qsize`-entry table. `#[kani::unwind(11)]` is one more than the walk can need, so Kani proves
+/// termination: a hostile `avail.idx` cannot hold the `DEVICES` lock with interrupts masked. See
+/// notes/dma/validator.md.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.the_outer_walk_stays_inside_the_rings_and_terminates.patch`
 #[kani::proof]
 #[kani::unwind(11)]
