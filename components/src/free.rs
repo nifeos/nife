@@ -11,8 +11,9 @@
 //! # BUGS
 //!
 //! `crates/free`'s, all of them: no cache columns because the kernel keeps none, no `Swap:` line
-//! because nife refuses paging out (pull request #1356), `Yours:` counts `free` itself, and
-//! `Yours:` is the machine's whole job pool, shared by every prompt and session, not one prompt's.
+//! because nife refuses paging out (pull request #1356), `Yours:` counts `free` itself, the two
+//! lines are read at slightly different moments, and `Yours:` is the machine's whole job pool,
+//! shared by every prompt and session, not one prompt's.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table), as milestone 126's `free` lane minted it.
 

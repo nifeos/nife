@@ -80,8 +80,9 @@ const E_ENTROPY: u64 = 0x01;
 const E_SCRATCH: u64 = 0x02;
 
 /// **The wire contract and the store must agree about their numbers**, and this is the only place
-/// both are in scope to be compared (rule 7). A page offset that disagreed here would put a
-/// client's blob where the service reads a proof.
+/// both are in scope to be compared (AGENTS.md codebase rule 7: anything two binaries must agree on
+/// is a crate). A page offset that disagreed here would put a client's blob where the service
+/// reads a proof.
 const _: () = assert!(proto::MAX_IDENTITY == credentialer::MAX_IDENTITY);
 const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
 

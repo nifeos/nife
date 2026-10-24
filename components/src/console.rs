@@ -231,8 +231,8 @@ pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
 
         // Acknowledge with the count actually printed, not the count asked for: a client that
         // asked for more than a page learns that fewer bytes went out rather than being told its
-        // whole request was honoured. The ack means the wire has them; the screen has them within
-        // one batching window.
+        // whole request was honoured. The ack means the wire has them, and the screen too; with the
+        // batcher on, the screen within one window.
         send(REPLY, len, 0, 0);
     }
 }

@@ -393,12 +393,13 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
     }
 }
 
-/// **The instruction backend** (milestone 162 (real hardware entropy on x86_64 and
-/// aarch64)): RDSEED on `x86_64`, RNDRRS on aarch64. Either can
-/// run dry under load, and then the answer is `NO_ENTROPY`, never the DRBG sibling; on-die
-/// conditioning is part of each instruction's contract and is not a DRBG. A module of the one
-/// program that uses it rather than a crate. **Provisional**, flagged for an architect: a second
-/// userspace program needing per-architecture `asm!` makes this the first candidate for a crate.
+/// **The instruction backend** (milestone 162 (real hardware entropy on x86_64 and aarch64)):
+/// RDSEED on `x86_64`, RNDRRS on aarch64, chosen by the kernel in
+/// `kernel/src/user/entropy_service.rs::is_instruction_backend_available`. Either can run dry
+/// under load, and then the answer is `NO_ENTROPY`, never the DRBG sibling; on-die conditioning is
+/// part of each instruction's contract and is not a DRBG. A module of the one program that uses it
+/// rather than a crate. **Provisional**, flagged for an architect: a second userspace program
+/// needing per-architecture `asm!` makes this the first candidate for a crate.
 mod instr {
     /// How many times to retry a transient "no data this cycle" result before giving up.
     ///

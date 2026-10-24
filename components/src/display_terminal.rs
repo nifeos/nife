@@ -4,10 +4,10 @@
 //! One binary, two wirings chosen by `arg0`, neither holding a device: [`MODE_DISPLAY`] holds rung
 //! one's display endpoint and the scanout (`painter`'s authority) and presents with `FLUSH`;
 //! [`MODE_WINDOW`] holds rung two's doorbell and one window's control page and surface (`window`'s).
-//! Its whole world is a report endpoint, one endpoint to present through, the one it serves (slot
-//! 2), an application's output page and its own pixels: no device, interrupt, DMA authority,
-//! physical address, or way to name another client's anything. With a control endpoint
-//! (`video_terminal::component::CONTROL`) it can be replaced live. See notes/glyphs.md.
+//! Its whole world is a report endpoint, one to present through, the one it serves (slot 2), an
+//! application's output page and its own pixels: no device, interrupt, DMA authority, physical
+//! address, or way to name another client's anything. With a control endpoint it can be replaced
+//! live, by `video_terminal::component`'s `OPERATION_QUIESCE`/`START_ABSORB` exchange.
 
 //! # One endpoint, and why input does not ring the doorbell
 //!
