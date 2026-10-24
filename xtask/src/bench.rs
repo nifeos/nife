@@ -495,11 +495,8 @@ fn read_bench_lines(stdout: impl std::io::Read) -> (Vec<(String, u64, u64)>, u64
             eprintln!("bench: the kernel panicked: {line} {message}");
             break;
         }
-        // **Diagnostics pass straight through, and deliberately do not become rows.** A probe
-        // reports a count or a bitmask, not a duration, so putting it in the table would invite
-        // `--check` to police an exact value with a 10% tolerance and would print a meaningless
-        // ns/iter beside it. Echoed instead, so a reader of a bench run sees it and the baseline
-        // never grows a line that is not a measurement. See `bench::map_new`'s shootdown probe.
+        // A probe reports a count or a bitmask, not a duration, so it is echoed and never becomes
+        // a row `--check` would police with a 10% tolerance. See `bench::map_new`'s probe.
         if let Some(probe) = line.strip_prefix("bench-probe: ") {
             eprintln!("  probe: {probe}");
             continue;
@@ -645,10 +642,8 @@ fn check_bench_baseline(
 
     ok &= emulator_matches_baseline(&text, baseline_path, qemu_binary);
 
-    // `trim_start` matters: this file's own header has INDENTED comment lines, and a
-    // column-0-only check would treat them as data. A three-word one would then be parsed as a
-    // benchmark named after its first word. Filtering after `trim_start` drops every comment
-    // line whatever its indent, so the destructure below only ever sees `name ticks iters` rows.
+    // `trim_start`: the header has indented comment lines, which a column-0 check would parse as
+    // benchmark rows.
     for line in text.lines().filter(|l| !l.trim_start().starts_with('#')) {
         let parts: Vec<&str> = line.split_whitespace().collect();
         let [name, base, _iters] = parts.as_slice() else {
@@ -680,12 +675,8 @@ fn check_bench_baseline(
         eprintln!("bench: check passed (all within 10% of baseline; coarse tripwire)");
     } else {
         eprintln!();
-        // **What the floor says about itself, printed where the reader is already looking.**
-        // The reasons are in the file, but a person reading a red gate in CI scrollback is not
-        // reading the file, and the question they are holding is exactly the one these lines
-        // answer: is this number a cost somebody chose, or drift nobody has explained? Empty
-        // on the three floors saved before milestone 302, which say `unrecorded` for the same
-        // reason the `# qemu:` line does.
+        // The saved reasons, printed where a person reading a red gate is already looking: is this
+        // a cost somebody chose, or drift nobody has explained?
         let recorded = recorded_reasons(&text);
         if !recorded.is_empty() {
             eprintln!("bench: this baseline was last saved because:");
