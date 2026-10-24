@@ -5,12 +5,9 @@
 
 use super::*;
 
-/// What one handle names, and what may be done through it.
-///
-/// The rights ride on the handle rather than on the session because that is what makes descending
-/// mean anything: a child directory handle is a *different* authority from its parent, held at the
-/// same time by the same client, and a file opened under it inherits its direction. A session-wide
-/// rights field could not express any of that.
+/// What one handle names, and what may be done through it. The rights ride on the handle, so a
+/// child directory handle is a different authority from its parent held at the same time; see
+/// notes/fs-server/the-core.md.
 #[derive(Clone, Copy)]
 pub(crate) enum Entry {
     /// A directory. Its rights are the full ladder.
@@ -25,13 +22,10 @@ pub(crate) enum Entry {
 /// filesystem code between them.
 pub struct Server<D: Disk> {
     pub(crate) fs: FileSystem<D>,
-    /// The open-handle table. `handles[h]` is what a handle names, or `None` for a freed slot; the
-    /// index is the handle. A capability the server issues and checks, never trusts.
-    ///
-    /// **Slot 0 is the bound directory** ([`filesystem_contract::fs::ROOT`]), installed by [`Server::open`]
-    /// before anything is served and never closeable. It exists so the directory an endpoint
-    /// designates is an ordinary handle: every name resolves under a handle, and there is no
-    /// separate "the current directory" field for a verb to forget to consult.
+    /// The open-handle table: `handles[h]` is what handle `h` names, or `None` for a freed slot. A
+    /// capability the server issues and checks, never trusts. Slot 0 is the bound directory
+    /// ([`filesystem_contract::fs::ROOT`]), installed by [`Server::open`] and never closeable, so
+    /// every name resolves under a handle.
     handles: Vec<Option<Entry>>,
     /// A monotonically increasing stand-in for wall-clock seconds, so a write advances the node's
     /// mtime deterministically. The server has no RTC; the value only needs to move forward, and the
@@ -51,29 +45,19 @@ pub struct Server<D: Disk> {
 impl<D: Disk> Server<D> {
     /// Open an existing RedoxFS image and bind the service to its root directory.
     ///
-    /// **What recovers a crashed image, precisely** (a correction, milestone 37). This used to say
-    /// that `cleanup: true` "replays the header ring to the newest consistent generation". It does
-    /// not, and the distinction matters because it names the wrong mechanism. `FileSystem::open`
-    /// scans all 256 header-ring slots **unconditionally**, keeps the newest one whose seahash still
-    /// checks out, and ignores the rest; that scan is the crash recovery, and it happens whatever
-    /// `cleanup` is. What `cleanup: true` adds is a tidy-up on top: release the nodes nothing points
-    /// at any more, and commit. The server passes it because a mount should not leak, not because
-    /// the recovery depends on it.
     ///
-    /// The recovery is measured rather than described: `tests/crash_consistency.rs` cuts the device
-    /// at every point in a workload, tears the write it was in the middle of, and mounts the result
-    /// through this function. See [`crate::crash`] and DECISIONS §34.
-    ///
-    /// The server never opens with the creation APIs: those are std-gated and stay host-side (the
-    /// server opens, it never makes).
+    /// `FileSystem::open` scans all 256 header-ring slots and keeps the newest whose seahash checks
+    /// out, whatever `cleanup` is: that scan is the crash recovery. `cleanup: true` only releases
+    /// the nodes nothing points at and commits, so a mount does not leak. `tests/crash_consistency.rs`
+    /// measures the recovery; see [`crate::crash`], DECISIONS §34 and
+    /// notes/fs-server/crash-consistency.md. The server never uses the creation APIs, which are
+    /// std-gated and stay host-side.
     pub fn open(disk: D) -> Result<Self> {
         let fs = FileSystem::open(disk, None, None, true)?;
         Ok(Self {
             fs,
-            // Handle 0 is the bound directory, and it carries every right: this server IS the whole
-            // filesystem's authority, and narrowing happens at the endpoint above it, never here.
-            // `Rights::root` is the only constructor that invents a rights set, and this is its
-            // only caller.
+            // Handle 0 carries every right; narrowing happens at the endpoint above, never here.
+            // This is `Rights::root`'s only caller.
             handles: alloc::vec![Some(Entry::Dir(TreePtr::root(), Rights::root(dir::ALL)))],
             clock: 1,
             memo: Memo::default(),
@@ -91,15 +75,11 @@ impl<D: Disk> Server<D> {
 
     /// Resolve `name` under the directory `handle` names and return a file handle for it.
     ///
-    /// The name is a single component resolved in that directory; it is not a path, which is the
-    /// whole point (no walk, no escape). `EINVAL` for anything that is not one component,
-    /// [`dir::EISDIR`] if the name is a directory ([`Server::open_dir`] is the verb for that), and
-    /// `ENOENT` if there is no such entry **or** if the directory carries neither [`dir::READ`] nor
-    /// [`dir::WRITE`]: a holder that may not reach a name must not learn that the name is there.
-    ///
-    /// The file handle **inherits** the directory's read and write bits, which is what makes
-    /// milestone 47's "a program handed a directory to write logs into" mean something: the
-    /// direction was decided when the directory was granted, and the file cannot widen it.
+    /// `name` is a single component, never a path. `EINVAL` for anything that is not one component,
+    /// [`dir::EISDIR`] for a directory ([`Server::open_dir`] is that verb), and `ENOENT` if there is
+    /// no such entry or the directory carries neither [`dir::READ`] nor [`dir::WRITE`]: a holder
+    /// that may not reach a name must not learn it is there. The file handle inherits the
+    /// directory's read and write bits and cannot widen them (milestone 47).
     pub fn open_file_at(&mut self, handle: u32, name: &NameCopy) -> Result<u32> {
         self.open_file_path(handle, name, 0)
     }
@@ -123,32 +103,22 @@ impl<D: Disk> Server<D> {
         }
         // A file, and never a symbolic link or a mount point: `subtree_scope` owns that rule.
         subtree_scope::landing(kind, false).map_err(refused)?;
-        // Register the node as open with the engine's usage table. This is what makes `unlink` an
-        // unlink: without it, removing the last name frees the node immediately and this handle
-        // would then read a deallocated one. See `Server::unlink`.
-        //
-        // **Done here rather than by `Transaction::on_open_node`**, which is these three lines
-        // inside a transaction, and opening a transaction clones the engine's whole allocator: that
-        // clone was most of the server's remaining time per request once the memo answered the
-        // lookup (milestone 606, `examples/walk_replay.rs`). The table is the engine's own public
-        // field and nothing else about the open touches the image.
+        // Registered open in the engine's usage table, so an unlink leaves this handle a live node
+        // ([`Server::unlink`]). Done directly rather than by `Transaction::on_open_node`, whose
+        // transaction clones the allocator; see notes/fs-server/the-core.md.
         let uses = self.fs.node_usages.entry(ptr.id()).or_insert(0);
         *uses = uses.checked_add(1).ok_or(Error::new(EINVAL))?;
         Ok(self.install(Entry::File(ptr, rights.attenuate(dir::READ | dir::WRITE))))
     }
 
-    /// **Descend: resolve `name` under the directory `handle` names and hand back a handle to the
-    /// child directory, carrying `requested` rights** (milestone 47's keystone).
+    /// Descend: resolve `name` under the directory `handle` names and hand back a handle to the
+    /// child directory, carrying `requested` rights (milestone 47's keystone).
     ///
     /// The child's rights are `parent & requested`, and [`Rights::attenuate`] is the only way this
-    /// crate makes a rights set that is not a root's, so **a child can never carry a right its
-    /// parent lacked** and no descendant of it can either. The `EPERM` below is not what enforces
-    /// that: delete it and the intersection still holds. What it does is refuse to hand back
-    /// *less* than was asked for without saying so, which is DECISIONS §42's rule against silent
-    /// degradation.
-    ///
-    /// Needs [`dir::DESCEND`] on the parent, and its absence answers `ENOENT` rather than a
-    /// refusal, so a holder that may not walk in cannot map what is there.
+    /// crate makes a non-root rights set, so no descendant carries a right its parent lacked.
+    /// `EPERM` if the grant would be smaller than the request (DECISIONS §42: no silent
+    /// degradation). Needs [`dir::DESCEND`] on the parent, whose absence answers `ENOENT`, so a
+    /// holder that may not walk in cannot map what is there.
     pub fn open_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         // A relative path (milestone 606, ruling A): every directory before the last is a descent
         // asking for `DESCEND | requested`, the shape the hop-by-hop walk sends.
@@ -161,13 +131,12 @@ impl<D: Disk> Server<D> {
         Ok(self.install(Entry::Dir(ptr, granted)))
     }
 
-    /// **Make a child directory and hand back a capability to it**: `mkdir` as descend-with-creation,
-    /// which is why it lives beside [`Server::open_dir`] and shares its rights arithmetic exactly.
+    /// Make a child directory and hand back a capability to it: `mkdir` as descend-with-creation,
+    /// sharing [`Server::open_dir`]'s rights arithmetic exactly.
     ///
-    /// Needs [`dir::CREATE`] *and* [`dir::DESCEND`] on the parent: making a directory you could not
-    /// have walked into would be a way to mint a capability out of a right that was withheld.
-    /// `EEXIST` if the name is already there, and nothing is modified, for the reason
-    /// [`Server::create_file`] gives.
+    /// Needs [`dir::CREATE`] (else [`dir::EROFS`]) and [`dir::DESCEND`] (else `EPERM`) on the
+    /// parent: a directory you could not walk into would mint a capability from a withheld right.
+    /// `EEXIST` if the name is already there, and nothing is modified.
     pub fn make_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
@@ -192,26 +161,15 @@ impl<D: Disk> Server<D> {
         Ok(self.install(Entry::Dir(node.ptr(), granted)))
     }
 
-    /// **Enumerate the directory `handle` names**, filling `out` with [`filesystem_contract::dirent`] records
-    /// and returning how many bytes were used. `cursor` is the index of the first entry to return;
-    /// 0 bytes back means the cursor is past the end.
-    ///
-    /// Needs [`dir::ENUMERATE`], and its absence is [`dir::EPERM`] rather than an empty listing.
-    /// An empty listing would be a statement about the *directory*, which would be false; the true
-    /// statement is about the capability, and DECISIONS §42 says a verb that is not offered fails
-    /// loudly instead of degrading into a plausible lie.
-    ///
-    /// Entries are sorted by name so the cursor means the same thing across calls. **The honest
-    /// caveat**: a name added or removed between two calls of one walk can be seen twice or
-    /// missed. That is readdir's usual caveat and it is recorded rather than fixed, because fixing
-    /// it means holding a snapshot per client and this table is not per client. Since milestone
-    /// 606 the listing is memoized until the next namespace change, so between changes every page
-    /// comes from one listing.
+    /// Enumerate the directory `handle` names into `out` as [`filesystem_contract::dirent`] records
+    /// from index `cursor` on, returning the bytes used (0 past the end). [`dir::EPERM`] without
+    /// [`dir::ENUMERATE`], never an empty listing (DECISIONS §42). Sorted by name so a cursor means
+    /// the same thing across calls, and memoized until the next namespace change.
     ///
     /// # BUGS
     ///
-    /// - **The first listing of a directory costs a node read per entry**; [`list`] says why. It is
-    ///   paid once per directory per namespace change, not once per page.
+    /// - A name added or removed mid-walk can be seen twice or missed (readdir's usual caveat).
+    /// - The first listing of a directory costs a node read per entry; [`list`] says why.
     pub fn read_dir(&mut self, handle: u32, cursor: u32, out: &mut [u8]) -> Result<usize> {
         let (ptr, rights) = self.dir_at(handle)?;
         if !rights.allows(dir::ENUMERATE) {
@@ -260,17 +218,12 @@ impl<D: Disk> Server<D> {
         self.look(|tx| tx.read_node(ptr, offset, buf, 0, 0))
     }
 
-    /// Write `data` to `handle` at `offset`, returning the count. Advances the internal clock so the
-    /// node's mtime moves forward; the data persists regardless of the timestamp.
+    /// Write `data` to `handle` at `offset`, returning the count, and advance the logical clock so
+    /// the node's mtime moves forward.
     ///
-    /// [`dir::EROFS`] without [`dir::WRITE`], the same word and the same argument
-    /// `fs_file_caretaker` uses: through this capability the file is read-only, and there is no
-    /// policy that could have said yes.
-    ///
-    /// `EFBIG` when `offset + data.len()` does not fit in 64 bits or passes [`MAX_FILE_END`],
-    /// checked before the engine sees it. RedoxFS adds the two unchecked, and the wrapped end made
-    /// its inline-data path slice backwards and panic, which killed the server; an end past the
-    /// tree indexed past it (both found by the `redoxfs_server_session` fuzz target).
+    /// [`dir::EROFS`] without [`dir::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
+    /// [`MAX_FILE_END`], checked before the engine, which adds the two unchecked (found by the
+    /// `redoxfs_server_session` fuzz target; notes/fs-server/the-core.md).
     pub fn write(&mut self, handle: u32, offset: u64, data: &[u8]) -> Result<usize> {
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
         match offset.checked_add(data.len() as u64) {
@@ -294,14 +247,9 @@ impl<D: Disk> Server<D> {
 
     /// Create `name` under the bound directory and return a handle for it (milestone 31 phase 2).
     ///
-    /// **Semantics, stated because the absence of these verbs cost a day.** If `name` does not exist
-    /// it is created empty and opened. If it *does* exist this returns `EEXIST` and creates nothing:
-    /// create is create, not create-or-open, so a caller that wants either has to say which it wants.
-    /// The alternative (silently opening an existing file) is what makes a partly-working write look
-    /// like a working one, which is the exact failure mode §27 records.
-    ///
-    /// Resolved under the bound directory like every other name, so this cannot create outside the
-    /// granted subtree, and `check_component` rejects a path rather than walking one.
+    /// `EEXIST` if `name` exists, and nothing is created: create is create, not create-or-open,
+    /// because silently opening an existing file makes a partly-working write look like a working
+    /// one (§27). `check_component` rejects a path rather than walking one.
     pub fn create_file(&mut self, name: &NameCopy) -> Result<u32> {
         self.create_file_at(filesystem_contract::fs::ROOT as u32, name)
     }
@@ -333,36 +281,17 @@ impl<D: Disk> Server<D> {
     }
 
     /// Set the size of the file a handle names to exactly `size` bytes (milestone 31 phase 2).
-    ///
-    /// **Both directions, deliberately.** Shrinking discards the bytes past `size`; growing extends
-    /// with zeroes. That is POSIX `ftruncate` semantics and it is what makes a shorter write able to
-    /// *replace* a file's contents rather than leave the old tail behind. §27 records what the absence
-    /// of this cost: a 61-byte write over a 64-byte file left a 64-byte file, three investigations read
-    /// the resulting assertion failure as a write failure, and the engine was never at fault.
-    ///
-    /// **What is guaranteed if the machine dies mid-truncate: untested (milestone 37).** RedoxFS is
-    /// copy-on-write and commits through a header ring, and the server always mounts with the
-    /// `cleanup: true` replay that walks back to the newest *consistent* generation, so the engine's
-    /// design says a torn truncate leaves either the old size or the new one. We have not injected a
-    /// torn or dropped write to check, so that is a design claim and not a measurement. Truncate and
-    /// create are the first verbs that change a file's *shape* rather than its bytes, which makes them
-    /// the most interesting cases for milestone 37 to attack.
+    /// Shrinking discards the tail and growing extends with zeroes, POSIX `ftruncate`, so a shorter
+    /// write can replace a file's contents (§27). [`dir::EROFS`] without [`dir::WRITE`], `EFBIG`
+    /// past [`MAX_FILE_END`].
     ///
     /// # BUGS
     ///
-    /// **Shrinking a file costs time linear in its logical size, sparse or not**, and this server
-    /// answers one request at a time, so any client holding a writable handle (a confined one
-    /// included, inside its own grant) can stall every other client with two requests: grow a file
-    /// to near [`MAX_FILE_END`], which is cheap because the engine writes no zero records, then
-    /// shrink it, which walks every record pointer in between. The same walk runs when such a file's
-    /// last name and handle go. Found by the `redoxfs_server_session` fuzz target as a ten-second
-    /// timeout (2026-10-04 UTC); not fixed here, because the two fixes are a pin divergence (skip a
-    /// null subtree in `truncate_node_inner`) or a semantics choice (refuse a sparse size past the
-    /// image), and both are an architect's. Proposed as
-    /// `design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.
+    /// - A shrink costs time linear in the logical size, sparse or not, so a writable handle can
+    ///   stall every client. Proposed as
+    ///   `design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.
     pub fn truncate(&mut self, handle: u32, size: u64) -> Result<()> {
-        // A truncate carries no bytes, so a guard that only covered `write` would leave a way to
-        // destroy a file just as thoroughly. It takes the same right and answers the same word.
+        // A truncate destroys a file as thoroughly as a write, so it takes the same right and word.
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
         // A file grown past the tree reads past it later; [`MAX_FILE_END`] has the defect.
         if size > MAX_FILE_END {
@@ -373,41 +302,14 @@ impl<D: Disk> Server<D> {
         self.change_file(ptr, |tx| tx.truncate_node(ptr, size, now, 0))
     }
 
-    /// **Move `src` under the directory `src_dir` names to `dst` under the directory `dst_dir`
-    /// names** (milestone 47). The verb `mv` is, and the rung that gave [`dir::REMOVE`] something to
-    /// enforce.
+    /// Move `src` under the directory `src_dir` names to `dst` under the directory `dst_dir` names
+    /// (milestone 47): `mv`'s verb, concurrency-atomic and crash-atomic (DECISIONS §42).
     ///
-    /// # The two atomicities, which POSIX taught everyone to conflate (DECISIONS §42)
-    ///
-    /// - **Concurrency-atomic.** Nothing observes the state where the name is in both places or
-    ///   neither, and the reason is structural rather than a lock: the serve loop runs one request
-    ///   to completion before it receives the next, so inside this server there is no concurrent
-    ///   observer at all.
-    /// - **Crash-atomic.** Everything below happens inside one `fs.tx`, which reaches the platter
-    ///   through one commit in RedoxFS's header ring, so a fresh mount finds the old name or the new
-    ///   one. Measured rather than asserted: this is the last operation of the workload in
-    ///   `tests/crash_consistency.rs`, whose sweep cuts the device at every write the workload
-    ///   makes, so the cut lands inside this transaction too.
-    ///
-    /// # Rights
-    ///
-    /// [`dir::REMOVE`] on the source (its name goes away) and [`dir::CREATE`] on the destination (a
-    /// name appears), each refused with [`dir::EROFS`]. Within one directory a rename needs both on
-    /// that one. **Checked before anything is resolved**, so a capability that may not move a name
-    /// cannot use this verb to find out whether one is there.
-    ///
-    /// # What it refuses, and why each refusal is the contract's rather than the backend's
-    ///
-    /// - A **directory** may be renamed in place but not moved between directories: `EINVAL`. See
-    ///   [`filesystem_contract::fs::RENAME`] for the cycle argument. Keeping the parent unchanged is what makes
-    ///   the in-place case provably safe without an ancestry walk.
-    /// - Replacing a destination of a **different kind** is `EISDIR` (file over directory) or
-    ///   `ENOTDIR` (directory over file). RedoxFS's own `rename_node` allows both, because it passes
-    ///   the *destination's* type to `remove_node` and so never compares the two; these two lines
-    ///   are ours, at our boundary, for §42's reason that an offered verb must mean one thing on
-    ///   every backend.
-    /// - A non-empty destination directory is `ENOTEMPTY`, from the engine.
-    /// - Either name that is not a single component is `EINVAL`, so `..` means nothing here either.
+    /// Needs [`dir::REMOVE`] on the source and [`dir::CREATE`] on the destination, each refused
+    /// with [`dir::EROFS`] before anything is resolved. `EINVAL` for a directory moved between
+    /// directories ([`filesystem_contract::fs::RENAME`]) or a name that is not one component.
+    /// `EISDIR` or `ENOTDIR` for replacing a destination of the other kind, a check the engine does
+    /// not make; `ENOTEMPTY` from the engine. See notes/fs-server/the-core.md.
     pub fn rename(
         &mut self,
         src_dir: u32,
@@ -428,12 +330,9 @@ impl<D: Disk> Server<D> {
             if node.data().is_dir() && !same_dir {
                 return Err(Error::new(EINVAL));
             }
-            // The node a replaced destination names, when this rename is its last link. Its
-            // extended attributes have to go with it, in **this** transaction: `rename_node` calls
-            // `remove_node` on the destination and throws the freed id away, so nothing else here
-            // ever learns that a node died, and a leaked blob would be inherited by whatever node
-            // the engine hands that id to next. Attributes keyed on a node are free across a rename
-            // and dangerous across a reuse, which are two halves of the same property.
+            // A replaced destination losing its last link has its attributes purged in this
+            // transaction: `rename_node` discards the freed id, and a leaked blob would pass to
+            // the next node the engine gives that id.
             let mut replaced = None;
             if let Ok(existing) = tx.find_node(dst_parent, dst) {
                 // A no-op rename is a success, not a self-replacement: `remove_node` would take the
@@ -453,9 +352,7 @@ impl<D: Disk> Server<D> {
                 }
             }
             tx.rename_node(src_parent, src, dst_parent, dst)?;
-            // The source keeps its node and therefore keeps its attributes, with no code here
-            // knowing a rename happened. That is the whole reason the store keys on a node rather
-            // than on a path, and it is what an AppleDouble sidecar gets wrong.
+            // The source keeps its node, and so its attributes: the store keys on nodes, not paths.
             if let Some(id) = replaced {
                 purge_attrs(tx, id)?;
             }
@@ -463,47 +360,25 @@ impl<D: Disk> Server<D> {
         })
     }
 
-    /// **Remove `name` from the directory `handle` names: `rm`'s verb, and it is `unlink` rather
-    /// than revocation** (milestone 47's commands).
+    /// Remove `name` from the directory `handle` names: `rm`'s verb, an unlink and not a revoke.
     ///
-    /// Needs [`dir::REMOVE`], refused with [`dir::EROFS`], and the right is checked **before the
-    /// name is resolved**, so a capability that may not remove cannot use this verb to discover
-    /// whether a name is there. `ENOENT` if there is no such entry, `EINVAL` if it is not a single
-    /// component, and [`dir::EISDIR`] for a directory: `rm` takes a name of a file away, and this
-    /// contract has no `RMDIR`, which is stated where a caller meets it
-    /// ([`filesystem_contract::fs::UNLINK`]) rather than approximated by removing whatever is found.
+    /// Needs [`dir::REMOVE`], refused with [`dir::EROFS`] before the name is resolved. `ENOENT` if
+    /// there is no such entry, `EINVAL` if it is not one component, [`dir::EISDIR`] for a directory
+    /// ([`filesystem_contract::fs::UNLINK`]). A file still open survives until its last
+    /// [`Server::close`] (milestone 47; notes/fs-server/the-core.md).
     ///
-    /// # What "unlink, not revoke" costs, and where it is paid
+    /// # BUGS
     ///
-    /// The name goes and the object stays while anyone still holds a handle on it, which is POSIX's
-    /// promise and the thing atomic-replace depends on. It is not free and it is not automatic:
-    /// RedoxFS frees a node the moment its last link goes **unless the node is registered as open**
-    /// in its usage table, in which case `remove_node` queues it on the release list and
-    /// `on_close_node` collects it later. So [`Server::open_file_at`] and [`Server::create_file_at`]
-    /// register, [`Server::close`] deregisters, and *that* pairing is what makes this verb an
-    /// unlink. Without it the read that follows an unlink reads a deallocated node, and `rm` would
-    /// be a revoke wearing an unlink's name, which is exactly the conflation §42 forbids.
-    ///
-    /// **BUGS.** A handle that is never closed pins the node for the life of the server, exactly as
-    /// a leaked fd does on Unix, and this handle table is per *server* and outlives its clients: a
-    /// confined program that dies mid-session leaves its files on the release list forever. The fix
-    /// is per-client handle ownership, which the note records as the same missing thing that makes
-    /// revocation unavailable.
+    /// - A handle never closed pins its node for the server's life; the fix is per-client handles.
     pub fn unlink(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
         if !rights.allows(dir::REMOVE) {
             return Err(Error::new(EROFS));
         }
-        // `remove_node` compares the node's kind against the mode it is given, so `EISDIR` for a
-        // directory is the engine's own answer here and matches POSIX. Contrast `rename`, where the
-        // kind check had to be ours because the engine never compares the two.
-        //
-        // It also answers `Some(id)` **exactly when the node's last link went**, which is precisely
-        // when its extended attributes must go too, and `None` when a link remains. So the purge
-        // asks the engine rather than guessing, and it happens inside the same transaction as the
-        // removal: a crash cannot leave a freed node's attributes behind for the next node to
-        // inherit that id (milestone 57, DECISIONS §34).
+        // `remove_node` checks the kind against the mode, so `EISDIR` is the engine's. It answers
+        // `Some(id)` exactly when the last link went, when the attributes must go too, in this
+        // transaction so a crash cannot leave them for the id's next node (DECISIONS §34).
         self.change(|tx| {
             if let Some(id) = tx.remove_node(parent, name, Node::MODE_FILE)? {
                 purge_attrs(tx, id)?;
@@ -512,54 +387,25 @@ impl<D: Disk> Server<D> {
         })
     }
 
-    /// **Remove an empty directory `name` from the directory `handle` names: `rmdir(2)`, and
-    /// empty-only is the entire safety property** (milestone 47's `rm -r`).
+    /// Remove the empty directory `name` from the directory `handle` names: `rmdir(2)`, and
+    /// empty-only is the safety property (milestone 47's `rm -r`, which recurses in userspace).
+    /// Needs [`dir::REMOVE`], refused with [`dir::EROFS`] before the name is resolved. `ENOTEMPTY`,
+    /// `ENOTDIR` for a file, `EINVAL` if not one component, `ENOENT` if there is no such name.
     ///
-    /// Needs [`dir::REMOVE`] on the parent, refused with [`dir::EROFS`], checked **before the name
-    /// is resolved** for [`Server::unlink`]'s reason. `ENOTEMPTY` if anything is still in it,
-    /// `ENOTDIR` for a file (POSIX's own answer, and the mirror of `unlink`'s `EISDIR`), `EINVAL`
-    /// for anything that is not a single component, `ENOENT` if there is no such name.
+    /// # BUGS
     ///
-    /// # Why this verb is safe to offer and a recursive one is not
-    ///
-    /// `mkdir` shipped in the commands lane with nothing that removed what it made, and the
-    /// objection recorded there was that "a verb that removes whatever it finds is how one word
-    /// takes a subtree away". That is right about a *recursive* verb and is not right about Unix's,
-    /// which is the point: **no single call on this contract can take a subtree away.** The
-    /// recursion lives in userspace (`components/src/rm.rs`) as a loop of individually safe steps, each of
-    /// which needs the rights for it at its own level, so a walk stops exactly where the
-    /// capabilities stop rather than where a check in here remembered to look.
-    ///
-    /// # It is not revocation, and here is what that costs
-    ///
-    /// [`Server::unlink`] pairs with the engine's usage table so an unlinked file survives for
-    /// whoever holds a handle. **Directory handles are not registered that way**, so a client
-    /// holding a handle to the directory this call removes is left naming a node the engine has
-    /// freed. ~~Its next request through that handle fails (`ENOENT`) rather than reaching
-    /// something else.~~ **That was wrong, and milestone 633 (an outside agent attacks the
-    /// confinement claim)'s second pass corrected it (2026-10-05 UTC, read from
-    /// `vendor/redoxfs/src/transaction.rs`, not run):** `release_node` frees the tree slot at once
-    /// when its usage count is zero, and `insert_tree` hands the first free slot to the next node
-    /// created anywhere on the image. So the stale handle names whichever directory next takes that
-    /// id, with the stale handle's rights, which is a reach outside the holder's grant rather than
-    /// an `ENOENT`. Removing a name is still not revoking a capability: the handle table is per
-    /// *server* and this server cannot enumerate the clients holding handles, so it could not
-    /// invalidate them if it wanted to. Recorded rather than fixed, because registering directory
-    /// handles is the same change as per-client handle ownership, which is what revocation needs.
+    /// - Directory handles are not registered open, so a handle to the removed directory names
+    ///   whichever directory next takes its id, with its rights: a reach outside the grant
+    ///   (milestone 633, read not run). See notes/fs-server/the-core.md.
     pub fn rmdir(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
         if !rights.allows(dir::REMOVE) {
             return Err(Error::new(EROFS));
         }
-        // `remove_node` compares the node's kind against the mode it is given, so `ENOTDIR` for a
-        // file is the engine's own answer, and it refuses a non-empty directory with `ENOTEMPTY`
-        // from inside the same transaction that would have removed it. Both are POSIX's words for
-        // `rmdir`, which is why neither is checked again out here: a second opinion that could
-        // disagree with the engine is worse than one that cannot.
-        //
-        // A directory carries extended attributes exactly as a file does, so it is purged exactly as
-        // a file is. See [`Server::unlink`] for why the engine's `Some(id)` is what decides it.
+        // `remove_node` answers `ENOTDIR` and `ENOTEMPTY` itself, inside this transaction; a check
+        // out here could only disagree with it. A directory's attributes are purged as a file's
+        // are ([`Server::unlink`]).
         self.change(|tx| {
             if let Some(id) = tx.remove_node(parent, name, Node::MODE_DIR)? {
                 purge_attrs(tx, id)?;
@@ -570,14 +416,9 @@ impl<D: Disk> Server<D> {
 
     // --- mtime (milestone 47's `touch`, DECISIONS §112) ---
     //
-    // Three methods, one per `filesystem_contract::fs` verb, and all three resolve `name` directly
-    // under the directory `handle` names rather than taking an already-open file handle: `touch`
-    // never opens what it acts on ([`Server::unlink`]'s shape, not [`Server::write`]'s). That also
-    // sidesteps a real constraint rather than a stylistic one: a **file** handle's `Rights` are
-    // hard-attenuated to `dir::READ | dir::WRITE` the moment [`Server::open_file_at`] or
-    // [`Server::create_file_at`] mints it, so `dir::SETTIME` could never be checked against one.
-    // Only a directory handle's rights carry the full seven-rung ladder, so these three check the
-    // *parent's* rights, exactly as [`Server::unlink`] and [`Server::rmdir`] do.
+    // All three resolve `name` under a directory handle and check the parent's rights: a file
+    // handle's rights are attenuated to `dir::READ | dir::WRITE`, so `dir::SETTIME` could never be
+    // checked against one.
 
     /// **The modification time of `name`, in Unix seconds** (`filesystem_contract::fs::GETMTIME`).
     ///
@@ -595,20 +436,12 @@ impl<D: Disk> Server<D> {
         Ok(node.data().mtime().0)
     }
 
-    /// **Set `name`'s modification time to now** (`filesystem_contract::fs::SETMTIME`, bare `touch`).
+    /// Set `name`'s modification time to now (`filesystem_contract::fs::SETMTIME`, bare `touch`).
     ///
-    /// "Now" is this server's own advancing logical clock, the exact value every mutating verb
-    /// already stamps a node with ([`Server::write`], [`Server::create_file_at`],
-    /// [`Server::truncate`]), **not** a reading of a real wall clock: this server has no RTC wired
-    /// to it (the same gap the `clock` field on this struct records). A `touch` on two names in
-    /// sequence is guaranteed to
-    /// observe the second mtime greater than the first, which is what a staleness check actually
-    /// depends on; it is not guaranteed to agree with a wall-clock reading taken at the same
-    /// instant. See `filesystem_contract::fs::SETMTIME`'s doc and notes/touch.md's `BUGS`.
-    ///
-    /// Needs [`dir::WRITE`], refused with [`dir::EROFS`], checked before the name is resolved for
-    /// [`Server::unlink`]'s reason. No more than [`dir::WRITE`], because the value recorded is one
-    /// the server observed rather than one the caller asserted (DECISIONS §112).
+    /// "Now" is this server's advancing logical clock, not a wall clock (it has no RTC): two touches
+    /// in sequence observe increasing times. Needs [`dir::WRITE`], refused with [`dir::EROFS`]
+    /// before the name is resolved, and no more, because the server observed the value (DECISIONS
+    /// §112). See `filesystem_contract::fs::SETMTIME` and notes/touch.md's `BUGS`.
     pub fn set_mtime_now(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
@@ -624,16 +457,12 @@ impl<D: Disk> Server<D> {
         })
     }
 
-    /// **Set `name`'s modification time to a caller-supplied Unix-seconds value**
-    /// (`filesystem_contract::fs::SETMTIME_AT`, `touch -t`; DECISIONS §112 (`touch`'s two behaviors need two rights: write covers "now", a separate right covers "arbitrary"): the ability to *lie about
-    /// history*).
+    /// Set `name`'s modification time to a caller-supplied Unix-seconds value
+    /// (`filesystem_contract::fs::SETMTIME_AT`, `touch -t`): the ability to lie about history.
     ///
-    /// Needs [`dir::WRITE`] **and** [`dir::SETTIME`], refused with [`dir::EROFS`] for either
-    /// missing, checked before the name is resolved for [`Server::unlink`]'s reason. Unlike
-    /// [`Server::set_mtime_now`], the value here is the caller's assertion rather than anything
-    /// this server observed, which is exactly the authority DECISIONS §112 declines to fold into
-    /// plain [`dir::WRITE`]. No range check on `seconds`: any value is accepted, because asserting
-    /// an implausible history is the same authority as asserting a merely surprising one.
+    /// Needs [`dir::WRITE`] and [`dir::SETTIME`] (DECISIONS §112 (`touch`'s two behaviors need two
+    /// rights: write covers "now", a separate right covers "arbitrary")), refused with
+    /// [`dir::EROFS`] before the name is resolved. Any `seconds` is accepted.
     pub fn set_mtime_at(&mut self, handle: u32, name: &NameCopy, seconds: u64) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
@@ -649,22 +478,17 @@ impl<D: Disk> Server<D> {
 
     // --- Extended attributes (milestone 57, DECISIONS §34's 2026-07-31 amendment) ---
     //
-    // The engine has none of this. The four methods below are a **layer**: a store the server keeps
-    // in the image, keyed on the node's `TreePtr` id, published as `filesystem_contract::xattr::store`. What
-    // makes the layer legitimate here and worthless on Linux is that nothing can bypass it, because
-    // every path to these bytes goes through `filesystem_contract`. See notes/xattr.md.
+    // A layer the engine knows nothing of: a store in the image keyed on the node's `TreePtr` id
+    // (`filesystem_contract::xattr::store`), which nothing can bypass because every path to these
+    // bytes goes through `filesystem_contract`. See notes/xattr.md.
 
-    /// **Read one extended attribute of the node `handle` names**, returning its type code and the
+    /// Read one extended attribute of the node `handle` names, returning its type code and the
     /// number of bytes written into `out`.
     ///
-    /// Needs [`dir::READ`], refused with `EBADF`, which is what [`Server::read`] needs and answers.
-    /// `ENODATA` if the attribute is not set: the only error that means absence, which is the
-    /// discipline milestone 37's harness learned the hard way (notes/fs-server.md).
-    ///
-    /// **`ERANGE` if `out` is shorter than the value**, never a short read. POSIX's own answer, and
-    /// DECISIONS §42's rule: a value clipped to fit would hand back a file that looked intact and
-    /// was not. In the running system `out` is the shared page, which is larger than
-    /// [`xattr::MAX_VALUE`] by construction, so this cannot fire on the wire.
+    /// `EBADF` without [`dir::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
+    /// not set, the only error that means absence (notes/fs-server.md). `ERANGE` if `out` is
+    /// shorter than the value, never a short read (DECISIONS §42); on the wire `out` is the shared
+    /// page, larger than [`xattr::MAX_VALUE`], so it cannot fire there.
     pub fn get_xattr(&mut self, handle: u32, name: &[u8], out: &mut [u8]) -> Result<(u32, usize)> {
         if !xattr::is_valid_name(name) {
             return Err(Error::new(xattr::ERANGE));
@@ -681,18 +505,12 @@ impl<D: Disk> Server<D> {
         })
     }
 
-    /// **Set one extended attribute on the node `handle` names.** Creating and replacing are one
-    /// operation ([`filesystem_contract::fs::SETXATTR`] says why).
+    /// Set one extended attribute on the node `handle` names; creating and replacing are one
+    /// operation ([`filesystem_contract::fs::SETXATTR`]).
     ///
-    /// Needs [`dir::WRITE`], refused with [`dir::EROFS`], which is what [`Server::write`] needs and
-    /// answers. The three ceilings answer their own words ([`xattr::ERANGE`], [`xattr::E2BIG`],
-    /// [`xattr::ENOSPC`]) so a caller can tell which one it hit.
-    ///
-    /// **Crash-atomic with the file's own bytes**, because the read, the rewrite and the store
-    /// write all happen inside one `fs.tx`, which reaches the platter as one commit in RedoxFS's
-    /// header ring. That was the check that had to pass before this layer was viable at all
-    /// (DECISIONS §34), and it is why an attribute cannot survive a crash that lost the file or
-    /// vice versa.
+    /// [`dir::EROFS`] without [`dir::WRITE`]. The three ceilings answer [`xattr::ERANGE`],
+    /// [`xattr::E2BIG`] and [`xattr::ENOSPC`], so a caller can tell which it hit. Crash-atomic with
+    /// the file's bytes: the read, rewrite and store write are one transaction (DECISIONS §34).
     pub fn set_xattr(&mut self, handle: u32, name: &[u8], kind: u32, value: &[u8]) -> Result<()> {
         // Checked before anything is allocated or opened, so a client cannot make the server size a
         // buffer from a length it invented. `store::set` checks again, and that is the copy the host
@@ -765,21 +583,11 @@ impl<D: Disk> Server<D> {
 
     /// Release a handle. `EBADF` if it was not open.
     ///
-    /// **The bound directory cannot be closed**, and the refusal is `EINVAL` rather than `EBADF`:
-    /// handle 0 is not something the client opened, it is the root of its namespace, and a client
-    /// that could close it could make every later request in the session fail.
-    ///
-    /// **Nor can a bound badge's grant root, while it is bound**, for the same reason one level
-    /// down, and with `EINVAL` for the same reason. The handle table is per server, so an open
-    /// client could otherwise close the handle a bound badge's `ROOT` resolves to, and the next
-    /// open anywhere would reuse the slot: the bound badge's `ROOT` would then name that object,
-    /// outside its grant. [`Server::unbind`] revokes the badge first and then closes the root, so
-    /// taking the grant back is how the handle is released. Found by the `redoxfs_server_session`
-    /// fuzz target (`lane/fuzz-service-handlers`, 2026-10-04 UTC).
-    ///
-    /// Closing a **file** handle is also what finally frees a node whose last name was unlinked
-    /// while this handle was open (see [`Server::unlink`]). Nothing else collects it, so a close is
-    /// not merely bookkeeping in a table this server owns.
+    /// `EINVAL` for the bound directory, and for a bound badge's grant root while it is bound
+    /// ([`Server::unbind`] releases that one): closing either would fail every later request or
+    /// let a later open reuse the slot outside the grant (found by the `redoxfs_server_session`
+    /// fuzz target, 2026-10-04 UTC). Closing a file handle also frees a node unlinked while it was
+    /// open. See notes/fs-server/the-core.md.
     pub fn close(&mut self, handle: u32) -> Result<()> {
         if handle as u64 == filesystem_contract::fs::ROOT || self.is_grant_root(handle) {
             return Err(Error::new(EINVAL));
@@ -787,17 +595,9 @@ impl<D: Disk> Server<D> {
         let entry = self.entry(handle)?;
         self.handles[handle as usize] = None;
         if let Entry::File(ptr, _) = entry {
-            // **The one transaction outside `look`/`change`, and why the memo survives it.**
-            // Closing the last handle to an unlinked file frees its node, which is a change, but
-            // not one the memo can observe: the unlink already forgot every listing, no handle
-            // names the node once this returns, and its id can only be reused by a verb that
-            // creates a node, which goes through `change` and forgets everything. Forgetting the
-            // file's bytes here instead would make every walk re-read every file it just read.
-            //
-            // `Transaction::on_close_node` without the transaction when it has nothing to do, for
-            // the reason `open_file_at` gives: drop the use; a node still in use, or one never
-            // registered, is done. Otherwise the engine's own call runs, and it has something to
-            // do only if the release list (nodes unlinked while open) is non-empty.
+            // A transaction outside `look`/`change` that keeps the memo: the unlink already forgot
+            // the listings, and a freed id is reused only through `change`. The engine's
+            // `on_close_node` runs only for a last use with a non-empty release list.
             match self.fs.node_usages.get_mut(&ptr.id()) {
                 Some(uses) if *uses > 1 => *uses -= 1,
                 Some(_) if self.fs.header.release.is_null() => {
@@ -810,25 +610,13 @@ impl<D: Disk> Server<D> {
         Ok(())
     }
 
-    /// **How much room the image has** ([`filesystem_contract::fs::STATFS`], milestone 54 (a network file service a Mac can actually mount)), as
+    /// How much room the image has ([`filesystem_contract::fs::STATFS`], milestone 54 (a network file service a Mac can actually mount)), as
     /// `(block_size, total_blocks, free_blocks)`.
     ///
-    /// The handle is validated and then not used, which looks odd and is the point: it is the
-    /// qualification rather than the subject. Holding any handle this server minted is what
-    /// entitles a caller to ask, and the answer is about the one image behind all of them, so
-    /// `EBADF` for a handle that was never minted is the whole of the check. No right is demanded;
-    /// [`filesystem_contract::fs::STATFS`] argues that at length.
-    ///
-    /// **Where the two numbers come from, and why one is not read inside a transaction.**
-    /// `header.size()` is the filesystem's size in bytes as the newest committed header records it,
-    /// and `allocator.free()` counts free level-0 blocks in the *committed* allocator. Both are
-    /// read outside `fs.tx`, deliberately: opening a transaction to answer a question changes
-    /// nothing and would put a commit in the path of a read-only verb. RedoxFS's own `clone`
-    /// computes free space from exactly this pair.
-    ///
-    /// A transaction in flight elsewhere would move `free`, and there is none: this server runs one
-    /// request to completion before it receives the next, which is the same property
-    /// [`filesystem_contract::fs::RENAME`]'s concurrency atomicity rests on.
+    /// The handle is validated and not used: holding any minted handle entitles a caller to ask, so
+    /// `EBADF` is the whole check and no right is demanded. Both numbers are read outside a
+    /// transaction, from the committed header and allocator, so a read-only verb makes no commit.
+    /// See notes/fs-server/the-core.md.
     pub fn statfs(&mut self, handle: u32) -> Result<(u64, u64, u64)> {
         self.entry(handle)?;
         let block = redoxfs::BLOCK_SIZE;
@@ -841,20 +629,13 @@ impl<D: Disk> Server<D> {
         ))
     }
 
-    /// **May this handle ask for the storage to be made durable?** (milestone 55). `Ok(())` when it
+    /// May this handle ask for the storage to be made durable? (milestone 55). `Ok(())` when it
     /// may; the caller then does the IO.
     ///
-    /// This is the permission half of `filesystem_contract::fs::SYNC` and **it performs no flush**, which the
-    /// name is chosen to say. The flush is a `filesystem_contract::blk::FLUSH` to the block server, so it lives
-    /// in the binary with the rest of the IO; RedoxFS's `Disk` trait has no sync method and this
-    /// crate does not modify vendored code to add one. A method here called `sync` would be the
-    /// exact kind of claim-beyond-the-mechanism milestone 55 exists to remove.
-    ///
-    /// `node_at` with [`dir::WRITE`], so it takes a handle of **either kind** the
-    /// way `STATFS` does (the answer is about the storage, not about the node), and refuses with
-    /// [`dir::EROFS`] the way every mutating verb does. The rights argument is in
-    /// `filesystem_contract::fs::SYNC`'s own documentation: a sync is an action on the device rather than a
-    /// fact about it, and a read-only holder has nothing outstanding to make durable.
+    /// The permission half of `filesystem_contract::fs::SYNC`, and it performs no flush: RedoxFS's
+    /// `Disk` has no sync method, so the flush is a `filesystem_contract::blk::FLUSH` in the binary.
+    /// Takes a handle of either kind and needs [`dir::WRITE`], refused with [`dir::EROFS`];
+    /// `filesystem_contract::fs::SYNC` has the rights argument.
     ///
     /// Name: provisional, minted by milestone 55's durability lane on 2026-08-18.
     pub fn sync_permitted(&self, handle: u32) -> Result<()> {
