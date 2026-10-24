@@ -134,9 +134,10 @@ A session ends on `^C` or on a line reading `quit`. Arm 1 puts the boot discipli
 mode on the way out. The shell's §227 fallback, its `BAD_REQUEST` path, takes it back to raw at the
 next prompt, and that covers a session the kernel killed before it could clean up.
 
-The session's authority is the result endpoint (slot 0), an endpoint that prints to the screen
-(slot 1) with the page its server reads, an endpoint that owns the keystrokes (slot 2), and, on arm
-0 only, the page the discipline delivers lines into. It holds no device, no interrupt and no DMA.
+The session holds four things. The result endpoint (slot 0) takes one word when the session ends.
+Slot 1 prints to the screen, with the page its server reads. Slot 2 owns the keystrokes. On arm 0
+only, a second page receives the lines the discipline delivers. It holds no device, no interrupt and
+no DMA.
 
 Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
 
