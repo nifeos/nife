@@ -221,8 +221,9 @@ fn reclaim_within_two_seconds(region: u64) -> bool {
 /// before the refusal for this reason, aborts the IPC and wakes it, and the armed kill is spent.
 /// See notes/object-revocation.md and notes/frames.md.
 ///
-/// Verified it can fail: moving the rendezvous sweep below the refusal in `reap_region_objects`
-/// spends the two-second deadline and trips the reclaim assertion (checked 2026-08-16).
+/// Verified it can fail, and it was: moving the rendezvous sweep back below the refusal in
+/// `reap_region_objects` makes this test spend its whole two-second deadline and trip its own
+/// assertion, "a region holding a resident blocked in RECEIVE never reclaimed" (checked 2026-08-16).
 #[test_case]
 fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
     // The child's whole world in one region, the rendezvous it parks on included.

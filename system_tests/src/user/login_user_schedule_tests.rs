@@ -89,14 +89,15 @@ fn a_login_session_with_pending_work_refuses_logout_until_the_work_is_gone() {
 }
 
 /// A user's schedule outlives their login, comes back when they return, and ends when they empty
-/// it (milestone 152, S1 and L2 of 2026-09-26; §222 (who holds a user's schedule)).
-///
-/// Three logins as `alice`, each a separate client, so only `login` and the durable session carry
-/// state. 1. [`ls::OPEN_SCHEDULE`]: `login` builds `user_timetable_keeper` on her budget, the
-/// client writes one entry and detaches, and the budget refuses `DESTROY` (§16).
+/// it (milestone 152, S1 and L2 of 2026-09-26; §222 (who holds a user's schedule)). Three logins
+/// as `alice`, each a separate client, so only `login` and the durable session carry state; every
+/// session comes home, the durable one through `DURABLE_UT_PAGES`.
+/// 1. [`ls::OPEN_SCHEDULE`]: `login` builds `user_timetable_keeper` on her budget, the client
+///    writes one entry and detaches, and the budget refuses `DESTROY` (§16).
 /// 2. [`ls::EMPTY_SCHEDULE`] gets the same session back, the first reply still on the page, and
-/// empties it: `STATUS_EMPTIED`. 3. [`ls::LOGOUT`] gets a fresh session and tears it down: nothing
-/// outlived its reason. Every session comes home, the durable one through `DURABLE_UT_PAGES`.
+///    empties it: `STATUS_EMPTIED`.
+/// 3. [`ls::LOGOUT`] gets a fresh session and tears it down: `login` saw the exit word, reclaimed
+///    `user_timetable_keeper` and the old budget, and minted fresh.
 #[test_case]
 fn a_users_schedule_outlives_their_login_and_ends_when_they_empty_it() {
     if fs_service::fs_server_image().is_none() {
@@ -197,6 +198,7 @@ fn a_users_schedule_outlives_their_login_and_ends_when_they_empty_it() {
 /// `SUSPEND`) ends one durable session; her correct password gets `SUSPENDED`, a wrong one still
 /// `DENIED` (the refusal is after authentication), and her stored schedule and manifest line stay.
 /// `user resume alice` brings it back at her next login; emptying it takes her off the manifest.
+///
 /// # BUGS
 /// - Its first login was once refused `DENIED` on HVF with the right password; see the module BUGS.
 #[test_case]
@@ -343,13 +345,16 @@ const START_UP_CONSTRUCTION_PAGES: u64 = 128 + DURABLE_UT_PAGES + 32 + 32;
 
 /// `login` re-derives a stored schedule at start-up and skips a suspended identity (milestone 152;
 /// Fork 7 ruled A by calef on 2026-09-27; DECISIONS §123 (the boot-time re-derivation privilege)).
-///
 /// The store is as a reboot finds it: both users' `DEMO_SCHEDULE_DOC` (§122 (the on-disk schedule
 /// store)), a manifest naming `alice` then `bob` (§125 (which identities have pending work)), and
-/// `alice` suspended. A second `login` starts on it (start-up runs once). `SUSPEND` with `alice`
-/// listed ends nothing, so only the skip explains it; a wrong secret for `bob` is `DENIED`;
-/// `SUSPEND` with `bob` ends one session, which only an accepted stored document keeps. A
-/// permanent charge of [`START_UP_CONSTRUCTION_PAGES`]; the store is put back afterwards.
+/// `alice` suspended. A second `login` starts on it (start-up runs once), at a permanent charge of
+/// [`START_UP_CONSTRUCTION_PAGES`]; the store is put back afterwards.
+/// 1. `SUSPEND` with `alice` listed ends nothing, so only the skip explains it: with one session
+///    kept, a pass that ignored the list would have spent it on her.
+/// 2. A wrong secret for `bob` is `DENIED`: the session re-derived for him is handed out only
+///    after the credential service says yes.
+/// 3. `SUSPEND` with `bob` ends one session, which only an accepted stored document keeps: what
+///    was written through the file service is what `login` read and the timetable accepted.
 #[test_case]
 fn a_durable_session_is_re_derived_at_start_up_unless_suspended() {
     if fs_service::fs_server_image().is_none() {

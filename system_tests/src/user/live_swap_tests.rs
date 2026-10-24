@@ -106,8 +106,11 @@ use crate::user::{NO_UART_PAGE, machine_has_no_device_page_for_the_console};
 const SWAPPER_BUDGET_PAGES: u64 = 224;
 
 /// How many reports one run can make before the test gives up waiting for the operator's final
-/// verdict. Only a tripwire: the loop stops at `RPT_LOG`. A role that adds reports must raise it,
-/// or the run loses the operator's verdict and fails for the wrong reason.
+/// verdict. Only a tripwire: the loop stops at `RPT_LOG`. 42 is a base of 24, raised to 28 for
+/// milestone 23's manifest (one `RPT_REFUSED` per run), to 40 for the hung-component role (three
+/// more), and to 42 for dependency-aware orchestration (one `RPT_DEPENDENTS` on the direct and
+/// queued channels). A role that adds reports must raise it, or the run loses the operator's
+/// verdict and fails for the wrong reason.
 const MAX_REPORTS: usize = 42;
 
 /// Spawn the operator the way the kernel spawns the progenitor, and return the report rendezvous
@@ -119,7 +122,8 @@ const MAX_REPORTS: usize = 42;
 fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {
     // From a region this run reclaims, not the kernel's pool, which grows in 32-page chunks it
     // never frees (the BUGS on `testing::SUITE_PAGE_FRAME_BUDGET`). It holds the report rendezvous
-    // and the notification and timer that bound the operator's un-park of the plant.
+    // and the notification and timer that bound the operator's un-park of the plant. The helper
+    // cannot make these, which is why the rendezvous arrives made.
     let report_region = crate::memory_region::create(4).expect("no region for the report endpoint");
     let report = sched::create_rendezvous_from(report_region).expect("no report rendezvous");
     let wake = sched::create_notification_from(report_region).expect("no notification for swapper");
@@ -216,10 +220,11 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
         "the swap system had more to say after the operator's final verdict",
     );
 
-    // The system reclaims itself, asserted (notes/live-replacement.md, "The system reclaims
-    // itself"): §16 refuses a region with children carved out of it, so the reclaim succeeds only
-    // if every collected instance (§32) came home. `sched::reclaim_region`, the `DESTROY` syscall's
-    // entry point, because the budget is pinned by the objects retyped from it.
+    // The system reclaims itself, asserted (notes/live-replacement.md, "The system reclaims itself,
+    // and the test asserts it"): §16 refuses a region with children carved out of it, so the
+    // reclaim succeeds only if every collected instance (§32) came home. `sched::reclaim_region`,
+    // the `DESTROY` syscall's entry point, because the budget is pinned by the objects retyped from
+    // it.
     let (_, region_size) =
         crate::memory_region::usage(budget).expect("the operator's budget should exist");
     assert_eq!(

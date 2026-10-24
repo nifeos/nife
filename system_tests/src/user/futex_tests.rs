@@ -9,7 +9,7 @@
 //! # BUGS
 //!
 //! - The waker is the kernel test, not a second user thread: two threads cannot share a space
-//!   until the join is built (calef's ruling on pull request #1892), so the wake is
+//!   until the join is built (it waits on calef's ruling on pull request #1892), so the wake is
 //!   `sched::futex_wake` called directly, past the own-space check. The syscall layer's checks are
 //!   proved below, by a caller refused at each; the end-to-end proof is the milestone's exit test,
 //!   four threads contending a `std::sync::Mutex`.

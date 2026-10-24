@@ -249,9 +249,10 @@ fn a_fill_gathers_across_round_trips() {
 /// and RNDRRS)): `RNDRRS` on aarch64, with no virtio device at all.
 ///
 /// It needs `ID_AA64ISAR0_EL1.RNDR` (`FEAT_RNG`, ARMv8.5), which the default `cortex-a72` lacks, so
-/// it skips there; run it under TCG with `script/test --arch aarch64 --cpu neoverse-n2`. Under HVF
-/// `helpers/qemu-runner-aarch64.sh` refuses `NIFE_CPU` (so Apple Silicon's `FEAT_RNG` is not
-/// established), and CI's CPU matrix sweeps riscv64 only, so CI always takes the skip. riscv64 has neither instruction ("Follow-on" in
+/// it skips there; run it under TCG with `script/test --arch aarch64 --cpu neoverse-n2` or
+/// `--cpu max`. Under HVF `helpers/qemu-runner-aarch64.sh` refuses `NIFE_CPU` (so Apple Silicon's
+/// `FEAT_RNG` is not established), and CI's CPU matrix sweeps riscv64 only, so CI always takes the
+/// skip. riscv64 has neither instruction ("Follow-on" in
 /// `design/roadmap/0162-cpu-instruction-entropy.md`); `x86_64` checks
 /// `arch::isa::get().has_random_seed_instruction()`. See notes/entropy.md, "Honest limits".
 #[test_case]

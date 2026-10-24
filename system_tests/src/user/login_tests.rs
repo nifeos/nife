@@ -716,12 +716,13 @@ fn caretaker_teardown_reclaims_a_full_session_worth_of_memory() {
 /// The terminal is handed out once, and a concurrent second login is denied until logout
 /// (`design/roadmap/0049-users-and-attribution.md`'s BUGS).
 ///
-/// 1. `alice` ([`ls::HOLD_TERMINAL`]) gets the terminal, proved by a word on `w.term_ep`, and ends
-///    her session without freeing it. 2. `bob`'s correct credential gets
-///    [`login_contract::NO_TERMINAL`], not `DENIED`. 3. [`ls::FREE_TERMINAL`] is answered
-///    [`login_contract::LOGGED_OUT`]. 4. `alice` gets the terminal again: freeing it is what makes
-///    it available to the next login. Nothing permanent is charged: each login logs out or is
-///    refused before `mint`.
+/// 1. `alice` ([`ls::HOLD_TERMINAL`]) gets the terminal, proved by a word on `w.term_ep`, and
+///    ends her session without freeing it.
+/// 2. `bob`'s correct credential gets [`login_contract::NO_TERMINAL`], not `DENIED`.
+/// 3. [`ls::FREE_TERMINAL`] is answered [`login_contract::LOGGED_OUT`].
+/// 4. `alice` gets the terminal again: freeing it is what makes it available to the next login.
+///
+/// Nothing permanent is charged: each login logs out or is refused before `mint`.
 #[test_case]
 fn login_hands_out_the_terminal_once_and_denies_a_concurrent_second_login_until_logout() {
     if fs_service::fs_server_image().is_none() {
@@ -825,9 +826,11 @@ fn login_hands_out_the_terminal_once_and_denies_a_concurrent_second_login_until_
 /// manager) rung 3a; DECISIONS §221 (the boot prompt is the owner's console), ruling 2).
 ///
 /// The sixth capability names the endpoint the spawner gave `login` and lacks `GRANT`, so it is a
-/// presentation, not a token. The only place the delivery runs; `script/swish-check` proves the
-/// progenitor's half. Falsified by hand (aarch64, 2026-09-26): delegating it `WRITE | GRANT` turned
-/// this red, the client's `SEND_CAP` arriving in place of the report.
+/// presentation, delivered only here; `script/swish-check` proves the progenitor's half.
+///
+/// Falsified by hand before it was committed (aarch64, 2026-09-26): delegating the sixth capability
+/// `WRITE | GRANT` in `components/src/login.rs` turned this test red. The client's `SEND_CAP` of it
+/// then succeeded, onto the report endpoint, and arrived in place of the report (word 0 read 0).
 #[test_case]
 fn login_hands_a_listed_session_the_run_unvouched_capability_and_it_cannot_be_passed_on() {
     if fs_service::fs_server_image().is_none() {
