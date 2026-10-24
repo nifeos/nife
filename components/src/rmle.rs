@@ -1,13 +1,13 @@
-//! **`rmle`, the Rust multi-line editor: the smallest real text editor**
-//! (milestone 169, design/roadmap/0169-kilo-editor.md), built on the raw-keystroke primitive that
-//! milestone added to the terminal contract (`OPERATION_RAWMODE`/`OPERATION_READRAW`,
-//! `crates/line_editor`). Modelled on antirez's public-domain `kilo`
-//! (<https://github.com/antirez/kilo>): a fixed screen, a row array, a cursor, insert and delete,
-//! save.
-//!
-//! It is Rust rather than a port of `kilo.c` because DECISIONS §31 (the foreign-language seam)
-//! calls C **once**, with a buffer and a length, and the C makes no syscalls; `kilo` is a blocking
-//! event loop that does its own I/O, and reshaping it into a call per keystroke is a new seam.
+//! **`rmle`, the Rust multi-line editor: the smallest real text editor** (milestone 169,
+//! design/roadmap/0169-kilo-editor.md), on the raw-keystroke primitive that milestone added to the
+//! terminal contract (`OPERATION_RAWMODE`/`OPERATION_READRAW`, `crates/line_editor`). Modelled on
+//! antirez's public-domain `kilo` (<https://github.com/antirez/kilo>): a fixed screen, a row array,
+//! a cursor, insert and delete, save. Rust rather than a port of `kilo.c`, because DECISIONS §31
+//! (the foreign-language seam) calls C **once**, with a buffer and a length, and the C makes no
+//! syscalls; `kilo` is a blocking event loop doing its own I/O, and a call per keystroke would be a
+//! new seam.
+
+//! # Capability contract
 //!
 //! | slot | what | why |
 //! |---|---|---|
@@ -15,18 +15,16 @@
 //! | 1 | a directory capability, `WRITE` (`CALL`) | `OPEN`/`CREATE`/`READ`/`WRITE`/`TRUNCATE`/`CLOSE` on the one file it edits |
 //! | 2 | a report endpoint, `WRITE` | one message, sent right before `exit()` |
 //!
-//! `_start(spec, name_lo, name_hi)`: the target filename arrives as `rm` takes one
-//! (`filesystem_contract::grant::{spec, pack_name}`). `rmle` holds no listing right, and [`load`]
-//! only ever calls `OPEN`/`CREATE` with the one name it was started with.
-//!
+//! `_start(spec, name_lo, name_hi)`: the filename arrives as `rm` takes one
+//! (`filesystem_contract::grant::{spec, pack_name}`). No listing right; [`load`] opens or creates
+//! only that one name.
 
 //! # What real `kilo` has that this does not
 //!
 //! - **No terminal size negotiation**: the serial contract carries none
 //!   (`notes/terminal-contract.md`), so [`SCREEN_COLS`]/[`SCREEN_ROWS`] are a fixed 80x24.
 //! - **A bounded document.** [`MAX_ROWS`] rows of [`MAX_COLS`] bytes, fixed arrays and no
-//!   allocator. A file past either bound is silently truncated on load; raising either is a
-//!   constant.
+//!   allocator; a file past either bound is silently truncated on load.
 //! - **No incremental search (`^F`), no syntax highlighting.** `^C` is a literal byte in raw mode
 //!   and bound to nothing; quit is `^Q`, as in `kilo`.
 //! - **Quit confirmation is one extra `^Q`, not three** (`KILO_QUIT_TIMES`).
@@ -184,10 +182,8 @@ struct Editor {
 impl Editor {
     /// `const` so the one instance can live in `.bss` rather than on the stack: a user process
     /// here gets one 4 KiB page of stack by default (`kernel/src/user.rs`'s `USER_STACK_VA`), and
-    /// even with `rmle_service.rs`'s extra pages this struct plus this debug build's per-call
-    /// overhead overflowed it once already (found the same way `components/src/line_editor.rs`'s own
-    /// `DISC`/`LINE_QUEUE`/`RAW_QUEUE` static fix was found: a real `Data abort` with `sp` just
-    /// past the mapped stack). `display_terminal.rs`'s `TERMINAL` is the precedent for this fix.
+    /// even with `rmle_service.rs`'s extra pages this struct plus a debug build's per-call overhead
+    /// overflows it. `display_terminal.rs`'s `TERMINAL` is the precedent.
     const fn new() -> Self {
         Editor {
             rows: [Row::empty(); MAX_ROWS],
@@ -310,27 +306,17 @@ impl Editor {
 
 /// A whole document's worth of scratch, for [`load`] and [`save`] to stage into before it goes to
 /// (or comes from) the FS page: another `.bss` static rather than a stack local, [`Editor::new`]'s
-/// own reason. Never used concurrently (this process has one thread, and `load` runs once at
-/// startup while `save` never nests inside it), so one buffer serves both.
+/// own reason. Never used concurrently (one thread, and `save` never nests inside `load`), so one
+/// buffer serves both.
 ///
-/// **The `+ 1` is the row separator, and leaving it out was a real defect** (milestone 197). This
-/// was `MAX_ROWS * MAX_COLS`, which is the size of the *text* and not the size of what [`save`]
-/// writes: `save` joins the rows with `\n`, so a full document costs `MAX_ROWS - 1` bytes more than
-/// its text. A document at both bounds (32 rows of 100 columns, which the editor's own limits
-/// permit and which typing 31 characters onto the last line of a freshly loaded full file reaches)
-/// staged 3231 bytes into a 3200-byte buffer and panicked the editor on `^S`. Budgeting one
-/// separator per row rather than per gap costs one byte and removes the off-by-`MAX_ROWS - 1`
-/// entirely.
+/// **The `+ 1` is the row separator**: [`save`] joins the rows with `\n`, so a full document costs
+/// `MAX_ROWS - 1` bytes more than its text, and one separator per row covers that for one byte.
+/// notes/user-proofs.md has the defect leaving it out caused (milestone 197).
 const FILE_SCRATCH_LEN: usize = MAX_ROWS * (MAX_COLS + 1);
 
-// **Rung one, and deliberately not a proof** (AGENTS.md's ladder; milestone 197). The defect above
-// is a relationship between three constants, and the compiler can hold it for nothing: raise
-// `MAX_ROWS` or `MAX_COLS` without raising the buffer and this build stops, at the line that is
-// wrong, with no test to run and no harness to remember. A Kani harness stating the same thing over
-// a symbolic document was written first and measured: it is a bounded sum of `MAX_ROWS` symbolic
-// values, which is a cardinality argument, and CBMC did not finish it in twenty minutes on either
-// CaDiCaL or Z3. notes/user-proofs.md records that, because "we chose the cheaper mechanism" and
-// "the expensive one does not work" are different sentences and only one of them is true here.
+// **Rung one, and deliberately not a proof** (AGENTS.md's ladder; milestone 197): raise `MAX_ROWS`
+// or `MAX_COLS` without raising the buffer and this build stops at the wrong line. A Kani harness
+// over a symbolic document is a bounded sum CBMC did not finish (notes/user-proofs.md).
 const _: () = assert!(FILE_SCRATCH_LEN >= MAX_ROWS * MAX_COLS + (MAX_ROWS - 1));
 
 static mut FILE_SCRATCH: [u8; FILE_SCRATCH_LEN] = [0; FILE_SCRATCH_LEN];
@@ -408,14 +394,11 @@ fn staged_len(ed: &Editor) -> usize {
 
 /// **Stage the document into `buf` as `\n`-joined rows**, and return how many bytes that took.
 ///
-/// [`save`]'s loop, with the two capability calls left behind it: this is arithmetic over the
-/// document's own bounds, and `save` is that arithmetic plus a write to a shared page and two
-/// `CALL`s to the FS server.
-///
-/// **The bounds check is hoisted to the top on purpose.** `buf[..staged_len(ed)]` is one check
-/// against a number that has a name and a `const` assertion about it, rather than a dozen implicit
-/// ones inside the copies where nothing says what they are protecting. If that slice exists the
-/// writes fit, because `n` never runs past the sum it is accumulating toward.
+/// [`save`]'s loop, with the two capability calls left behind it: arithmetic over the document's
+/// own bounds. **The bounds check is hoisted to the top on purpose**: `buf[..staged_len(ed)]` is
+/// one check against a number that has a name and a `const` assertion about it, rather than a dozen
+/// implicit ones inside the copies. If that slice exists the writes fit, because `n` never runs
+/// past the sum it is accumulating toward.
 ///
 /// Name: provisional (milestone 197). `stage` is the verb [`save`]'s own doc already used for this.
 fn stage(ed: &Editor, buf: &mut [u8]) -> usize {
