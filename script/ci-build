@@ -152,6 +152,7 @@ rg-threads-x86_64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 NIFE_SM
 boot-check|local|script/boot-check
 release-uefi-boot|ci|cargo xtask uefi-boot --release
 acpi-boot|ci|cargo xtask acpi-boot
+netboot-rehearsal|ci|cargo xtask uefi-image --release && script/netboot-rehearsal --check && script/netboot-rehearsal && script/netboot-rehearsal --mac 02:00:00:00:00:01
 hvf|local|hvf_leg
 fastpath-footprint|ci|script/fastpath-footprint
 boot-file-size-check|ci|script/boot-file-size-check
@@ -198,6 +199,12 @@ TABLE
 #                       for aarch64)). It builds a release
 #                       aarch64 kernel and archive that no `local` row builds, so it rides in the
 #                       `boot-check` job beside `release-uefi-boot` for the same reason.
+#   netboot-rehearsal   PXE-boots the release x86_64 UEFI image under OVMF through the real
+#                       `script/board-netboot`, with DHCP answered out of
+#                       `bench/xenon-netboot/dnsmasq.conf`, then checks that a MAC the config does
+#                       not name gets no boot file (milestone 260 (boot xenon over the network)).
+#                       It reuses the release kernel `release-uefi-boot` builds, so it rides in the
+#                       `boot-check` job after that row.
 #   boot-file-size-check builds the release x86_64 UEFI image (a release kernel and archive, which
 #                       only `stick` and `install-boot` build otherwise) to budget its size.
 #   stack-frame-check   builds the kernel test binary twice; `-Z emit-stack-sizes` changes the

@@ -241,14 +241,14 @@ Two things are then worth doing, in this order, and neither is in this lane's sc
 
 ## The bench: booting xenon over the network, with no stick at all
 
-Milestone 260 (boot xenon over the network) built it, rehearsed it on patagonia under OVMF, and has
-never run it on xenon. It removes the copy per boot and the need to carry the build machine to the
-bench. The procedure has three steps. Two firmware settings on xenon's `Integrated NIC` page are
-calef's. The house router takes the DHCP lines in `bench/xenon-netboot/dnsmasq.conf` once,
-architecture match included. Then serve:
+Milestone 260 (boot xenon over the network) built it and has never run it on xenon. CI rehearses
+it under OVMF on every pull request (`script/ci-build netboot-rehearsal`). It removes the copy per
+boot and the need to carry the build machine to the bench. Two firmware settings on xenon's
+`Integrated NIC` page are set, and the house router carries the DHCP lines in
+`bench/xenon-netboot/dnsmasq.conf`, architecture match included. What is left is to serve:
 
 ```console
-$ cargo xtask uefi-image                        # every time the kernel changes
+$ cargo xtask uefi-image --release              # every time the kernel changes
 $ script/board-netboot --root target/esp        # in the other terminal, while you work
 ```
 
