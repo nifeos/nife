@@ -24,7 +24,7 @@ design/decisions/0095-a-proven-ipc-fastpath.md is deciding about.
 | 5 | Replaced: thread IDs by endpoints as destinations | yes | endpoint-only naming, and no syscall names a receiver |
 | 6 | Abandoned: IPC timeouts | yes | none, and the resulting hang is recorded as a limitation where the reader meets it |
 | 7 | Abandoned: clans and chiefs | yes | never had it; capabilities do the job it was invented for |
-| 8 | Retained: user-level drivers | yes | `components/src/{block_driver,serial_driver,net_stack}.rs`; the kernel validates DMA and never drives |
+| 8 | Retained: user-level drivers | yes | `components/src/{block_driver,input,net_stack}.rs`; the kernel validates DMA and never drives |
 | 9 | Abandoned: hierarchical process management | yes | capabilities. §40 supervision is a lifetime relation, not an authority hierarchy |
 | 10 | Abandoned: recursive page mappings | yes | capabilities with §16 revocation, rather than authority riding on a mapping |
 | 11 | **Replaced: process kernel by event kernel** | **no** | every thread owns `STACK_PAGES` (6) of kernel stack plus a guard page. The word "continuation" appears nowhere in `kernel/src` |

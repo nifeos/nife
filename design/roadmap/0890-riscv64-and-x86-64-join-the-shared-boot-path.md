@@ -264,9 +264,6 @@ reaches the wire.
 - `x86_64`'s supervised death and two-round frame steady state are not checks. No portable spawn
   takes a supervisor, and one before-and-after over a spawn and its teardown counts whatever else
   allocated in the window, which is why that demo ran two rounds. `system_tests` proves both.
-- `serial_driver` is shipped in the drivers package and nothing starts it: riscv64's UART-driver
-  step was its only starter. The hand-over's input driver serves riscv64's UART. It also assumes QEMU's register
-  stride (`abi::uart`).
 - Gates run `console` and `input` at QEMU's stride; a host test pins the JH7110's.
 - `blockdev`'s driver is left running on disk 0, as the tour's was.
 
@@ -281,7 +278,7 @@ reaches the wire.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
-- **Milestone 945.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
+- **Milestone 945.** `serial_driver`, which the self-test left with no starter, is retired:
   `design/roadmap/0945-serial-driver-has-no-starter.md`.
 
 ## Index row

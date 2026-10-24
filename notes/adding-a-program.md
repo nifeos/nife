@@ -243,7 +243,7 @@ is the record. What was considered and refused for each choice is in
 - Every archive packs every program, including ones that cannot run there, which is the rule
   rather than an oversight (see
   [why-it-works-this-way.md](adding-a-program/why-it-works-this-way.md)). So the aarch64 archive
-  carries `serial_driver`, `jh7110_entropy` and `pmap`, and the other two carry `pmap`. `pmap` is
+  carries `jh7110_entropy` and `pmap`, and the other two carry `pmap`. `pmap` is
   packed and spawned by nothing (see `crates/pmap`'s `BUGS`); it costs a directory slot, which is what the
   rule prices it at.
 - Whether a program may take an argument and an input together is open, and it is an architect's
