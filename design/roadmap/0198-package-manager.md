@@ -16,11 +16,11 @@ package manager, and the trivial install that makes a second customer possible. 
 package manager, is complete. The rung table below maps every rung to its milestone.
 
 **Outstanding** (checked against the tree 2026-10-24 UTC): nothing inside this block's own rung.
-What keeps it PARTIAL is milestone 801 (packages over the internet), whose one open criterion is
-the run on xenon's installed system, waiting on milestone 494's bench boot and a fresh install; and
-milestone 802 (the trivial install), which waits on milestones 242, 400, 515, 801 and 809 and on
-calef's act of publication. Through 802 it also waits on milestone 809 (`jig`), whose items 7 and 8
-wait on milestone 849 (a package declares what it needs at run time, NOT-STARTED) and on a
+Two milestones keep it PARTIAL. Milestone 801 (packages over the internet) has one open criterion,
+the run on xenon's installed system, which waits on milestone 494's bench boot and a fresh install.
+Milestone 802 (the trivial install) waits on milestones 242, 400, 515, 801 and 809 and on calef's
+act of publication. Through 802 it also waits on milestone 809 (`jig`), whose items 7 and 8
+wait on milestone 849 (a package declares what it needs at run time), NOT-STARTED, and on a
 milestone for §306's authority list that nobody has proposed yet. Each of those is calef's hands or
 a lane of its own; none is work this block can do.
 
