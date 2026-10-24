@@ -2,21 +2,11 @@
 //! authority in it: seconds to a year, month and day and back, and the few textual forms the system
 //! needs. No IO, syscalls or allocation, so it is host-tested and Kani-checked.
 //!
-//! The calendar is proleptic Gregorian, as every Unix-time library's is, so dates before October
-//! 1582 differ from a historian's, and year 0 exists and is a leap year. Negative timestamps are
-//! supported, because files predating the epoch are ordinary and a dead RTC reads as anything.
-//!
-//! The range is **years 0000 through 9999** ([`MIN_TIMESTAMP`] to [`MAX_TIMESTAMP`]), RFC 3339's
-//! four-digit year, so no value can be computed that cannot be written; outside it is
-//! [`Error::OutOfRange`], never a wrapped date. Every timestamp is [`i64`], so 2038 is a non-event,
-//! and the tests prove it.
-//!
-//! Leap seconds have no Unix timestamp, so [`DateTime::parse_rfc3339`] refuses `:60` with
-//! [`Error::LeapSecond`] rather than folding it. Time zones are a fixed [`UtcOffset`], which is
-//! what RFC 3339 carries; the IANA database is out of scope permanently, being a frequently
-//! updated data distribution with its own capability question, and would be a separate crate. No
-//! durations or month arithmetic (one month after January 31 has no single answer) and no
-//! `strftime` ([`Format`] says why).
+//! The calendar is proleptic Gregorian (year 0 exists and is a leap year), negative timestamps are
+//! supported, and the range is years 0000 through 9999 ([`MIN_TIMESTAMP`] to [`MAX_TIMESTAMP`]),
+//! RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap seconds are
+//! [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of scope
+//! permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
 //!
 //! Name: ratified 2026-08-23 (calef): the plain noun for what the crate does.
 
@@ -101,18 +91,10 @@ pub const fn days_in_month(year: i32, month: u8) -> Option<u8> {
     }
 }
 
-// Howard Hinnant's civil-date algorithms (the ones in "chrono-Compatible Low-Level Date Algorithms",
-// and the same pair inside libc++ and every serious date library). They are not obvious, so what
-// each does and why it is shaped that way:
-//
-// The trick is to shift the year so it *starts in March*. Then the leap day is the last day of the
-// year rather than a discontinuity in the middle of it, and every month-length irregularity collapses
-// into one closed-form expression, `(153*m + 2)/5`, which walks the 31/30/31/30/31 pattern exactly.
-// The era is a 400-year cycle, which is the period of the whole Gregorian rule and contains exactly
-// 146,097 days; working within one era makes the century corrections plain division.
-//
-// Both directions are pure integer arithmetic with no loops and no tables, which is also what makes
-// them a good Kani target: the round-trip proof below is a formula, not a search.
+// Howard Hinnant's civil-date algorithms ("chrono-Compatible Low-Level Date Algorithms"): the year
+// starts in March so the leap day ends it, `(153*m + 2)/5` walks the month lengths, and a 400-year
+// era of 146,097 days makes the century corrections plain division. No loops and no tables. See
+// notes/calendar.md ("Why a calendar is worth writing down at all").
 
 /// Days since 1970-01-01 for a civil date. Private: the public entry points validate first, and this
 /// has a precondition (`month` in 1..=12, `day` in 1..=31) it does not check.
@@ -395,8 +377,8 @@ impl Civil {
     }
 }
 
-/// A fixed offset from UTC, in minutes. **Not a time zone**: see the module docs for why the IANA
-/// database is out of scope rather than pending.
+/// A fixed offset from UTC, in minutes. **Not a time zone**: notes/calendar.md ("Time zones")
+/// says why the IANA database is out of scope rather than pending.
 ///
 /// The range is ±23:59, which is RFC 3339's grammar rather than geography (real offsets run
 /// -12:00..+14:00). Parsing accepts what the grammar allows; nothing here needs to be stricter than
@@ -494,19 +476,11 @@ impl DateTime {
     }
 }
 
-/// The formats this crate can print. Five, chosen rather than derived, and the argument for each is
-/// that something in this system needs exactly it.
+/// The formats this crate can print: five, each one something in this system needs.
 ///
-/// **Why not `strftime`.** A format-string interpreter would be a second parser (one whose errors
-/// appear at runtime, in a `no_std` program with no allocator, for a string nobody type-checked) in
-/// exchange for combinations nothing here asks for. `%c` alone drags in locales. The five below
-/// cover every consumer milestone 51 actually has, and adding a sixth is a two-line match arm plus a
-/// test, which is a cheaper way to be wrong than a grammar is.
-///
-/// **Why no month names.** [`Format::Human`] keeps the ISO date and prepends the weekday, instead of
-/// copying `date`'s `Wed Jul 30 12:34:56 UTC 2026`. Two reasons: that layout does not sort, and it
-/// needs a month-name table which is the first step towards a locale question this crate has no
-/// business answering. The weekday abbreviation is the entire natural-language surface here.
+/// No `strftime`, which would be a second parser whose errors appear at runtime, and no month
+/// names, since `date`'s traditional layout does not sort and a month-name table opens the locale
+/// question. See notes/calendar.md ("The five formats, and why not `strftime`").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Format {
     /// `2026-07-30T12:34:56Z`, or `2026-07-30T12:34:56+05:30` away from UTC. RFC 3339, the
@@ -527,7 +501,7 @@ pub enum Format {
 }
 
 /// The longest output any [`Format`] produces is `Human` at an extreme offset,
-/// `Thu 9999-12-31 23:59:59 +23:59`, which is 30 bytes.
+/// `Fri 9999-12-31 23:59:59 +23:59`, which is 30 bytes.
 const FMT_CAP: usize = 32;
 
 /// A formatted timestamp, in a fixed buffer. No allocator, and no lifetime tied to the value it came
@@ -734,33 +708,18 @@ impl DateTime {
     /// YYYY-MM-DDTHH:MM:SS[.fraction](Z | ±HH:MM)
     /// ```
     ///
-    /// Three deliberate relaxations, each of which RFC 3339 itself sanctions:
-    ///
-    /// - **Lowercase `t` and `z`** are accepted (§5.6 says they may be).
-    /// - **A space in place of `T`** is accepted (§5.6's NOTE allows it by agreement, and it is what
-    ///   a person types at a shell prompt).
-    /// - **Fractional seconds are parsed and discarded.** This clock has one-second resolution, so
-    ///   keeping them would mean either lying about precision or growing the type. Refusing them
-    ///   would reject perfectly ordinary timestamps from other systems.
-    ///
-    /// Everything else is strict: exactly four year digits and two of everything else, no missing
-    /// offset (an RFC 3339 timestamp always carries one, which is the whole difference from bare
-    /// ISO 8601), no trailing bytes. `:60` is [`Error::LeapSecond`], not a syntax error, because it
-    /// is well-formed text this calendar cannot represent (see the module docs).
+    /// Accepts lowercase `t` and `z` and a space for `T` (RFC 3339 §5.6 and its NOTE), and discards
+    /// fractional seconds. Otherwise strict: fixed-width fields, a required offset, no trailing
+    /// bytes. `:60` is [`Error::LeapSecond`]. See notes/calendar.md ("Parsing: RFC 3339, strictly").
     pub fn parse_rfc3339(s: &str) -> Result<DateTime, Error> {
         DateTime::parse_rfc3339_bytes(s.as_bytes())
     }
 
-    /// [`DateTime::parse_rfc3339`] over bytes, which is what the grammar is actually defined on: RFC
-    /// 3339 is ASCII, and every byte outside it is a syntax error whether or not it forms valid
-    /// UTF-8.
+    /// [`DateTime::parse_rfc3339`] over bytes, which is what the grammar is defined on: RFC 3339 is
+    /// ASCII, and every byte outside it is a syntax error whether or not it forms valid UTF-8.
     ///
-    /// This is the real implementation and the `&str` version is the wrapper, not the other way
-    /// round, for two reasons. A caller holding a network buffer or a shell argument has bytes and
-    /// would otherwise have to validate UTF-8 first, only for this function to reject every non-ASCII
-    /// byte anyway. And it lets the totality proof quantify over **arbitrary bytes**, including
-    /// sequences that are not UTF-8 at all, rather than over the subset `from_utf8` would have let
-    /// through.
+    /// This is the real implementation and the `&str` version is its wrapper, so a caller holding a
+    /// buffer need not validate UTF-8 first and the totality proof quantifies over arbitrary bytes.
     pub fn parse_rfc3339_bytes(b: &[u8]) -> Result<DateTime, Error> {
         // "0000-00-00T00:00:00Z" is 20 bytes, the shortest legal input.
         if b.len() < 20 {
@@ -857,36 +816,14 @@ fn expect(b: &[u8], at: usize, c: u8) -> Result<(), Error> {
 #[cfg(test)]
 mod tests;
 
-/// **The machine-checked half** (`script/verify`, notes/verification.md).
+/// The machine-checked half (`script/verify`).
 ///
-/// A calendar looks like an ideal bounded-model-checking target: closed-form integer arithmetic, no
-/// loops, no tables, no allocation. It half is, and where it is not turned out to be the interesting
-/// finding of this lane, so it is recorded here rather than left as an unexplained set of bounds.
-///
-/// **The calendar arithmetic is cheap to prove and the seconds-per-day division is not.** The
-/// Hinnant algorithms round-trip over the *entire* supported range, all 3,652,425 days of it, in
-/// under a minute. Add one `div_euclid(86_400)` over a symbolic 64-bit timestamp and the same
-/// property does not finish in twenty. That is not a fact about calendars; it is that a bit-blasted
-/// 64-bit divider with an unconstrained dividend is one of the hardest things you can hand a CDCL
-/// SAT solver, and the divisions inside `civil_from_days` are cheap only because the era arithmetic
-/// keeps their operands small. Measured, not assumed: one day of timestamps proves in 3s, four years
-/// in 64s, the full range in neither twenty minutes nor with kissat instead of CaDiCaL.
-///
-/// So the harnesses are **factored along that seam** rather than bounded uniformly:
-///
-/// - the calendar half (`days <-> (y, m, d)`, and everything derived from a day number) is proved
-///   over the **full range**, unbounded below the type;
-/// - the seconds half (the `86_400` split, which is the only place the expensive division appears)
-///   is proved over a **four-year window that straddles the epoch**, chosen because the risk it
-///   carries is "did someone use truncating division instead of Euclidean", which is a property of
-///   the *code* and shows up on any negative timestamp. The window contains negative seconds, zero,
-///   positive seconds, a leap day and two year boundaries.
-///
-/// The two compose: `from_unix` is `civil_from_days(secs.div_euclid(86_400))` plus a time of day,
-/// and `to_unix` is `days_from_civil(...) * 86_400` plus the same time of day. Saying that plainly is
-/// better than a uniform bound that quietly excluded the year 3000, and the unit test
-/// `format_and_parse_round_trip_across_the_range` walks the whole ten thousand years at a stride to
-/// cover what a bounded proof cannot.
+/// The calendar half (day numbers to dates and back) is proved over the full range. The seconds
+/// half, the only place the expensive `div_euclid(86_400)` appears, is proved over a four-year
+/// window straddling the epoch. The two compose: `from_unix` is
+/// `civil_from_days(secs.div_euclid(86_400))` plus a time of day, `to_unix` its inverse, and the
+/// unit test `format_and_parse_round_trip_across_the_range` walks the ten thousand years at a
+/// stride. See notes/verification/calendar-proofs.md.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -895,14 +832,11 @@ mod verification {
     const FIRST_DAY: i64 = days_from_civil(MIN_YEAR, 1, 1);
     const LAST_DAY: i64 = days_from_civil(MAX_YEAR, 12, 31);
 
-    /// **Any representable `DateTime`**, built from six symbolic fields and a symbolic offset, or
-    /// `None` for the field combinations that are not a real date.
+    /// Any representable `DateTime`, built from six symbolic fields and a symbolic offset, or `None`
+    /// for the field combinations that are not a real date.
     ///
-    /// The text harnesses take their input this way rather than from a symbolic timestamp, and that
-    /// is the difference between a proof over one day and a proof over the whole range: constructing
-    /// the value from fields skips `from_unix`, and `from_unix` is where the expensive
-    /// `div_euclid(86_400)` lives (see the module comment). Coverage is identical, since every
-    /// `DateTime` this crate can hold is exactly a valid `Civil` and a valid offset.
+    /// Building from fields skips `from_unix` and its expensive division, which is what lets the
+    /// text harnesses cover the whole range; every `DateTime` is a valid `Civil` and offset.
     fn any_datetime() -> Option<DateTime> {
         let year: i32 = kani::any();
         let month: u8 = kani::any();
@@ -916,14 +850,11 @@ mod verification {
         Some(DateTime::new(civil, UtcOffset::from_minutes(om).unwrap()))
     }
 
-    /// **The central theorem: the two calendar algorithms are mutual inverses.** For every one of the
+    /// The central theorem: the two calendar algorithms are mutual inverses. For every one of the
     /// 3,652,425 days in the supported range, `civil_from_days` then `days_from_civil` returns the
     /// day it started with. No bound below the type's own.
     ///
-    /// If this holds, everything else about the calendar follows: the leap-year rules, the month
-    /// lengths, the century exceptions and their exception are all *inside* these two functions, and
-    /// a bijection cannot have them wrong in a way that cancels (a wrong month length would have to
-    /// map two days to one date, which is not injective).
+    /// A bijection cannot have the leap-year rules or month lengths wrong in a way that cancels.
     /// Falsification: replayable `crates/calendar/falsifications/verification.the_calendar_algorithms_are_mutual_inverses.patch`
     #[kani::proof]
     fn the_calendar_algorithms_are_mutual_inverses() {
@@ -933,14 +864,9 @@ mod verification {
         assert_eq!(days_from_civil(y, m, d), days);
     }
 
-    /// **A day number always decodes to a date that exists.** For every day in the range: the year is
-    /// in range, the month is 1..=12, and the day is within *that month's length in that year*, which
-    /// is the leap-year rule applied. The strongest phrasing is the last line: the validating
-    /// constructor accepts what the decoder produced, so `from_unix` cannot manufacture a `Civil` that
-    /// `Civil::new` would have refused.
-    ///
-    /// This is the harness that stops the bijection above from being vacuous. A decoder that
-    /// consistently invented February 30 would still be a bijection.
+    /// A day number always decodes to a date that exists: year in range, month 1..=12, day within
+    /// that month's length in that year, and `Civil::new` accepts it. This stops the bijection above
+    /// from being vacuous; a decoder that consistently invented February 30 would still be one.
     /// Falsification: replayable `crates/calendar/falsifications/verification.a_day_number_always_decodes_to_a_real_date.patch`
     #[kani::proof]
     fn a_day_number_always_decodes_to_a_real_date() {
@@ -953,13 +879,10 @@ mod verification {
         assert!(Civil::new(y, m, d, 0, 0, 0).is_ok());
     }
 
-    /// **The other direction, over every field value there is.** Year, month, day, hour, minute and
-    /// second are all fully symbolic, so February 30, hour 99 and year 10,000 are among the inputs.
-    /// For every combination `Civil::new` accepts, the date survives a trip through its day number,
-    /// and the timestamp it computes lies inside the supported range.
-    ///
-    /// `to_unix` appears here in full (it multiplies by 86,400 rather than dividing, which is the
-    /// cheap direction), so the range assertion is proved for every representable date.
+    /// The other direction, over every field value there is (February 30, hour 99 and year 10,000
+    /// among them). Every combination `Civil::new` accepts survives a trip through its day number,
+    /// and its timestamp lies inside the supported range; `to_unix` multiplies, the cheap direction,
+    /// so the range assertion holds for every representable date.
     /// Falsification: replayable `crates/calendar/falsifications/verification.every_real_date_survives_its_own_day_number.patch`
     #[kani::proof]
     fn every_real_date_survives_its_own_day_number() {
@@ -985,17 +908,11 @@ mod verification {
         kani::cover!(month == 2 && day == 29);
     }
 
-    /// **Time only moves forward.** Every day in the range decodes to a date that sorts strictly
-    /// after the day before it, under `Civil`'s derived `Ord`. That is what makes `Format::Date`
-    /// sortable text and what a log reader assumes, and it rules out the class of bug where a
-    /// boundary (a month end, a leap day, a century) steps the calendar backwards for one day.
+    /// Time only moves forward: every day in the range decodes to a date that sorts strictly after
+    /// the day before it under `Civil`'s derived `Ord`, which makes `Format::Date` sortable.
     ///
-    /// Stated on **adjacent** days rather than on an arbitrary pair, which is the same theorem: the
-    /// order is transitive, so `d(n) < d(n+1)` for every `n` gives `d(a) < d(b)` for every `a < b`.
-    /// It is also several times cheaper to check, because a second symbolic day number costs a second
-    /// copy of the whole decode: 228s measured for the pair, 38-50s for the adjacent form. Worth
-    /// stating rather than quietly enjoying, since it reads like a weaker claim and is not: this is a
-    /// proof of the general property, phrased as its induction step.
+    /// Stated on adjacent days, the same theorem by transitivity and several times cheaper than an
+    /// arbitrary pair (see notes/verification/calendar-proofs.md).
     /// Falsification: replayable `crates/calendar/falsifications/verification.each_day_sorts_after_the_one_before_it.patch`
     #[kani::proof]
     fn each_day_sorts_after_the_one_before_it() {
@@ -1008,9 +925,8 @@ mod verification {
         );
     }
 
-    /// **Day of year is 1..=366, and 366 happens only on 31 December of a leap year.** Full range,
-    /// every day. The `if and only if` is the part worth having: a day-of-year that saturates at 365,
-    /// or that reaches 366 in a common year, both fail this.
+    /// Day of year is 1..=366, and 366 happens only on 31 December of a leap year, for every day in
+    /// the range. A day-of-year that saturates at 365, or reaches 366 in a common year, fails this.
     /// Falsification: replayable `crates/calendar/falsifications/verification.day_of_year_is_bounded_and_366_means_leap.patch`
     #[kani::proof]
     fn day_of_year_is_bounded_and_366_means_leap() {
@@ -1027,11 +943,9 @@ mod verification {
         kani::cover!(doy == 366);
     }
 
-    /// **The week advances one day at a time and closes after seven.** Three facts, over every day in
-    /// the range: consecutive days differ, the ISO number steps 1..=7 in order (not merely changes),
-    /// and seven days on is the same weekday. The last is what makes it a cycle rather than a
-    /// sequence, and together they pin the `rem_euclid` that a truncating `%` would break for
-    /// pre-epoch dates.
+    /// The week advances one day at a time and closes after seven, over every day in the range:
+    /// consecutive days differ, the ISO number steps 1..=7 in order, and seven days on is the same
+    /// weekday. Together they pin the `rem_euclid` a truncating `%` would break before the epoch.
     /// Falsification: replayable `crates/calendar/falsifications/verification.weekdays_advance_one_day_at_a_time.patch`
     #[kani::proof]
     fn weekdays_advance_one_day_at_a_time() {
@@ -1044,19 +958,13 @@ mod verification {
         assert_eq!(Weekday::from_days(days + 7), today);
     }
 
-    /// **The seconds round trip**, which is the calendar theorem above plus the one thing it does not
-    /// cover: the `86_400` split, and whether the code divides the way a calendar needs.
+    /// The seconds round trip: the `86_400` split, and whether the code divides the way a calendar
+    /// needs.
     ///
-    /// Bounded to 1968-01-01T00:00:00Z through 1971-12-31T23:59:59Z, and the window is chosen rather
-    /// than convenient. It straddles the epoch, so it contains negative timestamps, zero, and positive
-    /// ones; in Rust `-1 / 86400` is `0` and the answer a calendar needs is `-1`, so truncating
-    /// division here reports 1970-01-01 for every instant in the last day of 1969, and *only* a
-    /// negative timestamp catches it. It is four years, so it contains a leap day (1968-02-29), all
-    /// twelve month lengths, and three year boundaries.
-    ///
-    /// What the bound excludes is the *calendar* behaviour at other years, and that is exactly what
-    /// `the_calendar_algorithms_are_mutual_inverses` proves over the full range. The composition is
-    /// stated in the module comment above.
+    /// Bounded to 1968-01-01T00:00:00Z through 1971-12-31T23:59:59Z. The window straddles the epoch,
+    /// so it holds the negative timestamps truncating division gets wrong, a leap day (1968-02-29),
+    /// all twelve month lengths and three year boundaries. The calendar at other years is
+    /// `the_calendar_algorithms_are_mutual_inverses`'s.
     /// Falsification: replayable `crates/calendar/falsifications/verification.unix_to_civil_and_back_is_the_identity.patch`
     #[kani::proof]
     fn unix_to_civil_and_back_is_the_identity() {
@@ -1074,15 +982,11 @@ mod verification {
         kani::cover!(c.month() == 2 && c.day() == 29);
     }
 
-    /// **Formatting is total, never truncates, and is always printable ASCII**, for every format, at
-    /// every legal UTC offset, over one day of timestamps.
+    /// Formatting is total, never truncates, and is always printable ASCII, for every format and
+    /// every representable `DateTime` at every legal UTC offset.
     ///
-    /// It proves the fixed buffer is big enough (the writer's silent-drop branch is never taken for
-    /// any input it can be handed), and it is what makes `Formatted::as_str`'s `unwrap_or("")`
-    /// unreachable rather than an untested fallback. That last step is one line of composition rather
-    /// than a proof through `core::str::from_utf8`: **ASCII is a subset of UTF-8**, so a buffer whose
-    /// every byte is ASCII decodes, always. Proving it *through* the standard library's validator
-    /// instead costs minutes of symbolic execution and adds nothing.
+    /// So the writer's silent-drop branch is never taken, and since ASCII is a subset of UTF-8,
+    /// `Formatted::as_str`'s `unwrap_or("")` is unreachable.
     /// Falsification: replayable `crates/calendar/falsifications/verification.every_format_is_ascii.patch`
     #[kani::proof]
     #[kani::unwind(34)]
@@ -1095,14 +999,9 @@ mod verification {
         printable(&dt.format(Format::Unix));
     }
 
-    /// The check `every_format_is_ascii` applies, written as an **index** loop over the fixed buffer
-    /// rather than a `for` over the variable-length slice.
-    ///
-    /// That is not a style preference, it is the difference between a proof that finishes and one that
-    /// does not. Iterating a slice whose *length* is symbolic makes CBMC branch on the length at every
-    /// step, and symbolic execution alone ran past ten minutes; the same property over the fixed array
-    /// with an `i < len` guard verifies in seconds. Worth knowing before writing the next harness over
-    /// a `&[u8]`.
+    /// The check `every_format_is_ascii` applies, as an index loop over the fixed buffer: a `for`
+    /// over a slice of symbolic length makes CBMC branch on the length at every step, and did not
+    /// finish in ten minutes.
     fn printable(f: &Formatted) {
         assert!(f.len as usize <= FMT_CAP);
         assert!(f.len > 0, "no format is empty");
@@ -1116,10 +1015,9 @@ mod verification {
         }
     }
 
-    /// **The `Unix` format fits any `i64`**, `i64::MIN` included, where the `-` and twenty digits are
-    /// the longest a signed 64-bit number can be. Separate from the harness above because this arm's
-    /// length depends on the magnitude of the number, which is precisely what a fixed buffer is at
-    /// risk from, and unbounded because the digit loop is where that risk lives.
+    /// The `Unix` format fits any `i64`, `i64::MIN` included (a `-` and nineteen digits). Separate
+    /// and unbounded because this arm's length depends on the number's magnitude, which is what a
+    /// fixed buffer is at risk from.
     /// Falsification: replayable `crates/calendar/falsifications/verification.the_unix_format_fits_any_i64.patch`
     #[kani::proof]
     #[kani::unwind(21)]
@@ -1132,14 +1030,9 @@ mod verification {
         assert!(f.len as usize <= FMT_CAP);
     }
 
-    /// **The parser never panics on arbitrary bytes.** Every input byte is symbolic, at every length
-    /// up to 26 (enough for a full `YYYY-MM-DDTHH:MM:SS.f+HH:MM` and more). It may return any
-    /// `Error`; what it may not do is index out of bounds, overflow, or divide by zero.
-    ///
-    /// A `date -s` argument and, later, anything an NTP exchange hands over are bytes this program did
-    /// not write, so totality here is a security property rather than tidiness. Nothing is assumed
-    /// about the bytes at all: they need not be UTF-8, let alone ASCII, which is why the harness goes
-    /// through [`DateTime::parse_rfc3339_bytes`].
+    /// The parser never panics on arbitrary bytes, every byte symbolic, at every length up to 26. It
+    /// may return any `Error`, but never index out of bounds, overflow or divide by zero. The input
+    /// is text this program did not write (a `date -s` argument), so this is a security property.
     /// Falsification: replayable `crates/calendar/falsifications/verification.parse_is_total_on_hostile_bytes.patch`
     #[kani::proof]
     #[kani::unwind(28)]
@@ -1159,12 +1052,9 @@ mod verification {
         kani::cover!(DateTime::parse_rfc3339_bytes(&bytes[..len]).is_ok());
     }
 
-    /// **Everything this crate prints, it can read back**, for every representable `DateTime`: every
-    /// date in the ten-thousand-year range, at every minute of offset from -23:59 to +23:59.
-    ///
-    /// This is what makes RFC 3339 usable as the system's interchange form: a timestamp `date` wrote
-    /// and `date -s` read is the same instant *and* the same offset (the equality is on the whole
-    /// `DateTime`, so an offset silently normalised away would fail it).
+    /// Everything this crate prints, it can read back, for every representable `DateTime` at every
+    /// minute of offset from -23:59 to +23:59: same instant and same offset, since the equality is
+    /// on the whole value.
     /// Falsification: replayable `crates/calendar/falsifications/verification.rfc3339_output_parses_back_to_itself.patch`
     #[kani::proof]
     #[kani::unwind(28)]
