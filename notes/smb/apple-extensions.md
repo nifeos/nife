@@ -1,5 +1,7 @@
 # The Apple half: the `AAPL` create context (2026-08-17)
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `apple-half`.*
+
 An appendix to [notes/smb.md](../smb.md). The code it describes was removed on 2026-08-30; read every
 present tense as "as of `685900ec`". It holds what milestone 55 (Time Machine: SMB3 with Apple's
 extensions, and mDNS) added for macOS, what the server claimed, and the durability gap the claim

@@ -1,5 +1,7 @@
 # A thread-stack fault that milestone 108 surfaced and did not cause
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `stack-frame-fault`.*
+
 An appendix to [notes/frames.md](../frames.md). It predates the `Frame` -> `PageFrame` rename.
 Every "frame" in it is a CPU call frame, the compiler's stack-size accounting for one function
 activation, never the kernel object the parent note describes. It is left with that word as it read

@@ -1,5 +1,7 @@
 # 3. What the timer interrupt path costs, and what a deadline scan adds to it
 
+*Name: provisional.*
+
 Section 3 of [`notes/timed-wait.md`](../timed-wait.md) in full: the timer tick's instruction counts
 on both ISAs, and the exact cost of the deadline check a prototype added.
 

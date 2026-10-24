@@ -180,3 +180,11 @@ lesson is that a call returning `Err` may still have acted; this one's is that a
 a critical section and recomputed outside it is not the same value, however identical the expression
 looks. When a critical section decides something the code after it needs, carry the decision out as
 a value. `Option<usize>` and `#[must_use]` cost nothing and make the stale re-read unspellable.
+
+## BUGS
+
+- The `#[must_use]` that makes the stale re-read unspellable is on `spawning::spawn_on`, not on
+  `placement::place_on`, whose `Option<usize>` is the answer that must not be dropped. Its message
+  is about the returned SGI, which `spawn_on` does not return. The attribute stayed in
+  `spawning.rs` when `place_on` moved to `placement.rs`, so a new caller of `place_on` that drops
+  the answer compiles silently. Moving the attribute is a one-line code change.

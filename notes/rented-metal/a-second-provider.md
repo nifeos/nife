@@ -1,5 +1,7 @@
 # What a second provider is a test of, and what it costs
 
+*Name: provisional. After the parent's "What a second provider is a test of".*
+
 An appendix to [`notes/rented-metal.md`](../rented-metal.md). It holds the case for a second
 x86_64 provider as an experiment rather than redundancy, and the side-by-side table of how each
 provider delivers a kernel, a console and power. It also holds the cost of running several vendors.

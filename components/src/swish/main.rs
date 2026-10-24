@@ -1,35 +1,26 @@
-//! The capability shell, at EL0: designation is authorization (notes/grant-expression.md). A Unix
-//! child inherits your whole authority; here the command line is a **grant expression**, so naming
-//! a resource grants it, a program that names nothing gets only the report channel every spawn
-//! carries, and a refusal reads "you hold no such capability". `grant_plan` parses and checks the
-//! line on the host; this file turns a checked grant into delegated capabilities.
-//!
-//! It grants only from what it holds: `prog --mem N` splits N pages from its own budget (slot 3),
-//! and a bare name in a file position resolves only if the progenitor granted it a directory
-//! ([`DIR_TERMINAL`]); see [`holdings`] and notes/pipes.md. `caps` prints its whole endowment and
-//! `caps <command>` previews exactly what a command would get, including the one authority no
-//! token designates, the clock a manifest like `date`'s declares. This shell holds its own clock
-//! `READ` without `GRANT`, so `time <command>` can measure and cannot hand a clock on
-//! (notes/time-command.md). No `run` verb and no `file:` prefix: a bare name spawns, and the
-//! manifest declares a file token's direction.
+//! The capability shell, at EL0: designation is authorization (notes/grant-expression.md). Naming
+//! a resource on the command line grants it, a program that names nothing gets only the report
+//! channel every spawn carries, and `caps <command>` previews exactly what a line would grant.
+//! `grant_plan` parses and checks the line on the host; this program turns a checked grant into
+//! delegated capabilities from only what it holds ([`holdings`]). It holds its clock `READ`
+//! without `GRANT`, so it can read one and cannot hand one on. See notes/shell/the-program.md.
+
+//! # Capability contract
 //!
 //! - slot 0: the terminal rendezvous (CALL: `OPERATION_WRITE` / `OPERATION_READLINE`).
 //! - slot 1: a spawn rendezvous (direct the progenitor to start a program; `grant_plan::spawnproto`).
 //! - slot 2: a result rendezvous (receive a spawned program's answer).
 //! - slot 3: an untyped budget, the memory it grants with `--mem`.
-//!
-//! Pages shared with the terminal: `OUT_VA` (text and prompts out) and `LINE_VA` (lines in). The
-//! directory ([`DIR_TERMINAL`], slot 4) and the clock page ([`CLOCK_SLOT`], from `x2`) depend on
-//! the boot's wiring, so their numbers are not constants.
-//!
+//! - `OUT_VA` (text out) and `LINE_VA` (lines in): pages shared with the terminal. The directory
+//!   ([`DIR_TERMINAL`], slot 4) and the clock page ([`CLOCK_SLOT`], from `x2`) move with the
+//!   boot's wiring, so their numbers are not constants.
+
 //! # BUGS
 //!
 //! - A child holding the result endpoint can send `SPAWN_FAILED`, `SPAWN_NO_DISPLAY` or a wrong
-//!   exit status about itself, though never about another job. Every `RECEIVE` returns the sender's
-//!   badge in `x3`, so a badged copy per sender would close it at no new authority.
-//! - A job that faults reaches the prompt as [`swish::FAULTED_SENTENCE`] with `$?` 1, through
-//!   `job_undertaker`'s `JOB_FAULTED`; a job that hangs without faulting still hangs the prompt,
-//!   and only an interruptible spawn can be ended with `^C`.
+//!   exit status about itself, never another job; a badged copy per sender would close it.
+//! - A job that faults reaches the prompt as [`swish::FAULTED_SENTENCE`] with `$?` 1, but one that
+//!   hangs without faulting hangs the prompt, and only an interruptible spawn ends with `^C`.
 //! - A fault reported while watching a screen-narrowed tail arrives one command late
 //!   (`job_undertaker`'s `BUGS`).
 //!

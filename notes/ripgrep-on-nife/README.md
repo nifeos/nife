@@ -8,6 +8,3 @@ prose budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget). calef names
 directories.*
-
-- `walk-faults` Name: provisional, for the parent's list of the walk's three faults. calef names
-  files.
