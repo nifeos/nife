@@ -43,6 +43,16 @@ kernel refuses every boot program as `Unmeasured`.
 The initial ramdisk is in the same nifefs format the virtio disk uses, so one parser serves both.
 It is generated on every build and never checked in: a binary in git is one nobody can review.
 
+## How the kernel finds it
+
+On aarch64, `helpers/qemu-runner-aarch64.sh` passes the packed archive to QEMU as `-initrd`
+(milestone 19f (run a real workload)). This is the road Linux's initramfs travels. QEMU loads the
+file into RAM and writes its address into `/chosen/linux,initrd-start` in the device tree. The
+kernel finds it there with `memory::initial_ramdisk_region`, built at milestone 3 (hand out physical
+memory) for this. The kernel knows nothing about the contents at build time beyond the measurement
+table's digests; that separation is what milestone 7c (user mode: EL0, capabilities, the ELF loader,
+and IPC) set out to build. The raw user ELFs are only the packer's input.
+
 ## Checks at packing time
 
 Packing refuses an archive rather than writing a partial one when:
