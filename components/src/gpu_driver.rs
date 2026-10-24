@@ -1,52 +1,14 @@
-//! **The GPU driver: virtio-gpu, at EL0, confined** (milestone 29, the display ladder's rung
-//! one).
+//! The GPU driver: virtio-gpu, at EL0, confined (milestone 29, the display ladder's rung one).
 //!
-//! The first pixels this system ever puts in a scanout, put there by an unprivileged process whose
-//! whole world is a capability table:
-//!
-//! - slot 0, a **report** endpoint: how it tells its spawner it came up, and what it flushed;
-//! - slot 1, an **`Irq`**: the device's completion interrupt, arriving as a message;
-//! - slot 2, a **`Virtio`**: the confined transport. The device's registers are NOT mapped here, so
-//!   this process cannot program a queue address or ring a doorbell; the kernel does both, and
-//!   validates every descriptor first (notes/dma.md);
-//! - slot 3, a **display** endpoint it receives on: where clients ask for a flush;
-//! - slot 4, an **untyped**: the budget the page tables for its own mappings come out of;
-//! - slot 5, its **DMA region**: one `PageFrame` capability naming the whole [`DMA_PAGE_FRAMES`]-page
-//!   run (DECISIONS §102), which it maps itself in one call (milestone 108). The region's *physical*
-//!   base is written in the region itself, at `abi::virtio::DMA_PHYS_OFFSET` of its first page,
-//!   because descriptors speak physical addresses and a process only knows virtual ones (it came in
-//!   `x1` until milestone 600 (provisional) moved this driver's spawn into the progenitor).
-//!
-//! **One capability for one contiguous region**, since DECISIONS §102 gave `PageFrame` a page
-//! count: this driver's DMA region is adjacent in physics, adjacent in its address space, and
-//! covered as a single range by the IOMMU domain the kernel programmed, so one capability names all
-//! of it. One capability per page would be 684 at the 1120x624 scanout ([`DMA_PAGE_FRAMES`]),
-//! which no sixteen-slot capability table holds. See notes/frames.md.
-//!
-//! # The thing that draws is not the thing that talks to the hardware
-//!
-//! This process never draws a pixel. It owns the device and the transport, and it serves a
-//! contract ([`graphics_contract`], notes/framebuffer-contract.md) to a client that owns the pixels and no
-//! device at all. That split is the whole point of the increment: rung two's compositor takes the
-//! client's place unchanged, and the security story is that a hostile client can draw nonsense and
-//! nothing more.
-//!
+//! It owns the device and the transport and serves [`graphics_contract`] to a client that owns the
+//! pixels and no device, so a hostile client can draw nonsense and nothing more; this process never
+//! draws a pixel. Its DMA region is one `PageFrame` capability for one contiguous run (DECISIONS
+//! §102): page 0 holds the rings and the control buffers, and pages 1.. hold the surface the client
+//! also maps. The kernel registers the whole run as this driver's region, so the shadow-ring
+//! validator and the IOMMU domain both bound every device access to it. Fonts, VT state, scrollback
+//! and input arrive as clients of the contract, never as code in here. See
+//! notes/framebuffer-contract.md and notes/frames.md.
 
-//! # The memory story, because a framebuffer does not fit in a page
-//!
-//! Every other driver here gets one 4 KiB DMA page. A framebuffer does not fit in one, and the
-//! tempting shortcut, letting the GPU's backing live outside the DMA region, would put the one
-//! device that reads bulk memory outside the confinement everything else is inside. So the region is
-//! **larger**, not special: page 0 holds the rings and the control request/response buffers (driver
-//! private), and pages 1.. hold the surface, which is the run of frames the client also maps. The
-//! kernel registers the whole run as this driver's DMA region, so the shadow-ring validator bounds
-//! every descriptor to it and the IOMMU domain covers exactly it. See notes/framebuffer-contract.md.
-//!
-//! # What this driver does NOT do
-//!
-//! No fonts, no VT state, no scrollback, no input. Those are later increments and they arrive as
-//! *clients* of the contract this serves, not as code in here.
-//!
 //! Name: ratified 2026-08-27 (calef). Renamed from `display` to `gpu_driver`, matching the
 //! `<device>_driver` shape given to `block_driver` and `keyboard_driver` in the same pass. This
 //! module's own doc already said it above: it is specifically and only the GPU device driver, and
@@ -70,24 +32,31 @@ use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
 
-/// Capability slots, by convention with `kernel/src/user/display_service.rs`.
+/// Capability slots, by convention with `kernel/src/user/display_service.rs`. Slot 0, the report
+/// endpoint: how this driver tells its spawner it came up, and what it flushed.
 const REPORT: u64 = 0;
+/// Slot 1, an `Irq`: the device's completion interrupt, arriving as a message.
 const IRQ: u64 = 1;
+/// Slot 2, a `Virtio`: the confined transport. The device's registers are not mapped here, so this
+/// process cannot program a queue address or ring a doorbell; the kernel does both, and validates
+/// every descriptor first (notes/dma.md).
 const VIRTIO: u64 = 2;
+/// Slot 3, the display endpoint this driver receives on: where clients ask for a flush.
 const DISPLAY: u64 = 3;
-/// The untyped this driver spends on the page tables its DMA region needs.
+/// Slot 4: the untyped this driver spends on the page tables its DMA region needs.
 const BUDGET: u64 = 4;
-/// The whole DMA region, one `PageFrame` capability naming the [`DMA_PAGE_FRAMES`]-page run
-/// (DECISIONS §102).
+/// Slot 5: the whole DMA region, one `PageFrame` capability naming the [`DMA_PAGE_FRAMES`]-page run
+/// (DECISIONS §102), which this driver maps itself in one call (milestone 108). One capability per
+/// page would be 684 at the 1120x624 scanout, which no sixteen-slot capability table holds.
 const DMA_FRAME: u64 = 5;
 
 /// The DMA region, in frames: one for the rings and control buffers, then the surface. Must match
 /// `display_service::DMA_PAGE_FRAMES`.
 const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 
-/// Where this driver puts its DMA region. **Its choice, not the kernel's**: it holds the frames and
-/// maps them (milestone 108). The *physical* base still arrives in `a1`, and has to: descriptors
-/// speak physical, and a process only knows virtual addresses.
+/// Where this driver puts its DMA region. Its choice, not the kernel's: it holds the frames and maps
+/// them (milestone 108). The physical base, which descriptors need, is read out of the region
+/// itself (`abi::virtio::DMA_PHYS_OFFSET`; see `_start`).
 ///
 /// **2 MiB-aligned** (milestone 142 (a text display good enough that people use it instead of a
 /// GUI), DECISIONS §102 (a Frame names a run of pages)): at the 1120x624 scanout
@@ -122,8 +91,7 @@ const F_VERSION_1_HI: u32 = 1;
 const F_ACCESS_PLATFORM_HI: u32 = 1 << 1;
 
 /// The virtio device type a GPU reports. The kernel's PCI transport answers `DEVICE_ID` with the
-/// type recovered from the PCI id, so this check means the same thing on either bus; before
-/// milestone 29 it would have read 2 here and this line is what found that out.
+/// type recovered from the PCI id, so this check means the same thing on either bus.
 const VIRTIO_ID_GPU: u32 = 16;
 
 /// The control virtqueue. A virtio-gpu also has a cursor queue (1); this driver has no cursor, so it
@@ -449,30 +417,16 @@ fn surface_pixel(i: usize) -> u32 {
     direct_memory_access_read::<u32>(OFF_SURFACE + (i * 4) as u64)
 }
 
-/// **The escape attempt.** Bring the device up honestly, then ask it to read pixels out of memory
-/// this driver was never granted: a `RESOURCE_ATTACH_BACKING` naming `victim`, a frame the kernel
-/// allocated and deliberately left out of this device's IOMMU domain. Then transfer from it, so the
-/// device really tries to move those bytes. Reports the device's response code and stops.
+/// Attack this driver's own confinement: bring the device up honestly, then attach `victim`, a
+/// frame the kernel left out of this device's IOMMU domain, as the resource's backing, and report
+/// the device's response code. `direct_memory_access_phys` is the region's physical base.
 ///
-/// This is the GPU's own confinement question, and it is not the disk's. Everywhere else, the
-/// addresses a device will touch arrive in virtqueue descriptors, which the kernel validates and
-/// copies into a shadow ring the driver cannot reach (notes/dma.md). A virtio-gpu's backing addresses
-/// arrive in a **device-level command payload** instead. The kernel bounds the descriptor carrying
-/// that command, but the addresses inside it are bytes it does not parse, and it should not start
-/// parsing them: that would put device knowledge in the transport, which is the line §18 draws.
-///
-/// So the IOMMU is the barrier here, and the kernel-side test is what checks it held, by draining the
-/// IOMMU's fault queue. **The device's response code is not the evidence**, and finding that out was
-/// the surprise: QEMU's DMA layer answers a translation failure with a bounce buffer rather than a
-/// failed mapping, so the command comes back OK while the bytes the device gets are not the victim's.
-/// The fault the IOMMU recorded is the fact; the response code is reported only so the test can say
-/// what happened. See notes/framebuffer-contract.md.
-///
-/// `victim` comes from the kernel rather than being computed here, for the same reason the milestone
-/// 16b confinement test picks its own escape frame: the test must know the exact address to look for
-/// in the fault queue. An earlier version guessed at "the frame just past my region" and that was a
-/// bad guess, because the allocator's next frame is not reliably out of the domain (the kernel's
-/// shadow page is allocated right after the region).
+/// A virtio-gpu's backing addresses ride in a device-level command payload, which the kernel's
+/// descriptor validation does not parse (§18 keeps device knowledge out of the transport), so the
+/// IOMMU is the barrier. The kernel test checks it from the IOMMU's fault queue: QEMU answers a
+/// translation failure with a bounce buffer, so the response code is not the evidence. `victim`
+/// comes from the kernel because the test must know the exact address to look for. See
+/// notes/framebuffer-contract/iommu-escape-test.md.
 fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     init(direct_memory_access_phys);
 
@@ -485,20 +439,10 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
         die(E_CREATE_2D);
     }
 
-    // Point the resource's backing at the victim frame: memory outside our grant, which a hostile
-    // display driver would love to read (another process's pixels, a key, a filesystem block) by
-    // having the GPU copy it into a scanout. Attaching is itself the access that must be refused: the
-    // device maps the backing here, and mapping an untranslatable address is what the IOMMU faults on.
-    //
-    // **One pixel's worth, not a whole frame, and the reason is a real limit worth knowing.** The
-    // RISC-V IOMMU's fault queue holds 128 records and the driver does not clear the queue's overflow
-    // bit, so a flood of faults latches the overflow and **silently stops fault reporting for
-    // everything after it**. A 4096-byte backing produced exactly that flood and broke the *next*
-    // test's fault assertion (milestone 16b's `the_iommu_faults_a_dma_that_escapes_the_domain`, which
-    // then saw no faults at all and reported the IOMMU as absent). Four bytes is one translation, one
-    // fault, and the same security question: can this device reach an address outside its grant?
-    // Recorded in notes/framebuffer-contract.md, because the overflow behaviour will matter more to
-    // whoever routes faults to a production handler than it does here.
+    // Attaching is itself the access the IOMMU must refuse: the device maps the backing here. Four
+    // bytes, not a frame: the RISC-V IOMMU's 128-record fault queue latches its overflow bit and
+    // then records nothing, so one translation and one fault ask the same question without a flood
+    // (notes/framebuffer-contract/iommu-escape-test.md).
     write_hdr(CMD_RESOURCE_ATTACH_BACKING);
     direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
     direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 4, 1); // nr_entries
@@ -525,12 +469,10 @@ pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
         // spawner that never sees `UP` knows bring-up failed.
         exit();
     }
-    // **Where the region is, read out of the region** (milestone 600 (provisional)). Descriptors
-    // speak physical addresses, and whoever built this process wrote the run's physical base into
-    // the tail of its first page (`abi::virtio::DMA_PHYS_OFFSET`, past `OFF_RESP`'s 408 bytes). It
-    // used to arrive in `x1`, which only a spawner that knew the address could fill; the
-    // progenitor, which builds this driver on the real boot, holds the run as a capability and
-    // knows no physical address, which is the point of holding it as one.
+    // Where the region is, read out of the region (milestone 600 (provisional)): descriptors speak
+    // physical addresses, and the progenitor that builds this driver holds the run as a capability
+    // and knows none, so whoever built this process wrote the base into the tail of the first page
+    // (`abi::virtio::DMA_PHYS_OFFSET`, past `OFF_RESP`'s 408 bytes).
     // SAFETY: the whole run was just mapped read/write at `DMA_VA`, and the offset is inside its
     // first page.
     let direct_memory_access_phys =
@@ -559,13 +501,10 @@ pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // display endpoint, through the kernel-minted one-shot Reply, so it never names its caller.
     let mut reported_flush = false;
     loop {
-        // The opcode AND the damage rectangle both ride in the first word (`gfx::req` packs the
-        // rectangle into its low 56 bits), so a flush is one message with no second word to keep in
-        // step. The request's `w1` is the caller's second word, which this contract does not
-        // use; reading the rectangle out of it instead of out of `w0` was the first bug this test
-        // caught, and it presented as a flush refused for an empty rectangle.
-        // A CALL's Reply, or nothing to answer: a client's SEND_CAP is deleted rather than
-        // answered into (milestone 706 (a CALL server can tell a Reply from a delegation)).
+        // The opcode and the damage rectangle both ride in `w0` (`gfx::req` packs the rectangle
+        // into its low 56 bits); this contract does not use `w1`. A client's SEND_CAP is deleted
+        // rather than answered into (milestone 706 (a CALL server can tell a Reply from a
+        // delegation)).
         let req = receive_request(DISPLAY);
         let w0 = req.w0;
         let reply_slot = req.delivered.into_reply();
@@ -589,13 +528,10 @@ pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
             reply(to, r0 as u64, r1);
         }
 
-        // **The driver-side witness**, once, after the first successful flush. The digest is taken
-        // in this address space, from our own mapping of the surface, after the device reported the
-        // transfer complete: a second independent account of what reached the hardware, from a
-        // different process than the one that wrote the pixels. Status, not contract; rung two can
-        // ignore it (notes/framebuffer-contract.md). **Its spawner cannot**: this `send` blocks
-        // until received, and nothing is in `RECEIVE` on `DISPLAY` meanwhile, so a spawner that never
-        // takes it stops every flush after the first (milestone 177's hang, which this line was).
+        // The driver-side witness, once, after the first successful flush; see
+        // notes/framebuffer-contract.md. This `send` blocks until received and nothing receives on
+        // `DISPLAY` meanwhile, so a spawner that never takes it stops every flush after the first
+        // (milestone 177's hang).
         if !reported_flush && gfx::operation(w0) == gfx::display::FLUSH && r0 == 0 {
             reported_flush = true;
             let digest = gfx::checksum(surface_pixel);
