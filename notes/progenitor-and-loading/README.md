@@ -11,6 +11,3 @@ its prose budget has no room for.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `the-binary-split` Name: provisional. For the 19f steps that split `hello` into the system's
-  binaries. calef names files.

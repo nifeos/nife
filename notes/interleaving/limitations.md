@@ -1,5 +1,7 @@
 # Interleavings: the BUGS list in full
 
+*Name: provisional.*
+
 An appendix to [notes/interleaving.md](../interleaving.md), whose BUGS section lists each entry in
 one line.
 

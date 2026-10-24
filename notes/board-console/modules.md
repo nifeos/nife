@@ -1,5 +1,7 @@
 # serial_console's modules: the design their doc comments link
 
+*Name: provisional, for the crate's modules whose comments link it.*
+
 An appendix to [notes/board-console.md](../board-console.md). The doc comments in
 `crates/serial_console/src/` state what each item holds and refuses. This page holds the reasons
 behind four of them that the comments link here.

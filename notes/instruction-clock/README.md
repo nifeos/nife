@@ -13,7 +13,4 @@ These files carry the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `why-opt-in` Name: provisional. Named after the parent's own heading.
-- `the-injections` Name: provisional. Named after the parent's own heading.
+Each stem here is named for its content, and calef names files.

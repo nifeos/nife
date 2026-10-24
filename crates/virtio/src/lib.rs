@@ -1,27 +1,16 @@
 #![no_std]
-//! A virtio driver, block and net. **At EL0.**
+//! A virtio driver, block and net, at EL0.
 //!
-//! This is milestone 9's headline: a real block device, driven by an unprivileged process. The
-//! kernel handed us three things and knows nothing else about this device:
+//! The kernel hands the process a DMA page, an `Irq` capability (slot 1) and a `Virtio` transport
+//! capability (slot 2); the device registers are not mapped, so every access goes through the
+//! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
+//! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
 //!
-//! - a mapping of the device's registers (`MMIO_VA`), as device memory,
-//! - a DMA page (`DMA_VA`), whose *physical* address arrived in `x1`, because descriptors speak
-//!   physical addresses and a process only knows virtual ones,
-//! - an `Irq` capability (slot 1), so the device's interrupt can reach us as a message.
-//!
-//! Everything about how a virtio block device actually works lives here, in userspace. If any of
-//! it is wrong, this process faults, and the kernel does not.
-//!
-//! The transport is **modern virtio-mmio (version 2)**: separate physical addresses for the
-//! descriptor table and the two rings, negotiated through the registers below. See the virtio
-//! 1.x spec, sections 4.2 (MMIO) and 5.2 (block).
-//!
-//! Nothing here can run off a machine: every entry point writes device registers through a
-//! mapping the kernel handed this process and returns `!`, so the example on [`run`] is `no_run`.
-//! The checkable parts of this subsystem are `direct_memory_access_validator` and
-//! `filesystem_contract`.
-//!
+//! Every entry point drives a device and returns `!`, so the example on [`run`] is `no_run`; the
+//! checkable parts of this subsystem are `direct_memory_access_validator` and
+//! `filesystem_contract`. See notes/virtio.md ("The driver crate") and notes/dma.md.
 
+//!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), as a proper name rather than
 //! on the acronym test: `virtio` is the specification's own name (virtio 1.x, OASIS), the string in
 //! every QEMU flag and device tree node, so expanding it would rename a standard. That is the `elf`
@@ -65,13 +54,9 @@ const S_FEATURES_OK: u32 = 8;
 // Feature bit 32: VIRTIO_F_VERSION_1. Mandatory for a modern device.
 const F_VERSION_1_HI: u32 = 1; // bit 32 lives in the high 32-bit word
 
-// Feature bit 33: VIRTIO_F_ACCESS_PLATFORM. The device sets it when it sits behind an IOMMU
-// (QEMU's `iommu_platform=on`, milestone 16b); it then treats the addresses in our descriptors and
-// ring registers as IOVAs to be translated, and REQUIRES the driver to negotiate the bit or it
-// refuses to run. Our DMA domain is an identity map (IOVA == PA, kernel/src/iommu.rs), so accepting
-// the bit changes nothing about the addresses we compute; it just tells the device we know we are
-// translated. Offered only when behind an IOMMU, so we ack it conditionally: the virtio-mmio disk
-// does not offer it, and acking a feature the device did not offer would fail negotiation.
+// Feature bit 33: VIRTIO_F_ACCESS_PLATFORM. A device behind an IOMMU offers it and refuses to run
+// unless it is negotiated; acked only when offered, since acking an unoffered feature fails
+// negotiation. The DMA domain is an identity map, so it changes no address (notes/virtio.md).
 const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // bit 33 lives in the high 32-bit word
 
 // The virtqueue we build. Small: one request in flight is all a demo needs.
@@ -94,15 +79,11 @@ const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // assuming it (virtio 1.2 §5.2.6; see `init_with_features` and `blk_flush`).
 const VIRTIO_BLK_T_FLUSH: u32 = 4;
 
-// Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command".
-//
-// **The whole durability claim rests on this bit being offered**, so it is read from the device
-// rather than assumed. A driver that sent `VIRTIO_BLK_T_FLUSH` without negotiating it would get
-// `VIRTIO_BLK_S_UNSUPP` from a well-behaved device and undefined behaviour from a careless one,
-// and either way a server that took the resulting silence for success would be telling a backup
-// client its data was safe. The kernel's `sanitize_driver_features` strips only bits 28 and 34, so
-// this bit reaches the device unchanged; `feature_negotiation_leaves_the_blk_flush_bit_alone` in
-// `kernel/src/virtio.rs` is the gate that keeps that true.
+// Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
+// durability claim rests on it, so it is read from the device, never assumed. The kernel's
+// `sanitize_driver_features` must leave it alone;
+// `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs` holds that. See
+// notes/virtio.md ("Feature negotiation").
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
@@ -134,28 +115,19 @@ fn direct_memory_access_read<T: Copy>(off: u64) -> T {
     unsafe { core::ptr::read_volatile((DMA_VA + off) as *const T) }
 }
 
-/// Read block 0 of the disk into the DMA data buffer, then verify the nifefs magic.
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
-/// is set up THROUGH THE KERNEL, which places the rings at fixed offsets in our DMA region and
+/// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
 fn init() {
     init_with_features(0, false);
 }
 
 /// The handshake, with `driver_features_lo` OR'd into the low feature word. The honest driver
-/// passes 0; the indirect attacker passes `F_INDIRECT_DESC_LO` to try to negotiate indirect
-/// descriptors (the kernel strips it, proving negotiation is filtered).
+/// passes 0; the indirect attacker passes `F_INDIRECT_DESC_LO`, unmasked against the offer, so the
+/// kernel is what strips it.
 ///
-/// `want_flush` additionally asks for `VIRTIO_BLK_F_FLUSH`, **but only if the device offered it**,
-/// which is `F_ACCESS_PLATFORM_HI`'s discipline applied to the low word: the ack stays a subset of
-/// the offer, so the same code negotiates correctly against a device that does caching and one that
-/// does not. Returns whether that bit ended up negotiated, which the block server needs as a fact
-/// rather than a hope: it is the difference between answering a sync and refusing one out loud.
-///
-/// The two words are asked for differently on purpose. `driver_features_lo` is passed **unmasked**,
-/// because the indirect attacker's whole point is to ask for a bit the device really does offer and
-/// be stripped by the *kernel*; masking it against the offer would quietly change what that test
-/// proves.
+/// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
+/// bit was negotiated. See notes/virtio.md ("Feature negotiation").
 fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
@@ -163,9 +135,8 @@ fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     mw(STATUS, S_ACKNOWLEDGE);
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
 
-    // Accept VIRTIO_F_VERSION_1 (high word bit 32), plus whatever the caller asked for in the low
-    // word. The kernel filters the low word, so a request for a ring-layout feature it cannot
-    // validate does not survive.
+    // The kernel filters the low word, so a ring-layout feature it cannot validate does not
+    // survive.
     mw(DEVICE_FEATURES_SEL, 0);
     let dev_lo = mr(DEVICE_FEATURES);
     let flush = want_flush && (dev_lo & F_FLUSH_LO) != 0;
@@ -175,10 +146,8 @@ fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
         driver_features_lo | if flush { F_FLUSH_LO } else { 0 },
     );
 
-    // The high word: VERSION_1 always, and ACCESS_PLATFORM only if the device offered it (i.e. it
-    // is behind an IOMMU). Reading the device's high feature word first is what keeps the ack a
-    // subset of the offer, so the same driver binary negotiates correctly on the bare mmio disk and
-    // the IOMMU-fronted PCIe disk alike.
+    // The high word: VERSION_1 always, ACCESS_PLATFORM only if offered, so the ack stays a subset
+    // of the offer.
     mw(DEVICE_FEATURES_SEL, 1);
     let dev_hi = mr(DEVICE_FEATURES);
     let mut ack_hi = F_VERSION_1_HI;
@@ -198,24 +167,18 @@ fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
         STATUS,
         S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK | S_DRIVER_OK,
     );
-    // FEATURES_OK stuck above, so the device accepted the set we wrote, and the only way this bit
-    // is in that set is that the device offered it and we asked for it. virtio-mmio's
-    // `DriverFeatures` is write-only, so there is nothing to read back; this is the negotiated
-    // truth, not an assumption about it.
+    // `DriverFeatures` is write-only; FEATURES_OK sticking is what says the device accepted this
+    // set.
     flush
 }
 
-/// The whole driver, called once from `_start` with the DMA page's physical address in hand.
-/// Negotiates the device, reads the superblock and the `motd` file off the disk, sends the
-/// file's first eight bytes back to the kernel so it can check them, and exits. Never returns:
-/// this is a one-shot test driver, not a resident service, so it does not loop waiting for more
-/// work.
+/// The one-shot read driver: reads the superblock and the `motd` file off the disk, reports the
+/// file's first eight bytes to the kernel to check, and exits.
 ///
 /// # Examples
 ///
-/// A driver's `_start`. What matters is what it holds: a device-typed mapping of the registers, the
-/// DMA page, and an `Irq` capability in slot 1, and no syscall that translates an address, which is
-/// why the DMA page's physical address arrives as an argument.
+/// A driver's `_start`. No syscall translates an address, so the DMA page's physical address
+/// arrives as an argument.
 ///
 /// ```no_run
 /// # use user_mode_runtime::exit;
@@ -236,9 +199,8 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     }
     assert!(magic == nifefs::MAGIC);
 
-    // Walk the directory (still in the block-0 buffer) to find the file named "motd", then read
-    // its first data block. This is a **read from a read-only filesystem, off a real disk, by a
-    // driver at EL0**: superblock -> directory -> file, all in userspace.
+    // Walk the directory, still in the block-0 buffer, to find "motd", then read its first data
+    // block.
     let start_block = find_file(b"motd").unwrap_or_else(|| report_code(0xE4));
     read_block(direct_memory_access_phys, start_block as u64);
 
@@ -250,10 +212,8 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     }
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
-    // Done: exit so the kernel reaps this one-shot driver thread rather than leaving it spinning
-    // on a run queue forever. A leaked spinner is not just untidy: enough of them starve a later
-    // heavy test (the RedoxFS mount) past the hang watchdog. See notes/supervision.md / the test
-    // starvation finding.
+    // Exit rather than spin: leaked spinners starve later tests past the watchdog
+    // (notes/virtio.md).
     exit();
 }
 
@@ -316,20 +276,15 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
 
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
-    // Done: exit so the kernel reaps this one-shot driver thread rather than leaving it spinning
-    // on a run queue forever. A leaked spinner is not just untidy: enough of them starve a later
-    // heavy test (the RedoxFS mount) past the hang watchdog. See notes/supervision.md / the test
-    // starvation finding.
+    // Exit rather than spin: leaked spinners starve later tests past the watchdog
+    // (notes/virtio.md).
     exit();
 }
 
-/// **The abandoned write.** Submit a write through the validated path and then die on purpose,
-/// without waiting for the completion, acknowledging the interrupt, or touching the used ring:
-/// the kill-mid-write case. The kernel reaps this thread with the device still owing it a
-/// completion; the test then runs the full writer against the same device and it must succeed,
-/// which is the proof the abandoned request left the transport, the validator bookkeeping, and
-/// the disk in a sane state. Reports 1 after the submit so the test knows the write really left,
-/// then panics (`brk`/`ebreak`), which is how a userspace process dies here.
+/// **The abandoned write**, the kill-mid-write case: submit a write through the validated path,
+/// report 1, then die (`brk`/`ebreak`) without waiting for the completion, acknowledging the
+/// interrupt or touching the used ring. The test then runs the full writer against the same device,
+/// which must succeed. See notes/dma.md.
 pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     init();
 
@@ -375,20 +330,16 @@ pub fn run_attack(direct_memory_access_phys: u64) -> ! {
     send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     let _ = direct_memory_access_phys;
-    // Done: exit so the kernel reaps this one-shot driver thread rather than leaving it spinning
-    // on a run queue forever. A leaked spinner is not just untidy: enough of them starve a later
-    // heavy test (the RedoxFS mount) past the hang watchdog. See notes/supervision.md / the test
-    // starvation finding.
+    // Exit rather than spin: leaked spinners starve later tests past the watchdog
+    // (notes/virtio.md).
     exit();
 }
 
-/// **The indirect-descriptor attack, refused.** The subtler cousin of `run_attack`: instead of a
-/// direct descriptor pointing at kernel memory (which the validator obviously refuses), this
-/// negotiates `INDIRECT_DESC` and submits a single descriptor flagged `INDIRECT`, whose *inner*
-/// table (in our own region) points the device at the kernel. A validator that walked only the
-/// flat chain would wave the outer descriptor through and let the device follow the table out. The
-/// kernel strips the feature during negotiation and refuses the flag on submit, so the device is
-/// never told to go. Reports 1 if refused (correct), 0 if the notify went through (a hole).
+/// **The indirect-descriptor attack, refused.** Negotiates `INDIRECT_DESC` and submits one
+/// descriptor flagged `INDIRECT` whose inner table, in our own region, points the device at the
+/// kernel; a validator that walked only the flat chain would let the device follow it out. The
+/// kernel strips the feature and refuses the flag on submit. Reports 1 if refused (correct), 0 if
+/// the notify went through (a hole).
 pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     // Ask for indirect descriptors. The kernel strips the bit, but we build the attack anyway to
     // prove the validator refuses the flag even if the feature ever slipped through.
@@ -424,10 +375,8 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     let _ = direct_memory_access_phys;
-    // Done: exit so the kernel reaps this one-shot driver thread rather than leaving it spinning
-    // on a run queue forever. A leaked spinner is not just untidy: enough of them starve a later
-    // heavy test (the RedoxFS mount) past the hang watchdog. See notes/supervision.md / the test
-    // starvation finding.
+    // Exit rather than spin: leaked spinners starve later tests past the watchdog
+    // (notes/virtio.md).
     exit();
 }
 
@@ -436,9 +385,8 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
 /// restated here: header (magic 8, count u32), then entries of
 /// { name\[`NAME_LEN`\], `start_block` u32, len u32 }.
 ///
-/// **Only the entries inside block 0 are visible**, because block 0 is all this driver has
-/// buffered. That is `nifefs::ENTRIES_IN_FIRST_BLOCK`, not the archive's whole `count`, and
-/// reading further would read past the DMA data buffer. The disk this walks holds three files.
+/// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside block 0 are visible; reading further
+/// would read past the DMA data buffer. The disk this walks holds three files.
 fn find_file(name: &[u8]) -> Option<u32> {
     let count = direct_memory_access_read::<u32>(OFF_DATA + 8) as usize;
     for i in 0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK) as u64 {
@@ -464,12 +412,9 @@ fn find_file(name: &[u8]) -> Option<u32> {
 }
 
 /// Build and publish the three-descriptor chain for one block transfer, and ring the device
-/// through the kernel. Returns the used-ring index from before the submit, which is what
-/// [`complete_block`] compares against to see the completion land. The chain shape is the blk
-/// spec's for both directions; only the data descriptor's device-writable flag differs:
-/// a read (`T_IN`) has the device WRITE our buffer, a write (`T_OUT`) has it READ the buffer.
-/// Either way every address is inside our DMA region, and the kernel checks that on NOTIFY;
-/// the direction flag changes nothing about the confinement, which bounds addresses, not flags.
+/// through the kernel. Returns the used-ring index from before the submit, which
+/// [`complete_block`] compares against. A read (`T_IN`) marks the data descriptor device-writable
+/// and a write (`T_OUT`) does not; the kernel checks every address on NOTIFY, whatever the flag.
 fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
     // The request header the device reads: type, reserved, sector.
     direct_memory_access_write::<u32>(OFF_HEADER, req_type);
@@ -517,9 +462,7 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
     direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
     virtio_ring_barrier(); // idx must be visible before we notify
 
-    // Submit THROUGH THE KERNEL. The kernel walks the descriptors we just published and, only if
-    // every one stays inside our DMA region, rings the device. If we pointed one outside our
-    // region, it returns an error and the device is never told to go.
+    // The kernel rings the device only if every published descriptor stays inside our DMA region.
     if notify(VIRTIO, 0) < 0 {
         report_code(0xE5); // the kernel refused our request (a descriptor escaped our region)
     }
@@ -529,22 +472,13 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
 
 /// Wait for the completion of a submitted transfer and confirm the device reported success.
 ///
-/// **The completion is the used ring advancing, not the wakeup.** A driver cannot treat one
-/// interrupt as one completion: the device's line is shared across every driver that ever holds
-/// this device, and a wakeup can be spurious, coalesced, or left pending by a *previous* operator
-/// of the device. The kill-mid-write case makes that concrete: a driver that submitted a write and
-/// died leaves its completion interrupt pending on the shared routing endpoint, and this fresh
-/// driver's first WAIT would consume that stale signal before its own request is on the used ring.
-/// So loop: WAIT, quiet the device, re-enable the line, and let `used.idx` decide when we are
-/// actually done. Every real completion the device makes also raises the line, so the loop always
-/// makes progress and cannot outlast the device. See notes/dma.md (the kill-mid-write section).
+/// The completion is the used ring advancing, not the wakeup: the line is shared, and a wakeup can
+/// be spurious, coalesced, or a dead driver's pending completion. So loop until `used.idx` moves.
+/// See notes/virtio.md ("A completion is the used ring advancing") and notes/dma.md.
 fn complete_block(used_before: u16) {
     loop {
-        // **Wait for the interrupt, as a message.** The device raises its line when it puts our
-        // buffer on the used ring; the kernel (milestone 9a) masks the line, turns it into a
-        // notification, and wakes us. If the interrupt already fired between the notify above and
-        // this call, the kernel's pending count makes WAIT return at once instead of blocking on
-        // an event that is already over.
+        // The kernel masks the line and delivers the interrupt as a notification; its pending count
+        // returns WAIT at once if the interrupt fired before this call.
         interrupt_wait(IRQ);
 
         // Quiet the device (read its interrupt-status, acknowledge it), then re-enable the line at
@@ -572,9 +506,8 @@ fn read_block(direct_memory_access_phys: u64, sector: u64) {
     complete_block(used_before);
 }
 
-/// Write the DMA data buffer to `sector`, start to finish. **The write verb** (milestone 32
-/// phase 1): the same chain, the same validated submit, the same completion; only the data
-/// descriptor's direction differs, so everything the read path proved carries over.
+/// Write the DMA data buffer to `sector`, start to finish (milestone 32 (a real filesystem:
+/// RedoxFS behind a capability FS server) phase 1): the read's chain, data direction flipped.
 fn write_block(direct_memory_access_phys: u64, sector: u64) {
     let used_before = submit_block(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT);
     complete_block(used_before);
@@ -584,10 +517,8 @@ fn write_block(direct_memory_access_phys: u64, sector: u64) {
 /// "not the nifefs magic" branch prints it. Only reached on a bring-up failure.
 fn report_code(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
-    // Done: exit so the kernel reaps this one-shot driver thread rather than leaving it spinning
-    // on a run queue forever. A leaked spinner is not just untidy: enough of them starve a later
-    // heavy test (the RedoxFS mount) past the hang watchdog. See notes/supervision.md / the test
-    // starvation finding.
+    // Exit rather than spin: leaked spinners starve later tests past the watchdog
+    // (notes/virtio.md).
     exit();
 }
 
@@ -601,19 +532,12 @@ fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
 }
 
 // =================================================================================================
-// A virtio-net driver. **At EL0, behind the multi-queue DMA confinement (milestone 30).**
+// A virtio-net driver, at EL0, behind the multi-queue DMA confinement (milestone 30 (the network
+// stack as a confined component)).
 //
-// The same shape as the disk driver above: the kernel owns the registers and the two DMA-critical
-// powers (the ring addresses and the "go"), and confines the device to this one DMA page. What is
-// new is that a NIC needs TWO virtqueues, receive (queue 0, where the device WRITES a frame into our
-// memory) and transmit (queue 1, where it READS one out), and milestone 30's confinement grew a
-// proved second queue and second direction to carry exactly that. The driver drives both queues
-// through the one `Virtio` capability, passing the queue number to SETUP_QUEUE and NOTIFY.
-//
-// The proof it runs, end to end, is a DHCP exchange against QEMU's user-mode (slirp) network: build
-// a DHCP DISCOVER by hand, transmit it (TX), and receive the OFFER slirp sends back (RX). That
-// exercises both directions and both queues with no TCP/IP stack in the loop, so it is a clean test
-// of the driver and the confinement rather than of smoltcp.
+// Receive is queue 0 (the device writes a frame) and transmit is queue 1 (it reads one), both
+// through the one `Virtio` capability. `run_net` proves both with a DHCP exchange against slirp.
+// See notes/virtio.md ("The roles").
 // =================================================================================================
 
 /// The two virtqueues, matching the kernel's contract (receive = 0, transmit = 1).
@@ -960,13 +884,9 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The block server (milestone 32 phase 2): drive the device, serve blocks over blk IPC.
-//
-// The driver roles above read one block and report. This role instead becomes a long-lived server:
-// it inits the device once, then answers read/write/size requests from the FS server forever, one
-// filesystem block (8 sectors, 4096 bytes) per request. The FS server is its only client and never
-// touches the DMA region; the device confinement (kernel/src/virtio.rs) is unchanged, so a serving
-// block driver is as confined as a reading one. See notes/fs-server.md and notes/dma.md.
+// The block server (milestone 32 phase 2): init the device once, then answer the FS server's
+// read/write/size/flush requests forever. The FS server never touches the DMA region, and the
+// device confinement is unchanged. See notes/virtio.md ("The block server") and notes/fs-server.md.
 // ---------------------------------------------------------------------------------------------
 
 /// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPs` the
@@ -976,13 +896,10 @@ const BLK_REQ: u64 = 0;
 /// Where the kernel maps the data region shared with the FS server (the block buffer). Distinct
 /// from the DMA region, which the FS server must never see, and from [`DMA_VA`].
 ///
-/// The block server's DMA region is **`1 + blk::TRANSFER_BLOCKS` contiguous pages**
-/// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header, and status
-/// (block-server-private), and pages `1..=blk::TRANSFER_BLOCKS` are the data buffer, which IS the
-/// region shared with the FS server. So one virtio request moves up to `blk::TRANSFER_BLOCKS`
-/// contiguous filesystem blocks and the device DMAs them straight into the FS server's region as a
-/// single descriptor, with no per-block loop and no copy (milestone 138 step 4; it was one page and
-/// one block until then). `BLK_OFF_DATA` is that page-1 offset.
+/// The block server's DMA region is `1 + blk::TRANSFER_BLOCKS` contiguous pages
+/// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
+/// `1..=blk::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
+/// `BLK_OFF_DATA` is that page-1 offset. See notes/virtio.md ("The block server").
 const BLK_OFF_DATA: u64 = 0x1000;
 
 /// The block server's readiness endpoint (slot 3): SEND once after the device is up, so the test
@@ -998,10 +915,8 @@ const CONFIG: u64 = 0x100;
 /// to, exactly once each. The transfer unit is one filesystem block; the bulk rides in the shared
 /// page, the control (opcode, block index, result) rides in the message, the §10 split.
 pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
-    // Ask for VIRTIO_BLK_F_FLUSH, and remember whether we got it. Everything about
-    // `filesystem_contract::blk::FLUSH` hangs off this one bool: with it, a sync is a device round trip; without
-    // it, a sync is a loud refusal. There is no third behaviour, and in particular there is no
-    // "answer yes and do nothing", which is the state this server was in before milestone 55.
+    // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `blk::FLUSH`: a device round trip, or a
+    // loud refusal, never a yes that does nothing.
     let can_flush = init_with_features(0, true);
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
@@ -1013,15 +928,12 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
         // RECEIVE_CAP: (first word, the Reply, second word = the starting block index). The Reply is
         // typed by the kernel's `x4` (milestone 706 (a `CALL` server can tell a Reply from a
         // delegation)): a SEND_CAP's capability is deleted, and a request with no Reply is served
-        // with nobody to answer, as before.
+        // with nobody to answer.
         let req = receive_request(BLK_REQ);
         let (w0, block) = (req.w0, req.w1);
         let to = req.delivered.into_reply();
-        // **Clamp, the same defence the file channel's server-side clamp is** (milestone 138 step
-        // 4, mirroring step 3's `fs_service.rs` clamp): every caller today sends at most
-        // `blk::TRANSFER_BLOCKS` (the field cannot encode more), but a request is never trusted to
-        // stay inside the region it shares just because the packing allows a larger number to be
-        // spelled at all.
+        // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
+        // inside the shared region just because its packing could spell a larger count.
         let count = blk::req_blocks(w0).min(blk::TRANSFER_BLOCKS) as u64;
         let r0: i64 = match filesystem_contract::operation(w0) {
             blk::READ => {
@@ -1055,29 +967,14 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     }
 }
 
-/// Complete a block-server transfer by **waiting on the completion interrupt**, the milestone-9
-/// discipline, not by polling the used ring.
-///
-/// The FS server does hundreds of reads at open (RedoxFS scans a 256-entry header ring). An earlier
-/// version polled the used ring here, on the belief that a WAIT-per-read overran the test's watchdog;
-/// measured (fix/irq-delivery, 2026-07-29), it does not. Because each request moves a whole 4096-byte
-/// filesystem block ([`submit_blk`]), the mount's read count stays in the low hundreds, and a WAIT
-/// per read fits well inside the watchdog on both ISAs at the 4-core boot. So this server uses the
-/// same interrupt-as-message completion every other driver does, which is what a real asynchronous
-/// device needs and what the confinement was built to carry. QEMU still completes synchronously
-/// inside `NOTIFY`, so the interrupt is already pending and the WAIT returns at once (the kernel's
-/// pending-signal count, DECISIONS §9a).
+/// Complete a block-server transfer by waiting on the completion interrupt, not by polling the
+/// used ring, with the same loop as [`complete_block`]. A WAIT per read fits the test watchdog,
+/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtio.md
+/// ("A completion is the used ring advancing").
 fn complete_blk(used_before: u16) {
-    // **Wait on the completion interrupt** (the milestone-9 discipline), not a poll of the used ring.
-    // The kernel turns the device's completion IRQ into a message on this server's `Irq` endpoint;
-    // WAIT for it, quiet the device, ACK the line, and let `used.idx` decide when the completion is
-    // really ours (a wakeup can be stale, coalesced, or a prior operator's). This is the same loop
-    // `complete_block` uses. An earlier note (notes/fs-server.md) claimed this "overran the watchdog"
-    // and forced a poll; it does not, because the whole-block reads above keep the mount's read count
-    // low enough that a WAIT per read fits comfortably (proven: redoxfs_server test green on both ISAs at
-    // the 4-core boot). QEMU still completes synchronously inside `NOTIFY`, so the interrupt is
-    // already pending and the kernel's pending-signal count (DECISIONS §9a) returns this WAIT at once
-    // rather than blocking on an event already over. See notes/dma.md.
+    // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
+    // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
+    // message)) returns this WAIT at once.
     loop {
         interrupt_wait(IRQ);
         let istatus = mr(INTERRUPT_STATUS);
@@ -1094,12 +991,10 @@ fn complete_blk(used_before: u16) {
     }
 }
 
-/// Read `count` contiguous filesystem blocks starting at `block` in a SINGLE virtio request. The
-/// device DMAs straight into the data pages of the DMA region, which is the FS server's shared
-/// region, so there is no per-block loop and no copy. Contrast the read path above, which the
-/// small-buffer driver roles use one 512-byte sector at a time; the FS server reads hundreds of
-/// blocks at open, and moves up to `blk::TRANSFER_BLOCKS` of them per request since milestone 138
-/// step 4, both for the same reason: a device round trip costs far more than the transfer itself.
+/// Read `count` contiguous filesystem blocks starting at `block` in a single virtio request,
+/// straight into the data pages, which are the FS server's shared region: no per-block loop and no
+/// copy (milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 4),
+/// since a device round trip costs far more than the transfer.
 fn blk_read(direct_memory_access_phys: u64, block: u64, count: u64) {
     let used_before = submit_blk(
         direct_memory_access_phys,
@@ -1126,19 +1021,10 @@ fn blk_write(direct_memory_access_phys: u64, block: u64, count: u64) {
 /// **Ask the device to make everything it has acknowledged durable**, and wait for it to say it
 /// did. `true` if the device completed with `VIRTIO_BLK_S_OK`.
 ///
-/// This is the operation the whole `VOLUME_FULL_SYNC` claim rests on, so it is worth being exact
-/// about what it proves. The device dequeues the request, performs whatever its backing calls a
-/// flush, and posts a completion on the used ring with a status byte. When that byte is 0 the
-/// device has told us the flush is done. It cannot prove the *hardware* underneath the device is
-/// honest, and nothing at this layer could; what it removes is the layer that was previously
-/// missing entirely, where nobody asked at all.
-///
-/// Unlike [`complete_blk`] this does **not** panic on a bad status. The block server is long-lived
-/// and its death blocks every client of the filesystem forever, so a device refusing a flush has to
-/// come back as an error a caller can read rather than as a corpse. `VIRTIO_BLK_S_UNSUPP` (2) is
-/// the status a device returns for a command it will not do, and a device that offered
-/// `VIRTIO_BLK_F_FLUSH` and then answers that way is exactly the case worth reporting rather than
-/// crashing on.
+/// A status of 0 says the device finished its flush; it cannot prove the hardware beneath is
+/// honest. Unlike [`complete_blk`] this does not panic on a bad status such as
+/// `VIRTIO_BLK_S_UNSUPP` (2): the long-lived block server's death would block every filesystem
+/// client. See notes/virtio.md ("The block server").
 fn blk_flush(direct_memory_access_phys: u64) -> bool {
     let used_before = submit_flush(direct_memory_access_phys);
     complete_flush(used_before)
@@ -1150,10 +1036,8 @@ fn blk_flush(direct_memory_access_phys: u64) -> bool {
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
     direct_memory_access_write::<u32>(OFF_HEADER, VIRTIO_BLK_T_FLUSH);
     direct_memory_access_write::<u32>(OFF_HEADER + 4, 0);
-    // The sector field is unused for a flush and the spec says to set it to 0. Writing it anyway
-    // rather than leaving the previous request's value there, because a stale sector in a header
-    // the device is entitled to ignore is the kind of thing that reads as deliberate to whoever
-    // debugs the next device.
+    // The sector field is unused for a flush and the spec says to set it to 0; written so no stale
+    // sector from the previous request is left in the header.
     direct_memory_access_write::<u64>(OFF_HEADER + 8, 0);
     direct_memory_access_write::<u8>(OFF_STATUS, 0xff);
 
@@ -1203,13 +1087,10 @@ fn complete_flush(used_before: u16) -> bool {
 }
 
 /// Build and publish the three-descriptor chain for a `count`-block transfer and ring the device
-/// through the kernel. Mirrors [`submit_block`] but with the data descriptor spanning `count`
-/// contiguous blocks at [`BLK_OFF_DATA`] (the shared data pages) instead of one sector. **One
-/// descriptor for the whole transfer, whatever `count` is** (milestone 138 step 4): virtio-blk
-/// places no requirement on a data descriptor's length beyond a whole number of sectors, so
-/// widening it is the entire batching mechanism, the same shape step 3 used for the file channel's
-/// length field. Returns the used-ring index from before the submit, which [`complete_block`]
-/// compares against.
+/// through the kernel. Mirrors [`submit_block`] but with one data descriptor spanning `count`
+/// contiguous blocks at [`BLK_OFF_DATA`] (milestone 138 step 4): virtio-blk asks only that its
+/// length be whole sectors. Returns the used-ring index from before the submit, which
+/// [`complete_block`] compares against.
 fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
     direct_memory_access_write::<u32>(OFF_HEADER, req_type);
     direct_memory_access_write::<u32>(OFF_HEADER + 4, 0);

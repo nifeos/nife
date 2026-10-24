@@ -43,3 +43,35 @@ list. This is every entry as it was written, sentence-split for the prose limits
   expected is written in the block of milestone 215 (a PCI function's interrupt reaches nothing on
   x86_64), and nowhere a reader meets the failure. What made QEMU
   exit 1 rather than 3 is unmeasured: one red in two runs is a rate nobody has taken yet.
+
+## The loader binary's BUGS, in full
+
+`uefi_loader/src/main.rs` keeps one line per entry. The full accounts:
+
+- Secure Boot must be off. The image is unsigned, and by calef's ruling on milestone 500 (a stick
+  that boots with Secure Boot on, or a page that says how to turn it off) nothing signs it. A
+  stranger turns Secure Boot off by `notes/turning-secure-boot-off.md`. Under QEMU it is the
+  difference between `edk2-x86_64-code.fd` and `edk2-x86_64-secure-code.fd`.
+- The kernel is embedded rather than loaded from the filesystem. That is one file on the stick
+  instead of three, and no `SimpleFileSystem` protocol to speak, at the cost of rebuilding the loader
+  whenever the kernel changes. `cargo xtask uefi-image` and `cargo xtask stick` do both in one
+  command, and the stick carries a `NIFE.TXT` naming its build. A stale file is no longer silent; it
+  is still stale.
+- Nothing validates the UEFI tables' header CRCs. The firmware is the trust root at this point in
+  boot, and there is nothing to check it against that is not also the firmware.
+- Nothing verifies what the loader hands over at boot. `build.rs` does refuse to embed an archive the
+  kernel does not vouch for, which is the one check that matters at build time.
+- The `hvm_start_info` command line carries only what the loader decided. Nothing reads a
+  configuration file off the stick. `handoff::cmdline` writes up to four words, and `CMDLINE_LEN`
+  adds them up: the screen (milestone 243 (a machine with no serial port)), the boot slot key and
+  digit, `boot_slot::medium::NVME`, and `SCREEN_HOLD` under the `screen_hold` feature.
+  [loader-design.md](loader-design.md) has each word's contract.
+- The screen is taken as the firmware left it. On aarch64 and riscv64 it is not handed over at all:
+  those kernels learn about a display from the device tree, and the firmware's GOP framebuffer is not
+  in it.
+- AP bring-up under UEFI is proved on OVMF and nowhere else (milestone 195 (finish the UEFI boot
+  path)); `uefi_loader/src/arch/x86_64` has the detail.
+- A `PixelBitMask` or `PixelBltOnly` adapter gets no screen on `x86_64`. A `PixelBltOnly` adapter has
+  no linear framebuffer, only a boot-services `Blt` call that is gone by the time the kernel runs. A
+  `PixelBitMask` adapter describes its channels by masks `machine_discovery::framebuffer` cannot
+  express. The loader says so before it hands over.

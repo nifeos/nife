@@ -67,6 +67,9 @@ timestamp is a count of seconds and has no idea a reform happened. Dates before 
 therefore not what a historian would write, and year 0 exists here (a leap year) where historians
 write 1 BC. Convention, stated rather than discovered.
 
+Negative timestamps are supported, because files predating the epoch are ordinary and a dead RTC
+reads as anything.
+
 ### Year 2038 is a non-event, and the test says so rather than the comment
 
 Every timestamp here is `i64`. `i32::MAX` seconds is 2038-01-19T03:14:07Z, the last instant a 32-bit

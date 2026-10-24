@@ -22,17 +22,13 @@ pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// **`x86_64` enters through one `call`, because the SysV stack contract is about the instruction
 /// before the function, not the function** (milestone 184).
 ///
-/// The kernel drops a new thread to ring 3 with `rsp` at the top of its stack page, which is a page
-/// boundary and so `rsp % 16 == 0`. The x86-64 psABI promises a function that `rsp % 16 == 8` on
-/// entry, because it assumes a `call` just pushed an 8-byte return address. aarch64 and RISC-V have
-/// no such offset (neither pushes on call), which is why only this architecture needs a shim. The
-/// cheapest correct fix is to make the assumption true: `call` the Rust entry, which pushes exactly
-/// the eight bytes the ABI expects. The argument registers pass through untouched.
-///
-/// Without SSE nothing in this target *faults* on a misaligned stack (there is no `movaps` to trip),
-/// so getting this wrong would pass every test and stay latent until someone compiled with vector
-/// features. That is the reason to do it properly rather than to rely on the soft-float target
-/// being forgiving. The `ud2` is unreachable: the Rust entry diverges.
+/// The kernel drops a new thread to ring 3 with `rsp` at the top of its stack page, so
+/// `rsp % 16 == 0`, and the x86-64 psABI promises `rsp % 16 == 8` on entry: the return address a
+/// `call` pushes. `call`ing the Rust entry makes that true; the argument registers pass through
+/// untouched. aarch64 and RISC-V push nothing on call, so only this architecture needs the shim.
+/// Without SSE a misaligned stack faults nowhere (no `movaps`), so a mistake here would stay latent
+/// until someone compiled with vector features. The `ud2` is unreachable: the Rust entry diverges.
+/// See notes/std/x86-64-target.md.
 #[cfg(all(not(test), target_arch = "x86_64"))]
 core::arch::global_asm!(
     ".pushsection .text._start, \"ax\", @progbits",

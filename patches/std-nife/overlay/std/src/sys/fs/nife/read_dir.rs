@@ -1,9 +1,7 @@
 //! **A directory listing**: `ReadDir` and the `DirEntry` values it yields.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -12,17 +10,12 @@ use super::*;
 
 /// A directory listing, **read whole at `read_dir` time** rather than streamed.
 ///
-/// std hands the caller an iterator it may hold across arbitrary other work, including opening the
-/// files it just listed. The listing arrives through the one page shared with the FS server, and
-/// that page is behind a lock every other operation also wants, so an iterator that fetched a page
-/// per `next()` would either hold the lock across user code or have to reacquire it and cope with
-/// the directory having moved under its cursor. Draining it up front costs the names' bytes and
-/// makes both problems go away.
-///
-/// The cost is stated rather than hidden: a huge directory is a `Vec` of every name in it, and the
-/// snapshot is from `read_dir` time, so an entry removed before the caller reaches it opens as
-/// `NotFound`. That is the ordinary readdir caveat (`filesystem_contract::fs::READDIR` records the same one
-/// for its cursor) rather than something this choice introduced.
+/// The listing arrives through the one page shared with the FS server, behind the lock every other
+/// operation wants, and std lets the caller hold the iterator across other work, including opening
+/// what it listed. Fetching per `next()` would hold the lock across user code, or reacquire it with
+/// the directory moved under its cursor. The cost: a huge directory is a `Vec` of every name, and
+/// an entry removed before the caller reaches it opens as `NotFound`, the ordinary readdir caveat
+/// (`filesystem_contract::fs::READDIR` records the same one for its cursor).
 pub struct ReadDir {
     /// The path the caller passed, so `DirEntry::path()` can rebuild what they would expect.
     pub(super) root: PathBuf,
