@@ -47,8 +47,8 @@ Upstream `tload` draws the load average as a graph. This kernel keeps no decayin
 rather than in a program of its own. So the line says what the machine statistics page can say
 truthfully. It gives how many threads were runnable at each core's last tick, on how many cores,
 and what share of all ticks since boot went to something other than the idle thread. It widens `top`'s
-authority past `ps`'s by one read-only page, which also settles the question milestone 281's rule
-left open: `top` no longer holds exactly what `ps` holds.
+authority past `ps`'s by one read-only page, which also settles the question milestone 281 (`watch` holds exactly what `ps`
+holds)'s rule left open: `top` no longer holds exactly what `ps` holds.
 
 ## What it does not do
 
