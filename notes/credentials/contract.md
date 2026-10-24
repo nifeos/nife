@@ -1,5 +1,8 @@
 # The credential contract: its wire, its fixtures and its proofs
 
+*Name: provisional, after the crate it explains. Each stem here is named for its content, and calef
+names files.*
+
 An appendix to [notes/credentials.md](../credentials.md). It carries the design behind
 `crates/credential_contract`, whose doc comments link here.
 

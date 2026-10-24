@@ -1,5 +1,8 @@
 # Measured boot: the crate's digest, its text and the loader's verdict
 
+*Name: provisional. After the crate it explains. Each stem here is named for its content, and calef
+names files.*
+
 An appendix to [notes/trusted-init.md](../trusted-init.md), which carries the hash and why it is
 SHA-256, written here. This file carries the rest of the design behind `crates/measured_boot`,
 whose doc comments link here.

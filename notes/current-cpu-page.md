@@ -1,5 +1,7 @@
 # The current-CPU page
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-15.*
+
 `crates/current_cpu_contract` defines the page through which a thread reads which CPU it runs on.
 §204 (how userspace asks where a thread runs) decided the mechanism: observing another thread is a
 rendezvous selector, and a thread observing itself reads a per-thread page shaped like Linux's

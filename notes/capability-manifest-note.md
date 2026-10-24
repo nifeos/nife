@@ -1,5 +1,7 @@
 # The manifest note: what no note can spell, and the verb table
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-15.*
+
 `crates/capability_manifest_note` is the wire format of the note a program carries to say what
 authority it asks for. The descriptor layouts are in the crate's module documentation; this page
 holds the reasons behind what the layout leaves out, and the verb table's design. How a manifest is

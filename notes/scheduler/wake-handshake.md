@@ -1,5 +1,8 @@
 # The block/wake handshake: its races, its states and the loom model
 
+*Name: provisional. After the crate it explains. Each stem here is named for its content, and calef
+names files.*
+
 An appendix to [notes/scheduler.md](../scheduler.md). It carries the design behind
 `crates/thread_wake_handshake`, whose doc comments link here. The undelivered-wake gate's own
 account is in [undelivered-wake-gate.md](undelivered-wake-gate.md).
