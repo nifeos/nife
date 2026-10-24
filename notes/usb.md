@@ -44,6 +44,31 @@ The kernel refuses to start the driver at all on a machine whose IOMMU does not 
 controller, because a process holding an xHCI register file names every physical address the
 controller reads.
 
+## What the driver holds
+
+`kernel/src/user/usb_keyboard_service.rs` is what the driver is handed, and its `Spawn` literal is
+the whole of the confinement claim.
+
+- Slot 0, the controller's interrupt (`Irq`, WAIT and ACK).
+- Slot 1, an attach endpoint (READ). The one message it receives there carries the endpoint its
+  keystrokes go to, delegated by the progenitor once the line discipline exists. So a driver the
+  kernel starts before the progenitor holds `WRITE` on an endpoint the progenitor creates, and the
+  kernel never names that endpoint.
+- Slot 2, a report endpoint (WRITE), for the one bring-up report the kernel waits for.
+- Mapped, device-typed: the register pages `register_window` chose, every page of BAR0 but the
+  MSI-X table's and the pending-bit array's.
+- Mapped, normal memory: the work pages of its DMA region.
+
+What it is denied is each a decision. The MSI-X pages are withheld, because whoever writes the
+table aims the interrupt message, and with interrupt remapping off that is any vector on any CPU.
+The scratchpad pages are the controller's private memory; the driver writes their addresses and
+never their contents. It cannot reach PCI configuration space, so it cannot change bus mastering,
+move a BAR or touch MSI. It holds no budget, filesystem, console or clock.
+
+The kernel enables the interrupt through the arch layer, as the `Irq` capability's ACK does. On
+riscv64 that is the source's stable round-robin hart (`target_context`). A source enabled on the
+boot hart's context instead is moved by its first ACK, and no keystroke after the first arrives.
+
 ## Proving it
 
 `script/swish-check` boots each architecture a fourth time with `qemu-xhci` and `usb-kbd` attached
@@ -113,6 +138,9 @@ port's `PORTSC` as the firmware left it and over the five seconds after the driv
 - No IOMMU, no USB keyboard. radon has none; a machine whose VT-d tables give the controller to
   a unit this kernel did not bring up gets the refusal line. This is the design, and it is a cost.
 - A device refused after boot is refused silently: the report endpoint carries one message.
+- The attach handshake is a blocking send. A driver that died between its report and its first
+  receive on the attach endpoint would block the progenitor's `SEND_CAP`, and the boot with it. The
+  driver receives there right after reporting, so the window is one system call wide.
 - The driver is mapped the USB Legacy Support capability (`USBLEGSUP`, `USBLEGCTLSTS`) whenever it
   sits on a page nothing else withholds. A compromised driver can then hand the controller back to
   the firmware's SMI handler. The kernel never needs the driver to touch it. Proposed as

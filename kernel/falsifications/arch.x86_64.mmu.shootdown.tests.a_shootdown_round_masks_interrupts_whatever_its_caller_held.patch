@@ -19,10 +19,10 @@ diff --git a/kernel/src/arch/x86_64/mmu/shootdown.rs b/kernel/src/arch/x86_64/mm
 index 20b68dd66..313b2d125 100644
 --- a/kernel/src/arch/x86_64/mmu/shootdown.rs
 +++ b/kernel/src/arch/x86_64/mmu/shootdown.rs
-@@ -136,7 +136,7 @@ fn broadcast(kind: u8, word: u64) {
-     // two forks), caught with both cores' stacks under gdb. Masking here also pins the `cpu::id()`
-     // read below to the core the round runs on, which a preemptible caller could otherwise leave
-     // behind.
+@@ -101,7 +101,7 @@ fn broadcast(kind: u8, word: u64) {
+     // Masked for the whole round, whatever the caller held: `flush_asid` calls this unmasked, and a
+     // tick in the ack wait could preempt the holder of `SHOOTDOWN_LOCK` into a reap that comes back
+     // here and spins on it. Masking also pins the `cpu::id()` read below to this core.
 -    let irqs_were_enabled = crate::arch::interrupts::disable();
 +    let irqs_were_enabled = crate::arch::interrupts::is_enabled();
      #[cfg(test)]

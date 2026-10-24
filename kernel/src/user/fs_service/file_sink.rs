@@ -1,27 +1,10 @@
-//! **A file behind a byte sink, and a file behind a byte source** (milestone 50 (pipes and
-//! redirection)).
-//!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! A file behind a byte sink, and a file behind a byte source. See notes/sink-protocol.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
-/// **Put a file behind a byte sink** (milestone 50, notes/sink-protocol.md).
-///
-/// Wires the FS service (or reuses this boot's) and spawns `fixtures/src/file_sink.rs`: it holds
-/// the FS-service endpoint, a report endpoint, and the page it shares with the FS server, and it
-/// serves one endpoint whose only expressible request is "append these bytes".
-///
-/// `sink` is the capability a program's output slot gets, and **that endpoint is the whole of
-/// what the writer holds**, which is the property the milestone rests on: it is created here
-/// and handed out with `WRITE` to whoever is redirected and `READ` to the sink.
-///
-/// Both endpoints are retyped from `endpoints`, a region the caller owns and reclaims once the
-/// sink has reported `DONE` and exited ([`FILE_SINK_PAGES`] of it).
 /// The pages [`start_file_sink`] or [`start_file_source`] retypes from its caller's region: two
 /// endpoints each.
 ///
@@ -29,6 +12,7 @@ use super::*;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const FILE_SINK_PAGES: u64 = 2;
 
+/// What [`start_file_sink`] wired.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct FileSink {
     /// The FS service's two readiness endpoints, if this call is the one that wired it.
@@ -39,6 +23,13 @@ pub struct FileSink {
     pub report: RendezvousId,
 }
 
+/// Put a file behind a byte sink: wire the FS service (or reuse this boot's) and spawn
+/// `fixtures/src/file_sink.rs`, which serves one endpoint whose only request is "append these
+/// bytes".
+///
+/// `sink` is the whole of what a redirected writer holds, with `WRITE`. Both endpoints are retyped
+/// from `endpoints`, a region of [`FILE_SINK_PAGES`] the caller reclaims once the sink has reported
+/// `DONE` and exited. `None` when no RedoxFS disk is attached.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_file_sink(
     blk_image: &'static [u8],
@@ -77,16 +68,12 @@ pub fn start_file_sink(
     })
 }
 
-/// **Read back what the file sink wrote**, in a different process with a different FS session.
+/// Read back what the file sink wrote, in a different process with a different FS session.
 ///
-/// Spawns `fixtures/src/file_source.rs`, and only after the sink has reported that it closed the
-/// file, because the two share the FS server's one file page (the [`wait_for_caretaker`] lesson:
-/// one page is sound between parties that are never using it at once, and sequencing is what makes
-/// that true).
-///
-/// It streams the file's contents out **over the sink contract**, so the bytes that reach the
-/// test arrive in the same sixteen-byte framing a `println!` does. Returns `(out, report)`, both
-/// retyped from `endpoints` as [`start_file_sink`]'s are.
+/// Spawn it only after the sink has reported that it closed the file, because the two share the FS
+/// server's one file page ([`wait_for_caretaker`]'s reason). It streams the file out over the sink
+/// contract, in the framing a `println!` uses. Returns `(out, report)`, both retyped from
+/// `endpoints`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_file_source(
     blk_image: &'static [u8],

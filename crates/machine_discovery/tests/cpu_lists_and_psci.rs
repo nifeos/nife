@@ -1,22 +1,13 @@
-//! **What the machine says its cores are, and how to start them.** Milestone 100, on the host.
+//! What the machine says its cores are, and how to start them (milestone 100 (read the machine's
+//! PSCI and its CPU list)), on the host; the machine side is the kernel's own tests, the split §7
+//! (testing) asks for. Four trees, each a shape the others cannot show:
 //!
-//! Four trees, and each is here because it is a shape the others cannot show:
-//!
-//! * **QEMU aarch64 `virt` at `-smp 4`**, dumped from the exact machine `script/test` boots
-//!   (`virt,gic-version=2,iommu=smmuv3`, `cortex-a72`). This is the one that holds the kernel's
-//!   former hardcodes against the machine: `hvc`, `0xc4000003`, and cores `0..4`.
-//! * **QEMU aarch64 `virt` with `virtualization=on`**, which is the *only* configuration on this
-//!   laptop that produces `method = "smc"`. It is a real dump, not a hand-edit, and it is the whole
-//!   evidence that the conduit is a machine property rather than a constant.
-//! * **QEMU riscv64 `virt`**, borrowed from the `device_tree_blob` crate's fixtures, for the
-//!   `timebase-frequency` the RISC-V timer used to hardcode.
-//! * **A hand-written clustered tree**, for the shapes QEMU cannot emit: two address cells, a
-//!   non-contiguous hardware id, a disabled core, a spin-table core, more cores than the kernel's
-//!   ceiling, and PSCI 0.1 with its own published function id.
-//!
-//! The parsing they exercise is [`machine_discovery::cpu_list`] and [`machine_discovery::aarch64::Psci`]; what happens on the
-//! machine (the refusals, the boot line, the bring-up itself) is in the kernel's own tests, which
-//! need an emulator. This is the split DECISIONS §7 asks for.
+//! * QEMU aarch64 `virt,gic-version=2,iommu=smmuv3`, `cortex-a72`, `-smp 4`, the machine
+//!   `script/test` boots: `hvc`, `0xc4000003`, and cores `0..4`.
+//! * QEMU aarch64 `virt` with `virtualization=on`, a real dump and the only `smc` here.
+//! * QEMU riscv64 `virt`, from `device_tree_blob`'s fixtures, for `timebase-frequency`.
+//! * A hand-written clustered tree: two address cells, a non-contiguous id, a disabled core, a
+//!   spin-table core, more cores than the ceiling, and PSCI 0.1 with its own function id.
 
 use machine_discovery::aarch64::{Conduit, PSCI_CPU_ON_64, Psci};
 use machine_discovery::cpu_list::{CpuList, EnableMethod, MAX_CPU_NODES};

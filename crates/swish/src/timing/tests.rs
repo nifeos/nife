@@ -43,7 +43,7 @@ fn a_timing_line_reports_the_duration_and_nothing_else() {
     // this kernel is asked what a thread spent.
     assert!(!line.contains("user"));
     assert!(!line.contains("sys"));
-    // The failure mode this used to disclaim is now unreachable rather than tolerated.
+    // A monotonic counter cannot be stepped, so there is nothing to disclaim.
     assert!(!line.contains("stepped"));
 }
 
