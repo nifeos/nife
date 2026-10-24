@@ -3,9 +3,8 @@
 //!
 //! [`crate::uefi`]'s `uefi_boot` twin, and deliberately the same shape: a QEMU monitor on a unix
 //! socket, a poller asking it for a screendump, and `serial_console::screen` turning the picture
-//! back into text. What differs is only where the framebuffer came from. On `x86_64` the firmware
-//! lit one and the loader measured it; here the kernel allocates one and tells the emulator about
-//! it over `fw_cfg` (`kernel/src/screen.rs`).
+//! back into text. Here the kernel allocates the framebuffer and tells the emulator about it over
+//! `fw_cfg` (`kernel/src/screen.rs`). See notes/serial-less-output/ramfb.md.
 //!
 //! *Module and subcommand names provisional (AGENTS.md: calef names these).*
 
@@ -22,19 +21,15 @@ use crate::{RISCV_TARGET, TARGET, profile_dir};
 /// answers, so the bound is only ever paid by a failure.
 const WATCH_SECONDS: u64 = 300;
 
-/// Boot one of the two board architectures with a `ramfb` and read the tour back off it.
+/// Boot one of the two board architectures, `arch`, with a `ramfb` and read the tour back off it.
 ///
-/// **The claim is the one the serial transcript cannot make.** Both boots print the same tour on the
-/// UART whether or not a single pixel was written, so the transcript would be identical with the
-/// screen black. This asserts that `boot_ladder::SELF_TEST` is *on the screen*, decoded glyph by
-/// glyph, which exercises the `fw_cfg` conversation, the physical address the kernel handed over,
-/// the byte order, the stride and the font.
-///
-/// **No virtio-gpu on this machine**, which is a requirement rather than a tidiness: `ramfb` adds a
-/// QEMU console and `screendump` with no device argument writes console 0, so a boot with both would
-/// be photographing whichever QEMU happened to order first.
-///
-/// The boot is stopped as soon as the screen has answered; the kernel never exits on its own.
+/// Returns true when `boot_ladder::SELF_TEST` was decoded off the screen glyph by glyph and the
+/// serial line carried it too. The UART transcript alone is identical with the screen black, so
+/// the screen read is the claim: the `fw_cfg` conversation, the address the kernel handed over, the
+/// byte order, the stride and the font. The machine has no virtio-gpu, because `screendump` with no
+/// device argument writes console 0 and a boot with both would photograph whichever console QEMU
+/// ordered first. The boot is stopped once the screen has answered; the kernel never exits on its
+/// own. See notes/serial-less-output/ramfb.md.
 pub(crate) fn screen_boot(arch: &str) -> bool {
     let Some((runner, elf, archive)) = build_screen_leg(arch) else {
         return false;
@@ -111,15 +106,10 @@ fn build_screen_leg(arch: &str) -> Option<(&'static str, String, String)> {
     }
     let elf = format!("target/{target}/{}/kernel", profile_dir());
 
-    // **The archive this architecture's kernel was measured against**, and it has to be said here.
-    //
-    // [`cargo`] exports `NIFE_INITIAL_RAMDISK` pointing at the *aarch64* archive, because that is
-    // what the aarch64 runner wants and it is the aarch64 path's helper. Every other riscv64 caller
-    // in this crate overrides it for exactly this reason (`suite`'s riscv leg says so in its own
-    // comment, and `swish_check` and the interactive boot both pick per architecture). This one did
-    // not, and the failure had two faces: locally the aarch64 archive existed, so the riscv kernel
-    // loaded it and printed `MEASURED BOOT REFUSED` and carried on; in a CI job that never built
-    // one, QEMU refused to start at all with `could not load ramdisk`.
+    // The archive this architecture's kernel was measured against, named here because [`cargo`]
+    // exports `NIFE_INITIAL_RAMDISK` pointing at the aarch64 one. Without the override a riscv64
+    // kernel prints `MEASURED BOOT REFUSED`, or QEMU stops at `could not load ramdisk` where no
+    // aarch64 archive was built.
     let archive = if arch == "riscv64" {
         riscv_initial_ramdisk_path()
     } else {
@@ -202,13 +192,8 @@ fn screen_showed_the_tour(seen: Option<&str>, arch: &str, shot: &std::path::Path
 /// anything has failed (the screen, per `screen_ok`, or this), the transcript's tail is printed.
 fn serial_control_holds(transcript: &str, screen_ok: bool) -> bool {
     let serial_ok = transcript.contains(boot_ladder::SELF_TEST);
-    // **The serial line is the control, and this line is the point of having one.**
-    //
-    // A screen gate that only reports "the screen was blank" sends the next reader into the
-    // framebuffer path, which is exactly where this milestone's own lane went and where nothing was
-    // wrong. Asserting the same marker on the channel the screen is *replacing* costs one
-    // `contains` and separates "this milestone's mechanism is broken" from "the machine did not
-    // boot", which are different people's afternoons. It earned its keep on its first red CI run.
+    // The serial line is the control: the same marker on the channel the screen replaces separates
+    // "the screen mechanism is broken" from "the machine did not boot".
     if !serial_ok {
         eprintln!(
             "screen-boot: the tour never reached the SERIAL line either, so this is a boot failure and not a screen one"
@@ -227,7 +212,7 @@ fn serial_control_holds(transcript: &str, screen_ok: bool) -> bool {
 ///
 /// Returns the decoded screen that carried the marker, or the last non-blank one seen, or `None` if
 /// nothing ever decoded. A dump that fails to decode is never fatal; the retry is the answer.
-/// (`screendump` waits for QEMU's answer since 2026-10-12, so the file is whole when it returns.)
+/// `screendump` waits for QEMU's answer, so the file is whole when it returns.
 fn watch(sock: &str, shot: &std::path::Path) -> Option<String> {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(WATCH_SECONDS);
     let mut answered = false;
