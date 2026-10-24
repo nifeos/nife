@@ -42,7 +42,7 @@ pub const SEND_CAP: u64 = 2;
 ///
 /// # BUGS
 /// - **A §26 death read here loses the faulting `pc`**: supervisors receive deaths with `RECEIVE`.
-/// - A delegation passes the `NO_CAP` guard; see [`REPLY_DELIVERED`].
+/// - A delegation passes the `NO_CAP` guard; see notes/abi/method-contracts.md.
 pub const RECEIVE_CAP: u64 = 3;
 
 /// `invoke(cap, CALL, w0, w1, _)` -> r0, with r1 in x1 and in x2 the slot of a capability the
