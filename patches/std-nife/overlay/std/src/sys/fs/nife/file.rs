@@ -1,9 +1,7 @@
 //! **File**.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -15,8 +13,7 @@ use super::*;
 /// the server to get out of step with).
 ///
 /// The offset is an atomic rather than a `Cell` because `std::fs::File` is `Sync` on every
-/// platform and this target should not be the exception; on a single-threaded target the atomic
-/// costs nothing.
+/// platform and this target should not be the exception.
 pub struct File {
     pub(super) handle: u64,
     pub(super) pos: AtomicU64,
@@ -38,17 +35,10 @@ impl File {
                 "an open must ask for read, write, or append"
             ));
         }
-        // `CREATE` and `TRUNCATE` exist now (milestone 31 phase 2), so this whole block used to be a
-        // refusal and is now a mapping. Creating a *file* was never the thing §27 kept host-side:
-        // that was creating a *filesystem*, which needs uuid and getrandom. `Transaction::create_node`
-        // is not std-gated, so the server can make a file without entropy ever becoming a userspace
-        // dependency, and the read of §27 that conflated the two is corrected there.
-        //
-        // The order below is POSIX's, and it matters: create-then-truncate, with truncate applied
-        // after a successful open of an existing file. `std::fs::write` is
-        // `create(true).truncate(true)`, so getting the order wrong would leave the old tail behind
-        // on exactly the path that exists to replace a file's contents, which is the day-costing bug
-        // this milestone is here to remove.
+        // POSIX's order: open, create only on `NotFound` when asked to, and truncate after a
+        // successful open of an existing file. `std::fs::write` is `create(true).truncate(true)`,
+        // so another order would leave the old tail behind on the path that exists to replace a
+        // file's contents. See notes/std/fs.md.
         let mut opened_size = 0;
         let handle = match open_handle(path, opts) {
             Ok((h, _)) if opts.create_new => {
@@ -65,8 +55,7 @@ impl File {
                 opened_size = size;
                 h
             }
-            // Not there, and the caller asked for it to be made. This is the case that used to be
-            // Unsupported.
+            // Not there, and the caller asked for it to be made.
             Err(e) if (opts.create || opts.create_new) && e.kind() == io::ErrorKind::NotFound => {
                 create_handle(path, opts)?
             }
@@ -262,13 +251,11 @@ impl File {
         unsupported()
     }
 
-    /// **Refused, and the reason changed on 2026-09-19.** It used to be "no verb sets an mtime",
-    /// which stopped being true when milestone 47's `touch` added `SETMTIME_AT`. What is true now is
-    /// narrower: that verb takes a **name under a directory**, and an open file has a handle and no
-    /// name. Stamping whatever holds the name this file was opened by would set the wrong file's
-    /// time after a rename, which is a silent wrong answer rather than a refusal ([`Mtime`] has the
-    /// whole argument). `std::fs::set_times(path, ..)` is bound and is what a caller can use; a
-    /// handle-taking verb is proposed in design/roadmap/proposals/an-mtime-for-an-open-file.md.
+    /// **Refused**: `SETMTIME_AT` (milestone 47) takes a **name under a directory**, and an open
+    /// file has a handle and no name. Stamping whatever holds the name this file was opened by would
+    /// set the wrong file's time after a rename, a silent wrong answer rather than a refusal
+    /// ([`Mtime`] has the argument). `std::fs::set_times(path, ..)` is bound and is what a caller
+    /// can use; a handle-taking verb is proposed in design/roadmap/0504-an-mtime-for-an-open-file.md.
     pub fn set_times(&self, _times: FileTimes) -> io::Result<()> {
         Err(io::const_error!(
             io::ErrorKind::Unsupported,

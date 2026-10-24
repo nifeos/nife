@@ -1,9 +1,7 @@
 //! **Errors, mapped by meaning**.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -36,18 +34,11 @@ pub(super) fn reply(r0: u64) -> io::Result<u64> {
 /// (RedoxFS) does, and §27 maps it at the server boundary and nowhere deeper.
 pub(super) fn from_errno(errno: i32) -> io::Error {
     match errno {
-        // `EPERM` is milestone 47's, and milestone 122 is what made it reachable from here: a
-        // directory capability that does not carry `ENUMERATE`, and a descent that asked for more
-        // than the parent holds, both answer it. It is the second errno in this map that is about
-        // *you* rather than about the name, so it gets the kind that says so.
-        //
-        // **`PermissionDenied` here is not the EPERM fiction `count_names`' refusals avoid**, and the
-        // difference is which side of the wire decided. Those refusals are this client saying "no
-        // capability designates that name", where no permission was ever consulted. This is the
-        // server saying "the capability you hold lacks the right that verb needs", which is a fact
-        // about authority and is exactly what `dir::EPERM` was specified to mean loudly rather than
-        // conceal. `ReadOnlyFilesystem` is its sibling for the mutating rights; std has no third
-        // kind that would fit better.
+        // `EPERM` (milestone 47): the capability lacks the right the verb needs, as when a directory
+        // capability lacks `ENUMERATE` or a descent asks for more than the parent holds. It is about
+        // *you*, not the name. Unlike `count_names`' refusals, where no capability designates the
+        // name and no permission was consulted, here the server judged authority, so
+        // `PermissionDenied` is honest. `ReadOnlyFilesystem` is its sibling for the mutating rights.
         1 => io::const_error!(
             io::ErrorKind::PermissionDenied,
             "this directory capability does not carry the right that verb needs"
@@ -67,8 +58,8 @@ pub(super) fn from_errno(errno: i32) -> io::Error {
         22 => io::const_error!(io::ErrorKind::InvalidInput, "the FS server refused the request"),
         28 => io::const_error!(io::ErrorKind::StorageFull, "the filesystem is full"),
         // `EROFS` here is a **capability** answer, not a mode bit: the directory capability this
-        // process holds does not carry the right this verb needs (§47's ladder). It is the one
-        // errno in this map that means "you", rather than "that name".
+        // process holds does not carry the right this verb needs (§47's ladder). With `EPERM`, it
+        // is one of the two errnos in this map that mean "you", rather than "that name".
         30 => io::const_error!(
             io::ErrorKind::ReadOnlyFilesystem,
             "this directory capability does not carry the right that verb needs"

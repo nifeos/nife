@@ -1,10 +1,8 @@
 //! **What a name or a handle reports**: `FileAttr` and the modification time it may carry,
 //! `FileType`, `FilePermissions` and `FileTimes`.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -45,7 +43,7 @@ impl FileAttr {
     /// time**: `redoxfs_server` has no clock grant, so every mutation stamps a counter that starts
     /// at 1 on each mount (notes/touch.md's `BUGS`). Such a file reads as a moment in early 1970,
     /// orders correctly against other writes in the same boot, and orders wrongly against a file
-    /// the host tool made. That is recorded where a reader of this PAL meets it (notes/std.md) and
+    /// the host tool made. That is recorded in notes/std/file-times.md's BUGS and
     /// proposed as its own piece of work; it is not something this function can detect, because
     /// `SETMTIME_AT` may legitimately assert a small number too.
     pub fn modified(&self) -> io::Result<SystemTime> {
@@ -101,27 +99,14 @@ impl FileAttr {
 
 /// **What the contract said about a modification time**, kept until `modified()` asks.
 ///
-/// `GETMTIME` (milestone 47, DECISIONS §112) resolves a **name under a directory handle**; it never
-/// takes an open file. So whether a `Metadata` can carry an mtime depends on how it was reached:
-///
-/// - `std::fs::metadata(path)` and `DirEntry::metadata` walk to the directory holding the name, so
-///   they ask, and keep the answer: [`Mtime::Seconds`], or [`Mtime::Refused`] with the reply word.
-/// - `File::metadata` and `Dir::metadata` hold a handle and **no name**, so there is nothing to ask
-///   by: [`Mtime::Unnamed`].
-///
-/// **Why not remember the name the `File` was opened by and ask with that?** Because the answer
-/// would be about whatever holds that name *now*. A file renamed or unlinked since it was opened
-/// would report another file's time, or a `NotFound` for a file the caller is holding open, and
-/// `set_times` through the same trick would stamp the wrong file. Unix's `fstat` and `futimens`
-/// act on the inode, not the name, and a binding that quietly acted on a name instead would be the
-/// silent-degradation shape DECISIONS §42 forbids. The honest fix is a handle-taking form on the
-/// contract, which two programs agree on and is therefore calef's; it is proposed in
-/// design/roadmap/proposals/an-mtime-for-an-open-file.md.
-///
-/// A refused `GETMTIME` does **not** fail `metadata()`: the size and the kind are still true, and
-/// a `metadata()` that failed because one field could not be read would break every caller that
-/// only wanted `is_dir()`. The refusal is kept and reported by `modified()`, which is the call that
-/// asked for the fact.
+/// `GETMTIME` (milestone 47, DECISIONS §112) resolves a **name under a directory handle** and never
+/// takes an open file. `std::fs::metadata(path)` and `DirEntry::metadata` reach a name, so they ask
+/// and keep [`Mtime::Seconds`] or [`Mtime::Refused`]; `File::metadata` and a held `Dir`'s own
+/// metadata have **no name**, so they get [`Mtime::Unnamed`]. Asking by the name a `File` was opened
+/// by would answer for whatever holds that name *now*, the silent degradation DECISIONS §42
+/// forbids. A refused `GETMTIME` fails only `modified()`, never `metadata()`. See
+/// notes/std/file-times.md; a handle-taking verb is proposed in
+/// design/roadmap/0504-an-mtime-for-an-open-file.md.
 #[derive(Clone, Copy)]
 pub(super) enum Mtime {
     /// Unix seconds, as the server reported them. See `modified()` for what the number means on an
@@ -134,11 +119,10 @@ pub(super) enum Mtime {
     Unnamed,
 }
 
-/// **The times a `set_times` call asks for** (milestone 64, rank 28). Its own type now rather than
-/// the unsupported backend's, whose setters threw the value away, because `SETMTIME_AT` has
-/// somewhere to carry a modification time. The access time is kept too, and kept only so
-/// [`set_times`] can refuse it loudly: no verb sets one, and dropping it would report success for
-/// half of what the caller asked.
+/// **The times a `set_times` call asks for** (milestone 64, rank 28). Its own type rather than the
+/// unsupported backend's, because `SETMTIME_AT` carries a modification time. The access time is
+/// kept only so [`set_times`] can refuse it loudly: no verb sets one, and dropping it would report
+/// success for half of what the caller asked.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct FileTimes {
     pub(super) accessed: Option<SystemTime>,

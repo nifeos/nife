@@ -1,24 +1,23 @@
-//! **Paths in one request (milestone 606, ruling A)**.
+//! **Paths in one request (milestone 606, ruling A)**, with the hop-by-hop walk for a server that
+//! predates it ([`PATHS`]).
 //!
-//! A server since milestone 606 (a directory walk costs what it does on Linux) resolves a relative
-//! path in one `OPEN` or `OPENDIR`, with exactly the rights the hop-by-hop walk would get
-//! (`filesystem_contract::fs::OPEN` has the rule). One that predates it answers `EINVAL` to any
-//! name with a `/`. So the PAL sends the path, and on `EINVAL` walks it hop by hop instead; if the
-//! walk then succeeds, the `EINVAL` was the server's age rather than the name, and every later
-//! request walks without asking again. An `EINVAL` the walk repeats was the name's, and says
-//! nothing about the server.
-//!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
 use super::*;
 
-// 0 = not yet known, 1 = paths work, 2 = this server walks hop by hop.
+/// Whether this server resolves a path in one request: 0 = not yet known, 1 = paths work, 2 = this
+/// server walks hop by hop.
+///
+/// A server since milestone 606 (a directory walk costs what it does on Linux), ruling A, resolves
+/// a relative path in one `OPEN` or `OPENDIR` with exactly the rights the hop-by-hop walk would get
+/// (`filesystem_contract::fs::OPEN` has the rule); an older one answers `EINVAL` to any name with a
+/// `/`. So the PAL sends the path and on `EINVAL` walks it instead. If the walk succeeds, the
+/// `EINVAL` was the server's age and every later request walks without asking; an `EINVAL` the
+/// walk repeats was the name's, and says nothing about the server.
 pub(super) static PATHS: AtomicU8 = AtomicU8::new(0);
 
 pub(super) fn paths_offered() -> bool {
@@ -77,7 +76,7 @@ pub(super) fn open_rights(opts: &OpenOptions) -> u64 {
 ///
 /// Since ruling A of milestone 606 (a directory walk costs what it does on Linux) a multi-name
 /// path is one `OPEN` with the rights each step asks for in the second word, and a server that
-/// refuses it gets the hop-by-hop walk ([`paths_offered`] and its note).
+/// refuses it gets the hop-by-hop walk ([`PATHS`] says how).
 pub(super) fn open_handle(path: &Path, opts: &OpenOptions) -> io::Result<(u64, u64)> {
     if !is_reachable() {
         return Err(unsupported_err());
@@ -109,21 +108,14 @@ pub(super) fn open_reply(w0: u64, want: u64) -> io::Result<(u64, u64)> {
 }
 
 /// Create the last name in `path` and return the handle. [`open_handle`]'s twin: the wire shape is
-/// identical, only the verb and the rights the walk asks for differ, which is why `CREATE` was
-/// specified to match `OPEN`.
+/// identical and only the verb and the walk's rights differ, which is why `CREATE` matches `OPEN`.
 ///
-/// **The walk asks for `CREATE` *and* what the caller will do with the file**, and leaving the
-/// second half out is a bug the nested case finds and the flat case cannot. A file handle carries
-/// `parent & (READ | WRITE)` (`redoxfs_server`'s `create_file_at`, the same arithmetic as `open_file_at`),
-/// so a descent that asked only for `CREATE` hands back a directory handle with no `WRITE` in it,
-/// which mints a file nobody can write. `std::fs::write("a/b")` created the file and then failed
-/// with `EROFS` on its own first write. Against the granted directory it never showed, because
-/// nothing is requested there: `ROOT` carries whatever the endpoint carries.
-///
-/// The server answers `EEXIST` if the name is already there, and this is only ever called after an
-/// open reported `NotFound`, so that reply means somebody else created it in between. It surfaces as
-/// `AlreadyExists` rather than being retried, because a silent retry would turn a lost race into a
-/// caller writing over a file it believes it just made.
+/// The walk asks for `CREATE` *and* what the caller will do with the file, because a file handle
+/// carries `parent & (READ | WRITE)` (`redoxfs_server`'s `create_file_at`): a descent that asked
+/// only for `CREATE` would mint a file nobody can write (notes/std/fs-descent.md). `EEXIST` here
+/// means somebody created the name after the open reported `NotFound`; it surfaces as
+/// `AlreadyExists` rather than being retried, so a lost race never becomes a caller writing over a
+/// file it believes it just made.
 pub(super) fn create_handle(path: &Path, opts: &OpenOptions) -> io::Result<u64> {
     if !is_reachable() {
         return Err(unsupported_err());

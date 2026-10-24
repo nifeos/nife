@@ -1,46 +1,32 @@
 //! `std::fs` for nife (milestone 27 phase two): `File` bound to the FS-service contract
-//! (DECISIONS §27, notes/fs-server.md, `crates/filesystem_contract`).
+//! (DECISIONS §27, `crates/filesystem_contract`). See notes/std/fs.md and notes/std/fs-descent.md.
 //!
-//! # There is no global namespace
-//!
-//! Per §27, open-by-path exists **only inside the FS server**, resolved relative to the one
-//! directory node the client's endpoint is bound to. A std program holds a **directory capability**
-//! (the FS-service endpoint, slot 4 of the std slot convention in `pal/nife/rt.rs`), and
-//! `File::open("foo")` means *"foo, under the directory I was granted"*. Consequences:
-//!
-//! 1. **A path that tries to leave the granted directory is refused here, before the wire.** Any
-//!    `..` names something this process holds no capability for: [`io::ErrorKind::InvalidFilename`],
-//!    not `PermissionDenied`, because nothing checked a permission. A leading `/` is the granted
-//!    directory itself, so `/motd` and `motd` name one file (`walk::count_names`).
-//! 2. **A program granted no directory capability gets `Unsupported` from everything**, as
-//!    `std::net` does when the `Stack` endpoint is absent.
-//! 3. **A nested path is a chain of descents, not a lookup** (milestone 122). `File::open("a/b/c")`
-//!    is `OPENDIR a`, `OPENDIR b`, then `OPEN c` against `b`'s handle. Every hop resolves under the
-//!    capability this process holds, rights only narrow, and there are no symlinks to escape through.
-//!
+//! There is no global namespace. A std program holds a **directory capability** (the FS-service
+//! endpoint, slot 4 of the std slot convention in `pal/nife/rt.rs`), and `File::open("foo")` means
+//! *"foo, under the directory I was granted"*. A `..` anywhere is refused here, before the wire,
+//! with [`io::ErrorKind::InvalidFilename`]; a leading `/` is the granted directory itself
+//! (`walk::count_names`). A nested path is a chain of `OPENDIR` descents (milestone 122). A program
+//! granted no directory capability gets `Unsupported` from everything, as `std::net` does when the
+//! `Stack` endpoint is absent.
 
-//! # What binds, and what stays Unsupported
+//! # What binds
 //!
-//! Bound: [`File::open`] (`OPEN`), `read` (`READ`), `write` (`WRITE`), `seek`/`tell` (an offset
-//! this side keeps, since the contract's read and write are both positional), `file_attr`/`size`
-//! (`FSTAT`), close on `Drop` (`CLOSE`), [`stat`]/[`exists`] built from open + fstat + close,
-//! `create` and `create_new` (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`,
-//! `create_dir`, `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`,
-//! `RMDIR`, `RENAME`), [`copy`] (open, a read/write loop, two closes), [`Dir`] (std's
-//! `openat`-shaped API, `#![feature(dirfd)]`), `remove_dir_all` (std's generic implementation over
-//! `read_dir` and `remove_file`), `Metadata::modified` (`GETMTIME`) and
-//! `std::fs::set_times`/`set_times_nofollow` (`SETMTIME_AT`, DECISIONS §112).
+//! [`File::open`] (`OPEN`), `read` (`READ`), `write` (`WRITE`), `seek`/`tell` (an offset this side
+//! keeps, since the contract's read and write are positional), `file_attr`/`size` (`FSTAT`), close
+//! on `Drop` (`CLOSE`), [`stat`]/[`exists`] (open, fstat, close), `create` and `create_new`
+//! (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`, `create_dir`,
+//! `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`, `RMDIR`,
+//! `RENAME`), [`copy`], [`Dir`] (`#![feature(dirfd)]`), `remove_dir_all`, `Metadata::modified`
+//! (`GETMTIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SETMTIME_AT`, §112).
+
+//! # What stays Unsupported
 //!
-//! The mtime verbs take a **name under a directory handle**, not an open file, so a path's
-//! metadata carries an mtime and an open `File`'s does not. See [`Mtime`] for why the PAL refuses
-//! rather than re-resolving a name it no longer holds.
-//!
-//! Still Unsupported, each because no verb in the contract backs it: symlinks and hard links,
-//! `canonicalize`, permissions, access and creation times, setting a time through an open `File`,
-//! locks, and duplicating a handle (`File::try_clone`, and `Dir::try_clone` for anything but
-//! the granted directory: a handle is a token the server minted; there is no dup verb). Before
-//! adding a refusal here, check the contract: several earlier ones outlived the verb that ended
-//! them. See notes/std.md for the full list with reasons.
+//! Each because no verb in the contract backs it: symlinks and hard links, `canonicalize`,
+//! permissions, access and creation times, setting a time through an open `File`, locks, and
+//! duplicating a handle (`File::try_clone`, and `Dir::try_clone` for anything but the granted
+//! directory: a handle is a token the server minted, and there is no dup verb). Before adding a
+//! refusal here, check the contract: several outlived the verb that ended them.
+//! notes/std/fs.md has the list with reasons.
 
 use crate::ffi::OsString;
 use crate::fmt;
@@ -53,11 +39,8 @@ use crate::sys::pal::nife::rt;
 use crate::sys::time::{SystemTime, UNIX_EPOCH};
 use crate::sys::{unsupported, unsupported_err};
 
-// The pieces of the phase-one backend that stay exactly as honest as they were: nothing in the
-// contract links or canonicalizes, so those keep the `unsupported` implementations rather than
-// gaining a nife-shaped copy of the same refusal. `FileTimes` used to come from there too, and its
-// setters discarded what they were given; it is this module's own now, because `set_times` has a
-// verb to carry a modification time to.
+// Nothing in the contract links or canonicalizes, so those keep upstream's `unsupported`
+// implementations rather than a nife-shaped copy of the same refusal.
 #[expect(dead_code)]
 #[path = "unsupported.rs"]
 mod unsupported_fs;
@@ -74,19 +57,13 @@ pub use unsupported_fs::{canonicalize, link, readlink, symlink};
 /// `unsupported` version, and wiring it is one line here once the verb grows the flag.
 pub use unsupported_fs::rename_noreplace;
 
-/// **`remove_dir_all` needed no code** (milestone 122), and that is the whole finding.
+/// `remove_dir_all` is std's generic implementation, which needs no nife code (milestone 122).
 ///
-/// It used to come from `unsupported.rs` with a note saying the recursion has to descend and a
-/// nested path is refused, so the loop belonged in `components/src/rm.rs` where a program can hold a
-/// directory capability per level. The second half of that was right and is now this module's
-/// business: [`walk`] holds one per level. std's own generic implementation is written entirely in
-/// terms of `read_dir`, `remove_file` and `remove_dir` on paths it composes with `DirEntry::path`,
-/// which is exactly the shape that started working when descent did.
-///
-/// It is the same finding milestone 64 recorded twice and this module records a fourth time: **a
-/// refusal outlived the reason for it**, and looked correct the whole while. The rights it needs at
-/// every level are `dir::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk in, `REMOVE` to take
-/// the name out), asked for one verb at a time by the walk rather than all at once.
+/// It is written in terms of `read_dir`, `remove_file` and `remove_dir` on paths it composes with
+/// `DirEntry::path`, and [`walk`] resolves those holding one directory capability per level. The
+/// rights it needs at every level are `dir::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
+/// in, `REMOVE` to take the name out), asked for one verb at a time by the walk. See
+/// notes/std/fs-descent.md.
 pub use crate::sys::fs::common::remove_dir_all;
 
 /// No nife-specific fields behind `std::fs::{HomeDirs, MediaDirs}` (rust-lang/rust#158936): the
@@ -105,12 +82,10 @@ const PAGE_VA: u64 = rt::FS_PAGE;
 /// The contract's transfer unit: one page, so one request never moves more than this.
 const PAGE: usize = fsproto::PAGE;
 
-// **The module's seams, one child each** (2026-10-12 UTC, for §266 (a Rust source file stays under
-// 2,000 lines) and §282 (when a file is split, the parent becomes an index)). Each child takes
+// One child per seam (§282 (when a file is split, the parent becomes an index)). Each takes
 // `use super::*` and is re-exported whole, the shape `kernel/src/sched.rs` uses, because it is part
 // of this module split across files rather than a client of it: `sys/fs/mod.rs` names `imp::File`,
-// `imp::stat` and the rest exactly as before. The three constants above are the handful every
-// child reads.
+// `imp::stat` and the rest. The three constants above are the handful every child reads.
 mod dir;
 mod errors;
 mod file;
