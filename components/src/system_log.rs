@@ -1,77 +1,22 @@
 //! **The system log service** (milestone 613 (a system log service: the in-memory half), for §242
-//! (a system log)): one place the programs on a machine append to, and that readers read from.
-//!
-//! Everything it decides is `crates/system_log`, host-tested; this file is the receive loop and
-//! the three syscalls around it. One thread, one wait point:
-//!
-//! 1. `RECEIVE` on the intake endpoint, which returns the three words a sender passed and the badge
-//!    the kernel read off the capability it sent through (milestone 613's amendment to §230
-//!    (badged endpoint capabilities): a plain `SEND` carries its badge too).
-//! 2. Hand them to [`system_log::Log::handle`]: a writer's bytes become stamped lines in the ring;
-//!    a badge-0 word is the spawner registering a badge; a reader's request names a window.
-//! 3. For a read, fill that reader's window and `SIGNAL` its notification. Signalling never blocks,
-//!    so a reader that stops reading cannot hold this thread, and a writer never waits on a reader.
-//!
-//! **And, at boot, the kernel's own lines** (milestone 342 (the kernel and the `console` server
-//! drive one UART from two address spaces), calef's ruling F). Started with `arg0` =
-//! `MODE_KERNEL`, the same wait point also ends on the kernel ring's notification, bound to this
-//! thread: the service copies every new record out of the ring (`kernel_ring`), stores it under
-//! the program name `kernel`, forwards the ones the kernel did not print itself to the console in
-//! sixteen-byte chunks, and moves the cursor. The console writes them only at a line start; if the
-//! terminal sits mid-line, a timer 250 ms later tells it to put them on a line of their own.
-//!
+//! (a system log)): one place the programs on a machine append to, and that readers read from. Its
+//! decisions are `crates/system_log`, host-tested; this is the receive loop around one wait point.
+//! `RECEIVE` on [`INTAKE`] returns a sender's three words and the badge the kernel read off its
+//! capability (milestone 613's amendment to §230 (badged endpoint capabilities): a plain `SEND`
+//! carries its badge too). [`Log::handle`] stamps a writer's bytes into the ring, takes a badge-0
+//! registration from the spawner, or names a reader's window, which is filled and its notification
+//! signalled. Signalling never blocks, so a reader that stops reading cannot hold this thread and a
+//! writer never waits on a reader. In [`MODE_KERNEL`] the wait also ends on the kernel ring's
+//! notification ([`drain`]). `system_tests/src/user/system_log_tests.rs` plays spawner and reader.
 
-//! # Capability contract
-//!
-//! | slot | what | rights |
-//! |---|---|---|
-//! | 0 | the intake endpoint: writers, readers and the spawner all `SEND` here | `READ` |
-//! | 1 | `MODE_KERNEL` only: the kernel ring's notification, bound here | `READ`, `WRITE` |
-//! | 2 | `MODE_KERNEL` only: the flush timer | `WRITE` |
-//! | 3 | `MODE_KERNEL` only: the console server's request endpoint | `WRITE` |
-//! | next `arg1` | reader *n*'s notification, signalled when its window is filled | `WRITE` |
-//!
-//! In `MODE_KERNEL` the ring is mapped read-only at `RING_VA` and the cursor page read-write at
-//! `CURSOR_VA`.
-//!
-//! Window *n* (0-based) is the page at `read::WINDOW_VA + n * 4096`, mapped read-write, which the
-//! same spawner maps into reader *n*. A window past the count is never written, and a missing
-//! notification slot is a reader nobody can wake: its window still holds the answer.
-//!
-//! The spawner holds the only unbadged `WRITE` capability to slot 0's endpoint, and mints a badged
-//! copy (`abi::rendezvous::BADGE`) for each writer and reader. That is what makes attribution
-//! unforgeable: every writer is somebody's badge, and only badge 0 may say whose.
-//!
-
-//! # EXAMPLES
-//!
-//! `system_tests/src/user/system_log_tests.rs` plays the spawner and the reader:
-//!
-//! ```text
-//! register writer badge 1 as program "sink_transcript_writer", user "alice"
-//! register writer badge 2 as program "sink_transcript_writer", user "bob"
-//! register badge 9 as the system reader, window 0
-//! spawn two writers, each holding only its badged capability; they print the transcript
-//! SEND (OPERATION_READ, cursor 0) through badge 9, wait on window 0's notification, read the window
-//! ```
-//!
 //! # BUGS
 //!
-//! - **At boot it serves the kernel and nobody else.** The progenitor starts it for the kernel's
-//!   ring but keeps no unbadged intake, mints no writer badges and wires no reader windows, so a
-//!   program's output does not reach it yet and nothing at the prompt can read it.
-//! - **Four readers at most** (`system_log_contract::read::WINDOWS`), because each is a page and
-//!   a notification the spawner provides at spawn.
-//! - **Its stack depth is measured only on the paths the QEMU test drives.** A program the kernel
-//!   spawns gets one 4 KiB stack page, and this one is built unoptimized in a debug image, so
-//!   `crates/system_log` lends 250-byte lines rather than moving them. The crowded-writer path (a
-//!   ninth writer mid-line) runs on the host only.
-//! - **The flush deadline is the first forwarded line's, not the waiting line's.** `drain` arms
-//!   [`FLUSH_NANOS`] when it forwards a line and nothing is armed, whether or not the console
-//!   queued that line, so a later line queued mid-line can be flushed far sooner than 250 ms and
-//!   its (exact) redraw lands in the middle of what a person is typing. Whether it widened the
-//!   window `script/swish-check` misread (`without_redraws` in `xtask/src/swish_check.rs`) is
-//!   unmeasured. The service cannot see the console's queue, so the fix moves the deadline there.
+//! - At boot it serves the kernel only: the progenitor keeps no unbadged intake, mints no writer
+//!   badges and wires no reader windows, so no program's output reaches it and nothing reads it.
+//! - Four readers at most (`system_log_contract::read::WINDOWS`), a page and a notification each.
+//! - Its stack is one 4 KiB page, unoptimized, measured only on the QEMU test's paths (so
+//!   `crates/system_log` lends 250-byte lines); a ninth writer mid-line runs on the host only.
+//! - The flush deadline is the first forwarded line's, not the waiting line's ([`drain`]).
 //!
 //! Name: ratified 2026-10-06 (calef, "`system_log` ratified.", in conversation). §242 calls it "the
 //! log service"; the crate and program share `system_log` so a reader finds both with one grep.
@@ -96,15 +41,19 @@ use user_mode_runtime::{
     send, timer_arm,
 };
 
-/// The intake endpoint, `READ`.
+/// Slot 0, the intake endpoint, `READ`: writers, readers and the spawner all `SEND` here. The
+/// spawner holds the only unbadged `WRITE` capability to it and mints a badged copy
+/// (`abi::rendezvous::BADGE`) for each writer and reader. That makes attribution unforgeable: every
+/// writer is somebody's badge, and only badge 0 may say whose.
 const INTAKE: u64 = 0;
 
 /// **`arg0` asking for the kernel's ring** (milestone 342 (the kernel and the `console` server
-/// drive one UART from two address spaces)). Then slot 1 is the kernel ring's notification, bound
-/// to this thread by the spawner (`READ | WRITE`: the kernel signals it and so does the timer),
-/// slot 2 a timer (`WRITE`), slot 3 the console server's request endpoint (`WRITE`), and the
-/// readers' notifications follow from slot 4. Without it they follow from slot 1. `arg1` is how
-/// many readers the spawner wired, at most `read::WINDOWS`.
+/// drive one UART from two address spaces), calef's ruling F). Then slot 1 is the kernel ring's
+/// notification, bound to this thread by the spawner (`READ | WRITE`: the kernel signals it and so
+/// does the timer), slot 2 a timer (`WRITE`), slot 3 the console server's request endpoint
+/// (`WRITE`), and the readers' notifications (`WRITE`, each signalled when its window is filled)
+/// follow from slot 4. Without it they follow from slot 1. `arg1` is how many readers the spawner
+/// wired, at most `read::WINDOWS`.
 const MODE_KERNEL: u64 = 1;
 /// Slot 1 in [`MODE_KERNEL`]: the kernel ring's notification.
 const KERNEL_NOTIFIED: u64 = 1;
@@ -122,7 +71,10 @@ const FLUSH_NANOS: u32 = 250_000_000;
 /// How many reader windows the service maps, from the contract both sides link.
 const WINDOWS: u64 = read::WINDOWS as u64;
 
-/// The first reader window, checked against the address-space map at compile time.
+/// The first reader window, checked against the address-space map at compile time. Window *n*
+/// (0-based) is the page at `read::WINDOW_VA + n * 4096`, mapped read-write here and by the same
+/// spawner into reader *n*. A window past the count is never written, and a missing notification
+/// slot is a reader nobody can wake: its window still holds the answer.
 const WINDOW_VA: u64 = address_space_map::pair_page(read::WINDOW_VA);
 /// Where the spawner maps the kernel's ring (read-only, `kernel_ring::PAGES` pages) in
 /// [`MODE_KERNEL`]. Must match `crates/system_initializer`'s `LOG_RING_VA`.
@@ -194,6 +146,12 @@ pub extern "C" fn _start(mode: u64, readers: u64, _a2: u64) -> ! {
 /// did not print itself to the console whole, and move the cursor past them. The first call
 /// attaches: the cursor goes from `DETACHED` to the oldest record still held, so the log starts
 /// with what is left of the boot (`dmesg`'s shape) and the kernel stops printing for itself.
+///
+/// The console writes a forwarded line only at a line start. The flush timer is armed when a line
+/// is forwarded and none is armed, even if the console did not queue it, so a later line queued
+/// mid-line can flush far sooner than [`FLUSH_NANOS`] and its exact redraw lands inside what a
+/// person types. Whether that widened the window `script/swish-check` misread (`without_redraws` in
+/// `xtask/src/swish_check.rs`) is unmeasured; the fix moves the deadline to the console's queue.
 fn drain(log: &mut Log, flush_armed: &mut bool) {
     // SAFETY: the spawner mapped `kernel_ring::PAGES` read-only frames at `RING_VA` and one
     // read-write frame at `CURSOR_VA` in this mode (the contract on `MODE_KERNEL`). Every access
