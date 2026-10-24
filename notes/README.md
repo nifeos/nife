@@ -89,6 +89,8 @@ area directories), ruled B). Appendices under
 
 `system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.
 
+`paging.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-07. Named for the crate it documents.
+
 `aarch64-port.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings `riscv-port.md` and `x86-port.md`.
 
 `swish-check-harness.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-04. The stem names the program, `script/swish-check`, and the part of it the page covers: the host side that types the script and reads the transcript back.

@@ -1,23 +1,12 @@
-//! Page tables, portable across formats. Each hardware format ([`Aarch64`], [`Sv39`], and x86's)
-//! supplies the few encode and decode operations the walk needs through [`PageFormat`], and the walk
-//! itself (descend the levels, allocate tables, write a leaf) is written once in [`Mapper`]: §17
-//! (the second architecture: RISC-V, and the page-table format trait), notes/riscv-port.md.
+//! Page tables, portable across formats. Each hardware format ([`Aarch64`], [`Sv39`] and x86's)
+//! supplies the encode and decode operations the walk needs through [`PageFormat`], and the walk
+//! (descend the levels, allocate tables, write a leaf) is written once in [`Mapper`]: §17 (the
+//! second architecture: RISC-V, and the page-table format trait). See notes/paging.md.
 //!
-//! Every format uses 512-entry, 4 KiB tables and 4 KiB pages, so a table is exactly one page and
-//! the frame allocator supplies page tables and nothing else. The same arithmetic gives 2 MiB and
-//! 1 GiB leaves one and two levels up (a block, a megapage, a large page): [`PageSize`] names
-//! them, and [`Mapper::map_span`] picks the largest that fits, which a direct map of RAM wants.
-//!
-//! **A block is a leaf the walk meets early, and every walk has to know that.** `map` refuses to
-//! descend through one (it would write a leaf into somebody's data), `unmap` refuses to take a
-//! 4 KiB bite out of one ([`MapError::InsideBlock`]), and `translate` stops at one and adds the
-//! offset. Nothing splits a block: on a live table that is the break-before-make hazard
-//! [`TlbFlush`] exists for, and nothing here has needed it.
-//!
-//! It is pure logic, so the host tests build real tables in host memory, using allocations as
-//! pretend physical frames (a `Box<PageTable>` is 4 KiB-aligned by its type), and walk them back
-//! with pointer arithmetic identical to the kernel's. [`Mapper::map`] and [`Mapper::unmap`] show
-//! it.
+//! **A block is a leaf the walk meets early.** [`PageSize`] names the 2 MiB and 1 GiB leaves, and
+//! [`Mapper::map_span`] picks the largest that fits. `map` refuses to descend through a block,
+//! `unmap` refuses to take a 4 KiB bite out of one ([`MapError::InsideBlock`]), and `translate`
+//! stops at one and adds the offset. Nothing splits a block.
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet): a standard term that is already right.
 
@@ -39,11 +28,8 @@ pub use x86_64::{AmdVi, Ia32e, Vtd};
 
 // --- Portable access flags ---
 //
-// `Flags` used to *be* the aarch64 descriptor's permission bits. It is now a format-neutral set of
-// capabilities: what access this mapping grants, said in terms every format can encode. Each
-// `PageFormat` translates these to and from its own descriptor bits (see `leaf_entry`/`leaf_flags`).
-// The constructor and predicate API is unchanged, so consumers that ask for `Flags::user_code()` or
-// test `is_writable()` did not move.
+// `Flags` is a format-neutral set of capabilities, what access a mapping grants, and each
+// `PageFormat` translates it to and from its own descriptor bits (`leaf_entry`/`leaf_flags`).
 
 #[cfg(test)]
 mod flag_tests;

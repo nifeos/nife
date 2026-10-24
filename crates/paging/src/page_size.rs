@@ -41,16 +41,12 @@ impl PageSize {
     }
 
     /// **The leaf size for the next step of mapping `remaining` bytes from `va` to `pa`**: the
-    /// largest size no bigger than `largest` for which both addresses are aligned and the whole
-    /// leaf fits in what is left.
+    /// largest no bigger than `largest` with both addresses aligned and the leaf inside the rest.
     ///
-    /// This is the one decision that makes a block mapping safe or not, which is why it is a
-    /// separate function rather than a line inside [`Mapper::map_span`](crate::Mapper::map_span): a block that overran the
-    /// span would map bytes nobody asked for (a device window, the kernel image's frames under a
-    /// second, writable alias), and that property is proved for every input here, where it is
-    /// loopless arithmetic, rather than tested through a built table. See this module's Kani
-    /// harnesses `a_chosen_leaf_is_aligned_and_inside_the_span` and
-    /// `the_chosen_leaf_is_the_largest_that_fits`.
+    /// Kept out of [`Mapper::map_span`](crate::Mapper::map_span) so Kani proves it for every
+    /// input: a block that overran the span would map bytes nobody asked for, such as a writable
+    /// alias of the kernel image (`a_chosen_leaf_is_aligned_and_inside_the_span`,
+    /// `the_chosen_leaf_is_the_largest_that_fits`).
     ///
     /// Answers [`PageSize::Size4KiB`] when nothing larger fits, including when `remaining` is less
     /// than a page; the caller is the one that knows a span must be page-aligned and whole.
