@@ -169,8 +169,8 @@ Every claim the three tours made, and where each one is now:
 | The machine's entropy source serves a client | `x86_64` (RDSEED), riscv64 (JH7110 TRNG) | `entropy`, all three; absent with no TRNG or seed instruction |
 | The JH7110's clock controller ungates the TRNG | riscv64 | `clock`; absent off a JH7110 |
 | The JH7110 TRNG's draws, timed | riscv64 | `trng`; absent off a JH7110 |
-| The boot's middle stages finished (`boot_ladder::TOUR`) | riscv64 | `kernel_main`, all three, after the verdict; the checks note stages 3 to 14 and 15 is finished |
-| A faulting ring-3 thread's death reaches its supervisor; two rounds of children leak no frames | `x86_64` | `supervised` and `teardown`, all three (milestone 944) |
+| The boot's middle stages finished (`boot_ladder::TOUR`) | riscv64 | `kernel_main`, all three, after the verdict; the checks note stages 3 to 16 and 17 is finished |
+| A faulting ring-3 thread's death reaches its supervisor; two rounds of children leak no frames | `x86_64` | `supervised` and `teardown`, all three (milestone 944 (the self-test proves a supervised death and a teardown that leaks nothing)) |
 | A bare riscv64 ELF initrd runs | riscv64 | Gone: every boot carries an archive |
 | Reports: image bounds, initial ramdisk, boot file | aarch64, `x86_64` | The machine description's |
 | An idle console server | aarch64 | Gone with `console_service` |

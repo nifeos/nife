@@ -222,7 +222,7 @@ const RUNS: usize = CHECKS - 1;
 
 /// **The stage that means the self-test finished and the boot's middle stages ran to their end**,
 /// noted beside `boot_ladder::TOUR` in `kernel_main`: the stage after the last check's. Board logs
-/// from before the checks replaced the tours read 11 as finished; this reads 15.
+/// from before the checks replaced the tours read 11 as finished, and 13-check kernels 15; this reads 17.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
 pub const TOUR_STAGE: u32 = FIRST_STAGE + RUNS as u32;

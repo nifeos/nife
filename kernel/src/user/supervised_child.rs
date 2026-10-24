@@ -53,6 +53,9 @@ pub const REPORT_WORD: u64 = 0x42;
 /// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(not(target_arch = "x86_64"))]
 pub const FAULT_PC_OFFSET: u64 = 4;
+/// [`FAULT_PC_OFFSET`] on `x86_64`.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(target_arch = "x86_64")]
 pub const FAULT_PC_OFFSET: u64 = x86_programs::FAULT_PC_OFFSET;
 
@@ -65,11 +68,17 @@ pub const FAULT_STUB: &[u32] = &[
     0xD2A0_14A0, // movz x0, #0xA5, lsl #16   (x0 = 0x00A5_0000)
     0xF940_0001, // ldr  x1, [x0]             (data abort: nothing maps FAULT_ADDRESS)
 ];
+/// [`FAULT_STUB`] on riscv64.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(target_arch = "riscv64")]
 pub const FAULT_STUB: &[u32] = &[
     0x00A5_0537, // lui a0, 0xA50             (a0 = 0x00A5_0000)
     0x0005_3583, // ld  a1, 0(a0)             (load page fault: nothing maps FAULT_ADDRESS)
 ];
+/// [`FAULT_STUB`] on `x86_64`.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(target_arch = "x86_64")]
 pub const FAULT_STUB: &[u32] = &x86_programs::fault(FAULT_ADDRESS as u32);
 
@@ -91,6 +100,9 @@ pub const REPORT_STUB: &[u32] = &[
     0xD280_0008,                                       // movz x8, #0            (SYS_EXIT)
     0xD400_0001,                                       // svc #0                 (exit)
 ];
+/// [`REPORT_STUB`] on riscv64.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(target_arch = "riscv64")]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const REPORT_STUB: &[u32] = &[
@@ -104,6 +116,9 @@ pub const REPORT_STUB: &[u32] = &[
     0x0000_0893 | ((abi::SYS_EXIT as u32) << 20),   // li a7, SYS_EXIT
     0x0000_0073,                                    // ecall               (exit)
 ];
+/// [`REPORT_STUB`] on `x86_64`.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 #[cfg(target_arch = "x86_64")]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const REPORT_STUB: &[u32] = &x86_programs::report(REPORT_WORD as u32);
