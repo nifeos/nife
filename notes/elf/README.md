@@ -17,3 +17,5 @@ parent under §212 (a prose budget). The directory follows §212's siting defaul
 - `why-not-mach-o-or-pe` Name: provisional, minted 2026-10-11 (UTC) by
   lane/seventh-ten-longest-notes, after the parent's "Why don't macOS and Windows use it?". calef
   names files.
+- `loaded-image-check` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18, for
+  the crate it describes. calef names files.

@@ -60,3 +60,7 @@ area directories), ruled B). Appendices under
 `aarch64-modern-board-survey.md`: Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.
 
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
+
+`jh7110-watchdog.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.
+
+`machine-statistics.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.
