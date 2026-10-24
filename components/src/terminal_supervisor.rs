@@ -81,9 +81,10 @@ pub extern "C" fn _start(mode: u64, lengths: u64, swap: u64) -> ! {
 
 /// **The stand-in: one `CALL` the supervisor cannot make itself**, because it has to be able to
 /// stop waiting for the answer. Its whole authority is `WRITE` on the endpoint it quiesces, badged
-/// `proto::SUPERVISOR_BADGE`, and on the supervisor's notification. A hung incumbent leaves it blocked here until the supervisor
-/// destroys its region, which finishes it in place and unlinks its request from the endpoint's
-/// queue (milestone 133 (ending a permanently blocked thread, and deciding who may)).
+/// `proto::SUPERVISOR_BADGE`, and on the supervisor's notification. A hung incumbent leaves it
+/// blocked here until the supervisor destroys its region, which finishes it in place and unlinks
+/// its request from the endpoint's queue (milestone 133 (ending a permanently blocked thread, and
+/// deciding who may)).
 fn stand_in() -> ! {
     let (q, _) = user_mode_runtime::call(
         STAND_IN_TERMINAL,

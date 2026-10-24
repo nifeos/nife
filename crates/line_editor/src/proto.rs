@@ -158,9 +158,10 @@ pub const OPERATION_QUIESCE: u64 = 8;
 ///
 /// The quiesce still rides the served endpoint, so its FIFO does the draining (§232 refused a
 /// separate control endpoint for that reason); the badge only says who sent it. Minting it takes
-/// `GRANT` on the unbadged endpoint (§230 (badged endpoint capabilities)), which the supervisor
-/// holds and its spawner holds, and no client of a boot does: the shell, `login` and the input
-/// driver hold `WRITE` alone. A badged copy cannot be re-badged, so a [`RAW_ONLY_BADGE`] or
+/// `GRANT` on the unbadged endpoint (§230 (badged endpoint capabilities)). `system_initializer`,
+/// `terminal_supervisor` and `login` hold that, and `login` only to hand sessions a `WRITE`-only
+/// copy. No program a person runs holds it: the shell, the input driver and every session hold
+/// `WRITE` alone. A badged copy cannot be re-badged, so a [`RAW_ONLY_BADGE`] or
 /// [`STDIN_BADGE`] holder cannot reach this one either. `terminal_supervisor` mints it for each
 /// quiesce and hands it to the stand-in that makes the call.
 ///
@@ -171,9 +172,12 @@ pub const SUPERVISOR_BADGE: u64 = 3;
 /// unbadged one. Every badge is an allowlist, so an operation added to the contract later is
 /// refused on it until somebody decides its holder may send it:
 ///
-/// - unbadged, the copy the input driver, the shell and `login` hold: everything but
-///   [`OPERATION_READ_LINE_BYTES`], so the shell's lines cannot be read eight bytes at a time
-///   from under it, and [`OPERATION_QUIESCE`], so none of them can stop the terminal;
+/// - unbadged, the copy the input driver, the shell and `login` hold: [`OPERATION_WRITE`],
+///   [`OPERATION_READLINE`], [`OPERATION_BYTES`], [`OPERATION_INTRCOUNT`],
+///   [`OPERATION_SUSPEND_COUNT`], [`OPERATION_PRINT`], [`OPERATION_RAWMODE`] and
+///   [`OPERATION_READRAW`]. Not [`OPERATION_READ_LINE_BYTES`], so the shell's lines cannot be read
+///   eight bytes at a time from under it, and not [`OPERATION_QUIESCE`], so none of them can stop
+///   the terminal;
 /// - [`RAW_ONLY_BADGE`]: [`OPERATION_RAWMODE`] and [`OPERATION_READRAW`], so nothing its holder
 ///   sends reaches the queue the shell reads its next command from;
 /// - [`STDIN_BADGE`]: [`OPERATION_READ_LINE_BYTES`] alone;
@@ -186,7 +190,17 @@ pub const SUPERVISOR_BADGE: u64 = 3;
 /// Name: provisional, minted 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only.
 pub const fn admits(badge: u64, operation: u64) -> bool {
     match badge {
-        0 => !matches!(operation, OPERATION_READ_LINE_BYTES | OPERATION_QUIESCE),
+        0 => matches!(
+            operation,
+            OPERATION_WRITE
+                | OPERATION_READLINE
+                | OPERATION_BYTES
+                | OPERATION_INTRCOUNT
+                | OPERATION_SUSPEND_COUNT
+                | OPERATION_PRINT
+                | OPERATION_RAWMODE
+                | OPERATION_READRAW
+        ),
         RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
         STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
         SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,

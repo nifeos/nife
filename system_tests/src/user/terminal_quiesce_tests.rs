@@ -6,10 +6,10 @@
 //!
 //! The test plays the supervisor as well as the input driver and the reader, on the harness
 //! `raw_mode_service` already provides. As the supervisor it quiesces through a copy badged
-//! `proto::SUPERVISOR_BADGE`; as anyone else, through the unbadged copy every client holds. What it proves is the incumbent's half of a swap: the
-//! reader is handed back, the half-typed line survives a resume, and the resumed read repaints
-//! nothing. The replacement's half needs the handoff page count first
-//! (`design/roadmap/0659-a-region-retypes-a-frame-run.md`).
+//! `proto::SUPERVISOR_BADGE`; as anyone else, through the unbadged copy every client holds. What it
+//! proves is the incumbent's half of a swap: the reader is handed back, the half-typed line
+//! survives a resume, and the resumed read repaints nothing. The replacement's half needs the
+//! handoff page count first (`design/roadmap/0659-a-region-retypes-a-frame-run.md`).
 
 use line_editor::proto;
 use raw_mode_service as svc;

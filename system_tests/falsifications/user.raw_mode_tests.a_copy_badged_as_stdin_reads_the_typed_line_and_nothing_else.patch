@@ -15,12 +15,12 @@ there. Replayed red on aarch64 the same day, at "a stdin holder's OPERATION_BYTE
 (`raw_mode_tests.rs:553`).
 
 diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
-index 98a5aff3c..695c42bcb 100644
+index 44da33940..51f978e14 100644
 --- a/crates/line_editor/src/proto.rs
 +++ b/crates/line_editor/src/proto.rs
-@@ -188,7 +188,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
-     match badge {
-         0 => !matches!(operation, OPERATION_READ_LINE_BYTES | OPERATION_QUIESCE),
+@@ -202,7 +202,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+                 | OPERATION_READRAW
+         ),
          RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
 -        STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
 +        STDIN_BADGE => true,

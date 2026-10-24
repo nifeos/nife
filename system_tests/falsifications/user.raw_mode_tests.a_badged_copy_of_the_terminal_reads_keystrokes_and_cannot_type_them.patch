@@ -30,13 +30,13 @@ one table. Same defect, `RAW_ONLY_BADGE => true` there. Replayed red on aarch64 
 the same first assertion (`raw_mode_tests.rs:449`).
 
 diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
-index 98a5aff3c..e88324356 100644
+index 44da33940..6e75276c9 100644
 --- a/crates/line_editor/src/proto.rs
 +++ b/crates/line_editor/src/proto.rs
-@@ -187,7 +187,7 @@ pub const SUPERVISOR_BADGE: u64 = 3;
- pub const fn admits(badge: u64, operation: u64) -> bool {
-     match badge {
-         0 => !matches!(operation, OPERATION_READ_LINE_BYTES | OPERATION_QUIESCE),
+@@ -201,7 +201,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+                 | OPERATION_RAWMODE
+                 | OPERATION_READRAW
+         ),
 -        RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
 +        RAW_ONLY_BADGE => true,
          STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,

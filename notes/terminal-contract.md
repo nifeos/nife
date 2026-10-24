@@ -72,8 +72,10 @@ no control endpoint refuses it with `BAD_REQUEST`. The boot's own `line_editor` 
 Only the supervisor may send it (§232 (the `line_editor` swap contract)). The supervisor sends it
 through a copy of the endpoint badged `proto::SUPERVISOR_BADGE`, and a terminal refuses a quiesce
 on any other copy with `BAD_REQUEST`, the unbadged one every client holds included, and refuses
-everything but a quiesce on that badge. Minting the badge takes `GRANT` on the endpoint, which the
-supervisor and its spawner hold and no client of a boot does. Honored from anyone else, a quiesce
+everything but a quiesce on that badge. Minting it takes `GRANT` on the unbadged endpoint.
+`system_initializer`, `terminal_supervisor` and `login` hold that, and `login` only to hand
+sessions a `WRITE`-only copy. No program a person runs holds it: the shell, the input driver and
+every session hold `WRITE` alone. Honored from anyone else, a quiesce
 would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole badge table is
 `proto::admits`.
 

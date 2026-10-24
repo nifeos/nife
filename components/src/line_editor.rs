@@ -176,8 +176,8 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
             continue;
         };
         // **The badge decides what a holder may ask**, and `proto::admits` is the table, with why
-        // each badge narrows. An allowlist, so a request added to the contract later is refused on
-        // every badge until somebody decides its holder may send it.
+        // each badge narrows. Every arm is an allowlist, the unbadged one included, so a request
+        // added to the contract later is refused until somebody decides its holder may send it.
         let allowed = proto::admits(badge, proto::operation(w0));
         if !allowed {
             reply(slot, proto::BAD_REQUEST, 0);
