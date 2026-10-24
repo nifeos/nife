@@ -75,18 +75,6 @@ path = "src/swish/main.rs"
 test = false
 bench = false
 
-
-# The interrupt-driven console input driver (milestone 20): an unprivileged userspace device driver.
-# It holds an Irq capability, a report endpoint, and a device mapping of the UART, and services the
-# receive interrupt with the seL4 WAIT/read/report/ACK loop. Portable; the riscv initial ramdisk
-# packs it as "serial_driver". The aarch64 input driver is the PL011-wired role of `hello`; this is
-# its portable analog.
-[[bin]]
-name = "serial_driver"
-path = "src/serial_driver.rs"
-test = false
-bench = false
-
 # **The progenitor** (milestone 266): the first process, on all three architectures. The kernel
 # loads it as the boot process and it builds the interactive system (console, input, line
 # discipline, shell) out of its own budget, then stays alive as the spawn service. Until 266 this

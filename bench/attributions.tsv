@@ -235,6 +235,6 @@ riscv64	ccea3ba7f	yield_switch	+3.42	#1617, milestone 761: set_current stores th
 
 # Milestone 939 (the icount bench runs without a preemption tick in its windows): each save's
 # whole step is the change, measured against #2565's floors with main on them.
-aarch64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
-riscv64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
-x86_64	5933ffe37	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+aarch64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+riscv64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+x86_64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first

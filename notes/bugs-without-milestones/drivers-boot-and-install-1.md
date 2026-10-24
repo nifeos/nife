@@ -71,7 +71,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  roadmap 0803 | other QEMU assumptions on the aarch64 boot path not swept beyond four files | Sweep the aarch64 boot path for QEMU assumptions | M  |
 |  roadmap 0805 | a reset does not quiesce devices; in-flight DMA is cut off | Reboot quiesces devices | M  |
 |  roadmap 0811 | whether kernel must reset the I/O queue pair before a server restart is unmeasured | Measure NVMe server restart state | S  |
-|  roadmap 0890 | `serial_driver` shipped and started by nothing; `serial_console` has not read radon's profile | Start or drop serial_driver; radon console profile | S  |
+|  roadmap 0890 | `serial_console` has not read radon's profile | radon console profile | S  |
 |  uefi_loader/src/chooser.rs | power cut mid table write, write order, and fallback to the backup table are all untested or unimplemented | Chooser survives a power cut and reads the backup table | M  |
 |  uefi_loader/src/chooser.rs (slot image) | an image started from a slot has no boot file so cannot install to a second disk; `booted_from_nvme` assumes NVMe | Let a slot-booted image find its boot file and check its disk | S  |
 |  uefi_loader/src/device_tree_from_acpi.rs (PCI) | no PCI or virtio-mmio on an ACPI aarch64 machine (needs `_CRS`/`_PRT`); a present bus is invisible (578 covers discovery, not AML) | Describe PCI on ACPI aarch64 machines | L  |
