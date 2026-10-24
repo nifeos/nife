@@ -10,6 +10,12 @@ const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
 /// needs and no more.
 const DMA_PAGE_FRAMES: u64 = 1;
 
+/// Stack pages mapped below the one every spawn gets. The driver's bring-up through
+/// `virtio-drivers` (milestone 947) peaks near 5 KiB in a debug build, `VirtQueue::new` alone
+/// taking 1.9 KiB, and one page faulted in its prologue. Three, so four in all, as
+/// `usb_keyboard_service` has; the boot's `system_initializer` gives every child twelve.
+const EXTRA_STACK_PAGES: usize = 3;
+
 pub struct Wiring {
     /// The driver's status endpoint.
     pub report: RendezvousId,
@@ -86,18 +92,30 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
     let report = crate::sched::create_rendezvous();
     let doorbell = crate::sched::create_rendezvous();
 
-    let maps = [
-        Mapping {
-            va: DMA_VA,
-            phys: dma,
+    let mut maps = [Mapping {
+        va: 0,
+        phys: 0,
+        flags: Flags::user_data(),
+    }; 2 + EXTRA_STACK_PAGES];
+    maps[0] = Mapping {
+        va: DMA_VA,
+        phys: dma,
+        flags: Flags::user_data(),
+    };
+    maps[1] = Mapping {
+        va: RING_VA,
+        phys: ring,
+        flags: Flags::user_data(),
+    };
+    for k in 0..EXTRA_STACK_PAGES {
+        maps[2 + k] = Mapping {
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            phys: crate::memory::alloc_zeroed()
+                .expect("no frame for the keyboard driver's stack")
+                .addr(),
             flags: Flags::user_data(),
-        },
-        Mapping {
-            va: RING_VA,
-            phys: ring,
-            flags: Flags::user_data(),
-        },
-    ];
+        };
+    }
     crate::sched::spawn(move || {
         run(
             image,

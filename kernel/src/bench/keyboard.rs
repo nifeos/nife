@@ -19,21 +19,25 @@ const PRESS_CUE: &str = "bench-keyboard: press";
 /// Time the keyboard driver's bring-up and its per-key path, or return at once when the boot has
 /// no keyboard or no `keyboard_driver` program.
 ///
-/// `keyboard_up` runs from the spawn to the driver's `KEYBOARD_UP` report: feature negotiation,
-/// queue setup and the first buffers, with the host not involved. `keyboard_event` runs, per press,
-/// from the kernel's delivery of the keyboard's interrupt (`sched::watched_irq_at`) to the driver's
-/// `COMMIT` reaching this thread, which stands in for the compositor; it excludes the wait for the
-/// host, which under icount is idle time the counter skips past. No `TickWindow`: the windows open
-/// on a device's interrupt, not on a tick, and the 1 Hz bench tick landing in one would move one
-/// press by a tick handler's cost, which `--keyboard` runs report rather than gate.
+/// `keyboard_up` runs from the driver's spawn being queued to its `KEYBOARD_UP` report: loading
+/// the image, feature negotiation, queue setup and the first buffers, with the host not involved.
+/// `keyboard_event` runs, per press, from the kernel's delivery of the keyboard's interrupt
+/// (`sched::watched_irq_at`) to the driver's `COMMIT` reaching this thread, which stands in for
+/// the compositor; it excludes the wait for the host, which under icount is idle time the counter
+/// skips past. No `TickWindow`: the windows open on a device's interrupt, not on a tick, and the
+/// 1 Hz bench tick landing in one would move one press by a tick handler's cost, which
+/// `--keyboard` runs report rather than gate.
 pub(super) fn keyboard() {
     let Some(image) = crate::trust::require_program("keyboard_driver") else {
         return;
     };
-    let t0 = crate::arch::timer::now();
     let Some(mut wiring) = keyboard_service::start(image) else {
         return; // no virtio keyboard on this boot
     };
+    // After the wiring (finding the device, its DMA page, the IOMMU domain), which is the
+    // kernel's and not the driver's. The spawned thread has not run yet: it loads the image once
+    // this thread blocks below.
+    let t0 = crate::arch::timer::now();
     let [tag, ..] = sched::ipc_receive(wiring.report);
     let t1 = crate::arch::timer::now();
     if tag != video_terminal::status::KEYBOARD_UP {

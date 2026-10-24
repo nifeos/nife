@@ -132,8 +132,9 @@ monitor socket. An ordinary bench boot finds no keyboard, prints neither row, an
 `--keyboard` refuses `--check`, `--save` and `--real`, because no baseline holds the rows and a host
 actor is in the loop.
 
-`keyboard_up` runs from the spawn to the driver's `KEYBOARD_UP` report. That covers feature
-negotiation, queue setup and posting the event buffers, and the host plays no part in it.
+`keyboard_up` runs from the driver's spawn being queued to its `KEYBOARD_UP` report, after the
+kernel has wired the device. That covers loading the image, feature negotiation, queue setup and
+posting the event buffers, and the host plays no part in it.
 
 `keyboard_event` sums 16 key presses. Each runs from the kernel delivering the keyboard's interrupt
 (`sched::watched_irq_at`, a bench-only timestamp in `irq_notify`) to the driver's `COMMIT` reaching
