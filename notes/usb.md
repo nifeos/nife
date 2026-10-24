@@ -135,6 +135,14 @@ registers through the last port's status register, interrupter 0's registers, an
 for every slot. A needed page that is withheld or out of reach is a refusal, because a driver
 started without it would fault on its first access.
 
+## Untrusted descriptors
+
+`crates/usb` is the part of the driver that reads untrusted input. Every descriptor and every
+report is whatever the device chose to send, and a device is whatever a stranger plugged in. So its
+parsers are total: they bound every walk, check every length before reading through it, and answer
+a `Refusal` that names what was wrong rather than panicking or guessing. Its Kani harnesses prove
+that for every input up to a bound, not only for the inputs a test happened to try.
+
 ## BUGS
 
 - Root ports only: a keyboard behind a hub is not found, and neither is a keyboard with a hub
