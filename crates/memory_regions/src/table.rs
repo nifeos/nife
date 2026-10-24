@@ -1053,11 +1053,12 @@ mod interleavings {
 
     /// The falsification witness: the pre-#316 protocol, and loom finding its double free.
     ///
-    /// A model that cannot fail proves nothing (milestone 62), so the broken protocol lives here
-    /// permanently, written against this module's private internals in the shape
-    /// `memory_region::destroy` had before the fix: check under the lock, release it, revoke, free
-    /// every page, and remove the slot last. The assertion is inverted on purpose: this harness
-    /// passes only when loom finds an execution in which both callers free the same run.
+    /// A model that cannot fail proves nothing (milestone 62 (make a red run mean something)), so
+    /// the broken protocol lives here permanently, written against this module's private internals
+    /// in the shape `memory_region::destroy` had before the fix: check under the lock, release it,
+    /// revoke, free every page, and remove the slot last. The assertion is inverted on purpose:
+    /// this harness passes only when loom finds an execution in which both callers free the same
+    /// run.
     #[test]
     fn the_pre_fix_protocol_double_frees_and_this_model_finds_it() {
         static DOUBLE_FREE: Reached = Reached::new();
