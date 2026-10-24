@@ -58,8 +58,9 @@ use uuid::{Builder, Uuid};
 /// Slot 0: where the identifier goes. An endpoint with `WRITE`, under the sink contract.
 const REPORT: u64 = 0;
 
-/// Slot 8: the declared second stream (DECISIONS §67). The refusal goes here so a `>` on the line
-/// cannot swallow it into a file that then looks like a successful run.
+/// Slot 8: the declared second stream (DECISIONS §67 (a program's second stream is a declaration,
+/// not a number)). The refusal goes here so a `>` on the line cannot swallow it into a file that
+/// then looks like a successful run.
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Slot 9: the entropy service, `WRITE`. Its *presence* is what the draw finds out about, and it
