@@ -1,37 +1,21 @@
-//! **The scheduler's block/wake handshake**: the per-thread state machine that decides when a
-//! blocked thread may become runnable, lifted out of `kernel/src/sched.rs` so loom can explore
-//! every interleaving of it on the host. The kernel calls these transitions rather than mirroring
-//! them (a proof over a copy proves the copy): `Thread` embeds a [`Handshake`].
+//! The scheduler's block/wake handshake: the per-thread state machine that decides when a blocked
+//! thread may become runnable. The kernel's `Thread` embeds a [`Handshake`] and calls these
+//! transitions, so loom explores on the host the code the kernel runs.
 //!
-//! Every field is written under `IPC_TABLES`; the concurrency is in the gaps between critical
-//! sections. A thread that marks itself `Blocked` keeps running until its core's `switch_to` saves
-//! its context, and a waker on another core can take `IPC_TABLES` inside that window. Each race out
-//! of that window is a rule here:
-//!
-//! - **Wake before switch-out** (notes/intrusive-queues.md): queueing a thread still on its CPU lets
-//!   two cores run one thread. [`try_wake`](Handshake::try_wake) finding
-//!   [`on_cpu`](Handshake::on_cpu) set parks the wake in [`wake_pending`](Handshake::wake_pending),
-//!   and [`finish_switch`](Handshake::finish_switch) completes it once the context is saved.
-//! - **The undelivered wake**: completing a parked `RECEIVE` off a stale mailbox. `try_wake` makes
-//!   a waiting thread `Ready` only if the waker delivered ([`ipc_served`](Handshake::ipc_served))
-//!   or aborted the wait ([`ipc_aborted`](Handshake::ipc_aborted)). It is hardening: it has never
-//!   fired on a field failure, and the loom harness proves the transition it forbids is unsafe.
-//! - **A steal racing a switch-out**: only the owning core pops its run queue, after
-//!   `finish_switch`, so a thief never gets a thread mid-save; [`switch_in`](Handshake::switch_in)
-//!   asserts `on_cpu` is clear as the tripwire.
-//!
-//! Kernel-side on purpose: the queues themselves (the verdicts, [`WakeVerdict`] and
-//! [`SwitchOutVerdict`], say when to push), the single-threaded out-of-protocol writes of
-//! [`state`](Handshake::state) (spawn, `depart`, `START`, the killed-thread conversion), and the
-//! self-switch and reply-role checks, which read state this type cannot see.
-//!
+//! Every field is written under `IPC_TABLES`. The races live in the window between a thread
+//! marking itself `Blocked` and its core's `switch_to` saving its context, and each is a rule here:
+//! wake before switch-out ([`Handshake::wake_pending`]), the undelivered wake
+//! ([`Handshake::ipc_served`], [`Handshake::ipc_aborted`]), and a steal racing a switch-out
+//! ([`Handshake::switch_in`]'s tripwire). The queues and out-of-protocol writes of `state` stay
+//! kernel-side. See notes/scheduler/wake-handshake.md.
+
 //! # BUGS
 //!
-//! - Nothing makes a new block path use [`park`](Handshake::park): the fields are public for the
-//!   legitimate out-of-protocol writers, so a site writing `Blocked` by hand skips the gate.
-//! - [`park`](Handshake::park) does not clear a stale [`ipc_aborted`](Handshake::ipc_aborted)
-//!   (`take_ipc_aborted` owns it), so a thread that blocks again without collecting an abort parks
-//!   with the gate half open. Every current caller collects it; nothing enforces that.
+//! - Nothing makes a new block path use [`park`](Handshake::park); a site writing `Blocked` by
+//!   hand through the public fields skips the gate.
+//! - [`park`](Handshake::park) leaves a stale [`ipc_aborted`](Handshake::ipc_aborted) set, so a
+//!   thread that blocks again without calling `take_aborted` parks with the gate half open. Every
+//!   current caller takes it; nothing enforces that.
 //! - Loom checks the protocol under the kernel's locking discipline, not the discipline itself
 //!   (notes/interleaving.md). Liveness is out of scope.
 //!
@@ -41,14 +25,12 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// **Where a thread is in its life**, the scheduler's own vocabulary, moved here with the
-/// handshake because [`Handshake::try_wake`] and [`Handshake::finish_switch`] branch on it. The
-/// kernel re-exports this as `thread::State`, so `sched.rs` reads exactly as it did.
+/// Where a thread is in its life. The kernel re-exports this as `thread::State`;
+/// [`Handshake::try_wake`] and [`Handshake::finish_switch`] branch on it.
 ///
-/// Only `Ready`, `Running` and `Blocked` take part in the handshake. `Embryo`, `Finished` and
-/// `Dead` are entered by kernel-side transitions (retype, exit, fault) and the handshake only ever
-/// reads them: a wake ignores them, and a finish-switch hands a `Finished` predecessor back to the
-/// kernel to reap.
+/// Only `Ready`, `Running` and `Blocked` take part in the handshake. The kernel enters `Embryo`,
+/// `Finished` and `Dead` (retype, exit, fault), and the handshake only reads them: a wake ignores
+/// them, and a finish-switch hands a `Finished` predecessor back to the kernel to reap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RunState {
     /// Retyped but not yet started (milestone 19c.3): in no queue, never picked, `START` makes it
@@ -70,54 +52,47 @@ pub enum RunState {
     Dead,
 }
 
-/// **What a wake attempt decided.** The caller (the kernel's `wake` / `wake_load_aware`, holding
-/// `IPC_TABLES`) acts on the verdict: only [`Queue`](WakeVerdict::Queue) comes with an obligation.
+/// What a wake attempt decided. The caller (the kernel's `wake` or `wake_load_aware`, holding
+/// `IPC_TABLES`) acts on it; only [`Queue`](WakeVerdict::Queue) comes with an obligation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WakeVerdict {
     /// The thread is not `Blocked`; the wake is a no-op. (A second waker lost the race, or the
     /// target is an embryo or a corpse.)
     NotBlocked,
-    /// **The undelivered-wake gate fired**: the thread waits on an endpoint and this wake
-    /// delivered nothing. The thread stays parked and stays linked on its endpoint's wait queue;
-    /// the rendezvous that has not happened is still pending. The kernel records `refuse:tid` on
-    /// the event ring, and as of 2026-08-15 that record has never appeared on a board ring: see
-    /// the undelivered-wake bullet above for why the gate is hardening rather than a repair.
+    /// The undelivered-wake gate fired: the thread waits on an endpoint and this wake delivered
+    /// nothing. The thread stays parked and linked on its endpoint's wait queue, and the kernel
+    /// records `refuse:tid` on the event ring. See notes/scheduler/undelivered-wake-gate.md.
     Refused,
     /// The thread is still standing on its CPU (its saved context is stale), so the wake was
     /// parked in [`Handshake::wake_pending`] instead of queueing a thread another core could
     /// switch into. Its own core completes it in [`Handshake::finish_switch`]. Nothing to queue.
     Deferred,
-    /// The thread is `Ready` and off every queue: **the caller must queue it now**, on whatever
+    /// The thread is `Ready` and off every queue: the caller must queue it now, on whatever
     /// core its policy picks (the waker's core for a rendezvous, the least-loaded for a device
     /// IRQ).
     Queue,
 }
 
-/// **What a finished switch found in the predecessor.** Returned by
-/// [`Handshake::finish_switch`], running on the incoming thread after the switch, when the
-/// predecessor is provably off its stack.
+/// What a finished switch found in the predecessor. Returned by [`Handshake::finish_switch`],
+/// which runs on the incoming thread once the predecessor is provably off its stack.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SwitchOutVerdict {
     /// The predecessor `Finished`: the caller reaps it (drops the `Thread`, freeing stack and
     /// address space). The handshake is left untouched because the thread is about to not exist.
     Reap,
-    /// A wake raced the switch-out and was parked ([`WakeVerdict::Deferred`]); the context is real
-    /// now, so the wake completed here: the thread is `Ready` and **the caller must queue it**, on
-    /// this core. (One non-load-aware wake in the rare IRQ-in-the-window case is the accepted
-    /// cost; teaching this path a placement policy was judged not worth it.)
+    /// A wake raced the switch-out and was parked ([`WakeVerdict::Deferred`]). The context is
+    /// saved now, so the wake completed: the thread is `Ready` and the caller must queue it on
+    /// this core, without load-aware placement (notes/scheduler/wake-handshake.md).
     WakeCompleted,
     /// The ordinary case: the predecessor's context is saved and other cores may now run it.
     /// Nothing to do.
     Cleared,
 }
 
-/// One thread's block/wake handshake: the fields `sched.rs` used to carry loose on `Thread`,
-/// plus the transitions that were inlined at its call sites. Generic over `W`, the "what am I
-/// waiting on" payload (the kernel uses `(RendezvousId, WaitRole)`; the tests use small scalars), because
-/// the handshake only ever asks whether it is present.
-///
-/// Every method is written to be called **under `IPC_TABLES`**. The struct itself has no interior
-/// mutability and no atomics; see the module documentation for why that is the honest shape.
+/// One thread's block/wake handshake: its state, flags and transitions. `W` is the payload naming
+/// what the thread waits on; the handshake only asks whether one is present. Every method is
+/// called with `IPC_TABLES` held, so the struct has no interior mutability and no atomics. See
+/// notes/scheduler/wake-handshake.md.
 ///
 /// # Examples
 ///
@@ -151,33 +126,30 @@ pub enum SwitchOutVerdict {
 #[derive(Debug)]
 pub struct Handshake<W> {
     /// See [`RunState`]. Out-of-protocol transitions (spawn, exit, kill, `START`) write this
-    /// directly, and that is by design; the module's BUGS section names the cost.
+    /// directly by design; the module's BUGS section names the cost.
     pub state: RunState,
 
-    /// **Still standing on a CPU.** Set by [`switch_in`](Self::switch_in); cleared by that core's
-    /// *successor* in [`finish_switch`](Self::finish_switch), after the switch away has saved this
-    /// thread's context. In the window between "released `IPC_TABLES`" and "actually off its stack",
-    /// this is what tells a waker the saved context is still stale.
+    /// Still standing on a CPU, so its saved context is stale. Set by
+    /// [`switch_in`](Self::switch_in); cleared by that core's successor in
+    /// [`finish_switch`](Self::finish_switch), once the switch away has saved its context.
     pub on_cpu: bool,
 
-    /// **A wake arrived while this thread was still switching out.** Parked here by
+    /// A wake arrived while this thread was still switching out. Parked here by
     /// [`try_wake`](Self::try_wake), completed by [`finish_switch`](Self::finish_switch) on the
     /// thread's own core, when the context is provably saved.
     pub wake_pending: bool,
 
-    /// **What this thread is blocked on**, or `None` when not waiting. Written by
-    /// [`park`](Self::park) in the same statement as `state = Blocked`; cleared where a wake makes
-    /// the thread `Ready`. The coupling is diagnostic as well as protocol: a `Blocked` beside a
-    /// `None` here is a state byte no block path wrote (notes/visionfive2.md, fourth bench stop).
+    /// What this thread is blocked on, or `None` when not waiting. Written by [`park`](Self::park)
+    /// in the same statement as `state = Blocked`; cleared where a wake makes the thread `Ready`.
+    /// A `Blocked` beside a `None` is a state byte no block path wrote.
     pub wait_on: Option<W>,
 
-    /// **The pending rendezvous was completed by the counterparty** (boot 8): a message staged, a
-    /// signal counted, a reply filled. Set by [`serve`](Self::serve) in the same `IPC_TABLES` critical
-    /// section that delivered, before the wake; cleared by [`park`](Self::park). One half of the
-    /// undelivered-wake gate.
+    /// The counterparty completed the pending rendezvous: a message staged, a signal counted, a
+    /// reply filled. Set by [`serve`](Self::serve) in the critical section that delivered, before
+    /// the wake; cleared by [`park`](Self::park). One half of the undelivered-wake gate.
     pub ipc_served: bool,
 
-    /// **The blocking IPC was aborted** (revocation tore the endpoint down, or it was stale at the
+    /// The blocking IPC was aborted (revocation tore the endpoint down, or it was stale at the
     /// call). Set by [`abort`](Self::abort); read and cleared by the syscall layer through
     /// [`take_aborted`](Self::take_aborted). The other half of the gate. Not cleared by `park`;
     /// see BUGS.
@@ -226,9 +198,9 @@ impl<W> Handshake<W> {
         }
     }
 
-    /// **Park the running thread in a blocking IPC** (`sched.rs`'s block sites: send, receive, call,
-    /// and their capability-carrying twins). `Blocked`, waiting on `wait`, with the gate armed:
-    /// only a counterparty that delivers (or an abort) may complete this wait.
+    /// Park the running thread in a blocking IPC (send, receive, call and their
+    /// capability-carrying twins). `Blocked`, waiting on `wait`, with the gate armed: only a
+    /// counterparty that delivers, or an abort, may complete this wait.
     ///
     /// The caller has already linked the thread on the endpoint's wait queue (or, for a `CALL`
     /// caller, deliberately on none) and stays under `IPC_TABLES` until both are recorded, so a
@@ -243,17 +215,14 @@ impl<W> Handshake<W> {
         self.ipc_served = false; // parked: only a delivering counterparty may wake us
     }
 
-    /// **Record a delivery** in the same `IPC_TABLES` critical section that staged it (a mailbox
-    /// written, a signal counted, a reply filled, a death message collected). This is what lets
-    /// the very next [`try_wake`](Self::try_wake) through the gate; a wake whose critical section
-    /// did not call this is exactly the wake the gate exists to refuse. No such wake has been
-    /// observed on hardware (see the undelivered-wake bullet at the top of this file); the
-    /// reconstruction that produces one lives in the loom module.
+    /// Record a delivery, in the same `IPC_TABLES` critical section that staged it (a mailbox
+    /// written, a signal counted, a reply filled, a death message collected). It lets the next
+    /// [`try_wake`](Self::try_wake) through the gate. See notes/scheduler/wake-handshake.md.
     pub fn serve(&mut self) {
         self.ipc_served = true;
     }
 
-    /// **Abort the wait** (the endpoint is stale or was revoked under the sleeper). Passes the
+    /// Abort the wait (the endpoint is stale or was revoked under the sleeper). Passes the
     /// gate like a delivery, because the woken thread does get something to return: the error the
     /// syscall layer reads through [`take_aborted`](Self::take_aborted).
     pub fn abort(&mut self) {
@@ -267,17 +236,16 @@ impl<W> Handshake<W> {
         self.ipc_served || self.ipc_aborted
     }
 
-    /// **Read and clear the abort flag**, exactly `core::mem::take`: the syscall layer calls this
+    /// Read and clear the abort flag, exactly `core::mem::take`: the syscall layer calls this
     /// right after a blocking primitive returns, and `true` means "hand the caller an error, not
     /// the mailbox".
     pub fn take_aborted(&mut self) -> bool {
         core::mem::take(&mut self.ipc_aborted)
     }
 
-    /// **Try to make a blocked thread runnable.** The whole wake decision, in the order the
-    /// kernel's `wake` established it: not blocked, then the undelivered-wake gate, then the
-    /// switch-out deferral, then `Ready`. See [`WakeVerdict`] for what each answer obliges the
-    /// caller to do; only [`Queue`](WakeVerdict::Queue) hands back a thread to place.
+    /// Try to make a blocked thread runnable. Checks, in order: not blocked, the undelivered-wake
+    /// gate, the switch-out deferral, then `Ready`. Returns a [`WakeVerdict`]; only
+    /// [`Queue`](WakeVerdict::Queue) hands back a thread to place.
     ///
     /// On `Queue` the thread leaves its wait (`wait_on` cleared) but keeps `ipc_served` until its
     /// next [`park`](Self::park): the resumed IPC tail still needs to see what was delivered.
@@ -285,16 +253,14 @@ impl<W> Handshake<W> {
         if self.state != RunState::Blocked {
             return WakeVerdict::NotBlocked;
         }
-        // The undelivered-wake gate (boot 8): a wake that delivered nothing has not dequeued the
-        // thread from its endpoint and has nothing for its parked IPC to return. Refuse it and
-        // leave the thread parked; the real counterparty completes the rendezvous later.
+        // A wake that delivered nothing has not dequeued the thread from its endpoint, and its
+        // parked IPC has nothing to return: refuse it and leave the thread parked.
         if self.wait_on.is_some() && !self.is_delivered() {
             return WakeVerdict::Refused;
         }
 
-        // The wake-before-switch-out race: still on a CPU means the saved context is stale, and
-        // queueing now would let another core switch into it while its own core still runs the
-        // present one. Park the wake; finish_switch completes it once the context is real.
+        // Still on a CPU means the saved context is stale; queueing now would let another core
+        // switch into it. finish_switch completes the parked wake once the context is saved.
         if self.on_cpu {
             self.wake_pending = true;
             return WakeVerdict::Deferred;
@@ -304,23 +270,17 @@ impl<W> Handshake<W> {
         WakeVerdict::Queue
     }
 
-    /// **A core is switching this thread in** (`schedule()`'s chosen `next`): `Running`, and
-    /// standing on a CPU until a successor's [`finish_switch`](Self::finish_switch) says
-    /// otherwise.
+    /// A core is switching this thread in (`schedule()`'s chosen `next`): `Running`, and standing
+    /// on a CPU until a successor's [`finish_switch`](Self::finish_switch) says otherwise.
     ///
-    /// The `debug_assert` is the steal-vs-switch-out tripwire: every path onto a CPU passes here,
-    /// and a thread arriving with `on_cpu` still set means some queue handed out a thread whose
-    /// context is still being saved, which is the two-cores-in-one-thread catastrophe regardless
-    /// of which queue it was. Debug builds fail loudly; the board build proceeds, because by the
-    /// time this is observable the coherent recovery is the switch already underway.
+    /// The `debug_assert` on `on_cpu` is the steal-vs-switch-out tripwire; release builds proceed.
+    /// See notes/scheduler/wake-handshake.md.
     pub fn switch_in(&mut self) {
         debug_assert!(
             !self.on_cpu,
             "switching into a thread that is still on a cpu"
         );
-        // Ready is the ordinary case (popped off a run queue). Running is the idle thread, which
-        // lives outside the ready queue and is never marked Ready when a core switches away from
-        // it, so it arrives here still saying Running from its last turn.
+        // Running is the idle thread: it is never marked Ready when a core leaves it.
         debug_assert!(
             matches!(self.state, RunState::Ready | RunState::Running),
             "switching into a thread that was neither Ready nor a parked idle"
@@ -329,11 +289,10 @@ impl<W> Handshake<W> {
         self.on_cpu = true;
     }
 
-    /// **The timer took this thread off its CPU with work left** (`schedule()`'s requeue): back to
-    /// `Ready`, and the caller pushes it on this core's run queue. `on_cpu` deliberately stays set
-    /// until the successor's [`finish_switch`](Self::finish_switch): the thread is in a queue
-    /// *and* still standing on its core, which is the one legal overlap and the reason the
-    /// single-owner queue discipline is load-bearing.
+    /// The timer took this thread off its CPU with work left (`schedule()`'s requeue): back to
+    /// `Ready`, and the caller pushes it on this core's run queue. `on_cpu` stays set until the
+    /// successor's [`finish_switch`](Self::finish_switch), which is the one legal overlap of queue
+    /// and CPU (notes/scheduler/wake-handshake.md).
     pub fn preempt(&mut self) {
         debug_assert!(
             self.state == RunState::Running,
@@ -342,20 +301,17 @@ impl<W> Handshake<W> {
         self.state = RunState::Ready;
     }
 
-    /// **The switch away from this thread has completed**; we are its successor, on its core, and
+    /// The switch away from this thread has completed; we are its successor, on its core, and
     /// its context is provably saved (we are running, so `switch_to` finished writing it). Reap it
     /// if it finished; otherwise clear [`on_cpu`](Self::on_cpu) and complete a deferred wake if
     /// one was parked. See [`SwitchOutVerdict`] for the caller's obligations.
     pub fn finish_switch(&mut self) -> SwitchOutVerdict {
         if self.state == RunState::Finished {
-            // Untouched: the caller drops the whole Thread, and clearing flags on it first would
-            // only dress a corpse.
+            // Untouched: the caller drops the whole Thread.
             return SwitchOutVerdict::Reap;
         }
         self.on_cpu = false;
         if self.wake_pending {
-            // A wake raced the switch-out and was deferred precisely so that it would complete
-            // here, where the context is real.
             self.wake_pending = false;
             self.state = RunState::Ready;
             self.wait_on = None;
@@ -367,8 +323,7 @@ impl<W> Handshake<W> {
 
 // --- The ordinary host tests -----------------------------------------------------------------
 //
-// Single-threaded: the transition table, edge by edge. The *interleavings* are the loom module
-// below, which is a different question and a different tool.
+// Single-threaded: the transition table, edge by edge. The loom module below checks interleavings.
 #[cfg(all(test, not(loom)))]
 mod tests {
     use super::*;
@@ -505,22 +460,11 @@ mod tests {
 mod interleavings {
     //! The block/wake handshake's critical sections, interleaved every way loom can order them.
     //!
-    //! Run with `script/interleaving-check`. What the model is and is not: `IPC_TABLES` is a
-    //! `loom::sync::Mutex`, the run queue and the migration inbox are booleans under it, the
-    //! thread's saved context is a `loom::cell::UnsafeCell` written **outside** the lock (exactly
-    //! where `switch_to` writes the real one), and each loom thread is a core executing its
-    //! critical sections in the kernel's program order. Loom then explores every interleaving of
-    //! those sections, and the `UnsafeCell` turns "the resumer sees a saved context" from an
-    //! argument into a checked ordering fact. What it cannot check is that the kernel keeps the
-    //! discipline the model encodes (every site under `IPC_TABLES`, queues single-owner); that is
-    //! established by reading `sched.rs`. See notes/interleaving.md.
-    //!
-    //! **Bounds, honestly.** Every harness here is run to exhaustion: no
-    //! `LOOM_MAX_PREEMPTIONS`, no `max_branches` trimming. That is affordable because the models
-    //! are three or four threads with two or three critical sections each, which is not modesty
-    //! but the protocol's real shape: one waker, one victim core, one thief is the whole cast of
-    //! every recorded race. The historical-semantics twins are `#[should_panic]`, so each race
-    //! reconstruction is required to fail, not assumed to.
+    //! Run with `script/interleaving-check`. `IPC_TABLES` is a `loom::sync::Mutex`, and the saved
+    //! context is a `loom::cell::UnsafeCell` written outside it, where `switch_to` writes the real
+    //! one. Every harness runs to exhaustion, and each reconstruction of an old race is
+    //! `#[should_panic]`. The model assumes the kernel's locking discipline rather than checking
+    //! it. See notes/scheduler/wake-handshake.md and notes/interleaving.md.
 
     use loom::cell::UnsafeCell;
     use loom::sync::{Arc, Mutex};
@@ -579,7 +523,7 @@ mod interleavings {
 
     const SAVED: u32 = 7;
 
-    /// **A waker races the receiver's switch-out, and the resumer always sees a saved context.**
+    /// A waker races the receiver's switch-out, and the resumer always sees a saved context.
     ///
     /// The wake-before-switch-out race (notes/intrusive-queues.md), as the kernel runs it: the
     /// receiver parks under `IPC_TABLES`, releases, saves its context (the write outside the lock),
@@ -596,12 +540,11 @@ mod interleavings {
         loom::model(|| {
             let m = Machine::new();
 
-            // The receiver parks itself (under IPC_TABLES), sequenced before both cores below, exactly
-            // as the endpoint queue linking sequences the real waker behind the real park.
+            // The park is sequenced before both cores, as endpoint queue linking sequences the
+            // real waker behind the real park.
             m.sched.lock().unwrap().hs.park(3);
 
-            // The receiver's core: save the context, then finish the switch. A completed deferred
-            // wake is queued and resumed here, on this core, as finish_switch's contract says.
+            // The receiver's core: save the context, then finish the switch.
             let victim = {
                 let m = Arc::clone(&m);
                 thread::spawn(move || {
@@ -629,8 +572,7 @@ mod interleavings {
                 })
             };
 
-            // The waker's core: deliver and wake in one critical section, then run the thread if
-            // the wake queued it.
+            // The waker's core: deliver and wake in one critical section.
             let waker = {
                 let m = Arc::clone(&m);
                 thread::spawn(move || {
@@ -669,11 +611,9 @@ mod interleavings {
         QUEUED_DIRECT.assert("an interleaving where the wake lands after the switch-out");
     }
 
-    /// Switch the thread in and read its saved context: the shared tail of every harness, and the
-    /// property carrier. The asserts here restate `switch_in`'s tripwires as real asserts,
-    /// because `script/interleaving-check` compiles `--release` and a `debug_assert` would leave
-    /// the `#[should_panic]` reconstructions with nothing to fire; the `ctx` read is the
-    /// loom-checked ordering fact.
+    /// Switch the thread in and read its saved context: the shared tail of every harness. The
+    /// asserts restate `switch_in`'s tripwires because `script/interleaving-check` compiles
+    /// `--release`, where a `debug_assert` would leave the reconstructions nothing to fire.
     fn resume(m: &Machine) {
         {
             let mut core = m.sched.lock().unwrap();
@@ -692,12 +632,10 @@ mod interleavings {
         });
     }
 
-    /// **The historical semantics: a wake that ignores `on_cpu` lets two cores share one
-    /// thread.** The pre-fix `wake()` had the gate's other pieces but queued a still-switching
-    /// thread directly; this is that wake, reconstructed, and loom is required to find the
-    /// catastrophe: an interleaving in which the waker's resume switches into a thread whose
-    /// core has not finished saving its context. `resume`'s still-on-a-cpu assert names it; the
-    /// `ctx` cell race behind it is the second net.
+    /// A wake that ignores `on_cpu` lets two cores share one thread. The wake respects the gate
+    /// but queues a still-switching thread directly, and loom must find a resume into a thread
+    /// whose core has not saved its context. `resume`'s still-on-a-cpu assert names it; the `ctx`
+    /// cell race behind it is the second net.
     #[test]
     #[should_panic(expected = "still on a cpu")]
     fn a_wake_that_ignores_on_cpu_switches_into_an_unsaved_context() {
@@ -740,15 +678,12 @@ mod interleavings {
         });
     }
 
-    /// **A stolen thread is never switched in before its context is saved.**
+    /// A stolen thread is never switched in before its context is saved.
     ///
-    /// The steal edge of the same window: a preempted thread sits `Ready` in its core's run queue
-    /// with `on_cpu` still set. The kernel's discipline is that only the owning core pops that
-    /// queue, at scheduler entries that come after `finish_switch`, so by the time
-    /// `serve_steal_request` hands the thread to a thief its context is saved. The model encodes
-    /// the discipline as program order on the victim core and checks that the handoff (inbox
-    /// slot, its own lock in the kernel; a flag under the model's lock here) carries the ordering
-    /// to the thief's resume.
+    /// A preempted thread sits `Ready` in its core's run queue with `on_cpu` still set. Only the
+    /// owning core pops that queue, after `finish_switch`, so `serve_steal_request` hands a thief
+    /// a saved context. The model encodes that as program order on the victim core and checks
+    /// that the inbox handoff (its own lock in the kernel, a flag here) carries the ordering.
     #[test]
     fn a_stolen_thread_resumes_on_its_saved_context() {
         static STOLEN: Reached = Reached::new();
@@ -764,9 +699,8 @@ mod interleavings {
                 core.queued += 1;
             }
 
-            // The victim core's continuation, in the kernel's program order: save the context,
-            // finish the switch, then (at the next scheduler entry) serve the steal by moving the
-            // queued thread into the thief's inbox.
+            // The victim core, in the kernel's program order: save, finish the switch, then serve
+            // the steal at the next scheduler entry.
             let victim = {
                 let m = Arc::clone(&m);
                 let inbox = Arc::clone(&inbox);
@@ -789,8 +723,7 @@ mod interleavings {
                 })
             };
 
-            // The thief: poll the inbox (bounded; loom's scheduler runs the victim between
-            // polls), and switch the stolen thread in.
+            // The thief polls the inbox a bounded number of times; loom runs the victim between.
             let thief = {
                 let m = Arc::clone(&m);
                 let inbox = Arc::clone(&inbox);
@@ -799,9 +732,7 @@ mod interleavings {
                         let arrived = core::mem::take(&mut *inbox.lock().unwrap());
                         if arrived {
                             {
-                                // A steal moves a Ready thread, not a parked one, so there is no
-                                // delivery to assert; the invariant is the switch-in one, spelled
-                                // as a real assert for the reason resume() gives.
+                                // A steal moves a Ready thread: no delivery to assert.
                                 let mut core = m.sched.lock().unwrap();
                                 assert!(
                                     !core.hs.on_cpu,
@@ -829,11 +760,9 @@ mod interleavings {
         STOLEN.assert("an execution in which the thief actually receives the stolen thread");
     }
 
-    /// **The historical shape: a thief that pops the victim's queue directly steals a thread
-    /// whose context is still being saved.** This is the single-owner run-queue rule broken on
-    /// purpose: the thief takes the queued thread the instant it appears, racing the victim's
-    /// context save, and `switch_in`'s tripwire (or loom's cell check, whichever the interleaving
-    /// reaches first) is required to fire.
+    /// A thief that pops the victim's queue directly steals a thread whose context is still
+    /// being saved. The single-owner run-queue rule is broken on purpose, and `switch_in`'s
+    /// tripwire or loom's cell check, whichever the interleaving reaches first, must fire.
     #[test]
     #[should_panic(expected = "still on a cpu")]
     fn a_thief_that_pops_a_foreign_queue_steals_an_unsaved_context() {
@@ -865,9 +794,7 @@ mod interleavings {
                         let mut core = m.sched.lock().unwrap();
                         if core.queued == 1 {
                             core.queued -= 1;
-                            // The tripwire, as a real assert (see resume()): a thief popping a
-                            // foreign queue can take a thread whose core is still saving its
-                            // context, and this is required to catch it.
+                            // The tripwire, as a real assert (see resume()).
                             assert!(
                                 !core.hs.on_cpu,
                                 "switching into a thread that is still on a cpu"
@@ -893,7 +820,7 @@ mod interleavings {
         });
     }
 
-    /// **An undelivered wake racing a park strands nobody** (boot 8). A spurious waker fires at a
+    /// An undelivered wake racing a park strands nobody. A spurious waker fires at a
     /// parked receiver with nothing delivered, racing the receiver's own switch-out; the gate
     /// refuses it in every interleaving, the receiver stays parked and waiting, and the real
     /// sender that follows still completes the rendezvous, after which the resume sees a
@@ -937,8 +864,7 @@ mod interleavings {
                 let m = Arc::clone(&m);
                 thread::spawn(move || {
                     {
-                        // The spurious wake: no delivery in this critical section. The gate must
-                        // refuse it whether or not the victim has finished switching out.
+                        // The spurious wake delivers nothing; the gate refuses it either way.
                         let mut core = m.sched.lock().unwrap();
                         assert_eq!(
                             core.hs.try_wake(),
@@ -995,11 +921,9 @@ mod interleavings {
         REFUSED_AFTER.assert("a spurious wake refused after the receiver was fully parked");
     }
 
-    /// **The historical semantics: without the gate, the spurious wake completes a rendezvous
-    /// that never happened.** The pre-boot-8 `wake()`, reconstructed: it respects the switch-out
-    /// deferral (that fix predates it by weeks) but wakes without asking whether anything was
-    /// delivered. Every interleaving strands the receiver, which is exactly what the bench saw:
-    /// the resume's "resumed with nothing delivered" tripwire is required to fire.
+    /// Without the gate, a spurious wake completes a rendezvous that never happened. The wake
+    /// keeps the switch-out deferral but never asks whether anything was delivered, so every
+    /// interleaving strands the receiver and the resume's delivery tripwire must fire.
     #[test]
     #[should_panic(expected = "resumed with nothing delivered")]
     fn without_the_gate_a_spurious_wake_completes_an_empty_rendezvous() {
@@ -1020,8 +944,7 @@ mod interleavings {
                         matches!(core.hs.finish_switch(), SwitchOutVerdict::WakeCompleted)
                     };
                     if completed {
-                        // The deferred spurious wake completed: the receiver resumes with an
-                        // empty mailbox, which is the strand the gate forbids.
+                        // The receiver resumes with an empty mailbox: the strand.
                         resume(&m);
                     }
                 })

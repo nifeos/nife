@@ -1,7 +1,8 @@
 # Generational names
 
-*(Milestone 14 phase A. The mechanism behind `crates/generational_table`, the scheduler's thread table since
-the `BTreeMap` was retired. See design/kernel-objects-from-untyped.md, decision D2.)*
+*(Milestone 14 (kernel objects from untyped) phase A. The mechanism behind
+`crates/generational_table`, the scheduler's thread table since the `BTreeMap` was retired. See
+design/kernel-objects-from-untyped.md, decision D2.)*
 
 ## The problem it solves
 
@@ -61,6 +62,56 @@ audit may pass over it; §71 says what would promote it. See notes/untracked-wor
 - Generations are 32-bit and wrap. A single slot reused 2^32 times could resurrect an
   ancient name. Recorded honestly in the crate doc; not a bound anything real approaches.
 - Insert is O(N) (scan for a free slot); lookup, the hot-path operation, is O(1).
+
+## Limits, in numbers
+
+A full table refuses an insert, and the caller decides what that means. For the kernel, spawn fails
+with the same contract as running out of memory, and `N` is a documented limit of the image.
+
+A slot must be reused 2^32 times before an ancient name could resolve again. At one spawn per
+microsecond against a single slot, that is an hour and a quarter of doing nothing else. A real
+workload spreads reuse over every free slot.
+
+Insert scans for a free slot, which is spawn-rate work. The switch path only calls `get` and
+`get_mut`.
+
+## The occupancy bound
+
+The table keeps `top`, one past the highest live slot. Every slot at or above it is empty, so a walk
+bounded by `top` sees exactly what a walk over all `N` slots would. Insert is first-fit, so
+occupancy packs toward slot 0 and `top` stays close to `len`. A walk then costs what the table holds
+rather than what it could hold.
+
+The bound exists because sweep cost was tracking `N`. The iterators yield only live entries but
+visited every slot to filter them. `sched::delete_page_frame_caps_where` walks every thread's
+capability table on every `MemoryRegion::DESTROY`, so it got dearer whenever `sched::MAX_THREADS`
+rose, with no more live threads. On the `spawn_el0` icount benchmark, raising that ceiling from 128
+to 256 cost 141,359 ticks through this path alone (notes/benchmarks.md). Every later raise would
+have paid again.
+
+`top` shrinks as well as grows, so it tracks live occupancy rather than peak occupancy. Removing the
+top entry walks down over empty slots and stops at the first live one. That is amortized O(1),
+because a step down happens at most once per slot that was filled and freed. The walk is a `for`
+over `N` with a `break`, since CBMC cannot see `top <= N` from the field and would unwind a `while`
+without limit.
+
+A bound that came down too far is the one way a walk could miss a live entry, so
+`a_bounded_walk_yields_every_live_entry` proves it cannot. It removes an arbitrary subset of three
+filled slots rather than running an arbitrary operation sequence. The sequence version did not
+finish, and `script/verify` is already the merge queue's long pole.
+
+## Resumable sweeps
+
+`iter_from` yields `(slot, name, &T)` from a given slot onward. The slot index is what lets a sweep
+resume after a caller gives its lock back between entries. A position in the filtered sequence
+would move when entries in the gap are removed. A slot index does not: if the entry at slot `k`
+died, `k` is empty rather than somebody else's.
+
+`rendezvous::SURVEY` (milestone 126 (the `procps` package, now `process-tools`)) reports one
+supervised thread per syscall and hands the next slot back to userspace as a cursor. The set can
+change between calls, so a resumed sweep is a sequence of snapshots rather than one. It never
+reports an entry twice and never resolves a cursor to the wrong thread, which is all a `readdir`
+shape ever promised.
 
 ## What is proved (milestone 18 style, before anything leans on it)
 

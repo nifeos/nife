@@ -1,37 +1,13 @@
 #![cfg_attr(not(test), no_std)]
-//! The socket contract wire format, shared by `net_stack` and its clients. See notes/net.md.
-//!
-//! **Each socket is its own capability** (§255 (each socket is its own capability)). A process
-//! holds a front door, a `Stack` endpoint that can only make sockets, and one capability per open
-//! socket. `OPEN_UDP`, `OPEN_TCP`, `BIND_UDP` and `LISTEN` are `CALL`s on the front door, answered
-//! by `REPLY_CAPABILITY` with the socket's capability (`user_mode_runtime::call_receiving`).
-//! `ATTACH_PAGE_FRAME` is a `SEND_CAP` on a socket. Every other operation is a `CALL` on a socket:
-//! opcode, one argument, one reply word; `ACCEPT` answers with the connection's capability. The
-//! stack names a socket only by the kernel-stamped badge it arrived on ([`SOCKET_BADGE`]), minted
-//! from a counter that never rewinds and dropped at `CLOSE`, so a closed socket's copies reach
-//! nothing and passing a socket is passing its capability.
-//!
-//! The frame is one data region reused per operation, not a TX/RX ring: each `CALL` is one
-//! synchronous exchange, so a request and its reply never coexist in it.
-//!
-//! ```text
-//!   +0x000  u8[4]  dst_ip      destination address, octets (SENDTO / CONNECT);
-//!                              source address on a UDP RECEIVE reply
-//!   +0x004  u16    dst_port    destination port, little-endian (SENDTO / CONNECT);
-//!                              source port on a UDP RECEIVE reply
-//!   +0x006  u16    len         payload length, in for SEND*/out for RECEIVE
-//!   +0x008  ...    payload     up to DATA_MAX bytes
-//! ```
-//!
-//! A UDP responder must see who asked (mDNS turns on the querier's port, RFC 6762 section 6.7), so a UDP
-//! `RECEIVE` reply carries the source in those otherwise dead fields; a TCP reply leaves them.
-//!
-//! A listener and a connection are two authorities: a listener receives connections on one
-//! exclusive port and carries no frame, since no bytes cross it; a connection speaks with one peer.
-//! Claiming a port, by `LISTEN` or a fixed `BIND_UDP`, is a claim on a shared namespace, so it is
-//! granted, never assumed: the stack is spawned with [`listen_grant`] and [`udp_bind_grant`] in one
-//! word, and refuses outside them with [`LISTEN_DENIED`].
-//!
+//! The socket contract wire format, shared by `net_stack` and its clients. Each socket is its own
+//! capability (§255 (each socket is its own capability)): a process holds a front door that can
+//! only make sockets, and one capability per open socket. Opening and `LISTEN` are `CALL`s on the
+//! front door answered with the socket's capability; every other operation is a `CALL` on the
+//! socket, with an opcode, one argument and one reply word. The stack names a socket only by its
+//! kernel-stamped [`SOCKET_BADGE`], so a closed socket's copies reach nothing. A port claim is
+//! granted at spawn ([`listen_grant`], [`udp_bind_grant`]), never assumed. See notes/net.md and
+//! notes/net/the-socket-contract.md.
+
 //! # BUGS
 //!
 //! - A grant is the stack's, shared by every holder of its front door; a per-client grant would
@@ -40,9 +16,8 @@
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet); `_contract` per calef's 2026-10-18 ruling.
 
-/// Operations. The opcode is the whole request word (milestone 649: it carried a socket id beside
-/// it until a socket became a capability).
-///
+// Operations. The opcode is the whole request word.
+
 /// `SEND_CAP` on a socket's capability: delegate that socket's shared frame.
 pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
 /// `CALL` on the front door: create a UDP socket and bind an ephemeral local port. Answered
@@ -68,18 +43,17 @@ pub const OPERATION_LISTEN: u64 = 9;
 /// answer [`REP_OK`] carrying the connection's capability, or [`REP_ERR`]. The listener keeps
 /// listening, and the connection wants a frame attached before it carries bytes.
 pub const OPERATION_ACCEPT: u64 = 10;
-/// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the **fixed**
+/// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
 /// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`LISTEN_GRANTED`] vocabulary,
 /// which is the port-claim vocabulary rather than a TCP one, and a granted one carries the socket's
 /// capability. Name provisional (milestone 55 (Time Machine: SMB3 with Apple's extensions, and
 /// mDNS)'s mDNS stack half).
 pub const OPERATION_BIND_UDP: u64 = 11;
 
-/// **The badge bit that marks a socket's capability** (§255 (each socket is its own capability);
+/// The badge bit that marks a socket's capability (§255 (each socket is its own capability);
 /// name provisional). The stack mints every socket's badge with this bit set, so a request whose
-/// badge has it names a socket and any other badge is a front door. That split is what stops a
-/// closed socket's capability from acting as a front door: its badge is in the socket range and no
-/// longer in the stack's table, so it reaches nothing at all.
+/// badge has it names a socket and any other badge is a front door. A closed socket's badge stays
+/// in the socket range and leaves the stack's table, so it reaches nothing at all.
 pub const SOCKET_BADGE: u64 = 1 << 63;
 
 /// Does a request that arrived with `badge` name a socket? `false` means it came through a front
@@ -100,24 +74,25 @@ pub const fn names_a_socket(badge: u64) -> bool {
     badge & SOCKET_BADGE != 0
 }
 
-/// Reply words. Non-negative is success (RECEIVE returns the length here); the connect outcomes are
-/// their own small vocabulary so the client can tell "refused" from "connected".
+// Reply words. The connect outcomes are their own small vocabulary, so a client can tell
+// "refused" from "connected".
+
+/// Success. Non-negative is success, and `RECEIVE` replies its length here instead.
 pub const REP_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
 /// The peer sent RST, or the connect otherwise failed or closed.
 pub const CONNECT_REFUSED: u64 = 1;
 /// A failure sentinel (a capability that names no live socket, a bad operation, or a server-side
-/// timeout). High bit set so
-/// it is never mistaken for a length or a connect outcome.
+/// timeout). Bit 32 set, so it is never mistaken for a length or a connect outcome.
 pub const REP_ERR: u64 = 1 << 32;
 
-/// `LISTEN`'s outcomes, its own small vocabulary for the same reason `CONNECT` has one: a client
-/// that cannot tell "I was never granted this port" from "somebody else holds it" cannot report
-/// anything useful, and the two call for opposite responses (ask for authority, versus pick another
-/// port).
+// `LISTEN`'s outcomes, its own small vocabulary because "never granted this port" and "somebody
+// else holds it" call for opposite responses: ask for authority, or pick another port.
+
+/// The port claim was granted; the reply carries the new capability.
 pub const LISTEN_GRANTED: u64 = 0;
-/// The port is outside this stack's [`listen_grant`]. **The capability refusal**: no retry, no
+/// The port is outside this stack's [`listen_grant`]. The capability refusal: no retry, no
 /// other port in range will help unless the caller was granted it.
 pub const LISTEN_DENIED: u64 = 1;
 /// The port is inside the grant but another socket already listens there. Exclusivity is the whole
@@ -157,7 +132,7 @@ pub const fn grant_allows(grant: u64, port: u16) -> bool {
     lo != 0 && port >= lo && port <= hi
 }
 
-/// Pack an inclusive **UDP bind** port range into the high half of the spawn word (milestone 55's
+/// Pack an inclusive UDP bind port range into the high half of the spawn word (milestone 55's
 /// mDNS stack half; the [`listen_grant`] holds the low half, and the two compose with `|`). The
 /// same degenerate cases as the listen grant, for the same reasons: `lo == 0` grants nothing, and
 /// an inverted range is a spawn-site mistake whose safe reading is "grants nothing".
@@ -207,34 +182,18 @@ pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
 }
 
 pub mod polled_wait {
-    //! **Whether `net_stack` may sleep while it waits on a NIC that raises no interrupt** (the
-    //! `e1000e` and radon's `DesignWare` port; `components/src/nic_wait.rs`).
-    //!
-    //! The module's name is provisional (milestone 53 (the board's own peripherals)'s receive-rate
-    //! lane, 2026-10-21 UTC). It is here rather than in `components/src/nic_wait.rs` so its claim
-    //! is a host test; only `net_stack` uses it.
-    //!
-    //! # Why a sleep is the wrong wait while frames are flowing
-    //!
-    //! A timed wait ends at the first scheduler tick at or after its deadline, 100 Hz as the
-    //! kernel publishes it on the current-CPU page (`user_mode_runtime::tick_hz`), so the 1 ms poll
-    //! sleep the polled NICs ask for lasts up to 10 ms. On a stream, the next segment arrives one
-    //! round trip after the stack's acknowledgment, which on a LAN is well under a tick. A stack
-    //! that sleeps once nothing is waiting therefore adds up to a tick to every round trip, and a
-    //! window's worth of data per tick is then the rate
-    //! (notes/designware-ethernet/the-receive-rate.md has the measurements).
-    //!
-    //! So for one tick after the last frame the stack keeps looking at the ring, yielding the core
-    //! between looks, and sleeps only once a whole tick has passed with nothing. A tick is the
-    //! bound because it is what a sleep costs: looking for longer than that can never deliver a
-    //! frame sooner than sleeping would.
-    //!
+    //! Whether `net_stack` may sleep while it waits on a NIC that raises no interrupt (the
+    //! `e1000e` and radon's `DesignWare` port; `components/src/nic_wait.rs`). For one scheduler
+    //! tick after the last frame the stack yields and looks at the ring again, and it sleeps only
+    //! once a whole tick has passed with nothing, because a timed wait ends at a tick and a sleep
+    //! would add up to a tick to every round trip. Here so its claim is a host test; only
+    //! `net_stack` uses it. The module's name is provisional (milestone 53 (the board's own
+    //! peripherals)). See notes/net/the-socket-contract.md.
+
     //! # BUGS
     //!
-    //! - **A core is busy while a stream flows**, and for a tick after it ends. Each look yields,
-    //!   so another thread on that core still runs, but an idle core does not idle. An interrupt
-    //!   for the NIC, or a timed wait finer than the tick, would remove it; neither exists for
-    //!   these NICs.
+    //! - A core is busy while a stream flows, and for a tick after it ends: each look yields, but
+    //!   an idle core does not idle. A NIC interrupt or a finer timed wait would fix it.
 
     /// What a polled NIC's wait does next.
     ///
@@ -304,42 +263,19 @@ pub mod polled_wait {
 }
 
 pub mod ephemeral {
-    //! **Which local port `net_stack` gives an outbound socket**: the private ephemeral range,
-    //! walked by a cursor that never falls behind the boot clock.
-    //!
-    //! The module's name is provisional (the resolver-connect-flake lane, 2026-10-13 UTC). It is here
-    //! rather than in `components/src/net_stack.rs` so its claim is a host test; only `net_stack`
-    //! uses it.
-    //!
-    //! # Why the clock
-    //!
-    //! A peer that closed first holds the 4-tuple in `TIME_WAIT` (10 s in QEMU's slirp, 60 s on
-    //! Linux and the BSDs) and recycles it only for a SYN whose sequence number is above the old
-    //! one's. smoltcp's are random, so a reused 4-tuple's SYNs go unanswered half the time, past
-    //! `net_stack`'s 15 s bound. One stack reuses a port only after the range cycles; a fresh stack
-    //! must not start on ports an earlier stack used moments ago. A clock advancing [`PER_SECOND`]
-    //! ports a second, shared by every stack because it is the boot counter, gives that: an
-    //! allocation takes the later of the cursor and the clock, so a later stack starts past an
-    //! earlier one's ports. RFC 6528 applies the same idea to sequence numbers, which smoltcp does
-    //! not offer. The capture, and the CI failures it explained, are in
-    //! `notes/net/the-outbound-gates.md`.
-    //!
+    //! Which local port `net_stack` gives an outbound socket: the private ephemeral range, walked
+    //! by a cursor that never falls behind the boot clock. An allocation takes the later of the
+    //! cursor and a clock advancing [`PER_SECOND`] ports a second, so a fresh stack starts past the
+    //! ports an earlier one used, which a peer may still hold in `TIME_WAIT`. Here so its claim is
+    //! a host test; only `net_stack` uses it. The module's name is provisional. See
+    //! notes/net/the-socket-contract.md and notes/net/the-outbound-gates.md.
+
     //! # BUGS
     //!
-    //! - The bound is a rate, not a proof. A stack that opens `n` sockets faster than the clock and
-    //!   is replaced within `n / PER_SECOND` seconds, or within a tick (about 4 ms) of its last
-    //!   open, can hand its successor a port it used. Not measured across the suite.
-    //! - The range wraps every `SPAN / PER_SECOND` = 64 s, so a port recurs after 64 s even when
-    //!   idle, which a peer holding `TIME_WAIT` longer (Windows' default is 240 s) can refuse as
-    //!   above.
-    //! - The clock is boot-relative, so a rebooted machine's first ports land where the last boot's
-    //!   did at the same uptime, and a peer still holding one (a reboot inside its 60 s, a
-    //!   connection in the same 4 ms tick) drops the SYN half the time. The counter seed this
-    //!   replaced was random per boot. Closing it needs a per-boot offset all of a boot's stacks
-    //!   share; nothing hands one to `net_stack` today.
-    //! - The sequence-number half stays smoltcp's: a reused 4-tuple still fails half the time. That
-    //!   is the generator of milestone 783 (the network stack seeds its random generator from the
-    //!   clock), and a monotonic initial sequence number needs a change to smoltcp.
+    //! - The bound is a rate, not a proof: a stack replaced quickly can hand its successor a port.
+    //! - The range wraps every 64 s, inside a longer `TIME_WAIT` such as Windows' 240 s.
+    //! - The clock is boot-relative, so a rebooted machine's first ports repeat the last boot's.
+    //! - The sequence-number half stays smoltcp's: a reused 4-tuple still fails half the time.
 
     /// The lowest port of the private ephemeral range (RFC 6335).
     pub const LO: u16 = 49152;
@@ -416,14 +352,11 @@ pub mod ephemeral {
             (got, at - gap_ms)
         }
 
-        /// **A stack started after another hands out none of its ports**, which is the CI failure
-        /// of 2026-10-13 (UTC) stated as a property. The shapes are the name resolver tests':
-        /// fourteen opens 50 ms apart, then a new stack whose first open comes every whole number
-        /// of milliseconds from one tick (4 ms) to 2 s later (the measured gap is about 230 ms on
-        /// riscv64), at a spread of boot times.
-        ///
-        /// Seeding the cursor once from the counter, as milestone 801 (packages over the internet)
-        /// did, fails this.
+        /// A stack started after another hands out none of its ports. The shapes are the name
+        /// resolver tests': fourteen opens 50 ms apart, then a new stack whose first open comes
+        /// every whole number of milliseconds from one tick (4 ms) to 2 s later (the measured gap
+        /// is about 230 ms on riscv64), at a spread of boot times. Seeding the cursor once from
+        /// the counter fails this.
         ///
         /// Falsification: replayable `crates/socket_contract/falsifications/ephemeral.tests.a_stack_started_after_another_reuses_none_of_its_ports.patch`
         #[test]
@@ -453,7 +386,7 @@ pub mod ephemeral {
             }
         }
 
-        /// **The cursor walks the whole private range and nothing outside it** (RFC 6335's
+        /// The cursor walks the whole private range and nothing outside it (RFC 6335's
         /// 49152 to 65535), in order, and wraps to its bottom. Spelled as numbers, because the
         /// other tests compare ports only with each other and would pass on any range.
         #[test]
@@ -477,8 +410,8 @@ pub mod ephemeral {
     }
 }
 
-/// **Where a network stack finds the two capabilities §255 (each socket is its own capability)
-/// added to its spawn**, which its spawners (the progenitor, and the kernel's test harness) and the
+/// Where a network stack finds the two capabilities §255 (each socket is its own capability)
+/// added to its spawn, which its spawners (the progenitor, and the kernel's test harness) and the
 /// stack itself must agree on, so they are here under rule 7 rather than spelled per program. Names
 /// provisional.
 pub mod stack_slots {
@@ -491,7 +424,15 @@ pub mod stack_slots {
     pub const OWN_SPACE: u64 = 8;
 }
 
-/// `PageFrame` header offsets.
+/// The destination address's offset in the `PageFrame`: the first header field. The frame is
+/// one region reused per synchronous `CALL`, not a ring.
+///
+/// ```text
+///   +0x000  u8[4]  dst_ip    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
+///   +0x004  u16    dst_port  little-endian, the same two roles
+///   +0x006  u16    len       payload length, in for SEND*, out for RECEIVE
+///   +0x008  ...    payload   up to DATA_MAX bytes
+/// ```
 pub const OFF_DST_IP: u64 = 0x000;
 /// The destination port, right after the destination IP.
 pub const OFF_DST_PORT: u64 = 0x004;
@@ -503,25 +444,15 @@ pub const OFF_PAYLOAD: u64 = 0x008;
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
 pub const DATA_MAX: usize = 4096 - OFF_PAYLOAD as usize;
 
-/// **The inbound gate's shared facts**, in one place because four programs have to agree on them
-/// and three of them are separate binaries: `socket_test_client` (the hand-written client),
-/// `std_exerciser` (the `std::net` client, in its own workspace), and the kernel test that decides
-/// which ports each stack is granted. The same discipline as `filesystem_fixture`, and rule 7's
-/// reason verbatim: a port number two binaries agree on is a crate, never a literal repeated per
-/// call site.
-///
-/// **What is deliberately NOT here is the host's copy**, and that is the interesting half.
-/// `xtask`'s prober spells `IN_MSG` and `OUT_MSG` again as its own literals, exactly as the
-/// pinned [MS-NLMP] vectors beside the credential tests are spelled twice: the gate's claim is that
-/// two independently-written sides agree, and a shared constant would let one edit move both. The
-/// port is spelled a third time in `helpers/qemu-runner-*.sh`, where a `hostfwd` names the guest
-/// side, because a shell script cannot read a Rust crate. A drift in either is loud (the prober
-/// reports "the guest served 0 of N"), which is the honest cost of the split.
+/// The inbound gate's shared facts, for the four programs that must agree on them (rule 7). The
+/// host's copy is deliberately not here: `xtask`'s prober and `helpers/qemu-runner-*.sh` spell
+/// them again, so the gate proves two independently written sides agree. See
+/// notes/net/the-socket-contract.md.
 pub mod fixture {
     /// The port the inbound gate listens on, and the guest side of the runners' `hostfwd`. Both
     /// ISA legs use the same number because they run one after the other and never hold it at once.
     pub const LISTEN_PORT: u16 = 7778;
-    /// A port deliberately **outside** every listen grant the tests hand out, so asking for it
+    /// A port deliberately outside every listen grant the tests hand out, so asking for it
     /// proves the grant *refuses* rather than that nothing happened to bind. It is the whole of the
     /// authority claim: a client that could bind this bound a port nothing granted.
     pub const DENIED_PORT: u16 = 8080;
@@ -533,29 +464,23 @@ pub mod fixture {
     /// What the guest answers with, composed rather than echoed (see the field-group docs).
     pub const OUT_MSG: &[u8] = b"nife-out!";
 
-    /// How many connections one listener serves before the client stops. **Two, and the second is
-    /// the load-bearing one**: a listener that accepts exactly one connection would pass a
+    /// How many connections one listener serves before the client stops. Two, and the second is
+    /// the load-bearing one: a listener that accepts exactly one connection would pass a
     /// one-round gate and is precisely what a file server cannot use.
     pub const ROUNDS: usize = 2;
 
-    /// **The runners' TCP echo peer**: a `guestfwd` inside QEMU's user-mode network that pipes
-    /// every connection to `10.0.2.9:7777` into a fresh `/bin/cat`
-    /// (`helpers/qemu-runner-aarch64.sh`, and its riscv64 twin). Two binaries connect to it, the
-    /// kernel harness's `socket_test_client` and the prompt's `network_echo_client` (milestone 590
-    /// (the booted system starts its network stack)), which is what put it here rather than in
-    /// each of them. The runners spell it a
-    /// third time for [`LISTEN_PORT`]'s reason.
+    /// The runners' TCP echo peer: a `guestfwd` inside QEMU's user-mode network that pipes every
+    /// connection to `10.0.2.9:7777` into a fresh `/bin/cat` (`helpers/qemu-runner-aarch64.sh`,
+    /// and its riscv64 twin). Two binaries dial it, so it is here; the runners spell it a third
+    /// time for [`LISTEN_PORT`]'s reason.
     pub const ECHO_PEER_IP: [u8; 4] = [10, 0, 2, 9];
     /// The echo peer's port; see [`ECHO_PEER_IP`].
     pub const ECHO_PEER_PORT: u16 = 7777;
 
-    /// **The runners' package source**: a `guestfwd` that runs `helpers/package-http-peer` once
-    /// per connection to `10.0.2.9:8080`, serving packages over HTTP/1.0 (milestone 198 (a package
-    /// manager) rung 3a). Two binaries dial it, the kernel harness's `socket_test_client` and
-    /// `jig install <name>` (the progenitor's until milestone 809 (the package client becomes a
-    /// program)), which is what put it here (rule 7). Only reachable
-    /// inside a QEMU runner: a booted system has no other package source yet, and that is
-    /// notes/packages.md's BUGS rather than a property of this address.
+    /// The runners' package source: a `guestfwd` that runs `helpers/package-http-peer` once per
+    /// connection to `10.0.2.9:8080`, serving packages over HTTP/1.0 (milestone 198 (a package
+    /// manager) rung 3a). `socket_test_client` and `jig install <name>` dial it (rule 7). Only
+    /// reachable inside a QEMU runner (notes/packages.md's BUGS).
     pub const PACKAGE_PEER_IP: [u8; 4] = [10, 0, 2, 9];
     /// The package source's port; see [`PACKAGE_PEER_IP`]. The same number as [`DENIED_PORT`], and
     /// unrelated to it: that is a port a *guest* may not listen on, this is one on a *host* the
@@ -565,17 +490,11 @@ pub mod fixture {
     pub const PACKAGE_PEER_HOST: &str = "10.0.2.9";
 }
 
-/// **The lease report** `net_stack` sends its spawner once DHCP completes, word by word. Provisional
-/// (2026-10-04, milestone 384 (in a capability system the resolver is a grant)), as is the name:
-/// §248 (the name resolver is its own confined program) gave the nameserver DHCP hands out a
-/// consumer, the resolver's spawner, so it rides the report's second word, which was zero.
-///
-/// - word 0: the leased IPv4 address, big-endian in the low 32 bits, unchanged since milestone 30
-///   (the network stack as a confined component)
-/// - word 1: the first DNS server the lease named, the same encoding, or [`lease::NO_NAMESERVER`]
-/// - word 2: zero, and reserved
-///
-/// A spawner that ignores word 1 is unaffected, which is why this did not need a new message.
+/// The lease report `net_stack` sends its spawner once DHCP completes, provisional, as is the name
+/// (milestone 384 (in a capability system the resolver is a grant)). Word 0 is the leased IPv4
+/// address, big-endian in the low 32 bits; word 1 the first DNS server the lease named, for the
+/// resolver's spawner (§248 (the name resolver is its own confined program)), the same encoding or
+/// [`lease::NO_NAMESERVER`]; word 2 is zero and reserved. See notes/net/the-socket-contract.md.
 ///
 /// ```
 /// use socket_contract::lease;
@@ -617,8 +536,7 @@ mod tests {
         assert_eq!(lease::word_ipv4(u32::MAX as u64), Some([255; 4]));
     }
 
-    /// Every opcode the contract defines, in one place. It was written out three times before
-    /// milestone 107 added two more, and a list repeated per property is a list that will one day
+    /// Every opcode the contract defines, in one place: a list repeated per property will one day
     /// be missing an entry in exactly the property that would have caught it.
     const OPERATIONS: &[u64] = &[
         OPERATION_ATTACH_PAGE_FRAME,
@@ -654,7 +572,7 @@ mod tests {
         }
     }
 
-    /// **The socket range and the front door never overlap.** A badge either names a socket or is
+    /// The socket range and the front door never overlap. A badge either names a socket or is
     /// a front door; if one value could be both, a closed socket's capability would open new
     /// sockets, or a front door would reach someone's socket.
     #[test]
@@ -719,7 +637,7 @@ mod tests {
         }
     }
 
-    /// **A grant admits exactly its range and nothing else.** This is the authority check itself,
+    /// A grant admits exactly its range and nothing else. This is the authority check itself,
     /// so an off-by-one here is a server binding a port it was never granted, which no other test
     /// in the tree would see: the on-device gate asks for one allowed port and one denied one.
     #[test]
@@ -741,7 +659,7 @@ mod tests {
         assert!(!grant_allows(one, 81));
     }
 
-    /// **No grant means no port.** The default a server is spawned with must admit nothing, or
+    /// No grant means no port. The default a server is spawned with must admit nothing, or
     /// "inbound authority is granted, never assumed" is a sentence in a doc comment and not a
     /// property of the system. Port 0 is refused under every grant, including one that names it,
     /// because it is not a port anything can listen on.
@@ -761,7 +679,7 @@ mod tests {
         assert_eq!(listen_grant(7780, 7778), NO_LISTEN_GRANT);
     }
 
-    /// **The UDP bind grant admits exactly its range**, the twin of the listen-grant test above
+    /// The UDP bind grant admits exactly its range, the twin of the listen-grant test above
     /// and for the same reason: this is the authority check itself, and the on-device gate asks
     /// for one allowed port and one denied one, so an off-by-one here is a server binding a UDP
     /// port it was never granted with no other test to see it.
@@ -799,7 +717,7 @@ mod tests {
         }
     }
 
-    /// **The two grants share one word and neither leaks into the other.** They are different
+    /// The two grants share one word and neither leaks into the other. They are different
     /// authorities (receive TCP connections on a port, versus claim a fixed UDP port), so a spawn
     /// that grants one must not have granted the other, and the composed word must answer each
     /// question from its own half only. A packing overlap here is a stack granting mDNS's port to
@@ -838,7 +756,7 @@ mod tests {
         assert!(!udp_grant_allows(top, 65534));
     }
 
-    /// **The inbound fixture's own claim, checked**: the port the gate is granted is inside the
+    /// The inbound fixture's own claim, checked: the port the gate is granted is inside the
     /// grant the tests hand out and the port it probes is outside it. Both device legs spend
     /// minutes proving the refusal on real hardware-shaped paths, and neither of them would notice
     /// if somebody edited [`fixture::DENIED_PORT`] to a number inside the range: the client would

@@ -1,24 +1,11 @@
-//! **A distribution's package index: which packages exist, the digest each must hash to, and where
-//! its bytes may be fetched**, for milestone 801 (packages over the internet).
-//!
-//! §250 (an image names its distribution's package index, and the bytes may live anywhere) splits
-//! what the image's catalog holds together: the index comes from the distribution's repository, and
-//! a package's bytes come from wherever the index says, believed only if they hash to the index's
-//! digest (§195 (a reviewed recipe vouches for a package)). calef's rulings of 2026-10-10 (UTC) on
-//! #1884 shape the rest, and `notes/packages/the-index-format.md` has them whole:
-//!
-//! - A [`Repository`] is a host and a channel: the index under `/<channel>/metadata/`, every
-//!   package under `/<channel>/targets/`, all three architectures in one index (Q4).
-//! - An [`Entry`] may list [`Location`]s, HTTPS only, tried in order; the repository's own
-//!   `targets/` is always the last source, and an owner may pin one mirror instead (Q1,
-//!   [`Index::sources`]). A listed location may never reach a private or link-local address
-//!   ([`public_address`]); a repository the owner chose may.
-//!
-//! **The encoding is a stand-in, not TUF.** [`Index::parse`] reads the catalog's line followed by
-//! zero or more locations, and the TUF client of milestone 858 (lab machines update themselves
-//! through packages) replaces that function and nothing
-//! above it. [`accept`] judges fetched bytes with the progenitor installer's own check,
-//! `package_archive::installable_as`.
+//! A distribution's package index: which packages exist, the digest each must hash to, and where
+//! its bytes may be fetched, for milestone 801 (packages over the internet) and §250 (an image
+//! names its distribution's package index, and the bytes may live anywhere). A [`Repository`] is a
+//! host and a channel; an [`Entry`]'s [`Location`]s are HTTPS only, tried before the repository's
+//! own `targets/` ([`Index::sources`]), and never reach a private address ([`public_address`]).
+//! The encoding is a stand-in that a TUF client replaces in [`Index::parse`] alone, and [`accept`]
+//! is the installer's own check. See notes/packages/the-index-format.md for calef's rulings and
+//! notes/packages/the-index-crate.md.
 //!
 //! # EXAMPLES
 //!
@@ -214,24 +201,12 @@ impl<'a> Location<'a> {
         }
     }
 
-    /// **Q1's safeguard on one resolution, and the addresses a client may then connect to.**
-    /// `resolved` is what this location's host resolved to, asked once. Every address must be one
-    /// [`public_address`] admits, or the location is refused; on success the returned
-    /// [`CheckedLocation`] holds that very slice, and its addresses are the only ones a client
-    /// connects to for this location.
-    ///
-    /// The shape is the fix for the DNS rebinding escape milestone 871 (a sixth outsider pass
-    /// attacks the confinement claim) booted on 2026-10-10 (UTC): a client that checked one
-    /// resolution and then connected by NAME resolved a second time, and a rebinding name server
-    /// answered the check public and the connect private. Resolving once and dialing only what
-    /// was checked is curl's `CURLOPT_RESOLVE` and Go's `net.Dialer.Control` (the check runs on
-    /// the address actually dialed); calef ruled it on #1901, 2026-10-10. The host name stays in
-    /// the [`CheckedLocation`] for TLS alone: the server name a client sends and the name the
-    /// certificate must carry, never a name to resolve again.
-    ///
-    /// Any address that is not IPv4 is refused, because [`public_address`] judges only IPv4 and an
-    /// address nothing judged must not reach a dial. An empty resolution is refused too, since
-    /// there is nothing to connect to.
+    /// Q1's safeguard on one resolution, and the addresses a client may then connect to.
+    /// `resolved` is what this location's host resolved to, asked once. Every address must be an
+    /// IPv4 address [`public_address`] admits, and the slice must not be empty, or the location is
+    /// refused. The returned [`CheckedLocation`] holds that very slice: its addresses are the only
+    /// ones a client dials, and its host name is for TLS alone, never resolved again, which closes
+    /// DNS rebinding (calef, #1901, 2026-10-10 UTC). See notes/packages/the-index-crate.md.
     pub fn check<'r>(
         &self,
         resolved: &'r [SocketAddr],
@@ -351,26 +326,12 @@ impl core::fmt::Display for LocationRefusal<'_> {
     }
 }
 
-/// **Is `host` an IPv4 address, and is it written the one way every reader agrees on?**
-/// `Ok(None)` for a DNS name, `Ok(Some(_))` for canonical dotted decimal, and a refusal for a host
-/// whose last label is a number but that is not canonical: `0010.0.0.1`, `0x0a.0.0.1`, `10.1`,
-/// `167772161`, `10.0.0.0x1`.
-///
-/// Such a host is refused outright, not read either way, because readers disagree on it. The
-/// WHATWG URL standard and `inet_aton` read `0010` as octal (8) and accept hex and short forms;
-/// others read decimal. That disagreement was CVE-2021-29921 (Python `ipaddress`) and
-/// CVE-2021-29923 (Go `net.ParseIP`), and both now refuse leading zeros, as Rust's `Ipv4Addr`
-/// does. A refusal here means nothing downstream has to agree with us about which address it is,
-/// and [`Location::check`] on the resolved address stops being the only guard. Index and repository
-/// hosts come from manifests the distribution writes, so no legitimate host is lost. calef ruled
-/// it on 2026-10-12 (UTC), on #2020; `notes/packages/the-index-format.md` has the ruling.
-///
-/// "Ends in a number" is WHATWG's test (the ends-in-a-number checker): the last label is all
-/// decimal digits, or `0x` followed by hex digits. Only the decimal case was in the ruling's words;
-/// the hex case is the same disagreement and is refused with it.
-///
-/// [`is_host`] has already admitted `host`, so a part holds only letters, digits and hyphens, and
-/// `u8`'s parser refuses every one of those that is not a decimal number up to 255.
+/// Is `host` an IPv4 address, written the one way every reader agrees on? `Ok(None)` for a DNS
+/// name, `Ok(Some(_))` for canonical dotted decimal, and a refusal for a host whose last label is a
+/// number (WHATWG's test: decimal digits, or `0x` and hex) but that is not canonical: `0010.0.0.1`,
+/// `0x0a.0.0.1`, `10.1`, `167772161`, `10.0.0.0x1`. Readers disagree on those (CVE-2021-29921,
+/// CVE-2021-29923), so they are refused outright (calef, #2020, 2026-10-12 UTC). [`is_host`] has
+/// already admitted `host`. See notes/packages/the-index-format.md.
 fn ipv4_literal(host: &str) -> Result<Option<[u8; 4]>, LocationRefusal<'_>> {
     let last = host.rsplit('.').next().unwrap_or(host);
     let hex = last.strip_prefix("0x").or_else(|| last.strip_prefix("0X"));
@@ -601,25 +562,12 @@ pub fn accept<'b>(entry: &Entry<'_>, bytes: &'b [u8]) -> Result<Installable<'b>,
     installable_as(catalog, entry.stem, bytes)
 }
 
-/// **Which of two package versions is newer: Debian's order, as dpkg computes it.** calef ruled it
-/// on 2026-10-18 (UTC), asked "How should jig order versions?": *"Debian dpkg order"*. It is the
-/// order `jig list -u` reports against (milestone 809 (the package client becomes a program)), and
-/// the one the reserved `upgrade` verb will install by.
-///
-/// A version here is what a stem carries between its name and its architecture, so it is dpkg's
-/// upstream version with neither an epoch (`1:`) nor a revision (`-1`): a stem is split at its
-/// hyphens, and an epoch's colon has no meaning without the rest of dpkg's syntax.
-/// [`check`](version::check) admits a version only if dpkg would read it without complaint, and
-/// refuses everything dpkg refuses or warns about: an empty string, a first character that is not a
-/// digit, or any character outside `0-9 A-Z a-z . + ~`. basalt writes these strings and `jig` reads
-/// them, so a string one side could not order is refused where the index is read
-/// ([`crate::Index::parse`]), not guessed at.
-///
-/// [`compare`](version::compare) is dpkg's `verrevcmp` (`lib/dpkg/version.c`): the strings
-/// alternate between runs of non-digits, compared character by character with letters before other
-/// symbols and `~` before everything, even the end of the string, and runs of digits, compared as
-/// numbers. So `1.10` is
-/// newer than `1.9`, `1.0~rc1` is older than `1.0`, and `1.0` and `1.00` are the same version.
+/// Which of two package versions is newer: Debian's order, as dpkg computes it (calef, 2026-10-18
+/// UTC: *"Debian dpkg order"*), for `jig list -u` (milestone 809 (the package client becomes a
+/// program)). A version is dpkg's upstream version, with no epoch or revision.
+/// [`check`](version::check) refuses whatever dpkg refuses or warns about, where the index is read
+/// ([`crate::Index::parse`]); [`compare`](version::compare) is dpkg's `verrevcmp`. See
+/// notes/packages/the-index-crate.md.
 ///
 /// # EXAMPLES
 ///
@@ -857,61 +805,20 @@ pub mod fixture {
     pub const REBOUND: &str = "rebound@0.1.0";
 }
 
-// **An image's index sources** (milestone 801 (packages over the internet), 2026-10-12 UTC).
-// **Where an image says its distribution's index is, and the root its TLS must chain to**, read
-// from the image's `package_index_sources` archive entry ([`SOURCES_ENTRY`]), for milestone 801
-// (packages over the internet).
-//
-// §250 (an image names its distribution's package index, and the bytes may live anywhere) puts
-// the index's address in the image, and calef's Q2 on #1884 gave it a backup address tried when
-// the first stops answering. Both live here as text the archive build writes and the kernel's
-// measurement table vouches for, so the image, not the program, names its index: basalt can
-// compose an image that names another (milestone 909 (basalt composes the bootable image from its
-// packages)) without rebuilding `jig`.
-//
-// ```text
-// # comments and blank lines are skipped
-// repository basalt.nifeos.org 443 rolling
-// repository basalt.test 8443 rolling 10.0.2.9
-// root isrg-root-x1
-// ```
-//
-// - `repository <host> <port> <channel> [<address>]`, one per index address, in the order they
-//   are tried. The optional address is where to connect for that host, asked of no resolver, as
-//   curl's `--resolve` does. It exists for the test image: under QEMU's slirp every name is asked
-//   of the host's own resolver, which knows no test host (measured by milestone 892 (a std
-//   program at the prompt holds the network and a name resolver)), and
-//   pinning an IP address instead is refused by `pinned_tls_client`. The host stays the TLS
-//   server name either way.
-// - `root <name>` or `root <hex>`: the one root every repository here must chain to (§196 (nife
-//   carries TLS) clause 4: one root per source; recommended as one pin in question A of
-//   `notes/packages/the-index-format.md`). A name is one the client carries (`isrg-root-x1`, §250's
-//   production pin); hex is a whole certificate in DER, for a root no client carries, such as the
-//   test authority.
-// - `location-root <name> [<root>]`, at most [`MAX_LOCATION_ROOTS`]: a further root the signed
-//   index may name for a listed location (calef's C2 on #2048); a bare name is one the client
-//   carries, as `sectigo-root-e46`. The keyword is provisional (2026-10-13 UTC).
-//
-// Every line must be read or the whole text is refused, [`crate::Index::parse`]'s rule, and there
-// must be at least one repository and exactly one root.
-//
-// Every name in this section, the entry's and the keywords included, is provisional: minted
-// 2026-10-12 (UTC) by lane `milestone/801-jig-installs-from-the-index`.
+// An image's index sources (milestone 801 (packages over the internet)): where an image says its
+// distribution's index is, and the root its TLS must chain to, read from the image's
+// `package_index_sources` archive entry ([`SOURCES_ENTRY`]). The format is on [`Sources`] and in
+// notes/packages/the-index-crate.md. Every name in this section is provisional.
 
-/// **The archive entry an image's index sources travel in**, packed before the measurement table
+/// The archive entry an image's index sources travel in, packed before the measurement table
 /// so the table vouches for it, as `package_archive::CATALOG` is. Name: provisional.
 pub const SOURCES_ENTRY: &str = "package_index_sources";
 
-/// **basalt's production sources**: the text an image built for real machines carries, where
-/// the test image carries `helpers/tls-peer` and the test authority (xtask's
-/// `image_index_sources`, which chooses between the two).
-///
-/// `basalt.nifeos.org` on 443, the provisional channel, pinned to ISRG Root X1, as §250 (an image
-/// names its distribution's package index) rules. calef ruled on 2026-10-12 (UTC) that the host
-/// is GitHub Pages under that custom domain; `nifeos.github.io` chains to X1 (measured 2026-10-13
-/// UTC), so the pin holds there. The second address is `basalt.crickertech.com`, tried when the
-/// first stops answering: §250 clause 6 puts it on another registrable domain, and calef chose
-/// `crickertech.com` on 2026-10-21 (UTC). One root covers both (clause 10).
+/// basalt's production sources: the text an image built for real machines carries (xtask's
+/// `image_index_sources` chooses it or the test image's). `basalt.nifeos.org` (GitHub Pages, calef,
+/// 2026-10-12 UTC) on 443, pinned to ISRG Root X1 as §250 (an image names its distribution's
+/// package index) rules, then `basalt.crickertech.com` on another registrable domain (clause 6).
+/// See notes/packages/the-index-crate.md.
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`. The
 /// host label `basalt.crickertech.com` is provisional too: calef chose the domain, and `basalt.`
@@ -977,7 +884,15 @@ impl Root<'_> {
     }
 }
 
-/// **An image's index sources, every line read.**
+/// An image's index sources, every line read: at least one repository, exactly one root.
+///
+/// ```text
+/// repository <host> <port> <channel> [<address>]   one per index address, tried in order
+/// root <name> | root <hex>                          the one root every repository chains to
+/// location-root <name> [<root>]                     a further root for listed locations
+/// ```
+///
+/// Blank lines and `#` comments are skipped. See notes/packages/the-index-crate.md.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Sources<'a> {
     repositories: [Option<Configured<'a>>; MAX_REPOSITORIES],

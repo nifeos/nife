@@ -18,6 +18,8 @@ the evidence its prose budget has no room for.
   `schedule`'s rules, the pick, the per-thread grants, and the reaper's far side.
 - [`rendezvous.md`](rendezvous.md): the design behind `sched/rendezvous.rs`: send, receive, call
   and reply, the capability rules on each arrival order, and freeing stranded callers.
+- [`wake-handshake.md`](wake-handshake.md): the design behind `crates/thread_wake_handshake`: the
+  three races of the switch-out window, the states, and the loom model.
 - [`the-current-cpu-page.md`](the-current-cpu-page.md): the page a thread reads its core from, and
   what its kernel tests prove.
 
