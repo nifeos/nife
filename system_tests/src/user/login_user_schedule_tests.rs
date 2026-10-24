@@ -1,17 +1,21 @@
 //! **A login session's work outlives the login, and a suspended user's does not** (milestone 152
 //! (durable delegation)): logout refused while work is pending, a user's schedule surviving their
 //! logout and ending when they empty it, suspension ending it, and a durable session re-derived at
-//! start-up.
-//!
-//! Cut out of `login_tests.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/files-over-1500,
-//! which was over the 1,500 lines the next split tier starts at. The wiring and the budget these
-//! tests share stay in `login_tests`. Named to sort right after `login_tests`, so the suite runs
-//! these next to it; within one module the order was alphabetical, so three of these used to run
-//! before the rest of `login_tests` and now run after it.
+//! start-up. The wiring and the budget these tests share stay in `login_tests`, and the name sorts
+//! right after it, so the suite runs these next to it.
 //!
 //! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Chosen to sort beside `login_tests`, as above; the pull request records no other name
 //! considered.
+
+//! # BUGS
+//!
+//! - `suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed` had its first login
+//!   refused `DENIED` once on the HVF leg, with the right password and before any suspension (left
+//!   2, right 1): one of ten full `script/test --hvf` runs on 2026-10-12 (UTC), at a 1-minute load
+//!   of 3.4, found by milestone 514 (the HVF std listener hangs in some full runs)'s verification
+//!   runs and not investigated there. The test empties the suspended list first, so a list left by
+//!   an earlier test is not the obvious reading.
 
 use credential_contract::fixture::{ALICE, BOB, WRONG};
 use login_service as ls;
@@ -20,25 +24,14 @@ use super::login_tests::{DURABLE_UT_PAGES, free_terminal, redoxfs_server_image, 
 use super::*;
 use crate::sched;
 
-/// **A login session with pending work cannot be logged out until the work is gone**, for
-/// milestone 152 (durable delegation), on DECISIONS §16 (object revocation).
+/// A login session with pending work cannot be logged out until the work is gone (milestone 152
+/// (durable delegation), on DECISIONS §16 (object revocation)).
 ///
-/// Milestone 152's design keeps a user's session alive past a disconnect for exactly as long as it
-/// has scheduled work, and it builds no new mechanism for that: a scheduled job's authority is a
-/// child split off the session's budget, and §16 already refuses `MemoryRegion::DESTROY` on a
-/// parent with a live child. This proves that on the object a login session actually is. The
-/// session's own budget, delegated by `login`, carries a one-page child; the logout's first step is
-/// refused `NotPermitted`; the budget still works afterwards; and once the child is destroyed the
-/// same logout goes through in [`ls::LOGOUT`]'s order, with its proofs that both capabilities came
-/// down.
-///
-/// The proof used to live on `smb_server`'s `DurableSession`, which went with the SMB code on
-/// 2026-08-30. A session re-derived at start-up is built on a budget the same way
-/// (`a_durable_session_is_re_derived_at_start_up_unless_suspended`), so this holds for it too.
-///
-/// **Costs nothing permanent against
-/// [`CONSTRUCTION_PAGES`](super::login_tests::CONSTRUCTION_PAGES)**: the session logs fully back
-/// out.
+/// A scheduled job's authority is a child split off the session's budget, and §16 refuses
+/// `MemoryRegion::DESTROY` on a parent with a live child. With a one-page child, the logout's first
+/// step is refused `NotPermitted` and the budget still works; with it destroyed, the logout goes
+/// through in [`ls::LOGOUT`]'s order. A re-derived session is built on a budget the same way. Logs
+/// fully out, at no charge to [`CONSTRUCTION_PAGES`](super::login_tests::CONSTRUCTION_PAGES).
 #[test_case]
 fn a_login_session_with_pending_work_refuses_logout_until_the_work_is_gone() {
     if fs_service::fs_server_image().is_none() {
@@ -95,27 +88,15 @@ fn a_login_session_with_pending_work_refuses_logout_until_the_work_is_gone() {
     free_terminal(&w);
 }
 
-/// **A user's schedule outlives their login, comes back when they return, and ends when they empty
-/// it** (milestone 152, durable delegation; S1 and L2 of 2026-09-26; §222 (who holds a user's
-/// schedule)).
+/// A user's schedule outlives their login, comes back when they return, and ends when they empty
+/// it (milestone 152, S1 and L2 of 2026-09-26; §222 (who holds a user's schedule)).
 ///
-/// Three logins as `alice`, each by a separate client process, so nothing but `login` and the
-/// durable session carries state from one to the next:
-///
-/// 1. [`ls::OPEN_SCHEDULE`] asks for its schedule. `login` builds `user_timetable_keeper` from a region
-///    of the user's own budget, `user_timetable_keeper` builds a timetable, and the client replaces its
-///    empty document with one entry the timetable plans to fire. It then detaches: its directory
-///    goes, and its budget refuses `DESTROY`, because `user_timetable_keeper` lives on it (§16).
-/// 2. [`ls::EMPTY_SCHEDULE`] logs in plainly and is handed the same session back: the page still
-///    carries the first client's reply. It replaces the document with an empty one, and the
-///    timetable answers `STATUS_EMPTIED` and writes its exit word.
-/// 3. [`ls::LOGOUT`] logs in plainly and gets an ordinary session, with no page announced, and
-///    tears it down completely. That is the proof nothing outlived its reason: `login` saw the exit
-///    word, reclaimed `user_timetable_keeper` and the old budget, and minted fresh.
-///
-/// **Costs nothing permanent against
-/// [`CONSTRUCTION_PAGES`](super::login_tests::CONSTRUCTION_PAGES)**: every session here comes home,
-/// the durable one through `login`'s own `DURABLE_UT_PAGES` budget.
+/// Three logins as `alice`, each a separate client, so only `login` and the durable session carry
+/// state. 1. [`ls::OPEN_SCHEDULE`]: `login` builds `user_timetable_keeper` on her budget, the
+/// client writes one entry and detaches, and the budget refuses `DESTROY` (§16).
+/// 2. [`ls::EMPTY_SCHEDULE`] gets the same session back, the first reply still on the page, and
+/// empties it: `STATUS_EMPTIED`. 3. [`ls::LOGOUT`] gets a fresh session and tears it down: nothing
+/// outlived its reason. Every session comes home, the durable one through `DURABLE_UT_PAGES`.
 #[test_case]
 fn a_users_schedule_outlives_their_login_and_ends_when_they_empty_it() {
     if fs_service::fs_server_image().is_none() {
@@ -209,26 +190,15 @@ fn a_users_schedule_outlives_their_login_and_ends_when_they_empty_it() {
     }
 }
 
-/// **Suspending a user ends their schedule now, refuses their login, and resuming lets them back**
-/// (milestone 152 (durable delegation), calef's §108 (disabling credentials kills the durable session) ruling of 2026-09-26).
+/// Suspending a user ends their schedule, refuses their login, and resuming lets them back
+/// (milestone 152; calef's §108 (disabling credentials kills the durable session), 2026-09-26).
 ///
-/// `alice` opens a schedule and detaches, so a `user_timetable_keeper` and a timetable are running on her
-/// budget. The owner's console then does what `user suspend alice` does: it lists `alice` in
-/// `login_contract::SUSPENDED_LIST` and sends `SUSPEND` on the front door. `login` answers that it
-/// ended one durable session, and a correct password for `alice` is refused `SUSPENDED`, not
-/// `DENIED`, while her stored schedule and her manifest line stay. `user resume alice` empties the
-/// list, and the stored schedule comes back at her next login, as the ruling says; emptying it then
-/// takes her off the manifest. A plain `DENIED` for the wrong secret while suspended shows the
-/// refusal is still after authentication.
-///
+/// With `alice` detached on a schedule, `user suspend alice` (listed in `SUSPENDED_LIST`, then
+/// `SUSPEND`) ends one durable session; her correct password gets `SUSPENDED`, a wrong one still
+/// `DENIED` (the refusal is after authentication), and her stored schedule and manifest line stay.
+/// `user resume alice` brings it back at her next login; emptying it takes her off the manifest.
 /// # BUGS
-///
-/// **Its first login was refused `DENIED` once on the HVF leg**, with the right password and before
-/// any suspension: `alice was not authenticated`, left 2 (`login_contract::DENIED`), right 1. One of
-/// ten full `script/test --hvf` runs on 2026-10-12 (UTC), at a 1-minute load of 3.4, found by
-/// milestone 514 (the HVF std listener hangs in some full runs)'s verification runs and not
-/// investigated there. The suspended list is emptied at the top of this test, so a list left by an
-/// earlier test is not the obvious reading.
+/// - Its first login was once refused `DENIED` on HVF with the right password; see the module BUGS.
 #[test_case]
 fn suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed() {
     if fs_service::fs_server_image().is_none() {
@@ -371,34 +341,15 @@ fn manifest_lists(identity: &[u8]) -> bool {
 /// margin. It serves no successful login, so nothing else is spent from it.
 const START_UP_CONSTRUCTION_PAGES: u64 = 128 + DURABLE_UT_PAGES + 32 + 32;
 
-/// **`login` re-derives a stored schedule at start-up, before anyone logs in, and skips a suspended
-/// identity** (milestone 152 (durable delegation); Fork 7 ruled A by calef on 2026-09-27; DECISIONS
-/// §123 (the boot-time re-derivation privilege) as amended). What `session_reviver_tests` proved
-/// against the retired `session_reviver`, now against `login` itself.
+/// `login` re-derives a stored schedule at start-up and skips a suspended identity (milestone 152;
+/// Fork 7 ruled A by calef on 2026-09-27; DECISIONS §123 (the boot-time re-derivation privilege)).
 ///
-/// The store is written as a reboot would find it: `alice` and `bob` each have
-/// `timetable_store::fixture::DEMO_SCHEDULE_DOC` stored in their own subtree (§122 (the on-disk
-/// schedule store)), the manifest (§125 (which identities have pending work)) names both, `alice`
-/// first, and the owner's suspended list names `alice`. Then a second `login` starts against that
-/// store, and three exchanges on its front door, none of them a successful login, show what its
-/// start-up pass did:
-///
-/// 1. `SUSPEND` with `alice` listed ends nothing. He has a stored schedule and comes first in the
-///    manifest, so only the skip explains it; with one session kept, a pass that ignored the list
-///    would have spent it on her.
-/// 2. A wrong secret for `bob` is `DENIED`. The session re-derived for him is handed out only
-///    after the credential service says yes, as at any login.
-/// 3. `SUSPEND` with `bob` listed ends one session. Nothing but the start-up pass could have
-///    built it, and it only stays kept when the timetable accepted the stored document, so this
-///    is also the proof that what was written through the file service is what `login` read and
-///    the timetable took, the connective proof `session_reviver` made against `timetable::parse`.
-///
-/// Its own `login`, because the start-up pass runs once, at start: `wired()`'s is shared by the
-/// whole suite and starts on an empty manifest. The store is put back afterwards.
-///
-/// **A permanent charge against `kernel::testing::SUITE_PAGE_FRAME_BUDGET`**: a second `login`
-/// process and its [`START_UP_CONSTRUCTION_PAGES`], which no test tears down. The re-derived
-/// session itself comes home to that budget when step 3 ends it.
+/// The store is as a reboot finds it: both users' `DEMO_SCHEDULE_DOC` (§122 (the on-disk schedule
+/// store)), a manifest naming `alice` then `bob` (§125 (which identities have pending work)), and
+/// `alice` suspended. A second `login` starts on it (start-up runs once). `SUSPEND` with `alice`
+/// listed ends nothing, so only the skip explains it; a wrong secret for `bob` is `DENIED`;
+/// `SUSPEND` with `bob` ends one session, which only an accepted stored document keeps. A
+/// permanent charge of [`START_UP_CONSTRUCTION_PAGES`]; the store is put back afterwards.
 #[test_case]
 fn a_durable_session_is_re_derived_at_start_up_unless_suspended() {
     if fs_service::fs_server_image().is_none() {
@@ -443,9 +394,8 @@ fn a_durable_session_is_re_derived_at_start_up_unless_suspended() {
         );
         r[1]
     };
-    // What the start-up pass's own `rederive` skipped and why (`login_contract::REDERIVE_SKIPS`),
-    // read back for a failing assertion below to print: the "skipped, not failed" contract used to
-    // leave no reason anywhere a failure could show.
+    // What the start-up pass's `rederive` skipped and why (`login_contract::REDERIVE_SKIPS`), for a
+    // failing assertion below to print.
     let rederive_skips = || {
         sched::ipc_send(w.request, [login_contract::rederive_skips_word(), 0, 0]);
         let r = sched::ipc_receive(w.result);
