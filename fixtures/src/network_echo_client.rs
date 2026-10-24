@@ -1,39 +1,31 @@
-//! **Reach the network from a booted system's prompt** (milestone 590 (the booted system starts
-//! its network stack)).
+//! **Reach the network from a booted system's prompt** (milestone 590 (the booted system starts its
+//! network stack)).
 //!
 //! Opens a TCP connection to the QEMU runners' echo peer (`socket_contract::fixture::ECHO_PEER_IP`,
-//! port `ECHO_PEER_PORT`), sends [`MSG`], reads what comes back, and prints it:
+//! port `ECHO_PEER_PORT`), sends [`MSG`], and prints what comes back. The real progenitor spawns it
+//! through the real spawn service, holding exactly what its manifest
+//! (`grant_plan::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
+//! green `script/swish-check` line for it is the claim about the system a person boots. A fixture
+//! and not a tool, because its peer exists only inside a QEMU runner.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! nife> network_echo_client --mem 4
 //! echo peer 10.0.2.9:7777 answered: nife-net!
 //! ```
-//!
-//! Every network test before this one started `net_stack` from the kernel's test harness, so none
-//! of them said anything about the system a person boots. This program is spawned by the real
-//! progenitor, through the real spawn service, holding exactly what its manifest
-//! (`grant_plan::Program::NetworkEchoClient`) declares, and it talks to the `net_stack` the progenitor
-//! built at boot. A green `script/swish-check` line for it is the claim.
-//!
-//! A fixture and not a tool, because the peer it talks to exists only inside a QEMU runner. The
-//! package client milestone 198 (a package manager) needs is the first real program that will
-//! declare the same manifest field.
-//!
+
 //! # What this program holds
 //!
 //! - slot 0: its output, the sink contract (`crates/byte_sink_contract`).
-//! - slot 1: the `--mem` budget, which it mints the one page it trades bytes with the stack
-//!   through out of. The network grant carries no memory, so a socket client pays for its own page.
-//! - slot 10 ([`grant_plan::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, the front door that
-//!   makes sockets. Placed there by the progenitor because the manifest declares `network`, and
-//!   empty on a boot whose progenitor built no stack (`x86_64`, or any run with `NIFE_NET` unset),
-//!   in which case this prints why and sends nothing.
-//! - while it runs, one more: the capability of the socket it opened, which the stack handed back
-//!   on `OPEN_TCP` and which reaches that socket and no other (§255 (each socket is its own
-//!   capability)). Until milestone 649 (every client of a network stack shares its socket numbers)
-//!   this program used socket number 0, the number every other client of the stack could also
-//!   name.
-//!
+//! - slot 1: the `--mem` budget, from which it mints the page it trades bytes with the stack
+//!   through; the network grant carries no memory.
+//! - slot 10 ([`grant_plan::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
+//!   manifest declares `network`; empty when the progenitor built no stack (`x86_64`, or `NIFE_NET`
+//!   unset), and then this prints why and sends nothing.
+//! - while it runs, the capability of the socket it opened (from `OPEN_TCP`), which reaches that
+//!   socket and no other (§255 (each socket is its own capability)).
+
 //! Name: provisional. Introduced 2026-09-24 for milestone 590; says what it talks to, and expects
 //! to be retired rather than renamed once a real network tool can stand in for it.
 
