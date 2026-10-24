@@ -24,8 +24,8 @@
 //! # BUGS
 //!
 //! - [`RUN_UNVOUCHED_LIST`] (§221 ruling 2) is read through the file service's one shared page,
-//!   sound only while one session is live; delisting holds from the next login, since nothing
-//!   revokes a delegated capability.
+//!   sound only while one session is live; delisting holds from the next login, and a built
+//!   session keeps its copy, since nothing revokes a delegated capability.
 //! - [`LOGOUT`] authenticates nothing: any holder of `REQUEST` can free the terminal from under
 //!   its user. Accepted for one boot, one terminal and no untrusted co-tenant; a hostile
 //!   deployment needs `LOGOUT` to carry a capability only the session holds.
@@ -139,7 +139,9 @@ pub const SCHEDULE_FOLLOWS: u64 = 2;
 /// **The owner's list of identities whose sessions may run unvouched bytes** (DECISIONS §221 (the
 /// boot prompt is the owner's console), ruling 2): a file at the root of the file service, beside
 /// the identities' own subtrees (DECISIONS §117 (a principal's subtree is named by its identity
-/// string)). A session cannot name it; the boot prompt can (`echo alice >> may-run-unvouched`).
+/// string)). A session is confined to its own subtree and cannot name it; the boot prompt can
+/// (`echo alice >> may-run-unvouched`).
+///
 /// **Empty by default**: no file, an unreadable file, or one larger than a page lists nobody, so
 /// the failure is always toward the narrower grant. The format is [`lists`]'s.
 ///

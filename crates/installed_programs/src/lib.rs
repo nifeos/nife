@@ -13,7 +13,8 @@
 //!
 //! - Nothing collects old generations; a retention rule is owed before frequent installs.
 //! - A table is read whole into the caller's buffer, about 140 bytes a row.
-//! - The progenitor uses one page per generation, so at about 170 bytes a row it holds two dozen.
+//! - The progenitor uses one page per generation; a row with its pointer, about 170 bytes, lets it
+//!   hold about two dozen installed programs.
 //! - Nothing makes the `current` write atomic; a torn write on RedoxFS was not checked.
 //!
 //! Name: ratified 2026-10-18 (calef, "`installed_programs`"). Each row is a program, keyed by its

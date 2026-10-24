@@ -5,9 +5,9 @@
 //!
 //! Every byte parsed here came from a server the client may not trust, so the parser is total (Kani
 //! checks the name decoder, `fuzz/fuzz_targets/domain_name_system_reply.rs` the rest), and
-//! [`Query::accept`] believes as little as it can: [`Reject`] lists its seven checks in order. Only
-//! A records owned by the end of the CNAME chain from our name are taken, so a reply about
-//! `example.com` cannot plant an address for `bank.test`; authority and additional are never read.
+//! [`Query::accept`] believes as little as it can: [`Reject`] lists its nine refusals, in check
+//! order. Only A records owned by the end of the CNAME chain from our name are taken, so a reply
+//! about `example.com` cannot plant an address for `bank.test`; authority and additional go unread.
 
 //! # BUGS
 //!

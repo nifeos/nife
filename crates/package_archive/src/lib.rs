@@ -26,7 +26,6 @@
 //! - [`Package::parse`] lets members overlap or precede the table: accessors are bounds-checked,
 //!   and [`Package::verify`] fails any arrangement the digests do not match.
 //! - Nothing here says where a package came from; §195's per-source trust is a client's job.
-
 //!
 //! Name: provisional 2026-09-23 (milestone 198's rung 3a lane): an archive of a package's files, in
 //! the field's words; `package` alone is too generic and `pkg` an abbreviation. Not ratified.

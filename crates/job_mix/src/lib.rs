@@ -87,15 +87,18 @@ pub const CENSUS: &str = "job-mix-census:";
 pub const KIND: &str = "job-mix-kind:";
 
 /// **How long one sweep point's threads waited for kernel locks**, summed over every core and every
-/// repeat at that point, timed windows only. Printed only with `--features lock_wait`
-/// (notes/job-mix/null-syscall-under-load.md), in three shapes after the [`KIND`] lines. Name
-/// provisional.
+/// repeat at that point, timed windows only. Three shapes, after the [`KIND`] lines:
 ///
-/// - `job-mix-lock: tasks=<n> rank=<r> name=<word or -> contended=<c> wait_ticks=<w>`, a held rank;
+/// - `job-mix-lock: tasks=<n> rank=<r> name=<word or -> contended=<c> wait_ticks=<w>`, one per lock
+///   rank that was ever found held;
 /// - `job-mix-lock: tasks=<n> site=reap reaps=<r> stack_free_ticks=<f> remove_ticks=<m>`, the
-///   reaper: stacks freed with no lock held, then its last critical section under `IPC_TABLES`;
+///   reaper: threads reaped, time freeing their kernel stacks (no lock held), and time its last
+///   critical section held `IPC_TABLES`;
 /// - `job-mix-lock: tasks=<n> site=current_cap calls=<c> contended=<k> wait_ticks=<w>`, the one
-///   lock the cheapest syscall takes.
+///   lock the cheapest syscall takes: every call, and the ones that found it held.
+///
+/// Printed only with `--features lock_wait` (notes/job-mix/null-syscall-under-load.md). Name
+/// provisional.
 pub const LOCK: &str = "job-mix-lock:";
 
 /// A compute-bound arithmetic loop, [`COMPUTE_ITERS`] iterations. No syscall.

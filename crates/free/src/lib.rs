@@ -22,7 +22,8 @@
 //! # BUGS
 //!
 //! - No `shared`, `buff/cache` or `available` columns: there is no page cache to report.
-//! - No `Swap:` line, not even zeroes: nife refuses paging out (calef, 2026-09-26, #1356).
+//! - No `Swap:` line: nife refuses paging out (calef, 2026-09-26, #1356), and a zero would say swap
+//!   exists and is empty.
 //! - `Yours:` counts `free` itself, the way `ps` lists itself.
 //! - The two lines are read at slightly different moments, and neither is a snapshot of the other.
 //! - **`Yours:` is the machine's whole job pool (`jobs_ut`), not one prompt's**: one session sees

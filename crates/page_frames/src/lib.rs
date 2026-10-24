@@ -197,7 +197,7 @@ impl<'a> PageFrameAllocator<'a> {
     /// The start rounds **down** and the end **up**: a region ending mid-frame (a kernel image
     /// ending at `0x4009_7010`) still owns that frame, and rounding down would hand out the tail of
     /// the kernel. Over-reserving wastes at most 4 KiB per region. notes/physical-memory.md, "The
-    /// rounding asymmetry".
+    /// rounding asymmetry, which is the whole ballgame".
     pub fn mark_used(&mut self, start: u64, size: u64) {
         for i in self.page_frame_range(start, size) {
             if !self.get(i) {
