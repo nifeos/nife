@@ -1,5 +1,9 @@
 # The timetable program: what it holds and how it runs
 
+*Name: provisional, minted 2026-10-24 (UTC) by the lane for milestone 929 (comments in the Linux
+style across first-party Rust), for the design `components/src/timetable.rs`'s comments link. calef
+names files.*
+
 An appendix of [scheduled execution](../scheduled-execution.md). It carries the design that
 `components/src/timetable.rs` links from its doc comments. The crate's registry and grammar are in
 the parent page; this file is about the program that runs them.
@@ -139,6 +143,3 @@ never becomes collectable is a leak.
 - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 - In store mode a program over `contract::STAGING_BYTES` is refused without saying which refusal
   it was, and a fire failure is reported only as the page's exit word, `contract::E_BUDGET`.
-
-*Name: provisional, minted by the lane for milestone 929 (comments in the Linux style across
-first-party Rust). calef names files.*

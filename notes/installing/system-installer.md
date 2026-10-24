@@ -1,5 +1,7 @@
 # What `system_installer` writes, and why it is safe to interrupt
 
+*Name: provisional. After the program it describes.*
+
 An appendix to [`notes/installing.md`](../installing.md). It holds the design behind
 `components/src/system_installer.rs`. The slot states are in [`notes/boot-slots.md`](../boot-slots.md).
 

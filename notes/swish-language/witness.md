@@ -1,5 +1,7 @@
 # The shell's witness scripts
 
+*Name: provisional, after `components/src/swish/witness.rs`. calef names files.*
+
 [`components/src/swish/witness.rs`](../../components/src/swish/witness.rs) holds the test roles
 `system_tests` spawns the shell in. Milestone 885 (the shell's test roles become scripts the shipping
 shell runs) replaces them. This page carries the design each script's doc comment links to.

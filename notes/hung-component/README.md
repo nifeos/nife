@@ -24,14 +24,4 @@ and evidence behind those answers, which its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `the-armed-kill` Name: provisional.
-- `liveness-watch` Name: provisional. Named after the provisional program name the note proposes.
-- `what-counts-as-hung` Name: provisional. Named after the parent's question 2.
-- `stranded-caller` Name: provisional.
-- `the-wedge-test` Name: provisional.
-- `what-is-left-of-milestone-23` Name: ratified 2026-10-18 (calef: "Approve both").
-- `examples` Name: provisional. For the parent's Rust EXAMPLES. calef names files.
-- `terminal-supervisor-bound` Name: provisional. After the program and the bound it measures.
 Each stem here is named for its content, and calef names files.

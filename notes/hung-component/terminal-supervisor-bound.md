@@ -1,5 +1,8 @@
 # `terminal_supervisor`'s quiesce bound, and the bays
 
+*Name: provisional. After the program and the bound it measures. Each stem here is named for its
+content, and calef names files.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), which states the bound. This
 holds the measurement behind `terminal_supervisor`'s `QUIESCE_BOUND_MS` and why its instances and
 stand-ins are built in bays.

@@ -9,6 +9,4 @@
 *Name: provisional, for the directory and every stem in it. The directory follows §212 (a prose
 budget)'s siting default, `notes/X/` beside `notes/X.md`. Naming is calef's.*
 
-Each stem below is named for its content, and calef names files.
-
-- `system-installer` Name: provisional. After the program it describes.
+Each stem here is named for its content, and calef names files.
