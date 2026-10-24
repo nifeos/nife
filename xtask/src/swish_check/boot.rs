@@ -17,8 +17,9 @@ use super::*;
 /// when every boot of the leg passed.
 ///
 /// The `x86_64` leg boots under OVMF from the UEFI image a customer boots, not through QEMU's PVH
-/// loader (milestone 182), and builds its entropy service on `RDSEED`, since `q35` has no mmio bus
-/// for a virtio-rng; the leg asserts the progenitor said so. See notes/swish-check-boot.md.
+/// loader (milestone 182 (x86_64's own interactive-boot entry point)), and builds its entropy
+/// service on `RDSEED`, since `q35` has no mmio bus for a virtio-rng; the leg asserts the
+/// progenitor said so. See notes/swish-check-boot.md.
 ///
 /// Falsification: replayable `xtask/falsifications/swish_check.boot.swish_check_leg.patch`
 pub(super) fn swish_check_leg(arch: &str) -> bool {
