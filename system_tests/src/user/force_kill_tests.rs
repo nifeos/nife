@@ -63,9 +63,9 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
     }
 
     // The first pass arms the kill and refuses; the runaway becomes a corpse at its next
-    // preemption; the retry reclaims. Time-bounded, because the runaway may be on another core
-    // that only its own tick converts (§28.3 / §16): a yield loop here would end inside one 10 ms
-    // tick, and one second spans ~100 ticks while still failing a real bug.
+    // preemption; the retry reclaims. Time-bounded, because the runaway may be on another core that
+    // only its own tick converts (§28.3 / §16 (object revocation)): a yield loop here would end
+    // inside one 10 ms tick, and one second spans ~100 ticks while still failing a real bug.
     let deadline = crate::arch::timer::now() + crate::arch::timer::frequency();
     let mut reclaimed = false;
     while crate::arch::timer::now() < deadline {
@@ -151,7 +151,8 @@ const CALL_STUB: &[u32] = &[
 const CALL_STUB: &[u32] = &super::x86_programs::call();
 
 /// Build a child from parts in one region, give it `rights` on `ep` in slot 0, run `code`, and
-/// hand back its region and its tid. The milestone 133 tests below differ only in stub and rights.
+/// hand back its region and its tid. The milestone 133 (ending a permanently blocked thread, and
+/// deciding who may) tests below differ only in stub and rights.
 ///
 /// `ep` is not created from `region`, unlike in
 /// [`destroy_reclaims_a_region_whose_resident_is_blocked_in_receive`], where the rendezvous sweep

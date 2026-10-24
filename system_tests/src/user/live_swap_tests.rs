@@ -83,10 +83,11 @@ const WEDGE_SEQ: u64 = 24;
 const DEV_VA: u64 = address_space_map::pair_page(0x0310_0000);
 
 /// The console UART's physical address, matching `crate::console`: the device the operator lends,
-/// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161), whose `x86_64` arm is
-/// zero: COM1 is in the I/O port space, so there is no page for a device capability to map
-/// ([DECISIONS §121](../../../design/decisions/0121-port-io-capability.md), PROPOSED). That zero is
-/// what [`NO_DEVICE_PAGE`] tests for.
+/// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161 (the x86_64 kernel
+/// port)), whose `x86_64` arm is zero: COM1 is in the I/O port space, so there is no page for a
+/// device capability to map ([DECISIONS
+/// §121](../../../design/decisions/0121-port-io-capability.md), PROPOSED). That zero is what
+/// [`NO_DEVICE_PAGE`] tests for.
 use crate::user::UART_PHYS;
 /// This file needs a device that is a page, and `x86_64` has none.
 ///
@@ -239,8 +240,9 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
     );
 
     // Hygiene, not asserted: the operator's own space and TCB come home through the reaper, which
-    // runs when the core it died on next schedules (DECISIONS §28), and a free-frame assertion here
-    // flakes on other tests' teardowns (notes/live-replacement.md's BUGS).
+    // runs when the core it died on next schedules (DECISIONS §28 (SMP placement)), and a
+    // free-frame assertion here flakes on other tests' teardowns (notes/live-replacement.md's
+    // BUGS).
     let _ = sched::reclaim_region(thread_control_block_region);
     // Last, after every thread that held the report endpoint is gone or going. Hygiene like the
     // line above, for the same reason it is not asserted on.
@@ -595,7 +597,8 @@ fn a_producer_never_blocks_on_an_absent_consumer_and_loses_nothing() {
 }
 
 // ===============================================================================================
-// Milestone 23's third residual: a component that stops answering **without dying**.
+// Milestone 23 (a capability-routed component OS with live replacement)'s third residual: a
+// component that stops answering **without dying**.
 // ===============================================================================================
 
 /// `abi::survey`'s state codes, unpacked from `RPT_SURVEY` by `hot_swap_contract::survey_counts`'s layout.

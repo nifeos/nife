@@ -217,7 +217,8 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
     );
 }
 
-/// A fill of more than one exchange gathers across round trips (milestone 159).
+/// A fill of more than one exchange gathers across round trips (milestone 159 (a real hardware
+/// entropy source: the JH7110's TRNG)).
 ///
 /// `entropy_contract` carries [`entropy_contract::MAX_BYTES`] bytes per exchange, so a 32-byte
 /// buffer takes four; `Wiring::fill` is the loop, run here against the backend CI has. A full
@@ -244,7 +245,8 @@ fn a_fill_gathers_across_round_trips() {
     assert_ne!(a, b, "two fills returned identical bytes");
 }
 
-/// The instruction backend (milestone 162): `RNDRRS` on aarch64, with no virtio device at all.
+/// The instruction backend (milestone 162 (real hardware entropy on x86_64 and aarch64: RDSEED
+/// and RNDRRS)): `RNDRRS` on aarch64, with no virtio device at all.
 ///
 /// It needs `ID_AA64ISAR0_EL1.RNDR` (`FEAT_RNG`, ARMv8.5), which the default `cortex-a72` lacks, so
 /// it skips there; run it under TCG with `script/test --arch aarch64 --cpu neoverse-n2`. Under HVF

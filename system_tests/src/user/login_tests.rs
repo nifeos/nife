@@ -19,9 +19,10 @@ pub(super) const CONSTRUCTION_PAGES: u64 = 3088;
 /// [`CONSTRUCTION_PAGES`] so the account above stays whole.
 pub(super) const DURABLE_UT_PAGES: u64 = login_contract::durable::BUDGET_PAGES;
 
-/// Install the one program the durable tests schedule, as an installer would (milestone 152, Fork 8
-/// ruled D by calef on 2026-09-27, on #1377): the demo's bytes go to `packages/` and a generation
-/// naming them to `activation/`, once per boot, before either scheduling `login` starts.
+/// Install the one program the durable tests schedule, as an installer would (milestone 152
+/// (durable delegation), Fork 8 ruled D by calef on 2026-09-27, on #1377): the demo's bytes go to
+/// `packages/` and a generation naming them to `activation/`, once per boot, before either
+/// scheduling `login` starts.
 ///
 /// The bytes are `least_authority_demo`'s, but not its name: §229 (how a bare name at the prompt
 /// reaches an installed program) refuses a package entry under a name the image carries, and
@@ -42,8 +43,9 @@ const EEXIST: i32 = 17;
 
 /// Ensure `name` exists as a subtree under `fs_ep`'s root, as `identity_provisioner.rs`'s
 /// `mkdir_home` does: [`filesystem_contract::fs::MKDIR`] with [`filesystem_contract::dir::ALL`] and
-/// the identity string as the name (DECISIONS §117). The FS root is the whole test binary's shared
-/// fixture and another suite may have made the name already, so `EEXIST` is tolerated.
+/// the identity string as the name (DECISIONS §117 (a principal's subtree is named by its identity
+/// string)). The FS root is the whole test binary's shared fixture and another suite may have made
+/// the name already, so `EEXIST` is tolerated.
 ///
 /// `login` never creates a subtree (§117: provision-time creation, never at login), so this is
 /// what lets `wired`'s instance attenuate `alice` and `bob` at all.
@@ -258,9 +260,10 @@ fn login_denies_a_wrong_secret_and_sends_nothing_further() {
 /// Two principals get two independently working channels, correctly attributed.
 ///
 /// `alice` and `bob` each get a working capability set, and the audit trail names, in order, which
-/// sequence number is whose: DECISIONS §109's property made checkable. It does not prove the
-/// channels are distinct objects; that rests on retyping from a freshly split region always
-/// yielding a new object, a primitive not re-derived here.
+/// sequence number is whose: DECISIONS §109 (attribution is a property of a channel, not of a
+/// capability)'s property made checkable. It does not prove the channels are distinct objects; that
+/// rests on retyping from a freshly split region always yielding a new object, a primitive not
+/// re-derived here.
 #[test_case]
 fn two_different_identities_get_independently_working_channels_and_correct_attribution() {
     if fs_service::fs_server_image().is_none() {
@@ -341,7 +344,8 @@ fn two_different_identities_get_independently_working_channels_and_correct_attri
 }
 
 /// Two clients reaching the front door together get independent channels, and neither observes the
-/// other's secret (milestone 49's channel-per-client update, `components/src/login.rs`'s BUGS).
+/// other's secret (milestone 49 (users, login, and attribution)'s channel-per-client update,
+/// `components/src/login.rs`'s BUGS).
 ///
 /// `ls::spawn_client` returns as soon as a run is spawned, so both roles race to `CONNECT`.
 /// `login` serves one to completion before accepting the other: order, not shared state. The

@@ -24,7 +24,8 @@ const MATCHED: [(&[u8], bool); 2] = [
 ///
 /// The shell expands the pattern over the fixture as staged, then the second phase removes what
 /// it matched; the other order would agree about the empty set. Two `#[test_case]`s would make
-/// that order a property of the harness, the order-coupled fixture of DECISIONS §27.
+/// that order a property of the harness, the order-coupled fixture of DECISIONS §27 (the
+/// filesystem service).
 #[test_case]
 fn what_a_shell_shows_is_what_a_set_grant_takes_away() {
     if fs_service::fs_server_image().is_none() {

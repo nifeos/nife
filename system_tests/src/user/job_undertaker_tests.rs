@@ -187,11 +187,12 @@ fn without_a_collector_a_bounded_job_pool_runs_out() {
 
 /// A bounded job pool is enough, because `job_undertaker` gives every region back.
 ///
-/// Twelve jobs through a pool with room for three, each split off the pool, born supervised (§26's
-/// spawn-slot convention), run and exited, the pool back to zero before the next. The collector is
-/// an unprivileged process with one endpoint and no memory, as at the prompt. The assertion is
-/// which budget the pages land in: a reap crediting the collector, or stranding the memory, fails
-/// the first `pool_came_back`; the last two assert the pages are spendable again.
+/// Twelve jobs through a pool with room for three, each split off the pool, born supervised (§26
+/// (the fault endpoint)'s spawn-slot convention), run and exited, the pool back to zero before the
+/// next. The collector is an unprivileged process with one endpoint and no memory, as at the
+/// prompt. The assertion is which budget the pages land in: a reap crediting the collector, or
+/// stranding the memory, fails the first `pool_came_back`; the last two assert the pages are
+/// spendable again.
 #[test_case]
 fn job_undertaker_returns_every_finished_job_to_the_pool() {
     let pool = crate::memory_region::create(POOL_PAGES).expect("no job pool");

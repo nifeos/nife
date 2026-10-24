@@ -16,7 +16,8 @@ use crate::arch::{UserFault, UserFaultAccess, timer};
 use crate::sched;
 
 /// The `interrupt_ignorer` program's ELF bytes: a `_start` that is nothing but a loop. Built for
-/// the shell's forcible-interrupt tier (DECISIONS §24), it is the hostile binary DECISIONS §5
+/// the shell's forcible-interrupt tier (DECISIONS §24 (interrupting the foreground process)), it is
+/// the hostile binary DECISIONS §5 (execution model: preemptive threads with real stacks)
 /// describes.
 fn interrupt_ignorer_image() -> &'static [u8] {
     program("interrupt_ignorer").expect("no interrupt_ignorer program in the initial ramdisk")
@@ -138,7 +139,8 @@ fn a_user_program_that_never_yields_is_preempted_anyway() {
     );
 }
 
-/// The user-entry path writes the trap frame where the trap path rebuilds it (milestone 71).
+/// The user-entry path writes the trap frame where the trap path rebuilds it (milestone 71 (the
+/// thread-start fault: a user thread dispatched with `sepc` = 0)).
 ///
 /// Rust and assembly on each ISA must agree the frame is at `stack_top - size_of::<TrapFrame>()`.
 /// `interrupt_ignorer` never syscalls, so a PC in that frame got there by the timer preempting it

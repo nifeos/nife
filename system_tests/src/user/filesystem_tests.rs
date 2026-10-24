@@ -25,7 +25,8 @@ use super::*;
 #[cfg(target_arch = "aarch64")]
 use crate::sched;
 
-/// A userspace driver reads a file off a real virtio disk (milestone 9, end to end).
+/// A userspace driver reads a file off a real virtio disk (milestone 9 (a virtio-blk driver at
+/// EL0, and an interrupt becomes a message), end to end).
 ///
 /// The driver at EL0 gets the device registers, a DMA page and an interrupt, reads `motd` off
 /// the nifefs image, and reports its first bytes: real disk data crossed DMA and the EL0 boundary.
@@ -71,7 +72,8 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
 /// a granted directory holds inside std, refusing `..`, an absolute path and a nested path.
 /// Without slot 4 the same binary gets `Unsupported` (the offline std test).
 // RISC-V twin: `riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability`.
-// It also runs on `x86_64` (milestone 303), where it is the only test that writes `scratch`:
+// It also runs on `x86_64` (milestone 303 (x86_64's FS service has a server and no disk it can
+// find)), where it is the only test that writes `scratch`:
 // `xtask::redoxfs_check_after_run` reopens that image after the last leg, and without this write
 // it would check a regenerated placeholder.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
@@ -97,7 +99,8 @@ fn std_fs_reads_a_file_through_a_granted_directory_capability() {
     assert_std_transcript(report, &want[..n], "std fs");
 }
 
-/// The RedoxFS filesystem service, end to end (milestone 32 phase 2). See notes/fs-server.md.
+/// The RedoxFS filesystem service, end to end (milestone 32 (a real filesystem: RedoxFS behind a
+/// capability FS server) phase 2). See notes/fs-server.md.
 ///
 /// A block server, an FS server and a client, all confined; the client opens `motd` through a
 /// granted directory capability and round-trips a pattern through `scratch`. It names nothing but
@@ -141,7 +144,8 @@ fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
     assert_attrs(attrs);
 }
 
-/// A read-only per-file grant survives an attacker (milestone 31 phase 2, notes/grant-expression.md).
+/// A read-only per-file grant survives an attacker (milestone 31 (a capability shell: designation
+/// is authorization) phase 2, notes/grant-expression.md).
 ///
 /// `run wc report.txt` must hand over one file, not its directory. An `fs_file_caretaker` holds
 /// the directory; `fs_test_client`'s attacker role holds a read-only grant of `motd` and attacks
