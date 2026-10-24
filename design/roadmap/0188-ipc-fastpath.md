@@ -9,7 +9,7 @@ Built 2026-10-24 (UTC), closed with phase 4 refused. Phases 1 to 3 are built and
 closed the block on 2026-10-24: *"Close 188, refuse phase 4"*. Phase 4 was not worth its permanent
 verification cost, which is how the block said it would close. Its trigger, a layout control
 showing a latency difference footprint explains, can no longer fire. On 2026-10-20 calef retired
-E3's question after step 0 showed milestone 796 pins the hot trap path ahead of the padding
+E3's question after step 0 showed milestone 796 (pin the hot trap path's placement) pins the hot trap path ahead of the padding
 (notes/footprint-perturbation.md). The refusal is milestone 951, with the condition that reopens it.
 
 calef's framing: *"a hand-maintained IPC fastpath, so the common case stops paying for the general

@@ -26,7 +26,8 @@ cuts come before a hand-written path', under its phase 4 section:
 
 The trigger 188 named can no longer fire. Milestone 370 (a layout control for the perturbation
 experiments) built the control, and E3 was to run the padding as a dose under it. On 2026-10-20
-(UTC) step 0 read `the sled precedes 0 of 16 hot symbols` in all eight images: milestone 796 pins
+(UTC) step 0 read `the sled precedes 0 of 16 hot symbols` in all eight images: milestone 796 (pin
+the hot trap path's placement) pins
 the hot trap path in `.text.hot`, ahead of the padding, so no pad or shift moves a hot instruction.
 calef retired E3's question that day (notes/footprint-perturbation.md). A held phase whose only
 trigger is gone is a wait on nothing, so 188 closed the way it said it would.
