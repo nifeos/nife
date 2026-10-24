@@ -2,16 +2,11 @@
 //! (`std::thread::spawn` runs real threads in one address space), the block's item 12: "measure it
 //! under four threads before replacing it").
 //!
-//! The same work twice: `ALLOCATIONS` small allocations and frees, done by one thread, then split
-//! across four. It prints the counter ticks each took, and the test that runs it
-//! (`system_tests::user::std_threads_tests`) prints them; `notes/std/threads.md` records what they
-//! were. A number under QEMU's emulation is a ratio to read, not a speed: the heap is the one lock,
-//! so four threads on four cores finishing in no less time than one thread is contention.
-//!
-//! Then [`ENDED`] threads, one after another, each leave a full allocation cache behind when they
-//! end (milestone 561 (a per-CPU allocator is what the current-CPU page was for)). A full cache
-//! holds 34,816 bytes, so unless a thread's end gives its cache back to the heap, the one-mebibyte
-//! heap budget `system_tests` grants runs out before the last of them and the program aborts.
+//! It times `ALLOCATIONS` allocations and frees on one thread, then split across four, and prints
+//! the counter ticks for `system_tests::user::std_threads_tests`; `notes/std/threads.md` records
+//! them. Then [`ENDED`] threads in turn each end with a full cache (milestone 561 (a per-CPU
+//! allocator is what the current-CPU page was for)), which exhausts the one-mebibyte heap budget
+//! unless a thread's end returns its cache. See notes/std/the-proof.md.
 
 use std::alloc::{Layout, alloc, dealloc};
 use std::time::Instant;

@@ -47,9 +47,9 @@ pub const ISRG_ROOT_X1_SHA256: [u8; 32] = [
 /// that the signed index may name it for a listed location; it is never a root for an index host.
 ///
 /// Read 2026-10-13 (UTC) from macOS's `SystemRootCertificates.keychain` and compared byte for byte
-/// with `http://crt.sectigo.com/SectigoPublicServerAuthenticationRootE46.crt`: identical. Its key is
-/// the cross-signed E46's that `github.com` sends; valid 2021-03-22 to 2046-03-21. A test recomputes
-/// [`SECTIGO_ROOT_E46_SHA256`].
+/// with `http://crt.sectigo.com/SectigoPublicServerAuthenticationRootE46.crt`: identical. Its key
+/// is the cross-signed E46's that `github.com` sends; valid 2021-03-22 to 2046-03-21. A test
+/// recomputes [`SECTIGO_ROOT_E46_SHA256`].
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
 pub const SECTIGO_ROOT_E46: &[u8] =

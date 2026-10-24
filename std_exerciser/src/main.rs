@@ -1,47 +1,21 @@
 //! The std proof (milestone 27): an ordinary Rust program, no `no_std`, running on the native
-//! capability ABI. Every line exercises a PAL surface: `println!` SENDs on the stdout endpoint
-//! (slot 1), collections draw from the untyped budget (slot 0), `Instant` reads the virtual
-//! counter, `SystemTime` reads the clock page slot 5 grants (milestone 51), `std::random` asks the
-//! entropy service slot 6 grants (milestone 56), `std::env`'s `TZ`/`LANG`/`TERM` come from the
-//! inert-configuration page slot 7 grants (milestone 47's environment-variable fork, DECISIONS
-//! §111), and `fs` returns honestly `Unsupported`.
+//! capability ABI. `println!` SENDs on slot 1, collections draw from the budget at slot 0,
+//! `Instant` reads the virtual counter, `SystemTime` the clock page at slot 5 (milestone 51),
+//! `std::random` the entropy service at slot 6 (milestone 56), and `std::env`'s `TZ`, `LANG` and
+//! `TERM` the inert-configuration page at slot 7 (milestone 47's environment-variable fork,
+//! DECISIONS §111).
 //!
-//! The two `#![feature]`s below are about **the APIs' stability upstream, not about this platform**:
-//! `std::random` (rust-lang/rust#130703) and `std::fs::Dir` (rust-lang/rust#120426) are both still
-//! unstable in Rust, so any program on any target that calls them opts in the same way. Everything
-//! else here is stable Rust.
+//! The two `#![feature]`s are upstream's API stability, not this platform's: `std::random`
+//! (rust-lang/rust#130703) and `std::fs::Dir` (rust-lang/rust#120426) are unstable on every target.
 #![feature(dirfd, random)]
 //!
-//! **One binary, three behaviours, chosen by the authority it was granted.** A std program reaches
-//! the network only if it holds the network, and the filesystem only if it holds a directory (no
-//! ambient authority, DECISIONS §10, §25, §27). So it probes, and its grants decide:
-//!   - **granted a directory** (the loader placed an FS-service endpoint in slot 4 and mapped the
-//!     page it shares with the FS server): it opens the file the RedoxFS image ships, reads it
-//!     through `std::fs`, and proves that a path trying to leave the granted directory is refused.
-//!   - **granted the network** (a `Stack` endpoint and a frame untyped in slots 2 and 3): it runs a
-//!     real UDP DNS query and a TCP echo round trip through `std::net` (milestone 27 phase two),
-//!     the same net_stack socket contract the hand-written client uses. And if its stack also
-//!     carries a **listen grant**, it serves: `TcpListener` binds the granted port, refuses the
-//!     one nobody granted, and answers connections a host process opens into the guest (milestone
-//!     64's inbound half). That is a fourth behaviour chosen by a fourth authority, on the same
-//!     principle as the three above; the grant is `net_stack`'s spawn word, not anything this
-//!     program can ask for.
-//!   - **granted neither**: both return `Unsupported`, and the program runs the phase-one
-//!     transcript, proving the collections, timing, and the honest refusals. Every run, not only
-//!     this one, is also always granted a clock, entropy, and an inert-configuration page (slots
-//!     5, 6 and 7); the fs/net branch above is the only thing chosen by absence, so this bullet's
-//!     "neither" is about the filesystem and the network specifically, not about everything the
-//!     spawn wires in.
-//!
-//!   - **granted a subtree rather than the root** (milestone 121 (`ripgrep` on nife:
-//!     enumeration as a capability)): the priced tree
-//!     `filesystem_fixture::walk` describes, behind a caretaker. With `ENUMERATE` it
-//!     prices a walk over it; without, it proves the walk is refused rather than empty. See
-//!     `walk_transcript`.
-//!
-//! One binary keeps the initial ramdisk inside its nifefs directory limit (`MAX_FILES`, 31 entries
-//! when this was written and 76 since 2026-08-01) while still proving all three. The kernel test
-//! suite spawns it three ways and checks each transcript byte for byte, on both ISAs.
+//! **One binary, its behavior chosen by the authority it was granted** (no ambient authority,
+//! DECISIONS §10, §25, §27). A directory in slot 4 runs `fs_demo`; a subtree rather than the root
+//! runs `walk_transcript` (milestone 121 (`ripgrep` on nife: enumeration as a capability)); the
+//! network in slots 2 and 3 runs `net_demo`, which serves if its stack carries a listen grant; and
+//! neither runs `offline_demo`, where `fs` and `net` are honestly `Unsupported`. Slots 5 to 7 are
+//! granted on every run. The kernel suite checks each transcript byte for byte;
+//! notes/std/the-proof.md has what each branch proves.
 
 use std::collections::HashMap;
 use std::fs::{Dir, File};
@@ -55,9 +29,8 @@ use socket_contract::fixture;
 
 fn main() {
     // `thread::sleep` blocks on a kernel timer (milestone 106 (a wait that ends on either the
-    // interrupt or the deadline)), retyping its timer and notification from slot 0 on this first
-    // call. Silent when it works, so every transcript below is unchanged; a sleep that returns early
-    // panics, and the transcript no longer matches.
+    // interrupt or the deadline)), retyped from slot 0 on this first call. Silent when it works; a
+    // sleep that returns early panics, and the transcript no longer matches.
     let before = Instant::now();
     std::thread::sleep(Duration::from_millis(20));
     assert!(
@@ -65,10 +38,8 @@ fn main() {
         "thread::sleep returned early"
     );
 
-    // Probe for a directory capability first: an `Unsupported` open means no FS-service endpoint in
-    // slot 4, i.e. this process holds no directory and there is no ambient filesystem to fall back
-    // on. Anything else means the filesystem IS granted, so a failure to open the file the image
-    // ships is a real failure and must not be silently swallowed by falling through to the net.
+    // `Unsupported` means no FS-service endpoint in slot 4 and no ambient filesystem to fall back
+    // on. Any other failure means a directory was granted, so it must not fall through to the net.
     match File::open(filesystem_fixture::MOTD_NAME) {
         Ok(f) => return fs_demo(f),
         Err(e) if e.kind() == ErrorKind::Unsupported => {}
@@ -78,9 +49,8 @@ fn main() {
         Err(e) => panic!("a directory capability was granted but the motd would not open: {e:?}"),
     }
 
-    // Probe for the network by trying to open a UDP socket. A program not granted the `Stack`
-    // endpoint and a frame untyped gets `Unsupported` here (the RETYPE of a shared frame fails
-    // with no untyped in slot 3), which is the signal to run the offline transcript instead.
+    // Without the `Stack` endpoint and a frame untyped this is `Unsupported` (the RETYPE of a
+    // shared frame fails with no untyped in slot 3), and the offline transcript runs instead.
     match UdpSocket::bind("0.0.0.0:0") {
         Ok(sock) => net_demo(sock),
         Err(_) => offline_demo(),
@@ -94,9 +64,9 @@ fn offline_demo() {
 
     println!("hello from std on nife");
     println!("os {}", std::env::consts::OS);
-    // **The argv** (milestone 205 (how a foreign program is told what to do), DECISIONS §170 (how a foreign program is told what to do)): what the argument page at slot 8 carried, or
-    // `[]` for a program granted none, which is the kernel harness's case. At the prompt the shell
-    // always sends one, so the name it was run by comes first.
+    // The argv (milestone 205 (how a foreign program is told what to do), DECISIONS §170 (how a
+    // foreign program is told what to do)): the argument page at slot 8, or `[]` when none was
+    // granted, which is the kernel harness's case.
     println!("args {:?}", std::env::args_os().collect::<Vec<_>>());
 
     // Vec: growth reallocations against the untyped-backed heap.
@@ -138,12 +108,8 @@ fn offline_demo() {
     );
     println!("instant monotonic ok");
 
-    // **Wall-clock time** (milestone 51). This process was granted a clock: a `PageFrame` capability
-    // naming the clock service's page in slot 5 and a read-only mapping of it, which is all
-    // `SystemTime::now()` needs (the offset from the page, the monotonic counter from the ambient
-    // register). Asserted rather than printed, because a real date is not a deterministic
-    // transcript; what is checked is that it is inside the same sanity window the clock service
-    // applies, which 1970-plus-uptime is not.
+    // Wall-clock time (milestone 51), from the clock page at slot 5. Asserted rather than printed,
+    // because a date is not a deterministic transcript, against the clock service's own window.
     let wall = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("the wall clock is before the Unix epoch");
@@ -157,12 +123,8 @@ fn offline_demo() {
     assert!(t2 >= t1, "the monotonic counter went backwards");
     println!("wall clock ok");
 
-    // **Real entropy** (milestone 56). This process was granted one endpoint that means "you may
-    // obtain randomness"; it names no device, and the entropy service on the other end is the only
-    // thing that can read the virtio-rng. Asserted rather than printed, because random bytes are
-    // the least deterministic transcript imaginable. Two 32-byte draws agreeing is a 2^-256 event
-    // with a real source and a certainty with the counter-seeded stream this replaced, so the
-    // comparison is what says the bytes came off a device.
+    // Real entropy (milestone 56), from the entropy service at slot 6. Asserted, not printed. Two
+    // 32-byte draws agree with probability 2^-256 from a real source, always from a counter seed.
     let mut a = [0u8; 32];
     let mut b = [0u8; 32];
     SystemRng.fill_bytes(&mut a);
@@ -171,14 +133,9 @@ fn offline_demo() {
     assert!(a.iter().any(|&x| x != 0), "a draw is all zeros");
     println!("entropy ok");
 
-    // **Inert configuration, seeded from a grant, before this program's own code ever ran**
-    // (milestone 47's environment-variable fork, DECISIONS §111). `std_service::start` maps this
-    // process an inert-configuration page unconditionally, the same way it maps a clock, so by
-    // the time `main` started, `pal::nife::init` had already read `TZ`, `LANG` and `TERM` off it
-    // and pushed them into `std::env`'s table (`sys/env/nife.rs::seed`). Nothing here invented
-    // them: a process granted no such page is seeded with nothing, which is the same
-    // honest-absence shape `env::var("PATH")` still has in
-    // `environment_holds_only_what_was_seeded`.
+    // Inert configuration (milestone 47's environment-variable fork, DECISIONS §111): before
+    // `main` ran, `pal::nife::init` seeded `TZ`, `LANG` and `TERM` from the page at slot 7
+    // (`sys/env/nife.rs::seed`). A process granted no such page is seeded with nothing.
     assert_eq!(
         std::env::var("TZ").as_deref(),
         Ok("UTC"),
@@ -200,44 +157,19 @@ fn offline_demo() {
 
     paths_answer_or_refuse_honestly();
 
-    // **Leave through `std::process::exit`, which used to be a trap instruction** (milestone 64,
-    // fourth pass). This is the same finding as `env::vars` and `temp_dir` one layer down, and it
-    // is the one that argues for a gate rather than another careful reading: `sys/exit.rs` is not a
-    // `sys/<module>/mod.rs` backend, so no amount of "read every module the PAL falls through"
-    // would have reached it. Its `_ =>` arm is `crate::intrinsics::abort()`, so this call compiled
-    // perfectly and then executed `brk`. The kernel reports that as `EVENT_FAULT` with a pc and an
-    // address: a clean exit arriving at a supervisor as a crash.
-    //
-    // Nothing noticed because the two ways a Rust program ends took different exits and only one
-    // was wired. Returning from `main` reaches `_start`, which calls the PAL's `rt::exit`
-    // directly; `std::process::exit` is the *only* caller of `sys::exit::exit` anywhere in std.
-    //
-    // So this transcript now ends the way a CLI-shaped program ends rather than the way a demo
-    // does, and the line above is what proves the call was reached: without it a later edit could
-    // drop the exit and the fault-count assertion in `a_whole_std_program_runs_on_the_native_abi`
-    // would still pass, having watched nothing happen.
-    //
-    // `process::exit` runs `rt::cleanup` first, so stdout is flushed and the sink contract's
-    // end-of-stream still goes out; the receiver sees exactly this transcript and then EOF.
+    // `std::process::exit` is the only caller of `sys::exit::exit` in std, wired apart from a
+    // return from `main` (notes/std/std-aborts.md). The `exiting` line proves the call was
+    // reached: without it, a dropped exit would still pass the fault count in
+    // `a_whole_std_program_runs_on_the_native_abi`. `rt::cleanup` runs first, so stdout is
+    // flushed and the sink's end-of-stream still goes out.
     println!("exiting through process::exit");
     std::process::exit(0);
 }
 
 /// The `env ok` line of [`offline_demo`]'s transcript.
 fn environment_holds_only_what_was_seeded() {
-    // **The environment** (milestone 64, rank 4 of the measured gap list). Three separate claims,
-    // and the first one is why the line exists at all.
-    //
-    // `vars()` must not panic. Before this milestone nife had no `sys::env` backend, so it fell
-    // through to the unsupported one whose `env()` is `panic!`, and `std::env::vars()` aborted the
-    // process. That compiled perfectly. Counting the iterator is what proves the call returned.
-    //
-    // It must hold EXACTLY the three keys the config grant seeded (`config seeded`, just before)
-    // and nothing else, because nothing endows a nife process with variables beyond what it was
-    // granted, and inventing more would be exactly the ambient authority this system does not have.
-    //
-    // And `set_var` must actually take, because that is what `set_var` means everywhere else and a
-    // library configured by its caller through the environment is an ordinary thing to do.
+    // Three claims (milestone 64): `vars()` returns rather than panicking, it holds exactly the
+    // three keys the config grant seeded and nothing ambient, and `set_var` takes.
     assert_eq!(
         std::env::vars().count(),
         3,
@@ -268,22 +200,15 @@ fn environment_holds_only_what_was_seeded() {
 
 /// The `paths ok` line of [`offline_demo`]'s transcript.
 fn paths_answer_or_refuse_honestly() {
-    // **The path half of `std::env`, and `process::id`** (milestone 64, third pass). Every
-    // assertion below used to be unreachable, because three of these calls did not refuse: they
-    // were `panic!` in the shared fallbacks nife fell through to, so a program that asked was
-    // killed. `std::env::temp_dir()`, `std::env::split_paths()` and `std::process::id()` all
-    // compiled perfectly and aborted, which is `env::vars()`'s finding a third time.
-    //
-    // `process::id` is 0 because this system issues no process identifier at all, and 0 is the one
-    // number no Unix assigns to a user process, so it cannot be mistaken for a real one.
+    // Milestone 64: `temp_dir`, `split_paths` and `process::id` answer rather than panic.
+    // `process::id` is 0: nife issues no process identifier, and no Unix gives 0 to a user process.
     assert_eq!(
         std::process::id(),
         0,
         "a nife process reported a pid it was never issued",
     );
-    // `temp_dir` is the directory this process holds, which is the only place a temporary file
-    // could go, and `TMPDIR` steers it exactly as it does on Unix. That variable is the seam
-    // milestone 47's namespace arrives through: nothing seeds it today, so the fallback answers.
+    // `temp_dir` is the held directory, steered by `TMPDIR` as on Unix, the seam milestone 47's
+    // namespace arrives through; nothing seeds it yet, so the fallback answers.
     assert_eq!(
         std::env::temp_dir(),
         PathBuf::from("/"),
@@ -296,9 +221,7 @@ fn paths_answer_or_refuse_honestly() {
         "TMPDIR did not steer temp_dir",
     );
     unsafe { std::env::remove_var("TMPDIR") };
-    // `join_paths`/`split_paths` are pure string work with no platform in them, which is why the
-    // old `panic!` was indefensible rather than merely unimplemented. Round-tripped, because a
-    // splitter that agrees with nothing is worth less than no splitter.
+    // Round-tripped: a splitter that agrees with no joiner is worth less than none.
     let joined = std::env::join_paths(["a", "b", "c"]).expect("joining three plain names failed");
     let split: Vec<PathBuf> = std::env::split_paths(&joined).collect();
     assert_eq!(
@@ -310,14 +233,8 @@ fn paths_answer_or_refuse_honestly() {
         std::env::join_paths(["a:b"]).is_err(),
         "a segment containing the separator was joined into a list that reads back as two",
     );
-    // And the refusals that stay refusals, asserted so that a later lane cannot quietly turn one
-    // into a fabricated answer.
-    //
-    // **`current_dir` is the interesting one, and this run is its negative control.** Milestone
-    // 47's namespace half made it answer `/`, the root of this process's own namespace, which is
-    // the directory it was granted. This process was granted none, so there is no root to name and
-    // the refusal stands. The same call answers in `fs_demo`, and the pair is the whole claim: a
-    // path is a name in what you hold, so a process holding nothing can name nothing.
+    // The refusals that stay refusals. `current_dir` is the negative control for `fs_demo`'s: it
+    // answers `/` only for a process holding a directory, and this one holds none.
     assert!(
         std::env::current_dir().is_err(),
         "current_dir answered for a process that holds no directory capability",
@@ -338,24 +255,18 @@ fn paths_answer_or_refuse_honestly() {
 const NOT_BEFORE: Duration = Duration::from_secs(1_767_225_600);
 const NOT_AFTER: Duration = Duration::from_secs(4_102_444_800);
 
-/// **The `std::fs` transcript** (milestone 27 phase two, the FS half): ordinary `File`, `Read`,
-/// `read_to_string`, and `metadata`, all served by the RedoxFS FS server over the §27 contract, and
-/// all reached through the one directory capability this process was granted.
+/// **The `std::fs` transcript** (milestone 27 phase two, the FS half): `File`, `Read`,
+/// `read_to_string` and `metadata`, served by the RedoxFS FS server over the §27 contract through
+/// the one directory capability this process holds. `motd` is already open: opening it was the
+/// probe that chose this branch.
 ///
-/// The interesting half is the refusals. `File::open` takes a path, but this system has no global
-/// namespace: a name means "under the directory I hold", so `/etc/passwd`, `../motd`, and
-/// `sub/motd` are not things this process can express, and each is refused *before* a byte reaches
-/// the server. The refusal is `InvalidFilename` (there is no such name here), never
-/// `PermissionDenied`, because nothing checked a permission. A name that IS expressible but absent
-/// is an ordinary `NotFound`, which is what makes the difference legible.
-///
-/// `motd` is already open when this runs: opening it was the probe that chose this branch.
+/// A name means "under the directory I hold", so a path that would leave it is refused before a
+/// byte reaches the server, as `InvalidFilename` and never `PermissionDenied`; an expressible name
+/// that is absent is `NotFound`. See notes/std/the-proof.md.
 fn fs_demo(mut motd: File) {
     println!("std fs on nife");
 
-    // Bytes off a real RedoxFS image, through a confined FS server, reached with `Read` on an
-    // ordinary `File`. Printed as well as asserted, so the kernel test compares the file's contents
-    // byte for byte after they have crossed the whole stack.
+    // Printed as well as asserted, so the kernel test compares the bytes after the whole stack.
     let mut bytes = Vec::new();
     motd.read_to_end(&mut bytes)
         .expect("reading the motd through std::fs failed");
@@ -380,11 +291,8 @@ fn fs_demo(mut motd: File) {
     assert!(meta.is_file(), "the motd is a regular file");
     println!("metadata len {}", meta.len());
 
-    // **`/` is the root of this process's namespace** (milestone 47's namespace half), so an
-    // absolute path names the directory this process was granted and nothing above it. Proven by
-    // opening the same file twice, once each way, and comparing the bytes: `/motd` and `motd` are
-    // one file. It was `InvalidFilename` until 2026-08-18, which was the honest answer for a
-    // system with no namespace to root a path in rather than a position.
+    // `/` is the root of this process's namespace (milestone 47's namespace half), so `/motd` and
+    // `motd` must read one file.
     let by_name =
         std::fs::read(filesystem_fixture::MOTD_NAME).expect("reading motd by name failed");
     let rooted = format!("/{}", filesystem_fixture::MOTD_NAME);
@@ -398,20 +306,15 @@ fn fs_demo(mut motd: File) {
     );
     println!("absolute is my root");
 
-    // **The negative control, and it is the one that matters**: rooting a path in your own
-    // namespace grants nothing, because there is no level above that root to name. `/..` is
-    // refused exactly as `..` is, and for the same reason: a handle names a directory and nothing
-    // on the wire names its parent.
+    // The negative control: rooting a path grants nothing, because no wire message names a
+    // directory's parent, so `/..` is refused exactly as `..` is.
     refused(
         &format!("/../{}", filesystem_fixture::MOTD_NAME),
         "absolute dotdot",
     );
     refused("../motd", "dotdot");
-    // **`..` is refused at every position, not only the first** (milestone 122, where nested paths
-    // stopped being refused as a class). This one names a file that really exists and that this
-    // process really can reach through the root grant it holds, by a route the contract has no verb
-    // for: a handle names a directory and nothing on the wire names its parent, so there is no
-    // ascent to perform and no capability that would designate what it reached.
+    // `..` is refused at every position (milestone 122): this names a file the root grant really
+    // reaches, by an ascent no verb performs.
     refused(
         &format!(
             "{}/../{}/{}",
@@ -427,12 +330,8 @@ fn fs_demo(mut motd: File) {
         other => panic!("a missing name did not read as NotFound: {other:?}"),
     }
 
-    // **`std::fs::write` works now** (milestone 31 phase 2), and this is the assertion the CREATE and
-    // TRUNCATE verbs exist for. It creates a name the image does not carry, so it exercises CREATE,
-    // and it is deliberately written TWICE with a SHORTER payload the second time, which is the case
-    // that used to be impossible to get right: without TRUNCATE the second write would leave the tail
-    // of the first behind and the read-back would come up long. §27's four corrections all trace to
-    // that one behaviour, so it is pinned here at the top level rather than only in a host test.
+    // CREATE, then a SHORTER second write (milestone 31 phase 2): without TRUNCATE the first
+    // write's tail would survive. §27's four corrections all trace to that, so it is pinned here.
     let long = b"the first write, deliberately the longer of the two";
     let short = b"the second write, shorter";
     assert!(
@@ -460,11 +359,8 @@ fn fs_demo(mut motd: File) {
         other => panic!("create_new over an existing name did not refuse: {other:?}"),
     }
 
-    // And a created name is still bound by the directory capability: creating outside it is refused
-    // the same way opening outside it is, so CREATE did not widen what a client can reach.
-    // The absolute case is `/../escape` rather than `/tmp/escape`: since the namespace half, a
-    // leading slash names this process's own root, so `/tmp/escape` is an ordinary relative name
-    // that fails with `NotFound` and would prove nothing about reach. `/..` is the escape.
+    // Creating outside the directory is refused as opening is, so CREATE did not widen reach.
+    // `/tmp/escape` is an ordinary relative name under the namespace half; `/..` is the escape.
     for (path, what) in [("/../escape", "absolute"), ("../escape", "dotdot")] {
         match std::fs::write(path, b"x") {
             Err(e) if e.kind() != ErrorKind::PermissionDenied => {
@@ -474,12 +370,8 @@ fn fs_demo(mut motd: File) {
         }
     }
 
-    // **The on-device write path, and a correction to the record.** notes/fs-server.md recorded
-    // that an end-to-end write looped inside RedoxFS's allocator commit on bare metal, so the
-    // milestone-32 client's test stayed read-only. With interrupt-driven block completion restored
-    // it completes: this writes over a file the image ships (there is no create verb, so `scratch`
-    // must already exist), reads it back, and the host tool re-reads the image after the run to
-    // prove the bytes reached the disk rather than a cache.
+    // Overwrites `scratch`, which the image ships; the host tool re-reads the image after the run
+    // to prove the bytes reached the disk rather than a cache.
     let mut scratch = std::fs::OpenOptions::new()
         .write(true)
         .open(filesystem_fixture::SCRATCH_NAME)
@@ -504,18 +396,11 @@ fn fs_demo(mut motd: File) {
 }
 
 /// **The namespace verbs** (milestone 64): `create_dir`, `read_dir`, `rename`, `remove_file`,
-/// `remove_dir`.
+/// `remove_dir`, bound end to end on a real RedoxFS image.
 ///
-/// All five were `Unsupported` in this PAL until now, and none of them was waiting on the FS
-/// contract: `MKDIR`, `OPENDIR`, `READDIR`, `RENAME`, `UNLINK` and `RMDIR` have been dispatched by
-/// the server since milestones 47 and 48. What this function proves is the binding, end to end, on
-/// a real RedoxFS image.
-///
-/// **It cleans up before it starts, not after**, and that is deliberate rather than tidy.
-/// `NIFE_KEEP_REDOXFS=1` runs the suite against an image a previous boot wrote, which is a
-/// supported mode (it is how the cross-boot write case is reached), so this has to be idempotent
-/// over an image that already carries what a previous run made. Cleaning up first also means the
-/// directory's contents are known by the time `read_dir` looks at them.
+/// It cleans up before it starts, not after: `NIFE_KEEP_REDOXFS=1` runs the suite against an image
+/// a previous boot wrote (the cross-boot write case), so it must be idempotent, and the
+/// directory's contents are then known when `read_dir` looks.
 fn namespace_transcript() {
     const DIR: &str = "made-dir-by-std";
     const RENAMED: &str = "renamed-by-std";
@@ -538,11 +423,8 @@ fn namespace_transcript() {
     std::fs::create_dir(DIR).expect("create_dir failed");
     println!("mkdir ok");
 
-    // **The listing, and the one fact only a listing can give you.** Before this verb bound, a
-    // program holding a directory capability could open a name it already knew and nothing else;
-    // it could not find out what was there. Two assertions: the fixture's own name is present (so
-    // the listing reaches real image contents), and the directory just created comes back marked
-    // as a directory (so `dirent`'s IS_DIR crosses the wire).
+    // The listing must reach real image contents (the fixture's own name) and carry `dirent`'s
+    // IS_DIR across the wire (the directory just made).
     let mut saw_motd = false;
     let mut saw_dir = false;
     for entry in std::fs::read_dir(".").expect("read_dir of the granted directory failed") {
@@ -567,20 +449,15 @@ fn namespace_transcript() {
     assert!(saw_dir, "read_dir did not list the directory just created");
     println!("read_dir ok");
 
-    // A subdirectory is reached by *descending*: `OPENDIR` mints a capability to it and the
-    // enumeration runs through that, which is why this is a different code path from the line
-    // above and worth its own assertion. A directory just made is empty; there are no `.` and
-    // `..` entries on this contract, because they would be names for things no capability
-    // designates.
+    // Descending is its own path: `OPENDIR` mints a capability and the listing runs through it.
+    // No `.` or `..` entries: no capability designates what they would name.
     let n = std::fs::read_dir(DIR)
         .expect("read_dir of a subdirectory failed")
         .count();
     assert_eq!(n, 0, "a directory just created was not empty");
     println!("read_dir descend ok");
 
-    // **Neither remove verb will remove the kind the other one is for**, which is the whole safety
-    // property behind having two. A single "remove whatever you find" is what makes `rm -r`
-    // dangerous, and this contract does not offer it at any opcode.
+    // Neither remove verb removes the other's kind; no opcode means "remove whatever is there".
     match std::fs::remove_file(DIR) {
         Err(e) if e.kind() == ErrorKind::IsADirectory => println!("unlink refused a directory"),
         other => panic!("remove_file on a directory was not refused: {other:?}"),
@@ -590,10 +467,7 @@ fn namespace_transcript() {
         other => panic!("remove_dir on a file was not refused: {other:?}"),
     }
 
-    // **Rename, which matters out of proportion to how often crates name it.** Write-a-temp-then-
-    // rename is how a careful program replaces a file, and it needs the destination to appear with
-    // the source's contents and the source's name to be gone in the same step. Both halves are
-    // asserted, because a rename that copied would pass the first one.
+    // Both halves of a rename, because a rename that copied would pass the first.
     std::fs::rename("made-by-std", RENAMED).expect("rename failed");
     let back = std::fs::read(RENAMED).expect("reading the renamed file failed");
     assert_eq!(
@@ -613,11 +487,8 @@ fn namespace_transcript() {
     );
     println!("unlink ok");
 
-    // **A directory can be stat'd, which sounds minor and is not.** `OPEN` refuses a directory, so
-    // `Path::is_dir()` used to be false for every directory that exists, and `create_dir_all` was
-    // not idempotent: it recovers from `AlreadyExists` by asking whether the name is a directory
-    // already, and got told no. Both are asserted here, and `create_dir_all` over the name that
-    // already exists is the one that would have failed.
+    // A directory can be stat'd although `OPEN` refuses one: `is_dir` and an idempotent
+    // `create_dir_all` depend on it.
     assert!(
         std::path::Path::new(DIR).is_dir(),
         "a directory did not answer is_dir",
@@ -711,29 +582,12 @@ const TIMES_DIR: &str = "times-dir";
 
 /// **File times** (milestone 64, ranks 19 and 28): `Metadata::modified` over `GETMTIME` and
 /// `std::fs::set_times` over `SETMTIME_AT`, the verbs milestone 47's `touch` added (DECISIONS §112).
-/// Both were refused in the PAL for three weeks after the verbs landed, with a comment saying no
-/// verb existed.
 ///
-/// Four positives, each proving something the one before it could not:
-///
-/// - **The image's own file reads a wall-clock time.** `motd` was put there by the host tool, which
-///   stamps real seconds, so its mtime has to land inside the same window `SystemTime::now()` is
-///   checked against. A binding that returned 0, or a size, or a handle number, fails here.
-/// - **A write moves it forward**, on a file this program made. Forward within this boot is all the
-///   FS server's stamp can promise: it is a counter that restarts at each mount rather than a
-///   wall-clock second, so the file reads as early 1970 (notes/std.md). The engine also only ever
-///   moves an mtime forward, so a write after a `set_times` into the future leaves that time in
-///   place; that is why the write is asserted *before* the set, not after.
-/// - **A time set by name reads back exactly, in whole seconds.** The half-second is deliberate:
-///   the wire carries seconds, and this pins that the sub-second part is truncated rather than
-///   rounded or refused.
-/// - **A directory has one too, and a listing's entry answers it.** `GETMTIME` works on a
-///   directory, and `DirEntry::metadata` now asks by name for a directory as for a file.
-///
-/// And four refusals, each a place where a success would be a lie: metadata through an open handle
-/// (the contract asks by name), setting a time through an open handle (it would stamp whatever holds
-/// the name now), an access time (no verb sets one, and the mtime beside it must not change), and
-/// the granted directory itself (no name to ask by).
+/// Four positives: the image's file reads a wall-clock time; a write moves a made file's time
+/// forward (asserted before the set, since the engine only moves an mtime forward); a set time
+/// reads back in whole seconds, sub-second truncated; and a directory and its listing entry agree.
+/// Four refusals, each where a success would be a lie: an open handle, both ways; an access time;
+/// and the granted directory itself. See notes/std/the-proof.md.
 fn file_times() {
     use std::fs::FileTimes;
 
@@ -805,20 +659,11 @@ fn file_times() {
 }
 
 /// **Descent** (milestone 122): a nested path is a chain of `OPENDIR`s, and a directory is a thing a
-/// program can hold.
+/// program can hold. Listing a subdirectory and then opening what it named, by the listed
+/// `path()`, is the pair every walker needs.
 ///
-/// The sharp bug this closes is the one a walker hits on its first step. `read_dir` has worked since
-/// milestone 64, and every entry it hands back carries a `path()`; one level down that path is two
-/// components, and two components were refused. **A std program could list a subdirectory and then
-/// not open what it had just been told was in there**, which is most of what filesystem software
-/// does.
-///
-/// Nothing here widens the grant, and the fixture is chosen so that can be seen rather than
-/// asserted. `sub/deeper/leaf` is two descents inside the directory this process holds, and each hop
-/// is an `OPENDIR` whose rights are the last hop's intersected with what was asked for.
-/// `sub/../other/secret` is a file in a *sibling* of `sub` that this process can reach perfectly
-/// well by naming `other/secret`, and it is refused through the `..` route, because the refusal is
-/// about there being no ascent rather than about what is at the end.
+/// Nothing widens the grant: each hop's rights are the last hop's intersected with the request,
+/// and `sub/../other/secret`, reachable as `other/secret`, is refused because there is no ascent.
 fn descent_transcript() {
     use filesystem_fixture::tree;
 
@@ -844,14 +689,9 @@ fn descent_transcript() {
     );
     println!("descend twice ok");
 
-    // **The tree this program owns**, built before anything lists it. It cannot be the fixture's
-    // `sub`: milestone 47's directory-capability attacker is granted exactly that directory and
-    // writes into it, so its contents depend on which tests ran first in this boot. `sub/inner` and
-    // `sub/deeper/leaf` above are safe to read because the post-run host check pins them; the
-    // *listing* of `sub` is not a fact this program can assert.
-    //
-    // Building it also exercises the walk on the way in: `create_dir` on a nested name is a walked
-    // `MKDIR`, and `write` to one is a walked `CREATE`.
+    // Not the fixture's `sub`: milestone 47's directory-capability attacker writes into it, so its
+    // listing depends on test order (reading `sub/inner` is safe: the host check pins it). Building
+    // it walks too: a nested `create_dir` is a walked `MKDIR`, a nested `write` a walked `CREATE`.
     const TREE: &str = "walked-by-std";
     match std::fs::remove_dir_all(TREE) {
         Ok(()) => {}
@@ -862,10 +702,7 @@ fn descent_transcript() {
     std::fs::create_dir(format!("{TREE}/{}", tree::DEEPER)).expect("a nested create_dir failed");
     std::fs::write(format!("{TREE}/top"), tree::LEAF_BODY).expect("a nested write failed");
 
-    // **The pair that was broken.** List a subdirectory, then open every file the listing named,
-    // through the `path()` the listing itself handed back. One level down that path is two
-    // components, and two components used to be refused, so a program could be told what was there
-    // and then not reach it. Every filesystem walker is built out of exactly this pair.
+    // Open every file the listing named by the `path()` it handed back, two components deep.
     let mut opened = 0;
     let mut dirs = 0;
     for entry in std::fs::read_dir(TREE).expect("read_dir of a subdirectory failed") {
@@ -887,9 +724,7 @@ fn descent_transcript() {
     assert_eq!(dirs, 1, "the tree this program made holds one directory");
     println!("walk entry ok");
 
-    // A name in the middle of a path has to be a directory. The server answers `ENOTDIR` for an
-    // `OPENDIR` of a file, and that is a fact about the name rather than about the capability, so it
-    // does not read as a refusal.
+    // `OPENDIR` of a file is `ENOTDIR`, a fact about the name, so it does not read as a refusal.
     match File::open(format!("{}/{}", filesystem_fixture::MOTD_NAME, tree::INNER)) {
         Err(e) if e.kind() == ErrorKind::NotADirectory => println!("through a file refused"),
         other => panic!("a path walking through a file was not refused: {other:?}"),
@@ -916,9 +751,7 @@ fn descent_transcript() {
     );
     println!("rename across ok");
 
-    // **`remove_dir_all` needed no nife code at all**: std's generic recursion is written over
-    // `read_dir`, `remove_file` and `remove_dir` on paths it composes with `DirEntry::path`, so
-    // it works when those do.
+    // No nife code: std's recursion is written over `read_dir`, `remove_file` and `remove_dir`.
     std::fs::remove_dir_all(TREE).expect("remove_dir_all failed");
     assert!(
         !std::fs::exists(TREE).expect("exists after remove_dir_all failed"),
@@ -1015,10 +848,8 @@ fn file_time_refusals(asserted: SystemTime, back: SystemTime) {
 fn held_directories() {
     use filesystem_fixture::tree;
 
-    // **`std::fs::Dir`**: std's own `openat`-shaped API, holding a capability this process was
-    // handed. This is the half of milestone 122 that matters most, because it is the interface that
-    // makes the system's model visible to the software running on it: the name `inner` is resolved
-    // against a directory the program is *holding*, and there is no path composition anywhere in it.
+    // `std::fs::Dir` (milestone 122): `inner` resolves against a held directory, with no path
+    // composition anywhere.
     let dir = Dir::open(tree::SUB).expect("Dir::open of a subdirectory failed");
     let mut f = dir
         .open_file(tree::INNER)
@@ -1110,9 +941,7 @@ fn enumeration_withheld() {
         other => panic!("a subdirectory listed under a grant without ENUMERATE: {other:?}"),
     }
 
-    // **The claim milestone 121 exists to make, in the shape a search tool meets it**: the walk
-    // is an error, not a walk that found nothing. A `grep -r` that silently matches zero files
-    // because it could not look is the worst failure such a tool can have.
+    // Milestone 121's claim: the walk is an error, never a walk that found nothing.
     match walk_pricing::walk(std::path::Path::new(".")) {
         Err(e) if e.kind() == ErrorKind::PermissionDenied => println!("walk refused, not empty"),
         Ok(t) => panic!("a walk without ENUMERATE returned {t:?} instead of an error"),
@@ -1151,18 +980,12 @@ const ECHO_PEER: &str = "10.0.2.9:7777";
 fn net_demo(sock: UdpSocket) {
     println!("std net on nife");
 
-    // **The inbound half is chosen by authority, exactly as this program's three top-level
-    // branches are** (milestone 64). A listening port is a grant `net_stack` was spawned with, so
-    // asking for one is the probe: granted means serve, and `PermissionDenied` means this stack was
-    // never told which ports it may serve. Neither answer is a fallback, and the refusal is
-    // *printed* rather than absorbed, so a run that silently lost the grant is a diff in the
-    // pinned transcript rather than a program quietly doing less than it was asked to.
+    // A listening port is a grant `net_stack` was spawned with (milestone 64), so asking is the
+    // probe. A refusal is printed, so a lost grant is a diff in the pinned transcript.
     match TcpListener::bind(("0.0.0.0", fixture::LISTEN_PORT)) {
         Ok(listener) => {
-            // **The granted run serves and stops**, rather than also doing the outbound work. Each
-            // of the two boots this binary gets on the network proves one thing, because a boot is
-            // the expensive unit here: a net test spends minutes in `net_stack`'s userspace smoltcp
-            // poll, and the outbound half is already proven by the run that is refused the port.
+            // The granted run serves and stops: a net boot costs minutes of smoltcp polling, and
+            // the outbound half is proven by the run refused the port.
             drop(sock);
             return inbound_demo(&listener);
         }
@@ -1175,10 +998,8 @@ fn net_demo(sock: UdpSocket) {
     assert!(udp_ok(&sock), "the UDP round trip through std::net failed");
     println!("udp ok");
 
-    // The UDP socket is held (by ref) across the TCP exchange so the two use distinct socket ids,
-    // and thus distinct net_stack local ports: net_stack derives a socket's local port from its id, so a TCP
-    // connect that reused a just-closed UDP socket's id would reuse its port against slirp and can
-    // stall (notes/std/net.md, the reuse finding). Keeping both open sidesteps it cleanly.
+    // Held across the TCP exchange: `net_stack` derives a local port from the socket id, and a
+    // reused id's port can stall against slirp (notes/std/net.md, the reuse finding).
     assert!(
         tcp_echo_ok(),
         "the TCP echo round trip through std::net failed"
@@ -1187,28 +1008,13 @@ fn net_demo(sock: UdpSocket) {
     drop(sock);
 }
 
-/// **The inbound transcript** (milestone 64): this program is a *server*, through `std::net` and
-/// nothing else.
+/// **The inbound transcript** (milestone 64): this program as a server, through `std::net` alone,
+/// accepting connections a host process opens through QEMU's `hostfwd`.
 ///
-/// Everything else here is the guest as a client. This is the mirror, and it is what a file
-/// service is made of: bind a port the spawn granted, accept a connection a **host** process opened
-/// through QEMU's `hostfwd`, read the request, compose an answer, and do it again on the same
-/// listener. Nothing in this function names a capability, a socket id, or a shared frame.
-///
-/// Three claims, in the order they are printed, and the first two are the ones that matter most:
-///
-/// - **`denied refused`**: a port outside the grant is `PermissionDenied`. If this program could
-///   bind a port nothing granted it, the whole inbound authority would be decoration, and that is
-///   the one failure on this path that would not show up as a missing line somewhere else.
-/// - **`in use refused`**: the granted port, asked for twice, is `AddrInUse`. Exclusivity is what
-///   makes a port a grantable thing rather than a number, and this is what enforcing it feels like
-///   through `std::io::ErrorKind`.
-/// - **`served N`**: `ROUNDS` connections, one after another, on one listener. The second is the
-///   load-bearing one: a listener that goes deaf after one connection would pass a one-round gate
-///   and is exactly what milestone 55's Samba-shaped workload cannot use.
-///
-/// The host's half of this is `xtask`'s inbound prober, which requires its own bytes back and fails
-/// the leg if the guest never answered. Neither side alone is the gate.
+/// It prints `denied refused` (a port outside the grant is `PermissionDenied`), `in use refused`
+/// (the granted port twice is `AddrInUse`) and `served N` (`ROUNDS` connections on one listener;
+/// the second is the load-bearing one). The host half is `xtask`'s inbound prober, which fails the
+/// leg if its bytes never come back. See notes/std/the-proof.md.
 fn inbound_demo(listener: &TcpListener) {
     println!("listen ok");
 
@@ -1232,24 +1038,17 @@ fn inbound_demo(listener: &TcpListener) {
     println!("served {}", fixture::ROUNDS);
 }
 
-/// Accept one inbound connection, check what the host sent, answer it, and close.
-///
-/// `read_exact` rather than one `read`: a segment boundary is the host's business and a server that
-/// assumed one read per request would be asserting something about slirp. Dropping the stream is
-/// the close, and `net_stack` drains the handshake inside it, so the answer is on the wire before
-/// this returns.
 /// How many of `net_stack`'s bounded accept waits (15 s each) a round sits through before it calls
 /// the round lost: two minutes, which covers the host prober's longest hold on a connection made
 /// before this listener existed (about 23 s) with room for a slow CPU model.
 const ACCEPT_TRIES: usize = 8;
 
+/// Accept one inbound connection, check what the host sent, answer it, and close. `read_exact`,
+/// because a segment boundary is the host's business; dropping the stream is the close, and
+/// `net_stack` drains the handshake inside it, so the answer is on the wire before this returns.
 fn serve_one_inbound(listener: &TcpListener, round: usize) {
-    // `WouldBlock` is the PAL's documented "the server's bounded wait expired, the listener is still
-    // armed, try again", so a server that means to serve keeps accepting. Treating the first one as
-    // fatal made this program race the host prober: on sifive-u54 and rva22s64 the one
-    // 15 s window opened while the prober was still holding an earlier connection, and round 0
-    // panicked with nobody having tried (milestone 649 (every client of a network stack shares its
-    // socket numbers)'s cpu-matrix failure, 2026-10-07 UTC).
+    // `WouldBlock` is the PAL's "the bounded wait expired, the listener is still armed": keep
+    // accepting, since a window can open while the host prober still holds an earlier connection.
     let mut tries = 0;
     let waiting = Instant::now();
     let (mut conn, _peer) = loop {
@@ -1277,25 +1076,13 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
         .unwrap_or_else(|e| panic!("round {round}: answering failed: {e:?}"));
 }
 
-/// **The gating UDP round trip: slirp's own TFTP server**, the `std::net` twin of `socket_test_client`'s
-/// `udp_tftp`. libslirp implements TFTP internally (enabled by `tftp=` on the netdev), so this
-/// request and its reply never leave the emulator.
+/// **The gating UDP round trip: slirp's own TFTP server**, the `std::net` twin of
+/// `socket_test_client`'s `udp_tftp`. libslirp serves TFTP itself (`tftp=` on the netdev), so
+/// nothing leaves the emulator; 10.0.2.3:53 would not do, since slirp NATs it to the host's DNS.
 ///
-/// This used to be a DNS A-record query for `example.com` at 10.0.2.3:53, which is *not* a resolver:
-/// libslirp NATs anything sent there to the HOST's nameserver, so the test silently depended on the
-/// developer's DNS answering at that instant and flaked at roughly 2.5% per query. That was fixed for
-/// the hand-built `socket_test_client` gate and **missed here**, which is why this twin went on flaking after the
-/// fix landed; it cost a riscv leg on 2026-07-29. The lesson is worth the sentence: a fix applied to
-/// one of two call sites of the same hazard is half a fix, and the surviving half is harder to find
-/// because the record says the problem is solved.
-///
-/// What it proves is what the DNS version was there to prove about *our* code and nothing about the
-/// host: a program holding no capability and no socket id sends a datagram through `std::net` to an
-/// address it chooses and reads the reply back. Send a read request (opcode 1, `octet` mode) for the
-/// fixture the runners planted, and require the first data packet: opcode 3, block 1, the fixture's
-/// bytes exactly. The fixture is one short block, so the whole file arrives in that packet.
-///
-/// The name and body must match what `helpers/qemu-runner-*.sh` writes into `target/tftp`.
+/// Sends a read request (opcode 1, `octet`) for the fixture and requires the first data packet:
+/// opcode 3, block 1, the fixture's bytes. The name and body must match what
+/// `helpers/qemu-runner-*.sh` writes into `target/tftp`. See notes/std/the-proof.md.
 fn udp_ok(sock: &UdpSocket) -> bool {
     const TFTP_SERVER: &str = "10.0.2.2:69";
     const TFTP_NAME: &[u8] = b"nife";
@@ -1329,9 +1116,8 @@ fn udp_ok(sock: &UdpSocket) -> bool {
         return false;
     }
 
-    // ACK block 1, ending the transfer properly rather than leaving the server retransmitting DATA
-    // at a socket we are about to drop. Failing to be acknowledged is not this test's business, so
-    // the send's result is deliberately ignored.
+    // ACK block 1 so the server stops retransmitting DATA; whether it is acknowledged is not this
+    // test's business, so the result is ignored.
     let _ = sock.send(&[0x00, 0x04, 0x00, 0x01]);
     true
 }
