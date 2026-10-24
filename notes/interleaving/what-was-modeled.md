@@ -23,6 +23,10 @@ calls it rather than keeping a copy of the protocol. That is the same Phase-2 mo
 | `a_relaxed_pairing_publishes_nothing` | **the falsification**, `#[should_panic]`: the same handshake with relaxed orderings must fail, and if it ever stops failing we want to hear about it |
 | `a_stale_load_reading_costs_a_round_and_nothing_more` | §28's gossip claim, that a thief reads its victim's load relaxed and possibly stale on purpose: the interleaving where the victim drains between the load and the claim costs a wasted round and nothing else |
 
+Everything else on the steal path is under a lock. The compare-exchange and the swap are lifted
+into the crate because they are the kind of protocol that is right on total store order and wrong
+on the weakly ordered ISAs this project runs on.
+
 ## `crates/clock_contract`, the second protocol
 
 A seqlock over a shared page. The clock service writes, and every process holding a read mapping

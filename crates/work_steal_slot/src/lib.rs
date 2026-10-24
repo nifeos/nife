@@ -1,33 +1,22 @@
 //! **The work-steal request slot**: the one lock-free, cross-core handshake in the scheduler. An
 //! idle core cannot reach a loaded core's run queue (§11 (SMP: per-CPU run queues, message-based
-//! migration)), so stealing is a message: the idle core parks a request in the victim's slot and
-//! pokes it with a reschedule interrupt, and the victim, at its next scheduler entry, hands one
-//! thread into the requester's inbox (§28 (SMP placement)). Everything else in that path is
-//! under a lock; this compare-exchange plus swap is lifted here because it is the kind of protocol
-//! that is right on total store order and wrong on the weakly ordered ISAs this project runs on.
+//! migration)), so it parks a request here and pokes the victim, which hands one thread into the
+//! requester's inbox (§28 (SMP placement)). The slot holds 0 (nobody asking) or `id + 1`.
 //!
-//! ```text
-//!   0          nobody is asking
-//!   id + 1     core `id` is asking, and has not been served yet
-//! ```
-//!
-//! A thief **claims** with a compare-exchange from zero, so a crowd of idle cores collapses to one
-//! request per victim, and a loser just asks again next idle round. A victim **takes** with a swap
-//! to zero, which reads and clears at once, so a take not followed by a hand-off still lets the
-//! next thief in. The claim is a **release** and the take an **acquire**: nothing rides that window
-//! yet, but the moment a request grows a field the pairing is what makes it safe, and loom
-//! falsifies the relaxed spelling (notes/interleaving.md). A failed claim is relaxed: the loser
-//! acts on nothing it learned.
-//!
+//! [`Slot::claim`] is a release compare-exchange from zero, so idle cores collapse to one request
+//! per victim; [`Slot::take`] is an acquire swap to zero, so a take with no hand-off still lets the
+//! next thief in. The pair carries nothing yet and makes a request field safe the day one is
+//! added; loom falsifies the relaxed spelling. A failed claim is relaxed: the loser acts on
+//! nothing. See notes/interleaving/what-was-modeled.md, "`crates/work_steal_slot`, the pilot".
+
 //! # BUGS
 //!
-//! - A take that finds an empty run queue drops the request silently (§28's bounded cost of an
-//!   empty give; the idle loop retries): **this promises delivery of the request, never a thread**.
-//! - A slot is only as live as the victim's scheduler entries; a poked victim that never reaches
-//!   one locks every other thief out, outside loom's model.
+//! - A take that finds an empty run queue drops the request: this promises delivery of the
+//!   request, never a thread (§28's bounded cost of an empty give; the idle loop retries).
+//! - A poked victim that never reaches a scheduler entry locks every other thief out, outside
+//!   loom's model.
 //! - The identity is not authenticated; the only caller passes its own `cpu::id()`.
-//! - [`MAX_REQUESTER`] guards the bias's addition, unreachable with single-digit `MAX_CPUS` and
-//!   covered by a host test alone.
+//! - [`MAX_REQUESTER`] guards the bias's addition, unreachable and covered by a host test alone.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `steal_request`: the type is `Slot` with
 //! `claim`/`take`, and "work-steal" is the field's compound (Cilk, Go, Rayon).
@@ -434,22 +423,13 @@ mod interleavings {
         READ_THE_PAYLOAD.assert("an interleaving where the take catches the claim");
     }
 
-    /// **The read and the clear are one step, and this is the property that needs them to be.**
+    /// **The read and the clear are one step**: two victims take the same claimed slot, and exactly
+    /// one may come away with the request; a `take` that read and then cleared would hand it to both.
     ///
-    /// Two victims take the same claimed slot. Exactly one may come away with the request; a
-    /// `take` that read and then cleared would hand it to both.
-    ///
-    /// **The kernel has only one victim per slot today**, and that is worth stating plainly because
-    /// it makes this the one harness here that guards a property the running system does not
-    /// currently need. `serve_steal_request` reads `cpu::current()` and runs from the reschedule
-    /// interrupt with interrupts masked, so the owning core is the only taker and it cannot
-    /// re-enter itself. Measured, not assumed: with the swap replaced by a load and a store, the
-    /// other four harnesses all still pass and only this one fails ("served twice: Some(4)
-    /// Some(4)"). See notes/interleaving.md, which records that as the pilot's sharpest result.
-    ///
-    /// So this is here as the guard on the discipline rather than on the code: the moment anything
-    /// serves a steal from a second context, the atomic read-modify-write is what stops a thread
-    /// being handed to two cores, and this harness is what notices if it stops being one.
+    /// The kernel has one victim per slot today (`serve_steal_request` runs on the owning core with
+    /// interrupts masked), so this guards the discipline rather than the running code: with the swap
+    /// replaced by a load and a store, only this harness fails. See notes/interleaving.md, "And the
+    /// pilot found nothing, which is its own result".
     #[test]
     fn a_second_victim_cannot_serve_the_same_request() {
         static BOTH_TRIED: Reached = Reached::new();
