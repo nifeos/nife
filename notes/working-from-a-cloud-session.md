@@ -35,8 +35,8 @@ status by hand.
     git config core.hooksPath .githooks
     git fetch origin main
 
-Bootstrap installs the pinned Rust nightly, `clang`, `shellcheck`, `cargo-machete`, `typos` and the
-pinned QEMU. It uses `apt-get`, and works as root without `sudo` since this note was written. The
+Bootstrap installs the pinned Rust nightly, `clang`, `shellcheck`, `ruby`, `cargo-machete`, `typos`
+and the pinned QEMU. It uses `apt-get`, and works as root without `sudo` since this note was written. The
 QEMU build lands in `~/.cache/nife-qemu` and is lost with the container. If the environment
 has a setup script, put these three lines there.
 

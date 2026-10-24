@@ -1,55 +1,23 @@
-//! **Fifty boots in a log, and what the placement lottery drew each time** (milestone 249).
+//! **Many boots in a log, and what the placement lottery drew each time.**
 //!
-//! [`progress`](crate::progress) reads *one* boot and answers "how far did it get". This module
-//! reads a capture of many and answers the question milestone 249 exists for: **how often does each
-//! arrangement come up, and does the top of the curve ever get drawn at all?**
+//! [`progress`](crate::progress) reads one boot; [`tally`] reads a capture of many and reports how
+//! often each arrangement came up, with the rate beside every draw. notes/soak/rebooting-soak.md
+//! says why the distribution is wanted, and notes/soak/boot-lottery.md holds the draws so far.
 //!
-//! Nine hand-cycled boots of radon on 2026-09-03 produced a fifteenfold throughput range, and
-//! milestone 240's placement census explained it: the rate tracks the number of cores that hold no
-//! grinder and do hold part of an IPC group. Those nine landed on two clean cores six times, one
-//! twice and zero once. **Three and four have never been drawn**, and nobody knows whether that is
-//! rare or structurally impossible. Fifty unattended boots would say; counting them by hand would
-//! not be done twice.
-//!
-//! # What counts as a clean core, stated once and used everywhere
-//!
-//! A core is **clean** when it carries at least one responder or caller and no grinder.
-//!
-//! Both halves are load-bearing and both come from measurement rather than from taste, which is
-//! recorded at length in notes/soak.md. A grinder is pure compute that never yields, so a core
-//! holding one starves whatever IPC threads share it; a core holding no IPC thread at all is idle
-//! as far as the round-trip rate is concerned, whatever else is on it. The three arrangements the
-//! board has actually drawn line up with the count this produces: two clean cores gave 342-347k/s,
-//! one gave 184-188k/s, and none gave 23k/s.
-//!
-//! **This is a summary of the census and not a theory of it.** Why placement lands where it does is
-//! DECISIONS 138's territory. If a series shows the rate does not follow this count, that is the
-//! result, and the count is still the right thing to have measured, which is why the report prints
-//! the rate beside every draw instead of only the tally.
-//!
-//! # Which census a draw is judged on
-//!
-//! **The last one printed**, not the first. The kernel prints a census at spawn and reprints it
-//! whenever `drifted=` says the old one stopped being true, and on radon the spawn arrangement is
-//! replaced about twenty-five seconds in by one that then holds for hours. The spawn census is the
-//! lottery's *ticket*; the settled one is what the machine ran.
-//!
+//! A core is **clean** when it carries at least one responder or caller and no grinder: a grinder
+//! starves the IPC threads beside it, and a core with no IPC thread is idle to the round-trip rate
+//! (notes/soak/radon-2026-09-03.md). A draw is judged on the **last** census it printed, because
+//! the spawn census is the lottery's ticket and the settled one is what the machine ran.
 
 //! # BUGS
 //!
-//! - **A draw with no census at all is still a draw**, and it reports `clean=?`. A pre-milestone-240
-//!   kernel prints no census, and a boot truncated before its first one has none yet. Both are
-//!   counted in the series and excluded from the distribution, because dropping them would make a
-//!   log of forty good boots and ten wedged ones read as forty boots.
-//! - **A boot that never reaches `soak-test: started` is invisible except as an attempt.** The counts
-//!   are printed side by side for exactly that reason: `attempts` above `draws` is the shape of
-//!   "three boots and then a wedge at 2am", which is the failure an unattended series is most
-//!   likely to suffer and the one nothing else here would report.
-//! - **The attempt count is U-Boot SPL's banner**, so it counts boots of the *board* rather than of
-//!   this kernel, and it counts zero on a QEMU capture, which has no SPL. A QEMU rehearsal
-//!   therefore reports fewer attempts than draws, which is honest and looks odd.
-//! - **Nothing here reads the rate as a function of anything.** It prints the pairs. Fitting a
-//!   curve to fifty points from one board would be a stronger claim than fifty points support.
+//! - **A draw with no census is still a draw** and reports `clean=?` (a kernel without the census,
+//!   or a boot cut off before its first). It is counted in the series and kept out of the
+//!   distribution, so forty good boots and ten wedged ones do not read as forty boots.
+//! - **A boot that never reaches `soak-test: started` is only an attempt**, so `attempts` above
+//!   `draws` is the one sign of a series that wedged unattended.
+//! - **The attempt count is U-Boot SPL's banner**: boots of the board, and zero on a QEMU capture.
+//! - **Nothing reads the rate as a function of anything.** It prints the pairs.
 
 use core::fmt::Write as _;
 
@@ -162,12 +130,9 @@ pub fn tally(log: &str) -> Series {
             continue;
         }
 
-        // **The endings are ranked rather than first-past-the-post**, and the rank was written
-        // after a test refused the first version. `soak-test-reboot: rebooting now` is printed *before*
-        // the `ecall`, because once the firmware starts a reset the UART stops draining; so a
-        // refusal always arrives after an announcement that the board was about to reboot, and
-        // taking the first line seen would report the one draw that proves the mechanism does not
-        // work on this board as a draw that worked. A finding outranks the loop working.
+        // The endings are ranked, not first-seen: `rebooting now` is printed before the `ecall`,
+        // since the UART stops draining once a reset starts, so a refusal always follows it. A
+        // finding outranks the loop working.
         if let Some(at) = line.find("soak-test: FAILED") {
             draw.ending = Ending::Failed(line[at..].to_string());
         } else if line.contains("soak-test-reboot: FAILED") {
@@ -507,9 +472,7 @@ mod tests {
         );
         let series = tally(log);
         // `rebooting now` is printed first and the refusal follows it, so the first ending seen is
-        // the wrong one. The refusal is the finding, so it must win. This test failed on the first
-        // version of `tally`, which took the first ending it met, and that is why the endings are
-        // ranked.
+        // the wrong one. The refusal is the finding, so it must win.
         assert_eq!(series.draws[0].ending, Ending::Refused);
     }
 

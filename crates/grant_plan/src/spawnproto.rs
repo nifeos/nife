@@ -1,42 +1,23 @@
-//! **The spawn protocol: the wire half of the shell-to-progenitor grant expression.** The shell
-//! resolves a `run` into an [`Endowment`](crate::Endowment) but does not build the child: the
-//! progenitor holds the initial ramdisk and the ELF loader. So the shell says what to spawn and
-//! delegates the capabilities it grants over the same endpoint. A userspace protocol, not kernel
-//! ABI: the kernel routes these words as any IPC and never reads them (§10 (process model:
-//! capability-based)).
+//! **The spawn protocol: the wire half of the shell-to-progenitor grant expression.**
 //!
-//! 1. **Request.** Three words on the spawn endpoint: the program id, the integer argument, and the
-//!    memory-grant page count ([`request`], [`prog_id`], [`program_argument`], [`memory_grant_pages`]).
-//! 2. **The directory grant**, if announced ([`Wiring::directory_grant`]): [`GRANT_WORDS`] plain `SEND`s,
-//!    before the capabilities, because they are data and mixing orders would put a `RECEIVE` where
-//!    a `RECEIVE_CAP` belongs.
-//! 3. **Delegation**, in a fixed order both sides read from the same [`Wiring`]: the supervised
-//!    job's pair, the sink, the source, the diagnostic endpoint, the screen-narrowed tail's
-//!    completion endpoint, the `--mem` untyped (split from the shell's own budget), the gpu's four
-//!    and the keyboard's three, and the machine statistics page last. Order rather than tags; a
-//!    promise nobody receives would deadlock both sides.
-//! 4. **Outcome.** The progenitor builds, endows and starts the child, which answers on the result
-//!    endpoint; if it cannot, it sends [`SPAWN_FAILED`] there, so the shell's single read completes.
-//! 5. **Death.** For a killed child, `job_undertaker` sends [`JOB_FAULTED`] on that same read.
-//! 6. **Reaped.** After every collect, `job_undertaker` sends [`reaped`] on the spawn endpoint
-//!    through a copy badged [`UNDERTAKER_BADGE`], which tells the progenitor the job's memory and
-//!    file-service window are back.
-//!
+//! The shell resolves a `run` into an [`Endowment`](crate::Endowment) but does not build the child:
+//! the progenitor holds the initial ramdisk and the ELF loader. So the shell sends three request
+//! words on the spawn endpoint ([`request`]), then any data messages, then the capabilities it
+//! grants, in the fixed order both sides read from the same [`Wiring`], and the progenitor answers
+//! on the result endpoint. A userspace protocol, not kernel ABI: the kernel routes these words as
+//! any IPC and never reads them (§10 (process model: capability-based)).
+//! notes/grant-expression/spawn-protocol.md has the exchange.
+
 //! # BUGS
 //!
-//! - Any promised message a caller withholds hangs the progenitor: claiming run-unvouched
-//!   ([`Wiring::run_unvouched`]) without holding [`RUN_UNVOUCHED_SLOT`], or a shell that cannot
-//!   retype a frame mid-request. Nothing lets either side abandon a half-sent request; today the
-//!   boot shell is the only holder. A holder can also lend its presentation to another's claim.
-//! - An image's manifest note ([`crate::image_manifest`]) reaches only what these words carry, so a
-//!   note declaring a file, directory, input, option, job, second stream, silent output or `std` is
-//!   refused ([`crate::image_can_carry`]). Its [`crate::Endowment`] names a stand-in row
-//!   ([`crate::IMAGE_ROW`]); reading that row instead of the manifest is the foot gun.
-//! - The shell reads the note twice; the progenitor judges what arrived and refuses a misfit with
-//!   [`SPAWN_REFUSED_BY_MANIFEST`]. Only a plain line runs an image, never interruptibly.
+//! - A withheld promised message hangs the progenitor ([`Wiring::run_unvouched`] claimed without
+//!   [`RUN_UNVOUCHED_SLOT`], a frame not retyped); nothing can abandon a half-sent request.
+//! - An image's manifest note reaches only what these words carry, and [`crate::image_can_carry`]
+//!   refuses the rest; its [`crate::Endowment`] names the stand-in row [`crate::IMAGE_ROW`].
+//! - The shell reads an image's note twice and the progenitor refuses a misfit with
+//!   [`SPAWN_REFUSED_BY_MANIFEST`]; only a plain line runs an image, never interruptibly.
 //! - Every activation verb, [`Activation::Vouch`] included, is open to any spawn-endpoint holder,
-//!   safe only while the owner's boot prompt is the one (§221); install, remove and rollback have
-//!   [`INSTALLER_BADGE`], vouch has none.
+//!   safe only while the owner's boot prompt is the one (§221).
 
 /// The interruptible bit, packed into the high half of the page-count word so one `SEND` still
 /// carries the whole request. `mem_pages` is a small count (`memory_grant_depleter`'s ceiling is
@@ -44,8 +25,9 @@
 const INTERRUPTIBLE_BIT: u64 = 1 << 32;
 
 /// **A capability for the child's output slot follows** (milestone 50). Set by `>` and by every
-/// stage of a `|` but the last: the shell delegates an endpoint and the progenitor puts it where the result
-/// endpoint would have gone, so the child writes to a pipe or a file sink without knowing which.
+/// stage of a `|` but the last: the shell delegates an endpoint and the progenitor puts it where
+/// the result endpoint would have gone, so the child writes to a pipe or a file sink without
+/// knowing which.
 const SINK_BIT: u64 = 1 << 33;
 
 /// **A capability for the child's input slot follows** (milestone 50). Set by `<` and by every
@@ -56,56 +38,38 @@ const SOURCE_BIT: u64 = 1 << 34;
 /// program whose manifest declares one, whether or not the line has a `2>` on it: the stream exists
 /// because the program says so, and the operator only names where it goes.
 ///
-/// Unlike [`SINK_BIT`] this does **not** say which slot: the progenitor reads that from the manifest, because
-/// the slot is the program's declaration and not the shell's choice. What the wire says is only
-/// "expect one more capability", which is what keeps the two sides in lockstep.
+/// Unlike [`SINK_BIT`] this does **not** say which slot: the progenitor reads that from the
+/// manifest, because the slot is the program's declaration and not the shell's choice. What the
+/// wire says is only "expect one more capability", which is what keeps the two sides in lockstep.
 const DIAG_BIT: u64 = 1 << 35;
 
 /// **A capability for a narrowed tail stage's completion signal follows** (DECISIONS §106). Set
 /// when the shell decided this stage both writes and reads, and the line named neither `>` nor `|`
-/// for its output (`Wiring::sink` is false and the plan says [`crate::line::Sink::Report`]): the
-/// shell cannot be both this stage's feeder and its reader, so its primary output defaults to
-/// `terminal_sink_caretaker` instead of the shell's own result endpoint, the same adapter a
-/// declared second stream already reaches by default under DECISIONS §67.
-///
-/// What follows is not a sink capability (the progenitor already knows to build that default from its own
-/// `term_sink`, unprompted, the same way it builds a diagnostic default). It is a **fresh
-/// endpoint the shell minted and kept a copy of**, delegated so the progenitor can install it as this child's
-/// DECISIONS §26 fault target in place of its own domain channel. The kernel then delivers the
-/// child's exit there instead of to the progenitor's reaper, and the shell `RECEIVE`s it as its completion
-/// signal instead of draining the child's bytes, which it no longer sees.
+/// for its output: its primary output defaults to `terminal_sink_caretaker`, and what follows is a
+/// fresh endpoint the shell minted and kept a copy of. The progenitor installs it as the child's
+/// fault target under DECISIONS §26 (the fault endpoint), so the shell `RECEIVE`s the child's exit
+/// there as its completion signal instead of draining bytes it no longer sees.
 const SCREEN_BIT: u64 = 1 << 37;
 
-/// **A directory grant follows, and the progenitor is to build a caretaker for it** (milestone 31 phase 3).
+/// **A directory grant follows, and the progenitor is to build a caretaker for it** (milestone 31
+/// phase 3).
 ///
-/// The odd one out on this word, because it announces **data rather than a capability**. Every other
-/// bit here says "expect one more `SEND_CAP`"; this one says "expect two more `SEND`s", and the
-/// reason is that the shell has nothing to delegate. A directory grant is delivered by a
-/// `fs_subtree_caretaker`, the caretaker has to hold the file service to attenuate it, and **the
-/// shell's file-service endpoint carries no `GRANT`**, so the shell could not hand one over if it
-/// wanted to. What it can do is say what the grant *is*; the progenitor holds the endpoint and builds the rest.
-///
-/// See [`GRANT_WORDS`] for what the two messages carry and why they are opaque to this module.
+/// The one bit here that announces data rather than a capability: two `SEND`s ([`GRANT_WORDS`]),
+/// not a `SEND_CAP`. The shell's file-service endpoint carries no `GRANT`, so it cannot delegate
+/// what a `fs_subtree_caretaker` needs; it says what the grant is, and the progenitor builds the
+/// rest.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const DIRECTORY_GRANT_BIT: u64 = 1 << 36;
 
 /// **A second directory grant follows, for the same confined program** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md). Set only alongside [`DIRECTORY_GRANT_BIT`]: a second
-/// grant is meaningless without a first, the same way the kernel's `fs_service::TwoDirGrant`
-/// (slot 0 grant A, slot 1 grant B) only exists in pairs.
+/// design/roadmap/0154-multi-directory-namespace.md). Set only alongside [`DIRECTORY_GRANT_BIT`].
 ///
-/// **Following [`DIRECTORY_GRANT_BIT`]'s own precedent rather than inventing a new shape**, as milestone
-/// 154's roadmap block names as the open question this closes: another two [`GRANT_WORDS`]
-/// messages follow the first pair, carrying the second caretaker's `START` words. Unlike
-/// [`DIRECTORY_GRANT_BIT`], the confined program's own `START` words are **not** repeated a second time: one
-/// program is still being started, holding two narrowed endpoints (slot 0 grant A, slot 1 grant
-/// B), the same delivery `fs_service::start_granted_two_dirs` already proved.
-///
-/// **Nothing on the shell side sets this bit yet, and the progenitor does not decode it.** No
-/// manifest declares two directory operands, so no plan constructs a two-directory `Endowment`
-/// (notes/two-trees.md's BUGS). This is the wire format alone, built ahead of an emitter the way
-/// [`DIRECTORY_GRANT_BIT`] itself once stated a grant nothing could construct yet.
+/// Another two [`GRANT_WORDS`] messages follow the first pair, carrying the second caretaker's
+/// `START` words; the program's own are not repeated, since one program starts holding two
+/// narrowed endpoints, as `fs_service::start_granted_two_dirs` does. **Nothing sets this bit yet
+/// and the progenitor does not decode it**: no manifest declares two directory operands
+/// (notes/two-trees.md's BUGS).
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
@@ -114,53 +78,24 @@ const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
 /// ruled by calef 2026-09-26). Set when the shell runs a program the image did not name by
 /// [`Program`](crate::Program) id: an installed package's member, or a binary somebody just built.
 ///
-/// **Word 0 changes meaning under this bit**: it carries the image's **length in bytes** instead
-/// of a program id ([`image_len`]), and [`image_pages`] of that many `SEND_CAP`s follow, one frame
-/// each, in page order, each tagged with its index. They come after the directory grant's data
-/// messages and before every other delegated capability, so the data-before-capabilities order the
-/// rest of this word keeps is kept here too. The shell sends each frame narrowed to `READ`, so the
-/// progenitor can map it and can neither write it nor pass it on.
-///
-/// **The progenitor hashes its own copy**, never the caller's frames, because the caller keeps a
-/// mapping of them and could change the bytes between a hash and a build. It maps each frame
-/// through the loader's scratch window (`supervision_protocol::map_scratch`), copies it into a page of its own, and deletes
-/// the capability before taking the next, so a request of any size costs its capability table one
-/// transient slot. A digest found in the installed-programs table is vouched and runs with that entry's
-/// manifest. A miss runs only for a caller that presents the run-unvouched capability
-/// ([`RUN_UNVOUCHED_BIT`], §219's gate D2), with [`crate::UNVOUCHED_MANIFEST`]; any other miss is
-/// refused with [`SPAWN_UNVOUCHED`].
+/// Word 0 is then the image's length in bytes ([`image_len`]), and [`image_pages`] `SEND_CAP`s
+/// follow, one `READ` frame each in page order, after the directory grant's data and before every
+/// other capability. The progenitor hashes its own copy, never the caller's frames. A miss runs
+/// only with [`RUN_UNVOUCHED_BIT`] and [`crate::UNVOUCHED_MANIFEST`], and is otherwise refused with
+/// [`SPAWN_UNVOUCHED`]. See notes/grant-expression/spawn-protocol.md.
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26), §219's own word for it.
 const IMAGE_BIT: u64 = 1 << 39;
 
-/// **Not a spawn: an edit to the installed-programs table** (milestone 198 (a package manager) rung 3a's
-/// installer; DECISIONS §208 (installing a package is granting it, and the installed programs are
-/// versioned)). When this bit is set the request asks the progenitor to install, remove or roll
-/// back, word 1 is an [`Activation`] verb, the rest of word 2 is zero, and the progenitor answers
-/// with exactly one message on the result endpoint: [`activation_reply`]'s two words.
+/// **Not a spawn: an edit to the installed-programs table** (milestone 198 (a package manager) rung
+/// 3a's installer; DECISIONS §208 (installing a package is granting it, and the installed programs
+/// are versioned)). Word 1 is an [`Activation`] verb, the rest of word 2 is zero, and the
+/// progenitor answers with one message on the result endpoint, [`activation_reply`]'s two words.
 ///
-/// **Why the progenitor serves it**, rather than an installer program: §208's argument for A3 was
-/// that "the supervisor that performs a live swap and the thing that decides which version is
-/// active are the same authority", and §219 already gave the progenitor the read half (it looks
-/// every image's digest up in the live generation). It holds the file service with `WRITE`, the
-/// image's catalogue in its archive, and the frame-staging path an image request built. The
-/// *client* is a program, `jig` (milestone 809 (the package client becomes a program)), which
-/// sends this request on its installer endpoint ([`INSTALLER_BADGE`]); the owner's console sends
-/// it on the spawn endpoint for `vouch`.
-///
-/// What follows the request depends on the verb:
-///
-/// - For [`Activation::Install`], word 0 is the package file's length in bytes, and its frames follow
-///   exactly as an image's do (`IMAGE_BIT`: [`image_pages`] `SEND_CAP`s, each narrowed to `READ`).
-///   The progenitor copies them before it hashes, for the image path's reason.
-/// - For [`Activation::Remove`], one data message follows, the program's name packed the way a
-///   directory grant packs one (`filesystem_contract::grant::pack_name`: two words, then the
-///   length). Opaque here for [`GRANT_WORDS`]'s reason.
-/// - For [`Activation::Rollback`], nothing follows.
-/// - For [`Activation::Vouch`], word 0 is the executable's length, its frames follow as an
-///   install's do, and then the name it will be recorded under, as one data message packed as
-///   [`Activation::Remove`]'s is. Frames before the name, because the frames are capabilities and
-///   the name is data, and the progenitor stages the one before it reads the other.
+/// What follows depends on the verb: an install's or a vouch's frames as [`IMAGE_BIT`]'s, with word
+/// 0 the file's length; for a vouch, then the name as one data message; for a remove, that name
+/// message alone; for a rollback, nothing, with names packed by
+/// `filesystem_contract::grant::pack_name`. notes/grant-expression/spawn-protocol.md says why.
 ///
 /// Name: provisional (2026-09-26).
 const ACTIVATION_BIT: u64 = 1 << 40;
@@ -170,38 +105,23 @@ const ACTIVATION_BIT: u64 = 1 << 40;
 /// progenitor honours it on any request, so a caller that sets it is never left blocked in its
 /// `SEND`.
 ///
-/// **Why a message on a second endpoint rather than a capability on this one.** The capability is
-/// granted without `GRANT`, so its holder cannot pass it on (§219 limitation 2), and for the same
-/// reason it cannot ride a `SEND_CAP` here: the kernel refuses to delegate a capability that lacks
-/// `GRANT`. What a holder *can* do with a `WRITE`-only endpoint is send on it. The progenitor holds
-/// the only `READ` on that endpoint and takes one message from it, at a fixed point in the
-/// exchange, while serving a request that claimed it. A message that arrives there came from a
-/// holder, because nothing else can reach the endpoint.
-///
-/// **Where in the exchange**: after every delegated capability, the last thing a request sends. The
-/// progenitor then knows the digest's verdict and the whole delegation before it decides. The word
-/// sent is not read: the fact that it arrived is the whole of what it says.
-///
-/// The progenitor rather than the kernel decides what it means, which is why this is a bit on a
-/// userspace word and not a method: DECISIONS §10 (process model: capability-based, microkernel)'s surface is unchanged. The kernel only routes a
-/// `SEND` on an endpoint, as it routes every other.
+/// A message rather than a capability, because the capability lacks `GRANT` and the kernel will not
+/// delegate it. It is the last thing a request sends, and the word is not read: that it arrived on
+/// an endpoint only holders can reach is the whole of what it says. See
+/// notes/grant-expression/spawn-protocol.md.
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26).
 const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
 
 /// **The line's argv follows as one frame** (milestone 205 (how a foreign program is told what to
-/// do), DECISIONS §170 (how a foreign program is told what to do)). The shell assembles the words it was typed into one page in
-/// `program_argument_contract`'s layout and `SEND_CAP`s it narrowed to `READ`, after the directory grant's
-/// data and any image's frames, and before every other delegated capability.
+/// do), DECISIONS §170 (how a foreign program is told what to do)). The shell assembles the words
+/// it was typed into one page in `program_argument_contract`'s layout and `SEND_CAP`s it narrowed
+/// to `READ`, after the directory grant's data and any image's frames, and before every other
+/// delegated capability.
 ///
-/// **The progenitor copies it**, for [`IMAGE_BIT`]'s reason: the shell keeps a mapping of the frame.
-/// It copies into a page carved from the child's own region, so the child's reclaim frees it, and
-/// places that at `std_runtime_contract::ARGS_SLOT` mapped read-only at `ARGS_PAGE`. The bytes are
-/// not read on the way, because §170 ruled that they carry no authority: what a word may reach is
-/// the directory grant's business and nothing on this page can widen it.
-///
-/// A request that sets it for a program that does not run on the `std` layout has its frame taken
-/// and dropped, so both sides stay in lockstep and the child gets nothing it could not read.
+/// The progenitor copies it, unread, into a page of the child's region placed at
+/// `std_runtime_contract::ARGS_SLOT` and mapped read-only at `ARGS_PAGE`: the bytes carry no
+/// authority. A program not on the `std` layout has the frame taken and dropped.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
@@ -211,31 +131,18 @@ const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
 /// manifest declares `machine`; the progenitor maps it read-only into the child and places it at
 /// `crate::MACHINE_SLOT`, then deletes its copy.
 ///
-/// **Why the page travels with the request rather than living in the progenitor.** The progenitor's
-/// capability table peaks during the login block at one slot under the table's size
-/// (`kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED`), and a page held for the life of the boot would
-/// have spent that last slot; the first CI run that tried it measured the table full. The progenitor
-/// hands the page to the shell before the login block and keeps no copy, so what reaches a program
-/// is decided by what its session holds. That is also the shape §225's "granted to every login,
-/// withholdable by the owner" reads as: a session without the page cannot pass it on.
-///
-/// **Bit 44, not the 42 calef ratified**: `PROGRAM_ARGUMENTS_BIT` took 42 (milestone 205, #1394) and
-/// `NAMESET_BIT` takes 43 (#1402) while this was in flight, and numbers stay provisional until the
-/// queue lands them. Still in word 2's flag half, above the 32-bit page count.
+/// The page travels with the request because the progenitor's capability table has no slot to
+/// spare for it; notes/grant-expression/spawn-protocol.md has the measurement.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
 const MACHINE_BIT: u64 = 1 << 44;
 
 /// **This is a graphical terminal launch** (milestone 632 (provisional), calef's 2026-09-30 ruling
-/// that graphics is launched from the prompt rather than built at boot). **No capability follows
-/// it** since milestone 715 (provisional): the spawn service holds the gpu's four (and a
-/// keyboard's three) from boot, and builds the session's drivers from its own copies, the way it
-/// already held the boot discipline's endpoint for the same session. Until 715 the shell held the
-/// seven at [`SHELL_GPU_SLOT`] onward for the life of the boot and delegated them after this bit,
-/// which lent the prompt `GRANT` on every device; the 2026-10-03 security audit's follow-up
-/// narrowed that. A boot with no display answers [`SPAWN_NO_DISPLAY`].
+/// that graphics is launched from the prompt rather than built at boot). No capability follows it:
+/// the spawn service holds the gpu's four and a keyboard's three from boot and builds the session's
+/// drivers from its own copies. A boot with no display answers [`SPAWN_NO_DISPLAY`].
 ///
-/// Meaningful only for a `graphical_terminal` request, and the progenitor refuses any other program that sets
+/// Meaningful only for a `graphical_terminal` request; the progenitor refuses any other that sets
 /// it.
 ///
 /// Name: ratified 2026-10-03 (calef, #1493). Refused one device-bundle bit covering both (it adds a
@@ -256,32 +163,17 @@ const KEYBOARD_BIT: u64 = 1 << 46;
 /// GRANT`, so it can delegate it with [`MACHINE_BIT`] and not write it. A named slot probed at
 /// `_start`, for [`RUN_UNVOUCHED_SLOT`]'s reasons.
 ///
-/// **Twenty, not the 21 calef ratified**: `crate::SHELL_CONFIGURATION_SLOT` took 21 (milestone 47 (navigation and naming)) while
-/// this was in flight.
-///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
 pub const MACHINE_PAGE_SLOT: u64 = 20;
 
-/// **Empty since milestone 715 (provisional)**: the spawn service holds the display devices, and no
-/// builder places anything here. The block stays reserved, and the fence below stays, because a
-/// probed slot is sound only where nothing allocates. What it was:
+/// **Empty and reserved**: the spawn service holds the display devices, and no builder places
+/// anything here. Slots 22 to 28 stay a named block between [`crate::SHELL_CONFIGURATION_SLOT`]
+/// (21) and [`RUN_UNVOUCHED_SLOT`] (62), fenced below, because a probed slot is sound only where
+/// nothing allocates. The seven held the gpu's transport, interrupt and two page runs and a virtio
+/// keyboard's three, with the rights the kernel granted the progenitor.
 ///
-/// **Where a session holds the gpu's confined transport** (milestone 632 (provisional)), with its
-/// three siblings beside it: the completion interrupt at 23, the DMA run at 24, the surface run at
-/// 25, and, when a virtio keyboard exists, its transport at 26, event interrupt at 27 and DMA page
-/// at 28. `WRITE | GRANT` on the transport, `READ | GRANT` on each interrupt, `READ | WRITE |
-/// GRANT` on each page: exactly the rights the kernel granted the progenitor, which places them
-/// here at the shell's build and keeps no copy, for [`MACHINE_PAGE_SLOT`]'s own reasons. A boot
-/// with no GPU leaves all seven empty, and the shell's `_start` probe is what tells that apart.
-///
-/// **Twenty-two through twenty-eight**, the block between [`crate::SHELL_CONFIGURATION_SLOT`] (21) and
-/// [`RUN_UNVOUCHED_SLOT`] (62): a named block rather than next-free numbering, because the shell
-/// probes these slots rather than being told, and a probe is sound only for a slot nothing else
-/// allocates into. One block of seven, contiguous, so the relation to the two slots that fence it
-/// reads as two assertions rather than seven.
-///
-/// Name: ratified 2026-10-03 (calef, #1493), with slots 22 to 28 and the delegation order (after the
-/// `--mem` untyped, before the machine statistics page).
+/// Name: ratified 2026-10-03 (calef, #1493), with slots 22 to 28 and the delegation order (after
+/// the `--mem` untyped, before the machine statistics page).
 pub const SHELL_GPU_SLOT: u64 = 22;
 
 // The seven graphical slots are one contiguous block fenced by two named ones, and these two
@@ -293,18 +185,15 @@ const _: () = assert!(SHELL_GPU_SLOT > MACHINE_PAGE_SLOT);
 const _: () = assert!(SHELL_GPU_SLOT > crate::SHELL_CONFIGURATION_SLOT);
 const _: () = assert!(SHELL_GPU_SLOT + 6 < RUN_UNVOUCHED_SLOT);
 
-/// **Where the boot shell holds its second mounted tree** (milestone 154's mechanism, milestone 834 (ioping on nife and Linux)'s
-/// use): the disk tree's endpoint, `WRITE` and no `GRANT`, the read-only and uncached view of the
-/// NVMe disk calef ruled for the prompt (2026-10-18 21:36 UTC, "Yes, read-only at prompt"). Empty
-/// on a machine with no NVMe disk, and the shell's `_start` probe is what tells that apart. A named
-/// slot for [`RUN_UNVOUCHED_SLOT`]'s reasons, one under [`MACHINE_PAGE_SLOT`]: below the
-/// graphical block, so `caps`'s census on a boot with the tree still runs from the configuration
-/// page (21) straight to the run-unvouched slot (62).
+/// **Where the boot shell holds its second mounted tree** (milestone 154's mechanism, milestone 834
+/// (ioping on nife and Linux)'s use): the disk tree's endpoint, `WRITE` and no `GRANT`, the
+/// read-only and uncached view of the NVMe disk calef ruled for the prompt (2026-10-18 21:36 UTC,
+/// "Yes, read-only at prompt"). Empty on a machine with no NVMe disk, which the shell's `_start`
+/// probe tells apart. Below the graphical block, so `caps`'s census runs from the configuration
+/// page (21) straight to 62.
 ///
-/// The tree shares the shell's one page with the first ([`MOUNTED_TREE_NAME`] says where it is
-/// mounted): the kernel maps the disk tree's window 0 onto the filesystem server's window 0 frame,
-/// which is sound for the reason the two-tree witness gives, that the shell has one `CALL` in
-/// flight. Only the boot shell is given it; a `login` session holds one tree.
+/// The kernel maps its window 0 onto the first tree's window 0 frame, sound because the shell has
+/// one `CALL` in flight. Only the boot shell is given it; a `login` session holds one tree.
 ///
 /// Name: provisional (lane `lane/ioping-direct-io`, 2026-10-18 UTC).
 pub const MOUNTED_TREE_SLOT: u64 = 19;
@@ -349,15 +238,13 @@ pub fn in_mounted_tree(name: &[u8]) -> Option<&[u8]> {
 }
 
 /// **The directory grant is a set of names, and the set follows as one frame** (milestone 205 (how
-/// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with [`Wiring::directory_grant`]: the
-/// progenitor builds `fs_nameset_caretaker` rather than `fs_subtree_caretaker` for the grant, and
-/// maps it the set, `filesystem_contract::nameset`'s encoding, read-only. The shell sends the frame
-/// `READ`-only after the argv's, before every other delegated capability; the progenitor copies it,
-/// for [`IMAGE_BIT`]'s reason, into a page from the job's region.
-///
-/// It is how a program that hears words gets exactly the names its words designated in the
-/// shell's directory and no sibling of them. `rm *.txt` would ride it too; nothing sends it for
-/// `rm` yet (`components/src/swish.rs`'s `dir_grant`).
+/// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with
+/// [`Wiring::directory_grant`]: the progenitor builds `fs_nameset_caretaker` rather than
+/// `fs_subtree_caretaker` for the grant, and maps it the set, `filesystem_contract::nameset`'s
+/// encoding, read-only. The shell sends the frame `READ`-only after the argv's, before every other
+/// delegated capability; the progenitor copies it, for [`IMAGE_BIT`]'s reason, into a page from the
+/// job's region. A program that hears words gets exactly the names its words designated and no
+/// sibling; nothing sends it for `rm *.txt` yet.
 ///
 /// Name: provisional (milestone 205, 2026-09-27).
 const NAMESET_BIT: u64 = 1 << 43;
@@ -366,14 +253,10 @@ const NAMESET_BIT: u64 = 1 << 43;
 /// progenitor places it in, `WRITE` only, in the boot shell and in `login`, and the slot `login`
 /// delegates it from.
 ///
-/// Sixty-two, the highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_EP_SLOT`,
-/// 63; `grant_plan` does not depend on `abi`, so each binary that reads this asserts the relation
-/// itself). It was twenty-two until calef raised the table from 24 slots to 32 on 2026-09-27 (UTC),
-/// thirty until milestone 754 (the capability table grows to 64 slots) raised it to 64 on 2026-10-04 (UTC), and it moved with the fault slot
-/// both times so those assertions still hold. A named slot for the reason [`crate::NETWORK_SLOT`] is one: the holder probes it rather
-/// than being told, and the probe is sound only at `_start`, before the process has allocated
-/// anything, because a runtime allocation takes the first free slot and could land here only in a
-/// table that is almost full.
+/// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_EP_SLOT`, 63);
+/// `grant_plan` does not depend on `abi`, so each binary that reads this asserts the relation. A
+/// named slot, as [`crate::NETWORK_SLOT`] is: the holder probes it at `_start`, before it has
+/// allocated anything, which is the only time a probe is sound.
 ///
 /// Name: provisional.
 pub const RUN_UNVOUCHED_SLOT: u64 = 62;
@@ -403,16 +286,11 @@ pub enum Activation {
     /// **The owner vouches for these bytes** (DECISIONS §221 (the boot prompt is the owner's
     /// console), ruling 1, and §195 (a reviewed recipe vouches for a package) clause 3: the owner
     /// may vouch for a digest no source carries). The progenitor hashes its own copy and writes a
-    /// new generation whose entry for the name is that digest, marked
-    /// `installed_programs::OWNER` in place of a package, so
-    /// `package rollback` undoes it like any other edit. The bytes are not copied: a digest vouches
-    /// for itself wherever the file is. They must parse as an executable, or nothing is written.
+    /// new generation whose entry for the name is that digest, marked `installed_programs::OWNER`,
+    /// so `package rollback` undoes it. The bytes are not copied, and must parse as an executable.
     ///
-    /// **Who may ask** is whoever holds the spawn endpoint, which is the boot prompt and nothing
-    /// else; §221 ruled that whoever holds that prompt is the owner. A session `login` builds holds
-    /// no spawn endpoint and cannot reach its root to write `activation/` by hand either. **The
-    /// installer endpoint refuses it** (milestone 809, [`INSTALLER_BADGE`]): a package manager may
-    /// install what a catalog vouches for, and may not vouch for any bytes it likes.
+    /// Only a spawn-endpoint holder may ask, which is the boot prompt and so the owner. The
+    /// installer endpoint refuses it ([`INSTALLER_BADGE`]).
     ///
     /// Name: provisional (milestone 198, lane `milestone/198-owner-console`, 2026-09-26).
     Vouch = 5,
@@ -456,8 +334,8 @@ pub fn activation(w1: u64, w2: u64) -> Option<Option<Activation>> {
 pub enum ActivationStatus {
     /// Done: word 1 is the generation now live.
     Done = 0,
-    /// The image's catalogue does not vouch for these bytes (DECISIONS §195 (a reviewed recipe vouches for a package)), or they are not a
-    /// package at all. Nothing was written.
+    /// The image's catalogue does not vouch for these bytes (DECISIONS §195 (a reviewed recipe
+    /// vouches for a package)), or they are not a package at all. Nothing was written.
     NotCataloged = 1,
     /// A vouched package with no program the installer can find. Nothing was written.
     NoProgram = 2,
@@ -573,29 +451,22 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAX]
     core::str::from_utf8(&out[..len]).unwrap_or("")
 }
 
-/// **The largest image `IMAGE_BIT` may carry, in pages** (4 MiB). A ceiling both sides read,
-/// so the shell refuses a larger file before it sends anything and the progenitor never stages more
-/// than its image pool can hold beside the child built from it. `uptime` is 22 pages stripped, and
-/// `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`), which is the program this
-/// was raised from 64 for (milestone 595 (the shell runs a `std` program), 2026-09-27).
+/// **The largest image `IMAGE_BIT` may carry, in pages** (4 MiB). A ceiling both sides read, so the
+/// shell refuses a larger file before it sends anything and the progenitor never stages more than
+/// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`).
 ///
-/// What the number costs, because it is reserved rather than spent: the shell's budget carries one
-/// image's worth of staging frames, and the progenitor's image pool two (its own copy, which §219
-/// has it hash, and the child's pages) plus a `std` program's heap. That is
-/// `IMAGE_MAX_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5 MiB, set aside at boot
-/// whether or not an image is ever run. See `IMAGE_POOL_PAGES` in `crates/system_initializer`.
-///
-/// Provisional, like the bit: the number is the pools' arithmetic, not a property of any program.
+/// Reserved, not spent: `IMAGE_MAX_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5 MiB,
+/// are set aside at boot for the shell's staging frames, the progenitor's copy, the child's pages
+/// and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
 pub const IMAGE_MAX_PAGES: u64 = 1024;
 
 /// **The budget the progenitor hands the boot shell**, in pages, which both read: the progenitor
-/// splits it, and the shell prints it in `caps` because there is no call that says how much is left.
-/// Moved here from two constants that had to be kept equal by hand (milestone 595 (the shell runs a
-/// `std` program), 2026-09-27).
+/// splits it, and the shell prints it in `caps` because there is no call that says how much is
+/// left.
 ///
-/// 128 pages for `--mem` grants, pipes and the shell's own windows, as it was from milestone 31 (a
-/// capability shell), plus one image's staging frames ([`IMAGE_MAX_PAGES`]), since the shell
-/// reads a file run by its path into frames split from this budget before it sends them.
+/// 128 pages for `--mem` grants, pipes and the shell's own windows, plus one image's staging frames
+/// ([`IMAGE_MAX_PAGES`]), since the shell reads a file run by its path into frames split from this
+/// budget before it sends them.
 ///
 /// Name: provisional.
 pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
@@ -604,22 +475,15 @@ pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
 /// builds for.
 pub const IMAGE_PAGE: u64 = 4096;
 
-/// **The two messages a [`Wiring::directory_grant`] request is followed by**, in order, each three words:
+/// **The two messages after a [`Wiring::directory_grant`] request**, in order, three words each:
 ///
-/// 1. **the caretaker's `START` words**, which the progenitor passes to `fs_subtree_caretaker` verbatim: the
-///    granted directory's name and the `filesystem_contract::dir` rights the subtree capability is to carry;
-/// 2. **the confined program's `START` words**, which the progenitor passes to the program verbatim: for `rm`,
-///    the operand's name and the options that were typed.
+/// 1. **the caretaker's `START` words**, passed to `fs_subtree_caretaker` verbatim: the granted
+///    directory's name and the `filesystem_contract::dir` rights the subtree capability carries;
+/// 2. **the confined program's `START` words**, passed to the program verbatim: for `rm`, the
+///    operand's name and the options that were typed.
 ///
-/// **This module does not decode either, deliberately.** They are `filesystem_contract::grant`'s packing, and
-/// `grant_plan` has no non-dev dependency on `filesystem_contract` on purpose (its own manifest says why: the
-/// shell must be able to check a command line without linking the filesystem contract). Passing them
-/// through as opaque triples keeps that true, and it means a change to how a grant is packed is a
-/// change in one crate rather than in the wire this one owns. The shell packs them; the progenitor forwards
-/// them; nothing in between reads them.
-///
-/// Two messages rather than one because the two processes are started with different names: the
-/// caretaker with the *directory*, the program with the *operand inside it*. Six words do not fit in
+/// Opaque here: they are `filesystem_contract::grant`'s packing, which this crate does not link.
+/// Two messages because the two processes start with different names; six words do not fit in
 /// three.
 pub const GRANT_WORDS: usize = 2;
 
@@ -638,14 +502,13 @@ pub struct Wiring {
     pub source: bool,
     /// The child declares a second output stream, so one more endpoint follows (DECISIONS §67).
     pub diagnostics: bool,
-    /// **A directory grant follows as two data messages** ([`GRANT_WORDS`]), and the progenitor is to build a
-    /// `fs_subtree_caretaker` for it before it builds the child. The only entry here that announces
-    /// data instead of a capability; see `DIRECTORY_GRANT_BIT`.
+    /// **A directory grant follows as two data messages** ([`GRANT_WORDS`]), and the progenitor is
+    /// to build a `fs_subtree_caretaker` for it before it builds the child. The only entry here
+    /// that announces data instead of a capability; see `DIRECTORY_GRANT_BIT`.
     pub directory_grant: bool,
     /// **A second directory grant follows, as two more data messages** (milestone 154). See
-    /// `SECOND_DIRECTORY_GRANT_BIT`. Meaningless unless `dir` is also set; nothing here enforces that on its own
-    /// (the wire is one word, and a caller that set this without `dir` sent a request that was
-    /// wrong before it left the shell).
+    /// `SECOND_DIRECTORY_GRANT_BIT`. Meaningless unless `directory_grant` is also set, which
+    /// nothing here enforces: a caller that set it alone sent a request wrong before it left.
     pub second_directory_grant: bool,
     /// **This stage's primary output defaults to `terminal_sink_caretaker`, and a fresh completion
     /// endpoint follows** (DECISIONS §106). See `SCREEN_BIT`. Mutually exclusive with `sink` in
@@ -658,7 +521,8 @@ pub struct Wiring {
     /// **One `SEND` on the run-unvouched capability follows the delegation** (DECISIONS §219 gate
     /// D2). See `RUN_UNVOUCHED_BIT`.
     pub run_unvouched: bool,
-    /// **The line's argv follows as one `READ` frame** (DECISIONS §170). See `PROGRAM_ARGUMENTS_BIT`.
+    /// **The line's argv follows as one `READ` frame** (DECISIONS §170). See
+    /// `PROGRAM_ARGUMENTS_BIT`.
     pub program_arguments: bool,
     /// **The directory grant is a set of names, which follows as one `READ` frame** (milestone
     /// 205). See [`NAMESET_BIT`].
@@ -666,8 +530,8 @@ pub struct Wiring {
     /// **The machine statistics page follows as the last delegated capability** (milestone 126).
     /// See [`MACHINE_BIT`].
     pub machine: bool,
-    /// **The gpu's four capabilities follow, and the graphical terminal session is to be built from them**
-    /// (milestone 632 (provisional)). See [`GRAPHICS_BIT`].
+    /// **The gpu's four capabilities follow, and the graphical terminal session is to be built from
+    /// them** (milestone 632 (provisional)). See [`GRAPHICS_BIT`].
     pub graphics: bool,
     /// **A virtio keyboard's three follow beside the gpu's four** (milestone 632 (provisional)).
     /// See [`KEYBOARD_BIT`]; meaningless unless `graphics` is also set.
@@ -722,8 +586,8 @@ pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, 
     (prog_id, arg, w2)
 }
 
-/// The whole wiring of a received request (word 2), so the progenitor reads it once rather than asking three
-/// separate questions of the same word.
+/// The whole wiring of a received request (word 2), so the progenitor reads it once rather than
+/// asking three separate questions of the same word.
 pub fn wiring(w2: u64) -> Wiring {
     Wiring {
         interruptible: is_interruptible(w2),
@@ -776,59 +640,31 @@ pub fn memory_grant_pages(w2: u64) -> u64 {
 }
 
 /// Whether this is a supervised foreground job (word 2's high bit). When set, the delegation leads
-/// with two caps: a job untyped (the progenitor builds the child from it; the shell keeps it to `DESTROY`) and
-/// a shared job frame (the cooperative interrupt flag and the child's status).
+/// with two caps: a job untyped (the progenitor builds the child from it; the shell keeps it to
+/// `DESTROY`) and a shared job frame (the cooperative interrupt flag and the child's status).
 pub fn is_interruptible(w2: u64) -> bool {
     w2 & INTERRUPTIBLE_BIT != 0
 }
 
 /// The data word carried alongside the delegated untyped in the `SEND_CAP`. It is not load-bearing
-/// (the progenitor identifies the cap by the protocol position, not the tag), but a fixed marker makes a
-/// misrouted message obvious in a trace. Its low bits echo the page count as a cheap cross-check.
+/// (the progenitor identifies the cap by the protocol position, not the tag), but a fixed marker
+/// makes a misrouted message obvious in a trace. Its low bits echo the page count as a cheap
+/// cross-check.
 pub const CAP_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
 
-/// The sentinel the progenitor sends on the result endpoint when it could not build the child, so the
-/// shell's single read completes with a legible failure rather than blocking forever. Distinct
+/// The sentinel the progenitor sends on the result endpoint when it could not build the child, so
+/// the shell's single read completes with a legible failure rather than blocking forever. Distinct
 /// from any answer a real program would report (no phase-1 program returns `u64::MAX`).
 pub const SPAWN_FAILED: u64 = u64::MAX;
 
 /// **The word for a job the kernel killed** (milestone 235,
 /// design/roadmap/0235-a-faulted-job-should-reach-the-prompt.md). Sent on the result endpoint by
-/// `job_undertaker`, which is the process already holding the progenitor's supervision endpoint, once it has
-/// collected the corpse.
+/// `job_undertaker`, which already holds the progenitor's supervision endpoint, once it has
+/// collected the corpse. A child the kernel killed sends nothing, so without this the shell's
+/// single read would never complete.
 ///
-/// It exists because a faulted job is the one outcome this protocol could not say. A child that
-/// exits non-zero has answered; a child the progenitor could not build gets [`SPAWN_FAILED`]; a child the
-/// kernel killed **sends nothing at all**, so the shell's single read had nothing to complete it
-/// and the prompt never came back (measured 2026-09-02: `least_authority_demo` patched to trap, and
-/// `script/swish-check` reporting "the prompt never came back to take `least_authority_demo 7`").
-///
-/// # Why the supervisor says it rather than the shell asking or the endpoint carrying it
-///
-/// DECISIONS §26 (the fault endpoint: thread death becomes a message a supervisor holds) delivers
-/// every death to exactly **one** endpoint, so the three couplings milestone 235 named are a choice
-/// of who holds that endpoint, and only one of them leaves the ordinary paths alone.
-///
-/// **The shell asking** loses first. A shell that asks has to decide *when* to ask, and with no
-/// non-blocking receive in the ABI (`crates/system_initializer`'s own loop records that it has
-/// none) that decision is a poll interval, which is a timeout wearing a different hat: it cannot
-/// tell a slow job from a dead one, which is the thing the hang already could not tell.
-///
-/// **The endpoint carrying the death** loses on the ordinary path. Pointing a job's fault target at
-/// the endpoint the shell reads would work for a fault, and §26.3 flows *exits* down the same
-/// endpoint too, so every ordinary job would leave a second message on the shell's result endpoint
-/// behind its answer and the next command's read would take it. It also moves collection into the
-/// shell for every job, and takes every job out of the progenitor's supervision domain, which is what
-/// `ps`/`pgrep` read (DECISIONS §106 already records that cost as acceptable for one narrow stage
-/// and it is not acceptable for all of them).
-///
-/// **The supervisor telling** costs one capability and one word. `job_undertaker` already receives
-/// the death, already collects the corpse, and its own `BUGS` section already recorded that it "has
-/// no way to say anything". This is that sentence answered.
-///
-/// Distinct from [`SPAWN_FAILED`] because the two are different facts a person needs told apart:
-/// nothing ran, versus something ran and died. It sits one below `u64::MAX` for the same reason
-/// that one sits at it, and the same caveat applies: no program in this tree answers with either.
+/// Distinct from [`SPAWN_FAILED`]: nothing ran, versus something ran and died. One below
+/// `u64::MAX`; no program answers with either. See notes/grant-expression/spawn-protocol.md.
 ///
 /// Name: provisional, like everything a lane mints: a word in a protocol is exactly the kind of
 /// name an architect decides.
@@ -836,34 +672,14 @@ pub const JOB_FAULTED: u64 = u64::MAX - 1;
 
 /// **The badge on `job_undertaker`'s copy of the spawn endpoint** (milestone 685 (a job is finished
 /// when its memory is back), option A, ruled by calef 2026-10-06 UTC: "A looks right."). A message
-/// on the spawn endpoint carrying this badge is a [`reaped`] message, never a request.
+/// on the spawn endpoint carrying this badge is a [`reaped`] message, never a request. Only the
+/// copy the progenitor minted can carry it, since the shell's is unbadged `WRITE` and `BADGE`
+/// needs `GRANT`; the kernel delivers the badge on every receive, so each one is checked.
 ///
-/// The shell's copy is unbadged and carries `WRITE` alone, and `BADGE` needs `GRANT`
-/// (`abi::rendezvous::BADGE`), so nothing but the copy the progenitor minted for the undertaker can
-/// send with this badge. The kernel delivers the badge on a plain `SEND` too (milestone 613
-/// (a system log service: the in-memory half)'s amendment to §230 (badged endpoint capabilities)), in `x3` for `RECEIVE` and `RECEIVE_CAP`
-/// alike, which is why the progenitor can check it on every receive of a request, not only the
-/// first.
-///
-/// **The wire layout**, three words of a plain `SEND`:
-///
-/// ```text
-///   w0  label   the badge the progenitor put on the job's supervision capability (DECISIONS §148
-///               (resolves by asking the kernel)), which the kernel returned beside the death;
-///               0 for a job built without one
-///   w1  tid     the dead thread's id, as the kernel stamped it on the death message
-///   w2  0       reserved
-/// ```
-///
-/// The label is what the progenitor keys on, because it is a name the progenitor chose before the
-/// job ran: the progenitor holds a job's thread capability, not its thread id, so a tid alone would
-/// name nothing it knows. The tid rides along because the ruling asked for it and a reader of the
-/// trace wants it. `w0` and `w1` are the two words a `RECEIVE_CAP` returns as data (`x0`, `x2`),
-/// so a reaped message arriving where the progenitor expected a delegated capability is read
-/// whole.
-///
-/// **Sent after the collect, never before**: the message means the region is already back in the
-/// pool, which is the whole of its use. Name: provisional.
+/// Three words of a plain `SEND`, sent after the collect, so the region is already back: `w0` the
+/// label the progenitor put on the job's supervision capability (0 for none), which it keys on;
+/// `w1` the dead thread's id; `w2` zero. See notes/grant-expression/spawn-protocol.md. Name:
+/// provisional.
 pub const UNDERTAKER_BADGE: u64 = 1;
 
 /// **The "reaped" message for job `label`, thread `tid`** ([`UNDERTAKER_BADGE`] has the layout).
@@ -874,22 +690,13 @@ pub const fn reaped(label: u64, tid: u64) -> (u64, u64, u64) {
 
 /// **The bit that marks a badge as an installer endpoint's** (milestone 809 (the package client
 /// becomes a program), DECISIONS §270 (a package manager holds an installer endpoint, not the spawn
-/// endpoint)). The progenitor badges a copy of the spawn endpoint [`installer_badge`] of the job's
-/// label for a program that declares `Manifest::installer`, narrowed to `WRITE`, and places it at
-/// `crate::INSTALLER_SLOT`. A request carrying such a badge is served only if it is an
-/// [`Activation::Install`], [`Activation::Remove`] or [`Activation::Rollback`]; anything else is
-/// answered [`ActivationStatus::NotServedHere`] with nothing read past its first message. The
-/// answer goes to the holder's own reply endpoint, `crate::INSTALLER_REPLY_SLOT`, because the
-/// shell is reading the result endpoint while the holder runs.
+/// endpoint)). The progenitor badges a `WRITE` copy of the spawn endpoint [`installer_badge`] of
+/// the job's label for a program declaring `Manifest::installer`, at `crate::INSTALLER_SLOT`, which
+/// serves install, remove and rollback and answers [`ActivationStatus::NotServedHere`] otherwise.
 ///
-/// The wire after the first message is [`activation_request`]'s, unchanged: only the endpoint it
-/// arrives on is new. A label is never `0` and stays far below this bit (a counter from 1), and
-/// [`UNDERTAKER_BADGE`] is `1` without it, so the three kinds of sender never share a badge: the
-/// shell's copy is unbadged.
-///
-/// **A holder that promises frames and does not send them holds the progenitor** until it dies:
-/// its reaped message ends the wait, and the request is abandoned. One that blocks without dying
-/// holds it for good, the exposure every promise in this protocol has.
+/// Labels count from 1 and stay below this bit, and [`UNDERTAKER_BADGE`] is `1` without it, so no
+/// two kinds of sender share a badge. A holder that promises frames and never sends them holds the
+/// progenitor until its reaped message ends the wait, or for good if it never dies.
 ///
 /// Name: provisional (milestone 809).
 pub const INSTALLER_BADGE: u64 = 1 << 62;
@@ -922,14 +729,10 @@ pub const fn installer_serves(verb: Activation) -> bool {
 }
 
 /// **The word for bytes nobody vouched for** (DECISIONS §219, milestone 198 rung 3a). Sent on the
-/// result endpoint by the progenitor when an `IMAGE_BIT` request's digest is not in the
-/// installed-programs table, in place of [`SPAWN_FAILED`], because "nothing was built" and "it was refused
-/// as unvouched" are different facts a person needs told apart: the first is out of memory, the
-/// second is a decision.
-///
-/// A miss gets it unless the caller presented the run-unvouched capability ([`Wiring::run_unvouched`],
-/// §219's gate D2). A presented miss is built instead, with [`crate::UNVOUCHED_MANIFEST`]: only what
-/// the caller delegated, and the clock and configuration pages.
+/// result endpoint when an `IMAGE_BIT` request's digest is not in the installed-programs table, in
+/// place of [`SPAWN_FAILED`]: "nothing was built" is out of memory, and "refused as unvouched" is a
+/// decision. A caller presenting [`Wiring::run_unvouched`] has the miss built instead, with
+/// [`crate::UNVOUCHED_MANIFEST`]: only what it delegated, and the clock and configuration pages.
 ///
 /// Two below `u64::MAX`, for [`JOB_FAULTED`]'s reason one below it. Name: provisional.
 pub const SPAWN_UNVOUCHED: u64 = u64::MAX - 2;
@@ -945,12 +748,10 @@ pub const SPAWN_UNVOUCHED: u64 = u64::MAX - 2;
 pub const SPAWN_REFUSED_BY_MANIFEST: u64 = u64::MAX - 3;
 
 /// **The spawn service's word for a `graphical_terminal` launch on a boot with no display**
-/// (milestone 715 (provisional)). Since 715 the spawn service holds the display devices and the
-/// shell holds none, so the shell cannot find out from its own slots that there is nothing to
-/// launch a session on; it asks, and this is the answer. Distinct from [`SPAWN_FAILED`] for
-/// [`SPAWN_UNVOUCHED`]'s reason: "this boot has no display" is a fact about the machine, and "the
-/// session could not be built" (a second session, the job pool spent) is a failure, and a person
-/// needs them told apart. Four below `u64::MAX`, for [`JOB_FAULTED`]'s reason.
+/// (milestone 715 (provisional)). The shell holds no display device, so it asks, and this is the
+/// answer. Distinct from [`SPAWN_FAILED`]: no display is a fact about the machine, and a session
+/// that could not be built (a second session, the job pool spent) is a failure. Four below
+/// `u64::MAX`, for [`JOB_FAULTED`]'s reason.
 ///
 /// Mechanism: ruled 2026-10-04 (UTC, calef): the shell learns "no display" from this result word,
 /// not from a fact it is told at `_start`. Name: provisional (milestone 715, 2026-10-03); the
@@ -966,10 +767,10 @@ pub const SPAWN_NO_DISPLAY: u64 = u64::MAX - 4;
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/image-needs-jig.
 pub const SPAWN_NOT_IN_IMAGE: u64 = u64::MAX - 5;
 
-/// The ack the progenitor sends on the result endpoint when a **supervised** (interruptible) child started
-/// cleanly. An interruptible child reports its own progress and exit through the shared job frame,
-/// not the result endpoint, so the progenitor sends this once as the go-ahead: the shell reads it, then begins
-/// watching the job frame. `0` is distinct from [`SPAWN_FAILED`].
+/// The ack the progenitor sends on the result endpoint when a **supervised** (interruptible) child
+/// started cleanly. An interruptible child reports its own progress and exit through the shared job
+/// frame, not the result endpoint, so the progenitor sends this once as the go-ahead: the shell
+/// reads it, then begins watching the job frame. `0` is distinct from [`SPAWN_FAILED`].
 pub const SPAWN_OK: u64 = 0;
 
 #[cfg(test)]
@@ -1021,7 +822,8 @@ mod tests {
 
     #[test]
     fn interruptible_bit_survives_a_zero_page_count() {
-        // The interrupt demonstrators take no --mem, so the flag must ride independent of the count.
+        // The interrupt demonstrators take no --mem, so the flag must ride independent of the
+        // count.
         let (_, _, w2) = request(
             2,
             0,
@@ -1190,10 +992,9 @@ mod tests {
         assert!(!installer_serves(Activation::Vouch));
     }
 
-    /// **`SECOND_DIRECTORY_GRANT_BIT` follows [`DIRECTORY_GRANT_BIT`]'s own precedent**: it is a second bit, not a count, and it
-    /// round-trips independent of whether `dir` itself is set (nothing here enforces the "meaningless
-    /// without `dir`" rule from the wire alone; that is the emitter's obligation, stated in
-    /// [`Wiring::second_directory_grant`]'s own doc).
+    /// **`SECOND_DIRECTORY_GRANT_BIT` follows [`DIRECTORY_GRANT_BIT`]'s own precedent**: it is a
+    /// second bit, not a count, and it round-trips whether or not `directory_grant` is set; the
+    /// "meaningless without it" rule is the emitter's ([`Wiring::second_directory_grant`]).
     #[test]
     fn a_second_directory_grant_is_a_second_bit_not_a_count() {
         let (_, _, w2) = request(
