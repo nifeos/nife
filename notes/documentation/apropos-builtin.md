@@ -1,5 +1,7 @@
 # The guest searches with `apropos`, and it is a builtin
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), which states the conclusion.
 
 Phase 2's other half, and the decision in it is *where the search runs* rather than how.

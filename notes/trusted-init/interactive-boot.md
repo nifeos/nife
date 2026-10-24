@@ -123,3 +123,43 @@ is what the inits needed, a capability placed at a named slot (§67's diagnostic
 stack size the caller states. The stack is a field rather than a constant because the two callers
 honestly differ: four pages is enough for the supervision tree, and a child at the prompt gets twelve
 because the shell's redirection path found the wall twice.
+
+## What the boot keeps, and what it says before the prompt
+
+`system_initializer::boot` ends by holding a few capabilities for the life of the boot and printing
+a few sentences. Each has a reason the code cannot show, and they are here.
+
+The file service stays. A directory grant has one delivery mechanism, a caretaker, and the caretaker
+must hold the file service to attenuate it. The shell's copy carries no `GRANT`, so only the
+progenitor can build one. A program spawned without the capability its command line named would be
+the worst failure this model has. The two slots sit on the progenitor's capability peak for the
+whole boot, and `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` keeps that account.
+
+The boot terminal's endpoint stays too, and its output page does not. A `graphical_terminal` session
+with no virtio keyboard takes its keystrokes from the boot's own line discipline, in raw mode. Only
+the progenitor can grant a session that endpoint. The shell's copy carries no `GRANT`, so nothing
+typed at the prompt can hand the terminal, with its `OPERATION_READLINE`, to any program it likes.
+That widening is what milestone 50 (pipes and redirection)'s sink adapter exists to avoid. So the
+spawn service holds `WRITE | GRANT` on an endpoint it never receives on, the same shape as the file
+service pair.
+
+The sentences are printed through the shell's output page, mapped into the progenitor only once the
+first one is said. So the entropy, network and login outcomes are decided early in `boot` and said
+together at the end. The measurement sentence is the load-bearing one. A measured boot's natural bug
+is for the check to vanish when the build step does not run, and a boot that says nothing looks like
+one that measured everything. `script/swish-check` reads the sentence, so a boot that stopped
+measuring fails the gate. The sentence about how directory grants are delivered is there for the
+same gate.
+
+The login sentence names its evidence. It reports that `identity_provisioner` answered `IDP_RPT_OK`:
+a credential store exists and holds this identity and secret. It does not claim that `login` is
+alive. Knowing that would need `login` to say so, which is a message, an endpoint and a wait the
+progenitor does not have. A boot that blocks on a child's readiness hangs when that child is the
+broken thing. The survival claim lives in `script/swish-check` instead, which fails a boot whose
+kernel reported killing a user thread. The password is printed once, because the progenitor's own
+copy is wiped once `identity_provisioner` has used it.
+
+The undertaker gets three capabilities and nothing else. `READ` on the supervision endpoint lets it
+free a job's memory and never spend it. `WRITE` on the result endpoint lets it say the one word a
+killed job cannot say for itself, `JOB_FAULTED`. `WRITE` on a copy of the spawn endpoint, badged
+`UNDERTAKER_BADGE`, lets it say which job it reaped. Neither `WRITE` carries `GRANT`.

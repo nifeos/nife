@@ -21,13 +21,4 @@ mechanism or one record each, at a length the main page's prose budget cannot ho
 `notes/<stem>/` appendix convention §212 (a prose budget) set, so its name is the main page's stem;
 the file name `prose-only.md` matches the classifier it documents and changes if that is renamed.*
 
-Each stem below is named for its content, and calef names files.
-
-- `lane-claim-check` Name: provisional. After the script it documents.
-- `what-the-merge-queue-took-over` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `before-the-queue`.
-- `actions-migration` Name: provisional.
-- `at-risk-check` Name: provisional. After the script it documents.
-- `main-push-and-check-timeout` Name: provisional.
-- `what-the-queue-bought` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `measured-2026-08-16`.
-- `merge-methods-and-holds` Name: provisional.
-- `limitations` Name: provisional.
+Each stem here is named for its content, and calef names files.

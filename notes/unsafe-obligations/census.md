@@ -1,5 +1,7 @@
 # The unsafe census: the measurement (milestone 134)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/unsafe-obligations.md](../unsafe-obligations.md), which summarizes it. The
 ceilings each number is held to are in [ceilings.md](ceilings.md).
 

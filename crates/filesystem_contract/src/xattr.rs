@@ -8,23 +8,13 @@ pub const MAX_NAME: usize = 255;
 
 /// The longest attribute **value**, in bytes.
 ///
-/// Three kibibytes, and the bound that sets it is the transport: [`fs::SETXATTR`] carries a name
-/// and a value in one [`super::PAGE`], so `MAX_NAME + MAX_VALUE` must fit 4096 with room that a
-/// reader can see is room. It is far above what the application needs (Apple's `AFP_AfpInfo` is
-/// 60 bytes, a `FinderInfo` blob is 32) and far below what Samba's `streams_xattr` can be asked
-/// to hold, because that feature stores whole alternate data streams as attributes.
+/// Three kibibytes, set by the transport: [`fs::SETXATTR`] carries a name and a value in one
+/// [`super::PAGE`], so `MAX_NAME + MAX_VALUE` must fit 4096 with room to spare. Apple's
+/// `AFP_AfpInfo` is 60 bytes and a `FinderInfo` blob 32, while Samba's `streams_xattr` can ask for
+/// far more; §99 (where Apple's metadata lands) says what fits here.
 ///
-/// **Corrected 2026-08-18.** This said `AFP_AfpInfo` was 402 bytes, which conflated two
-/// different blobs. `AFP_INFO_SIZE` is `0x3c`, 60, in Samba's `source3/include/MacExtensions.h`,
-/// and Apple's own SMB client carries it as `uint8_t afpinfo[60]`. The 402 is the
-/// AppleDouble-shaped buffer on Samba's *netatalk* metadata path, `uint8_t ad_data[402]` in
-/// `vfs_fruit.c`. The sizing argument above survives the correction with more room, not less;
-/// see §99 for what does and does not fit here.
-///
-/// **BUGS.** A resource fork larger than this is refused with [`E2BIG`], loudly, per DECISIONS
-/// §42: an attribute store that silently truncated a value would hand back a file that looked
-/// intact and was not. Lifting the limit means chunking the transfer across requests, which the
-/// contract does not do for anything today.
+/// **BUGS.** A larger value is refused with [`E2BIG`], loudly, per DECISIONS §42 (a filesystem
+/// declares what it offers and must be truthful); lifting the limit means chunking the transfer.
 pub const MAX_VALUE: usize = 3072;
 
 /// The most attributes one file or directory may carry.
@@ -70,20 +60,12 @@ pub const ENOTSUP: i32 = 95;
 
 /// **The reserved name the attribute store lives under**, in the image root.
 ///
-/// It is refused by every name-taking verb and skipped by [`fs::READDIR`], in **every**
-/// directory rather than only in the root, so the rule a client has to remember is one sentence
-/// instead of a location-dependent one. A store a client could name would be part of the
-/// namespace, and then "the attributes of a file" would be reachable as ordinary bytes by
-/// anything holding the directory.
+/// Every name-taking verb refuses it with `EINVAL`, as for `..`, and [`fs::READDIR`] skips it, in
+/// every directory, so no client reaches attributes as ordinary bytes. Recovery does see it:
+/// `redoxfs_host extract` and upstream's FUSE mount carry it out with the files, a decision and not
+/// a leak (notes/host-recovery.md).
 ///
-/// **BUGS.** You cannot create a file called `.nife-attrs` anywhere on a nife
-/// filesystem, at any rights. The refusal is `EINVAL`, the same one `..` gets, because the name
-/// is not expressible rather than not permitted.
-///
-/// Recovery **does** see it. `redoxfs_host extract` and upstream's FUSE mount show this
-/// directory as ordinary data, so a backup carries the attributes out with the files. That is a
-/// decision and not a leak (notes/host-recovery.md); the store is unnameable through the
-/// *contract*, and the contract is what confines a client.
+/// **BUGS.** No file anywhere on a nife filesystem can be called `.nife-attrs`, at any rights.
 pub const STORE_DIR: &str = ".nife-attrs";
 
 /// Pack [`fs::SETXATTR`]'s second word: the value's type code in the high 32 bits, its length in
@@ -200,26 +182,14 @@ pub mod list {
     }
 }
 
-/// **The store's on-disk record format, and the whole of the layer's semantics as pure
-/// functions.**
+/// **The store's on-disk record format, and the layer's semantics as pure functions.**
 ///
-/// One node's attributes are one blob: a sequence of records, each a [`store::RECORD_HEADER`]-byte
-/// header (a name length, a `u32` kind, a `u16` value length, all little-endian) followed by the
-/// name and then the value. The FS server keeps one such blob per node in a file named for the
-/// node's `TreePtr` id ([`store::file_name`]) inside [`STORE_DIR`].
-///
-/// **Why the format is published here rather than hidden in the server.** Two reasons, and the
-/// first is the honest one: every interesting rule of this feature (what replaces what, when a
-/// limit is hit, what a truncated blob means) lives in [`store::set`], [`store::remove`] and [`store::get`], which are
-/// pure functions over a byte slice and therefore host-tested in milliseconds instead of under an
-/// emulator. The second is recovery: a person holding a damaged image and the `redoxfs_host`
-/// tool can read the store, because the format is written down next to the code that makes it.
-///
-/// **Keyed on the node, which is what makes rename free.** A rename changes a directory entry and
-/// not the node, so attributes follow a file across one without any code knowing a rename
-/// happened. AppleDouble sidecars get exactly this wrong, and so would any path-keyed store; the
-/// correctness is only available inside the FS server, which is an argument *for* the layer
-/// rather than a consolation for it.
+/// One node's attributes are one blob of records, each a [`store::RECORD_HEADER`]-byte header (a
+/// name length, a `u32` kind, a `u16` value length, little-endian), then the name, then the value.
+/// The FS server keeps one blob per node in a file named for the node's `TreePtr` id
+/// ([`store::file_name`]) inside [`STORE_DIR`], so attributes follow a file across a rename. The
+/// format is public so its rules are host-tested and a recovery tool can read it. See
+/// notes/xattr.md.
 pub mod store {
     use super::{E2BIG, ENODATA, ENOSPC, ERANGE, MAX_COUNT, MAX_KIND, MAX_VALUE, is_valid_name};
 
@@ -290,20 +260,12 @@ pub mod store {
         used
     }
 
-    /// **Set `name` to `value`, producing the new blob in `out` and returning its length.**
+    /// **Set `name` to `value`, producing the new blob in `out` and returning its length.** An
+    /// existing attribute is replaced in place, so [`super::super::fs::LISTXATTR`]'s order does not
+    /// shuffle; a new one is appended.
     ///
-    /// An existing attribute is replaced **in place**, so the order a client sees from
-    /// [`super::super::fs::LISTXATTR`] does not shuffle when a value changes; a new one is
-    /// appended. Create and replace are one operation, for the reason
-    /// [`super::super::fs::SETXATTR`] gives.
-    ///
-    /// `out` must hold `blob.len() + record_len(name.len(), value.len())`, which is always
-    /// enough because replacing can only shrink the result. A shorter one is [`ENOSPC`], which a
-    /// correctly sized caller never sees.
-    ///
-    /// Errors are errnos rather than a bespoke type, because the FS server's rule is that
-    /// nothing below the serve loop speaks the wire's vocabulary and everything speaks the
-    /// engine's.
+    /// `out` must hold `blob.len() + record_len(name.len(), value.len())`, which is always enough;
+    /// a shorter one is [`ENOSPC`]. Errors are the engine's errnos, as below the serve loop.
     pub fn set(
         blob: &[u8],
         name: &[u8],
