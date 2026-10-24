@@ -167,6 +167,24 @@ Three findings against this note's predictions:
   floating-point save area. relibc's `printf` printed every `double` as 0 until it read the bits as
   a `u64`. SQLite's `speedtest1` did not notice, because SQLite formats numbers itself; ioping did.
 
+## The errno a C program sees
+
+`crates/c_library_errno` translates each `std::io::Error` the platform layer meets into an `errno`.
+It is a crate of its own so it can be proven on the host in milliseconds, because the platform layer
+itself builds only for the `*-unknown-nife` targets.
+
+The mapping is by meaning, the way `std` maps the other way (`decode_error_kind` on Unix). Where a C
+caller's behavior turns on the value, the value matters more than the wording:
+
+- SQLite treats `ENOENT` from `open` as "no such database, create it", and `EACCES` and `EPERM` as
+  "read-only". So a missing grant is `EACCES`, never `EIO`.
+- nife's `std` answers `Unsupported` for anything the platform does not provide (no grant, no such
+  operation), and C's word for that is `ENOSYS`.
+- Anything with no closer meaning is `EIO`, the errno a C program is least likely to retry.
+
+The numbers are Linux's generic ones, which `c_library`'s `errno.h` also uses. `c_library` checks at
+compile time that its constants equal the crate's, so the two cannot drift.
+
 ## BUGS
 
 - Measured from a shallow clone. Submodules were not fetched, so dlmalloc's and openlibm's sizes are
