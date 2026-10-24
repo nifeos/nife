@@ -1,5 +1,7 @@
 # The filesystem test fixture
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.*
+
 `crates/filesystem_fixture` holds the names and contents of the files the test image ships, the
 witnesses' verdict words, and the shapes of the `walk` and `throughput` benchmarks. Three programs
 read it and must agree: the host build that writes the RedoxFS image, the client that reads and

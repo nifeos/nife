@@ -1,5 +1,7 @@
 # The FAT32 writer
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.*
+
 `crates/file_allocation_table` lays out one FAT32 volume holding one boot file, as arithmetic with
 no I/O. Why the installer needs it, the cluster count that types the volume, and the alignment bug
 are in [installing.md](installing.md), section 3. This page holds the volume's shape, the long-name

@@ -23,14 +23,4 @@ not:
 *Name: provisional, for the directory and the stems `what-is-left` and
 `the-machine-and-your-share`. Naming is calef's; `script/names --unratified` lists each stem.*
 
-Each stem below is named for its content, and calef names files.
-
-- `survey-design` Name: ratified 2026-10-18 (calef, "survey-design.md") Refused `survey-method`.
-- `pgrep` Name: provisional. For the program it describes.
-- `address-space-enumeration` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `pmap-listing`.
-- `watch` Name: provisional. For the program it records.
-- `top` Name: provisional. For the program it describes.
-- `limitations` Name: provisional.
-- `remaining-procps-programs` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `what-is-left`.
-- `the-ps-crate` Name: provisional. For the crate whose doc comments link it.
 Each stem here is named for its content, and calef names files.

@@ -1,5 +1,8 @@
 # The `ps` crate: why its logic has the shape it has
 
+*Name: provisional. For the crate whose doc comments link it. Each stem here is named for its
+content, and calef names files.*
+
 `crates/ps` is the logic of `ps`, lifted out to run on the host; `components/src/ps.rs` is the
 syscall and the two output streams. [process-view.md](../process-view.md) has what the view is.
 This page holds the reasons the crate's doc comments link.

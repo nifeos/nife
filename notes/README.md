@@ -46,7 +46,3 @@ area directories), ruled B). Appendices under
 - [Build, boot and install](README/build-boot-and-install.md): the toolchain, the boot formats, packages and installing.
 - [How the tree is run](README/how-the-tree-is-run.md): gates, records and the merge queue that keep many lanes honest.
 - [Delegation and the method](README/delegation-and-the-method.md): how agents do the work here, and what it costs.
-
-`file-allocation-table.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.
-
-`filesystem-fixture.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.
