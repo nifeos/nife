@@ -28,7 +28,7 @@ The shipped document exercises the parent's four answers:
 
 - `least_authority_demo 7`, `least_authority_demo 3` and `memory_grant_depleter --mem 4` are
   planned, backed and fired. Their answers come back on the endpoint the plan said they would
-  hold. The third is milestone 129's `--mem` grant: this timetable holds
+  hold. The third is milestone 129 (scheduled execution)'s `--mem` grant: this timetable holds
   `timetable::SHIPPED_HELD.mem_pages` pages it may split off, and `memory_grant_depleter` maps some
   of them and reports how many.
 - `memory_grant_depleter` with no `--mem`, and `wc`, are refused by the prompt's own check. The same
@@ -53,17 +53,18 @@ leaked refusal fails on the value rather than on a count.
 registrar, which will be a user's durable session once milestone 152 (durable delegation) rebuilds
 one. It sends four replacements, each the control for the others:
 
-1. The stored schedule's shape, `STORED_SCHEDULE_CONTROL`, with the program renamed. §222's fifth
-   sub-ruling is that the session writes the store and then replaces, so what the store holds must
-   be exactly what a replacement accepts, unedited. Its `at-boot` line fires (9).
+1. The stored schedule's shape, `STORED_SCHEDULE_CONTROL`, with the program renamed. §222 (who holds
+   a user's schedule)'s fifth sub-ruling is that the session writes the store and then replaces, so
+   what the store holds must be exactly what a replacement accepts, unedited. Its `at-boot` line
+   fires (9).
 2. A document that does not parse. It is refused whole, with its line number in the page, and
    nothing fires: the schedule in force is untouched.
 3. An edit. The `at-boot` line is resent byte for byte and keeps its beat, so it does not fire a
    second time. The `every 30s` line is removed. A new `at-boot` line fires once (16), a scheduled
    `date` is unbacked, and a new hourly line arms and never comes round.
 4. An empty document, which ends the timetable. The run was asked for no fire count, so nothing else
-   could end it. A timetable holding nothing would still hold its session up, under §16's
-   live-children rule.
+   could end it. A timetable holding nothing would still hold its session up, under §16 (object
+   revocation)'s live-children rule.
 
 One tolerance is stated rather than hidden. The stored schedule's `every 30s` line is in force from
 the first replacement until the third, and a host stalled for thirty seconds in between would let
@@ -121,12 +122,12 @@ covers it with room.
   `timetable::Registry` holds one per entry. Too small a stack dies with a data abort whose faulting
   address is the stack pointer. That is what a stack overflow looks like from the kernel, and it
   reads like a wild pointer when it is not one.
-- `spawn_timetable_with` does not use the suite's shared progenitor-shaped spawn. Why is in
-  [the progenitor-shaped spawn](../progenitor-shaped-spawn.md).
+- `spawn_timetable_with` does not use the suite's shared progenitor-shaped spawn. Why is in [the
+  progenitor-shaped spawn](../progenitor-shaped-spawn.md).
 - The archive is copied into fresh pages rather than shared with the initial ramdisk's, so it costs
   the address space a page each. That is the price of narrowing: no capability in this system names
-  "these blocks of that archive", so a narrower endowment is a smaller archive, and a smaller archive
-  is bytes somebody has to own.
+  "these blocks of that archive", so a narrower endowment is a smaller archive, and a smaller
+  archive is bytes somebody has to own.
 - Each test gives back the budget, the TCB region and the endpoint region. The kernel's region table
   is finite, and a later test's fire once failed with "the budget cannot back one instance" at 252
   of 256 live regions. `reclaim_region` refuses a region with a child still carved out of it, so the

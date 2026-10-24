@@ -79,9 +79,9 @@ pub(super) fn spawn_bare(
 /// A bare thread belongs to no reclaimable region, so nothing tears it down when its test returns,
 /// and a spinner left running loads every later test: two on a four-hart machine starved
 /// `reclaim_frees_a_started_then_exited_childs_regions` into its watchdog on CI. See
-/// `notes/riscv-parity-scope.md`. The kill is armed rather than immediate (DECISIONS §16), so this
-/// waits for the name to stop resolving. Returns whether the thread went; callers assert on it,
-/// because a silent failure here restores the leak this exists to remove.
+/// `notes/riscv-parity-scope.md`. The kill is armed rather than immediate (DECISIONS §16 (object
+/// revocation)), so this waits for the name to stop resolving. Returns whether the thread went;
+/// callers assert on it, because a silent failure here restores the leak this exists to remove.
 pub(super) fn reap_bare(tid: crate::thread::ThreadId) -> bool {
     if !sched::kill_thread(tid) {
         // Already gone. Nothing to wait for, and not a failure.

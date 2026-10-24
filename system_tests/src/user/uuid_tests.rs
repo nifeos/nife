@@ -50,13 +50,14 @@ fn chunk(out: RendezvousId, buf: &mut [u8; 16]) -> Option<usize> {
 
 /// **A program that was not endowed entropy draws none, prints no identifier, and says so.**
 ///
-/// The half of milestone 111 that carries the claim: authority a program did not declare is not
-/// quietly available anyway. A process that draws a key and one that hardcodes it make the same
-/// syscalls, so only taking the capability away tells them apart, and the assertions are about
-/// silence: no byte of the 36-character identifier reaches the sink, the stream is the one
-/// sentence, and the process ends normally. A `uuid` that fell back to a counter, a boot-time seed
-/// or a tick fails, the fallback `crates/globally_unique_identifier_partition_table` and
-/// `disk_partitioner` refuse. Arch-neutral (DECISIONS §19 (architectural parity is a tenet)): every ISA runs this very test.
+/// The half of milestone 111 (a shell that can endow a child with entropy) that carries the claim:
+/// authority a program did not declare is not quietly available anyway. A process that draws a key
+/// and one that hardcodes it make the same syscalls, so only taking the capability away tells them
+/// apart, and the assertions are about silence: no byte of the 36-character identifier reaches the
+/// sink, the stream is the one sentence, and the process ends normally. A `uuid` that fell back to
+/// a counter, a boot-time seed or a tick fails, the fallback
+/// `crates/globally_unique_identifier_partition_table` and `disk_partitioner` refuse. Arch-neutral
+/// (DECISIONS §19 (architectural parity is a tenet)): every ISA runs this very test.
 #[test_case]
 fn a_process_granted_no_entropy_prints_no_identifier() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");

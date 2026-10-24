@@ -11,7 +11,8 @@
 //!
 //! 1. A non-holder cannot touch the port, and a holder's grant does not leak across a switch:
 //!    [`port_holder_transmits_then_a_non_holder_faults`].
-//! 2. A revoked holder faults on its next `in`/`out`: [`a_revoked_holder_faults_on_its_next_port_write`].
+//! 2. A revoked holder faults on its next `in`/`out`:
+//!    [`a_revoked_holder_faults_on_its_next_port_write`].
 //! 3. A holder that drops its own port capability faults on its next `in`/`out`:
 //!    [`a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write`].
 //! 4. A holder that takes the range back from everyone else keeps its own bitmap:
@@ -159,14 +160,14 @@ fn reap(region: u64) {
 /// `(3/4)^64`, about one in a hundred million, and a miss fails the test loudly rather than passing.
 const NON_HOLDER_ATTEMPTS: u32 = 64;
 
-/// **A holder transmits; a non-holder that runs next on the same core faults.** The non-holder
-/// test and the hand-off test in one, because the order is the hand-off: the non-holder runs after
-/// the holder installed and vacated the TSS bitmap, so its fault proves the switch left the port
-/// denied. The bitmap is per core, so the holder reports the core it wrote on
-/// ([`super::x86_programs::port_out_reporting_cpu`]) and the non-holder executes its `out` only on
-/// that core, otherwise faulting at a different pc ([`super::x86_programs::port_out_on_cpu_then_exit`]),
-/// which counts as a miss and is retried. A thread moved between its core read and its `out` is not
-/// covered. See notes/x86-port/the-port-range-tests.md.
+/// **A holder transmits; a non-holder that runs next on the same core faults.** The order is the
+/// hand-off: the non-holder runs after the holder installed and vacated the TSS bitmap, so its
+/// fault proves the switch left the port denied. The bitmap is per core, so the holder reports the
+/// core it wrote on ([`super::x86_programs::port_out_reporting_cpu`]) and the non-holder executes
+/// its `out` only on that core, otherwise faulting at a different pc
+/// ([`super::x86_programs::port_out_on_cpu_then_exit`]), which counts as a miss and is retried. A
+/// thread moved between its core read and its `out` is not covered. See
+/// notes/x86-port/the-port-range-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.port_holder_transmits_then_a_non_holder_faults.patch`
 #[test_case]
@@ -299,8 +300,8 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
 
 /// **A holder that deletes its own port capability faults on its next `out`** (milestone 313's
 /// audit, 2026-09-17): the grant is a cached field the switch installs, and `SYS_CAP_DELETE` must
-/// clear it with the slot, or §12 (call/reply IPC: a one-shot reply capability)'s "a consumed capability cannot be used again" fails for the one
-/// object enforced outside the table. The progenitor makes this drop on every x86 boot. The child
+/// clear it with the slot, or §12 (call/reply IPC: a one-shot reply capability)'s "a consumed
+/// capability cannot be used again" fails for the one object enforced outside the table. The child
 /// deletes [`PORT_SLOT_WITHOUT_WAKE`], executes `out` and exits rather than reporting, so a
 /// permitted `out` goes red instead of hanging (row 26's shape): the first `assert_eq!` fails,
 /// holding `EVENT_EXIT` where it wanted `EVENT_FAULT`, and the pc check guards the other direction.

@@ -45,12 +45,13 @@ const ARMED: &str = "timetable: armed";
 /// the assertions below as well. See notes/scheduled-execution/archive-narrowing.md.
 const PLANNED_PROGRAMS: [&str; 2] = ["least_authority_demo", "memory_grant_depleter"];
 
-/// **What `at-boot memory_grant_depleter --mem 4` grants**, mirrored from `components/timetable.conf`
-/// and `timetable::SHIPPED_HELD.mem_pages`, whose 4 pages admit the line. Written rather than
-/// computed for [`PLANNED_PROGRAMS`]' reason (this test does not depend on the `timetable` crate,
-/// because of `script/stack-frame-check`), and held by the same host test. Used as a range below:
-/// how many of the 4 pages `memory_grant_depleter` manages to map is page-table overhead, which
-/// this milestone makes no claim about and which may differ between aarch64 and riscv64.
+/// **What `at-boot memory_grant_depleter --mem 4` grants**, mirrored from
+/// `components/timetable.conf` and `timetable::SHIPPED_HELD.mem_pages`, whose 4 pages admit the
+/// line. Written rather than computed for [`PLANNED_PROGRAMS`]' reason (this test does not depend
+/// on the `timetable` crate, because of `script/stack-frame-check`), and held by the same host
+/// test. Used as a range below: how many of the 4 pages `memory_grant_depleter` manages to map is
+/// page-table overhead, which this milestone makes no claim about and which may differ between
+/// aarch64 and riscv64.
 const MEM_GRANT_PAGES: u64 = 4;
 
 /// **Room for the archive this spawn site builds**, which is not the initial ramdisk.
@@ -834,7 +835,8 @@ const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NANOS_PER_SE
 /// The lead is not what the test proves: it only has to outlast the gap between this publication
 /// and the timetable's next pass, since a pass that first reads the page at 02:00 or later arms the
 /// next day's occurrence instead. A pass is one yield of a loop that never blocks here, so a second
-/// covers it with room, and when it does not, [`fires_at_two`] publishes again instead of going red.
+/// covers it with room, and when it does not, [`fires_at_two`] publishes again instead of going
+/// red.
 const LEAD: u64 = clock_contract::NANOS_PER_SEC;
 
 /// **How long after 02:00 to wait for the report before publishing again.** Four seconds, so a

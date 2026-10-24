@@ -1,13 +1,13 @@
 //! **A seeded syscall driver with a shadow model** (milestone 752 (a seeded syscall driver with a
-//! shadow model), provisional; part (b) of `design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`).
+//! shadow model), provisional; part (b) of
+//! `design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`).
 //!
-//! From a seed, seven actor threads issue random capability operations through `syscall::invoke`,
-//! the function the trap handler calls for `SYS_INVOKE`. The conductor models every capability
-//! table, rendezvous queue and the notification's word, predicts each answer and each actor's whole
-//! table, and fails on the first difference. Actor 6 is the witness and holds nothing: every call
-//! it makes must be refused `NoSuchSlot`, and its table must stay empty. A seed replays the same
-//! operations on every run; `NIFE_SYSCALL_FUZZ_SEEDS=<first>:<count>` at build time (read with
-//! `option_env!`) replaces the committed list. See notes/fuzzing/the-syscall-driver.md.
+//! From a seed, seven actor threads issue random capability operations through `syscall::invoke`.
+//! The conductor models every capability table, rendezvous queue and the notification's word,
+//! predicts each answer and each actor's whole table, and fails on the first mismatch. The witness,
+//! actor 6, holds nothing: its every call must be refused `NoSuchSlot`, its table stay empty.
+//! A seed always replays the same calls; `NIFE_SYSCALL_FUZZ_SEEDS=<first>:<count>` at build time
+//! (`option_env!`) replaces the committed seeds. See notes/fuzzing/the-syscall-driver.md.
 
 //! # What the generator reaches
 //!
