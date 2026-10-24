@@ -204,8 +204,8 @@ The tables are in [session-2026-09-04.md](footprint-perturbation/session-2026-09
 - Dead code that is never executed cannot make anything faster. So the 193 ns is code layout, and
   the 19 ns cannot be attributed to footprint either. It is not a null result: the instrument is
   confounded, rather than the hypothesis false.
-- Phase 4 of milestone 188 (the IPC fastpath) stays where it is. A layout control decides it, and
-  that control is the one this page now plans.
+- Phase 4 of milestone 188 (the IPC fastpath) waited on a layout control. calef refused it on
+  2026-10-24 (UTC), after step 0 showed the control cannot move the hot path: milestone 951.
 - E1 has a real knee: latency rises 68% between 2 and 16 threads, then is flat to 96. The effect that
   §96 (process kernel or event kernel) worries about is real on radon. The customer path runs 4 to 8
   threads, below the knee.
