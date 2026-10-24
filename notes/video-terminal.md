@@ -1,5 +1,7 @@
 # The VT engine: `crates/video_terminal`
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-09.*
+
 This note carries the design that `crates/video_terminal`'s doc comments link to. The crate is the
 grid a display terminal keeps: bytes in, a character grid out, plus the rectangle that changed. Its
 font and its limits are in [glyphs.md](glyphs.md), and the line discipline it displays is in

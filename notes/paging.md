@@ -1,5 +1,8 @@
 # The paging crate
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-07. Named for the crate it
+documents.*
+
 `crates/paging` builds page tables for every format this tree walks: aarch64, Sv39, Sv39 with
 T-Head's memory types, x86's IA-32e, and the two IOMMU formats VT-d and AMD-Vi. Each format
 supplies a few encode and decode operations through `PageFormat`, and the walk is written once in
