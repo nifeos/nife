@@ -599,7 +599,8 @@ mod proofs {
 
     /// A request word round-trips its three fields for every combination `place` can produce;
     /// outside those ranges the packing is deliberately lossy. On its own it is blind to a swap of
-    /// both length fields in encoder and decoder (milestone 213); the parse proof above catches
+    /// both length fields in encoder and decoder (milestone 213 (a harness that re-implements the
+    /// code instead of calling it proves nothing about the code)); the parse proof above catches
     /// that, so weakening it uncovers the wire format. See notes/credentials/contract.md.
     /// Falsification: replayable `crates/credential_contract/falsifications/proofs.a_request_word_round_trips_every_field.patch`
     #[kani::proof]

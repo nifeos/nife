@@ -41,7 +41,7 @@ always `NO_DATA`, so it is not a decryption oracle either.
 `NO_ENTROPY` is its own code rather than a case of `MALFORMED`, because the two need different
 responses. A malformed request is the provisioner's bug. `NO_ENTROPY` is the machine saying it has
 no unpredictable bits. Serving the request anyway, with a salt the service made up, is the silent
-degradation DECISIONS §42 forbids. It would also be invisible: every login would keep working, and
+degradation DECISIONS §42 (a filesystem declares what it offers and must be truthful) forbids. It would also be invisible: every login would keep working, and
 the whole store would be one rainbow table wide.
 
 `place` refuses an empty identity on the client side, not only at the server. The empty name is the
@@ -57,13 +57,13 @@ wrong answer that looks like a bug in the code under test. It has four readers.
 authenticates against. xtask's SMB prober computes a real proof over the password on the host. A
 kernel test asserts that no key material is left in the frame the adapter and the service share.
 
-The account is [MS-NLMP] §4.2.1's published one on purpose. Microsoft prints every intermediate
+The account is the one section 4.2.1 of [MS-NLMP] publishes, on purpose. Microsoft prints every intermediate
 value for `Domain\User` with password `Password`, so a gate built on it asserts against numbers
 somebody else published. `ntlm`'s own tests pin those numbers. It is a fixture, not a deployment. A
 real share's account and password belong to somebody and must never be these
 ([notes/smb.md](../smb.md), BUGS).
 
-`fixture::PEOPLE` (milestone 293) is the three people every credential fixture authenticates,
+`fixture::PEOPLE` (milestone 293 (a role that differs only in its credentials is an argument)) is the three people every credential fixture authenticates,
 matching the three family members design/roadmap/0056-secrets-and-entropy.md says the real
 deployment serves. `credentialer_test_client`, `login_test_client` and
 `kernel::user::identity_provisioning_tests` all read it. It holds pairs rather than two parallel
@@ -78,14 +78,14 @@ The host tests sample a few dozen of the 2^64 request words and 2^64 reply words
 are about what an adversary can send or receive, so the Kani harnesses check every word.
 
 `no_request_word_makes_the_parse_read_outside_the_page` states the two length shifts as literals
-(milestone 211). Asserting the slice lengths only against `id_len` and `secret_len` would prove that
+(milestone 211 (a harness that states its property through the function under test cannot see that function break)). Asserting the slice lengths only against `id_len` and `secret_len` would prove that
 `read` used those accessors, and an `id_len` that read the wrong sixteen bits would satisfy both
 sides.
 
 `a_request_word_round_trips_every_field` is an encoder round-tripped through its own decoder, and on
-its own it is blind (milestone 213's sweep, measured). Swapping the two length fields in `req` and in
+its own it is blind (milestone 213 (a harness that re-implements the code instead of calling it proves nothing about the code), measured). Swapping the two length fields in `req` and in
 `id_len`/`secret_len` together leaves it verifying, while a client using the real wire format has its
 identity read as its secret length. The sibling above goes red on exactly that patch. Restating the
 shifts here as well would be a second copy of a claim one harness already pins, which DECISIONS §46
-refuses. The cost is that this harness's coverage is a fact about the suite: deleting or weakening
+(thin primitives or whole subsystems) refuses. The cost is that this harness's coverage is a fact about the suite: deleting or weakening
 the sibling silently uncovers the wire format.

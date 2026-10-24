@@ -201,8 +201,9 @@ impl<T, const N: usize> Table<T, N> {
     ///
     /// The slot index makes a sweep resumable across calls that give the lock back, which
     /// [`iter`](Self::iter) cannot be: removals below a slot do not move it. `rendezvous::SURVEY`
-    /// (milestone 126) hands it to userspace as a cursor, so a resumed sweep is a sequence of
-    /// snapshots. `from >= N` yields nothing. See notes/generational-names.md.
+    /// (milestone 126 (the `procps` package, now `process-tools`)) hands it to userspace as a
+    /// cursor, so a resumed sweep is a sequence of snapshots. `from >= N` yields nothing. See
+    /// notes/generational-names.md.
     ///
     /// ```
     /// use generational_table::Table;

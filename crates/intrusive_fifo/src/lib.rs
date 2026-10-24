@@ -248,9 +248,10 @@ impl<T: Node> Default for Fifo<T> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). The harness drives the real `Fifo` with a symbolic
-/// operation sequence against a trivially-correct model (an array and two counters), covering
-/// every push/pop pattern up to the bound, the regrowth-from-empty transitions included.
+/// Machine-checked proofs (DECISIONS §14 (the project's direction)). The harness drives the real
+/// `Fifo` with a symbolic operation sequence against a trivially-correct model (an array and two
+/// counters), covering every push/pop pattern up to the bound, the regrowth-from-empty transitions
+/// included.
 #[cfg(kani)]
 mod verification {
     use super::*;

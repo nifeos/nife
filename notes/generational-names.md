@@ -106,7 +106,7 @@ resume after a caller gives its lock back between entries. A position in the fil
 would move when entries in the gap are removed. A slot index does not: if the entry at slot `k`
 died, `k` is empty rather than somebody else's.
 
-`rendezvous::SURVEY` (milestone 126) reports one supervised thread per syscall and hands the next
+`rendezvous::SURVEY` (milestone 126 (the `procps` package, now `process-tools`)) reports one supervised thread per syscall and hands the next
 slot back to userspace as a cursor. The set can change between calls, so a resumed sweep is a
 sequence of snapshots rather than one. It never reports an entry twice and never resolves a cursor
 to the wrong thread, which is all a `readdir` shape ever promised.

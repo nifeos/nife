@@ -77,7 +77,7 @@ security event the boot reports out loud.
 A program the table vouches for that is not an ELF is not a refusal. The measurement did its job,
 and not being a loadable program is a build defect, not a substitution.
 
-`Default` is "the archive did not have it", derived on purpose (milestone 246). It is the fail-safe
+`Default` is "the archive did not have it", derived on purpose (milestone 246 (measured boot's refusal path is tested by nothing, and one mutant turns it off)). It is the fail-safe
 value: no image means nothing runs, so a default-constructed `Verdict` vouches for nothing. It also
 makes `verdict` mutable. `cargo mutants`' only operator on a function returning a struct replaces
 the body with `Default::default()`, which without the derive does not compile and is scored

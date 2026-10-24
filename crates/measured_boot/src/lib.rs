@@ -1,7 +1,7 @@
-//! Measured boot: the hash the kernel checks the progenitor against (milestone 22 phase B.1).
-//! The kernel carries a trust root compiled into its image (`(name, digest)` pairs from
-//! `kernel/build.rs`), hashes the archive entry it is about to load, and refuses to enter
-//! userspace on a mismatch, so the unverified progenitor is not loaded on trust (DECISIONS §14).
+//! Measured boot: the hash the kernel checks the progenitor against (milestone 22 phase B.1). The
+//! kernel hashes the archive entry it is about to load against a trust root of `(name, digest)`
+//! pairs compiled into its image by `kernel/build.rs`, and refuses to enter userspace on a mismatch
+//! (DECISIONS §14 (the project's direction)).
 //!
 //! The hash is SHA-256, written here: collision- and preimage-resistant, about a hundred lines with
 //! no dependency, allocation or unsafe (§46 (thin primitives or whole subsystems); calef,
@@ -358,13 +358,15 @@ fn parse_digest_bytes(text: &[u8]) -> Result<Digest, DigestTextError> {
     parse_hex(&text[colon + 1..]).ok_or(DigestTextError::NotHex)
 }
 
-/// The archive entry that carries the progenitor's measurement table (milestone 104). The
-/// progenitor is in the archive it would measure, so its table is an archive entry the kernel's
-/// trust root names, vouched for as the progenitor is. See notes/trusted-init/measured-boot.md.
+/// The archive entry that carries the progenitor's measurement table (milestone 104 (the
+/// measurement continues past init)). The progenitor is in the archive it would measure, so its
+/// table is an archive entry the kernel's trust root names, vouched for as the progenitor is. See
+/// notes/trusted-init/measured-boot.md.
 ///
 /// The entry name is provisional and fits under `nifefs`'s `NAME_LEN = 32`. A string two programs
 /// agree on sits outside `script/names`' four surfaces, so this paragraph is its whole record; it
-/// does not wear the `Name:` spelling, which milestone 283 reserved for the crate's one block.
+/// does not wear the `Name:` spelling, which milestone 283 (one provenance block per file, in the
+/// spelling the parse reads) reserved for the crate's one block.
 pub const PROGRAM_MEASUREMENTS: &str = "program_measurements";
 
 /// A manifest line [`manifest_entries`] could not read, and why.
