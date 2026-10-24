@@ -1,40 +1,13 @@
-//! **The clock service** (milestone 51 lane A; DECISIONS §43, notes/clock.md).
+//! The clock service, sole owner of the RTC and the wall clock's offset (DECISIONS §43 (reading
+//! the clock is a page, setting it is a page you may write, proposing is an endpoint)).
 //!
-//! The one process that owns the real-time clock's registers and the wall clock's offset. Its
-//! entire authority is four things placed before it ran: the propose endpoint (slot 0, RECEIVE), a
-//! report endpoint (slot 1, WRITE, for whoever wired it), the **clock page** mapped read/write, and
-//! the **RTC's registers** as a device mapping. No initial ramdisk, no budget, no network, nothing
-//! it could build anything with. A compromised clock service is a machine that believes the wrong
-//! time, which is exactly as much damage as owning the clock should be worth.
-//!
-//! # What it does, in order
-//!
-//! 1. Stamp the clock page (it starts as an honest [`clock_contract::state::UNKNOWN`]).
-//! 2. Read the RTC once, through whichever driver the *machine* named (`a0`, from the device
-//!    tree's `compatible`, not from `target_arch`), or, on `x86_64`, take the reading the *kernel*
-//!    already made (`a1`), because the CMOS clock is two I/O ports the kernel keeps to itself
-//!    (DECISIONS §121, §130; milestone 176).
-//! 3. If the reading is plausible, publish it. **If it is not, publish nothing**: the page stays
-//!    unknown and every reader can see that the machine does not know what time it is. This is
-//!    DECISIONS §42's no-silent-degradation rule; the alternative is confidently reporting 1970.
-//! 4. Serve proposals forever, each judged by `clock_contract::policy` and none of them able to set
-//!    the clock outright.
-//!
-//! # The three authorities are three different objects, and only one of them is here
-//!
-//! **Reading does not come through this process at all.** A reader holds the clock page read-only
-//! and the ambient monotonic counter, and computes the time itself: two loads and an add, no
-//! syscall, no round trip. **Setting** is a read/write mapping of that same page, which is a
-//! capability this process holds and could hand on; writing the offset *is* setting the clock.
-//! **Proposing** is the endpoint below, and it is deliberately not either of those. See the
-//! contract crate's module docs for the picture.
-//!
-//! The one thing worth understanding about the shape: this process has **one blocking wait point**,
-//! because the kernel has no wait-any primitive and no threads sharing an address space. So it can
-//! serve exactly one endpoint, and a design that wanted `set` and `propose` to both be messages
-//! would have needed two servers. Making `set` a page write instead is not a workaround; it is
-//! what "set the offset outright" already means (DECISIONS §43).
-//!
+//! Its whole authority is the propose endpoint (slot 0, RECEIVE), a report endpoint (slot 1,
+//! WRITE), the clock page read/write and the RTC's registers. A compromised clock service is a
+//! machine that believes the wrong time, no more. It stamps the page `UNKNOWN`, reads the RTC once
+//! (the driver the device tree names in `a0`, or on `x86_64` the kernel's CMOS reading in `a1`,
+//! §121 (x86 port I/O), §130 (the CMOS RTC reaches the userspace clock service)), publishes only a
+//! plausible reading (§42 (a filesystem must be truthful)'s no-silent-degradation rule), then
+//! serves proposals judged by `clock_contract::policy`. See notes/clock.md, "Three authorities".
 
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), confirming milestone 63's
 //! name table (design/roadmap/0063-name-spellings.md). Introduced 2026-07-30. Milestone 63 argues

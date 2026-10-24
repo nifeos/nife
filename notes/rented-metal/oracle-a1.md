@@ -1,5 +1,7 @@
 # Booting nife on an Oracle Always Free Ampere A1 instance
 
+*Name: provisional (milestone 578's lane, 2026-10-21 UTC), after the shape it boots on.*
+
 The runbook for milestone 578 (an ACPI discovery path for aarch64)'s item 7. It puts the aarch64
 boot file on a disk Oracle Cloud Infrastructure (OCI) will import and boots it on a
 `VM.Standard.A1.Flex` instance. The serial console then shows what the firmware handed the loader. It is an appendix
@@ -156,5 +158,3 @@ Nothing in sections 1 to 6 should cost money on a Free Trial account if section 
 - Oracle, [Always Free Resources](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm): A1 allowance, home region, 200 GB Block Volume, 20 GB Object Storage, the Always Free image list, capacity, reclamation.
 - NetBSD, [NetBSD Arm on Oracle Cloud](https://blog.netbsd.org/tnf/entry/netbsd_arm_on_oracle_cloud): QCOW2, Paravirtualized, A1 only, BIOS unticked; DMI says QEMU/KVM.
 - Sidero Labs, [Talos on Oracle](https://docs.siderolabs.com/talos/v1.14/platform-specific-installations/cloud-platforms/oracle) and [siderolabs/talos#12557](https://github.com/siderolabs/talos/issues/12557): a QCOW2 that dropped to the UEFI shell, a stream-optimized VMDK that booted, BIOS unticked.
-
-*Name: provisional (milestone 578's lane, 2026-10-21 UTC), after the shape it boots on.*

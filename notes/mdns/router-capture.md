@@ -1,5 +1,7 @@
 # mDNS: the measured reference, captured 2026-08-15
 
+*Name: provisional.*
+
 An appendix to [`notes/mdns.md`](../mdns.md). The code it describes was retired on 2026-09-15; read
 it in the past tense.
 

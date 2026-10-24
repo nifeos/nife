@@ -12,7 +12,4 @@ prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `user-tests-port` Name: provisional.
-- `suite-gaps` Name: provisional.
+Each stem here is named for its content, and calef names files.

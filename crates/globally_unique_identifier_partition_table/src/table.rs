@@ -21,19 +21,11 @@ pub struct GloballyUniqueIdentifierPartitionTable<'a> {
 impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// Parse a primary GPT.
     ///
-    /// `header_block` is the single block read from LBA 1; its length is taken as the disk's
-    /// logical block size. `entry_array` is the bytes read starting at the header's
-    /// `PartitionEntryLBA`, and may be longer than the array (a caller reading whole blocks will
-    /// usually have a few spare).
-    ///
-    /// Everything is checked, and any failure is an error: the header's own structure and CRC (via
-    /// [`Header::decode`]), the entry array's CRC, that the table fits outside the usable range,
-    /// that every used partition lies inside it, and that no two partitions overlap.
-    ///
-    /// **This does not look at the backup.** Pass it to
-    /// [`GloballyUniqueIdentifierPartitionTable::check_backup`], which is separate because reading
-    /// the last block of the disk is a second I/O the caller may not want to do before it knows the
-    /// primary is sound.
+    /// `header_block` is the block read from LBA 1, and its length is the logical block size.
+    /// `entry_array` is read from the header's `PartitionEntryLBA` and may run past the array.
+    /// Refuses a bad header ([`Header::decode`]), a bad array CRC, a table that intrudes on the
+    /// usable range, a used partition outside it, and two partitions that overlap. The backup is
+    /// a second read, left to [`GloballyUniqueIdentifierPartitionTable::check_backup`].
     ///
     /// # Examples
     ///
@@ -96,11 +88,9 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
         let backup_reserved = array_blocks
             .checked_add(1)
             .ok_or(Error::TableOverlapsUsable)?;
-        // `>=`, not `>`: `block_count - backup_reserved` IS the backup array's first block (it is
-        // what `backup_entry_lba` computes), so a last_usable_lba equal to it puts one usable
-        // block inside the backup array. The `>` this shipped with accepted that header, and no
-        // test noticed until milestone 85's mutation run reported `> with >=` as a survivor: the
-        // mutant was the fix. See notes/mutation-testing.md.
+        // `>=`, not `>`: `block_count - backup_reserved` IS the backup array's first block (what
+        // `backup_entry_lba` computes), so equality puts a usable block inside the backup array.
+        // See notes/mutation-testing.md.
         if header.entry_array_lba <= PRIMARY_HEADER_LBA
             || primary_end > header.first_usable_lba
             || block_count < backup_reserved
@@ -120,17 +110,11 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
 
     /// Build a new table. The `mkpart` half of the milestone.
     ///
-    /// `entry_array` is the caller's buffer for the entry array and must be a whole number of
-    /// entries; its size sets `NumberOfPartitionEntries`, so pass `[0u8; `[`ENTRY_ARRAY_BYTES`]`]`
-    /// for the 128 entries every real disk has. It is overwritten completely, unused entries
-    /// included, because a leftover entry from a previous table is a partition that comes back from
-    /// the dead.
-    ///
-    /// The partitions are checked exactly as [`GloballyUniqueIdentifierPartitionTable::parse`]
-    /// checks a disk's: inside the usable range, non-empty, non-overlapping. **Placement is the
-    /// caller's job**, deliberately: alignment (the 2048-block, 1 MiB convention that keeps a
-    /// partition from straddling an SSD erase block) is policy, and a format crate that silently
-    /// moved a partition would be doing policy behind the caller's back.
+    /// `entry_array` must be a whole number of entries, and its size sets
+    /// `NumberOfPartitionEntries`: pass `[0u8; `[`ENTRY_ARRAY_BYTES`]`]` for the usual 128. It is
+    /// overwritten completely, so no entry of a previous table comes back. The partitions are
+    /// checked as [`GloballyUniqueIdentifierPartitionTable::parse`] checks a disk's, and placing
+    /// them (the 1 MiB alignment convention included) is the caller's policy.
     ///
     /// # Examples
     ///
@@ -228,11 +212,9 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// [`GloballyUniqueIdentifierPartitionTable::backup_entry_lba`]. Every field the two headers
     /// must share is compared, and the two arrays are compared by CRC.
     ///
-    /// **Comparing by CRC rather than byte for byte is deliberate.** The header's array CRC is what
-    /// the format itself uses to bind a header to its array, so two arrays that CRC alike and
-    /// differ in bytes would mean a CRC-32 collision, which is a stronger adversary than this
-    /// format defends against anywhere else. It also means a caller can check the backup without
-    /// holding both 16 KiB arrays at once.
+    /// The CRC is what the format itself binds a header to its array with, so arrays that CRC
+    /// alike and differ would be a CRC-32 collision; and the caller need not hold both 16 KiB
+    /// arrays at once.
     pub fn check_backup(&self, backup_block: &[u8], backup_entries: &[u8]) -> Result<(), Error> {
         let backup = Header::decode(backup_block)?;
 

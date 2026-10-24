@@ -1,36 +1,22 @@
-//! **The interactive boot's undertaker.** The progenitor builds a fresh process for every command
-//! and is parked in `RECEIVE` on the spawn channel for life, with no non-blocking receive, so it
-//! cannot collect its dead jobs; without this program every job's region stayed spent and a long
-//! session ran out of memory. Collecting is the whole job: no restart policy, because a command a
-//! person typed should not restart when it ends.
+//! The interactive boot's undertaker: it collects the progenitor's dead jobs, which the progenitor,
+//! parked in `RECEIVE` on the spawn channel for life with no non-blocking receive, cannot. Without
+//! it every job's region stayed spent and a long session ran out of memory. It never restarts a
+//! job, because a command a person typed should not restart when it ends.
 //!
-//! **Its authority is three endpoints and nothing else**: `READ` on the progenitor's supervision
-//! endpoint; `WRITE` on its result endpoint, to say one word to the shell; and `WRITE` on a copy of
-//! the spawn endpoint badged [`grant_plan::spawnproto::UNDERTAKER_BADGE`]. No untyped, frame, TCB or
-//! address space: `Rendezvous::REAP` is authorized by the supervision relationship (§32 (a
-//! supervisor may collect a corpse without being able to build one)), and the pages go back to the
-//! progenitor, which split the region. This process can free a job's memory and never spend it.
-//!
-//! A job the kernel killed sends nothing, so after collecting it this sends
-//! [`grant_plan::spawnproto::JOB_FAULTED`] on the result endpoint, once, and the prompt comes back.
-//! After every collect it sends [`grant_plan::spawnproto::reaped`] on the spawn endpoint, with the
-//! job's label and tid, so the progenitor knows the job's memory and file-service window are free
-//! before the next command.
-//!
+//! Its authority is three endpoints and nothing else ([`DEATHS`], [`REPORT`], [`SPAWN`]): no
+//! untyped, frame, TCB or address space. `Rendezvous::REAP` is authorized by the supervision
+//! relationship (§32 (a supervisor may collect a corpse without being able to build one)), and the
+//! pages go back to the progenitor, so it can free a job's memory and never spend it. See
+//! notes/supervision.md.
+
 //! # BUGS
 //!
-//! - It can say one word and no more. A refused reap of a thread the kernel named dead is a trap,
-//!   and this program dying shows as the prompt eventually answering "could not spawn".
-//! - A reaped message can park behind one request on the spawn endpoint; the collect it announces
-//!   has already happened.
-//! - **A fault report can park and wedge this loop**: the `SEND` completes only when someone reads
-//!   the result endpoint, and on a screen-narrowed line (§106 (take the `terminal_sink_caretaker`
-//!   narrowing)) a faulting non-tail stage leaves nobody reading. Nothing more is collected until the next command reads
-//!   there, which then takes the stale word for the wrong line. Collecting before reporting keeps
-//!   the memory coming back meanwhile. Closing it needs a non-blocking send or a two-endpoint
-//!   receive: the syscall surface, an architect's call.
-//! - A refused reclaim is retried, because a job behind a directory grant shares its region with
-//!   the caretaker, so the first reclaim is refused by construction ([`MAX_ATTEMPTS`]).
+//! - It can say one word: a refused reap of a dead thread traps, shown as "could not spawn".
+//! - A reaped message can park behind one request on the spawn endpoint, after its collect.
+//! - A fault report parks this loop when nobody reads the result endpoint, as after a faulting
+//!   non-tail stage of a screen-narrowed line (notes/supervision.md).
+//! - A refused reclaim is retried, since a job behind a directory grant shares its region with its
+//!   caretaker ([`MAX_ATTEMPTS`]).
 //! - It cannot reap a hung job (§32 refuses a live thread); `^C` twice covers what a person sees.
 //!
 //! Name: ratified 2026-08-03 (calef), replacing `job_reaper`. Refused `job_reaper` (named for what
@@ -61,24 +47,16 @@ const REPORT: u64 = 1;
 /// `GRANT`, so the badge cannot be passed on, and the progenitor is the only receiver.
 const SPAWN: u64 = 2;
 
-/// **How many times one corpse may be refused before this program treats it as a broken kernel**
+/// How many times one corpse may be refused before this program treats it as a broken kernel
 /// (milestone 31 phase 3).
 ///
-/// A refusal is no longer always a bug, and that is what this constant is for. A job behind a
-/// directory grant shares its region with the `fs_subtree_caretaker` that carries the grant
-/// (DECISIONS §92), and the caretaker's serve loop only ends when that region is torn down. So the
-/// **first** reclaim of such a region is refused by construction: `reap_region_objects` sweeps the
-/// region's endpoints, which wakes the caretaker out of `RECEIVE`, and a thread that can be scheduled
-/// is `RefuseAndArm`. The same pass arms §16's kill, the scheduler turns the caretaker into a corpse
-/// at its next preemption, and the retry finds nothing left alive and reclaims. That is exactly the
-/// contract `reclaim_region` documents for the shell's `^C` escalation, met here for the first time
-/// by an ordinary command.
-///
-/// Two properties make the number a safety net rather than a policy. It is far past what the
-/// mechanism needs, because one preemption is enough and this yields between attempts. And running
-/// out is still [`fail`], so the failure this program was written to make loud is still loud: a
-/// corpse that never becomes collectable is a leak, and a leak here ends the prompt's memory a few
-/// commands later with nothing to point at.
+/// A job behind a directory grant shares its region with the `fs_subtree_caretaker` that carries
+/// the grant (DECISIONS §92 (a caretaker is supervised by the client it serves)), so the first
+/// reclaim of that region is refused by construction: the sweep wakes the caretaker, arms the kill
+/// of §16 (object revocation), and the retry after its next preemption reclaims
+/// (notes/grant-expression/per-file-grants.md). The number is far past the one preemption that
+/// needs, and running out is still [`fail`]: a corpse that never becomes collectable is a leak,
+/// and a leak here ends the prompt's memory a few commands later with nothing to point at.
 const MAX_ATTEMPTS: usize = 1024;
 
 #[unsafe(no_mangle)]

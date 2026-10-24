@@ -57,14 +57,13 @@ userspace threads (the TCBs of milestone 19c (run a real workload)) or a select-
 
 ### One binary, one archive entry
 
-The client rides in the net_stack binary (a nonzero entry role runs
-it) rather than a separate binary, because the nifefs archive directory held at most 15 files at
-the time and the initrd was already near that ceiling. (The ceiling is `nifefs::MAX_FILES`, 76
-since 2026-08-01; see [nifefs.md](nifefs.md). The decision stands on its own merits, but the
-pressure behind it is gone.) A subtlety worth recording: net_stack reports its DHCP
-lease with a *blocking* `send`, so the spawn service drains that report before returning, or net_stack
-never reaches its serve loop and the client's first request hangs. That was the one real bug in
-bring-up, caught by a watchdog hang.
+The client rides in the net_stack binary (a nonzero entry role runs it) rather than a separate
+binary, because the nifefs archive directory held at most 15 files at the time and the initrd was
+already near that ceiling. (The ceiling is `nifefs::MAX_FILES`, now 178, fourteen 512-byte directory
+blocks of 40-byte entries. The decision stands on its own merits, but the pressure behind it is
+gone.) A subtlety worth recording: net_stack reports its DHCP lease with a *blocking* `send`, so the
+spawn service drains that report before returning, or net_stack never reaches its serve loop and the
+client's first request hangs. That was the one real bug in bring-up, caught by a watchdog hang.
 
 
 ## The inbound half: the guest can be connected to (milestone 107)
@@ -155,6 +154,7 @@ needed to use the contract.
 | [std-tcp-listener.md](net/std-tcp-listener.md) | `std::net::TcpListener` on this contract, and why the prober requires three rounds of four. |
 | [memory-and-reclamation.md](net/memory-and-reclamation.md) | How net servers ran the aarch64 test boot out of memory, and what reclaiming them returned. |
 | [the-socket-contract.md](net/the-socket-contract.md) | The design behind `crates/socket_contract`: the per-socket capability, the frame, grants, the polled-NIC wait, ephemeral ports, the fixture and the lease report. |
+| [the-test-clients.md](net/the-test-clients.md) | What the client roles in the `net_stack` binary prove per spawn, and the hostile squatter's five steps. |
 
 ## BUGS
 

@@ -1,5 +1,8 @@
 # `xargs`: batching at the bound (milestone 109)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, after the prefix word
+it is about, whose own name is provisional.*
+
 An appendix to [`notes/glob-grant.md`](../glob-grant.md), which states the conclusion. Milestone 109
 (`xargs`) built it.
 
@@ -12,7 +15,7 @@ shell ran off the bottom of its stack planning one grant, by 256 bytes with two 
 lost-wakeup watchdog followed (the test was still waiting for a report from a process that had
 died). The cause is a set traveling by value through four frames a debug build does not collapse:
 the expander holds one, `Expansion` carries one into `plan`, `designate` returns one, and the
-`Endowment` that comes back carries one more.
+`Endowment` that comes back carries one more. Eight names of sixteen bytes is 152 bytes a copy.
 
 The fix was the one `spawn_fs_client`'s own comment already prescribes: its four-page cap says a
 client needing more is a client whose frames want looking at, not a number that wants raising. So

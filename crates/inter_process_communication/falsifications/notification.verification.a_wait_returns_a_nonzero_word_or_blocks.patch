@@ -8,8 +8,8 @@ Expected to fail: `assert_eq!(n.word, 0)` after `Wait::Word`.
 diff --git a/crates/inter_process_communication/src/notification.rs b/crates/inter_process_communication/src/notification.rs
 --- a/crates/inter_process_communication/src/notification.rs
 +++ b/crates/inter_process_communication/src/notification.rs
-@@ -224,7 +224,7 @@ impl<T: Node> Notification<T> {
-     /// thread is `Blocked`, which the reaper never frees).
+@@ -192,7 +192,7 @@ impl<T: Node> Notification<T> {
+     /// `me`, and the caller blocks it.
      pub fn wait(&mut self, me: Unqueued<T>) -> Wait<T> {
          if self.word != 0 {
 -            Wait::Word(core::mem::take(&mut self.word), me)

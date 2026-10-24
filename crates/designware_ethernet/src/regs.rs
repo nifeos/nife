@@ -2,24 +2,11 @@
 //! driver writes or reads.
 //!
 //! Transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (revision of 2026-07-31, commit
-//! `59ec3ab4d107`, ISC license, notice in the crate root), which is the header OpenBSD's JH7110
-//! driver is built on, and cross-checked against Linux's `stmmac/dwmac4.h` for the one bit
-//! OpenBSD does not name ([`MAC_CONF_LM`]) and U-Boot's `dwc_eth_qos.h` for the receive buffer
-//! size field OpenBSD never writes ([`CHAN_RX_CONTROL_RBSZ_SHIFT`]). Only what this driver uses
-//! is here; the header has more.
-//!
-//! # Where the pages fall, which decides what a process can be given
-//!
-//! | page | holds |
-//! |---|---|
-//! | `0x0000` | MAC: configuration, packet filter, flow control, interrupt enables, version, hardware features, MDIO, the station address |
-//! | `0x0c00` (still page 0) | MTL: the queue operation modes |
-//! | `0x1000` | DMA: the bus mode (with **software reset**), the system bus mode, and channel 0's control, ring bases, ring lengths, **tail pointers** and status |
-//!
-//! So the channel's tail pointers share a page with its ring bases and with the bit that resets
-//! the whole controller. A process that can move a tail can repoint a ring and reset the MAC, and
-//! the JH7110 has no IOMMU in front of this device. That is the whole confinement story, and
-//! `kernel/src/user/designware_ethernet_service.rs`'s header carries it.
+//! `59ec3ab4d107`, ISC license, notice in the crate root), with [`MAC_CONF_LM`] from Linux's
+//! `stmmac/dwmac4.h` and [`CHAN_RX_CONTROL_RBSZ_SHIFT`] from U-Boot's `dwc_eth_qos.h`. The MAC and
+//! MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring bases
+//! and the controller's software reset, and there is no IOMMU, so a process given that page can
+//! repoint a ring and reset the MAC. See notes/designware-ethernet/the-hardware.md.
 
 /// MAC configuration.
 pub(crate) const MAC_CONF: u32 = 0x0000;

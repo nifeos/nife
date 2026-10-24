@@ -68,12 +68,8 @@ fn an_entry_survives_the_round_trip() {
 /// **A GUID survives GPT's mixed-endian layout**, for all 2^128 on-disk byte patterns: what
 /// [`guid::from_disk`] reads, [`guid::to_disk`] writes back unchanged.
 ///
-/// The swap is the one place in this crate where a transposition produces something that looks
-/// entirely reasonable and matches nothing. This proves the two directions are inverses; the
-/// EFI System Partition vector in `guid.rs`'s tests proves they are the right permutation.
-/// Until 2026-10-06 (UTC) the swap lived in the printer and this was
-/// `a_guid_survives_printing_and_parsing`; the text half moved to
-/// the `uuid` crate with the type.
+/// This proves the two directions are inverses; the EFI System Partition vector in `guid.rs`'s
+/// tests proves they are the right permutation.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_guid_survives_the_on_disk_layout.patch`
 #[kani::proof]
 #[kani::unwind(17)]
@@ -84,19 +80,10 @@ fn a_guid_survives_the_on_disk_layout() {
 
 /// **A header's fields survive the round trip**, for every value of every one of the nine.
 ///
-/// This is the header's *layout* proved: nine fields at nine offsets in two integer widths, and
-/// not a bit lost. The integrity half is proved by the two CRC harnesses above and, at the
-/// lengths that actually occur, exhaustively by the tests.
-///
-/// **Why the split, and why the halves compose.** Going through `encode_into`/`decode` instead
-/// puts a 92-byte CRC-32 over symbolic bytes into the formula twice. That was **measured at
-/// over 274 seconds and still unfinished**, against a `script/verify` budget of roughly three
-/// minutes per harness, because a table-driven CRC becomes a 256-way multiplexer per byte once
-/// the state goes symbolic and ninety-two of those is a large formula to prove a fact about
-/// byte offsets. The two halves compose for a reason visible in three lines of `header.rs`
-/// rather than by assumption: everything `encode_into` adds is four bytes at offset 16,
-/// everything `decode` adds is checks, and the CRC field is not one of the nine fields, so
-/// neither half can disturb the other.
+/// The header's layout: nine fields at nine offsets, not a bit lost. It goes through
+/// `encode_fields`/`decode_fields` because a run through the CRC did not finish in 274 seconds;
+/// the halves compose because the CRC field is not one of the nine. See
+/// notes/globally-unique-identifier-partition-table/the-proofs.md.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_headers_fields_survive_the_round_trip.patch`
 #[kani::proof]
 #[kani::unwind(513)]
@@ -167,22 +154,10 @@ fn overlap_is_exactly_sharing_a_block() {
 /// every partition placement.
 ///
 /// Every geometry rule [`GloballyUniqueIdentifierPartitionTable::parse`] enforces, asserted on
-/// what [`GloballyUniqueIdentifierPartitionTable::create`] produced. A writer that emitted a
-/// table its own reader refuses would be the worst outcome this crate has, because it would be
-/// discovered on somebody's disk rather than in this file, and the dimension where that could
-/// hide is the one enumerated tests cover worst: an unusual disk size, where the arithmetic
-/// that places the backup table runs out of room.
-///
-/// Stated over the *geometry* rather than over the bytes, deliberately. A byte-level
-/// create-then-parse harness has four symbolic CRC-32 chains in it and did not finish inside
-/// the budget (see `a_headers_fields_survive_the_round_trip` for the measurement). The
-/// byte-level identity is proved instead where it can be proved *completely*:
-/// `GloballyUniqueIdentifierPartitionTable::create` reproduces `sgdisk`'s own 512-byte header,
-/// backup header and 16 KiB array exactly, in `tests/real_disks.rs`. This harness supplies what
-/// that test cannot, which is every other disk size.
-///
-/// `create` is allowed to fail and the harness then returns; what is proved is that whenever it
-/// succeeds, the result satisfies the reader's rules.
+/// whatever [`GloballyUniqueIdentifierPartitionTable::create`] produces when it succeeds. Stated
+/// over the geometry, since a byte-level harness carries four symbolic CRC chains and does not
+/// finish; `tests/real_disks.rs` proves the bytes for `sgdisk`'s disk size, and this every other.
+/// See notes/globally-unique-identifier-partition-table/the-proofs.md.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.create_never_lays_out_a_table_parse_would_reject.patch`
 #[kani::proof]
 fn create_never_lays_out_a_table_parse_would_reject() {

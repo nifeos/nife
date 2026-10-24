@@ -1,8 +1,6 @@
 //! **What a builtin has to say**: [`Say`], the value a builtin returns rather than printing, the
 //! heap cap its `HeapFull` sentence names, and [`write_say`], which renders it.
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
