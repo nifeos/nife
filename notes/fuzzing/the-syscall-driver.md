@@ -48,17 +48,17 @@ at seed 19, step 63, inside the suite's range. Revocation in flight went red onl
 
 ## The BUGS, in full
 
-- **`SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.**
+- `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
   `dispatch` would read as `SYS_CAP_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
-- **Not generated:** `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
+- Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
   `Timer`, `Irq`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages. No actor
   holds a TCB capability, so `BIND` reaches only its refusals. Each is a model extension, not a
   rewrite. A timer needs the model to reason about time, which is why it was left.
-- **Unexpected wakes are seen late.** An actor the model says is parked is checked for a stray
+- Unexpected wakes are seen late. An actor the model says is parked is checked for a stray
   answer at every step and at teardown. A wrong wake is caught, but possibly some steps after the
   operation that caused it.
-- **The corpus is tied to the kernel's walk, not only to this generator.** A change to `pick_op` or
+- The corpus is tied to the kernel's walk, not only to this generator. A change to `pick_op` or
   `endow` re-rolls every seed. So does a kernel change that alters any answer the model predicts.
   A corpus seed can then rot green with its defect still reachable, and the corpus must be re-found
   with the roadmap block's replay table. A new finding's seed goes into `CORPUS` with its reason.
