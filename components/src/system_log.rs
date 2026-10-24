@@ -5,7 +5,7 @@
 //! capability (milestone 613's amendment to §230 (badged endpoint capabilities): a plain `SEND`
 //! carries its badge too). [`Log::handle`] stamps a writer's bytes into the ring, takes a badge-0
 //! registration from the spawner, or names a reader's window, which is filled and its notification
-//! signalled. Signalling never blocks, so a reader that stops reading cannot hold this thread and a
+//! signaled. Signaling never blocks, so a reader that stops reading cannot hold this thread and a
 //! writer never waits on a reader. In [`MODE_KERNEL`] the wait also ends on the kernel ring's
 //! notification ([`drain`]). `system_tests/src/user/system_log_tests.rs` plays spawner and reader.
 
@@ -51,7 +51,7 @@ const INTAKE: u64 = 0;
 /// drive one UART from two address spaces), calef's ruling F). Then slot 1 is the kernel ring's
 /// notification, bound to this thread by the spawner (`READ | WRITE`: the kernel signals it and so
 /// does the timer), slot 2 a timer (`WRITE`), slot 3 the console server's request endpoint
-/// (`WRITE`), and the readers' notifications (`WRITE`, each signalled when its window is filled)
+/// (`WRITE`), and the readers' notifications (`WRITE`, each signaled when its window is filled)
 /// follow from slot 4. Without it they follow from slot 1. `arg1` is how many readers the spawner
 /// wired, at most `read::WINDOWS`.
 const MODE_KERNEL: u64 = 1;

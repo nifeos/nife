@@ -18,7 +18,7 @@
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
 //! - A replacement's plan is cut at `registration::BODY_MAX`; only the compiled-in one is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
-
+//!
 //! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
 
 #![no_std]
