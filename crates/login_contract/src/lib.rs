@@ -453,7 +453,7 @@ pub mod durable {
     /// caretaker's region. Measured for the process on aarch64's debug build on 2026-09-26 at 192
     /// with room to spare. Provisional.
     pub const USER_TIMETABLE_KEEPER_REGION_PAGES: u64 = 192 + 2 * 64;
-    /// **What a durable `user_timetable_keeper` builds its timetable from**: the timetable's region (272,
+    /// **What a durable `user_timetable_keeper` builds its timetable from**: the timetable's region (284,
     /// `user_timetable_keeper.rs`'s `TIMETABLE_REGION_PAGES`) and its jobs' budget (128), with room for two
     /// endpoints. 400 -> 416 on 2026-10-02 (UTC), for the timetable's staging buffer growing to
     /// 128 KiB. Provisional.

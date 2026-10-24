@@ -351,6 +351,11 @@ opt-level = 2
 # notes/glob-grant/xargs.md ("The bytes a set carries").
 [profile.dev.package.grant_plan]
 opt-level = 2
+# The timetable, for the planner's reason: it holds an `Endowment` per entry, and a replacement
+# holds two plans at once, so its debug frames grew by the same file grants and ran
+# `login_user_schedule_tests`'s timetable off its 48-page stack in `Registry::register`.
+[profile.dev.package.timetable]
+opt-level = 2
 
 # Overflow checks in release, ruled by calef 2026-10-04 (UTC) (notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather

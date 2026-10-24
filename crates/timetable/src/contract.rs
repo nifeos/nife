@@ -95,9 +95,12 @@ pub const ARG_REGISTRATION_PAGE: usize = 2;
 /// (`-Z emit-stack-sizes`) sum to about 125 KiB: `replace_if_asked` 48.0 KiB, `Registry::register`
 /// 21.2, `_start` 20.0, `plan_against_with` 13.4, the resolve closures 11.2 and 10.0,
 /// `register_installed` 9.8, `admit_installed` 5.6, and `resolve_installed` -> `load_current` ->
-/// `store::load` 11.0. 48 pages is that with roughly half again; the bound is a size rather than an
-/// assertion, so growth in `grant_plan`'s planning path is met by raising it.
-pub const STACK_PAGES: u64 = 48;
+/// `store::load` 11.0. The bound is a size rather than an assertion, so growth in `grant_plan`'s
+/// planning path is met by raising it. Measured again on 2026-10-24 (UTC), once an `Endowment`'s file
+/// grants could name 255 bytes (milestone 946): `login_user_schedule_tests`' re-derived session
+/// faults at 52 pages and passes at 56. 60 is that with the four pages
+/// `user_timetable_keeper`'s budget still holds; this crate is compiled optimized in a debug build.
+pub const STACK_PAGES: u64 = 60;
 
 /// Exit codes, the verdict word on [`OUT_SLOT`] or the page's exit word. A clean finish is `0`.
 ///
