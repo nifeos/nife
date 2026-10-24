@@ -1,31 +1,23 @@
 //! **The client that does not notice, and the attacker that cannot** (milestone 23, DECISIONS §41).
 //!
-//! One binary, six roles, because an attacker that holds the honest client's own capabilities is
-//! a fair test of the boundary rather than a different program failing for its own reasons. Besides
-//! the client and the attacker below: `ROLE_PRODUCER`, the same conversation one rung up the latency
-//! ladder on the queued channel; `ROLE_CONFUSED` and `ROLE_PLANT`, a second attacker and the
-//! instrument that lets the first one fail rather than hang; and `ROLE_QUIESCER`, the operator's
-//! stand-in for the one `CALL` it has to bound.
-//!
+//! One binary, six roles, because an attacker that holds the honest client's own capabilities is a
+//! fair test of the boundary rather than a different program failing for its own reasons. Besides
+//! the client and the attacker below: `ROLE_PRODUCER`, the same conversation one rung up the
+//! latency ladder on the queued channel; `ROLE_CONFUSED` and `ROLE_PLANT`, a second attacker and
+//! the instrument that lets the first one fail rather than hang; and `ROLE_QUIESCER`, the
+//! operator's stand-in for the one `CALL` it has to bound. See notes/live-replacement.md.
+
 //! # The client (`ROLE_CLIENT`)
 //!
-//! It calls a stable endpoint sixty-four times in a loop and checks every answer. It holds one
-//! capability to that endpoint for its whole life and it never reconnects. Its one retry is for a
-//! request the kernel answered `Gone`, which happens only on the hung channel, when the server that
-//! took the request was destroyed without answering it.
-//! Somewhere in the middle of that loop the server is torn down and a different program, written in
-//! a different language, takes its place.
-//!
-//! **It is its own witness.** The verdict it reports is computed here, from what it observed:
-//! every call returned, every reply echoed the sequence number that asked for it, every digest
-//! matched this program's own independent computation, and the version word went up exactly once.
-//! The operator has a second, independent witness (the shared log page, in the operator's address
-//! space); neither is taken on the other's word, which is the shape milestones 29, 33 and 36 used.
-//!
-//! What it *cannot* claim, stated plainly: the client does observe the version word change, so it
-//! is not blind to the swap. The claim is that its stream was unbroken, not that a swap is
-//! undetectable by a client that goes looking for one.
-//!
+//! It calls a stable endpoint sixty-four times and checks every answer, holding one capability to
+//! it for its whole life and never reconnecting; its one retry is for a request the kernel answered
+//! `Gone`, on the hung channel. Mid-loop the server is torn down and a program in a different
+//! language takes its place. **It is its own witness**: every call returned, every reply echoed its
+//! sequence number, every digest matched this program's own computation, and the version word went
+//! up exactly once. The operator's shared log page is a second witness, neither taken on the
+//! other's word (milestones 29, 33 and 36's shape). The client does see the version word change:
+//! the claim is an unbroken stream, not an undetectable swap.
+
 //! # The attacker (`ROLE_USURPER`)
 //!
 //! It is endowed with exactly the client's capabilities, including a real, working capability to
@@ -33,7 +25,6 @@
 //! it would be able to park itself in `RECEIVE_CAP` and take the client's requests. It cannot: its
 //! capability carries `WRITE` and not `READ`, and the same object handed out with different rights
 //! is a one-way pipe in whichever direction each holder was trusted with. It reports the refusal.
-//!
 
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `chatty`.
 //! Introduced 2026-07-30 with milestone 23's live replacement, as a fixture rather than a
@@ -108,19 +99,13 @@ fn converse() -> ! {
     for seq in 0..hot_swap_contract::REQUESTS {
         let (mut got, mut tag) = call(SVC, hot_swap_contract::OPERATION_PUT, seq);
 
-        // **We were stranded inside this call, and the kernel freed us** (milestone 23 (a
-        // capability-routed component OS with live replacement)'s hung-component channel). A
-        // component took this request and then stopped answering without dying. The operator
-        // destroyed its region, which finished it where it sat (milestone 133 (ending a permanently
-        // blocked thread, and deciding who may)), and the kernel answered every caller it still
-        // held a reply capability for with `Gone` (milestone 254 (a caller stranded by a server
-        // that died)). Our server did nothing: it never ran again.
-        //
-        // So this arm is not error handling. It is the tail of a request that took a detour through
-        // the operator's recovery, and the only honest thing to do with it is ask again: `Gone` here
-        // says the request was never served, not that it failed. The endpoint we call is the
-        // operator's and still exists, so the second call reaches whoever serves it now. On the
-        // healthy channels this value never arrives and this branch is dead.
+        // `Gone`: a component took this request and stopped answering without dying; the operator
+        // destroyed its region, finishing it where it sat (milestone 133 (ending a permanently
+        // blocked thread, and deciding who may)), and the kernel answered its stranded callers
+        // `Gone` (milestone 254 (a caller stranded by a server that died)). The request was never
+        // served, and the endpoint is the operator's and still exists, so ask again. Dead on the
+        // healthy channels (milestone 23 (a capability-routed component OS with live replacement)'s
+        // hung-component channel only).
         if got == abi::Error::Gone as i64 as u64 {
             bits |= ck::WAS_GONE;
             let again = call(SVC, hot_swap_contract::OPERATION_PUT, seq);
@@ -250,20 +235,16 @@ fn usurp() -> ! {
     user_mode_runtime::exit()
 }
 
-/// **The plant** (milestone 800 (a non-Anthropic model attacks the confinement claim), fourth pass).
-/// Not an attacker: an instrument for the usurper's. A `RECEIVE_CAP` the kernel fails to refuse has
-/// nothing to take when the endpoint's queue is empty, so it blocks, and the break surfaces as a
-/// watchdog hang instead of a red assertion: the wrong-reason red milestone 202 (every confinement
-/// test is a ritual until somebody breaks the confinement) recorded, and the
-/// reason claim 26's own test could never fail. This role parks a message on the endpoint first,
-/// so a let-open `RECEIVE_CAP` *returns* it (the kernel's `sched::ipc_receive_cap` takes any parked sender's word),
-/// and the usurper's report carries a word nothing honest produces
-/// ([`hot_swap_contract::PLANT_MARKER`]).
+/// **The plant** (milestone 800 (a non-Anthropic model attacks the confinement claim), fourth
+/// pass).
 ///
-/// It parks one plain `SEND` and exits when anyone takes it: the usurper, on a kernel that let
-/// one through, or the operator's bounded receive, on one that refused it. Every interleaving
-/// works without any handshake: if the usurper's try has already parked as a receiver, the send
-/// delivers to it directly.
+/// An instrument for the usurper's attack. A `RECEIVE_CAP` the kernel fails to refuse blocks on an
+/// empty queue, so the break would surface as a watchdog hang: the wrong-reason red milestone 202
+/// (every confinement test is a ritual until somebody breaks the confinement) recorded, and why
+/// claim 26's test could never fail. So it parks one plain `SEND` first: a let-open `RECEIVE_CAP`
+/// returns it (`sched::ipc_receive_cap` takes any parked sender's word) and the usurper reports
+/// [`hot_swap_contract::PLANT_MARKER`], which nothing honest produces. It exits when anyone takes
+/// it, the usurper or the operator's bounded receive, so no interleaving needs a handshake.
 fn plant() -> ! {
     send(SVC, hot_swap_contract::PLANT_MARKER, 0, 0);
     user_mode_runtime::exit()
