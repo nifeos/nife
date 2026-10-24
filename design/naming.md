@@ -164,8 +164,9 @@ A lane minting any of these writes the marker, so the name joins `--unratified`.
 never fails.
 
 A document's block is an italic paragraph under its title (calef, 2026-10-24 UTC), not frontmatter
-([why](naming/provenance.md#a-documents-block-is-a-paragraph-not-frontmatter)). Until the sweep
-after milestone 929, a README paragraph opening `` `stem` Name: `` is read too.
+([why](naming/provenance.md#a-documents-block-is-a-paragraph-not-frontmatter)). Until
+`helpers/document_name_migrate.py` moves the last, a README paragraph opening `` `stem` Name: `` is
+read too.
 
 The refusals are the valuable half. A refused name is visible nowhere else, and the person who most
 needs it is the one about to propose it again.

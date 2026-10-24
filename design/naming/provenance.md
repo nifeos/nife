@@ -65,7 +65,8 @@ Frontmatter, with fields for status, date and minter, was the alternative. It lo
 Where a README paragraph and the document's own block both exist, `script/names` reads them
 together and fails statuses that disagree. `helpers/document_name_migrate.py` lists and moves the
 README form; its header holds the rules, and `helpers/name_census.py` carries the BUGS line for
-the reading that goes when the sweep after milestone 929 finds nothing left.
+the reading that goes when the sweep after milestone 929 (comments in the Linux style across first-party Rust) finds
+nothing left.
 
 ### The three states
 

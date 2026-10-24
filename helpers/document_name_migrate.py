@@ -32,7 +32,8 @@ the two together until then, and `script/names --check` fails them if their stat
 stem naming no file is left too, because `script/names --check` already reports it.
 
 BUGS. The census's reading of the README form (`helpers/name_census.py`, `_document_block`) is
-transitional and goes once a run of this lists nothing, after milestone 929's lanes have merged.
+transitional and goes once a run of this lists nothing, after the lanes of milestone 929 (comments
+in the Linux style across first-party Rust) have merged.
 """
 
 import os
@@ -213,7 +214,8 @@ def main(argv):
             writes, _kept = migrate(readme, read)
             for stem in unlinked(read(readme), writes.get(readme)):
                 print(f"UNLINKED  {readme}: the paragraph that moved held its only link to {stem}.md; "
-                      f"give that document an index line there (§212: an unlinked appendix is lost)")
+                      f"give that document an index line there (§212 (a prose budget): an "
+                      f"unlinked appendix is lost)")
             for path, text in writes.items():
                 with open(os.path.join(root, path), "w", encoding="utf-8") as fh:
                     fh.write(text)
@@ -232,7 +234,7 @@ def selftest():
         return ({r["path"]: (r["status"], r["date"], r["refused"]) for r in records
                  if r["kind"] == "document"}, problems, unblocked)
 
-    readme = ("# Notes\n\n*Name: ratified 2026-08-16 (calef, §75).*\n\n- [A](a.md): the a.\n\n"
+    readme = ("# Notes\n\n*Name: ratified 2026-08-16 (calef, in session).*\n\n- [A](a.md): the a.\n\n"
               "`a.md`: Name: ratified 2026-10-18 (calef, \"Yes\"). Refused `aa` (too short).\n\n"
               "`b` Name: provisional, minted 2026-10-24 (UTC) by lane/b.\n")
     sub = ("# X\n\n*Name: provisional.*\n\nEach stem below is named for its content.\n\n"
@@ -270,7 +272,7 @@ def selftest():
          after["notes/a.md"].startswith("# A\n\n*Name: ratified 2026-10-18 (calef, \"Yes\"). "
                                         "Refused `aa` (too short).*\n\nThe a.\n")),
         ("the README keeps its own block and index line",
-         after["notes/README.md"] == "# Notes\n\n*Name: ratified 2026-08-16 (calef, §75).*\n\n"
+         after["notes/README.md"] == "# Notes\n\n*Name: ratified 2026-08-16 (calef, in session).*\n\n"
                                      "- [A](a.md): the a.\n"),
         ("a README paragraph the document already says is dropped",
          "`b` Name" not in after["notes/README.md"] and after["notes/b.md"] == tree["notes/b.md"]),
