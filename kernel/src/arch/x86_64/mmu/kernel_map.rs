@@ -11,11 +11,6 @@
 
 use super::*;
 
-// Deleted 2026-09-30 by the CI-warnings lane: `is_enabled` (was paging on? read back CR0.PG) had
-// no caller in any configuration on this, its only, architecture. The boot print that asks the
-// question is riscv's ("paging on", in `lib.rs`'s riscv boot); if the x86_64 boot ever wants the
-// same self-test, that print is the caller to write and git has the body.
-
 /// The physical address of the page-table root the CPU is currently walking (`CR3`, with the
 /// PCID/flag bits masked off).
 pub(crate) fn current_root() -> u64 {
@@ -38,9 +33,9 @@ pub(crate) fn print_summary() {
             KERNEL_VA_BASE,
             DIRECT_MAP_BASE,
         );
-        // The cost, measured rather than asserted, and the leaf size that set it: RAM goes in the
-        // largest block the machine offers and everything else in 4 KiB pages (this module's
-        // BUGS). On QEMU's 256 MiB it was 560 KiB in pages alone.
+        // The cost, measured, and the leaf size that set it: RAM goes in the largest block the
+        // machine offers and everything else in 4 KiB pages (the BUGS of
+        // notes/x86-port/kernel-page-tables.md).
         crate::println!(
             "                  : {} KiB of page tables (ram in {} blocks), no identity map, guard pages are holes",
             TABLE_FRAMES.load(Ordering::Relaxed) * PAGE_SIZE / 1024,
@@ -89,20 +84,13 @@ pub(super) fn largest_leaf() -> PageSize {
 static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
     crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
-/// **Replace the boot map with a fine-grained one**: W^X kernel sections, the guard pages actually
-/// unmapped, device registers device-typed, a direct map that covers all of physical memory, and
-/// **no identity map** (which was a complete alias of physical memory in the half user programs
-/// get).
+/// **Replace the boot map with a fine-grained one**: W^X kernel sections, the guard pages
+/// unmapped, device registers device-typed, a direct map over all of physical memory, and no
+/// identity map.
 ///
-/// We are already executing in the high half on the boot table, and the fine table maps the same
-/// kernel VAs (image and direct map alike) to the same frames, so the `mov cr3` is seamless: the
-/// next instruction fetch resolves identically. That is what [`verify`] checks before the hardware
-/// bets the machine on it.
-///
-/// **The console does not enter into it here, unlike on the other two architectures.** x86's COM1 is
-/// an I/O port, not a mapping, so nothing this function does can make the machine go silent. That is
-/// a real convenience while debugging and it is also the reason a port capability is an open
-/// question (DECISIONS §121).
+/// The fine table maps the same kernel VAs to the same frames as the boot table, so the `mov cr3`
+/// is seamless; [`verify`] checks that before the switch. COM1 is an I/O port, not a mapping, so
+/// nothing here can silence the console.
 pub fn init() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()
@@ -116,7 +104,7 @@ pub fn init() {
 
     // SAFETY: `root` is zeroed and page-aligned; `phys_to_ptr` is valid because `boot.s` installed
     // the direct map over the low 4 GiB before any Rust ran, so every frame the mapper allocates is
-    // addressable through it (see this module's BUGS for the >4 GiB case).
+    // addressable through it (notes/x86-port/kernel-page-tables.md's BUGS has the >4 GiB case).
     let mut mapper = unsafe {
         Mapper::<_, _, Ia32e>::new(
             root,

@@ -1,24 +1,11 @@
-//! **Port I/O**, the addressing mode x86 has and the other two architectures do not.
+//! **Port I/O**: x86's second, 16-bit address space, reached only by `in` and `out`, with no page
+//! tables in front of it. The legacy hardware lives there: the 8259 PICs, the PIT, the CMOS clock,
+//! the 16550 COM ports, and QEMU's `isa-debug-exit`.
 //!
-//! aarch64 and RISC-V reach every device through memory: a load or a store to a physical address
-//! the MMU maps device-typed. x86 has that too, and it also has a second, entirely separate 16-bit
-//! address space reached only by the `in` and `out` instructions, with no page tables in front of
-//! it and therefore no way for the MMU to grant or deny access to part of it. That is where the
-//! legacy hardware lives: the 8259 PICs, the PIT, the CMOS clock, the 16550 COM ports, and QEMU's
-//! `isa-debug-exit`.
-//!
-//! **This is a confinement problem, not just an extra addressing mode**, and it is worth stating
-//! before the port needs an answer. A capability system's whole claim is that a program can only
-//! touch what it holds a capability for, and on the other two architectures a device *is* a page,
-//! so a device capability is a mapping. Port I/O has no page. x86 gates it two ways instead:
-//! `RFLAGS.IOPL` (all-or-nothing per privilege level) and the TSS **I/O permission bitmap**, one bit
-//! per port, which is per-task rather than per-page and is the only mechanism with the right
-//! granularity. Nothing here uses it yet: everything below runs in ring 0, and no user program has
-//! been given a port. When one is, the bitmap is where the grant has to be recorded, and
-//! `arch::x86_64::segments` is where the TSS that carries it lives.
-//!
-//! Rule #1 is why these four functions exist at all rather than each caller writing its own `asm!`:
-//! `in`/`out` are instructions, so they belong under `arch/`.
+//! A port has no page, so a port capability cannot be a mapping. Ring 3's access is gated by the
+//! TSS I/O permission bitmap, one bit per port and one bitmap per core (`segments`, §121 (a device
+//! capability when the device has no page: x86 port I/O)). These functions are instructions, so
+//! they live under `arch/`. See notes/x86-port/cpu-state.md.
 
 use core::arch::asm;
 
@@ -100,15 +87,11 @@ pub(crate) unsafe fn in32(port: u16) -> u32 {
 
 /// **The 16550's registers reached as I/O ports**, which is where every x86 machine puts COM1.
 ///
-/// The whole of the difference from `drivers::ns16550::Mmio` is the instruction used; the register
-/// indices, the stride, the divisor arithmetic and the transmit poll are the 16550's and are shared.
-/// It lives here rather than beside the driver because `in` and `out` are instructions, and rule #1
-/// puts instructions under `arch/`.
-///
-/// The 32-bit accessors are present because the trait has them and are not reachable in practice:
-/// a port-space 16550 has `reg_shift = 0`, so `reg_io_width == 4` is never taken. They are
-/// implemented rather than left to panic because a panic in a console accessor has nowhere to print
-/// itself.
+/// Only the instruction differs from `drivers::ns16550::Mmio`; the register indices, stride,
+/// divisor arithmetic and transmit poll are the 16550's and shared. The 32-bit accessors exist because the
+/// trait has them; a port-space 16550 has `reg_shift = 0`, so `reg_io_width == 4` is never taken.
+/// They are implemented rather than left to panic, since a panic in a console accessor has nowhere
+/// to print itself.
 pub struct PortIo;
 
 // SAFETY: `in`/`out` reach exactly the port and width named, and the CPU does not cache, reorder or
