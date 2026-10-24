@@ -50,7 +50,7 @@ pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), abi::Error> {
 /// Grant the running thread the cycle counter, which breaks the embryo rule [`grant_cycle_counter`]
 /// enforces. Two kernel callers, each on a kernel thread before it drops to EL0 through
 /// `user::run`: the system test of the EL0 grant, and the bench boot's `ipc_rtt_el0_cycles` probe
-/// under `cycle_counter_grant` (milestone 101, the L4 calibration). Neither is a program asking, so the rule's reason
+/// under `cycle_counter_grant` (milestone 101 (the L4 calibration)). Neither is a program asking, so the rule's reason
 /// (the grant is the spawner's choice, never the grantee's) still holds.
 ///
 /// It writes the register as well as the field, because the caller will not pass through

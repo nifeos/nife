@@ -421,7 +421,7 @@ cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unkn
 # a silence. Count: 8 builds x 2 targets = 16 `==>` lines. `lock_wait` is a measurement build no
 # gate otherwise compiles, and it is the only build that compiles the counting arm of
 # `IrqSafeMutex::lock` and the reaper's timing (kernel/src/lock_wait.rs). `bench,cycle_counter_grant`
-# is the one pair: it alone compiles the bench boot's `ipc_rtt_el0_cycles` probe (milestone 101, the L4 calibration),
+# is the one pair: it alone compiles the bench boot's `ipc_rtt_el0_cycles` probe (milestone 101 (the L4 calibration)),
 # which neither feature builds by itself.
 #
 # On BOTH ISAs since milestone 41. riscv64 was linted only under `watchdog_probe` before, so the

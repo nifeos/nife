@@ -106,7 +106,7 @@ does.
 ### `ipc_rtt_el0_cycles`: the round trip in cycles, read rather than converted
 
 A build with `cycle_counter_grant` beside `bench` grants the `ipc_rtt_el0` client the cycle counter
-(the per-thread grant of §139, who may read the cycle counter) and has it read the counter across the same timed loop. Two
+(the per-thread grant of §139 (who may read the cycle counter)) and has it read the counter across the same timed loop. Two
 probe lines follow the row, which does not change:
 
 ```

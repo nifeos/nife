@@ -33,7 +33,7 @@ Which reading closes milestone 101? Both are a person at a board; the question i
 - (B, recommended) radon's direct read. The block's own `machine_requirements` names riscv64
   silicon, and the step this block was waiting for, cycles read from a PMU instead of an assumed
   clock, is exactly what the probe gives there. The same-silicon comparison against seL4's TX1
-  figures is milestone 25's (cross-OS performance comparison) and already gated on argon, so nothing is lost.
+  figures belongs to milestone 25 (cross-OS performance comparison) and already gated on argon, so nothing is lost.
   It closes on one evening at a board that already boots the bench.
 - (A) argon's direct read. The calibration's referent is seL4's TX1 pair, so only a TX1 cycle
   count makes the ratio a measurement. Honest, but it ties this block to a delivery with no date.
@@ -203,9 +203,11 @@ and it did not.
 - **Milestone 74.** Cycles from a PMU on each ISA, PARTIAL (both halves built; radon has run the
   riscv64 half, argon has run nothing). Its `cycles_per_tick` probe gave this block radon's
   converted figure.
-- **Milestone 374.** Cycles per IPC on the bench card: a cycle column on every bench row. This block added one probe line for one
+- **Milestone 374.** Milestone 374 (cycles per IPC on the bench card) is a cycle column on every
+  bench row. This block added one probe line for one
   row and left the row format, which 374 calls a decision about a recorded artifact, alone.
-- **Milestone 16.** Real hardware and IOMMU-backed driver isolation; radon is 16a's board. It ran the bench suite on 2026-09-16
+- **Milestone 16.** radon is the board of milestone 16 (real hardware and IOMMU-backed driver
+  isolation), as 16a. It ran the bench suite on 2026-09-16
   (`bench/radon-2026-09-16/bench-134300.log`). HVF on the development machine passes through no
   PMU.
 - **Recorded.** The kernel-side numbers stay. The IPC round trip is the gating instrument the
