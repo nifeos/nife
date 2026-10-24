@@ -167,6 +167,24 @@ about the read, and what to do with it is the client's business.
 not implement, and to a second concurrent read. A sentinel rather than silence, so a confused
 client fails fast instead of hanging on a reply that will never come.
 
+### Badged copies
+
+A terminal endpoint capability with a non-zero badge is served by the badge's value, and every
+request outside that badge's set is refused with `BAD_REQUEST`. An unbadged capability is served in
+full, and that is every holder the boot wires: the input driver, the shell and `login`. The badge is
+the kernel's word on every receive (§230 (badged endpoint capabilities)), and a badged copy cannot
+be re-badged, so a holder cannot widen it back.
+
+- `proto::RAW_ONLY_BADGE` (milestone 709 (a graphical terminal session on the no-keyboard arm
+  holds only the raw half of the boot discipline)) reads keystrokes and nothing else: `OPERATION_RAWMODE` and
+  `OPERATION_READRAW`. Without `OPERATION_BYTES` its holder cannot type a line somebody else reads,
+  and without `OPERATION_READLINE` it cannot take one. It cannot print or quiesce. The spawn service
+  mints it for a `graphical_terminal` session with no keyboard, whose keystrokes come from the boot's
+  own discipline.
+- `proto::STDIN_BADGE` (milestone 892 (a std program at the prompt holds the network and a name
+  resolver)) is a program's standard input, served
+  `OPERATION_READ_LINE_BYTES` only.
+
 ## What a terminal owes a program, and what it does not
 
 Owes:

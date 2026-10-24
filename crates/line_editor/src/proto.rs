@@ -64,11 +64,11 @@ pub const OPERATION_READRAW: u64 = 7;
 /// (milestone 709 (a graphical terminal session on the no-keyboard arm holds only the raw half
 /// of the boot discipline), fatal risk 7).
 ///
-/// On a capability with **any non-zero badge** the terminal serves only [`OPERATION_RAWMODE`] and
-/// [`OPERATION_READRAW`] and refuses the rest with [`BAD_REQUEST`]; it serves a badge by its value,
-/// this one or [`STDIN_BADGE`]. The spawn service mints it (`abi::rendezvous::BADGE`) for a
-/// keyboardless `graphical_terminal` session; a badged copy cannot be re-badged (§230 (badged
-/// endpoint capabilities)), so its holder cannot widen it back. See notes/terminal-contract.md.
+/// The terminal serves a badge by its value: on this one only [`OPERATION_RAWMODE`] and
+/// [`OPERATION_READRAW`], refusing the rest with [`BAD_REQUEST`], and on an unknown one nothing.
+/// The spawn service mints it (`abi::rendezvous::BADGE`) for a keyboardless `graphical_terminal`
+/// session. A badged copy cannot be re-badged (§230 (badged endpoint capabilities)), so its holder
+/// cannot widen it back (notes/terminal-contract.md, "Badged copies").
 ///
 /// Name: provisional (the lane for milestone 709, 2026-10-03).
 pub const RAW_ONLY_BADGE: u64 = 1;

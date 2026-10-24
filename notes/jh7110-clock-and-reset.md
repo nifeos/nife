@@ -69,6 +69,10 @@ The rebase arithmetic is a host test (`the_two_trees_agree_on_the_identifiers`) 
 paragraph, so a renumbering upstream fails the build instead of surprising somebody at the bench.
 Every URL and fetch date is in `crates/jh7110_clock_and_reset/src/lib.rs`'s header.
 
+All three identifiers are STG-domain, so `TRNG_BRING_UP` means nothing without `STG`, and that
+coupling is why `Step` has no domain field. A second device in a second domain carries its own plan
+and its own domain beside it; that is the time to decide whether the pair wants a type.
+
 Two mechanics worth knowing, both transcribed rather than inferred:
 
 - A clock is one 32-bit word per index, at `base + 4 * index`, and bit 31 turns it on
