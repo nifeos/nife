@@ -1,57 +1,40 @@
-//! `std::net` for nife (milestone 27 phase two): `TcpStream` and outbound `UdpSocket` bound
-//! to the net_stack socket contract (DECISIONS §25, notes/net.md, `crates/socket_contract`).
+//! `std::net` for nife (milestone 27 phase two): `TcpStream`, `TcpListener` and outbound
+//! `UdpSocket` bound to the net_stack socket contract (DECISIONS §25, `crates/socket_contract`).
 //!
-//! A std program given the network holds a `Stack` endpoint and an untyped budget (the slot
-//! convention in `pal/nife/rt.rs`). Opening a socket is a `CALL` on that endpoint, which net_stack
-//! answers with **the socket's own capability** (§255 (each socket is its own capability)); this
-//! PAL hands that socket a shared `PageFrame` minted from the untyped (`SEND_CAP`,
-//! `OPERATION_ATTACH_PAGE_FRAME`), and every later operation is one `CALL` on the socket's
-//! capability with the payload in the shared frame. Bytes never cross a message.
-//!
-//! The PAL's **socket ids** are local: an index into its registry of each open socket's
-//! capability, page and residual bytes. Each open socket costs one of the process's 64 slots.
-//!
-//! **Blocking, one exchange at a time.** A `CALL` blocks in net_stack while it services the
-//! network, which is what `std::net`'s blocking API wants. The target is single-threaded, so a
-//! program can hold up to `SOCKETS` sockets but has one operation in flight.
-//!
+//! A program given the network holds a `Stack` endpoint and an untyped budget (`pal/nife/rt.rs`).
+//! Opening a socket is a `CALL` on that endpoint, answered with **the socket's own capability**
+//! (§255 (each socket is its own capability)). The PAL hands it a shared `PageFrame` minted from
+//! the untyped (`SEND_CAP`, `OPERATION_ATTACH_PAGE_FRAME`), and every later operation is one
+//! blocking `CALL` on the socket with the payload in the frame; bytes never cross a message. Socket
+//! ids are local registry indices, and each open socket costs one of the process's 64 slots. See
+//! notes/std/net.md.
 
 //! ## `TcpListener` is a held authority
 //!
-//! `bind` is `OPERATION_LISTEN` and `accept` is `OPERATION_ACCEPT`. **A listening port is a grant
-//! this program was given, or was not**: `net_stack` is spawned with a **listen grant**
-//! (`netproto::listen_grant`), an inclusive port range, and refuses `LISTEN` outside it;
-//! `NO_LISTEN_GRANT` is the default.
-//!
-//! | contract | `std::io::ErrorKind` | what a caller should do |
-//! |---|---|---|
-//! | `LISTEN_GRANTED` | (success) | serve |
-//! | `LISTEN_DENIED` | `PermissionDenied` | ask whoever spawned you for the port; do not retry |
-//! | `LISTEN_IN_USE` | `AddrInUse` | pick another port |
-//!
-//! **A listener and a connection are two objects** (notes/net/the-inbound-half.md). A listener
-//! holds its own capability and no shared frame; `accept` gets the connection back as a *second*
-//! capability under a second id, and attaches that one's frame. The listener re-arms inside
-//! `ACCEPT`, so `listener.incoming()` serves connections one after another, but not two at once: a
-//! second peer arriving while this program is busy gets a RST (the backlog is one deep).
-//!
+//! `bind` is `OPERATION_LISTEN` and `accept` is `OPERATION_ACCEPT`. `net_stack` is spawned with a
+//! **listen grant** (`netproto::listen_grant`, default `NO_LISTEN_GRANT`), an inclusive port range,
+//! and refuses `LISTEN` outside it: `LISTEN_DENIED` is `PermissionDenied` (ask whoever spawned you
+//! for the port; do not retry), and `LISTEN_IN_USE` is `AddrInUse` (pick another port). A listener
+//! holds no frame; `accept` gets the connection as a second capability under a second id
+//! (notes/net/the-inbound-half.md). The listener re-arms inside `ACCEPT`, so connections are served
+//! one after another, and a second peer arriving while this program is busy gets a RST.
 
 //! ## What is Unsupported, and why
 //!
-//! - **An accepted connection's peer address.** The `OPERATION_ACCEPT` reply carries no peer, so
-//!   `accept` and `peer_addr()` report the placeholder `0.0.0.0:0`. Fixing it changes what two
-//!   programs agree on; see notes/net/std-tcp-listener.md.
-//! - **Non-blocking mode and read/write timeouts.** The contract is blocking-only, with no poll
-//!   verb. `set_nonblocking(true)` and `set_*_timeout(Some(..))` return `Unsupported`;
-//!   `set_nonblocking(false)` and the `None` timeouts succeed.
-//! - **DNS without a resolver grant.** `lookup_host` asks the resolver through the badges at
-//!   `rt::RESOLVER_SLOTS` (see the end of this file); a program granted none resolves only numeric
-//!   addresses.
-//! - **IPv6.** net_stack is IPv4-only (smoltcp built with `proto-ipv4`).
-//! - **`peek`, `duplicate`, multicast join/leave.** No contract verb backs them.
+//! - **An accepted connection's peer address.** The `OPERATION_ACCEPT` reply carries none, so
+//!   `accept` and `peer_addr()` report `0.0.0.0:0` (notes/net/std-tcp-listener.md).
+//! - **Non-blocking mode and timeouts.** The contract is blocking-only with no poll verb:
+//!   `set_nonblocking(true)` and `set_*_timeout(Some(..))` refuse; `false` and `None` succeed.
+//! - **DNS without a resolver grant** (numeric addresses only; the end of this file), **IPv6**
+//!   (net_stack is IPv4-only), and **`peek`, `duplicate`, multicast join/leave** (no verb).
+//! - Advisory knobs (`set_nodelay`, `set_ttl`, the IPv6 hop limits, `set_linger`, broadcast,
+//!   multicast options) accept and return plausible values and change nothing on the wire.
+
+//! # BUGS
 //!
-//! Advisory knobs with no contract effect (`set_nodelay`, `set_ttl`, the IPv6 hop limits,
-//! `set_linger`, broadcast, multicast options) accept and return plausible values; they change
+//! - **One operation per socket at a time is assumed, not enforced.** The shared frame is not
+//!   locked, a design from before std threads; two threads using one socket at once (a read and a
+//!   write through a shared `&TcpStream`) can overwrite each other's bytes in its frame.
 //! nothing on the wire.
 
 #![allow(dead_code)]
@@ -82,9 +65,8 @@ fn page_frame_va(id: u64) -> u64 {
 
 // --- The socket registry ---------------------------------------------------------------------
 //
-// A small fixed table, one entry per possible socket id, guarded by a spinlock (uncontended on
-// this single-threaded target, correct if threads ever arrive, the same discipline as the heap in
-// `sys/alloc/nife`). It tracks which ids are in use, each open socket's capability, each id's page
+// A small fixed table, one entry per possible socket id, guarded by a spinlock (the same
+// discipline as the heap in `sys/alloc/nife`). It tracks which ids are in use, each open socket's capability, each id's page
 // (minted once per id and kept, so open/close cycles reuse the page without re-mapping an
 // already-mapped VA), a per-TCP-socket residual buffer (bytes net_stack delivered into the frame that a
 // short `read` could not take), and each UDP socket's peer/last destination.
@@ -213,8 +195,8 @@ fn socket_of(id: u64) -> u64 {
 
 // --- Shared-frame access ---------------------------------------------------------------------
 //
-// Single-threaded, one exchange at a time, so the frame needs no locking: only the running
-// operation touches it between its own `CALL`s.
+// The frame is not locked: only the running operation on a socket touches it between its own
+// `CALL`s, which assumes one operation per socket at a time (see BUGS in the module docs).
 
 fn fw8(va: u64, v: u8) {
     // SAFETY: `va` is inside this socket's mapped, writable shared frame.
@@ -649,9 +631,8 @@ impl TcpListener {
     /// bind here means. The port, by contrast, is the whole authority, so it is sent as asked and
     /// refused as asked.
     ///
-    /// **No frame is attached, deliberately.** A socket that carries bytes is handed its page when
-    /// it opens; a listener carries none. The page arrives at `accept` time, on the *connection's*
-    /// id.
+    /// **No frame is attached**: a listener carries no bytes. The page arrives at `accept` time, on
+    /// the *connection's* id.
     fn bind_one(addr: &SocketAddr) -> io::Result<TcpListener> {
         let (_ip, port) = v4(addr)?;
         let id = alloc_id().ok_or_else(|| {
@@ -709,15 +690,10 @@ impl TcpListener {
 
     /// **`OPERATION_ACCEPT`: block until a peer connects, and take the connection at a second socket id.**
     ///
-    /// The second id is the point rather than an implementation detail. A listener and a connection
-    /// are two objects here: net_stack answers `ACCEPT` with the connection's own capability, and
-    /// `accept` files it under a *new* id and hands it that id's page, which the listener never had.
-    ///
-    /// The listener re-arms inside the same call, before it returns, so accepting in a loop works
-    /// and a server does not go deaf after one connection.
-    ///
-    /// **The peer address is `0.0.0.0:0`**: the contract's reply carries no peer. Named in this
-    /// module's header rather than hidden, because a caller who logs it will log zeros.
+    /// A listener and a connection are two objects: net_stack answers `ACCEPT` with the connection's
+    /// own capability, and `accept` files it under a *new* id with that id's page, which the
+    /// listener never had. The listener re-arms inside the same call, so accepting in a loop works.
+    /// **The peer address is `0.0.0.0:0`**: the contract's reply carries no peer (module docs).
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
         let conn = alloc_id().ok_or_else(|| {
             io::const_error!(io::ErrorKind::Other, "too many open sockets (contract limit)")
@@ -1049,19 +1025,15 @@ impl fmt::Debug for UdpSocket {
 }
 
 // --- DNS: the resolver this program was granted, if it was granted one -------------------------
-//
-// Milestone 801 (packages over the internet). A name is resolved by the name resolver of milestone
-// 384 (in a capability system the resolver is a grant), through the badged endpoints at
-// `rt::RESOLVER_SLOTS`. Each badge carries one zone the spawner granted (§252 (a resolver grant is
-// one zone per client badge)), so `ToSocketAddrs` resolves those zones and nothing else, and a
-// program with slot 9 empty resolves nothing: numeric addresses still work, because std parses
-// those before it ever calls here. The badges are asked in slot order, and the next only when the
-// resolver answers that the name is outside this one's zone (milestone 892 (a std program at the
-// prompt holds the network and a resolver); calef, 2026-10-19 (UTC): "probed in order"). That
-// refusal is the resolver's own, before it sends anything, so a miss costs one round trip and no
-// packet. The page the resolver writes answers into is this program's, minted from the socket
-// frames' budget once and kept, and lent to each badge the first time that badge is asked; that is
-// why a resolver is only usable beside the network.
+// Milestone 801 (packages over the internet). A name goes to the resolver of milestone 384 (in a
+// capability system the resolver is a grant) through the badged endpoints at `rt::RESOLVER_SLOTS`,
+// one granted zone per badge (§252 (a resolver grant is one zone per client badge)). With slot 9
+// empty nothing resolves, but numeric addresses work: std parses those before calling here. Badges
+// are asked in slot order, the next only when the resolver says the name is outside this one's
+// zone (milestone 892 (a std program at the prompt holds the network and a resolver); calef,
+// 2026-10-19 (UTC): "probed in order"), a refusal that costs one round trip and no packet. The
+// answer page is minted once from the socket frames' budget and lent to each badge the first time
+// it is asked, which is why a resolver is only usable beside the network.
 
 use crate::sys::pal::nife::resolveproto as resolve;
 

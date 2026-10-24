@@ -80,3 +80,12 @@ on the network, and one that has closed them all still spends six.
 net_stack assigns ephemeral local ports with a rotating allocator, independently of the socket, and
 a socket has no number at all under §255 (each socket is its own capability). So a socket's local
 port does not follow its id, and reopening one does not reuse the port it had.
+
+## BUGS
+
+- One operation per socket at a time is assumed, not enforced. The registry is behind a spinlock,
+  but a socket's shared frame is not locked: only the running operation touches it between its own
+  `CALL`s. That held while a std process had one thread. Under `std::thread` (see
+  [threads](threads.md)), two threads using one socket at once, a read and a write through a shared
+  `&TcpStream`, can overwrite each other's bytes in the frame. Distinct sockets have distinct frames
+  and do not collide.
