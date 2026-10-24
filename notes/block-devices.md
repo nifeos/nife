@@ -194,6 +194,19 @@ handed to a second driver after the first programmed the device. That is a lifet
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.
 
+## What a survey reports
+
+`ROLE_SURVEY` on the milestone 57 test disk, a 64 MiB image `sgdisk` partitioned:
+
+```text
+roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
+table  : 3 partitions, disk GUID 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506
+         1  EFI system    2048..10239
+         2  linux root   10240..30719
+         3  nife data 30720..131038
+backup : agrees with the primary
+```
+
 ## See also
 
 - [The GUID Partition Table](globally-unique-identifier-partition-table.md) for the format, the fixtures and the proofs.
