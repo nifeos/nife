@@ -25,8 +25,8 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_map_into, cap_delete, cycle_reading, destroy_memory_region, exit, map_page_frame, now, receive,
-    retype_into_kernel_object, retype_into_page_frame, send, split_memory_region,
+    address_space_map_into, cap_delete, cycle_reading, destroy_memory_region, exit, map_page_frame,
+    now, receive, retype_into_kernel_object, retype_into_page_frame, send, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start, yield_now,
 };

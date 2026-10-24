@@ -198,7 +198,9 @@ fn el0_cycle_counter_refusal() -> Option<&'static str> {
     }
     #[cfg(target_arch = "riscv64")]
     if !crate::arch::pmu::counts_through_the_cycle_csr() {
-        return Some("the kernel's cycle counter is not the `cycle` CSR a granted U-mode read uses");
+        return Some(
+            "the kernel's cycle counter is not the `cycle` CSR a granted U-mode read uses",
+        );
     }
     None
 }
@@ -212,7 +214,9 @@ fn el0_cycle_counter_refusal() -> Option<&'static str> {
 #[cfg(feature = "cycle_counter_grant")]
 fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
     if cycles == 0 || cycles > u64::MAX / 200 {
-        println!("bench-probe: ipc_rtt_el0_cycles unavailable (the counter read {cycles} across the loop)");
+        println!(
+            "bench-probe: ipc_rtt_el0_cycles unavailable (the counter read {cycles} across the loop)"
+        );
         return;
     }
     let per_iter = (cycles * 100).checked_div(iters).unwrap_or(0);
