@@ -173,7 +173,7 @@ macro_rules! program_entry {
         /// The process entry point `program_entry!` writes, the symbol the link script's
         /// `ENTRY(_start)` reads.
         ///
-        /// Name: recorded (`ENTRY(_start)` in crates/user_mode_runtime/link.ld). The ELF entry
+        /// Name: recorded (crates/user_mode_runtime/link.ld, its `ENTRY` line). The ELF entry
         /// symbol every toolchain uses.
         #[cfg(not(target_arch = "x86_64"))]
         #[unsafe(no_mangle)]
