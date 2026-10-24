@@ -1,20 +1,18 @@
-//! **Traps, RISC-V.** The `stvec` vector, the saved [`TrapFrame`], and the dispatch into the
-//! portable syscall and fault handlers. The S-mode analog of aarch64's `VBAR` table + `ESR` decode.
+//! RISC-V traps: the `stvec` vector, the saved [`TrapFrame`], and the dispatch into the portable
+//! syscall and fault handlers.
 //!
-//! RISC-V has a single trap entry (`stvec`), not aarch64's 16-slot table; interrupt-versus-exception
-//! is the top bit of `scause`, and the syscall path is the `ecall` cause. The trap-entry assembly is
-//! in trap.s; it fills a [`TrapFrame`] and calls [`riscv_trap_dispatch`], which fans out on `scause`.
-//! The syscall-ABI reconciliation is done: the portable dispatcher reads the number and arguments
-//! through `TrapFrame::{syscall_nr, arg, set_arg}` (see this module's `impl`), so `ecall`'s a7/a0..a5
-//! map correctly without `syscall.rs` naming a register.
+//! trap.s is the single trap entry. It fills a [`TrapFrame`] and calls [`riscv_trap_dispatch`],
+//! which fans out on `scause`. The portable syscall dispatcher reads `ecall`'s `a7` and `a0`..`a5`
+//! through `TrapFrame::{syscall_nr, arg, set_arg}`.
+//!
+//! See notes/riscv-port/traps.md.
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use crate::arch::{UserFault, UserFaultAccess};
 
-/// The registers saved on a trap. `x` is the RISC-V general-register file `x0`..`x31` (`x[0]` is the
-/// hardwired zero); the trap CSRs follow. `#[repr(C)]` because the trap-entry assembly (the traps
-/// step) will fill it field for field.
+/// The registers saved on a trap: the general registers, then the trap CSRs. `#[repr(C)]` because
+/// trap.s fills it field for field.
 ///
 /// `x` is `pub` because the portable syscall dispatcher indexes it; the rest is arch-internal.
 #[repr(C)]
@@ -33,18 +31,13 @@ pub struct TrapFrame {
     pub sstatus: u64,
 }
 
-// If this fails, `trap_entry` and `TrapFrame` have drifted apart and the Rust side is about to read
-// the wrong bytes. The aarch64 twin has carried this check since the port; RISC-V went without it
-// until milestone 71, which is when the number stopped being confined to trap.s: the two
-// `addi sp, sp, -288` in trap.s, the `addi sp, sp, 288` in trap_return, and the frame reservation
-// in `user_entry_trampoline` all spell 288 by hand.
+// 288 is spelled by hand in trap.s (`addi sp, sp, -288` in `trap_entry`, `addi t1, sp, 288` in
+// `trap_return`) and in context.s (`user_entry_trampoline`'s frame reservation).
 const _: () = assert!(size_of::<TrapFrame>() == 288);
 
 impl TrapFrame {
-    /// The syscall number the caller passed. RISC-V `ecall` ABI: register `a7` (`x17`). The portable
-    /// dispatcher reads it here so it never names a register directly. This, with `arg`/`set_arg`, is
-    /// the resolution of the syscall-ABI leak flagged during the port (DECISIONS §17): aarch64 uses
-    /// x8 + x0..x5, RISC-V uses a7 + a0..a5, and each maps its own registers.
+    /// The syscall number the caller passed, in `a7` (`x17`), so the portable dispatcher names no
+    /// register (DECISIONS §17 (the second architecture: RISC-V)).
     pub(crate) fn syscall_nr(&self) -> u64 {
         self.x[17] // a7
     }
@@ -67,32 +60,20 @@ impl TrapFrame {
         self.x[4] = v;
     }
 
-    /// Build the frame that drops a brand-new thread to U-mode at `entry` on `user_sp`, with `args`
-    /// in `a0`..`a2`. The RISC-V side of the userspace-entry seam (notes/riscv-port.md, leak #3),
-    /// mirroring aarch64's `for_user_entry`. `sret` will resume at `sepc` in the privilege named by
-    /// `sstatus.SPP`: SPP = 0 is U-mode, and SPIE = 1 makes interrupts enabled after the return, so a
-    /// tight-loop user thread stays preemptible (the RISC-V analog of aarch64's DAIF = 0).
+    /// Build the frame that drops a new thread to U-mode at `entry` on `user_sp`, with `args` in
+    /// `a0`..`a2` and its own thread pointer in `tp`.
     ///
-    /// The register indices are the RISC-V ABI: `a0`..`a2` are `x10`..`x12`, `sp` is `x2`. This is
-    /// also where the syscall-ABI reconciliation (the traps step) will settle, since the dispatcher
-    /// reads its arguments from this same frame.
+    /// `sstatus` has SPP = 0 (return to U-mode), SPIE = 1 (interrupts on after `sret`, so the
+    /// thread stays preemptible) and UXL = 64-bit. See notes/riscv-port/hal-leaks.md.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
-        // sstatus for the sret: SPIE (interrupts on after the return), SPP left 0 (return to U-mode),
-        // and UXL = 2 (U-mode is 64-bit, bits 33:32). UXL is load-bearing: the trap-return path
-        // writes this whole value into sstatus, so omitting UXL would clear it to 0 and make the
-        // U-mode XLEN illegal, faulting on the first user instruction.
+        // `trap_return` writes this whole word into sstatus, so UXL (bits 33:32) must be 2 here or
+        // the first user instruction faults on an illegal XLEN.
         const SPIE: u64 = 1 << 5;
         const UXL_64: u64 = 2 << 32;
 
-        // **SIE must stay clear in any fabricated frame, and this assertion is load-bearing.**
-        // `trap_return` masks interrupts on entry (the fix for the exception-return race,
-        // notes/exceptions.md) and then writes this whole word into `sstatus`. On RISC-V `sstatus`
-        // holds both the staged fields and the LIVE interrupt-enable bit, so a frame carrying
-        // SIE = 1 would re-enable interrupts right after `sepc` is staged and defeat the mask
-        // outright. Real traps cannot do it (the hardware clears SIE on entry); a hand-built frame
-        // like this one could, silently, so the compiler checks instead of a comment asking nicely.
-        // aarch64 needs no equivalent: its staged `SPSR_EL1` is a different register from PSTATE.
-        // See trap.s `trap_return` and notes/arch-audit.md.
+        // SIE must be clear in a fabricated frame. `sstatus` holds the live interrupt enable as
+        // well as the staged fields, so SIE = 1 would unmask interrupts inside `trap_return` after
+        // `sepc` is staged (notes/exceptions.md, the exception-return race).
         const SIE: u64 = 1 << 1;
         const _: () = assert!((SPIE | UXL_64) & SIE == 0);
 
@@ -101,15 +82,10 @@ impl TrapFrame {
         x[11] = args[1]; // a1
         x[12] = args[2]; // a2
         x[2] = user_sp; // sp
-        // x[4] (tp) is the calling thread's own thread pointer (milestone 812 (`std::thread::spawn`
-        // runs real threads in one address space), §269 (how threads share a process) fork 4),
-        // zero for a thread nobody gave one, and never the kernel's per-hart pointer: RISC-V's tp is
-        // a general register (not a system register like aarch64's TPIDR_EL1), so that pointer must
-        // not ride into U-mode. trap.s restores the kernel tp from this hart's per-hart trap stash
-        // (via sscratch) on the way in, so the handler's cpu::current() is valid without leaking a
-        // kernel address. It is read here, while the frame is still a value, because the frame's
-        // final home at the top of the kernel stack may not be touched by a call once it is written
-        // (`enter_user`). On the other two architectures the context switch installed it.
+        // tp is the thread's own pointer (§269 (how threads share a process) fork 4), zero if it
+        // has none, never the kernel's per-hart one. Read now, while the frame is a value: once
+        // written at the stack top no call may run (`enter_user`). See notes/riscv-port.md, the
+        // per-hart `tp` hazard.
         x[4] = crate::sched::current_thread_pointer();
         TrapFrame {
             x,
@@ -128,30 +104,18 @@ unsafe extern "C" {
     fn user_return(frame: *mut TrapFrame) -> !;
 }
 
-/// Drop to U-mode by loading `frame` and executing `sret`. The RISC-V side of the userspace-entry
-/// seam (the counterpart of aarch64's `enter_user`).
+/// Drop to U-mode by loading `frame` and executing `sret`, the twin of aarch64's `enter_user`.
 ///
-/// **`#[inline(always)]` is load-bearing**, exactly as on aarch64: the frame sits at the top of the
-/// caller's own kernel stack, so a real call frame pushed here would overwrite it before
-/// `user_return`'s `mv sp, a0` takes effect. Inlining makes the caller tail-jump to `user_return`
-/// with no push.
+/// `#[inline(always)]` because the frame sits at the top of the caller's kernel stack, and a pushed
+/// call frame would overwrite it before `user_return`'s `mv sp, a0`. Panics on `sepc == 0`.
 ///
 /// # Safety
 /// `frame` must be a correctly-built, writable `TrapFrame` at the top of the current thread's kernel
 /// stack, with the user address space installed.
 #[inline(always)]
 pub unsafe fn enter_user(frame: *mut TrapFrame) -> ! {
-    // **Refuse to enter U-mode with no entry point.** A thread dispatched with `sepc == 0` fetches
-    // its first instruction from address 0, takes an instruction page fault, and dies; whatever it
-    // was supposed to serve then never answers, so every thread waiting on it blocks and the run
-    // ends 60 s later in the lost-wakeup watchdog, arbitrarily far from the cause. CI has produced
-    // that hang in three different tests on three different CPU models (2026-08-02), and it has
-    // never reproduced locally, so this converts a rare hang into a loud failure carrying its own
-    // evidence rather than something to be re-run past.
-    //
-    // The comparison is a load and a branch on a frame this function already touches, so the hot
-    // path keeps the property the `#[inline(always)]` above exists for: no call, nothing pushed
-    // over the frame that sits at the top of this stack.
+    // A load and a branch, no call: nothing is pushed over the frame on the hot path. `sepc == 0`
+    // would surface as a lost-wakeup hang far from its cause. See notes/riscv-port/traps.md.
     //
     // SAFETY: the caller's contract says `frame` is a valid, writable `TrapFrame`.
     let sepc = unsafe { (*frame).sepc };
@@ -181,15 +145,8 @@ fn entered_user_with_no_entry_point(user_sp: u64) -> ! {
     )
 }
 
-/// **Diagnostic: the U-mode PC of a thread, from the `TrapFrame` at the top of its kernel stack.**
-/// The twin of aarch64's `user_pc`, and the watchdog dump's U-mode-PC column.
-///
-/// This was a stub returning 0 until milestone 71, and the reason it was a stub is the bug that
-/// milestone fixed: the frame did not live at a fixed stack offset, it rode below whatever the live
-/// `sp` happened to be, so there was no address to read. Now it sits at `stack_top - 288` on this
-/// ISA exactly as it does on aarch64, both on first entry and on every trap after it, so the dump
-/// can say *where* a wedged thread is rather than only that it is wedged. Meaningless for a pure
-/// kernel thread, which never builds one.
+/// The U-mode PC of a thread, read from the `TrapFrame` at `stack_top - 288`, for the watchdog
+/// dump. Meaningless for a pure kernel thread, which has no frame there.
 pub(crate) fn user_pc(stack_top: u64) -> u64 {
     let frame = (stack_top - size_of::<TrapFrame>() as u64) as *const TrapFrame;
     // SAFETY: a diagnostic read of the frame `trap_entry` writes at the stack top. Volatile because
@@ -197,11 +154,9 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
     unsafe { core::ptr::read_volatile(&raw const (*frame).sepc) }
 }
 
-/// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
-/// stack that [`user_pc`] reads. The thread's return to user mode restores it from there, so this is
-/// how the kernel hands a blocked or trapped user thread a result word that is not one of the five
-/// its syscall path writes. The death message's label uses it, in argument register 5, so that only
-/// the death path pays: DECISIONS §148 (resolves by asking the kernel), as amended 2026-10-04.
+/// Write `v` to argument register `i` of the user frame at `stack_top`, which the return to U-mode
+/// restores: a result word the syscall path does not write, like the death label (§148 (a
+/// supervisor resolves by asking the kernel)).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -219,15 +174,11 @@ pub unsafe fn set_user_arg(stack_top: u64, i: usize, v: u64) {
 /// Interrupts routed to a userspace handler (delegated IRQs). Bumped by the trap dispatcher.
 pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
 
-/// Interrupts taken with no source enabled to explain them (should stay zero until the timer/PLIC
-/// steps enable real sources).
+/// Interrupts taken with no source enabled or routed to explain them.
 pub(crate) static SPURIOUS_IRQS: AtomicUsize = AtomicUsize::new(0);
 
-/// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
-/// proves a program reached user mode and came back by watching it rise). Every syscall on every
-/// core bumps this one line, so it is compiled out of every other build: until 2026-10-04 it was
-/// in all of them, and it was one of two shared writes on the cheapest syscall's path
-/// (notes/job-mix/null-syscall-under-load.md).
+/// System calls served, in test builds only, for `system_tests/src/user/el0_boundary_tests.rs`:
+/// every syscall on every core writes this one line (notes/job-mix/null-syscall-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -235,8 +186,7 @@ pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 /// bumped by the trap dispatcher.
 pub static USER_FAULTS: AtomicUsize = AtomicUsize::new(0);
 
-/// Breakpoints (`ebreak`) caught. Exists so a test can prove the trap round-trip actually ran,
-/// rather than proving only that we did not crash. The aarch64 analog is its own `BRK_COUNT`.
+/// Breakpoints (`ebreak`) caught from S-mode, so a test can prove the trap round trip ran.
 pub(crate) static BRK_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// The `sstatus.SPP` bit: the privilege the trap came from (0 = U-mode, 1 = S-mode).
@@ -286,49 +236,33 @@ static LAST_USER_FAULT: AtomicU64 = AtomicU64::new(0);
 static LAST_USER_FAULT_ADDR: AtomicU64 = AtomicU64::new(0);
 
 /// The last user fault's kind and the address it named, or `None` if no user thread has faulted
-/// yet.
-///
-/// **This is new on RISC-V, and it is the reason the fault tests can run here at all.** Until it
-/// existed the kernel recorded that a user thread faulted and threw away everything about the
-/// fault, so a test on this ISA could assert "something died" and nothing more. See [`classify`]
-/// for what "kind" costs here that it does not cost on aarch64.
+/// yet. [`classify`] says how the kind is derived.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn last_user_fault() -> Option<(UserFault, u64)> {
-    // Pairs with the `Release` on `USER_FAULTS` in [`user_fault`], so a caller that has seen the
-    // counter rise reads the record the faulting hart wrote rather than something older.
+    // A caller that saw the counter rise reads the record the faulting hart wrote.
     //
     // PAIR: `USER_FAULTS.fetch_add(1, Ordering::Release)` in [`user_fault`], below in this file.
-    // Both halves are here and both are load-bearing; the aarch64 twin is the same pair.
     core::sync::atomic::fence(Ordering::Acquire);
     let kind = UserFault::decode(LAST_USER_FAULT.load(Ordering::Relaxed))?;
     Some((kind, LAST_USER_FAULT_ADDR.load(Ordering::Relaxed)))
 }
 
-/// Read a U-mode trap as a [`UserFault`].
+/// Read a U-mode trap with exception `code` as a [`UserFault`].
 ///
-/// **RISC-V is not told the answer, so this derives it.** `scause` has exactly three page-fault
-/// codes, one per access kind, and no field anywhere says *why* the walk refused: a missing leaf
-/// and a leaf whose `U` bit is clear produce the identical `scause` 13. aarch64 gets that
-/// distinction free in `ESR_EL1`'s fault status code. Here the only source of it is the page table,
-/// so we walk it ([`mmu::is_mapped_in_current_space`]) and read "there is a translation" as "the
-/// refusal was about permission".
+/// `scause` gives the access kind and not the reason, so a mapped `stval` in the current space
+/// ([`mmu::is_mapped_in_current_space`]) is read as a permission fault, an unmapped one as a
+/// translation fault. Returns [`UserFault::Other`] for a cause that is not a page fault.
 ///
 /// # BUGS
 ///
-/// The walk happens *after* the fault, not during it, so it is evidence about the tables a few
-/// hundred cycles later rather than the hardware's own verdict. If another hart unmapped that page
-/// in the gap, a permission fault would be reported as a translation fault (and the reverse for a
-/// concurrent map). Nothing in the kernel does that to a live user page today, and the tests that
-/// read this record fault a thread that owns the address space alone, but the gap is real and no
-/// amount of care here closes it: the architecture did not record the fact at the instant it had
-/// it. The honest summary is that aarch64's answer is a measurement and RISC-V's is an inference.
+/// The walk runs after the fault, so a concurrent map or unmap on another hart misclassifies it.
+/// See notes/riscv-port/traps.md.
 fn classify(frame: &TrapFrame, code: u64) -> UserFault {
     let access = match code {
         CAUSE_INSTRUCTION_PAGE_FAULT => UserFaultAccess::Fetch,
         CAUSE_LOAD_PAGE_FAULT => UserFaultAccess::Read,
         CAUSE_STORE_PAGE_FAULT => UserFaultAccess::Write,
-        // An illegal instruction, an `ebreak`, a misaligned access: not a memory-permission
-        // question, so neither "permission" nor "translation" is a true thing to say about it.
+        // Not a memory-permission question, so neither answer would be true.
         _ => return UserFault::Other,
     };
 
@@ -339,17 +273,16 @@ fn classify(frame: &TrapFrame, code: u64) -> UserFault {
     }
 }
 
-/// Unmask supervisor external interrupts (`sie.SEIE`, bit 9): the PLIC's deliveries. The caller must
-/// have `sstatus.SIE` on (the timer step turned it on) for these to actually be taken, exactly as for
-/// the timer's `sie.STIE`. Setting this is what lets a device interrupt reach [`riscv_trap_dispatch`].
+/// Unmask supervisor external interrupts (`sie.SEIE`, bit 9), the PLIC's deliveries. They are taken
+/// only while `sstatus.SIE` is on.
 pub(crate) fn enable_external() {
     const SEIE: u64 = 1 << 9;
     // Setting sie.SEIE only unmasks the external-interrupt source; it takes effect under SIE.
     super::instructions::set_sie(SEIE);
 }
 
-/// Install the trap vector: `stvec` = [`trap_entry`], direct mode (all traps to one handler; the low
-/// two bits of `stvec` select the mode and must be 0, which trap.s's `.balign 4` guarantees).
+/// Install the trap vector: `stvec` = `trap_entry`, in direct mode. The low two bits of `stvec`
+/// select the mode, and trap.s's `.balign 4` keeps them 0.
 pub fn init() {
     unsafe extern "C" {
         fn trap_entry();
@@ -364,10 +297,8 @@ pub fn init() {
 fn advance_past_trapping_insn(frame: &mut TrapFrame) {
     // SAFETY: `sepc` is the address of the instruction that trapped, which is mapped and readable.
     let low = unsafe { core::ptr::read_volatile(frame.sepc as *const u16) };
-    // Wrapping, because the wrap cannot happen (release builds check overflow,
-    // notes/overflow-checks.md, and this is inlined into the trap body every syscall crosses): the
-    // only caller is the S-mode breakpoint arm, so `sepc` is in the kernel's own `.text`, linked
-    // gigabytes below `2^64 - 4`.
+    // Wrapping, to keep the overflow check off the trap body (notes/overflow-checks.md): the one
+    // caller is the S-mode breakpoint arm, so `sepc` is in kernel `.text`, far below `2^64 - 4`.
     frame.sepc = frame
         .sepc
         .wrapping_add(if low & 0b11 == 0b11 { 4 } else { 2 });
@@ -379,24 +310,22 @@ unsafe extern "C" {
     fn dispatch_on_interrupt_stack(frame: &mut TrapFrame, top: u64) -> bool;
 }
 
-/// **The outer half of the trap path, and the half that stays on the interrupted stack.**
+/// The outer half of the trap path, which stays on the interrupted stack.
 ///
-/// The twin of aarch64's `exception_dispatch`, with the same two jobs: pick the stack the handler
-/// runs on, and run the deferred `schedule()` afterwards, on a stack that belongs to the interrupted
-/// thread rather than to this hart. See `kernel/src/interrupt_stack.rs` for why the second one
-/// cannot happen anywhere else.
+/// Picks the stack [`riscv_trap_body`] runs on, then runs any deferred `schedule()` on the
+/// interrupted thread's own stack. See `kernel/src/interrupt_stack.rs`.
+///
+/// Context: interrupt context, with interrupts masked.
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[unsafe(link_section = ".text.hot.riscv_trap_dispatch")]
 extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
-    // U-mode traps keep their old behaviour: that thread's kernel stack is empty at this instant,
-    // and the syscall it is probably taking may block, which an interrupt stack may not do.
+    // A U-mode trap stays on its thread's kernel stack: the syscall may block, which an interrupt
+    // stack may not.
     let from_user = frame.sstatus & SPP == 0;
     let top = crate::interrupt_stack::top_for_trap(from_user);
     let deferred_switch = if top == 0 {
-        // The common case, and it must not pay for the uncommon one: see the aarch64 twin, where
-        // routing every `ecall` through the trampoline for a stack move that does not happen cost
-        // 8.6 instructions per `null_syscall`.
+        // The common case calls directly: the trampoline would cost every `ecall` instructions.
         riscv_trap_body(frame)
     } else {
         // SAFETY: `top` is this hart's own interrupt-stack top, from the module that owns the
@@ -411,12 +340,13 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
     }
 }
 
-/// The trap handler proper: everything that runs on the interrupt stack when there is one. Fans out
-/// on `scause`: an `ecall` from U-mode is a syscall; a breakpoint is a debug/self-test trap; an
-/// interrupt goes to the interrupt path; anything else is a fault.
+/// The trap handler proper, run on the interrupt stack when there is one. Fans out on `scause`:
+/// syscall, first FP use, S-mode breakpoint, interrupt or fault.
 ///
-/// Returns whether the caller owes a deferred `schedule()`, which is true for an interrupt and false
-/// for everything else.
+/// Returns whether the caller owes a deferred `schedule()`: true for an interrupt, else false.
+///
+/// Context: interrupt context, with interrupts masked; it may not call `schedule()` when on the
+/// interrupt stack (a trap from S-mode).
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[unsafe(link_section = ".text.hot.riscv_trap_body")]
@@ -426,27 +356,16 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
     if scause & INTERRUPT != 0 {
         let code = scause & 0xff;
         match code as u32 {
-            // The S-mode timer: count the tick, rearm, and RECORD that a reschedule is due. We do
-            // not switch here; we are mid-handler with a half-saved world. DECISIONS §9 says
-            // handlers record and the switch happens at a safe point, which is the deferral below.
+            // Record that a reschedule is due; the switch happens at the deferral (DECISIONS §9
+            // (locking: IrqSafeMutex, plus a discipline)).
             super::timer::TIMER_INTID => {
                 super::timer::tick();
                 crate::sched::on_tick();
             }
-            // A device interrupt, arrived through the PLIC. Claim it and, if it is routed to a
-            // userspace driver, deliver it as a message; the completion is the driver's ACK.
-            //
-            // **The claim is the mask.** From a claim until its completion the PLIC's gateway
-            // forwards nothing more from that source, so a level-triggered device that holds its
-            // line until its driver quiets it cannot storm. The source stays enabled, and that is
-            // load-bearing rather than a saving: the specification ignores a completion for a
-            // source its target does not enable. QEMU's PLIC accepts such a completion and the
-            // JH7110's drops it, so a disable here passes every gate and shows only on radon, as
-            // one keystroke per boot (milestone 890). See drivers/plic.rs.
+            // The claim is the mask until the driver's completion. The source stays enabled: the
+            // JH7110's PLIC drops a completion for a disabled source (drivers/plic.rs).
             S_EXTERNAL => {
-                // Claim against THIS hart's own context. IRQ affinity may have routed the source to
-                // a secondary hart's context, and that hart claims from its own context, not the
-                // boot hart's (drivers/plic.rs, arch::irq::this_s_context).
+                // Claim against this hart's own context; affinity may route a source to any hart.
                 let ctx = super::irq::this_s_context();
                 let source = crate::drivers::plic::claim(ctx);
                 if source != 0 {
@@ -461,14 +380,11 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
                     }
                 }
             }
-            // A reschedule IPI from another hart (SBI set our sip.SSIP). Clear the pending bit, then
-            // drain our inbox: another hart handed us a thread and poked us, and drain_inbox moves it
-            // onto our own run queue and sets need_resched, so the deferral below switches to it.
-            // The RISC-V twin of aarch64's RESCHED_SGI case. See sched::place_on / drain_inbox.
+            // A reschedule IPI: clear `sip.SSIP`, or it re-fires as soon as interrupts reopen.
             S_SOFTWARE => {
                 clear_software_interrupt();
-                // Two reasons a hart pokes us (DECISIONS §28): it handed us a thread (drain it), or
-                // an idle hart asked us for work (serve the steal). The same IPI carries both.
+                // One IPI carries both (DECISIONS §28 (SMP placement)): a handed thread and a steal
+                // request.
                 crate::sched::drain_inbox();
                 crate::sched::serve_steal_request();
             }
@@ -477,15 +393,8 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
             }
         }
 
-        // --- and preemption used to be here, the same four lines as aarch64 ---
-        //
-        // Both ISAs moved it out to the dispatcher's outer half at milestone 124, because this
-        // function may be running on a per-hart interrupt stack and `schedule()` may only be called
-        // on a stack the interrupted thread owns. Saying `true` is how this half asks for it. What
-        // the switch then does is unchanged: it saves this thread's kernel context and may not
-        // return until this thread is picked again, and when it does, the return falls through to
-        // `trap_return`, which restores `frame` and `sret`s back to exactly the instruction the
-        // timer interrupted (DECISIONS §5). See kernel/src/interrupt_stack.rs.
+        // Preemption runs in `riscv_trap_dispatch`, on the interrupted thread's stack, never on
+        // the interrupt stack this may be on (DECISIONS §5 (execution model: preemptive threads)).
         return true;
     }
 
@@ -494,67 +403,31 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
 
     match code {
         CAUSE_ECALL_U => {
-            // The syscall. `sepc` points AT the `ecall` (unlike aarch64, where the hardware advances
-            // ELR past `svc`), so step over it before dispatching, and `ecall` is always 4 bytes.
-            // Wrapping, because the wrap cannot happen on the one path every syscall takes
-            // (release builds check overflow, notes/overflow-checks.md): this cause is U-mode
-            // only, so `sepc` is a user address in Sv39's low half, far below `2^64 - 4`.
+            // `sepc` points at the 4-byte `ecall`; step over it. Wrapping keeps the overflow check
+            // off the syscall path: `sepc` is a user address, far below `2^64 - 4`.
             frame.sepc = frame.sepc.wrapping_add(4);
             #[cfg(any(test, feature = "system_tests"))]
             SVC_COUNT.fetch_add(1, Ordering::Relaxed);
             crate::syscall::dispatch(frame);
         }
-        // **A thread asked for the FP unit for the first time**
-        // (milestone 447 (a thread's vector registers are its own)), and RISC-V does not
-        // say so: an FP instruction under `sstatus.FS == Off` is reported as an ordinary illegal
-        // instruction, with nothing in `scause` or `stval` to separate it from a genuinely bad
-        // opcode. aarch64 has its own exception class for this and x86 has its own vector.
-        //
-        // **So this does not decode the instruction; it retries it.** `FS == Off` in the frame is
-        // the whole guard: open the unit, leave `sepc` where it is, and let the `sret` re-execute
-        // whatever trapped. An instruction that was genuinely illegal traps a second time, this
-        // time with `FS` no longer Off, and falls through to `user_fault` or the panic below. The
-        // cost of being wrong is one extra trap on a path that is already killing a thread; the
-        // alternative was reading the faulting instruction out of user memory (`stval` is permitted
-        // to be zero for this cause, and is on some parts) and decoding seven major opcodes plus
-        // the compressed forms, to answer a question the retry answers for free.
-        //
-        // **The frame's `sstatus`, not just the live CSR**, and this is the RISC-V-only trap:
-        // `trap.s` writes the frame's copy back on the way out, so an enable that only touched the
-        // live register would be undone by its own return. `crate::fp::enable_for_current` has just
-        // loaded a register file, so the hardware's `FS` is Dirty and that is what the frame gets.
-        //
-        // Like the aarch64 arm, it serves S-mode as well as U-mode: milestone 447's concurrency
-        // proof is written as kernel threads, because every userspace target in `targets/` is
-        // soft-float and cannot ask.
+        // An illegal instruction under `FS == Off` may be a first FP use. Open the unit and retry
+        // without decoding: a genuinely illegal one traps again with `FS` on. Set the frame's FS,
+        // which trap.s writes back, to Dirty. See notes/riscv-port/traps.md.
         CAUSE_ILLEGAL_INSTRUCTION
             if frame.sstatus & super::fp::SSTATUS_FS == 0 && crate::fp::enable_for_current() =>
         {
             frame.sstatus = (frame.sstatus & !super::fp::SSTATUS_FS) | super::fp::SSTATUS_FS_DIRTY;
         }
 
-        // A breakpoint from S-mode is the trap self-test: count it and step over. From U-mode it
-        // falls through to `user_fault` below, because every userspace panic handler ends in
-        // `ebreak` *expecting to die* ("a driver bug is a dead driver"); stepping over it would
-        // resume a program that just declared itself broken.
+        // S-mode only: a U-mode `ebreak` ends a userspace panic and must kill the thread.
         CAUSE_BREAKPOINT if !from_user => {
             BRK_COUNT.fetch_add(1, Ordering::Relaxed);
             advance_past_trapping_insn(frame);
         }
-        // A user thread did something illegal (or `ebreak`ed on purpose). It dies; the kernel
-        // does not. Same promise as aarch64's `user_fault`, kept on the second ISA.
         _ if from_user => user_fault(frame, scause, code),
         _ => {
-            // An exception from S-mode is a KERNEL bug, and fatal. Report it with the detail
-            // that makes it legible.
-            //
-            // Say first whether `stval` is a guard page, because that single fact decides what the
-            // rest of the message means. Milestone 78: two `cpu matrix` runs died here with
-            // `scause=0xf ... from_user=false` and an address nothing interpreted, and it took
-            // arithmetic on the CI log to work out that both were the base of a thread stack's
-            // guard page. The kernel knew; it just was not saying.
-            // `x[2]` is the interrupted `sp`, which trap.s saved out of the stash. The live `sp`
-            // would name this hart's interrupt stack instead (milestone 124).
+            // A kernel exception is fatal. `x[2]` is the interrupted `sp`; the live one may be
+            // this hart's interrupt stack.
             crate::stack::warn_if_guard_page(frame.stval, frame.x[2]);
             panic!(
                 "unexpected RISC-V trap: scause={scause:#x} (code {code}) stval={:#x} sepc={:#x} \
@@ -564,21 +437,14 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
         }
     }
 
-    // A synchronous trap has already done whatever it was going to do. Nothing is deferred.
     false
 }
 
-/// **What the hardware walked, beside the root this thread's own space has**, for a user page
-/// fault's kill report. A page fault at a pc the thread had just been executing is otherwise
-/// undiagnosable from a CI transcript (merge-group run 38284891615; notes/riscv-tlb-shootdown.md,
-/// BUGS).
+/// Print what the hardware walked for a user page fault at `stval`: the live `satp` and leaf, and
+/// in `system_tests` builds whether the root is the thread's own.
 ///
-/// The thread's own root comes from `sched::thread_space_root`, which exists only in a
-/// `system_tests` build, so a shipping kernel prints the live `satp` and the leaf and leaves the
-/// comparison out. Kept out of line and cold for `script/fastpath-footprint`, which measures the
-/// trap dispatcher as part of `syscall_entry`. A new function in `sched` itself is not neutral
-/// either: one added for this report moved the codegen-unit split and grew riscv64's
-/// `syscall_entry` from 2,010 to 2,604 bytes on 2026-10-13 (UTC), whatever its attributes.
+/// Cold and out of line for `script/fastpath-footprint`. See notes/riscv-port/traps.md and
+/// notes/riscv-tlb-shootdown.md, BUGS.
 #[cold]
 #[inline(never)]
 fn report_translation(stval: u64) {
@@ -596,8 +462,7 @@ fn report_translation(stval: u64) {
         Some(_) => crate::println!(
             "    satp {satp:#018x} (root {live:#x}, the thread's own), leaf at stval {leaf:x?}"
         ),
-        // `thread_space_root` answers `None` for a thread whose record holds no space, which the
-        // switch-in then runs on the reserved root; say so, or it reads like a shipping build.
+        // `None` here is a thread with no space, run on the reserved root, not a shipping build.
         None if cfg!(feature = "system_tests") => crate::println!(
             "    satp {satp:#018x} (root {live:#x}, and the thread's record holds no space), leaf \
              at stval {leaf:x?}"
@@ -606,31 +471,18 @@ fn report_translation(stval: u64) {
     }
 }
 
-/// A user thread did something it is not allowed to do. Kill it; keep the machine.
+/// Kill the user thread whose trap `frame` (cause `scause`, exception `code`) is a fault, and keep
+/// the machine.
 ///
-/// The mechanism is aarch64's `user_fault`, verbatim in spirit: we are in the trap handler on the
-/// faulting thread's kernel stack, `sched::exit()` marks it Finished and schedules away forever,
-/// and the reaper frees the stack from the next thread. The blocking-syscall path (`ipc_receive`)
-/// already schedules away from this exact context, so nothing here is novel.
-///
-/// **Correction, on the record.** Until milestone 32 this arm panicked the whole kernel, behind a
-/// comment claiming no user thread could run on RISC-V, which had been false since parity (user
-/// threads shipped with milestone 20 and the parity workstreams). Nothing noticed because no riscv
-/// test made a user thread fault; the kill-mid-write test is the first, and it flushed this out.
-/// The stale comment survived two workstreams past the decision that obsoleted it, which is
-/// exactly the "a TODO that outlives its decision becomes misinformation" failure notes/teardown.md
-/// documents.
+/// Records the fault for [`last_user_fault`], prints the kill report, and hands the thread to
+/// `sched::fault`, which delivers it to a supervisor or retires it (DECISIONS §26 (the fault
+/// endpoint)). Never returns.
 fn user_fault(frame: &TrapFrame, scause: u64, code: u64) -> ! {
-    // Classify BEFORE anything else: the walk reads the address space this thread is still
-    // installed on, and `sched::fault` below is where that stops being true.
+    // Classify first, while this thread's space is still installed.
     //
-    // **The record first, the counter last, and the counter's store is the release.** Every test
-    // that reads this record finds it by watching `USER_FAULTS` rise and then calling
-    // [`last_user_fault`], so the counter is the publication flag for the record and must be
-    // written after it. It was written first on both ISAs, which is a race a passing test cannot
-    // see: the reader gets either an earlier fault's record (an assertion satisfied by the wrong
-    // evidence) or, on the boot's first fault, a zero that reads as "nothing faulted". The aarch64
-    // twin carries the same fix.
+    // The record, then the counter: the counter's Release publishes the record.
+    //
+    // PAIR: the `Acquire` fence in [`last_user_fault`].
     LAST_USER_FAULT_ADDR.store(frame.stval, Ordering::Relaxed);
     LAST_USER_FAULT.store(classify(frame, code).encode(), Ordering::Relaxed);
     USER_FAULTS.fetch_add(1, Ordering::Release);
@@ -656,20 +508,12 @@ fn user_fault(frame: &TrapFrame, scause: u64, code: u64) -> ! {
     }
     crate::println!("  the kernel is fine.");
 
-    // Deliver the fault to a supervisor if this thread had one, and become a corpse; otherwise the
-    // unsupervised path (Finished, reaped by the next thread), exactly as `exit`. DECISIONS §26,
-    // sched::depart. `frame.sepc` is the faulting pc, `frame.stval` the faulting address.
     crate::sched::fault(frame.sepc, frame.stval);
 }
 
-/// Prove the trap path works end to end: execute a breakpoint and return. If traps are wired,
-/// [`riscv_trap_dispatch`] catches `scause` = breakpoint, [`advance_past_trapping_insn`] steps `sepc`
-/// past the `ebreak`, and `sret` lands us right back here. If they are not, this never returns.
-/// Returns the breakpoint count so the caller can confirm the handler actually ran.
-// The boot self-test is the only caller, and it is `#[cfg(not(any(test, feature = "bench")))]`, as
-// aarch64's is. The riscv64 boot called this unconditionally until milestone 890 (riscv64 and
-// `x86_64` join the shared boot path) retired its `traps` line in favor of the self-test's
-// `exceptions` check, which makes the same claim on all three architectures.
+/// Prove the trap path end to end: execute an `ebreak` and return how many breakpoints the handler
+/// counted, which is 1 when traps are wired. Without them this never returns.
+// The boot self-test is the only caller, and it is not built under `test` or `bench`.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)
@@ -683,23 +527,11 @@ pub(crate) fn self_test() -> usize {
 #[cfg(test)]
 mod tests {
     //! Tests for trap handling.
-    //!
-    //! `registers_survive_a_trap` is the load-bearing one. The [`TrapFrame`](super::TrapFrame)
-    //! layout is a contract with trap.s that the compiler cannot check, and a wrong offset would
-    //! scramble a register while still `sret`ing happily to the right address, corrupting a caller's
-    //! state and blaming innocent code thousands of instructions later.
 
-    /// The trap vector is installed, in direct mode, at an address the hardware will accept.
+    /// The trap vector is installed in direct mode, 4-byte aligned.
     ///
-    /// `stvec` is not a plain pointer: its low two bits are the MODE field (0 = direct, all traps to
-    /// one handler; 1 = vectored, interrupts to `base + 4*cause`). So the base must be 4-byte
-    /// aligned or its low bits *are* a mode selector, and writing a 2-byte-aligned entry point would
-    /// silently select vectored mode and send every interrupt to a wrong address. trap.s's
-    /// `.balign 4` is what makes that impossible, and this is the assertion that says so.
-    ///
-    /// The aarch64 twin checks `VBAR_EL1`'s 2048-byte alignment, which is the same class of rule
-    /// (the hardware assumes low bits are zero) at a very different scale, because that ISA's vector
-    /// is a 16-slot table and this one is a single entry point.
+    /// The low two bits of `stvec` are its MODE field, so a 2-byte-aligned entry would select
+    /// vectored mode and send every interrupt to a wrong address.
     #[test_case]
     fn stvec_points_at_our_trap_entry() {
         unsafe extern "C" {
@@ -718,27 +550,10 @@ mod tests {
         assert_eq!(expected % 4, 0, "trap entry misaligned: {expected:#x}");
     }
 
-    /// The real one: take a trap and come back from it.
+    /// Take a breakpoint and come back from it, which exercises the whole trap path.
     ///
-    /// `ebreak` raises a synchronous breakpoint. To reach the line after it, every piece of the
-    /// RISC-V trap path has to be right: `stvec` points at trap.s, the entry recovers the kernel
-    /// `tp` and stack through `sscratch`, it writes a frame matching `TrapFrame`, the dispatcher
-    /// decodes `scause` and recognizes the breakpoint cause, it advances `sepc` past the instruction
-    /// (which the hardware does NOT do for us, unlike `ecall`... which it also does not do, unlike
-    /// aarch64's `svc`), the restore path puts the machine back, and `sret` returns to exactly the
-    /// right address. Get any of that wrong and you do not get a failing assertion; you get an
-    /// infinite loop on the `ebreak`, or a crash. So arriving here at all is most of the test.
-    ///
-    /// **It is also the S-mode witness, which is why this ISA needs no `running_at_el1`.** aarch64
-    /// reads `CurrentEL` and checks it is 1; RISC-V deliberately gives S-mode no way to read its own
-    /// privilege. It does not need one here. The breakpoint arm is guarded by `!from_user`
-    /// (`sstatus.SPP == 1`), so `BRK_COUNT` cannot move unless the trap came from S-mode. And it
-    /// could not have been taken at all in M-mode, where `mtvec` (OpenSBI's) owns the trap and our
-    /// handler never runs. A count that went up is a machine executing in S-mode.
-    ///
-    /// The `ebreak` also exercises the compressed-instruction case: with the C extension the
-    /// assembler emits the 2-byte `c.ebreak`, so `advance_past_trapping_insn` must read the opcode
-    /// and step 2 rather than 4. Stepping 4 would resume in the middle of the next instruction.
+    /// A count that rose also witnesses S-mode, which RISC-V gives no register to read, and the
+    /// 2-byte `c.ebreak` step. See notes/riscv-port/traps.md.
     #[test_case]
     fn breakpoint_is_caught_and_execution_resumes() {
         use core::sync::atomic::Ordering;
@@ -747,7 +562,6 @@ mod tests {
 
         let before = BRK_COUNT.load(Ordering::Relaxed);
 
-        // This deliberately traps. We handle it.
         crate::arch::riscv64::instructions::ebreak();
 
         assert_eq!(
@@ -757,18 +571,11 @@ mod tests {
         );
     }
 
-    /// Proves the trap frame actually round-trips a register.
+    /// A trap round-trips a register: a wrong offset in trap.s's save and restore would scramble
+    /// one and still `sret` to the right address.
     ///
-    /// The previous test proves we *return*. This proves we return with the machine intact, which is
-    /// a different claim. Put a known value in a callee-saved register, take a trap, read it back.
-    ///
-    /// A bug in trap.s's save/restore (a wrong offset, a swapped pair) would scramble registers
-    /// while still `sret`ing perfectly happily to the right address. That is the nastiest possible
-    /// failure: it corrupts a caller's state and blames a completely innocent piece of code
-    /// thousands of instructions later. This is the test that catches it.
-    ///
-    /// `s2` (`x18`) is the register under test: callee-saved, so the compiler is told we clobber it,
-    /// and far enough into the file that an off-by-one in the frame layout lands on it.
+    /// `s2` (`x18`) is callee-saved, so the clobber is declared, and far enough into the frame that
+    /// an off-by-one lands on it.
     #[test_case]
     fn registers_survive_a_trap() {
         let sent: u64 = 0xdead_beef_cafe_f00d;

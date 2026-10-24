@@ -1,7 +1,5 @@
-//! **Futex wait and wake, the scheduler half** (milestone 812 (`std::thread::spawn` runs real
-//! threads in one address space), §269 (how threads share a process) fork 2). Split out of
-//! `sched.rs` along this seam by §266 (a Rust source file stays under 2,000 lines); the queues are
-//! `inter_process_communication::futex`, the wire contract `abi::address_space::WAIT`, and the
+//! Futex wait and wake, the scheduler half (§269 (how threads share a process) fork 2). The queues
+//! are `inter_process_communication::futex`, the wire contract `abi::address_space::WAIT`, and the
 //! argument `notes/futex.md`.
 
 use core::sync::atomic::Ordering;
@@ -10,8 +8,8 @@ use super::{
     IPC_TABLES, Thread, Wait, current_thread_id, hold_token, schedule, take_token, trace, wake,
 };
 
-/// **The key a parked futex waiter is under**, read from its own handshake: what the futex table
-/// asks of each waiter it passes while looking for a key.
+/// The key a parked futex waiter is under, read from its own handshake: what the futex table asks
+/// of each waiter it passes while looking for a key.
 ///
 /// # Safety
 /// `waiter` is a thread on the futex table, so a live TCB page, and `IPC_TABLES` is held. Only the
@@ -31,9 +29,8 @@ unsafe fn futex_key_of(
     }
 }
 
-/// **Is `space` the calling thread's own address space?** The futex methods' authority check: the
-/// key is a word in memory, and a thread may only wait on or wake words of its own space (§269 fork
-/// 2, "a virtual address in the caller's own space").
+/// Whether `space` is the calling thread's own address space: the futex methods' authority check,
+/// since a thread may only wait on or wake words of its own space (§269 fork 2).
 pub fn is_current_space(space: u64) -> bool {
     let guard = IPC_TABLES.lock();
     guard
@@ -43,21 +40,15 @@ pub fn is_current_space(space: u64) -> bool {
         .is_some_and(|s| s.name() == space)
 }
 
-/// **`AddressSpace::WAIT`, the kernel half** (milestone 812 (`std::thread::spawn` runs real threads
-/// in one address space), §269 (how threads share a process) fork 2): park the calling thread on
-/// the 32-bit word at `va` in its own space `space`, unless the word no longer holds `expected`.
-/// `Ok(0)` after a wake, `Ok(1)` if the word differed, `BadPointer` if `va` is not mapped readable
-/// to user mode, `Gone` if the wait ended without a wake.
+/// `AddressSpace::WAIT`, the kernel half (§269 fork 2): park the calling thread on the 32-bit word
+/// at `va` in its own space `space`, unless the word no longer holds `expected`. `Ok(0)` after a
+/// wake, `Ok(1)` if the word differed, `BadPointer` if `va` is not mapped readable to user mode,
+/// `Gone` if the wait ended without a wake. The syscall layer has checked the flags, the alignment
+/// and that `space` is the caller's.
 ///
-/// The syscall layer has already checked the flags, the alignment, and that `space` is the caller's
-/// own, so the live user page tables are this space's.
-///
-/// **Why reading the word and parking are one hold of `IPC_TABLES`**, which is the whole of a
-/// futex's correctness. A waker stores the new value, then calls `WAKE`, which takes this lock. If
-/// the store comes before our hold, the lock's release-acquire pair orders it before our read and
-/// we see the new value and do not sleep. If it comes after, we are already parked when `WAKE`
-/// looks, and it finds us. There is no third order. The load is `Acquire` for the same reason the
-/// lock is: what the waker wrote before its store is visible to us once we return.
+/// Context: reads the word and parks under one hold of `IPC_TABLES`, which `WAKE` also takes, so a
+/// waker's store is either seen here or finds this thread parked (notes/futex.md). The load is
+/// `Acquire`, pairing with the waker's store.
 pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
     let key = inter_process_communication::futex::Key { space, address: va };
     {
@@ -103,10 +94,9 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
     Ok(0)
 }
 
-/// **`AddressSpace::WAKE`, the kernel half** (milestone 812, §269 fork 2): wake up to `count`
-/// threads parked on the word at `va` in `space`, oldest first, and return how many. Reads no
-/// memory, so an unmapped `va` simply has no waiters. The woken are placed on this core, as a
-/// notification's are: the waker is usually about to block or yield itself.
+/// `AddressSpace::WAKE`, the kernel half (§269 fork 2): wake up to `count` threads parked on the
+/// word at `va` in `space`, oldest first, and return how many. Reads no memory, so an unmapped `va`
+/// has no waiters. The woken are placed on this core: the waker is usually about to block or yield.
 pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     let key = inter_process_communication::futex::Key { space, address: va };
     let mut guard = IPC_TABLES.lock();
@@ -130,11 +120,10 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     n
 }
 
-/// **`SYS_EXIT_THREAD`'s word** (milestone 812): store zero in the calling thread's 32-bit word at
-/// `va` and wake every futex waiter on it, so a joiner waiting there may free the thread's stack.
-/// Called on the way out, before the thread departs; its user stack is not touched again, because
-/// the departure runs on the kernel stack. A word that is zero, misaligned, outside the user half,
-/// or not mapped writable is skipped: nothing stops a thread exiting.
+/// `SYS_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
+/// futex waiter on it, so a joiner may free the thread's stack. Called before the thread departs,
+/// which runs on the kernel stack, so the user stack is not touched again. A word that is zero,
+/// misaligned, outside the user half or not mapped writable is skipped: nothing stops an exit.
 pub(super) fn clear_and_wake(va: u64) {
     if va == 0
         || !va.is_multiple_of(4)
