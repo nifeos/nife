@@ -112,15 +112,12 @@ fn describe_dirscape(v: u64) -> &'static str {
 
 /// **A read-only explorer: it may descend, read and list, and it reaches nothing above itself.**
 ///
-/// This is milestone 47's keystone under attack. The attacker holds a capability to `sub` and
-/// spends its life trying to name `motd` (which is in the parent), `other` and `other/secret`
-/// (which are in a sibling), and `..`. All three exist on the image and the caretaker one hop
-/// up can reach every one of them on any request it likes, so each refusal is a fact about the
-/// capability rather than about the filesystem.
-///
-/// It also proves both halves of "a child can never exceed its parent": a child asked for no
-/// rights can do nothing at all, and a child asked for a right this grant does not carry is
-/// refused rather than quietly given something smaller.
+/// The keystone of milestone 47 (navigation and naming) under attack. Holding a capability to
+/// `sub`, the attacker tries to name `motd` (in the parent), `other` and `other/secret` (a sibling)
+/// and `..`. All three exist and the caretaker one hop up could reach each, so every refusal is a
+/// fact about the capability. A child asked for no rights can do nothing, and a child asked for a
+/// right this grant lacks is refused rather than given something smaller
+/// (notes/dir-capability/tests-and-stack-usage.md).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.dir_capability_tests.a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it.patch`
 #[test_case]
@@ -173,17 +170,11 @@ fn a_full_directory_capability_does_everything_inside_and_nothing_outside() {
 /// into can add to it and write to what it added, and it cannot walk into a subdirectory or find
 /// out what else is in there.
 ///
-/// Three rungs withheld at once (`DESCEND`, `ENUMERATE`, `REMOVE`), and two of them are the
-/// interesting cases:
-///
-/// - `DESCEND` withheld while `CREATE` is held: `mkdir` needs both, so this capability can make
-///   a file and cannot make a directory. A directory it could not have walked into would be a
-///   way to mint a capability out of a right that was withheld.
-/// - `REMOVE` withheld while `CREATE` is held is **"add to this, destroy nothing"** exactly, and
-///   it is what `RENAME` exists to make falsifiable: this attacker creates a name and then tries
-///   to move it, through the same code the full run below moves it with, and cannot. Before that
-///   verb existed nothing on the wire consulted `REMOVE` at all, so the rung was a claim rather
-///   than a rule.
+/// `DESCEND`, `ENUMERATE` and `REMOVE` are withheld. Without `DESCEND`, `CREATE` makes a file and
+/// not a directory: `mkdir` needs both, and a directory it could not walk into would mint a
+/// capability out of a withheld right. Without `REMOVE`, `CREATE` is "add to this, destroy
+/// nothing" exactly, which `RENAME` makes falsifiable: the attacker creates a name and cannot move
+/// it, through the same code the full run moves it with.
 #[test_case]
 fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
     if fs_service::fs_server_image().is_none() {
@@ -202,19 +193,11 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
 /// **A name-set capability carries its files' attributes and still designates only its names**
 /// (milestone 61, the third caretaker).
 ///
-/// The other two caretakers are covered by the runs above and by the per-file attacker.
-/// `fs_nameset_caretaker` is the one that inspects a name on **every** request, so teaching it
-/// four verbs whose operand is an *attribute* name rather than a directory name is where this
-/// milestone could most easily have gone wrong, in either direction:
-///
-/// - Filter the attribute name against the set, and a program behind `rm *.txt` cannot read what
-///   is attached to a file the pattern did match. `READ_ATTRS` and `SET_AN_ATTR` catch that.
-/// - Stop filtering the directory names, and the set stops being a set. `REACHED_AN_UNMATCHED`
-///   `_NAME` catches that, and the witness holds `dir::READ`, which `rm`'s own witness does not,
-///   so the naming question is asked here through the verbs `rm` never sends.
-///
-/// The set is one name inside the `sub` fixture, so `deeper` is one directory entry away and the
-/// caretaker one hop up holds a capability that could open it.
+/// `fs_nameset_caretaker` inspects a name on every request, so its four attribute verbs could go
+/// wrong either way. Filtering the attribute name against the set would hide what is attached to a
+/// matched file (`READ_ATTRS` and `SET_AN_ATTR` catch it). Not filtering the directory names would
+/// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `dir::READ` verbs `rm` never
+/// sends). The set is one name in `sub`, so `deeper` is one entry away and reachable one hop up.
 #[test_case]
 fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
     if fs_service::fs_server_image().is_none() {
