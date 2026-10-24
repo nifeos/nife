@@ -17,6 +17,7 @@
 //! - The first boot keyboard interface wins; a second keyboard is not looked for.
 //! - No key repeat: holding a key types it once, and typematic repeat is the host's job.
 //! - Caps Lock, Num Lock and the LEDs do nothing: `video_terminal::keymap` maps no lock key.
+//!
 
 //! Name: provisional, for milestone 242 (USB host and HID). `usb` and not `universal_serial_bus`
 //! by DECISIONS §154 (the acronym test is whether the phrase is spoken), as `pci` was: nobody says

@@ -13,7 +13,7 @@
 //! - No writer has a quota, and a writer picks its own severity, as `syslog(3)` allows.
 //! - The intake endpoint must receive nothing the kernel writes, because a kernel delivery reads
 //!   as the spawner's badge 0; notes/system-log.md, "The intake hears only programs".
-
+//!
 //! Name: ratified 2026-10-06 (calef): §242's noun, shared with the program. `starlog` was deferred,
 //! not refused, for a reader command that does not exist yet.
 
