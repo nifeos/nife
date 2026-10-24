@@ -21,4 +21,4 @@ paths = ["vendor/virtio-drivers.divergence.patch", "vendor/virtio-drivers.pin"]
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
 interfaces = ["e1000e", "designware_ethernet", "designware_mobile_storage"]
-programs = ["block_driver", "serial_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]
+programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]

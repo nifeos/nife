@@ -122,7 +122,6 @@ components/src/reboot.rs::_start
 components/src/rm.rs::_start
 components/src/rmle.rs::_start
 components/src/root_supervisor.rs::_start
-components/src/serial_driver.rs::_start
 components/src/slabtop.rs::_start
 components/src/socket_server.rs::_start
 components/src/socket_squatter.rs::ROLE
