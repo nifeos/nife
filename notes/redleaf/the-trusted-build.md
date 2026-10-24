@@ -1,5 +1,7 @@
 # The trusted compilation environment, and the safe-Rust rule the public tree does not enforce
 
+*Name: provisional. For the trusted compilation environment it describes.*
+
 An appendix to [`notes/redleaf.md`](../redleaf.md), under "Bet one: what each system has to
 trust". It holds what RedLeaf's safety across separately compiled domains depends on, and the audit
 of the 2026-09-20 clone that found the safe-Rust rule unenforced.

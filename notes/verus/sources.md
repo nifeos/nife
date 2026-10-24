@@ -1,5 +1,7 @@
 # What the Verus comparison read and ran, and when
 
+*Name: provisional, for the source table it holds.*
+
 An appendix to [`notes/verus.md`](../verus.md). It lists the papers, documentation and tool
 releases the comparison rests on, with where each was fetched and the date it was read or run.
 

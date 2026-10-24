@@ -1,5 +1,7 @@
 # The ceiling, which is the floor read upside down
 
+*Name: provisional. Named after the parent's own heading.*
+
 Milestone 134 (the register of measures) added the third relation
 [`notes/counted-claims.md`](../counted-claims.md) lists, on 2026-08-18. This is why it exists, how its headroom is chosen, the one ceiling that became a
 ratchet and was retired, and the auto-fix that was refused.

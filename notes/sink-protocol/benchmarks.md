@@ -1,5 +1,7 @@
 # The sink protocol: benchmarks
 
+*Name: provisional. After the main page's own heading.*
+
 An appendix to [`notes/sink-protocol.md`](../sink-protocol.md), which states the result.
 
 `println!` is on the ABI fastpath and `relay_rtt` / `call_reply` price exactly the kind of hop this

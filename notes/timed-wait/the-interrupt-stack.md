@@ -1,5 +1,7 @@
 # 4. The interrupt-stack proof holds, and the reason it holds was already in the tree
 
+*Name: provisional.*
+
 Section 4 of [`notes/timed-wait.md`](../timed-wait.md) in full: why a deadline expiry in the timer
 handler keeps the interrupt-stack proof, the gate run that showed it, and what it does cost.
 

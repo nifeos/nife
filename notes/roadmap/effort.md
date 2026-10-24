@@ -1,5 +1,7 @@
 # Effort, calibrated from git history
 
+*Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-c, after the parent's "Effort".*
+
 Moved verbatim from [`../roadmap.md`](../roadmap.md)'s "Effort" under §212 (a prose budget) on
 2026-10-13 (UTC).
 

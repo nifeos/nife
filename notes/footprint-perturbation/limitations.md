@@ -1,5 +1,7 @@
 # The radon benchmark's limitations, in full
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.*
+
 An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md), whose BUGS section
 keeps the short list. This is every entry as it was written, sentence-split for the prose limits.
 

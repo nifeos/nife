@@ -1,5 +1,7 @@
 # The manual: why the search limits are drawn where they are
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), whose `BUGS` section states each
 limit in a sentence. These are the full entries, with their reasons.
 
