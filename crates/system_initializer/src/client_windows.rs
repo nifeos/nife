@@ -155,6 +155,16 @@ pub(super) fn bound_channel(
     bind_window(fs, &files, (windows, w), handle)
 }
 
+/// **A caretaker's `START` words for a channel already bound to its directory**: the rights kept,
+/// the name emptied, which tells `fs_nameset_caretaker` its directory is the bound root and there is
+/// nothing to descend into.
+///
+/// Name: provisional (milestone 946).
+pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {
+    use filesystem_contract::grant;
+    (0, 0, grant::spec(0, grant::spec_rights(spec)))
+}
+
 /// **Bind window `w`'s badge to the directory `handle` names, and hand back the window's page and
 /// endpoint**: the half [`bound_channel`] and [`bound_index_store`] share once each has opened its
 /// directory. A negative `handle` is a failure already; a refused `BIND` closes it.

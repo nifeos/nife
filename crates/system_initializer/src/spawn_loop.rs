@@ -1034,8 +1034,23 @@ impl Service<'_> {
             _ => None,
         };
         let narrowed = if let Some(b) = bound {
-            // The job holds the file server's own endpoint, badged and bound: no caretaker.
-            Some(b.ep)
+            match (set_seen, region, grant) {
+                // The job holds the file server's own endpoint, badged and bound: no caretaker.
+                (None, ..) => Some(b.ep),
+                // **A set of names is served over the bound channel**: the badge is bound to the
+                // whole directory and the set is what narrows it, so `fs_nameset_caretaker` sits
+                // between, told the bound root is its directory (`at_bound_root`).
+                (Some(_), Some(r), Some((care_words, _))) => build_grant(
+                    own_ut,
+                    r,
+                    b,
+                    &self.care,
+                    at_bound_root(care_words),
+                    set_seen,
+                    manifest,
+                ),
+                _ => None,
+            }
         } else if wiring.directory_grant {
             match (region, channel, grant) {
                 (Some(r), Some(ch), Some((care_words, _))) => {
@@ -1451,8 +1466,9 @@ impl Service<'_> {
         }
         if let Some(ch) = dir.channel {
             cap_delete(ch.page);
-            // A bound channel's endpoint is `narrowed`, already deleted above.
-            if dir.bound.is_none() {
+            // A bound channel's endpoint is `narrowed`, already deleted above, unless a caretaker
+            // serves a set over it (`at_bound_root`), and then `narrowed` is the caretaker's.
+            if dir.narrowed != Some(ch.ep) {
                 cap_delete(ch.ep);
             }
         }

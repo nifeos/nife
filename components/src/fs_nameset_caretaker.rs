@@ -299,16 +299,23 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
 
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
-    // through the handle this one request minted.
-    put_at(0, &buf[..n]);
-    let (r0, _) = call(
-        FS,
-        fs::req(fs::OPENDIR, fs::ROOT, n as u64),
-        grant::spec_rights(spec),
-    );
-    if reply_errno(r0 as i64).is_some() {
-        panic!();
-    }
+    // through the handle this one request minted. An empty name is a channel the progenitor already
+    // bound to the directory, whose root is the granted directory and whose rights the server holds
+    // it to, so there is nothing to descend into.
+    let dir = if n == 0 {
+        fs::ROOT
+    } else {
+        put_at(0, &buf[..n]);
+        let (r0, _) = call(
+            FS,
+            fs::req(fs::OPENDIR, fs::ROOT, n as u64),
+            grant::spec_rights(spec),
+        );
+        if reply_errno(r0 as i64).is_some() {
+            panic!();
+        }
+        r0
+    };
     // A set with nothing in it is not a capability anybody meant to hand out, and the shell refuses
     // to plan one (`grant_plan::Refusal::NoMatch`). If one arrives anyway the wiring is wrong, and dying
     // here is better than serving a namespace with no names in it.
@@ -317,7 +324,7 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     }
 
     send(REPORT, filesystem_contract::READY, 0, 0);
-    serve(r0, &set);
+    serve(dir, &set);
 }
 
 user_mode_runtime::panic_handler!();
