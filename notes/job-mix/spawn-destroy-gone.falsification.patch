@@ -20,15 +20,14 @@ diff --git a/crates/user_mode_runtime/src/process.rs b/crates/user_mode_runtime/
 index 125a93bd6..6846f93aa 100644
 --- a/crates/user_mode_runtime/src/process.rs
 +++ b/crates/user_mode_runtime/src/process.rs
-@@ -9,15 +9,37 @@ use crate::syscall::trap6;
+@@ -11,14 +11,37 @@ use crate::syscall::trap6;
  
  /// Give up the CPU (`SYS_YIELD`). Returns when the scheduler runs this thread again; if another
  /// thread is ready, control goes there and back, which is one context-switch round trip.
 -///
--/// Through [`trap6`] like every other syscall, for the reason its doc gives: the kernel writes its
--/// result into `x0`/`a0`/`rdi` on the way out of a yield too. And not `nomem`: while this thread
--/// is away, others run and write memory it shares with them, so a yield is a point where memory
--/// changes, which is what a caller spinning on a shared word with `yield_now` relies on.
+-/// Not `nomem`: while this thread is away others write memory it shares with them, which a caller
+-/// spinning on a shared word with `yield_now` relies on. Through [`trap6`], because the kernel
+-/// writes its result into `x0`/`a0`/`rdi` on the way out of a yield too.
 +#[cfg(target_arch = "aarch64")]
  pub fn yield_now() {
 -    // SAFETY: SYS_YIELD gives up the CPU and comes back; it reads no argument and touches no

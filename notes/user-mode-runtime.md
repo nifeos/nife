@@ -32,8 +32,8 @@ as §124 (ratify the x86_64 syscall ABI) records. All three return in the first 
 the kernel reconciles them in `TrapFrame`, and every signature and `abi` constant is identical.
 
 `x86_64` costs more in three places. `syscall` clobbers `rcx` and `r11` at every site, `rdtsc`
-answers in two halves, and there is no architected counter frequency, which is why `cntfrq` has a
-`BUGS` section.
+answers in two halves, and there is no architected counter frequency, so `cntfrq` reads a page the
+kernel fills and panics when the page is zeroed or unrecognized.
 
 ## The trap
 

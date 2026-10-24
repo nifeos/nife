@@ -32,8 +32,9 @@ its memory. `kernel::arch::riscv64::timer::init_frequency` reads it on the boot 
 4 MHz, so no constant could stand in for it.
 
 x86 has no architected rate a ring-3 program can ask for. `CPUID` leaf `0x15` is absent on many
-parts, and calibrating against the 8254 PIT needs port I/O, which §121 (what a device capability is
-when the device has no page: x86 port I/O) keeps from userspace.
+parts, and calibrating against the 8254 PIT needs port I/O. Under §121 (what a device capability is when
+the device has no page: x86 port I/O) ring 3 runs `in` and `out` only on a `PortRange` it holds,
+and no program holds one for the PIT.
 `arch::x86_64::timer::init_frequency` reads the leaf or calibrates, and every kernel path that
 builds a top-level address space maps the page (`kernel::user::map_x86_timebase_page`).
 
