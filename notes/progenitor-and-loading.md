@@ -225,9 +225,8 @@ sequence from the kernel's side. The gap was a join rather than a hole, and the 
 ## One program and one grant table on every architecture
 
 `components/src/progenitor.rs` is one program on aarch64, riscv64 and `x86_64`, and its `GRANTS`
-table is one table, so the file carries no `cfg` at all. Two copies of the first process is
-[DECISIONS §19](../design/decisions/0019-architectural-parity.md) (architectural parity)'s
-own failure mode. That bill was
+table is one table, so the file carries no `cfg` at all. Two copies of the first process is the
+failure mode of DECISIONS §19 (architectural parity is a tenet). That bill was
 paid once: a fix that landed in one copy and not the other presented as a boot that reached
 userspace and printed nothing, with no fault and no message. `script/swish-check` runs both legs,
 which is what makes it the gate for that file.
