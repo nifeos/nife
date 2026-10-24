@@ -18,10 +18,11 @@ firmware's screen)) are all on that path, and the PVH boot has none of them. Mil
 (x86_64's own interactive-boot entry point) records what OVMF costs over PVH.
 
 `q35` has no virtio-mmio bus, and every entropy device the kernel can find is virtio-mmio. The
-kernel therefore builds the progenitor's entropy service on the CPU's `RDSEED` instruction, which
-the runner's `-cpu max` implements (milestone 595 (provisional)). The leg asserts the progenitor
-said so, because a boot that fell back to no entropy would otherwise surface only as the `uuid`
-lines failing.
+kernel therefore builds the progenitor's entropy service on the CPU's `RDSEED` instruction
+(milestone 595 (the shell runs a `std` program, and `rg pattern` works at the prompt)), which the
+runner's `-cpu max` implements. The instruction backend is milestone 162 (real hardware entropy on
+x86_64 and aarch64: RDSEED and RNDRRS). The leg asserts the progenitor said so, because a boot that
+fell back to no entropy would otherwise surface only as the `uuid` lines failing.
 
 The x86_64 leg runs on KVM when the host offers a writable `/dev/kvm`. The aarch64 and riscv64 legs
 stay on TCG on purpose: on CI's arm64 runner, TCG puts their kernels in front of a weakly ordered
@@ -72,23 +73,24 @@ The progenitor prints a positive or a negative sentence for each of four claims,
 requires the positive one. Each claim is in the transcript before the banner, because the banner
 comes from a shell the progenitor starts afterwards.
 
-- **It gave the construction budget away** (milestone 22 (trusted init)). It prints the line after
-  deleting the root untyped, and only when `RETYPE` and `RETYPE_OBJ` on that slot both answered
-  `NoSuchSlot`: the capability is gone, not narrowed. The complaint says only which string was
-  missing. All the check knows is whether a string is in a transcript, so naming a capability state
-  would claim evidence it does not have.
+- **It gave the construction budget away** (milestone 22 (trusted init: verify it, and shrink what a
+  broken one can do)). It prints the line after deleting the root untyped, and only when `RETYPE`
+  and `RETYPE_OBJ` on that slot both answered `NoSuchSlot`: the capability is gone, not narrowed.
+  The complaint says only which string was missing. All the check knows is whether a string is in a
+  transcript, so naming a capability state would claim evidence it does not have.
 - **It measured every program it loaded** (milestone 104 (the measurement continues past init)). A
   kernel built without the measurement step refuses to boot. A table that stopped naming programs
   would leave a system that boots, prompts and vouches for nothing, and looks exactly like a healthy
   one. The negative sentence names the programs it refused.
-- **Its directory grants go through a bound badge** (milestone 606 (walk cost), calef's rulings D
-  and T1 of 2026-09-27). Every leg's image carries `redoxfs_server`, whose bytes carry the
-  subtree-grants note, so the `rm` lines run through the server's own narrowing. A progenitor that
-  lost the note falls back to a caretaker and says so.
-- **It has an entropy service from this machine's source** (milestone 595 (provisional)): a
-  virtio-rng on the two `virt` machines, `RDSEED` on `q35`. Without it the `uuid` and
-  `std_exerciser` lines fail as a refused draw several lines on, which says nothing about why. The
-  negative is the kernel's own refusal, which both of its no-entropy sentences end with.
+- **Its directory grants go through a bound badge** (milestone 606 (a directory walk costs what it
+  does on Linux), calef's rulings D and T1 of 2026-09-27). Every leg's image carries
+  `redoxfs_server`, whose bytes carry the subtree-grants note, so the `rm` lines run through the
+  server's own narrowing. A progenitor that lost the note falls back to a caretaker and says so.
+- **It has an entropy service from this machine's source** (milestone 595 (the shell runs a `std`
+  program, and `rg pattern` works at the prompt)): a virtio-rng on the two `virt` machines, `RDSEED`
+  on `q35`. Without it the `uuid` and `std_exerciser` lines fail as a refused draw several lines on,
+  which says nothing about why. The negative is the kernel's own refusal, which both of its
+  no-entropy sentences end with.
 
 ## Nothing may die
 

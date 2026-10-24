@@ -24,7 +24,7 @@ use super::*;
 /// Falsification: replayable `xtask/falsifications/swish_check.boot.swish_check_leg.patch`
 pub(super) fn swish_check_leg(arch: &str) -> bool {
     // **Where the graphical launch rides** (2026-10-03 UTC, calef's ruling folding the
-    // `swish-check-graphical` job in; milestone 632 (provisional)). `graphical_terminal` is a
+    // `swish-check-graphical` job in; milestone 632 (graphics on demand)). `graphical_terminal` is a
     // plain spawn the shell waits on, so a launch ends the boot it is typed into. The first boot
     // therefore stays GPU-less, which is what lets its `graphical_terminal` line require the
     // refusal sentence on every ISA at no extra boot. The second boot (after the reboot) attaches a
@@ -585,7 +585,7 @@ impl OptionalPrograms {
     /// when the leg must refuse instead: CI is missing one it always builds.
     fn find(arch: &str, fresh: bool) -> Option<Self> {
         // **`std_exerciser` is in this boot's archive only if it was built** (milestone 595
-        // (provisional)): `cargo xtask std-exerciser` compiles it against this worktree's patched std farm, which
+        // (the shell runs a `std` program, and `rg pattern` works at the prompt)): `cargo xtask std-exerciser` compiles it against this worktree's patched std farm, which
         // `script/test` runs and a bare `script/swish-check` does not. Without it the progenitor has no
         // image and the line would answer "could not spawn", which is a fact about this checkout rather
         // than the boot, so the line is skipped and says why. **Not in CI**, where `test` always builds
@@ -708,6 +708,10 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
 /// **The runner [`swish_check_boot`] starts**: [`leg_runner`], bounded on x86_64 by every wait
 /// the boot makes for a script of `script_lines` lines, with the disk, the entropy device, and the
 /// gpu, NIC and package source each boot's arm needs.
+///
+/// # BUGS
+///
+/// - The keyboard boot's NIC guard is inert; see notes/swish-check-boot.md.
 fn swish_check_runner(
     arch: &str,
     kvm: bool,
@@ -742,7 +746,7 @@ fn swish_check_runner(
     // `Command` directly (see `NIFE_INITIAL_RAMDISK`/`NIFE_DISK` just above) rather than spawning
     // through the global-env-inheriting path `test()` uses.
     cmd.env("NIFE_RNG", "1");
-    // **The gpu, and the keyboard on the device arm** (milestone 632 (provisional)): read by
+    // **The gpu, and the keyboard on the device arm** (milestone 632): read by
     // `helpers/qemu-runner-*.sh`. The boot ignores the devices and the shell holds their grants
     // until the launch line is typed. The monitor socket is what `screendump` reads.
     if graphics.is_some() {
@@ -753,7 +757,7 @@ fn swish_check_runner(
             cmd.env("NIFE_KEYBOARD", "1");
         }
     }
-    // A NIC (milestone 590 (provisional)) on the two legs whose runner can attach one: the
+    // A NIC (milestone 590 (the booted system starts its network stack)) on the two legs whose runner can attach one: the
     // progenitor builds `net_stack` from it, and `network_echo_client` reaches the runners' echo
     // peer through that. The runner attaches an mmio NIC and a PCIe one behind the IOMMU; the
     // kernel grants the progenitor the mmio one. The keyboard boot is meant to go without, but
@@ -899,8 +903,10 @@ fn boot_claim_failures(x86: bool, now: &dyn Fn() -> String) -> Vec<String> {
     // (trusted init: verify it, and shrink what a broken one can do)), measured every program it
     // loaded (milestone 104 (the measurement continues past init)), delivers directory grants
     // through a bound badge (milestone 606 (a directory walk costs what it does on Linux)), and has
-    // an entropy service from this machine's source (milestone 595 (provisional)). A missing
-    // marker means only a missing marker; the complaint names the string, never a capability state.
+    // an entropy service from this machine's source (milestone 595 (the shell runs a `std` program,
+    // and `rg pattern` works at the prompt); the instruction backend is milestone 162 (real hardware
+    // entropy on x86_64 and aarch64: RDSEED and RNDRRS)). A missing marker means only a missing
+    // marker; the complaint names the string, never a capability state.
     // Why each claim is shaped so: notes/swish-check-boot.md.
     let claims: [(&str, &str, &str); 4] = [
         (

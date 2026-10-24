@@ -129,7 +129,7 @@ impl ArchLegs {
 /// ([`hvf_kernel_leg`], notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
 /// kernel tests on every leg (§19), skips the host pass, the image checks and the referees'
 /// verdicts, and fails when nothing matches; `--repeat <N>` repeats that selection in one boot.
-/// Callers: `script/cpu_matrix` (`--arch`, `--cpu`; notes/cpu-models.md) and `script/ci-build`
+/// Callers: `script/cpu-matrix` (`--arch`, `--cpu`; notes/cpu-models.md) and `script/ci-build`
 /// (`--hvf`, an `--arch` list, `--no-host`). See notes/xtask-test.md for each flag's reasons.
 pub(crate) fn test() -> bool {
     let Some((hvf, legs)) = legs_from_flags() else {
