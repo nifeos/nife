@@ -227,11 +227,11 @@ const DISPATCH_ARMS: &[SysEdit] = &[
         "cfg_select! {",
         "    target_os = \"nife\" => {\n        #[allow(dead_code)]\n        mod unsupported;\n        mod nife;\n        mod imp {\n            pub use super::nife::getpid;\n            pub use super::unsupported::{\n                ChildPipe, Command, CommandArgs, EnvKey, ExitCode, ExitStatus, ExitStatusError,\n                Process, Stdio, output, read_output,\n            };\n        }\n    }",
     ),
-    // exit (milestone 64 (enough `std` to run somebody else's crate)): `sys/exit.rs` is not a `sys/<module>/mod.rs` dispatcher; its
-    // `cfg_select!` sits inside `pub fn exit`, and the `_ =>` arm is `crate::intrinsics::abort()`,
-    // which the kernel reports as a fault. This arm does what `_start` already does on `main`'s
-    // return, the same `SYS_EXIT` with the same code (which the kernel discards).
-    // `a_whole_std_program_runs_on_the_native_abi` asserts exit, not fault. See
+    // exit (milestone 64 (enough `std` to run somebody else's crate)): `sys/exit.rs` is not a
+    // `sys/<module>/mod.rs` dispatcher; its `cfg_select!` sits inside `pub fn exit`, and the `_ =>`
+    // arm is `crate::intrinsics::abort()`, which the kernel reports as a fault. This arm does what
+    // `_start` already does on `main`'s return, the same `SYS_EXIT` with the same code (which the
+    // kernel discards). `a_whole_std_program_runs_on_the_native_abi` asserts exit, not fault. See
     // notes/std/caveats.md.
     SysEdit::After(
         "exit.rs",

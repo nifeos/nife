@@ -239,8 +239,8 @@ pub(crate) fn manual_store(term: Option<String>) -> bool {
 // ---- the tree-wide search (milestone 40, script/apropos) -----------------------------------
 
 /// **The same index, the same reader, pointed at this repository instead of at the image.**
-/// Searches for `term` and returns false on a usage error or when a printed result's path was too
-/// long to hold.
+/// Searches for `term`; returns false on any error, or when a printed result's path was too long
+/// to hold.
 ///
 /// Milestone 117's stranger runs found pages that nothing a person would type led to. Milestone
 /// 40's inverted index, shard-merging reader and ranking were pointed only at the pages the image

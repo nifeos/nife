@@ -11,7 +11,7 @@
 use super::*;
 
 /// **Every std call that kills a nife process instead of refusing it** (milestone 64). Returns
-/// whether every process-ending body found is in [`ABORTS_ACCEPTED`].
+/// false if the sweep cannot run or finds a body not in [`ABORTS_ACCEPTED`].
 ///
 /// It reads which `library/std/src/sys/` sources rustc actually compiled for nife out of cargo's
 /// own dep-info, so nothing here models `cfg`, and finds each body there that ends the process. A

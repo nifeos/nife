@@ -26,9 +26,10 @@ const TOOLCHAIN_PREFIX: &str = "nife-dev-";
 /// Bump to force every farm to rebuild after a change to the patch logic itself (not the inputs).
 const STD_SRC_PATCH_VERSION: u32 = 15;
 
-// The verbs and their helpers, one child each (§282 (when a file is split, the parent becomes an
-// index)). Each child takes `use super::*`; the names other modules call keep their `crate::farm::`
-// paths through the re-exports below. The constants above are the handful every child reads.
+// The verbs and their helpers, one child each, for §266 (a Rust source file stays under 2,000
+// lines) and §282 (when a file is split, the parent becomes an index). Each child takes
+// `use super::*`; the names other modules call keep their `crate::farm::` paths through the
+// re-exports below. The constants above are the handful every child reads.
 mod aborts;
 mod exerciser;
 mod generate;
