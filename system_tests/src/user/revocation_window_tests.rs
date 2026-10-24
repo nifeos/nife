@@ -1,45 +1,19 @@
-//! **A revocation sweep that lands inside a delegation leaves no copy behind** (the revocation-race
-//! lane, 2026-10-04 UTC; fatal risk 7's confinement claim and DECISIONS §13 (capability revocation
-//! and untyped reclamation)).
+//! A revocation sweep that lands inside a delegation leaves no copy behind.
 //!
-//! **The defect these tests were written to demonstrate was live and is fixed here.** Milestone 761
-//! (capability lookup off the global lock) recorded it in its `BUGS`, unverified: a syscall that
-//! delegates reads its source capability in one critical section and files the narrowed copy in
-//! another, so a sweep can fall between the two. These tests drove a sweep into that gap on every
-//! delegating syscall that names a `PageFrame`, and all three filed the copy:
-//!
-//! - `SEND_CAP` read the source with `sched::current_cap`, then `sched::ipc_send_cap` took
-//!   `IPC_TABLES` again to deliver or park the copy.
-//! - `ThreadControlBlock::CAP_INSERT` read the same way, then `sched::thread_control_block_insert_cap`
-//!   filed the copy in the embryo's table.
-//! - `PageFrame::SLICE` read its source at the top of `syscall::invoke` and filed the slice with
-//!   `sched::grant`.
-//!
-//! Not new with milestone 761: before it, `current_cap` took `IPC_TABLES` and released it, and the
-//! filing took it again, so the gap was two acquisitions of one lock rather than two locks.
-//!
-//! **Why it matters more than a stale handle would.** Most objects carry generational names
-//! (`crates/slots`, DECISIONS §16 (object revocation)), so a copy minted after its object died names a dead generation and fails on
-//! use. A `PageFrame` names physical memory and has no generation: the sweep is the only thing that
-//! takes it back. Under `PageFrame::REVOKE` the copy is authority the revoker took back; under
-//! `MemoryRegion::DESTROY` it names pages the allocator is about to hand to somebody else, which is
-//! §13's use-after-free. `DeviceFrame::REVOKE` and `x86_64`'s `PortRange::REVOKE` sweep the same way
-//! and shared the gap through `SEND_CAP` and `CAP_INSERT`; the fix is one path for every object, so
-//! the frame is the one these tests drive.
-//!
-//! **How the interleaving is forced.** Two cores can produce it by timing, a few hundred
-//! instructions wide, which no test can rely on. `delegation_pause` holds an armed thread at the
-//! start of its delegation with no lock held, the test runs the whole sweep, then lets it go.
-//!
+//! `SEND_CAP`, `ThreadControlBlock::CAP_INSERT` and `PageFrame::SLICE` each read a source
+//! capability and file a narrowed copy, and a sweep falling between the two would leave the copy
+//! alive. These tests drive a `PageFrame` sweep into that window on each: a frame has no
+//! generation, so the sweep is the only thing that takes it back (fatal risk 7, DECISIONS §13
+//! (capability revocation and untyped reclamation)). `delegation_pause` holds an armed thread at
+//! the start of its delegation with no lock held while the test runs the whole sweep. See
+//! notes/capability-lifecycle.md, "A sweep inside a delegation, and how the tests force it".
 
 //! # BUGS
 //!
-//! - **The `DeviceFrame` and `PortRange` take-backs are reasoned, not driven.** They go through the
-//!   same two sched functions as the frame, so the fix covers them by construction, but no test here
-//!   drives either.
-//! - **A `MAP` that read its frame before a sweep was a sibling gap, closed elsewhere.** It is a use
-//!   rather than a delegation, and `revoke::MappingHold` closes it;
-//!   `map_revocation_window_tests` drives it with this file's seam.
+//! - The `DeviceFrame` and `PortRange` take-backs go through the same two sched functions, so the
+//!   fix covers them by construction, but no test here drives either.
+//! - A `MAP` that read its frame before a sweep is a use, not a delegation: `revoke::MappingHold`
+//!   closes it and `map_revocation_window_tests` drives it with this file's seam.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -88,16 +62,14 @@ fn encode(answer: Result<i64, Error>) -> u64 {
     answer.unwrap_or_else(|e| e as i64) as u64
 }
 
-/// **A `PageFrame::REVOKE` that lands inside a `SEND_CAP` must not let the copy reach anyone.**
+/// A `PageFrame::REVOKE` that lands inside a `SEND_CAP` must not let the copy reach anyone.
 ///
 /// The sender holds a frame with `GRANT` and sends a read-only copy to a rendezvous nobody is
 /// receiving on. It is held at the delegation seam; the revoke runs whole-machine; then it goes on.
 /// Either the send finds its source gone (`NoSuchSlot`, as if it had started after the revoke) or it
 /// parks a copy the receiver then collects. The headline is that the receiver is not handed a
-/// capability naming the revoked frame.
-///
-/// The assertions above it are a vacuity guard (the sender really was held inside the delegation)
-/// and a premise check (the revoke really did reach the sender's own table).
+/// capability naming the revoked frame; above it sit a vacuity guard (the sender really was held
+/// inside the delegation) and a premise check (the revoke reached the sender's own table).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.revocation_window_tests.a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy.patch`
 #[test_case]

@@ -163,6 +163,24 @@ Only three ways, and none is ambient: retype it out of untyped you hold, be hand
 `open(path)`, no global name, no way to mint authority from who you are. A thread's capability table is empty
 until something puts a capability in it. That is the whole of §10, seen from the object's side.
 
+## A sweep inside a delegation, and how the tests force it
+
+`system_tests::user::revocation_window_tests` drives a sweep into each delegating syscall that names
+a `PageFrame`: `SEND_CAP`, `ThreadControlBlock::CAP_INSERT` and `PageFrame::SLICE`. The claim is
+fatal risk 7's, and the use-after-free it guards is DECISIONS §13's.
+
+The frame is the object that matters most. Most objects carry generational names (`crates/slots`,
+DECISIONS §16 (object revocation)), so a copy minted after its object died names a dead generation
+and fails on use. A `PageFrame` names physical memory and has no generation, so the sweep is the
+only take-back. Under `PageFrame::REVOKE` a surviving copy is authority the revoker took back. Under
+`MemoryRegion::DESTROY` it names pages the allocator is about to hand to somebody else.
+`DeviceFrame::REVOKE` and `x86_64`'s `PortRange::REVOKE` sweep the same way and delegate through the
+same `SEND_CAP` and `CAP_INSERT` path, so one fix covers every object and the tests drive the frame.
+
+Two cores can produce the interleaving by timing, but the window is a few hundred instructions wide
+and no test can rely on it. `delegation_pause` holds an armed thread at the start of its delegation
+with no lock held. The test runs the whole sweep, then lets the thread go.
+
 ---
 
 *Add to this file as new capability-lifecycle questions come up.*
