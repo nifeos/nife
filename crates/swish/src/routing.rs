@@ -1,30 +1,26 @@
 //! **The routing of a typed line**: [`Route`] and [`route`], including the one ordering with a
 //! bug behind it, the prefix words answered before the line is split on its operators.
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
 
 /// **What kind of thing the user typed**, decided before anything is invoked.
 ///
-/// The variants are not three grammars. They are the three shapes the shell has to act on
-/// differently, and the order they are decided in is load-bearing (see [`route`]).
+/// The order the variants are decided in is load-bearing (see [`route`]).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Route<'a> {
     /// `caps`, with everything after it. The tail is a **whole command line**, operators included.
     Caps(&'a [u8]),
     /// `time`, with everything after it (milestone 86). The tail is a whole command line for
-    /// [`Caps`](Route::Caps)'s reason, and the shell **re-dispatches** it: what gets timed is the
-    /// line taking the path it would have taken untimed, so "what you time is what you run" is a
-    /// property of the code rather than a claim about it.
+    /// [`Caps`](Route::Caps)'s reason, and the shell re-dispatches it, so what is timed is the line
+    /// taking the path it would have taken untimed.
     Time(&'a [u8]),
     /// `xargs`, with everything after it (milestone 109). The tail is a whole command line for
     /// [`Caps`](Route::Caps)'s reason, and the shell re-dispatches it **once per batch** of what its
     /// pattern matched. The name is provisional.
     Xargs(&'a [u8]),
-    /// One command, with no operators on it: the path every line took before milestone 50.
+    /// One command, with no operators on it.
     One(&'a [u8]),
     /// A line with `>`, `<` or `|` on it, already split into stages.
     Pipeline(Line<'a>),
@@ -34,15 +30,9 @@ pub enum Route<'a> {
 
 /// **Read one line and decide what it is.**
 ///
-/// The two prefix words are asked about **before** the line is split, and that ordering is the whole
-/// reason this is a function worth having. Their operand *is* a command line, so they have to see
-/// the operators: `caps date | wc` must print two stages, and splitting first would hand it the word
-/// `date` and silently lose the rest. `time date | wc` is the same shape with the same bug behind
-/// it, one milestone later, and it costs one arm rather than a second mechanism.
-///
-/// A line with no operators takes exactly the path it took before they existed, which is deliberate.
-/// The operators must not make an ordinary command more expensive or more complicated, because an
-/// ordinary command is nearly every command.
+/// The prefix words (`caps`, `time`, `xargs`) are asked about before the line is split, because
+/// their operand is a whole command line: splitting first would hand `caps date | wc` the word
+/// `date` and lose the rest. A line with no operators pays nothing for them.
 ///
 /// ```
 /// use swish::{Route, route};

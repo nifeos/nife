@@ -9,6 +9,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The native ABI](../abi.md): the syscall convention, object surface and entry contract.
 - [Threads, the context switch, and preemption](../threads.md): threads, the fifteen-instruction switch, and preemption.
 - [The scheduler: placement, stealing, wakes](../scheduler.md): per-core run queues, placement, stealing and wakes.
+- [Bringing up the other cores](../smp.md): the core roster seated by hardware id, secondary start and stacks, and how the SMP tests wait.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
 - [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.
 - [Intrusive queues](../intrusive-queues.md): run queues whose link lives inside the thread.

@@ -62,3 +62,5 @@ area directories), ruled B). Appendices under
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
 `system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
+
+`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.

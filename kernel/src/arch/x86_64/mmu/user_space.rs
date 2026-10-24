@@ -14,17 +14,11 @@ use super::*;
 // ---------------------------------------------------------------------------------------------
 // The user address spaces (milestone 161, roadmap item 3).
 //
-// The x86 shape is RISC-V's rather than aarch64's, which is what every function below is arranged
-// around: `CR3` names the WHOLE address space the way `satp` does, so a process's own root must
-// carry the kernel's high-half entries ([`share_kernel_half`]) or the `mov cr3` unmaps the kernel
-// that is executing it. aarch64 needs no such copy, because TTBR1 is a second root every process
-// shares implicitly.
-//
-// Where it is neither: the ASID equivalent. PCID lives in `CR3[11:0]` and is honoured **only** when
-// `CR4.PCIDE` is set. It is not set here (see this module's BUGS and roadmap item 3), so a tag
-// cannot be written into `CR3` at all -- bits 11:5 and 2:0 are reserved-zero with PCIDE clear, and
-// a nonzero one faults -- and every `mov cr3` discards the entire non-global TLB. [`ttbr0_value`]
-// and [`flush_asid`] are where that shows, and each says so in its own words.
+// x86 has RISC-V's shape, not aarch64's: `CR3` names the whole address space, as `satp` does, so
+// a process's root must carry the kernel's high half ([`share_kernel_half`]). PCID, the ASID
+// equivalent, is off (`CR4.PCIDE` clear), so no tag can be written into `CR3` and every `mov cr3`
+// discards the whole non-global TLB; [`ttbr0_value`] and [`flush_asid`] say so. See
+// notes/x86-port/kernel-page-tables.md.
 // ---------------------------------------------------------------------------------------------
 
 /// The raw `CR3`, flag and PCID bits included. [`current_root`] is this with the address masked
@@ -70,14 +64,9 @@ pub(crate) fn reserved_root() -> u64 {
 /// Compose the value `CR3` should hold for a root and an address-space id. Named for aarch64's
 /// register because that is the arch contract's word.
 ///
-/// **The `asid` is deliberately dropped, and that is the honest encoding rather than a stub.** The
-/// PCID field is `CR3[11:0]`, and with `CR4.PCIDE` clear those bits are not a tag: bits 2:0 and
-/// 11:5 are reserved and must be written as zero, so `root | asid` would `#GP` on the very first
-/// switch rather than tagging anything. There is nothing to write the number into until PCIDE is
-/// on, and turning it on is roadmap item 3's own deferred decision (see this module's BUGS).
-///
-/// What that costs is stated where it is paid: [`flush_asid`] cannot flush one address space,
-/// because the hardware holds no tag to select on.
+/// The `asid` is dropped: with `CR4.PCIDE` clear, `CR3[11:0]` is not a tag, and bits 2:0 and 11:5
+/// are reserved-zero, so `root | asid` would `#GP` on the first switch. [`flush_asid`] pays for
+/// that by flushing everything.
 #[allow(dead_code)]
 pub(crate) fn ttbr0_value(root: u64, asid: u16) -> u64 {
     debug_assert_eq!(
@@ -92,18 +81,13 @@ pub(crate) fn ttbr0_value(root: u64, asid: u16) -> u64 {
     root
 }
 
-/// Populate a fresh process root's **high half** with the kernel's, so one `CR3` pointing at it
-/// sees both the process's user pages (low half) and the whole kernel (high half).
+/// Populate a fresh process root's **high half** with the kernel's, so one `CR3` sees both the
+/// process's user pages and the whole kernel.
 ///
-/// This is the single-root requirement RISC-V has and aarch64 does not, and x86 is on RISC-V's side
-/// of it. The kernel half is PML4 entries 256..512, which is the `SPLIT_SHIFT = 47` line
-/// `Ia32e::is_in_half` tests: **both** kernel bases live up there ([`KERNEL_VA_BASE`] is PML4[511]
-/// and [`DIRECT_MAP_BASE`] is PML4[273]), so one `copy_from_slice` shares the image, the direct map
-/// and every device window at once. The entries point at kernel intermediate tables, so this shares
-/// the map itself rather than a snapshot of it: a page the kernel maps afterwards is visible in
-/// every process, which is what a shared high half has to mean.
-///
-/// Called by `user::AddressSpace::new` right after it allocates a root.
+/// The kernel half is PML4 entries 256..512, where both kernel bases live, so one
+/// `copy_from_slice` shares the image, the direct map and every device window. The entries point at
+/// kernel intermediate tables, so a page the kernel maps later is visible in every process. Called
+/// by `user::AddressSpace::new` right after it allocates a root.
 #[allow(dead_code)]
 pub(crate) fn share_kernel_half(root: u64) {
     let kernel_root = KERNEL_ROOT.load(Ordering::Relaxed);
@@ -121,20 +105,14 @@ pub(crate) fn share_kernel_half(root: u64) {
     }
 }
 
-/// Install the address space named by `cr3`, **unless it is already installed**.
-///
-/// The early return is worth more here than on either of the other two architectures. `CR4.PGE` is
-/// off, so a `mov cr3` throws away *every* translation this CPU holds, the kernel's included; a
-/// switch between two threads of the same space, or between two kernel threads (both naming
-/// [`reserved_root`]), would otherwise pay for a full TLB refill to change nothing. The comparison
-/// reads the register back, so it is against what the hardware is walking rather than against our
-/// record of it.
+/// Install the address space named by `cr3`, **unless it is already installed**: with `CR4.PGE`
+/// off a `mov cr3` drops every translation, the kernel's included, so a switch that changes nothing
+/// would still pay a full refill. The comparison reads the register back.
 ///
 /// # Safety
 /// `cr3` must be a value [`ttbr0_value`] composed over a **live** root that carries the kernel's
-/// high half, or [`reserved_root`]. Anything else unmaps the instruction after this one, which on
-/// this architecture is a page fault taken with tables that cannot describe the fault handler: a
-/// double fault, then a triple fault, then a silent machine reset.
+/// high half, or [`reserved_root`]. Anything else unmaps the instruction after this one: a page
+/// fault with tables that cannot describe the handler, then a double and a triple fault.
 #[allow(dead_code)]
 pub(crate) unsafe fn switch_user_root(cr3: u64) {
     if read_cr3() == cr3 {
@@ -162,39 +140,26 @@ pub fn asid_of(cr3: u64) -> u16 {
 }
 
 /// **Test-only: let ring 0 load and store through pages marked user-accessible**, returning whether
-/// it was already permitted so the caller can put it back.
+/// it was already permitted (always `true`, so the three arch modules share one signature).
 ///
-/// A no-op here, as on aarch64, and for a closely related reason: the feature that would forbid it
-/// is **SMAP** (`CR4.SMAP`, plus `RFLAGS.AC` to punch through it per access), which this kernel does
-/// not enable, exactly as it never sets aarch64's `PSTATE.PAN`. RISC-V is the odd one out, forbidding
-/// it unless `sstatus.SUM` is set, which is why this function exists at all: without it a test that
-/// reads through a user VA to see what the TLB holds compiles on all three ISAs and faults on one.
-///
-/// Returns the previous state (always `true`) so the three arch modules have one signature.
+/// A no-op here: SMAP (`CR4.SMAP`), which would forbid it, is off, as aarch64 never sets
+/// `PSTATE.PAN`. RISC-V forbids it unless `sstatus.SUM` is set, which is why this exists.
 ///
 /// # BUGS
-/// **Turning SMAP on would make this a real function and is worth doing**, for the reason RISC-V
-/// leaves `SUM` clear in a shipping build: a kernel bug that strays into the low half should fault
-/// rather than succeed quietly. It is not on because nothing has measured what it costs on the
-/// syscall path, and a protection turned on without a number is the shape of change this tree asks
-/// for evidence about.
+/// SMAP is off because nothing has measured its cost on the syscall path; with it on, a kernel bug
+/// that strays into the low half would fault rather than succeed quietly.
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; a unit-test boot on some ISAs does not
 pub fn permit_kernel_access_to_user_pages(_allowed: bool) -> bool {
     true
 }
 
-/// Install a user address space unconditionally, by writing `CR3`.
-///
-/// The running kernel does not call this: it installs address spaces through the context switch,
-/// which goes via [`switch_user_root`] so it can skip a `mov cr3` that would change nothing. This is
-/// the unconditional install, which is what a test wants when it is asserting about a *specific*
-/// address space rather than about scheduling.
+/// Install a user address space unconditionally, by writing `CR3`. The running kernel installs
+/// through [`switch_user_root`]; this is for a test asserting about one specific address space.
 ///
 /// # Safety
 /// `cr3` must be a value [`ttbr0_value`] composed over a live root that carries the kernel's high
-/// half. Anything else unmaps the instruction after this one; see [`switch_user_root`] for what that
-/// costs on this architecture.
+/// half. Anything else unmaps the instruction after this one; see [`switch_user_root`].
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub unsafe fn activate_user(cr3: u64) {
     // SAFETY: this function's own `# Safety` contract is exactly the one `install` needs; it
@@ -210,21 +175,13 @@ pub fn deactivate_user() {
     unsafe { switch_user_root(reserved_root()) };
 }
 
-/// Discharge every translation belonging to the address space tagged `asid`.
+/// Discharge every translation belonging to the address space tagged `asid`, on every online CPU.
 ///
-/// **It flushes everything, and saying so is the point.** `crates/address_space_identifier`'s teardown contract is
-/// "after this call, and only after it, the number may tag someone else". With `CR4.PCIDE` clear
-/// the hardware holds no tag at all, so there is no set of entries this could select: the only
-/// implementation that keeps the contract true is to discard the whole non-global TLB, which a
-/// `CR3` reload does. Over-flushing is correct and slow; under-flushing would be one process
-/// reading another's memory with no fault to announce it, which is the failure `flush_asid` exists
-/// to prevent.
-///
-/// **Every online CPU, not just this one.** x86 has no TLB broadcast (`invlpg` and a `CR3` reload
-/// are both local), so the remote half is [`shoot_down_others`]'s NMI protocol, the same problem
-/// RISC-V solves with SBI RFENCE. Without it, a core that ran a thread of the dying space keeps its
-/// translations and the next space handed this number reads them, which is one process reading
-/// another's memory with no fault to announce it.
+/// It flushes everything: with `CR4.PCIDE` clear the hardware holds no tag to select on, so
+/// keeping `crates/address_space_identifier`'s contract (after this call the number may tag
+/// someone else) takes a `CR3` reload. The remote half is [`shoot_down_others`]'s NMI, because
+/// `invlpg` and a `CR3` reload are both local. Under-flushing would let one process read another's
+/// memory with no fault to announce it.
 #[allow(dead_code)]
 pub fn flush_asid(asid: u16) {
     let _ = asid; // nothing to select on; see this function's doc comment
