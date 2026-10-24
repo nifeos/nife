@@ -186,7 +186,9 @@ graph holds talc, and `cargo xtask std-src` generates std's heap from it.
 ## virtio-drivers 0.13.0
 
 The virtio device drivers milestone 784 (reuse what the tree wrote) moves nife's onto, one device per
-milestone: (c1) input, (c2) GPU, (c3) block, (c4) net. Nothing builds it yet.
+milestone: (c1) input, (c2) GPU, (c3) block, (c4) net. `crates/confined_virtio` links it, through
+the root `[patch.crates-io]` as talc is; `keyboard_driver` is on it (milestone 947 (the virtio input
+device runs on `virtio-drivers`)).
 
 - **Source:** the published crates.io package `virtio-drivers-0.13.0.crate`, sha256
   `cfdc1c628cdd8ce7c3b9e65a8ed550d0338e9ef9f911e729666f1cce097de2f7`, upstream git sha

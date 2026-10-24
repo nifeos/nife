@@ -130,7 +130,7 @@ members = [
 # reason. It is no workspace root of its own: it builds only as the `[patch.crates-io]` below.
 #
 # `vendor/virtio-drivers`, the virtio drivers carried with upstream's `ACCESS_PLATFORM` support, is
-# excluded for the same first reason. It builds as a path dependency of `crates/confined_virtio`;
+# excluded for the same first reason, and like talc builds only as the `[patch.crates-io]` below;
 # milestone 784 (reuse what the tree wrote)'s items (c1) to (c4) move the devices onto it one at a time.
 #
 # `fuzz` is excluded for a different reason (milestone 42): its targets link libFuzzer's `main`, are
@@ -359,3 +359,7 @@ overflow-checks = true
 # so no build links the unpatched crate. vendor/README.md has the drop condition.
 [patch.crates-io]
 talc = { path = "vendor/talc" }
+# virtio-drivers 0.13.0 with rcore-os/virtio-drivers#232 (calef, 2026-10-22 UTC, on #2586), the same
+# way and for the same reason; through the patch rather than a path dependency, so `cargo fmt --all`
+# leaves upstream's code alone, as it does talc's. Linked by `crates/confined_virtio`.
+virtio-drivers = { path = "vendor/virtio-drivers" }
