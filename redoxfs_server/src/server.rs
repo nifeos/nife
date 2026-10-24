@@ -169,7 +169,7 @@ impl<D: Disk> Server<D> {
     /// # BUGS
     ///
     /// - A name added or removed mid-walk can be seen twice or missed (readdir's usual caveat).
-    /// - The first listing of a directory costs a node read per entry; [`list`] says why.
+    /// - The first listing of a directory costs a node read per entry; `list` says why.
     pub fn read_dir(&mut self, handle: u32, cursor: u32, out: &mut [u8]) -> Result<usize> {
         let (ptr, rights) = self.dir_at(handle)?;
         if !rights.allows(dir::ENUMERATE) {

@@ -36,8 +36,8 @@ impl From<subtree_scope::Refusal> for Fault {
 /// 825 (a hostile client races the file server's name window), calef's "Refused names" ruling,
 /// 2026-10-15 UTC). The only constructor, [`NameCopy::copy_in`], copies into this value's own
 /// bounded buffer and validates UTF-8 on the copy, so a name read straight from a client's window
-/// cannot reach a verb. The text is reachable only through [`NameCopy::component`] and
-/// [`NameCopy::path`], which run `check_component` first. See notes/fs-server/the-core.md.
+/// cannot reach a verb. The text is reachable only through `NameCopy::component` and
+/// `NameCopy::path`, which run `check_component` first. See notes/fs-server/the-core.md.
 ///
 /// A window-borrowed `&str` does not reach a verb:
 ///
