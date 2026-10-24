@@ -124,6 +124,26 @@ page the client shares with the server, so these are a request rate in disguise.
 hundredths on the kernel side, where the counter frequency and transfer size are both known; a phase
 whose ticks did not advance is a broken run and reports zero.
 
+## The keyboard rows
+
+`keyboard_up` and `keyboard_event` time the virtio keyboard driver, and only `script/bench
+--keyboard` prints them, on any of the three architectures. That flag attaches the keyboard and a
+monitor socket. An ordinary bench boot finds no keyboard, prints neither row, and gates nothing new.
+`--keyboard` refuses `--check`, `--save` and `--real`, because no baseline holds the rows and a host
+actor is in the loop.
+
+`keyboard_up` runs from the spawn to the driver's `KEYBOARD_UP` report. That covers feature
+negotiation, queue setup and posting the event buffers, and the host plays no part in it.
+
+`keyboard_event` sums 16 key presses. Each runs from the kernel delivering the keyboard's interrupt
+(`sched::watched_irq_at`, a bench-only timestamp in `irq_notify`) to the driver's `COMMIT` reaching
+the bench thread, which stands in for the compositor. The wait for the host is outside the window,
+and under icount an idle guest skips that wait anyway. The kernel prints a cue before each press,
+and `xtask` answers it with one `sendkey` after 200 ms of real time. By then the previous release has
+had its own interrupt, so every press is one interrupt carrying an `EV_KEY` and an `EV_SYN`. Two
+runs on aarch64 gave identical counts. Milestone 947 has the numbers before and after the driver
+moved onto `virtio-drivers`.
+
 ## Multi-hart throughput
 
 Every other row is hart-pinned, so it is per-core path length and cannot show the placement of §28

@@ -55,6 +55,10 @@ pub fn irq_route(intid: u32) -> Option<RendezvousId> {
 pub fn irq_notify(ep: RendezvousId) {
     // Counted for `vmstat`'s `in` column.
     crate::machine_statistics::interrupt();
+    #[cfg(feature = "bench")]
+    if WATCHED.load(Ordering::Relaxed) == ep + 1 {
+        WATCHED_AT.store(crate::arch::timer::now(), Ordering::Relaxed);
+    }
     // Load-aware (§28 (SMP placement), part 2): a remote placement owes an SGI, sent after
     // `IPC_TABLES` is released.
     let remote = {
@@ -79,4 +83,30 @@ pub fn irq_notify(ep: RendezvousId) {
     if let Some(target) = remote {
         crate::arch::irq::send_reschedule(target);
     }
+}
+
+/// The rendezvous whose interrupts [`irq_notify`] timestamps for a bench row, plus one (0 means
+/// none). See [`watch_irq`].
+#[cfg(feature = "bench")]
+static WATCHED: AtomicU64 = AtomicU64::new(0);
+/// The counter reading at the last interrupt delivered to the watched rendezvous.
+#[cfg(feature = "bench")]
+static WATCHED_AT: AtomicU64 = AtomicU64::new(0);
+
+/// Timestamp every interrupt delivered to `ep` from now on, for a bench row that times a driver
+/// from its interrupt to its answer (`bench::keyboard`). Bench builds only: the store costs one
+/// compare on every interrupt.
+#[cfg(feature = "bench")]
+pub fn watch_irq(ep: RendezvousId) {
+    WATCHED.store(ep + 1, Ordering::Relaxed);
+}
+
+/// The counter reading at the last interrupt [`irq_notify`] delivered to the watched rendezvous.
+///
+/// Relaxed on both sides: a reader learns that the interrupt happened through an IPC the driver
+/// sent after waking from it, and that IPC passes through `IPC_TABLES`, which orders this load
+/// after the store.
+#[cfg(feature = "bench")]
+pub fn watched_irq_at() -> u64 {
+    WATCHED_AT.load(Ordering::Relaxed)
 }

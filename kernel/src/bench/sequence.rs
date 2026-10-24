@@ -59,6 +59,8 @@ pub fn run() -> ! {
     fs_walk();
     fs_walk_bound();
     rg_search();
+    // Last, so an ordinary boot's search for a keyboard that is not there moves no row above.
+    keyboard();
 
     println!("bench: done");
     crate::arch::halt(crate::arch::HaltReason::measurement_boot());
