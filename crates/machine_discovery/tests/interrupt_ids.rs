@@ -1,16 +1,9 @@
 //! The console UART's interrupt line, read from each machine's own tree, on the host.
 //!
-//! The number this replaces was the last QEMU constant on the interrupt path: `UART_IRQ = 10` in
-//! `kernel/src/lib.rs`, which on the JH7110 armed an unrelated PLIC source, and boot 13
-//! (2026-08-15) proved it on silicon when a key press at the completed tour's prompt reached
-//! nothing (notes/visionfive2.md, BUGS). These tests hold the fix's whole claim: the same read
-//! that answers 10 on QEMU's tree answers 32 on both JH7110 fixtures, and 33 on the aarch64
-//! `virt` tree whose GIC speaks three-cell entries, so the number the kernel arms is the
-//! machine's rather than the emulator's.
-//!
-//! The three trees deliberately cover the three places `interrupt-parent` lives: on the serial
-//! node itself (QEMU riscv64), once on the root (QEMU aarch64), and on `/soc` per the mainline
-//! dtsi (the JH7110 upstream model; the vendor fixture spells it per-node).
+//! The same read answers 10 on QEMU riscv64's tree, 32 on both JH7110 fixtures, and 33 on the
+//! aarch64 `virt` tree whose GIC speaks three-cell entries. The trees cover the three places
+//! `interrupt-parent` lives: the serial node (QEMU riscv64), the root (QEMU aarch64), and `/soc`
+//! (the mainline JH7110 dtsi). See `notes/machine-discovery.md` ("Interrupt ids").
 
 use machine_discovery::interrupt_id;
 

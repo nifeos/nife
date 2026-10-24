@@ -1,29 +1,12 @@
-//! **The display seam's wiring**: a confined virtio-gpu driver, the client that paints through it,
-//! and the terminal that took the client's place (milestones 29, 33; notes/framebuffer-contract.md).
+//! The display seam's wiring: a confined virtio-gpu driver, the client that paints through it, and
+//! the terminal that takes the client's place.
 //!
-//! # The pixels are capabilities now (milestone 108, notes/frames.md)
+//! Each program holds its pages as `PageFrame` capabilities and maps them itself, out of a memory
+//! region it also holds. A capability names a whole run (§102 (a Frame names a run of pages)), so
+//! the [`graphics_contract::SURFACE_PAGE_FRAMES`]-page scanout is one capability and one `MAP` call.
+//! The kernel places no page at spawn beyond the one `load` gives every process.
 //!
-//! Everything here used to arrive as `Spawn::maps`: the kernel wrote the DMA region into the
-//! driver's address space and the surface into the client's, at addresses the kernel picked, before
-//! either program's first instruction. Nothing in either capability table said the memory was there, and
-//! nothing could narrow it, hand it on, or take it back.
-//!
-//! Each program now holds its pages as `PageFrame` capabilities and maps them itself, out of an untyped
-//! it also holds.
-//!
-//! # One capability per run, not one per page (DECISIONS §102, milestone 142)
-//!
-//! `PageFrame` used to name exactly one page, so the driver's DMA region (rings and control
-//! buffers, then the surface) was one capability per page: at the 128x64 scanout this milestone
-//! grew from, that was 9 capabilities in 9 consecutive slots of a sixteen-slot capability table,
-//! with one slot spare and no room for anything larger. §102 gave `PageFrame` a page count, so a
-//! whole run is now **one capability and one `MAP` call**, however many pages it holds. That is
-//! what makes the grown scanout ([`graphics_contract::WIDTH`] x [`graphics_contract::HEIGHT`],
-//! [`graphics_contract::SURFACE_PAGE_FRAMES`] page frames, 683 at 1120x624) fit at all: that many
-//! one-page capabilities never would have. See notes/frames.md.
-//!
-//! What stays wired at spawn is nothing at all here: these programs have no extra stack pages, so
-//! the only page the kernel still places is the one `load` gives every process.
+//! See notes/framebuffer-contract.md and notes/framebuffer-contract/kernel-wiring.md.
 
 use core::num::NonZeroU64;
 
@@ -37,12 +20,10 @@ use crate::sched::RendezvousId;
 /// The DMA region, in frames: one for the rings and control buffers, then the surface.
 const DMA_PAGE_FRAMES: u64 = 1 + graphics_contract::SURFACE_PAGE_FRAMES as u64;
 
-/// The three run lengths this file grants, as run lengths.
+/// The three run lengths this file grants.
 ///
-/// They are `const` rather than computed at the call site so that
-/// [`crate::cap::page_frame_run_len`]'s refusal of a zero-page run happens **while this file is
-/// compiled**: a geometry change that took `SURFACE_PAGE_FRAMES` to zero would fail the build here
-/// rather than panic a driver at boot. (Provisional names; a lane does not settle a name.)
+/// They are `const` so that [`crate::cap::page_frame_run_len`]'s refusal of a zero-page run fails
+/// the build, not a driver at boot. Name: provisional.
 const SURFACE_RUN: NonZeroU64 = page_frame_run_len(graphics_contract::SURFACE_PAGE_FRAMES as u64);
 const DMA_RUN: NonZeroU64 = page_frame_run_len(DMA_PAGE_FRAMES);
 const ONE_PAGE_RUN: NonZeroU64 = NonZeroU64::MIN;
@@ -50,13 +31,11 @@ const ONE_PAGE_RUN: NonZeroU64 = NonZeroU64::MIN;
 /// The driver binary's escape-attempt role; must match `components/src/gpu_driver.rs` `ROLE_BACKING_ESCAPE`.
 const ROLE_BACKING_ESCAPE: u64 = 1;
 
-/// **The budget every program on this path draws its page tables from** (milestone 108 (the drivers
-/// move onto frame capabilities)). At 1120x624 the 683-page surface
-/// ([`graphics_contract::SURFACE_PAGE_FRAMES`]) spans two 2 MiB windows (two L3 tables), and the
-/// terminal's separate output page a third, so more than one L3 is the ordinary case here rather
-/// than the edge case notes/frames.md recorded at 800x608. Twenty-four pages also carried the
-/// 900-page 1280x720 surface this path booted with before, so it is headroom already exercised
-/// rather than a number nobody has booted against, and still under one percent of the free pool.
+/// The budget, in pages, every program on this path draws its page tables from.
+///
+/// At 1120x624 the 683-page surface spans two 2 MiB windows (two L3 tables) and the terminal's
+/// output page a third. Twenty-four pages has also booted a 900-page 1280x720 surface, and is under
+/// one percent of the free pool. See notes/frames.md.
 const MAP_BUDGET_PAGES: u64 = 24;
 
 // The driver's capability table. Must match components/src/gpu_driver.rs.
@@ -65,11 +44,7 @@ const DRIVER_SLOT_IRQ: u64 = 1;
 const DRIVER_SLOT_VIRTIO: u64 = 2;
 const DRIVER_SLOT_DISPLAY: u64 = 3;
 const DRIVER_SLOT_BUDGET: u64 = 4;
-/// **The whole DMA region, one capability** (§102). Before the widening this was
-/// [`DMA_PAGE_FRAMES`] separate slots, one per page, and a `const` assertion guarded the last one
-/// against the fault slot; a scanout large enough to need this milestone would have failed that
-/// assertion outright. One slot names the whole run now, so the *pressure* that assertion guarded
-/// against is retired. See notes/frames.md's BUGS.
+/// The whole DMA region, one capability (§102).
 const DRIVER_SLOT_DMA: u64 = 5;
 
 // The painting client's capability table. Must match fixtures/src/painter.rs.
@@ -90,26 +65,18 @@ const TERM_SLOT_SURFACE: u64 = 4;
 /// of the scanout's contiguous run.
 const TERM_SLOT_OUT: u64 = TERM_SLOT_SURFACE + 1;
 
-// **No grant list on this path may reach the fault slot** (reinstated by milestone 142's review,
-// MAJOR 6). `abi::fault::FAULT_EP_SLOT` is `CAPABILITY_TABLE_SLOTS - 1` and the supervisor writes
-// the process's fault endpoint there; a grant that landed on it would overwrite that endpoint with
-// a frame, and the process would simply stop being supervised. There is no runtime complaint for
-// that, because `grant_at` on an *empty* slot succeeds: it surfaces later as a faulting process
-// that hangs instead of being reaped, three subsystems away from the cause.
-//
-// The retired assertion said `DRIVER_SLOT_DMA + DMA_PAGE_FRAMES <= FAULT_EP_SLOT`, which was the
-// same claim expressed in the one-slot-per-page representation §102 abolished. This is that claim
-// in run terms: the highest slot each of the three grant lists actually uses, against the slot none
-// of them may reach. It is the *statement* that was worth keeping, not the arithmetic.
+// No grant list on this path may reach the fault slot. The supervisor writes the process's fault
+// endpoint at `abi::fault::FAULT_EP_SLOT`, and `grant_at` on an empty slot succeeds, so a grant
+// there would overwrite it silently: the process would hang on a fault instead of being reaped.
+// Each assertion is the highest slot one grant list uses.
 const _: () = {
     assert!(DRIVER_SLOT_DMA < abi::fault::FAULT_EP_SLOT);
     assert!(CLIENT_SLOT_SURFACE < abi::fault::FAULT_EP_SLOT);
     assert!(TERM_SLOT_OUT < abi::fault::FAULT_EP_SLOT);
 };
 
-/// Grant one capability naming the `count`-frame run at `base`, read/write, at `slot`. The
-/// counterpart of the single `MAP` call each of these programs now makes at startup for the run
-/// (§102): before this widening a run was `count` separate slots and `count` separate `MAP` calls.
+/// Grant one capability naming the `count`-frame run at `base`, read/write, at `slot`; the program
+/// maps it with one `MAP` call (§102). Panics, naming `what`, if `slot` is occupied.
 fn grant_run(slot: u64, base: u64, count: NonZeroU64, what: &str) {
     crate::sched::grant_at(
         slot,
@@ -118,20 +85,18 @@ fn grant_run(slot: u64, base: u64, count: NonZeroU64, what: &str) {
     .unwrap_or_else(|_| panic!("{what}: slot {slot} was occupied"));
 }
 
-/// **Wire and spawn the GPU driver and the painting client.** Returns
-/// `(driver report, client report)`, or `None` if no virtio-gpu function is on the bus.
+/// Wire and spawn the GPU driver and the painting client.
 ///
-/// One spawn site for two processes on purpose: they are only meaningful together (a driver with
-/// no client serves nobody, a client with no driver blocks on its first CALL), and the endpoint
-/// and the shared frames that join them are created here, in the one place that is allowed to
-/// know both halves.
+/// Returns `(driver report, client report)`, or `None` if no virtio-gpu function is on the bus.
+/// The client holds a report endpoint, the display endpoint, a map budget and the surface, and
+/// nothing else. The two share one spawn site because only it knows both halves of the endpoint
+/// and the frames that join them.
 pub fn start(
     driver_image: &'static [u8],
     client_image: &'static [u8],
 ) -> Option<(RendezvousId, RendezvousId)> {
     let (driver_report, display_ep, surface) = wire_driver(driver_image, 0, 0)?;
 
-    // --- the client: an endpoint and the pixels. Nothing else, which is the point. ---
     let client_report = crate::sched::create_rendezvous();
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the client");
@@ -170,20 +135,13 @@ pub fn start(
     Some((driver_report, client_report))
 }
 
-/// **Spawn a driver that attacks its own confinement** (`components/src/gpu_driver.rs` `run_backing_escape`):
-/// it asks the device to read pixels out of a frame outside its grant. Returns
-/// `(report endpoint, the victim frame's physical address)`, or `None` if no GPU is on the bus.
+/// Spawn a driver that attacks its own confinement (`components/src/gpu_driver.rs`
+/// `run_backing_escape`) by asking the device to read a frame outside its grant.
 ///
-/// It gets exactly the honest driver's world, no more: the same confined transport, the same
-/// region, the same interrupt. That is what makes it a fair test of the barrier rather than of a
-/// missing capability. No client, because it never serves one.
-///
-/// The **kernel** picks the victim frame and hands it over in `arg2`, the same way milestone 16b's
-/// confinement test picks its own escape frame: the caller has to know the exact address to look
-/// for in the IOMMU's fault queue, and a driver guessing at "the frame past my region" guesses
-/// wrong (the shadow page is allocated right after it, and that frame IS in the domain). The frame
-/// is deliberately never freed: it is an escape target, and handing it back to the allocator while
-/// a device has been told to read it is the use-after-free-by-hardware notes/dma.md warns about.
+/// Returns `(report endpoint, the victim frame's physical address)`, or `None` if no GPU is on the
+/// bus. The driver gets the honest driver's world exactly, and no client. The kernel picks the
+/// victim frame, passes it in `arg2`, and never frees it, since a device has been told to read it.
+/// See notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId, u64)> {
     let victim = crate::memory::alloc()
         .expect("no victim frame for the backing-escape test")
@@ -192,14 +150,13 @@ pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId
     Some((report, victim))
 }
 
-/// **A virtio-gpu, wired and confined but driven by nobody yet**: what [`wire_device`] hands back.
+/// A virtio-gpu, wired and confined but driven by nobody yet: what [`wire_device`] returns.
 ///
-/// Everything the kernel has to do for a GPU that is not driving it: the transport registered and
-/// confined to [`dma`](GpuDevice::dma)'s run, the interrupt routed and enabled, and the region's own
-/// physical base written into its first page at `abi::virtio::DMA_PHYS_OFFSET`. What happens next is
-/// somebody's spawn: the kernel's own test wiring ([`wire_driver`]), or since milestone 600
-/// (provisional) the progenitor, which is granted these as capabilities by
-/// `kernel::user::boot_progenitor` and builds `gpu_driver` and `display_terminal` itself.
+/// The transport is registered and confined to [`dma`](GpuDevice::dma)'s run, the interrupt routed
+/// and enabled, and the region's physical base written into its first page at
+/// `abi::virtio::DMA_PHYS_OFFSET`. [`wire_driver`] spawns a driver on it; the progenitor is granted
+/// it as capabilities by `kernel::user::boot_progenitor` and builds `gpu_driver` and
+/// `display_terminal` itself.
 /// Name: provisional.
 pub struct GpuDevice {
     /// The `Virtio` capability's id (`crate::virtio::register`'s return value).
@@ -222,35 +179,23 @@ pub(crate) const GPU_DMA_RUN: NonZeroU64 = DMA_RUN;
 /// See [`GPU_DMA_RUN`].
 pub(crate) const GPU_SURFACE_RUN: NonZeroU64 = SURFACE_RUN;
 
-/// **Find the GPU, build its DMA region, route its interrupt and register its confined transport**,
-/// and spawn nothing. `None` if no virtio-gpu function is on the bus.
+/// Find the GPU, build its DMA region, route its interrupt and register its confined transport,
+/// spawning nothing. `None` if no virtio-gpu function is on the bus.
 ///
-/// **The region is one contiguous run, and has been since milestone 142 (a text display good
-/// enough that people use it instead of a GUI)**, by DECISIONS §102 (a Frame names a run of pages):
-/// one `alloc_contiguous_zeroed` of [`DMA_PAGE_FRAMES`] frames, registered with `crate::virtio` as
-/// one region, and granted as one `PageFrame` capability. That is the fact milestone 600
-/// (provisional) was promoted to check, because milestone 177 (wire the graphical terminal stack
-/// into the real interactive boot) had built the graphical stack kernel-side on the premise that
-/// the driver needed a capability per DMA page.
+/// The region is one contiguous, zeroed run of [`DMA_PAGE_FRAMES`] frames, registered with
+/// `crate::virtio` as one region and granted as one `PageFrame` capability (§102).
 pub(crate) fn wire_device() -> Option<GpuDevice> {
     let d = crate::pci::find_gpu_device()?;
 
-    // The DMA region: contiguous, because the surface must be one run of physical frames for the
-    // device's backing to be a single memory entry and for the IOMMU domain to cover it as one
-    // range. Zeroed, so neither a stale descriptor nor a stale pixel is ever visible to the
-    // device or to the client.
+    // Contiguous, so the device's backing is one memory entry and the IOMMU domain one range.
     let dma = crate::memory::alloc_contiguous_zeroed(DMA_PAGE_FRAMES as usize)
         .expect("no contiguous DMA region for the GPU driver")
         .addr();
-    // The region says where it is, in the tail of its first page, which `gpu_driver`'s rings and
-    // control buffers end well short of (`abi::virtio::DMA_PHYS_OFFSET`). A driver the progenitor
-    // builds has no other way to learn it: the progenitor holds the run as a capability and knows
-    // no physical address either.
+    // A progenitor-built driver has no other way to learn the region's physical base.
     super::write_dma_phys(dma);
     let surface = dma + FRAME_SIZE; // page 1 onward: the frames the client also maps
 
-    // The device's interrupt, routed to an endpoint so the driver's WAIT receives it as a
-    // message (milestone 9a).
+    // Routed to an endpoint, so the driver's WAIT receives the interrupt as a message.
     let irq_ep = crate::sched::create_rendezvous();
     crate::sched::bind_irq(d.intid, irq_ep);
     crate::arch::irq::enable(d.intid);
@@ -288,9 +233,6 @@ fn wire_driver(
     let display_ep = crate::sched::create_rendezvous(); // client WRITE (CALL) -> driver READ
     let driver_report = crate::sched::create_rendezvous();
 
-    // --- the driver: the confined transport, the interrupt, the whole DMA region, and the
-    // display endpoint's serving half. The region is one `PageFrame` capability naming the whole
-    // DMA_PAGE_FRAMES-page run (§102; see [`DRIVER_SLOT_DMA`]). ---
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the driver");
     crate::sched::spawn(move || {
@@ -299,13 +241,10 @@ fn wire_driver(
             rendezvous_cap(driver_report, Rights::WRITE),
         )
         .expect("driver slot 0 was occupied");
-        // The completion IRQ.
         crate::sched::grant_at(DRIVER_SLOT_IRQ, irq_cap(intid))
             .expect("driver slot 1 was occupied");
-        // The confined transport.
         crate::sched::grant_at(DRIVER_SLOT_VIRTIO, virtio_cap(vid))
             .expect("driver slot 2 was occupied");
-        // Serve clients.
         crate::sched::grant_at(
             DRIVER_SLOT_DISPLAY,
             rendezvous_cap(display_ep, Rights::READ),
@@ -318,9 +257,7 @@ fn wire_driver(
             driver_image,
             Spawn {
                 arg0: role, // 0 = the GPU driver; 1 = the escape attempt
-                // No physical address: the region's first page carries it
-                // (`abi::virtio::DMA_PHYS_OFFSET`), the same place the progenitor-built driver
-                // reads it from, so the harness and the boot hand the driver one world.
+                // The region's first page carries its address, as for a progenitor-built driver.
                 arg1: 0,
                 arg2,        // the escape role's victim frame; unused (0) by the GPU driver
                 grants: &[], // every one of them is placed above, at its own slot
@@ -333,13 +270,9 @@ fn wire_driver(
     Some((driver_report, display_ep, surface))
 }
 
-/// **Wire and spawn the GPU driver alone**, with no client: `(report endpoint, display
-/// endpoint, the surface's physical base)`, or `None` if no virtio-gpu is on the bus.
-///
-/// For rung two (milestone 33). The compositor takes `painter`'s place at this seam exactly as the
-/// contract promised it would, so what it needs from rung one is a display endpoint to CALL and the
-/// frames the device scans out. Nothing about the driver changes, which is the claim
-/// notes/framebuffer-contract.md made when it said routing was by endpoint.
+/// Wire and spawn the GPU driver alone, with no client, for the compositor to take `painter`'s
+/// place: `(report endpoint, display endpoint, the surface's physical base)`, or `None` if no
+/// virtio-gpu is on the bus.
 ///
 /// The caller must receive `FLUSHED` on the report endpoint after the client's first flush, or
 /// the driver never serves a second one; see [`start_terminal`].
@@ -363,48 +296,32 @@ pub struct TerminalWiring {
     pub surface: u64,
     /// How many frames [`Self::surface`] is, which a caller that frees them needs: the contract's
     /// [`graphics_contract::SURFACE_PAGE_FRAMES`] on the virtio path, and on a firmware screen
-    /// whatever covers that screen (since 2026-10-04, see [`start_screen_terminal`]).
+    /// whatever covers that screen (see [`start_screen_terminal`]).
     pub surface_frames: u64,
-    /// **What a caller hands back to end it**: the threads, the region its endpoints live in, and
-    /// the map budgets. Filled by [`start_screen_terminal`], whose endpoints come out of a region
-    /// for exactly this reason (a server parked in `RECEIVE` on the kernel's own endpoint chunks
-    /// cannot be woken to die; `user::holding`'s BUGS). **Empty on the virtio path**, which
-    /// predates it and which no caller tears down. The surface and the output page are not in it:
-    /// they are frames rather than regions, and a caller that releases this frees them after.
+    /// What a caller hands back to end it: the threads, the region its endpoints live in, and the
+    /// map budgets. Filled by [`start_screen_terminal`], whose endpoints come out of a region so a
+    /// server parked in `RECEIVE` can be woken to die (`user::holding`'s BUGS). Empty on the virtio
+    /// path, which no caller tears down. The surface and the output page are frames, not in it; a
+    /// caller that releases this frees them after.
     pub held: super::holding::Holding,
 }
 
-/// **Wire and spawn the GPU driver with a terminal on the whole scanout** (milestone 29's
-/// remaining increment). `None` if no virtio-gpu function is on the bus.
+/// Wire and spawn the GPU driver with a terminal on the whole scanout. `None` if no virtio-gpu
+/// function is on the bus.
 ///
-/// The terminal takes `painter`'s place at the display seam with **exactly `painter`'s
-/// authority**: a report endpoint, the display endpoint, and the surface frames. It holds no
-/// device, no interrupt, and no physical address, and `gpu_driver` cannot tell it from the client that
-/// drew a test pattern. That is the answer to "did the framebuffer contract need changing to
-/// carry text?", and it is an answer made of a spawn literal rather than an argument.
+/// The terminal holds exactly `painter`'s authority (a report endpoint, the display endpoint, the
+/// surface) plus the terminal contract's two additions: an endpoint it serves and a page an
+/// application writes bytes into (§10 (process model: capability-based, microkernel)).
 ///
-/// What it adds over `painter`'s wiring is two things, and both are the terminal contract's, not
-/// the framebuffer's: an endpoint it **serves** (the terminal contract's IPC half), and a page an
-/// application writes bytes into (DECISIONS §10's control-by-message, bulk-by-shared-page split).
-///
-/// **The caller must receive three reports, not two, or the screen freezes after one frame**
-/// (milestone 177). `driver_report` carries `UP` and then, once the terminal's first flush (its
-/// blank grid) is served, `FLUSHED`; `term_report` carries `TERM_UP`. All three are blocking
-/// `SEND`s, and the driver sends `FLUSHED` from inside its serving loop, so a caller that stops
-/// after `UP` and `TERM_UP` leaves the driver parked there and every later flush unanswered. That is
-/// the bug the real boot shipped with. **This is a foot gun kept on purpose, at rung three**: the
-/// tests that call this read the digest `FLUSHED` carries as the driver-side witness, so the
-/// function cannot swallow it for them. The boot no longer calls this (milestone 600
-/// (provisional)): the progenitor builds the same two processes and takes the same three reports
-/// in `system_initializer`'s `build_graphical_stack`. [`start_driver`] has the same obligation.
+/// The caller must receive three blocking reports, or the screen freezes after one frame: `UP` and
+/// then `FLUSHED` on `driver_report`, and `TERM_UP` on `term_report`. The tests read `FLUSHED`'s
+/// digest, so this does not swallow it. See notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_terminal(
     driver_image: &'static [u8],
     term_image: &'static [u8],
 ) -> Option<TerminalWiring> {
-    // A scanout with no room for a character has nothing to show. It does **not** have to be a
-    // whole number of them: a strip no cell covers is painted as background on the terminal's
-    // first frame (see `components/src/display_terminal.rs`) and `Vt::pixel` answers for it,
-    // which is what keeps the picture a total function of the state.
+    // At least one character cell, not a whole number: a strip no cell covers is painted as
+    // background and `Vt::pixel` answers for it, so the picture is a function of the state.
     const _: () = assert!(
         graphics_contract::WIDTH >= video_terminal::CELL_W
             && graphics_contract::HEIGHT >= video_terminal::CELL_H,
@@ -464,10 +381,8 @@ fn spawn_terminal(
     let tid = crate::sched::spawn(move || {
         crate::sched::grant_at(TERM_SLOT_REPORT, rendezvous_cap(term_report, Rights::WRITE))
             .expect("terminal slot 0 was occupied");
-        // CALL the driver.
         crate::sched::grant_at(TERM_SLOT_DISPLAY, rendezvous_cap(display_ep, Rights::WRITE))
             .expect("terminal slot 1 was occupied");
-        // Serve the terminal.
         crate::sched::grant_at(TERM_SLOT_TERM, rendezvous_cap(term, Rights::READ))
             .expect("terminal slot 2 was occupied");
         crate::sched::grant_at(TERM_SLOT_BUDGET, memory_region_cap(budget))
@@ -478,7 +393,6 @@ fn spawn_terminal(
             surface_run,
             "the display terminal",
         );
-        // The page an application writes text into.
         grant_run(TERM_SLOT_OUT, out, ONE_PAGE_RUN, "the display terminal");
         run(
             term_image,
@@ -511,22 +425,19 @@ struct SpawnedTerminal {
     budget: u64,
 }
 
-/// Where `framebuffer_driver` finds the covered part of the aperture. **Must match
-/// `components/src/framebuffer_driver.rs`'s `APERTURE_VA`.**
-/// A service window on the address-space map (milestone 206 (a program image has under 896 KiB)); it was `0x4000_0000`, the heap
-/// band's first address, until 2026-09-26.
+/// Where `framebuffer_driver` finds the covered part of the aperture, a service window on the
+/// address-space map. Must match `components/src/framebuffer_driver.rs`'s `APERTURE_VA`.
 const SCREEN_APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
 const _: () = assert!(address_space_map::SERVICE_WINDOWS.holds(
     SCREEN_APERTURE_VA,
     SCREEN_APERTURE_VA + MAX_APERTURE_PAGES * page_frames::FRAME_SIZE
 ));
 
-/// **The most aperture pages this wiring maps**: 8 MiB, four 2 MiB page-table windows. The tables
-/// come out of the driver's own address-space budget (`AS_OVERHEAD`, sixteen pages shared with its
-/// image and stack), so this is a bound rather than a preference. Since the terminal fills the
-/// screen (2026-10-04) it is close to the screens it serves: xenon's 1920x1080 is 2,025 pages. A
-/// larger screen gets a terminal over the rows that fit rather than none; see
-/// [`start_screen_terminal`].
+/// The most aperture pages this wiring maps: 8 MiB, four 2 MiB page-table windows.
+///
+/// The tables come out of the driver's own address-space budget (`AS_OVERHEAD`, sixteen pages shared
+/// with its image and stack), so this is a bound. xenon's 1920x1080 is 2,025 pages; a larger screen
+/// gets a terminal over the rows that fit (see [`start_screen_terminal`]).
 const MAX_APERTURE_PAGES: u64 = 2048;
 
 // The firmware screen driver's capability table. Must match components/src/framebuffer_driver.rs.
@@ -536,18 +447,16 @@ const SCREEN_SLOT_BUDGET: u64 = 2;
 const SCREEN_SLOT_SURFACE: u64 = 3;
 const _: () = assert!(SCREEN_SLOT_SURFACE < abi::fault::FAULT_EP_SLOT);
 
-/// **The part of `screen` the terminal covers, and the pages of it the driver maps**:
+/// The part of `screen` the terminal covers, and the pages of it the driver maps:
 /// [`start_screen_terminal`]'s first step. `None` when the screen cannot show a surface or its
 /// covered rows would need more than [`MAX_APERTURE_PAGES`].
+///
+/// The surface is the screen divided by `screen_console::ScreenConsole::scale_for_cell`'s scale,
+/// the boot console's rule, capped at what one terminal grid can lay out. See
+/// notes/framebuffer-contract/kernel-wiring.md.
 fn screen_terminal_aperture(
     screen: &machine_discovery::framebuffer::Framebuffer,
 ) -> Option<(screen_console::Aperture, u64)> {
-    // **The whole screen, at the boot console's rule for the terminal's cell.** The surface is
-    // the screen divided by `screen_console::ScreenConsole::scale_for_cell`'s scale (one rule, one
-    // function, both consoles), capped at what one terminal grid can lay out over, and
-    // `framebuffer_driver` draws each surface pixel as a scale-by-scale block. The terminal's
-    // cell is twice the boot console's width, so a screen draws it at half the boot console's
-    // scale and the two show the same columns: 137 on xenon's 1920x1080, at scale one.
     let mut aperture = screen_console::Aperture::new(
         screen,
         video_terminal::CELL_W,
@@ -592,20 +501,14 @@ fn screen_terminal_aperture(
     Some((aperture, pages))
 }
 
-/// **The terminal on a screen the firmware already set up** (the shell on the firmware screen,
-/// milestone 198's rung 1b): `framebuffer_driver` serving the framebuffer contract over `screen`,
-/// and `display_terminal` on it exactly as [`start_terminal`] wires it over virtio-gpu. `None`, with
-/// nothing spawned, when the screen cannot show a surface or its covered rows would need more than
-/// [`MAX_APERTURE_PAGES`].
+/// The terminal on a screen the firmware already set up: `framebuffer_driver` serving the
+/// framebuffer contract over `screen`, and `display_terminal` on it as [`start_terminal`] wires it.
+/// `None`, with nothing spawned, when the screen cannot show a surface or its covered rows would
+/// need more than [`MAX_APERTURE_PAGES`].
 ///
-/// **`screen` must already be off the kernel's console** (`console::yield_screen`): the driver this
-/// spawns paints the aperture, and two painters on one screen is the defect that function exists to
-/// make unrepresentable.
-///
-/// The driver's world is its `Spawn` below, and the security argument is what it lacks: no
-/// interrupt, no DMA, no transport, no physical address, and only the rows of the screen its
-/// surface can reach (`screen_console::Aperture::span`), mapped at spawn so it holds no name for
-/// them. The terminal's world is byte for byte the virtio path's.
+/// `screen` must already be off the kernel's console (`console::yield_screen`), or two painters
+/// share it. The driver holds no interrupt, DMA, transport or physical address, and only the rows
+/// its surface reaches, mapped at spawn. See notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_screen_terminal(
     driver_image: &'static [u8],
     term_image: &'static [u8],
@@ -615,10 +518,8 @@ pub fn start_screen_terminal(
     // Where pixel (0, 0) is in the first mapped page (see `screen_terminal_aperture`).
     let offset = screen.base % FRAME_SIZE;
 
-    // The surface: RAM, exactly the covered part's size at four bytes a pixel and no padding,
-    // shared by the driver and the terminal. Contiguous, the same allocation `wire_driver` makes,
-    // minus the ring page, because nothing here is a device's DMA: the driver copies it with the
-    // CPU. The terminal paints it at a stride of four times the width `INFO` answers.
+    // RAM at four bytes a pixel and no padding: the terminal paints it at a stride of four times
+    // the width `INFO` answers. No ring page, because the driver copies it with the CPU.
     let (sw, sh) = aperture.size();
     let surface_frames = (sw as u64 * sh as u64 * 4).div_ceil(FRAME_SIZE);
     let surface_run = NonZeroU64::new(surface_frames)?;
@@ -626,11 +527,9 @@ pub fn start_screen_terminal(
         .expect("no contiguous surface for the framebuffer driver")
         .addr();
 
-    // **The four endpoints come out of a region of their own**, `virtio_service::wire_net_server`'s
-    // shape and for its reason: both programs park in `RECEIVE` for good, and reclaiming the region
-    // their endpoints live in is the only thing that wakes them to die. The boot never tears this
-    // down; the suite does, because every service a test leaves standing is frames and region slots
-    // a later test cannot have (`user::holding`). One page per endpoint, and one spare.
+    // The endpoints come out of a region of their own: both programs park in `RECEIVE` for good,
+    // and reclaiming that region is the only thing that wakes them to die (`user::holding`). One
+    // page per endpoint, and one spare.
     let ep_region =
         crate::memory_region::create(5).expect("no endpoint region for the screen terminal");
     let endpoint = || {

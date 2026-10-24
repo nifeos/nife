@@ -1,59 +1,19 @@
-//! **What RISC-V machine is this?** Parsed out of the device tree, because there is no CPUID.
+//! What RISC-V machine is this? Parsed out of the device tree, because there is no CPUID.
 //!
-//! `misa` exists and is not enough: it is permitted to read as zero, its single-letter fields cannot
-//! name a multi-letter extension, and every extension ratified after 2015 is multi-letter. So the
-//! architected answer is a property firmware wrote into the device tree, and this module reads it.
-//!
-//! Three properties carry the answer, and which of them a given machine has depends on how old its
-//! firmware is:
-//!
-//! | Property | Since | Shape |
-//! |---|---|---|
-//! | `riscv,isa-extensions` | Linux 6.6 (2023) | a stringlist, one entry per extension |
-//! | `riscv,isa-base` | Linux 6.6 (2023) | `"rv64i"` |
-//! | `riscv,isa` | forever, deprecated | one string, `"rv64imafdc_zicsr_..."` |
-//!
-//! **The legacy string is not a fallback we are being polite about.** The VisionFive 2's vendor tree
-//! predates the split, and it is the board this milestone exists for, so [`Isa::from_device_tree`]
-//! parses both forms and records which one it got in [`Isa::legacy_isa_string`].
-//!
-//! # Why every CPU node, and not `cpu@0`
-//!
-//! A RISC-V machine may be heterogeneous, and the one arriving in August is: the JH7110 on a
-//! VisionFive 2 pairs four U74 application cores with a small S7 monitor core, described as separate
-//! `cpu@` nodes with **different `riscv,isa` strings**. A kernel that reads the first node and then
-//! schedules a thread onto any hart has read the wrong node half the time.
-//!
-//! So [`Isa::common`] is the **intersection** over every CPU node that describes itself, which is
-//! what "an instruction the kernel may emit" actually means, and [`Isa::any`] is the union, which is
-//! the only way to tell "this machine has no FPU" from "one of its harts has no FPU". The `mmu-type`
-//! is taken the same way: the narrowest any hart declares.
-//!
+//! The answer is `riscv,isa-extensions` and `riscv,isa-base` (Linux 6.6 and later) or the older
+//! single `riscv,isa` string; [`Isa::from_device_tree`] parses both. [`Isa::common`] is the
+//! intersection over every hart that may speak for the machine and [`Isa::any`] the union, and
+//! `mmu-type` is the narrowest any such hart declares. See `notes/isa-discovery.md`.
 
 //! # BUGS
 //!
-//! - **A `status = "disabled"` CPU node contributes nothing to the record** (the VisionFive 2 prep,
-//!   2026-08-14; this used to be the first bug on this list). The real board showed the case this
-//!   list was waiting for: the JH7110's hart 0 is an MMU-less S7 monitor core marked disabled, and
-//!   counting it would narrow `common` to the S7's `rv64imac` and, on a tree that spells the S7's
-//!   MMU as `riscv,none`, refuse to boot a machine whose four real harts are exactly our contract.
-//!   The kernel never runs on a disabled hart (`smp` refuses to start one), so its self-description
-//!   is not a fact about the machine the kernel schedules on. Such a node still counts in
-//!   [`Isa::harts`], which is an honest node count, not a roster.
-//! - **A hart whose own `riscv,isa` disclaims supervisor mode contributes nothing either** (the
-//!   VisionFive 2 bench, 2026-08-14, same day, second stop). The vendor tree in the flashed
-//!   firmware marks the S7 `status = "okay"` **and** gives it `mmu-type = "riscv,sv39"`, both
-//!   false, so the `status` gate above never fires there. The one truthful property is the ISA
-//!   string itself: `rv64imacu` spells user mode and omits supervisor. A hart that cannot enter
-//!   S-mode never runs this kernel, so it may not narrow `common` or `mmu` regardless of what
-//!   `status` claims. See [`supervisor_mode_claim`] for why the rule needs the `u` witness: absence
-//!   of `s` alone would exclude every modern machine, QEMU included.
-//! - **Absence of `zicsr` or `zifencei` from a legacy `riscv,isa` string is not evidence of
-//!   absence.** Both were carved out of the base `I` extension in 2019, and a string written before
-//!   that (or by firmware that never caught up) simply says `rv64imafdc` while the hardware has
-//!   them. This is exactly why neither is in [`REQUIRED`] even though the kernel uses both on every
-//!   trap and in `sync_icache`: a check that fails on the board we are buying is worse than no
-//!   check. `M`, `A` and `C` carry no such ambiguity, so they are the ones that gate the boot.
+//! - A `status = "disabled"` hart contributes nothing to the record, since the kernel never runs
+//!   on it; it still counts in [`Isa::harts`], an honest node count rather than a roster.
+//! - A hart whose own `riscv,isa` disclaims supervisor mode contributes nothing either, whatever
+//!   its `status` claims; see [`supervisor_mode_claim`] for why that needs a bare `u` as witness.
+//! - An absent `zicsr` or `zifencei` in a legacy string is not evidence of absence: both left the
+//!   base `I` in 2019, and older strings omit them. So neither is in [`REQUIRED`], though the
+//!   kernel uses both; `M`, `A` and `C` gate the boot.
 
 use device_tree_blob::{DeviceTreeBlob, Error};
 
@@ -701,9 +661,8 @@ impl Isa {
         // Which harts may speak for the machine at all. A disabled hart never runs kernel code,
         // and neither does one whose own ISA string disclaims supervisor mode, so what they
         // declare says nothing about the machine the kernel schedules on; see the module BUGS.
-        // Both gates are live on the same silicon: mainline JH7110 trees exclude the S7 by
-        // `status`, the vendor tree marks it "okay" (and Sv39, both lies) and only the missing
-        // `s` in `rv64imacu` tells the truth (bench, 2026-08-14).
+        // Both gates are needed: mainline JH7110 trees exclude the S7 by `status`, and the vendor
+        // tree marks it "okay" so only the missing `s` in `rv64imacu` excludes it.
         let mut status = [None; MAX_HARTS];
         dt.node_props(b"cpu@", b"status", &mut status)?;
         let enabled = |i: usize| {
@@ -872,29 +831,16 @@ fn strip_base_prefix(value: &[u8]) -> &[u8] {
     s
 }
 
-/// **What a legacy `riscv,isa` string says about supervisor mode**, which is a privilege level
-/// rather than an extension, and which the string's grammar changed its mind about spelling.
-///
-/// Early strings list privilege letters in the single-letter run: QEMU before 5.1 wrote
-/// `rv64imafdcsu`, and the VisionFive 2's vendor firmware still writes that generation
-/// (`rv64imacu` on the S7, `rv64imafdcbsux` on the U74s, read at the bench 2026-08-14). Modern
-/// strings write **neither** letter, because Linux rejects them: QEMU `virt` today says
-/// `rv64imafdch_...` on a machine that certainly has S-mode, and the mainline JH7110 dtsi spells
-/// no privilege letter on any hart. So a missing `s` alone proves nothing, and a rule that read it
-/// as "no supervisor mode" would refuse every hart of every modern machine, boot hart included.
-///
-/// The reading that is honest on both generations: a bare `u` is the witness that the writer was
-/// spelling privilege modes at all, and only then is a missing `s` a statement.
+/// What a legacy `riscv,isa` string says about supervisor mode. Modern strings spell no privilege
+/// letters, so a bare `u` is the witness that the writer was spelling them, and only then is a
+/// missing `s` a statement.
 ///
 /// - `Some(true)`: a bare `s` in the single-letter run. The hart claims S-mode.
-/// - `Some(false)`: a bare `u` and no `s`. The writer spelled privilege modes and left supervisor
-///   out. This hart cannot enter S-mode, so it cannot run this kernel, whatever its node's
-///   `status` and `mmu-type` claim; the vendor S7 lies about both and this is the tell.
-/// - `None`: neither letter. The string is silent about privilege modes (the modern spelling),
-///   and silence is not evidence of absence, same rule as [`Sbi::has_answered`].
+/// - `Some(false)`: a bare `u` and no `s`. The hart cannot run this kernel, whatever else it says.
+/// - `None`: neither letter, which is silence, not absence.
 ///
-/// Only the run before the first `_` is scanned, so `_s`-prefixed multi-letter extensions
-/// (`_sstc`, `_svadu`, `_sdtrig`, all in QEMU's string today) can never read as a bare `s`.
+/// Only the run before the first `_` is scanned, so `_sstc` never reads as a bare `s`. See
+/// `notes/visionfive2/hart-roster-stops.md`.
 pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
     let single_letters = strip_base_prefix(value)
         .split(|&b| b == b'_')
@@ -916,28 +862,16 @@ pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
     }
 }
 
-/// **What `sbi_pmu_counter_get_info` said about one counter** (milestone 74).
-///
-/// The SBI specification packs the answer into one XLEN-wide word, and this is the decode. Kept
-/// here rather than in the kernel because it is pure bit arithmetic over a value firmware hands
-/// back, which is exactly the half of discovery a host test can prove without an emulator: the
-/// kernel's own half is the `ecall`, and nothing else.
-///
-/// The layout, from the RISC-V SBI Specification v3.0 (ratified 2025-07-16), `src/ext-pmu.adoc`,
-/// "Function: Get details of a counter (FID #1)", read 2026-09-03:
-///
+/// What `sbi_pmu_counter_get_info` said about one counter (milestone 74 (cycle counters)), decoded
+/// from one XLEN-wide word (SBI v3.0, `src/ext-pmu.adoc`, "Get details of a counter (FID #1)"):
 /// ```text
 ///     counter_info[11:0] = CSR (12bit CSR number)
 ///     counter_info[17:12] = Width (One less than number of bits in CSR)
 ///     counter_info[XLEN-2:18] = Reserved for future use
 ///     counter_info[XLEN-1] = Type (0 = hardware and 1 = firmware)
 /// ```
-///
-/// **`width` is one less than the number of bits**, which is the field most likely to be read
-/// wrong: a 64-bit `mcycle` reports 63. [`CounterInfo::bits`] does the `+ 1` in one place so no
-/// caller has to remember, and the same specification sentence says `csr` and `width` "should be
-/// ignored" when the counter is a firmware one, which is why [`CounterInfo::csr`] is an `Option`
-/// rather than a number a caller could accidentally use.
+/// [`CounterInfo::bits`] adds the one back, and [`CounterInfo::csr`] is `None` for a firmware
+/// counter, whose `csr` and `width` the specification says to ignore.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct CounterInfo {
     /// `true` when the counter is maintained by the SBI implementation rather than by hardware.
@@ -982,17 +916,10 @@ impl CounterInfo {
     }
 }
 
-/// **The `event_idx` for "one CPU cycle"**, the only event milestone 74 asks for.
-///
-/// `event_idx[19:16]` is the type and `event_idx[15:0]` is the code. Type 0 is "hardware general
-/// events" and code 1 is `SBI_PMU_HW_CPU_CYCLES`, so the whole value is 1. Written as the two
-/// fields rather than as a bare `1` because the next event anyone adds will not be so forgiving,
-/// and because a reader with the specification open can check the two halves separately.
-///
-/// The specification's own note on this event, which is the sentence that makes it the right one
-/// for a cycle-denominated benchmark: *"The `SBI_PMU_HW_CPU_CYCLES` event counts CPU clock cycles as
-/// counted by the `cycle` CSR. These may be variable frequency cycles, and are not counted when the
-/// CPU clock is halted."* (SBI v3.0, `src/ext-pmu.adoc`, read 2026-09-03.)
+/// The `event_idx` for "one CPU cycle", the only event milestone 74 asks for: type 0 (hardware
+/// general events) in bits 19:16 and code 1 (`SBI_PMU_HW_CPU_CYCLES`) in 15:0, written as the two
+/// fields so each can be checked against the specification. The event counts the cycles the
+/// `cycle` CSR counts, which may vary in frequency and stop while the clock is halted.
 pub const EVENT_HW_CPU_CYCLES: usize = pmu_event(0, 1);
 
 /// Assemble an `event_idx` from its type and code, per SBI v3.0 `src/ext-pmu.adoc`:
@@ -1007,14 +934,9 @@ pub const PMU_CFG_CLEAR_VALUE: usize = 1 << 1;
 /// configure and start are one `ecall` instead of two.
 pub const PMU_CFG_AUTO_START: usize = 1 << 2;
 
-/// Machine-checked proofs over the RISC-V ISA string (DECISIONS §14, milestone 319).
-///
-/// **The parsers here are slice arithmetic and `match`, so totality is not the interesting claim**;
-/// what is interesting is the one place where the grammar is genuinely ambiguous and a reader can
-/// get it wrong in a way no type catches. That is the privilege-letter reading, and the bench paid
-/// for it once already: the VisionFive 2's M/U-only S7 monitor core is marked `"okay"` with
-/// `mmu-type = "riscv,sv39"`, both false, and starting it crashed the firmware (2026-08-14,
-/// notes/visionfive2.md). Its own `riscv,isa` is the only thing that told the truth.
+/// Machine-checked proofs over the RISC-V ISA string and the counter decode (milestone 319 (the
+/// crate that parses firmware had no proofs)). The interesting claim is the privilege-letter
+/// reading, the one place the grammar is ambiguous and no type catches a wrong reading.
 ///
 /// Names: provisional (milestone 319).
 #[cfg(kani)]
@@ -1025,23 +947,11 @@ mod verification {
     /// scan stops, and the scan stops at the first `_` however long the run is.
     const RUN: usize = 4;
 
-    /// **A multi-letter extension can never be mistaken for a privilege letter.**
-    ///
-    /// The grammar's trap, proved rather than commented. `riscv,isa` puts single-letter extensions
-    /// and privilege letters in one undelimited run, then multi-letter extensions after the first
-    /// `_`; QEMU `virt` writes `_sstc`, `_svinval` and `_sdtrig` today, and the mainline JH7110
-    /// dtsi writes `_smstateen`. A decoder that scanned the whole string would read any of those
-    /// leading `s` bytes as "this hart claims supervisor mode".
-    ///
-    /// Why that is not merely untidy: the `Some(false)` answer is the *only* thing that refuses the
-    /// S7, because its `status` and `mmu-type` both lie. A scan that reaches past the first `_`
-    /// turns `Some(false)` into `Some(true)` on any string carrying an `_s` extension, and this
-    /// kernel starts a core with no supervisor mode. [`crate::cpu_list::Cpu::is_startable`] is the
-    /// consumer and it has no second opinion to fall back on.
-    ///
-    /// The claim is stated as an invariance rather than as a restatement of the code: **appending a
-    /// multi-letter extension to an ISA string never changes what it says about privilege modes**,
-    /// for every single-letter run, and whether or not that run mentions `s` or `u` at all.
+    /// **A multi-letter extension can never be mistaken for a privilege letter**: appending one to
+    /// an ISA string never changes what it says about privilege modes, for every single-letter run.
+    /// QEMU writes `_sstc` and the JH7110 dtsi `_smstateen`, and a scan past the first `_` would
+    /// turn the `Some(false)` that refuses the S7 into `Some(true)`;
+    /// [`crate::cpu_list::Cpu::is_startable`] has no second opinion.
     /// Falsification: replayable `crates/machine_discovery/falsifications/riscv64.verification.a_multi_letter_extension_is_never_read_as_a_privilege_letter.patch`
     #[kani::proof]
     #[kani::unwind(16)]
@@ -1075,19 +985,9 @@ mod verification {
     }
 
     /// **A counter width that is one less than the answer is widened before the one is added.**
-    ///
-    /// This harness exists because its twin one crate-module over was *false*:
-    /// `acpi::Dmar::host_address_width` was `body[0] + 1` in a `u8` and panicked the x86 boot path
-    /// on a firmware byte of `0xff` (see that module's verification). [`CounterInfo::bits`] is the
-    /// identical specification shape, a field the standard defines as one less than the value every
-    /// caller wants, over a word that arrives from firmware through `sbiret.value`. It happens to be
-    /// written correctly, widening to `u32` before the `+ 1`, and the point of proving it is that
-    /// nothing in the code says which of the two shapes it is.
-    ///
-    /// Could plausibly have been false: `raw_width` is a `u8` and the field is six bits, so a `u8`
-    /// return type reads as the natural one and overflows at a width field of 255. It cannot reach
-    /// 255 through `from_raw`'s `& 0x3f` mask, which is the second half of the claim here and is
-    /// exactly the kind of two-places-apart reasoning a prover is better at than a reader.
+    /// [`CounterInfo::bits`] has the shape of the DMAR's host address width, a firmware field
+    /// defined as one less than the value wanted. A `u8` return would overflow at 255, which
+    /// `from_raw`'s `& 0x3f` mask keeps out of reach; the proof holds both halves together.
     /// Falsification: replayable `crates/machine_discovery/falsifications/riscv64.verification.a_counter_width_is_widened_before_the_specifications_off_by_one_is_undone.patch`
     #[kani::proof]
     fn a_counter_width_is_widened_before_the_specifications_off_by_one_is_undone() {

@@ -2,9 +2,8 @@
 //! and `ParsedInvocation`. `parse_run` is the only thing that builds a `ParsedInvocation`, so its fields stay private
 //! here (§272, fork 3).
 //!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
+//! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -48,13 +47,11 @@ pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8
 /// told what to do), DECISIONS §170; see [`ProgramArgumentDeclaration::Words`](crate::ProgramArgumentDeclaration::Words)), onto `page`, and return how many
 /// words it carries.
 ///
-/// `line` is one command: the program's name and its words, with no operator on it. Every word is
-/// read exactly as [`parse_run`] reads one, quotes off, and none is classified: `-i`,
-/// `--color=never` and `8` all arrive as the bytes that were typed. The program's name is `argv[0]`,
-/// as typed, because `ripgrep` skips the first element and `clap` treats it as the binary's name.
-///
-/// Refused, with the page left not an argv, for [`check_words`]'s reasons. The planner has already
-/// asked that question of the same line, so a refusal here means the line changed in between.
+/// `line` is one command: the program's name and its words, no operator. Every word is read as
+/// [`parse_run`] reads one, quotes off, and none is classified. The name is `argv[0]` as typed,
+/// because `ripgrep` skips the first element and `clap` treats it as the binary's name. Refused,
+/// with the page left not an argv, for [`check_words`]'s reasons, which the planner already asked
+/// of the same line.
 pub fn argv(
     line: &[u8],
     page: &mut [u8; program_argument_contract::PAGE_BYTES],
@@ -121,27 +118,19 @@ pub const BUILTINS: &[&[u8]] = &[
 
 /// Parse a whole command line into a [`Command`]. Pure and allocation-free.
 ///
-/// The grammar is small: the first token selects the command, and a first token that is not a
-/// builtin is a **program name**, because milestone 47 deleted the `run` verb. `echo` keeps the
-/// rest of the line verbatim (so `echo   two  spaces` prints its spaces); everything else works on
-/// tokens.
-///
-/// Builtins win over programs, which is why [`Program::from_name`](crate::Program::from_name) must never learn a name that is
-/// also a builtin. A handful of reserved words is the whole cost of a shell where every command is
-/// typed the same way.
-///
-/// **Two of them are prefix words**, `caps` and `time`, and they are the ones that keep the rest of
-/// the line intact instead of tokenizing it: what they operate on is a command line, not an operand.
+/// The first token selects the command, and one that is not a builtin is a **program name**.
+/// `echo` keeps the rest of the line verbatim; the prefix words (`caps`, `time`, `xargs`) keep it
+/// unsplit, since their operand is a command line; everything else works on tokens. Builtins win
+/// over programs, so [`Program::from_name`](crate::Program::from_name) must never learn a name
+/// that is also a builtin.
 pub fn parse(line: &[u8]) -> Command<'_> {
     let trimmed = trim(line);
     if trimmed.is_empty() {
         return Command::Empty;
     }
     let (first, rest) = split_first_word(trimmed);
-    // **A quoted builtin name still names the builtin**, because quoting decides what a word *is*
-    // and this match is about what the word says. A first word whose quotes do not make sense falls
-    // through to [`parse_run`], which is the one place a quoting refusal is raised; raising it here
-    // as well would be a second copy of the same sentence.
+    // A quoted builtin name still names the builtin. A first word whose quotes do not make sense
+    // falls through to `parse_run`, the one place a quoting refusal is raised.
     let first = match word::read(first) {
         Ok(w) => w.text,
         Err(_) => return Command::Run(parse_run(trimmed)),
@@ -150,23 +139,15 @@ pub fn parse(line: &[u8]) -> Command<'_> {
         b"help" => Command::Help,
         b"echo" => Command::Echo(rest),
         b"caps" => Command::Caps(rest),
-        // The second prefix word (milestone 86). Like `caps`, its operand is a whole command line
-        // rather than a token, so `rest` is kept unsplit and the shell re-dispatches it.
         b"time" => Command::Time(rest),
-        // The third (milestone 109), and the same shape for the same reason: batching is about how
-        // the shell hands a designation over, so its operand is the line it batches.
         b"xargs" => Command::Xargs(rest),
-        // The navigation builtins (milestone 47). They take a path operand rather than tokens,
-        // because a path is one designation however many slashes it has, and `trim` is all the
-        // classification they need.
+        // A path operand is one designation however many slashes it has, so `trim` is all the
+        // classification it needs.
         b"cd" => Command::Cd(trim(rest)),
         b"pwd" => Command::Pwd,
         b"ls" => Command::Ls(trim(rest)),
         b"mkdir" => Command::Mkdir(trim(rest)),
-        // `touch` takes one word (`cd`/`ls`/`mkdir`'s reason: `trim` is all the classification a
-        // bare path needs) unless it starts with `-t`, DECISIONS §112's arbitrary-instant form,
-        // which is two words: the RFC 3339 text (unparsed here, see `TouchOperands`'s own doc) and then
-        // the name.
+        // One path, or with `-t` two words: the instant's text, unparsed, and then the name.
         b"touch" => {
             let rest = trim(rest);
             match rest.strip_prefix(b"-t") {
@@ -185,49 +166,29 @@ pub fn parse(line: &[u8]) -> Command<'_> {
                 }),
             }
         }
-        // `bind <target> <name>` (milestone 47/154). One word for the target, everything after it
-        // (trimmed) for the name: the same "one opaque trailing blob" rule `cd`/`mkdir` already
-        // use for their single path operand, generalized to two operands here rather than
-        // tokenizing the name further.
+        // One word for the target, and the trimmed rest for the name, untokenized.
         b"bind" => {
             let rest = trim(rest);
             let (target, name) = split_first_word(rest);
             Command::Bind(target, trim(name))
         }
-        // **Search the documentation store** (milestone 40 phase 2). A builtin for exactly
-        // [`Command::Ls`]'s reason, stated there: a search *is* an enumeration, and a searching
-        // program would have to be handed the store's directory in order to read every shard in it.
-        // The operand is a word rather than a path, so `trim` is all the classification it needs.
         b"apropos" => Command::Apropos(trim(rest)),
-        // **The owner vouches for a file** (DECISIONS §221). Its own word, a builtin, because it
-        // names no package: the bytes are the whole of what is vouched, and `jig` is not asked.
         b"vouch" => Command::Vouch(trim(rest)),
-        // **The owner suspends or resumes an identity** (milestone 152's §108 ruling). A builtin
-        // because what it edits is a file at this shell's own root, which is the owner's authority
-        // only when this shell is the owner's console: a confined shell's root is its own subtree,
-        // where a `suspended` file is one nothing reads.
         b"user" => Command::User(trim(rest)),
-        // **Job control** (milestone 48 (job control), phase one). Builtins because a job is what this shell
-        // holds capabilities for, and only the holder can act on them.
         b"jobs" => Command::Jobs,
         b"wait" => Command::Wait(trim(rest)),
         b"kill" => Command::Kill(trim(rest)),
         b"fg" => Command::Fg(trim(rest)),
         b"bg" => Command::Bg(trim(rest)),
-        // **`rm` is deliberately not here.** It was a builtin in the commands lane and is a program
-        // now (milestone 47's rmdir lane): a builtin runs with the shell's whole endowment, and a
-        // destructive loop should take an explicit attenuated grant instead. Since builtins are
-        // matched first, deleting the line is the entire change at this level; `Program::from_name`
-        // picks the word up.
-        // Not a builtin, so it is a program invocation, and the whole line (name included) is the
-        // grant expression. Whether the program exists is `plan`'s question, not the parser's.
+        // `rm` is deliberately not a builtin: a builtin runs with the shell's whole endowment, and
+        // a destructive loop takes an attenuated grant instead. Whether a program exists is
+        // `plan`'s question, not the parser's.
         _ => Command::Run(parse_run(trimmed)),
     }
 }
 
-/// **Which job an operand names** (milestone 48): `%N` or a bare `N`, counted from one as `jobs`
-/// prints them. `Ok(None)` is an empty operand, which `wait` reads as every job and `fg` as the
-/// most recent; `Err(())` is anything else, which names no job.
+/// **Which job an operand names** (milestone 48): `%N` or a bare `N`, counted from one. `Ok(None)`
+/// is an empty operand (every job to `wait`, the newest to `fg`); `Err(())` names no job.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by milestone/48-job-control.
 ///
@@ -257,8 +218,8 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
     if n == 0 { Err(()) } else { Ok(Some(n)) }
 }
 
-/// **`kill`'s operands** (milestone 48 (job control)): whether `-9` asked for the forcible tier, and the job.
-/// A job is required, because `kill` with nothing named would have to guess which job to stop.
+/// **`kill`'s operands** (milestone 48 (job control)): whether `-9` asked for the forcible tier, and
+/// the job, which is required rather than guessed.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by milestone/48-job-control.
 ///
@@ -360,9 +321,8 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 
     let mut i = 0;
     while i < toks.len() {
-        // **The quotes come off before anything is classified** (milestone 67), because what a
-        // token *is* is what it says: `"--mem"` is a name and `--mem` is an option, and deciding
-        // that after the flag check would make a quoted name into a flag.
+        // The quotes come off before anything is classified: `"--mem"` is a name and `--mem` an
+        // option, and checking for flags first would make a quoted name into a flag.
         let (t, quoted) = match word::read(toks[i]) {
             Ok(w) => (w.text, w.quoted),
             Err(r) => {
@@ -386,15 +346,11 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
             }
             continue;
         }
-        // A quoted token is never an option, which is the same rule one line up: `rm "-r"` names a
-        // file called `-r`, and reading it as the flag that widens a directory grant into a subtree
-        // walk would be the loudest possible version of a typo becoming a capability transfer.
+        // A quoted token is never an option: `rm "-r"` names a file called `-r`, not the flag that
+        // widens a directory grant.
         if !quoted && t.first() == Some(&b'-') {
             // A cluster of short options (`-r`, `-rf`), kept for the manifest to check. Anything
-            // else shaped like a flag is refused: it never becomes a program name and never reaches
-            // the file position, because an unknown flag silently designating a file is exactly the
-            // typo-into-a-grant the old `file:` prefix was there to prevent, and this is the part
-            // of that job worth keeping.
+            // else shaped like a flag is refused, so an unknown flag never designates a file.
             let letters = &t[1..];
             let short = !letters.is_empty() && letters.iter().all(u8::is_ascii_alphabetic);
             if short && short_option_count + letters.len() <= MAX_SHORT_OPTIONS {
