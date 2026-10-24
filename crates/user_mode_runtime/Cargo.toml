@@ -16,7 +16,20 @@ doctest = false
 [lints]
 workspace = true
 
+[features]
+# `confined_virtio` (milestone 947): `vendor/virtio-drivers` over the kernel's confined transport,
+# for a driver built on the crate. Off unless a program that drives a device asks for it. Name:
+# provisional (2026-10-24 UTC), after the crate it brings in.
+virtio-drivers = ["dep:virtio-drivers", "dep:zerocopy", "dep:direct_memory_access_validator"]
+
 [dependencies]
+# For `confined_virtio` only. The vendored crate is 0.13.0 plus rcore-os/virtio-drivers#232
+# (vendor/virtio-drivers.pin); default features off, so no `alloc` and no `embedded-io`.
+virtio-drivers = { version = "0.13.0", path = "../../vendor/virtio-drivers", default-features = false, optional = true }
+# The traits the crate's `Transport::read_config_space` is bounded on; the same 0.8 the crate takes.
+zerocopy = { version = "0.8.40", default-features = false, optional = true }
+# The kernel's fixed ring layout, which `confined_virtio::WindowHal` must hand out exactly.
+direct_memory_access_validator = { version = "0.1.0", path = "../direct_memory_access_validator", optional = true }
 abi = { version = "0.1.0", path = "../abi" }
 # The x86_64 timebase page (milestone 161's `cntfrq` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only

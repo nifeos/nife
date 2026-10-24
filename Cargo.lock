@@ -462,6 +462,17 @@ name = "entropy_contract"
 version = "0.1.0"
 
 [[package]]
+name = "enumn"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f9ed6b3789237c8a0c1c505af1c7eb2c560df6186f01b098c3a1064ea532f38"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "environment_contract"
 version = "0.1.0"
 
@@ -1088,6 +1099,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
+name = "safe-mmio"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e885ed64c91774b671612cb99dda2ede3738b0aa2d39a85a1471b20bf09eabe0"
+dependencies = [
+ "zerocopy",
+]
+
+[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1605,8 +1625,11 @@ dependencies = [
  "abi",
  "counter_frequency_contract",
  "current_cpu_contract",
+ "direct_memory_access_validator",
  "entropy_contract",
  "socket_contract",
+ "virtio-drivers",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1638,6 +1661,18 @@ dependencies = [
  "filesystem_contract",
  "nifefs",
  "user_mode_runtime",
+]
+
+[[package]]
+name = "virtio-drivers"
+version = "0.13.0"
+dependencies = [
+ "bitflags 2.13.2",
+ "enumn",
+ "log",
+ "safe-mmio",
+ "thiserror",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1723,6 +1758,26 @@ dependencies = [
  "uuid",
  "video_terminal",
  "walk_pricing",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.8.63"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5fe1f8f1b06191a00962174c61aa5005e0bb391a6d80d07e24d115c01a92ed8"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.63"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "863ad3ac83293fb4d740aedbfdc9240dd8d1a50c1099acd76ce80ce7c7230c7f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

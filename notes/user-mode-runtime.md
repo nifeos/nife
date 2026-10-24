@@ -65,6 +65,20 @@ by hand (`arch/x86_64/trap.s`).
 It draws the number and all six words at random, unknown numbers included, which no typed wrapper
 can express.
 
+## Entering a process
+
+The kernel enters a new thread with the stack pointer at the top of its stack page, 16-byte aligned.
+On aarch64 and riscv64 that is what a function expects. On `x86_64` the psABI expects `rsp % 16 ==
+8` at a function's first instruction, because a `call` has just pushed the return address. A plain
+`extern "C" fn _start` therefore runs every frame eight bytes off. Without SSE nothing faults, so
+the mistake stays latent until a local needs 16-byte alignment and Rust's debug alignment check
+panics. `virtio-drivers`' descriptors are such a local.
+
+`program_entry!(start)` writes `_start` for a program: a one-`call` shim on `x86_64`, as std's entry
+has (`patches/std-nife/overlay/std/src/sys/pal/nife/entry.rs`), and a plain function elsewhere.
+`keyboard_driver` uses it. The other `no_std` programs still write their own `_start`, and the
+macro's `BUGS` says so.
+
 ## Ending a process
 
 `exit` and `trap` are the two ways a program ends, and they report differently. `exit` reports
@@ -185,6 +199,26 @@ The `virtio` module wraps the four `Virtio` capability methods. The `SAFETY` arg
 call site was `invoke`'s own contract and nothing more. `abi::virtio` states what the kernel checks:
 `WRITE_REGISTER` refuses the queue-address and notify registers, and `SETUP_QUEUE` and `NOTIFY` are
 bounds-checked against the DMA region and its high-water mark.
+
+## `virtio-drivers` over the confined transport
+
+With the `virtio-drivers` feature, `confined_virtio` lets a driver use `vendor/virtio-drivers`
+without mapping its device. `ConfinedTransport` is the crate's `Transport` over a `Virtio`
+capability, and `WindowHal` is its `Hal` over the one DMA window the spawner mapped. A driver calls
+`install_window` once, then builds a `VirtQueue<WindowHal, QUEUE_SIZE>`. `keyboard_driver` is the
+first user (milestone 947).
+
+The kernel chooses where a queue's rings go, and the crate allocates them itself, so the two have
+to agree. `WindowHal::dma_alloc` answers each queue's two allocations with the kernel's fixed
+offsets, in queue order: the descriptor table and available ring at the queue's ring block, then
+the used ring at `USED_OFF` in it. `ConfinedTransport::queue_set` checks the three addresses
+before it asks for `SETUP_QUEUE`. A mismatch is kept as a `Refusal::Layout`, because the trait's
+methods return nothing; a driver reads `refusal()` after setting up its queues. `share` translates a
+buffer that is already in the window and copies nothing, so a driver keeps its buffers there.
+
+The window is three globals, because `Hal`'s methods take no `self`. The module's `BUGS` list what
+this pair does not do yet: allocations other than rings, configuration past eight bytes on PCI,
+configuration writes, and two devices in one process.
 
 ## A child's whole program
 

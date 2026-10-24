@@ -140,3 +140,59 @@ macro_rules! panic_handler {
         }
     };
 }
+
+/// **The process entry point, entered with the stack the C ABI promises**: `_start`, calling
+/// `$entry(arg0, arg1, arg2)`.
+///
+/// The kernel enters a new thread with the stack pointer at the top of its stack page, 16-byte
+/// aligned. On `x86_64` the psABI promises `rsp % 16 == 8` at a function's first instruction, the
+/// return address a `call` pushes, so a plain `extern "C" fn _start` runs every frame eight bytes
+/// off, and a local with 16-byte alignment (`virtio-drivers`' `Descriptor`) fails Rust's alignment
+/// check. On `x86_64` this expands to a one-`call` shim, as std's own entry does
+/// (`patches/std-nife/overlay/std/src/sys/pal/nife/entry.rs`); aarch64 and riscv64 push nothing on a
+/// call and get a plain `_start`. See notes/user-mode-runtime.md, "Entering a process".
+///
+/// # Examples
+///
+/// ```ignore
+/// user_mode_runtime::program_entry!(start);
+///
+/// fn start(arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+///     user_mode_runtime::exit()
+/// }
+/// ```
+///
+/// # BUGS
+/// Only `keyboard_driver` uses it (milestone 947). Every other `no_std` program still writes its
+/// own `extern "C" fn _start` and runs misaligned on `x86_64`, which nothing notices until one
+/// holds a 16-byte-aligned local.
+///
+/// Name: provisional (milestone 947, 2026-10-24 UTC).
+#[macro_export]
+macro_rules! program_entry {
+    ($entry:path) => {
+        #[cfg(not(target_arch = "x86_64"))]
+        #[unsafe(no_mangle)]
+        pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+            $entry(arg0, arg1, arg2)
+        }
+
+        #[cfg(target_arch = "x86_64")]
+        extern "C" fn __program_entry(arg0: u64, arg1: u64, arg2: u64) -> ! {
+            $entry(arg0, arg1, arg2)
+        }
+
+        // The `call` pushes the return address the psABI expects at entry; the argument registers
+        // pass through untouched. The `ud2` is unreachable, because the entry diverges.
+        #[cfg(target_arch = "x86_64")]
+        ::core::arch::global_asm!(
+            ".pushsection .text._start, \"ax\", @progbits",
+            ".globl _start",
+            "_start:",
+            "call {entry}",
+            "ud2",
+            ".popsection",
+            entry = sym __program_entry,
+        );
+    };
+}

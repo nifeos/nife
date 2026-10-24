@@ -16,6 +16,8 @@
 #![no_std]
 
 pub mod child_stub;
+#[cfg(feature = "virtio-drivers")]
+pub mod confined_virtio;
 pub mod entropy;
 pub mod initial_ramdisk;
 pub mod mapped_window;

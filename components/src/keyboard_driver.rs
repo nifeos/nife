@@ -8,6 +8,22 @@
 //! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
 //! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
+//!
+//! The device is driven through `vendor/virtio-drivers` (milestone 947): the crate's `Transport`
+//! status dance and its `VirtQueue`, over the kernel's confined transport and the one DMA page,
+//! by way of `user_mode_runtime::confined_virtio`. What stays here is nife's: the keymap, the two
+//! delivery modes, the bring-up codes and the check on a device-written buffer index.
+//!
+//! Reuse: `virtio-drivers` 0.13.0 plus rcore-os/virtio-drivers#232 for the queue and the status
+//! dance (calef, #2586, 2026-10-22 UTC). Its `VirtIOInput` is not used: it fixes 32-entry queues,
+//! four times what the confinement drives, and boxes its buffers in a heap this program does not
+//! have. See design/roadmap/0947-virtio-input-on-virtio-drivers.md.
+//!
+//! # BUGS
+//!
+//! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`. The
+//!   crate cannot step past a used entry it will not pop, so dropping the entry and going on is not
+//!   available; a lying device stops the keyboard, which it could do anyway by staying silent.
 
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
@@ -20,8 +36,13 @@
 #![no_main]
 
 use line_editor::proto;
+use user_mode_runtime::confined_virtio::virtio_drivers::device::common::Feature;
+use user_mode_runtime::confined_virtio::virtio_drivers::queue::VirtQueue;
+use user_mode_runtime::confined_virtio::virtio_drivers::transport::{
+    DeviceStatus, DeviceType, Transport,
+};
+use user_mode_runtime::confined_virtio::{self, ConfinedTransport, QUEUE_SIZE, Refusal, WindowHal};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
-use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 
 /// Capability slots, by convention with `kernel/src/user/keyboard_service.rs`. Slot 0, the report
@@ -52,50 +73,25 @@ const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
 // program runs.
 const RING: MappedWindow = unsafe { MappedWindow::new(RING_VA, PAGE) };
 
-// virtio-mmio register offsets. The §18 transport seam speaks this vocabulary on both buses, so a
-// driver written against it runs over PCIe and over mmio without knowing which it got.
-const MAGIC: u64 = 0x000;
-const DEVICE_ID: u64 = 0x008;
-const DEVICE_FEATURES: u64 = 0x010;
-const DEVICE_FEATURES_SEL: u64 = 0x014;
-const DRIVER_FEATURES: u64 = 0x020;
-const DRIVER_FEATURES_SEL: u64 = 0x024;
-const INTERRUPT_STATUS: u64 = 0x060;
-const INTERRUPT_ACK: u64 = 0x064;
-const STATUS: u64 = 0x070;
-
-const S_ACKNOWLEDGE: u32 = 1;
-const S_DRIVER: u32 = 2;
-const S_DRIVER_OK: u32 = 4;
-const S_FEATURES_OK: u32 = 8;
-const F_VERSION_1_HI: u32 = 1; // feature bit 32
-const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // feature bit 33 (behind an IOMMU)
-
-const VIRTQ_DESC_F_WRITE: u16 = 2;
-
-/// The virtio device type this driver will talk to. Checked, not assumed: the PCI transport
-/// synthesizes the device id, and a driver that looks cannot program another device's queues.
-const VIRTIO_ID_INPUT: u32 = 18;
-
 /// The event queue. virtio-input has a second (status) queue for LEDs, which this driver never sets
 /// up, so it stays inside the two-queue confinement ceiling DECISIONS §23 records.
-const EVENT_Q: u64 = 0;
-const QSIZE: u16 = 8;
+const EVENT_Q: u16 = 0;
 
-/// The DMA page's layout: the event queue's rings at the kernel's per-queue offsets, then the event
-/// buffers. All inside the one 4 KiB page the kernel granted, so the shadow-ring validator confines
-/// every address the device is handed.
-const EQ_DESC: u64 = 0x000;
-const EQ_AVAIL: u64 = 0x080;
-const EQ_USED: u64 = 0x100;
+/// The event queue, as the crate drives it: its rings at the kernel's offsets in the DMA page.
+type EventQueue = VirtQueue<WindowHal, QUEUE_SIZE>;
+
+/// Where the event buffers start in the DMA page, past queue 0's ring block (which
+/// `confined_virtio::WindowHal` fills) and below the physical-base word at the page's end. Inside
+/// the one 4 KiB page the kernel granted, so the shadow-ring validator confines every address the
+/// device is handed.
 const EVENT_BASE: u64 = 0x400;
 
 /// `struct virtio_input_event { le16 type; le16 code; le32 value; }`. Eight bytes, and the device
 /// writes exactly one per buffer.
 const EVENT_LEN: u64 = 8;
-/// How many events can be in flight. Eight is the queue size; a keyboard produces two or three
+/// How many events can be in flight: one buffer per queue entry. A keyboard produces two or three
 /// events per keystroke and this drains on every interrupt, so the ring never has to be deep.
-const EVENTS: usize = 8;
+const EVENTS: usize = QUEUE_SIZE;
 
 /// Bring-up failures, in a `0xDEAD_...` word so a failure names its step instead of hanging.
 const E_MAGIC: u64 = 0x01;
@@ -103,6 +99,8 @@ const E_DEVICE_ID: u64 = 0x02;
 const E_FEATURES: u64 = 0x03;
 const E_QUEUE: u64 = 0x04;
 const E_MODE: u64 = 0x05;
+/// The device completed a buffer this driver never posted (see the module's BUGS).
+const E_COMPLETION: u64 = 0x06;
 
 fn event_buf(i: usize) -> u64 {
     EVENT_BASE + i as u64 * EVENT_LEN
@@ -116,26 +114,12 @@ fn r32(off: u64) -> u32 {
     DMA.r32(off)
 }
 
-fn w16(off: u64, v: u16) {
-    DMA.w16(off, v);
-}
-
-fn mr(off: u64) -> u32 {
-    user_mode_runtime::virtio::read_register(VIRTIO, off) as u32
-}
-
-fn mw(off: u64, v: u32) {
-    user_mode_runtime::virtio::write_register(VIRTIO, off, v as u64);
-}
-
-fn write_desc(i: u64, addr: u64, len: u32, flags: u16) {
-    let b = EQ_DESC + i * 16;
-    // Inside the DMA page, at the descriptor table the kernel programmed the queue with; all four
-    // writes are bounds-checked by `DMA` rather than trusted by hand.
-    DMA.write(b, addr);
-    DMA.write(b + 8, len);
-    DMA.write(b + 12, flags);
-    DMA.write::<u16>(b + 14, 0);
+/// Event buffer `i` as the bytes the crate hands the device.
+fn event_slot(i: usize) -> &'static mut [u8] {
+    // SAFETY: `event_buf(i)` for `i < EVENTS` is inside the DMA page mapped read/write at `DMA_VA`
+    // (`EVENTS * EVENT_LEN` bytes from 0x400 end below the physical-base word), this program is one
+    // thread, and each slice lives only for the one `add` or `pop_used` call it is passed to.
+    unsafe { MappedWindow::new(DMA_VA + event_buf(i), EVENT_LEN).as_mut_slice() }
 }
 
 fn die(code: u64) -> ! {
@@ -185,8 +169,11 @@ fn direct_send(buf: &[u8], n: &mut usize) {
     *n = 0;
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
+// Through the runtime's entry, because `VirtQueue` holds 16-byte-aligned descriptors and a plain
+// `_start` runs eight bytes off on x86_64.
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     if mode != MODE_RING && mode != MODE_DIRECT {
         die(E_MODE);
     }
@@ -197,8 +184,8 @@ pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     // and the offset is inside it.
     let direct_memory_access_phys =
         unsafe { core::ptr::read_volatile((DMA_VA + abi::virtio::DMA_PHYS_OFFSET) as *const u64) };
-    bring_up_device();
-    let avail = post_event_buffers(direct_memory_access_phys);
+    confined_virtio::install_window(DMA_VA, direct_memory_access_phys, PAGE);
+    let (transport, queue) = bring_up_device();
 
     send(
         REPORT,
@@ -210,8 +197,8 @@ pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     let mut events = Events {
         mode,
         keys: video_terminal::keymap::Keyboard::new(),
-        seen: 0,
-        avail,
+        transport,
+        queue,
         tail: 0,
         direct_buf: [0u8; 8],
         direct_n: 0,
@@ -223,82 +210,72 @@ pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
 
         // Quiet the device, then re-enable the line at the controller. In that order: the disk
         // driver's discipline, and the reason an interrupt does not immediately re-fire.
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
+        events.transport.ack_interrupt();
         interrupt_acknowledge(IRQ); // re-enable the interrupt the kernel masked when it fired
 
         events.flush(typed);
     }
 }
 
-/// Check the device is a virtio-input device, negotiate features, and set up the event queue,
-/// ending with `DRIVER_OK`.
-fn bring_up_device() {
-    if mr(MAGIC) != 0x7472_6976 {
-        die(E_MAGIC);
-    }
+/// Check the device is a virtio-input device, negotiate features, set up the event queue, end
+/// with `DRIVER_OK`, then post every event buffer.
+fn bring_up_device() -> (ConfinedTransport, EventQueue) {
     // Check what we are talking to: a keyboard driver that skipped this would happily program a
-    // disk's queues.
-    if mr(DEVICE_ID) != VIRTIO_ID_INPUT {
+    // disk's queues. The PCI transport synthesizes the device id, so it is checked, not assumed.
+    let mut transport = match ConfinedTransport::new(VIRTIO) {
+        Ok(t) => t,
+        Err(Refusal::NotVirtio) => die(E_MAGIC),
+        Err(_) => die(E_DEVICE_ID),
+    };
+    if transport.device_type() != DeviceType::Input {
         die(E_DEVICE_ID);
     }
 
-    mw(STATUS, 0);
-    mw(STATUS, S_ACKNOWLEDGE);
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
-
-    mw(DRIVER_FEATURES_SEL, 0);
-    mw(DRIVER_FEATURES, 0); // virtio-input has no low-word features
-    mw(DEVICE_FEATURES_SEL, 1);
-    let dev_hi = mr(DEVICE_FEATURES);
-    let mut ack_hi = F_VERSION_1_HI;
-    if dev_hi & F_ACCESS_PLATFORM_HI != 0 {
-        ack_hi |= F_ACCESS_PLATFORM_HI; // behind an IOMMU, which on this bus it is
-    }
-    mw(DRIVER_FEATURES_SEL, 1);
-    mw(DRIVER_FEATURES, ack_hi);
-
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK);
-    if mr(STATUS) & S_FEATURES_OK == 0 {
+    // virtio-input has no feature of its own to accept. ACCESS_PLATFORM is offered behind an
+    // IOMMU, which on this bus it is, and a device that offers it refuses FEATURES_OK without it.
+    let features = transport.begin_init(Feature::VERSION_1 | Feature::ACCESS_PLATFORM);
+    // The crate writes FEATURES_OK and never reads it back (rcore-os/virtio-drivers at 0.13.0).
+    if !transport.get_status().contains(DeviceStatus::FEATURES_OK) {
         die(E_FEATURES);
     }
 
-    // The kernel programs the queue's ring addresses; this driver never writes a queue address
-    // register, which is the §18 seam and the reason the shadow ring can be trusted.
-    if user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, EVENT_Q) != 0 {
+    // The kernel programs the queue's ring addresses; `ConfinedTransport::queue_set` only checks
+    // that the crate put its rings where the kernel will point the device.
+    let Ok(mut queue) = EventQueue::new(
+        &mut transport,
+        EVENT_Q,
+        false,
+        false,
+        features.contains(Feature::ACCESS_PLATFORM),
+    ) else {
+        die(E_QUEUE);
+    };
+    if transport.refusal().is_some() {
         die(E_QUEUE);
     }
-    mw(
-        STATUS,
-        S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK | S_DRIVER_OK,
-    );
-}
+    transport.finish_init();
 
-/// Post every event buffer to the device and notify it; returns the avail index after them.
-fn post_event_buffers(direct_memory_access_phys: u64) -> u16 {
     // **Every buffer is device-writable, and posted before the first key can arrive.** This is the
     // receive direction: the device writes into our memory. It is the direction the DMA validator
     // grew for virtio-net (DECISIONS §23) and the direction where confinement matters most, because
-    // an unbounded address here would let a device overwrite whatever it liked.
-    let mut avail: u16 = 0;
+    // an unbounded address here would let a device overwrite whatever it liked. Buffer `i` gets
+    // token `i`, because the crate's free list starts in order.
     for i in 0..EVENTS {
-        write_desc(
-            i as u64,
-            direct_memory_access_phys + event_buf(i),
-            EVENT_LEN as u32,
-            VIRTQ_DESC_F_WRITE,
-        );
-        let slot = (avail % QSIZE) as u64;
-        w16(EQ_AVAIL + 4 + slot * 2, i as u16);
-        avail = avail.wrapping_add(1);
+        // SAFETY: the buffer is in the DMA page and stays there, untouched by this program, until
+        // the device returns it under this token and `drain` pops it.
+        if unsafe { queue.add(&[], &mut [event_slot(i)]) } != Ok(i as u16) {
+            die(E_QUEUE);
+        }
     }
-    virtio_ring_barrier();
-    w16(EQ_AVAIL + 2, avail);
-    virtio_ring_barrier();
     // The kernel validates the newly published descriptors and copies them into the shadow ring
     // the device actually reads.
-    user_mode_runtime::virtio::notify(VIRTIO, EVENT_Q);
-    avail
+    if queue.should_notify() {
+        transport.notify(EVENT_Q);
+    }
+    if transport.refusal().is_some() {
+        die(E_QUEUE);
+    }
+    (transport, queue)
 }
 
 /// The interrupt loop's state: the keymap, both ring indices, and whichever delivery buffer
@@ -306,8 +283,8 @@ fn post_event_buffers(direct_memory_access_phys: u64) -> u16 {
 struct Events {
     mode: u64,
     keys: video_terminal::keymap::Keyboard,
-    seen: u16,           // used-ring index already drained
-    avail: u16,          // our avail-ring index
+    transport: ConfinedTransport,
+    queue: EventQueue,
     tail: u32,           // our end of the compositor's input ring (MODE_RING)
     direct_buf: [u8; 8], // buffered bytes awaiting one OPERATION_BYTES CALL (MODE_DIRECT)
     direct_n: usize,
@@ -319,25 +296,21 @@ impl Events {
     #[inline]
     fn drain(&mut self) -> bool {
         let mut typed = false;
-        loop {
-            let used_idx = r16(EQ_USED + 2);
-            if used_idx == self.seen {
-                break;
-            }
-            let slot = (self.seen % QSIZE) as u64;
-            // used-ring element: { u32 id; u32 len }.
-            let id = r32(EQ_USED + 4 + slot * 8) as usize;
-            // `id` is a 32-bit value the device wrote (notes/shared-page-audit.md, finding 6): the
-            // IOMMU confines where the device may touch, not what it may say, and unchecked
-            // `event_buf(id)` leaves the page at `id = 462`. A completion naming a buffer never
-            // posted is dropped, not re-posted: a bogus `id` does not say which buffer it was.
+        while let Some(token) = self.queue.peek_used() {
+            // `token` is a value the device wrote (notes/shared-page-audit.md, finding 6): the
+            // IOMMU confines where the device may touch, not what it may say. Every buffer is
+            // always posted, so any token below `EVENTS` names one; anything else is a lie the
+            // crate cannot step past.
+            let id = token as usize;
             if id >= EVENTS {
-                self.seen = self.seen.wrapping_add(1);
-                continue;
+                die(E_COMPLETION);
+            }
+            // SAFETY: `event_slot(id)` is the buffer `add` posted under this token.
+            if unsafe { self.queue.pop_used(token, &[], &mut [event_slot(id)]) }.is_err() {
+                die(E_COMPLETION);
             }
             let at = event_buf(id);
             let (kind, code, value) = (r16(at), r16(at + 2), r32(at + 4));
-            self.seen = self.seen.wrapping_add(1);
 
             if let Some(bytes) = self.keys.event(kind, code, value) {
                 self.deliver(bytes.as_slice());
@@ -370,17 +343,19 @@ impl Events {
         }
     }
 
-    /// Re-post buffer `id`. Its descriptor is permanent, so this is one index write. Per scancode,
+    /// Re-post buffer `id` and notify. Its descriptor was just freed by `pop_used`, and the
+    /// crate's free list hands back the head it was given, so the token stays `id`. Per scancode,
     /// so inlined.
     #[inline]
     fn repost(&mut self, id: usize) {
-        let aslot = (self.avail % QSIZE) as u64;
-        w16(EQ_AVAIL + 4 + aslot * 2, id as u16);
-        virtio_ring_barrier();
-        self.avail = self.avail.wrapping_add(1);
-        w16(EQ_AVAIL + 2, self.avail);
-        virtio_ring_barrier();
-        user_mode_runtime::virtio::notify(VIRTIO, EVENT_Q);
+        // SAFETY: as in `bring_up_device`: the buffer is in the DMA page and untouched until the
+        // device returns it.
+        if unsafe { self.queue.add(&[], &mut [event_slot(id)]) } != Ok(id as u16) {
+            die(E_QUEUE);
+        }
+        if self.queue.should_notify() {
+            self.transport.notify(EVENT_Q);
+        }
     }
 
     /// After a drain: send the direct batch, or publish the ring and ring the compositor's
