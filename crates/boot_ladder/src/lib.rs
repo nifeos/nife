@@ -1,29 +1,20 @@
 //! **The rungs of the boot ladder, as the exact bytes that appear on a console** (milestone 268).
 //!
-//! A boot climbs a fixed ladder: the console works, the machine has described itself, the kernel
-//! has tested itself, the machine has been handed to userspace. Each rung announces itself with a
-//! line, and each line is **a contract between the program that prints it and the programs that
-//! read it**: `crates/serial_console` on a bench or in CI, and a person reading a photograph of a
-//! monitor. The kernel prints [`BANNER`], [`MACHINE`] and [`SELF_TEST`]; `swish` prints
-//! [`PROMPT`]; `serial_console` matches all of them (rule 7 of `AGENTS.md`).
-//!
-//! # Why a prefix rather than a whole line
-//!
-//! Every constant here is the **stable head** of a line whose tail carries numbers: the head is
-//! what a matcher keys on and never changes, the tail is what a human reads and is free to
-//! improve. Each carries its own trailing space or punctuation where it has one, so a match is a
-//! match on a boundary rather than on the start of a longer word.
-//!
+//! Each rung's line is a contract between the program that prints it and the programs that read
+//! it, on a bench, in CI or in a photograph of a monitor. The kernel prints [`BANNER`], [`MACHINE`]
+//! and [`SELF_TEST`]; `swish` prints [`PROMPT`]; `serial_console` matches all of them (rule 7 of
+//! `AGENTS.md`). Every constant is the stable head of a line whose tail carries numbers: a matcher
+//! keys on the head, which never changes, and the tail is free to improve. Each carries its own
+//! trailing space or punctuation, so a match is on a boundary. See notes/boot-ladder.md.
+
 //! # BUGS
 //!
-//! - **Nothing gates that a new rung is added here** rather than as a fresh literal somewhere; the
-//!   kernel uses these constants, so its own output cannot drift from them. Review is the mechanism.
-//! - **[`PROMPT`] is `swish`'s banner, not its prompt.** The prompt is `$ `, too weak to key on in
-//!   a console log; the banner is printed immediately before the first prompt by the same program,
-//!   but whether the prompt itself came out is `cargo xtask swish-check`'s question.
-//! - **The wordings are provisional** (milestone 268 (every architecture boots the same way)): they
+//! - Nothing gates that a new rung is added here rather than as a fresh literal; review does. The
+//!   kernel uses these constants, so its own output cannot drift from them.
+//! - [`PROMPT`] is `swish`'s banner, not its `$ ` prompt, which is too weak to key on in a log;
+//!   whether the prompt came out is `cargo xtask swish-check`'s question.
+//! - The wordings are provisional (milestone 268 (every architecture boots the same way)): they
 //!   are contracts, so they are an architect's.
-//!
 
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist). A noun for the ladder a boot
 //! climbs, coined rather than standard. `AGENTS.md` spends *ladder* on its mechanism-strength
@@ -82,17 +73,10 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 
 /// **The boot self-test's checks, by name, in the order they run** (milestone 268).
 ///
-/// One list for every architecture, and that is the whole point. Before it the set was a
-/// compile-time fact inside `kernel/src/self_test.rs`, so an architecture that ran a different set,
-/// or a smaller one with the count adjusted to match, still printed *N of N passed* and read as
-/// green. Measured on 2026-09-14: `x86_64` with `scheduler` cut and the count set to four printed
-/// `nife self-test: 4 of 4 passed` and `boot-check` passed it.
-///
-/// So the kernel takes its check names from here, and its verdict counts against this list rather
-/// than against what ran. A listed check that did not run fails by name, a check that is not
-/// listed fails by name, and `serial_console` fails a verdict whose total is not this list's
-/// length. Changing the set is an edit to this one list, which every architecture and the
-/// recogniser read.
+/// One list for every architecture. The kernel takes its check names from here and counts its
+/// verdict against this list rather than against what ran: a listed check that did not run fails
+/// by name, an unlisted one fails by name, and `serial_console` fails a verdict whose total is not
+/// this list's length. See notes/boot-ladder.md, "One list of checks, for every architecture".
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
 pub const SELF_TEST_CHECKS: &[&str] = &[
@@ -144,17 +128,10 @@ pub const PROMPT: &str = "nife capability shell";
 
 /// **The kernel is holding the screen open for a host that wants to photograph it**
 /// (milestone 445 (the screen check stops sampling and starts asking)), and will clear it as soon as one byte comes
-/// back on the serial line.
+/// back on the serial line. *Wording provisional, like every other constant here.*
 ///
-/// *Wording provisional, like every other constant here.*
-///
-/// **Not a rung of the ladder, and it is here for the reason the rungs are**: it is a line two
-/// binaries agree on. `kernel::console::yield_screen` prints it when the boot command line carried
-/// `machine_discovery::framebuffer::SCREEN_HOLD`; `cargo xtask uefi-boot` waits for it, takes its
-/// screendump while the tour is guaranteed to still be on the framebuffer, and answers. A boot that
-/// was not asked to hold never prints it.
-///
-/// It exists because the alternative was sampling. The window between the kernel painting its tour
-/// and the handover clearing it closes in *guest* time, so no host-side deadline widens it: on
-/// 2026-09-20 a loaded `script/test` run caught zero rows where the same leg run alone caught 56.
+/// Not a rung, but a line two binaries agree on: `kernel::console::yield_screen` prints it when the
+/// boot command line carried `machine_discovery::framebuffer::SCREEN_HOLD`, and `cargo xtask
+/// uefi-boot` waits for it, takes its screendump and answers. A boot that was not asked to hold
+/// never prints it. Why it asks rather than samples is in notes/boot-ladder.md, "The screen hold".
 pub const SCREEN_HELD: &str = "nife screen: held for the host; ";
