@@ -1,32 +1,24 @@
 //! **A program that does not know what it is writing to** (milestone 50, split out of the `sink`
 //! binary by milestone 292; notes/sink-protocol.md).
 //!
-//! It writes [`byte_sink_contract::fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how the
-//! last `SEND` classified. Its whole job is to make the classification assertable **by value**,
-//! because "gone" and "never had one" are two numbers and a test that could not tell them apart
-//! would not be testing milestone 50's one behaviour change.
-//!
-//! **The negative is the point.** This process holds one writable endpoint and a report endpoint.
-//! Nothing it holds names a file, a directory, a terminal or the FS server, so it cannot discover
-//! what is on the other side of slot 0 even if it wanted to. Three different things are put there
-//! by `kernel::user::sink_tests` (an endpoint the kernel drains, `file_sink` with a real RedoxFS
-//! file behind it, and `terminal_sink_caretaker` in front of a real terminal) and the same bytes
-//! come out of all three.
-//!
+//! It writes [`byte_sink_contract::fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
+//! the last `SEND` classified, by value: "gone" and "never had one" must be two numbers to test
+//! milestone 50's one behaviour change. **The negative is the point**: it holds one writable
+//! endpoint and a report endpoint, nothing that names a file, a directory, a terminal or the FS
+//! server. `kernel::user::sink_tests` puts three things in slot 0 (an endpoint the kernel drains,
+//! `file_sink` over a real RedoxFS file, `terminal_sink_caretaker` before a real terminal) and the
+//! same bytes come out of all three.
+
 //! # The wiring
 //!
 //! | slot 0 | slot 1 | `a0` |
 //! |---|---|---|
 //! | the byte sink, `WRITE` (or **empty**) | the report, `WRITE` | how many times to write the transcript |
 //!
-//! `a0 = 0` means "until the sink stops taking it", which is what the destroyed-sink test uses: the
-//! program cannot know when its reader will die, so it writes until the sink tells it to stop,
-//! which is exactly the position a real producer in `yes | head` is in.
-//!
-//! **An empty slot 0 is a case, not a mistake**: "you were never given one". The program keeps
-//! running and classifies [`byte_sink_contract::Sent::NoSink`], as a process whose stdout is closed
-//! runs to completion anywhere.
-//!
+//! `a0 = 0` means "until the sink stops taking it", for the destroyed-sink test: like a producer in
+//! `yes | head`, it cannot know when its reader will die. An empty slot 0 is a case ("you were
+//! never given one"): it runs on and classifies [`byte_sink_contract::Sent::NoSink`], as a process
+//! whose stdout is closed runs to completion anywhere.
 
 //! # EXAMPLES
 //!
@@ -38,7 +30,7 @@
 //! assert_eq!(class, fixture::code(Sent::Ok));
 //! assert_eq!(total as usize, fixture::TRANSCRIPT.len());
 //! ```
-//!
+
 //! # BUGS
 //!
 //! The report is a single `send` of three words, so a caller that never drains it parks this

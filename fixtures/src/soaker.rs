@@ -2,25 +2,29 @@
 //! names sustained multi-core stress with the load-sensitive assertions live as its experiment;
 //! `kernel/src/soak.rs` spawns and watches this. See notes/soak.md.
 //!
-//! **It stresses cross-core IPC rendezvous at the highest rate the machine will do them**, because
-//! that is where the one defect this risk has produced lived (a receiver made `Ready` with nothing
-//! delivered, in `sched::wake_load_aware`), driven through the real syscall boundary from user
-//! mode. A round trip (`CALL`, `RECEIVE_CAP`, `REPLY`, the caller waking) is two block/wake
-//! handshakes, each of which may place its peer on another core, and with two runnable threads per
-//! core the run queues empty often enough to keep `serve_steal_request` under load too.
+//! **It stresses cross-core IPC rendezvous at the highest rate the machine will do them**, through
+//! the real syscall boundary, because that is where the one defect this risk has produced lived (a
+//! receiver made `Ready` with nothing delivered, in `sched::wake_load_aware`). A round trip
+//! (`CALL`, `RECEIVE_CAP`, `REPLY`, the caller waking) is two block/wake handshakes, each of which
+//! may place its peer on another core, and with two runnable threads per core the run queues empty
+//! often enough to keep `serve_steal_request` under load too.
+
+//! # How it crosses cores
 //!
 //! A saturated workload never crosses cores (§138 (how a saturated workload is made to hand threads
 //! across cores)), so a waiter role blocks through `Irq::WAIT` on a rendezvous the kernel signals
 //! from `sched::on_tick`. The waiter is deliberately trivial; the mechanism is the kernel's wake
-//! path. What crosses is the waiters, not the pairs.
-//!
-//! Each worker spins a pseudo-random number of iterations between round trips (xorshift, seeded
-//! from `arg2`, distinct per worker), so pairs drift rather than lock into one interleaving.
+//! path, and what crosses is the waiters, not the pairs. Each worker spins a pseudo-random number
+//! of iterations between round trips (xorshift, seeded from `arg2`, distinct per worker), so pairs
+//! drift rather than lock into one interleaving.
+
+//! # What it holds
 //!
 //! Slot 0 is the request endpoint, `WRITE` for a caller and `READ` for a responder, or an `Irq`
-//! naming the tick route for a waiter; nothing else, not the console, clock or peer. The shared page
-//! at [`soak_page::VA`] is where it publishes its counters for the kernel to read. It never exits.
-//!
+//! naming the tick route for a waiter; nothing else, not the console, clock or peer. The shared
+//! page at [`soak_page::VA`] is where it publishes its counters for the kernel to read. It never
+//! exits.
+
 //! # BUGS
 //!
 //! - A green soak proves nothing about the concurrency being correct; its number is for comparison.
@@ -94,18 +98,12 @@ pub extern "C" fn _start(role: u64, index: u64, seed: u64) -> ! {
 
     loop {
         if role == ROLE_WAITER {
-            // **The whole of the waiter role** (milestone 221): block on the tick route, count the
-            // wake, block again. `interrupt_wait` is the same `Irq::WAIT` a device driver uses, and the
-            // kernel's soak build is what signals the route, from `sched::on_tick` on every core.
-            //
-            // No `interrupt_acknowledge`. A driver acknowledges because its controller masked a line that a
-            // device is still asserting; there is no line here and nothing was masked, so an ack
-            // would be a real controller write for an interrupt that does not exist.
-            //
-            // A negative return is a refusal (`abi::Error`), and the honest response is to stop
-            // counting rather than to spin: the counter stops moving, and the kernel's stall check
-            // reports it at the next beat, which is the same way every other failure in this
-            // workload surfaces.
+            // The waiter role (milestone 221): `interrupt_wait` is the `Irq::WAIT` a driver uses,
+            // and the kernel's soak build signals the route from `sched::on_tick` on every core. No
+            // `interrupt_acknowledge`: there is no line and nothing was masked, so an ack would be
+            // a real controller write for an interrupt that does not exist. A refusal
+            // (`abi::Error`) stops the counting rather than retrying, and the kernel's stall check
+            // reports it at the next beat, as every other failure here surfaces.
             if interrupt_wait(TICK_IRQ) < 0 {
                 loop {
                     core::hint::spin_loop();
