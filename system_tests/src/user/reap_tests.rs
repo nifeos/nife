@@ -15,8 +15,8 @@ const BUILDER_BUDGET_PAGES: u64 = 80;
 /// stack page, and its TCB. Sixteen is what `build_child` has always carved.
 const INSTANCE_PAGES: u64 = 16;
 
-/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJ`'s one-object-per-page
-/// rule). Two is the most any one test here needs; four is slack.
+/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJ`'s
+/// one-object-per-page rule). Two is the most any one test here needs; four is slack.
 const RENDEZVOUS_PAGES: u64 = 4;
 
 /// The slot half of a generational name (`crates/slots` packs generation in the high 32 bits,
@@ -25,11 +25,12 @@ const RENDEZVOUS_PAGES: u64 = 4;
 /// running.
 const SLOT_MASK: u64 = 0xffff_ffff;
 
-/// One test's world: a budget the *builder* owns, and a small region the test's rendezvous points are
-/// retyped from. The rendezvous points come out of a reclaimable region rather than `create_rendezvous`'s
-/// shared kernel one so that `tidy` can give them back; six tests each leaking a couple of
-/// rendezvous points exhausted the kernel's rendezvous budget for every test that ran afterwards, which is
-/// the sort of failure a test should not be able to inflict on its neighbours.
+/// One test's world: a budget the *builder* owns, and a small region the test's rendezvous points
+/// are retyped from. The rendezvous points come out of a reclaimable region rather than
+/// `create_rendezvous`'s shared kernel one so that `tidy` can give them back; six tests each
+/// leaking a couple of rendezvous points exhausted the kernel's rendezvous budget for every test
+/// that ran afterwards, which is the sort of failure a test should not be able to inflict on its
+/// neighbours.
 fn arena() -> (u64, u64) {
     let budget = crate::memory_region::create(BUILDER_BUDGET_PAGES).expect("no builder budget");
     let rendezvous_region =
@@ -102,14 +103,14 @@ fn occupied_slots() -> usize {
 
 /// **The supervisor cannot construct anything, audited slot by slot.**
 ///
-/// For every empty slot, the two primitives that build a process (`RETYPE_OBJ` for a TCB and for
-/// an address space) are driven through the real dispatcher and must answer `NoSuchSlot`: there
-/// is nothing there, which is what no-ambient-authority feels like, and it is a different fact
-/// from `NotPermitted` (something there, restricted). For every occupied slot, the capability
-/// must be an `Rendezvous`, which cannot build by dispatch: the rendezvous arm of `invoke` offers
-/// send, receive, delegate, call, and reap, and no constructor at all. `MemoryRegion` methods are *not*
-/// invoked on those slots, because method numbers are per-object-type and `RETYPE_OBJ`'s number
-/// is `SEND_CAP`'s on an rendezvous.
+/// For every empty slot, the two primitives that build a process (`RETYPE_OBJ` for a TCB and for an
+/// address space) are driven through the real dispatcher and must answer `NoSuchSlot`: there is
+/// nothing there, which is what no-ambient-authority feels like, and it is a different fact from
+/// `NotPermitted` (something there, restricted). For every occupied slot, the capability must be an
+/// `Rendezvous`, which cannot build by dispatch: the rendezvous arm of `invoke` offers send,
+/// receive, delegate, call, and reap, and no constructor at all. `MemoryRegion` methods are *not*
+/// invoked on those slots, because method numbers are per-object-type and `RETYPE_OBJ`'s number is
+/// `SEND_CAP`'s on an rendezvous.
 fn assert_can_only_supervise(expected: &[u64]) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     for slot in 0..abi::CAPABILITY_TABLE_SLOTS {
@@ -300,11 +301,12 @@ fn reap_refuses_a_live_child_with_a_distinct_error() {
 
 /// **Another supervisor's child is refused, even to a holder of both rendezvous points.**
 ///
-/// The sharpest form of §32's authorization rule: one process holds two supervision rendezvous points,
-/// and learns a tid legitimately, through the rendezvous that supervises it. Naming that tid on
-/// the *other* rendezvous is refused, because authorization is the `(tid, rendezvous)` relationship
-/// and not "am I a supervisor". So a tid is a name inside a relationship, never a global handle,
-/// which is what lets §26's kernel-stamped tid be reused for this with no new bookkeeping.
+/// The sharpest form of §32's authorization rule: one process holds two supervision rendezvous
+/// points, and learns a tid legitimately, through the rendezvous that supervises it. Naming that
+/// tid on the *other* rendezvous is refused, because authorization is the `(tid, rendezvous)`
+/// relationship and not "am I a supervisor". So a tid is a name inside a relationship, never a
+/// global handle, which is what lets §26's kernel-stamped tid be reused for this with no new
+/// bookkeeping.
 #[test_case]
 fn reap_refuses_another_supervisors_child() {
     let (budget, rendezvous_region) = arena();
@@ -398,10 +400,10 @@ fn reap_refuses_a_recycled_thread_id_rather_than_the_wrong_thread() {
 /// **Reaping a corpse whose death message was never collected leaves the rendezvous clean.**
 ///
 /// A supervised thread that dies with nobody in `RECEIVE` parks on its supervision rendezvous's
-/// sender queue holding the message (§26 implementation note 2). A supervisor need not collect it
-/// before reaping (its builder may tell it the tid), so the reap unlinks the corpse from that queue
-/// before freeing its TCB, or the next `RECEIVE` follows a pointer into a recycled page.
-/// `crates/inter_process_communication`'s `remove_sender` does the unlink, for
+/// sender queue holding the message (§26 (the fault endpoint) implementation note 2). A supervisor
+/// need not collect it before reaping (its builder may tell it the tid), so the reap unlinks the
+/// corpse from that queue before freeing its TCB, or the next `RECEIVE` follows a pointer into a
+/// recycled page. `crates/inter_process_communication`'s `remove_sender` does the unlink, for
 /// `MemoryRegion::DESTROY` as for `REAP`. The second half (a fresh child's death arriving normally
 /// on the same rendezvous) proves the queue intact, not merely counted right.
 #[test_case]

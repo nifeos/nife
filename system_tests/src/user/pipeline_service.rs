@@ -18,13 +18,13 @@ const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
 const SH_BUDGET_PAGES: u64 = 128;
 
 /// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
-/// `spawn_fs_client`'s measured reason, and milestone 50 added an array of planned endowments it
-/// carries by value. `run_pipeline`'s frame holds two `FileOut`s (`2>`), each with a 256-byte
-/// staging buffer because the filesystem's write unit is a page and the sink contract's sixteen
-/// bytes; seven pages overflowed by twenty-four, as a data abort one word below the lowest mapped
-/// page. Eleven keeps four pages of headroom, since every exact fit met the wall again on the next
-/// change. It must stay level with `system_initializer`'s `CHILD_STACK_PAGES`: a test wiring with
-/// less headroom finds faults the boot does not have (notes/pipes/the-boot.md).
+/// `spawn_fs_client`'s measured reason, and milestone 50 (pipes and redirection) added an array of
+/// planned endowments it carries by value. `run_pipeline`'s frame holds two `FileOut`s (`2>`), each
+/// with a 256-byte staging buffer because the filesystem's write unit is a page and the sink
+/// contract's sixteen bytes; seven pages overflowed by twenty-four, as a data abort one word below
+/// the lowest mapped page. Eleven keeps four pages of headroom, since every exact fit met the wall
+/// again on the next change. It must stay level with `system_initializer`'s `CHILD_STACK_PAGES`: a
+/// test wiring with less headroom finds faults the boot does not have (notes/pipes/the-boot.md).
 const SHELL_EXTRA_STACK: usize = 11;
 
 /// What the kernel holds of a scripted shell.
@@ -413,13 +413,13 @@ pub fn counts(said: &[u8]) -> (u64, u64, u64) {
 /// **The progenitor, as the shell sees it**: the spawn protocol, including milestone 50's two
 /// delegated capabilities.
 ///
-/// The operators' whole addition is small: receive a rendezvous, and put it where the result
-/// rendezvous would have gone. Nothing decides what is behind it, because nothing here can find
-/// out. Not implemented: a directory grant (`Wiring::directory_grant`, milestone 31 (a capability
-/// shell: designation is authorization) phase 3) and a screen-narrowed tail's completion rendezvous
-/// (`Wiring::screen`, DECISIONS §106). Each needs something this stub lacks, so neither bit is
-/// drained, and a line setting one would desync the shared count of delegated capabilities. Only
-/// `script/swish-check`, against the real progenitor, exercises them.
+/// The operators add only this: receive a rendezvous, and put it where the result rendezvous would
+/// have gone. Nothing decides what is behind it, because nothing here can find out. Not
+/// implemented: a directory grant (`Wiring::directory_grant`, milestone 31 (a capability shell:
+/// designation is authorization) phase 3) and a screen-narrowed tail's completion rendezvous
+/// (`Wiring::screen`, DECISIONS §106 (take the `terminal_sink_caretaker` narrowing)). Each needs
+/// something this stub lacks, so neither bit is drained and a line setting one would desync the
+/// count of delegated capabilities; `script/swish-check` covers both.
 fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
     loop {
         let m = crate::sched::ipc_receive(spawn_ep);
@@ -440,7 +440,8 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         } else {
             None
         };
-        // A declared second stream is received and closed on the child's behalf (DECISIONS §67): a
+        // A declared second stream is received and closed on the child's behalf (DECISIONS §67 (a
+        // program's second stream is a declaration, not a number)): a
         // `Spawn` fills from zero and cannot name slot eight, so `date` here finds an empty
         // diagnostic slot and reports in-band. This is the fallback path; the real one is
         // `script/swish-check`, running `user/src/system_initializer.rs`. Receiving keeps the two

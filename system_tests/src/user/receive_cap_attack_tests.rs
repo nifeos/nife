@@ -1,6 +1,6 @@
 //! **A plain `SEND` received by `RECEIVE_CAP` hands the receiver `NO_CAP` in `x1`, never a
-//! sender-chosen word** (milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver
-//! a sender-chosen slot), fatal risk 7's confinement claim).
+//! sender-chosen word** (milestone 634 (a plain SEND received by RECEIVE_CAP never hands the
+//! receiver a sender-chosen slot), fatal risk 7's confinement claim).
 //!
 //! `RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP`, and a
 //! `CALL` server reads it as its `Reply`'s slot. The receive side writes `NO_CAP` unless a
@@ -216,9 +216,9 @@ fn a_send_cap_aborted_by_teardown_stages_nothing_for_a_later_plain_send() {
     crate::memory_region::destroy(region);
 }
 
-/// **A `SEND_CAP` collected by a plain `RECEIVE` stages nothing for a later plain `SEND`** (milestone
-/// 633 (an outside agent attacks the confinement claim), fatal risk 7's first outsider pass,
-/// 2026-10-03 UTC). The non-abort sibling of
+/// **A `SEND_CAP` collected by a plain `RECEIVE` stages nothing for a later plain `SEND`**
+/// (milestone 633 (an outside agent attacks the confinement claim), fatal risk 7's first outsider
+/// pass, 2026-10-03 UTC). The non-abort sibling of
 /// `a_send_cap_aborted_by_teardown_stages_nothing_for_a_later_plain_send`.
 ///
 /// Woken by a plain `RECEIVE` that collects it (`ipc_receive`'s `!leave_blocked` branch skips
@@ -241,8 +241,8 @@ fn a_send_cap_collected_by_a_plain_receive_stages_nothing_for_a_later_plain_send
 
     sched::spawn(move || {
         PARKED_ON_FIRST.store(true, Ordering::SeqCst);
-        // Parks as a SEND_CAP sender on first_ep; the plain RECEIVE below collects it and delivers no
-        // capability, completing the rendezvous without an abort.
+        // Parks as a SEND_CAP sender on first_ep; the plain RECEIVE below collects it and delivers
+        // no capability, completing the rendezvous without an abort.
         sched::ipc_send_cap(first_ep, 1, delegated, 0);
         // Then a plain SEND on an unrelated rendezvous. If the delegation stayed staged, this hands
         // it to the RECEIVE_CAP below.
@@ -255,9 +255,9 @@ fn a_send_cap_collected_by_a_plain_receive_stages_nothing_for_a_later_plain_send
             && sched::rendezvous_waiting_senders(first_ep) == 1),
         "the sender never parked in SEND_CAP on the first rendezvous",
     );
-    // Plain RECEIVE: takes the data word, no capability, and wakes the sender through the successful
-    // path (not set_ipc_aborted). This is the vacuity guard's premise: a SEND_CAP really was in
-    // flight and was collected by a receiver that cannot hold a capability.
+    // Plain RECEIVE: takes the data word, no capability, and wakes the sender through the
+    // successful path (not set_ipc_aborted). This is the vacuity guard's premise: a SEND_CAP really
+    // was in flight and was collected by a receiver that cannot hold a capability.
     let [w0, ..] = sched::ipc_receive(first_ep);
     assert_eq!(
         w0, 1,
@@ -340,10 +340,10 @@ impl CallServerRound {
 /// (milestone 706 (a `CALL` server can tell a Reply from a delegation), DECISIONS §245 (a `CALL`
 /// server tells a Reply from a delegation), fatal risk 7's confinement claim).
 ///
-/// A client `SEND_CAP`s an unreceived rendezvous to a `CALL` server that reads a receive as
-/// `user_mode_runtime::receive_request` does (`x4 == REPLY_DELIVERED` is a Reply, any other slot a
-/// delegation to delete); on both orders it must answer its caller and keep nothing. The tag is
-/// asserted, not the hang, which would need milestone 417's timed receive to end.
+/// A client `SEND_CAP`s an unreceived rendezvous to a server that reads receives as
+/// `user_mode_runtime::receive_request` does (`x4 == REPLY_DELIVERED` is a Reply, other slots are
+/// delegations to delete); on both orders it must answer and keep nothing. It asserts the tag, not
+/// the hang, which needs milestone 417 (a usurper that reports instead of hanging)'s timed receive.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders.patch`
 #[test_case]
@@ -489,8 +489,8 @@ fn the_server_answered_and_kept_nothing(round: &CallServerRound, server_first: b
 const QUIET_INTID: u32 = 250;
 
 /// **An interrupt signal received by `RECEIVE_CAP` delivers `NO_CAP` in `x1` whichever side arrives
-/// first** (milestone 714 (the sibling `RECEIVE_CAP` paths get a receiver-first test), fatal risk 7's
-/// confinement claim; the sibling of milestone 634's plain-`SEND` test above).
+/// first** (milestone 714 (the sibling `RECEIVE_CAP` paths get a receiver-first test), fatal risk
+/// 7's confinement claim; the sibling of milestone 634's plain-`SEND` test above).
 ///
 /// `irq_notify` drops `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so without 634's
 /// `cap_delivered` default a receiver-first `RECEIVE_CAP` sees `x1 = 0`: a kernel word, not a
@@ -615,7 +615,8 @@ fn a_death_message_received_by_receive_cap_delivers_no_cap_whichever_side_parks_
         "reaping the first corpse's region failed",
     );
 
-    // Corpse-first: the child dies and parks on the supervision rendezvous, then this thread receives.
+    // Corpse-first: the child dies and parks on the supervision rendezvous, then this thread
+    // receives.
     let fault_ep = sched::create_rendezvous_from(endpoints).expect("no fault rendezvous");
     let region = crate::memory_region::create(16).expect("no region for the second child");
     let child = build_child_in(region, FAULT_STUB, None, Some(fault_ep));

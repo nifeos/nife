@@ -399,9 +399,10 @@ fn an_ntp_client_holds_no_writable_clock_page() {
         wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > faults),
         "an NTP client wrote the clock page at {va:#x} and was NOT stopped",
     );
-    // The exact address, on both ISAs, from milestone 19's portable last-fault record. The kind is
-    // deliberately not asserted: the witness holds no mapping of the clock page at all, so the
-    // fault is a translation fault, and the claim here is about the address the client aimed at.
+    // The exact address, on both ISAs, from milestone 19 (run a real workload)'s portable
+    // last-fault record. The kind is deliberately not asserted: the witness holds no mapping of the
+    // clock page at all, so the fault is a translation fault, and the claim here is about the
+    // address the client aimed at.
     assert_eq!(
         crate::arch::exceptions::last_user_fault().map(|(_, addr)| addr),
         Some(va),

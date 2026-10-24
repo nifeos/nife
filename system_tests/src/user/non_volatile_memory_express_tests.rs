@@ -1,12 +1,13 @@
-//! **A confined EL0 process drives the machine's NVMe disk** (milestone 261 (the NVMe driver leaves the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel)'s
-//! option 2a, notes/non-volatile-memory-express.md).
+//! **A confined EL0 process drives the machine's NVMe disk** (milestone 261 (the NVMe driver leaves
+//! the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel)'s option 2a,
+//! notes/non-volatile-memory-express.md).
 //!
-//! The sequence milestone 53 proved (find the controller over the §18 PCIe transport, confine it
-//! behind the machine's IOMMU, bring it from reset through identify to an I/O queue pair, serve the
-//! blk verbs), with the queue half at EL0, in a process holding two endpoints, one page of BAR0 and
-//! a run of DMA pages, with no capability naming any of it. It is fatal risk 6's prerequisite, not
-//! its experiment (a real device at real speed, on xenon), and any number measured under QEMU is a
-//! number about QEMU. The note's "What the test proves, and where" has the rest.
+//! The sequence milestone 53 (the board's own peripherals) proved: find the controller over §18
+//! (the PCIe transport), confine it behind the IOMMU, bring it from reset through identify to an
+//! I/O queue pair, and serve the blk verbs. Here the queue half runs at EL0, in a process holding
+//! two endpoints, a page of BAR0 and DMA pages, and no capability naming any of it. It is fatal
+//! risk 6's prerequisite, not its experiment, and a number measured under QEMU is about QEMU; see
+//! the note's "What the test proves, and where".
 
 use super::*;
 
@@ -47,8 +48,8 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
         );
     }
     // A namespace of no blocks would make every assertion below vacuously true, and
-    // `kernel/src/non_volatile_memory_express.rs::bring_up` already refuses one; say so here rather than let a silent
-    // zero pass for a pass.
+    // `kernel/src/non_volatile_memory_express.rs::bring_up` already refuses one; say so here rather
+    // than let a silent zero pass for a pass.
     assert!(
         w.size_bytes >= 2 * crate::non_volatile_memory_express::BLOCK_SIZE as u64,
         "the namespace is {} bytes, too small for this test's two blocks",
@@ -96,8 +97,9 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
 
     // Two blocks, two patterns, each reading back its own: the second pattern, not zeros expected
     // from a neighbour, shows a write lands where it said, so nothing assumes the disk's prior
-    // contents (milestone 318). Block 37 is far enough in that a server confusing block and LBA
-    // units (the classic factor of 8) lands visibly elsewhere; 38, its neighbour, catches a smear.
+    // contents (milestone 318 (the NVMe boot test on real geometry)). Block 37 is far enough in
+    // that a server confusing block and LBA units (the classic factor of 8) lands visibly
+    // elsewhere; 38, its neighbour, catches a smear.
     const BLOCK: u64 = 37;
     // Both functions of the byte's offset, so a server that returns a constant, a shifted copy, or
     // the other block fails. 251 and 241 are prime to 4096, so neither aliases a page period.
@@ -295,7 +297,8 @@ fn a_confined_el0_server_cannot_dma_outside_its_region() {
     // **The evidence the controller actually tried the out-of-region DMA.** QEMU records the fault
     // as it processes the doorbell under TCG, so a bounded spin is plenty; the bound turns "no
     // fault ever" into a failure rather than a hang. Without this a pass would be consistent with
-    // the controller never reaching the address at all, which is the hollow pass milestone 202 forbids.
+    // the controller never reaching the address at all, which is the hollow pass milestone 202
+    // forbids.
     let mut fault = None;
     for _ in 0..2_000_000 {
         if let Some(f) = crate::iommu::take_fault() {
