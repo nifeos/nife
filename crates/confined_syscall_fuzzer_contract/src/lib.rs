@@ -6,8 +6,7 @@
 //! take one call at a time, and after each call checks that it reached nothing it was not granted.
 //! Both binaries need the same slot layout, the same two conductor words and the same report-page
 //! layout, so those live here (AGENTS.md rule 7: anything two binaries agree on is a crate).
-//!
-//! Every name in this crate is provisional, the crate's included.
+//! Every name in this crate but the crate's own is provisional.
 //!
 //! Name: ratified 2026-10-18 (calef): "ratify `confined_syscall_fuzzer_contract`". It matches the
 //! fixture program it serves, `confined_syscall_fuzzer`.
@@ -16,13 +15,10 @@
 
 /// **The conductor's channel**, `READ` only and in slot 0. The fuzzer waits here between calls.
 /// The generator never names this slot, and without `GRANT` it cannot be delegated, so the one
-/// capability the fuzzer needs to be conducted is the one it cannot fuzz. Recorded as a `BUGS`
-/// entry in the fixture: one slot of 64 is not exercised.
-///
-/// Slot 0, not the last slot as the scaffolding first had it: `user::run` grants a `Spawn`'s
-/// capabilities into slots 0, 1, 2, ... in order and offers no way to place one at a chosen slot,
-/// and the witness holds only this capability, so the slot it lands in by grant must be the slot
-/// the generator excludes (2026-10-06, UTC, correcting the lane's own scaffolding).
+/// capability the fuzzer needs to be conducted is the one it cannot fuzz (the fixture's `BUGS`).
+/// Slot 0 because `user::run` grants a `Spawn`'s capabilities into slots 0, 1, 2, ... in order,
+/// with no way to choose one, and the witness holds only this capability, so the slot it lands
+/// in must be the slot the generator excludes.
 pub const GO: u64 = 0;
 /// The fuzzer's own memory region, `WRITE` only.
 pub const REGION: u64 = 1;

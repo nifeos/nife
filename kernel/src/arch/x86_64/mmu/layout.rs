@@ -19,45 +19,30 @@ pub const KERNEL_VA_BASE: u64 = 0xffff_ffff_8000_0000;
 
 /// **The base of the direct map: where physical address `pa` is readable as `pa + this`.**
 ///
-/// `0xffff888000000000`, which is Linux's `page_offset_base`, taken rather than invented because a
-/// reader who has met one `x86_64` kernel has met this number. What the value has to satisfy is
-/// short: canonically high (bit 47 set and sign-extended, so the same `Ia32e::is_in_half` test that
-/// admits the kernel image admits this), clear of PML4[511] where the image lives, clear of the low
-/// half that ring 3 will get, and with room above it for all of physical memory. This has 64 TiB of
-/// room before it would reach anything else, which is 2^46 and not a limit worth thinking about.
-///
-/// **`boot.s` installs the PML4 entry for this before any Rust runs**, so the arithmetic below is
-/// valid from the first instruction rather than from [`init`](super::init); the module header says
-/// why that matters more than it looks like it should.
+/// `0xffff888000000000`, Linux's `page_offset_base`. It must be canonically high, clear of
+/// PML4[511] where the image lives and of the low half ring 3 gets, with room above it for all of
+/// physical memory (it has 64 TiB). `boot.s` installs its PML4 entry before any Rust runs, so the
+/// arithmetic below is valid from the first instruction. See notes/x86-port/kernel-page-tables.md.
 ///
 /// Name: provisional (milestone 161 (the `x86_64` kernel port)): calef names the constants, and
 /// this one was minted by a lane. The tree's analogous name is [`KERNEL_VA_BASE`], which is why
 /// this is `_BASE` too.
 pub const DIRECT_MAP_BASE: u64 = 0xffff_8880_0000_0000;
 
-/// The top-level (PML4) index the direct map occupies, **duplicated in `boot.s`** because a 32-bit
-/// assembler cannot compute it from the constant above. This is the gate that keeps the two in
-/// agreement: change [`DIRECT_MAP_BASE`] without changing `boot.s` and the kernel does not build.
-/// **Where kernel thread stacks live, virtually** (`thread.rs`'s `STACK_AREA`).
+/// **Where kernel thread stacks live, virtually** (`thread.rs`'s `STACK_AREA`): PML4[402], which
+/// is nothing else's (the image is PML4[511] and the direct map PML4[273]).
 ///
-/// `0xffff_c900_0000_0000` is **Linux's `VMALLOC_START`**, taken rather than invented for the same
-/// reason [`DIRECT_MAP_BASE`] is Linux's `page_offset_base`: a reader who has met one `x86_64` kernel
-/// has met this number, and the alternative is a constant nobody can check against anything.
-///
-/// **The portable expression the other two architectures use does not survive here**, and the way
-/// it fails is silent. `thread.rs` computed this as `KERNEL_VA_BASE | 0x10_0000_0000` ("64 GiB above
-/// the direct map"), which works where the kernel base is a *half* base with room above it.
-/// [`KERNEL_VA_BASE`] here is `0xffff_ffff_8000_0000`, which already has every bit of
-/// `0x10_0000_0000` set, so the OR was the identity: every kernel thread stack would have been
-/// mapped at the kernel image's own base, over `.text`. Caught by reading rather than by booting,
-/// because the mapper's overwrite refusal turns it into `kmem: no memory to wire one` far from the
-/// cause.
-///
-/// PML4[402], which is nothing else's: the image is PML4[511] and the direct map PML4[273].
+/// `0xffff_c900_0000_0000` is Linux's `VMALLOC_START`. The other architectures' expression,
+/// `KERNEL_VA_BASE | 0x10_0000_0000`, is the identity here, because this `KERNEL_VA_BASE` already
+/// has those bits set, and would put every stack over `.text`. See
+/// notes/x86-port/kernel-page-tables.md.
 ///
 /// Name: provisional (milestone 161, roadmap item 4).
 pub const THREAD_STACK_AREA: u64 = 0xffff_c900_0000_0000;
 
+/// The top-level (PML4) index the direct map occupies, **duplicated in `boot.s`** because a 32-bit
+/// assembler cannot compute it from the constant above. This is the gate that keeps the two in
+/// agreement: change [`DIRECT_MAP_BASE`] without changing `boot.s` and the kernel does not build.
 const DIRECT_MAP_PML4_INDEX: u64 = 273;
 
 const _: () = {
@@ -118,23 +103,11 @@ pub(crate) const LOCAL_APIC_PHYS: u64 = 0xfee0_0000;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) const IO_APIC_PHYS: u64 = 0xfec0_0000;
 
-/// **Where q35 puts the PCIe ECAM window**, and QEMU's q35 default. `map_everything` no longer
-/// maps this constant directly: the real window is read from `memory::pci_regions()`, which
-/// `main.rs` fills from ACPI's MCFG the same way `memory::init` fills it from a
-/// `pci-host-ecam-generic` node on the other two architectures. This stays as the value
-/// `machine::print_acpi_summary` prints the MCFG's own answer against, which is the second
-/// witness aarch64 and riscv64 also kept (their old device-tree hardcodes, held equal to the
-/// discovered value by `pci.rs`'s own test).
-///
-/// **The asymmetry is worth knowing before reading a boot log.** Those two architectures only ever
-/// boot QEMU `virt`, so there the second witness is an *equality invariant* and a difference would
-/// be a finding. Here it is not, and not only on real hardware. Firmware places this window, so the
-/// two values agree on QEMU q35 **under `SeaBIOS`** and nowhere else that has been measured: OVMF
-/// relocates it to `0xe000_0000`, which is what both of `script/test --arch x86_64`'s real-firmware
-/// boots print, and xenon's own MCFG says `0xf000_0000` over 128 buses. That is why
-/// `print_acpi_summary` names q35 rather than this constant when it prints the comparison
-/// (milestone 314); the earlier wording read as a defect report everywhere except the one firmware
-/// it was written against, and was eventually reported as one.
+/// **Where q35 puts the PCIe ECAM window**, QEMU's q35 default. Not mapped directly: the real
+/// window comes from ACPI's MCFG through `memory::pci_regions()`. It stays as the value
+/// `machine::print_acpi_summary` prints the MCFG's answer against, which on x86 is no equality
+/// invariant: firmware places the window (OVMF at `0xe000_0000`, xenon at `0xf000_0000`), so the
+/// two agree only on q35 under `SeaBIOS`. See notes/x86-port/kernel-page-tables.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) const PCI_ECAM_PHYS: u64 = 0xb000_0000;
 

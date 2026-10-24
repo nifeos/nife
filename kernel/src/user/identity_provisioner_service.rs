@@ -20,23 +20,13 @@ pub(crate) const RPT_MALFORMED: u64 = 2;
 pub(crate) const RPT_SUBTREE_FAILED: u64 = 3;
 pub const RPT_CRED_FAILED: u64 = 4;
 
-/// **Run the provisioning tool once**, against an already-wired credential service's provision
-/// endpoint and an already-wired file service's root directory, and wait for its report.
+/// Run the provisioning tool once, for `identity` and `secret`, and return its report's first two
+/// words (`RPT_*`).
 ///
-/// `prov` must be the credential service's own provision endpoint, before its seal (milestone 56);
-/// `prov_page_frame` is the exact physical frame it maps at its own `PROV_VA`
-/// (`credential_service::Wiring::provision_page_frame` on the instance `prov` came from). `fs_ep`/
-/// `fs_page_frame` are the file service's root directory capability and the page its clients share with
-/// it (`fs_service::root_directory`), unnarrowed: see `components/src/identity_provisioner.rs`'s own
-/// module docs on why that is this slice's bound and not a design decision.
-///
-/// This module plays the operator's role that a real shell does not yet: it stages `identity` and
-/// `secret` into the request page directly, the same way `narrow_dir`'s `name: &'static str`
-/// argument is supplied by the kernel test rather than by guest-side staging. The tool itself never
-/// sees where the bytes came from; it only relays what is in the page.
-///
-/// Returns `[report_word0, report_word1]` verbatim (see `identity_provisioner.rs`'s `RPT_*`
-/// constants and this module's re-exports of them).
+/// `prov` must be a credential service's provision endpoint before its seal, and `prov_page_frame`
+/// the frame it maps at its `PROV_VA` (`credential_service::Wiring::provision_page_frame`). `fs_ep`
+/// and `fs_page_frame` are the file service's unnarrowed root (`fs_service::root_directory`). The
+/// kernel stages `identity` and `secret` into the request page itself, playing the operator.
 pub fn provision(
     image: &'static [u8],
     prov: RendezvousId,

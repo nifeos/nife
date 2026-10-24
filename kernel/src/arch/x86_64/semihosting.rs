@@ -1,24 +1,13 @@
-//! **Asking the host to terminate, `x86_64`.** The test harness's exit path.
+//! **Asking the host to terminate, `x86_64`.** The test harness's exit path, through QEMU's
+//! `isa-debug-exit` device: a write to its I/O port ends the guest with status `(value << 1) | 1`.
 //!
-//! The module keeps the aarch64 name (`arch::semihosting::exit`) because it is the arch contract the
-//! test harness calls, exactly as the RISC-V one does, and like that one the mechanism has nothing
-//! to do with ARM semihosting. Here it is QEMU's `isa-debug-exit` device: a write of any width to
-//! its I/O port terminates the guest with status `(value << 1) | 1`.
-//!
-//! **That encoding is why the codes below look odd, and it is a real constraint rather than a
-//! quirk to route around.** Every exit status this device can produce is ODD, so exit code 0 is
-//! unreachable: "success" has to be some agreed non-zero number, and the runner is what maps it
-//! back. `0` written to the port yields host status 1; `1` yields 3. This module therefore reports
-//! **3** for success and anything else for failure, and `helpers/qemu-runner-x86_64.sh` carries the
-//! matching translation. Getting this backwards produces a suite that passes when it fails, which
-//! is the one failure mode a test harness must not have, so both halves name the number.
+//! Every status that device produces is odd, so success is reported as host status **3** (a write
+//! of 1), and `helpers/qemu-runner-x86_64.sh` maps it back. Both halves name the number, because
+//! getting it backwards makes a failing suite pass. See notes/semihosting.md.
 //!
 //! # BUGS
 //!
-//! - **A real machine has no `isa-debug-exit`.** Milestone 87's `OptiPlex` will need the same answer
-//!   the VisionFive 2 needed: print a fixed marker line the serial harness can read, then power
-//!   down (ACPI S5 rather than SBI SRST). Nothing here does that yet, so a test build run on real
-//!   x86 hardware would write to a port nothing answers and fall through to the halt loop.
+//! - A real machine has no `isa-debug-exit`, so a test build there falls through to the halt loop.
 
 use core::arch::asm;
 
