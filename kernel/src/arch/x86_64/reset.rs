@@ -1,48 +1,16 @@
-//! **A kernel-initiated cold reboot, `x86_64`** (milestone 249 (the boot lottery is sampled by a person walking to the board)'s parity half).
+//! **A kernel-initiated cold reboot, `x86_64`** (milestone 249 (the boot lottery is sampled by a
+//! person walking to the board)'s parity half).
 //!
-//! A PC has no one firmware call that owns its power the way PSCI does on aarch64 or SBI SRST on
-//! RISC-V. It has three reset mechanisms of different vintages, and a kernel that wants to come
-//! back tries them strongest-first and says which one it is on before each, because a successful
-//! one never returns and the console line before it is the only record:
-//!
-//! 1. **The FADT's reset register**, when the table offers one (`RESET_REG_SUP`). This is the route
-//!    firmware vouches for, and on every Intel chipset this project has seen it names port `0xCF9`
-//!    anyway; it is tried first because a machine that puts it somewhere else is exactly the
-//!    machine on which the guess in step 2 is wrong.
-//! 2. **Port `0xCF9`, the chipset's Reset Control register**, written `0x02` then `0x0E`: system
-//!    reset, then CPU reset with full reset. Full reset (bit 3) is what makes it *cold*: the
-//!    platform drops power to the rails briefly rather than only pulling the CPU's reset line, which
-//!    is the difference that matters on a board whose firmware does not survive a warm reset
-//!    (radon's lesson, milestone 249's block).
-//! 3. **The 8042 keyboard controller's reset pulse**, command `0xFE` to port `0x64`. The oldest
-//!    route and the one most likely to be emulated by a platform that has nothing else.
-//!
-//! Each gets a tenth of a second to take effect before the next is tried. If all three come back,
-//! [`reboot`] returns and the caller says so; nothing here halts, because the caller (the rebooting
-//! soak, or since milestone 805 the reboot object's method) still has a running machine to report
-//! on.
-//!
+//! Three routes, strongest first, each announced first since a reset that works never returns: the
+//! FADT's reset register, port `0xCF9` written `0x02` then `0x0E` (full reset, so cold), then the
+//! 8042's `0xFE` pulse, a tenth of a second each. See notes/board-reboot.md.
 
 //! # BUGS
 //!
-//! - **A memory-space FADT reset register is not attempted.** It would need a device mapping made
-//!   at the moment of the reset, and no `x86_64` machine this project owns or emulates uses one (q35
-//!   and xenon both say system I/O). It is logged and skipped, so the fallback still runs.
-//! - **Only the first route has ever reset anything.** q35's FADT offers `0xCF9 <- 0x0F`, so
-//!   `script/soak-test --reboot --arch x86_64` resets on attempt 1 and never reaches 2 or 3. Both
-//!   fallbacks compile, print, and have never executed; a QEMU proof of either needs a machine
-//!   whose FADT does not offer that route, and no runner here starts one. xenon's first bench
-//!   reboot is where attempt 1 meets real firmware; the fallbacks stay unproven until a machine
-//!   without the FADT route turns up.
-//! - **Proven under QEMU `q35` only.** Whether xenon's `0xCF9` full reset brings the machine all
-//!   the way back through its firmware to a netboot is the bench's first question; a reset the
-//!   firmware does not survive is not a reboot. See milestone 249's block.
-//! - **Nothing here quiesces devices first.** A reset through `0xCF9` resets the platform, so a DMA
-//!   engine mid-transfer is cut off with everything else; that is the point of a cold reset. Since
-//!   milestone 805 (`reboot` at the prompt) this is also called on a machine holding a filesystem
-//!   open, through the reboot object (kernel/src/reboot.rs). What makes that safe is not here:
-//!   `reboot` syncs the writable filesystem before it invokes the object, so the block servers are
-//!   idle by the time this runs, and nothing else on the machine writes to persistent storage.
+//! - A memory-space FADT reset register is not attempted; it is logged and skipped.
+//! - Only the first route has ever reset anything: the `0xCF9` and 8042 fallbacks never ran.
+//! - Proven under QEMU `q35` only; xenon's first bench reboot is the first test on firmware.
+//! - Nothing here quiesces devices first; `reboot` syncs the writable filesystem before calling.
 
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 

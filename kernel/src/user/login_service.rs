@@ -5,40 +5,26 @@ use crate::sched::{self, RendezvousId};
 /// Where the service maps its own request to the credential service. Must match `components/src/login.rs`.
 const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
 
-/// How many pages a spawned `login_test_client` run's own `memory_region_cap` (slot 3) holds:
-/// enough for `page_frame::MAP`'s own page-table cost when it self-maps the frame `login`'s
-/// `CONNECT` step delegates (milestone 49's channel-per-client update; `fixtures/src/login_test_client.rs`
-/// mirrors this program's own post-auth `map_page_frame(fs_page_frame, FS_VA, true, budget)`, but a
-/// run holds no budget yet at the point it must map its own connect channel). Margin over the one
-/// page a fresh mapping ever strictly needs, on this file's own existing style for every other
-/// region here. One page more since milestone 152: the run's report endpoint is retyped from it.
+/// How many pages a `login_test_client` run's own `memory_region_cap` (slot 3) holds.
 ///
-/// **Reclaimed once the run is dead** ([`wait_client`], 2026-09-26 UTC). A run's scratch pays for
-/// page tables in that run's own address space, so it is handed to
-/// `kernel::user::holding::Holding::add_region_after_death` beside the run's thread id, and comes
-/// back only after the thread is gone. Until then nothing reclaimed it, and every run held one
-/// region and four frames for the rest of the boot. It cost two lanes a test on the same day: the
-/// `milestone/198-owner-console` lane's two extra runs made `tests::std_net_runs_over_the_socket_contract`
-/// fail to load a program for want of frames, and one more login test in milestone 152's lane took
-/// the aarch64 suite to 253 of `memory_region::MAX_REGIONS` (256) live regions at `timetable_tests`,
-/// so the timetable's `--mem` split failed and the test hung rather than failing.
+/// It pays `page_frame::MAP`'s page-table cost when the run maps the frame `login`'s `CONNECT`
+/// step delegates, before the run holds any other budget, and one page for the run's report
+/// endpoint. [`wait_client`] reclaims it once the run's thread is dead, since it pays for tables in
+/// that run's address space. See notes/login.md, "The kernel's test harness".
 const CLIENT_SCRATCH_UT_PAGES: u64 = 5;
 
-/// Stack pages beyond the one page `run` maps. This process parses the initial ramdisk, parses an
-/// ELF, and builds a child address space (`supervision_protocol::build_child`), which is deeper
-/// than `root_supervisor`'s own 8-page stack covers; sized against `credentialer.rs`'s own lesson
-/// (its Argon2id inner loop needed 16 pages where one was not close) rather than guessed from
-/// nothing.
+/// Stack pages beyond the one page `run` maps. `login` parses an ELF and builds a child address
+/// space (`supervision_protocol::build_child`), deeper than `root_supervisor`'s 8-page stack
+/// covers; sixteen is the size `credentialer.rs`'s Argon2id loop needed.
 const LOGIN_STACK_PAGES: u64 = 16;
 
-/// **What a `login_test_client` run is handed** (milestone 293): a behaviour, and separately a
-/// credential. Must match `fixtures/src/login_test_client.rs`, whose module docs carry the argument
-/// for why these are two things and not eleven roles.
+/// The behaviours a `login_test_client` run is handed, separately from its credential. Must match
+/// `fixtures/src/login_test_client.rs`, whose module docs argue the split.
 ///
-/// The credential halves are `credential_contract::fixture`'s own indices, not named again here: a
-/// third copy of `alice` is exactly what 293 removed.
+/// The credential halves are `credential_contract::fixture`'s indices, not named again here.
 pub const LOGIN: u64 = 0;
-/// DECISIONS §117's per-identity subtree proof, writing the identity it was handed; see the same
+/// §117 (a principal's subtree is named by its identity string)'s proof, writing the identity it
+/// was handed; see the same
 /// file's module docs.
 pub const WRITE_MARKER: u64 = 1;
 /// Reads that marker back, in an independent channel.
@@ -46,20 +32,20 @@ pub const READ_MARKER: u64 = 2;
 /// Logs in, then tears the session down with the fourth delegated capability and proves the
 /// directory came down with it. See the same file's module docs.
 pub const LOGOUT: u64 = 3;
-/// Milestone 49's terminal update: logs in, proves the fifth delegated capability (the terminal)
+/// Logs in, proves the fifth delegated capability (the terminal)
 /// works, tears the session down without freeing the terminal. See the same file's module docs.
 pub const HOLD_TERMINAL: u64 = 4;
 /// Sends `login_contract::logout_word` on the front door directly, with no credential at all.
 pub const FREE_TERMINAL: u64 = 5;
-/// DECISIONS §219 (how the shell names an installed program to the spawner) gate D2: logs in and sends [`RUN_UNVOUCHED_MAGIC`] on the sixth delegated
-/// capability. See the same file's module docs.
+/// §219 (how the shell names an installed program to the spawner) gate D2: logs in and sends
+/// [`RUN_UNVOUCHED_MAGIC`] on the sixth delegated capability. See the same file's module docs.
 pub const PRESENT_RUN_UNVOUCHED: u64 = 6;
-/// Milestone 152 (durable delegation): logs in, holds a pending-job child off the budget, proves the logout is refused
-/// until the child is gone. See the same file's module docs. Provisional name.
+/// Logs in, holds a pending-job child off the budget, proves the logout is refused until the child
+/// is gone. See the same file's module docs. Provisional name.
 pub const PENDING_WORK: u64 = 7;
-/// Milestone 152: logs in with `SCHEDULE`, replaces the document, detaches. Provisional name.
+/// Logs in with `SCHEDULE`, replaces the document, detaches. Provisional name.
 pub const OPEN_SCHEDULE: u64 = 8;
-/// Milestone 152: logs in, reattaches, empties the schedule, waits for the timetable to stop.
+/// Logs in, reattaches, empties the schedule, waits for the timetable to stop.
 /// Provisional name.
 pub const EMPTY_SCHEDULE: u64 = 9;
 /// [`PRESENT_RUN_UNVOUCHED`]'s proof-of-life word; must match the same file's
@@ -71,11 +57,11 @@ pub const RPT_OK: u64 = login_contract::OK;
 pub const RPT_DENIED: u64 = login_contract::DENIED;
 #[allow(dead_code)] // named for completeness with the pair above; nothing exercises it today
 pub(crate) const RPT_MALFORMED: u64 = login_contract::MALFORMED;
-/// Milestone 49's terminal update: the terminal was already on loan.
+/// The terminal was already on loan.
 pub const RPT_NO_TERMINAL: u64 = login_contract::NO_TERMINAL;
 /// [`FREE_TERMINAL`]'s own answer.
 pub const RPT_LOGGED_OUT: u64 = login_contract::LOGGED_OUT;
-/// Milestone 152: authenticated, and on the owner's suspended list.
+/// Authenticated, and on the owner's suspended list.
 pub const RPT_SUSPENDED: u64 = login_contract::SUSPENDED;
 
 /// [`HOLD_TERMINAL`]'s proof-of-life word for the delegated terminal; must match the same file's
@@ -91,43 +77,40 @@ pub const F_TEARDOWN_OK: u64 = 1 << 4;
 pub const F_DEAD_AFTER_TEARDOWN: u64 = 1 << 5;
 pub const F_BUDGET_TEARDOWN_OK: u64 = 1 << 6;
 pub const F_BUDGET_DEAD_AFTER_TEARDOWN: u64 = 1 << 7;
-/// Milestone 49's terminal update: the fifth delegated capability delivered [`TERM_MAGIC`] to a
+/// The fifth delegated capability delivered [`TERM_MAGIC`] to a
 /// real receiver. Set only by [`HOLD_TERMINAL`].
 pub const F_TERM_WORKS: u64 = 1 << 8;
-/// DECISIONS §219 limitation 2: the sixth capability arrived and `SEND_CAP` of it was refused.
+/// §219 limitation 2: the sixth capability arrived and `SEND_CAP` of it was refused.
 pub const F_RUN_UNVOUCHED_NOT_GRANTABLE: u64 = 1 << 9;
 /// The sixth capability delivered [`RUN_UNVOUCHED_MAGIC`]. Set only by [`PRESENT_RUN_UNVOUCHED`].
 pub const F_RUN_UNVOUCHED_WORKS: u64 = 1 << 10;
 /// `OK` announced a sixth capability. Set by every behaviour that was sent one.
 pub const F_RUN_UNVOUCHED_ANNOUNCED: u64 = 1 << 11;
-/// Milestone 152: the budget's `DESTROY` was refused `NotPermitted` while a pending-job child lived.
+/// The budget's `DESTROY` was refused `NotPermitted` while a pending-job child lived.
 pub const F_LOGOUT_REFUSED_WHILE_PENDING: u64 = 1 << 12;
-/// Milestone 152: the budget still retyped a page after that refusal.
+/// The budget still retyped a page after that refusal.
 pub const F_SESSION_SURVIVED_REFUSAL: u64 = 1 << 13;
-/// Milestone 152: the pending-job child was destroyed.
+/// The pending-job child was destroyed.
 pub const F_PENDING_WORK_DESTROYED: u64 = 1 << 14;
-/// Milestone 152: the reply announced the registration page.
+/// The reply announced the registration page.
 pub const F_SCHEDULE_ANNOUNCED: u64 = 1 << 15;
-/// Milestone 152: the replace was in force (planned to fire, or emptied).
+/// The replace was in force (planned to fire, or emptied).
 pub const F_REPLACED: u64 = 1 << 16;
-/// Milestone 152: the page already carried the first session's reply.
+/// The page already carried the first session's reply.
 pub const F_REATTACHED: u64 = 1 << 17;
-/// Milestone 152: the timetable's exit word appeared.
+/// The timetable's exit word appeared.
 pub const F_TIMETABLE_EXITED: u64 = 1 << 18;
-/// Milestone 152: the document was written to the identity's stored schedule first.
+/// The document was written to the identity's stored schedule first.
 pub const F_STORED: u64 = 1 << 19;
-/// Milestone 152, Fork 6 C: the plan in the page granted the job no report endpoint.
+/// The plan in the page granted the job no report endpoint.
 pub const F_NO_REPORT: u64 = 1 << 20;
 
-/// **[`LOGOUT`]'s third report word is microseconds, not an identity hint**: how long that
-/// behaviour's `MemoryRegion::DESTROY` on the caretaker region waited for §16's armed kill to land.
-/// Every other behaviour that fills the third word puts a [`login_contract::identity_hint`] there; this one
-/// has no identity to report and a number a red run needs. Must match
-/// `fixtures/src/login_test_client.rs`'s `waited_micros`.
+/// The ceiling, in microseconds, on [`LOGOUT`]'s wait for §16 (object revocation)'s armed kill to
+/// land on the caretaker region's `MemoryRegion::DESTROY`.
 ///
-/// This is that client's own ceiling in the same units, so a failure message can say how close to
-/// it the wait came, which is the difference between "the host was slow" and "the caretaker never
-/// died". Must match its `DESTROY_WAIT_SECS`.
+/// [`LOGOUT`]'s third report word is that wait (`waited_micros`), not an identity hint, so a failure
+/// can say whether the host was slow or the caretaker never died. Must match
+/// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECS`.
 pub const DESTROY_WAIT_MICROS: u64 = 5 * 1_000_000;
 
 /// A running login service and the endpoints that reach it.
@@ -138,32 +121,24 @@ pub struct Wiring {
     pub result: RendezvousId,
     /// One [`login_contract::ATTRIBUTED`] message per successful login, `READ`.
     pub audit: RendezvousId,
-    /// **The stand-in terminal** (milestone 49's terminal update): this test harness holds no real
-    /// terminal to grant, so it wires a bare rendezvous in its place, `READ`. A test can `ipc_receive`
-    /// here to confirm a delegated `TERM_EP` copy actually names this object (real communication,
-    /// not merely "a capability arrived"), the same "prove it works, not merely that it arrived"
-    /// standard this file's own module doc already sets for the directory and the budget.
+    /// The stand-in terminal, `READ`: a bare rendezvous, since the harness holds no real terminal.
+    /// A test `ipc_receive`s here to prove a delegated `TERM_EP` copy names this object.
     pub term_ep: RendezvousId,
-    /// **The stand-in run-unvouched endpoint** (DECISIONS §219 gate D2), `READ`: the progenitor's
+    /// The stand-in run-unvouched endpoint (§219 gate D2), `READ`: the progenitor's
     /// role, played by the harness. `login` holds it `WRITE | GRANT` at
     /// `grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
     /// `ipc_receive`s here to confirm the copy a session was handed names this object.
     pub run_unvouched: RendezvousId,
-    /// **`login`'s own thread** (milestone 757 (a test kernel fails a process on its Nth retype),
-    /// provisional): what `retype_fault::arm` names, and whose capability table a sweep reads
-    /// before and after each run. A test reads it; nothing sends to it.
+    /// `login`'s own thread: what `retype_fault::arm` names, and whose capability table a sweep
+    /// reads before and after each run.
     pub tid: crate::thread::ThreadId,
 }
 
-/// Copy `bytes` into fresh read-only pages at consecutive VAs from `base` (milestone 233).
+/// Copy `bytes` into fresh read-only pages at consecutive VAs from `base`.
 ///
-/// The kernel-side twin of `supervision_protocol`'s `blobs`, which is how
-/// `crates/system_initializer` hands the same two blobs to the same program. Read-only for the
-/// same reason that one gives: a program image is data the child reads, and a child that could
-/// rewrite the image it was handed could hand a different one on.
-///
-/// An empty `bytes` maps nothing at all, which is the case `login` is told about by a zero length
-/// in its argument register rather than by a mapping it would have to probe.
+/// The kernel-side twin of `supervision_protocol`'s `blobs`, read-only so a child cannot rewrite
+/// an image it hands on. An empty `bytes` maps nothing; `login` learns that from a zero length in
+/// its argument register.
 fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
     let mut off = 0usize;
     while off < bytes.len() {
@@ -176,23 +151,15 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
     }
 }
 
-/// **Wire and spawn the login service, and return once its start-up pass is over.** It parses the
-/// initial ramdisk for `fs_subtree_caretaker`'s own bytes, re-derives what the durable-session
-/// manifest names, and then blocks on [`Wiring::request`].
+/// Wire and spawn the login service, and return once its start-up pass is over.
 ///
-/// `verify` is the credential service's verify endpoint (milestone 56), already sealed: login never
-/// provisions it and never could. `verify_page_frame` is the exact physical frame that instance maps at
-/// its own `VERIFY_VA` (`credential_service::Wiring::verify_page_frame` on the instance `verify` came
-/// from). `fs_ep`/`fs_page_frame` are the file service's root directory capability and the page its
-/// clients share with it (`fs_service::root_directory`). `construction_pages` bounds how many
-/// logins this instance can serve before every further one is answered [`login_contract::DENIED`] (see
-/// `components/src/login.rs`'s BUGS: nothing reclaims a caretaker's region in this slice).
-///
-/// **`verify_page_frame` is a parameter and not a lookup**, on purpose (milestone 155): a caller that
-/// wired more than one credential service in the same boot (as that milestone's own suite does, for
-/// a store still open to provision against) cannot ask a bare global "which one," because there is
-/// no one answer. Taking the frame from the specific `Wiring` the caller already holds is correct
-/// regardless of how many other instances exist or when they were wired.
+/// `verify` is a sealed credential service's verify endpoint, and `verify_page_frame` the frame that
+/// instance maps at its `VERIFY_VA` (`credential_service::Wiring::verify_page_frame`), passed rather
+/// than looked up because a boot may wire more than one. `fs_ep` and `fs_page_frame` are the file
+/// service's root directory and shared page (`fs_service::root_directory`). After
+/// `construction_pages` is spent every login is answered [`login_contract::DENIED`], since nothing
+/// reclaims a caretaker's region (`components/src/login.rs`'s BUGS). `schedule`
+/// maps the durable-session programs. See notes/login.md, "The kernel's test harness".
 pub fn start(
     image: &'static [u8],
     verify: RendezvousId,
@@ -210,7 +177,6 @@ pub fn start(
     let request = sched::create_rendezvous();
     let result = sched::create_rendezvous();
     let audit = sched::create_rendezvous();
-    // The stand-in terminal (milestone 49's terminal update); see `Wiring::term_ep`'s own doc.
     let term_ep = sched::create_rendezvous();
     let construction = crate::memory_region::create(construction_pages)
         .expect("no construction budget for the login service");
@@ -250,16 +216,9 @@ pub fn start(
     )
     .expect("start");
 
-    // **Returned only once `login`'s start-up pass is over**, so no caller holds a `Wiring` to a
-    // `login` that is still re-deriving. That pass reads the manifest, the suspended list and each
-    // stored schedule through `fs_page_frame`, the one page every direct client of the file
-    // service writes its names into, and `login.rs` takes it as "this process's alone" because no
-    // session is live yet. A caller that went on to write that page itself (`fs_service`'s
-    // `set_home_file` and `set_root_list`, `login_tests`' `ensure_home_subtree`) raced it: the
-    // durable start-up test failed twice on 2026-10-03 with bob's subtree not found (`-2`, on
-    // sifive-u54) and his stored schedule not found (on thead-c906), so not one CPU model's fault.
-    // `REDERIVE_SKIPS` is the one front-door word with no side effect, and `login` receives
-    // nothing on the front door until the pass has run.
+    // The start-up pass uses `fs_page_frame` as its own, so a caller that writes that page before
+    // the pass ends races it. `REDERIVE_SKIPS` is the one front-door word with no side effect, and
+    // `login` receives nothing on the front door until the pass has run.
     sched::ipc_send(request, [login_contract::rederive_skips_word(), 0, 0]);
     let r = sched::ipc_receive(result);
     assert_eq!(
@@ -288,25 +247,14 @@ struct LoginBlobs {
 }
 
 /// Read the caretaker, the program measurements and, when `schedule` is set, the durable-session
-/// programs out of the initial ramdisk.
+/// programs (`user_timetable_keeper` and `timetable`) out of the initial ramdisk.
 fn read_login_blobs(schedule: bool) -> LoginBlobs {
-    // **The two blobs `login`'s `_start` is started against** (milestone 233), read out of the same
-    // archive this harness used to map wholesale.
-    //
-    // This changed so that there is **one** contract rather than two. `login` used to read the
-    // initial ramdisk at `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, which this
-    // harness could hand it (it is the kernel; it maps reserved RAM directly) and which
-    // `crates/system_initializer` could not (`build_child` maps only pages the spawner holds a
-    // capability for, and nothing names the archive). So the one path the suite exercised was the
-    // one the real boot never took, and `login` died at `_start` on every interactive boot without
-    // a single test noticing. A harness that starts a program differently from the way the system
-    // starts it is not testing that program.
+    // `login` gets these as blobs, never the archive itself, because that is how
+    // `crates/system_initializer` starts it.
     let archive = super::initial_ramdisk().expect("no initial ramdisk");
     let fs = nifefs::Fs::parse(archive).expect("the initial ramdisk is not a nifefs archive");
     let caretaker = fs.read("fs_subtree_caretaker").unwrap_or(&[]);
     let measurements = fs.read(measured_boot::PROGRAM_MEASUREMENTS).unwrap_or(&[]);
-    // **What a durable session is built from** (milestone 152), when this `login` may open one:
-    // `user_timetable_keeper` and `timetable`, out of the same archive, as the progenitor hands them.
     let (keeper, timetable) = if schedule {
         (
             fs.read("user_timetable_keeper")
@@ -364,25 +312,15 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
         login_contract::PROGRAM_MEASUREMENTS_VA,
         measurements,
     );
-    // What `login` builds a user's `user_timetable_keeper` and timetable from, when they ask for their
-    // schedule (milestone 152). Empty means no schedule opens.
+    // Empty means no schedule opens.
     map_blob(
         &mut space,
         login_contract::USER_TIMETABLE_KEEPER_ELF_VA,
         keeper,
     );
     map_blob(&mut space, login_contract::TIMETABLE_ELF_VA, timetable);
-    // Milestone 49's channel-per-client update removed the front door's own shared staging page:
-    // `CONNECT` (the only word the front door accepts) carries no page at all, and every actual
-    // login's identity and secret now travel on a page `login`'s own `connect()` mints and maps at
-    // runtime, private to the one client it was minted for. Only the credential-relay page below is
-    // still wired here, statically, because it must be the exact frame `credential_service` itself
-    // reads from.
-    //
-    // The credential-relay page: it must be the exact physical frame `credential_service` wired the
-    // service's own `VERIFY_VA` to, because that is the only page the credential service ever reads
-    // a request from. Taken from the caller's own `Wiring` (see this function's own doc) rather than
-    // looked up.
+    // The one page wired statically: the credential service reads requests only from the frame
+    // it maps at its `VERIFY_VA`. A login's identity and secret travel on a page `connect()` mints.
     let cred_page = verify_page_frame;
     space
         .map_physical(
@@ -420,18 +358,9 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
         audit,
         term_ep,
     } = slots;
-    // In `components/src/login.rs`'s own slot order: REQUEST, RESULT, VERIFY, FS_EP, FS_PAGE_FRAME,
-    // CONSTRUCTION_UT, AUDIT, TERM_EP. Each `assert_eq!` inside `grant_in_order` is that file's
-    // own doc read from the other side, the same discipline `authority_tests::spawn_tree` uses for
-    // `root_supervisor`.
-    //
-    // Granted one at a time rather than collected into a `[(&str, Cap); 8]` first: milestone 49's
-    // terminal update took that array to eight entries and `start`'s frame to 4288 bytes, over the
-    // 4096-byte guard page `script/stack-frame-check` gates against, because an unoptimised build
-    // materialises the whole table plus a temporary per element before the first insert ever runs.
-    // The array only ever existed to pair each name with its slot index, and the counter below
-    // pairs them just as tightly while nothing but one capability is ever live at once: 1632 bytes
-    // on aarch64, 1648 on riscv64, measured the same way the gate measures.
+    // Granted one at a time, not from an array: an unoptimised build materialises a `[(&str, Cap);
+    // 8]` whole, and that took `start`'s frame past the 4096-byte guard page
+    // `script/stack-frame-check` gates against. See notes/login.md, "The kernel's test harness".
     let mut next_slot = 0u64;
     let mut grant_in_order = |name: &str, cap: crate::cap::Cap| {
         let slot = sched::thread_control_block_insert_cap(tid, cap, None)
@@ -454,11 +383,7 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     );
     grant_in_order(
         "fs_page_frame",
-        // GRANT as well as READ|WRITE: `components/src/login.rs` both maps this frame into every
-        // caretaker it builds (`MAP_INTO`, which only checks WRITE) and delegates it directly
-        // to every authenticated client (`SEND_CAP`, which needs GRANT on the capability being
-        // sent). The second use is why this differs from `credential_service.rs`'s own frames,
-        // which are never delegated onward.
+        // GRANT too: `login` delegates this frame to every authenticated client (`SEND_CAP`).
         page_frame_cap(
             fs_page_frame,
             Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
@@ -473,12 +398,10 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     assert_eq!(next_slot, 8, "login must hold exactly eight capabilities");
 }
 
-/// Grant the run-unvouched endpoint and the durable window at their named slots; returns the
-/// run-unvouched endpoint.
+/// Grant the run-unvouched endpoint (§219 gate D2) and the durable window (the page a durable
+/// session's timetable reads the store through) at the slots the progenitor places them; returns
+/// the run-unvouched endpoint.
 fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
-    // **And the run-unvouched capability at its named slot** (DECISIONS §219 gate D2), where
-    // `crates/system_initializer` places it in the real boot, so `login` meets one contract here
-    // and there.
     let run_unvouched = sched::create_rendezvous();
     let landed = sched::thread_control_block_insert_cap(
         tid,
@@ -487,8 +410,6 @@ fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     )
     .expect("insert run_unvouched");
     assert_eq!(landed, grant_plan::spawnproto::RUN_UNVOUCHED_SLOT);
-    // **And the durable window's page at its named slot** (milestone 152, Fork 8 D), the channel a
-    // durable session's timetable reads the store through, as the progenitor places it.
     let window = super::fs_service::durable_window().expect("the file service is wired");
     let landed = sched::thread_control_block_insert_cap(
         tid,
@@ -503,10 +424,8 @@ fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     run_unvouched
 }
 
-/// **Spawn one `login_test_client` run** against `w`, and return its report. Waits for it to
-/// finish before returning: `spawn_client` followed by `wait_client` is the same pair, split, for a
-/// caller that wants two (or more) runs genuinely in flight together (see those two functions'
-/// own docs, and `kernel::user::login_tests` for the isolation proof that needs it).
+/// Spawn one `login_test_client` run against `w`, wait for it, and return its report. For two
+/// runs in flight at once, use [`spawn_client`] and [`wait_client`].
 pub fn client(
     image: &'static [u8],
     w: &Wiring,
@@ -517,7 +436,7 @@ pub fn client(
     wait_client(spawn_client(image, w, behaviour, identity, secret))
 }
 
-/// **One `login_test_client` run in flight**: where its report arrives, and what [`wait_client`]
+/// One `login_test_client` run in flight: where its report arrives, and what [`wait_client`]
 /// gives back once the run is dead (its thread, and the scratch region its page tables came from).
 pub struct ClientRun {
     report: RendezvousId,
@@ -525,16 +444,11 @@ pub struct ClientRun {
     scratch: u64,
 }
 
-/// **Spawn one `login_test_client` run and return its report endpoint immediately**, without
-/// waiting for it to run at all. Milestone 49's channel-per-client update is what makes this worth
-/// having separately from [`client`]: two runs spawned this way before either is waited on reach
-/// the front door on their own schedule, which is genuine concurrency at the front door rather than
-/// the artificial kind a single call that spawns-then-waits could ever produce. Pair with
-/// [`wait_client`].
+/// Spawn one `login_test_client` run at `behaviour` and return without waiting for it; pair with
+/// [`wait_client`]. Two runs spawned this way reach the front door concurrently.
 ///
-/// **`identity` and `secret` are separate arguments on purpose** (milestone 293): they compose, so
-/// the wrong-secret case is `(fixture::ALICE, fixture::WRONG)` rather than an eleventh role whose
-/// code could drift away from the honest one's. Both are `credential_contract::fixture` indices.
+/// `identity` and `secret` are `credential_contract::fixture` indices, separate so they compose:
+/// the wrong-secret case is `(fixture::ALICE, fixture::WRONG)`.
 pub fn spawn_client(
     image: &'static [u8],
     w: &Wiring,
@@ -542,23 +456,13 @@ pub fn spawn_client(
     identity: u64,
     secret: u64,
 ) -> ClientRun {
-    // A small, private scratch budget for this one run: milestone 49's channel-per-client update
-    // means a run must map the page `login`'s `CONNECT` step delegates before it holds anything
-    // else of its own (unlike the post-auth `budget`, `map_page_frame`'s own page-table cost has
-    // nowhere else to come from at that point). Independent per run, the same reason
-    // `login`'s own `CONSTRUCTION_UT` is never shared with a client: two runs racing to map their
-    // own, unrelated pages must never be able to exhaust or interfere with each other's page tables.
+    // One scratch per run, so two runs mapping at once cannot exhaust each other's page tables.
     let scratch =
         crate::memory_region::create(CLIENT_SCRATCH_UT_PAGES).expect("no scratch region for a run");
-    // **The report endpoint comes out of the scratch too** (milestone 152), so reclaiming the
-    // scratch once the run is dead takes the endpoint with it. `sched::create_rendezvous` draws on
-    // the kernel's own chunks, which are never given back, and the whole machine shares
-    // `sched::MAX_RENDEZVOUS` (512) live endpoints: one per run was enough, with the durable-session
-    // tests' three more, to reach that ceiling in `timetable_tests` on 2026-09-26.
+    // From the scratch, not `sched::create_rendezvous`, whose chunks are never given back: the
+    // machine shares `sched::MAX_RENDEZVOUS` live endpoints, and the suite's runs would reach it.
     let report =
         sched::create_rendezvous_from(scratch).expect("no report endpoint in a run's scratch");
-    // Copied out of `w` rather than captured by reference: the spawned closure must be `'static`,
-    // and an `RendezvousId` is a plain integer with nothing left to borrow once it is in hand.
     let (request, result) = (w.request, w.result);
     let tid = sched::spawn(move || {
         run(
@@ -585,7 +489,7 @@ pub fn spawn_client(
     }
 }
 
-/// **Block for one run's report**, the other half of [`spawn_client`], then hand the run's scratch
+/// Block for one run's report, the other half of [`spawn_client`], then hand the run's scratch
 /// back once its thread is gone. The report is the last thing a run sends before it exits, so the
 /// wait is for an exit already under way.
 pub fn wait_client(run: ClientRun) -> [u64; 5] {

@@ -2,43 +2,18 @@
 //! **The Intel `e1000e` family, as pure logic** (milestone 494 (a driver for the network card a PC
 //! actually has); notes/e1000e.md).
 //!
-//! Everything both halves of the driver compute, and nothing either of them touches. The kernel
-//! (`kernel/src/e1000e.rs`) resets the controller, reads its MAC address and programs the ring base
-//! registers; `net_stack` (`components/src/e1000e_transport.rs`) fills descriptors and moves the
-//! two ring tails. Both are thin volatile layers over this crate, which is what makes the ring
-//! logic host-testable against a simulated device ([`DataPlane`]'s tests) when the real device only
-//! exists inside an emulator and on one desk.
-//!
-//! # Where the facts come from
-//!
-//! Read, not recalled, on 2026-10-04 (UTC): Linux's `drivers/net/ethernet/intel/e1000e/regs.h`,
-//! `defines.h` and `hw.h` for offsets, bits, descriptor layouts and device ids, cross-checked the
-//! same day against FreeBSD's BSD-licensed `sys/dev/e1000/` (`e1000_regs.h`, and `e1000_api.c`'s
-//! SPT class, which is exactly [`DEVICE_IDS`]' I219 rows), and QEMU's `hw/net/e1000e_core.c` for
-//! what the emulated 82574L does with them (legacy descriptors unless `RFCTL.EXTEN`; receive only
-//! with `RCTL.EN`, link up and bus mastering). No Linux code was copied. **Intel's own I219
-//! datasheet was not read**; where the I219 is believed to differ from the 82574L it is said so,
-//! and marked, at the item.
-//!
-//! # The finding that decides the confinement story
-//!
-//! Milestone 494's block asked this to be read before the split was drawn, because NVMe had put a
-//! page boundary exactly where the authority boundary belongs and this family might not. **It does
-//! not.** Receive queue 0's base is at `0x2800` and its tail at `0x2818`; transmit queue 0's base
-//! is at `0x3800` and its tail at `0x3818` ([`regs`]). A process that can move a ring tail can
-//! also repoint the ring, so on this device **the IOMMU is the whole of the DMA confinement**, as
-//! the block predicted. What the page split still buys is everything else: the process holds the
-//! two queue pages ([`RX_QUEUE_PAGE`], [`TX_QUEUE_PAGE`]) and not page 0 (`CTRL`, `STATUS`, `RCTL`,
-//! `TCTL`, the interrupt registers) or page 5 (the receive address filter), so it cannot reset the
-//! controller, change its MAC address, turn on promiscuous receive, or touch the PHY.
-//!
+//! Everything both halves of the driver compute, and nothing either touches. The kernel
+//! (`kernel/src/e1000e.rs`) resets the controller, reads its MAC address and programs the ring
+//! bases; `net_stack` (`components/src/e1000e_transport.rs`) fills descriptors and moves the tails.
+//! A ring's base and tail share a page ([`regs`]), so the IOMMU is the whole DMA confinement; the
+//! process holds only [`RX_QUEUE_PAGE`] and [`TX_QUEUE_PAGE`]. The design is in notes/e1000e.md and
+//! where the register facts come from in notes/e1000e/the-i219-port.md.
 
 //! # BUGS
 //!
-//! - **The I219's bring-up is ported in [`pch`]** (MAC and PHY steps, with Intel's BSD licence)
-//!   **but not its link-up half**, which [`pch`]'s own BUGS records; none of it has run on silicon.
-//! - **Legacy descriptors on the I219 are an assumption.** The 82574L supports them (QEMU uses them
-//!   unless `RFCTL.EXTEN`); the PCH parts are believed to, from the 8254x lineage, and that was not
+//! - **The I219's bring-up is ported in [`pch`] but not its link-up half**, which [`pch`]'s own
+//!   BUGS records.
+//! - **Legacy descriptors on the I219 are an assumption**, believed from the 8254x lineage and not
 //!   read anywhere.
 //! - **One receive and one transmit queue, polled.** No interrupt, no checksum offload, no
 //!   segmentation offload, no jumbo frames. Each is a later decision rather than an omission.

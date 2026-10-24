@@ -82,7 +82,8 @@ physical memory sitting in the half user programs get.
 - `kernel_main`'s single pointer is called `dtb`. What arrives on x86 is `hvm_start_info`. The
   *shape* is right (one pointer to everything discoverable) and only the name is wrong.
 
-Both are naming decisions, so both are calef's; a lane records them rather than deciding.
+Both are naming decisions, so both were calef's. He ratified the renames: the call is
+`arch::cpu_start`, and the pointer is `boot_info_pointer`.
 
 ## The bug worth knowing about
 

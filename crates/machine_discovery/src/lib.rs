@@ -1,42 +1,17 @@
-//! **What machine is this?** One record per architecture, populated once at boot, printed at boot.
+//! What machine is this? One record per architecture, populated once at boot and printed at boot,
+//! and the readers every architecture shares: the core list, interrupt ids, the screen token and
+//! ACPI.
 //!
-//! Milestone 60 (design/roadmap/0060-isa-discovery.md). An emulator is whatever we ask for; a board
-//! is not, so the kernel reads what the machine is rather than what the target triple implies.
-//!
-//! # The tiers
-//!
-//! 1. **The firmware's claim.** A device tree property. Cheap, structured, and *hearsay*.
-//! 2. **A targeted measurement.** Write a value, read back what stuck: what the silicon does rather
-//!    than what somebody wrote about it.
-//! 3. **Trap-and-detect.** Execute the instruction and catch the fault. Last resort; not used.
-//!
-//! **aarch64 has a tier 0: the CPU describes itself.** `MIDR_EL1` and the `ID_AA64*` registers are
-//! architected, mandatory, and read from the part in front of you. RISC-V removed that tier: `misa`
-//! is coarse, may read as zero, and says nothing about extensions ratified after 2015, so the
-//! answer is a device-tree property. That is why [`riscv64::Isa`] is a parser and [`aarch64::Isa`]
-//! a decoder, and why the RISC-V side keeps its tier-2 probe: **the tree is a claim and the probe
-//! is a measurement, and when they disagree the machine wins.**
-//!
+//! Each record is `Copy` with public fields, and `missing_requirements` is the one verb a call
+//! site branches on. There is no trait. See `notes/isa-discovery.md` for the tiers of discovery
+//! and `notes/machine-discovery.md` for the shared readers.
 
-//! # The trap this crate is written to avoid
-//!
-//! `if isa.has_x()` sprouting across the kernel turns a fact into a hundred branches. So the record
-//! is `Copy`, has public fields, and offers exactly two verbs, [`riscv64::Isa::missing_requirements`]
-//! and [`aarch64::Isa::missing_requirements`], which answer "can this machine run us at all".
-//! Everything else is for the boot print.
-//!
-//! [`cpu_list`] (milestone 100 (read the machine's PSCI and its CPU list)) sits beside the arch
-//! records because every architecture answers "which cores" the same way: `/cpus` holds a `cpu@`
-//! node per core with its hardware id in `reg`.
-//! `aarch64::Psci` is arch-specific and lives in the aarch64 module. **There is no trait and no
-//! per-chip abstraction** until a second real board says what the abstraction is.
-//!
 //! # BUGS
 //!
-//! - **Discovery does not make the kernel portable, it makes it honest.** Today the kernel does one
-//!   thing with a missing requirement: it says so and stops.
-//! - **The device tree can lie.** Tier 2 exists for that, and on RISC-V it covers exactly one fact
-//!   (the ASID width).
+//! - Discovery makes the kernel honest, not portable: a missing requirement is reported and the
+//!   boot stops.
+//! - The device tree can lie. The tier-2 probe exists for that, and on RISC-V it covers one fact,
+//!   the ASID width.
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from `isa`,
 //! which collided with the ISA bus and described only part of the scope. Linux ARM's `machine_desc`
