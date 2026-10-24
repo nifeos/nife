@@ -1,6 +1,5 @@
-//! `std_threads_tests`: **milestone 812 (`std::thread::spawn` runs real threads in one address
-//! space)'s exit test**, on all three architectures (§19 (architectural parity is a tenet)).
-//!
+//! Milestone 812 (`std::thread::spawn` runs real threads in one address space)'s exit test, on all
+//! three architectures (§19 (architectural parity is a tenet)).
 //! The `std_threads` program is ordinary `std` Rust: four threads, an `AtomicU64` and a
 //! `Mutex<u64>` a million increments each, a `thread_local!` per thread, and
 //! `available_parallelism`. It runs here the way a loader that gives a program threads builds it:
@@ -338,14 +337,13 @@ fn rayons_parallel_sum_runs_on_every_online_core() {
     );
 }
 
-/// **The `std` heap's one lock, measured under four threads** (the block's item 12: "measure it under
-/// four threads before replacing it"). `std_heap_contention` does the same allocations with one
-/// thread and then four and prints both times; this prints them to the log and checks only that both
-/// arrived. Under QEMU the numbers are a ratio, not a speed. `notes/std/threads.md` and
-/// `notes/std/allocation.md` record them.
+/// The `std` heap's one lock, measured under four threads (the block's item 12: "measure it under
+/// four threads before replacing it").
 ///
-/// It also checks that a thread's end gives its allocation cache back to the heap (milestone 561 (a
-/// per-CPU allocator is what the current-CPU page was for)): the program then runs 64 threads in
+/// `std_heap_contention` does the same allocations with one thread and then four; this logs both
+/// times (a ratio under QEMU, recorded in `notes/std/threads.md` and `notes/std/allocation.md`) and
+/// checks that both arrived. It also checks that a thread's end gives its allocation cache back
+/// (milestone 561 (a per-CPU allocator is what the current-CPU page was for)): 64 threads run in
 /// turn, each ending with a full cache, twice the program's heap budget between them.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.std_threads_tests.the_std_heap_is_measured_under_four_threads.patch`

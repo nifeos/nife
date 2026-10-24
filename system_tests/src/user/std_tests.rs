@@ -3,19 +3,12 @@ use super::*;
 /// Reassemble a std program's stdout off its endpoint until the writer says the stream is over,
 /// and compare byte for byte.
 ///
-/// The framing is the sink contract's (`crates/byte_sink_contract`, milestone 50 (pipes and redirection: one sink protocol, and `|` turns out to be an endpoint)), which for bytes is
-/// bit-for-bit the framing the PAL used before that contract existed: `w0` is the count, `w1`
-/// and `w2` are the bytes, little-endian. `SEND` blocks until a receiver takes it, so the
-/// program is somewhere between its last `println!` and `SYS_EXIT` when the bytes land.
-///
-/// **It reads to end of stream rather than to a byte count, and that is a strengthening.**
-/// Stopping at `want.len()` proved the right bytes came out and said nothing about whether more
-/// were coming; draining to `OPERATION_EOF` proves the program printed exactly this and then finished,
-/// and it exercises the end-of-stream announcement std's `cleanup` now makes, which is what a
-/// pipe's reader will depend on.
-///
-/// Shared by every std test on both ISAs (the arch-gated test modules reach it here), so all of
-/// them assert the same way and a drift in one is a diff in one place.
+/// The framing is the sink contract's (`crates/byte_sink_contract`, milestone 50 (pipes and
+/// redirection: one sink protocol, and `|` turns out to be an endpoint)): `w0` is the count, `w1`
+/// and `w2` the bytes, little-endian. `SEND` blocks until a receiver takes it, so the program is
+/// between its last `println!` and `SYS_EXIT` when the bytes land. Reading to `OPERATION_EOF`
+/// rather than to `want.len()` proves the program printed exactly this and then finished. Every
+/// std test on every ISA asserts through here, so a drift is a diff in one place.
 pub(super) fn assert_std_transcript(report: crate::sched::RendezvousId, want: &[u8], what: &str) {
     let mut got = [0u8; 768];
     let len = drain_sink(report, &mut got, what);
@@ -49,25 +42,14 @@ pub(super) fn assert_std_transcript_from(
 
 /// Reassemble a sink-contract stream into `out` until end of stream; returns its length.
 ///
-/// The one decoder for every sink in the suite, on purpose. The indifference test's whole claim
-/// is that two destinations produce the same bytes, and it would be a much weaker claim if each
-/// arm were decoded by its own code.
+/// The one decoder for every sink in the suite, so the indifference test's arms share it.
+///
 /// # BUGS
 ///
-/// **A program that aborts is never heard, and this hid a bug for a day.** Found by
-/// milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets).
-/// This loop ends only on the sink's end-of-stream marker, which the runtime's `cleanup` sends after `main` returns. A program that
-/// panics under `panic = "abort"` traps instead, so every byte it printed, **including the panic
-/// message**, is sent to this endpoint and never read: the caller blocks until the watchdog fires
-/// and the transcript reads as empty. That is indistinguishable from a program that never started,
-/// and it was read as exactly that.
-///
-/// The workaround a program can apply itself is a panic hook that prints and then calls
-/// `process::exit`, which is what `cryptography_exerciser` does. A caller that knows which thread
-/// writes the stream can use [`drain_sink_from`] instead, which ends on that thread's death and
-/// prints what it said (milestone 514 (the HVF std listener hangs in some full runs)). This one
-/// stays for the callers whose starter does not hand back the writer's thread; each is a hang
-/// waiting for its first abort.
+/// A program that aborts is never heard: this ends only on the end-of-stream marker `cleanup`
+/// sends, so a `panic = "abort"` trap leaves the caller blocked until the watchdog, its panic
+/// message unread. [`drain_sink_from`] covers callers that know the writer's thread; see
+/// notes/std/the-proof.md, "How the tests read a std program's stream".
 pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &str) -> usize {
     let mut len = 0usize;
     loop {
@@ -100,32 +82,15 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
 /// often; `LIVENESS_PERIOD_MS` was considered.
 const WRITER_CHECK_MS: u64 = 100;
 
-/// **[`drain_sink`], for a caller that knows which thread writes the stream: if that thread dies
-/// before it ends the stream, fail at once and print everything it wrote** (milestone 514).
+/// [`drain_sink`] for a caller that knows the writing thread: if it dies before ending the stream,
+/// fail at once and print everything it wrote (milestone 514).
 ///
-/// `drain_sink` blocks in `RECEIVE` until end of stream, so a writer that aborts leaves it parked
-/// for good, and the suite's watchdog fires a minute later and calls it a lost wakeup. That is how
-/// `a_std_program_serves_a_granted_listening_port` read for three weeks on the HVF leg: the
-/// program's panic message had been received into this buffer, and nothing ever printed it.
-///
-/// **How it notices, with nothing new in the kernel.** The calling thread binds a notification and
-/// arms a timer on it every [`WRITER_CHECK_MS`]. A bound notification ends a `RECEIVE` (§101
-/// (notification objects), the `x4 == BOUND` tag), so the receive returns either a sink message or
-/// a tick, and on a tick this asks whether the writer's thread still resolves. A name is
-/// generational, so "gone" means gone.
-/// It is a poll and not an event because an unsupervised thread's death signals nobody; making it
-/// an event would mean spawning the writer supervised, which changes who reaps it.
-///
-/// `echo` prints each line as it arrives, indented under the test's own line, so the host relay
-/// can stamp it on the inbound prober's clock (`xtask/src/inbound.rs`). The comparison is made on
-/// the bytes either way.
+/// A timer on a bound notification ends the `RECEIVE` every [`WRITER_CHECK_MS`] (§101
+/// (notification objects)) to ask whether the writer still resolves. `echo` prints lines as they
+/// arrive, for the host relay (`xtask/src/inbound.rs`). See notes/std/the-proof.md.
 ///
 /// # BUGS
-///
-/// **The tick is a wake, and a wake is progress to the suite's lost-wakeup watchdog**
-/// (`testing::watchdog_tick`). So a writer that is alive but stuck, which used to trip that
-/// watchdog after 60 s, now runs to the test's own budget (90 s by default) and is reported as a
-/// livelock. The dump that follows names the stuck thread either way; the label is what changed.
+/// - The tick is progress to the lost-wakeup watchdog, so a stuck writer reports as a livelock.
 ///
 /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). `drain_sink` plus the thread it
 /// drains from; `drain_sink_watching` and `drain_sink_or_death` were considered.
@@ -212,33 +177,16 @@ fn printable(bytes: &[u8]) -> &str {
     }
 }
 
-/// Consume the FS service's two readiness sentinels, if this caller is the one that wired it.
+/// Kill the filesystem mid-transaction on a real device, then mount what is left of it (milestone
+/// 37, DECISIONS §34 condition 1), asserted identically on each ISA (rule 5, §19).
 ///
-/// One boot has one FS service (the block server owns the device), so the hand-written client's
-/// test and the `std::fs` test share it, and only the first of them to run gets the sentinels.
-/// Asserting on them where they exist is what separates a hang in the mount from one in the
-/// serve path.
-/// **Kill the filesystem mid-transaction on a real device, then mount what is left of it**
-/// (milestone 37, DECISIONS §34 condition 1). Shared by both ISA test modules, so the property
-/// and its wording are asserted identically on each (rule 5, §19).
-///
-/// Six steps, each of which has to happen for the next one to mean anything:
-///
-/// 1. a block server brings up the crash test's own disk (nothing else in the boot touches it);
-/// 2. an FS server mounts it, so the image was sound before this test damaged it;
-/// 3. the driver writes payload A, reads it straight back, and reports: **acknowledged**;
-/// 4. the driver's second write walks into the injector, which tears a block at 2048 bytes and
-///    traps with the transaction's commit unwritten. The `CUT` word is how we know the kill was
-///    the injector's rather than something else having gone wrong;
-/// 5. a **different FS-server process** mounts the same disk through the same block server. Its
-///    readiness sentinel is the consistency result: `Server::open` refuses an image it cannot
-///    make sense of, so arriving at all means the filesystem is intact;
-/// 6. a fresh client reads the file and says which payload is in it.
-///
-/// **The assertion is the property, not an outcome.** Either payload is a pass; what fails is a
-/// mixture, a length nobody wrote, or the pre-boot contents (which would mean an acknowledged
-/// write had vanished). Pinning the answer to "A" would be pinning a detail of when RedoxFS
-/// happens to write its commit, and the claim is not about that.
+/// A block server brings up the crash test's own disk and an FS server mounts it. The driver writes
+/// payload A, reads it back and reports it acknowledged; its second write walks into the injector,
+/// which tears a block at 2048 bytes and traps with the commit unwritten (the `CUT` word says the
+/// kill was the injector's). A different FS-server process mounts the disk, its readiness sentinel
+/// being the consistency result, and a fresh client reads which payload is there. Either payload
+/// passes; a mixture, a length nobody wrote or the pre-boot contents fail. See
+/// notes/fs-server/crash-consistency.md.
 pub(super) fn assert_a_kill_mid_transaction_recovers(
     blk_image: &'static [u8],
     redoxfs_server_image: &'static [u8],
@@ -344,6 +292,12 @@ pub(super) fn assert_attrs(attrs: u64) {
     );
 }
 
+/// Consume the FS service's two readiness sentinels, if this caller is the one that wired it.
+///
+/// One boot has one FS service (the block server owns the device), so the hand-written client's
+/// test and the `std::fs` test share it, and only the first of them to run gets the sentinels.
+/// Asserting on them where they exist is what separates a hang in the mount from one in the
+/// serve path.
 pub(super) fn assert_fs_service_ready(readiness: fs_service::Readiness) {
     // One copy, in `fs_service`, because draining these is **sequencing** and not only an
     // assertion: each server is parked inside its own blocking announcement until somebody
@@ -368,17 +322,9 @@ pub(super) fn std_fs_expected(buf: &mut [u8; 768]) -> usize {
         b"std fs on nife\n".as_slice(),
         filesystem_fixture::MOTD,
         b"read_to_string 70\nmetadata len 70\n".as_slice(),
-        // Milestone 122 changed the third of these. `sub/motd` used to be refused for being
-        // nested, which is no longer a category; what replaces it is `sub/../other/secret`, a real
-        // file in a real sibling directory that this process CAN reach by naming `other/secret`,
-        // refused through the `..` route. The refusal moved from "a path with two components" to
-        // "there is no ascent", which is the property that was always the point.
-        // Milestone 47's namespace half changed the first of these, on 2026-08-18. `/etc/passwd`
-        // used to be refused for having a leading slash, and a leading slash now names this
-        // process's own root, so the line that replaces it is a *positive*: `/motd` and `motd`
-        // opened the same file, and `current_dir` named the root they share. The refusal that
-        // carries the claim moved to `/../motd`, which asks for the level above the only root
-        // there is.
+        // `/motd` and `motd` open the same file and `current_dir` names their root. The refusals
+        // are `/../motd`, the level above the only root, and `sub/../other/secret`, a file this
+        // process reaches as `other/secret` but not through an ascent.
         b"absolute is my root\n".as_slice(),
         b"absolute dotdot refused\ndotdot refused\ninner dotdot refused\n".as_slice(),
         b"missing not found\n".as_slice(),
@@ -452,27 +398,12 @@ pub(super) const EXPECTED: &[u8] = b"hello from std on nife\n\
 
 /// A whole Rust `std` program runs on the native ABI and its output is exactly right.
 ///
-/// Granted a heap, a stdout endpoint, a clock and a configuration page, so both `fs` and `net`
-/// refuse: the two `unsupported` lines are "no ambient filesystem" and "no ambient network" felt
-/// from inside std. Several lines guard a call that once compiled and then killed the program, so
-/// a test that only checked for no crash would have passed:
-///
-/// - `wall clock ok` (milestone 51 (wall-clock time)): `SystemTime::now()` reached a real time
-///   through a read-only page and the ambient counter, inside the clock service's sanity window,
-///   not 1970 plus uptime.
-/// - `config seeded` (milestone 47 (navigation and naming), DECISIONS §111 (inert configuration is
-///   a read-only page)): the kernel assembled the inert-configuration page
-///   (`std_service::start_on_full`/`CONFIG_SLOT`/`CONFIG_PAGE_STD`) and `pal::nife::init` read back
-///   exactly `TZ`, `LANG` and `TERM`.
-/// - `env ok` (milestone 64 (enough `std` to run somebody else's crate)): `std::env::vars()`
-///   returns, holds exactly the three seeded keys, and `set_var` takes.
-/// - `paths ok`: `temp_dir` is the granted directory and `TMPDIR` steers it, a path list survives a
-///   join and a split, and `current_dir`, `current_exe` and `home_dir` still refuse.
-/// - `entropy ok` (milestone 56 (secrets, credentials, and the entropy to make them safe)):
-///   `std::random` reached a virtio-rng device through one endpoint, and two draws differ.
-/// - `exiting through process::exit`, and the two assertions after the transcript:
-///   `std::process::exit` ends the program as an exit, not a trap. `sys/exit.rs` is not a
-///   `sys/<module>/mod.rs` backend, so `cargo xtask std-aborts` is what finds such fall-throughs.
+/// Granted a heap, a stdout endpoint, a clock and a configuration page, so `fs` and `net` refuse:
+/// the two `unsupported` lines are no ambient filesystem and no ambient network, felt from inside
+/// std. Several lines (`wall clock ok`, `config seeded`, `env ok`, `paths ok`, `entropy ok`) guard
+/// a call that once compiled and then killed the program, so a no-crash check would have passed.
+/// `std::process::exit` must end the program as an exit, not a trap. See notes/std/the-proof.md,
+/// "What the offline transcript's lines guard".
 #[test_case]
 fn a_whole_std_program_runs_on_the_native_abi() {
     if std_service::std_exerciser_image().is_none() {
@@ -490,17 +421,10 @@ fn a_whole_std_program_runs_on_the_native_abi() {
     let (report, tid) = (run.report, run.thread);
     assert_std_transcript(report, EXPECTED, "std_exerciser");
 
-    // **The exit is part of the transcript's claim, and it was not being checked** (milestone 64,
-    // fourth pass). The last line the program prints is the one before `std::process::exit(0)`,
-    // whose `_ =>` arm in `sys/exit.rs` was `crate::intrinsics::abort()`: a `brk`, which the kernel
-    // takes as a fault. So this program used to print a perfect transcript and then die as a crash,
-    // and every byte above passed while it did.
-    //
-    // Waiting for the thread to be *gone* rather than for a timeout is what makes this cheap and
-    // race-free. The transcript ends inside `rt::cleanup`, which runs before the process leaves, so
-    // reading the last byte proves nothing about how it left; both a clean exit and a fault reap an
-    // unsupervised thread, so the departure is the synchronisation and the fault counter is the
-    // verdict.
+    // The exit is part of the claim: a program can print a perfect transcript and then trap. The
+    // transcript ends inside `rt::cleanup`, before the process leaves, and both a clean exit and a
+    // fault reap an unsupervised thread, so the departure is the synchronization and the fault
+    // counter is the verdict.
     assert!(
         super::wait_for(|| !crate::sched::is_thread_present(tid)),
         "the std program never left: it is neither exited nor faulted",
