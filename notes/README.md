@@ -77,6 +77,8 @@ area directories), ruled B). Appendices under
 
 `system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.
 
+`aarch64-port.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings `riscv-port.md` and `x86-port.md`.
+
 `xtask-test.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-03.
 
 `swish-check-boot.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-03.
