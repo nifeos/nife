@@ -65,6 +65,18 @@ area directories), ruled B). Appendices under
 
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
+`progenitor-boot.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`user-address-spaces.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`x86-user-programs.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
+
+`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
+
+`system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.
+
 `mapping-log.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `capability-objects.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
@@ -72,7 +84,3 @@ area directories), ruled B). Appendices under
 `kernel-wired-services.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `test-kernel-seams.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
-
-`system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
-
-`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.

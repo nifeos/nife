@@ -1,22 +1,13 @@
 #![cfg_attr(not(test), no_std)]
-//! **The `StarFive` JH7110's clock and reset generator, as pure logic**
-//! (notes/jh7110-clock-and-reset.md): register offsets, bit positions, the bring-up plan the TRNG
-//! needs, and the device-tree query that finds the controller. The volatile shell is
-//! `kernel/src/drivers/jh7110_clock_and_reset.rs`; this never dereferences a pointer, so it is
-//! host-testable and Kani-reachable. Real `SoC` peripherals do not come up running, as virtio
-//! devices do: radon read the TRNG's whole register file as zeros until these clocks were ungated.
+//! The `StarFive` JH7110's clock and reset generator, as pure logic: register offsets, bit
+//! positions, the bring-up plans and the device-tree queries that find each domain's window.
 //!
-//! Every number appears in two independent published trees, and they agree: Linux mainline
-//! ([mainline-dts], [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and the
-//! vendor U-Boot radon runs ([vendor-dts], [vendor-ids]), whose flat numbering rebases to the same
-//! 15, 16 and 3 in the STG domain at `0x1023_0000` (the note's table; [`STG`]'s own note).
-//! One 32-bit register per clock, `base + 4 * idx`, enable bit 31. The STG block asserts resets at
-//! `0x74` and reads status at `0x78`, and the JH7110 inverts the poll: **a set status bit means
-//! the line is out of reset**, which is [`is_deasserted`]'s whole reason to exist.
-//!
-//! **Nothing here has been verified against a JH7110**: QEMU's `virt` has no clock or reset
-//! controller, so CI exercises the absence path and the arithmetic. The note has the bench
-//! procedure and what each outcome means.
+//! This never dereferences a pointer, so it is host-testable and Kani-reachable; the volatile
+//! shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`. Every number is transcribed from Linux
+//! mainline ([mainline-dts], [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and
+//! the vendor U-Boot ([vendor-dts], [vendor-ids]), which agree. One word per clock at
+//! `base + 4 * idx` with enable bit 31; a set reset-status bit means out of reset
+//! ([`is_deasserted`]). Nothing here has run on a JH7110. See notes/jh7110-clock-and-reset.md.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `jh7110_crg`; kept as the crates.io name
 //! (#1806).
@@ -77,13 +68,8 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 }
 
 /// **What the JH7110's TRNG needs before its registers answer**, transcribed from
-/// \[mainline-trng\]'s probe and cross-checked against \[vendor-dts\] (see the module header:
-/// both trees name clocks 15 and 16 and reset 3 of the STG domain, in different spellings).
-///
-/// All three identifiers are STG-domain, so this slice is meaningless without [`STG`]; that
-/// coupling is why there is no `Domain` field on `Step`. A second device in a second domain would
-/// carry its own plan and its own domain beside it, and the day that happens is the day to decide
-/// whether the pair wants a type.
+/// \[mainline-trng\]'s probe and cross-checked against \[vendor-dts\]: clocks 15 and 16, then
+/// reset 3, all of the STG domain, so the plan is meaningless without [`STG`].
 ///
 /// # Examples
 ///
@@ -227,12 +213,10 @@ pub struct ResetBit {
 
 /// One clock-and-reset domain of the JH7110: a register window, and where the resets sit in it.
 ///
-/// Three exist ([vendor-dts]'s `reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg", "voutcrg"`
-/// names five), and only [`STG`] is described here, deliberately. The milestone's own `BUGS`
-/// section named unbounded scope as its main risk: "a clock and reset driver for the JH7110" could
-/// mean the one clock the TRNG needs or the whole controller, and those differ by an order of
-/// magnitude. This is the first, with the arithmetic general enough that the second is a table
-/// rather than a rewrite.
+/// The JH7110 has five ([vendor-dts]'s `reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg",
+/// "voutcrg"`); [`STG`], [`AON`] and [`SYS`] are described here, each only as far as a device in
+/// this tree needs it. The arithmetic is general, so another domain is a table entry rather than a
+/// rewrite.
 ///
 /// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -261,15 +245,10 @@ pub const STG: Domain = Domain {
 
 /// **The STG domain's register window, as both published trees give it.**
 ///
-/// A constant address in a tree whose whole habit is to read addresses out of the device tree, so
-/// it owes a reason. [`discover`] reads the tree first and falls back to this only when the tree
-/// names no controller, and [`Found::from_tree`] says which happened, so nothing can quietly
-/// mistake one for the other. It is here because the alternative is worse: radon's firmware tree
-/// is already known to omit and misdescribe things (milestone 239; the same tree calls the S7 core
-/// `okay` and gives it an MMU it does not have), and a bench session that comes back with "no
-/// controller node, nothing attempted" has spent a trip to the machine and learned nothing. Two
-/// independently published trees agree on this number, which is a stronger warrant than most
-/// device-tree reads get.
+/// The fallback [`discover`] answers with when the tree names no controller, and
+/// [`Found::from_tree`] says which happened. A firmware tree may omit or misdescribe the
+/// controller, and two independently published trees agree on this number; see
+/// notes/jh7110-clock-and-reset.md ("The one genuinely dangerous thing here, and what stops it").
 pub(crate) const STG_BASE: u64 = 0x1023_0000;
 
 /// The STG window's size, `0x10000` in both trees.
@@ -479,23 +458,12 @@ fn fill_pmic_address_and_bus(
     }
 }
 
-/// **Read the PMIC's I2C bus's clocks and resets out of `tree`** (milestone 592, provisional).
-///
-/// Finds the AXP15060 by `compatible` (mainline's spelling first, then the vendor's), reads the
-/// `clocks` and `resets` of its **parent** node, which is the I2C controller it sits on, and keeps
-/// each `<phandle id>` pair only when the phandle names a SYS-domain provider this crate knows
-/// (mainline `syscrg`, or the vendor `clkgen`/`rstgen`), that provider has one cell per
-/// specifier, and the id is inside [`SYS`]'s bounds. Everything else is counted in
-/// [`PmicBus::skipped`] and never becomes a step.
-///
-/// The vendor providers number all their domains in one flat space with SYS first, so "inside
-/// [`SYS`]'s bounds" is the same test as "a SYS-domain id" there; mainline's `syscrg` numbers SYS
-/// alone. That is why one bound serves both.
-///
-/// Never fails to produce a plan: a tree with no PMIC, or a PMIC whose bus yields no usable step,
-/// gets [`PMIC_BUS_BRING_UP`] with `from_tree: false`. Like [`discover`], an answer here says
-/// nothing about whether the machine is a JH7110, and the caller must have established that first.
-///
+/// **Read the PMIC's I2C bus's clocks and resets out of `tree`** (milestone 592, provisional):
+/// the `clocks` and `resets` of the AXP15060's parent bus, mainline's `compatible` tried first.
+/// A `<phandle id>` pair becomes a step only for a known one-cell SYS provider and an id inside
+/// [`SYS`]'s bounds (the vendor numbers SYS first, so one bound serves both trees); the rest are
+/// counted in [`PmicBus::skipped`]. With no usable step it returns [`PMIC_BUS_BRING_UP`] with
+/// `from_tree: false`. Like [`discover`], an answer is not evidence of a JH7110.
 /// # Errors
 ///
 /// Propagates [`device_tree_blob::Error`] if the blob is malformed.
@@ -1126,15 +1094,10 @@ const VENDOR_RSTGEN_SYS_NAME: &[u8] = b"syscrg";
 
 /// **Find the STG clock and reset window in `tree`.**
 ///
-/// Never returns `None` and never fails to produce an address: a tree that names no controller
-/// gets [`STG_BASE`] with `from_tree: false`, for the reason [`STG_BASE`] records. What it can
-/// return is an error, if the blob itself does not parse.
-///
-/// **Three spellings are tried, mainline's first**, the same order and the same reasoning
-/// `jh7110_entropy::discover` uses: a tree that carries the standardised binding is describing itself
-/// in the language the binding standardised, and that is the one to believe. The two vendor nodes
-/// carry several windows and are indexed by `reg-names` rather than by position, because a
-/// position that happens to be right today is a fact nobody wrote down.
+/// Never fails to produce an address: a tree that names no controller gets [`STG_BASE`] with
+/// `from_tree: false`. Three spellings are tried, mainline's first, as `jh7110_entropy::discover`
+/// does; the two vendor nodes carry several windows and are indexed by `reg-names`, not position.
+/// An answer is not evidence that the machine is a JH7110.
 ///
 /// # Errors
 ///
@@ -1155,11 +1118,8 @@ pub fn discover(
 }
 
 /// **Find the AON clock and reset window in `tree`** (milestone 53, the JH7110's Ethernet), the
-/// domain holding `gmac0`'s bus clocks, transmit clock and resets.
-///
-/// [`discover`]'s twin, with the same three spellings in the same order and the same refusal to
-/// fail: a tree that names no controller gets [`AON_BASE`] with `from_tree: false`, and an answer
-/// here is not evidence that the machine is a JH7110.
+/// domain holding `gmac0`'s bus clocks, transmit clock and resets. [`discover`]'s twin, under its
+/// rules, falling back to [`AON_BASE`] with `from_tree: false`.
 ///
 /// Name: provisional (milestone 53's lane, 2026-10-06 UTC), after [`discover_sys`].
 ///
@@ -1182,11 +1142,8 @@ pub fn discover_aon(
 }
 
 /// **Find the SYS clock and reset window in `tree`** (milestone 592, provisional), the domain
-/// that holds I2C5's clock and reset and so the only road OpenSBI has to radon's PMIC.
-///
-/// [`discover`]'s twin, with the same three spellings in the same order and the same refusal to
-/// fail: a tree that names no controller gets [`SYS_BASE`] with `from_tree: false`. The caller is
-/// held to [`discover`]'s rule: an answer here is not evidence that the machine is a JH7110.
+/// holding I2C5's clock and reset. [`discover`]'s twin, under its rules, falling back to
+/// [`SYS_BASE`] with `from_tree: false`.
 ///
 /// Name: provisional (milestone 592), 2026-09-25. calef names public functions.
 ///

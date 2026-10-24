@@ -36,16 +36,11 @@ static FLUSH_COUNT: AtomicUsize = AtomicUsize::new(0);
 /// **A display the kernel serves itself**: the rung-one contract (`INFO`, `FLUSH`) over frames the
 /// kernel allocated, with no device behind it. Returns `(display endpoint, screen frames, region)`.
 ///
-/// It exists to make the damage rectangle visible. A real driver honours the rectangle and says
-/// nothing about it; here the flush *is* the observation, so a compositor that quietly repainted the
-/// screen every frame would fail a test rather than merely be slow.
-///
-/// **The screen and the endpoint both come out of `region`, and the test reclaims it last**
-/// ([`retire_kernel_display`]). That one call revokes every capability and mapping of the screen
-/// (§13 (capability revocation and untyped reclamation)), so the compositor the test leaves
-/// parked loses it rather than keeping a pointer into freed memory, and it ends the stand-in,
-/// whose receive comes back aborted. Before this, every call kept a scanout's worth of frames,
-/// about 300, for the rest of the boot.
+/// Here the flush *is* the observation, so a compositor that repainted the screen every frame
+/// fails a test rather than merely being slow. The screen and the endpoint both come out of
+/// `region`, which the test reclaims last ([`retire_kernel_display`]): that revokes every
+/// capability and mapping of the screen (§13 (capability revocation and untyped reclamation)), so
+/// the compositor left parked loses it, and it ends the stand-in, whose receive comes back aborted.
 pub(super) fn kernel_display() -> (sched::RendezvousId, u64, u64) {
     let frames = graphics_contract::SURFACE_PAGE_FRAMES as u64;
     let region = crate::memory_region::create(frames + 1)
@@ -172,35 +167,11 @@ fn assert_screen_is(w: &Wiring, committed: usize) {
 
 /// **A client cannot reach its neighbour's pixels, and cannot read the screen it draws into.**
 ///
-/// The thesis content of this rung, so it is proved from four directions rather than asserted.
-///
-/// The attacker is given every advantage short of a capability. It is the *same binary* as the
-/// honest client, with the same grants, and the kernel hands it the **exact virtual address** at
-/// which its neighbour's pixels sit: one page past its own surface, which is where the kernel's
-/// contiguous allocation really did put them (asserted here, so the attack cannot quietly become a
-/// poke at nothing). Every client maps its surface at the same virtual address, so this is also the
-/// address the neighbour uses for its own pixels. It still cannot touch them, because the boundary
-/// is the mapping and not the layout.
-///
-/// What that proves, in order:
-///
-/// 1. **The refusal that needs no attack.** The attacker asks the kernel to receive on the input
-///    slot it was not granted, and gets `NoSuchSlot`: "there is nothing there", not a permission
-///    error from a server that consulted a list. Slot 2 is empty because the spawn literal left it
-///    empty, and that emptiness is the whole of the difference between this client and a focusable
-///    one.
-/// 2. **The write faults**, and on aarch64 the faulting address is exactly the one it was handed.
-/// 3. **Nothing was written**: the victim's witness pattern digests identically before and after,
-///    from two independent readers (the kernel through the direct map, and the victim itself
-///    through its own mapping after the attacker is dead). The victim is held in a `CALL` across
-///    the whole attack so that "after" really is after.
-/// 4. **No ambient display.** A third client, which painted into this very screen, reads the
-///    address where the screen is mapped in the compositor and in the capture client, and faults.
-///    It holds no mapping of the screen, so there is nothing to read and no verb to ask with.
-///
-/// A read fault proves the page is not mapped *at all*, which is the same reason a write cannot
-/// reach it either; the two probes here are a write (integrity) and a read (confidentiality) so
-/// both directions are exercised on real hardware behaviour rather than argued from one.
+/// The attacker is the honest client's binary with its grants, handed the exact virtual address of
+/// its neighbour's pixels (asserted to be the neighbour's frame). It finds its ungranted input slot
+/// empty (`NoSuchSlot`); its write faults at that address; the victim's pattern digests the same
+/// before and after, read by the kernel and by the victim held in a `CALL`; and a third client
+/// faults reading the screen's address. See notes/system-test-modules/compositor-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.compositor_tests.a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen.patch`
 #[test_case]
@@ -269,10 +240,8 @@ fn a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen() {
         wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > faults),
         "a client wrote at {probe_va:#x}, its neighbour's pixels, and was NOT stopped",
     );
-    // The exact address, on both ISAs. This half used to be aarch64-only, because aarch64 had a
-    // last-fault record (`FAR_EL1`, stashed for tests) and RISC-V had only a fault *count*: it
-    // knew `stval` at the instant of the fault and threw it away. Milestone 19's portable
-    // record keeps it on both, so "something faulted" is no longer all this ISA can say.
+    // The exact address, on every ISA: the portable last-fault record keeps `stval` as it keeps
+    // `FAR_EL1`.
     assert_eq!(
         crate::arch::exceptions::last_user_fault().map(|(_, addr)| addr),
         Some(probe_va),
@@ -378,13 +347,10 @@ fn a_client_with_no_input_grant_finds_nothing_in_the_input_slot() {
 
 /// **Part 2 of claim 25: no page of a neighbour's is readable, whichever page and whichever way.**
 ///
-/// The original test's probe is one **write** at the neighbour's first pixel page. That cannot tell
-/// "not mapped" from "mapped read-only" (both fault at the same address), so a spawner that exposed
-/// the neighbour's pixels read-only would leave it green while every pixel leaked. This attacker
-/// **reads**, at the neighbour's control page, its first pixel page and its last, one fresh attacker
-/// each because the first fault is fatal. The contiguous allocation is asserted, so each address is
-/// the victim's own frame and a probe cannot degenerate into poking an empty hole, and the fault must
-/// be at exactly the address it was handed.
+/// A write probe cannot tell "not mapped" from "mapped read-only" (both fault at the same address),
+/// so this attacker **reads**: the neighbour's control page, then each pixel page, one fresh
+/// attacker each because the first fault is fatal. The allocation is asserted contiguous, so each
+/// address is the victim's own frame, and each fault must be at exactly the address handed in.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.compositor_tests.a_client_cannot_read_any_page_of_its_neighbours_it_can_name.patch`
 #[test_case]
@@ -498,14 +464,11 @@ fn lie_to_the_compositor() -> (Wiring, (u64, u64), u64, [u32; 12], u64) {
 
 /// **Part 3 of claim 25: nothing a client writes in its own control page changes a neighbour's.**
 ///
-/// The original test's witness digests sit behind its fault wait, so they can only fire if that wait
-/// already has. This reaches them without a fault: the one untrusted input the compositor reads, a
-/// client's damage rectangle, is set to nine lies, and the **victim's surface and its whole control
-/// page** are compared before and after, by the kernel through the direct map and by the victim
-/// itself. The compositor has write access to every client's memory (it publishes each control page
-/// and writes `STATUS` and `ACKED` back), so the claim here is that the *address* it writes is never
-/// a function of what a client said; the control page is in the witness because that is where a
-/// confused deputy would aim.
+/// A client's damage rectangle, the one untrusted input the compositor reads, is set to nine lies,
+/// with no fault to wait behind, and the **victim's surface and whole control page** are compared
+/// before and after, by the kernel and by the victim. The compositor writes every client's control
+/// page (`STATUS`, `ACKED`), so the claim is that the *address* it writes never depends on what a
+/// client said; the control page is where a confused deputy would aim.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.compositor_tests.a_lying_damage_rectangle_changes_nothing_of_its_neighbours.patch`
 #[test_case]
@@ -540,9 +503,9 @@ fn a_lying_damage_rectangle_changes_nothing_of_its_neighbours() {
 ///
 /// The same nine lies, now watched from the screen. Every `CALL` is answered (the liar reports only
 /// after the ninth), and the composed screen is exactly the picture the contract gives two committed
-/// windows, so a rectangle cannot deface a neighbour's region or the background. Before milestone
-/// 719 the first lie, `x = i32::MAX, w = 1`, overflowed `Rect::right` and panicked the compositor in
-/// a debug build, which wedged every client behind the shared doorbell.
+/// windows, so a rectangle cannot deface a neighbour's region or the background. The first lie,
+/// `x = i32::MAX, w = 1`, overflows an unchecked `Rect::right`, and a compositor that panics on it
+/// wedges every client behind the shared doorbell.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.compositor_tests.a_lying_damage_rectangle_cannot_stop_the_compositor_or_misdraw_the_screen.patch`
 #[test_case]
@@ -589,19 +552,11 @@ fn a_client_granted_no_screen_capability_cannot_map_or_read_the_screen() {
 
 /// **A one-window redraw costs one rectangle, not a screen.**
 ///
-/// The damage rectangle is the whole reason rung one put one in the contract, and it is only worth
-/// anything if the compositor honours it end to end. So this test does not measure time (which
-/// under TCG would mean nothing); it observes **what was flushed** and **what was left alone**:
-///
-/// - the kernel plays the display, so the flush rectangle is a value it can compare against
-///   `compositor::damage_to_screen`, and the count of flushes says one commit produced one flush;
-/// - between the two frames the kernel **poisons every screen pixel outside** the rectangle the
-///   coming commit should produce. A compositor that repainted the screen would erase the poison.
-///   Finding it intact afterwards is the proof, and it is the same technique the crate's host test
-///   uses in microseconds.
-///
-/// It also pins the startup behaviour that makes the whole picture predictable: the compositor's
-/// first paint is the background over the whole screen, once, with no window drawn, because no
+/// It observes what was flushed and what was left alone, not time, which under TCG means nothing.
+/// The kernel plays the display, so the flush rectangle is compared against
+/// `compositor::damage_to_screen` and one commit must be one flush; and between frames the kernel
+/// **poisons every screen pixel outside** the expected rectangle, which a full repaint would erase.
+/// It also pins startup: the first paint is the background over the whole screen, once, because no
 /// client has committed yet.
 #[test_case]
 fn a_one_window_redraw_costs_one_rectangle_and_not_the_screen() {
@@ -692,22 +647,12 @@ fn a_one_window_redraw_costs_one_rectangle_and_not_the_screen() {
 /// **Input reaches the focused client because that client holds a capability, and focus is the
 /// compositor's decision.**
 ///
-/// Three things are being separated here, and Unix conflates all three:
-///
-/// 1. **Who may deliver input.** The keystroke arrives in a ring page shared with the input source
-///    alone. Any client may ring the doorbell; none of them can write that page, so none of them can
-///    inject a keystroke into another client. (There is no "grab the keyboard" verb to guard,
-///    because there is nothing a message could say that would do it.)
-/// 2. **Who may receive it.** The focused client receives because it *holds* an input endpoint. A
-///    client without one cannot be sent a keystroke by anyone, however the compositor feels about
-///    it, which is the previous test's `NoSuchSlot` refusal seen from the other side.
-/// 3. **Who decides.** Focus moves on a byte, in userspace, in the compositor. The kernel routes
-///    the message and knows nothing about focus; this test *witnesses* the decision by reading the
-///    window-list page the compositor publishes rather than by asking it.
-///
-/// The negative half is the interesting half: after focus moves, the unfocused client must not
-/// receive the next keystroke, and `rendezvous_waiting_senders` is how a test says "and then nothing
-/// happened" without blocking forever on a quiet endpoint.
+/// It separates three things Unix conflates. Who may deliver input: only the input source can write
+/// the ring page, so no client can inject a keystroke. Who may receive it: a client holding an
+/// input endpoint, so one without cannot be sent anything. Who decides: the compositor, in
+/// userspace, witnessed through the window-list page it publishes. After focus moves, the unfocused
+/// client must receive nothing, checked with `rendezvous_waiting_senders` rather than a receive
+/// that would block forever. See notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn input_reaches_only_the_focused_client_and_focus_is_the_compositors_call() {
     let (display, screen, display_region) = kernel_display();
@@ -761,34 +706,13 @@ fn input_reaches_only_the_focused_client_and_focus_is_the_compositors_call() {
 /// **Focus routes a keystroke into one terminal's grid and not its neighbour's** (milestone 29's
 /// text increment meeting rung two).
 ///
-/// Two display terminals, side by side, each a compositor client with exactly a window client's
-/// authority. The keystroke routing this rung already proved is now **visible in the picture**,
-/// which is a stronger statement than the endpoint-level one and a different kind of evidence:
-/// an `A` typed while terminal 0 has focus appears in terminal 0's grid, a TAB moves focus, and
-/// a `B` appears in terminal 1's. Neither letter appears in the other window, and the kernel
-/// checks that by comparing every pixel of the composed screen against the two engines it ran
-/// itself.
-///
-/// # Why this is the capability claim and not a policy claim
-///
-/// Terminal 1 receives the `B` because it **holds an input endpoint**, not because it asked and
-/// not because the compositor consulted a list (DECISIONS §33). The compositor's whole part in
-/// it is choosing *which* of the capabilities it holds to use. A client granted no input endpoint
-/// has an empty capability table slot and cannot be sent a keystroke by anyone, which the neighbouring test
-/// in this module proves by value (`NoSuchSlot`); this one proves the other half, that a
-/// keystroke routed to one holder does not land in another's memory.
-///
-/// # And the terminal is a client, unchanged at both seams
-///
-/// `compositor` cannot tell a display terminal from the `window` client that paints a coordinate
-/// pattern: same grants, same control page, same doorbell, same `COMMIT`. Neither `compositor` nor
-/// `graphics_contract` needed a line changed to carry text. That is the seam claim made twice in one
-/// milestone, once at each rung.
-///
-/// Uses the kernel's display stand-in rather than the GPU, deliberately: this test is about
-/// routing and composition, the device is proved elsewhere in this file, and a third `gpu_driver`
-/// against the same physical device would put the scanout's picture in a race with the
-/// host-side check that reads it.
+/// Two display terminals, each a compositor client with a window client's authority. An `A` typed
+/// while terminal 0 has focus appears in its grid, TAB moves focus, and a `B` appears in terminal
+/// 1's; the kernel compares every pixel of the composed screen against two engines it ran itself.
+/// Terminal 1 receives because it holds an input endpoint (§33 (the compositor's authority is
+/// memory, not messages)), and the compositor cannot tell a terminal from a `window` client. It
+/// uses the kernel's display stand-in, because a third `gpu_driver` would race the host's scanout
+/// check. See notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
     let (display, screen, display_region) = kernel_display();
@@ -859,11 +783,9 @@ fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
     );
     w.type_bytes(video_terminal::script::WINDOW_TYPED[1]);
 
-    // **Scroll both windows** (the paint path, 2026-09-30). A window-mode scroll publishes
-    // whole-window damage and moves the terminal's own pixels; until this, that path had never
-    // run under this file's pixel comparison, because nothing here ever pushed a window past its
-    // own height. One write per line, so each present scrolls once, and the oracle (`window`
-    // above) feeds the same lines.
+    // **Scroll both windows.** A window-mode scroll publishes whole-window damage and moves the
+    // terminal's own pixels, a paint path only a window pushed past its height reaches. One write
+    // per line, so each present scrolls once, and the oracle (`window` above) feeds the same lines.
     for (i, c) in clients.iter().enumerate() {
         for n in 0..video_terminal::script::WINDOW_SCROLL_LINES {
             let mut line = [0u8; 8];
@@ -915,26 +837,14 @@ fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
 
 /// **Three clients' surfaces become one screen, and the host confirms it.**
 ///
-/// The end-to-end picture, with a real virtio-gpu under it (rung one's driver, unchanged: the
-/// compositor takes `painter`'s place at that seam and `gpu_driver` cannot tell). Four witnesses, which is
-/// the point, because a compositor's output is exactly the thing one digest cannot be trusted about:
-///
-/// 1. **the driver**, digesting the frames it handed the device after the device said it had them.
-///    Its one report is the compositor's *startup* frame, which is the background alone, so it is
-///    also the check that an empty screen is a defined picture rather than whatever was in RAM;
-/// 2. **the kernel**, reading the scanout frames through the direct map and comparing every pixel
-///    against `compositor::expected_screen_pixel`, a value it computed itself;
-/// 3. **a capture client in its own address space**, which holds a read-only mapping of the screen
-///    (that mapping being the screenshot capability) and digests what it sees;
-/// 4. **the host**, through QEMU's monitor, comparing `screendump`'s PPM against the same
-///    definition. This one is not optional: `-display none` means nothing in the guest can see the
-///    device's own surface, so a wrong pixel format or scanout rectangle would pass all three
-///    in-guest witnesses and show garbage on a screen. `cargo xtask` runs it beside this suite.
-///
-/// The capture client also proves the *shape* of the grant twice over: it enumerates the windows
-/// out of the read-only page the compositor publishes (there is no enumerate verb to call), and its
-/// attempt to **write** the screen faults, because a thing that may look at the screen may not draw
-/// on it.
+/// A real virtio-gpu under rung one's unchanged driver, and four witnesses, because one digest of a
+/// compositor's output cannot be trusted: the driver (its one report is the startup frame, so an
+/// empty screen is a defined picture), the kernel (every scanout pixel against
+/// `compositor::expected_screen_pixel`), a capture client holding a read-only mapping of the
+/// screen, and the host's `screendump` through QEMU's monitor, which `cargo xtask` runs because
+/// under `-display none` only it sees the device's own surface. The capture client enumerates
+/// windows from the published page and faults writing the screen. See
+/// notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn three_clients_compose_into_one_scanout_and_the_host_sees_it() {
     // **A missing GPU is not always the build-order mistake this test exists to catch.** On the
@@ -1051,17 +961,10 @@ fn three_clients_compose_into_one_scanout_and_the_host_sees_it() {
 /// **A client that forges its whole control page changes nothing but its own window, and the
 /// compositor answers every commit** (an eighth outsider pass at the confinement claim, claim 25).
 ///
-/// The cited lying-rectangle test attacks the damage fields, the one input the protocol names as
-/// untrusted. This attacks the rest of the control page at once: `ID`, `WIDTH`, `HEIGHT`, `STRIDE`
-/// (including a zero and a `stride = 1` with a near-`i32::MAX` width), `STATUS`, `ACKED`, and a
-/// `SEQ` that jumps backwards to zero and then forwards to `u32::MAX`, with a commit after each
-/// forge. The page is the client's own granted memory, so writing it is not itself an escape; the
-/// escape would be the compositor trusting any of it back: re-reading geometry for clipping, or
-/// steering its `ACKED`/`SEQ` bookkeeping with a forged value, is a confused deputy writing
-/// through someone else's words. The forger reports `WIN_FORGED` only if the compositor answered
-/// all three commits (an error answer takes the client down at `E_COMMIT`, which reads here as a
-/// `0xDEAD` word), the victim's surface and whole control page are compared before and after, and
-/// the screen is exactly the two-window contract picture.
+/// The forger rewrites `ID`, `WIDTH`, `HEIGHT`, `STRIDE`, `STATUS`, `ACKED` and `SEQ`, committing
+/// after each forge; the compositor trusting any of it back would be the escape. It reports
+/// `WIN_FORGED` only if all three commits were answered, and the victim and the screen must be
+/// unchanged. See notes/system-test-modules/compositor-tests.md.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

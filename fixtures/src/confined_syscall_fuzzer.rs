@@ -1,41 +1,33 @@
-//! **A confined process that issues random syscalls, one at a time, under a conductor** (milestone
+//! A confined process that issues random syscalls, one at a time, under a conductor (milestone
 //! 779 (fuzz the surface a confined process can reach), provisional).
 //!
 //! `system_tests/src/user/confined_fuzzer_tests.rs` spawns three of these with the endowment
-//! `confined_syscall_fuzzer_contract` lays out, and between every two calls it checks that none of them holds
-//! a capability, or maps a page, that it was never granted. This program is the generator half: it
-//! waits on [`GO`], makes one call drawn from its seed, writes what it did to the report page, and
-//! waits again. It never interprets an answer, so a wrong answer cannot steer it anywhere a right
-//! one would not; the oracle is entirely the conductor's.
-//!
-//! `arg0` is the seed and `arg1` the role (`confined_syscall_fuzzer_contract::ROLE_*`). The seed alone
-//! decides every call, so a run replays from it.
-//!
-//! **Why an EL0 program and not milestone 752 (a seeded syscall driver with a shadow model)'s kernel threads.** 752's driver enters through
-//! `syscall::invoke` from kernel threads, which skips the trap entry, the register marshaling, and
-//! any check that depends on the caller having a user address space. This process is spawned with
-//! `user::run` like any confined program, holds only its grants, and reaches the kernel through the
-//! same `svc`/`ecall`/`syscall` every program does.
-//!
+//! `confined_syscall_fuzzer_contract` lays out, and between every two calls checks that none holds
+//! a capability, or maps a page, it was never granted. This is the generator: it waits on [`GO`],
+//! makes one call drawn from its seed, writes what it did to the report page, and waits again. It
+//! never interprets an answer, so a wrong answer cannot steer it; the oracle is the conductor's.
+//! `arg0` is the seed, which alone decides every call, so a run replays from it; `arg1` is the role
+//! (`confined_syscall_fuzzer_contract::ROLE_*`).
+
 //! # What the generator reaches
 //!
-//! `SYS_INVOKE` on any slot but [`GO`] with any method and any words, biased toward the endowment and
-//! the methods objects have; `SYS_CAP_DELETE`; `SYS_YIELD`; and unknown syscall numbers. Words are
-//! drawn from small integers, slot numbers, rights masks, page-aligned addresses in the playground,
-//! on the report page and in the image and stack, the ABI's tag values, and raw random words.
-//!
+//! `SYS_INVOKE` on any slot but [`GO`] with any method and any words, biased toward the endowment
+//! and the methods objects have; `SYS_CAP_DELETE`; `SYS_YIELD`; and unknown syscall numbers. Words
+//! are small integers, slot numbers, rights masks, page-aligned addresses in the playground, report
+//! page, image and stack, the ABI's tag values, and raw random words. It is spawned with
+//! `user::run` and enters through `svc`/`ecall`/`syscall`, so it reaches what milestone 752 (a
+//! seeded syscall driver with a shadow model)'s kernel threads skip by entering at
+//! `syscall::invoke`: the trap entry, the register marshaling, and every check that depends on the
+//! caller having a user address space.
+
 //! # BUGS
 //!
-//! - **[`GO`] is never fuzzed.** It is the one capability the conductor needs, so the generator
-//!   never names it. It holds `READ` alone, which leaves `RECEIVE` and `RECEIVE_CAP` on it unexercised.
-//! - **No thread or timer is ever made.** A `MemoryRegion::RETYPE_OBJ` asking for a TCB or a timer is
-//!   rewritten to ask for a rendezvous, because a second thread running at a random entry, or a timer
-//!   firing on the clock, would make a seed's run depend on timing, and the seed is the reproducer.
-//!   Both object types, and every method on them, are therefore out of reach.
-//! - **`SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn.** Either would end the run, which teaches
-//!   the oracle nothing.
-//! - **It never touches the memory it maps.** A load or store into a mapped page is not a syscall,
-//!   and the page oracle reads the page tables directly instead.
+//! - [`GO`] is never fuzzed: the conductor needs it. It holds `READ` alone, so `RECEIVE` and
+//!   `RECEIVE_CAP` on it go unexercised.
+//! - No thread or timer is ever made: a `MemoryRegion::RETYPE_OBJ` for either is rewritten to a
+//!   rendezvous, since a thread or a timer would make a seed's run depend on timing.
+//! - `SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn; either would end the run.
+//! - It never touches the memory it maps; the page oracle reads the page tables instead.
 //!
 //! Name: provisional (milestone 779 (fuzz the surface a confined process can reach)'s lane, 2026-10-06 UTC).
 

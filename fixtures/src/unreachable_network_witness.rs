@@ -1,13 +1,15 @@
-//! **Try to reach what it did not declare, and print what the kernel answered** (milestone 590
-//! (the booted system starts its network stack); widened by milestone 198 (a package manager)
-//! rung 3a for milestone 202 (every confinement test is a ritual until somebody breaks the
-//! confinement)).
+//! **Try to reach what it did not declare, and print what the kernel answered** (milestone 590 (the
+//! booted system starts its network stack); widened by milestone 198 (a package manager) rung 3a
+//! for milestone 202 (every confinement test is a ritual until somebody breaks the confinement)).
 //!
-//! The negative control for `network_echo_client`, and the fixture for an unvouched child of
-//! DECISIONS §219 (how the shell names an installed program to the spawner) gate D2. Its manifest
-//! (`grant_plan::Program::UnreachableNetworkWitness`) declares nothing, so the progenitor's spawn
-//! service must leave the process domain, entropy and network slots empty. It asks each of them
-//! anyway, with a real request, and then lists every slot it holds:
+//! The negative control for `network_echo_client`, and the unvouched child of DECISIONS §219 (how
+//! the shell names an installed program to the spawner) gate D2. Its manifest
+//! (`grant_plan::Program::UnreachableNetworkWitness`) declares nothing, so the spawn service must
+//! leave the process domain, entropy and network slots empty; it asks each anyway with a real
+//! request, then lists every slot it holds. An endowed authority turns its line into `REACHED` and
+//! the census gains that slot; `script/swish-check` fails on either.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! nife> unreachable_network_witness
@@ -17,34 +19,36 @@
 //! reboot: refused (no capability at slot 13)
 //! slots held: 0
 //! ```
-//!
-//! An endowed authority turns its line into `REACHED` and the census gains that slot;
-//! `script/swish-check` fails on either. Only a child the spawn service spawned can report what it
-//! was given.
-//!
 
-//! **Two ways to be run, one claim each.** By name it is a vouched program with an empty manifest,
-//! endowed the output alone. As `installed/unvouched` (`xtask/src/disk.rs`), stripped so no digest
-//! matches, it is bytes nobody vouched for, run by a session holding the run-unvouched capability,
-//! and must be endowed what the line delegated plus the clock and configuration pages
-//! (`grant_plan::UNVOUCHED_MANIFEST`): `slots held: 0 1 2`.
+//! # Two ways to be run, one claim each
 //!
-//! **Its note asks for all three, deliberately** (milestone 597 (a program carries its manifest in
-//! an ELF note)). [`NOTE_ASKS`] declares the network, entropy and the process domain. Run by name,
-//! the note is never read; run unvouched, §219 says it grants nothing, so the census must still
-//! read `0 1 2` while `caps installed/unvouched` prints what the note asks.
+//! By name it is a vouched program with an empty manifest, endowed the output alone. As
+//! `installed/unvouched` (`xtask/src/disk.rs`), stripped so no digest matches, it is bytes nobody
+//! vouched for, run by a session holding the run-unvouched capability, and must be endowed what the
+//! line delegated plus the clock and configuration pages (`grant_plan::UNVOUCHED_MANIFEST`):
+//! `slots held: 0 1 2`. Only a child the spawn service spawned can report what it was given.
+
+//! # What its note asks
 //!
-//! **And the reboot object** (milestone 805 (`reboot` at the prompt)), probed by invoking it: a
-//! spawn service that endowed it would reset the machine mid-`script/swish-check`, and the gate
-//! fails on the lines that never come back. A note cannot spell it (`capability_manifest_note::encode`).
+//! All three, deliberately (milestone 597 (a program carries its manifest in an ELF note)):
+//! [`NOTE_ASKS`] declares the network, entropy and the process domain. Run by name, the note is
+//! never read; run unvouched, §219 says it grants nothing, so the census must still read `0 1 2`
+//! while `caps installed/unvouched` prints what the note asks.
+
+//! # The reboot object, and the census
 //!
-//! **The census asks the kernel.** Each slot below the reserved fault slot is invoked with a method
-//! no object defines (`user_mode_runtime::is_granted`): an empty slot answers `NoSuchSlot`, so a
+//! The reboot object (milestone 805 (`reboot` at the prompt)) is probed by invoking it: a spawn
+//! service that endowed it would reset the machine mid-`script/swish-check`, and the gate fails on
+//! the lines that never come back. A note cannot spell it (`capability_manifest_note::encode`). The
+//! census asks the kernel: each slot below the reserved fault slot is invoked with a method no
+//! object defines (`user_mode_runtime::is_granted`), and an empty slot answers `NoSuchSlot`, so a
 //! capability at a slot nobody thought to probe is still counted.
+
+//! # What it holds
 //!
-//! It holds slot 0, its output (`crates/byte_sink_contract`), and, only when run unvouched, slots
-//! 1 and 2, the clock and configuration pages, which it does not read.
-//!
+//! Slot 0, its output (`crates/byte_sink_contract`), and, only when run unvouched, slots 1 and 2,
+//! the clock and configuration pages, which it does not read.
+
 //! # BUGS
 //!
 //! - **The name says less than the program does**: it witnesses three unreachable authorities, not

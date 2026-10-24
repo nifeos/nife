@@ -18,9 +18,9 @@ fn main() {
     };
     println!("cargo::rerun-if-changed=../kernel/{link_script}");
     println!("cargo::rustc-link-arg=-T{manifest_dir}/../kernel/{link_script}");
-    // **Whether a missing `rg` fails rather than skips** (milestone 121 (`ripgrep` on nife), lane
-    // milestone/121-rg-threads): `ripgrep_threads_tests` reads it with `env!`. The CI rows that
-    // build `rg` set it to 1, so a build that left `rg` out of the archive cannot pass as a skip.
+    // **Whether a missing `rg` fails rather than skips** (milestone 121 (`ripgrep` on nife)):
+    // `ripgrep_threads_tests` reads it with `env!`. The CI rows that build `rg` set it to 1, so a
+    // build that left `rg` out of the archive cannot pass as a skip.
     println!("cargo::rerun-if-env-changed=NIFE_RIPGREP_REQUIRED");
     println!(
         "cargo::rustc-env=NIFE_RIPGREP_REQUIRED={}",

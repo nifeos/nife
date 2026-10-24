@@ -40,6 +40,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Trusted init: measuring the boot program, and then everything the progenitor loads](../trusted-init.md).
 - [The progenitor, and loading a program from userspace](../progenitor-and-loading.md).
 - [Two seams only the test kernel has](../test-kernel-seams.md): holding a delegation open for a revocation sweep, and failing a thread's Nth retype.
+- [Booting the progenitor](../progenitor-boot.md): the boot capability set, slot by slot, and the devices the kernel starts itself.
 - [The system initializer](../system-initializer.md): what the progenitor builds, how it measures
   what it loads, and the spawn service.
 - [Auditing the hand-written arch assembly](../arch-audit.md): a by-hand audit of the least-verified TCB code.

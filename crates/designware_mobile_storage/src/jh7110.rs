@@ -1,29 +1,13 @@
-//! **The JH7110's two controllers, as its device trees describe them.**
-//!
-//! Both trees name the part, read 2026-10-06 (UTC):
-//!
-//! - **Mainline Linux**, `arch/riscv/boot/dts/starfive/jh7110.dtsi`: `mmc0: mmc@16010000` and
-//!   `mmc1: mmc@16020000`, `compatible = "starfive,jh7110-mmc"`, whose binding
-//!   (`Documentation/devicetree/bindings/mmc/starfive,jh7110-mmc.yaml`) includes
-//!   `synopsys-dw-mshc-common.yaml`. `clocks` are SYS-domain `SDIOn_AHB` (`biu`) and
-//!   `SDIOn_SDCARD` (`ciu`), `resets` SYS-domain `SDIOn_AHB`, `interrupts` 74 and 75,
-//!   `fifo-depth = <32>`. `jh7110-common.dtsi` gives the VisionFive 2's wiring: `mmc0` 8-bit, the
-//!   eMMC socket; `mmc1` 4-bit, the microSD slot; both with `assigned-clock-rates = <50000000>`.
-//! - **The vendor U-Boot's tree**, the one radon's firmware hands over
-//!   (`starfive-tech/u-boot`, `JH7110_VisionFive2_devel`, `arch/riscv/dts/jh7110.dtsi` and
-//!   `starfive_visionfive2.dts`): `sdio0: sdio0@16010000` and `sdio1: sdio1@16020000`,
-//!   `compatible = "snps,dw-mshc"`, the same clocks and resets under vendor names, the same
-//!   widths and rate, `fifo-depth = <32>`, and **no `interrupts` property**.
-//!
-//! radon's own U-Boot banner says the same thing from the other side: `MMC: sdio0@16010000: 0,
-//! sdio1@16020000: 1` (bench/radon-2026-10-05/boot5-main.log, line 59), and it loads its boot
-//! script from `mmc 1:1`, the microSD slot.
-//!
-//! So the part is **Synopsys `DesignWare` Mobile Storage Host Controller** (`DW_mshc`, the
-//! databook's name; Linux's `dw_mmc`), the older Synopsys SD/MMC core with its own register map and
-//! FIFO. It is not the newer `DesignWare` Cores Mobile Storage Host (`DWC_mshc`, Linux's
-//! `sdhci-of-dwcmshc`), which is SDHCI-compatible; the two share a vendor and an acronym and
-//! nothing else. `VERID` on silicon names the release, and the bench step prints it.
+//! The JH7110's two controllers, as its device trees describe them (read 2026-10-06 UTC). Mainline
+//! Linux's `arch/riscv/boot/dts/starfive/jh7110.dtsi` has `mmc0: mmc@16010000` and
+//! `mmc1: mmc@16020000`, `compatible = "starfive,jh7110-mmc"` (its binding includes
+//! `synopsys-dw-mshc-common.yaml`), `interrupts` 74 and 75 and `fifo-depth = <32>`. The vendor
+//! U-Boot tree radon's firmware hands over (`starfive-tech/u-boot`, `JH7110_VisionFive2_devel`) has
+//! `sdio0@16010000` and `sdio1@16020000`, `compatible = "snps,dw-mshc"`, and no `interrupts`. On a
+//! VisionFive 2 `mmc0` is the 8-bit eMMC socket and `mmc1` the 4-bit microSD slot, both at 50 MHz.
+//! The part is `DW_mshc` (Linux's `dw_mmc`), not the SDHCI-compatible `DWC_mshc`
+//! (`sdhci-of-dwcmshc`). Every node, clock, reset and log line is in
+//! notes/designware-mobile-storage/driver.md.
 
 use device_tree_blob::{DeviceTreeBlob, Region};
 
