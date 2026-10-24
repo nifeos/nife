@@ -122,3 +122,39 @@ These are code in the progenitor, and would be built as soon as both answers are
   still bound, so the unbind cannot drift back to reuse: the host test
   `take_never_hands_out_a_bound_window` fails if it does.
 
+
+## The window pool: `grant_plan::job_windows`
+
+The pool's bookkeeping is pure logic in `crates/grant_plan/src/job_windows.rs`, so its rule is
+tested on the host. The progenitor holds the capabilities and does the binding.
+
+A window shared by two live jobs is the shared-channel race the pool exists to close. It is worse
+once the window is bound, because the older job's badge then resolves to the newer job's directory
+(confinement claim 24 in [confinement-claims.md](confinement-claims.md)). So `Windows::take` hands
+a window to a job only when the job that last held it has been reaped. The progenitor learns of a
+reap from `job_undertaker`'s "reaped" message. That is option A of milestone 685 (a job is finished
+when its memory is back), which calef ruled on 2026-10-06 (UTC).
+
+A bound window is unbound at its holder's reap, never at its reuse (milestone 606 (a directory walk
+costs what it does on Linux), ruling D). `Windows::take` skips a window whose bound bit is set, so
+the progenitor's `UNBIND`, at `Windows::reaped` or `Windows::release`, must run before the window
+can go to anyone else.
+
+`ReapsDue` is the other use of the "reaped" message. It records the finished jobs whose whole answer
+went to the shell's result endpoint and whose reap has not yet come. The shell reads such an answer
+to the end before it sends another request. So when a later request finds a pool short, that job
+has finished or is finishing, and waiting for its reap waits for an event that will come. A job whose
+output went elsewhere, such as a pipeline stage with a sink, may still be waiting on a stage the
+request in hand has not built. It is not recorded, because waiting for it could wait forever.
+
+### BUGS
+
+- **A window whose `UNBIND` fails is never handed out again.** Its bound bit stays set, and
+  `Windows::take` skips it for the life of the boot. The progenitor is the only caller allowed
+  `UNBIND` and names a window it bound, so the file server has no reason to refuse it. Leaking is
+  the safe direction: the pool refuses spawns, and it never shares a window.
+- **A window is only as free as the reaps that reach the progenitor.** A job that `job_undertaker`
+  never reaps keeps its window for the life of the boot. A screen-narrowed job (DECISIONS §106 (the
+  `terminal_sink_caretaker` narrowing)) is reaped by the shell, not the undertaker, so one behind a
+  directory grant would leak its window. None can be today: a tail is screen-narrowed only when its
+  manifest declares `writes_while_reading`, and no shipped manifest does.

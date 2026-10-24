@@ -1,36 +1,20 @@
-//! **The operators: `>`, `<` and `|`** (notes/pipes.md). The shape of a command line, one level
-//! above [`crate::parse`]: the line becomes a [`Line`] of stages plus the file names at either end,
-//! and each stage is then parsed as a whole line was before, so the operators change nothing about
-//! how a command is read.
-//!
-//! **One mechanism, not three.** `>` and `|` put a different capability in a program's output slot,
-//! and the program cannot tell which (notes/sink-protocol.md); `<` does the same to the input slot.
-//! So this module produces [`Sink`] and [`Source`] values only; what is on the other end is wiring.
-//!
-//! ```text
-//! line  := stage ('|' stage)*
-//! stage := <command words> ('<' name | '>' name | '>>' name | '2>' name | '2>>' name)*
-//! ```
-//!
-//! - **A redirection goes last in its stage** ([`Refusal::WordAfterRedirect`]), so a stage's
-//!   command is a slice of the line, not something reassembled without an allocator.
-//! - **Only the first stage takes input and only the last is redirected**: `a > f | b` would give
-//!   `a` two outputs ([`Refusal::RedirectMidPipeline`]).
-//! - **A redirection names one file**: a pattern there is [`Refusal::PatternInRedirect`].
-//!
-//! `2>` (§67 (a program's second stream is a declaration)) names where a program's declared second
-//! output goes: it binds to a stream the manifest declares ([`OutputDeclaration`](crate::OutputDeclaration)) and
-//! is [`Refusal::NoDiagnosticStream`] for a program declaring none. The `2` is the familiar
-//! spelling, not a file descriptor, and counts only at a word boundary (`wc2>f` is a word).
-//!
+//! **The operators: `>`, `<` and `|`.** The shape of a command line, one level above
+//! [`crate::parse`]: the line becomes a [`Line`] of stages plus the file names at either end, and
+//! each stage is then parsed as a whole line is. `>` and `|` put a different capability in a
+//! program's output slot, and `<` in its input slot, so this module yields only [`Sink`] and
+//! [`Source`] values. It refuses a word after a redirection ([`Refusal::WordAfterRedirect`]), a
+//! redirection on the wrong end of a pipeline ([`Refusal::RedirectMidPipeline`]) and a pattern as a
+//! target ([`Refusal::PatternInRedirect`]). `2>` names where a declared second stream goes (§67 (a
+//! program's second stream is a declaration)); planning refuses it for a program declaring none
+//! ([`Refusal::NoDiagnosticStream`]). See notes/pipes.md, and
+//! notes/grant-expression/grant-plan-crate.md for the rest.
+
 //! # BUGS
 //!
-//! - A line has one diagnostic stream, minted once and given to every stage that declares one, so
-//!   a pipeline carrying `2>` where only some stages declare one is refused.
-//! - `<<` is refused as [`Refusal::NoRedirectTarget`], a message about a missing name where the
-//!   mistake was a missing feature.
-//! - Quoting makes an operator an ordinary byte, and nothing puts one back. A quoted redirection
-//!   name is exempt from [`Refusal::PatternInRedirect`]: `> "*.txt"` writes a file called `*.txt`.
+//! - A line has one diagnostic stream, so `2>` on a pipeline where only some stages declare one is
+//!   refused.
+//! - `<<` is refused as [`Refusal::NoRedirectTarget`], about a missing name, not a missing feature.
+//! - A quoted operator stays a byte, so `> "*.txt"` writes a file named `*.txt`.
 
 use crate::{Refusal, word};
 
@@ -235,8 +219,8 @@ fn is_diag_op(line: &[u8], i: usize, word_start: usize) -> bool {
 
 /// **Split a command line into stages and redirection targets.**
 ///
-/// Pure and allocation-free: every slice it returns points into `line`. See the module note for the
-/// three rules it enforces and why each one exists.
+/// Pure and allocation-free: every slice it returns points into `line`. The module doc names the
+/// refusals and the note that says why.
 ///
 /// # Examples
 ///

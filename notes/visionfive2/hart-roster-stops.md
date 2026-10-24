@@ -1,5 +1,7 @@
 # The S7 and the online set: bench stops one to three
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md). It records the 2026-08-14 bench stops
 that came from the JH7110's five harts: the correction to this note's first claim, the vendor
 tree's two lies about the S7, and the first online set not contiguous from zero.

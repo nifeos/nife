@@ -1,5 +1,8 @@
 # The first scaffold: what the fourth shape costs, 2026-09-05
 
+*Name: provisional. For the 2026-09-05 scaffold the parent's "What the fourth shape costs" measured.
+calef names files.*
+
 An appendix of [can a userspace process hold a timer?](../timer-capability.md). The parent keeps the
 shape and the three headline figures. This file keeps the scaffold's method, the tables and what the
 scaffold did not price. The scaffold was built and deleted on 2026-09-05.

@@ -1,5 +1,11 @@
 # basalt
 
+*Name: ratified 2026-10-05 (calef, the distribution's name, reserved by milestone 120 (nife and the
+organization)). Refused `travertine` (needs a geologist's footnote), `magma` (molten rock, not a
+rock), `tufa` (confused with `tuff`), `scoria` (also means slag), `flowstone` (a commercial
+product), `tephra` (loose fragments, not a rock), `obsidian` (the notes app), `pumice` (reads as
+light). Each reason is in [basalt.md](basalt.md).*
+
 *The name of nife's first-party distribution, the `nifeos/basalt` repository that milestone 120 (nife and the organization)
 reserved. The ruling and its refusals are recorded in [this directory's index](README.md), where
 `script/names` reads them. What basalt assembles is decided in

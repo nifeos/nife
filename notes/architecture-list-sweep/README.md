@@ -17,10 +17,4 @@ has no room for.
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `silent-gaps` Name: provisional. After the main page's own heading.
-- `virtio-ring-barrier` Name: provisional. After the function finding 9 became.
-- `not-findings` Name: provisional.
-- `design-options` Name: provisional.
-- `methods` Name: provisional. After the main page's own heading.
+Each stem here is named for its content, and calef names files.

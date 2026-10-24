@@ -1,17 +1,11 @@
 //! Reading the ISA out of real and hand-written device trees, on the host, in milliseconds.
 //!
-//! Four trees, and each is here for a reason no other one covers:
-//!
-//! * **QEMU's own `virt`**, borrowed from the `device_tree_blob` crate's fixtures so the two crates
-//!   cannot disagree about what the machine we test on says. This is the tree the RISC-V suite
-//!   actually boots against, and the surprise in it is the whole argument for the milestone.
-//! * **`mixed-cpus`**, hand-written, for the shapes QEMU never produces: the deprecated
-//!   `riscv,isa` string, the `g` abbreviation, and harts that differ from each other.
-//! * **`narrow-machine`**, hand-written, so the refusal path has a witness rather than only a
-//!   comment saying it would refuse.
-//! * **`wide-hart-first`**, hand-written, with the wide hart ahead of the narrow one, because the
-//!   other trees happen to declare their narrowest hart first and would forgive a loop that never
-//!   replaces an answer it already holds.
+//! * QEMU's own `virt`, from `device_tree_blob`'s fixtures, the tree the RISC-V suite boots on.
+//! * `mixed-cpus`, hand-written: the deprecated `riscv,isa`, the `g` abbreviation, and harts that
+//!   differ from each other.
+//! * `narrow-machine`, hand-written, a witness for the refusal path.
+//! * `wide-hart-first`, hand-written, with the wide hart first, against a loop that never replaces
+//!   an answer it already holds.
 
 use machine_discovery::riscv64::*;
 
@@ -166,15 +160,9 @@ fn narrow_machine_is_refused() {
 
 /// **The narrowest hart wins from second place, and a hart with no base cannot erase one.**
 ///
-/// The other fixtures declare their narrowest hart first, so they would pass with a loop that
-/// never replaces a value it already holds. This tree is ordered against that: rv64/sv48 first,
-/// rv32/sv32 second. Keeping the first hart's answer here is a wrong-accept, and the fault it
-/// defers is the worst kind: the scheduler places a thread on the rv32 core and every pointer is
-/// the wrong width.
-///
-/// The third hart is the other half of the same loop: it declares `riscv,isa-extensions` with no
-/// base at all, which is a legal modern node, and its Unknown must not overwrite the rv32 the
-/// tree already established.
+/// rv64/sv48 first and rv32/sv32 second, so keeping the first answer is a wrong-accept that puts a
+/// thread on the rv32 core. The third hart declares `riscv,isa-extensions` with no base, a legal
+/// modern node, and its Unknown must not overwrite the rv32.
 #[test]
 fn the_narrow_hart_wins_regardless_of_order() {
     let cpu = parse(WIDE_FIRST);

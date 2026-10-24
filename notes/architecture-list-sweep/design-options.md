@@ -1,5 +1,7 @@
 # The design question: three options, priced
 
+*Name: provisional.*
+
 An appendix to [`notes/architecture-list-sweep.md`](../architecture-list-sweep.md), which states the
 result.
 

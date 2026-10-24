@@ -1,5 +1,7 @@
 # To measure at the bench, in full
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), which keeps the list in short form. These
 are the facts documentation could not settle, each an explicit measurement and none guessed.
 

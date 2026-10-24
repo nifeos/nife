@@ -1,5 +1,7 @@
 # The writer and the reader must agree on what a word is, and did not
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), which states the conclusion.
 
 `documentation::index::normalize` folds a query by dropping every byte that is not a letter or a digit, so

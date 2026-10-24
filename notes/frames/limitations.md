@@ -1,5 +1,8 @@
 # PageFrame capabilities: the BUGS list in full
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes, after
+`notes/soak/limitations.md`.*
+
 An appendix to [notes/frames.md](../frames.md), whose BUGS section lists each entry in one line.
 This is each entry with its history and its measurements. The one entry that opened a design fork,
 a `PageFrame` that names a run of pages, has its record in [run-fork.md](run-fork.md).

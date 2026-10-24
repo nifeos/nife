@@ -1,5 +1,7 @@
 # The ancestor: the 2017 case for writing a kernel in Rust
 
+*Name: provisional. After the parent's "The ancestor: the 2017 case".*
+
 An appendix to [`notes/redleaf.md`](../redleaf.md). It holds the reading of Levy et al. (APSys
 '17), the three questions that paper left open and whether RedLeaf closed them, and what this tree
 can and cannot say in the paper's terms. Every quotation is from the sources in
