@@ -4,9 +4,9 @@
 //! Each mechanism is tested where it could be wrong. `MemoryRegion::USAGE` has a rights gate, so it
 //! is driven through the real dispatcher with capabilities holding one right each. The machine
 //! statistics page is scheduler-written counters, read through its protocol crate for what only a
-//! running kernel makes true: the page exists, is recognized, and its counters move. Nothing here
-//! is under `arch/`, so all three architectures run it (DECISIONS §19 (architectural parity is a
-//! tenet)).
+//! running kernel makes true: the page exists, is recognized, and its counters move. Nothing here,
+//! nor in `crate::machine_statistics`, is under `arch/`, so all three architectures run it
+//! (DECISIONS §19 (architectural parity is a tenet)).
 
 use abi::{Error, usage};
 
