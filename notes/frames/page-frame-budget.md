@@ -221,3 +221,9 @@ went), and the difference is accounted rather than shrugged at:
 - **The ledger cannot see memory that never reaches the page frame allocator.** A region reserved and
   unspent costs exactly as much as one filled to its watermark, which is correct for this failure
   (an untyped is a reservation) and means the ledger says nothing about waste *inside* a budget.
+- **The suite's total depends on where the tree is checked out.** On 2026-10-24 (UTC) the same
+  commit, unpatched, kept 24312 page frames on aarch64 and 24316 on riscv64 in a lane worktree and
+  in CI. In a checkout under a longer path on the same machine it kept 24320 and 24330, two runs
+  each. riscv64 then fails against the 24322 budget with every test green. The mechanism is not
+  identified; path strings embedded in the programs a test loads are the suspect. It was found
+  during the measurement in [host-reordering-under-tcg](../benchmarks/host-reordering-under-tcg.md).

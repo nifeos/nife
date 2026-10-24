@@ -9,8 +9,15 @@ detail its prose budget has no room for.
   files, what the tool is honest about, a transcript on a Mac, how it is proven, and its BUGS.
 - [`devices-and-partitions.md`](devices-and-partitions.md): the partition selectors, the correction
   about the old tool on a partitioned disk, transcripts, how it is proven, and its BUGS.
+- [`the-library.md`](the-library.md): the library's seams (errors, the partition window, the
+  version message, import, attributes on the host) and how its tests are shaped.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
+Each stem below is named for its content, and calef names files.
+
+- `extended-attributes` Name: provisional. After the parent's own heading.
+- `devices-and-partitions` Name: provisional. After the parent's own heading.
+- `the-library` Name: provisional. After the parent's own heading.
 Each stem here is named for its content, and calef names files.

@@ -1,17 +1,11 @@
 //! **`std_grep`: the smallest `std` program that reads what its words name** (milestone 205 (how
 //! a foreign program is told what to do), §170 (how a foreign program is told what to do) clauses
-//! 2 to 5). `std_grep NEEDLE [PATH...]` prints every line of every file under the paths that
-//! contains NEEDLE, as `path:line`, walking a directory the way `rg` does. With no path it searches `.`, as `rg` does.
-//!
-//! It exists because `rg` cannot travel as an image yet (256 KiB, `spawnproto::IMAGE_MAX_PAGES`)
-//! and is not built in CI, and the designation half needs a program that behaves like it at the
-//! prompt. `script/swish-check` copies it to the disk unvouched and runs it by path, so every
-//! name it opens was designated by a word on the line and granted read-only, and nothing else
-//! exists for it (calef's N1 ruling, 2026-09-27T06:27Z: `std_grep needle` names nothing and is
-//! granted nothing, so its search of `.` fails, loudly).
-//!
-//! Exit status is `grep`'s: 0 for a match, 1 for none, 2 for an error. Name: provisional
-//! (2026-09-27).
+//! 2 to 5). `std_grep NEEDLE [PATH...]` prints each line containing NEEDLE as `path:line`, walking
+//! directories as `rg` does, and searches `.` with no path. It stands in for `rg`, which cannot
+//! travel as an image yet; `script/swish-check` runs it unvouched by path, so it can open only what
+//! a word designated. With no path it is granted nothing and fails loudly (calef's N1 ruling,
+//! 2026-09-27T06:27Z). Exit status is `grep`'s: 0 a match, 1 none, 2 an error. See
+//! notes/std/the-proof.md. Name: provisional (2026-09-27).
 
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};

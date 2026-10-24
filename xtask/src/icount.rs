@@ -1,5 +1,6 @@
-//! The instruction-count instrument (milestone 78): the two timing claims a wall clock cannot
-//! make, on both ISAs. See script/icount.
+//! The instruction-count instrument (milestone 78 (the load-sensitive assertions)): the two timing
+//! claims a wall clock cannot make, on both ISAs (§19 (architectural parity is a tenet)). See
+//! script/icount.
 
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -8,33 +9,23 @@ use crate::host::{cargo, flag_value};
 use crate::suite::ArchLegs;
 use crate::{RISCV_TARGET, RUNNER, TARGET};
 
-/// **The instruction-count instrument** (milestone 78;
-/// design/roadmap/0078-load-sensitive-assertions.md), on both ISAs because parity is a gate (§19).
+/// **The instruction-count instrument** (milestone 78), on both ISAs or the one `--arch` names,
+/// because parity is a gate (§19). Returns whether every leg's claims held.
 ///
-/// Boots a `--features icount` kernel under `-icount shift=0,sleep=off`, where QEMU's virtual clock
-/// advances by exactly one nanosecond per guest instruction retired and by nothing else. The guest
-/// asserts two claims a wall-clock test cannot make (that the timer fired at the deadline the kernel
-/// armed, and that the handler costs fewer than N instructions) and prints what it measured.
-///
-/// **This is not on the test path and that is the design.** `-icount` changes what QEMU is, and the
-/// two ways that matter are not the one the milestone block gave: it is **not** measurably slower on
-/// compute (measured, 2026-08-17), but it gives every vCPU **one shared virtual clock**, which forces
-/// `-smp 1` and would silently retire every cross-core property the suite proves, and it makes a
-/// clock-bound wait cost instructions rather than host time. So the instrument gets its own boot,
-/// exactly as `script/bench` does, and the test path is untouched. See notes/instruction-clock.md.
-///
-/// The verdict arrives the bench boot's way rather than through semihosting: the guest prints
-/// `icount: done` and parks in `wfi`, this owns the child and kills it. A panic (a violated claim)
-/// prints `[PANIC]` and is a failure; so is reaching end of output with neither.
+/// Boots a `--features icount` kernel under `-icount shift=0,sleep=off`, where QEMU's clock
+/// advances one nanosecond per guest instruction and by nothing else. The guest asserts that the
+/// timer fired at the deadline the kernel armed and that the handler costs fewer than N
+/// instructions, then prints `icount: done`; a `[PANIC]`, or output ending with neither, fails. It
+/// is off the test path: `-icount` is not measurably slower on compute (2026-08-17), but one clock
+/// for every vCPU forces `-smp 1`, and a clock-bound wait costs instructions. See
+/// notes/instruction-clock.md and design/roadmap/0078-load-sensitive-assertions.md.
 pub(crate) fn icount() -> bool {
     let legs = match flag_value("--arch").as_deref() {
         None => ArchLegs::ALL,
         Some("aarch64") => ArchLegs::AARCH64,
         Some("riscv64") => ArchLegs::RISCV64,
         // x86_64 has no icount leg: the instrument compares against a deadline the kernel re-armed,
-        // and this port's LAPIC timer is a periodic hardware reload (`bench_x86`'s doc). The
-        // userspace reason this line used to give stopped being true with milestone 161 (the x86-64
-        // kernel port); found stale by the 2026-09-29 documentation audit.
+        // and this port's LAPIC timer is a periodic hardware reload (`bench_x86`'s doc).
         Some(other) => {
             eprintln!("icount: --arch {other} is not an architecture (aarch64 or riscv64)");
             return false;
@@ -147,16 +138,10 @@ fn start_icount_deadline(
     finished: &std::sync::Arc<AtomicBool>,
     panicked: &std::sync::Arc<AtomicBool>,
 ) -> std::thread::JoinHandle<()> {
-    // **A deadline, on a thread, because the guest is not obliged to say anything.**
-    //
-    // The read below blocks, and a QEMU that has wedged before printing (or after panicking, since
-    // this kernel's panic handler halts rather than exiting) never closes the pipe. This lane leaked
-    // two emulators learning that, at 80% of a core each, on a laptop already carrying four other
-    // lanes' gates. AGENTS.md's rule is that every unattended QEMU run is bounded, and a bound that
-    // depends on the guest reaching a marker is not a bound.
-    //
-    // Generous on purpose: the instrument's own work is a few seconds, so this only ever fires on a
-    // machine that is not making progress at all.
+    // A deadline on a thread, because the guest is not obliged to say anything: the read below
+    // blocks, and a QEMU wedged before printing (or after panicking, since this kernel's panic
+    // handler halts) never closes the pipe. Every unattended QEMU run is bounded (AGENTS.md), and a
+    // bound that waits for a marker is not one. Generous, as the instrument's work takes seconds.
     const DEADLINE_SECS: u64 = 300;
     const PANIC_GRACE_SECS: u64 = 3;
     let finished = std::sync::Arc::clone(finished);
@@ -170,11 +155,9 @@ fn start_icount_deadline(
             if finished.load(Ordering::Relaxed) {
                 return;
             }
-            // A panic shortens the fuse rather than taking a path of its own. The reader below
-            // keeps printing for a few seconds, however many lines the message runs to, and then
-            // this kill closes the pipe and ends the read. Counting lines instead was the first
-            // attempt and it hung: the panic printed two and the reader waited forever for a
-            // third that a halted guest was never going to send.
+            // A panic shortens the fuse: the reader keeps printing for a few seconds, however many
+            // lines the message runs to, and then this kill closes the pipe and ends the read.
+            // Counting lines instead hangs when a halted guest prints fewer than expected.
             match grace {
                 _ if !panicked.load(Ordering::Relaxed) => {}
                 None => grace = Some(PANIC_GRACE_SECS),

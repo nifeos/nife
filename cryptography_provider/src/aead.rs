@@ -1,21 +1,13 @@
 //! The TLS 1.3 record layer: AES-128-GCM, AES-256-GCM and ChaCha20-Poly1305 behind `rustls`'
 //! `Tls13AeadAlgorithm`.
 //!
-//! **This is the file with the most opportunity to be wrong, and it computes nothing.** Every byte
-//! of confidentiality and authenticity here comes from `aes-gcm` or `chacha20poly1305`, the two
-//! crates in this graph that carry NCC Group's 2020 audit in their own README. What this file does
-//! is assemble the record the way RFC 8446 section 5.2 says: plaintext, then the real content type
-//! as one byte, then the tag, with a five-byte additional-data block that is the *outer* header.
-//!
-//! **The detached form is used on purpose.** `aes-gcm` offers both `encrypt_in_place`, which needs
-//! a growable `aead::Buffer`, and `encrypt_in_place_detached`, which takes a plain `&mut [u8]` and
-//! hands the tag back. `rustls`' buffers are its own types and implement neither `Buffer` nor
-//! anything close, so the detached form is the one that does not require copying the record twice.
-//!
-//! **`rustls` supplies the nonce and the additional data**, through `Nonce::new` and
-//! `make_tls13_aad`, and they are used rather than rewritten. Deriving a nonce is exactly the kind
-//! of thing that looks like four lines and is a catastrophe when the sequence number is encoded
-//! wrongly, and `rustls` has already made those four lines part of its own API.
+//! This file computes nothing: every byte of confidentiality and authenticity comes from `aes-gcm`
+//! or `chacha20poly1305`. It assembles the record as RFC 8446 section 5.2 says: plaintext, the real
+//! content type as one byte, then the tag, with the five-byte *outer* header as additional data. It
+//! uses the detached form (`encrypt_in_place_detached`, on a plain `&mut [u8]`) because `rustls`'
+//! buffers implement no `aead::Buffer`, so the record is not copied twice. The nonce and additional
+//! data are `rustls`' own (`Nonce::new`, `make_tls13_aad`), used rather than rewritten.
+//! notes/cryptography-provider/the-glue.md has the reasons.
 
 use alloc::boxed::Box;
 

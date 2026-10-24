@@ -68,7 +68,7 @@ the instrument failing. The four un-padded images are the layout distribution. W
 are 820 and 2,460 (U74 branch-target alignment and L1d page sets) is in
 [layout-control.md](footprint-perturbation/layout-control.md).
 
-### Step 0, on patagonia, before anyone walks to the bench
+### Step 0, on the build machine, before anyone walks to the bench
 
 ```sh
 git log -1 --format=%h                     # the commit every image below is built from
@@ -182,7 +182,7 @@ test E3 cannot be, needs a build and an evening of its own:
 
 | order | what | boots | why this order |
 |---|---|---|---|
-| 1 | on patagonia: step 0 above, all eight images | none | the check that invalidates the whole E3 block if it fails, and it needs no board |
+| 1 | on the build machine: step 0 above, all eight images | none | the check that invalidates the whole E3 block if it fails, and it needs no board |
 | 2 | E3, `script/board-image --bench --tftp --extra-features fastpath_pad` per image | 3 per image, interleaved | interleaving is the design, so it goes first while the room and the board are at one temperature |
 | 3 | milestone 168's job mix, `script/board-image --job-mix --tftp` | at least 5 | notes/job-mix.md, "The next bench evening on radon", steps 0 to 8, unchanged |
 | 4 | optional: one `--bench --extra-features ipc_stack_depth` boot | 1 | last, because nothing is blocked on it |

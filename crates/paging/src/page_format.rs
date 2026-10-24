@@ -10,15 +10,10 @@ use super::*;
 /// just the marker, and the format supplies the geometry via [`PageFormat::is_in_half`] and
 /// [`PageFormat::half_base`].
 ///
-/// # The thing that is easy to get wrong
-///
-/// **The top bits of a virtual address are not translated.** They are not part of any index; they
-/// select *which set of tables to use* (aarch64 `TTBR0`/`TTBR1`; on RISC-V a single `satp` per
-/// address space, with the sign-extended top bit distinguishing the halves). The index is extracted
-/// from the lower bits **identically** for both halves, so a low address and its high-half twin are
-/// the same entry within a table and differ only in which tables the hardware consults. A
-/// higher-half kernel works because it is a *separate set of tables*, not because high addresses
-/// index differently. A test discovered this the hard way, which is what host tests are for.
+/// **The top bits of a virtual address are not translated**: they select which set of tables to
+/// use (aarch64 `TTBR0`/`TTBR1`; on RISC-V one `satp` per space, the sign-extended top bit telling
+/// the halves apart), and the index comes from the lower bits identically for both halves. A
+/// higher-half kernel is a separate set of tables. See notes/page-tables.md.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Half {
     /// The low half: user space.
@@ -29,13 +24,9 @@ pub enum Half {
 
 /// **The user-VA gate: may a user process ask for a mapping at `va` at all?**
 ///
-/// True exactly when `va` is page-aligned and in the low half for the given format. The syscall
-/// layer runs this before spending anything on a user `MAP` request, for two reasons:
-///
-/// - **Isolation.** An admitted address is in the low half, so the request can only ever walk the
-///   process's own tables. No address that passes this gate lands in the kernel's half. (The halves
-///   are disjoint; that is proved per format.)
-/// - **Budget.** A rejected address is rejected *before* a page is retyped for it.
+/// True exactly when `va` is page-aligned and in the low half for format `F`, so an admitted
+/// request walks only the process's own tables (the halves are proved disjoint per format). The
+/// syscall layer runs it before a page is retyped for a user `MAP` request.
 ///
 /// # Examples
 ///
@@ -49,8 +40,6 @@ pub enum Half {
 /// assert!(!is_user_page_va::<Aarch64>(0xffff_0000_0000_0000)); // aligned, and the kernel's half
 /// assert_eq!(PAGE_SIZE, 4096);
 /// ```
-///
-/// Generic over the format so the split lands at the right bit for the running architecture.
 pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
     F::is_in_half(Half::Low, va) && va.is_multiple_of(PAGE_SIZE)
 }
@@ -60,8 +49,8 @@ pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
 /// [`Mapper`] descends the levels, allocates intermediate tables, and writes a leaf, using nothing
 /// architecture-specific except what a format supplies here: how many levels, where the halves
 /// split, and the four bit operations (is-present, extract-address, encode-a-table-pointer,
-/// encode-and-decode-a-leaf). Both hardware formats we support are 512-entry / 4 KiB / 4 KiB, so
-/// [`ENTRIES`] and [`PAGE_SIZE`] are shared and not part of the trait.
+/// encode-and-decode-a-leaf). Every format here is 512-entry / 4 KiB / 4 KiB, so [`ENTRIES`] and
+/// [`PAGE_SIZE`] are shared and not part of the trait.
 pub trait PageFormat {
     /// Translation levels. aarch64: 4. Sv39: 3.
     const LEVELS: usize;
@@ -81,12 +70,9 @@ pub trait PageFormat {
     ///
     /// `level` is the level of the table this entry is written INTO, counted the way
     /// [`index`](Self::index) counts it (0 = the top), so the table `pa` names is at `level + 1`.
-    /// Three of the four formats ignore it. **AMD-Vi cannot**: its directory entry carries a
-    /// `NextLevel` field that must name the level of the table it points at, and a wrong value is
-    /// not a slightly different encoding but a skipped level (AMD 48882 rev 2.62, section 2.2.3).
-    /// Required rather than a second method with a default, for the reason
-    /// [`block_entry`](Self::block_entry) gives: a default that dropped the level would let a new
-    /// format inherit the wrong encoding without saying so.
+    /// Only AMD-Vi reads it: its `NextLevel` field must name the level of the table it points at,
+    /// and a wrong value is a skipped level. Required, for the reason
+    /// [`block_entry`](Self::block_entry) gives.
     fn table_entry(pa: u64, level: usize) -> u64;
 
     /// Encode a leaf entry mapping physical `pa` with `flags`.
@@ -101,13 +87,9 @@ pub trait PageFormat {
     /// 1 GiB), mapping the naturally aligned span at `pa` with `flags`. `None` when this format has
     /// no leaf of that size, which is how a format declines rather than being mis-encoded.
     ///
-    /// Given [`PageSize::Size4KiB`] this is [`leaf_entry`](Self::leaf_entry), so a caller need
-    /// not special-case the bottom level.
-    ///
-    /// **Required, with no default, on purpose**: a default of `None` would let a new format
-    /// silently decline blocks, and a default that reused `leaf_entry` would silently write a
-    /// table pointer's bit pattern where the hardware expects a block's on aarch64 (`0b11` at L2
-    /// is a table; a block is `0b01`). Every format has to say.
+    /// Given [`PageSize::Size4KiB`] this is [`leaf_entry`](Self::leaf_entry). Required, with no
+    /// default: `None` would let a new format silently decline blocks, and reusing `leaf_entry`
+    /// would write a table pointer on aarch64 (`0b11` at L2 is a table; a block is `0b01`).
     fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64>;
 
     /// **Is this present entry, found above the bottom level, a block rather than a table

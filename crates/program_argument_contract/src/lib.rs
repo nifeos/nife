@@ -9,7 +9,6 @@
 //!
 
 //! # The layout
-//!
 //! ```text
 //!   offset  size  field
 //!   0       8     MAGIC, b"nifeargv"
@@ -17,18 +16,8 @@
 //!   12      4     total, little-endian u32: how many bytes of records follow
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
 //! ```
-//!
-//! - **Length-prefixed, not NUL-terminated**, so an argument may hold any byte, including NUL and
-//!   the `0xff` a regex can carry. `args_os` is `OsString`, and a path need not be text.
-//! - **`argv[0]` is present.** `ripgrep` skips the first element and `clap` treats it as the
-//!   binary's name, so a block without it would lose the pattern. [`PageBuilder`] does not insist,
-//!   because an empty argv is a representable thing to hand a program; the shell always pushes the
-//!   name it ran.
-//! - **Everything past the records is unspecified.** A reader never looks there, so a page reused
-//!   for a shorter line needs no clearing.
-//! - **One page.** [`CAPACITY`] is 4,080 bytes of records, the four-byte prefixes included.
-//!   A line that does not fit is refused at assembly ([`Refused::TooLong`]), never truncated.
-//!
+//! Any byte may appear in a record, nothing past the records is read, and a line longer than
+//! [`CAPACITY`] is refused ([`Refused::TooLong`]). See notes/foreign-program-arguments.md.
 
 //! # A page that does not parse reads as no arguments
 //!
@@ -36,14 +25,12 @@
 //! default-honest shape `environment_contract::ConfigPage` uses. A zeroed frame, a page belonging
 //! to something else, or a count that disagrees with the records all answer an empty argv rather
 //! than a partial one: a program that sees half its arguments would act on a line nobody typed.
-//!
+
 //! # BUGS
 //!
-//! - **A secret on a command line is plain bytes on this page**, handed to the program with no
-//!   protection, the ruling's known cost; §111 (inert configuration is a read-only page) refused
-//!   free-form strings on the configuration page for this reason.
-//! - **The environment does not ride here.** §170 is silent on environment variables for a foreign
-//!   program, so they stay on §111's validated page and this one carries argv alone.
+//! - A secret on a command line is plain bytes on this page, the ruling's known cost; §111 (inert
+//!   configuration is a read-only page) refused free-form strings on its page for this reason.
+//! - The environment does not ride here: §170 is silent on it, so it stays on §111's page.
 //!
 //! Name: ratified 2026-10-18 (calef), asked "Or should it be `program_argument_contract`?" and
 //! answering yes: `argument` alone collides with the argument register and the argument word.

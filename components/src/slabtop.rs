@@ -3,7 +3,7 @@
 //!
 //! Six `MemoryRegion::USAGE` questions about one budget, and a table. Why this is what `slabtop`
 //! became on a kernel with no slab is `crates/slabtop`'s module docs.
-//!
+
 //! # Capability contract
 //!
 //! | slot | what | why |
@@ -14,9 +14,8 @@
 //!
 //! No machine page, which is the difference from `free`: this program describes a budget, not a
 //! machine.
-//!
+
 //! # EXAMPLES
-//!
 //! ```text
 //! $ slabtop
 //! job budget: 80 of 512 pages spent
@@ -26,7 +25,7 @@
 //!        4       16  address spaces
 //!        2        8  rendezvous
 //! ```
-//!
+
 //! # BUGS
 //!
 //! `crates/slabtop`'s: the counts say where pages went rather than what is alive, and the table

@@ -21,7 +21,7 @@ diff --git a/pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs b/pinned_tl
 index 272ab0d07..ab5f33fbc 100644
 --- a/pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs
 +++ b/pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs
-@@ -67,7 +67,7 @@ const PINNED_ROOT: &[u8] = include_bytes!("../../../pinned_tls_client/fixtures/p
+@@ -48,7 +48,7 @@ const PINNED_ROOT: &[u8] = include_bytes!("../../../pinned_tls_client/fixtures/p
  /// confinement claim) booted; `TcpStream::connect` on a slice of `SocketAddr` asks no resolver.
  fn get(server_name: &str, to: &[SocketAddr], path: &str) -> Result<Vec<u8>, String> {
      let peer = PinnedPeer::new(server_name, PINNED_ROOT).map_err(|e| format!("{e:?}"))?;

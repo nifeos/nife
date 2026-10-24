@@ -162,7 +162,7 @@ script line by line, the address choices and the captured transcripts.
 
 ## Booting over the network
 
-Milestone 257 (boot radon over the network) serves the payload over TFTP from patagonia, the machine that builds it
+Milestone 257 (boot radon over the network) serves the payload over TFTP from the Mac that builds it
 and that radon's UART goes into, so the card stops being the tax. Two commands, in two terminals:
 
 ```
@@ -189,7 +189,7 @@ Setup, in order:
    for; `script/board-image --card /Volumes/NIFE` without `--tftp` is still the card-only script
    and is what to write when there will be no serving machine.
 
-   Then, on patagonia and in a second terminal, `script/board-netboot`, for as long as the session
+   Then, on that Mac and in a second terminal, `script/board-netboot`, for as long as the session
    lasts. It serves `target/board` on udp/69 and prints the `setenv nife_boot_server` line for each
    address the board might reach it on. Leave it running: every later boot is
    `script/board-image --tftp` and a power cycle, with no card in anybody's hand.

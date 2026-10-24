@@ -1,28 +1,22 @@
 //! Fuzz the RedoxFS file server's **request dispatch** with whole client sessions, and check the
 //! subtree rule after every request (proposal #1592 part a, rank 1).
 //!
-//! **What runs.** `redoxfs_server::Server::handle`, the function the EL0 binary's serve loop calls
-//! for every request, over a host-built RedoxFS image. A session is a sequence of requests, each a
-//! `(badge, w0, w1, window bytes)` as the kernel would deliver it, so the fuzzer explores what a
-//! sequence of clients can do to one server rather than what one message can do to a decoder.
-//!
-//! **The rules it checks**, beyond "no panic". These are confinement claims, and a breach of either
-//! answers a request with success and crashes nothing, so a crash-only fuzzer would miss both.
+//! `redoxfs_server::Server::handle`, which the EL0 binary's serve loop calls per request, runs over
+//! a host-built RedoxFS image. A session is a sequence of `(badge, w0, w1, window bytes)` requests as
+//! the kernel would deliver them. The rules are confinement claims, whose breach answers with
+//! success and crashes nothing, so a crash-only fuzzer would miss both. The image is formatted once
+//! and every input reopens it through a copy-on-write disk ([`Overlay`]);
+//! `notes/fuzzing-the-services.md` records what this layout runs.
+
+//! # The rules it checks, beyond "no panic"
 //!
 //! 1. *Admission.* A revoked badge, and any nonzero badge the server has no window for (milestone
 //!    726 (an unknown badge fails closed in subtree_scope)), succeeds at nothing. A bound badge
-//!    succeeds only through `ROOT` or a handle it minted itself, never binds or unbinds, and never
-//!    closes `ROOT`. The model of who holds what is this file's own, kept from the replies.
-//! 2. *Content.* A badge bound by the session's prologue never reads the bytes of a file outside
-//!    its grant. Every file in the image is filled with a marker naming where it sits, and nothing
-//!    a session can write spells one, so a marker read through a bound badge is a read from outside
-//!    the subtree. The rule stands down after the first successful `RENAME` by an open badge,
-//!    because that is the one request that can legitimately carry outside bytes in.
-//!
-//! **Setup is paid once.** The image is formatted on the first input and every input after that
-//! reopens it through a copy-on-write disk ([`Overlay`]) whose writes land in a per-input block map.
-//! The proposal's scratch target formatted a fresh 4 MiB image per input and ran about 190 sessions
-//! a second; `notes/fuzzing-the-services.md` records what this layout runs.
+//!    succeeds only through `ROOT` or a handle it minted, never binds or unbinds, and never closes
+//!    `ROOT`. The model of who holds what is this file's own, kept from the replies.
+//! 2. *Content.* A badge bound by the prologue never reads a file outside its grant: every file
+//!    holds a marker naming where it sits, which no session write can spell. The rule stands down
+//!    after an open badge's first successful `RENAME`, which can carry outside bytes in.
 //!
 //! Name: provisional (`lane/fuzz-service-handlers`, 2026-10-04 UTC); an architect names things.
 //! Falsification: replayable `fuzz/falsifications/redoxfs_server_session.unknown_badge_fails_open.patch`

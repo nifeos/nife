@@ -4,30 +4,12 @@
 
 /// **Proof that a page table changed and the TLB may now be lying.**
 ///
-/// # Why this type exists at all
-///
-/// The CPU caches translations in a TLB. Change a mapping without invalidating it and **the CPU
-/// keeps using the old translation**. Memory reads back as the *previous* owner's data. That is a
-/// security hole, and close to undebuggable: the page tables *in memory are correct*; it is the
-/// CPU's private cache of them that is stale, and you cannot look at it.
-///
-/// So `unmap` doesn't just do the work and trust you to remember. It hands you an obligation.
-/// `#[must_use]` means dropping it on the floor is a compiler warning, and the only ways to
-/// discharge it are [`flush`](Self::flush) (do the invalidation) or
-/// [`assume_no_stale_entry`](Self::assume_no_stale_entry), which is `unsafe` and makes you say why.
-///
-/// # Break-before-make
-///
-/// The other half of the discipline, and the reason [`MapError::AlreadyMapped`](crate::MapError::AlreadyMapped) exists rather than
-/// `map` silently overwriting. Changing a **valid** entry directly into a *different* **valid** one
-/// is architecturally unsafe (a TLB conflict): you must go valid → invalid → invalidate → valid.
-/// Refusing to overwrite an existing mapping is what forces that sequence. **The API cannot be used
-/// incorrectly**, rather than merely documenting the rule and hoping.
-///
-/// # What does NOT need one
-///
-/// Mapping a page that was **invalid** before: the hardware may not cache an entry that would fault,
-/// so there is no stale entry to invalidate. That is why `map` returns `()` and not this.
+/// A changed mapping that is not invalidated leaves the CPU using the old translation, and memory
+/// reads back as the previous owner's data. `unmap` returns this; it is `#[must_use]`, and only
+/// [`flush`](Self::flush) or the `unsafe` [`assume_no_stale_entry`](Self::assume_no_stale_entry)
+/// discharges it. [`MapError::AlreadyMapped`](crate::MapError::AlreadyMapped) forces
+/// break-before-make. Mapping a page that was invalid needs none, since the hardware may not cache
+/// a faulting entry. See notes/page-tables.md, "The TLB obligation" and "Break-before-make".
 #[must_use = "a page table changed: the TLB MUST be invalidated, or the CPU keeps using the old \
               translation and memory reads back as the previous owner's data"]
 #[derive(Debug, PartialEq, Eq)]

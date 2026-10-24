@@ -1,71 +1,24 @@
 //! **The kernel proving it works on this machine, before it hands the machine to anybody.**
 //!
-//! Milestone 268 (every architecture boots the same way)'s second rung: say what the machine is
-//! ([`crate::print_machine_description`]), prove the kernel works on it (here), then hand over.
-//! The checks are the claims the per-port tours made, on every port (calef's ruling of 2026-10-19
-//! (UTC) on #2434). Every check runs on every architecture; where an architecture differs is
-//! `arch::exceptions::self_test`, `arch::irq::device_line_interrupts` and the JH7110 bring-up.
-//!
-//! # It reports, it does not gate
-//!
-//! calef, 2026-09-09: *"I could see building tools to diagnose what broke but we can only run them
-//! if there is a prompt"*. A failing check prints its verdict and the boot carries on to userspace.
-//! **So the verdict is read by a program**: `boot_ladder::SELF_TEST` is the contract,
-//! `crates/serial_console` matches it, and `cargo xtask boot-check` boots all three architectures
-//! and fails on a red one in CI.
-//!
-//! ```text
-//! nife self-test: 10 of 13 passed, 3 absent: blockdev clock trng
-//! nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng, 1 FAILED: exceptions
-//! ```
-//!
-//! - **The prefix is always present and identical on every architecture**: a missing marker looks
-//!   exactly like a slow board.
-//! - **The counts print on success as well as on failure**, so "ran nothing and passed" is
-//!   distinguishable from "ran the set and passed".
-//! - **A check whose device this machine lacks is `absent`, with its reason**, neither a pass nor a
-//!   failure (calef's ruling of 2026-10-20 (UTC) on #2447). Which absences a board allows is
-//!   `serial_console`'s board profile's to say, and an absence its profile forbids is a failure
-//!   there: radon may not be without `entropy`, `trng` or `clock`, xenon without `entropy` or
-//!   `deviceirq`.
-//!
-//! The wording is **provisional**: a line two programs agree on is an architect's.
-//! `serial_console::progress` is tested against this module's own constant.
-//!
+//! The second rung of milestone 268 (every architecture boots the same way): every check runs on
+//! every architecture, a failure prints and the boot carries on, and a program reads the verdict
+//! (`boot_ladder::SELF_TEST`, matched by `crates/serial_console`). notes/boot-ladder.md has the
+//! verdict's contract, and notes/self-test-checks.md each check's design and the full account of
+//! the BUGS below.
 
 //! # BUGS
 //!
-//! - **Nothing here proves an architecture ran the right set.** The list is a compile-time fact,
-//!   and a check deleted from it takes its own evidence with it; the count is the partial defense,
-//!   and review guards the set.
-//! - **The checks cost time on every boot.** [`fn@timer`] waits about 20 ms for a tick and
-//!   [`preemption`] spends a fifth of a second; [`userspace`], [`budget`] and, where there is a
-//!   disk, [`blockdev`] each spawn a process from the archive and wait for it. The deep proofs are
-//!   still `script/test`'s.
-//! - **[`blockdev`]'s driver is left running**, as it was in the tour it came from: it holds disk 0,
-//!   which nothing after it uses, and `virtio_service::start` returns no thread to end.
-//! - **[`budget`]'s helper thread can be left parked.** A receive has no deadline, so the reports
-//!   are taken on a thread of their own; a process that never reports leaves that thread blocked,
-//!   and the check fails by its own deadline.
-//! - **[`budget`] still brackets the machine's used-frame count**, so it is sound only while
-//!   nothing on any core allocates or frees a frame in its window. That is a rung below a
-//!   mechanism, and deliberately so: the claim is that the kernel allocates nothing, which no
-//!   single object can be asked. It holds because each earlier check that spawns waits for its
-//!   threads to be reaped ([`preemption`], [`userspace`]) or ends long before ([`scheduler`]'s
-//!   thread, a fifth of a second earlier). A check added before it that returns with a teardown
-//!   in flight reopens the red `notes/load-sensitive-assertions.md` records.
-//! - **A check can still hang the boot if the operation it measures never returns.** Both waits
-//!   read the counter through [`Counter`], which reports a stopped counter rather than waiting on
-//!   it, and [`fn@timer`] spins rather than sleeping. A `sched::yield_now` or `mmu::map_page` that
-//!   never comes back is unbounded; that needs a watchdog this module does not own.
-//!   `arch::timer::spin_for` still hangs on a stopped counter.
+//! - Nothing proves an architecture ran the right set; review guards the list.
+//! - The checks cost time on every boot: about a quarter of a second, and up to three spawns.
+//! - [`blockdev`]'s driver is left running, holding disk 0.
+//! - [`budget`]'s helper thread can be left parked if the process never reports.
+//! - [`budget`] brackets the machine's used-frame count, sound only while nothing else allocates.
+//! - A check whose operation never returns still hangs the boot; that needs a watchdog.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-// **The verdict's two fixed strings come from `crates/boot_ladder`**, not from literals here, so
-// that this module and `crates/serial_console` cannot hold two copies of one contract (`AGENTS.md`
-// rule 7). Each carries its own trailing space, so a matcher that finds one has found a boundary
-// rather than the start of a longer word.
+// The verdict's fixed strings come from `crates/boot_ladder`, so this module and
+// `crates/serial_console` hold one copy of the contract (AGENTS.md rule 7).
 use boot_ladder::{SELF_TEST as VERDICT, SELF_TEST_ABSENT as ABSENT, SELF_TEST_FAILED as FAILED};
 
 use crate::{arch, memory, println, sched};
@@ -90,22 +43,12 @@ mod timer {
 /// from one architecture took its own evidence with it and the verdict still said *N of N*.
 const CHECKS: usize = boot_ladder::SELF_TEST_CHECKS.len();
 
-/// **Make one check report failure**, so the verdict can be *seen* red rather than reasoned about.
+/// **Make one check report failure**, so the verdict can be seen red: `cargo xtask boot-check
+/// --inject` builds with this on and asserts the gate goes red.
 ///
-/// A verdict that has never been red is a verdict nobody has tested, and milestone 268's proof
-/// condition is that an injected failure turns the line red and fails CI. `cargo xtask boot-check
-/// --inject` builds each architecture with this on and asserts the gate goes red; without it the
-/// only way to know would be to break the kernel for real.
-///
-/// It is a `cfg!` rather than a `#[cfg]` block so that both arms compile on every build: a fault
-/// injector that only type-checks when it is switched on is an injector that has rotted by the time
-/// somebody needs it.
-///
-/// **It injects two failures, and the second is a gate for the first fix.** Besides failing
-/// `exceptions` it stops the counter the checks read (this module's `timer::now`), which is the
-/// fault that used to hang [`fn@timer`] forever. So every `--inject` run also proves the waits are
-/// bounded: a regression there turns a red verdict back into a boot that goes quiet, and
-/// `boot-check --inject` fails on that.
+/// It also stops the counter the checks read (this module's `timer::now`), so every injected run
+/// proves the waits are bounded. A `cfg!` rather than `#[cfg]`, so both arms compile on every
+/// build.
 ///
 /// Name: provisional (milestone 268 (every architecture boots the same way)).
 const INJECT: bool = cfg!(feature = "self_test_injection");
@@ -253,14 +196,9 @@ fn print_names(names: &[&str]) {
 pub fn run() {
     let mut tally = Tally::new();
 
-    // Each check notes its boot stage before it runs, so a thread dump during a wedged check says
-    // which one (the breadcrumb `sched::dump_threads` repeats every couple of seconds survives a
-    // lossy serial log; notes/visionfive2.md, fifth stop). Stage 3 is the first check and the
-    // last is 2 plus the list's length; `TOUR_STAGE` follows the verdict.
-    // One run per check except `jh7110`, which records `clock` and `trng` from one bring-up; the
-    // verdict names any listed check that recorded nothing, so the list and these runs cannot
-    // drift apart unseen. `entropy` runs after `jh7110` because on a JH7110 it draws from the
-    // service that bring-up wired.
+    // Each check notes its boot stage first, so a dump during a wedged check names it. `jh7110`
+    // records both `clock` and `trng`, and `entropy` runs after it because on a JH7110 it draws
+    // from the service that bring-up wired.
     let runs: [fn(&mut Tally); RUNS] = [
         exceptions, mapping, frames, timer, scheduler, preemption, userspace, budget, blockdev,
         deviceirq, jh7110, entropy,
@@ -290,16 +228,9 @@ pub const TOUR_STAGE: u32 = FIRST_STAGE + RUNS as u32;
 
 /// **A breakpoint is caught and stepped over.**
 ///
-/// The oldest self-test in this tree, and the one milestone 268 collected rather than invented:
-/// riscv64 and `x86_64` have called `arch::exceptions::self_test` from `main.rs` since their ports
-/// were written, and `notes/riscv-port.md` already calls it "a boot self-test". aarch64 had the
-/// machinery (`BRK_COUNT`, and a handler that advances past a `brk`) and no function; milestone 268
-/// gave it one.
-///
-/// What it proves is the whole trap round trip: the vector is installed at an address the hardware
-/// accepts, a synchronous exception reaches our dispatcher, the dispatcher recognises the cause,
-/// and the return lands on the instruction *after* the trapping one rather than on it. Getting the
-/// last of those wrong is an infinite loop rather than a wrong answer.
+/// The whole trap round trip: the vector is installed where the hardware accepts it, a synchronous
+/// exception reaches the dispatcher, the cause is recognized, and the return lands after the
+/// trapping instruction. Getting the last wrong is an infinite loop rather than a wrong answer.
 fn exceptions(tally: &mut Tally) {
     let caught = arch::exceptions::self_test();
     let ok = caught >= 1 && !INJECT;
@@ -318,21 +249,11 @@ fn exceptions(tally: &mut Tally) {
     }
 }
 
-/// **The kernel can map a page it did not have at boot, and unmap it again.**
+/// **The kernel can map a page it did not have at boot, and unmap it again**, which is what the
+/// kernel stack allocator stands on.
 ///
-/// The second self-test milestone 268 collected: it was an unnamed block in the RISC-V tour
-/// (`kmap test`), and it is what the kernel stack allocator stands on, so a kernel where it fails
-/// cannot spawn a thread.
-///
-/// **The address is computed, not a constant**, and that is the part worth keeping. A constant here
-/// was the third QEMU-shaped address the VisionFive 2 caught in one bench session (2026-08-14); the
-/// direct map ends at the top of whatever RAM this machine has, so one gigabyte above that clears
-/// any alignment the mapper rounds to and is free on every machine rather than on one.
-///
-/// `phys_to_virt` rather than each architecture's own arithmetic: the three spell the direct map
-/// differently (`pa | KERNEL_VA_BASE` on aarch64, `pa + KERNEL_VA_BASE` on riscv64, `pa +
-/// DIRECT_MAP_BASE` on `x86_64`, whose kernel *image* base is a different constant entirely), and the
-/// function is the one thing all three agree on.
+/// The address is computed from this machine's RAM, one gigabyte above the direct map's end,
+/// rather than a constant that is free on one machine only. See notes/self-test-checks.md.
 fn mapping(tally: &mut Tally) {
     use paging::Flags;
 
@@ -395,25 +316,18 @@ fn mapping(tally: &mut Tally) {
                 "{va:#x} -> {pa:#x}: translate {translated:x?}, read back {read_back:#x}, unmap {unmapped:x?}"
             ),
         );
-        // Deliberately leaked rather than freed: a frame whose mapping state is unknown must not go
-        // back into the pool, where the next allocation would inherit whatever went wrong.
+        // Leaked, not freed: a frame whose mapping state is unknown must not go back to the pool.
     }
 }
 
-/// **How many reads of an unchanged counter mean it has stopped.**
-///
-/// Every counter this kernel reads is free-running and fast: `CNTVCT_EL0` at 62.5 MHz on QEMU's
-/// aarch64, `rdtime` at 10 MHz on QEMU's riscv64 and 4 MHz on the JH7110, the TSC on `x86_64`. The
-/// slowest of those changes every 250 ns, and a million reads take far longer than that on any core
-/// this runs on, so a healthy counter cannot read the same value this many times running. Counted
-/// in reads rather than in time for the obvious reason: time is the thing in doubt.
+/// **How many reads of an unchanged counter mean it has stopped.** The slowest counter this
+/// kernel reads changes every 250 ns, far faster than a million reads, and the count is in reads
+/// because time is the thing in doubt.
 const STALLED_READS: u32 = 1_000_000;
 
-/// **How many looks with a yield between them mean the counter has stopped.** A yield is a pass
-/// through the scheduler, and with [`preemption`]'s spinners runnable it can be a whole 10 ms tick
-/// before this thread runs again, so a healthy counter changes between every two looks by a wide
-/// margin. A hundred unchanged looks is a stopped counter, found within about a second even when
-/// every look waits a tick; [`STALLED_READS`]' million would be three hours.
+/// **How many looks with a yield between them mean the counter has stopped.** A yield can cost a
+/// whole 10 ms tick with [`preemption`]'s spinners runnable, so a hundred unchanged looks is a
+/// stopped counter, found within about a second.
 const STALLED_YIELDS: u32 = 100;
 
 /// **The free-running counter, read by something that notices when it stops.**
@@ -503,20 +417,10 @@ fn frames(tally: &mut Tally) {
 
 /// **The counter advances and the tick interrupt arrives.**
 ///
-/// Two claims in one window, and they are different claims. A free-running counter that moves says
-/// the time source exists; a tick count that moves says the interrupt controller routes its
-/// interrupt to this core, the core has interrupts unmasked, and the handler runs. The second is
-/// what preemption stands on, and the first is what everything that waits stands on, including the
-/// wait below.
-///
-/// **Bounded by the counter rather than by an iteration count**, which is what makes the number
-/// mean the same thing on a 62 MHz aarch64 generic timer, a 10 MHz RISC-V `mtime` and a 2 GHz TSC.
-///
-/// **It spins rather than sleeping, and reads through [`Counter`]**, and both are the fix for the
-/// hang this module's `BUGS` used to record. The loop was `wait_for_interrupt` until the counter
-/// passed the window, so a counter that never advanced sat here forever, and so did a machine whose
-/// interrupts never arrived, because the sleep had nothing to wake it. Spinning with interrupts on
-/// still lets the tick arrive, which is half of what this check measures.
+/// Two claims: a moving counter says the time source exists, and a moving tick count says the
+/// controller routes the interrupt to this core and the handler runs. Bounded by the counter, so
+/// the window means the same on every timer, and it spins through [`Counter`] rather than sleeping,
+/// so a stopped counter or a missing interrupt ends the check instead of the boot.
 fn timer(tally: &mut Tally) {
     let hz = timer::frequency();
     let mut counter = Counter::new();
@@ -556,18 +460,9 @@ fn timer(tally: &mut Tally) {
     );
 }
 
-/// **A thread the kernel spawned runs, and carries what it captured.**
-///
-/// The context switch, end to end: `spawn` builds a thread out of the kernel's own budget,
-/// `switch_to` leaves this stack and the trampoline arrives on the new one, the closure runs with
-/// the environment it was built with, and the thread exits back into the scheduler. A kernel that
-/// fails this cannot run a driver, a service or a process.
-///
-/// **Clock-bounded rather than yield-bounded**, which the RISC-V tour learned the hard way: the
-/// secondaries are online by this point, so placement can put the new thread on another core, and a
-/// fixed count of `yield_now` on this core elapses in microseconds, long before another core has
-/// scheduled it. Boot 12 on the VisionFive 2 printed "1 of 2" and boot 13 "0 of 2" against a
-/// yield-bounded wait (notes/visionfive2.md).
+/// **A thread the kernel spawned runs, and carries what it captured**: the context switch, end
+/// to end. The wait is bounded by the clock, not by a count of yields, because the new thread may
+/// be placed on another core. See notes/self-test-checks.md.
 fn scheduler(tally: &mut Tally) {
     static SAW: AtomicU64 = AtomicU64::new(0);
 
@@ -585,10 +480,7 @@ fn scheduler(tally: &mut Tally) {
         return;
     };
 
-    // Two seconds is far beyond any honest completion and is the same bound the RISC-V tour
-    // settled on; the point of the deadline is that the boot continues rather than that the number
-    // is tight. Read through [`Counter`], so a stopped counter ends the wait instead of making the
-    // deadline unreachable.
+    // Two seconds is far beyond honest completion; the point is that the boot continues.
     let mut counter = Counter::new();
     let deadline = counter.last + 2 * timer::frequency();
     while SAW.load(Ordering::SeqCst) != CAPTURED {
@@ -632,19 +524,12 @@ fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
     }
 }
 
-/// **Threads that never yield are taken off the CPU anyway, and none of them starves.**
+/// **Threads that never yield are taken off the CPU anyway, and none of them starves**
+/// (DECISIONS §5 (preemptive threads with real stacks)).
 ///
-/// The property that separates a kernel from a runtime (DECISIONS §5 (preemptive threads with real stacks)): a thread whose whole body is
-/// a loop, with no yield, no syscall and not even a function call, owns its core under any
-/// cooperative scheduler. These run inside the kernel and are still preempted, which is the stronger
-/// form of the claim; `system_tests`' `a_user_program_that_never_yields_is_preempted_anyway` makes
-/// it for a program at user level.
-///
-/// **One more spinner than there are cores online**, so at least one core runs two of them and the
-/// timer has to take the CPU from one to give it to the other. Two spinners on a four-core machine
-/// can each own a core and never be preempted, which proves nothing; that was the shape of the
-/// aarch64 and riscv64 tours this check replaces. Every spinner has to advance, and the global
-/// preemption count has to move.
+/// One more spinner than there are cores online, so at least one core runs two and the timer has
+/// to take the CPU from one to give it to the other. Every spinner must advance, and the global
+/// preemption count must move.
 fn preemption(tally: &mut Tally) {
     use core::sync::atomic::AtomicBool;
 
@@ -708,21 +593,10 @@ fn preemption(tally: &mut Tally) {
 /// **A program runs at user level, reaches for a kernel address, and is killed; the kernel is
 /// not.**
 ///
-/// The privilege boundary, both halves. `kernel_test_subject` is handed the address of the kernel's
-/// own fault counter, which is certainly mapped and certainly not the program's, so the fault it
-/// takes is a permission fault on a page that exists rather than a translation fault on one that
-/// does not. The program has to run at user level to take it, and the counter it reached for is the
-/// one that records it. The kernel then executes the next line, which is the other half.
-///
-/// Needs the archive, which every boot that can hand over has. A boot without one fails this check
-/// by name rather than passing it: no user program ran.
-///
-/// **It waits for the killed thread to be reaped before it returns.** The fault is counted before
-/// the process is torn down, and the teardown returns about twenty frames on whichever core the
-/// thread was on. [`budget`], next, brackets a process run with the machine's used-frame count, so
-/// a teardown still in flight lands in its window and reads as the kernel allocating. Under TCG
-/// with two cores the thread was still present when this returned on 22 of 24 loaded boots
-/// (2026-10-20); `notes/load-sensitive-assertions.md` has the red it caused.
+/// `kernel_test_subject` reads the kernel's own fault counter, a page that exists and is not its
+/// own, so it takes a permission fault. Fails by name when the archive has no such program. It
+/// waits for the thread to be reaped, because [`budget`], next, brackets the used-frame count and
+/// a teardown in flight would read as the kernel allocating. See notes/self-test-checks.md.
 fn userspace(tally: &mut Tally) {
     use crate::arch::exceptions::{USER_FAULTS, last_user_fault};
     use crate::user;
@@ -775,16 +649,9 @@ fn userspace(tally: &mut Tally) {
 
 /// **A process spends a budget it was handed, and the kernel allocates nothing for it.**
 ///
-/// Milestone 11 (untyped memory)'s claim, and the reason a process cannot exhaust the kernel: every page it maps
-/// comes out of the untyped region it holds, so the kernel's own used-frame count stands still
-/// while the process maps until the region is spent. `memory_region_depleter` reports once it is
-/// loaded (its ELF and stack are the kernel's, as any process's are) and again with how many pages
-/// it mapped; the count is read at both reports.
-///
-/// The process spins after its second report so the count it reports against holds still, so this
-/// ends it. The reports are received on a helper thread, because a receive has no deadline and
-/// this check's waits must all have one; a process that never reports leaves that helper parked,
-/// which is the failure path's whole cost.
+/// `memory_region_depleter` reports once loaded and again with the pages it mapped, and the
+/// kernel's used-frame count, read at both, must not move. The reports arrive on a helper thread,
+/// because a receive has no deadline; then the process is killed.
 fn budget(tally: &mut Tally) {
     use crate::user;
 
@@ -852,16 +719,10 @@ fn budget(tally: &mut Tally) {
 
 /// **A user-level driver reads a file off a virtio disk, woken by the device's interrupt.**
 ///
-/// The kernel enumerates the bus, grants the driver the device's registers, a DMA page and its
-/// interrupt, and receives what the driver read. Every one of those is an authority the driver did
-/// not have until the kernel granted it, and the kernel issues no virtio command and touches no DMA
-/// itself. The driver reads `motd` through a nifefs superblock it parses, and reports its first
-/// eight bytes.
-///
-/// Disk 0, the MMIO one, or the PCIe virtio-blk when there is no MMIO disk. The hand-over's file
-/// service takes disk 1 and the installer and surveyor their own, so this driver collides with
-/// none of them. **Absent on a machine with no virtio disk**, which is every boot `boot-check`
-/// makes and every board.
+/// The driver gets the registers, a DMA page and the interrupt by grant, parses nifefs itself and
+/// reports `motd`'s first eight bytes; the kernel issues no virtio command. Disk 0, MMIO first,
+/// else the PCIe virtio-blk; the file service, installer and surveyor use disks of their own.
+/// Absent on a machine with no virtio disk, which is every boot `boot-check` makes and every board.
 fn blockdev(tally: &mut Tally) {
     use crate::user;
 
@@ -953,15 +814,9 @@ fn deviceirq(tally: &mut Tally) {
 
 /// **The JH7110's clock controller ungates its TRNG, and the TRNG serves a client, timed.**
 ///
-/// Two checks from one wiring, because one bring-up produces both answers. `clock` is the
-/// clock-and-reset controller's own before-and-after (milestone 220 (this kernel drives no clock
-/// or reset controller, and the first real device will need one)): the TRNG's clocks running and its reset released. `trng` is the TRNG, through its
-/// confined user-level driver, drawing two device generations that differ, with the bring-up and
-/// the draw timed, which is fatal risk 6's "at real speed" (milestone 306 (time the hw entropy
-/// step)). The kernel never reads a `RAND` register.
-///
-/// **Absent on every machine but a JH7110**, and radon's board profile in `serial_console` names
-/// both as checks that may not be absent there.
+/// One bring-up gives both answers: `clock` is the controller's before and after (clocks running,
+/// reset released), and `trng` two device generations that differ, drawn through the confined
+/// driver, with bring-up and draw timed. Absent on every machine but a JH7110.
 fn jh7110(tally: &mut Tally) {
     #[cfg(target_arch = "riscv64")]
     jh7110_on_riscv64(tally);
@@ -1239,28 +1094,16 @@ fn entropy(tally: &mut Tally) {
         ),
     }
 }
-/// **Counter ticks as microseconds** (design/roadmap/0306-time-the-hw-entropy-step.md), for
-/// the `trng` check's timings.
-///
-/// Microseconds rather than milliseconds because the interesting half of the number is an IPC round
-/// trip, and rather than raw ticks because a tick is a different amount of time on every machine
-/// this runs on: QEMU's riscv64 `virt` counts at 10 MHz and the JH7110 at 4 MHz, so a transcript
-/// quoting ticks could not be compared against another board's without the rate beside it. The rate
-/// itself came out of this machine's own device tree (`arch::timer::init_frequency`), which is why
-/// there is no constant here to go stale.
-///
-/// Truncating division, deliberately: this is an instrument, and a figure that rounded up would
-/// report a nonzero duration for work that took no measurable time at all.
+/// **Counter ticks as microseconds**, for the `trng` check's timings: comparable across boards,
+/// whose counters run at different rates. Truncating, so work too short to measure reads zero.
 ///
 /// Provisional name (an architect's call): `micros`, with `micros_between` and `bytes_per_second`
 /// beside it.
 #[cfg(target_arch = "riscv64")]
 #[allow(dead_code)]
 fn micros(ticks: u64) -> u64 {
-    // `frequency()` asserts the rate is nonzero rather than returning a poison value, and it has
-    // been read from the tree since `bring_up_machine`, long before this tour, so there is no
-    // pre-init case to guard here. `saturating_mul` bounds the scaling rather than the duration: a
-    // gap long enough to overflow is one nobody is timing.
+    // `frequency()` asserts a nonzero rate. `saturating_mul` bounds the scaling: a gap long enough
+    // to overflow is one nobody is timing.
     ticks.saturating_mul(1_000_000) / arch::timer::frequency()
 }
 
@@ -1273,19 +1116,10 @@ fn micros_between(start: u64, end: u64) -> u64 {
     micros(end.wrapping_sub(start))
 }
 
-/// **Bytes per second over a measured span**, for the same line.
-///
-/// Computed from ticks rather than from the microsecond figure beside it, so the rate does not
-/// inherit that figure's truncation. Zero for a span too short to measure, which is the honest
-/// answer: a rate derived from a zero-length interval is not a large number, it is no number.
-///
-/// **What it counts, which has to be stated before it is quoted.** Everything between the readiness
-/// report and the last byte landing: the `entropy_contract` round trips (one per
-/// `entropy_contract::MAX_BYTES`, so four per 32-byte draw), the two context switches each one costs,
-/// the driver's own poll loop, and the device. It does **not** count the process spawn or the
-/// bring-up, which are the once-per-boot cost reported separately. It is therefore not comparable
-/// to a Linux `hwrng` throughput figure, which is a read from an already-running kernel driver with
-/// no IPC in it at all; `notes/benchmarks.md`'s rule is to say so where the number is printed.
+/// **Bytes per second over a measured span**, from ticks so it does not inherit the microsecond
+/// figure's truncation; zero for a span too short to measure. It counts the IPC round trips and
+/// the driver as well as the device, so it is not comparable to a Linux `hwrng` figure
+/// (notes/self-test-checks.md).
 #[cfg(target_arch = "riscv64")]
 #[allow(dead_code)]
 fn bytes_per_second(bytes: u64, ticks: u64) -> u64 {
@@ -1295,19 +1129,9 @@ fn bytes_per_second(bytes: u64, ticks: u64) -> u64 {
     bytes.saturating_mul(arch::timer::frequency()) / ticks
 }
 
-/// **Say what the TRNG's `STAT` says about its output width** (milestone 159), for the boot tour's
-/// `hw entropy` line.
-///
-/// This is the one bit that decides whether the 32 bytes that line reports are 32 bytes of device
-/// output. In 128-bit mode only `RAND0..RAND3` carry a generation's answer, so a driver that
-/// assembles all eight words is serving 16 real bytes and 16 of whatever the upper registers hold.
-/// The driver writes `MODE.R256` during bring-up precisely because the width a given JH7110 resets
-/// to is a build-time parameter of the silicon; `STAT.R256` is the read-back that says it took, and
-/// nothing has ever read it on hardware.
-///
-/// An all-zero `STAT` is called out separately because it is not a mode report at all: it is the
-/// signature of a register window that answered with nothing, which milestone 220's clock line
-/// above is what explains.
+/// **Say what the TRNG's `STAT` says about its output width**: in 128-bit mode only `RAND0..RAND3`
+/// carry an answer, so 16 of 32 reported bytes would not be device output. An all-zero `STAT` is a
+/// register window that answered nothing. See notes/self-test-checks.md.
 // riscv64-only because the JH7110 is; `allow(dead_code)` because the boot tour that calls it is
 // itself compiled out of the shell and bench builds, the same way `image_for_virtio` is.
 #[cfg(target_arch = "riscv64")]

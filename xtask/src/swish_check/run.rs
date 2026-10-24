@@ -1,9 +1,6 @@
 //! **The `cargo xtask swish-check` verb**: its flags, the probes of milestone 342, and the
 //! loop over the legs. `main.rs` reaches [`swish_check`] through the parent's re-export.
 //!
-//! Cut out of `swish_check.rs` unchanged by milestone 847 (the swish-check harness is split
-//! along its seams).
-//!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
 //! splits into submodules, with its script in one)).
 
@@ -72,29 +69,14 @@ pub(super) fn flood_counts(raw: &str) -> (usize, usize) {
 }
 
 /// **Boot the system and type at it** (milestone 50 (pipes and redirection), notes/pipes.md).
+/// Reads `--arch`, the probe flags and `--release`; returns whether every selected leg passed.
 ///
-/// Everything else that exercises the shell wires it from **the kernel**, which serves the spawn
-/// protocol in place of `components/src/progenitor.rs`, so a change that broke the real
-/// progenitor's spawn path would fail nothing else. Such breaks present as a boot that prints
-/// nothing at all (a virtual-address collision, a full capability table, a stack one call short).
-///
-/// The lines answer each other rather than a constant:
-///
-/// ```text
-/// echo hello world | wc      -> 1 2 12   the bytes went through a real spawned process
-/// echo hello world > gate    -> nothing  the same bytes into a file the shell backs
-/// wc < gate                  -> 1 2 12   ... and they are the same bytes
-/// echo hello world >> gate   -> nothing
-/// wc < gate                  -> 2 4 24   ... exactly twice, so `>>` kept the first line
-/// wc gate                    -> 2 4 24   milestone 31: the name IS the grant, same bytes
-/// wc                         -> refused  ... and with no name there is nothing to read
-/// caps wc gate               -> input     ... and the preview says which file, and how
-/// date                       -> ...UTC   a real wall clock, wired through the real progenitor
-/// caps date                  -> cap 1    ... and `caps` names the capability that made it real
-/// ```
-///
-/// That walks the whole endowment: a spawn through the real progenitor, the FS service it narrowed
-/// into the shell, and both redirection operators.
+/// Nothing else that exercises the shell spawns through the real progenitor (the kernel plays it),
+/// so a break in its spawn path, which presents as a boot that prints nothing, fails only here.
+/// The script's lines answer each other rather than a constant: `echo hello world | wc` answers
+/// `1 2 12`, the same bytes written `>` then `>>` to a file make `wc < gate` answer `2 4 24`, and
+/// `date` with `caps date` shows a real clock and the capability behind it. That walks the
+/// endowment: a real spawn, the FS service narrowed into the shell, and both redirections.
 pub(crate) fn swish_check() -> bool {
     let probe = if std::env::args().any(|a| a == "--flood") {
         Probe::Flood
@@ -112,8 +94,7 @@ pub(crate) fn swish_check() -> bool {
         None => ArchLegs::ALL,
         Some("aarch64") => ArchLegs::AARCH64,
         Some("riscv64") => ArchLegs::RISCV64,
-        // The third leg (milestone 182), since milestone 299 gave x86_64 a userspace console to
-        // reach a prompt through. It boots under OVMF rather than PVH; see `swish_check_leg`.
+        // Boots under OVMF rather than PVH; see `swish_check_leg`.
         Some("x86_64") => ArchLegs::X86_64,
         Some(other) => {
             eprintln!(
@@ -122,9 +103,8 @@ pub(crate) fn swish_check() -> bool {
             return false;
         }
     };
-    // **The two graphical flags are gone, and saying so beats ignoring them** (2026-10-03 UTC):
-    // every flag here is read with `any`, so a stale `--graphical` in somebody's muscle memory or a
-    // script would otherwise run the plain legs and print green for a boot it never made.
+    // Refused rather than ignored: every flag is read with `any`, so a stale `--graphical` would
+    // otherwise run the plain legs and print green for a boot it never made.
     if std::env::args().any(|a| a == "--graphical" || a == "--graphical-serial") {
         eprintln!(
             "swish-check: --graphical and --graphical-serial no longer exist; the aarch64 and riscv64 \
@@ -132,15 +112,13 @@ pub(crate) fn swish_check() -> bool {
         );
         return false;
     }
-    // `--release` builds and boots the optimized kernel and programs, which is what a customer's
-    // stick carries (`xtask stick` is release-only). Added for the progenitor stack's measurement
-    // (milestone progenitor-stack (provisional)): the gauge's numbers differ by profile, and the
-    // debug build is the deeper one. Not in CI. Flag name provisional.
+    // `--release` boots what a customer's stick carries (`xtask stick` is release-only); the
+    // stack gauge's numbers differ by profile, and debug is the deeper. Not in CI. Name provisional.
     if std::env::args().any(|a| a == "--release") {
         crate::RELEASE.store(true, std::sync::atomic::Ordering::Relaxed);
     }
-    // TCG only. This boot never exits (the shell loops on its prompt), so it is killed rather than
-    // waited on, and there is nothing HVF would buy a gate that spends its time in QEMU's serial.
+    // TCG only: the boot never exits and is killed, and HVF buys nothing for a gate that spends
+    // its time in QEMU's serial.
     // SAFETY: `set_var`/`remove_var` became unsafe in edition 2024 because they race other
     // threads. xtask is single-threaded here: this runs on the main thread before the child
     // that reads it is spawned, and the only thread xtask ever starts (the transcript reader

@@ -1,15 +1,12 @@
 //! `malloc` and its family, on `std`'s global allocator (milestone 835 (a C library, stage 1:
 //! files, clock and memory)).
 //!
-//! relibc's own allocator (dlmalloc over `mmap`) is not seeded. §31 (the foreign-language seam)
-//! rule 4 already tied a C program's heap to the one heap algorithm `std`'s `GlobalAlloc` runs
-//! (`talc`, notes/std.md), so C and Rust in one process share one heap and
-//! one budget.
-//!
-//! C's `free` is given a pointer and nothing else, and `std::alloc::dealloc` needs the layout back.
-//! So every block carries a 16-byte header just below the pointer handed out: the requested size,
-//! then the alignment the block was made with. The header is `ALIGN` bytes (at least 16) so the
-//! returned pointer keeps the block's alignment.
+//! relibc's dlmalloc is not seeded: §31 (the foreign-language seam) rule 4 ties a C program's heap
+//! to `std`'s `GlobalAlloc` (`talc`, notes/std.md), so C and Rust share one heap and one budget.
+//! C's `free` gets only a pointer and `std::alloc::dealloc` needs the layout back, so every block
+//! carries a 16-byte header just below the pointer handed out: the requested size, then the
+//! alignment. The header takes `ALIGN` bytes (at least 16) so the pointer keeps the block's
+//! alignment.
 
 use core::alloc::Layout;
 use core::ptr;

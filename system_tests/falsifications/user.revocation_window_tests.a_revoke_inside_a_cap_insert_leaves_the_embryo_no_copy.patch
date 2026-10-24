@@ -21,13 +21,12 @@ Nothing here is architecture-specific: the syscall layer, the sweeps and the sea
 code, so one patch serves every leg.
 
 diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
-index 4e85fa134..980ed2784 100644
 --- a/kernel/src/syscall/thread_control_block.rs
 +++ b/kernel/src/syscall/thread_control_block.rs
-@@ -1337,13 +1337,21 @@ fn thread_control_block_cap_insert(
+@@ -136,13 +136,21 @@
+ ) -> Result<i64, Error> {
      let target = (target != 0).then(|| target - 1);
-     // The source is read and checked inside `sched`, under the hold that files the copy
-     // (`sched::Delegation`): reading it here first left a revocation sweep room to fall between.
+     // Read and checked inside `sched`, under the hold that files the copy (`sched::Delegation`).
 +    let src = sched::current_cap(src_slot).map_err(|_| Error::NoSuchSlot)?;
 +    if !src.rights.allows(Rights::GRANT) {
 +        return Err(Error::NotPermitted);

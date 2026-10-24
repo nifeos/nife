@@ -1,15 +1,10 @@
 //! IPC round-trip latency on the host OS, lmbench's `lat_pipe`, and the host side of nife's
 //! EL0 `ipc_rtt_el0` bench (notes/benchmarks.md, milestone 25).
 //!
-//! Two **processes** (fork, so the round trip crosses an address-space boundary, exactly as ours
-//! does over two EL0 processes) connected by a pair of pipes. One iteration is: parent writes a
-//! byte, child reads it and writes a byte back, parent reads it, four syscalls and two context
-//! switches, the same shape as our client SEND / server RECEIVE+SEND / client RECEIVE.
-//!
-//! Uses the direct libc `read`/`write` (what a C program and lmbench use), not the generic `syscall`
-//! gate, which is ~200 ns slower here and would under-count. `rustc` emits a benign "suspicious
-//! runtime symbol" warning for declaring `read`/`write`; it is expected and the declarations match
-//! libc exactly. Native numbers are statistical (a shared desktop underneath), so take a median.
+//! Two forked processes and a pair of pipes: one round trip is four syscalls and two context
+//! switches across an address-space boundary, the shape of nife's SEND / RECEIVE+SEND / RECEIVE.
+//! It calls libc's `read` and `write` directly, and `rustc`'s "suspicious runtime symbol" warning
+//! for them is expected; notes/benchmarks/host-programs.md has why, and why to take a median.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O bench/host/ipc_rtt.rs -o /tmp/ipc_rtt && /tmp/ipc_rtt

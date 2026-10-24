@@ -1,16 +1,11 @@
 //! **`std_threads`: milestone 812 (`std::thread::spawn` runs real threads in one address space)'s
 //! exit test, as an ordinary `std` program.**
 //!
-//! Four threads each add one to a shared `AtomicU64` and to a shared `Mutex<u64>` a million times,
-//! and are joined; both must read four million. Each thread keeps its own value in a
-//! `thread_local!` through all of that and reads it back at the end, and the main thread's own is
-//! untouched. The first thread to finish is joined before the others, and the shared state is used
-//! after it, so the address space outlived it. `available_parallelism` is printed for the test to
-//! compare with the cores the kernel has online.
-//!
-//! Nothing here is nife-specific: it is the program any Rust user would write, which is the point.
-//! `system_tests/src/user/std_threads_tests.rs` runs it on all three architectures and checks its
-//! transcript.
+//! Four threads each add one to a shared `AtomicU64` and a shared `Mutex<u64>` a million times;
+//! both must read four million. Each keeps a `thread_local!` value that survives, and the main
+//! thread's is untouched. The first thread is joined early and shared state used after it.
+//! `system_tests/src/user/std_threads_tests.rs` runs it on all three architectures and compares
+//! the printed `available_parallelism` with the cores online. See notes/std/the-proof.md.
 
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};

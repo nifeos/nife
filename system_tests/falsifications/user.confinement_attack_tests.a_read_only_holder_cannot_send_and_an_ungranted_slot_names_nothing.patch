@@ -20,13 +20,13 @@ day.
 diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
 --- a/kernel/src/syscall/rendezvous.rs
 +++ b/kernel/src/syscall/rendezvous.rs
-@@ -35,9 +35,6 @@ pub(super) fn rendezvous_send(
+@@ -22,9 +22,6 @@
      badge: u64,
      words: [u64; 3],
  ) -> Result<i64, Error> {
 -    if !rights.allows(Rights::WRITE) {
 -        return Err(Error::NotPermitted);
 -    }
-     // The three words are already in registers. **Nothing is read from user memory**, so there
-     // is no pointer to validate and no confused-deputy question to ask. That is the fastpath,
-     // and it is why IPC carries control and not bulk data (§10 (process model: capability-based,
+     // The badge rides in word 3: a writer's identity is its capability's badge, never its claim.
+     sched::ipc_send_badged(ep, words, badge);
+     // An abort is a revoked endpoint (`Gone`, not `NoSuchSlot`: a pipe writer acts on the

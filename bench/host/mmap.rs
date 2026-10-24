@@ -1,17 +1,10 @@
 //! Page-map (fault-in) latency on the host OS, lmbench's `lat_mmap`, and the host side of nife's
 //! EL0 `map_el0` bench (notes/benchmarks.md, milestone 25).
 //!
-//! What "map one page" costs, as apples-to-apples with our `MAP_INTO` as a stock OS allows. Neither a
-//! bare `mmap` syscall (lazy on both Linux and macOS: it creates the VMA and installs no PTE) nor our
-//! `MAP_INTO` (which eagerly writes one PTE) is the other's equal. The act they share is the trap that
-//! installs a page-table entry, so that is what we time: `mmap` a large anonymous region, then touch
-//! one byte per page. The first touch faults, and the kernel's fault handler installs the PTE, a
-//! user->kernel->user round trip like our `svc`. Per page = touch-loop time / pages. This is exactly
-//! lmbench's `lat_mmap` shape.
-//!
-//! Two honest asymmetries (see the note): the trigger differs (a page fault here, an explicit syscall
-//! in `MAP_INTO`), and the host also allocates and zeroes a fresh page where our bench aliases one
-//! existing frame, so the host number carries a page-zeroing cost ours does not.
+//! It `mmap`s a large anonymous region and writes one byte per page. Each first touch faults and
+//! the kernel installs the PTE, the user-kernel-user round trip nearest our `MAP_INTO`; per page is
+//! the touch loop's time over the page count. The trigger differs (a fault, not a syscall) and the
+//! host also allocates and zeroes each page; notes/benchmarks/host-programs.md has both asymmetries.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O bench/host/mmap.rs -o /tmp/mmap && /tmp/mmap

@@ -27,11 +27,6 @@ fn the_noteless_install_line_names_the_seeded_file() {
     assert!(SWISH_CHECK_SCRIPT.iter().any(|l| l.typed == "cd downloads"));
 }
 
-/// **A job count names a program** ([`Line`]'s doc): no line may claim more jobs than it has
-/// stages whose head is something the progenitor can build, a `grant_plan::Program` or an
-/// installed package's path, after the `time` and `xargs` prefixes. A `caps` head is a preview
-/// and builds nothing. A bound from above only; a tag that is too low is the case no host test
-/// can see, and the transcript cannot either.
 /// Bare names this script installs before it types them (§229 (how a bare name at the prompt
 /// reaches an installed program), B2), which run as programs without being the image's, and
 /// the version-qualified ask, which is not a bare name but resolves to one of these rows the
@@ -108,6 +103,11 @@ fn no_script_types_a_silent_line_twice_in_a_row() {
     }
 }
 
+/// **A job count names a program** ([`Line`]'s doc): no line may claim more jobs than it has
+/// stages whose head is something the progenitor can build, a `grant_plan::Program` or an
+/// installed package's path, after the `time` and `xargs` prefixes. A `caps` head is a preview
+/// and builds nothing. A bound from above only; a tag that is too low is the case no host test
+/// can see, and the transcript cannot either.
 #[test]
 fn a_job_count_names_a_program() {
     for l in SWISH_CHECK_SCRIPT.iter().chain(SWISH_CHECK_AFTER_REBOOT) {
@@ -138,9 +138,8 @@ fn a_job_count_names_a_program() {
 
 #[test]
 fn every_spawnable_program_has_a_swish_check_line() {
-    // Programs a transcript cannot drive, each with the reason. Empty since 2026-09-25, when
-    // `SWISH_CHECK_INTERRUPTED` taught this gate to press `^C` and the two supervised
-    // demonstrators left this list.
+    // Programs a transcript cannot drive, each with the reason. Empty: `SWISH_CHECK_INTERRUPTED`
+    // presses `^C` for the two supervised demonstrators.
     const UNSCRIPTED: [&str; 0] = [];
     for p in grant_plan::Program::ALL {
         let name = p.name();

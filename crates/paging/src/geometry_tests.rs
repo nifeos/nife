@@ -18,7 +18,7 @@ fn the_user_va_gate_admits_only_aligned_low_half_addresses() {
 /// **A leaf size fits only when `va` and `pa` are both aligned to it.** Each alone is not
 /// enough, and the case that shows it is two addresses whose misaligned bits differ: their
 /// intersection is aligned when neither is. The Kani harnesses prove this for every input;
-/// this is the one `cargo test` (and so the mutation run) can see. Milestone 326 (turn a mutation score upward), 2026-09-24.
+/// this is the one `cargo test` (and so the mutation run) can see.
 #[test]
 fn a_leaf_fits_only_when_both_addresses_are_aligned_to_it() {
     let two = 2 << 20;
