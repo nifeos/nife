@@ -78,30 +78,16 @@ fn entropy() -> Option<crate::sched::RendezvousId> {
     Some(w.request)
 }
 
-/// **Whether this machine has no source of unguessable bytes for the client's nonce**, checked
-/// before any test that needs a *complete* exchange rather than merely a client and a server:
-/// the client refuses to reach the network without one (`without_entropy_the_client_refuses_rather_than_guessing`
-/// is the test that proves exactly that refusal), so a test that assumes `exchange` completes
-/// has to know first, the same convention `disk_tests`, `credential_tests` and `entropy_tests`
-/// already use for the identical cause.
+/// Whether this machine has no source of unguessable bytes for the client's nonce, checked before
+/// any test that needs a complete exchange: the client refuses the network without one
+/// (`without_entropy_the_client_refuses_rather_than_guessing`), the convention `disk_tests`,
+/// `credential_tests` and `entropy_tests` share. x86_64 is the case today: its runner attaches no
+/// virtio-rng (notes/x86-port.md), where both QEMU `virt` boards have one on mmio.
 ///
-/// `x86_64` is the case this exists for today: the test runner attaches no virtio-rng function on
-/// any bus yet (notes/x86-port.md), where both QEMU `virt` boards have one on mmio. Milestone 176
-/// only fixed the wall clock (DECISIONS §130); it did not, and was not scoped to, give this
-/// architecture a network entropy device.
-///
-/// **It goes through [`entropy`] rather than calling `ensure` itself, and that is load-bearing**
-/// (milestone 290, found by running these tests under a `--test` filter). It used to call
-/// `entropy_service::ensure` and throw the `Wiring` away. The first caller of `ensure` is the one
-/// handed the service's `ready` endpoint, and the service announces itself with a **blocking**
-/// send: discarding that `Wiring` without draining it parks the entropy service in its own startup,
-/// before it ever reaches its request loop. Every later `ensure` gets `ready: None` and cannot
-/// rescue it. The client then blocks forever in `call(ENTROPY, ...)`, which surfaces here as *"the
-/// test server never saw a request"* two frames away from the cause.
-///
-/// It never showed in a whole-suite run because `entropy_tests` sorts before `ntp_tests` and drains
-/// the report first, so this file was relying on another file's ordering. It showed the moment one
-/// of these tests was run on its own.
+/// It goes through [`entropy`], never `ensure` directly, and that is load-bearing: the first
+/// `ensure` caller gets the service's `ready` endpoint, the service announces itself with a
+/// blocking send, and a discarded `Wiring` parks it in its startup for good, so the client blocks
+/// in `call(ENTROPY, ...)` and this reads as "the test server never saw a request".
 fn machine_has_no_entropy() -> bool {
     entropy().is_none()
 }
@@ -258,15 +244,12 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
 
 /// **A reply that fails validation moves nothing.**
 ///
-/// Three replies a real client meets, and each is a different situation rather than three ways
-/// of saying "bad packet": an origin that is not our nonce is the off-path spoof the check
-/// exists for, a kiss-o'-death is an instruction, and twenty bytes is something that is not NTP
-/// arriving on our socket. `network_time_protocol` proves the checks themselves over 2^384 packets; what is
-/// proved here is that the client **honours the verdict**, which is a property of this component.
-///
-/// The attempt count is the second half of it. A rejected reply is retried, because it may have
-/// been a spoof that beat the real server; a kiss-o'-death is **not**, because retrying into one
-/// is the abusive behaviour the packet exists to stop.
+/// Three replies a real client meets, each a different situation: an origin that is not our nonce
+/// is the off-path spoof the check exists for, a kiss-o'-death is an instruction, and twenty bytes
+/// is something not NTP arriving on our socket. `network_time_protocol` proves the checks over
+/// 2^384 packets; this proves the client honours the verdict. A rejected reply is retried (it may
+/// have been a spoof that beat the real server); a kiss-o'-death is not, because retrying into one
+/// is the abusive behaviour the packet exists to stop, and the attempt count asserts both.
 #[test_case]
 fn a_reply_that_fails_validation_never_becomes_a_proposal() {
     if clock_service::machine_has_no_rtc() {
@@ -374,21 +357,13 @@ fn a_proposal_outside_the_policy_is_refused_by_the_service() {
 
 /// **The client holds no writable clock page, and knowing where one would be buys it nothing.**
 ///
-/// `unwritable_clock_witness`, given the same five slots an NTP client is given, plus the exact
-/// address at which a process holding the *set* authority maps the clock page. It reports the
-/// address, writes there, and dies. The boundary is the mapping and not the layout, so there is no
-/// address at which this write succeeds; this one is chosen because it is the address that would
-/// matter.
-///
-/// **What makes "the same five slots" true is the wiring, not the binary.** Until milestone 290 the
-/// witness was a role of the client's own binary and this comment said "the same binary", as though
-/// sharing code were the guarantee. It is not: the fault comes from the capability set, so any
-/// process holding it faults here whatever code it runs. `start_client` and `start_witness` both
-/// go through `ntp_service::spawn_with_client_endowment`, which is the single grant list, and a
-/// sixth slot given to the client is a sixth slot given to this witness with nothing to remember.
-///
-/// This is the claim Unix cannot make. `ntpd` runs as root: there is no address in a Unix system
-/// its `settimeofday` cannot reach.
+/// `unwritable_clock_witness`, given the same five slots an NTP client is given plus the address at
+/// which a holder of the set authority maps the clock page, reports the address, writes there, and
+/// dies. The boundary is the mapping, not the layout, so no address works; this is the one that
+/// would matter. The fault comes from the capability set, not the binary: `start_client` and
+/// `start_witness` share `ntp_service::spawn_with_client_endowment`, the single grant list, so a
+/// sixth slot for the client is a sixth for the witness. `ntpd` runs as root, and no address in a
+/// Unix system is out of its `settimeofday`'s reach.
 #[test_case]
 fn an_ntp_client_holds_no_writable_clock_page() {
     if clock_service::machine_has_no_rtc() {
@@ -451,15 +426,11 @@ fn an_ntp_client_holds_no_writable_clock_page() {
 
 /// **The nonce is unpredictable, because it comes from the entropy service.**
 ///
-/// Two exchanges, and the server reports what was actually on the wire each time. Two things
-/// follow, and the second is the one worth having: the two nonces differ, and neither of them is
-/// a **time**. A client using `Query::new` would put its own clock in the transmit field, whose
-/// seconds would be within a moment of now; a 64-bit draw from the device lands in a random one
-/// of 2^32 seconds, so a false failure here is a 7201-in-2^32 event (about one boot in 600,000).
-///
-/// This is what `Query::with_nonce` is worth, and it is worth nothing if the bits are guessable:
-/// before the entropy service landed, the only source here was splitmix64 seeded off the virtual
-/// counter, which notes/entropy.md calls predictable to anyone who can guess boot-relative time.
+/// Two exchanges, the server reporting what was on the wire each time: the nonces differ, and
+/// neither is a time. `Query::new` would put the client's clock in the transmit field, within a
+/// moment of now; a 64-bit draw lands in a random one of 2^32 seconds, so a false failure is a
+/// 7201-in-2^32 event (about one boot in 600,000). `Query::with_nonce` is worth nothing if the bits
+/// are guessable, as splitmix64 seeded off the virtual counter would be (notes/entropy.md).
 #[test_case]
 fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
     if clock_service::machine_has_no_rtc() {
