@@ -5,7 +5,8 @@
 
 use super::*;
 
-/// **`REBOOT`: restart the machine, or say why not** (DECISIONS §251, "The method").
+/// `REBOOT`: restart the machine, or say why not (§251 (restarting the machine is a kernel object
+/// the progenitor hands out), "The method").
 ///
 /// Returns only when the firmware refused, with the refusal already printed; a successful reset
 /// does not come back. The caller is `syscall::invoke`'s arm for `Object::Reboot`, and the
@@ -22,37 +23,25 @@ pub(crate) fn restart() -> abi::Error {
     refused
 }
 
-/// **Try every reset route this machine has, board routes before firmware routes** (milestone 592,
-/// 2026-10-10). The one place the order lives, so the reboot object and the rebooting soak cannot
-/// disagree about it.
+/// Try every reset route this machine has, board routes before firmware routes.
 ///
-/// On a JH7110 whose tree names the PMIC's bus, the first route is the direct one: this kernel
-/// programs the I2C controller's timing itself and writes the AXP15060's reset bit, which does not
-/// depend on OpenSBI's driver at all. That is option B, built after the 2026-10-10 bench put the
-/// firmware route in the outcome table's fourth row: bus up, PMIC read still failing ten times.
-/// Whatever that attempt prints, the firmware route follows it, because on 2026-10-09 the firmware
-/// route worked and one attempt's evidence is not a verdict either way.
+/// The one place the order lives, so the reboot object and the rebooting soak agree. On a JH7110
+/// whose tree names the PMIC's bus, the direct AXP15060 write comes first and the firmware route
+/// follows it whatever it printed. Returns only when every route was refused, each refusal already
+/// on the console. See design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 pub(crate) fn cold_reset(marker: &str) -> abi::Error {
     prepare_reset_route(marker);
     pmic_reset_attempt(marker);
     arch::reboot(marker)
 }
 
-/// **Put back what the firmware's reset needs and U-Boot took away** (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
-/// provisional).
+/// Put back what the firmware's reset needs and U-Boot took away: ungate and release I2C5.
 ///
-/// On a JH7110 board, OpenSBI performs SBI SRST as an I2C write to the AXP15060 PMIC on I2C5, and
-/// radon's U-Boot removes its I2C driver at `Starting kernel`, which gates the bus's clock and
-/// asserts its reset. Radon's OpenSBI re-enables a clock, but it computes which one from the bus
-/// node's name and U-Boot's tree names it `i2c@12050000`, so it ungates UART4's core clock
-/// instead; and it never releases a reset. So the kernel ungates and releases I2C5 itself, from
-/// the plan `memory::init` read out of the device tree, and prints every word it saw.
-///
-/// A no-op with no output on every machine that is not a JH7110 (`memory::jh7110_pmic_bus` is
-/// `None` there), which is every machine CI boots. Two callers since milestone 805: the rebooting
-/// soak and [`restart`], the two SBI resets nife makes on purpose. Moved here from `soak.rs` so the
-/// second one could reach it without the soak's feature. The board test exit's shutdown takes the
-/// same road and is recorded as a `BUGS` entry in milestone 592 rather than changed here.
+/// On a JH7110, OpenSBI's SBI SRST is an I2C write to the AXP15060 on I2C5, which U-Boot gates and
+/// holds in reset at `Starting kernel` and radon's OpenSBI does not restore. The kernel does it
+/// from the plan `memory::init` read out of the device tree, printing every word it saw. A no-op
+/// with no output on every other machine. Called by the rebooting soak and [`restart`]. See
+/// design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 ///
 /// Name: ratified 2026-10-06 (calef, #1783: "`prepare_reset_route`"), from
 /// `prepare_the_reset_route`.

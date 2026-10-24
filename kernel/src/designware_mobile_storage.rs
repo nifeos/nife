@@ -1,17 +1,10 @@
-//! **radon's SD/MMC controller, the volatile half** (milestone 53 (the board's own peripherals:
-//! network and storage on real silicon)).
+//! radon's SD/MMC controller, the volatile half: one volatile load, one volatile store and a clock,
+//! over a base address it is handed, for the sequences in `crates/designware_mobile_storage`.
 //!
-//! `crates/designware_mobile_storage` is the whole driver: the register map, the controller and
-//! card sequences, block I/O, the bench step's two sequences, all host-tested against a simulated
-//! controller. This file is the window those sequences run against, and nothing else: one
-//! volatile load, one volatile store and a clock, over a base address it is handed. Rule 2 in its
-//! smallest form. See notes/designware-mobile-storage.md.
-//!
-//! **The parity note this milestone must carry**: the JH7110 is a riscv64 part on one board, so
-//! this module is riscv64-only and has no aarch64 or x86_64 counterpart. Rule 5's "a scope note
-//! records the gap and the plan" applies: the crate is architecture-neutral, and a board with a
-//! `DesignWare` Mobile Storage controller on another ISA (several Rockchip arm64 boards have one)
-//! would need only this file's twenty lines and a device-tree match.
+//! Parity: the JH7110 is a riscv64 part on one board, so this module is riscv64-only. The crate is
+//! architecture-neutral, and a board with this controller on another ISA (several Rockchip arm64
+//! boards) needs only this file's twenty lines and a device-tree match. See
+//! notes/designware-mobile-storage.md.
 
 use designware_mobile_storage::host::Registers;
 use designware_mobile_storage::idmac::DirectMemoryAccessRegion;

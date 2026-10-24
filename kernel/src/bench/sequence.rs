@@ -1,31 +1,24 @@
 //! **The bench boot**: every benchmark, in the fixed order a baseline is read in, then a halt.
 //!
-//! Cut out of `bench.rs` unchanged by lane `maintainer/last-three-over-2000`, which left the
-//! parent an index (§282 (when a file is split, the parent becomes an index)) and under §266 (a
-//! Rust source file stays under 2,000 lines).
-//!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
 /// Run every benchmark and halt. Never returns, never semihosts (see the module doc).
+///
+/// `ipc_stack_depth` runs first, so nothing earlier in the suite is on a stack it reads; it is off
+/// in every timing build, and the rows after it are not results with it on.
 pub fn run() -> ! {
     println!();
     println!("bench: cntfrq {}", crate::arch::timer::frequency());
-    // Which E3 image this is (milestone 134's layout control): nothing else on a card says, and E3
-    // interleaves up to eight images through one card or one TFTP slot. A probe, so it is echoed
-    // and never becomes a row. See kernel/src/fastpath_pad.rs for why the numbers are read as data.
+    // Which E3 image this is; nothing else on a card says. A probe, never a row.
     #[cfg(feature = "fastpath_pad")]
     {
         let [units, shift] = *core::hint::black_box(&crate::fastpath_pad::BUILD);
         println!("bench-probe: fastpath_pad units {units} shift {shift}");
     }
 
-    // Milestone 134's per-IPC stack depth, in the build it is otherwise impossible to measure: the
-    // release kernel radon boots. First, so nothing earlier in the suite is on any stack it reads,
-    // and never in a timing build (the feature is off in every one; see kernel/Cargo.toml). The
-    // rows after it still run, and their times are not results with this on.
     #[cfg(feature = "ipc_stack_depth")]
     {
         let bad =
@@ -48,7 +41,6 @@ pub fn run() -> ! {
     map_new();
     #[cfg(target_arch = "riscv64")]
     rfence_self();
-    // Milestone 74's riscv64 and aarch64 halves and milestone 309's x86_64 half.
     cycles_per_tick();
     coremark_compute();
     null_syscall_el0();
@@ -69,7 +61,5 @@ pub fn run() -> ! {
     rg_search();
 
     println!("bench: done");
-    // Parked, not exited: the host side saw the marker and tears QEMU down. `wfi`, so a
-    // forgotten bench QEMU costs nothing while it waits to be killed (CLAUDE.md's rule).
     crate::arch::halt(crate::arch::HaltReason::measurement_boot());
 }

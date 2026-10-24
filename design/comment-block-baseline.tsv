@@ -13,14 +13,6 @@
 cap	kernel/	20
 in-body	kernel/	5289
 block	lines
-kernel/build.rs:142	23
-kernel/src/bench.rs:1	35
-kernel/src/bench/app_displacement.rs:173	22
-kernel/src/bench/cycle_probe.rs:13	39
-kernel/src/bench/filesystem.rs:13	38
-kernel/src/bench/filesystem.rs:88	22
-kernel/src/bench/smp_throughput.rs:13	37
-kernel/src/bench/spawn_map.rs:49	26
 kernel/src/cap.rs:60	27
 kernel/src/cap.rs:155	26
 kernel/src/cap.rs:204	21
@@ -31,7 +23,6 @@ kernel/src/console.rs:368	32
 kernel/src/console.rs:408	30
 kernel/src/delegation_pause.rs:1	39
 kernel/src/designware_ethernet.rs:1	39
-kernel/src/disk_throughput.rs:1	38
 kernel/src/drivers/gic.rs:1	39
 kernel/src/drivers/gicv3.rs:20	31
 kernel/src/drivers/jh7110_clock_and_reset.rs:1	36
@@ -40,23 +31,14 @@ kernel/src/drivers/ns16550.rs:399	27
 kernel/src/drivers/plic.rs:1	38
 kernel/src/drivers/plic.rs:123	35
 kernel/src/drivers/ramfb.rs:1	29
-kernel/src/e1000e.rs:1	33
 kernel/src/extensible_host_controller_interface.rs:1	39
-kernel/src/fastpath_pad.rs:17	22
 kernel/src/iommu.rs:1	21
-kernel/src/job_mix.rs:1	32
 kernel/src/kernel_log.rs:1	39
-kernel/src/lib.rs:1	23
-kernel/src/machine_statistics.rs:1	32
-kernel/src/network_bench.rs:1	40
-kernel/src/non_volatile_memory_express.rs:1	27
 kernel/src/pci.rs:1	25
 kernel/src/pci.rs:94	31
 kernel/src/pci.rs:201	31
 kernel/src/pci.rs:604	34
 kernel/src/pci.rs:869	26
-kernel/src/reboot.rs:1	32
-kernel/src/reboot/designware_i2c.rs:1	22
 kernel/src/retype_fault.rs:1	36
 kernel/src/revoke.rs:1	40
 kernel/src/revoke.rs:45	33
@@ -68,10 +50,6 @@ kernel/src/revoke.rs:874	25
 kernel/src/revoke.rs:930	39
 kernel/src/screen.rs:1	21
 kernel/src/screen.rs:23	23
-kernel/src/soak.rs:1	40
-kernel/src/soak.rs:419	21
-kernel/src/soak.rs:885	30
-kernel/src/storage_bench.rs:1	39
 kernel/src/thread.rs:1	25
 kernel/src/thread.rs:37	23
 kernel/src/thread.rs:391	27
