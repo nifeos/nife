@@ -9,8 +9,8 @@ readiness rule and the two ways a client fills a buffer, which the crate's doc c
 
 The service sends `READY` on its readiness endpoint only once its first bytes are in hand, and that
 is a claim about the bytes, not about the handshake. A service that finished its register sequence
-and holds nothing, or holds a bufferful of zeros, has not met the condition. The JH7110 backend once
-sent `READY` on radon holding zeros off a block whose clock was gated
+and holds nothing, or holds a bufferful of zeros, has not met the condition. A JH7110 TRNG whose
+block clock is gated completes its register sequence and reads zeros
 (`design/roadmap/0159-jh7110-trng-driver.md`). Every backend therefore calls `readiness` rather than
 composing the word itself.
 
