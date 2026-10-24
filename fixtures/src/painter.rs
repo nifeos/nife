@@ -5,17 +5,18 @@
 //! - slot 0, a **report** endpoint: its verdict goes to whoever spawned it;
 //! - slot 1, a **display** endpoint (WRITE): it CALLs the driver here;
 //! - slot 2, an **untyped**: the budget the page tables for its own mappings come out of;
-//! - slot 3, the **surface**: one `PageFrame` capability naming the whole `gfx::SURFACE_PAGE_FRAMES`-page
-//!   run (DECISIONS §102), which it maps itself in one call (milestone 108; before that the kernel
-//!   mapped them in at spawn and the client held nothing that said so).
+//! - slot 3, the **surface**: one `PageFrame` capability naming the whole
+//!   `gfx::SURFACE_PAGE_FRAMES`-page run (DECISIONS §102), which it maps itself in one call
+//!   (milestone 108).
+
+//! # What it does not hold
 //!
-//! And that is all. It holds no `Virtio` capability, no interrupt, no device mapping, and it cannot
-//! name a physical address; it has never heard of virtio-gpu. The pixels are the only memory it
-//! shares with anything. So the worst a hostile version of this program can do is draw nonsense: it
-//! cannot program a queue, cannot ring a doorbell, and cannot aim a device at a byte it does not
-//! already own. That is the separation rung two (the compositor) is built on, and the reason this
+//! No `Virtio` capability, no interrupt, no device mapping, and no way to name a physical address;
+//! it has never heard of virtio-gpu. The pixels are the only memory it shares, so a hostile version
+//! can draw nonsense but cannot program a queue, ring a doorbell, or aim a device at a byte it does
+//! not already own. That separation is what rung two (the compositor) is built on, and why this
 //! trivial program is a separate binary rather than a function inside the driver.
-//!
+
 //! # What it proves
 //!
 //! It paints [`graphics_contract::pixel`], a per-coordinate function rather than a fill, then flushes, then

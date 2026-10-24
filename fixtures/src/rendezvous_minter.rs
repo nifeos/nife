@@ -2,14 +2,12 @@
 //!
 //! Holds a memory region (slot 0), a channel (slot 1), and nothing else. It retypes a page of its
 //! own region into a brand-new rendezvous object (`RETYPE_OBJ`), one no kernel wiring created, then
-//! delegates a READ view of it over the channel and SENDs a word into it.
-//!
-//! If the kernel's object really works, a peer this program has never met receives that word over
-//! a rendezvous that did not exist a moment ago. The `SEND` blocks until the peer receives, so
-//! reaching `exit` is itself half the proof.
+//! delegates a READ view of it over the channel and SENDs a word into it. If the object works, a
+//! peer this program has never met receives that word over a rendezvous that did not exist a moment
+//! ago; the `SEND` blocks until the peer receives, so reaching `exit` is itself half the proof.
 //!
 //! The other half is `rendezvous_peer`; the wiring is `system_tests/src/user/retype_ep_service.rs`.
-//!
+
 //! Name: provisional (milestone 291). This was `hello`'s `EP_MAKER` role, number 17. `ep` is an
 //! abbreviation that needs a decoder, which is the first of AGENTS.md's three naming failure
 //! modes, and the object's own name in this tree is `RENDEZVOUS` (`abi::objtype::RENDEZVOUS`,

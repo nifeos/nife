@@ -1,16 +1,14 @@
 //! **A thread that binds a notification to itself and waits on a message or a signal at once**
-//! (milestone 151 (notification objects), DECISIONS §101 (notification objects)), driven through the real syscall boundary.
+//! (milestone 151 (notification objects), DECISIONS §101 (notification objects)), driven through
+//! the real syscall boundary.
 //!
-//! Slots: 0 a memory region to mint from, 1 a `ThreadControlBlock` capability naming *this* thread
-//! (the kernel test mints it, because a running thread otherwise holds none to itself), 2 an
-//! endpoint to receive on, 3 a report endpoint.
+//! Slots: 0 a memory region, 1 a `ThreadControlBlock` capability to *this* thread (minted by the
+//! kernel test: a running thread holds none to itself), 2 an endpoint to receive on, 3 a report.
 //!
-//! Every check that can be made from inside is a `check`, which traps: a failed check must be
-//! indistinguishable from a broken program. What only the other side can see (a wake that arrived
-//! while this thread was blocked, and a sender's attempt to forge a notification) is reported on
-//! slot 3 as `(w0, w1, tag)`, where `tag` is 1 for a notification and 0 for a message, and the
-//! kernel test asserts it.
-//!
+//! A failed `check` traps, indistinguishable from a broken program. What only the other side sees
+//! (a wake that arrived while this thread was blocked, a sender's attempt to forge one) goes to
+//! slot 3 as `(w0, w1, tag)`, `tag` 1 for a notification and 0 for a message, for the kernel test.
+
 //! Name: provisional (milestone 151's lane, 2026-09-26).
 
 #![no_std]

@@ -8,7 +8,7 @@
 //! refused. `kernel::user::tests` asserts both, separately, so a failure says which half broke.
 //!
 //! The other half is `page_frame_producer`.
-//!
+
 //! Name: provisional (milestone 291). This was `hello`'s `PAGE_FRAME_CONSUMER` role, number 12.
 
 #![no_std]
