@@ -1,10 +1,9 @@
-//! **The FS server's own cost of a directory walk**, on this host's core (milestone 606 (a
+//! The FS server's own cost of a directory walk, on this host's core (milestone 606 (a
 //! directory walk costs what it does on Linux), provisional number).
 //!
-//! `walk_model` replays the requests `std` sends for `walk_pricing::walk` straight at the server
-//! core, over an in-memory image behind the same cache the EL0 binary runs. No IPC, no caretaker,
-//! no device: what is left is the server's work, which on an M-series host is the same core the
-//! HVF guest runs on. Subtract it from the on-target walk and the remainder is the path.
+//! `walk_model` replays the requests `std` sends for `walk_pricing::walk` at the server core, over
+//! an in-memory image behind the same cache the EL0 binary runs, with no IPC, caretaker or device.
+//! On an M-series host that is the HVF guest's core, so the on-target walk minus this is the path.
 //!
 //! ```text
 //! cargo run --release --manifest-path redoxfs_server/Cargo.toml --example walk_replay

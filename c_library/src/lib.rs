@@ -2,24 +2,13 @@
 //! clock and memory), §265 (a C library started from relibc, whose Rust platform layer holds the
 //! capabilities)).
 //!
-//! Two halves, kept in two places so a reader and a gate can tell them apart:
-//!
-//! - **relibc's code**, seeded once at a recorded commit into `vendor/relibc/` and owned by nife
-//!   from then on (no upstream tracking; fixes are ported by hand). Its header modules (`stdio`,
-//!   `string`, `stdlib`, `time` and the rest) call the operating system only through its `Pal`
-//!   trait. Every place nife changed it says `nife:` where the change is. `vendor/README.md` lists
-//!   what was taken, what was left behind and why.
-//! - **nife's code**, here: the platform layer (`platform/nife.rs`, `Pal` implemented on nife's
-//!   Rust `std`), `malloc` on `std`'s allocator (`platform/allocator.rs`), and the start of a C
-//!   program (`start.rs`). Every gate this tree runs reads these files.
-//!
-//! No C translation unit makes a syscall and neither does this crate: every call that leaves the
-//! process goes through `std` (§31 (the foreign-language seam) rule 1 as amended by §265).
-//! `c_library/README.md` is the guide.
-//!
-//! The crate is `no_std` so the seeded files keep relibc's `core::` and `alloc::` paths unchanged;
-//! `std` is linked for the platform layer.
-//!
+//! relibc's code is seeded once into `vendor/relibc/` and owned by nife from then on; it reaches
+//! the operating system only through its `Pal` trait. nife's code is here: the platform layer
+//! (`platform/nife.rs`), `malloc` (`platform/allocator.rs`) and a C program's start (`start.rs`).
+//! No C translation unit and nothing here makes a syscall (§31 (the foreign-language seam) rule 1
+//! as amended by §265). The crate is `no_std` so the seeded files keep relibc's `core::` and
+//! `alloc::` paths, and links `std` for the platform layer. `c_library/README.md` is the guide.
+
 //! Name: provisional 2026-10-10 (UTC), milestone 835's lane, after `notes/c-library.md`. calef has
 //! not ruled; §265 leaves the crate's name to him.
 

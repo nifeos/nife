@@ -1,14 +1,9 @@
 //! **F3 to JSONL**: one record, one JSON object, one line (§242 (a system log), Question 3).
 //!
-//! Written in the tree rather than taken as a dependency, as the ruling said under §46 (thin
-//! primitives or whole subsystems): a writer this small is cheaper to own than to vet. It writes,
-//! never parses: nothing in the service reads JSON back, because the ring keeps the stamped user
-//! beside each line for the per-user filter.
-//!
-//! The field order is fixed (`seq`, `time`, `source`, `program`, `user`, `severity`, `msg`, then
-//! the flags that are set), so two records diff cleanly and a reader that greps rather than parses
-//! still works. Text that is not UTF-8 is not passed through: each byte that does not decode
-//! becomes U+FFFD, so every line the service emits is valid JSON.
+//! It writes and never parses. The field order is fixed (`seq`, `time`, `source`, `program`,
+//! `user`, `severity`, `msg`, then the flags that are set), so two records diff cleanly and a grep
+//! still works. Each byte that does not decode as UTF-8 becomes U+FFFD, so every line is valid
+//! JSON. See notes/system-log.md, "The JSONL writer".
 
 use system_log_contract::record::{Header, TEXT_MAX, flags};
 use system_log_contract::{control, severity};

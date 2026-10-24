@@ -1,5 +1,7 @@
 # board-console: the BUGS list in full
 
+*Name: provisional, after `notes/soak/limitations.md` and `notes/frames/limitations.md`.*
+
 An appendix to [notes/board-console.md](../board-console.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). The main page lists each limitation in a line; this is each one in
 full.
@@ -108,6 +110,14 @@ than fifteen-to-one is called wedged when it is merely slow, and `--quiet-after 
 detection to avoid that. Giving the sweep a real wall-clock heartbeat, the way `kernel/src/soak.rs`
 has one, is a kernel change and was not made here. The longest subrun is 4.0 seconds since milestone
 168 (a multi-tasking workload benchmark)'s mix, and `script/job-mix`'s own header says fifteen.
+
+A sweep's marker heads are shared and its fields are not. The seven heads are `crates/job_mix`'s
+constants, so a kernel cannot rename one without the recognizer following. Everything after a head
+(`tasks=`, `ticks_median=`, `rounds=`, `beat=`) is a string literal in
+`crates/serial_console/src/progress.rs` and nowhere else. A kernel that renames or inserts a field
+still prints a line the recognizer matches, the parse reads nothing, and every test stays green.
+Captured fixtures and field names spelled as the wire spells them blunt this. Sharing the field
+names the way the heads are shared would fix it, and that is not built.
 
 No sweep has been watched on a board. The recognizer was proved against QEMU on 2026-09-19. A
 finished sweep exits 0, one wedged by a one-second quiet window exits 2, and one cut off by a

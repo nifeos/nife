@@ -34,6 +34,26 @@ The code is in `kernel/src/arch/aarch64/mod.rs`, `kernel/src/arch/x86_64/reset.r
 `kernel/src/arch/riscv64/semihosting.rs`. The FADT parser is
 `machine_discovery::acpi::parse_fadt_reset`, with a host test.
 
+### Why x86_64 tries its routes in that order
+
+A PC has no one firmware call that owns its power, the way PSCI does on aarch64 or SBI SRST on
+RISC-V. It has three reset mechanisms of different vintages, so `arch::x86_64::reset::reboot` tries
+them strongest first. The FADT's reset register comes first because firmware vouches for it. On
+every Intel chipset this project has seen it names port `0xCF9` anyway, and a machine that puts it
+elsewhere is exactly the machine on which the `0xCF9` guess is wrong. `0xCF9` is the chipset's Reset
+Control register, written `0x02` (system reset) then `0x0E`. Bit 3, full reset, makes the platform
+drop power to the rails briefly rather than only pulling the CPU's reset line. That matters on a
+board whose firmware does not survive a warm reset, which is radon's lesson. The 8042 keyboard
+controller's pulse, `0xFE` to port `0x64`, is the oldest route and the one a platform with nothing
+else is most likely to emulate. Each route gets a tenth of a second before the next is tried, and
+nothing halts, because the caller still has a running machine to report on.
+
+Since milestone 805 (`reboot` at the prompt) the route also runs on a machine holding a filesystem
+open, through the reboot object (`kernel/src/reboot.rs`). Nothing in `reset.rs` quiesces devices
+first: a reset through `0xCF9` cuts off a DMA engine mid-transfer with everything else, which is
+the point of a cold reset. What makes it safe is that `reboot` syncs the writable filesystem before
+it invokes the object, so the block servers are idle, and nothing else writes persistent storage.
+
 ## What QEMU proves
 
 `script/soak-test --reboot --arch <arch>` passes only on a second boot. The soak's start line must
@@ -48,12 +68,50 @@ x86_64   PASS, 129s in: attempt 1 of 3: FADT reset register, I/O port 0xcf9 <- 0
 riscv64  PASS, 128s in: attempt 1 of 1: SBI SRST system_reset, reset type 1 (cold reboot)
 ```
 
+## The `reboot` program
+
+`components/src/reboot.rs` syncs the writable filesystem, says what the sync answered, then
+invokes the reboot object. Its capability table is in its module doc.
+
+**Why a sync-only capability.** §251 (restarting the machine is a kernel object the progenitor
+hands out), clause 3, puts the sync before the reset, and the kernel does
+none of it. `SYNC` needs `dir::WRITE` on a handle for an ordinary client, which is also the right to
+open and truncate files by name. So the file server binds this program's badge sync-only
+(`filesystem_contract::fs::BIND_SYNC`): it answers `SYNC`, refuses every other verb, and nothing in
+the program can reach a file. calef ruled against the progenitor syncing on its behalf (2026-10-06
+UTC, #1783), so the sync is the program's own act.
+
+**Why the report is sent twice.** The report goes to the shell, which forwards it to the terminal,
+and the reset that follows stops everything. A `SEND` on a rendezvous returns when the receiver has
+taken the message, not when it has printed it. So the end-of-stream after the report is the
+barrier: the shell takes it only once it has finished with the report. Without it the report raced
+the reset and lost.
+
+Its limits, which its `BUGS` lists one line each:
+
+- A firmware that accepts the reset and hangs cannot be told from a slow one, from inside the
+  machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in reset.
+  The kernel releases the bus before the reset (milestone 592 (radon's cold reboot dies in
+  OpenSBI's PMIC write)), and `reboot` typed at radon's prompt resets the board through the
+  AXP15060 (`bench/radon-2026-10-21/README-890.md`, #2516).
+- A refusal does not exit non-zero, because no program in this system reports an exit status
+  (`crates/swish`'s `Status` says so). The refusal is a sentence on the second stream, naming which
+  of the kernel's four reasons it was.
+- The sync is not fenced against background jobs. A write another job makes after `SYNC` is
+  answered and before the reset lands is not covered. The window is the report's two sends and the
+  invoke. The shell runs `reboot` in the foreground, so this is a job somebody started earlier and
+  left writing. Milestone 853 (orderly shutdown closes the sync window) owns closing it.
+- Devices are not quiesced. A DMA transfer in flight is cut off. After `SYNC` the block servers are
+  idle and nothing else writes to persistent storage.
+
 ## BUGS
 
 - The proof is in no CI gate. Each leg takes over two minutes, because the window is the board's
   own 120 seconds. A regression is found when somebody runs it.
-- On `x86_64` only attempt 1 has run. q35 offers the FADT route, so the `0xCF9` and 8042 fallbacks
-  have compiled and never executed.
+- On `x86_64` only attempt 1 has run. q35 offers the FADT route (`0xCF9 <- 0x0F`), so the `0xCF9`
+  and 8042 fallbacks have compiled and never executed. A QEMU proof of either needs a machine whose
+  FADT does not offer that route, and no runner here starts one. Whether xenon's `0xCF9` full reset
+  brings it all the way back through firmware to a netboot is the bench's first question.
 - The aarch64 `smc` conduit has never executed. QEMU's PSCI answers on `hvc`. `smc` is argon's.
 - A memory-space FADT reset register is not attempted. No machine here uses one.
 - Nothing has run on any board.

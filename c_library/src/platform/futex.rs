@@ -1,22 +1,14 @@
 //! The wait-on-address pair relibc's locks are built on (`Pal::futex_wait` and `futex_wake`), on
 //! `std`'s thread parking (milestone 836 (a C library, stage 2: threads)).
 //!
-//! relibc's `sync` module, `pthread_mutex_t`, `pthread_cond_t`, `pthread_rwlock_t`, barriers,
-//! semaphores and `pthread_join` all reduce to two calls: sleep while this word still holds what I
-//! saw, and wake up to `n` sleepers on this word. Milestone 812 (`std::thread::spawn` runs real
-//! threads in one address space) built exactly that in the kernel (`notes/futex.md`), and `std`'s
-//! own locks use it. `std` does not export it, and this crate makes no system call of its own
-//! (`c_library/README.md`: the platform layer is built on `std`). So this is the same pair built
-//! from what `std` does export, `thread::park` and `Thread::unpark`, which on nife are themselves
-//! one kernel wait and one kernel wake on a word of the parked thread's own.
-//!
-//! The shape is WebKit's parking lot, which Rust's `parking_lot` crate also takes: a fixed table of
-//! buckets keyed by address, each a short `std::sync::Mutex` over a queue of parked threads. A wait
-//! checks the word and queues itself under the bucket's lock, and a wake dequeues under the same
-//! lock, so a wake can never fall between a waiter's check and its sleep. That one lock is the
-//! whole correctness argument, and why the word is read with `Relaxed`: whatever the waker wrote
-//! before its wake is ordered before the waiter's read by the bucket lock's release and acquire.
-//!
+//! `std` does not export the kernel futex its own locks use (`notes/futex.md`), so this builds the
+//! pair from `thread::park` and `Thread::unpark` as a parking lot: a fixed table of buckets keyed by
+//! address, each a short `std::sync::Mutex` over a queue of parked threads. A wait checks the word
+//! and queues itself under the bucket's lock, and a wake dequeues under the same lock, so a wake
+//! never falls between a waiter's check and its sleep. The word is read `Relaxed` because the bucket
+//! lock's release and acquire order the waker's writes before it. notes/c-library.md ("The platform
+//! layer's own constraints") has the rest.
+
 //! # BUGS
 //!
 //! - **A wake costs a second crossing.** The kernel already keys its waiters by address; this

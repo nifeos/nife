@@ -20,10 +20,9 @@ patch passes. riscv64 and x86_64 are first replayed by the per-PR `--affected-si
 Nothing here is architecture-specific, so one patch serves every leg.
 
 diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
-index 42610962c..4ca68be66 100644
 --- a/kernel/src/syscall/thread_control_block.rs
 +++ b/kernel/src/syscall/thread_control_block.rs
-@@ -53,7 +53,7 @@ pub(super) fn thread_control_block_invoke(
+@@ -45,7 +45,7 @@
              if !rights.allows(Rights::WRITE) {
                  return Err(Error::NotPermitted);
              }
@@ -31,4 +30,4 @@ index 42610962c..4ca68be66 100644
 +            let _ = (tid, a0, a1, a2);
              Ok(0)
          }
-         // §300 (the paused state, a TCB verb, silent): the TCB capability is the whole
+         abi::thread_control_block::SUSPEND => {

@@ -1,22 +1,12 @@
-//! A fixture gets the same userspace linker script every component does, and it must NOT be the
-//! kernel's.
+//! Links every fixture with the shared userspace linker script, never the kernel's, and compiles
+//! the C half of each fixture that links one.
 //!
-//! `cargo:rustc-link-arg` is per-package, which is the whole reason the EL0 programs are their own
-//! packages rather than more binaries in `kernel/`.
-//!
-//! **The linker script lives in `crates/user_mode_runtime`, not here, and that is deliberate.** Both
-//! `components` and `fixtures` link against the identical EL0 layout, so a copy in each would be
-//! two places to be wrong about the image base with nothing comparing them; milestone 73 (name the aarch64 files aarch64) refused to
-//! rename `user/link.ld` on exactly that ground ("it is genuinely shared"), and milestone 175 split
-//! the package that held it. `user_mode_runtime` is the runtime that supplies `_start`'s ABI and the panic
-//! handler to every program in both packages, so a program image's layout is its business.
-//! basalt's package build links `rg` with the same file, unchanged.
-//!
-//! Since milestone 36 this also compiles the **C** half of the `c_shim` program (`c/c_seam.c`) with
-//! a bare-metal clang and hands the object to the linker for that one binary only. Both C-linked
-//! programs are fixtures (milestone 36's throwaway seam and milestone 23's replacement component),
-//! which is why the C lives on this side of milestone 175's split and `components/build.rs` is the
-//! short one. See [`compile_c_component`] and notes/c-seam.md.
+//! `cargo:rustc-link-arg` is per-package, which is why the EL0 programs are their own packages
+//! rather than binaries in `kernel/`. The script lives in `crates/user_mode_runtime`, the runtime
+//! that supplies `_start`'s ABI and the panic handler to `components` and `fixtures` alike, so one
+//! copy holds the image base for both; basalt's package build links `rg` with it unchanged. Both
+//! C-linked programs (`c_shim`, `c_swappable`) are fixtures, so the C is compiled here and
+//! `components/build.rs` is the short one. See [`compile_c_component`] and notes/c-seam.md.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -70,20 +60,12 @@ fn compile_c_component(manifest_dir: &Path) {
             "-march=rv64imac",
             "-mabi=lp64",
         ],
-        // Match `x86_64-unknown-none` exactly (milestone 161). That Rust target sets
-        // `features = "-mmx,-sse,+soft-float"` and `disable_redzone = true`, and both halves of
-        // that have to be said again here or the object disagrees with every Rust object it is
-        // linked beside.
-        //
-        // **`-mno-sse` is the aarch64 arm's `-mgeneral-regs-only` argument, one ISA over**: the
-        // kernel does not enable the FP unit for ring 3, so a clang that felt free to vectorize a
-        // byte loop into `xmm` registers would take `#UD` (`CR4.OSFXSR` clear) on the first one.
-        // `-mno-red-zone` is the one with no counterpart on either other architecture: the red zone
-        // is 128 bytes below `rsp` a leaf function may use without adjusting the pointer, and it is
-        // safe only if nothing can push there behind the function's back. Ring 3 code is preempted
-        // by an interrupt that switches to a *different* stack, so a user program could in fact
-        // keep it; it is off anyway because the Rust half has it off, and an ABI that is off by 128
-        // bytes on one side of a call is not an ABI.
+        // Match `x86_64-unknown-none` exactly: it sets `features = "-mmx,-sse,+soft-float"` and
+        // `disable_redzone = true`, and an object that disagrees breaks the ABI with every Rust
+        // object it is linked beside. `-mno-sse` is the aarch64 arm's argument one ISA over: the
+        // kernel does not enable the FP unit for ring 3, so an `xmm` register takes `#UD`
+        // (`CR4.OSFXSR` clear). `-mno-red-zone` matches the Rust half; notes/c-seam/the-toolchain.md
+        // has why it is off.
         "x86_64" => vec![
             "--target=x86_64-unknown-none-elf",
             "-mno-sse",
@@ -161,24 +143,13 @@ fn compile_one(manifest_dir: &Path, clang: &Path, flags: &[&str], source: &str, 
     println!("cargo::rustc-link-arg-bin={bin}={}", out.display());
 }
 
-/// **Find a clang that can target every one of this project's bare ISAs.**
+/// Find a clang that can target every one of this project's bare ISAs, or `None`.
 ///
-/// The same discipline `xtask`'s `llvm_tool` uses for `llvm-objcopy`: resolve the tool from a known
-/// list rather than hoping it is on `PATH` under the right name, and fail loudly with what to
-/// install. The extra step here is a *capability* check, because the most likely clang on a macOS
-/// dev machine (Apple's, in the Xcode command line tools) is built with the AArch64 and X86
-/// backends only and cannot emit RISC-V at all.
-///
-/// Every backend is required from one compiler even when only one ISA is being built. That is
-/// DECISIONS §19 (parity is a gate, not an aspiration) applied to the toolchain: a machine where the
-/// architectures would be compiled by different clangs is a machine where "it works on aarch64"
-/// stops predicting anything about riscv64, and the failure would surface halfway through a build
-/// rather than here.
-///
-/// **Milestone 161 made this a three-way check and did not change the rejection**, which is the
-/// useful thing to notice: adding `x86_64` costs nothing here because every clang that already passed
-/// (Homebrew's keg, a distro build) has the X86 backend, and the one that already failed (Apple's)
-/// fails on RISC-V exactly as before.
+/// Resolves from a known list rather than `PATH` alone, as `xtask`'s `llvm_tool` does for
+/// `llvm-objcopy`, and keeps the first candidate [`has_every_backend`] accepts. Apple's clang has
+/// the AArch64 and X86 backends only, so it is rejected: every backend must come from one compiler
+/// even when one ISA is built, which is DECISIONS §19 (architectural parity is a tenet) applied
+/// to the toolchain. See notes/c-seam/the-toolchain.md.
 fn resolve_clang() -> Option<PathBuf> {
     // The escape hatch **overrides** the search rather than joining it: "use this compiler" has to
     // mean that, or a typo in the path silently falls back to a different compiler and the build is

@@ -1,36 +1,13 @@
-//! **The interrupt controller, `x86_64`: the local APIC and the IO APIC**, where aarch64 has a GIC
-//! and RISC-V a PLIC. On x86 the controller is a pair, and it is also the SMP bring-up mechanism.
-//! The **local APIC** is per-CPU: it receives and acknowledges interrupts (the EOI), owns a timer,
-//! and sends inter-processor interrupts, including the INIT and STARTUP that start a secondary
-//! ([`send_init`], [`send_startup`]; see `arch::x86_64::ap_boot`). The **IO APIC** routes device
-//! lines to vectors; the ACPI MADT says where it is (`machine_discovery::acpi`). Built here too:
-//! masking the 8259s, the calibration counter `timer.rs` needs, the redirection table, and MSI
-//! vector allocation ([`alloc_msi_vector`]), which is how a PCI function reaches a userspace driver.
-//!
-//! **The 8259s are still wired** (`PCAT_COMPAT`), raise interrupts on vectors 8..15 (the CPU's own
-//! exception vectors), and see every line the IO APIC routes. [`init_local_apic`] masks both before
-//! enabling the local APIC, in that order; masked, not remapped, because a live 8259 would deliver
-//! a second copy of every routed interrupt on an exception vector.
-//!
-//! **A legacy IRQ number is not an IO APIC input**: the MADT's overrides rewire them (the PIT's IRQ
-//! 0 arrives as GSI 2 on essentially every PC). `machine_discovery::acpi::isa_irq_table` resolves
-//! them and [`record_isa_routing`] hands the answer here; a legacy number used as a pin would arm a
-//! line nothing drives, silently.
+//! The x86_64 interrupt controller (aarch64's GIC, RISC-V's PLIC): the per-CPU local APIC (EOI,
+//! timer, IPIs, the INIT and STARTUP that start a secondary) and the IO APIC, which routes device
+//! lines to vectors; also the 8259 mask, legacy routing, MSI. See notes/x86-port/traps.md.
 //!
 //! # BUGS
-//!
-//! - One IO APIC, the first the MADT lists; a GSI owned by a second is refused by [`route_gsi`],
-//!   so a two-socket server is unimplemented. The nonzero-base routing is proved
-//!   (`proofs::an_owned_gsi_routes_inside_the_io_apic_band`) and unit-tested, never booted.
-//! - Every entry targets the local APIC of the core that called [`enable`], in physical mode, and
-//!   every MSI the core that ran [`alloc_msi_vector`]; nothing is distributed.
-//! - Nothing masks a routed line on the way out: revoking a driver's `Irq` does not call
-//!   [`mask_gsi`], so a dead input driver's COM1 line stays armed into a rendezvous nobody waits on.
-//! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps); a device brought up twice
-//!   spends two of the band's sixty-three.
-//! - Interrupt remapping is assumed off: a VT-d unit with it on rejects the compatibility-format
-//!   messages built here. Check this first if MSI stops arriving on a machine whose firmware enables
-//!   it.
+//! - One IO APIC: [`route_gsi`] refuses a GSI a second owns (proved, unit-tested, never booted).
+//! - Every line and MSI targets the core that armed it, in physical mode; nothing is distributed.
+//! - Revoking a driver's `Irq` does not [`mask_gsi`], so a dead driver's COM1 line stays armed.
+//! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps), out of a band of 63.
+//! - Interrupt remapping is assumed off; a VT-d unit with it on rejects these MSI messages.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
@@ -285,14 +262,13 @@ pub(crate) fn mask_timer() {
 // The IO APIC: where a *device* line becomes a vector.
 // ---------------------------------------------------------------------------------------------
 
-/// **The IO APIC's registers are not a flat array, and that is the first thing to know about it.**
+/// The IO APIC's registers: an index register and a data window, not a flat array. To touch
+/// register `n`, write `n` to [`IOREGSEL`] and then read or write [`IOWIN`], so every access is a
+/// pair and the device is stateful.
 ///
-/// The whole device is two 32-bit words in the memory map: an index register and a data window.
-/// To touch register `n` you write `n` to [`IOREGSEL`] and then read or write [`IOWIN`], which
-/// makes every access a *pair* and makes the device stateful. Two CPUs doing this concurrently
-/// would interleave and each would read the other's register; nothing here is concurrent yet
-/// (single-threaded boot, one CPU), and this note is where the next person finds out that a lock
-/// belongs here the moment SMP lands.
+/// # BUGS
+/// Nothing serializes the pair. A driver's `Irq::ACK` (`enable`) and the trap handler (`disable`)
+/// can run on two cores at once, and each would read or write the other's register.
 mod io_reg {
     /// The index register, at offset 0. Write the number of the register you want.
     pub(crate) const IOREGSEL: u64 = 0x00;
@@ -319,58 +295,33 @@ const REDIR_LEVEL: u32 = 1 << 15;
 /// Redirection entry bit 13: the input pin is asserted low rather than high.
 const REDIR_ACTIVE_LOW: u32 = 1 << 13;
 
-/// **The first vector the IO APIC's lines are routed to.** 0x30, which leaves 0x20..0x2f for the
-/// local APIC's own sources (the timer at [`TIMER_VECTOR`], and later the thermal, performance,
-/// error and inter-processor vectors, which are LVT entries rather than redirection entries).
+/// The first vector the IO APIC's lines are routed to: 0x30, leaving 0x20..0x2f for the local
+/// APIC's own sources (the timer, the IPIs, and the thermal, performance and error LVT entries).
 ///
-/// A GSI's vector is this plus its **redirection index**, the offset of its entry within the IO
-/// APIC that owns it (milestone 308; it was this plus the GSI until then, which wrapped onto an
-/// exception vector on an IO APIC whose global interrupt base is not zero). The map is flat *in the
-/// index*, so a stray vector in a fault report names its redirection entry by subtraction, and on
-/// every machine this kernel has booted that entry's index is also its GSI because the MADT gives
-/// the single IO APIC base zero. **Recovering the GSI on a machine where they differ needs the
-/// base**, which [`redirection_index`] reads and nothing inverts; see `exceptions.rs`'s BUGS, where
-/// the inversion is recorded as missing and unneeded.
-///
-/// The flat map costs the ability to prioritise (x86 priority is the vector's top four bits, so a
-/// flat map gives 0x30..0x47 two priority classes and no say in which line is in which). Nothing
-/// here has a priority policy to express yet.
+/// A GSI's vector is this plus its redirection index within the owning IO APIC (milestone 308 (a
+/// GSI reaches its vector by redirection index)), so a stray vector names its entry by subtraction;
+/// the GSI needs the IO APIC's base too, and nothing inverts that. The flat map gives 0x30..0x47
+/// two priority classes (x86 priority is the vector's top four bits) and no say over which line is
+/// in which; nothing has a priority policy yet.
 ///
 /// Name: provisional (milestone 161), along with [`gsi_vector`] and the IO APIC entry points
 /// below.
 pub const GSI_VECTOR_BASE: u8 = 0x30;
 
-/// **The first vector a PCI function's MSI-X message delivers on** (milestone 215). 0xc0, above
-/// every redirection entry any real part has and below [`SPURIOUS_VECTOR`], so the three vector
-/// bands on this architecture are disjoint by construction rather than by anybody remembering:
+/// The first vector a PCI function's MSI-X message delivers on (milestone 215): 0xc0, above every
+/// redirection entry and below [`SPURIOUS_VECTOR`]. The three bands are disjoint by construction:
 /// 0x20..0x30 the local APIC's own sources, [`GSI_VECTOR_BASE`]..0xc0 the IO APIC's lines, and
-/// 0xc0..0xff MSI.
-///
-/// **Disjointness is what lets one number mean one thing.** `sched::bind_irq` and
-/// `arch::irq::enable` take an `intid`, and on this architecture an intid is a vector for a local
-/// APIC source and a legacy IRQ number for an IO APIC line. An MSI vector is a local APIC source
-/// in the only sense that matters here (the device writes it straight to the local APIC; there is
-/// no controller input and nothing to unmask), so an MSI intid **is** its vector, and the whole
-/// vector-to-intid inversion the trap handler used to owe for a device line never arises.
+/// 0xc0..0xff MSI. So an intid means one thing: a legacy IRQ for an IO APIC line, and the vector
+/// itself for a local APIC source or an MSI, which the device writes straight to the local APIC.
 ///
 /// Name: provisional (milestone 215 (a PCI function's interrupt reaches nothing)): calef
 /// names public items.
 pub const MSI_VECTOR_BASE: u8 = 0xc0;
 
-/// The most redirection entries this kernel will use. Real parts have 24 (the 82093AA, QEMU's q35,
-/// the ICH-era chipsets); the field could report up to 256, and this cap is the number that still
-/// fits in the vector space between [`GSI_VECTOR_BASE`] and [`MSI_VECTOR_BASE`]. It bounds
-/// [`is_device_vector`] and the mask loop in [`init_io_apic`] against a version register saying
-/// something absurd.
-///
-/// **It bounds the entry count, and until milestone 308 this doc claimed it also stopped
-/// [`gsi_vector`] wrapping onto an exception vector or onto an MSI one. It never did.** The cap is
-/// a statement about how many redirection entries exist; the old `gsi_vector` added the *GSI*, a
-/// number the MADT supplies and nothing here bounds, so a second IO APIC based at global interrupt
-/// 200 wrapped GSI 210 onto vector 2. A doc asserting a guarantee the code did not provide is what
-/// hid that defect for as long as it existed, which is why the correction is spelled out here
-/// rather than quietly deleted. Now that [`gsi_vector`] adds the index instead, this cap **is** the
-/// bound that keeps the sum inside the band, which is the claim
+/// The most redirection entries this kernel will use: what fits between [`GSI_VECTOR_BASE`] and
+/// [`MSI_VECTOR_BASE`]. Real parts have 24 (the 82093AA, q35, the ICH-era chipsets) and the field
+/// could report 256. It bounds [`is_device_vector`] and [`init_io_apic`]'s mask loop, and keeps
+/// [`gsi_vector`]'s base plus index inside the band, the claim
 /// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` checks.
 const MAX_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as u32;
 
@@ -383,39 +334,14 @@ static MSI_NEXT: AtomicU32 = AtomicU32::new(0);
 /// How many MSI vectors this band holds: 0xc0..0xff, stopping short of [`SPURIOUS_VECTOR`].
 const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 
-/// **Reserve a vector a PCI function may deliver an MSI-X message on, and say where to send it.**
+/// Reserve a vector a PCI function may deliver an MSI-X message on, and say where to send it.
 ///
-/// The arch contract's answer to "this machine has a PCI function whose interrupt must reach a
-/// driver". `None` means this machine routes PCI interrupts some other way, which is what the
-/// aarch64 and riscv64 implementations say: both boards' functions arrive as INTx through a
-/// swizzle their device tree states, so `kernel/src/pci.rs` falls back to that.
-///
-/// The returned `u32` is the **intid** a driver binds and `arch::irq::enable`/`ACK` take, and on
-/// this architecture it is the vector itself; see [`MSI_VECTOR_BASE`] for why that is a design
-/// rather than a coincidence.
-///
-/// # The message, and the two fields that are not obvious
-///
-/// The address is `0xfee0_0000 | (destination local APIC id << 12)`. It is not memory: the local
-/// APIC claims `0xfee0_0000..0xfef0_0000` on the bus, so a device's ordinary posted write into
-/// that range *is* an interrupt, which is the whole trick and the reason MSI needs no routing
-/// table. Redirection-hint and destination-mode bits (3 and 2) are left zero: physical
-/// destination, no redirection, the same policy [`route_gsi`] takes and for the same reason.
-///
-/// The data is the vector, with delivery mode `Fixed` (bits 10:8 zero) and edge trigger (bit 15
-/// zero). **MSI is edge-triggered by construction**: the message is a write that happens once, so
-/// there is no asserted line to hold off, which is why `enable` has nothing to do for one of these
-/// and why an `Irq::ACK` from a driver is correctly a no-op.
-///
-/// # A caveat the emulator cannot show
-///
-/// **With VT-d interrupt remapping enabled, this address is not delivered as written.** An
-/// interrupt-remapping unit reinterprets `0xfee0_0000..0xfef0_0000` writes as an index into a
-/// remapping table, and a message built the way this one is would be rejected as a malformed
-/// remappable request. `helpers/qemu-runner-x86_64.sh` runs `-device intel-iommu` **without**
-/// `intremap=on`, so DMA is translated and interrupt messages pass through; the same is true of
-/// every machine whose firmware leaves remapping off, which is the default. Turning it on is its
-/// own piece of work and is recorded as one; see this module's BUGS.
+/// Returns the intid a driver binds, which here is the vector, and the message; `None` when the
+/// band is spent (aarch64 and riscv64 always answer `None`, and `kernel/src/pci.rs` uses INTx). The
+/// address is `0xfee0_0000 | (local APIC id << 12)` with physical destination and no redirection;
+/// the data is the vector, `Fixed` delivery, edge trigger, so `enable` and a driver's `Irq::ACK`
+/// have nothing to do. With VT-d interrupt remapping on, these messages are rejected (this
+/// module's BUGS). See notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 215).
 pub fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
@@ -569,19 +495,10 @@ pub(crate) fn io_apic_entries() -> u32 {
     IO_APIC_ENTRIES.load(Ordering::Relaxed)
 }
 
-/// **The vector a global system interrupt is routed to**, or `None` when this IO APIC does not own
-/// that GSI and so has no entry to route it through.
-///
-/// The vector is [`GSI_VECTOR_BASE`] plus the GSI's **redirection index**, not plus the GSI
-/// (milestone 308). On every machine this kernel has booted the two are the same number, because
-/// the MADT gives the single IO APIC global interrupt base zero; they part company on a machine
-/// with a second IO APIC, and the version that added the GSI wrapped a GSI of 210 onto vector 2,
-/// the NMI. See this module's BUGS for the case, and
-/// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` for the statement that it can no longer
-/// happen.
-///
-/// **This is the same partiality [`redirection_index`] has**, and it is the point rather than a
-/// side effect: a GSI with no entry has no vector, and the old total signature had to invent one.
+/// The vector a global system interrupt is routed to: [`GSI_VECTOR_BASE`] plus its redirection
+/// index, not plus the GSI (milestone 308). `None` when this IO APIC does not own the GSI, the
+/// partiality [`redirection_index`] has. `proofs::an_owned_gsi_routes_inside_the_io_apic_band`
+/// checks the result stays in the band whatever the IO APIC's global interrupt base.
 ///
 /// Name: provisional, and this change makes it worse rather than better (milestone 161 marked it
 /// provisional; milestone 308 is the lane that noticed): the function now maps an *index* into the
@@ -590,11 +507,8 @@ pub(crate) fn io_apic_entries() -> u32 {
 /// calef names public items; this lane proposes rather than renames.
 pub fn gsi_vector(gsi: u32) -> Option<u8> {
     let index = redirection_index(gsi)?;
-    // `init_io_apic` clamps the entry count to `MAX_REDIRECTION_ENTRIES`, which is exactly the
-    // width of the band, and `redirection_index` admits only an index below that count. So this
-    // addition lands in `GSI_VECTOR_BASE..MSI_VECTOR_BASE` and neither wraps nor truncates. The
-    // assert is the invariant said out loud at the one place that depends on it; the proof named
-    // above is what checks it over every entry count a version register can report.
+    // `init_io_apic` clamps the entry count to the band's width and `redirection_index` admits
+    // only an index below it, so this addition neither wraps nor truncates.
     debug_assert!(
         index < MAX_REDIRECTION_ENTRIES,
         "redirection index {index} is outside the vector band the entry-count cap reserves"
@@ -602,14 +516,9 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
     Some(GSI_VECTOR_BASE + index as u8)
 }
 
-/// Is `vector` one of the IO APIC's? The trap handler asks, so that a device interrupt is counted
-/// as routed rather than as an unowned vector nothing claimed.
-///
-/// **This and [`gsi_vector`] agree on what the band is**, which they did not before milestone 308:
-/// this predicate has always defined the band by *index* (`GSI_VECTOR_BASE` up to the entry count),
-/// while `gsi_vector` assigned by GSI, so on an IO APIC with a nonzero base the same interrupt was
-/// routed as a device vector and then not counted as one here.
-/// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` now asserts the agreement directly.
+/// Is `vector` one of the IO APIC's? The trap handler asks, so a device interrupt is counted as
+/// routed. The band is by redirection index, as [`gsi_vector`] assigns it, and
+/// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` asserts the two agree.
 pub(crate) fn is_device_vector(vector: u64) -> bool {
     let base = GSI_VECTOR_BASE as u64;
     vector >= base && vector < base + io_apic_entries() as u64
@@ -626,20 +535,14 @@ fn redirection_index(gsi: u32) -> Option<u32> {
     (index < entries).then_some(index)
 }
 
-/// **Route `gsi` to `vector` on the local APIC `dest_apic_id`, and unmask it.**
+/// Route `gsi` to `vector` on the local APIC `dest_apic_id`, and unmask it.
 ///
-/// Fixed delivery mode and physical destination mode: the vector is delivered to exactly the local
-/// APIC whose id is named, rather than to a logical group or to whichever CPU is running at the
-/// lowest priority. That is the simplest thing that is correct on one CPU and stays correct on
-/// several; distributing interrupts is a policy, and there is nothing here to have one yet.
-///
-/// The high word is written **first**, and the low word (which carries the mask bit) last, so the
-/// destination is already in place at the instant the line goes live. The reverse order leaves a
-/// window in which an interrupt is delivered to whatever CPU the previous value named.
+/// Fixed delivery and physical destination: exactly the named local APIC, correct on any number of
+/// CPUs; distributing interrupts is a policy nothing here has. The high word goes first and the low
+/// word (with the mask bit) last, so the destination is in place when the line goes live.
 ///
 /// # Panics
-/// If this IO APIC does not own `gsi`. Silently doing nothing would be an unarmed line that looks
-/// exactly like a device that never interrupts.
+/// If this IO APIC does not own `gsi`: an unarmed line looks exactly like a silent device.
 pub(crate) fn route_gsi(
     gsi: u32,
     vector: u8,
@@ -742,19 +645,13 @@ pub(crate) fn init_contexts(boot_info_pointer: usize) {
     );
 }
 
-/// **Bring up the interrupt controller**: the IO APIC the MADT names, its legacy routing, and one
+/// Bring up the interrupt controller: the IO APIC the MADT names, its legacy routing, and one
 /// device interrupt through it, before the shared `interrupts_init` arms the tick and unmasks.
 ///
-/// The local APIC timer and `RFLAGS.IF` prove the CPU takes an interrupt it did not ask for; the
-/// PIT's line proves one from outside the CPU reaches it, which is a different claim and needs a
-/// different device. The PIT is the right one twice over: `timer.rs` already drives it for
-/// calibration, and its legacy IRQ 0 is the line every PC rewires, arriving as GSI 2. Arming
-/// redirection entry 0 for "the timer" would arm the 8259 cascade and produce no interrupts and no
-/// error, so this line is the easiest device to reach and the strongest test of the override table.
-/// `cargo xtask uefi-boot` reads the `device irq` line on a machine with two local APICs.
-///
-/// Here rather than in a tour because every build reaches it, the test boot included, and because
-/// the window it needs (the scheduler up, the tick not yet armed) exists only here.
+/// The PIT's line proves an interrupt from outside the CPU arrives, and its IRQ 0 arrives as GSI 2,
+/// which tests the override table (notes/x86-port/traps.md). It is here because every build reaches
+/// it and the window it needs, the scheduler up and the tick not yet armed, exists only here.
+/// `cargo xtask uefi-boot` reads the `device irq` line it prints.
 pub fn init() {
     let (io_apic, isa_irqs) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_irqs));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {
@@ -834,19 +731,11 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
     }
 }
 
-/// Bring up this CPU's local interrupt interface (milestone 161's SMP item): a secondary's own
-/// call to [`init_local_apic`], at the SAME physical address the boot core already found in the
-/// MADT and mapped device-typed.
-///
-/// **Every core's local APIC answers at this identical MMIO address**, unlike a device with one
-/// physical instance: the address is architecturally per-core (`IA32_APIC_BASE`, reset to the same
-/// value on every core), so a redundant [`mask_the_8259s`] and a redundant write of [`LOCAL_APIC`]/
-/// [`LOCAL_APIC_PHYS`] to the SAME value are both harmless idempotent re-statements of what the
-/// boot core already recorded, not a race over shared state.
-///
-/// A no-op if the boot core never found a local APIC at all (`local_apic_phys()` is `None`):
-/// unreachable in practice, because `smp::bring_up_secondaries` only starts a core once
-/// `arch::can_start_secondaries()` has already required exactly that.
+/// Bring up this CPU's local interrupt interface: a secondary's own [`init_local_apic`], at the
+/// physical address the boot core found in the MADT. Every core's local APIC answers at that one
+/// address (`IA32_APIC_BASE` resets alike on every core), so re-masking the 8259s and rewriting
+/// [`LOCAL_APIC`] with the same value are idempotent, not a race. A no-op with no local APIC, which
+/// `arch::can_start_secondaries()` rules out before any secondary starts.
 pub(crate) fn init_this_cpu() {
     if let Some(apic) = local_apic_phys() {
         // SAFETY: the same physical address the boot core already validated (it is where
@@ -856,49 +745,20 @@ pub(crate) fn init_this_cpu() {
     }
 }
 
-/// **Unmask interrupt `intid` at the controller**, where `intid` is a *legacy IRQ number* the way
-/// the arch contract's other two implementations take an INTID or a PLIC source.
+/// Unmask interrupt `intid` at the controller.
 ///
-/// The translation is the whole point of this function: [`isa_routing`] turns the legacy number
-/// into the GSI the MADT says it actually arrives on, plus that line's polarity and trigger mode,
-/// and only then is a redirection entry written. IRQ 0 becomes GSI 2 here, and a version of this
-/// that skipped the step would arm the 8259 cascade and report success.
-///
-/// The vector is [`gsi_vector`]'s, and the destination is the boot CPU.
-///
-/// # An intid on this architecture is one of two things
-///
-/// **A local APIC source names itself by its vector**, because there is no controller input to
-/// name: [`RESCHEDULE_VECTOR`], [`SELF_TEST_VECTOR`] and its `_B` twin are raised by writing the
-/// ICR, and the ICR takes a vector. There is nothing to unmask, so this is a **no-op** for them,
-/// and that is a real answer rather than a shrug: the line is already deliverable the moment the
-/// local APIC is enabled, which is what `RFLAGS.IF` then gates.
-///
-/// **An MSI vector is the same case for a stronger reason** (milestone 215). A PCI function with
-/// MSI-X enabled raises its interrupt by *writing* to the local APIC's message address, so there
-/// is no controller input anywhere in the path: no redirection entry, no swizzle, no `_PRT`. There
-/// is nothing to unmask, and nothing for a driver's `Irq::ACK` to re-arm either, which is correct
-/// rather than a gap: the message is edge-delivered and already over by the time the driver runs.
-///
-/// **Everything else is a legacy IRQ**, 0..15, and goes through the translation above.
-///
-/// The two ranges cannot collide, which is what makes one function able to take both:
-/// [`GSI_VECTOR_BASE`]'s doc reserves 0x20..0x2f for the local APIC's own sources, and a legacy IRQ
-/// number never reaches 0x20. **This was a real bug until userspace arrived** (milestone 161, item
-/// 4's hand-off): `spawn_elf_child_builder` enables `user::DELEGATED_TEST_INTERRUPT`, which on
-/// x86 *is* `SELF_TEST_VECTOR`, and routing 34 as though it were a legacy IRQ panicked with
-/// "gsi 34 is outside the IO APIC's range". Nothing had ever called `enable` with a local-APIC
-/// number before, because nothing above the arch layer had run.
+/// A local APIC source ([`RESCHEDULE_VECTOR`], [`SELF_TEST_VECTOR`] and its `_B` twin) or an MSI
+/// vector names itself by vector and has no controller input, so for it this is a no-op. Any other
+/// intid is a legacy IRQ, 0..15: [`isa_routing`] turns it into the GSI the MADT says it arrives on,
+/// with polarity and trigger mode, and the entry is routed to [`gsi_vector`]'s vector on this core.
+/// IRQ 0 becomes GSI 2. The ranges cannot collide, since local sources start at 0x20. See
+/// notes/x86-port/traps.md.
 pub fn enable(intid: u32) {
     if is_local_apic_source(intid) || is_msi_vector(intid as u64) {
         return;
     }
     let routing = isa_routing(intid);
-    // A GSI with no redirection entry has no vector, which is the same condition `route_gsi` panics
-    // on one line below. It is refused here instead, and not only to satisfy the `Option`: this
-    // message names the `intid` the caller passed, which `route_gsi` never sees. The bug quoted
-    // above surfaced as "gsi 34 is outside the IO APIC's range" when what the caller said was 34,
-    // and reading that took a while precisely because the two numbers had been silently swapped.
+    // Refused here rather than in `route_gsi`, so the message names the caller's `intid`.
     let Some(vector) = gsi_vector(routing.gsi) else {
         panic!(
             "intid {intid} resolves to gsi {}, which is outside the IO APIC's range (base {}, {} entries)",
@@ -936,17 +796,11 @@ pub fn intid_of_vector(vector: u64) -> Option<u32> {
     }
 }
 
-/// **Hold a routed line off until its driver ACKs**: the trap handler's act for a line it hands to
-/// a userspace driver, undone by [`enable`] when the driver ACKs. aarch64's `irq::disable` is the
-/// same step.
+/// Hold a routed line off until its driver ACKs, undone by [`enable`]; aarch64's `irq::disable`.
 ///
-/// **A level-triggered line is masked; an edge-triggered one is left live**, and the difference is
-/// the IO APIC's rather than a choice. A GIC keeps an interrupt pending while it is disabled. An IO
-/// APIC does not: an edge that arrives on a masked entry is dropped. COM1's IRQ 4 is edge-triggered
-/// on every PC, and a 16550 holds its line high until the driver drains it, so masking it would turn
-/// a byte that arrives between the driver's last read and its ACK into an input that never wakes
-/// anything again: the line is already high when the entry is unmasked, so no new edge comes.
-/// Left live, that byte raises a fresh edge after the drain, and the rendezvous counts it.
+/// Only a level-triggered line is masked: an IO APIC drops an edge that arrives on a masked entry,
+/// where a GIC keeps it pending. COM1's edge-triggered IRQ 4 stays high until the 16550 is drained,
+/// so a masked COM1 would lose a byte arriving before the ACK and never interrupt again.
 ///
 /// Name: recorded (aarch64's `arch::irq::disable`): the arch contract's name for the same step, which
 /// is why it is not named for the edge/level split. Provisional on this architecture (milestone 505's
@@ -1015,20 +869,12 @@ pub fn send_ipi(dest_apic_id: u8, vector: u8) {
     write(reg::ICR_LOW, ICR_FIXED | ICR_ASSERT | vector as u32);
 }
 
-/// **Raise `vector` on the CPU executing this**, through the local APIC's self shorthand.
+/// Raise `vector` on the CPU executing this, through the local APIC's self shorthand.
 ///
-/// This is x86's answer to a question the other two architectures answer very differently, and the
-/// asymmetry is worth stating because `sched`'s interrupt-delivery tests depend on it. aarch64 can
-/// raise a software-generated interrupt on itself with no device at all. RISC-V cannot raise
-/// anything: `sip.SEIP` is read-only to S-mode and the PLIC's pending block is read-only by
-/// specification, so its tests assert the console UART's transmit-empty line instead. x86 is
-/// aarch64's case rather than RISC-V's: the local APIC will deliver any vector to itself on demand,
-/// through a real delivery path (the ICR, the IRR, the ISR, an EOI), so the interrupt is the
-/// hardware's and not a function call wearing a handler's name.
-///
-/// It is deliberately **not** the console UART's line. COM1's interrupt is discoverable here
-/// (`Acpi::isa_irqs[4]`) and unwired, and asserting a device this port has no driver for would prove
-/// less than this does while being able to fail for reasons unrelated to the kernel.
+/// `sched`'s interrupt-delivery tests use it. The interrupt takes the hardware's path (ICR, IRR,
+/// ISR, EOI), as aarch64's software-generated interrupt does; RISC-V can raise nothing and asserts
+/// its console UART's line instead. A device line here could fail for reasons unrelated to the
+/// kernel. See notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 161, roadmap item 4).
 pub fn raise_self_interrupt(vector: u8) {
@@ -1041,16 +887,11 @@ pub fn raise_self_interrupt(vector: u8) {
     );
 }
 
-/// Send a reschedule inter-processor interrupt to `target_cpu`, whose handler drains its inbox and
-/// serves any outstanding work-steal request (`sched::drain_inbox`, `sched::serve_steal_request`).
-/// The x86 counterpart of aarch64's reschedule SGI and RISC-V's SBI IPI.
+/// Send a reschedule IPI to `target_cpu`, whose handler drains its inbox and serves any work-steal
+/// request (`sched::drain_inbox`, `sched::serve_steal_request`); aarch64's reschedule SGI.
 ///
-/// **The logical cpu id is looked up in the roster rather than used as the destination local APIC
-/// id directly** (fixed, milestone 161's SMP item). The two numbers are independent in general; the
-/// MADT states the mapping and `smp::seat_cpus_from_acpi` reads it into the same roster
-/// `bring_up_secondaries` uses, seating every core (the boot core included, via
-/// `arch::boot_cpu_id`'s own `CPUID` read) at the slot its own local APIC id names, so
-/// `smp::hwid(id)` is that id.
+/// The destination is `smp::hwid(target_cpu)`, the local APIC id the MADT gave that core's roster
+/// slot (`smp::seat_cpus_from_acpi`), not the logical id: the two are independent.
 ///
 /// # Panics
 /// If `target_cpu` names no seated core. Every caller in `sched` first checks the target is an
@@ -1133,32 +974,18 @@ pub(crate) fn print_summary() {
     }
 }
 
-/// **Proofs about the vector space** (milestone 304), the first properties this tree has ever
-/// checked on `arch/x86_64/`: until 304 the prover compiled `arch/aarch64/` and nothing else, so
-/// this whole subtree was out of reach for a `cfg` rather than for a construct. See
-/// notes/kernel-proofs.md, whose stub list applies here unchanged, and
-/// design/roadmap/0304-prover-one-architecture.md for why a second host is what made them runnable.
-///
-/// Both harnesses are about **numbers firmware chose**. The MADT supplies the IO APIC's GSI base,
-/// the version register supplies its entry count, and an interrupt source override supplies the GSI
-/// a legacy IRQ resolves to. Every one of those decides which vector an interrupt is delivered on,
-/// and a vector is an index into the IDT: getting it wrong does not misroute an interrupt, it runs
-/// the page-fault handler.
+/// Proofs about the vector space (milestone 304 (`cargo kani -p kernel` only ever compiled one
+/// architecture)), over numbers firmware chose: the MADT's GSI base, the version register's entry
+/// count, an override's GSI. Each picks an interrupt's vector, an index into the IDT, so a wrong
+/// one runs the page-fault handler. See notes/kernel-proofs.md and
+/// design/roadmap/0304-prover-one-architecture.md.
 #[cfg(kani)]
 mod proofs {
     use super::*;
 
-    /// **The three vector bands never overlap, whatever the version register says.**
-    ///
-    /// [`MSI_VECTOR_BASE`]'s doc claims the bands are "disjoint by construction rather than by
-    /// anybody remembering", and the construction is [`MAX_REDIRECTION_ENTRIES`] clamping the
-    /// entry count in [`init_io_apic`]. This is that claim, stated over every entry count an
-    /// eight-bit version field can report and every allocation state the MSI bump counter can be
-    /// in, rather than over the two numbers QEMU happens to produce.
-    ///
-    /// The claim is deliberately not a restatement of the constants: it asks the two *predicates*
-    /// the trap handler actually calls, so a change to either one's arithmetic breaks this even if
-    /// the constants are untouched.
+    /// The three vector bands never overlap, whatever the version register says: the claim
+    /// [`MSI_VECTOR_BASE`]'s doc makes, over every entry count and MSI allocation state, asked of
+    /// the predicates the trap handler calls rather than of the constants.
     ///
     /// Falsification: attested 2026-09-16. `MAX_REDIRECTION_ENTRIES` raised by one, on cordoba
     /// (x86_64 Linux): the device band then reaches `MSI_VECTOR_BASE` and this goes red, along
@@ -1213,28 +1040,9 @@ mod proofs {
         );
     }
 
-    /// **A GSI this IO APIC owns is routed to a vector inside the IO APIC's own band**, whatever
-    /// global interrupt base the MADT gave it.
-    ///
-    /// [`route_gsi`] is called as `route_gsi(gsi, gsi_vector(gsi), ...)` from [`enable`], and
-    /// [`redirection_index`] is the only thing between a GSI the MADT supplied and a raw
-    /// redirection-table write. So the question a model checker can settle is whether the *guard*
-    /// and the *vector* agree: for every GSI the guard admits, does the flat map land in
-    /// `GSI_VECTOR_BASE..MSI_VECTOR_BASE`? The same shape as milestone 255's
-    /// `no_stream_can_reach_another_streams_tables` one architecture over: a firmware-supplied
-    /// identifier, one bounds check, and a write that cannot be taken back.
-    ///
-    /// **No precondition on `base`**: the property holds over every `base`, every entry count an
-    /// eight-bit version field can report, and every `gsi` in `u32`, because routing is by
-    /// redirection index (a GSI-based map once put GSI 255 on a base of 127 at `0x2f`, inside the
-    /// local APIC's own band).
-    ///
-    /// **The second assertion is the one milestone 308 added**, and it is a claim about two
-    /// functions rather than one. [`is_device_vector`] has always defined the band by *index*
-    /// (`GSI_VECTOR_BASE` up to the entry count) while [`gsi_vector`] assigned by *GSI*, so on a
-    /// nonzero base the trap handler declined to count an interrupt this kernel had itself routed
-    /// as a device vector. They are now the same arithmetic, and this says so over every input
-    /// instead of leaving it to a reader comparing two function bodies.
+    /// A GSI this IO APIC owns routes to a vector inside its band, whatever base the MADT gave it,
+    /// and [`is_device_vector`] counts that vector: the guard ([`redirection_index`]) and the map
+    /// agree over every `base`, entry count and `gsi`.
     ///
     /// Falsification: attested 2026-09-16. On cordoba (x86_64 Linux), and the patch is written
     /// down, which is unusual for an `attested` record and is the point:
@@ -1300,18 +1108,10 @@ mod proofs {
 mod tests {
     use super::*;
 
-    /// **A GSI owned by an IO APIC based at global interrupt 200 routes inside the device band**,
-    /// and the vector the trap handler would see is one it counts as a device vector.
-    ///
-    /// The numbers are the proposal's plausible-hardware case rather than the prover's: base 200
-    /// with the 24 redirection entries every real part has, so GSI 210 is entry 10. Before
-    /// milestone 308 that GSI mapped to `0x30.wrapping_add(210)`, which is **2, the NMI**, and the
-    /// assertion on `NMI` below is why this test names a vector rather than only a range: a reader
-    /// meeting a failure here should see immediately what the old map did with it.
-    ///
-    /// The two statics are this machine's real IO APIC state, so they are saved and put back. They
-    /// are read by the trap handler's `is_device_vector`, and the entry count is restored to the
-    /// same value it is set to here, so nothing in flight can see a band that moved.
+    /// A GSI owned by an IO APIC based at global interrupt 200 routes inside the device band, and
+    /// the trap handler counts its vector as a device vector. GSI 210 is entry 10 of a 24-entry
+    /// part; a GSI-based map sends it to `0x30.wrapping_add(210)`, which is 2, the NMI. The two
+    /// statics are this machine's real IO APIC state, so they are saved and put back.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.x86_64.irq.tests.a_gsi_on_a_second_io_apic_routes_inside_the_band.patch`
     #[test_case]

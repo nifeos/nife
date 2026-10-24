@@ -26,6 +26,35 @@ endpoints (print), and three shared pages (the console's, the client's output, t
 input). It touches no UART and no interrupt, which is exactly why the component could not exist
 until the drivers did: it is the layer *between* drivers, not a driver.
 
+## What the engine does and leaves out
+
+The engine's bindings, as `crates/line_editor/src/lib.rs` implements them:
+
+- Insertion and deletion at a cursor. Typing at the end echoes only the byte; an edit mid-line
+  redraws the tail.
+- Cursor movement as control characters (`^B` `^F` `^A` `^E`) and as ANSI sequences: CSI D, C, H
+  and F, their SS3 forms, and the vt220 `~` forms.
+- Kill and yank: `^K` kills to the end, `^U` to the start, `^W` a word back, and `^Y` inserts the
+  kill buffer.
+- History: the last `HIST` non-empty lines on up and down, with the line in progress stashed.
+- CR or LF ends a line, and an LF straight after a CR is swallowed. Interactive input (CR) and
+  piped input (LF, CRLF) both work without the caller knowing which it has.
+- `^C` discards the line. `^D` is end of input on an empty line and a delete otherwise, Unix's
+  double duty. `^L` repaints.
+
+Three things it leaves out on purpose:
+
+- It tracks no terminal size. The redraw math assumes one row, so a wrapped long line redraws
+  wrongly past the margin. Probing the terminal would block the discipline on a terminal that may
+  never answer, such as a piped boot script, and `LINE_MAX` keeps the wrap rare.
+- It does no tab completion, because that needs the command namespace. Tab comes back as
+  `Event::Tab` and the terminal ignores it. The shell runs this engine itself in raw mode and
+  answers Tab with `LineDisc::pending` and `LineDisc::insert_text` (§227 (how Tab reaches the
+  shell)).
+- It keeps no output-side state. Newline translation is the free function `expand_output`,
+  because output shares no state with input editing (notes/thread-control-block.md has the tty
+  layer).
+
 ## The build-vs-reuse call: built, against the rule's default
 
 The prior-art rule (DECISIONS §14) says for userspace, outside the trusted computing base,
@@ -93,6 +122,33 @@ concrete form: a terminal with real behavior is a far better first swap target t
 loop. `line_editor` faults into a clean kill on any bug (it `brk`s / `ebreak`s in its panic handler),
 which is honest rather than reckless precisely because the hot-swap story is what recovers it.
 
+## The component's slots
+
+`line_editor::component` declares what a supervisor routes to a `line_editor` it can replace.
+Both declarations put the terminal in slot 0 and the output sink in slot 1. The console's reply
+endpoint takes slot 2 when there is one, then come the control endpoint and the supervisor's
+notification endpoint. `line_editor` learns the control slot from its second start argument and
+finds the notification endpoint in the slot after it, so one binary serves both sink shapes.
+
+`terminal_supervisor` holds every object a `line_editor` is built from, with `GRANT`, so it can
+build a second one. It holds the terminal endpoint with `WRITE` too, so it can send
+`OPERATION_QUIESCE`. Its start arguments are the sink's mode (`MODE_CONSOLE` = 0 or `MODE_DISPLAY`
+= 1), the two image lengths `supervisor::image_lengths` packs, and the slot of a swap-request
+endpoint. That slot is 0 on every boot today: the trigger is milestone 198 (a package manager,
+and the trivial install)'s installer, ruled by §308 (the installer asks the terminal to swap) and
+not built.
+
+The machine's swap reserve, `supervisor::SWAP_RESERVE_PAGES`, is one per machine and apart from
+every job pool (calef's ruling "D", 2026-10-19 UTC). It is sized to the largest swappable
+instance plus its handoff, which today is `display_terminal`'s: that budget holds one instance and
+so cannot hold its replacement. `terminal_supervisor` holds the size to
+`video_terminal::component::SWAP_PAGES` at compile time. Whoever drives a swap splits the reserve
+whole and lends it with the request; the supervisor gives it back before it answers, and the
+lender's `DESTROY` revokes what was made from it. A second swap while one holds the reserve finds
+nothing to split and is refused, so the reserve itself serializes swaps. The holder is the swap
+trigger, milestone 694 (the installer asks the terminal to swap); until that is built, the
+kernel's test `system_tests::user::terminal_display_swap_tests` holds it.
+
 ## Where it runs
 
 The interactive system is built by userspace progenitor out of its own budget, on both
@@ -106,3 +162,113 @@ the drivers and shell the `WRITE` side, and none of the wiring is in the kernel.
 on
 both ISAs: `help`, `echo`, and `run` drive a worker to completion through the full path
 (input driver → line discipline → console server, and shell → line discipline → console server).
+
+## The graphical terminal: a session over a discipline
+
+`graphical_terminal` is a prompt on the display, launched from the swish prompt rather than started
+at boot (calef's ruling of 2026-09-30, milestone 632 (graphics on demand)). The person at the boot
+prompt delegates the display devices by typing its name. The progenitor then builds `gpu_driver`,
+`display_terminal`, and one of two keystroke sources, and passes the choice in `x0`:
+
+```text
+  arm 0 (a keyboard came):
+    keyboard_driver ──OPERATION_BYTES──► line_editor ──OPERATION_WRITE──► display_terminal ──► screen
+           graphical_terminal ◄──lines── (slot 2)     (slot 1 == slot 2's server)
+
+  arm 1 (no keyboard; the UART is the keystroke source):
+    boot input ──OPERATION_BYTES──► boot line_editor ◄──OPERATION_READRAW── graphical_terminal
+           graphical_terminal ──OPERATION_WRITE──► display_terminal ──► screen
+```
+
+On arm 0 the session's own `line_editor` does the whole job in cooked mode. It paints the prompt,
+echoes each keystroke and hands over the completed line. On arm 1 the program puts the boot
+discipline in raw mode, reads register-only, and paints the echo itself as the bytes arrive, which
+is the shell's own §227 (how Tab reaches the shell) shape. The discipline's cooked echo is bypassed
+in raw mode, so nothing echoes twice.
+
+A session ends on `^C` or on a line reading `quit`. Arm 1 puts the boot discipline back in cooked
+mode on the way out. The shell's §227 fallback, its `BAD_REQUEST` path, takes it back to raw at the
+next prompt, and that covers a session the kernel killed before it could clean up.
+
+The session holds four things. The result endpoint (slot 0) takes one word when the session ends.
+Slot 1 prints to the screen, with the page its server reads. Slot 2 owns the keystrokes. On arm 0
+only, a second page receives the lines the discipline delivers. It holds no device, no interrupt and
+no DMA.
+
+Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
+
+- A session runs no program. Its lines are echoed and nothing else.
+- Arm 1 has no line editing. The only edits are `^C` and retyping.
+- Arm 1 can switch the boot discipline's mode under the shell. Slot 2 on that arm is the boot
+  discipline's endpoint badged `line_editor::proto::RAW_ONLY_BADGE`, under milestone 709 (a
+  graphical terminal session on the no-keyboard arm holds only the raw half of the boot discipline).
+  So a session can neither type nor take a line the boot shell reads, and cannot print to the UART.
+  Flipping the mode while the shell is between reads abandons what the shell had half typed and
+  fails a parked read with `BAD_REQUEST`, which the shell's §227 recovery absorbs. That is a
+  disruption, not authority.
+
+## The keyboard as a second input source
+
+`keyboard_driver` turns virtio-input key events into the bytes a terminal understands, and its
+spawner picks one of two wirings in `arg0`:
+
+```text
+  MODE_RING (rung two, a compositor scene):
+  virtio-input ──virtio (PCIe, behind the IOMMU)──► keyboard_driver ──the input ring──► compositor
+   (a keyboard)                                      │                (shared memory)
+                                                     └──doorbell COMMIT──► "look at the surfaces"
+
+  MODE_DIRECT (milestone 177, option A: the boot's single-terminal case):
+  virtio-input ──virtio──► keyboard_driver ──OPERATION_BYTES, one CALL──► line_editor
+```
+
+`MODE_RING` is DECISIONS §33 (the compositor's authority is memory, not messages) seen from the
+producing side, and [glyphs.md](glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
+exactly one terminal, where there is no second window to misdirect a keystroke to
+(design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
+`line_editor`'s served endpoint, granted at spawn, and sends every keystroke there in the same
+`OPERATION_BYTES` framing the UART receive driver uses. A keyboard and a serial line are both one
+input source to the discipline, and neither contract grew to carry the other's bytes. That is
+narrower authority than the ring, not looser: one capability, fixed by whoever built the driver.
+
+The driver does no key repeat of its own: the device sends repeats, and `video_terminal::keymap`
+honors them. It drives no LEDs and switches no layouts. It handles no mouse or tablet, though a
+`virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci`), and it makes no
+configuration-space query.
+
+## Two sinks, and the badged copies
+
+The process's output side is chosen at spawn by `mode` and nowhere else:
+
+```text
+  MODE_CONSOLE (the plain-console boot):
+  input driver ──OPERATION_BYTES──►┌─────────────┐──text──► console server ──► UART
+                                   │ line_editor │
+       application ◄─lines─────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+
+  MODE_DISPLAY (a graphical_terminal session, built when the user launches it from the prompt):
+  keyboard_driver (direct) ──OPERATION_BYTES──►┌─────────────┐──OPERATION_WRITE──► display_terminal
+                                               │ line_editor │
+       application ◄─lines─────────────────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+```
+
+`Con::put` writes the same page in both modes, and only `Con::flush`'s wire shape differs. In
+`MODE_DISPLAY` the sink endpoint is `display_terminal`'s own, answered by one `CALL`, and the
+console's reply endpoint is never granted. The process holds no device in either mode.
+
+Every client the boot wires is unbadged. Every copy of the terminal endpoint, unbadged or badged,
+is served an allowlist (`proto::admits`), so a request added to the contract later is refused until
+somebody decides its holder may send it. The unbadged copy is never served the quiesce or the stdin
+read.
+
+- `proto::RAW_ONLY_BADGE`, milestone 709 (a graphical terminal session on the no-keyboard arm holds
+  only the raw half of the boot discipline). Its holder, a `graphical_terminal` session reading
+  keystrokes over the UART, may switch raw mode and read raw bytes. Nothing it sends can reach the
+  queue the shell reads its next command from.
+- `proto::STDIN_BADGE`, milestone 892 (a std program at the prompt holds the network and a
+  resolver). It is a program's standard input and nothing else: it reads the line being typed,
+  eight bytes at a time. The unbadged surface never serves that read, so the shell's own lines
+  cannot be taken through it.
+- `proto::SUPERVISOR_BADGE`, §232 (the `line_editor` swap contract). `terminal_supervisor` mints
+  it for each quiesce, and it carries `OPERATION_QUIESCE` and nothing else. A quiesce on any other
+  copy is refused, because it would stop the terminal until a `CTL_RESUME` nobody sends.

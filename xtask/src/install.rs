@@ -1,24 +1,17 @@
 //! **The install gate**: a stick boots, puts itself on a disk, and the machine boots from that disk
 //! with the stick gone (milestone 198 (a package manager, and the trivial install that makes a
-//! second customer possible), rung 2a.
-//!
-//! Milestone 515 (a stick that puts itself on the machine's disk) is the proposal it follows.
-//!
+//! second customer possible), rung 2a). Milestone 515 (a stick that puts itself on the machine's
+//! disk) is the proposal it follows. See notes/installing.md.
+
 //! # Why it is two boots, and then a third
 //!
-//! **A sequence that only works while the stick is still attached has not installed anything**, so
-//! the second boot is the gate, and three properties keep it from succeeding by accident:
-//!
-//! - **The stick is not attached at all**, not merely deprioritised. `NIFE_UEFI_NO_STICK=1` removes
-//!   the vvfat drive from the machine.
-//! - **The firmware variable store is deleted before each boot.** The default store persists across
-//!   runs in a checkout, so boot 1 would leave a boot option that boot 2 then rode.
-//! - **The NVMe image is created empty**, every run, so nothing survives from the last one.
-//!
-//! The third boot is the stick again, on the machine it installed, with nobody typing anything
-//! ([`stick_on_the_installed_machine`]). It is the live stick proposal's G1 and G2 as a measurement:
-//! which system ran, and whether the disk changed by a single byte.
-//!
+//! **A sequence that only works while the stick is attached has installed nothing**, so boot 2 is
+//! the gate, and three things keep it from passing by accident: the stick is not attached at all
+//! (`NIFE_UEFI_NO_STICK=1` removes the vvfat drive), the firmware variable store is deleted before
+//! each boot (boot 1 would leave a boot option boot 2 then rode), and the NVMe image is created
+//! empty every run. Boot 3 is the stick again on the machine it installed, with nobody typing
+//! ([`stick_on_the_installed_machine`]): the live stick proposal's G1 and G2 as a measurement,
+//! which system ran and whether the disk changed by a single byte.
 
 //! # EXAMPLES
 //!
@@ -35,26 +28,15 @@
 //! install-boot: boot 3 left the installed disk byte-for-byte unchanged
 //! install-boot: PASS
 //! ```
-//!
+
 //! # BUGS
 //!
-//! - **It is one disk of one size**, a 1 GiB image. The installer's layout arithmetic has a floor
-//!   and a rounding step that nothing here varies, and a disk under about 600 MiB is refused by
-//!   code no test exercises.
-//! - **It proves nothing about a real firmware.** OVMF is one implementation and a generous one.
-//! - **It runs nowhere on its own** (about 42 seconds warm, yet not in `script/test`'s default legs
-//!   and not scheduled): `design/roadmap/0712-the-install-gates-run-nowhere.md`.
-//! - **Boot 3 proves the stick left the disk alone under OVMF, and only there.** What keeps it so
-//!   is the `boot_slot::medium` token (calef, 2026-10-04 UTC): the loader
-//!   writes it only when its file is on an NVMe namespace, and a real firmware that built that
-//!   device path differently would leave an installed machine without its filesystem rather than
-//!   a stick with one.
-//! - **Boot 3 needs the disk in the firmware's boot order.** OVMF connects only the devices its boot
-//!   options name, so with the stick alone the loader never sees the disk and G1 cannot happen.
-//!   `NIFE_NVME_DEVICE_OPTS=,bootindex=1` is what makes it the machine a boot menu would give.
-//! - **A failure leaves the NVMe image behind**, on purpose: it is the evidence, and
-//!   `hdiutil attach -imagekey diskimage-class=CRawDiskImage` on the partition reads the EFI system
-//!   partition it wrote.
+//! - One disk of one size (1 GiB), so the installer's floor and rounding go untested.
+//! - It proves nothing about a real firmware; OVMF is one implementation and a generous one.
+//! - It runs nowhere on its own: `design/roadmap/0712-the-install-gates-run-nowhere.md`.
+//! - Boot 3's unchanged disk is proved under OVMF only (notes/installing.md says why).
+//! - Boot 3 needs the disk in the firmware's boot order (`NIFE_NVME_DEVICE_OPTS=,bootindex=1`).
+//! - A failure leaves the NVMe image behind, on purpose: it is the evidence.
 
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -177,16 +159,14 @@ pub(crate) fn install_boot() -> bool {
 }
 
 /// **Boot 3: the stick again, on the machine it just installed, and nobody types anything.**
+/// Returns whether the stick's own image ran and the disk came through byte for byte unchanged.
 ///
-/// The live stick proposal (`design/roadmap/0773-a-live-stick.md`, G1 and G2) read two defects
-/// out of the code: the stick's loader chain-loads the installed disk's boot slot instead of
-/// running its own image, and a stick boot mounts the internal disk, which writes it. This boot is
-/// the measurement. It asserts which system ran, and it compares the disk byte for byte before and
-/// after, so a write anywhere (the partition table, the filesystem, the EFI system partition) fails
-/// it and is named by region.
-///
-/// It comes after boot 2 on purpose: by then the installed system has booted once and confirmed
-/// itself, so anything this boot changes is the stick's doing and not the install settling.
+/// It measures the two defects the live stick proposal (`design/roadmap/0773-a-live-stick.md`, G1
+/// and G2) read out of the code: a stick loader that chain-loads the installed disk's boot slot,
+/// and a stick boot that mounts, and so writes, the internal disk. A write anywhere (the partition
+/// table, the filesystem, the EFI system partition) fails it and is named by region. It runs after
+/// boot 2, once the installed system has confirmed itself, so any change is the stick's doing and
+/// not the install settling.
 fn stick_on_the_installed_machine() -> bool {
     eprintln!();
     eprintln!("--- boot 3 of 3: the stick again, with the installed disk attached ---");
@@ -216,9 +196,8 @@ fn stick_on_the_installed_machine() -> bool {
         return false;
     };
 
-    // **The firmware must have started the stick**, or nothing below measures the stick at all.
-    // The first run of this boot did not: OVMF preferred the disk, and the gate read the installed
-    // system's own boot as the stick's.
+    // **The firmware must have started the stick**, or nothing below measures the stick at all:
+    // OVMF can prefer the disk, and the installed system's own boot would then pass as the stick's.
     if third
         .lines()
         .any(|l| l.contains("BdsDxe: starting") && l.contains("NVMe"))

@@ -8,9 +8,9 @@ its prose budget has no room for.
 - [`the-binary-split.md`](the-binary-split.md): how `least_authority_demo`, `console`, `input` and
   `swish` left the multi-role `hello` binary in milestones 19f.2 to 19f.5, and the shared runtime
   lifted out after them in 19f.6.
+- [`one-program-every-architecture.md`](one-program-every-architecture.md): why the progenitor is
+  one program with one `GRANTS` table on every architecture, and the one per-architecture
+  difference in its slots.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `the-binary-split` Name: provisional. For the 19f steps that split `hello` into the system's
-  binaries. calef names files.

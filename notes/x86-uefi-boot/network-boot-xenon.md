@@ -1,5 +1,8 @@
 # The bench: booting xenon over the network, with no stick at all
 
+*Name: ratified 2026-10-18 (calef, "Yes"). Kept: the directory names a boot path, not a machine, so
+the stem keeps its machine.*
+
 An appendix to [notes/x86-uefi-boot.md](../x86-uefi-boot.md), which keeps the summary. This is the
 procedure milestone 260 (boot xenon over the network) built, for the machine of milestone 87 (the
 x86_64 bare-metal machine), written to be followed rather than interpreted.
@@ -20,16 +23,17 @@ grows.
   measured what that costs on the other board. The 2026-09-04 radon session wrote the card six times,
   once per boot, because comparing two builds means interleaving them.
 - It removes the co-location. First light is on record as happening because the video output was the
-  only channel: *"patagonia could not be moved to the bench"*. A netboot does not need it to be. xenon
-  needs an ethernet cable to the house LAN, and patagonia needs to be on the same LAN, from wherever
-  it is.
+  only channel: *"patagonia could not be moved to the bench"*. A netboot does not need it to be.
+  xenon needs an ethernet cable to the house LAN, and the serving Mac needs to be on the same LAN,
+  from wherever it is.
 
 ## What you need
 
 - xenon, on the house LAN by cable into the motherboard's ethernet. Not the Wi-Fi card in
   Slot2_M.2: `Integrated NIC` switches the LOM and nothing else, and only the LOM can PXE.
-- patagonia on the same LAN, and its address. `script/board-netboot` prints every private address
-  this machine has. That is a list of candidates rather than an answer; see the failure table.
+- The serving Mac on the same LAN, and its address. `script/board-netboot` prints every private
+  address this machine has. That is a list of candidates rather than an answer; see the failure
+  table.
 - The house router, once, to take the DHCP lines. Nothing in this repository has ever talked to it.
 - A monitor on xenon, exactly as for the stick procedure, because the Dell's serial port does not
   carry firmware output, and the firmware is the half that is new here.
@@ -93,7 +97,7 @@ six cases and takes under a second.
 
 ## Step 3: serve, and boot
 
-On patagonia, two commands in two terminals:
+On the serving Mac, two commands in two terminals:
 
 ```console
 $ cargo xtask uefi-image                        # every time the kernel changes
@@ -123,7 +127,7 @@ same path, staged once.
    hour apart on 2026-09-05 measured 9,210,880 and 9,797,120. What matters is that the number the
    firmware prints and the number `board-netboot` prints are the same number.
 
-2. In patagonia's `board-netboot` terminal, two requests and not one, in this order:
+2. In the `board-netboot` terminal, two requests and not one, in this order:
 
    ```text
    board-netboot: 192.168.8.NN <- EFI/BOOT/BOOTX64.EFI (9210880 bytes, blksize 1468)
@@ -149,7 +153,7 @@ same path, staged once.
 |---|---|
 | No `>>Start PXE over IPv4` on the screen at all | The two firmware settings did not take, or took on the wrong machine. `Enabled w/PXE` is what creates the boot entry; `Enable UEFI Network Stack` is what lets it exist. Check `F12`'s one-time boot menu for a `UEFI PXEv4` entry: no entry means step 1 |
 | `PXE-E16: No valid offer received` | The router is answering, and answering with no boot file. Either the MAC in `dhcp-host` is wrong (read it off `General → System Information`, `LOM MAC Address`), or the `dhcp-match` tag is not being applied and the `tag:efi-x86-64` requirement is failing. This is the same output `script/netboot-rehearsal --mac <not-xenon>` produces, deliberately |
-| `PXE-E18: Server response timeout` | The offer arrived and the transfer did not. patagonia's address in `dhcp-boot` is stale or is an address xenon cannot route to (a Tailscale address, or the wrong side of a Wi-Fi/ethernet split); or `board-netboot` is not running; or macOS's firewall is dropping inbound UDP to python3, which is the failure this rig has that radon's did not, because radon's traffic was on a port macOS had already been asked about |
+| `PXE-E18: Server response timeout` | The offer arrived and the transfer did not. The server's address in `dhcp-boot` is stale or is an address xenon cannot route to (a Tailscale address, or the wrong side of a Wi-Fi/ethernet split); or `board-netboot` is not running; or macOS's firewall is dropping inbound UDP to python3, which is the failure this rig has that radon's did not, because radon's traffic was on a port macOS had already been asked about |
 | `board-netboot` says `NOT FOUND` with a name in it | The filename in `dhcp-boot` and the layout under `--root` disagree. It is a path relative to the served directory, so `--root target/esp` wants `EFI/BOOT/BOOTX64.EFI` and nothing else |
 | Transfer completes, then nothing | The firmware executed the image and the loader's video output is the next thing. If the screen is blank, that is milestone 87's territory rather than this one, and a stick will reproduce it without the network in the way |
 | The machine sits at POST waiting for a keypress | `Alert! Keyboard not found`, which this rig runs straight into and does not fix. See below |

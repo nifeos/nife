@@ -1,34 +1,14 @@
-//! **`disk_partitioner`**: writes the map `disk_surveyor` reads
-//! (notes/globally-unique-identifier-partition-table.md). The destructive half of the pair, and its
-//! endowment is the point: a block-service endpoint for **one** disk (`filesystem_contract::blk`),
-//! the authority to destroy that disk and no other, and an entropy endpoint (`entropy_contract`),
-//! which reaches random bytes and not the device. **Both are required and neither is sufficient**:
-//! a GPT's unique ids must be random, the partition-table crate refuses to invent one, so without
-//! entropy this program writes nothing rather than fall back to a counter. Compare `parted
-//! /dev/sda` as root, which reaches every disk; here there is no path to type.
+//! `disk_partitioner`: writes the map `disk_surveyor` reads
+//! (notes/globally-unique-identifier-partition-table.md, "Writing a table on the target").
 //!
-//! | `a0` | |
-//! |---|---|
-//! | [`ROLE_PARTITION`] | draw four GUIDs, lay out a table, write both copies |
-//! | [`ROLE_VERIFY`] | read the disk back and report what is on it |
-//!
-//! `ROLE_VERIFY` is a separate process with no entropy endpoint, so "the refusal wrote nothing" is a
-//! reading, not an assertion. The layout is `filesystem_fixture::blank`, 2048-block
-//! aligned; placement is this program's policy, which the partition-table crate refuses to make.
-//! Every block is read before the table is laid over it: the primary table is 34 logical blocks and
-//! a transfer is eight, so writing whole transfer blocks would zero the start of a partition.
-//!
-//! ```text
-//!   ROLE_PARTITION, wired with a disk AND an entropy endpoint:
-//!     report: R_PARTITIONED, 3 partitions
-//!
-//!   ROLE_PARTITION, wired with the disk and NO entropy endpoint:
-//!     report: R_NO_ENTROPY, 0 partitions          (and the disk is untouched)
-//!
-//!   ROLE_VERIFY, afterwards:
-//!     report: F_MBR|F_PRIMARY|F_BACKUP|F_NIFE|F_NAMES, 3 partitions, data at LBA 30720
-//! ```
-//!
+//! The destructive half of the pair, and its endowment is the point: a block-service endpoint for
+//! one disk (`filesystem_contract::blk`), the authority to destroy that disk and no other, and an
+//! entropy endpoint (`entropy_contract`), which reaches random bytes and not the device. Both are
+//! required: a GPT's unique ids must be random, so without entropy it writes nothing rather than
+//! fall back to a counter. `a0` is [`ROLE_PARTITION`] (draw four GUIDs, lay out a table, write
+//! both copies over blocks read first) or [`ROLE_VERIFY`] (a separate process with no entropy that
+//! reads the disk back). The layout, `filesystem_fixture::blank`, is 2048-block aligned.
+
 //! # BUGS
 //!
 //! - The logical block size is assumed to be 512. One hard-coded layout, with no `mkpart` options.

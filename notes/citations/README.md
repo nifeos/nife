@@ -17,11 +17,4 @@ These files carry the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `ratchet` Name: provisional.
-- `census-and-backfill` Name: provisional.
-- `moved` Name: provisional. Named after the `--moved` mode it is about.
-- `another-medium` Name: provisional. Named after the main page's own heading.
-- `bugs` Name: provisional.
-- `first-run` Name: provisional. Named after the parent's own heading. calef names files.
+Each stem here is named for its content, and calef names files.

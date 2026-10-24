@@ -1,21 +1,13 @@
-//! **The saved register context of a thread, RISC-V.** The Rust half of `context.s`, and the
-//! second implementation of the seam introduced when HAL leak #1 was closed (notes/riscv-port.md):
-//! `thread.rs` asks for a context "for a kernel thread" or "for a user thread" and never names a
-//! register; this module owns which RISC-V register carries the closure, the entry, or the return.
+//! A thread's saved register context on RISC-V, the Rust half of `context.s`.
 //!
-//! Where aarch64 saves `x19`..`x30`, RISC-V saves its own callee-saved set: `ra` (the return
-//! address, where `switch_to`'s `ret` lands) and `s0`..`s11`. `sp` is the context pointer itself,
-//! so it is not a field. See context.s for the matching push/pop order.
+//! `thread.rs` asks for a context for a kernel or a user thread and never names a register. This
+//! module owns which callee-saved register (`ra`, `s0`..`s11`) carries the closure, the entry or
+//! the return; `sp` is the context pointer itself. See notes/riscv-port/hal-leaks.md.
 
 /// The callee-saved registers, as `switch_to` pushes them.
 ///
-/// **This layout is a contract with `context.s`.** Fourteen `u64` slots, 112 bytes (a multiple of
-/// 16, so `sp` stays aligned as the RISC-V calling convention requires), in exactly this order.
-/// Thirteen are live registers; the last is padding for that alignment. Reorder a field and the
-/// assembly restores the wrong register.
-///
-/// The fields are private: the two ways a fresh context is ever built live here, so which register
-/// carries what never escapes `arch/`.
+/// The layout is a contract with `context.s`: fourteen `u64` slots in this order, 112 bytes so `sp`
+/// stays 16-byte aligned. The fields are private, so which register carries what stays in `arch/`.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Context {

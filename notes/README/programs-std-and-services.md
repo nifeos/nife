@@ -42,8 +42,10 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Swapping the interactive stack](../interactive-stack-swap.md): what stands between `line_editor`, `display_terminal`, `compositor` and a live swap.
 - [The process view](../process-view.md): `ps`, `pgrep` and `top` over a supervision subtree.
 - [Scheduled execution](../scheduled-execution.md): a cron whose every entry is a grant.
+- [The system log service](../system-log.md): how the log service stamps, joins, renders and keeps lines, and its wire contracts.
 - [Durable delegation](../durable-delegation.md): a login session that outlives its client.
 - [Wall-clock time](../clock.md): wall clock as counter plus offset, three authorities.
+- [The machine statistics page](../machine-statistics.md): the granted page `free`, `vmstat` and `top` read, and why it is not a snapshot. Name provisional.
 - [`date`](../date.md): prints the wall clock and cannot set it.
 - [`time`](../time-command.md): times a command on the shell's clock.
 - [The calendar crate](../calendar.md): Unix seconds to civil dates and back, and formats.

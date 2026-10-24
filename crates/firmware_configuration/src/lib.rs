@@ -1,18 +1,12 @@
-//! **Asking the emulator for a screen**: QEMU's `fw_cfg` interface, wire side. QEMU's `virt`
-//! boards are entered from `-kernel` with no firmware that lit a display, but they have **`ramfb`**,
-//! a device whose contract is that the guest supplies the memory and tells the emulator where it
-//! is, through `fw_cfg` (the channel firmware reads the E820 map and ACPI tables through). This
-//! crate is that conversation's wire format and nothing else, so the kernel driver is a
-//! `write_volatile` and a poll and the arithmetic is proved on the host. QEMU, Linux, EDK2 and
-//! U-Boot spell it `fw_cfg`; a reader arriving from QEMU's `docs/specs/fw_cfg.rst` is in the right
-//! place. See notes/serial-less-output/ramfb.md.
-//!
-//! Only `fw_cfg`'s DMA interface can write, and `ramfb` is a write-only file, so it is the DMA
-//! interface, not the port pair. **Every multi-byte field is big-endian**, including on the
-//! little-endian machines this tree runs on; that is the mistake this crate exists to make
-//! impossible, so every encoder takes native values and returns bytes, never a struct anybody could
-//! `transmute`.
-//!
+//! **Asking the emulator for a screen**: QEMU's `fw_cfg` interface, wire side, as QEMU's
+//! `docs/specs/fw_cfg.rst` specifies it. QEMU's `virt` boards are entered from `-kernel` with no
+//! firmware that lit a display, but they have **`ramfb`**, a device whose contract is that the guest
+//! supplies the memory and tells the emulator where it is, through `fw_cfg`'s DMA interface (the
+//! only one that can write). This crate is that conversation's wire format and nothing else, so the
+//! kernel driver is a `write_volatile` and a poll. **Every multi-byte field is big-endian**, even on
+//! little-endian machines, so every encoder takes native values and returns bytes, never a struct
+//! anybody could `transmute`. See notes/serial-less-output/ramfb.md.
+
 //! # BUGS
 //!
 //! - Nothing checks that the device is real: the trust boundary is the device tree, as for the UART.

@@ -1,16 +1,13 @@
-//! **`mdr`: the markdown renderer** (notes/documentation.md). It reads markdown on its standard
-//! input and writes it rendered on its standard output; the rendering is `crates/documentation`,
-//! which parses with `pulldown-cmark` and is host-tested.
+//! **`mdr`: the markdown renderer.** It reads markdown on its standard input and writes it
+//! rendered on its standard output; the rendering is `crates/documentation` (`pulldown-cmark`).
 //!
-//! **It cannot name a page.** A Unix `man` opens the file it prints, so it can open any file its
-//! caller can. This is handed bytes: `mdr notes/glob.md` is the shell resolving the name against
-//! its own directory capability and streaming the file, and `mdr < notes/glob.md`, `mdr
-//! notes/glob.md` and `something | mdr` are one behavior with three sources. Finding a page is
-//! `apropos`'s job, a shell builtin, because a search must read the store's index.
-//!
-//! A `std` program (`std_runtime_contract`): its heap's budget at slot 0, its output at slot 1,
-//! and its input as a byte stream at slot 30, which `std::io::stdin` reads. No file, directory,
-//! clock or shared page. It cannot tell whether its output is a terminal, so it emits plain text.
+//! It cannot open a page by name: `mdr notes/glob.md` is the shell resolving the name against its
+//! own directory capability and streaming the file, one behavior with `<` and a pipe. A `std`
+//! program (`std_runtime_contract`): heap budget at slot 0, output at slot 1, input stream at slot
+//! 30, and no file, directory, clock or shared page. It cannot tell whether its output is a
+//! terminal, so it emits plain text. Finding a page is `apropos`'s. See notes/documentation.md.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! $ mdr gate.txt | wc
@@ -20,7 +17,7 @@
 //! ```
 //!
 //! `gate.txt` is `2 4 24`; the rendering is one re-flowed line plus two bytes of indent.
-//!
+
 //! # BUGS
 //!
 //! - **It reads the whole input before it writes a byte**, because CommonMark needs the whole

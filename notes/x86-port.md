@@ -114,11 +114,17 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 | [boot.md](x86-port/boot.md) | Why the kernel boots by PVH and not Multiboot, the real-firmware path through `uefi_loader`, and the 32-bit trampoline into long mode. |
 | [acpi-and-pci.md](x86-port/acpi-and-pci.md) | The PVH memory map, the ACPI tables as q35 reports them, the discovery seam milestone 20 (a portable HAL) promised, and why a PCI function's interrupt is MSI-X rather than the legacy pin. |
 | [interrupts-and-the-fine-map.md](x86-port/interrupts-and-the-fine-map.md) | The PIT-calibrated clock, the IO APIC and its legacy-IRQ trap, the W^X kernel page tables, and the direct map in blocks. |
+| [traps.md](x86-port/traps.md) | The IDT and its 256 stubs, the syscall ABI and why it returns by `iretq`, the vector bands, MSI, the GDT and TSS, and port grants in the TSS bitmap. |
 | [ring-3.md](x86-port/ring-3.md) | Address spaces, `swapgs`, the `syscall` pair, and the hand-assembled probe that first ran at CPL 3. |
 | [scheduler.md](x86-port/scheduler.md) | The trap-path split, `TSS.RSP0`, the self-IPI, and four places portable code was wrong for a third architecture. |
 | [user-mode-runtime.md](x86-port/user-mode-runtime.md) | The ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door that was closed, and `cntfrq()`. |
 | [userspace.md](x86-port/userspace.md) | How the archive arrives as a PVH module, the suite's skips by cause, and four latent bugs userspace found. |
 | [what-does-not-fit.md](x86-port/what-does-not-fit.md) | The four places the `arch/` seam did not stretch, the segment-base bug, the SMP counting bug, and where TSO pays out. |
+| [the-port-range-tests.md](x86-port/the-port-range-tests.md) | Why each `PortRange` test runs a ring-3 `out`, checks the core it ran on, exits rather than reports, and narrows the rights. |
+| [cpu-state.md](x86-port/cpu-state.md) | The control-register bits each core sets (PAT, SMEP, `PCE`), the port I/O gate, the boot CPU's id and the per-CPU pointer, the thread pointer, the FP and SSE unit, and the `CPUID` boot gates. |
+| [smp-bring-up.md](x86-port/smp-bring-up.md) | INIT-SIPI-SIPI, the one trampoline page every secondary shares, and the timing of the wait for each core. |
+| [kernel-page-tables.md](x86-port/kernel-page-tables.md) | The two kernel bases, what the direct map claims and in which order, the 32-bit MMIO hole and the BAR window, the user address spaces without PCID, and the MMU's BUGS. |
+| [tco-watchdog.md](x86-port/tco-watchdog.md) | The Intel TCO watchdog: the second timeout that resets the platform, the register map on ICH9 and the 200-series PCH with its sources, and its BUGS. |
 
 ## BUGS
 

@@ -16,6 +16,8 @@ not:
   handed over today.
 - [`watch`](watch.md): built, then cut, and the test it leaves behind.
 - [The `ps` crate](the-ps-crate.md): why its logic collects first, owns no buffer and joins two walks.
+- [`top`](top.md): what it ranks by, its summary and machine lines, and what it does not do.
+- [The CPU-time tests](cpu-time-tests.md): why `cpu_time_tests` compares a spinner with a sleeper.
 - [The BUGS list in full](limitations.md): the parent's BUGS section, one line per entry there.
 
 *Name: provisional, for the directory and the stems `what-is-left` and
@@ -27,6 +29,7 @@ Each stem below is named for its content, and calef names files.
 - `pgrep` Name: provisional. For the program it describes.
 - `address-space-enumeration` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `pmap-listing`.
 - `watch` Name: provisional. For the program it records.
+- `top` Name: provisional. For the program it describes.
 - `limitations` Name: provisional.
 - `remaining-procps-programs` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `what-is-left`.
 - `the-ps-crate` Name: provisional. For the crate whose doc comments link it.

@@ -2,6 +2,8 @@
 //! system, and the machine keeps it. A rollback mechanism alone reverts every good upgrade a few
 //! boots later, so one nobody has watched *not* roll back is as unproven as one nobody has watched
 //! roll back.
+
+//! # The boots
 //!
 //! | | |
 //! |---|---|
@@ -10,18 +12,19 @@
 //! | 2 | the machine picks slot 1, spends its one try, **comes up**, and says so on the disk |
 //! | 3 | the machine picks slot 1 again, on a slot with no tries left |
 //!
-//! **Boot 3 is the whole assertion**: `boot_slot::State::is_bootable` refuses `tries = 0` unless the
-//! successful bit is set, so choosing slot 1 means reading a bit boot 2 wrote, across two QEMU
-//! processes with only the disk between them. One try, not three, so priority alone cannot pass a
-//! machine whose confirmation did nothing. The upgrade is a copy of the working image, staged as
-//! `rollback` stages it.
+//! The upgrade is a copy of the working image, staged as `rollback` stages it.
+
+//! # What it asserts
 //!
-//! It asserts that boot 2 chose slot 1 and was told so (`boot_slot::cmdline`), reached a shell
-//! and read the file `mkfs` wrote (`install_service::confirm`'s criterion), and wrote `slot 1
-//! confirmed`; that boot 3 chose slot 1 without mentioning slot 0 and wrote nothing, since the
-//! write is idempotent; and that the disk, read by this gate, shows slot 1 at `tries = 0,
-//! successful = 1` with priority untouched and slot 0 as installed.
-//!
+//! Boot 3 is the whole assertion: `boot_slot::State::is_bootable` refuses `tries = 0` unless the
+//! successful bit is set, so choosing slot 1 means reading a bit boot 2 wrote, with only the disk
+//! between two QEMU processes. One try, so priority alone cannot pass a machine whose confirmation
+//! did nothing. Boot 2 must choose slot 1 and be told so (`boot_slot::cmdline`), reach a shell, read
+//! the file `mkfs` wrote (`install_service::confirm`'s criterion) and write `slot 1 confirmed`; boot
+//! 3 must choose slot 1 without mentioning slot 0 and, the write being idempotent, write nothing.
+//! The disk must then show slot 1 at `tries = 0, successful = 1`, priority untouched, slot 0 as
+//! installed.
+
 //! # BUGS
 //!
 //! - The upgrade is staged by this gate, not by nife; the format goes through the installer's

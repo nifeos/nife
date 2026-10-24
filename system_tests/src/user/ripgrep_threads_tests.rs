@@ -1,25 +1,13 @@
-//! **Unmodified `ripgrep` runs its parallel walker on more than one thread** (milestone 121 (`ripgrep` on nife), fatal
-//! risk 1's third gap; lane milestone/121-rg-threads, 2026-10-12 UTC).
+//! Unmodified `ripgrep` runs its parallel walker on more than one thread (milestone 121
+//! (`ripgrep` on nife), fatal risk 1's third gap).
 //!
 //! calef, 2026-10-12 (UTC): *"the path to green on risk 1 requires a foreign program running a
-//! second thread."* `ripgrep` asks `available_parallelism` for its thread count, and since milestone
-//! 812 (`std::thread::spawn` runs real threads in one address space) nife answers with the online
-//! core count, so `rg` takes `ignore`'s parallel walker: one worker thread per core, each walking
-//! and searching, while the main thread waits for them.
-//!
-//! These tests prove it from the kernel's side rather than by asking the program. `rg` runs as a
-//! process, built the way the progenitor builds every `std` job (its own process with `BIND`, its
-//! first thread, its space), holding the priced tree through a caretaker. When it has ended, the
-//! process's count of threads ever started ([`sched::process_threads_started`]) must be the main
-//! thread plus the workers `rg` asked for. A walk that fell back to one thread, or a spawn that
-//! failed, reads 1 and fails. And the output must be exactly the fixture's 138 match lines, each
-//! once, in whatever order the workers finished: the host's `rg` is held to the same list by
-//! `walk_pricing`'s `the_hosts_parallel_rg_prints_the_fixture_lines`, so the two agree byte for
-//! byte up to order.
-//!
-//! They skip when nobody built `rg`, like `ripgrep_tests`. CI's `rg-threads` rows build it and run
-//! these at four cores on all three architectures (`script/ci-build`).
-//!
+//! second thread."* `rg` runs as a `std` job holding the priced tree through a caretaker. When it
+//! ends, [`sched::process_threads_started`] must be the main thread plus the workers it asked for,
+//! and its output the fixture's 138 match lines, each once, in any order (the host's `rg` is held
+//! to the same list by `walk_pricing`). They skip without `rg`; CI's `rg-threads` rows run them at
+//! four cores on all three ISAs. See notes/ripgrep-on-nife.md, on threads.
+
 //! Name: provisional, lane milestone/121-rg-threads (#2016), 2026-10-12 (UTC), for the module and
 //! the file. The pull request records no other name considered.
 

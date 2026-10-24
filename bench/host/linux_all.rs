@@ -1,13 +1,13 @@
 //! Same-hardware Linux side of the primitive suite (milestone 25). Built as a static aarch64 binary
 //! and booted as PID 1 in a one-file initramfs under QEMU-HVF, so it runs on the *same* M-series core
-//! at the *same* virtualization tier as nife. It measures null syscall and IPC round trip (the
-//! same metrics as bench/host/null_syscall.rs and ipc_rtt.rs), prints them, and powers the machine
-//! off (it is PID 1: exiting would panic the kernel).
+//! at the *same* virtualization tier as nife. It measures null syscall, IPC round trip, the derived
+//! context switch, map and spawn (the metrics of the native programs beside it), prints them, and
+//! powers the machine off (it is PID 1: exiting would panic the kernel).
 //!
 //! Build static (rust-lld, no C toolchain needed) and run under QEMU-HVF:
 //!   rustc -O --target aarch64-unknown-linux-musl -C target-feature=+crt-static \
 //!         -C linker=rust-lld -C link-self-contained=yes bench/host/linux_all.rs -o /tmp/linux_init
-//!   (then pack /tmp/linux_init as /init in a newc cpio and boot it; see the driver in the session)
+//!   (then pack it as /init in a newc cpio and boot it; `sh bench/host/run_linux.sh` does all three)
 
 use std::time::Instant;
 

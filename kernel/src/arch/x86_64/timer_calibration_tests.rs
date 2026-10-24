@@ -1,42 +1,12 @@
-//! **The TSC calibration's estimator, checked where it is a decision rather than a device.**
-//!
-//! `arch::x86_64::timer` is nearly all `in8` and `out8` against the 8254, which nothing but a real
-//! boot can exercise. The one part that is neither is the rule that decides when enough windows
-//! have been timed, and it is the part that was wrong: the module shipped for months taking
-//! exactly one window and dividing by exactly ten milliseconds, which is an estimator with an
-//! unbounded one-sided error and no test could have said so, because there was no estimator to
-//! test.
-//!
-//! So these are in their own file rather than in `timer.rs`, and they come in two kinds. The
-//! **estimator** tests feed the stopping rule sequences written by hand, including the ones a real
-//! host is too polite to produce, and assert what it decides. The **boot** tests are the two
-//! assertions that need a machine: that the windows were actually timed, and that the number the
-//! rest of the kernel reads is the smallest of them.
-//!
-//! **They all run under QEMU rather than on the host**, which is not where this tree would
-//! normally put pure logic. `timer.rs` compiles only for `x86_64-unknown-none`, so an aarch64
-//! development machine's `cargo test` cannot reach the stopping rule at all without moving it into
-//! a crate, and there is no second consumer to justify one (AGENTS.md's rule 7 is about what two
-//! binaries must agree on). The marginal cost is nil because `script/test --arch x86_64` boots
-//! this kernel anyway. If the rule ever gains a second caller, it belongs in
-//! `crates/counter_frequency_contract`, which already holds `is_plausible` and is the same kind of
-//! thing.
-//!
-//! See design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md (the x86 boot
-//! calibrates the TSC once, and can be wrong by 4x) for the measured distributions that chose the
-//! cap and the tolerance.
+//! The TSC calibration's stopping rule, fed hand-written windows (`estimator`), and the two
+//! assertions that need a boot (`boot`): the windows were timed, and the stored rate is the
+//! smallest. Under QEMU because `timer.rs` builds only for `x86_64-unknown-none`; a second caller
+//! would move the rule to `crates/counter_frequency_contract`. See
+//! design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md.
 //!
 //! # BUGS
-//!
-//! - **Nothing here can prove the calibration is accurate**, only that the estimator is the one
-//!   intended. Accuracy needs an independent clock, which is `arch::x86_64::tsc_probe` behind the
-//!   off-by-default `tsc_probe` feature, and it costs thirty-five seconds of wall clock per boot,
-//!   which is why it is an instrument rather than a test. notes/tsc-under-tcg.md is its owner.
-//! - **The boot tests cannot fail on a machine that reports `CPUID` leaf 0x15**, because the
-//!   stored rate then comes from the part rather than from these windows. No machine this runs on
-//!   today does (TCG does not offer the leaf), so the skip has never been taken; it is written as
-//!   a skip rather than an assertion so that the day it is taken, the suite says so instead of
-//!   going red for the wrong reason.
+//! - These prove the estimator, not accuracy; that needs `tsc_probe` (notes/tsc-under-tcg.md).
+//! - A machine reporting `CPUID` leaf 0x15 passes the boot tests by skipping; none does under TCG.
 
 #[cfg(any(test, feature = "system_tests"))]
 mod estimator {

@@ -1,56 +1,40 @@
-//! **`mkfs`**: `mkfs` on the target (milestone 57's write half, notes/nifefs.md).
+//! `mkfs`: `mkfs` on the target (milestone 57's write half, notes/nifefs.md).
 //!
-//! The program that creates a filesystem, and the whole of its authority is two capabilities:
-//!
-//! - a **block-service endpoint** for **one** disk (`filesystem_contract::blk`), which is the power
-//!   to destroy that disk and nothing else; and
-//! - an **entropy endpoint** (`entropy_contract`), which is the power to obtain random bytes and
-//!   nothing else.
-//!
-//! **That pair is sufficient and neither half is.** A filesystem carries a unique id, and the
-//! vendored RedoxFS has no randomness in a `no_std` build, so the engine **takes the uuid as an
-//! argument**, as `create` already takes `ctime` because it has no clock (`vendor/README.md`
-//! divergence 4, `patches/redoxfs-no-std-create-uuid.patch`). The library computes, the program
-//! holds the authority, and no randomness enters vendored code. The kernel-side test runs the
-//! binary with both, with the disk alone (it writes nothing) and with entropy alone.
-//!
+//! Creates a filesystem with two capabilities and no more: a block-service endpoint for one disk
+//! (`filesystem_contract::blk`), the power to destroy that disk, and an entropy endpoint
+//! (`entropy_contract`), the power to obtain random bytes. Neither suffices alone: a filesystem
+//! carries a unique id, and the vendored RedoxFS has no `no_std` randomness, so the engine takes
+//! the uuid as an argument (`vendor/README.md` divergence 4,
+//! `patches/redoxfs-no-std-create-uuid.patch`). The kernel-side test runs it with both, with the
+//! disk alone (it writes nothing) and with entropy alone. See notes/fs-server/mkfs-on-target.md.
+
 //! # What it does
 //!
-//! 1. Reads the partition table off the disk it holds and finds the **nife data partition** by
-//!    type GUID, never by name: DECISIONS §45 (a nife partition is
+//! 1. Finds the nife data partition by type GUID, never by name: DECISIONS §45 (a nife partition is
 //!    `EC5CC08B-D749-4434-AC38-A274C50385BA`).
-//! 2. Draws sixteen random bytes, and stops if it cannot, **before the first write**, so a refusal
-//!    leaves the partition untouched.
-//! 3. Creates the filesystem **inside that partition**, through a [`PartitionDisk`] whose block
-//!    zero is the partition's first block and whose `size` is the partition's length, so the engine
+//! 2. Draws sixteen random bytes before the first write, so a refusal leaves the partition intact.
+//! 3. Creates the filesystem through a [`PartitionDisk`] bounded to the partition, so the engine
 //!    cannot address a byte outside it even by arithmetic error.
 //! 4. Reopens it through [`redoxfs_server::Server`] and writes one file, so the platter holds a
 //!    filesystem with a tree in it rather than only a header.
+
+//! # EXAMPLES
 //!
 //! ```text
-//!   wired with a disk AND an entropy endpoint:
-//!     report: R_MADE, 12288 blocks, ctime 0
-//!
-//!   wired with the disk and NO entropy endpoint:
-//!     report: R_NO_ENTROPY                      (and the partition is untouched)
-//!
-//!   wired with entropy and NO disk:
-//!     report: R_NO_DISK                         (there is nothing to write to)
+//!   wired with a disk AND an entropy endpoint:    report: R_MADE, 12288 blocks, ctime 0
+//!   wired with the disk and NO entropy endpoint:  report: R_NO_ENTROPY (partition untouched)
+//!   wired with entropy and NO disk:               report: R_NO_DISK (nothing to write to)
 //! ```
-//!
 
 //! # BUGS
 //!
-//! - **Every timestamp on the new filesystem is zero.** This program holds no clock capability, so
-//!   it passes zero rather than invent a number; adding one would blur the two-capability claim.
-//! - **It refuses a partition that is not 4096-aligned at both ends**, rather than rounding one in:
-//!   blocks straddling the partition's first byte would be readable only through the offset disk
-//!   that made them.
-//! - **No progress, no resume, and no confirmation.** It formats what it was handed, one partition
-//!   of one disk.
-//! - **The filesystem is unencrypted** (milestone 57 (partitioning and formatting a real
-//!   drive)). RedoxFS encryption needs a salt and two keys; the `no_std` creation path refuses a
-//!   password rather than silently making an unencrypted filesystem.
+//! - Every timestamp on the new filesystem is zero: it holds no clock capability, and adding one
+//!   would blur the two-capability claim.
+//! - It refuses a partition not 4096-aligned at both ends rather than rounding in: blocks
+//!   straddling its first byte would be readable only through the offset disk that made them.
+//! - No progress, no resume, and no confirmation: it formats one partition of one disk.
+//! - Unencrypted (milestone 57 (partitioning and formatting a real drive)): encryption needs a
+//!   salt and two keys, and the `no_std` path refuses a password rather than skip it silently.
 
 #![no_std]
 #![no_main]
@@ -220,11 +204,9 @@ pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
 /// somebody else needs). It is the reading that turns "the refused run reported R_NO_ENTROPY" into
 /// "the refused run left an unformatted partition".
 fn check(first_block: u64, blocks: u64) -> ! {
-    // **The signature first, because the alternative is 12,288 IPC round trips.** `FileSystem::open`
-    // scans the whole disk for a valid header (it has no way to know how big the ring is on a disk
-    // it has not opened yet), and on an unformatted partition that scan runs until a read fails at
-    // the end. Block 0 always holds generation zero's header, so its signature is a one-read answer
-    // to "is there a filesystem here at all", and it is the question this role is asked twice.
+    // The signature first: on an unformatted partition `FileSystem::open`'s header scan runs until
+    // a read fails at the end, 12,288 IPC round trips. Block 0 always holds generation zero's
+    // header, so its signature answers "is there a filesystem here" in one read.
     if blk_call(blk::READ, first_block) < 0 {
         send(REPORT, R_NO_DISK, 0, 0);
         user_mode_runtime::exit()

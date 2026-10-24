@@ -1,22 +1,13 @@
-//! **The attribute half of the recovery witness** (milestone 57): metadata written by the FS server
-//! on one side, and back on a real host file on the other.
+//! **The attribute half of the recovery witness** (milestone 57 (partitioning and formatting a real
+//! drive, and extended attributes)): metadata written by the FS server on one side, back on a real
+//! host file on the other. It answers calef's test of a backup, *if I am struggling to get the data
+//! off, the backup has failed at its job*, for the attributes a Time Machine sparsebundle keeps
+//! Apple metadata in.
 //!
-//! The claim this closes is calef's, and it is the one that decides whether the backup is credible:
-//! *if I am struggling to get the data off, the backup has failed at its job.* Before this, the
-//! attributes came out of an image as `.nife-attrs/0000002a`, a blob whose owner you had to work
-//! out by hand. A Time Machine sparsebundle carries Apple metadata in exactly those attributes, so
-//! "by hand" was the recovery story for the part of the backup a Mac needs to make sense of the rest.
-//!
-//! **Who writes the fixture matters.** It is `redoxfs_server::Server`, the sans-IO core that runs on the
-//! board, driven here over a `DiskFile`. Not a second writer in this crate: a reader and a writer in
-//! one crate can share a misunderstanding of the format and agree perfectly, which is exactly the
-//! trap `recovery.rs` avoids by importing through upstream's archiver. The store is written by the
-//! thing that will write it in the field, then a separate process reads it.
-//!
-//! **A host that cannot hold attributes is a case, not a skip.** If the destination filesystem
-//! refuses them, this test asserts that the tool *said so*, loudly and with a count, rather than
-//! reporting a clean extraction. DECISIONS §42 is the rule and this is where it is measured: the
-//! failure mode that matters is a recovery that looks complete and is not.
+//! The fixture is written by `redoxfs_server::Server`, the board's sans-IO core, never by a second
+//! writer in this crate that could share the reader's misunderstanding. A destination that cannot
+//! hold attributes is a case, not a skip: the tool must say so with a count (DECISIONS §42 (a
+//! filesystem declares what it offers and must be truthful)).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

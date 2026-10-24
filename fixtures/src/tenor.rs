@@ -5,6 +5,8 @@
 //! `alto`, as the members `bin/tenor` and `bin/alto`. Neither is named after the package, so a
 //! bare `tenor` at the prompt reaches this only if `jig install` wrote a row for each program and
 //! not one for the package. `fixtures` lists both in `packaged_only`, so no archive packs them.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! $ cd downloads
@@ -14,13 +16,13 @@
 //! tenor: one of two programs in the package duet
 //! clock: not held; slot 1 is empty
 //! ```
-//!
+
 //! # What this program holds
 //!
 //! Slot 0, its output, and nothing else: [`MANIFEST`] asks for no clock, where `alto`'s does, so
 //! the two programs of one package are endowed differently, each from its own note, and the
 //! second line each prints is the proof.
-//!
+
 //! # BUGS
 //!
 //! It proves the path, and nothing about the program.

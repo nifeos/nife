@@ -67,18 +67,10 @@ impl<'a> From<&'a Path> for Volume<'a> {
 /// A [`Disk`] that is a window onto a file: block zero is `first_block` of the file, and the disk
 /// is `blocks` long.
 ///
-/// **The window is what keeps the engine inside the partition**, by construction rather than by the
-/// engine's good behaviour: every address it computes is relative to block zero, and `size` reports
-/// the partition's length, which is what its allocator sizes itself from. An address past the end is
-/// `EIO` rather than a read of the next partition. This is `redoxfs_server/src/bin/mkfs.rs`'s
-/// `PartitionDisk` with a file underneath instead of the block-service IPC; the two are deliberately
-/// separate, because that one is `no_std` inside a `[[bin]]` on the board and this one wraps
-/// `DiskFile`.
-///
-/// A whole-file volume is the same type with `first_block: 0` and no length, which delegates `size`
-/// to the file. **That case must not be turned into a block count**: a raw device on macOS reports a
-/// length of zero (see `Volume::window`), and computing a size from it would hand the engine a
-/// zero-block disk.
+/// The window keeps the engine inside the partition by construction: its addresses are relative to
+/// block zero, `size` reports the partition's length, and an address past the end is `EIO`. A
+/// whole-file volume has `first_block: 0` and no length, and must not become a block count: a raw
+/// device on macOS reports length zero. See notes/host-recovery/the-library.md.
 pub struct PartitionDisk {
     file: DiskFile,
     /// Where the window starts, in RedoxFS blocks from the start of the file.
@@ -127,21 +119,10 @@ impl Volume<'_> {
     /// Resolve this volume to a window on the open file: `(first block, length in blocks)` in
     /// RedoxFS blocks, with `None` for "the whole file".
     ///
-    /// Three refusals here are worth naming where a reader meets them:
-    ///
-    /// - **A partition whose first byte is not on a 4096-byte boundary** is refused rather than
-    ///   rounded into. That filesystem would read back correctly only through a disk offset by the
-    ///   same fraction, which is the worst failure available; the board's `mkfs` refuses to *create*
-    ///   one for the same reason.
-    /// - **A partition that runs past the end of a regular file** is refused, because that is a
-    ///   truncated dump and half-reading one produces a corrupt recovery that looks like a real one.
-    ///   Only for a regular file: **a raw device reports a length of zero on macOS**, so the bound
-    ///   does not exist to be checked against and applying it would refuse every real disk.
-    /// - **A partition shorter than one filesystem block** is refused; there is nothing to open.
-    ///
-    /// The length is *floored* to whole blocks rather than refused, unlike creation: a partition
-    /// whose length is not a multiple of 4096 holds a filesystem that reads perfectly, plus a tail
-    /// the engine never addresses.
+    /// Refuses a partition whose first byte is off a 4096-byte boundary, one that runs past the end
+    /// of a regular file (not a raw device, which reports length zero on macOS), and one shorter
+    /// than a block. The length is floored to whole blocks. notes/host-recovery/the-library.md has
+    /// why.
     fn window(&self, file: &File, path: &Path) -> Result<(u64, Option<u64>), String> {
         let Some(selector) = self.partition else {
             return Ok((0, None));
@@ -259,18 +240,12 @@ pub(crate) fn open_ro(volume: Volume) -> Result<FileSystem<PartitionDisk>, Strin
         .map_err(|e| open_failed(path, first_block * BLOCK_SIZE, e))
 }
 
-/// Explain a failed open, and in particular explain the one failure the operational rule exists to
-/// prevent: a reader that does not match the format it is reading.
+/// Explain a failed open, and in particular a reader that does not match the format it reads.
 ///
-/// `Header::valid` checks the version before anything else, so an image written by a *different*
-/// RedoxFS presents as no valid header anywhere in the ring, and the engine's own error for that is
-/// ENOENT. "No such file or directory" for a file that is plainly there is the wrong thing to be
-/// told at 2am, so when the signature is on the disk we read the version field beside it and say so.
-/// See notes/host-recovery.md: this is the message that tells you to go and find the pin.
-///
-/// `at` is where the filesystem starts in the file, which is zero for an image and the partition's
-/// first byte for a device. Reading the version from the wrong place would answer "not a RedoxFS
-/// image" for every partitioned disk, which is the message this function exists to avoid giving.
+/// An image from a different RedoxFS fails `Header::valid`'s version check everywhere in the ring,
+/// which the engine reports as ENOENT; when the signature is there, this names the version beside
+/// it, the message that sends you to find the pin (notes/host-recovery.md). `at` is where the
+/// filesystem starts in the file: zero for an image, the partition's first byte for a device.
 pub(crate) fn open_failed(image: &Path, at: u64, err: impl std::fmt::Display) -> String {
     match on_disk_version(image, at) {
         Some(v) if v != redoxfs::VERSION => format!(

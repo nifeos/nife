@@ -123,6 +123,14 @@ generation 1` before a proposal, `synced, generation 2` after one the service ac
 endpoint is an authority `date` does not hold, which is the point: the provenance follows the page
 rather than the process.
 
+### The second stream
+
+`a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty` checks DECISIONS §67 (a
+program's second stream is a declaration, not a number) by value. A `date` with no clock and a
+diagnostic endpoint at its manifest's slot sends the complaint there and nothing to its output. The
+program differs from the one-stream case only in which endpoint it writes to. That is why the
+separation is a declaration in the manifest rather than a convention about slot numbers.
+
 ## BUGS
 
 Named here rather than in a tracker, next to the feature.

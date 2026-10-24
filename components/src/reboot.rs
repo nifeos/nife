@@ -1,11 +1,13 @@
 //! **`reboot`**: restart the machine (milestone 805 (`reboot` at the prompt), DECISIONS §251
 //! (restarting the machine is a kernel object the progenitor hands out)).
 //!
-//! The whole program is: sync the writable filesystem, say what the sync answered, then invoke
-//! the reboot object. On success the last step never returns, and the next thing on the console is
-//! the firmware.
-//!
-//! # The capability table
+//! Sync the writable filesystem, say what the sync answered, then invoke the reboot object; on
+//! success the last step never returns and the next thing on the console is the firmware. The sync
+//! is this program's own act, through a capability the file server binds sync-only, and the
+//! end-of-stream after the report is the barrier that keeps the reset from beating the report to
+//! the terminal (notes/board-reboot.md, "The `reboot` program", has both arguments).
+
+//! # Capability contract
 //!
 //! | slot | what | why it is that and not wider |
 //! |---|---|---|
@@ -13,41 +15,14 @@
 //! | 8 | the diagnostics sink, `WRITE` | where a refusal goes, so `>` cannot swallow it |
 //! | 13 | the reboot object, `WRITE` | the right to invoke it, and no `GRANT` to hand it on |
 //! | 14 | the file server, sync-only, `WRITE` | `SYNC` and nothing else; empty with no filesystem |
-//!
-//! # Why a sync-only capability
-//!
-//! §251's clause 3 says the sync comes before the reset, and the kernel does none of it. `SYNC`
-//! needs `dir::WRITE` on a handle for an ordinary client, which is also the right to open and
-//! truncate files by name. So the file server binds this program's badge sync-only
-//! (`filesystem_contract::fs::BIND_SYNC`): it answers `SYNC` and refuses every other verb, and
-//! nothing here can reach a file. calef ruled against the progenitor syncing on this program's
-//! behalf (2026-10-06 UTC, #1783), so the sync is this program's own act.
-//!
-//! # Why the report is sent twice
-//!
-//! The report goes to the shell, which forwards it to the terminal, and the reset that follows
-//! stops everything. A `SEND` on a rendezvous returns when the receiver has taken the message, not
-//! when it has printed it, so the end-of-stream after the report is the barrier: the shell takes it
-//! only once it has finished with the report. Without that the report raced the reset and lost.
-//!
 
 //! # BUGS
 //!
-//! - **A firmware that accepts the reset and hangs cannot be told from a slow one**, from inside
-//!   the machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in
-//!   reset. The kernel releases the bus before the reset (milestone 592 (radon's cold reboot dies
-//!   in OpenSBI's PMIC write)), and `reboot` typed at radon's prompt resets the board through the
-//!   AXP15060 (`bench/radon-2026-10-21/README-890.md`, #2516).
-//! - **A refusal does not exit non-zero**, because no program in this system reports an exit
-//!   status (`crates/swish`'s `Status` says so). The refusal is a sentence on the second stream,
-//!   naming which of the kernel's four reasons it was.
-//! - **The sync is not fenced against background jobs.** A write another job makes after this
-//!   program's `SYNC` is answered and before the reset lands is not covered: the window is the
-//!   report's two sends and the invoke. The shell runs `reboot` in the foreground, so this is a job
-//!   somebody started earlier and left writing. Milestone 853 (orderly shutdown closes the sync
-//!   window) owns closing it.
-//! - **Devices are not quiesced.** A DMA transfer in flight is cut off; after `SYNC` the block
-//!   servers are idle and nothing else writes to persistent storage.
+//! - A firmware that accepts the reset and hangs cannot be told from a slow one, from inside.
+//! - A refusal does not exit non-zero: no program in this system reports an exit status.
+//! - The sync is not fenced against background jobs; milestone 853 (orderly shutdown closes the
+//!   sync window) owns closing it.
+//! - Devices are not quiesced: a DMA transfer in flight is cut off.
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept: it is the Unix word, a verb
 //! that design/naming.md passes as a term of art. His answer to keeping it was "Yes".

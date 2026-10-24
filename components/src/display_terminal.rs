@@ -1,66 +1,23 @@
-//! **The display terminal** (milestone 29, the display ladder's text).
+//! The display terminal: the terminal contract's IPC half (notes/terminal-contract.md) served
+//! against a grid and a font, on a screen it does not own (milestone 29 (a display terminal)).
 //!
-//! The component that makes the framebuffer readable: it serves the terminal contract's IPC half
-//! (notes/terminal-contract.md) against a **grid and a font** instead of a serial line, and puts the
-//! result on a screen it does not own.
-//!
-//! ```text
-//!   application ──OPERATION_WRITE──►┌──────────────────┐──glyphs──► its surface ──FLUSH/COMMIT──► a screen
-//!   keystrokes ──OPERATION_BYTES───►│ display_terminal │
-//!                                   └──────────────────┘
-//! ```
-//!
-//! # It is a client, twice over, and that is the whole point
-//!
-//! The same binary runs in two wirings, chosen by `arg0`, and neither of them holds a device:
-//!
-//! - [`MODE_DISPLAY`]: it holds rung one's **display endpoint** and the
-//!   scanout frames, exactly the authority `painter` had, and shows text on the whole screen. This
-//!   is the wiring that answers "did the framebuffer contract need to change for text?" The answer
-//!   is no: it draws pixels and calls `FLUSH` with a damage rectangle, which is what the contract
-//!   already said a client does.
-//! - [`MODE_WINDOW`]: it holds rung two's **doorbell** and one window's
-//!   control page and surface, exactly the authority `window` had, and shows text in a window
-//!   among mutually distrusting neighbours.
-//!
-//! In both, its whole world is: a report endpoint, one endpoint to present through, **one endpoint
-//! it serves** (slot 2), a page an application writes text into, and its own pixels. No device, no
-//! interrupt, no DMA authority, no physical address, and no way to name another client's anything.
-//!
-//! # Under a supervisor, it can be replaced live
-//!
-//! Started with a control endpoint (`video_terminal::component::CONTROL`), it answers
-//! `OPERATION_QUIESCE`, writes its whole `Vt` into the handoff run its supervisor sends, and quits
-//! or resumes on the supervisor's word. Started with `START_ABSORB`, it reads such a blob before
-//! its first paint. `video_terminal::component` has the exchange, and milestone 23 (a
-//! capability-routed component OS with live replacement) the rulings behind it.
-//!
+//! One binary, two wirings chosen by `arg0`, neither holding a device: [`MODE_DISPLAY`] holds rung
+//! one's display endpoint and the scanout (`painter`'s authority) and presents with `FLUSH`;
+//! [`MODE_WINDOW`] holds rung two's doorbell and one window's control page and surface (`window`'s).
+//! Its whole world is a report endpoint, one to present through, the one it serves (slot 2), an
+//! application's output page and its own pixels: no device, interrupt, DMA authority, physical
+//! address, or way to name another client's anything. With a control endpoint it can be replaced
+//! live, by `video_terminal::component`'s `OPERATION_QUIESCE`/`START_ABSORB` exchange, and it takes
+//! the quiesce only on its supervisor's `line_editor::proto::SUPERVISOR_BADGE` copy.
 
-//! # One endpoint, because this process has one wait point
+//! # One endpoint, and why input does not ring the doorbell
 //!
-//! A terminal has two classes of sender: an application printing, and an input source typing.
-//! DECISIONS §33 (the compositor's authority is memory, not messages) recorded that a process here has exactly **one blocking wait point** (one `RECEIVE`,
-//! no wait-any, and two threads cannot share an address space), so distinguishing them by endpoint
-//! is not available. They arrive on **one** endpoint and are distinguished by opcode, which is what
-//! `line_editor` already does for the serial terminal, and the security consequence is stated rather than
-//! hidden: an application holding this endpoint could send `OPERATION_BYTES` and forge a keystroke into its
-//! own terminal. It gains nothing by it (the keystrokes come back to the same grid it is already
-//! printing on), and the boundary that matters, one client's input not reaching another's, is the
-//! compositor's and is a capability there. See notes/glyphs.md.
-//!
-//! # Why input does not ring the doorbell, and the deadlock that taught us
-//!
-//! In [`MODE_WINDOW`] the compositor delivers a keystroke by **`CALL`ing this process** and blocking
-//! until it replies (DECISIONS §33). So a terminal that answered a keystroke by ringing the doorbell
-//! would deadlock the moment two keystrokes arrived in one drain: the compositor would be blocked in
-//! its `CALL` to us while we were blocked in our `CALL` to it.
-//!
-//! It does not need to. The compositor rescans **every** client's control page on every `COMMIT`
-//! from anyone, and the input source rings `COMMIT` itself after it fills the ring. So the frame
-//! that delivers the keystroke is the frame that will show it: this process paints, records its
-//! damage, bumps its sequence, and replies. Application output is different (nobody else is going to
-//! ring for it), so `OPERATION_WRITE` does ring, and that is safe because the caller blocked in `CALL` is
-//! the *application*, not the compositor.
+//! With one wait point (§33 (the compositor's authority is memory, not messages)), output and
+//! keystrokes share the served endpoint, told apart by opcode; an application holding it can forge
+//! a keystroke into its own terminal and gains nothing. In [`MODE_WINDOW`] the compositor delivers
+//! a keystroke by `CALL`ing this process, so ringing the doorbell in answer would deadlock; the
+//! input source's own `COMMIT` shows it. `OPERATION_WRITE` does ring, since its blocked caller is
+//! the application. See notes/glyphs/terminal-and-proof.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `vterm`. Refused `vterm` (an
 //! abbreviation), `text_console` (`console` is already a program) and `video_terminal` for the
@@ -98,10 +55,8 @@ const BUDGET: u64 = component::BUDGET;
 /// (DECISIONS §102), then one more slot for [`OUT_VA`]'s page. **[`MODE_DISPLAY`] only**
 /// (milestone 108).
 ///
-/// The two wirings do not agree about this yet, and the asymmetry is deliberate rather than
-/// overlooked: milestone 108 migrated the disk and display paths, and rung two's compositor is not
-/// one of them. In [`MODE_WINDOW`] the surface, the output page and the control page still arrive as
-/// spawn-time mappings from `compositor_service`, which is why the `MAP` calls below are inside the
+/// In [`MODE_WINDOW`] the surface, the output page and the control page arrive as spawn-time
+/// mappings from `compositor_service` instead, which is why the `MAP` calls below are inside the
 /// `MODE_DISPLAY` arm.
 const SURFACE_FRAME: u64 = component::SURFACE;
 const OUT_PAGE_FRAME: u64 = component::OUT;
@@ -110,13 +65,11 @@ const _: () = assert!(OUT_PAGE_FRAME == SURFACE_FRAME + 1);
 /// Where the scanout goes. In [`MODE_DISPLAY`] this process holds the frames and picks the address;
 /// in [`MODE_WINDOW`] the compositor's wiring maps it here.
 ///
-/// **`OUT_VA`/`CTL_VA` moved past it** (milestone 142, DECISIONS §102): the scanout grew from 8
-/// page frames to 900 (up to 4 MiB from `SURFACE_VA`), so the old `OUT_VA` (`0x68_0000`, inside
-/// that span's old 512 KiB neighbourhood) would now be inside the middle of
-/// [`MODE_DISPLAY`]'s own surface mapping, and its `PageFrame::MAP` would refuse it as
-/// already-mapped. Both moved well clear; `SURFACE_VA`'s own 2 MiB alignment is unchanged and is
-/// what keeps a run this large inside as few page-table windows as possible
-/// (`display_service::MAP_BUDGET_PAGES`'s own comment has the arithmetic).
+/// The scanout run is up to 900 page frames (4 MiB from `SURFACE_VA`, DECISIONS §102 (a Frame
+/// names a run of pages)), so
+/// `OUT_VA` and `CTL_VA` sit clear of it; one inside it would be refused by `PageFrame::MAP` as
+/// already mapped. The 2 MiB alignment keeps the run in as few page-table windows as possible
+/// (`display_service::MAP_BUDGET_PAGES`'s comment has the arithmetic).
 const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 /// The page an application writes the bytes of an `OPERATION_WRITE` into. The terminal contract's
 /// "control by message, bulk by shared page" split (DECISIONS §10 (process model: capability-based, microkernel. Untyped memory deferred.)), the same one `filesystem_contract` makes.
@@ -137,8 +90,8 @@ const E_SURFACE: u64 = 0x07;
 /// **The grid lives in a `static`, not on the stack.** A user process here gets one 4 KiB page of
 /// stack (`kernel/src/user.rs`, `USER_STACK_VA`), and a `Vt` is hundreds of KiB.
 /// `video_terminal::Vt::new` is `const` precisely so this can be a `static`. It is `.data`, not
-/// `.bss`: a blank cell is not zero bytes, so the grid's 177 pages are in the image file
-/// (measured 2026-10-19 (UTC): a 900 KB image).
+/// `.bss`: a blank cell is not zero bytes, so the grid's 177 pages are in the image file (a 900 KB
+/// image, measured 2026-10-19 UTC).
 static mut TERMINAL: video_terminal::Vt = video_terminal::Vt::new(1, 1);
 
 /// The one terminal this process owns.
@@ -208,15 +161,12 @@ fn paint(
 /// **Move the picture up `px` pixel rows without rendering anything**: the pixel half of a scroll
 /// (`video_terminal::Damage`'s invariant).
 ///
-/// Every unchanged row of a scrolled screen is pixels this process already holds, so re-rendering
-/// them through `Vt::pixel` (a divide, a cell fetch, a glyph lookup and a blend per pixel, times
-/// 698,880 pixels on the 1120x624 scanout) buys nothing, and under TCG, where the `x86_64` swish leg
-/// pays ~3.5x per store, it would be most of that leg's time (`notes/benchmarks/icount-tick-scales.md`).
-/// A move of bytes the surface already contains is the whole work, and
-/// [`MappedWindow::copy_within`] does it as one bounds-checked move rather than a checked volatile
-/// access per word, which at opt-level 0 under TCG costs about 250 ms a scroll on riscv64. When rows are
-/// packed (`w * 4 == stride`, the full scanout) the moved rows are one block; a window narrower
-/// than its stride moves row by row.
+/// Re-rendering unchanged rows through `Vt::pixel` (a divide, a cell fetch, a glyph lookup and a
+/// blend for each of the 1120x624 scanout's 698,880 pixels, at ~3.5x per store under TCG) would be
+/// most of the `x86_64` swish leg's time (`notes/benchmarks/icount-tick-scales.md`). So this moves
+/// the bytes with one bounds-checked [`MappedWindow::copy_within`], not a checked access per word
+/// (about 250 ms a scroll on riscv64 at opt-level 0). Packed rows (`w * 4 == stride`) move as one
+/// block; a window narrower than its stride moves row by row.
 fn scroll_surface(surface: &MappedWindow, stride: u32, w: u32, h: u32, px: u32) {
     let (stride, row, moved) = (stride as u64, w as u64 * 4, (h - px) as u64);
     let from = px as u64 * stride;
@@ -255,17 +205,10 @@ struct Wiring {
 impl Wiring {
     /// **Put whatever changed on the screen.**
     ///
-    /// The two wirings are two sentences at the same seam. `MODE_DISPLAY` calls rung one's
-    /// `FLUSH(rect)` on the display endpoint, which is the request `painter` made and the driver has
-    /// honoured since rung one; `MODE_WINDOW` writes the rectangle into its own control page, bumps
-    /// its sequence, and rings `COMMIT`, which is the request `window` made. Neither contract needed
-    /// a change to carry text, because both carry pixels.
-    ///
-    /// **A scroll moves pixels instead of rendering them** (the paint lane, 2026-09-30). The
-    /// engine's damage carries how many rows scrolled; [`scroll_surface`] shifts the rows this
-    /// process already painted and only the reported rectangle is rendered. The rectangle handed
-    /// onward (`FLUSH`, the control page) is then the whole surface, because on the screen every
-    /// row did change: it moved.
+    /// `MODE_DISPLAY` calls rung one's `FLUSH(rect)` on the display endpoint; `MODE_WINDOW` writes
+    /// the rectangle into its control page, bumps its sequence, and rings `COMMIT`. A scroll moves
+    /// pixels with [`scroll_surface`] and renders only the reported rectangle, then hands onward
+    /// the whole surface, because every row on the screen moved.
     ///
     /// `ring` is false for a keystroke: see the module note on the deadlock.
     fn present(&mut self, ring: bool) {
@@ -276,14 +219,9 @@ impl Wiring {
         // vocabulary: the compositor re-scans whatever rectangle is named, and after a move that
         // rectangle has to be everything.
         let cells = damage.repaint_rect(term().cols(), term().rows());
-        // **The first frame paints the whole surface, not just the grid.**
-        //
-        // A 7-pixel cell does not divide a 128-pixel scanout, so a full-width terminal is 18
-        // columns of 7 and two pixels wide of nothing. `Vt::pixel` answers for those two (a cell
-        // outside the grid is a blank on the default background, which is what makes the picture a
-        // total function), but no cell ever *damages* them, so without this they would keep
-        // whatever the frame held at boot: a strip of noise beside the text that looks like a
-        // rendering bug for a day. The grid can never write there afterwards, so once is enough.
+        // **The first frame paints the whole surface, not just the grid.** Pixels outside every
+        // cell (two columns of them on a 128-pixel scanout) are never damaged, so they would keep
+        // whatever the frame held at boot. The grid never writes there, so once is enough.
         let (x, y, w, h) = if !self.painted_all {
             self.painted_all = true;
             paint(
@@ -622,6 +560,17 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
         let (w0, w1) = (req.w0, req.w1);
         let reply_slot = req.delivered.into_reply();
         let mut r0: u64 = 0;
+        // The supervisor's badge carries a quiesce and nothing else, and nothing else carries a
+        // quiesce (`proto::SUPERVISOR_BADGE`): a quiesce from an application would stop this
+        // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
+        // served as unbadged.
+        let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
+        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
+            }
+            continue;
+        }
         match proto::operation(w0) {
             // The application half: print `len` bytes from the shared output page. The terminal
             // performs no newline translation, deliberately: `line_editor::expand_output` already put

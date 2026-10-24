@@ -113,15 +113,15 @@ Everything about the card, the console and U-Boot is `notes/bench-runbook.md`'s,
 
 - `lsof /dev/cu.*`: one capture per serial port. Two split the byte stream silently, which cost a
   boot on 2026-09-16 (`notes/bench-runbook.md`'s `BUGS`).
-- `pgrep -l qemu` on patagonia is irrelevant to radon's numbers, but a busy TFTP server is not:
-  leave the host alone while a boot fetches.
+- `pgrep -l qemu` on the serving Mac is irrelevant to radon's numbers, but a busy TFTP server is
+  not: leave the host alone while a boot fetches.
 
 ### 1. Build the image once, from a commit that has this page's 2026-09-19 section
 
 ```sh
 git log -1 --format=%h                  # write this down; it goes in the Results row
 script/board-image --job-mix --tftp     # network boot, the 2026-09-16 workflow (milestone 257)
-# or, with the card in patagonia:
+# or, with the card mounted on this machine:
 script/board-image --job-mix --card /Volumes/NIFE
 ```
 
@@ -141,10 +141,10 @@ SEALED` falsely.
 script/board-console --for 30m --until none --log bench/radon-$(date -u +%F)/jobmix-boot1.log
 ```
 
-115200 8N1, a WCH CH343 at `/dev/cu.usbmodem*` on patagonia. `--until none` because this run ends by
-halting rather than by reaching a stage the console recognises (milestone 324): read the log for
-`job-mix: done`. The timed windows of the seven-job sweep sum to about 12 seconds on radon
-(2026-10-04), so most of a boot is U-Boot and the fetch.
+115200 8N1, a WCH CH343 at `/dev/cu.usbmodem*` on the Mac radon's UART goes into. `--until none`
+because this run ends by halting rather than by reaching a stage the console recognises (milestone
+324): read the log for `job-mix: done`. The timed windows of the seven-job sweep sum to about 12
+seconds on radon (2026-10-04), so most of a boot is U-Boot and the fetch.
 
 ### 3. Check the boot is the new instrument before reading any number
 

@@ -1,5 +1,7 @@
 # The six questions, answered for this fork
 
+*Name: provisional. After the parent's "The six questions". calef names files.*
+
 An appendix of [reviewing the work of one model](../model-attribution-review.md). The parent keeps a
 one-line answer to each; this file keeps the answers whole. "Finding 6" is in
 [reconnaissance.md](reconnaissance.md), and "above" means the parent.

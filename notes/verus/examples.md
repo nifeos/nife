@@ -1,5 +1,7 @@
 # Verus: the examples, runnable
 
+*Name: provisional, for the parent's EXAMPLES section.*
+
 An appendix to [`../verus.md`](../verus.md), holding its EXAMPLES. Every command here was run on
 this Mac on 2026-09-20.
 

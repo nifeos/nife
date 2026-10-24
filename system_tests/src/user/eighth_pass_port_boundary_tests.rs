@@ -1,29 +1,13 @@
 //! **The port range's read side, its revocation's precision, and a duplicated holder** (an eighth
 //! outsider pass at the confinement claim, claims 27, 28, 29 and 33).
 //!
-//! The cited tests drive a non-holder's `out`, a revoked holder's `out`, a self-deleting holder's
-//! `out`, and a READ-only holder's `out`. This module attacks the sides those leave:
-//!
-//! - **The read side** (claims 27 and 33): a non-holder's `in` must fault like its `out` did, and
-//!   after a holder transmits, a non-holder's `in` must still fault, the leak check's read half.
-//!   A READ-only capability stops port I/O at the first instruction, the `in` itself: the TSS
-//!   bitmap cannot split reads from writes, so without WRITE nothing is installed and the claim's
-//!   "no output" is held the stronger way, no I/O at all. A full-rights holder running the same
-//!   stub exits cleanly, the control that proves the refusals were the rights gate.
-//! - **Revocation precision** (claim 28): revoking a *sub-range* of what a holder holds must
-//!   revoke it; revoking a range the holder does not hold at all must leave its `out` working.
-//!   Under-revocation passes the first and over-revocation fails the second.
-//! - **A duplicated holder** (claim 29): a child holding one port range in two capability slots
-//!   deletes one slot and its `out` must still be permitted; deleting both must revoke it. The
-//!   single-slot cited test cannot see a revoke that sweeps by object (both slots) where it should
-//!   sweep by slot, or vice versa.
-//!
-//! Every child exits or faults promptly (the `EXIT`-tailed stubs), so a wrongly permitted port
-//! turns the run red as `EVENT_EXIT` where `EVENT_FAULT` was asserted, never as a hang. Parked
-//! children park on a wake endpoint of their own, so no child ever competes with the supervision
-//! endpoint the deaths arrive on. `x86_64` only, because port I/O is (DECISIONS §121 (what a
+//! Beyond the cited non-holder, revoked, self-deleting and READ-only `out` tests: a non-holder's
+//! `in` (claims 27, 33), a revoke of a held range against one of an unheld range (claim 28), and a
+//! range held in two slots (claim 29). Every child exits or faults promptly, so a wrong permit is
+//! red as `EVENT_EXIT`, never a hang. `x86_64` only, because port I/O is (DECISIONS §121 (what a
 //! device capability is when the device has no page: x86 port I/O), milestone 299 (the x86
-//! port-range capability: the serial console becomes a userspace driver)).
+//! port-range capability: the serial console becomes a userspace driver)). See
+//! notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::supervision_tests::{CODE_VA, build_child_with};
 use super::x86_programs;
@@ -84,16 +68,13 @@ fn reap(region: u64) {
     );
 }
 
-/// **A non-holder's `in` faults, a READ-only holder reads but may not write, and a leak of the
+/// **A non-holder's `in` faults, a READ-only holder may not write (or read), and a leak of the
 /// holder's grant would show as a non-holder's clean exit.**
 ///
-/// A holder transmits first (`EVENT_EXIT`), so its grant was genuinely installed in some core's
-/// TSS bitmap. Then non-holder children run `in` against the same port and each must take its
-/// general-protection fault at the `in` instruction itself: a bitmap left behind by the holder's
-/// run would carry the non-holder through to a clean exit instead. Last, the READ-only holder: its
-/// `in` succeeds and its immediately following `out` faults, with the faulting pc naming the `out`
-/// as the instruction that was refused, which is what makes the read's success observable rather
-/// than assumed.
+/// A holder transmits first, so its grant was installed in some core's TSS bitmap; each
+/// non-holder's `in` must then fault at the `in` itself, where a leftover bitmap would let it exit
+/// cleanly. The READ-only holder faults at its first instruction, the `in`, since the bitmap cannot
+/// split reads from writes. A full-rights holder running the same stub is the control.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -189,20 +170,11 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
 
 /// **Revoking a holder's own range revokes it; revoking a range nobody held revokes nothing.**
 ///
-/// Two holders of the whole COM1 range, each parked in `RECEIVE` on its own wake endpoint so the
-/// test chooses the instant to revoke. The first wakes after its exact range was revoked: its
-/// `out` must fault. The second wakes after an entirely different range was revoked (one no child
-/// holds): its `out` must still be permitted, which is the over-revocation check; a sweep that
-/// matched too widely would stop it.
-///
-/// **A sub-range revoke is not a leg, and the reason is worth recording.** The sweep matches by
-/// exact `(base, count)`, so `revoke_port_range(base, 2)` leaves a holder of `(base, 8)` alone:
-/// observed, during this pass, as a clean exit where the fault was asserted. It is not reachable
-/// from the boundary, because `PortRange::REVOKE` takes its range from the capability itself and
-/// no syscall can name a narrower one, and the frame sweep's overlap matching
-/// (`delete_page_frame_caps_overlapping`) is the deliberate contrast. It is recorded in this
-/// pass's results as a near miss: one design change away from an escape if a sub-range revoke ever
-/// becomes expressible.
+/// Two holders of the whole COM1 range park on their own wake endpoints, so the test picks the
+/// instant. The first wakes after its exact range is revoked and its `out` must fault; the second
+/// wakes after an unheld range is revoked and its `out` must still work. A sub-range revoke is no
+/// leg: the sweep matches exact `(base, count)` and no syscall can name a narrower range (near
+/// miss 1 of notes/confinement-outsider-pass-8.md).
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -265,18 +237,10 @@ fn a_revoked_range_stops_its_holder_and_an_unrelated_revoke_stops_no_one() {
 /// **A child holding one range in two slots loses the port when one slot is deleted, though the
 /// twin survives; deleting both loses it too.**
 ///
-/// **The first leg is a characterization of a near miss this pass found, asserted as the tree
-/// behaves so a fix turns it red.** Deleting one of two identical `PortRange` capabilities clears
-/// the thread's cached TSS grant wholesale, so the surviving capability's `out` faults even though
-/// the table still holds it with every right: claim 5's "dropping one capability does not disturb
-/// the others" fails at this corner, in the fails-closed direction. No confinement is breached
-/// (nothing was reached that was not granted; authority was lost, not gained), so this records the
-/// gap rather than blocking the pass. The cached grant is one field the context switch reads; a
-/// delete that checked whether another capability still named the range would leave the twin
-/// working, and would flip this assertion.
-///
-/// The second leg is the claim's: after deleting both slots the `out` faults on the `out`
-/// instruction itself, the duplicated form of the cited single-slot test.
+/// The first leg characterizes near miss 2 of the eighth pass, asserted as the tree behaves so a
+/// fix turns it red: deleting one twin clears the thread's cached TSS grant, so the survivor's
+/// `out` faults. That fails closed, at claim 5's corner (`sched::delete_current_cap`'s `BUGS`).
+/// The second leg is the claim's: with both deleted, the `out` faults at the `out` itself.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

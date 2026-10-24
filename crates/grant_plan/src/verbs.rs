@@ -100,10 +100,10 @@ pub const MAX_VERB: usize = 16;
 /// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted
 /// by their bytes, which `capability_manifest_note`'s record requires. Each holds the least it
 /// needs: `update` and `install` reach the index over TLS, so they take the network, the clock and
-/// entropy; `install` also takes the installer and the catalog, to resolve a name and check what
-/// arrives, and `update` writes the index store. `list` reads the catalog and the store, and
-/// `list -u` (calef, 2026-10-17 UTC) only the activation directory, since it compares what is
-/// installed with the index copy beneath it.
+/// entropy; `install` also takes the installer, the catalog (to resolve a name and check what
+/// arrives) and reads the index store, and `update` writes it. `remove` and `rollback` hold the
+/// installer alone. `list` reads the catalog and the store, and `list -u` (calef, 2026-10-17 UTC)
+/// only the activation directory, comparing what is installed with the index copy beneath it.
 pub(crate) const JIG_VERBS: &[VerbGrant] = &[
     VerbGrant {
         verb: "install",

@@ -1,5 +1,7 @@
 # Booting over the network, in detail
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), which keeps the two commands. This file
 holds the design of the TFTP path from milestone 257 (boot radon over the network) and the measurements behind it.
 
@@ -47,6 +49,24 @@ StarFive # setenv nife_boot_server 192.168.8.42
 StarFive # source ${scriptaddr}
 ```
 
+## The script's shape, and its two settings
+
+The network-first script is the dullest shape that can express a fallback: one state variable, `if
+cmd; then` and `fi`, nesting never deeper than two, and no `else`. U-Boot's parser is a cut-down
+hush, and nobody has watched this script run on the board. A chain of guards costs a few more lines
+than nested branches and puts fewer parser features between the card and a board that boots. A host
+test holds the shape; another runs the script under `/bin/sh` with the U-Boot verbs stubbed, which
+proves the control flow but not that hush accepts it.
+
+`autoload no` is required because bare `dhcp` in U-Boot means "get an address and TFTP the bootfile
+the DHCP server names". On a home network that server is the router. Without the setting, radon
+fetched from the router on 2026-09-05, reported `TFTP server died`, and `dhcp` returned failure. The
+whole network branch was skipped and the card fallback fired, so a bug looked like a clean fallback.
+No host test could catch it, because every test stubs `dhcp`.
+
+`netretry no` makes a missing network fail in seconds instead of retrying while nobody is watching.
+That is the difference between a fallback and a hang.
+
 ## It reads interfaces, not the routing table
 
 Not a connected UDP socket whose local address the kernel picks from the route, because the default
@@ -80,5 +100,5 @@ already handing out leases. A second DHCP server on it is an outage for everyone
 stays right. A tool that cannot speak DHCP at all cannot get that wrong.
 
 python3 is also already what ten `script/` entry points are written in. So this asks nothing new of
-anybody's machine, while `brew install dnsmasq` does. Port 69 binds without root on patagonia
+anybody's machine, while `brew install dnsmasq` does. Port 69 binds without root on macOS
 (checked 2026-09-04, rechecked 2026-09-05), so there is no `sudo` in the runbook.

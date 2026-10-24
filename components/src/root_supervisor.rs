@@ -1,32 +1,12 @@
 //! **The root supervisor: a first process that gives its authority away** (milestone 22 phase B.2).
 //!
-//! The progenitor is the unverified component that builds every other process, and phase B.1 closed the
-//! question of *what bytes it is*. This closes the other half: **what a broken one can still do.**
-//!
-//! The pre-B.2 first process (`system_initializer`, `hello`'s init role) holds a large untyped budget for its entire life,
-//! because it stays the system's process builder. Every process in the system is therefore one bug in
-//! the progenitor away from being built wrong. This program instead holds full construction authority for
-//! exactly as long as it takes to build two servers, and then **deletes it**:
-//!
-//! ```text
-//!   root_supervisor   root untyped + the initial ramdisk + a report endpoint      (briefly)
-//!     |
-//!     +-- spawner   one program image, one budget, no initial ramdisk (can build only that program)
-//!     |
-//!     +-- sub_server_supervisor    a request channel + a fault endpoint         (holds NO memory at all)
-//!             |
-//!             +-- first_attempt_crasher   a report endpoint      (the supervised sub-server)
-//!
-//!   then: root_supervisor deletes its untyped and becomes a RECEIVE loop on its own supervision endpoint.
-//! ```
-//!
-//! After the handoff `root_supervisor` cannot build a process, cannot endow anyone with memory, and cannot
-//! reach the sub-servers' internals. What is left of it is a supervisor so small it essentially
-//! cannot fail: receive a death, report it, stop. A compromised `root_supervisor` at that point can lie about
-//! deaths on one endpoint. That is the entire blast radius.
-//!
-//! The restart policy is `sub_server_supervisor`'s, in userspace, and the kernel never relaunches anything
-//! (DECISIONS §26). See notes/trusted-init.md and notes/supervision.md.
+//! It holds full construction authority exactly as long as it takes to build two servers, a
+//! `spawner` that can build only one program image and a `sub_server_supervisor` that holds no
+//! memory, then **deletes it** and becomes a `RECEIVE` loop on its own supervision endpoint. After
+//! that it cannot build a process, endow anyone with memory, or reach the sub-servers' internals: a
+//! compromised `root_supervisor` can lie about deaths on one endpoint, and that is the entire blast
+//! radius. The restart policy is `sub_server_supervisor`'s; the kernel never relaunches anything
+//! (DECISIONS §26 (the fault endpoint)). notes/trusted-init/supervision-tree.md draws the tree.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `rootsup`. Refused `rootsup` and
 //! `root_sup` (`sup` was the abbreviation, so putting a separator in it would have relocated the

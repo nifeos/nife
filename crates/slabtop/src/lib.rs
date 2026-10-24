@@ -1,19 +1,14 @@
 //! **`slabtop`: where this prompt's job budget went, by kind of kernel object** (milestone 126 (the `procps` package),
 //! DECISIONS §225 (`free` sees the machine and your share)).
 //!
-//! Upstream `slabtop` ranks the kernel's slab caches by the memory each holds. This kernel has no
-//! slab: milestone 14 (kernel objects from untyped) removed its heap, and a kernel object is carved
-//! from a region its holder owns. So the question §225 kept is the same one asked of a budget
-//! instead of a kernel: of the pages this prompt's jobs have spent, how many went to threads, to
-//! address spaces, to rendezvous objects, and to plain frames. The figures are
-//! `MemoryRegion::USAGE` on a view of the budget narrowed to `ENUMERATE`, summed by the kernel over
-//! every job region carved from it.
-//!
-//! The program's logic lives here so it runs on the host; `components/src/slabtop.rs` asks the
-//! kernel seven questions and writes this.
-//!
+//! This kernel has no slab (milestone 14 (kernel objects from untyped) removed its heap), so the
+//! question upstream `slabtop` asks of slab caches is asked of a budget: of the pages this prompt's
+//! jobs have spent, how many went to threads, address spaces, rendezvous objects and plain frames.
+//! The figures are `MemoryRegion::USAGE` on a view of the budget narrowed to `ENUMERATE`, summed by
+//! the kernel over every job region carved from it. The logic lives here so it runs on the host;
+//! `components/src/slabtop.rs` asks the kernel seven questions and writes this.
+
 //! # EXAMPLES
-//!
 //! ```text
 //! $ slabtop
 //! job budget: 80 of 512 pages spent
@@ -23,12 +18,11 @@
 //!        4       16  address spaces
 //!        2        8  rendezvous
 //! ```
-//!
+
 //! # BUGS
 //!
-//! - The counts say where pages went, not what is alive: a region's pages are spent until the
-//!   region is reclaimed, so a job that ended and was reaped leaves nothing, and a thread that died
-//!   inside a live job still counts.
+//! - The counts say where pages went, not what is alive: a region's pages are spent until it is
+//!   reclaimed, so a reaped job leaves nothing and a thread that died in a live job still counts.
 //! - It does not refresh, for `vmstat`'s reason (milestone 106 (a wait that ends on either the interrupt or the deadline)).
 //! - It counts `slabtop` itself, which is one of the jobs.
 //! - The breakdown need not sum to the pages spent: a job region's unspent pages are spent from the

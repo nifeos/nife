@@ -79,9 +79,25 @@ typo would produce. The audit trail does not help, since it only records a succe
 Distinguishing the two would need a deliberately-weaker operator-facing channel than the login
 result, real work this slice did not build.
 
-## Reclaiming a session: the design argument
+### Provisioning an identity: the subtree first
 
-Moved here 2026-10-09 from the module doc; the resolved history is in git.
+`identity_provisioner` is `useradd` one level down. Whoever holds the credential service's provision
+endpoint (before its seal) and `WRITE` on the principal tree may run it. It authenticates no caller,
+like the provision endpoint itself. How an operator comes to
+hold those two capabilities is the boot-wiring question `login.rs`'s BUGS name.
+
+It makes two calls to two servers with no cross-server commit, so their order decides what a
+failure leaves behind. The `MKDIR` of the home subtree goes first. If it fails, nothing was stored
+and the caller retries. If the `PUT` then fails (`credential_contract::FULL`, `NO_ENTROPY`, or a
+duplicate identity), the result is an orphaned, empty subtree with no identity. That is inert, and
+re-running recovers it. The other order risks a credential that verifies for an identity with no
+home. So `MKDIR`'s `EEXIST` means "already created, proceed", exactly the state a failed run
+leaves, and any other `MKDIR` failure stops before the store is touched.
+
+It never sends `SEAL`: sealing ends provisioning for the whole store, the caller's decision once
+every identity is in. It does not deprovision.
+
+## Reclaiming a session: the design argument
 
 A successful login delegates four (or five, with the terminal) capabilities, and the fourth is
 the client's **logout ticket**. It is `mint`'s own construction region, undropped and narrowed
@@ -96,7 +112,7 @@ Two candidate shapes for giving this memory back were refused before the ticket 
 recorded with their reasons in the appendix: a supervision endpoint reaching back into this
 process, and a caretaker `DESTROY`ed by name. The first is the durable-session machinery milestone
 152 is scoped to design in general. The second needed a name for the caretaker's region this
-process does not keep. The ticket needed neither a session nor new supervision plumbing. The
+process does not keep. The
 caretaker's own construction region is the only thing that ever needed tearing down, and its builder
 can hand the means directly to the one party who should hold it.
 
@@ -242,6 +258,11 @@ Guest tests (`kernel::user::login_tests`, both aarch64 and riscv64):
 - The caretaker measurement matches the real table and a tampered one would be refused
   (`logins_caretaker_measurement_matches_the_real_table_and_a_tampered_one_would_be_refused`).
 
+## The appendix
+
+[login/budgets-and-reclamation.md](login/budgets-and-reclamation.md) has the start-up budgets, full
+reclamation, the capability-table ordering and their measurements.
+
 ## The kernel's test harness
 
 `kernel/src/user/login_service.rs` starts `login` for the guest tests, and it starts it the way
@@ -281,7 +302,7 @@ rather than repeats. The living items:
 - the 16-byte subtree-name bound;
 - the measured-boot decision this program spells itself;
 - the audit trail proving establishment rather than per-request attribution;
-- not being wired into the interactive boot.
+- a session that never sends `LOGOUT` holding the terminal until restart.
 
 Summarized in
 [design/roadmap/0049-users-and-attribution.md](../design/roadmap/0049-users-and-attribution.md)'s own BUGS.

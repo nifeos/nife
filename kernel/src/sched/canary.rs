@@ -89,23 +89,15 @@ pub(crate) fn divergences() -> u64 {
     DIVERGED.load(Ordering::Relaxed)
 }
 
-/// Re-read every watched byte against the shadow; print and absorb what changed. Called from
-/// the timer tick (IRQ context, interrupts masked) and from the test. Single-flight, so a
-/// slow check on one core and the next tick on another cannot interleave shadow updates.
+/// Re-read every watched byte against the shadow; print and absorb what changed. Single-flight, so
+/// passes on two cores cannot interleave shadow updates.
 ///
-/// Split in two so the disarmed tick costs no stack. A debug-build prologue reserves the
-/// WHOLE frame before the first instruction of the body runs, early return included, and the
-/// one-piece spelling of this function carried a 592-byte frame onto the interrupted thread's
-/// stack on every tick of every thread, disarmed or not. That frame was one of the middle
-/// frames of the 2026-08-15 thread-stack overflow (thread.rs, `STACK_PAGES`); the tick path
-/// pays ~16 bytes now, and only an armed pass pays for the real work.
+/// Split in two so a disarmed tick costs no stack: a debug-build prologue reserves the whole frame
+/// before an early return, and the one-piece spelling put a 592-byte frame on every thread's stack
+/// every tick. Returns whether a full pass ran; `false` means disarmed, mid-arm, or another core's
+/// pass holds the slot, so a caller that must see a completed pass loops until `true`.
 ///
-/// Returns whether a full pass RAN. `false` means disarmed, mid-arm, or another core's pass
-/// holds the slot. The tick ignores the answer (a sampling instrument may skip a beat); a
-/// caller that must observe a completed pass loops until it gets `true`. Returning the
-/// refusal instead of swallowing it is the fix for the c906 flake: the test's decisive check
-/// used to lose the slot to a tick's pass that had read the byte before the flip, and its
-/// silent no-op read as a missed corruption.
+/// Context: the timer tick (interrupt context, interrupts masked) and the test.
 pub(crate) fn check() -> bool {
     if !GATE.is_armed_hint() {
         return false; // one relaxed load: every unarmed tick's whole cost

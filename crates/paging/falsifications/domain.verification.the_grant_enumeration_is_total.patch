@@ -18,9 +18,9 @@ is_refused` record breaks that one.
 diff --git a/crates/paging/src/domain.rs b/crates/paging/src/domain.rs
 --- a/crates/paging/src/domain.rs
 +++ b/crates/paging/src/domain.rs
-@@ -90,7 +90,7 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
- /// the builder never would, and the checked arithmetic is what makes the function total; the
- /// confinement itself comes from the count.
+@@ -58,7 +58,7 @@
+ /// the enumeration is total for any region and index. Soundness rests on [`grant_pages`] flooring
+ /// the count, and the whole-page test below is defense in depth (notes/paging.md).
  pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
 -    let off = i.checked_mul(PAGE_SIZE)?;
 +    let off = i * PAGE_SIZE;

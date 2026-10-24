@@ -7,8 +7,10 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Userspace](../userspace.md): the three hardware walls that make userspace.
 - [The console driver leaves the kernel](../userspace-drivers.md): the console as a userspace process reached by IPC.
 - [The native ABI](../abi.md): the syscall convention, object surface and entry contract.
+- [The syscall boundary](../syscall-boundary.md): the five calls, where each method's code sits for the footprint gate, the rights each asks for, and how a run is mapped.
 - [Threads, the context switch, and preemption](../threads.md): threads, the fifteen-instruction switch, and preemption.
 - [The scheduler: placement, stealing, wakes](../scheduler.md): per-core run queues, placement, stealing and wakes.
+- [The scheduler's diagnostic instruments](../scheduler-instruments.md): the per-core event rings and the corruption canary, what each costs and why the canary is kept unarmed. Name provisional.
 - [Bringing up the other cores](../smp.md): the core roster seated by hardware id, secondary start and stacks, and how the SMP tests wait.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
 - [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.
@@ -22,6 +24,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
 - [The thread pointer, and the one asymmetry below its ABI](../thread-pointer.md): each thread's own `TPIDR_EL0`, `tp` or `FS` base, set by the kernel.
+- [The IPC decision core](../inter-process-communication.md): the rendezvous, notification, timer and futex state machines the kernel wraps, and how their proofs are shaped. Name provisional.
 - [Notification objects](../notification-objects.md): a doorbell bound to a thread, and why the receive tag lives in `w4`.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.
@@ -36,6 +39,9 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Can a userspace process hold a timer?](../timer-capability.md).
 - [Trusted init: measuring the boot program, and then everything the progenitor loads](../trusted-init.md).
 - [The progenitor, and loading a program from userspace](../progenitor-and-loading.md).
+- [Booting the progenitor](../progenitor-boot.md): the boot capability set, slot by slot, and the devices the kernel starts itself.
+- [The system initializer](../system-initializer.md): what the progenitor builds, how it measures
+  what it loads, and the spawn service.
 - [Auditing the hand-written arch assembly](../arch-audit.md): a by-hand audit of the least-verified TCB code.
 - [The L4 lessons, audited against this kernel](../l4-lessons.md): the kernel checked against L4's twenty-year retrospective.
 - [How the log service drains the kernel's ring](../kernel-ring-drain.md): milestone 342 (the kernel and the `console` server drive one UART)'s proposal, a read-only frame plus a notification against a read method on a new object, with the seven questions answered.

@@ -2844,6 +2844,9 @@ fi
 #    the one that was read. It names the line and which of four things is wrong with it.
 "$(dirname "$0")/names" --check
 python3 helpers/name_rules.py --selftest
+# The sweep that moves a document's block out of its README into the document, and the census's
+# reading of both homes while it runs (helpers/document_name_migrate.py's header).
+python3 helpers/document_name_migrate.py --selftest >/dev/null
 python3 helpers/name_crossings.py --selftest
 python3 helpers/name_ruled.py --selftest
 

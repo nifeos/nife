@@ -1,20 +1,12 @@
 //! **A consumed capability stays consumed, and deleting one disturbs nothing else** (an eighth
 //! outsider pass at the confinement claim, claims 4, 5 and 2's slot half).
 //!
-//! Claim 4 ("a consumed capability cannot be used again") and claim 5 ("dropping one capability
-//! does not disturb the others") are proved on pure logic in the host crate
-//! (`capability::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
-//! attacks the live kernel paths instead: `SYS_CAP_DELETE`'s kernel half (`delete_current_cap`)
-//! followed by invokes through the real dispatcher (`syscall::invoke`), the way a program's
-//! `svc`/`ecall` reaches them. The attack angles a host crate cannot reach: a stale slot *number*
-//! held by a program that watched its capability be deleted, an out-of-range slot index forged in a
-//! register, and a deleted slot whose number the table later hands out again.
-//!
-//! Nothing blocks, so a regression is red at an assertion. Every capability is deleted and each
-//! region reclaimed, so the frame and region ledgers are flat across the test.
-//!
-//! Cross-ISA: `invoke`, the slot lookup and the table are portable kernel code (DECISIONS §19
-//! (architectural parity is a tenet)).
+//! Claims 4 and 5 are proved on host logic (`capability::a_deleted_capability_stays_deleted`,
+//! `delete_touches_only_its_slot`). This module drives the live kernel, `delete_current_cap` then
+//! `syscall::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
+//! deleted slot the table hands out again. Nothing blocks, and the frame and region ledgers end
+//! flat. Cross-ISA (DECISIONS §19 (architectural parity is a tenet)). See
+//! notes/confinement-claims/the-eighth-pass-tests.md.
 
 use abi::Error;
 
@@ -38,16 +30,10 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// **A deleted capability cannot be used again by its number, and a number the table never held
 /// names nothing.**
 ///
-/// A receiver is parked first, so a use that slipped past the deletion would be observed as a
-/// delivery and a falling waiting-receiver count, not a hang. Then the sender's capability is
-/// deleted and three forgeries are tried through the real dispatcher: the deleted slot's own
-/// number, an index past the whole table, and `u64::MAX`. Each must answer `NoSuchSlot`: the table
-/// says "there is nothing there", not "you may not". The kernel-side delete half is attacked too:
-/// deleting the same slot a second time must fail rather than succeed silently.
-///
-/// The positive control closes it: a `READ` capability on the same object, granted after the
-/// deletion, still receives a message the deleted capability sent before it died. Deletion
-/// consumed the one capability, not the object and not its neighbors' access to it.
+/// A receiver is parked, so a use past the deletion shows as a delivery, not a hang. After the
+/// delete, the slot's own number, an index past the table and `u64::MAX` must each answer
+/// `NoSuchSlot`, and a second delete must fail. The control: a `READ` capability granted after the
+/// deletion still receives what the deleted one sent, so only the one capability was consumed.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

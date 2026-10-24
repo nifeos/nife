@@ -88,12 +88,9 @@ fn answer_as_the_gate_reads(chunks: &[&str], line: &str) -> Option<String> {
 
 #[test]
 fn a_console_redraw_beneath_a_gauge_is_not_read_as_a_second_prompt() {
-    // Run 37167978481 (merge_group, 2026-10-04 UTC), aarch64, the first line after the
-    // reboot, verbatim but for the chunking. The stack gauge waited in the console's queue
-    // while the prompt line was partial, the system log service's 250 ms `OP_FLUSH` fired
-    // after the echo of the last typed character and before the echo of Enter, and the
-    // console did what milestone 342 says it does: a line end, the gauge, and the partial
-    // line drawn again beneath it. The program then answered, under the redraw.
+    // Run 37167978481 (merge_group, 2026-10-04 UTC), aarch64, verbatim but for the chunking:
+    // the 250 ms `OP_FLUSH` fell between the last typed character's echo and Enter's, so the
+    // console drew a line end, the gauge and the partial line again, and the answer came under it.
     let chunks = [
         "          'quote a whole word'   and   ;  &&  ||   with  echo $?  for the status\n$ ",
         "packages/noteless/0.1.0/noteless",
@@ -153,11 +150,8 @@ fn text_that_only_starts_like_the_gauge_is_let_through() {
 
 #[test]
 fn degauge_recovers_a_command_echo_the_gauge_was_spliced_into() {
-    // #1371's CI failure, verbatim: the progenitor-stack gauge landed byte-by-byte inside the
-    // shell's echo of `package install`, so `GaugeFilter`'s whole-line assumption never fired
-    // and `wait_after`'s exact search for "package install\n" never matched anything. This is
-    // the interim fix: greedily matching the gauge's own words, numbers as wildcards, and
-    // deleting only the characters that matched.
+    // #1371's CI failure, verbatim: the gauge landed byte by byte inside the echo of
+    // `package install`, so neither `GaugeFilter` nor an exact search could find either.
     let spliced = "package   proinstgenitor sall tack: 31528 of 49152 bytes at peak, 17624 spare";
     let cleaned = degauge(spliced);
     assert!(
@@ -172,9 +166,8 @@ fn degauge_recovers_a_command_echo_the_gauge_was_spliced_into() {
 
 #[test]
 fn degauge_removes_a_gauge_that_arrives_whole_between_two_lines() {
-    // The ordinary case `GaugeFilter` already handles live in the reader thread; `degauge` is
-    // a second, independent pass applied only at match time, and must not mishandle the common
-    // shape while fixing the rare spliced one.
+    // The ordinary case `GaugeFilter` handles live; `degauge`, a second pass at match time,
+    // must not mishandle it.
     let text =
         "$ echo hi\nhi\n  progenitor stack: 22880 of 32768 bytes at peak, 9888 spare\n$ wc\n";
     let cleaned = degauge(text);

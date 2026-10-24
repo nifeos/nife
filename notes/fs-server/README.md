@@ -14,10 +14,17 @@ history behind each summary.
   did.
 - [`verb-table.md`](verb-table.md): one row per opcode, and the row that carries a security property.
 - [`statfs.md`](statfs.md): op 18 in full.
+- [`file-protocol.md`](file-protocol.md): why each file and block verb is shaped as it is.
 - [`throughput.md`](throughput.md): where the milliseconds go, the cache, the transfer unit and the
   throughput BUGS.
 - [`kernel-wiring.md`](kernel-wiring.md): how `kernel/src/user/fs_service/` wires the servers, the
   caretakers and their clients, and why.
+- [`the-core.md`](the-core.md): the `redoxfs_server` core's handle table, names and verbs, and where
+  it departs from upstream RedoxFS.
+- [`caches-and-io.md`](caches-and-io.md): the memo, the block cache, the wire shapes the dispatch
+  decodes, and the EL0 binary's IO.
+- [`the-test-client.md`](the-test-client.md): why `fs_test_client`'s attackers and witnesses are
+  shaped as they are.
 
 Name: provisional, minted 2026-10-11 (UTC) by `lane/ten-longest-notes`, which split the parent under
 §212 (a prose budget), for the directory and every stem in it. The directory follows the

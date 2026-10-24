@@ -136,6 +136,7 @@ const DEVICE_FLAG: &str = if cfg!(target_os = "linux") {
 ///
 /// If the device cannot be opened: an unplugged adapter, a `/dev/tty.*` path, or another program
 /// holding the port.
+///
 /// # Examples
 ///
 /// Watch a board boot, with the default policy's cap:

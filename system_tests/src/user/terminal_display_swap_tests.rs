@@ -3,17 +3,17 @@
 //! 2026-10-19 (UTC): a dedicated swap reserve, "everything" handed off, the spawner supervises).
 //!
 //! A real `terminal_supervisor` in display mode builds a real `display_terminal` on the kernel's
-//! display stand-in, and a `line_editor` printing through it. The test plays the application on the
-//! terminal's endpoint, holds the supervisor's swap endpoint, and holds the machine's one swap
-//! reserve, which on a real boot would be the installer's (milestone 694 (the installer asks the
-//! terminal to swap), not built).
+//! display stand-in, with a `line_editor` printing through it. The test plays the application,
+//! holds the supervisor's swap endpoint and the machine's one swap reserve (the installer's on a
+//! real boot: milestone 694 (the installer asks the terminal to swap), not built).
+
+//! # Why a kernel test
 //!
-//! It is a kernel test rather than a userspace one because its two witnesses are memory no
-//! program holds: the scanout, read through the direct map and compared pixel for pixel with an
-//! engine the kernel runs itself, and the handoff blob, read out of the reserve after the swap and
-//! compared byte for byte with the blob that engine writes. The pixels show the screen survived;
-//! the blob shows the scrollback, the cursor, the rendition and the parser's state did, which no
-//! pixel on a live view can.
+//! Its two witnesses are memory no program holds. The scanout, read through the direct map, is
+//! compared pixel for pixel with an engine the kernel runs itself, which shows the screen survived.
+//! The handoff blob, read out of the reserve after the swap, is compared byte for byte with the
+//! blob that engine writes, which shows the scrollback, cursor, rendition and parser state did; no
+//! pixel on a live view can show those.
 //!
 //! Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 
@@ -357,6 +357,70 @@ fn the_display_terminal_is_replaced_live_and_its_screen_and_history_survive() {
 
     rig.stop();
     sched::reclaim_region(reserve.0).expect("the swap reserve would not reclaim");
+    super::compositor_tests::retire_kernel_display(display_region);
+}
+
+/// **A supervised `display_terminal` takes a quiesce from its supervisor and from nobody else**
+/// (§232 (the `line_editor` swap contract): "only a supervisor sends it"). The test holds the
+/// endpoint `display_terminal` serves unbadged, as the `line_editor` printing through it does, and
+/// quiesces it. Honored, that would stop the screen on a control endpoint only the supervisor
+/// speaks on, and a supervisor that did not ask never says `CTL_RESUME`. So it is refused, the
+/// terminal goes on drawing, and the supervisor's own quiesce, sent through its badged copy when
+/// the test stops it, still works.
+///
+/// Falsification: replayable `system_tests/falsifications/user.terminal_display_swap_tests.a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor.patch`
+#[test_case]
+fn a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor() {
+    let (display_ep, surface, display_region) = super::compositor_tests::kernel_display();
+    let rig = Rig::start(display_ep, surface);
+    let (sink, sink_page) = (rig.sink, rig.sink_page);
+
+    let expect_p = &raw mut EXPECT;
+    // SAFETY: this test is the only user of `EXPECT` while it runs, and the suite runs one test
+    // at a time.
+    let expect: &mut video_terminal::Vt = unsafe { &mut *expect_p };
+    expect.reset_to(COLS, ROWS);
+    let w = wiring(sink, sink_page, surface);
+    both(&w, expect, b"before ");
+
+    use line_editor::proto::{self, BAD_REQUEST};
+    let quiesce = [proto::req(proto::OPERATION_QUIESCE, 0), 0];
+    // Each answer is checked before the next call: a terminal that honored one would never
+    // answer the next, and the run would end at the watchdog rather than at the assertion.
+    for (badge, what) in [
+        (0, "an unbadged holder"),
+        (proto::RAW_ONLY_BADGE, "a raw-only holder"),
+    ] {
+        let q = match badge {
+            0 => sched::ipc_call(sink, quiesce),
+            b => sched::ipc_call_badged(sink, quiesce, b),
+        };
+        assert_eq!(
+            q[0], BAD_REQUEST,
+            "{what} quiesced a supervised display_terminal (reply {:#x}): any application could \
+             freeze the screen until a CTL_RESUME nobody sends",
+            q[0],
+        );
+    }
+
+    // The supervisor's copy carries a quiesce and nothing else: it cannot print.
+    let printed = sched::ipc_call_badged(
+        sink,
+        [proto::req(proto::OPERATION_WRITE, 0), 0],
+        proto::SUPERVISOR_BADGE,
+    );
+    assert_eq!(
+        printed[0], BAD_REQUEST,
+        "the supervisor's badged copy was served OPERATION_WRITE"
+    );
+
+    both(&w, expect, b"and after");
+    w.assert_screen_is(
+        expect,
+        "a display_terminal that refused a stranger's quiesce",
+    );
+
+    rig.stop();
     super::compositor_tests::retire_kernel_display(display_region);
 }
 

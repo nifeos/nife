@@ -27,6 +27,44 @@ milestone's gate stays HARDWARE.
   (`RAND_RDY` 0, `SEED_DONE` 1, `AGE_ALARM` 2, `RQST_LOCKUP` 3, `LFSR_LOCKUP` 4, `GLOBAL` 31).
   Its poll path trusts `ISTAT.RAND_RDY` only when `STAT.SEEDED` is set, which is the gate the
   crate applies.
+- uboot-dtsi: `arch/riscv/dts/jh7110.dtsi` in `starfive-tech/u-boot` at `bfbdce9b86a2`,
+  <https://github.com/starfive-tech/u-boot/blob/bfbdce9b86a2/arch/riscv/dts/jh7110.dtsi>.
+- vendor-driver: `drivers/char/hw_random/starfive-trng.c` in `starfive-tech/linux` at
+  `202b558ae34c`,
+  <https://github.com/starfive-tech/linux/blob/202b558ae34c/drivers/char/hw_random/starfive-trng.c>.
+
+## The vendor spelling
+
+The tree nife is handed on the VisionFive 2 is the vendor U-Boot's control DTB (U-Boot 2021.10,
+per `crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`). StarFive's
+fork spells the node this way (uboot-dtsi):
+
+```text
+trng: trng@1600C000 {
+    compatible = "starfive,trng";
+    reg = <0x0 0x1600C000 0x0 0x4000>;
+    clocks = <&clkgen JH7110_SEC_HCLK>,
+         <&clkgen JH7110_SEC_MISCAHB_CLK>;
+    clock-names = "hclk", "miscahb_clk";
+    resets = <&rstgen RSTN_U0_SEC_TOP_HRESETN>;
+    interrupts = <30>;
+    status = "disabled";
+};
+```
+
+It is the same device, window and interrupt under a different string: a stale fork, not different
+silicon. Accepting `starfive,trng` is a claim about the register layout, and the vendor Linux driver
+at the firmware's own vintage (vendor-driver) backs it. It defines `STARFIVE_CTRL` 0x00, `STAT`
+0x04, `MODE` 0x08, `SMODE` 0x0C, `IE` 0x10, `ISTAT` 0x14, `RAND0`..`RAND7` 0x20..0x3C, `AUTO_RQSTS`
+0x60 and `AUTO_AGE` 0x64. Its `CTRL`, `STAT` and `ISTAT` bit positions match mainline's
+`jh7110-trng.c`. Two drivers written against one IP block agree completely.
+
+`discover` reports the node's `status` and does not act on it. The vendor tree marks the TRNG
+disabled because U-Boot has no driver for it, not because the silicon is absent; StarFive's own
+Linux enables the node from `jh7110-common.dtsi` (`&trng { status = "okay"; };`). The same DTB
+marks the S7 monitor core `okay` and claims an Sv39 MMU for it, and both are false
+(notes/visionfive2.md, "Second bench stop"). So the crate says what the tree says, and the caller
+neither refuses a device that is there nor trusts one that is not.
 
 ## The bring-up order
 
@@ -81,3 +119,27 @@ first act is to read `STAT`, and a gated block answers that read with zeros. The
 controller is admin plane and stays in the kernel
 (`kernel/src/drivers/jh7110_clock_and_reset.rs`), on the argument of §86 (whether an NVMe driver can
 leave the kernel). A virtio-rng needs no such step, since a QEMU device comes up running.
+
+## The driver's own choices
+
+`components/src/jh7110_entropy.rs` polls `ISTAT` rather than taking PLIC line 30. A wrong interrupt
+binding fails silently, as a hang. A wrong poll bound fails loudly, as `NO_ENTROPY`. Switching to
+the interrupt once the board confirms the binding is reversible.
+
+It draws the first 32 bytes before it reports, and the bytes decide the readiness word. A device
+whose clock is gated reads as zeros, and an all-zero first generation reports
+`STEP_FIRST_ALL_ZERO`. That device is then refused for the rest of the boot. A client only ever
+sees a reply, so a service that reported dead and went on serving its zero buffer would hand those
+zeros out as randomness to everyone not watching the handshake. A device that answered with nothing
+is not refused. It has told the truth at every step, `take` answers `NO_ENTROPY` while it stays
+dry, and it recovers by itself if it starts answering.
+
+The readiness message has a fixed layout. Word 0 is the verdict. Word 1 holds the byte count, and
+in its high half the `STAT` read right after the bring-up writes. Word 2 is always
+`(STAT << 32) | ISTAT`, read at report time, whatever word 0 says. An all-zero pair says the
+register window read as nothing: a gated clock, a reset still asserted, or a base that is not the
+TRNG. A nonzero `STAT` with `SEEDED` clear says the device is alive and seeding did not finish.
+
+One question about the bytes is open. `MODE.R256` has never been read back on silicon. If radon's
+`STAT.R256`, in word 1's high half, reads clear, the upper four `RAND` words are not device output
+and only 16 bytes per generation may be served. One line of a bench transcript closes it.

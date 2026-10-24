@@ -665,17 +665,13 @@ fn create_into_a_populated_root_and_look_it_up() {
         "a miss must still terminate and report, not scan forever",
     );
 }
-/// **CREATE through the EL0 binary's exact block chunking**, which is the one path none of the
-/// other create tests take.
+/// CREATE through the EL0 binary's exact block chunking, the one path no other create test takes.
 ///
-/// Every test above drives `DiskMemory`, whose `write_at` writes exactly the buffer it is given.
-/// The device drives `IpcDisk` behind [`BlockDisk`], which splits every call into whole-block
-/// transfers and READ-MODIFY-WRITES a short final chunk. `create_node` writes a fresh node block
-/// and extends a directory, so it is exactly the shape that would expose a chunking fault, and on
-/// device it hangs with FS servers spinning in `create_node` and `find_node_inner`.
-///
-/// Bounded on purpose: the point is that this terminates, so a livelock fails the run rather than
-/// wedging the suite.
+/// The other tests drive `DiskMemory`, whose `write_at` writes exactly its buffer; the device drives
+/// `IpcDisk` behind [`BlockDisk`], which splits calls into whole blocks and read-modify-writes a
+/// short final chunk. `create_node` writes a fresh node block and extends a directory, the shape
+/// that would expose a chunking fault, and on device FS servers were seen spinning in `create_node`
+/// and `find_node_inner`. Bounded, so a livelock fails the run rather than wedging the suite.
 #[test]
 fn create_through_the_block_chunking_does_not_loop() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)

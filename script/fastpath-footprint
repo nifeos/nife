@@ -367,17 +367,32 @@ size = {s: last.get(s, start[s]) - start[s] + 4 for s in start}
 # capability lookup that IS the security check, and the general scheduler re-selection that a
 # hand-written fastpath would be trying to skip.
 #
-# **The optional module segment** follows milestone 840 (the scheduler file is split along its
-# seams), 2026-10-11 UTC. A mangled name follows the defining module, so `ipc_*` moved to
-# `kernel5sched10rendezvous...` and `current_cap` to `kernel5sched12capabilities...` while
-# `schedule` and `finish_switch` stayed in `sched` itself. A `pub use` keeps the Rust path and not
-# the symbol, so without the segment every root but two would silently fall out of the closure.
+# **Each root names its own module**, because a mangled name follows the defining module, not the
+# `pub use` that keeps the Rust path: `ipc_*` are `kernel5sched10rendezvous...`
+# (kernel/src/sched/rendezvous.rs), `current_cap` is `kernel5sched12capabilities...`
+# (capabilities.rs), and `schedule` and `finish_switch` are `kernel5sched6switch...` (switch.rs).
+# Each entry below is `<len><module><len><function>` as v0 mangling writes it, and the shape's
+# regex and the guard below are both built from that one list.
+#
+# `schedule` and `finish_switch` are roots even though every IPC root reaches them today, because
+# the closure follows only unconditional direct calls and tail branches. If a root came to reach
+# them through a conditional branch or a function pointer, the walk would lose their bytes while
+# the IPC still ran them. Naming them keeps their bytes in the closure whatever call shape reaches
+# them.
+#
+# **Every root must match a symbol**, checked below, or the run fails. `INLINED` names the two that
+# are `#[inline(always)]` badge-0 wrappers (see `ipc_call_badged` below) and so have no symbol in a
+# release build; they stay in the lists so a build that does emit them still measures them.
 SHAPES = [
     ("ipc_send_receive",
-     re.compile(r"kernel5sched(?:10rendezvous|12capabilities)?(8ipc_send|15ipc_send_badged|11ipc_receive|8schedule|13finish_switch|11current_cap)")),
+     ["10rendezvous8ipc_send", "10rendezvous15ipc_send_badged", "10rendezvous11ipc_receive",
+      "6switch8schedule", "6switch13finish_switch", "12capabilities11current_cap"]),
     ("ipc_call_reply",
-     re.compile(r"kernel5sched(?:10rendezvous|12capabilities)?(8ipc_call|15ipc_call_badged|15ipc_receive_cap|9ipc_reply|8schedule|13finish_switch|11current_cap)")),
+     ["10rendezvous8ipc_call", "10rendezvous15ipc_call_badged", "10rendezvous15ipc_receive_cap",
+      "10rendezvous9ipc_reply", "6switch8schedule", "6switch13finish_switch",
+      "12capabilities11current_cap"]),
 ]
+INLINED = {"10rendezvous8ipc_send", "10rendezvous8ipc_call"}
 # **`ipc_call_badged` is a root because it IS the CALL body** (milestone 599 (a frame per filesystem
 # client channel), 2026-09-26). The syscall's `CALL` dispatches to it, and `ipc_call` became an
 # `#[inline(always)]` wrapper that passes badge 0, so the `ipc_call` symbol no longer exists in a
@@ -499,12 +514,17 @@ ENTRY = {
 }[arch]
 
 shape_totals, shape_syms = {}, {}
-for label, rootre in SHAPES:
-    roots = [s for s in size if rootre.search(s)]
-    if not roots:
-        print(f"fastpath-footprint: {arch}: no {label} root symbols matched; the kernel or the names moved",
-              file=sys.stderr)
+for label, names in SHAPES:
+    # Each root on its own, so one that stops matching (a module split, a rename) fails the run
+    # instead of shrinking the closure inside the 5% band.
+    lost = [n for n in names
+            if n not in INLINED and not any(re.search("kernel5sched" + n, s) for s in size)]
+    if lost:
+        print(f"fastpath-footprint: {arch}: {label} root(s) {', '.join(lost)} matched no symbol; "
+              "the module or the name moved", file=sys.stderr)
         sys.exit(1)
+    rootre = re.compile("kernel5sched(" + "|".join(names) + ")")
+    roots = [s for s in size if rootre.search(s)]
     seen, stack = set(), list(roots)
     while stack:
         s = stack.pop()

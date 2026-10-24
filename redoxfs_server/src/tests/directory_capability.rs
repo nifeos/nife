@@ -195,12 +195,11 @@ fn a_badge_with_no_window_is_refused() {
     assert_eq!(srv.admit(windows - 1, outside as u64).unwrap(), outside);
 }
 
-/// **A sync-only badge answers `SYNC` and refuses every other verb** (milestone 805 (`reboot` at
-/// the prompt), `fs::BIND_SYNC`). Driven through [`Server::handle`], the dispatch the EL0
-/// binary runs, so it is the wire's answer and not a helper's: every verb from `OPEN` to
-/// `UNBIND`, on `ROOT` and on a real handle, is `EPERM` and reaches no device, and `SYNC`
-/// reaches the device once and answers its count. An unbound badge's `SYNC` still needs a handle
-/// with `WRITE`, as it always did.
+/// A sync-only badge answers `SYNC` and refuses every other verb (milestone 805 (`reboot` at the
+/// prompt), `fs::BIND_SYNC`), through [`Server::handle`], the dispatch the EL0 binary runs: every
+/// verb from `OPEN` to `UNBIND`, on `ROOT` and on a real handle, is `EPERM` and reaches no device,
+/// and `SYNC` reaches the device once and answers its count. An unbound badge's `SYNC` still needs
+/// a handle with `WRITE`, as it always did.
 ///
 /// Falsification: attested 2026-10-06. Removed the dispatch's `EPERM` arm for a sync-only badge,
 /// so every other verb fell through to `admit`; the test went red on opcode 0 (`EBADF` from
@@ -323,12 +322,10 @@ fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
     );
 }
 
-/// **A write whose end does not fit in 64 bits is refused, and the server lives** (found by the
-/// `redoxfs_server_session` fuzz target, `lane/fuzz-service-handlers`). The engine computes
-/// `offset + len` unchecked; an offset near `u64::MAX` wrapped it, and the inline-data path
-/// then sliced backwards and panicked, so any client holding a writable handle could kill the
-/// file server with one `WRITE`. Refused `EFBIG`, POSIX's answer for a write past the largest
-/// offset a file can have.
+/// A write whose end does not fit in 64 bits is refused `EFBIG`, POSIX's answer, and the server
+/// lives (found by the `redoxfs_server_session` fuzz target, `lane/fuzz-service-handlers`). The
+/// engine computes `offset + len` unchecked; an offset near `u64::MAX` wrapped it and the
+/// inline-data path sliced backwards and panicked, so one `WRITE` killed the file server.
 /// Falsification: attested 2026-10-04. Drop the `checked_add` guard from `Server::write`; the
 /// engine panicked in `Transaction::write_node_inner` (`vendor/redoxfs/src/transaction.rs`), at its
 /// `offset + buf.len()` addition. Not swept (separate workspace, see

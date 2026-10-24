@@ -8,10 +8,10 @@ Expected to fail: the `NotPermitted` assertion, which gets `Ok(0)`.
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -50,12 +50,7 @@
-         // DECISIONS §162 (whether a holder can give up a mapping), option A).
-         // `WRITE`, the authority `MAP_INTO` takes: shaping a space is one right in both
-         // directions. See `abi::address_space::UNMAP` and notes/unmap.md.
+@@ -28,12 +28,7 @@
+             address_space_list(frame, name, a0)
+         }
+         // `WRITE`, the right `MAP_INTO` takes: shaping a space is one right in both directions.
 -        abi::address_space::UNMAP => {
 -            if !cap.rights.allows(Rights::WRITE) {
 -                return Err(Error::NotPermitted);
@@ -19,6 +19,6 @@ diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_sp
 -            address_space_unmap(name, a0)
 -        }
 +        abi::address_space::UNMAP => address_space_unmap(name, a0),
-         // Futex wait and wake (milestone 812 (`std::thread::spawn` runs real threads in one
-         // address space), §269 (how threads share a process) fork 2), out of line: neither is
-         // a step of the IPC round trip the fastpath footprint bounds.
+         // §269 (how threads share a process) fork 2.
+         abi::address_space::WAIT | abi::address_space::WAKE => {
+             address_space_futex(cap.rights, name, method, a0, a1, a2)

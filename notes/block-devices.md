@@ -96,6 +96,13 @@ The ordinals are the same numbers `virtio::find_block_device_n` counts by, which
 than a coincidence. The roster and the wiring walk the bus the same way, so a listing and a wiring
 cannot disagree about which disk is which.
 
+### What an NVMe entry says
+
+An NVMe entry carries exactly what a virtio one does, an ordinal and a transport (§193 (what a
+block-roster entry calls an NVMe disk)). Its ordinal counts NVMe controllers. That identifies a disk
+only while each controller has one namespace, which is every controller this tree drives. A
+controller with two namespaces is the measurement that would make an entry need to say which.
+
 ### The negative control
 
 `disk_surveyor`'s second role announces the roster's address and writes to it. The mapping is
@@ -184,6 +191,25 @@ mount's 352 KiB high-water, and `start_maker` destroys the previous run's region
 another. When reservations pile up, the symptom is an unrelated test failing to get its budget
 several tests later.
 
+## The disk tests
+
+`system_tests/src/user/disk_tests.rs` states each claim. Two reasons behind them live here.
+
+The write half's entropy refusal is not a policy. A GPT partition and a RedoxFS volume each carry
+an identifier that must be globally unique. `crates/globally_unique_identifier_partition_table`
+refuses to invent a GUID (notes/globally-unique-identifier-partition-table.md). The engine's
+`Header::new` is std-gated because it calls `getrandom` (vendor/README.md, divergence 4). So a
+program without the entropy rendezvous genuinely cannot make an identifier, and the test checks
+that it says so rather than making one up. A working `mkfs` proves nothing about authority, since
+every Unix has one and it reaches every disk. The test withholds each capability from the same
+binary, budget and stack, then reads the disk.
+
+On the PVH x86_64 leg the roster must name exactly five virtio disks (nifefs 0, RedoxFS 1, crash
+2, GPT 3, blank 4), plus one NVMe controller when `NIFE_NVME` is set. The runner attaches three of
+them only if their images exist, and the rest of the assertions hold for any count. Without the
+exact count, a runner that lost a fixture would read as a skip, or as a protective-MBR panic that
+names neither disk.
+
 ## What this lane deliberately did not do
 
 - No hot plug. The roster is written once and never again. A hot-plug story would change
@@ -219,6 +245,49 @@ comment records that it was told not to and why it did anyway: the unregister ha
 handed to a second driver after the first programmed the device. That is a lifetime decision about a
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.
+
+## What a survey reports
+
+`ROLE_SURVEY` on the test disk of milestone 57 (partitioning and formatting a real drive), a 64 MiB
+image `sgdisk` partitioned:
+
+```text
+roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
+table  : 3 partitions, disk GUID 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506
+         1  EFI system    2048..10239
+         2  linux root   10240..30719
+         3  nife data 30720..131038
+backup : agrees with the primary
+```
+
+## The disk tree: a whole disk as one file, with no cache
+
+`crates/disk_tree` is the pure half of `components/src/disk_tree.rs`, built for milestone 834 (ioping
+on nife and Linux). It serves a namespace of two names, a directory `nvme0` and a file `n1` in it,
+whose bytes are the disk's from block 0.
+
+It exists so that a program run at the prompt can measure the device rather than a file server's
+memory. `redoxfs_server` keeps whole small files and recently read blocks in memory. Linux answers
+the same need with `/dev/nvme0n1` opened with `O_DIRECT`. Every read the disk tree answers becomes
+exactly one device read, and its tests hold that.
+
+It is read-only twice over. No mutating verb is answered (each gets `EROFS`), and the server's block
+endpoint is badged with a window the NVMe server never writes from
+(`non_volatile_memory_express::can_write`).
+
+The shell mounts it as its second tree (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"),
+so a measurement names the file inside the mounted directory:
+
+```text
+cd /disk/nvme0
+ioping -D -c 1000 -i 0 -s 4k -S 64m -o 1m n1
+```
+
+One file is the whole namespace, whatever partitions are on the disk. A partition is a byte range of
+`n1`, given to ioping with `-o` and `-S`. Naming partitions would need the table read in the server.
+A read longer than the server's transfer window comes back short, at most `blk::TRANSFER_BLOCKS`
+blocks from the first one touched. POSIX allows that, and every client in this tree loops on a short
+read.
 
 ## See also
 

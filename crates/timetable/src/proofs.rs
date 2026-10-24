@@ -1,39 +1,12 @@
-//! Machine-checked proofs for the firing arithmetic (milestone 129).
+//! Machine-checked proofs for the firing arithmetic (milestone 129 (scheduled execution)).
 //!
-//! **Why this function and not the parser.** A parser is a total function on bytes and the host
-//! tests sample it well; a wrong answer there is a document that does not load, which is loud. The
-//! arithmetic is the opposite: every wrong answer is quiet. An off-by-one at a period boundary
-//! fires an entry twice in one pass and nothing complains; a lost phase drifts an entry a few
-//! nanoseconds per hour and shows up as a schedule nobody can explain a month later; a `+ period`
-//! that overflows wraps a deadline into the past and turns a scheduler into a spin. None of those
-//! is reachable by sampling, because the interesting inputs are the ones nobody thinks to type.
-//!
-//! Kani quantifies over them instead. The bounds below are stated where they are needed and are
-//! generous rather than convenient: `1 << 50` nanoseconds is thirteen days, which is longer than
-//! anything this system has stayed up.
-//!
-//! # The one property that is not here, and why
-//!
-//! **Phase preservation is host-tested and not machine-checked**, and it is the most interesting of
-//! the four laws `next_after` obeys, so the absence is worth a paragraph rather than a shrug.
-//!
-//! The claim is that the answer is congruent to `prev` modulo `period`. Every way of writing that
-//! needs a modulo of a *computed* value on top of the one already inside `next_after`, and a second
-//! 64-bit modulo is where CBMC stops finishing: the direct spelling
-//! (`next % period == prev % period`) did not return after ten minutes, the cheaper one
-//! (`(next - prev) % period == 0`) did not either, and neither did the cheaper one bounded to
-//! `1 << 32`. Shipping a harness bounded far enough down to finish would have been worse than
-//! shipping none: it would read as proved and cover a range no schedule lives in.
-//!
-//! What covers it instead: `next_after_is_strictly_in_the_future_and_keeps_its_phase` in the crate's
-//! host tests asserts the congruence at values up to `u64::MAX / 4`, across four periods including
-//! `1` and a large prime. That is sampling and it is honest about being sampling.
-//!
-//! **It is also the least likely of the four to be got wrong silently**, which is the reason this is
-//! a recorded gap rather than a blocker: the implementation reaches its answer by snapping `now`
-//! back onto the beat (`now - (now - prev) % period`), so the phase is not computed and then
-//! preserved, it is the only thing the expression can produce. A change that broke it would have to
-//! rewrite the line, not slip past a boundary in it.
+//! The arithmetic rather than the parser: a wrong parse is a document that does not load, which is
+//! loud, while a wrong fire is quiet (an occurrence fired twice at a period boundary, a phase that
+//! drifts, a `+ period` that wraps a deadline into the past and turns the scheduler into a spin),
+//! and the inputs that reach those are ones nobody thinks to type. Phase preservation is
+//! host-tested at values up to `u64::MAX / 4`, not proved: a second 64-bit modulo is where CBMC
+//! stops finishing, and the snapping expression can produce nothing but the phase. See
+//! notes/scheduled-execution/next-after-proofs.md.
 
 use crate::next_after;
 

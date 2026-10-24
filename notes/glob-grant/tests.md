@@ -1,5 +1,7 @@
 # Globbing: what the tests prove, and from where
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.*
+
 An appendix to [`notes/glob-grant.md`](../glob-grant.md), which states the conclusion.
 
 ## On the host, in milliseconds

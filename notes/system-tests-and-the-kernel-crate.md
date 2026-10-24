@@ -169,6 +169,38 @@ internals after all. The honest backlog is the three harness-only files: the she
 pipeline and redirection tests, which drive `swish` and read what it printed. Every other file
 observes kernel state no syscall exposes, which is the case rule 2 allows.
 
+## What each test cost, and its budget
+
+`crates/test_times` holds the grammar of the `time per test` block the kernel's runner prints and
+`xtask` reads. The console is the record's channel because it is the only one aarch64, riscv64 and
+x86_64 share. x86_64 exits through `isa-debug-exit`, which has no file I/O, so semihosting a file
+out would break §19 (architectural parity is a tenet).
+
+The block's heading is not in §254 (a gate prints what each item cost)'s wording, which rules on the
+line. It is there so a reader can tell "this image printed no record" from "this image ran no
+tests", and so a test whose own output happens to begin with `time ` is never read as a record line.
+The figures are milliseconds because whole seconds round most of this suite to zero (§254). A `u64`
+of milliseconds outlasts any suite.
+
+Every test gets `DEFAULT_BUDGET_SECS`, 90 s, unless it declares a longer one in `SLOW_TESTS`, with
+its reason. A budget is roughly twice the measured time: enough headroom that host load or a debug
+build does not produce a flaky failure, and tight enough to still catch a hang. A single global limit
+large enough for every test would protect nothing. `SLOW_TESTS` has been empty since 2026-10-11
+(UTC). Its one entry gave `std_net_runs_over_the_socket_contract` 700 s for a measured 300 to 344 s.
+That test now takes 1.3 to 2.5 s, and the slowest test in about 27,000 per-test records takes
+20.5 s.
+
+## The shared spawn's bound notification
+
+`test_programs::spawn_progenitor_shaped` starts a program the way the kernel starts the
+progenitor; [milestone 794 (one progenitor-shaped spawn for the system tests)](../design/roadmap/0794-one-progenitor-shaped-spawn-for-the-system-tests.md)
+records why its space is hand-built and which spawn sites keep their own. Its `bound_notification`
+is bound between configure and start, because that is the only order without a race. A program
+that reached a wait before its notification was bound would park outside the
+bind-delivers-what-was-counted rule. The bind is the spawner's to make, because a running thread
+holds no capability to its own TCB. `net_stack`'s wiring makes the same bind for its retransmit
+wait.
+
 ## BUGS
 
 - Five service crates are still kernel dependencies, pending #1389's division of them.

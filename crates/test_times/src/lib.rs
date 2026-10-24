@@ -1,43 +1,33 @@
 //! **What each kernel test cost, as the lines the suite prints and `xtask` reads** (milestone 807
 //! (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1).
 //!
-//! The kernel's test runner stamps the timer before every test, keeps every figure and, after the
-//! suite's other reports and before `test result:`, prints a block:
+//! The kernel's test runner stamps the timer before every test and, after the suite's other
+//! reports and before `test result:`, prints a block on the console, the one channel all three
+//! architectures share (§19 (architectural parity is a tenet)). The kernel prints it and `xtask`
+//! parses it, so the grammar is a crate (rule 7). See notes/system-tests-and-the-kernel-crate.md,
+//! "What each test cost, and its budget".
+
+//! # The grammar
+//!
+//! A line is `time`, one space, the elapsed milliseconds in decimal, one space, the test's full
+//! path as `core::any::type_name` gives it. No other spacing is accepted, and a path may not
+//! contain whitespace. A trailing `\r` is tolerated because a serial transcript may carry one. The
+//! block opens with [`HEADING`] on a line of its own, and `xtask` reads record lines only after it.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! time per test, in milliseconds:
 //! time 3 kernel::memory::tests::frames_are_zeroed
 //! time 10512 system_tests::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock
 //! ```
-//!
-//! The console is the record's channel because it is the only one aarch64, riscv64 and x86_64
-//! share: x86_64 exits through `isa-debug-exit`, which has no file I/O, so semihosting a file out
-//! would break §19 (architectural parity is a tenet). Two programs agree on the grammar, the kernel
-//! that prints it and `xtask` that parses it, so it is a crate (rule 7).
-//!
 
-//! # The grammar
-//!
-//! A line is `time`, one space, the elapsed milliseconds in decimal, one space, the test's full
-//! path as `core::any::type_name` gives it. No other spacing is accepted, and a path may not
-//! contain whitespace. A trailing `\r` is tolerated because a serial transcript may carry one.
-//!
-//! The block opens with [`HEADING`] on a line of its own. The heading is not in §254's wording,
-//! which rules on the line; it is there so a reader can tell "this image printed no record" from
-//! "this image ran no tests", and so a test whose own output happens to begin with `time ` is never
-//! read as a record line. `xtask` reads record lines only after the heading.
-//!
-//! Milliseconds because whole seconds round most of this suite to zero (§254). A `u64` of
-//! milliseconds outlasts any suite.
-//!
 //! # BUGS
 //!
-//! - **The figure is guest time.** Under TCG the guest's counter follows the host's clock, so a
-//!   slow runner reads as a slow test. `xtask`'s cross-check bounds the guest clock against the
-//!   host's, not against a fair machine.
-//! - **The heading is a wording, not a rung of [`boot_ladder`]'s kind**, and nothing else keys on
-//!   it. Changing it is a change to two programs at once, which this crate makes a compile error
-//!   rather than a silent drift, since both take it from here.
+//! - The figure is guest time: under TCG a slow runner reads as a slow test, and `xtask`'s
+//!   cross-check bounds the guest clock against the host's, not against a fair machine.
+//! - The heading is a wording, not a rung of [`boot_ladder`]'s kind, and nothing else keys on it.
+//!   Both programs take it from here, so changing it is a compile error rather than a silent drift.
 //!
 //! [`boot_ladder`]: ../boot_ladder/index.html
 //!
@@ -139,19 +129,11 @@ pub fn parse(line: &str) -> Result<Line<'_>, Malformed> {
 pub const DEFAULT_BUDGET_SECS: u64 = 90;
 
 /// **The known-slow tests, each declaring its own cost.** A test whose honest runtime exceeds
-/// [`DEFAULT_BUDGET_SECS`] must say so here, with the reason, which is the point: the exception is
-/// visible, reviewable, and attached to an explanation instead of being absorbed into one enormous
-/// global limit that protects nothing. Matched as a substring of the full test path, so the entry
-/// covers a test on every architecture.
-///
-/// Keep budgets roughly 2x the measured time: enough headroom that host load or a debug build does
-/// not produce a flaky failure, tight enough to still catch a hang. The kernel's own report of any
-/// test over 5 s, and the per-test time record (`time per test`), are where the measurement comes
-/// from.
-///
-/// Empty since 2026-10-11 (UTC). Its one entry gave `std_net_runs_over_the_socket_contract` 700 s
-/// for a measured 300 to 344 s; that test now takes 1.3 to 2.5 s, and the slowest test in about
-/// 27,000 per-test records takes 20.5 s.
+/// [`DEFAULT_BUDGET_SECS`] must say so here, with the reason, so the exception is visible and
+/// reviewable. Matched as a substring of the full test path, so the entry covers a test on every
+/// architecture. Keep budgets roughly 2x the measured time, taken from the kernel's report of any
+/// test over 5 s or from the `time per test` record. Empty since 2026-10-11 (UTC); the measurement
+/// behind that is in notes/system-tests-and-the-kernel-crate.md.
 pub const SLOW_TESTS: &[(&str, u64)] = &[];
 
 /// The budget for a test, in seconds, by its full path: its [`SLOW_TESTS`] entry if it has one,

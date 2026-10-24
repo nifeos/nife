@@ -70,17 +70,13 @@ fn listing_counts(printed: &[u8]) -> (u64, u64, u64) {
     (lines, words, bytes)
 }
 
-/// **The headline: one builtin, two destinations, the same bytes.**
+/// One builtin, two destinations, the same bytes.
 ///
 /// `ls > out.txt` writes a listing into a file and prints nothing. The `ls` after it prints that
-/// same listing (nothing between the two lines changes the directory: `>` created `out.txt`
-/// *before* the first listing was read, so both see it). `wc < out.txt` then has to agree with
-/// what was printed, byte for byte, once the prompt's two-space indent is taken off.
-///
-/// **This line spawns no process at all**, which is the part worth noticing. The shell is the
-/// producer and the shell is the thing behind the file, so `ls > out.txt` is one process doing
-/// two things it already knew how to do. See notes/pipes.md for why the file end is the shell's
-/// and not a sink process's.
+/// same listing (`>` created `out.txt` before the first listing was read, so both see it).
+/// `wc < out.txt` then has to agree with what was printed, byte for byte, once the prompt's
+/// two-space indent is taken off. The line spawns no process: the shell is both the producer and
+/// the file end. See notes/pipes/the-file-end.md.
 #[test_case]
 fn one_builtin_two_destinations_and_the_same_bytes() {
     let mut buf = [0u8; TRANSCRIPT_MAX];
@@ -145,22 +141,14 @@ fn naming_a_file_to_a_reader_is_the_operator_left_out() {
     assert_eq!(operand, listing_counts(answer(t, b"ls")));
 }
 
-/// **A named file reaches a stage of a pipeline**, which is the fix this lane exists for.
+/// A named file reaches the head stage of a pipeline.
 ///
-/// `wc out.txt | wc` puts the operand on the **head** of a pipeline. The name is resolved by the
-/// planner (deciding that a trailing positional is a stream needs the manifest), and the shell used
-/// to wire the head's input off the `Line`, which has no `<` on it. So the planned source was
-/// thrown away and the stage was spawned with an **empty** input slot.
-///
-/// It did not hang, which is what made it hard to see. A `receive` on an empty slot answers
-/// `NoSuchSlot` rather than blocking, the error word decodes as `byte_sink_contract::Msg::Malformed`, and
-/// every reader in this tree treats a malformed message as the end of the document. So the stage
-/// ran to completion over nothing and reported an honest count of an empty stream.
-///
-/// The assertion is derived from the line above it rather than from a constant: the second `wc`
-/// counts what the first one printed, so its byte total is the length of that answer with the
-/// prompt's two-space indent taken off. A head stage fed nothing would report `0 0 0`, which is
-/// exactly what milestone 40's viewer got and what made the bug look like a viewer bug.
+/// `wc out.txt | wc` puts the operand on the head of a pipeline; the planner resolves it, since
+/// deciding that a trailing positional is a stream needs the manifest. An empty input slot does
+/// not hang: `receive` answers `NoSuchSlot`, which decodes as `byte_sink_contract::Msg::Malformed`
+/// and reads as end of document, so a head fed nothing reports `0 0 0`. The assertion is derived
+/// from the line above rather than a constant: the second `wc`'s byte total is the length of the
+/// first one's answer, less the prompt's two-space indent. See notes/pipes.md, EXAMPLES.
 #[test_case]
 fn a_named_file_reaches_the_head_of_a_pipeline() {
     let mut buf = [0u8; TRANSCRIPT_MAX];
@@ -219,22 +207,15 @@ fn one_program_two_destinations_and_the_same_bytes() {
     );
 }
 
-/// **`>>` is `>` with the emptying left out, and the two are measured against each other.**
-///
-/// The script runs the same two commands twice, changing one character:
-///
+/// `>>` is `>` with the emptying left out; the script runs two commands twice, one character apart:
 /// ```text
 /// echo one > trunc.txt        echo one > app.txt
 /// echo two > trunc.txt        echo two >> app.txt
 /// ```
 ///
-/// so the append file must hold **exactly twice** what the truncate file holds, in all three
-/// counts. Doubling is the assertion rather than `(2, 2, 8)` because a literal would be a claim
-/// about what `echo` prints; this is a claim about what the operator did, and it holds whatever
-/// the two lines say.
-///
-/// The truncate arm is load-bearing in its own right: it is what says `>` still empties the
-/// file, which is the property `>>` exists to be the opposite of.
+/// so the append file must hold exactly twice what the truncate file holds, in all three counts.
+/// Doubling, not `(2, 2, 8)`, is a claim about the operator whatever `echo` prints; the truncate
+/// arm is what says `>` still empties the file.
 #[test_case]
 fn append_keeps_what_truncate_throws_away() {
     let mut buf = [0u8; TRANSCRIPT_MAX];

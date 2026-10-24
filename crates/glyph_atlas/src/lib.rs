@@ -4,12 +4,9 @@
 //! ships one face or four)) as coverage tables, and a pure function from `(character, x, y, fg,
 //! bg)` to a color.
 //!
-//! The rasteriser is not here. It ran once, on the host, in `tools/glyph_atlas_generator`, and its
-//! output is the four files under `coverage/`, one byte of coverage a pixel. So drawing a glyph is a
-//! lookup and a blend in linear light, exactly as pure as `bitmap_font`'s bit test, and the three parties that draw,
-//! predict and grade the terminal's picture keep computing it independently without a font engine
-//! in any of them. That generator's test fails if the tables are not what it makes from
-//! `vendor/dejavu`, byte for byte.
+//! The tables under `coverage/` are `tools/glyph_atlas_generator`'s output, one byte of coverage a
+//! pixel, and that generator's test fails unless they are what it makes from `vendor/dejavu`, byte
+//! for byte. See notes/glyphs/glyph-atlas.md.
 //!
 //! # Examples
 //!
@@ -25,7 +22,7 @@
 //! assert!(ink(4, ASCENT - 8), "while the stem is on the left");
 //! assert!((0..CELL_W).all(|x| !ink(x, ASCENT)), "nothing of an L is below the baseline");
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - The repertoire is printable ASCII. Everything else draws the font's own missing-glyph box, as

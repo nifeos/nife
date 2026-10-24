@@ -2,14 +2,12 @@
 //! believed only by the index's digest** (milestone 801 (packages over the internet), items 1, 3
 //! and 4).
 //!
-//! The kernel plays the spawner: `net_stack` over the `e1000e`, `domain_name_resolver` told to ask the
+//! The kernel plays the spawner: `net_stack` over the `e1000e`, `domain_name_resolver` asking the
 //! runners' name server, a badge granted the root zone (`package_index::fixture::ZONE`, as `jig`'s
 //! is under calef's Q5), and `package_fetch_exerciser` holding that badge, the network, a clock and
-//! entropy. The repository is `helpers/tls-peer` as `basalt.test`, the image's backup index
-//! address, standing in for `basalt.nifeos.org`. Nothing leaves slirp.
-//!
-//! Skips only where the program was not built, on `pinned_tls_tests`' terms: `cargo xtask test`
-//! builds it for every leg it boots since milestone 855 (the TLS graph enters the gated build).
+//! entropy. The repository, inside slirp, is `helpers/tls-peer` as `basalt.test`, the image's
+//! backup index address, for `basalt.nifeos.org`. It skips only where the program was not built,
+//! like `pinned_tls_tests` (milestone 855 (the TLS graph enters the gated build)).
 
 use super::name_resolver_tests::{entropy, grant, start_resolver};
 use super::*;
@@ -25,38 +23,11 @@ const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: `cargo xta
 /// admitted by the index's digest, an altered copy is refused, and a name the index does not list
 /// fetches nothing** (calef's Q1, Q2, Q4 and Q5 of 2026-10-10 (UTC) on #1884).
 ///
-/// The refusal is what gives the fetch its meaning: the altered copy is a complete, correct HTTPS
-/// exchange of a well-formed package, so only the digest the index carried can refuse it.
-///
-/// Attested by hand 2026-10-10, besides the replayable record below: with
-/// `package_index::public_address` admitting every address (on aarch64), the client connected to
-/// the listed location at 10.0.2.9 and the test went red on the private-address line. Earlier, with
-/// `accept` hashing the fetched bytes instead of reading the entry's digest, `uptime` was refused
-/// as `MemberMismatch` rather than `NotCataloged`: the flipped byte is also caught by the package's
-/// own table of contents, which is why the test names the refusal.
-///
-/// **The rebinding half (milestone 871 (a sixth outsider pass attacks the confinement claim),
-/// 2026-10-10): the address check and the connection must agree.** The index lists `rebound` under
-/// `rebind.basalt.test`, whose name answers 192.0.2.1 (public) on the first query and the private
-/// peer on every later one. The resolver has no cache (`components/src/domain_name_resolver.rs`), so a
-/// client that checks one resolution and then connects by name asks twice, and a rebinding server
-/// answers the two apart. A `Tls(...)` reason on a listed location means a TLS server answered, and
-/// the only one in slirp is the peer at the private 10.0.2.9:8443, so the client reached a private
-/// address Q1 forbids a listed location from reaching. That is what the client before the fix
-/// printed on aarch64, 2026-10-10 (UTC):
-/// `Tls(InvalidCertificate(NotValidForNameContext { expected: DnsName("rebind.basalt.test"), ...`.
-/// The fixed client dials only the address its check passed (`package_index::Location::check`),
-/// slirp has nothing at 192.0.2.1, and the reason is `ConnectionRefused`.
-///
-/// The record's patch, `get` in `pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs` connecting
-/// by name again (`TcpStream::connect((server_name, to[0].port()))`), went red on aarch64, riscv64
-/// and x86_64 (OVMF included) on patagonia, 2026-10-10, and green with it reverted. Row 35 of
-/// `notes/confinement-claims.md` cites this test.
+/// Only the index's digest can refuse the altered copy, a correct HTTPS exchange of a well-formed
+/// package. Row 35 of `notes/confinement-claims.md` cites this test, and
+/// notes/packages/over-the-internet.md, "The index fetch test", has its hand attestations.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.package_index_tests.a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest.patch`
-///
-/// Redirects (C2, #2048): six probes through a second test authority, one fetched, five refused.
-/// Their falsification is recorded in `notes/packages/the-index-format.md`, question C.
 #[test_case]
 fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest() {
     let Some(exerciser) = program("package_fetch_exerciser") else {
@@ -109,8 +80,11 @@ fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_dig
         .release_or_fail("net_stack and domain_name_resolver, for the package index client");
 }
 
-/// The exerciser's report, `text`, holds every step's line in order: the index, its refusals,
-/// the fetch, the redirect probes, and the final line last.
+/// The exerciser's report, `text`, holds every step's line in order: the index, its refusals, the
+/// fetch, the six redirect probes through a second test authority (one fetched and five refused,
+/// falsified in `notes/packages/the-index-format.md`, question C, per C2 on #2048), and the final
+/// line last. The altered copy must be refused as `NotCataloged`, which only the index's digest
+/// gives; the package's own table of contents would say `MemberMismatch`.
 fn every_step_was_printed_in_order(text: &str) {
     let arch = crate::arch::NAME;
     let mut passed_over = [0u8; 128];
@@ -175,6 +149,10 @@ fn every_step_was_printed_in_order(text: &str) {
 }
 
 /// The rebinding probe (milestone 871), read from the exerciser's report `text`.
+/// `rebind.basalt.test` answers a public address first and the private peer after, and the
+/// resolver has no cache, so a client that checked one answer and then connected by name would
+/// reach the private peer. The client dials only the address its check passed
+/// (`package_index::Location::check`); slirp has nothing at the public one.
 fn the_rebinding_probe_reached_no_private_peer(text: &str) {
     let arch = crate::arch::NAME;
     // The rebinding probe (milestone 871): where the client's refusal of the listed location

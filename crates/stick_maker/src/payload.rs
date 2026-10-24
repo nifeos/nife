@@ -1,19 +1,12 @@
 //! **The boot files this program carries, and the note it leaves beside them.**
 //!
-//! The payload is a set of UEFI applications at the removable-media paths the UEFI specification
-//! fixes per architecture (UEFI 2.10, 3.5.1.1): `\EFI\BOOT\BOOTX64.EFI` for `x86_64`,
-//! `BOOTAA64.EFI` for aarch64, `BOOTRISCV64.EFI` for riscv64. Each firmware looks for its own name
-//! and ignores the others, so one stick carrying all three boots on all three, and nobody picks a
-//! target. That is the universal stick (U1 in the roadmap block).
-//!
-//! # Why the kernel and its archive cannot arrive here mismatched
-//!
-//! Each file is **one** UEFI application that already contains its kernel and the userspace
-//! archive that kernel measures (`uefi_loader/build.rs`), and the loader's own build refuses a
-//! pair whose archive the kernel does not vouch for. So there is nothing in this program that
-//! could pair a kernel with the wrong archive: the only unit it handles is the sealed file. radon
-//! and xenon have both halted at `MEASURED BOOT REFUSED` on a mismatched pair that a person
-//! copied; this program has no way to express that copy.
+//! The payload is a set of UEFI applications at the removable-media paths UEFI 2.10, 3.5.1.1 fixes
+//! per architecture: `\EFI\BOOT\BOOTX64.EFI` for `x86_64`, `BOOTAA64.EFI` for aarch64 and
+//! `BOOTRISCV64.EFI` for riscv64. Each firmware loads only its own name, so one stick boots on all
+//! three and nobody picks a target (U1 in the roadmap block). Each file is one sealed application
+//! holding its kernel and the archive that kernel measures, and the loader's build refuses a
+//! mismatched pair (`uefi_loader/build.rs`), so this program cannot pair a kernel with the wrong
+//! archive. See notes/boot-stick/the-program.md.
 
 use measured_boot::{hex, sha256};
 
