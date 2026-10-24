@@ -256,10 +256,7 @@ fn the_bottom_row_scrolls() {
     assert_eq!(t.cursor(), (0, 2), "the cursor stays on the bottom row");
     t.feed(b"new\r\nend");
     assert_eq!(rows(&t), ["six ", "new ", "end "]);
-    // Printing plus the cursor between them already dirty the whole grid here, and the scroll
-    // is movement rather than change: the honest re-render box is still everything, but the
-    // report says how many rows moved rather than that every cell changed. Two scrolls
-    // happened (one before `six`'s line feed, one inside `new`'s).
+    // The printing dirtied every cell; the report also counts the two scrolls.
     assert_eq!(
         t.damage().map(|d| d.repaint_rect(4, 3)),
         Some(CellRect {
@@ -271,19 +268,14 @@ fn the_bottom_row_scrolls() {
     );
     assert_eq!(t.damage().expect("the feeds above scrolled").scrolled, 2);
 
-    // The same claim with nothing else in the frame. Above, the printing and the cursor
-    // between them already dirty the whole grid, so a scroll that reported no damage at all
-    // would still add up to the right rectangle. A bare LF on the bottom row moves every row
-    // and writes no new cell, which is the only shape that can tell a scroll from a change
-    // apart.
+    // A bare LF on the bottom row moves every row and writes no cell: a scroll alone.
     let mut t = vt(4, 3);
     t.set_cursor_visible(false);
     t.feed(b"ab\r\ncd\r\nef");
     t.take_damage();
     t.feed(b"\r\n");
     assert_eq!(rows(&t), ["cd  ", "ef  ", "    "]);
-    // One row of movement. The only cells to re-render are the ones the bottom row's old
-    // content (`ef`) vacated when the scroll blanked it.
+    // One row of movement, and only the cells `ef` vacated to render.
     assert_eq!(
         t.take_damage().map(|d| (d.rect, d.scrolled)),
         Some((
@@ -302,8 +294,7 @@ fn the_bottom_row_scrolls() {
     assert_eq!(rows(&t), ["ef  ", "    ", "    "]);
     assert_eq!(t.take_damage(), Some(Damage::new(CellRect::EMPTY, 1)));
 
-    // The old whole-grid report is what a consumer that cannot move pixels must still paint,
-    // and `repaint_rect` is the one-call spelling of it.
+    // A consumer that cannot move pixels paints `repaint_rect`, the whole grid.
     assert_eq!(
         Damage::new(CellRect::EMPTY, 1).repaint_rect(4, 3),
         CellRect {
@@ -326,8 +317,7 @@ fn scrolls_report_movement_and_cap_at_the_screen() {
     t.feed(b"ab\r\ncd\r\nef");
     t.take_damage();
 
-    // One scroll: `ef` moved from row 2 to row 1 without changing, and the only cells to
-    // render are the ones its old position vacated when the bottom row blanked.
+    // One scroll: `ef` moved up unchanged; render only the cells it vacated.
     t.feed(b"\r\n");
     let d = t.take_damage().expect("the grid scrolled");
     assert_eq!(d.scrolled, 1);
@@ -348,8 +338,7 @@ fn scrolls_report_movement_and_cap_at_the_screen() {
     assert_eq!(d.scrolled, 1);
     assert_eq!(d.rect, CellRect::EMPTY, "the bottom row opened blank");
 
-    // Three scrolls between takes (one first, then two more) is every row of a three-row grid
-    // replaced, so the report gives up the movement and says content.
+    // Three scrolls replace every row of a three-row grid: content, not movement.
     t.feed(b"\r\n");
     t.feed(b"\r\n\r\n");
     let d = t.take_damage().expect("the grid scrolled");
@@ -406,8 +395,7 @@ fn the_cursor_sequences_use_ansi_defaults() {
     assert_eq!(t.cursor(), (7, 0));
     t.feed(b"\x1b[H");
     assert_eq!(t.cursor(), (0, 0), "CSI H with no parameters is home");
-    // The far edges. A clamp that is one too generous parks the cursor off the grid, where
-    // every subsequent write is silently discarded by `put`.
+    // The far edges: a clamp one too generous parks the cursor where `put` discards writes.
     t.feed(b"\x1b[99B");
     assert_eq!(t.cursor(), (0, 3), "downward motion clamps to the last row");
     t.feed(b"\x1b[99;99H");
@@ -648,17 +636,14 @@ fn an_unknown_sequence_leaves_nothing_on_the_screen() {
         "abcde   ",
         "an unimplemented sequence left bytes on the screen",
     );
-    // A sequence split across two feeds is still one sequence: the parser is a state machine
-    // across calls, which is what a byte-at-a-time IPC path needs.
+    // A sequence split across two feeds is still one sequence.
     let mut t = vt(8, 1);
     t.feed(b"x\x1b");
     t.feed(b"[2");
     t.feed(b"Cy");
     assert_eq!(rows(&t)[0], "x  y    ");
 
-    // A string sequence ends at ST (`ESC \`) as well as at BEL, and an ESC inside it that is
-    // not ST is part of the string. Only the BEL terminator is exercised above, so the whole
-    // ESC-in-a-string state was reachable but never distinguished from Ground.
+    // A string ends at ST (`ESC \`) too, and an ESC inside it that is not ST is part of it.
     let mut t = vt(8, 1);
     t.feed(b"a\x1b]0;title\x1b\\b");
     assert_eq!(rows(&t)[0], "ab      ");
@@ -670,8 +655,7 @@ fn an_unknown_sequence_leaves_nothing_on_the_screen() {
         "an ESC that is not ST stays in the string"
     );
 
-    // Control codes with no meaning here are consumed. Drawn instead, they are the font's
-    // blanks or its missing-glyph box, in the middle of a line that was otherwise fine.
+    // Control codes with no meaning here are consumed, not drawn.
     let mut t = vt(8, 1);
     t.feed(b"a\x01\x02\x1f\x7fb");
     assert_eq!(rows(&t)[0], "ab      ");
@@ -761,9 +745,8 @@ fn it_understands_the_line_disciplines_echo() {
         }
     }
 
-    // Type "hello", back up two (^B), insert "XY", delete forward (^D), kill to end (^K), then
-    // Enter. That is the editing that produces CSI D, CSI C, CSI K and a mid-line redraw, which
-    // is the whole set a display terminal has to understand to show an edited line correctly.
+    // "hello", ^B ^B, "XY", ^D, ^K, Enter: the editing that emits CSI D, CSI C, CSI K and a
+    // mid-line redraw.
     let mut ld = line_editor::LineDisc::new();
     let mut echo = Echo(Vec::new());
     let mut event = line_editor::Event::None;
@@ -792,8 +775,7 @@ fn it_understands_the_line_disciplines_echo() {
         "the grid disagrees with the line the discipline assembled",
     );
 
-    // And the ^L repaint (CSI 2J, CSI H, then the prompt and the line) drives this engine
-    // correctly: the screen is cleared and the line is back at the top.
+    // The ^L repaint (CSI 2J, CSI H, the prompt and the line) puts the line back at the top.
     let mut echo = Echo(Vec::new());
     for &b in b"redraw\x0c" {
         ld.feed(b, &mut echo);
@@ -837,10 +819,7 @@ fn each_window_shows_its_own_banner_and_its_own_typing() {
 /// find out otherwise.
 #[test]
 fn the_demo_script_produces_a_picture_worth_checking() {
-    // Drive `script::full_screen` rather than rebuilding it here. The guest test renders
-    // exactly that, so reconstructing the setup by hand let the two witnesses diverge: this
-    // test fed GREETING and stopped, while the screen being graded in QEMU also had TYPED on
-    // it. `script.rs` exists so every party agrees, which only works if every party calls it.
+    // `script::full_screen`, not a rebuilt copy, so this and the guest test cannot diverge.
     let mut t = vt(script::COLS, script::ROWS);
     script::full_screen(&mut t);
     let seen = rows(&t);
@@ -857,8 +836,7 @@ fn the_demo_script_produces_a_picture_worth_checking() {
         attrs.iter().any(|a| *a != Attr::DEFAULT),
         "the script never changes rendition: the colour path is untested on the machine",
     );
-    // The truecolour pass's own two claims reach the machine only if the script carries them:
-    // a 24-bit colour, and a line rendition, each on a cell with ink.
+    // A 24-bit colour and a line rendition reach the machine only if the script carries them.
     assert!(
         attrs.iter().any(|a| matches!(a.fg(), Colour::Rgb(..))),
         "the script has no 24-bit colour: truecolour is untested on the machine",
@@ -936,8 +914,7 @@ fn geometry_clamps_exactly_at_the_boundary_not_one_off_it() {
         MAX_COLS as u32,
         "one column past the boundary must be clamped"
     );
-    // The two screens this was sized for fit whole: OVMF's 1280x800 and xenon's 1920x1080 at the
-    // 14x26 cell.
+    // OVMF's 1280x800 and xenon's 1920x1080 fit whole at the 14x26 cell.
     for (cols, rows) in [(91, 30), (137, 41)] {
         assert_eq!(
             (Vt::new(cols, rows).cols(), Vt::new(cols, rows).rows()),
@@ -1021,9 +998,7 @@ fn utf8_decodes_every_sequence_length_and_recovers_from_a_bad_one() {
     t.feed("🎉".as_bytes());
     assert_eq!(t.cell(0, 0).ch, '🎉');
 
-    // A truncated sequence: the lead byte of a two-byte character, then a byte that is not a
-    // continuation byte. The truncated character draws the replacement, and the byte that
-    // interrupted it is reprocessed as its own character rather than eaten.
+    // A truncated two-byte character: the replacement, then the interrupting byte as its own.
     let mut t = vt(8, 1);
     t.feed(b"\xc3Z");
     assert_eq!(t.cell(0, 0).ch, '\u{fffd}', "truncated sequence");
@@ -1033,8 +1008,7 @@ fn utf8_decodes_every_sequence_length_and_recovers_from_a_bad_one() {
         "the interrupting byte must still be typed"
     );
 
-    // A byte that can never start a sequence (a bare continuation byte): the replacement,
-    // immediately, with nothing held waiting for continuation bytes that were never coming.
+    // A bare continuation byte: the replacement at once, nothing held.
     let mut t = vt(8, 1);
     t.feed(b"\x80A");
     assert_eq!(t.cell(0, 0).ch, '\u{fffd}', "a lone continuation byte");
@@ -1059,26 +1033,19 @@ fn scrollback_survives_the_rings_wrap_and_reads_back_in_order() {
         t.feed(std::format!("L{i:03}\r\n").as_bytes());
     }
 
-    // 349 scrolls happened (every line after the first fills the grid and pushes one row), and
-    // the ring caps at SCROLLBACK_ROWS.
+    // 349 scrolls, capped at SCROLLBACK_ROWS.
     assert_eq!(t.scrollback_len(), SCROLLBACK_ROWS as u32);
 
-    // The live grid holds the last line printed; nothing was fed after it, so the bottom row is
-    // still blank.
+    // The last line printed, then the blank row its LF opened.
     assert_eq!(rows(&t), ["L349", "    "]);
 
     // Scrolling clamps at the ring's true depth, not at whatever was asked for.
     t.scroll_up(u32::MAX);
     assert_eq!(t.view_offset(), SCROLLBACK_ROWS as u32);
 
-    // Six checkpoints spanning the ring, including both edges: age 0 (the row pushed right
-    // before the wrap stopped, where `sb_tail` last wrote) and age SCROLLBACK_ROWS - 1 (the
-    // oldest survivor, on the far side of the ring from where it is currently writing). A wrong
-    // `+`/`*`/`%` in the ring's index arithmetic is very unlikely to agree with the right one at
-    // all six. Both display rows are checked, not just the top one: at row 0, `Vt::cell`'s
-    // `age = view_offset - 1 - row` has `row == 0`, so a `-row` mutated to `+row` is invisible
-    // there and needs row 1 (and, at `offset == 1`, row 1 comes from the *live* half of
-    // `Vt::cell` instead, which is what exercises `live_row = row - view_offset`).
+    // Six offsets spanning the ring, both edges included, so wrong ring arithmetic disagrees
+    // somewhere. Row 1 is checked too: at row 0 a `-row` mutated to `+row` is invisible, and at
+    // offset 1 row 1 is live, which exercises `live_row = row - view_offset`.
     for offset in [1u32, 2, 50, 150, 299, 300] {
         t.scroll_down(u32::MAX);
         t.scroll_up(offset);
@@ -1161,8 +1128,7 @@ fn put_and_damage_cell_reject_a_partly_out_of_range_coordinate() {
 /// time, on a surface taller than the grid the way a real scanout leaves a strip below it.
 #[test]
 fn moving_pixels_and_rendering_the_damage_reproduces_the_whole_picture() {
-    // One present per write (the console unbatched), and several writes per present (a
-    // batch window, or a terminal that drained more than one request before presenting).
+    // One write per present, and several.
     moving_pixels_with_k::<1>();
     moving_pixels_with_k::<2>();
     moving_pixels_with_k::<3>();
@@ -1247,8 +1213,7 @@ fn a_painter_that_moves_and_renders_what_damage_says_ends_with_the_engines_pictu
             b"\x1b[2;3Hmid\x1b[6;1H\r\n\r\n\r\n",
             b"x\r\ny\r\nzzzzzzzzzzzzzzzzzzz\r\n\r\n",
             b"a\r\nb\r\nc\r\nd\r\ne\r\nf\r\ng\r\n",
-            // Two full rows, then two feeds with nothing written: the move exposes the bottom row,
-            // whose old pixels are the second full row.
+            // Two full rows, then a move that exposes the bottom row over the second one's pixels.
             b"AAAAAAAAAAAAAAAAAAA\r\nBBBBBBBBBBBBBBBBBBB",
             b"\r\n\r\n",
         ] {

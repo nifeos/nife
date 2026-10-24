@@ -16,8 +16,8 @@ use crate::handoff::{
     word_at, words_attr, words_attr_1, words_cell, words_cell_1,
 };
 
-/// The parser's state. Deliberately few: a VT's full state machine has a dozen states, and most of
-/// the extra ones exist to distinguish sequences this engine swallows anyway.
+/// The parser's state. Deliberately few: most of a full VT's dozen states distinguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
     /// Printing.
@@ -26,44 +26,28 @@ enum State {
     Esc,
     /// Inside `ESC [`, accumulating parameters.
     Csi,
-    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and its relatives).
-    ///
-    /// This state earns its place: a string sequence carries arbitrary text, so a parser without it
-    /// prints the window title onto the screen. That is not hypothetical, it is what this engine did
-    /// before the test caught it, and it is the reason the test feeds a title-setting sequence.
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and its relatives),
+    /// whose arbitrary text a parser without this state would print, a window title included.
     Str,
     /// Inside a string sequence, having just seen `ESC`: a `\` ends the string (ST), anything else
     /// is part of it.
     StrEsc,
 }
 
-/// How many numeric parameters a CSI sequence may carry. **Sixteen since milestone 142's truecolour
-/// pass**, up from four: one 24-bit color is five parameters (`38;2;r;g;b`), a foreground and a
-/// background together are ten, and a highlighter commonly adds a reset and a rendition or two in
-/// the same sequence. A seventeenth is swallowed rather than growing the array, because a parameter
-/// list that long belongs to a sequence this engine does not implement.
+/// How many numeric parameters a CSI sequence may carry: a foreground and a background in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth marks the sequence
+/// ignored rather than growing the array.
 pub(crate) const MAX_PARAMS: usize = 16;
 
 /// **A terminal's live grid, plus its off-screen history.**
 ///
-/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [`Vt::pixel`], and ask
-/// what changed with [`Vt::take_damage`]. Scroll into history with [`Vt::scroll_up`]/
-/// [`Vt::scroll_down`] (milestone 142 increment 2).
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`Vt::scroll_down`].
 ///
-/// **Large enough now that a `Vt` must never be a runtime-constructed local or return value**,
-/// which is worth stating as a rule next to the type rather than only in the notes. At [`MAX_COLS`]
-/// x [`MAX_ROWS`] plus [`SCROLLBACK_CELLS`] this is several hundred KiB, comfortably past a kernel
-/// thread stack (24 KiB) and past a user process's own stack page (4 KiB). `Vt::new` stays `const
-/// fn` for exactly this reason: called with compile-time-constant `cols`/`rows` (as every
-/// `static mut ... = Vt::new(...)` in this tree does), the value is built by the compiler and placed
-/// directly in `.bss`, never on a stack. A caller with a **runtime** geometry (`display_terminal`
-/// negotiating with its driver, a kernel test reading dimensions off a reply) must construct once,
-/// at a fixed or upper-bound size, and then call [`Vt::reset_to`] to retarget it in place; it must
-/// never write `let vt = Vt::new(runtime_cols, runtime_rows);` or `*existing = Vt::new(...);`; both
-/// are calls to a `const fn` outside a const context, which run as ordinary functions and would
-/// require an ordinary, Vt-sized return value to exist somewhere at runtime. `script/stack-frame-
-/// check` is the gate that would catch a violation, and this doc comment is why a reader should not
-/// need it to.
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed local or return
+/// value.** Build it in a `static` with constant geometry and retarget it with [`Vt::reset_to`];
+/// `script/stack-frame-check` catches a violation. See notes/video-terminal.md, "The grid's
+/// capacity".
 pub struct Vt {
     cells: [Cell; MAX_CELLS],
     /// Off-screen history: a ring of whole rows, oldest overwritten first. See
@@ -108,30 +92,18 @@ pub struct Vt {
     /// whole-grid rectangle.
     scrolled: u32,
     /// Where the cursor was drawn in the picture the last [`Vt::take_damage`] reported, in
-    /// **current** coordinates: each scroll moves it up a row with the grid. This is what makes
-    /// the cursor honest under the scroll fast path, because the cursor is the one thing on the
-    /// screen whose pixels do not move with its cell: a scroll carries the *rendered* block up a
-    /// row while the cursor itself stays on the bottom row, so the row the block landed on has to
-    /// be re-rendered, and this field is how the engine knows which row that is. `None` when the
-    /// last reported picture drew no cursor (hidden, or never taken).
+    /// **current** coordinates: each scroll moves it up a row with the grid, so the row a scrolled
+    /// block landed on is re-rendered. `None` when the last reported picture drew no cursor.
     drawn: Option<(u32, u32)>,
 }
 
 impl Vt {
     /// A blank terminal of `cols` by `rows` cells, clamped to [`MAX_COLS`] and [`MAX_ROWS`].
     ///
-    /// Clamped rather than refused because the alternative in a `no_std` component is a panic in a
-    /// process that has no way to report one, and a terminal that is smaller than asked for is
-    /// visibly wrong. The component that wires it asserts the real geometry at compile time.
-    ///
-    /// **`const`, so a terminal can live in `.bss`.** See this struct's own doc for why that
-    /// matters more now than it used to: a `Vt` is hundreds of KiB, and `const` is what lets a
-    /// compile-time-constant geometry cost nothing at runtime. The clamps are spelled out rather
-    /// than using `Ord::clamp`, which is not `const`.
-    ///
-    /// A **runtime** geometry must not call this directly and bind the result (see the struct doc);
-    /// construct once with any geometry (typically `(1, 1)`, as `components/src/display_terminal.rs`'s
-    /// `static` does) and call [`Vt::reset_to`] instead.
+    /// Clamped rather than refused, because the alternative in a `no_std` component is a panic it
+    /// cannot report. **`const`, so a terminal can live in `.bss`**; the clamps are spelled out
+    /// because `Ord::clamp` is not `const`. A runtime geometry constructs once, typically at
+    /// `(1, 1)`, and calls [`Vt::reset_to`] (see the struct doc).
     pub const fn new(cols: u32, rows: u32) -> Vt {
         let cols = Self::clamp_cols(cols);
         let rows = Self::clamp_rows(rows, cols);
@@ -155,9 +127,7 @@ impl Vt {
             ignore: false,
             utf8_need: 0,
             utf8_code: 0,
-            // A fresh terminal is entirely damage: nothing has painted its surface yet, so the
-            // first present must cover the whole grid rather than the empty rectangle "nothing
-            // changed" would give.
+            // Nothing has painted the surface yet, so the first present covers the whole grid.
             dirty: Some(CellRect {
                 col: 0,
                 row: 0,
@@ -209,12 +179,8 @@ impl Vt {
     }
 
     /// **Re-target this terminal to `cols` by `rows`, in place, clearing the grid and the
-    /// scrollback.** What [`Vt::new`] does, applied to an existing `Vt` by mutating it field by
-    /// field, so a caller with a **runtime** geometry never needs a `Vt`-sized return value or
-    /// local (see this struct's own doc for why that is now a real hazard rather than a style
-    /// preference). Typical use: a `static mut` constructed once at `(1, 1)`, retargeted here the
-    /// moment the real geometry is known (`components/src/display_terminal.rs`'s own bring-up, a kernel
-    /// test that read a window's size off a control page).
+    /// scrollback.** What [`Vt::new`] does, field by field, so a caller with a runtime geometry
+    /// never needs a `Vt`-sized value (see the struct doc).
     pub fn reset_to(&mut self, cols: u32, rows: u32) {
         let cols = Self::clamp_cols(cols);
         let rows = Self::clamp_rows(rows, cols);
@@ -280,18 +246,15 @@ impl Vt {
     /// [`Vt::view_offset`] is nonzero). Out of range gives a default blank rather than a panic,
     /// because the callers are pixel loops.
     ///
-    /// `row` is a **display** row: `0` is always the top of whatever is currently shown, whether
-    /// that is the live grid (view offset `0`) or a scrolled-back history page. This is the one
-    /// function every reader (`pixel`, `row_bytes`) goes through, so the scrollback view is uniform
-    /// rather than a special case each caller has to know about.
+    /// `row` is a **display** row: `0` is the top of whatever is shown. Every reader (`pixel`,
+    /// `row_bytes`) goes through here, so the scrollback view is uniform.
     pub fn cell(&self, col: u32, row: u32) -> Cell {
         if col >= self.cols || row >= self.rows {
             return Cell::default();
         }
         if row < self.view_offset {
-            // The topmost `view_offset` display rows come from history: display row 0 is the
-            // oldest of the rows being shown from scrollback (`age = view_offset - 1`), and each
-            // row closer to the live grid is one age newer, down to `age = 0` immediately above it.
+            // Display row 0 is the oldest row shown (`age = view_offset - 1`); the row just above
+            // the live grid is `age = 0`.
             let age = self.view_offset - 1 - row;
             return self.scrollback_cell(col, age);
         }
@@ -307,31 +270,19 @@ impl Vt {
         if age >= self.sb_len {
             return Cell::default();
         }
-        // `sb_tail` is the ring slot the *next* push will use, so the most recent row (age 0) is
-        // one slot behind it, and each older age is one slot further behind, wrapping.
+        // `sb_tail` is the slot the next push uses, so age 0 is one slot behind it.
         let capacity = self.scrollback_depth();
         let ring_row = (self.sb_tail + capacity - 1 - age) % capacity;
         self.scrollback[(ring_row * self.cols + col) as usize]
     }
 
     /// **The pixel at `(x, y)` of the terminal's surface.** The whole of rendering, as a pure
-    /// function of the grid (and, since milestone 142 increment 2, of the scroll position).
+    /// function of the grid and the scroll position.
     ///
-    /// The cursor is a **block**, drawn by swapping the cell's own two colors. Drawing it here
-    /// rather than as a separate overlay is what keeps the picture a function of the state: a test
-    /// that predicts the screen predicts the cursor too, and a cursor left in the wrong place is a
-    /// failure rather than a cosmetic difference nobody notices.
-    ///
-    /// **The cursor does not draw while scrolled back.** It names a position in the live grid, which
-    /// is not what is on screen when `view_offset` is nonzero; drawing it there would put the block
-    /// on whatever history cell happens to share its `(col, row)`, which is not the cursor's
-    /// position and would be actively misleading.
-    ///
-    /// **`col < self.cols` is checked after `col == self.col`, and by then it is redundant.**
-    /// `self.col` is never `>= self.cols` (the same cursor-in-bounds invariant `Vt::erase_display`'s
-    /// doc comment names), so `col == self.col` already implies `col < self.cols`; relaxing the
-    /// comparison to `<=` cannot change which branch is taken. It stays written out because a reader
-    /// should not have to chase that invariant to see the guard is safe.
+    /// The cursor is a **block**, drawn by swapping the cell's two colors rather than as an
+    /// overlay, so a test that predicts the screen predicts the cursor too. It is not drawn while
+    /// scrolled back. The `col < self.cols` guard is redundant and kept for the reader; see
+    /// notes/video-terminal.md, "Rendering" and "Mutants the engine cannot kill".
     pub fn pixel(&self, x: u32, y: u32) -> u32 {
         let (col, row) = (x / crate::CELL_W, y / crate::CELL_H);
         let cell = self.cell(col, row);
@@ -346,11 +297,8 @@ impl Vt {
         }
         let (fg, bg) = attr.colours();
         let (gx, gy) = (x % crate::CELL_W, y % crate::CELL_H);
-        // The line renditions are ink across the **whole** cell width, gutters included, so an
-        // underlined or struck-out word is one unbroken line rather than a dash per letter (unlike
-        // the underscore glyph, whose ink stops at the gutters; see notes/glyphs.md). The
-        // patterned underlines read the screen's `x`, not the cell's, so a wave or a run of dots
-        // carries on across cells rather than restarting in each.
+        // Line renditions ink the whole cell width, gutters included, and patterned underlines
+        // read the screen's `x`, so both run unbroken across cells.
         if underline_ink(attr.underline(), x, gy) {
             return attr.underline_color(fg);
         }
@@ -383,13 +331,8 @@ impl Vt {
         }
     }
 
-    /// **What changed since the last call, clearing the record.**
-    ///
-    /// The returned [`Damage`] carries the invariant a painter needs (move `scrolled` rows up,
-    /// render `rect`); its own doc says why a scroll is movement rather than a whole-grid box.
-    /// Taking the report also fixes the cursor into it: from this moment the engine knows where
-    /// the cursor was last drawn ([`Vt::drawn`]'s own doc says why that has to survive scrolls),
-    /// and the next report will name the row the old block has to be lifted from.
+    /// **What changed since the last call, clearing the record**, as a [`Damage`]. Taking it also
+    /// records where the cursor was drawn ([`Vt::drawn`]).
     ///
     /// # Examples
     ///
@@ -416,11 +359,7 @@ impl Vt {
     /// assert_eq!(vt.take_damage(), None); // taken once
     /// ```
     pub fn take_damage(&mut self) -> Option<Damage> {
-        // The cursor is part of the picture, so the report has to cover it moving, appearing or
-        // vanishing since the last take. `feed` already dirties the endpoints of every move it
-        // makes; this is the net that catches what a scroll carries sideways (a drawn cursor one
-        // row up, say), and only dirtying on a real difference is what keeps an engine at rest
-        // reporting `None`: a `BEL` must not become a one-cell flush.
+        // Dirty the cursor cells only on a real difference, so an engine at rest reports `None`.
         let drawn_now = if self.cursor_visible {
             Some((self.col, self.row))
         } else {
@@ -436,12 +375,8 @@ impl Vt {
             self.drawn = drawn_now;
         }
         let scrolled = core::mem::take(&mut self.scrolled);
-        // **The rows a move of more than one row exposes are rendered whole.** A painter moves its
-        // picture up `scrolled` rows at once, so the bottom `scrolled` rows keep the pixels the old
-        // picture had there. The cell model behind `put`'s comparison is a move of one row at a
-        // time, which leaves a copy of the bottom row behind, and the two agree only when
-        // `scrolled` is one. Past that, a row wider than the rows that replaced it would leave its
-        // tail on the screen.
+        // `put`'s comparison models a move of one row at a time; a painter moves `scrolled` rows
+        // at once, so past one the exposed bottom rows must be rendered whole.
         if scrolled > 1 {
             self.dirty = Some(
                 CellRect {
@@ -455,8 +390,7 @@ impl Vt {
         }
         let rect = match self.dirty.take() {
             Some(rect) => rect,
-            // A scroll with nothing to render (a bare LF over an already-blank bottom row, cursor
-            // hidden) is still a report: the painter's pixels moved.
+            // A scroll with nothing to render is still a report: the painter's pixels moved.
             None if scrolled > 0 => CellRect::EMPTY,
             None => return None,
         };
@@ -464,10 +398,7 @@ impl Vt {
     }
 
     /// Copy row `row`'s characters into `out` as bytes, returning how many were written. For tests
-    /// and for a caller that wants the text rather than the pixels; there is no `String` in
-    /// `no_std`. ASCII characters pass through unchanged; anything else (a non-ASCII `char`, since
-    /// milestone 142's UTF-8 increment) becomes `?`, the conventional lossy placeholder, since the
-    /// return type has no room for anything wider than a byte.
+    /// and for a caller that wants the text; a non-ASCII `char` becomes `?`.
     ///
     /// # Examples
     ///
@@ -525,16 +456,11 @@ impl Vt {
         }
     }
 
-    /// **Push bytes through the parser.**
+    /// **Push bytes through the parser.** New output snaps a scrolled-back view to live.
     ///
-    /// # Deferred wrap, which is the one subtlety in printing
-    ///
-    /// Writing into the last column does **not** move the cursor to the next row. It leaves the
-    /// cursor on that last cell and arms a pending wrap, and the *next* printable byte does the
-    /// wrap first. Every real terminal does this, and the reason is visible in a line discipline's
-    /// echo: a line that exactly fills the width would otherwise scroll the screen before anything
-    /// asked it to, and a `CR` arriving right after the last character would find the cursor a row
-    /// too low. Any cursor motion, `CR`, or `LF` cancels the pending wrap.
+    /// Writing into the last column leaves the cursor there with a wrap pending, which the next
+    /// printable byte does first; cursor motion, `CR` and `LF` cancel it. See
+    /// notes/video-terminal.md, "Printing and the cursor".
     ///
     /// # Examples
     ///
@@ -563,11 +489,6 @@ impl Vt {
     /// assert_eq!(row[0], b'e');
     /// ```
     pub fn feed(&mut self, bytes: &[u8]) {
-        // New output snaps the view back to live, the same convention every real terminal follows:
-        // typing (or a program printing) while scrolled into history is disorienting otherwise, and
-        // it is what makes `view_offset` a read-only concern for a caller that never scrolls. A
-        // caller mid-history who then feeds nothing (a scroll key alone, which goes through
-        // `scroll_up`/`scroll_down` and never reaches this function) is unaffected.
         if self.view_offset != 0 {
             self.view_offset = 0;
             self.damage_all();
@@ -577,9 +498,7 @@ impl Vt {
             self.byte(b);
         }
         if (self.col, self.row) != before && self.cursor_visible {
-            // The cursor is painted, so moving it dirties both the cell it left and the one it
-            // arrived at. Doing it once per `feed` rather than per byte keeps a long print from
-            // dirtying a trail of cells it also overwrote.
+            // Once per `feed`, not per byte, so a long print dirties no trail of cells.
             self.damage_cell(before.0, before.1);
             self.damage_cell(self.col, self.row);
         }
@@ -596,8 +515,7 @@ impl Vt {
                 _ => {}
             },
             State::StrEsc => {
-                // `ESC \` is the standard string terminator; an ESC followed by anything else was
-                // part of the string after all.
+                // `ESC \` (ST) ends the string; an ESC followed by anything else is part of it.
                 self.state = if b == b'\\' {
                     State::Ground
                 } else {
@@ -607,26 +525,16 @@ impl Vt {
         }
     }
 
-    /// The Unicode replacement character, drawn for an invalid or incomplete UTF-8 sequence. The
-    /// conventional choice (the same one `String::from_utf8_lossy` makes), so this engine's failure
-    /// picture is the one a reader has likely seen from every other tool that decodes UTF-8.
+    /// The Unicode replacement character, drawn for an invalid or incomplete UTF-8 sequence, as
+    /// `String::from_utf8_lossy` does.
     const REPLACEMENT: char = '\u{fffd}';
 
     fn ground(&mut self, b: u8) {
-        // **UTF-8 decoding, ahead of the control-code match.** Every control code and every escape
-        // introducer this engine understands is plain ASCII (`< 0x80`), so a byte with the high bit
-        // set can only be part of a multi-byte character; checking `utf8_need` first is what lets
-        // the two decoders (this one, and the ANSI/CSI state machine below) coexist without either
-        // having to know about the other's bytes. State persists across `feed` calls, so a sequence
-        // split at a buffer boundary still decodes correctly.
+        // UTF-8 first: every control code and introducer is below 0x80, so a high-bit byte can
+        // only belong to a multi-byte character. See notes/video-terminal.md, "UTF-8".
         if self.utf8_need > 0 {
             if b & 0xc0 == 0x80 {
-                // A well-formed continuation byte.
-                //
-                // **The `|` cannot be distinguished from `^` here.** `self.utf8_code << 6` always has
-                // its low six bits zero (a left shift by six fills them with zero), and `b & 0x3f` is
-                // exactly six bits, so the two operands never share a set bit; OR and XOR agree on
-                // every input for that reason alone, not because of anything this loop's callers do.
+                // A continuation byte. The operands of `|` share no bit, so `^` would agree.
                 self.utf8_code = (self.utf8_code << 6) | (b & 0x3f) as u32;
                 self.utf8_need -= 1;
                 if self.utf8_need == 0 {
@@ -635,9 +543,7 @@ impl Vt {
                 }
                 return;
             }
-            // Not a continuation byte: the sequence was truncated. Draw the replacement for what
-            // was collected so far and reprocess `b` as a fresh byte, rather than eating it, so a
-            // truncated sequence loses exactly the bytes it claimed and nothing after them.
+            // Truncated: draw the replacement and reprocess `b` rather than eating it.
             self.utf8_need = 0;
             self.print(Self::REPLACEMENT);
         }
@@ -654,27 +560,19 @@ impl Vt {
                 self.line_feed();
             }
             0x08 => {
-                // Backspace does not wrap back to the previous row. A line discipline never asks it
-                // to (it only backs up within the line it echoed), and a terminal that did would
-                // have to remember whether the previous row ended in a wrap.
+                // No wrap back to the previous row: a line discipline only backs up within a line.
                 self.wrap_pending = false;
                 self.col = self.col.saturating_sub(1);
             }
             b'\t' => {
                 self.wrap_pending = false;
-                // Every eight columns, and never past the last one: a tab at the right margin stops
-                // there rather than wrapping, which is what the fixed-tab-stop terminals do.
+                // Every eight columns, stopping at the last one rather than wrapping.
                 self.col = ((self.col / 8 + 1) * 8).min(self.cols - 1);
             }
             0x07 => {} // BEL: there is no bell on a framebuffer, and a visual bell is policy
             0x00..=0x1f | 0x7f => {} // every other control code: consumed, never drawn
             0x20..=0x7e => self.print(b as char), // plain printable ASCII, the common case
-            // A UTF-8 lead byte: 0xc2..0xdf is two bytes total, 0xe0..0xef three, 0xf0..0xf4 four
-            // (RFC 3629's range, past which no code point is assigned). 0x80..0xc1 and 0xf5..0xff
-            // can never start a sequence (0x80..0xbf are continuation-only; 0xc0/0xc1 could only
-            // encode a code point already representable in one byte, which RFC 3629 forbids as an
-            // overlong form), so those draw the replacement immediately rather than waiting for
-            // bytes that would never complete a valid character.
+            // RFC 3629's lead bytes; 0x80..=0xc1 and 0xf5..=0xff can never start a sequence.
             0xc2..=0xdf => {
                 self.utf8_need = 1;
                 self.utf8_code = (b & 0x1f) as u32;
@@ -719,17 +617,13 @@ impl Vt {
             self.row += 1;
             return;
         }
-        // Scroll: the row about to fall off the top goes to scrollback first (milestone 142
-        // increment 2), before the shift below overwrites it. The blanked bottom row is content
-        // change and is dirtied by `put` (which compares, so blanking an already-blank row is
-        // free); the movement itself is reported by `scroll_damage`, because a painter that can
-        // move pixels should not re-render a screen it already holds.
+        // The top row goes to scrollback before the shift overwrites it. `put` dirties the
+        // blanked bottom row; `scroll_damage` reports the movement.
         let cols = self.cols as usize;
         self.push_scrollback_row(0);
         let used = cols * self.rows as usize;
         self.cells.copy_within(cols..used, 0);
-        // What changed since the last take moved up with the cells it changed, so its box moves
-        // too, before the bottom row's own changes are added at the bottom.
+        // The box of what changed moves up with its cells, before the bottom row is added.
         self.dirty = self.dirty.and_then(|d| match d.row {
             0 if d.rows <= 1 => None,
             0 => Some(CellRect {
@@ -749,16 +643,9 @@ impl Vt {
 
     /// Copy live row `row` into the scrollback ring's next slot, as the newest entry.
     ///
-    /// Only ever called from [`Vt::line_feed`], itself only reachable through [`Vt::feed`]'s byte
-    /// loop, and [`Vt::feed`] resets `view_offset` to `0` before that loop runs (see its own doc).
-    /// So a push never happens while the caller is looking at history, and this does not need to
-    /// (and does not) adjust `view_offset` to compensate for the shift a push would otherwise cause.
-    ///
-    /// **`row` is always `0`.** This is a private method with one call site, which passes the
-    /// literal `0` (see [`Vt::line_feed`]): the row about to scroll off the top is always the grid's
-    /// first row, because scrolling is what makes room at the bottom, not a copy from elsewhere. So
-    /// the source index's `row * cols` is always `0 * cols`, and a mutant reading it as `row / cols`
-    /// computes the same `0` on the only input this function is ever given.
+    /// Called only from [`Vt::line_feed`] with `row` `0`, after [`Vt::feed`] has reset
+    /// `view_offset`, so it never adjusts the view. See notes/video-terminal.md, "Mutants the
+    /// engine cannot kill".
     fn push_scrollback_row(&mut self, row: u32) {
         let cols = self.cols;
         let capacity = self.scrollback_depth();
@@ -783,12 +670,9 @@ impl Vt {
                 self.ignore = false;
             }
             b'c' => self.reset(),
-            // The string introducers: OSC (`]`), DCS (`P`), SOS/PM/APC (`X`, `^`, `_`). Their
-            // payload is arbitrary text, so it has to be *consumed*, not returned to Ground.
+            // OSC, DCS, SOS/PM/APC: arbitrary text, consumed rather than printed.
             b']' | b'P' | b'X' | b'^' | b'_' => self.state = State::Str,
-            // Anything else: the introducer and this byte are both consumed. A two-byte escape this
-            // engine does not speak must not leave its final byte to be printed as a letter, which is
-            // the classic "stray letter on the screen" bug.
+            // An unknown two-byte escape consumes its final byte too, or it prints as a letter.
             _ => {}
         }
     }
@@ -804,9 +688,8 @@ impl Vt {
                     *p = p.saturating_mul(10).saturating_add((b - b'0') as u16);
                 }
             }
-            // A `:` separates a sub-parameter from the parameter it belongs to. The first
-            // parameter may be empty either way (`CSI ;5H`, `CSI :2m`), so a separator before any
-            // digit opens the first parameter as well as the next.
+            // `:` opens a sub-parameter. A separator before any digit opens an empty first
+            // parameter too (`CSI ;5H`, `CSI :2m`).
             b';' | b':' => {
                 if self.nparams == 0 {
                     self.nparams = 1;
@@ -819,16 +702,8 @@ impl Vt {
                     self.subs |= 1 << (self.nparams - 1);
                 }
             }
-            // A private-use introducer (`?`, `<`, `=`, `>`) or an intermediate byte: this engine
-            // implements none of those sequences, so it swallows the whole thing rather than acting
-            // on a parameter list that means something else.
-            //
-            // **Deleting this arm changes nothing**: `0x20..=0x2f` and `0x3c..=0x3f` are not matched
-            // by `b'0'..=b'9'`, `b';'`, or `0x40..=0x7e`, so removing the arm routes those bytes to
-            // the catch-all below, which sets `self.ignore = true` too. Kept written out rather than
-            // folded into `_` because a reader needs to see the two families of swallowed byte (the
-            // sequences this engine chose not to implement, versus a stray control code) named
-            // separately, even though the code they run is identical.
+            // Private-use introducers and intermediate bytes: a parameter list that means something
+            // else. The catch-all does the same; the arm names the family.
             0x20..=0x2f | 0x3c..=0x3f => self.ignore = true,
             0x40..=0x7e => {
                 let ignore = self.ignore;
@@ -838,9 +713,7 @@ impl Vt {
                 }
             }
             _ => {
-                // A control code inside a sequence: real terminals execute it. Nothing that reaches
-                // this engine does that, so it is dropped along with the sequence, which fails in the
-                // direction of drawing nothing rather than drawing garbage.
+                // A control code inside a sequence is dropped with it: fail toward drawing nothing.
                 self.ignore = true;
             }
         }
@@ -873,8 +746,7 @@ impl Vt {
                 self.wrap_pending = false;
                 self.col = self.col.saturating_sub(self.param(0, 1));
             }
-            // CUP. Parameters are **one-based** on the wire and zero-based here, which is the
-            // off-by-one every terminal implementation has had at least once.
+            // CUP: parameters are one-based on the wire and zero-based here.
             b'H' | b'f' => {
                 self.wrap_pending = false;
                 self.row = (self.param(0, 1) - 1).min(self.rows - 1);
@@ -883,25 +755,15 @@ impl Vt {
             b'J' => self.erase_display(self.param(0, 0)),
             b'K' => self.erase_line(self.param(0, 0)),
             b'm' => self.sgr(),
-            // Every other final byte: the sequence is consumed and nothing happens. That includes
-            // the device-report sequences, deliberately: this engine has no way to answer one and a
-            // half-answered query is worse than an unanswered one.
+            // Every other final byte, device reports included: consumed, and nothing happens.
             _ => {}
         }
     }
 
     /// `CSI n J`: 0 erases from the cursor to the end of the screen, 1 to its start, 2 all of it.
-    /// Note that `CSI 2 J` does **not** move the cursor; that is why a line discipline's ^L sends
-    /// `CSI 2J` followed by `CSI H`.
-    ///
-    /// **`to > from` always holds here**, given two invariants this type maintains everywhere else:
-    /// `cols >= 1` and `rows >= 1` ([`Vt::clamp_cols`]/[`Vt::clamp_rows`], the only places `cols`/
-    /// `rows` are ever set), and `col < cols`, `row < rows` (every cursor-moving path clamps with
-    /// `.min(self.cols - 1)`/`.min(self.rows - 1)`, so the cursor is never parked on or past the
-    /// margin). Mode 0's `end - here = (rows - row) * cols - col >= cols - col >= 1`; mode 1's
-    /// `here + 1 >= 1`; the default's `end = rows * cols >= 1`. So the guard below can never see
-    /// `to == from`, which is why a mutant relaxing `>` to `>=` survives: there is no reachable
-    /// input on which the two disagree.
+    /// `CSI 2 J` does **not** move the cursor. `to > from` always holds, since `cols` and `rows`
+    /// are at least one and the cursor is inside the grid: mode 0's `end - here >= cols - col >= 1`,
+    /// mode 1's `here + 1 >= 1`, the default's `rows * cols >= 1`. So `>` relaxed to `>=` survives.
     fn erase_display(&mut self, mode: u32) {
         let here = self.row * self.cols + self.col;
         let end = self.rows * self.cols;
@@ -934,21 +796,13 @@ impl Vt {
     /// `CSI ... m`: the rendition. An empty parameter list is `CSI 0 m`, a reset, which is the one
     /// place the "absent means zero" default differs from the cursor sequences' "absent means one".
     ///
-    /// The extended colors (`38`, `48` and `58`, followed by `5;n` or `2;r;g;b`) consume the
-    /// parameters they name, so the loop walks an index rather than iterating. A malformed one (a
-    /// missing or out-of-range component, or a color space other than 2 or 5) ends the sequence's
-    /// effect there, which is xterm's behavior: the parameters after it cannot be told apart from
-    /// the broken color's own.
-    ///
-    /// **The colon form** (ECMA-48's sub-parameters) is read too: `4:3` is a curly underline, and
-    /// `38:2::r:g:b` (with its empty color-space slot) or `38:2:r:g:b` a 24-bit color. A
-    /// parameter's sub-parameters belong to it alone, so ones it does not use are skipped rather
-    /// than read as the next attribute.
+    /// The extended colors (`38`, `48`, `58`) consume the parameters they name, and a malformed one
+    /// ends the sequence's effect there, as xterm does. The colon form (`4:3`, `38:2::r:g:b`) is
+    /// read too, and unused sub-parameters are skipped. See notes/video-terminal.md, "SGR".
     fn sgr(&mut self) {
         let n = self.nparams.max(1);
         let mut i = 0;
-        // Every pass consumes at least one parameter, so `MAX_PARAMS` passes always reach the end;
-        // a bound rather than `while i < n` so the walk ends by construction.
+        // Every pass consumes at least one parameter, so the bound ends the walk by construction.
         for _ in 0..MAX_PARAMS {
             if i >= n {
                 break;
@@ -1028,9 +882,7 @@ impl Vt {
                         },
                     }
                 }
-                // Everything else (blink, overline, fonts) is dropped. Blink needs a clock this
-                // engine deliberately does not read; drawing the *text* in the wrong style is
-                // better than not drawing it.
+                // Blink, overline and fonts are dropped: no clock, and the text still draws.
                 _ => a,
             };
             // Whatever sub-parameters `p` had and did not consume are its own, not attributes.
@@ -1111,19 +963,14 @@ impl Vt {
             cols: self.cols,
             rows: self.rows,
         });
-        // A full box already says "repaint everything", so any scroll the same window accumulated
-        // is subsumed: reporting movement as well would only invite a painter to move rows it is
-        // about to overwrite. This is what keeps `Damage::scrolled < rows` true at every take.
+        // A full box subsumes any scroll, which keeps `Damage::scrolled < rows` at every take.
         self.scrolled = 0;
     }
 
     /// **A scroll's half of the damage report**: the grid moved up a row, which is neither a
     /// changed cell nor a rectangle. See [`Damage`] for the invariant the painter hangs on this.
     fn scroll_damage(&mut self) {
-        // The cursor the last report drew has just moved up a row with the pixels under it, while
-        // the cursor itself stayed on the bottom row: the row the rendered block landed on must be
-        // re-rendered, or a stale block rides up the screen one scroll at a time. This is the one
-        // bookkeeping a scroll needs beyond the counter, and it is why `drawn` is tracked at all.
+        // The drawn block moved up with its pixels; re-render the row it landed on.
         if let Some((c, r)) = self.drawn {
             self.drawn = if r > 0 { Some((c, r - 1)) } else { None };
             if r > 0 {
@@ -1132,8 +979,7 @@ impl Vt {
         }
         self.scrolled += 1;
         if self.scrolled >= self.rows {
-            // Everything on screen was replaced between takes (`rows` scrolls move the top row
-            // clean off), so the move conveys nothing: report the whole grid as content instead.
+            // `rows` scrolls replaced everything, so report content, not movement.
             self.damage_all();
         }
     }
