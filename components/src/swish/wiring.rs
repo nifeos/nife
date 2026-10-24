@@ -22,28 +22,18 @@ pub(super) const SH_BUDGET_PAGES: u64 = spawnproto::SHELL_BUDGET_PAGES;
 
 /// **The slot holding the clock page**, or [`NO_CLOCK`] when this wiring granted none. Told to us in
 /// `x2` at [`_start`](crate::entry::_start) rather than fixed, because the clock is granted after the filesystem pair and a
-/// boot with no disk attached has one fewer capability under it.
-///
-/// Being *told* is the same shape as `arg1` carrying the directory's rights, and for the same reason
-/// recorded there: nothing in this system reports what a process holds, so a shell that guessed would
-/// be guessing about its own capability table. A wrong guess here is worse than the directory's, because
-/// probing the wrong slot would find some *other* object and map a page that is not a clock.
+/// boot with no disk attached has one fewer capability under it. Told, not probed: a wrong slot
+/// would map some other object as the clock (notes/pipes/the-shell-side.md, "The shell's slots").
 pub(super) static CLOCK_SLOT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(NO_CLOCK);
 
 /// **Whether this session holds the run-unvouched capability** (DECISIONS §219 gate D2), at
 /// [`spawnproto::RUN_UNVOUCHED_SLOT`], `WRITE` only.
 ///
-/// Probed once, at [`_start`](crate::entry::_start), and that timing is the soundness argument rather than a detail: at
-/// `_start` this shell has allocated nothing, so the slot holds exactly what its builder placed
-/// there. Probed any later, a frame or a region this shell retyped could have landed in it. Probed
-/// rather than told because `x0` to `x2` are all spoken for (role, directory rights, clock slot),
-/// and a named slot is how this tree already places an authority a program looks for
-/// (`grant_plan::NETWORK_SLOT`).
-///
-/// Holding it changes one thing: an image request claims it and sends one message on it
-/// ([`run_image`]), so a digest miss runs with only what the line granted instead of being
-/// refused. It is not something this shell can hand on: it carries no `GRANT`.
+/// Probed once, at [`_start`](crate::entry::_start), before this shell allocates anything, so the
+/// slot holds only what its builder placed. Holding it lets an image request ([`run_image`]) run a
+/// digest miss with only what the line granted; it carries no `GRANT`. See
+/// notes/pipes/the-shell-side.md, "The shell's slots".
 pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
@@ -106,15 +96,9 @@ pub(super) const NO_CLOCK: u64 = 0;
 
 /// **What this shell holds, which is what decides whether a named file can be backed.**
 ///
-/// A per-file grant is a directory capability narrowed to one name (milestone 31 phase 2,
-/// `components/src/fs_file_caretaker.rs`), and a redirection is a file opened through one. Both need a
-/// directory to narrow, so both answer to this: a shell whose the progenitor granted it a directory
-/// capability (slot [`DIR_TERMINAL`]) can back `>` and `<`, and a shell whose the progenitor granted it none
-/// gets the milestone's headline refusal, which is **true** rather than a placeholder.
-///
-/// The same binary is in both positions, which is the point: `date > report.txt` is refused in the
-/// wiring with no filesystem and runs in the wiring with one, and nothing in this file branches on
-/// which. See notes/pipes.md.
+/// A per-file grant and a redirection both narrow a directory capability, so a shell granted one
+/// (slot [`DIR_TERMINAL`]) can back `>` and `<`, and a shell granted none refuses them. See
+/// notes/pipes/the-shell-side.md, "The shell's slots".
 pub(super) fn holdings(nav: &Nav) -> grant_plan::Holdings {
     nav.holds
 }
@@ -166,11 +150,9 @@ pub(super) fn send_cap(slot: u64) {
 
 /// **Delegate one capability to the progenitor, with exactly the rights it should travel with.**
 ///
-/// `GRANT` has to be in `rights` for the send itself to be legal, so what varies is the other half,
-/// and that half is load-bearing for milestone 50: a pipe's write end goes over as `WRITE|GRANT` and
-/// its read end as `READ|GRANT`, so the child at the far end of a `|` **cannot write back up its own
-/// input**. A pipeline that granted both directions would be a two-way channel nobody asked for, and
-/// the narrowing is what stops it rather than a convention the programs are trusted to keep.
+/// `GRANT` has to be in `rights` for the send to be legal. The rest is load-bearing: a pipe's write
+/// end goes as `WRITE|GRANT` and its read end as `READ|GRANT`, so the child on the right of a `|`
+/// cannot write back up its own input, by the narrowing rather than by convention.
 pub(super) fn delegate(slot: u64, rights: u64) {
     user_mode_runtime::send_capability(SPAWN, slot, rights, spawnproto::CAP_TAG);
 }

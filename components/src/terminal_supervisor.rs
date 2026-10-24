@@ -1,32 +1,14 @@
-//! **`terminal_supervisor`: holds the terminal's components, and replaces them live** (milestone
-//! 23 (a capability-routed component OS with live replacement); calef's ruling of 2026-09-27,
-//! option A of `design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`, and his
-//! rulings of 2026-10-19 (UTC) on `display_terminal`).
-//!
-//! A component's spawner supervises its swaps (calef, 2026-10-19). `system_initializer` builds this
-//! rather than `line_editor`, and hands it the objects a `line_editor` is made of plus a budget for
-//! two instances. In display mode a spawner may also hand it `display_terminal`'s image and the
-//! display endpoint and scanout, and then it builds and holds `display_terminal` too. `SWAP`'s
-//! second word names the child. It runs the swap of DECISIONS §209 (state handoff is an opaque blob
-//! over a granted frame, and it is optional):
-//!
-//! ```text
-//!   1 BUILT      lay the replacement out, wired like the incumbent, not started.
-//!   2 QUIESCED   OPERATION_QUIESCE, answered within QUIESCE_BOUND_MS. The endpoint's FIFO drains
-//!                everything ahead; a parked reader is answered FLAG_RETRY; the blob is written.
-//!   3 ABSORBING  start the replacement with START_ABSORB. It reads the blob before it serves.
-//!   4 COMMIT     NOTE_ABSORBED: tell the incumbent CTL_QUIT and collect it.
-//!     or UNDO    NOTE_NOT_ABSORBED: collect the refuser and tell the incumbent CTL_RESUME.
-//!   2' HUNG      no answer: start the replacement empty, destroy the incumbent's region (its
-//!                callers are answered Gone), and reply REPLACED_HUNG.
-//! ```
-//!
-//! `line_editor`'s budget holds two bays and a swap moves it between them. `display_terminal`'s
-//! holds one: its swap is lent the machine's swap reserve (`supervisor::SWAP_RESERVE_PAGES`) with
-//! `LEND`, and moves into it and home again, answering `NEEDS_RESERVE` when nothing was lent. A
-//! `CALL` takes no deadline, so a stand-in built from this program's own image makes each quiesce
-//! and signals a notification the supervisor's timer also signals (notes/hung-component.md).
-//!
+//! **`terminal_supervisor`: holds the terminal's components, and replaces them live** (milestone 23
+//! (a capability-routed component OS with live replacement); calef's ruling of 2026-09-27, option A
+//! of `design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`, and his rulings of
+//! 2026-10-19 (UTC) on `display_terminal`). A component's spawner supervises its swaps (calef,
+//! 2026-10-19), so `system_initializer` builds this rather than `line_editor` and hands it a
+//! `line_editor`'s objects and a budget for two instances; in display mode, also
+//! `display_terminal`'s image, the display endpoint and the scanout. `SWAP`'s second word names the
+//! child, and the swap is DECISIONS §209 (state handoff is an opaque blob over a granted frame, and
+//! it is optional), in the steps [`Child::hop`] lists. See notes/interactive-stack-swap.md and
+//! notes/hung-component.md.
+
 //! # BUGS
 //!
 //! Nothing on a real boot asks it to swap or holds the reserve: milestone 694 (the installer asks
@@ -295,11 +277,9 @@ impl<'a> Child<'a> {
             faultep: obj(abi::objtype::RENDEZVOUS),
             controls: [obj(abi::objtype::RENDEZVOUS), obj(abi::objtype::RENDEZVOUS)],
             notify: obj(abi::objtype::RENDEZVOUS),
-            // **Bays, one per instance, split once and reused.** A child's region comes home to
-            // the region it was split from, and only un-bumps that region's watermark when it is
-            // on top. Built straight from the budget, the incumbent's region is always under its
-            // replacement's when it dies, so every swap would leave a hole the size of an
-            // instance: the second swap failed for want of budget, which is how this was found.
+            // Bays, one per instance, split once and reused: a region split straight from the
+            // budget leaves a hole when the incumbent under it dies, and the second swap fails
+            // for want of budget (notes/hung-component/terminal-supervisor-bound.md).
             places: [bay(bay_pages), second_bay],
             instances: [0, 0],
             budgets: [0, 0],
@@ -485,7 +465,16 @@ impl<'a> Child<'a> {
         self.maps_run[p]
     }
 
-    /// **Move the live instance to the other place**: steps 1 to 4 of the module's table, or 2'.
+    /// **Move the live instance to the other place**: steps 1 to 4, or 2' for a hung incumbent.
+    /// ```text
+    ///   1 BUILT      lay the replacement out, wired like the incumbent, not started.
+    ///   2 QUIESCED   OPERATION_QUIESCE within QUIESCE_BOUND_MS: the FIFO drains everything ahead,
+    ///                a parked reader is answered FLAG_RETRY, the blob is written.
+    ///   3 ABSORBING  start the replacement with START_ABSORB; it reads the blob before it serves.
+    ///   4 COMMIT     NOTE_ABSORBED: tell the incumbent CTL_QUIT and collect it.
+    ///     or UNDO    NOTE_NOT_ABSORBED: collect the refuser and tell the incumbent CTL_RESUME.
+    ///   2' HUNG      no answer: start it empty, destroy the incumbent's region; REPLACED_HUNG.
+    /// ```
     fn hop(&mut self, sup: &Supervisor) -> Option<Hop> {
         let (cur, next) = (self.current, 1 - self.current);
         let laid = self.lay_out(next)?;
@@ -552,7 +541,8 @@ impl<'a> Child<'a> {
 
     /// **`SWAP` of `display_terminal`: into the lent reserve, then home to the bay**, so the
     /// reserve is free again when the answer goes back. `NEEDS_RESERVE`, retryable, when nothing
-    /// was lent or what was lent cannot hold an instance and its handoff.
+    /// was lent or what was lent cannot hold an instance and its handoff. Its budget holds one bay;
+    /// the reserve (`supervisor::SWAP_RESERVE_PAGES`) arrives by `LEND` on the swap endpoint.
     fn swap_through_reserve(&mut self, sup: &Supervisor, lent: &mut Option<u64>) -> (u64, u64) {
         let Some(reserve) = *lent else {
             return (s::NEEDS_RESERVE, 0);
@@ -647,17 +637,9 @@ impl Supervisor<'_> {
     /// **`OPERATION_QUIESCE` on `served`, with a deadline a `CALL` cannot have.** Builds a
     /// stand-in, starts it to make the call, arms the timer, and waits on the notification both of
     /// them signal. The stand-in is built before the clock starts, so the bound measures the
-    /// incumbent and not a build.
-    ///
-    /// **The bound, `QUIESCE_BOUND_MS` (250 ms), is about thirty times the slowest healthy answer
-    /// measured.** Timed from the stand-in's start to its answer, on 2026-10-19 (UTC), eleven swaps
-    /// per run under `script/test`, on a 16 GB Apple Silicon host with a load average of 5 to 6
-    /// from other lanes' builds: aarch64 2.0 to 2.8 ms over three runs, riscv64 3.6 to 7.8 ms over
-    /// three, `x86_64` 1.9 to 2.6 ms over its two legs of one run. It covers a parked reader
-    /// answered `FLAG_RETRY` and the blob written, which `swapper`'s fixture does not have, so it
-    /// is this component's bound and not a copy of `swapper`'s. It is wall time, since
-    /// `script/test` runs TCG without `-icount`, and the margin is for a loaded host. The deadline
-    /// fires at the first 10 ms tick at or after it; the hung test prints the real wait.
+    /// incumbent and not a build. The bound, `QUIESCE_BOUND_MS` (250 ms), is wall time, about
+    /// thirty times the slowest healthy answer measured, and fires at the first 10 ms tick at or
+    /// after it (notes/hung-component/terminal-supervisor-bound.md).
     fn quiesce(&self, served: u64, faultep: u64) -> Quiesce {
         let Some(d) = &self.deadline else { fail() };
         let Ok(region) = supervision_protocol::memory_region_split(d.bay, s::STAND_IN_PAGES) else {
@@ -729,11 +711,9 @@ struct Deadline<'a> {
     own: elf::Elf<'a>,
     wake: u64,
     timer: u64,
-    /// **Every stand-in is built in this one bay**, for the reason the children's bays exist. A
-    /// stand-in split straight from the budget is under whatever the build retyped from the budget
-    /// while it lived (a scratch page table, the first time the loader's cursor reaches a new 2 MiB),
-    /// so when it dies it leaves a hole the size of a stand-in. On riscv64 the second display swap
-    /// did that, and `STOP` then found no budget for its own stand-in, which is how this was found.
+    /// **Every stand-in is built in this one bay**, for the reason the children's bays exist: one
+    /// split straight from the budget leaves a hole when it dies, under whatever the build retyped
+    /// (notes/hung-component/terminal-supervisor-bound.md).
     bay: u64,
 }
 

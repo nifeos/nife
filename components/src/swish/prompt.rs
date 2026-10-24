@@ -1,8 +1,6 @@
 //! **The prompt**: `apropos`, reading a line through the terminal, the shell editing its own
-//! line (§227 (how Tab reaches the shell) option D), and Tab completion.
-//!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
+//! line (§227 (how Tab reaches the shell) option D), and Tab completion. One of the modules §273
+//! (the shell program becomes a directory of modules) lays out.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -13,10 +11,8 @@ use super::*;
 
 /// **One index shard, as pages read one at a time through the file contract.**
 ///
-/// This is the entire guest half of the search, and it is small on purpose: the layout was designed
-/// so that a reader holds one 4 KiB page and never more, which is exactly what a client of the file
-/// contract already shares with the FS server. So there is no buffering, no memory grant, and no
-/// second copy of the index anywhere.
+/// The whole guest half of the search: the layout lets a reader hold one 4 KiB page, the one a file
+/// contract client already shares with the FS server, so there is no buffer and no memory grant.
 struct Shard {
     /// The slot the directory capability lives in, which is what a request is sent on.
     dir: u64,
@@ -56,16 +52,11 @@ pub(super) static mut RANKED: documentation::index::Ranked = documentation::inde
 
 /// **`apropos <word>`: name the installed pages that mention it.**
 ///
-/// A builtin, and `grant_plan::Command::Apropos` carries the argument for why. What is here is only
-/// the IO: open the store, read the manifest, and hand each shard to `documentation::index::search`, which
-/// is the same function `cargo xtask manual <word>` runs on the host over the same bytes.
-///
-/// **The store is opened from the root, not from the cwd**, because it is installed at the root of
-/// whatever this shell was granted. A `cd` does not move the manual, and a search that answered
-/// differently depending on where you were standing would be a worse tool.
-///
-/// **It grants nothing and spawns nothing.** What comes back is a list of names; opening one is a
-/// separate line the reader types, and *that* is where a capability moves.
+/// A builtin (`grant_plan::Command::Apropos` says why): it opens the store at the root of what this
+/// shell holds, so a `cd` does not move the manual, reads the manifest, and hands each shard to
+/// `documentation::index::search`, which `cargo xtask manual <word>` runs on the host. It grants
+/// and spawns nothing. Returns the filesystem's errno for a bundle that would not open, after the
+/// results.
 pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     use documentation::index;
 
@@ -143,10 +134,9 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     });
     nav.close_in(t, store);
 
-    // **A manifest that filled the buffer is a search that did not cover the store**, and saying
-    // nothing would make "no page says that" a lie about bundles nobody looked in. Found by review
-    // rather than by running: the shipped manifest is 25 bytes and this will not fire until the
-    // store is ten times its size.
+    // A manifest that filled the buffer is a search that did not cover the store; say so rather
+    // than answer "no page says that" about bundles nobody looked in. The shipped manifest is 25
+    // bytes, so this fires only once the store is ten times that.
     if got == MANIFEST_MAX {
         print(b"  the bundle manifest filled this shell's buffer; bundles past it were not searched\n");
     }

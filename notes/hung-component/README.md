@@ -18,6 +18,8 @@ and evidence behind those answers, which its prose budget has no room for.
   residuals of milestone 23 (a capability-routed component OS with live replacement).
 - [`examples.md`](examples.md): the Rust examples, a watcher's `SURVEY` loop, its one-right
   endowment, and restoring a service under a hung component.
+- [`terminal-supervisor-bound.md`](terminal-supervisor-bound.md): how `terminal_supervisor`'s
+  quiesce bound was measured, and why its instances and stand-ins are built in bays.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
