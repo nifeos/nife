@@ -288,7 +288,7 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 /// DNS over TCP) about six names through `domain_name_system`. Two resolve, one via a compressed
 /// CNAME; four fail their own checks (no such name, a wrong transaction id, an unasked-for address,
 /// a self-pointing compression pointer); then it connects to the resolved address for an echo. The
-/// second half, real DNS via 10.0.2.3 (NATed to the host's nameserver), does not gate: no answer
+/// second half, real DNS via 10.0.2.3 (forwarded to the host's nameserver), does not gate: no answer
 /// skips (milestone 214's partial shape), and only a reply that is not a valid answer fails.
 // RISC-V twin:
 // `riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.

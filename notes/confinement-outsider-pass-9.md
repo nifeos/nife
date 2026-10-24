@@ -162,11 +162,11 @@ adds to the suite. They share one shape.
 
 Most reduce a hostile program to the kernel operations it would issue, driven through the real
 dispatcher (`syscall::invoke`) the way a program's `svc` or `ecall` reaches it. The ELF tests call
-the loader `exec` uses, and the EL0 and port tests boot real ring-3 children. Nothing blocks: no test
-issues a `SEND`, `RECEIVE` or `CALL` with no peer, and `SLICE`, `BADGE`, `REAP` and `SURVEY` do not
-park. So a regression is red at an assertion rather than a watchdog hang. Every capability is
-deleted and every region reclaimed, so the suite's frame and region ledgers are flat across each
-module.
+the loader `exec` uses, and the EL0, port and supervision tests boot real ring-3 children. Nothing
+blocks: no test issues a `SEND`, `RECEIVE` or `CALL` with no peer, and `SLICE`, `BADGE`, `REAP` and
+`SURVEY` do not park. So a regression is red at an assertion rather than a watchdog hang. Every
+capability is deleted and every region reclaimed, so the suite's frame and region ledgers are flat
+across each module.
 
 The x86 port children are built in one region each, the way `x86_port_tests` and
 `supervision_tests` build theirs. They reuse the architect-ratified stub builders in `x86_programs`,
