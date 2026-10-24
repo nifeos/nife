@@ -71,6 +71,20 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
 - `budget` is the claim of milestone 11 (untyped memory): a process maps until its region is spent and
   the kernel's used-frame count does not move. The process spins after its second report so the
   count holds still, and the check then kills it.
+- `supervised` builds a child from `user::supervised_child`'s fault stub, its address space, code,
+  stack, TCB and supervision endpoint all in one 16-page region, with the endpoint in the reserved
+  fault slot so `START` makes it supervised (DECISIONS §26 (the fault endpoint)). The child loads
+  from an address nothing maps. The check waits on the corpse, not on a receive, because a receive
+  has no deadline; a corpse parked as the endpoint's sender then makes the receive return at once.
+  The message must say `EVENT_FAULT` and name the child, the load's pc and the address, and the
+  supervisor reaps the corpse with its region. It is the TCB path rather than `user::run`, because
+  supervision is fixed at `START` and a thread `run` enters never passes it.
+- `teardown` runs `supervised`'s round twice and judges the second: the machine's used-frame count
+  must not move across a spawn, a death and a reap. A first round pays first-use carves that are
+  not leaks (a kernel stack the recycler has not held yet), so one before-and-after over a single
+  round cannot tell those from a leak. Under QEMU both rounds cost zero on all three ports,
+  because `supervised` has already paid them. `budget` waits for its helper thread's reap so no
+  teardown is in flight when this brackets the count.
 - `blockdev` has a user-level driver read `motd` off virtio disk 0, through a nifefs parse of its
   own. The hand-over's file service takes disk 1, so they do not collide.
 - `deviceirq` reads the count `x86_64` took from the PIT through the IO APIC at bring-up, the one
@@ -110,13 +124,14 @@ which the `clock` line explains.
 - Nothing proves an architecture ran the right set. The list is a compile-time fact, a check
   deleted from it takes its evidence with it, and review guards the set.
 - The checks cost time on every boot: `timer` waits about 20 ms and `preemption` a fifth of a
-  second, and `userspace`, `budget` and `blockdev` each spawn a process and wait for it.
+  second, and `userspace`, `budget`, `supervised`, `teardown` and `blockdev` spawn processes and
+  wait for them.
 - `blockdev`'s driver is left running. It holds disk 0, which nothing after it uses, and
   `virtio_service::start` returns no thread to end.
 - `budget`'s helper thread can be left parked on a receive with no deadline, if the process never
   reports; the check then fails by its own deadline.
-- `budget` brackets the machine's used-frame count, so it is sound only while nothing on any core
-  allocates or frees in its window. Each earlier check that spawns waits for its threads to be
+- `budget` and `teardown` bracket the machine's used-frame count, so each is sound only while
+  nothing on any core allocates or frees in its window. Each earlier check that spawns waits for its threads to be
   reaped; a check added before it that returns with a teardown in flight reopens the red
   [load-sensitive-assertions.md](load-sensitive-assertions.md) records.
 - A check can still hang the boot if the operation it measures never returns. A `sched::yield_now`
