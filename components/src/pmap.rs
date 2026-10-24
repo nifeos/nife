@@ -1,39 +1,27 @@
 //! **`pmap`: what is mapped, and who is allowed to ask** (milestone 126, notes/process-view.md,
 //! DECISIONS §114).
 //!
-//! The whole program is: walk one address space with `abi::address_space::LIST`, then say what it
-//! found on one stream and what went wrong on the other, `ps`'s shape one object type over. The
-//! listing itself is `crates/pmap`, host-tested; what lives here is the syscall and the two sinks.
-//!
-//! # `ENUMERATE`, not `WRITE`, is the whole demonstration
-//!
-//! `abi::address_space::MAP_INTO` needs `WRITE` on the address-space capability: the authority to
-//! shape it. `abi::address_space::LIST` needs `ENUMERATE`: the authority to look. A `pmap` granted
-//! `ENUMERATE` alone can list every mapping and cannot add, remove or change one.
+//! Walk one address space with `abi::address_space::LIST`, then say what it found on one stream
+//! and what went wrong on the other, `ps`'s shape one object type over. The listing is
+//! `crates/pmap`, host-tested; what lives here is the syscall and the two sinks. `MAP_INTO` needs
+//! `WRITE` on the address-space capability, the authority to shape it; `LIST` needs `ENUMERATE`,
+//! the authority to look. A `pmap` granted `ENUMERATE` alone can list every mapping and cannot add,
+//! remove or change one, and that is the whole demonstration.
+
+//! # Capability contract
 //!
 //! | slot | what | why |
 //! |---|---|---|
 //! | 0 | the output sink, `WRITE` | where the table goes |
 //! | [`ADDRESS_SPACE_SLOT`] | the address space, `ENUMERATE` | the space whose mappings it may **name** |
 //! | [`DIAG_SLOT`](grant_plan::DIAGNOSTICS_SLOT) | the diagnostics sink, `WRITE` | where a refusal goes |
-//!
+
 //! # BUGS
 //!
-//! **Nothing at the interactive prompt can grant this program an address space.** `ps` reaches the
-//! shell because `Manifest::domain` tells `system_initializer` which live supervision endpoint to
-//! place; there is no such manifest field or wiring for an address space. Since §249 (a running
-//! address space stays nameable) a builder can keep a copy, so the gap is the wiring and the design
-//! for handing a narrowed view to a third party (`crates/pmap`'s `BUGS`).
-//! `kernel::user::pmap_tests` proves this program end to end against a real space:
-//!
-//! ```text
-//! $ pmap
-//!               VA  PERM
-//!       0x00400000  r-x
-//!       0x00500000  rw-
-//!
-//! $ pmap        pmap: this address space may be mapped into, but not looked at: no ENUMERATE
-//! ```
+//! - **Nothing at the interactive prompt can grant this program an address space**: the wiring
+//!   and the design for a narrowed third-party view are missing (`crates/pmap`'s `BUGS`;
+//!   notes/process-view/pmap.md, "At the prompt, once it can be reached").
+//!   `kernel::user::pmap_tests` proves the program end to end against a real space.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), on milestone 126 and
 //! design/naming.md: the name every reader knows from outside, shared with `crates/pmap` as `ps`
@@ -76,9 +64,7 @@ pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     HAS_DIAG.store(is_granted(DIAG_SLOT), Ordering::Relaxed);
 
     // Collect first, complain second, print third (DECISIONS §67), `ps`'s shape verbatim: a
-    // listing cannot know its complaints up front (the space may be refused on the first call or
-    // vanish on a later one), so the whole thing goes into a buffer before either stream is
-    // touched.
+    // listing cannot know its complaints up front, so it is all buffered before either stream.
     let mut rows = [pmap::Row::default(); pmap::MAX_ROWS];
     let found = pmap::collect(&mut rows, &mut |cursor| list(ADDRESS_SPACE_SLOT, cursor));
 

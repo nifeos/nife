@@ -1,30 +1,10 @@
-//! Putting an extended attribute back onto a **host** file, which is the last step of a recovery
-//! (milestone 57).
-//!
-//! `std` wraps no part of this. The call is `setxattr` on macOS and `lsetxattr` on Linux, the
-//! argument lists differ, and every other Unix spells it differently again (FreeBSD has
-//! `extattr_set_link`), so this module is three implementations behind one signature and a fourth
-//! arm that refuses honestly on a platform nobody has taught it.
-//!
-//! **Three properties the callers depend on, and each is a decision.**
-//!
-//! *Links are not followed.* macOS passes `XATTR_NOFOLLOW`; Linux uses the `l`-prefixed entry point.
-//! An extract recreates a symlink as a symlink, so following it would hang the attributes of the
-//! link onto whatever the *host* happens to have at the target path today, which is somebody else's
-//! file. Linux then refuses `user.*` attributes on a symlink outright, and that refusal is reported
-//! rather than hidden (see [`set`]).
-//!
-//! *A failure is an [`std::io::Error`] carrying the platform's errno*, because which errno it is
-//! decides what a recovering human should do. `ENOTSUP` means the destination filesystem does not
-//! hold attributes and the answer is to extract somewhere else; `EPERM` on Linux means the name has
-//! no `user.` prefix; `E2BIG` means the value is over that filesystem's ceiling. A recovery tool
-//! that printed "failed" for all three would be telling somebody at 2am to guess.
-//!
-//! *Names are bytes.* The store holds bytes ([`filesystem_contract::xattr::is_valid_name`] refuses
-//! only NUL and over-length), and both platform calls take a NUL-terminated C string, so the only
-//! conversion needed is the terminator. Nothing here invents a namespace prefix: a tool that
-//! silently rewrote `foo` to `user.foo` to satisfy Linux would hand back a file whose metadata does
-//! not say what the backup said.
+//! Putting an extended attribute back onto a **host** file, the last step of a recovery (milestone
+//! 57 (partitioning and formatting a real drive, and extended attributes)). `std` wraps none of it:
+//! `setxattr` with `XATTR_NOFOLLOW` on macOS, `lsetxattr` on Linux, and an arm that refuses on any
+//! other platform. Links are never followed, since an extracted symlink's target on the host is
+//! somebody else's file. A failure carries the platform's errno, because it decides what the person
+//! recovering does next. Names are bytes, passed with a NUL terminator and never given a namespace
+//! prefix. See notes/host-recovery/the-library.md.
 
 use std::ffi::CString;
 use std::io;

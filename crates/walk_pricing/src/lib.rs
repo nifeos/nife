@@ -1,53 +1,24 @@
 //! **What a directory walk costs, separated into the parts that cost it** (milestone 121 (`ripgrep` on
 //! nife: enumeration as a capability), and what the walk costs).
 //!
-//! Every `read_dir` on nife is a message to a filesystem server, and every path is resolved one
-//! component per message (`OPENDIR` per hop, then the verb, then a `CLOSE` per hop). A recursive
-//! walk is therefore the workload that most directly prices the system's central bet, and this is
-//! the instrument. It is ordinary `std::fs` code with no nife in it, so the same function runs on
-//! nife through a granted directory and on a host through a path, which is the only way a
-//! comparison runs the same logic on both sides.
-//!
-//! # What it separates
-//!
-//! One number for a walk hides which half of the system is expensive, so [`price`] measures four
-//! things over [`filesystem_fixture::walk`]'s tree, each a slope over one variable with
-//! the others held still:
-//!
-//! - **per component**: reading the one small file at each level of a chain of directories, from
-//!   one component below the grant to ten. The slope is what one more name in a path costs.
-//! - **per entry**: listing a directory of 128 files against listing one of 1, each with its
-//!   `file_type`, which is free on nife because `READDIR` carries it. The slope is what one more
-//!   entry in a listing costs.
-//! - **per byte**: reading a 4 KiB file against a 256 KiB one. The slope is what the search half
-//!   of a search tool pays, and it exercises the block path rather than the name path.
-//! - **the whole walk**: a recursive `read_dir` and read of every file, in the shape `walkdir` and
-//!   `ignore` walk in, with the count of path components it resolved, so the three slopes can be
-//!   checked against the total rather than trusted.
-//!
-//! Each slope's points are the median of [`REPS`] timed runs after one untimed one. The whole walk
-//! is the median of [`WHOLE_REPS`], warm, after the walk that counted, and each of those runs is
-//! also split by the `std::fs` call that spent the time ([`Split`]).
+//! [`price`] times slopes over [`filesystem_fixture::walk`]'s tree, each over one variable: per
+//! path component, per directory entry and per byte read, and the whole walk split by call
+//! ([`Split`]) to check them against. Points are medians of [`REPS`] or [`WHOLE_REPS`] warm runs.
+//! Plain `std::fs`, so nife and a host run the same code; see notes/walk-pricing.md.
 //!
 //! # Name
 //!
 //! Name: provisional 2026-09-26 (milestone 121's lane). A noun for what the crate does to a walk,
 //! in the `_pricing` shape nothing else in the tree uses yet; calef names crates.
-//!
 
 //! # BUGS
 //!
-//! - **A median of three is not statistics.** It removes a stray preemption and nothing else. The
-//!   figures are magnitudes and directions; a published comparison wants more runs and a spread.
-//! - **Warm, not cold.** The untimed run primes whatever caches each side has (the FS server's
-//!   metadata cache on nife, the dentry and page caches on a Unix host), so these are the costs of
-//!   a second walk. A first walk over a cold disk is a different number and is not taken here.
-//! - **The per-entry slope is inside one `READDIR` page.** 128 four-byte names fit in one; a
-//!   directory of more than about 680 such names would add a message per page, which this does not
-//!   price. See `fixture::walk::WIDE_COUNT`.
-//! - **Path-shaped only.** It walks with paths, as `walkdir` and `ignore` do, which on nife means
-//!   every open re-resolves every component from the grant. A walker holding `std::fs::Dir` handles
-//!   would pay one hop per directory instead, and nothing here measures that shape.
+//! - A median of three is not statistics: the figures are magnitudes and directions.
+//! - Warm, not cold: these are the costs of a second walk.
+//! - The per-entry slope is inside one `READDIR` page; see `fixture::walk::WIDE_COUNT`.
+//! - Path-shaped only: a walker holding `std::fs::Dir` handles is not measured.
+//!
+//! notes/walk-pricing.md, "What the instrument does not see", has each in full.
 
 use std::path::Path;
 use std::time::Instant;

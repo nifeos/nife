@@ -163,7 +163,7 @@ DEBUG_EXIT="-device isa-debug-exit,iobase=0xf4,iosize=0x04"
 #     -device intel-iommu,intremap=off    ECAP = 0xf42      IR clear
 #
 # QEMU's `intremap` property is tri-state and defaults to `auto`, which resolves to ON when there
-# is no in-kernel irqchip to conflict with. patagonia has no KVM, so it has always resolved ON.
+# is no in-kernel irqchip to conflict with. A macOS host has no KVM, so there it resolves ON.
 # **Interrupt remapping has been offered to this kernel in every x86_64 boot it has ever run**, and
 # nothing read the bit, so nobody noticed. `intremap=off` is therefore the only way to reach a
 # machine WITHOUT the capability, which is the comparison this knob exists to make possible.
@@ -174,7 +174,7 @@ DEBUG_EXIT="-device isa-debug-exit,iobase=0xf4,iosize=0x04"
 #
 # **`kernel-irqchip=split` is NOT required here, and that is measured rather than inherited.** The
 # advice that pairs the two is real, and it is a KVM constraint: QEMU refuses `intremap=on` with an
-# in-kernel irqchip. patagonia has no KVM, so `q35` under TCG (and under HVF, which does not apply
+# in-kernel irqchip. A macOS host has no KVM, so `q35` under TCG (and under HVF, which does not apply
 # to this runner) emulates the whole irqchip in the QEMU process and the check never fires. Against
 # QEMU 11.1.1, `-machine q35 -device intel-iommu,intremap=on` starts with no diagnostic, and so
 # does the same line with `kernel-irqchip=on`. A Linux host running these tests under KVM WOULD

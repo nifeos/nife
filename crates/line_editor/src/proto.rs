@@ -100,14 +100,68 @@ pub const OPERATION_READ_LINE_BYTES: u64 = 10;
 /// endpoint's FIFO does the draining. Parked [`OPERATION_READLINE`] and [`OPERATION_READRAW`] get
 /// [`FLAG_RETRY`] (a reply capability cannot leave the process), the reply is r0 = [`QUIESCED`],
 /// and the terminal waits for [`CTL_RESUME`] or [`CTL_QUIT`] on its control endpoint. A terminal
-/// with none refuses it with [`BAD_REQUEST`]. See notes/terminal-contract.md.
-/// # BUGS
-/// - The terminal does not check the sender, and the exposure is live on every boot: any unbadged
-///   holder (input driver, shell, `login`, `system_initializer`, `terminal_supervisor`) can quiesce
-///   the boot terminal, which `terminal_supervisor` starts with a control endpoint, until reboot.
+/// with none refuses it with [`BAD_REQUEST`], and so does every terminal on a copy not badged
+/// [`SUPERVISOR_BADGE`]. See notes/terminal-contract.md.
 ///
 /// Name: provisional (the lane for milestone 23, 2026-09-26).
 pub const OPERATION_QUIESCE: u64 = 8;
+
+/// **The badge on the copy of a terminal's endpoint its supervisor quiesces it through**
+/// (DECISIONS §232 (the `line_editor` swap contract): "only a supervisor sends it"). A terminal
+/// serves [`OPERATION_QUIESCE`] on this badge and nothing else, and refuses [`OPERATION_QUIESCE`]
+/// on every other. Both `line_editor` and `display_terminal` read it.
+///
+/// The quiesce still rides the served endpoint, so its FIFO does the draining (§232 refused a
+/// separate control endpoint for that reason); the badge only says who sent it. Minting it takes
+/// `GRANT` on the unbadged endpoint (§230 (badged endpoint capabilities)). `system_initializer`,
+/// `terminal_supervisor` and `login` hold that, and `login` only to hand sessions a `WRITE`-only
+/// copy. No program a person runs holds it: the shell, the input driver and every session hold
+/// `WRITE` alone. A badged copy cannot be re-badged, so a [`RAW_ONLY_BADGE`] or
+/// [`STDIN_BADGE`] holder cannot reach this one either. `terminal_supervisor` mints it for each
+/// quiesce and hands it to the stand-in that makes the call.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only.
+pub const SUPERVISOR_BADGE: u64 = 3;
+
+/// **Whether `line_editor` serves `operation` on a capability badged `badge`**, `0` for an
+/// unbadged one. Every badge is an allowlist, so an operation added to the contract later is
+/// refused on it until somebody decides its holder may send it:
+///
+/// - unbadged, the copy the input driver, the shell and `login` hold: [`OPERATION_WRITE`],
+///   [`OPERATION_READLINE`], [`OPERATION_BYTES`], [`OPERATION_INTRCOUNT`],
+///   [`OPERATION_SUSPEND_COUNT`], [`OPERATION_PRINT`], [`OPERATION_RAWMODE`] and
+///   [`OPERATION_READRAW`]. Not [`OPERATION_READ_LINE_BYTES`], so the shell's lines cannot be read
+///   eight bytes at a time from under it, and not [`OPERATION_QUIESCE`], so none of them can stop
+///   the terminal;
+/// - [`RAW_ONLY_BADGE`]: [`OPERATION_RAWMODE`] and [`OPERATION_READRAW`], so nothing its holder
+///   sends reaches the queue the shell reads its next command from;
+/// - [`STDIN_BADGE`]: [`OPERATION_READ_LINE_BYTES`] alone;
+/// - [`SUPERVISOR_BADGE`]: [`OPERATION_QUIESCE`] alone;
+/// - any other badge: nothing.
+///
+/// `true` says only that the badge admits it; the terminal may still refuse it in its state (a
+/// second parked read, a quiesce with no control endpoint). See notes/terminal-contract.md.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only.
+pub const fn admits(badge: u64, operation: u64) -> bool {
+    match badge {
+        0 => matches!(
+            operation,
+            OPERATION_WRITE
+                | OPERATION_READLINE
+                | OPERATION_BYTES
+                | OPERATION_INTRCOUNT
+                | OPERATION_SUSPEND_COUNT
+                | OPERATION_PRINT
+                | OPERATION_RAWMODE
+                | OPERATION_READRAW
+        ),
+        RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
+        STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
+        SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,
+        _ => false,
+    }
+}
 
 /// The reply word to [`OPERATION_QUIESCE`]: "QUIT", the value `hot_swap_contract::QUIESCED` also uses.
 pub const QUIESCED: u64 = 0x5155_4954;

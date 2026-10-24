@@ -1,29 +1,13 @@
-//! Reading a filesystem out of a **partition on a device** (milestone 110).
+//! Reading a filesystem out of a **partition on a device** (milestone 110 (the recovery tool takes
+//! a device and a partition)), each read a separate invocation of the built binary, as in
+//! `recovery.rs`, so only the bytes are shared.
 //!
-//! The device here is a file with a real GUID partition table at the front and a real RedoxFS
-//! inside its third partition, and every read is a separate invocation of the built binary, which
-//! is the same discipline `recovery.rs` keeps and for the same reason: nothing is shared between
-//! the writer and the reader but the bytes.
-//!
-//! **The filesystem is built as an image and then placed**, rather than written through the offset
-//! disk under test. That is what makes this a test of the arithmetic: the bytes in the partition
-//! were produced by a writer that knew nothing about partitions, so if the offset is wrong by one
-//! block in either direction nothing opens. The table is built with
-//! `crates/globally_unique_identifier_partition_table`, which is the parser the reader uses, so the
-//! one thing this cannot catch is a table both halves agree is wrong; `blank_check_after_run` in
-//! xtask closes that by reading a table the *guest* wrote.
-//!
-//! The layout deliberately has three partitions:
-//!
-//! - **1, an EFI system partition**, empty. It proves a selector picks a partition rather than
-//!   finding the only filesystem on the disk, and that asking for the wrong one fails cleanly.
-//! - **2, misaligned on purpose**: it starts at an odd LBA, so its first byte is not on a 4096-byte
-//!   filesystem block. The tool must refuse it rather than round it in.
-//! - **3, the nife data partition**, holding the filesystem.
-//!
-//! And one test uses a **320 MiB** device with the data partition past 256 MiB, because that is
-//! where the capability is genuinely new rather than cosmetic. See
-//! `a_partition_past_the_engines_scan_is_reachable_only_by_name`.
+//! The filesystem is built as an image and then placed, so an offset wrong by one block opens
+//! nothing. The table comes from the parser the reader uses; xtask's `blank_check_after_run`
+//! covers a table both agree on wrongly. Partition 1 is an empty ESP (it proves a selector picks
+//! a partition, not the only filesystem, and that a wrong pick fails cleanly), 2 starts on an odd
+//! LBA (refused, never rounded) and 3 holds the filesystem. One test uses a 320 MiB device with it
+//! past 256 MiB: `a_partition_past_the_engines_scan_is_reachable_only_by_name`.
 
 use std::fs::OpenOptions;
 use std::os::unix::fs::FileExt;

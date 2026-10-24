@@ -9,26 +9,13 @@
 
 /// **One line this gate types, what it must answer, and how many jobs it runs.**
 ///
-/// The job count sits beside the line because it is a fact about the line, and until 2026-09-26 it
-/// was a hand-kept total in the success summary instead: every lane that added a line had to edit
-/// that total and the script's declared length, so any two such lanes conflicted (five rebases in
-/// one day: #1318, #1320, #1322, #1329 and #1330). Now the script is a slice, the total is summed
-/// from the lines each leg actually typed, and adding a line touches the line.
-///
-/// `jobs` is how many children the progenitor builds from its bounded job pool for this line: one
-/// per program stage that runs. **Zero** for a builtin (`echo`, `ls`, `apropos`, `package`), a
-/// `caps` preview, a line refused at the prompt with nothing spawned, an image the installed-programs table
-/// refuses, and a supervised job (`interrupt_heeder` and `interrupt_ignorer`, built from the
-/// shell's own untyped rather than the pool). A pipeline counts each program stage, so
-/// `wc gate.txt | wc` is two; a `builtin | program` pipeline is one. `rm` with its caretaker is one
-/// job whose region holds two processes. It is a required field with no default, so a line cannot
-/// be added without saying.
-///
-/// **The count is checked, not only printed.** A line with `jobs > 0` whose answer carries the
-/// shell's "could not spawn" or "faulted" sentence fails the gate even when its wanted phrases are
-/// empty (`uuid > id.txt`), which is what makes "ran N jobs" in the summary a statement this gate
-/// verified. What it cannot catch is a tag that is too low, since nothing at the prompt reports a
-/// job that nobody counted; the host test `a_job_count_names_a_program` bounds a tag from above.
+/// `jobs` counts the children the progenitor builds from its job pool, one per program stage, so
+/// `wc gate.txt | wc` is two and `builtin | program` one. It is zero for a builtin, a `caps`
+/// preview, a refusal at the prompt, an image the installed-programs table refuses, and a
+/// supervised job (`interrupt_heeder`, `interrupt_ignorer`). It has no default, and the summary's
+/// total is summed from it. A line with jobs whose answer says "could not spawn" or "faulted"
+/// fails even with no wanted phrases; `a_job_count_names_a_program` bounds a tag from above. See
+/// notes/swish-check-harness.md, "Why the script's rows assert what they assert".
 #[derive(Clone)]
 pub(in crate::swish_check) struct Line {
     pub(crate) typed: &'static str,

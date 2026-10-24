@@ -1,33 +1,12 @@
 //! Fuzz the GUID partition table parser with the head of an arbitrary disk.
 //!
-//! **Why this target exists.** A partition table is read from a disk somebody else formatted, with
-//! somebody else's tool, possibly years ago and possibly on purpose.
-//! `crates/globally_unique_identifier_partition_table` is what stands between that and the block
-//! layer deciding which LBA range is a filesystem, so every field it trusts is a field an attacker
-//! who can hand us a disk image gets to choose.
-//!
-//! **The input is a disk prefix, not three separate buffers.** Byte 0 onward is LBA 0, so:
-//!
-//!   * `data[0..512]`      LBA 0, the protective MBR
-//!   * `data[512..1024]`   LBA 1, the primary header (its length is the block size, hence 512)
-//!   * `data[1024..]`      the entry array
-//!
-//! That layout is not a convenience. It makes
-//! `crates/globally_unique_identifier_partition_table/tests/fixtures/*.head`, which are real disks
-//! formatted by `sgdisk` and by Apple's Disk Utility, directly usable as seeds: the fuzzer starts
-//! from two tables the format's own tools produced rather than from `[]`.
-//!
-//! **What it adds over the Kani proofs and the mutation tests.**
-//! `crates/globally_unique_identifier_partition_table` is the most heavily checked parser in the
-//! tree: eight harnesses, plus exhaustive mutation tests that flip every byte of a real header and
-//! a real entry array to every other value, 460,000 validations. Both are
-//! *single-field* explorations around a valid table. Neither can build a table whose `entry_size`,
-//! `entry_count`, `entry_array_lba`, `first_usable_lba` and `alternate_lba` are hostile
-//! **together**, which is where the interesting arithmetic is: `entry_count * entry_size`,
-//! `alternate_lba - entry_array_blocks()`, `last_usable_lba > block_count - backup_reserved`. A
-//! table that survives the CRC and then makes one of those wrap is exactly what a fuzzer is for and
-//! exactly what a single-byte mutation cannot reach, because changing any field invalidates the CRC
-//! and the mutation test's job is to prove that the CRC catches it.
+//! The input is a disk prefix: `data[0..512]` is LBA 0, the protective MBR; `data[512..1024]` is
+//! LBA 1, the primary header (its length is the block size, hence 512); `data[1024..]` is the entry
+//! array. So the real `sgdisk` and Disk Utility disks in
+//! `crates/globally_unique_identifier_partition_table/tests/fixtures/*.head` seed it directly. The
+//! crate's Kani harnesses and mutation tests explore one field at a time; this reaches tables whose
+//! `entry_size`, `entry_count`, `entry_array_lba`, `first_usable_lba` and `alternate_lba` are
+//! hostile together and survive the CRC (notes/fuzzing/targets.md).
 
 #![no_main]
 

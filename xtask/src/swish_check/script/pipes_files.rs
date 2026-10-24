@@ -51,17 +51,11 @@ pub(super) const LINES: &[Line] = &[
     // as `wc` is and for the same reason: a viewer that could open the page it renders could open
     // any page.
     line(0, "mdr", &["name a file"]),
-    // **The named file reaches the viewer and comes back rendered**, which two of this gate's own
-    // comments said it did not until 2026-08-18. Both halves of that were fixed elsewhere and the
-    // record was never corrected: the input operand now comes off the plan rather than off the
-    // `Line` (`components/src/swish.rs`, the same fix `wc gate.txt | wc` above pins), and
-    // `MAX_OUTPUT_CHUNKS` is 4096 rather than the 32 that would have truncated a page to 512 bytes.
-    //
-    // The numbers are the assertion and not decoration. `gate.txt` is 2 lines, 4 words, 24 bytes
-    // (`wc gate.txt`, above). What comes back is **1 line, 4 words, 26 bytes**: the two source
-    // lines are one paragraph re-flowed to one output line, and the two bytes are the body indent.
-    // A viewer handed an empty stream would answer `0 0 0`, which is what this line answered when
-    // the operand was being dropped, so the count is what separates rendering from silence.
+    // **The named file reaches the viewer and comes back rendered.** The input operand comes off
+    // the plan (`components/src/swish.rs`), and `MAX_OUTPUT_CHUNKS` (4096) holds a whole page.
+    // `gate.txt` is 2 lines, 4 words, 24 bytes; rendered it is **1 line, 4 words, 26 bytes**, one
+    // reflowed paragraph plus a two-byte body indent. An empty stream would answer `0 0 0`, so the
+    // count is what separates rendering from silence.
     line(2, "mdr gate.txt | wc", &["1 4 26"]),
     // **And the line a person actually wants now renders**, which is milestone 40's whole
     // remaining phase (DECISIONS §106, 2026-08-22). `mdr gate.txt` alone used to make this shell

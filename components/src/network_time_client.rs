@@ -1,37 +1,12 @@
 //! **The network time client** (§43 (reading the clock is a page), notes/ntp.md): turns
 //! `network_time_protocol`'s wire format into a clock correction. It holds a network capability and
-//! a capability to propose a time, and does not hold the clock. Its test server is
-//! `fixtures/src/network_time_test_server.rs`, and `fixtures/src/unwritable_clock_witness.rs`
-//! proves the missing slot.
+//! a capability to propose a time, and does not hold the clock: with no clock page, setting the
+//! time is not an operation it can express, so a compromised client can lie inside the service's
+//! bounds and do nothing else. `an_ntp_client_holds_no_writable_clock_page` proves the missing
+//! mapping with `fixtures/src/unwritable_clock_witness.rs`, endowed by the same function.
 //!
-//! ```text
-//!   entropy ──an endpoint──►┌──────────────┐──an endpoint──► net_stack ──► the network
-//!   (8 random bytes,        │  this client │ (the socket contract, UDP 123)
-//!    the nonce)             └──────┬───────┘
-//!                                  │ an endpoint: PROPOSE
-//!                          ┌───────▼────────┐
-//!                          │ clock service  │──writes──► the clock page
-//!                          └────────────────┘   (this process holds NO mapping of it,
-//!                                                read-only or otherwise)
-//! ```
-//!
-//! **A compromised NTP client can lie inside the service's bounds and do nothing else**: with no
-//! clock page, setting the time is not an operation it can express, where Unix `ntpd` runs as root.
-//! `an_ntp_client_holds_no_writable_clock_page` proves it: the witness, endowed by the same
-//! function as this client (`spawn_with_client_endowment`), writes where a setter maps the page and
-//! faults. One endowment function means no second capability list can drift.
-//!
-//! The 64-bit nonce comes from the entropy service, or the client sends nothing and reports
-//! [`RPT_NO_ENTROPY`]; a guessable nonce would undo the one defence against an off-path attacker.
-//! It is a one-shot synchroniser: up to [`ATTEMPTS`] requests, sleeping on a `Timer` between them,
-//! then one proposal and exit. A long-running client is its own design question
-//! (`design/roadmap/0674-the-last-yield-spinners-sleep-on-a-timer.md`). A kiss-o'-death is never
-//! retried.
-//!
-//! The test server is also the network, holding `READ` on this client's socket endpoint, so the
-//! client's real code runs against it. That proves the socket-contract glue, the 48-byte packet,
-//! the nonce, that a rejected reply moves nothing, and that a sample becomes a proposal. It does not
-//! prove smoltcp, UDP or the NIC (proven elsewhere), nor anything about a real internet server.
+//! One-shot: up to [`ATTEMPTS`] requests, a fresh entropy-service nonce and a `Timer` sleep each,
+//! one proposal, exit. No entropy, no request ([`RPT_NO_ENTROPY`]); a kiss-o'-death is not retried.
 //!
 //! Name: ratified 2026-09-14 (calef), replacing `ntp`. Refused keeping `ntp`: nothing types this
 //! name, so a typed command's latitude does not reach it. `client` is NTP's own mode word.
@@ -133,19 +108,16 @@ fn done(w0: u64, w1: u64, w2: u64) -> ! {
 }
 
 fn client(server_ip: u64, server_port: u64) -> ! {
-    // The wall clock, read the only way this process can read it: by asking the service. A reader
-    // would hold the clock page and do two loads and an add, but the whole point of this process is
-    // that it holds no mapping of that page, so `propose::STATE` is its channel. It costs one round
-    // trip, and it is taken once: the ambient monotonic counter carries the time from here.
+    // The wall clock, by asking the service (`propose::STATE`): this process holds no mapping of
+    // the clock page. Taken once; the ambient monotonic counter carries the time from here.
     let (_state, wall0) = call(PROPOSE, propose::req(propose::STATE), 0);
     let local = LocalClock {
         wall0,
         mono0: monotonic_nanos(),
     };
 
-    // **The nonce before the network.** A client that cannot obtain unguessable bits has nothing to
-    // send, so it finds that out before it exercises any network authority at all, rather than
-    // reaching the same refusal one socket later.
+    // **The nonce before the network**: a client with no unguessable bits has nothing to send,
+    // so it learns that before it exercises any network authority at all.
     let mut nonce = match nonce_bits() {
         Ok(bits) => bits,
         Err(word) => done(RPT_NO_ENTROPY, word, 0),
@@ -170,12 +142,9 @@ fn client(server_ip: u64, server_port: u64) -> ! {
             };
         }
 
-        // T1 as late as it can honestly be taken. The bytes on the wire do not depend on it (a
-        // request carries the nonce, not the send time), so everything that can be done first is,
-        // and what remains between this reading and the datagram leaving is one IPC. What is left
-        // over lands in the measured delay, which is the same path asymmetry NTP already lives with.
-        // The server is the one the *wiring* named in `a0`/`a1`, not one this program chose:
-        // which server to ask is an endowment, the same way which network to use is.
+        // T1 as late as it can honestly be taken: the request carries the nonce, not the send
+        // time, so only one IPC lies between this reading and the datagram leaving. The server is
+        // the one the wiring named in `a0`/`a1`; which server to ask is an endowment.
         SHARED_FRAME.set_dst((server_ip as u32).to_be_bytes(), server_port as u16);
         let Some(t1) = stamp(local.now()) else {
             done(RPT_BAD_LOCAL_TIME, local.now(), 0);
@@ -209,9 +178,8 @@ fn client(server_ip: u64, server_port: u64) -> ! {
 
         match query.accept(&wire[..n], t4) {
             Ok(sample) => {
-                // The correction, applied to the local clock as it is now rather than as it was at
-                // T4: the proposal is a claim about the present, and the service will compare it
-                // against the present.
+                // Applied to the local clock as it is now, not as it was at T4: the proposal is a
+                // claim about the present, and the service compares it against the present.
                 let corrected = local.now() as i128 + sample.offset.nanos();
                 let proposed = corrected.clamp(0, u64::MAX as i128) as u64;
                 let (status, _wall_after) = call(PROPOSE, propose::req(propose::PROPOSE), proposed);

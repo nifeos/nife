@@ -44,7 +44,7 @@ costs. The price is a busy core while a stream flows.
 
 [The parent's bench step](../designware-ethernet.md#calefs-bench-step-on-radon), unchanged, from
 a commit that has the fix: same peer, same image flags, same console capture. While the transfer
-runs, in a fourth terminal on patagonia, capture the stream (it needs `sudo`; without it, skip
+runs, in a fourth terminal on the same Mac, capture the stream (it needs `sudo`; without it, skip
 the capture and say so in the Results row):
 
 ```sh

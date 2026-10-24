@@ -1,47 +1,22 @@
 //! **`rm`: remove a name, and with `-r` the tree under it** (milestone 47, notes/rm.md).
 //!
-//! A **program, not a shell builtin**, and that is Unix's shape rather than a divergence from it.
-//! `cd`, `pwd` and `ls` are builtins here because the shell is rebinding a capability it already
-//! holds; this is a destructive loop, not a rebinding. A builtin would run with the shell's **entire
-//! endowment**. A program takes an explicit attenuated grant, so `caps rm -r logs` prints the
-//! subtree at risk before anything happens, and a bug in the recursion below can only reach what
-//! this process was handed.
-//!
-//! # The recursion is in here, and that is the design
-//!
-//! `filesystem_contract` has no verb that removes a subtree. [`fs::UNLINK`] refuses a directory and
-//! [`fs::RMDIR`] refuses a non-empty one, so **no single call on that contract can take a tree
-//! away**. What this program does is the loop Unix does: enumerate, unlink the files, recurse into
-//! the directories, remove them from the bottom up. Every step is one request the FS server runs to
-//! completion, and every step needs the right for it **at that level**, so the walk stops exactly
-//! where the capabilities stop rather than where a check somebody wrote remembered to look.
-//!
-//! An interrupted run therefore leaves a **partial tree**, with what failed reported and a non-zero
-//! exit. That is what `rm(1)` does too, and it is forced here: there is no transaction spanning
-//! requests, and adding one would mean the FS server holding a transaction open across receives,
-//! which is exactly the property its serve loop relies on not doing.
-//!
+//! A **program, not a shell builtin**: a builtin would run with the shell's entire endowment, where
+//! a program takes an explicit attenuated grant, so `caps rm -r logs` prints the subtree at risk
+//! first and a bug in the recursion reaches only what this process was handed. The recursion is
+//! here because no single call on `filesystem_contract` takes a tree away ([`fs::UNLINK`] refuses a
+//! directory, [`fs::RMDIR`] a non-empty one): enumerate, unlink, recurse, remove bottom-up, each
+//! step needing its right at that level, so the walk stops where the capabilities stop. An
+//! interrupted run leaves a partial tree and a non-zero exit, since no transaction spans requests.
 
 //! # Capability contract (`kernel/src/user/fs_service/directory_grant.rs`, `start_granted_dir`)
 //!
-//! - **slot 0**: the narrowed directory endpoint, `WRITE`. [`fs::ROOT`] on it is the directory that
-//!   holds the operand: the shell resolves any leading path at the prompt and grants **the
-//!   directory the name is in**, because taking a name away is an operation on a directory.
-//! - **slot 1**: a report endpoint, `WRITE`. Diagnostics and `-v` lines as framed text, then one
-//!   [`byte_sink_contract::eof`] carrying the verdict; see [`filesystem_contract::rm`] and [`verdict`].
-//! - **[`PAGE_VA`]**: the page shared with the FS server, where a name goes out and a listing comes
-//!   back.
-//!
-//! **The same two slots on both wirings, and that is why the order is this way round.** The kernel's
-//! `start_granted_dir` puts the narrowed endpoint at slot 0 and a report endpoint at slot 1;
-//! `system_initializer`'s spawn service puts the caretaker it built at slot 0 and the shell's output
-//! at slot 1, ahead of every other grant, so this program's two constants mean one thing in a guest
-//! test and at the real prompt. Every other program in this tree takes its output at slot 0, and the
-//! exception is recorded there rather than left for a reader to infer from two call sites.
-//!
-//! The name and the options ride in the three `START` argument words, packed by
-//! [`filesystem_contract::grant`] exactly as a per-file grant's name is, so this program costs no extra frame
-//! and holds nothing that names a progenitor, a terminal, or the filesystem above its grant.
+//! - **slot 0**: the narrowed directory endpoint, `WRITE`; [`fs::ROOT`] on it is **the directory
+//!   the name is in**, because taking a name away is an operation on a directory.
+//! - **slot 1**: a report endpoint, `WRITE`: framed text, then one [`byte_sink_contract::eof`]
+//!   carrying the verdict ([`filesystem_contract::rm`], [`verdict`]). Output at slot 1, unlike
+//!   every other program, so both wirings agree (notes/rm.md, "The program's shape").
+//! - **[`PAGE_VA`]**: the page shared with the FS server. The name and options ride in the three
+//!   `START` words, packed by [`filesystem_contract::grant`].
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), on AGENTS.md's naming
 //! section, "standard terms a reader already knows from outside". This is the one of the five
@@ -156,14 +131,11 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     }
     let errno = (-r) as i32;
 
-    // **`-f`, and exactly what it means.** `rm(1)`: "If the file does not exist, do not display a
-    // diagnostic message or modify the exit status." So it suppresses both, and it suppresses them
-    // for *this* case only. A permission failure on a name that exists still reports, and so does an
-    // `ENOENT` from anywhere else in the walk: the `OPENDIR` below answers `ENOENT` when the
-    // capability may not descend (a naming right withheld is "in this scope there is no such name",
-    // by design), and swallowing that would turn a walk that could not start into a silent success.
-    // That is a real hazard rather than a hypothetical one, and it is why this branch is here and
-    // not around the whole function.
+    // **`-f`, and exactly what it means** (`rm(1)`: "If the file does not exist, do not display a
+    // diagnostic message or modify the exit status"), for *this* case only. A permission failure
+    // still reports, and so does an `ENOENT` from elsewhere in the walk: the `OPENDIR` below
+    // answers `ENOENT` when the capability may not descend, and swallowing that would turn a walk
+    // that could not start into a silent success.
     if errno == ENOENT && flags & grant_plan::rmopt::FORCE != 0 {
         return Ok(());
     }
@@ -260,15 +232,11 @@ fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i
 
 /// **Remove everything this process can see** (milestone 47's globbing lane).
 ///
-/// `rm *.txt` grants a directory capability attenuated to the names the pattern matched, so what
-/// this program was handed is a namespace whose whole content is the operand. It is told so by a
-/// grant carrying no name at all ([`grant::WHOLE_NAMESPACE`]), and it learns the names by
-/// **enumerating its own capability**, which reveals exactly what the command line already printed.
-///
-/// **One listing, no rounds**, and that is not a shortcut: a set namespace is *fixed*, so the
-/// caretaker answers `READDIR` with the set whether or not a name still exists. Re-reading (which
-/// is what [`empty`] must do, because removing a name shifts a real directory's entries) would hand
-/// this loop the names it has already taken away and turn a finished job into a page of `ENOENT`s.
+/// `rm *.txt` grants a directory capability attenuated to the names the pattern matched, and says
+/// so with a grant carrying no name ([`grant::WHOLE_NAMESPACE`]); this program learns the names by
+/// **enumerating its own capability**, which reveals exactly what the command line printed. One
+/// listing, no rounds: a set namespace is *fixed*, so re-reading as [`empty`] must would hand this
+/// loop the names it has already taken away, a page of `ENOENT`s.
 fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
     let n = call(DIR, fs::req(fs::READDIR, fs::ROOT, 0), 0).0 as i64;
     if n < 0 {
@@ -359,17 +327,11 @@ fn text(bytes: &[u8]) {
 /// **The last message, and it closes the stream** ([`byte_sink_contract::eof`]) rather than inventing a
 /// terminator of its own.
 ///
-/// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], which is the sink contract:
-/// self-framing byte messages ending in `OPERATION_EOF`. [`text`] always produced them, and the verdict
-/// used to be `filesystem_fixture::VERDICT`, a word that contract has no meaning for. Under the guest
-/// wiring the reader was a test that knew to look for it; at the real prompt the reader is the shell,
-/// which reads the same three words through `byte_sink_contract::unpack` and would have called it malformed.
-/// So `rm -rv logs | wc` had never been expressible, and the declaration and the program disagreed
-/// with nothing to notice. Found while wiring milestone 31 phase 3, 2026-08-17.
-///
-/// The verdict is not lost: `OPERATION_EOF` uses only the first word, so the status and the count ride in
-/// the two the contract leaves free. Every reader that wants them takes them off the message that
-/// ends the stream, which is also the only message that can carry a status without racing the text.
+/// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], the sink contract:
+/// self-framing byte messages ending in `OPERATION_EOF`, which the shell reads through
+/// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. `OPERATION_EOF` uses only the first
+/// word, so the status and the count ride in the two the contract leaves free, on the one message
+/// that can carry a status without racing the text.
 fn verdict(status: u64, count: u64) {
     send(REPORT, byte_sink_contract::eof(), status, count);
 }

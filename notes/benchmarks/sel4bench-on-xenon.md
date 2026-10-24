@@ -149,13 +149,12 @@ firmware is UEFI and speaks neither, so GRUB does it: `grub-mkstandalone` packs 
 `EFI/BOOT/BOOTX64.EFI`. seL4 reads the ACPI root pointer and the memory map from GRUB's multiboot2
 tags, and finds COM1 at `0x3f8`, where xenon's serial module is.
 
-There is one file per configuration, `OUTDIR/esp/<configuration>/EFI/BOOT/BOOTX64.EFI`, each
-booting its own entry after a five-second timeout. The configuration is chosen on patagonia, by
-which directory `script/board-netboot` serves or which file goes on the stick, because
+There is one file per configuration, `OUTDIR/esp/<configuration>/EFI/BOOT/BOOTX64.EFI`, each booting
+its own entry after a five-second timeout. The configuration is chosen on the serving Mac, by which
+directory `script/board-netboot` serves or which file goes on the stick, because
 `script/board-console` sends nothing to a board and nobody needs to type at GRUB. Network boot uses
-the path milestone 260 (boot xenon over the network) built (`bench/xenon-netboot/dnsmasq.conf`
-names `EFI/BOOT/BOOTX64.EFI`); the stick is the path milestone 87 (the x86_64 bare-metal machine)
-proved.
+the path milestone 260 (boot xenon over the network) built (`bench/xenon-netboot/dnsmasq.conf` names
+`EFI/BOOT/BOOTX64.EFI`); the stick is the path milestone 87 (the x86_64 bare-metal machine) proved.
 
 ### What UEFI changes for sel4bench itself, found in rehearsal
 
@@ -198,8 +197,8 @@ sel4bench's output and its reading.
 
 ## The bench: what calef does
 
-Build on patagonia first, about four minutes once the Foundation's image is pulled (`podman`):
-
+Build on the maintainer's Mac first, about four minutes once the Foundation's image is pulled
+(`podman`):
 ```console
 $ sh bench/xenon-sel4bench/build.sh /path/to/sel4bench-xenon
 ```

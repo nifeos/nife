@@ -12,13 +12,12 @@ WRITE", with `left: Rights(31)` and `right: Rights(2)`. Replayed on 2026-10-12 (
 824's lane: red at exactly that assertion on aarch64.
 
 diff --git a/kernel/src/syscall/retype.rs b/kernel/src/syscall/retype.rs
-index b72777aa3..ecc3be939 100644
 --- a/kernel/src/syscall/retype.rs
 +++ b/kernel/src/syscall/retype.rs
-@@ -44,7 +44,7 @@ pub(super) fn memory_region_retype_obj(
-             // could not narrow `deaths` to a right it did not itself hold, `CAP_INSERT` refused
-             // the widen, and the spawn surfaced as `OutOfMemory` at a prompt. Inheriting from the
-             // budget keeps that fixed, because the root budget is `Rights::ALL`.
+@@ -33,7 +33,7 @@
+             let ep = sched::create_rendezvous_from(region).ok_or(Error::OutOfMemory)?;
+             // The budget's rights, never a hand-written list, which would stop being full the
+             // day a right is added.
 -            let slot = sched::grant_from(floor, budget.mint_child(Object::Rendezvous(ep, 0)))
 +            let slot = sched::grant_from(floor, crate::cap::rendezvous_cap(ep, Rights::ALL))
                  .map_err(|_| Error::OutOfMemory)?;

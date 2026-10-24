@@ -11,20 +11,13 @@ use super::*;
 
 /// The redirection rows of [`SWISH_CHECK_SCRIPT`], in table order.
 pub(super) const LINES: &[Line] = &[
-    // **`uuid`, at the real prompt** (milestone 111), and this is the only gate that can run it.
-    // The endowment is `crates/system_initializer`'s to make: the progenitor holds the entropy service's
-    // request endpoint and places a `WRITE` view of it at `grant_plan::ENTROPY_SLOT` for a child
-    // whose manifest declares it, exactly as it places the clock. Every other test that runs the
-    // shell has the KERNEL play the progenitor, and `Spawn` fills a capability table from slot 0 upward, so
-    // nothing else in this tree can put a capability at a slot a manifest names.
-    //
-    // **The value is deliberately not asserted, and the shape is.** A version-4 identifier that a
-    // gate could predict would be a version-4 identifier drawn from nothing, so pinning one would
-    // assert the opposite of what this milestone is about. What is pinned is the framing: `uuid >
-    // id.txt` puts 36 characters and a newline in a file, and `wc` counts one line, one word, 37
-    // bytes. A `uuid` the progenitor endowed nothing would leave that file **empty** (its refusal goes to the
-    // second stream, `Manifest::output`'s whole reason here), so `1 1 37` fails on exactly the
-    // condition this milestone exists to create.
+    // **`uuid`, at the real prompt** (milestone 111 (a shell that can endow a child with entropy)),
+    // the only gate that can run it: the progenitor places a `WRITE` view of the entropy service at
+    // `grant_plan::ENTROPY_SLOT`, and elsewhere the kernel plays the progenitor and fills a table
+    // from slot 0 upward. The value is not asserted, since a predictable version-4 identifier is
+    // drawn from nothing; the shape is. 36 characters and a newline make `1 1 37`, and a `uuid`
+    // endowed with nothing leaves the file empty (its refusal goes to the second stream), so the
+    // count fails exactly then.
     line(1, "uuid > id.txt", &[]),
     line(1, "wc < id.txt", &["1 1 37"]),
     // And the second stream is empty, which is the same trick the `pgrep 2>` line above uses: this
@@ -89,17 +82,12 @@ pub(super) const LINES: &[Line] = &[
     // And the duration itself, checked for its shape rather than its value: the number is a real
     // measurement and cannot be a constant, but `real` and a unit are what a stopwatch prints.
     line(1, "time date", &["time: real"]),
-    // The visibility surface agrees with the wiring, the same pairing `caps date` makes for the
-    // child's clock. This one is about the shell's own: `caps` is the only thing in this system that
-    // claims to print a process's whole authority, and a clock the boot really grants would make
-    // that claim false if it went unprinted. The rights half is the load-bearing word: READ without
-    // GRANT is why nothing typed here can hand a clock to a child.
-    //
-    // **The second wanted phrase is milestone 31 phase 3's**, and it is the machine-checked form of "flip
-    // `holdings()`": the shell's `holdings().dir` is true exactly when the progenitor granted it a directory,
-    // and this row is the only place a person can read that at the real prompt. Every other test
-    // that runs the shell has the kernel play the progenitor, so a boot that stopped granting it would fail
-    // nothing; `wc gate.txt` above would keep working, because the shell opens that file itself.
+    // `caps` claims to print a process's whole authority, so the shell's own clock must show; READ
+    // without GRANT is why nothing typed here can hand a clock to a child. The second phrase is
+    // milestone 31 (a capability shell) phase 3's: `holdings().dir` is true exactly when the
+    // progenitor granted the shell a directory. Elsewhere the kernel plays the progenitor, so a
+    // boot that stopped granting it would fail nothing else; `wc gate.txt` keeps working because
+    // the shell opens that file.
     line(
         0,
         "caps",

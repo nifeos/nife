@@ -1,33 +1,22 @@
 //! **The net server: smoltcp as a userspace TCP/IP stack over the confined NIC** (milestone 30,
-//! piece 3).
+//! piece 3; notes/net.md).
 //!
-//! The networking form of the userspace-reuse thesis: the kernel confines the NIC's DMA (pieces 1
-//! and 2), and a real, reused TCP/IP stack (smoltcp, not hand-built) runs it entirely at EL0. The
-//! kernel knows nothing about TCP, UDP, or DHCP; it owns only the DMA confinement.
-//!
-//! `net_stack` brings the NIC up, runs DHCP to completion (reporting the lease), then serves a
-//! capability-shaped socket contract on a `Stack` endpoint (DECISIONS §25, notes/net.md,
-//! `crates/socket_contract/src/lib.rs`): a socket is a capability this server mints and names by its
-//! badge (§255 (each socket is its own capability)), per-connection bytes cross in a shared frame
-//! the client delegates, and every operation is one message. Phase one is single-threaded and
-//! synchronous, one exchange per request; the server blocks on the `Stack` endpoint between
-//! requests and drives the network inside handling one.
-//!
+//! The kernel confines the NIC's DMA and knows nothing about TCP, UDP or DHCP. `net_stack` brings
+//! the NIC up, runs DHCP to completion and reports the lease, then serves the socket contract
+//! (DECISIONS §25 (socket identity), `crates/socket_contract`) on its `Stack` endpoint: a socket is
+//! a capability it mints and names by its badge (§255 (each socket is its own capability)), a
+//! connection's bytes cross in a frame the client delegates, and every operation is one message.
+//! One thread: it blocks on `Stack` between requests, drives the network inside one, and accepts
+//! (milestone 107 (the socket contract learns to accept)) only on ports its spawner granted.
+
 //! # Capability contract
-//! - slot 0: the report endpoint (WRITE) for the DHCP lease
-//! - slot 1: the NIC interrupt (WAIT / ACK)
-//! - slot 2: the confined `Virtio` transport
-//! - slot 3: an untyped budget, for the heap and for mapping clients' shared frames
-//! - slot 4: the `Stack` endpoint (READ), where clients' requests arrive
-//! - slot 5: the retransmit notification, bound to this thread (absent from the progenitor's spawn)
-//! - slot 6: the retransmit timer (likewise)
-//! - slot 7: the `Stack` endpoint again (WRITE | GRANT), which each socket is minted from
-//! - slot 8: this process's own address space (WRITE), to unmap a closed socket's page
-//! - arg1: the DMA page's physical address
-//! - arg2: the **grant word**: the TCP listen range (milestone 107) in its low half and the
-//!   fixed-UDP bind range (milestone 55's stack half) in its high half, both packed by
-//!   `socket_contract`. Zero, the default, means no port anywhere in either protocol: a stack serves
-//!   inbound connections, or claims a fixed UDP port, only when whoever spawned it said which.
+//!
+//! Slot 0 the lease's report endpoint (`WRITE`); 1 the NIC interrupt (`WAIT`/`ACK`); 2 the confined
+//! `Virtio` transport; 3 an untyped budget, for the heap and clients' frames; 4 `Stack` (`READ`),
+//! where requests arrive; 5 and 6 a notification bound to this thread and its retransmit timer (not
+//! in the progenitor's spawn); 7 `Stack` (`WRITE | GRANT`) to mint sockets from; 8 this address
+//! space (`WRITE`), to unmap a closed socket's page. `arg1` is the DMA page's physical address and
+//! `arg2` the TCP listen (milestone 107) and UDP bind ranges, of which zero opens neither.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `netd`, and
 //! respelled from `netstack` on 2026-08-01 (milestone 63) because `net` is already this tree's word
@@ -39,30 +28,12 @@
 
 //! # BUGS
 //!
-//! **No host fuzz target reaches this dispatch** (proposal #1592 part a, rank 2). The request match
-//! and every helper under it live in this EL0 binary and take `virtio_net_transport::VirtioNet`,
-//! the clock and two blocking waits directly, so nothing builds for the host. What a host part
-//! would cost, measured by reading on 2026-10-04 (UTC): about 630 lines moved into a sans-IO crate
-//! over smoltcp's `phy::Device`, with the clock and the waits behind an edge trait. See
-//! `notes/fuzzing-the-services.md`.
+//! Each in full in notes/net/memory-and-reclamation.md, "The server's own limits".
 //!
-//! **One client can take every socket.** The table is [`SOCKETS`] entries shared by every client
-//! of the stack, and nothing bounds how many one client holds, so a client that opens sixteen and
-//! keeps them starves the rest of the network. Before §255 (each socket is its own capability) the
-//! same was true of the six shared socket numbers. A per-client quota wants the client named, which
-//! a badged front door per client would do; nothing builds that yet. Recorded by milestone 649
-//! (every client of a network stack shares its socket numbers).
-//!
-//! **DHCP has no bound.** The lease loop runs until a server answers, and every spawner blocks
-//! on the report, so a link that is up with no DHCP server behind it is a wait with no end. The
-//! kernel's `e1000e_service` and `designware_ethernet_service` refuse a link that never came up
-//! (`Absent::NoLink`, `NotStarted::NoLink`) and every test runner provides slirp's server, so only
-//! a live link to a LAN with no DHCP server reaches it.
-//!
-//! **A spawn without slot 8 cannot reuse a socket's page.** With no address space to `UNMAP` from,
-//! a closed socket's page stays mapped, and its table entry refuses every later frame rather than
-//! show the next socket the last one's page, so after sixteen sockets with pages the stack carries
-//! no more bytes. Every spawner in the tree grants slot 8.
+//! - No host fuzz target reaches this dispatch; `notes/fuzzing-the-services.md` prices one.
+//! - One client can take every socket: nothing bounds how many of [`SOCKETS`] one client holds.
+//! - DHCP has no bound: a live link to a LAN with no DHCP server is a wait with no end.
+//! - A spawn without slot 8 cannot reuse a socket's page, so after sixteen it carries no bytes.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

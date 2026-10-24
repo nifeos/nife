@@ -7,24 +7,18 @@ const PAGE: u128 = paging::PAGE_SIZE as u128;
 
 /// **`run_end_va` is exact, and it refuses exactly the runs that do not fit.**
 ///
-/// This is milestone 142's MAJOR 4 written as a property. The code it replaced computed
-/// `va.checked_add((count - 1) * paging::PAGE_SIZE)` and checked only the addition, so a
-/// `count` big enough to wrap the *multiply* produced a `last_va` sitting a few pages above
-/// `va`, and the guard at both call sites cheerfully admitted a run that spans the address
-/// space. A unit test cannot find that: the witnesses are a measure-zero set of `count`s near
-/// multiples of 2^52, and nobody writes them down. The solver enumerates the whole domain.
-///
-/// The claim is stated against `u128` arithmetic, which cannot wrap in this range, so the
-/// harness does not repeat the implementation's own expression back to it.
+/// A wrapping multiply would admit a run spanning the address space for a measure-zero set of
+/// `count`s near multiples of 2^52, which no unit test writes down; the solver covers the domain.
+/// The claim is stated in `u128`, which cannot wrap here, so the harness does not repeat the
+/// implementation's own expression back to it.
 ///
 /// Falsification: replayable `kernel/falsifications/syscall.proofs.the_run_end_is_exact_and_refuses_exactly_what_does_not_fit.patch`
 #[kani::proof]
 fn the_run_end_is_exact_and_refuses_exactly_what_does_not_fit() {
     let va: u64 = kani::any();
     let count: u64 = kani::any();
-    // `count` rides on the capability as a `NonZeroU64` (cap.rs, DECISIONS §102), so zero is
-    // not a state a caller can reach. Assuming it here rather than proving it is honest: the
-    // type is the mechanism, and this harness is about the arithmetic above it.
+    // Assumed, not proved: `count` is a `NonZeroU64` on the capability (DECISIONS §102 (a Frame
+    // names a run of pages)), and the type is the mechanism.
     kani::assume(count >= 1);
 
     let want = va as u128 + (count as u128 - 1) * PAGE;
@@ -46,25 +40,12 @@ fn the_run_end_is_exact_and_refuses_exactly_what_does_not_fit() {
 
 /// **Checking the two ends of a run is enough to check every page in it.**
 ///
-/// Both mapping paths (`page_frame_map` and `MAP_INTO`) guard `va` and `run_end_va(va, count)`
-/// and then walk `va + k * PAGE_SIZE` for `k` in `0..count` with **nothing re-checking the
-/// pages in between**. That is milestone 142's MAJOR 3 in its fixed form, and it is only sound
-/// because the user half is a contiguous prefix of the address space: on aarch64
-/// `is_user_page_va` is `va & 0xfff == 0 && va >> 48 == 0`, so an aligned address between two
-/// user addresses is itself a user address.
+/// Both mapping paths (`page_frame_map` and `MAP_INTO`) guard `va` and `run_end_va(va, count)`,
+/// then walk the pages between unchecked, sound because the user half is a contiguous prefix. `k`
+/// is the solver's, so every page of every run is covered without an unwind bound.
 ///
-/// Sound, but not obviously so, and the loop is where a future widening of `Half::Low` would
-/// break it silently. `k` is chosen by the solver rather than iterated, so this covers every
-/// page of every run without an unwind bound.
-///
-/// **The guard below is a model of two call sites, and a model can go stale.** Milestone
-/// 213's sweep read `page_frame_map` and `MAP_INTO` on 2026-09-02 and both apply exactly
-/// this: `run_end_va(va, count)`, then `is_user_page_va` on `va` and on `last_va`, then the
-/// loop. So the model is faithful today, checked rather than assumed. Nothing checks it
-/// tomorrow: a call site that added an alignment condition, or dropped one of the two ends,
-/// would leave this harness green while proving a claim about a guard nobody applies. Unlike
-/// the harnesses 213 rewrote, the duplication here cannot be removed by calling something,
-/// because what is duplicated is a *caller's* control flow rather than a function.
+/// # BUGS
+/// - The guard below models the two call sites, and it can go stale: nothing keeps it faithful.
 ///
 /// Falsification: replayable `kernel/falsifications/syscall.proofs.every_page_between_the_checked_ends_is_itself_a_user_page.patch`
 #[kani::proof]

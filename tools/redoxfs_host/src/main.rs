@@ -1,5 +1,9 @@
 //! `redoxfs_host`: make, inspect and **recover** RedoxFS images and disks on the host
-//! (milestones 32, 57, 110).
+//! (milestones 32, 57, 110). The logic lives in the library (src/lib.rs), so the tests exercise
+//! exactly what this binary runs. vendor/README.md has its 0.9.1 pin, and notes/host-recovery.md
+//! why that pin has to be kept with the backup.
+
+//! # SYNOPSIS
 //!
 //!     cargo run -p redoxfs_host -- mkfs       IMAGE SIZE_MIB
 //!     cargo run -p redoxfs_host -- partitions DEVICE
@@ -9,27 +13,15 @@
 //!     cargo run -p redoxfs_host -- extract    VOLUME PATH DEST
 //!     cargo run -p redoxfs_host -- put        IMAGE PATH HOST_FILE
 //!     cargo run -p redoxfs_host -- import     IMAGE HOST_DIR
+
+//! # DESCRIPTION
 //!
-//! `ls`, `cat`, `xattr` and `extract` are the disaster-recovery half: they open the volume
-//! read-only, need no FUSE, no kernel extension, no root and no key, and behave identically on
-//! macOS and Linux. `PATH` is always relative to the filesystem root and `..` is refused.
-//!
-//! **A `VOLUME` is an image file, or a device plus a partition** (milestone 110). With no selector
-//! the bytes at offset zero are the filesystem, which is what an image is. With `--partition N` or
-//! `--partition-type GUID` the table at offset zero is read first and the filesystem is the one
-//! inside that partition, which is what a disk pulled out of the board is. `partitions DEVICE`
-//! prints the table so there is something to choose from. **Both flag names are PROVISIONAL.**
-//!
-//! The selector is **refused on `mkfs`, `put` and `import`**, which are the verbs that open
-//! read-write. Recovery never writes, and opening a *device* read-write by accident is a
-//! considerably worse mistake than opening an image read-write.
-//!
-//! `xattr` is deliberately shaped like macOS's own `xattr(1)`: with no `NAME` it lists what is
-//! attached, with a `NAME` it writes that attribute's bytes to stdout the way `cat` writes a file's.
-//!
-//! The logic lives in the library (src/lib.rs) so the round-trip tests exercise exactly what this
-//! binary runs. See vendor/README.md for the 0.9.1 pin this is built against, and
-//! notes/host-recovery.md for why that pin has to be kept with the backup.
+//! `ls`, `cat`, `xattr` and `extract` recover: read-only, with no FUSE, kernel extension, root or
+//! key, alike on macOS and Linux. `PATH` is relative to the filesystem root; `..` is refused. A
+//! `VOLUME` is an image, or with `--partition N` or `--partition-type GUID` (both PROVISIONAL) a
+//! partition of a device, which `partitions` lists. The read-write verbs `mkfs`, `put` and
+//! `import` refuse a selector: opening a device read-write by accident is the worse mistake.
+//! `xattr` is shaped like macOS's `xattr(1)`: no `NAME` lists, a `NAME` writes its bytes to stdout.
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -94,11 +86,8 @@ fn main() -> ExitCode {
         ["xattr", image, path, name] => attr_value(vol(image, selector), path, name),
         ["extract", image, path, dest] => {
             redoxfs_host::extract(vol(image, selector), path, Path::new(dest)).map(|s| {
-                // The attribute counts are always printed, including the zeroes, and that is the
-                // point rather than noise: "0 attributes reattached" on a backup you know carried
-                // some is the line that tells you the destination filesystem cannot hold them,
-                // while a summary that mentioned them only when non-zero would look identical to a
-                // backup that never had any.
+                // The counts are printed even at zero: "0 attributes reattached" on a backup that
+                // carried some says the destination cannot hold them.
                 eprintln!(
                     "extracted {} to {dest}: {} files, {} directories, {} symlinks, {} bytes{}, \
                      {} attributes reattached{}{}",

@@ -4,7 +4,8 @@
 //! The capability slots every builder hands `display_terminal` (the kernel's test wiring,
 //! `system_initializer`'s session, and `terminal_supervisor`), so the four agree through one list
 //! (AGENTS.md rule 7), and the page budgets a supervisor sets aside for it. Under a supervisor the
-//! handoff run arrives with `CTL_HANDOFF` on [`CONTROL`] and is mapped at [`HANDOFF_ADDRESS`].
+//! handoff run arrives with `CTL_HANDOFF` on [`CONTROL`] and is mapped at [`HANDOFF_ADDRESS`]. A
+//! quiesce is refused unless it comes through a copy badged `line_editor::proto::SUPERVISOR_BADGE`.
 //! The swap and the measured budgets are in notes/video-terminal/handoff-and-component.md.
 //!
 //! Name: provisional (the lane for milestone 23, 2026-10-19 UTC), for this module and every item
