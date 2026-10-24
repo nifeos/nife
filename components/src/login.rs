@@ -1,42 +1,30 @@
 //! **The login service: authentication produces capabilities** (milestone 49, §109 (attribution
 //! is a channel property)). It authenticates an identity against the credential service and, on
 //! success, hands back capabilities instead of mutating an identity field: a fresh directory, a
-//! fresh budget, a logout ticket and, when free, the terminal. See notes/login.md.
+//! fresh budget, a logout ticket and, when free, the terminal. See notes/login.md for the design,
+//! and notes/login/budgets-and-reclamation.md for its budgets and what giving each back takes.
+
+//! # What it holds to
 //!
-//! - Each login builds its own `fs_subtree_caretaker`, never a narrowed copy of a shared endpoint,
-//!   so two logins are two endpoint objects, each revocable and nameable only by its principal.
-//! - The front door ([`REQUEST`]/[`RESULT`]) takes only [`login_contract::CONNECT`] and
-//!   [`login_contract::LOGOUT`]. [`connect`] mints a private request/result pair and staging page
-//!   per caller, so identity and secret travel only there (`login_contract` has the exchange).
-//! - §117 (a principal's subtree is named by its identity string): provisioned beforehand, and an
-//!   identity with none is refused as [`login_contract::DENIED`], like a bad password.
-//! - Run-unvouched ([`RUN_UNVOUCHED`]) is delegated `WRITE` without `GRANT`, and only to identities
-//!   on the owner's list ([`listed`]; §219 (how the shell names an installed program to the
-//!   spawner) gate D2, §221 ruling 2).
-//! - The logout ticket is [`mint`]'s construction region narrowed to `WRITE`. A full logout must
-//!   destroy the budget before the region: LIFO reclaim returns pages only from the top, and
-//!   `mint` splits the region first. A `DESTROY` refused mid-`forward` is transient; retry a few
-//!   times (`fixtures/src/login_test_client.rs`'s teardown).
-//! - One session holds the terminal ([`TERM_EP`]) at a time. A login while it is held is refused
-//!   [`login_contract::NO_TERMINAL`] before its secret is relayed; `LOGOUT` releases it,
-//!   authenticates nothing, and a holder that never sends it wedges the terminal until restart.
-//! - `_start` checks the caretaker and timetable images against
-//!   [`measured_boot::PROGRAM_MEASUREMENTS`]; with no table every login is `DENIED`. Each channel
-//!   maps one page above [`CONNECT_VA_BASE`] that is never reused, since it held a secret.
-//!
+//! - Each login builds its own `fs_subtree_caretaker`, never a narrowed copy of a shared endpoint.
+//! - The front door ([`REQUEST`]/[`RESULT`]) takes `CONNECT`, `LOGOUT`, `SUSPEND` and
+//!   `REDERIVE_SKIPS`; [`connect`] mints a private channel per caller, the only place identity
+//!   and secret travel. An identity with no provisioned subtree (§117) is refused `DENIED`.
+//! - Run-unvouched ([`RUN_UNVOUCHED`]) goes `WRITE` without `GRANT`, to listed identities only.
+//! - One session holds the terminal ([`TERM_EP`]): another login is refused `NO_TERMINAL` before
+//!   its secret is relayed; `LOGOUT` releases it and authenticates nothing.
+
 //! # BUGS
-//!
-//! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary
-//!   session. Start-up waits up to [`END_WAIT_SECS`] per re-derived session, unmeasured.
-//! - A stopped durable session is retired only at its identity's next login; ending one waits for
-//!   a running job (§222 (who holds a user's schedule)), and `SUSPEND` waits on the terminal.
+//! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary one.
+//! - Start-up waits up to [`END_WAIT_SECS`] per re-derived session, unmeasured.
+//! - A stopped durable session is retired only at its identity's next login.
+//! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
-//! - Identities longer than `filesystem_contract::grant::MAX_NAME` (16 bytes) get no subtree:
-//!   [`mint`] refuses rather than truncate into a name two identities could share.
+//! - Identities over `grant::MAX_NAME` (16 bytes) get no subtree: [`mint`] refuses to truncate.
+//! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
-//! - Not wired into the interactive boot; `design/roadmap/0049-users-and-attribution.md` has why.
-//!
+
 //! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary-rulings.md`).
 
 #![no_std]
@@ -67,7 +55,7 @@ const VERIFY: u64 = 2;
 /// attenuates, and where [`listed`] reads the owner's list.
 const FS_EP: u64 = 3;
 /// The file service's shared page, a `PageFrame`, `READ | WRITE`, delegated on to each principal.
-/// `WRITE` alone maps read+write for every holder ([`serve_login`]'s comment).
+/// `WRITE` alone maps read+write for every holder ([`hand_over`]'s comment).
 const FS_PAGE_FRAME: u64 = 4;
 /// Everything a connecting client's own channel, a caretaker, and a client budget are all built
 /// from, `WRITE | GRANT`. Never given away.
@@ -76,13 +64,10 @@ const CONSTRUCTION_UT: u64 = 5;
 /// or the first login blocks this process forever (`system_initializer::boot` wires
 /// `login_audit_receiver`; the kernel harness drains via `Wiring::audit`).
 const AUDIT: u64 = 6;
-/// **The interactive terminal** (milestone 49's terminal update), `WRITE | GRANT`. The same
-/// endpoint `crates/system_initializer::boot` already hands the shell, `WRITE` only: this process
-/// never reads a keystroke or writes a line itself, it only ever hands a narrowed `WRITE` copy on to
-/// whichever session currently holds it (see `_start`'s own `terminal_held` flag and this program's
-/// module docs, "The terminal: single-session, deny cleanly"). `GRANT` is what lets [`delegate`]
-/// narrow and re-delegate it at all; absent that right the capability could be held but never handed
-/// on.
+/// **The interactive terminal** (milestone 49's terminal update), `WRITE | GRANT`: the endpoint
+/// `crates/system_initializer::boot` hands the shell. This process never reads a keystroke or
+/// writes a line; it hands a narrowed `WRITE` copy to whichever session holds it (notes/login.md,
+/// "The terminal: the design argument"), and `GRANT` is what lets [`delegate`] do that.
 const TERM_EP: u64 = 7;
 /// **The run-unvouched capability** (DECISIONS §219 gate D2), `WRITE | GRANT`, when the spawner
 /// placed one: the endpoint the progenitor receives a presentation on. Delegated `WRITE` alone to
@@ -116,11 +101,9 @@ static LIST_MAPPED: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicB
 
 /// The page shared with the credential service, for the relayed `VERIFY`.
 const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
-/// The base of a scratch VA range [`connect`] bump-allocates one page from per channel it mints.
-/// Distinct from `credentialer.rs`'s own request pages (a different process, so no collision is
-/// possible), but numbered in the same family so a reader who knows one contract's addresses
-/// recognises the shape of the other's. Nothing before milestone 49's channel-per-client update
-/// mapped anything at or past this address.
+/// The base of the scratch VA range [`connect`] takes one fresh page from per channel it mints: a
+/// VA is never reused, since `page_frame::MAP` refuses an already-mapped one and the page held a
+/// secret. Numbered in the same family as `credentialer.rs`'s request pages, in another process.
 const CONNECT_VA_BASE: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
 /// One channel's whole cost: two `RETYPE_OBJ`s (request, result), one `RETYPE` (the staging page),
 /// and the page tables `page_frame::MAP` needs for that page's own mapping. Three pages minimum,
@@ -129,29 +112,10 @@ const CONNECT_VA_BASE: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000)
 const CHANNEL_REGION_PAGES: u64 = 8;
 
 /// **A budget of its own that only [`connect`] ever spends, so a served channel's pages actually
-/// come home.** Four channels' worth, though only one is ever live at a time (see below).
-///
-/// This is a `crates/regions` LIFO consequence, measured rather than reasoned about, and it is the
-/// same rule this program's module docs already name for the logout ticket's own destroy order.
-/// `MemoryRegion::DESTROY` returns a child's pages to its parent's watermark **only when the child
-/// sits at the top of it**; a child freed out of order leaves a hole that does not come back until
-/// no child above it is live (until 2026-10-03 UTC, not until the parent itself was destroyed;
-/// `RegionTable::return_to_parent` has the change). A channel is minted before the login it carries and destroyed
-/// after it, so a channel region split from [`CONSTRUCTION_UT`] is *never* the top when it is
-/// destroyed: the caretaker region and the client budget that login minted sit above it, and both
-/// outlive it whenever the client stays logged in. Every connect therefore stranded
-/// [`CHANNEL_REGION_PAGES`] of `CONSTRUCTION_UT`, permanently, for the life of this process, which
-/// this suite measured directly as **368 pages of holes** in a `CONSTRUCTION_UT` whose real
-/// residents accounted for 1664 (`kernel::user::login_tests::CONSTRUCTION_PAGES`' own account).
-///
-/// A budget with exactly one spender fixes it outright rather than sizing around it. This process
-/// has one thread and serves one channel at a time ([`connect`] answers one caller, [`_start`]
-/// destroys that channel before it receives the next `CONNECT`), so a channel region carved from
-/// here is always this region's **only** live child, therefore always the LIFO top, therefore
-/// always fully returned. Nothing else may ever be split or retyped from this region, or that
-/// property quietly stops holding; that is why it is its own constant rather than a share of
-/// [`OWN_UT_PAGES`], whose spender ([`mint`]'s `build_child`) allocates *during* a login, with the
-/// channel still live.
+/// come home.** Four channels' worth, though only one is ever live at a time. A channel region
+/// carved here is always this budget's only live child, so always the LIFO top and always fully
+/// returned; nothing else may ever be split or retyped from it, or that stops holding. See
+/// notes/login/budgets-and-reclamation.md, "Why a channel has a budget of its own".
 const CHANNEL_UT_PAGES: u64 = 32;
 
 /// Where a built caretaker and the file service's shared page meet. Must match
@@ -160,35 +124,17 @@ const CHANNEL_UT_PAGES: u64 = 32;
 const CARETAKER_FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 
 /// This process's own scratch: page tables for [`build_child`]'s own temporary mappings (never a
-/// child's). [`connect`] draws from [`CHANNEL_UT_PAGES`] instead, for the LIFO reason that
-/// constant's own doc gives, so this budget's only spender is [`mint`]'s own `build_child` calls.
-///
-/// **Not "one build's worth," corrected.** An earlier version of this comment claimed only one
-/// caretaker is ever mid-construction, so this budget never holds more than one build's worth of
-/// intermediate page tables. That is wrong about `supervision_protocol::fill_and_map`'s own mechanism:
-/// its scratch cursor is a single, process-wide VA allocator, so every segment and blob page of
-/// every caretaker this process builds (successfully or not: `mint` calls `build_child` before it
-/// knows whether the caretaker's own descent will be refused) moves it on, and each 2 MiB it first
-/// reaches costs this region a page table. Since milestone 604 (provisional) the cursor wraps inside
-/// `supervision_protocol::SCRATCH_WINDOW`, so the most it can ever cost is
-/// `SCRATCH_TABLE_PAGES` (32); before, it grew for as long as this process ran.
-///
-/// **The real accumulation is one page, measured** (2026-08-26, over a whole aarch64 suite run: the
-/// twenty-six caretakers this file's tests build between them spend `usage() == (1, 128)` of this
-/// region). An earlier version of this comment raised it from 128 to 1024 and justified the raise by
-/// asserting 128 was "closer to this suite's own real accumulation than comfortable margin should
-/// ever be"; that assertion was never measured and is wrong by three orders of magnitude. It was
-/// raised while chasing this program's second-login failure, whose cause turned out to be this
-/// process's own sixteen-slot capability table (see BUGS), and it is back at 128, which is 128 times
-/// the observed high-water rather than a tight count.
+/// child's), spent only by [`mint`]'s `build_child` calls. `supervision_protocol::fill_and_map`'s
+/// scratch cursor wraps inside `SCRATCH_WINDOW`, so the most it can cost is `SCRATCH_TABLE_PAGES`
+/// (32); a whole aarch64 suite run measured one page, so 128 is margin, not a tight count. See
+/// notes/login/budgets-and-reclamation.md, "Four budgets, each with its own parent".
 const OWN_UT_PAGES: u64 = 128;
 
 /// One caretaker's whole construction: its address space, TCB, and stack.
 /// `crates/system_initializer::DIR_JOB_REGION_PAGES` (96) covers a caretaker **and** the program
 /// behind it; this process builds only the caretaker, so a smaller region should hold it, with
 /// margin rather than a tight fit (a region too small fails as `Err(())` mid-login, which this
-/// process can only answer with the one code `login_contract::DENIED` already carries for "could not
-/// mint", see this program's BUGS).
+/// process can only answer with `login_contract::DENIED`).
 const CARETAKER_REGION_PAGES: u64 = 64;
 
 /// Stack pages beyond the one `build_child` maps, matching
@@ -256,11 +202,9 @@ pub extern "C" fn _start(caretaker_len: u64, table_len: u64, schedule_len: u64) 
     );
     let (care_elf, table) = vouched_caretaker(caretaker_len, table_len);
 
-    // **What a durable session is built from** (milestone 152): `user_timetable_keeper` and `timetable`, each
-    // checked against the same table the caretaker is, and the caretaker itself, since each
-    // session's timetable reads the store through two of them (Fork 8 D). Anything unvouched and no
-    // schedule opens on this boot, which is the caretaker's own fold: `SCHEDULE` is then answered
-    // as `LOGIN` is.
+    // **What a durable session is built from** (milestone 152): `user_timetable_keeper` and
+    // `timetable`, vouched like the caretaker, which a session's two store caretakers also need.
+    // Anything unvouched and no schedule opens on this boot: `SCHEDULE` is answered as `LOGIN` is.
     let schedule = care_elf
         .as_ref()
         .and_then(|care| schedule_images(schedule_len, care, table));
@@ -289,11 +233,9 @@ pub extern "C" fn _start(caretaker_len: u64, table_len: u64, schedule_len: u64) 
         core::sync::atomic::Ordering::Relaxed,
     );
 
-    // **Boot re-derivation, before the front door opens** (milestone 152, Fork 7 ruled A by calef
-    // on 2026-09-27; DECISIONS §123 (the boot-time re-derivation privilege) as amended). Every
-    // durable session the manifest names and the owner has not suspended is opened again, by the
-    // code that opens one at a login. No session is live yet, so the file page is this process's
-    // alone.
+    // **Boot re-derivation, before the front door opens** (milestone 152; DECISIONS §123 (the
+    // boot-time re-derivation privilege) as amended): see [`rederive`]. No session is live yet, so
+    // the file page is this process's alone.
     if let (Some(images), Some(ut)) = (schedule, durable_ut) {
         rederive(own_ut, images, ut, &mut durables, &mut rederive_skips);
     }
@@ -317,18 +259,16 @@ pub extern "C" fn _start(caretaker_len: u64, table_len: u64, schedule_len: u64) 
 }
 
 /// The caretaker's image and the measurement table the spawner mapped, the image only if the table
-/// vouches for it.
+/// vouches for it. A caretaker that is not vouched for is not a reason to refuse to start: every
+/// login is answered `DENIED` instead, since `crates/system_initializer` treats this program as
+/// optional.
 fn vouched_caretaker(
     caretaker_len: u64,
     table_len: u64,
 ) -> (Option<elf::Elf<'static>>, &'static str) {
-    // **Two blobs rather than the archive** (milestone 233). Whoever started this process mapped
-    // `fs_subtree_caretaker`'s ELF bytes read-only at `login_contract::CARETAKER_ELF_VA` and the
-    // measurement table at `login_contract::PROGRAM_MEASUREMENTS_VA`, with their lengths in the first
-    // two argument registers. Those constants carry the whole account of why this is not a mapping
-    // of the initial ramdisk any more; the short version is that the real boot could not hand over
-    // the initial ramdisk at all, so this program died at `_start` on every interactive boot until
-    // milestone 233 (`login` dies on every boot).
+    // **Two blobs rather than the archive** (milestone 233 (`login` dies on every boot)): the
+    // caretaker's ELF and the measurement table, their lengths in the first two argument registers
+    // (notes/login/budgets-and-reclamation.md, "Two blobs rather than the archive").
     //
     // SAFETY: the spawner maps `caretaker_len` bytes read-only at `CARETAKER_ELF_VA`, for the
     // lifetime of this process, before `_start` runs (`login_contract::CARETAKER_ELF_VA`'s own
@@ -342,30 +282,10 @@ fn vouched_caretaker(
         )
     };
 
-    // **The table `crates/system_initializer` already consults before loading anything it did not
-    // build itself** (milestone 104), read the identical way: bytes that are not UTF-8 become the
-    // empty table rather than a fault (`measured_boot`'s own reasoning for why that is the safe
-    // direction to fail), and an empty table vouches for nothing. Checked once, here, rather than
-    // per login: both blobs are read-only pages fixed for the whole life of this process, so every
-    // future request would see exactly the same verdict, and there is nothing to gain by re-hashing
-    // the same bytes on every request.
-    //
-    // **Not a reason to refuse to start**, which is the whole of milestone 233's second half.
-    // `crates/system_initializer` treats this exact program as optional (its own doc: "without one,
-    // a directory grant cannot be delivered, ... which costs `rm` and nothing else"), and this
-    // process now mirrors that in every case rather than only some: an unvouched, unparseable or
-    // absent caretaker costs this service the one thing it exists to hand out, so every login is
-    // answered `DENIED` below (via `mint`) instead. See this program's BUGS for why that fold is
-    // not the same anti-oracle reasoning a wrong password gets, and is the considered answer anyway.
-    //
-    // **This check's trust root moved with the blob and the docs have to say so.** When this
-    // program read the initial ramdisk it was reading the same physical archive the kernel maps for
-    // the progenitor, so the check was independent of whoever spawned this process. It is not any
-    // more: under `crates/system_initializer` both the bytes and the table arrive from the
-    // progenitor, which has already run the identical `verify_in_manifest` over them. What survives
-    // is a consistency check on the hand-over rather than an independent verification, and it is
-    // kept because it costs one hash and catches a spawner that pairs the wrong two blobs. This
-    // program's BUGS records the loss.
+    // Read the way `crates/system_initializer` reads it (milestone 104): bytes that are not UTF-8
+    // are the empty table, which vouches for nothing. Checked once: both blobs are read-only for
+    // the life of this process. The check is a consistency check on the progenitor's hand-over, not
+    // an independent verification (notes/login.md, "Measured boot: the posture").
     //
     // SAFETY: as above, for `table_len` bytes at `PROGRAM_MEASUREMENTS_VA`.
     let table = unsafe {
@@ -375,10 +295,8 @@ fn vouched_caretaker(
         )
     };
     let table = core::str::from_utf8(table).unwrap_or("");
-    // An empty table vouches for nothing, an unparseable image is not a caretaker, and a zero-length
-    // blob is a spawner saying it had nothing vouched-for to hand over. All three end here, as
-    // `None`, and all three are answered the same way: see the `None` arm of `mint` and this
-    // program's own docs above on why that fold is the considered answer.
+    // An empty table, an unparseable image and a zero-length blob all end here as `None`, answered
+    // by the `None` arm of `mint`.
     let care_elf = elf::Elf::parse(care_bytes).ok().filter(|_| {
         measured_boot::verify_in_manifest(table, "fs_subtree_caretaker", care_bytes).is_ok()
     });
@@ -421,17 +339,14 @@ struct FrontDoor<'e> {
     durables: Durables,
     /// The start-up pass's skip counts, one per reason; see `_start`.
     rederive_skips: [u32; login_contract::durable::REDERIVE_SKIP_REASONS],
-    // How many logins this process has established, in order. The audit trail's sequence number,
-    // not a capacity: `CONSTRUCTION_UT` is what actually bounds how many logins this process can
-    // serve (see BUGS).
+    // How many logins this process has established, in order: the audit trail's sequence number,
+    // not a capacity (`CONSTRUCTION_UT` bounds how many logins it can serve).
     seq: u64,
     // How many channels this process has minted, in order: [`connect`]'s own bump allocator for a
     // fresh scratch VA per channel (see `CONNECT_VA_BASE`'s own doc on why a VA is never reused).
     connect_seq: u64,
-    // **Whether [`TERM_EP`] is currently on loan to a session** (milestone 49's terminal update).
-    // `false` at start-up: nobody has logged in yet, so the terminal is free. See this program's
-    // module docs, "The terminal: single-session, deny cleanly", for the whole design and this
-    // program's BUGS for what freeing it does and does not guarantee.
+    // **Whether [`TERM_EP`] is on loan to a session** (milestone 49's terminal update), `false` at
+    // start-up. notes/login.md, "The terminal: the design argument", has the design.
     terminal_held: bool,
 }
 
@@ -440,23 +355,18 @@ impl FrontDoor<'_> {
     fn serve(&mut self, w0: u64) {
         let operation = login_contract::operation(w0);
         if operation == login_contract::LOGOUT {
-            // **Travels on the front door itself**, unlike an actual login: it carries no secret,
-            // so there is nothing a shared endpoint would expose by handling it here directly (see
-            // `login_contract`'s own BUGS on what this does and does not authenticate). Idempotent: a
-            // logout that arrives when nobody holds the terminal simply finds `terminal_held`
-            // already `false`.
+            // On the front door itself: it carries no secret, so a shared endpoint exposes nothing
+            // (`login_contract`'s BUGS says what it does not authenticate). Idempotent.
             self.terminal_held = false;
             send(RESULT, login_contract::LOGGED_OUT, 0, 0);
             return;
         }
         if operation == login_contract::SUSPEND {
-            // **The §108 (disabling credentials kills the durable session) cascade** (milestone 152, calef's ruling of 2026-09-26): reread the owner's
-            // suspended list and end the durable session of anyone on it. Unauthenticated, like
-            // `LOGOUT`, for the reason `login_contract::SUSPEND` gives.
-            //
-            // Not while a session holds the terminal: reading the list takes the file page that
-            // session's caretaker shares with the server (see [`listed`]). The cascade then runs at
-            // the suspended identity's next login instead, which ends its durable session too.
+            // **The §108 (disabling credentials kills the durable session) cascade** (milestone
+            // 152): end the durable session of everyone on the owner's suspended list.
+            // Unauthenticated, like `LOGOUT`, for the reason `login_contract::SUSPEND` gives. Not
+            // while a session holds the terminal, whose caretaker shares the file page the list is
+            // read through ([`listed`]); the cascade then runs at that identity's next login.
             self.suspend_listed();
             return;
         }
@@ -504,7 +414,7 @@ impl FrontDoor<'_> {
     /// `CONNECT`: mint a private channel, serve one login on it, and reclaim it.
     fn serve_connect(&mut self) {
         let Some(channel) = connect(self.channel_ut, self.connect_seq) else {
-            // The construction budget is spent (see BUGS); folded into `DENIED` for
+            // The channel budget is spent; folded into `DENIED` for
             // `login_contract::DENIED`'s own stated reason, even though no identity is in play yet:
             // this program has exactly one code for "authenticated or not, I could not serve you".
             send(RESULT, login_contract::DENIED, 0, 0);
@@ -532,59 +442,22 @@ impl FrontDoor<'_> {
                 durables: &mut self.durables,
             },
         );
-        // **Reclaim the whole channel by destroying the region it was built from, not by deleting
-        // our own capabilities to its pieces.** An earlier version of this loop only called
-        // `cap_delete` on `channel.request`/`channel.result`/`channel.page`, which removes *this
-        // process's own reference* but does nothing to the underlying kernel objects: a rendezvous
-        // retyped by `RETYPE_OBJ` lives in the kernel's own global rendezvous registry
-        // (`kernel::sched`'s `MAX_RENDEZVOUS`, 512 slots, shared by *every* process in the machine,
-        // not this one's own capability table or `CONSTRUCTION_UT`'s own page count) until the
-        // *region* it was retyped from is destroyed. `cap_delete` alone left two of those slots
-        // permanently spent per connect, and this suite's own tests found it: a later, unrelated
-        // test failed with "out of rendezvous points" after this file's ~29 connects had quietly
-        // spent 58 of the 512 the whole machine shares. `channel.region` is destroyed here instead,
-        // which reclaims the request and result rendezvous and the staging page frame in one call.
-        // No thread ever runs in this region (only `RETYPE_OBJ`/`RETYPE`, never a
-        // `THREAD_CONTROL_BLOCK`), so `DESTROY` has nothing to wait on and cannot be transiently
-        // refused, so [`reclaim`]'s bounded retry (shared with every other
-        // `MemoryRegion::DESTROY` in this program) is expected to return on its first attempt here;
-        // reused anyway rather than a bare call, so an assumption this comment states does not have
-        // to also be a correctness dependency if it is ever wrong.
-        //
-        // **The two `cap_delete`s are the other half, and an earlier version of this comment was
-        // wrong to say the `DESTROY` covered them.** It claimed destroying the region reclaimed
-        // "this process's own capability-table slots for all three"; it does not, and cannot.
-        // `MemoryRegion::DESTROY` tears down the objects inside the region and gives its pages back,
-        // and `revoke_region` deletes every `PageFrame` capability naming a page it just freed
-        // (which is why `channel.page` needs nothing here). Neither touches a `Rendezvous`
-        // capability, and nothing anywhere deletes the `MemoryRegion` capability *naming the region
-        // being destroyed*: both stay as live entries in this process's sixteen-slot table, now
-        // stale, until this process clears them itself. So every served connect used to spend two of
-        // those sixteen slots permanently, which is exactly two logins' worth of headroom: the
-        // second login after this process started would reach `mint`, get through `build_child`'s
-        // address space, and fail on the next `RETYPE` with the table full, and the caller reads
-        // that as `login_contract::DENIED` on a correct password. See this program's BUGS.
+        // Destroy the channel's region rather than only deleting our capabilities to its pieces:
+        // its rendezvous live in the kernel's global registry until the region goes, and `DESTROY`
+        // leaves our `MemoryRegion` and `Rendezvous` capabilities in the table, so `result` is
+        // deleted and the region discarded (notes/login/budgets-and-reclamation.md).
+        // `channel.request` and `channel.page` are gone already ([`authenticate`]).
         cap_delete(channel.result);
         discard(channel.region);
     }
 }
 
-/// **Serve one login on its own private channel**, exactly the exchange every client used to run on
-/// the shared front door before milestone 49's channel-per-client update: relay the presented
-/// identity and secret to the credential service, and on success mint a fresh capability set. `seq`
-/// is the audit trail's own counter, shared across every channel this process ever serves (not
-/// `channel`'s own connect-sequence number, which is a different count with a different purpose: see
-/// `CONNECT_VA_BASE`'s doc).
-///
-/// **Drops `channel.request` and `channel.page` itself, as early as each stops being needed, rather
-/// than leaving both live for `_start` to drop after this returns.** This process's own capability
-/// table has sixteen slots (`kernel::cap::CAPABILITY_TABLE_SLOTS`) and eight are spent at rest; at
-/// this function's peak, [`mint`] is itself mid-construction holding up to four of its own
-/// (`region`, `narrow_ep`, `ready`, and briefly `tcb`), which left only one slot of headroom if this
-/// channel's three stayed live for the whole call, down from `mint`'s own four-slot margin before
-/// this channel existed at all. `channel.request` is done being useful the instant its one expected
-/// message has been received (below); `channel.page` is done the instant it has been read and wiped.
-/// Freeing both before `mint` ever runs restores the margin `mint`'s own four slots already assumed.
+/// **Serve one login on its own private channel**: relay the presented identity and secret to the
+/// credential service, and on success mint a fresh capability set. `seq` is the audit trail's
+/// counter, shared across every channel (not the connect sequence `CONNECT_VA_BASE` counts).
+/// [`authenticate`] drops `channel.request` and `channel.page` as soon as each stops being needed,
+/// so [`mint`]'s peak use of the capability table comes with the channel down to one slot
+/// (notes/login/budgets-and-reclamation.md, "The capability table, in order").
 fn serve_login(
     channel: &Channel,
     own_ut: u64,
@@ -629,11 +502,9 @@ fn serve_login(
     // this process holds as little as it can, and one ordinary login's peak comes after, as it
     // does beside a kept session. Counted in `login_contract::durable`.
     let Some((dir_ep, region)) = mint(own_ut, care, identity) else {
-        // Authenticated, and the service still could not serve it (the construction budget is
-        // spent, or the caretaker's descent was refused). Answered identically to a wrong
-        // secret; see login_contract::DENIED's own doc on why that fold is deliberate rather than
-        // a missed distinction. A durable session opened above stays kept, as one re-derived at
-        // start-up does, for its user's next login.
+        // Authenticated, and still not servable (budget spent, or the caretaker's descent refused):
+        // answered as a wrong secret is, for `login_contract::DENIED`'s reason. A durable session
+        // opened above stays kept, as one re-derived at start-up does, for its user's next login.
         if !keep_budget {
             discard(budget);
         }
@@ -682,12 +553,9 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
         send(channel.result, login_contract::MALFORMED, 0, 0);
         return None;
     };
-    // **The terminal check runs before anything about `identity` or `secret` is acted on**
-    // (milestone 49's terminal update). This is global, caller-independent state (there is exactly
-    // one physical terminal, held or not, regardless of who is asking), not a fact about any
-    // identity, so checking it first costs nothing an attacker could turn into a per-identity
-    // timing or outcome oracle, and it saves a round trip to the credential service on every
-    // refusal while the terminal is spoken for.
+    // **The terminal check runs before anything about `identity` or `secret` is acted on**: it is
+    // global state, the same for every caller, so checking it first gives no per-identity timing or
+    // outcome oracle, and it saves a credential round trip while the terminal is spoken for.
     if terminal_held {
         wipe_page(channel.va);
         cap_delete(channel.page);
@@ -696,12 +564,9 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
     }
     // Computed before the page is wiped: `identity` borrows `channel.va` and must not be read after.
     let hint = login_contract::identity_hint(identity);
-    // **Copy the identity out before it is gone.** `identity` borrows `channel.va`, and the page is
-    // wiped a few lines below (`wipe_page`, right after the credential relay); `mint` needs the
-    // identity's own bytes to name the subtree to attenuate to (DECISIONS §117), which happens after
-    // that wipe, on success. An owned, fixed-size copy (bounded by `login_contract::MAX_IDENTITY`,
-    // which `login_contract::read` has already checked `identity` fits within) is the only way to carry
-    // it that far without reading freed/zeroed memory.
+    // **Copy the identity out before it is gone**: the page is wiped right after the credential
+    // relay, and `mint` needs the identity's bytes to name the subtree (DECISIONS §117) after that.
+    // `login_contract::read` has already checked it fits `login_contract::MAX_IDENTITY`.
     let mut identity_buf = [0u8; login_contract::MAX_IDENTITY];
     let identity_len = identity.len();
     identity_buf[..identity_len].copy_from_slice(identity);
@@ -768,12 +633,9 @@ fn session_budget(
         .and_then(|k| schedules.durables.held[k].as_ref())
         .map(|d| (d.budget, d.page));
 
-    // The budget: the durable session's own on a reattach, a fresh one otherwise. A session that
-    // asks for its schedule gets one from [`DURABLE_UT_PAGES`]'s budget, sized for the session
-    // process and its timetable as well as the client's own spending.
-    //
-    // **A stored schedule comes back at login** (milestone 152; calef's §108 ruling: "the stored
-    // schedule resumes at the next login"): an identity with a non-empty `schedule` in its subtree
+    // The budget: the durable session's own on a reattach, else a fresh one, from
+    // [`DURABLE_UT_PAGES`]'s budget when a session opens. **A stored schedule comes back at login**
+    // (milestone 152; calef's §108 ruling): an identity with a non-empty `schedule` in its subtree
     // and no durable session gets one opened, as though it had asked, with that document in force.
     let room = schedules.durables.free();
     let can_open = reattach.is_none() && room.is_some() && schedules.archive.is_some();
@@ -842,18 +704,16 @@ fn hand_over(
     }
     send(channel.result, login_contract::OK, flags, 0);
     delegate(channel.result, dir_ep, abi::rights::WRITE);
-    // **`WRITE` alone, not `READ | WRITE`** (resolved, milestone 49 (users, login, and attribution)'s boot-wiring update): the
-    // kernel's own `page_frame_map` checks only `Rights::WRITE` for a writable mapping and grants a
-    // fully read+write page table entry either way; `crates/system_initializer::boot` itself holds
-    // only `WRITE | GRANT` on the real file service's shared page, so a real boot could never have
-    // delegated `READ` here at all (found by `script/swish-check` refusing this exact `SEND_CAP`).
+    // `WRITE` alone: the kernel's `page_frame_map` grants a read+write mapping on `WRITE`, and
+    // `crates/system_initializer::boot` holds only `WRITE | GRANT` on this page, so a real boot
+    // could never delegate `READ` here (`script/swish-check` refused exactly that `SEND_CAP`).
     delegate(channel.result, FS_PAGE_FRAME, abi::rights::WRITE);
     // Every right (milestone 824 (a retype mints no right its budget lacks)): the session builds
     // from it, and what it builds carries the budget's rights.
     delegate(channel.result, budget, abi::rights::ALL);
-    // The logout ticket: `WRITE` is the one right `MemoryRegion::DESTROY` needs (this program's own
-    // module docs, "Reclaiming a session"). Not `GRANT`: a client that could delegate its own
-    // logout ticket onward could hand another principal the means to end this one's session.
+    // The logout ticket: `WRITE` is the one right `MemoryRegion::DESTROY` needs (notes/login.md,
+    // "Reclaiming a session: the design argument"). Not `GRANT`: a client that could delegate its
+    // logout ticket could hand another principal the means to end this one's session.
     delegate(channel.result, region, abi::rights::WRITE);
     // **The terminal, fifth** (milestone 49's terminal update). Reaching here already proved
     // `!*terminal_held`, so this is never refused. `WRITE` only: a login session gets to write the
@@ -912,24 +772,15 @@ impl Durables {
 }
 
 /// **Re-derive, at start-up, every durable session the manifest names** (milestone 152; Fork 7,
-/// option A, calef's ruling of 2026-09-27; DECISIONS §123 as amended that day). For each identity
-/// the manifest (§125) lists and the owner's suspended list does not, in manifest order, until
-/// [`DURABLE_SESSIONS`] are kept: read its stored schedule (§122), split a budget off
-/// `durable_ut`, build `user_timetable_keeper` ([`Durable::open`], what a login that opens a schedule
-/// calls) and put the stored document in force ([`Durable::restore`], what a login after a reboot
-/// calls). No credential is presented, and none is needed for what this does: the session is
-/// handed to nobody until its user logs in and the credential service says yes, which is the
-/// ordinary reattachment path in [`serve_login`].
+/// option A, calef's ruling of 2026-09-27; DECISIONS §123 as amended that day): for each identity
+/// the manifest (§125) lists and the suspended list does not, in order, until [`DURABLE_SESSIONS`]
+/// are kept, open its session ([`Durable::open`]) and put its stored schedule (§122) in force
+/// ([`Durable::restore`]). No credential is needed: the session goes to nobody until its user logs
+/// in and the credential service says yes, the ordinary reattachment path in [`serve_login`].
 ///
-/// Skipped, not failed: an identity with no stored schedule or an empty one (a stale manifest
-/// line), one whose name is too long to keep, one already kept, and one whose budget or session
-/// process cannot be built. A stored document the timetable refuses ends its session again at
-/// once, and the manifest line stays, so the refusal is shown to its user at their next login,
-/// where the same document is restored with a client there to read the verdict.
-///
-/// `skips` counts each reason (`login_contract::durable::RederiveSkip`), so the skip above stays
-/// silent to a caller but not to `REDERIVE_SKIPS`: the missing count this program's own module
-/// docs used to leave was the defect, not the skip.
+/// Skipped, and counted per reason in `skips` for `REDERIVE_SKIPS`: no stored schedule or an empty
+/// one, a name too long to keep, one already kept, a budget or session that cannot be built. A
+/// document the timetable refuses ends its session and keeps the manifest line, for its user.
 fn rederive(
     own_ut: u64,
     images: ScheduleImages<'_>,
@@ -1351,12 +1202,10 @@ fn store_caretaker(
     Some(narrow_ep)
 }
 
-/// One connecting client's own private channel: this process's own copies of the request/result
-/// endpoints [`connect`] minted (narrowed copies went to the client; see `_start`), where the
-/// staging page they share landed in this process's own address space, and the region every one of
-/// those objects was retyped from (`region`, never delegated: this process's own means of reclaiming
-/// the whole channel in one call once it is done with it, `_start`'s own [`reclaim`] after
-/// [`serve_login`] returns).
+/// One connecting client's private channel, as this process holds it: its own copies of the
+/// request/result endpoints [`connect`] minted (narrowed copies went to the client), where the
+/// staging page landed in this address space, and the region all of it was retyped from, never
+/// delegated, which `FrontDoor::serve_connect` discards once [`serve_login`] returns.
 struct Channel {
     /// `RECEIVE`, this process's own copy (the client's is `WRITE`).
     request: u64,
@@ -1373,36 +1222,16 @@ struct Channel {
     region: u64,
 }
 
-/// **Mint one connecting client's own private channel**: a fresh, dedicated region, and a
-/// request/result rendezvous pair and a staging page retyped from it. `connect_seq` picks a scratch
-/// VA this process has never mapped before (`page_frame::MAP` refuses a second mapping at an
-/// already-mapped `va`, so `_start`'s own counter bumps by one page per successful call rather than
-/// reusing one). `None` on any failure, which the caller answers with [`login_contract::DENIED`].
-///
-/// **Retyped from their own region, not from a shared budget directly, and that choice is the
-/// whole reason this channel is reclaimable at all.** An earlier version of this function retyped
-/// `request`/`result`/`page` straight out of `CONSTRUCTION_UT`, which this process's `_start` could
-/// only ever answer with `cap_delete` (removing this process's own reference) and never with
-/// `MemoryRegion::DESTROY` (which needs a region, not a bare object, to act on). A rendezvous
-/// retyped by `RETYPE_OBJ` lives in the kernel's own global registry (`kernel::sched::MAX_RENDEZVOUS`,
-/// 512 slots, shared by every process the machine is running, not this one's own budget) until the
-/// region it came from is destroyed, so `cap_delete` alone leaked two of those slots, permanently,
-/// per connect. This suite's own tests caught it: a later, unrelated test failed with "out of
-/// rendezvous points" after this program's ~29 test-suite connects had quietly spent 58 of the 512
-/// the whole machine shares. Splitting a small region here, and destroying it in `_start` once
-/// [`serve_login`] is done with it, is what makes the channel's objects, not merely this process's
-/// own capabilities to them, actually go away.
-///
-/// **`channel_ut` is [`CHANNEL_UT_PAGES`], not [`CONSTRUCTION_UT`]**, and that is the second half of
-/// the same story: a region carved here is destroyed while the login it carried may still be alive,
-/// so carving it from the budget that also holds live sessions left one LIFO hole per connect. See
-/// that constant's own doc for the measurement.
+/// **Mint one connecting client's own private channel**: a fresh region split from `channel_ut`
+/// ([`CHANNEL_UT_PAGES`]), and a request/result rendezvous pair and a staging page retyped from it,
+/// so the whole channel goes away in one `DESTROY`. `connect_seq` picks a scratch VA this process
+/// has never mapped (`page_frame::MAP` refuses an already-mapped one). `None` on any failure, which
+/// the caller answers with [`login_contract::DENIED`]. Why the channel has its own region and its
+/// own budget is in notes/login/budgets-and-reclamation.md.
 fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     let region = memory_region_split(channel_ut, CHANNEL_REGION_PAGES).ok()?;
-    // **Every abandoned step below gives back its capability slots as well as its memory**
-    // ([`discard`], and `cap_delete` for what was retyped before the step that failed). A partial
-    // connect that left them behind would spend this process's sixteen-slot table down exactly the
-    // way the served path used to; see this program's BUGS.
+    // Every abandoned step below gives back its capability slots as well as its memory
+    // ([`discard`], and `cap_delete` for what was retyped before the step that failed).
     let Ok(request) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
         discard(region);
         return None;
@@ -1422,10 +1251,7 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     // Page tables for this new mapping come from `region` itself: the channel's whole cost, objects
     // and page tables alike, lives in one place and comes home in one `DESTROY`.
     if !map_page_frame(page, va, true, region) {
-        // The whole region is abandoned here rather than picked apart: nothing in it has a live
-        // thread (only `RETYPE_OBJ`/`RETYPE`, never a `THREAD_CONTROL_BLOCK`), so `reclaim` is
-        // expected to succeed on its first attempt, the same assumption `_start`'s own call after a
-        // *successful* connect makes.
+        // Nothing in the region has a live thread, so `discard` is expected to succeed first time.
         cap_delete(page);
         cap_delete(result);
         cap_delete(request);
@@ -1447,40 +1273,26 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 }
 
 /// **Mint one principal's capability set**: a fresh `fs_subtree_caretaker` attenuated to
-/// `identity`'s own home subtree (DECISIONS §117: the identity string, used directly, with no
-/// separate lookup table), a fresh budget, and the construction region itself (the caretaker's own
-/// logout ticket; see this program's module docs, "Reclaiming a session"), all three held with full
-/// rights so [`delegate`] can narrow them on the way out. `None` on any failure, which this
-/// process's caller answers with [`login_contract::DENIED`] (see this program's BUGS on why that is the
-/// honest fold rather than a missing distinction, and on the two failures this now folds in
-/// alongside "the construction budget is spent": an identity too long for the grant mechanism, and
-/// an authenticated identity with no provisioned subtree).
-///
-/// `identity` must already name a subtree `identity_provisioner` created; this process never
-/// creates one (DECISIONS §117: provision-time creation, not auto-vivified at login).
-///
-/// `care` is `None` when `_start`'s own measurement check refused `fs_subtree_caretaker`'s bytes
-/// (this program's BUGS, "does not consult `measured_boot::PROGRAM_MEASUREMENTS`", resolved): this
-/// function has nothing to build from and returns `None` immediately, the same as every other
-/// reason it cannot serve a login.
+/// `identity`'s own home subtree (DECISIONS §117: the identity string, used directly) and the
+/// construction region itself, the caretaker's logout ticket (notes/login.md, "Reclaiming a
+/// session: the design argument"), both held with full rights for [`delegate`] to narrow. `None`
+/// on any failure, answered [`login_contract::DENIED`]: a spent budget, an identity too long to
+/// grant, no provisioned subtree, or `care` being `None` because `_start`'s measurement refused
+/// the caretaker. `identity_provisioner` creates the subtree; this process never does (§117).
 fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
 
-    // **The grant name travels in two `START` argument words, not a frame** (`filesystem_contract::grant`'s own
-    // doc), so it is capped at `grant::MAX_NAME` (16 bytes): smaller than `login_contract::MAX_IDENTITY`
-    // (64), the bound `identity` already satisfies by construction (`login_contract::read` checked it).
-    // `pack_name` does not itself refuse an oversized name; it silently stops copying at the 16th
-    // byte, which would otherwise mint a caretaker attenuated to a *different, truncated* name than
-    // the one `identity_provisioner` created. Refusing here, before anything is built, is what keeps
-    // that silent truncation from ever happening. See this program's BUGS: identities over 16 bytes
-    // cannot get a per-identity subtree in this slice at all.
+    // The grant name travels in two `START` argument words, so it is capped at `grant::MAX_NAME`
+    // (16 bytes), below `login_contract::MAX_IDENTITY` (64). `pack_name` silently stops copying at
+    // the 16th byte, which would attenuate to a truncated name two identities could share; refuse
+    // before anything is built.
     if !filesystem_contract::grant::fits(identity) {
         return None;
     }
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
-    // ([`discard`]). See this program's BUGS for what leaving them behind cost.
+    // ([`discard`]).
     let Ok(narrow_ep) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
         discard(region);
         return None;
@@ -1526,68 +1338,37 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     if !started {
         cap_delete(ready);
         cap_delete(narrow_ep);
-        // **`region` used to be abandoned here**, on a comment claiming this process had no
-        // `DESTROY` capability on its own construction budget's children. That was never true (the
-        // descent-refused path below already destroyed it, with the same capability), and it is the
-        // same leak the served path had; see BUGS. A caretaker that failed to start left nothing
-        // running in the region, so `DESTROY` has nothing to wait on.
+        // A caretaker that failed to start left nothing running in the region, so `DESTROY` has
+        // nothing to wait on.
         discard(region);
         return None;
     }
     // The one bounded wait: the caretaker's descent against the file service, exactly the
-    // handshake `crates/system_initializer::build_caretaker` performs.
-    //
-    // **This is also where "the credential is real but nobody ever provisioned this identity's
-    // subtree" is answered**, and deliberately with no special case: `identity_provisioner` didn't
-    // run, or its `MKDIR` never reached this file service's disk, so the caretaker's `OPENDIR`
-    // against `identity` comes back `ENOENT` and it reports [`filesystem_contract::DESCENT_REFUSED`]
-    // here instead of `READY`, which this function already turns into `None` and this program's
-    // caller already folds into `login_contract::DENIED`, indistinguishable from a wrong password. See
-    // this program's BUGS for why that fold is the considered answer for this case too, not merely
-    // an accident of reusing the same code path.
+    // handshake `crates/system_initializer::build_caretaker` performs. An identity with no
+    // provisioned subtree is answered here with no special case: the caretaker's `OPENDIR` comes
+    // back `ENOENT`, it reports [`filesystem_contract::DESCENT_REFUSED`], and the caller folds that
+    // into `DENIED`, like a wrong password (notes/login.md says why that fold is meant).
     let (verdict, _, _) = receive(ready);
     cap_delete(ready);
     if verdict != filesystem_contract::READY {
         cap_delete(narrow_ep);
-        // **`region` used to be abandoned here.** The caretaker's `OPENDIR` was refused, so it has
-        // already called `exit()` (`fs_subtree_caretaker.rs`'s own descent handshake): nothing is
-        // running in `region` anymore, and `narrow_ep` (retyped from it) was just deleted above, so
-        // this is case (a) or a plain corpse, never case (c) (`notes/hung-component.md`'s
-        // taxonomy; see this program's module docs, "Reclaiming a session", for why that
-        // distinction is what makes `DESTROY` usable at all rather than merely desired). Reclaiming
-        // it here, rather than leaving it for a client that will never receive this `region` (a
-        // failed mint hands back nothing), is what keeps this failure path from being a second,
-        // silent leak alongside the one this function's caller already answers with `DENIED`.
-        // [`discard`] rather than [`reclaim`]: the capability naming the region is a table slot of
-        // its own and `DESTROY` does not free it (BUGS).
+        // The caretaker's `OPENDIR` was refused, so it has already exited and nothing runs in
+        // `region`: case (a) or a plain corpse in notes/hung-component.md's taxonomy, never (c), so
+        // `DESTROY` cannot be refused for good. [`discard`], so the region's slot goes too.
         discard(region);
         return None;
     }
 
-    // **`region` is not dropped here.** It is returned to the caller, which delegates it to the
-    // authenticated client as the fourth capability (the caretaker's own logout ticket; see this
-    // program's module docs, "Reclaiming a session") and only then deletes its own copy. The
-    // budget is the caller's too since milestone 152, because a reattaching login hands back an
-    // existing one rather than splitting a fresh one.
+    // **`region` is not dropped here**: the caller delegates it to the client as the logout ticket
+    // and only then deletes its own copy.
     Some((narrow_ep, region))
 }
 
-/// **Reclaim a construction region, retrying while something in it can still run.**
-/// `crates/system_initializer::reclaim`'s own idiom, reused rather than re-derived: a `DESTROY` of a
-/// region holding a live thread is refused with §16's kill armed, and preemptions later the retry
-/// succeeds.
-///
-/// **The bound is 1024, not the 64 this used to share with `system_initializer`.** Until milestone
-/// 152 the only residents this waited on were caretakers that had already exited or were parked on
-/// their own endpoints (never on a foreign one; see this program's module docs), and one preemption
-/// was enough. [`Durable::retire`] added a third shape: the session region's two store caretakers
-/// being killed by §40's cascade as their supervisor's supervisor exits, an asynchronous teardown
-/// this process can only wait out. Measured 2026-09-30 on the riscv64 TCG leg: at 64 the wait gave
-/// up inside the race **4 boots in 4**, `discard` silently leaked the whole 784-page durable
-/// budget, and the next `SCHEDULE` login was answered `DENIED` for want of a split; at 1024 the
-/// same boot passed 7 in 7. A caller stuck past this many attempts still has a different problem
-/// than this loop can fix, which is the same sentence `components/src/user_timetable_keeper.rs`'s `ATTEMPTS`
-/// (1024, from `job_undertaker`) carries for the same wait.
+/// **Reclaim a construction region, retrying while something in it can still run**
+/// (`crates/system_initializer::reclaim`'s idiom): a `DESTROY` of a region holding a live thread is
+/// refused with §16's kill armed, and preemptions later the retry succeeds. The bound is
+/// [`RECLAIM_ATTEMPTS`], not `system_initializer`'s 64, for [`Durable::retire`]'s store caretakers;
+/// notes/login/budgets-and-reclamation.md, "The bounded retry", has the measurement.
 fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
         if memory_region_destroy(region) {
@@ -1602,17 +1383,9 @@ fn reclaim(region: u64) {
 const RECLAIM_ATTEMPTS: usize = 1024;
 
 /// **Give a region back completely: the memory *and* this process's own capability-table slot.**
-///
-/// [`reclaim`] alone does the first half only, and the difference is what made this program's own
-/// second login fail on a correct password (see BUGS). `MemoryRegion::DESTROY` tears down the
-/// objects retyped from the region and returns its pages; it leaves the `MemoryRegion` capability
-/// that named it sitting in the caller's table, stale but still occupying one of
-/// `kernel::cap::CAPABILITY_TABLE_SLOTS` (sixteen). A long-lived server that destroys a region per
-/// request therefore runs out of *slots* while its budget still looks healthy, and the failure
-/// arrives as whatever that server says when it cannot serve.
-///
-/// Every site in this program that stops wanting a region calls this rather than [`reclaim`],
-/// because there is no case here where keeping the stale capability is useful.
+/// `MemoryRegion::DESTROY` ([`reclaim`]) leaves the `MemoryRegion` capability that named the region
+/// in the caller's table, stale, so a long-lived server destroying a region per request runs out
+/// of slots while its budget looks healthy. Every site here that stops wanting a region calls this.
 fn discard(region: u64) {
     reclaim(region);
     cap_delete(region);

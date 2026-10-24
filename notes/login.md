@@ -241,6 +241,12 @@ Guest tests (`kernel::user::login_tests`, both aarch64 and riscv64):
 - The caretaker measurement matches the real table and a tampered one would be refused
   (`logins_caretaker_measurement_matches_the_real_table_and_a_tampered_one_would_be_refused`).
 
+## The appendix
+
+[login/budgets-and-reclamation.md](login/budgets-and-reclamation.md) has the budgets the service splits
+at start-up, what giving a channel or a region back completely takes, the capability-table ordering,
+and the measurements behind each number.
+
 ## BUGS
 
 See `components/src/login.rs`'s own BUGS for the itemized list, which this note summarizes
@@ -255,7 +261,7 @@ rather than repeats. The living items:
 - the 16-byte subtree-name bound;
 - the measured-boot decision this program spells itself;
 - the audit trail proving establishment rather than per-request attribution;
-- not being wired into the interactive boot.
+- a session that never sends `LOGOUT` holding the terminal until restart.
 
 Summarized in
 [design/roadmap/0049-users-and-attribution.md](../design/roadmap/0049-users-and-attribution.md)'s own BUGS.
