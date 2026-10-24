@@ -1,29 +1,12 @@
-//! **From a keyboard's scancodes to the bytes a terminal receives** (milestone 29's input).
+//! **From a keyboard's scancodes to the bytes a terminal receives** (milestone 29 (a display
+//! terminal: framebuffer, virtio-gpu, and a foreign component)'s input).
 //!
-//! A virtio-input device does not send characters. It sends `virtio_input_event` records carrying
-//! **Linux evdev codes**: a physical key going down or coming up, in a numbering that has nothing to
-//! do with what is printed on the keycap. Turning those into the wire bytes a terminal understands is
-//! a table plus one bit of state, which makes it exactly the kind of thing that belongs on the host
-//! (DECISIONS §7) rather than in a driver where a wrong row costs a QEMU boot to find.
-//!
-//! It lives in this crate rather than in `line_editor` because it is the *display* terminal's input
-//! half, and because the driver that uses it (`components/src/keyboard_driver.rs`) already depends on nothing else
-//! here. The bytes it produces are the terminal contract's driver half either way
-//! (notes/terminal-contract.md, `OPERATION_BYTES`), so a keystroke from this device and a keystroke from the
-//! UART are the same thing by the time anything downstream sees it.
-//!
-//! # What it covers, and the limits that are real
-//!
-//! A **US layout's main block**: the alphanumerics, the symbol keys, space, enter, tab, backspace,
-//! and escape, shifted and unshifted. **Plus the arrow cluster** (milestone 142 (a text display
-//! good enough that people use it instead of a GUI), increment 2) **and the navigation cluster**
-//! (home, end, insert, delete, page up, page down; milestone 142, the 2026-09-26 pass), each with
-//! its shift-modified form: a terminal sends an escape sequence for those, and `crates/line_editor`
-//! already understood the receiving half of that mapping (`CSI A/B/C/D`, `CSI H`/`CSI F`, `CSI 3~`)
-//! before this crate could produce it. What is still missing, and stays the honest line: no keypad,
-//! no function keys, no control or alt modifier on a cluster key, no compose, no dead keys, no
-//! other layout, and no key repeat beyond what the device itself sends. Recorded in notes/glyphs.md
-//! rather than half-built.
+//! A virtio-input device sends Linux evdev codes, a key going down or up, not characters. This
+//! turns them into the terminal contract's driver-half bytes (notes/terminal-contract.md,
+//! `OPERATION_BYTES`) for `components/src/keyboard_driver.rs`, on the host where a wrong row is a
+//! failed test rather than a QEMU boot. It covers a US layout's main block and the arrow and
+//! navigation clusters, shifted and unshifted, and control on letters; no keypad, function keys,
+//! compose, dead keys or other layout. See notes/video-terminal/palette-keymap-and-script.md.
 
 /// `EV_SYN`: an event-batch separator. Carries no key and is ignored here.
 pub const EV_SYN: u16 = 0;
@@ -109,11 +92,7 @@ pub fn byte(code: u16, shift: bool) -> Option<u8> {
 }
 
 /// **The `(parameter, final byte)` of one cursor- or navigation-cluster key's `CSI` sequence**, or
-/// `None` if `code` is not one of them.
-///
-/// These are xterm's sequences in its default (normal, not application) cursor mode, which is what
-/// every terminal emulator a program here was written against sends, and what
-/// `crates/line_editor` already understands on its receiving side:
+/// `None` if `code` is not one of them: xterm's normal cursor mode, which `line_editor` reads.
 ///
 /// | Key | Sends | With shift |
 /// |---|---|---|
@@ -121,11 +100,6 @@ pub fn byte(code: u16, shift: bool) -> Option<u8> {
 /// | home, end | `CSI H`, `CSI F` | `CSI 1;2 H`, `CSI 1;2 F` |
 /// | insert, delete | `CSI 2 ~`, `CSI 3 ~` | `CSI 2;2 ~`, `CSI 3;2 ~` |
 /// | page up, page down | `CSI 5 ~`, `CSI 6 ~` | `CSI 5;2 ~`, `CSI 6;2 ~` |
-///
-/// The parameter is `1` for the keys whose unmodified form carries none; it is only written when a
-/// modifier forces a second parameter, which is xterm's own rule (`CSI 1;2 A`, never `CSI 1 A`).
-/// No SS3 (application-mode) variant: a plain arrow always sends the CSI form, which `line_editor`
-/// treats identically to SS3 already (`ss3_arrows_are_understood`).
 const fn cluster(code: u16) -> Option<(u8, u8)> {
     match code {
         KEY_UP => Some((b'1', b'A')),
@@ -391,9 +365,7 @@ mod tests {
         kb.event(EV_KEY, KEY_RIGHTSHIFT, 0);
         assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
 
-        // Which hand is down is only ever read as the OR of the two, so a keyboard that filed the
-        // left key under the right one types identically and debugs as the wrong hand. The state
-        // dump is the only witness, and a driver being debugged is what it is for.
+        // Only the state dump can tell the hands apart: typing reads the OR of the two.
         kb.event(EV_KEY, KEY_LEFTSHIFT, 1);
         assert!(
             std::format!("{kb:?}").contains("left: true, right: false"),

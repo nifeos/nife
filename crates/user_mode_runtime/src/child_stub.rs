@@ -2,12 +2,9 @@
 //! architecture, for a parent that builds a child from EL0 through the granular verbs and needs
 //! the child to run something.
 //!
-//! Moved here on 2026-09-19 from `fixtures/src/os_primitives_benchmarker.rs`, where it was private,
-//! because milestone 168's `SPAWN` job needs the same child and a second hand-assembled copy of
-//! three instruction sets is the drift AGENTS.md rule 7 exists to prevent. The bytes are unchanged;
-//! only where they live moved. A parent copies [`SEND_THEN_EXIT`] into a frame it maps writable in
-//! its own space, then aliases that frame as `MAP_CODE` into each child; the kernel makes the
-//! I-cache coherent at that map.
+//! A parent copies [`SEND_THEN_EXIT`] into a frame it maps writable in its own space, then aliases
+//! that frame as `MAP_CODE` into each child; the kernel makes the I-cache coherent at that map. One
+//! copy, because two hand-assembled copies of three instruction sets would drift (AGENTS.md rule 7).
 //!
 //! Name: provisional (milestone 168's lane, 2026-09-19); the module and the constant are both
 //! unratified. `child_stub` is what `os_primitives_benchmarker` already called it in prose.
@@ -50,15 +47,9 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 /// `x86_64`: rdi=slot 0, rsi=SEND, rdx=1, r10=0, r8=0, rax=`SYS_INVOKE`, syscall; then rax=`SYS_EXIT`,
 /// rdi=0, syscall (DECISIONS §124).
 ///
-/// **Bytes rather than words, because x86 instructions are not a fixed width**, which is the one
-/// place this port could not follow the shape the other two share. Every immediate is loaded with
-/// the 32-bit form (`mov r32, imm32`), which zeroes the upper half of the 64-bit register on this
-/// architecture; that is not an optimisation but the only encoding that keeps a load of a small
-/// constant to five bytes, and every value here fits in 32 bits.
-///
-/// `r10` and `r8` need a REX prefix (`0x41`) to be named at all, which is why those two rows are
-/// six bytes where the others are five: the registers the `syscall` ABI's fourth and fifth
-/// arguments ride in did not exist on the 386 whose opcode map this still is.
+/// Bytes rather than words, because x86 instructions are not a fixed width. Each immediate uses
+/// `mov r32, imm32`, which zeroes the upper half and keeps a small constant to five bytes; `r10`
+/// and `r8` need a REX prefix (`0x41`), so those rows are six. See notes/user-mode-runtime.md.
 #[cfg(target_arch = "x86_64")]
 pub const SEND_THEN_EXIT: [u8; 46] = {
     const SEND_METHOD: u32 = abi::rendezvous::SEND as u32;
