@@ -93,12 +93,12 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
 
 ## The plain request
 
-A plain line sets no `diagnostics` bit (§67 (a program's second stream is a declaration)). It has no `2>`, so there is nothing for the shell to
-back. A program that declares a second stream gets the terminal's own sink, endowed from the
-manifest the way the clock is. The `screen` bit is never set either (§106 (an unredirected tail stage's output goes to the screen)). A program reaches this
-path only when `plan` put nothing in its source slot. Every program that declares
-`writes_while_reading` also declares `InputDeclaration::Required`, which sends it down the
-`Source::File` arm instead.
+A plain line sets no `diagnostics` bit (§67 (a program's second stream is a declaration)). It has no
+`2>`, so there is nothing for the shell to back. A program that declares a second stream gets the
+terminal's own sink, endowed from the manifest the way the clock is. The `screen` bit is never set
+either (§106 (an unredirected tail stage's output goes to the screen)). A program reaches this path
+only when `plan` put nothing in its source slot. Every program that declares `writes_while_reading`
+also declares `InputDeclaration::Required`, which sends it down the `Source::File` arm instead.
 
 The `graphics` bit is the whole request for a `graphical_terminal` launch, because the spawn service
 holds the display devices and this shell holds none. A plain line is the only line that manifest can
@@ -111,9 +111,9 @@ The kernel's exit delivery is the completion signal for a tail stage narrowed to
 `receive_fault` blocks until the child is dead and unreaped, which is stronger than "it painted its
 last line". A dead thread cannot enqueue another `SEND`, so the child cannot still be mid-write.
 What can still be in flight is `terminal_sink_caretaker`'s trailing `CALL` to `line_editor`. That is
-the caretaker-hop display race §106 (an unredirected tail stage's output goes to the screen) accepts: the next `$ ` can interleave with that call's output.
-It is a display glitch, not a correctness or confinement failure, and milestone 151 (notification
-objects) tracks it.
+the caretaker-hop display race §106 (an unredirected tail stage's output goes to the screen)
+accepts: the next `$ ` can interleave with that call's output. It is a display glitch, not a
+correctness or confinement failure, and milestone 151 (notification objects) tracks it.
 
 A corpse can be refused once if its region still holds something schedulable, so the reap retries
 with a yield between attempts. A reap that never succeeds leaks one job's worth of the progenitor's

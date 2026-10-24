@@ -15,10 +15,10 @@ The program holds `timetable::contract`'s table and nothing else:
 - in `a2`, the registration page of §222 (who holds a user's schedule), or zero.
 
 Without a registration page the document is the compiled-in `timetable.conf`. `timetable::Audit`
-prints how wide the archive was, next to the plan, so the spawn site's narrowing can be checked
-from inside. The audit measures and does not enforce, because a process cannot narrow its own
-endowment. `system_tests/src/user/timetable_tests.rs` builds the sub-archive from exactly
-`Registry::programs`. Why the set is a written list is in [archive-narrowing.md](archive-narrowing.md).
+prints how wide the archive was, next to the plan, so the spawn site's narrowing can be checked from
+inside. The audit measures and does not enforce, because a process cannot narrow its own endowment.
+`system_tests/src/user/timetable_tests.rs` builds the sub-archive from exactly `Registry::programs`.
+Why the set is a written list is in [archive-narrowing.md](archive-narrowing.md).
 
 It holds no clock page unless one is granted. It holds no directory, console, network or device,
 which is why a scheduled `date` is refused at registration. A plan holds a kilobyte-sized
@@ -27,16 +27,16 @@ pointer, not like a stack fault.
 
 `_start` states what it holds once, as a `timetable::Held`, in the vocabulary registration checks
 against. Every field but `mem_pages` is false, and each is a fact a reader can check against the
-slot list. `timetable::SHIPPED_HELD` is the one number that has widened since the first stratum
-of milestone 129 (scheduled execution). The crate's host test uses the same constant, so the two
-cannot drift apart, and widening it again shows in the printed plan. The report endpoint is left out when the spawn site placed
-none. A durable session never places one (Fork 6 C of milestone 152 (durable delegation)): a durable
-job writes through what its entry grants.
+slot list. `timetable::SHIPPED_HELD` is the one number that has widened since the first stratum of
+milestone 129 (scheduled execution). The crate's host test uses the same constant, so the two cannot
+drift apart, and widening it again shows in the printed plan. The report endpoint is left out when
+the spawn site placed none. A durable session never places one (Fork 6 C of milestone 152 (durable
+delegation)): a durable job writes through what its entry grants.
 
 ## Probes before anything is allocated
 
-`_start` reads three slots before it allocates anything: the run-unvouched slot, the report slot
-and the clock slot. Until then an occupied slot can only be what the spawn site placed there. A
+`_start` reads four slots before it allocates anything: the activation slot, which is what makes
+it store mode, the run-unvouched slot, the clock slot and the report slot. Until then an occupied slot can only be what the spawn site placed there. A
 region split later could land in the slot and read as held.
 
 A scheduled job never holds the run-unvouched capability, gate D2 of §219 (how the shell names an
@@ -97,14 +97,15 @@ rows are dormant while the time is unknown and re-armed when its generation move
 (`Registry::observe`). Without the page every calendar line is `Unbacked::WallClock`.
 
 A fire builds one instance in its own region of 48 pages, the number `components/src/spawner.rs`
-uses for the same job. One region per instance is what lets a single `MemoryRegion::DESTROY`
-reclaim a whole dead child. The instance is endowed at most what the printed plan shows. Slot 0
-holds the report endpoint when this timetable hands one out. Slot 1 holds the clock page, `READ`
-only and mapped read-only at `contract::CLOCK_VA`. A `--mem` grant, narrowed to `WRITE`, comes next. That is the
-progenitor's order, and `system_initializer` narrows a shell's `--mem` delegation the same way. Its
-supervision endpoint goes in the reserved fault slot, which `START` reads and clears, so the child
-holds no authority on its own death channel. Nothing is kept afterwards. The TCB capability is not
-the thread, and since §32 (collect a corpse without being able to build one) the region capability is not the reap either.
+uses for the same job. One region per instance is what lets a single `MemoryRegion::DESTROY` reclaim
+a whole dead child. The instance is endowed at most what the printed plan shows. Slot 0 holds the
+report endpoint when this timetable hands one out. Slot 1 holds the clock page, `READ` only and
+mapped read-only at `contract::CLOCK_VA`. A `--mem` grant, narrowed to `WRITE`, comes next. That is
+the progenitor's order, and `system_initializer` narrows a shell's `--mem` delegation the same way.
+Its supervision endpoint goes in the reserved fault slot, which `START` reads and clears, so the
+child holds no authority on its own death channel. Nothing is kept afterwards. The TCB capability is
+not the thread, and since §32 (collect a corpse without being able to build one) the region
+capability is not the reap either.
 
 When the budget cannot back another instance, the loop blocks until a corpse comes back, then tries
 once more. A second failure, or a failure with nothing outstanding, is a budget too small for one

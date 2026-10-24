@@ -257,7 +257,8 @@ fn read_primary() -> bool {
 const MAX_PARTITIONS: usize = 16;
 
 /// **Say that this boot worked**, by setting `boot_slot::State::successful` on the slot the
-/// machine started from. Answers [`R_CONFIRMED`], or [`R_NO_SLOT`] and writes nothing.
+/// machine started from. Answers [`R_CONFIRMED`], [`R_NO_SLOT`] having written nothing, or
+/// [`R_DISK_FAILED`] with the step that failed.
 ///
 /// `slot` is the index among this disk's `NIFE_BOOT` partitions in table order, counted as
 /// `uefi_loader`'s chooser counts them (`the_disk_with_slots`) before writing it onto the kernel's

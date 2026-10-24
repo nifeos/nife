@@ -135,7 +135,8 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     nav.close_in(t, store);
 
     // A manifest that filled the buffer is a search that did not cover the store; say so rather
-    // than answer "no page says that" about bundles nobody looked in.
+    // than answer "no page says that" about bundles nobody looked in. The shipped manifest is 25
+    // bytes, so this fires only once the store is ten times that.
     if got == MANIFEST_MAX {
         print(b"  the bundle manifest filled this shell's buffer; bundles past it were not searched\n");
     }

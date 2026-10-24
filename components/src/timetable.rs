@@ -3,11 +3,12 @@
 //! tick. Compromising this process yields the entries' summed endowments, not the system.
 //!
 //! It holds `timetable::contract`'s table and nothing else: the plan page, an untyped budget, the
-//! supervision and reaping endpoints, in `a1` an archive of exactly the programs the plan builds,
-//! and in `a2` the registration page of §222 (who holds a user's schedule). No directory, console,
-//! network or device, and no clock page unless granted. In store mode (milestone 152's Fork 8 D)
-//! it holds read-only `activation/` and `packages/` instead, and re-plans at every fire. See
-//! `notes/scheduled-execution/the-program.md`; a plan needs a big stack, and it says why.
+//! supervision and reaping endpoints, `a1` an archive of exactly the programs the plan builds, and
+//! `a2` the registration page of §222 (who holds a user's schedule). No directory, console, network
+//! or device, and no clock page unless granted. Store mode (milestone 152's Fork 8 D) holds
+//! `activation/` and `packages/` instead. See `notes/scheduled-execution/the-program.md`.
+//!
+//! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
 
 //! # BUGS
 //!
@@ -18,8 +19,7 @@
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
 //! - A replacement's plan is cut at `registration::BODY_MAX`; only the compiled-in one is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
-//!
-//! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
+//! - In store mode an oversized program's refusal is unnamed, and a fire failure is only `E_BUDGET`.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

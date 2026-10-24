@@ -83,8 +83,8 @@ pub(super) struct WordsGrant {
 /// **Turn a word designation into what the progenitor builds it from**, through set window `stage`.
 ///
 /// The caretaker descends into the current directory with `grant`'s rights, clamped by the
-/// progenitor: a `fs_nameset_caretaker` with the set on a page, or for `.` a `fs_subtree_caretaker`.
-/// `Err(Some(sentence))` cannot be delivered, `Err(None)` is the budget (`notes/swish-language/running.md`).
+/// progenitor: a `fs_nameset_caretaker` with the set on a page, or for `.` a
+/// `fs_subtree_caretaker`. `Err(Some(sentence))` is undeliverable and `Err(None)` the budget.
 ///
 /// # BUGS
 ///
