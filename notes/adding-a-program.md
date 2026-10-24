@@ -101,8 +101,7 @@ bench = false
 That block is the whole of step 3, and of packing. `xtask` reads the `[[bin]]` blocks of both
 packages (`declared_programs()`) and packs every one into all three archives, aarch64, riscv64 and
 `x86_64`, under its own name. There is no packing table and no per-architecture filter;
-[why-it-works-this-way.md](adding-a-program/why-it-works-this-way.md) says why, and
-[the-archives.md](adding-a-program/the-archives.md) says what else an archive carries. You do not touch
+[why-it-works-this-way.md](adding-a-program/why-it-works-this-way.md) says why. You do not touch
 the measurement table either: `xtask` hashes every entry of the archive it just packed and writes the table the progenitor measures
 against from that (`write_measure_manifest`).
 
