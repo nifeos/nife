@@ -1,5 +1,6 @@
-//! The sustained runs under QEMU: the multicore soak (milestone 219) and the multi-tasking
-//! job mix (milestone 168).
+//! The sustained runs under QEMU: the multicore soak (milestone 219 (the boot tour ends and the
+//! kernel halts, so there is nothing to soak)) and the multi-tasking job mix (milestone 168 (a
+//! multi-tasking workload benchmark)).
 //!
 //! Both return their own exit codes rather than a bool, because a rehearsal that cannot say
 //! *how* it failed is not a rehearsal.
@@ -25,9 +26,10 @@ use crate::{
 /// Returns `script/board-console`'s exit statuses, judged by `serial_console` (milestone 324 (the
 /// bench console cannot speak to any of the three boards), part 2), so a sweep that wedges
 /// mid-subrun ends with status 2 rather than hanging. This is a rehearsal, not the measurement: TCG
-/// models no caches and HVF puts the host scheduler under every guest thread, so DECISIONS §96's
-/// number is taken on radon by `notes/job-mix.md`'s procedure. It proves the workload runs, the
-/// sweep completes and the output has the shape the bench evening reads. See `script/job-mix`.
+/// models no caches and HVF puts the host scheduler under every guest thread, so the number
+/// DECISIONS §96 (process kernel or event kernel, and how to decide it) waits for is taken on radon
+/// by `notes/job-mix.md`'s procedure. It proves the workload runs, the sweep completes and the
+/// output has the shape the bench evening reads. See `script/job-mix`.
 pub(crate) fn job_mix_sweep() -> ExitCode {
     use std::time::Duration;
 
@@ -369,11 +371,10 @@ fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
 /// a real board, and return the same exit statuses, 4 for arguments or a build.
 ///
 /// One recogniser for both sources, so the workload and the console agree about what a hang is, as
-/// milestone 219's block requires. This adds only what a board does not need: building the kernel
-/// and the archive, starting QEMU, and killing it. See `script/soak-test` and notes/soak.md.
-///
-/// Named for the command rather than the workload (milestone 297): this function *is*
-/// `script/soak-test`, where `BootProgress::soak` one crate over keeps the workload's spelling.
+/// milestone 219's block requires; this adds only building, starting QEMU and killing it. Named for
+/// the command rather than the workload (milestone 297 (`soak` becomes `soak-test`)): this *is*
+/// `script/soak-test`, where `BootProgress::soak` one crate over keeps the workload's spelling. See
+/// `script/soak-test` and notes/soak.md.
 pub(crate) fn soak_test() -> ExitCode {
     use std::time::Duration;
 

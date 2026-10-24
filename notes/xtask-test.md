@@ -9,7 +9,7 @@ line it governs; the reasons that span the whole command live here.
 ## The order
 
 The host pass runs first. The host crates hold the pure logic and fail in milliseconds with no
-emulator, so a red host test costs nothing to find (DECISIONS §7). Only then does the command spend
+emulator, so a red host test costs nothing to find (DECISIONS §7 (testing: a QEMU harness and host-testable crates, from commit one)). Only then does the command spend
 TCG boots: aarch64, riscv64, then x86_64. After the three legs come the boot tour on a `ramfb`
 screen for the two boards, and last the host-side image checks.
 
@@ -32,15 +32,16 @@ Each flag defaults to a full run, so a plain `script/test` always means the whol
   host's own ISA, so the flag narrows the run to aarch64 and refuses `--cpu` and the other legs.
   notes/hvf-leg.md has the mechanism. `script/ci-build` passes `--hvf`, the `--arch` list and
   `--no-host`.
-- `--test <substring>` runs only the kernel tests whose full path contains the substring, the shape
-  `cargo test <name>` has (milestone 210). `kernel/build.rs` bakes it into the test binary as a
+- `--test <substring>` runs only the kernel tests whose full path contains the substring. It has
+  the shape `cargo test <name>` has (milestone 210 (no kernel test can be run by name, so one
+  falsification costs a whole suite)). `kernel/build.rs` bakes it into the test binary as a
   `rustc-env`, because a booted kernel has no command line. A change costs a kernel relink of about
   2.3 seconds and saves the roughly 53 seconds the aarch64 suite spends running 312 tests.
 - `--repeat <N>` runs the `--test` selection N times in one boot, so a rare failure gets a frequency
-  from one bench visit (milestone 321).
+  from one bench visit (milestone 321 (a corpse that did not park, on four real cores)).
 
 `--test` selects tests, not architectures. Every leg still runs, because a filter that quietly ran
-one ISA would be the parity hole DECISIONS §19 distrusts; add `--arch` to narrow. Under a filter the
+one ISA would be the parity hole DECISIONS §19 (architectural parity is a tenet) distrusts; add `--arch` to narrow. Under a filter the
 command also skips the host pass (about 72 seconds here, and the host crates already have
 `cargo test <name>`), the root-port and AMD-Vi boots, and the image checks. It drops the scanout and
 inbound referees' verdicts too. Each of those asserts what unselected tests would have written. A
@@ -48,8 +49,8 @@ filter that matches nothing in either test image fails the leg rather than repor
 
 ## The host pass
 
-The host pass is `cargo test --workspace` less the host-excluded crates, plus every crate kept in a
-workspace of its own: the vendored RedoxFS host tool and `no_std` engine, the glyph atlas generator,
+The host pass is `cargo test --workspace` less the host-excluded crates. It adds every crate kept
+in a workspace of its own: the vendored RedoxFS host tool and `no_std` engine, the glyph atlas generator,
 the FS server's sans-IO core, and the TLS graph's two crates. A hand-kept list of `-p` flags drifts,
 and the crates it misses stay green because nothing runs them.
 
@@ -88,7 +89,7 @@ The x86_64 leg runs the same suite on a 4-level map, its scheduler and ring 3, e
 attaches each as a virtio-blk-pci function. The image `NIFE_DISK` itself names is attached nowhere.
 `NIFE_X86_FIXTURES_REQUIRED` tells the system suite the runner owes all five, so a runner that lost
 a soft-attached disk fails by name instead of skipping green. The NVMe image is the x86_64 and
-VT-d data point DECISIONS §86 asked for.
+VT-d data point DECISIONS §86 (whether an NVMe driver can leave the kernel) asked for.
 
 After the suite the leg boots the same kernel on three other machines:
 
@@ -109,7 +110,9 @@ After the suite the leg boots the same kernel on three other machines:
 
 After the legs, the host tool reopens the images the last leg wrote: x86_64 in a full run, riscv64
 when x86_64 was not asked for, aarch64 alone. It checks that the FS server's write persisted and the
-filesystem parses, that the crash disk holds one payload whole (milestone 37), and that the blank
-disk carries the partition table and filesystem the guest wrote (milestone 57). No crash test runs
-on x86_64, since its twins are cfg-gated to the other two ISAs. After an x86_64 leg the crash check
-is skipped, because it would open a pristine disk and pass without witnessing anything.
+filesystem parses. It checks that the crash disk holds one payload whole (milestone 37 (prove
+RedoxFS's crash consistency)). It checks that the blank disk carries the partition table and
+filesystem the guest wrote (milestone 57 (partitioning and formatting a real drive, and extended
+attributes)). No crash test runs on x86_64, since its twins are cfg-gated to the other two ISAs.
+After an x86_64 leg the crash check is skipped, because it would open a pristine disk and pass
+without witnessing anything.

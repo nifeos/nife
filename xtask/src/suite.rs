@@ -123,7 +123,7 @@ impl ArchLegs {
 
 /// Host tests first, then each architecture's kernel under QEMU, the boot tour on a screen and the
 /// post-run image checks; true when all passed. The host crates fail in milliseconds with no
-/// emulator, so they go first (DECISIONS §7). Every flag defaults to a full run:
+/// emulator, so they go first (DECISIONS §7 (testing: QEMU harness + host-testable crates)). Flags:
 /// `--arch aarch64|riscv64|x86_64[,...]` runs the named legs in the suite's order; `--no-host` skips
 /// the host pass; `--cpu <model>` sets `NIFE_CPU`; `--hvf` runs the aarch64 leg on the physical core
 /// ([`hvf_kernel_leg`], notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
@@ -178,7 +178,8 @@ pub(crate) fn test() -> bool {
     if legs.riscv64() && !riscv64_suite(filter.is_some()) {
         return false;
     }
-    // The third architecture (milestone 161, roadmap item 4), exiting through `isa-debug-exit`.
+    // The third architecture (milestone 161 (the x86_64 kernel port), roadmap item 4), exiting
+    // through `isa-debug-exit`.
     // It runs last and sets its own archive, disk and NIC, since the earlier legs leave theirs in
     // the environment. notes/xtask-test.md has what it builds and attaches.
     if legs.x86_64() && !x86_64_suite(filter.is_some()) {
@@ -378,11 +379,11 @@ fn host_pass(hvf: bool, filtered: bool) -> bool {
 /// `helpers/host-excluded-crates.sh` rather than listed. Panics when the helper cannot run or fails.
 ///
 /// Every member that reaches `crates/user_mode_runtime` cannot compile for the host (`svc` and
-/// `ecall` there are EL0 syscalls), and the whole set must go: `--exclude` removes a package from the
-/// test selection, not from the dependency graph. One derivation serves script/lint's two clippy
-/// passes, script/coverage, script/mutation and this file's host and Miri passes. script/lint's
-/// "the host pass excludes exactly the bare-metal crates" gate fails if this file stops calling it
-/// or the derivation disagrees with `cargo metadata`. See notes/xtask-test.md.
+/// `ecall` there are EL0 syscalls), and the whole set must go: `--exclude` removes a package from
+/// the test selection, not from the dependency graph. One derivation serves script/lint's two
+/// clippy passes, script/coverage, script/mutation and this file's host and Miri passes.
+/// script/lint's "the host pass excludes exactly the bare-metal crates" gate fails if this file
+/// stops calling it or the derivation disagrees with `cargo metadata`. See notes/xtask-test.md.
 fn host_excluded_args() -> Vec<String> {
     let output = Command::new("sh")
         .arg("helpers/host-excluded-crates.sh")
@@ -691,7 +692,8 @@ fn x86_64_suite(filtered: bool) -> bool {
         "--- kernel tests, x86_64 (QEMU q35, {}) ---",
         crate::host::qemu_version("x86_64")
     );
-    // The FS server before the archive that packs it (milestone 164), as on the other legs. The
+    // The FS server before the archive that packs it (milestone 164 (x86_64 userspace can't build
+    // `aes`, and therefore `fs_server`)), as on the other legs. The
     // runner attaches five fixtures as virtio-blk-pci functions (milestones 215, 303 and 420), so
     // this leg builds all five, regenerating every image the earlier legs wrote so it is not
     // order-coupled to them.
@@ -825,9 +827,9 @@ fn x86_64_behind_a_root_port() -> bool {
 /// `q35` with `-device amd-iommu` writes an IVRS and no DMAR, so the kernel brings up
 /// `arch/x86_64/amd_vi.rs` and every confinement test (the virtio and NVMe DMA escapes among them)
 /// runs against the other unit. The whole suite, because DECISIONS §19 (architectural parity is a
-/// tenet) has the same suite prove a capability on every machine it ships on; one PVH boot per image.
-/// Returns the verdict. Skipped under `--test`; a caller wanting one test here sets `NIFE_IOMMU=amd`
-/// for the run, as a falsification record's `Environment:` line does.
+/// tenet) has the same suite prove a capability on every machine it ships on; one PVH boot per
+/// image. Returns the verdict. Skipped under `--test`; a caller wanting one test here sets
+/// `NIFE_IOMMU=amd` for the run, as a falsification record's `Environment:` line does.
 fn x86_64_on_amd_vi() -> bool {
     eprintln!();
     eprintln!("--- kernel and system tests, x86_64 with AMD-Vi in place of VT-d ---");
@@ -949,10 +951,9 @@ fn filtered_leg(arch: &str, target: &str) -> bool {
     true
 }
 
-/// One test image on the physical Apple Silicon core (milestone 81, `--hvf`). Returns the verdict
-/// and how many tests its harness selected; `watch_devices` adds the scanout referee and inbound
-/// prober, which only the system suite needs.
-///
+/// One test image on the physical Apple Silicon core (milestone 81 (an HVF leg: the test suite on
+/// the physical core), `--hvf`). Returns the verdict and how many tests its harness selected;
+/// `watch_devices` adds the scanout referee and inbound prober, which only the system suite needs.
 /// QEMU does not answer ARM semihosting under HVF, and the harness reports through it, so the guest
 /// prints its verdict and wedges. Like `run_bench`, this owns the QEMU child and reads the
 /// transcript: `test result: ok.` passes, `[PANIC] ` or `WATCHDOG:` fails, and output ending with
@@ -1245,16 +1246,15 @@ pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<
     found
 }
 
-/// **The host tests again, under Miri's interpreter** (milestone 79): aliasing (tree borrows),
-/// provenance, uninitialized reads, leaks. Returns cargo's verdict. See notes/undefined-behavior.md.
-///
-/// The selection is `test()`'s, `--workspace` less [`host_excluded_args`], plus four judgment
-/// exclusions with no `unsafe` Miri could execute: `xtask` (safe pixel arithmetic, about seven
-/// minutes under Miri); `serial_console` (about 55 minutes, and ten tests reach the host filesystem
-/// or wall-clock timeouts); `stick_maker` (isolation refuses `statx`, its `unsafe` is FFI;
-/// `measured_boot` stays in); `walk_pricing` (`lstat` refused, a timing instrument;
-/// `filesystem_fixture` stays in). Extra args are forwarded but do not narrow the run; check one
-/// crate with `cargo miri test -p <crate>`.
+/// **The host tests again, under Miri's interpreter** (milestone 79 (Miri over the host crates)):
+/// aliasing (tree borrows), provenance, uninitialized reads, leaks. Returns cargo's verdict. See
+/// notes/undefined-behavior.md. The selection is `test()`'s, `--workspace` less
+/// [`host_excluded_args`], plus four judgment exclusions with no `unsafe` Miri could execute:
+/// `xtask` (safe pixel arithmetic, about seven minutes under Miri); `serial_console` (about 55
+/// minutes, and ten tests reach the host filesystem or wall-clock timeouts); `stick_maker`
+/// (isolation refuses `statx`, its `unsafe` is FFI; `measured_boot` stays in); `walk_pricing`
+/// (`lstat` refused, a timing instrument; `filesystem_fixture` stays in). Extra args are forwarded
+/// but do not narrow the run; check one crate with `cargo miri test -p <crate>`.
 pub(crate) fn undefined_behavior_check() -> bool {
     eprintln!("--- host tests under Miri (aliasing, provenance, uninitialized reads) ---");
     let mut args: Vec<String> = ["miri", "test", "--workspace"]
