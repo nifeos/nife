@@ -101,7 +101,8 @@ pub const DISPLAY: Requirements = Requirements {
 /// **How `terminal_supervisor` is endowed**, by `system_initializer` on a real boot and by the
 /// kernel's own test: one list both builders and the supervisor read (AGENTS.md rule 7). The
 /// supervisor holds every object a `line_editor` is built from, with `GRANT`, so it can build a
-/// second one; and the terminal endpoint with `WRITE` too, so it can send `OPERATION_QUIESCE`.
+/// second one; and the terminal endpoint with `WRITE` too, so it can send `OPERATION_QUIESCE`
+/// through the copy it badges [`proto::SUPERVISOR_BADGE`](crate::proto::SUPERVISOR_BADGE).
 ///
 /// Start arguments: the output sink's mode (`line_editor`'s own `MODE_CONSOLE` = 0 or
 /// `MODE_DISPLAY` = 1), the lengths of the `line_editor` image copied to [`ELF_VA`](supervisor::ELF_VA) and of the

@@ -9,15 +9,21 @@ the shell runs, print, or switch the terminal's mode.
 
 Expected to fail: the assertion that a stdin holder's `OPERATION_BYTES` is refused.
 
-diff --git a/components/src/line_editor.rs b/components/src/line_editor.rs
---- a/components/src/line_editor.rs
-+++ b/components/src/line_editor.rs
-@@ -198,7 +198,7 @@
-             proto::RAW_ONLY_BADGE => {
-                 matches!(op, proto::OPERATION_RAWMODE | proto::OPERATION_READRAW)
-             }
--            proto::STDIN_BADGE => op == proto::OPERATION_READ_LINE_BYTES,
-+            proto::STDIN_BADGE => true,
-             _ => false,
-         };
-         if !allowed {
+**Re-cut 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only**, when the serve
+loop's allowlist moved into `line_editor::proto::admits`. Same defect, `STDIN_BADGE => true`
+there. Replayed red on aarch64 the same day, at "a stdin holder's OPERATION_BYTES was served"
+(`raw_mode_tests.rs:553`).
+
+diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
+index 98a5aff3c..695c42bcb 100644
+--- a/crates/line_editor/src/proto.rs
++++ b/crates/line_editor/src/proto.rs
+@@ -188,7 +188,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+     match badge {
+         0 => !matches!(operation, OPERATION_READ_LINE_BYTES | OPERATION_QUIESCE),
+         RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
+-        STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
++        STDIN_BADGE => true,
+         SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,
+         _ => false,
+     }

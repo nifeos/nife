@@ -30,7 +30,8 @@
 //! # Under a supervisor, it can be replaced live
 //!
 //! Started with a control endpoint (`video_terminal::component::CONTROL`), it answers
-//! `OPERATION_QUIESCE`, writes its whole `Vt` into the handoff run its supervisor sends, and quits
+//! `OPERATION_QUIESCE` from its supervisor's badged copy (`line_editor::proto::SUPERVISOR_BADGE`)
+//! and from no other, writes its whole `Vt` into the handoff run its supervisor sends, and quits
 //! or resumes on the supervisor's word. Started with `START_ABSORB`, it reads such a blob before
 //! its first paint. `video_terminal::component` has the exchange, and milestone 23 (a
 //! capability-routed component OS with live replacement) the rulings behind it.
@@ -622,6 +623,17 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
         let (w0, w1) = (req.w0, req.w1);
         let reply_slot = req.delivered.into_reply();
         let mut r0: u64 = 0;
+        // The supervisor's badge carries a quiesce and nothing else, and nothing else carries a
+        // quiesce (`proto::SUPERVISOR_BADGE`): a quiesce from an application would stop this
+        // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
+        // served as unbadged, as they always were.
+        let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
+        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
+            }
+            continue;
+        }
         match proto::operation(w0) {
             // The application half: print `len` bytes from the shared output page. The terminal
             // performs no newline translation, deliberately: `line_editor::expand_output` already put

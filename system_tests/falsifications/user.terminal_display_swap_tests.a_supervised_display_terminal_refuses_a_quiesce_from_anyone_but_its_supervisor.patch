@@ -1,0 +1,28 @@
+Falsifies `system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor`.
+
+Architecture: aarch64
+
+The patch keeps `display_terminal` refusing everything but a quiesce on the supervisor's badge, and
+drops the other half of the rule: a quiesce on any other capability is served again. A supervised
+`display_terminal` then honors an application's quiesce, answers `QUIESCED`, and stops drawing
+until a `CTL_RESUME` its supervisor never sends.
+
+Expected to fail: `assert_eq!` "an unbadged holder quiesced a supervised display_terminal (reply
+0x51554954)", with `left: 1364543828` (`proto::QUIESCED`). Replayed red at exactly that assertion
+on aarch64 on 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only, after the test
+was made to check each answer before its next call; checked together, the second call parked on
+the quiesced terminal and the run ended at the watchdog instead.
+
+diff --git a/components/src/display_terminal.rs b/components/src/display_terminal.rs
+index a9ae0ee74..8d2cd8cb5 100644
+--- a/components/src/display_terminal.rs
++++ b/components/src/display_terminal.rs
+@@ -628,7 +628,7 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
+         // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
+         // served as unbadged, as they always were.
+         let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
+-        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
++        if from_supervisor && proto::operation(w0) != proto::OPERATION_QUIESCE {
+             if let Some(to) = reply_slot {
+                 reply(to, proto::BAD_REQUEST, 0);
+             }

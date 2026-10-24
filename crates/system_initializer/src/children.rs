@@ -969,9 +969,9 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor`** (milestone 23 (a
 /// capability-routed component OS with live replacement), calef's ruling of 2026-09-27). `caps` is
 /// in `line_editor::component::supervisor`'s slot order after its budget: the terminal endpoint
-/// with every right (it delegates `READ` and sends `OPERATION_QUIESCE`), the output sink, the three pages,
-/// and the console's reply endpoint in console mode. Copies, not moves: this process frees its own
-/// as it always did.
+/// with every right (it delegates `READ`, and mints the `proto::SUPERVISOR_BADGE` copy it sends
+/// `OPERATION_QUIESCE` through), the output sink, the three pages, and the console's reply
+/// endpoint in console mode. Copies, not moves: this process frees its own as it always did.
 ///
 /// No swap endpoint is passed: the trigger (milestone 198 (a package manager, and the trivial
 /// install)'s installer activating a new build) is ruled by §308 (the installer asks the terminal

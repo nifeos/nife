@@ -123,9 +123,6 @@ the harness.
 - A `graphical_terminal` session builds its own `display_terminal` and hands the supervisor its
   endpoint, so a session's `display_terminal` is not supervised. Holding it would cost the session
   the image's 220 pages and buy nothing until a boot can ask for a swap.
-- `OPERATION_QUIESCE` is served to any holder of the endpoint, `display_terminal`'s as
-  `line_editor`'s. An application that sends it freezes its own terminal until the supervisor's
-  next word, which never comes outside a swap.
 - A `display_terminal` replacement that refuses its own blob on the move home leaves the terminal
   serving from the reserve, answered `IN_RESERVE`. The reserve stays lent until a later `SWAP`
   finishes the move. Same-image refusal is what the host round trip in `video_terminal::handoff`

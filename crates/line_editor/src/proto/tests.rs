@@ -43,3 +43,71 @@ fn the_two_start_bits_are_distinct_low_bits() {
     assert_eq!(proto::START_HANDOFF, 1);
     assert_eq!(proto::START_ABSORB, 2);
 }
+
+/// **Only the supervisor's badge admits a quiesce, and it admits nothing else** (DECISIONS §232:
+/// "only a supervisor sends it"). An unbadged copy is what the shell, `login` and the input driver
+/// hold; a quiesce honored from one of them stops the terminal until a supervisor that never
+/// asked says `CTL_RESUME`, which on a boot is never.
+#[test]
+fn only_the_supervisor_badge_admits_a_quiesce() {
+    for badge in [0, proto::RAW_ONLY_BADGE, proto::STDIN_BADGE, 4, u64::MAX] {
+        assert!(
+            !proto::admits(badge, proto::OPERATION_QUIESCE),
+            "badge {badge} admitted OPERATION_QUIESCE"
+        );
+    }
+    assert!(proto::admits(
+        proto::SUPERVISOR_BADGE,
+        proto::OPERATION_QUIESCE
+    ));
+    for operation in 0..=u8::MAX as u64 {
+        if operation != proto::OPERATION_QUIESCE {
+            assert!(
+                !proto::admits(proto::SUPERVISOR_BADGE, operation),
+                "the supervisor's badge admitted operation {operation}"
+            );
+        }
+    }
+    // Distinct from the two client badges, so no client copy is the supervisor's.
+    assert_ne!(proto::SUPERVISOR_BADGE, proto::RAW_ONLY_BADGE);
+    assert_ne!(proto::SUPERVISOR_BADGE, proto::STDIN_BADGE);
+    assert_ne!(proto::SUPERVISOR_BADGE, 0);
+}
+
+/// The unbadged surface is every client operation, and the two badged client surfaces are exactly
+/// what their constants say; any other badge is served nothing.
+#[test]
+fn each_badge_admits_exactly_its_surface() {
+    for operation in [
+        proto::OPERATION_WRITE,
+        proto::OPERATION_READLINE,
+        proto::OPERATION_BYTES,
+        proto::OPERATION_INTRCOUNT,
+        proto::OPERATION_SUSPEND_COUNT,
+        proto::OPERATION_PRINT,
+        proto::OPERATION_RAWMODE,
+        proto::OPERATION_READRAW,
+    ] {
+        assert!(proto::admits(0, operation), "unbadged refused {operation}");
+    }
+    assert!(!proto::admits(0, proto::OPERATION_READ_LINE_BYTES));
+    for operation in 0..=u8::MAX as u64 {
+        assert_eq!(
+            proto::admits(proto::RAW_ONLY_BADGE, operation),
+            matches!(
+                operation,
+                proto::OPERATION_RAWMODE | proto::OPERATION_READRAW
+            ),
+            "the raw-only badge on operation {operation}"
+        );
+        assert_eq!(
+            proto::admits(proto::STDIN_BADGE, operation),
+            operation == proto::OPERATION_READ_LINE_BYTES,
+            "the stdin badge on operation {operation}"
+        );
+        assert!(
+            !proto::admits(4, operation),
+            "badge 4 on operation {operation}"
+        );
+    }
+}

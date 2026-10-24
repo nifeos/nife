@@ -35,8 +35,8 @@
 //!
 //! **Plus, when a supervisor that can replace it built it, a control endpoint** (milestone 23 (a
 //! capability-routed component OS with live replacement)) in the slot named by the second start
-//! argument (`0` for none). With one, `OPERATION_QUIESCE` answers any parked read with
-//! `FLAG_RETRY`, replies, and waits for `CTL_RESUME` or `CTL_QUIT`; without one, it is refused.
+//! argument (`0` for none). With one, `OPERATION_QUIESCE` on a `proto::SUPERVISOR_BADGE` copy answers
+//! parked reads `FLAG_RETRY`, replies, and waits for `CTL_RESUME` or `CTL_QUIT`; otherwise, refused.
 //!
 
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46) for the word and again
@@ -175,27 +175,10 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
             // delegation)).
             continue;
         };
-        // **A badged copy of this endpoint is the raw half and nothing else** (milestone 709 (a
-        // graphical terminal session on the no-keyboard arm holds only the raw half of the boot
-        // discipline), `proto::RAW_ONLY_BADGE`). Every holder the boot wires is unbadged and is
-        // served below exactly as before; a badged holder (a `graphical_terminal` session reading
-        // keystrokes over the UART) may switch raw mode and read raw bytes, and nothing it sends
-        // can reach the queue the shell reads its next command from. An allowlist, so a request
-        // added to the contract later is refused here until somebody decides a reader may send it.
-        //
-        // **A copy badged `proto::STDIN_BADGE` is a program's standard input and nothing else**
-        // (milestone 892 (a std program at the prompt holds the network and a resolver)): it reads
-        // the line being typed, eight bytes at a time, and the unbadged surface never serves that
-        // read, so the shell's own lines cannot be taken through it.
-        let op = proto::operation(w0);
-        let allowed = match badge {
-            0 => op != proto::OPERATION_READ_LINE_BYTES,
-            proto::RAW_ONLY_BADGE => {
-                matches!(op, proto::OPERATION_RAWMODE | proto::OPERATION_READRAW)
-            }
-            proto::STDIN_BADGE => op == proto::OPERATION_READ_LINE_BYTES,
-            _ => false,
-        };
+        // **The badge decides what a holder may ask**, and `proto::admits` is the table, with why
+        // each badge narrows. An allowlist, so a request added to the contract later is refused on
+        // every badge until somebody decides its holder may send it.
+        let allowed = proto::admits(badge, proto::operation(w0));
         if !allowed {
             reply(slot, proto::BAD_REQUEST, 0);
             continue;
@@ -315,8 +298,8 @@ impl Terminal {
                 reply(slot, len as u64, 0);
             }
             proto::OPERATION_QUIESCE if self.control == 0 => {
-                // No control endpoint means nobody could ever tell us to resume: honouring this
-                // would leave a dead terminal. Every boot-built terminal today is this case.
+                // Only a `proto::SUPERVISOR_BADGE` copy reaches here. With no control endpoint
+                // nobody could tell us to resume, so honoring it would leave a dead terminal.
                 reply(slot, proto::BAD_REQUEST, 0);
             }
             proto::OPERATION_QUIESCE => self.quiesce(slot),

@@ -90,17 +90,19 @@ pub const OPERATION_READRAW: u64 = 7;
 /// **The badge on a copy of the terminal endpoint that reads keystrokes and nothing else**
 /// (milestone 709 (a graphical terminal session on the no-keyboard arm holds only the raw half
 /// of the boot discipline), fatal risk 7). The terminal serves [`OPERATION_RAWMODE`] and
-/// [`OPERATION_READRAW`] on a capability carrying **any non-zero badge** and refuses every other
+/// [`OPERATION_READRAW`] on a capability carrying **this badge** and refuses every other
 /// request on it with [`BAD_REQUEST`]: no [`OPERATION_BYTES`], so its holder cannot type a line
 /// somebody else reads; no [`OPERATION_READLINE`], so it cannot take one; no [`OPERATION_PRINT`] or
-/// [`OPERATION_WRITE`]; no [`OPERATION_QUIESCE`]. An unbadged capability is served exactly as before, which is
-/// every holder the boot wires (the input driver, the shell, `login`).
+/// [`OPERATION_WRITE`]; no [`OPERATION_QUIESCE`]. An unbadged capability is served everything but
+/// [`OPERATION_READ_LINE_BYTES`] and [`OPERATION_QUIESCE`], which is every holder the boot wires
+/// (the input driver, the shell, `login`). [`admits`] is the whole table.
 ///
 /// The spawn service mints this one (`abi::rendezvous::BADGE`) for a `graphical_terminal`
 /// session with no keyboard, whose keystrokes come from the boot's own discipline. The badge is
 /// the kernel's word on every receive (§230 (badged endpoint capabilities)) and a badged copy
 /// cannot be re-badged, so a holder cannot widen it back to the unbadged surface. The terminal
-/// serves a badge by its value: this one, [`STDIN_BADGE`], and nothing on any other.
+/// serves a badge by its value: this one, [`STDIN_BADGE`], [`SUPERVISOR_BADGE`], and nothing on
+/// any other.
 ///
 /// Name: provisional (the lane for milestone 709, 2026-10-03).
 pub const RAW_ONLY_BADGE: u64 = 1;
@@ -137,12 +139,60 @@ pub const OPERATION_READ_LINE_BYTES: u64 = 10;
 /// on it could never be woken. Then it replies r0 = [`QUIESCED`] and stops receiving until its
 /// supervisor says [`CTL_RESUME`] or [`CTL_QUIT`] on its control endpoint.
 ///
-/// **Refused with [`BAD_REQUEST`] by a terminal started with no control endpoint**, which is
-/// every terminal a boot builds today. Without one there is nobody to tell it to resume, so an
-/// honoured quiesce would be a dead terminal. See this crate's `BUGS` for who may send it.
+/// **Served only on a copy badged [`SUPERVISOR_BADGE`]**, and refused with [`BAD_REQUEST`] on
+/// any other, the unbadged copy every client holds included. An honored quiesce stops the
+/// terminal until its control endpoint speaks, and only the supervisor holds that, so a quiesce
+/// from anyone else would leave the terminal dead.
+///
+/// **Refused with [`BAD_REQUEST`] by a terminal started with no control endpoint**, whatever the
+/// badge. Without one there is nobody to tell it to resume. The boot's own `line_editor` has one,
+/// because `terminal_supervisor` builds it.
 ///
 /// Name: provisional (the lane for milestone 23, 2026-09-26).
 pub const OPERATION_QUIESCE: u64 = 8;
+
+/// **The badge on the copy of a terminal's endpoint its supervisor quiesces it through**
+/// (DECISIONS §232 (the `line_editor` swap contract): "only a supervisor sends it"). A terminal
+/// serves [`OPERATION_QUIESCE`] on this badge and nothing else, and refuses [`OPERATION_QUIESCE`]
+/// on every other. Both `line_editor` and `display_terminal` read it.
+///
+/// The quiesce still rides the served endpoint, so its FIFO does the draining (§232 refused a
+/// separate control endpoint for that reason); the badge only says who sent it. Minting it takes
+/// `GRANT` on the unbadged endpoint (§230 (badged endpoint capabilities)), which the supervisor
+/// holds and its spawner holds, and no client of a boot does: the shell, `login` and the input
+/// driver hold `WRITE` alone. A badged copy cannot be re-badged, so a [`RAW_ONLY_BADGE`] or
+/// [`STDIN_BADGE`] holder cannot reach this one either. `terminal_supervisor` mints it for each
+/// quiesce and hands it to the stand-in that makes the call.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only.
+pub const SUPERVISOR_BADGE: u64 = 3;
+
+/// **Whether `line_editor` serves `operation` on a capability badged `badge`**, `0` for an
+/// unbadged one. Every badge is an allowlist, so an operation added to the contract later is
+/// refused on it until somebody decides its holder may send it:
+///
+/// - unbadged, the copy the input driver, the shell and `login` hold: everything but
+///   [`OPERATION_READ_LINE_BYTES`], so the shell's lines cannot be read eight bytes at a time
+///   from under it, and [`OPERATION_QUIESCE`], so none of them can stop the terminal;
+/// - [`RAW_ONLY_BADGE`]: [`OPERATION_RAWMODE`] and [`OPERATION_READRAW`], so nothing its holder
+///   sends reaches the queue the shell reads its next command from;
+/// - [`STDIN_BADGE`]: [`OPERATION_READ_LINE_BYTES`] alone;
+/// - [`SUPERVISOR_BADGE`]: [`OPERATION_QUIESCE`] alone;
+/// - any other badge: nothing.
+///
+/// `true` says only that the badge admits it; the terminal may still refuse it in its state (a
+/// second parked read, a quiesce with no control endpoint). See notes/terminal-contract.md.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only.
+pub const fn admits(badge: u64, operation: u64) -> bool {
+    match badge {
+        0 => !matches!(operation, OPERATION_READ_LINE_BYTES | OPERATION_QUIESCE),
+        RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
+        STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
+        SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,
+        _ => false,
+    }
+}
 
 /// The reply word to [`OPERATION_QUIESCE`]: "QUIT", the value `hot_swap_contract::QUIESCED` also uses.
 pub const QUIESCED: u64 = 0x5155_4954;
