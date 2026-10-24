@@ -23,6 +23,6 @@ These files carry the tables, sources and arguments its prose budget has no room
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem here is named for its content, and calef names files.
+Each stem below is named for its content, and calef names files.
 
 - `x86_64`, `aarch64` and `riscv64` Name: provisional. After the parent's own architecture headings.

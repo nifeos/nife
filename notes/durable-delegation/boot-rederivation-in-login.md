@@ -1,5 +1,7 @@
 # Fork 7: where boot re-derivation runs
 
+Name: provisional, minted by milestone 152's lane on 2026-09-27.
+
 **DECIDED: option A**, calef, 2026-09-27 (UTC). Built the same day: `login`'s `rederive`, and
 `session_reviver` is gone. DECISIONS §123 carries the amendment. What follows is the analysis as
 it was presented, kept as the record of why.
@@ -10,8 +12,6 @@ boot-time re-derivation privilege) gives to a separate, boot-only process. This 
 [notes/durable-delegation.md](../durable-delegation.md) asks which process should run it. It is
 written to the seven questions in `CLAUDE.md`. Counts are from the code at `c457dee32`, 2026-09-27
 (UTC), unless a line says otherwise.
-
-Name: provisional, minted by milestone 152's lane on 2026-09-27.
 
 ## The options
 

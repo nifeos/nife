@@ -1,7 +1,7 @@
 # Review of model-checking/kani#4913
 
-*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pr-4913-review`. Written 2026-09-30 (UTC) by the lane `lane/kani-upstream`. The parent note is
-[kani-upstream.md](../kani-upstream.md).*
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pr-4913-review`. Written 2026-09-30
+(UTC) by the lane `lane/kani-upstream`. The parent note is [kani-upstream.md](../kani-upstream.md).*
 
 This lane reviewed [kani#4913](https://github.com/model-checking/kani/pull/4913) as a hostile-but-fair
 upstream reviewer would, and records the findings here. The pull request is our own: head `6760749`,

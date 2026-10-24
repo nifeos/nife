@@ -49,7 +49,8 @@ So:
 A document under `design/`, `notes/` or `briefs/` carries its block as a paragraph under its title,
 in the grammar of every other kind (calef, 2026-10-24 UTC, who left the format to the lane). So
 adding a note touches the note and one index line. A shared README is where concurrent lanes
-conflict, and code names `notes/README.md`, so a change to it never takes CI's prose-only skip.
+conflict, and code refers to `notes/README.md` by path, so a change to it never takes CI's
+prose-only skip. A note's index line goes on its `notes/README/<area>.md` page.
 
 Frontmatter, with fields for status, date and minter, was the alternative. It lost on four counts:
 
