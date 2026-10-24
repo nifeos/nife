@@ -1,26 +1,13 @@
 //! A userspace device driver: the interrupt-driven console input driver (milestone 20).
 //!
-//! This is the point of the whole interrupt story on RISC-V, and the demonstrator's thesis in one
-//! small program: **a device driver is an unprivileged userspace process.** It holds no privilege at
-//! all. Its entire authority is three things the kernel handed it: an `Irq` capability for the UART's
-//! interrupt (slot 0), a report endpoint to send what it reads (slot 1), and a device-typed mapping
-//! of the NS16550's registers at [`UART_VA`]. From those, and nothing else, it services the device.
-//!
-//! The loop is the seL4 `IRQHandler` protocol:
-//!
-//! 1. `WAIT` on the `Irq` capability. This blocks until the kernel delivers the UART interrupt as a
-//!    message (the interrupt the driver owns by capability, not by privilege).
-//! 2. Read the received byte straight from the UART's receive register, through the driver's own
-//!    device mapping. The kernel never touches the byte; it is not in the data path.
-//! 3. `SEND` the byte on the report endpoint, so whoever is watching sees it.
-//! 4. `ACK` the `Irq` capability. The kernel masked the source when it fired; the ACK re-arms it
-//!    (kernel side: `arch::irq::enable`, the PLIC on RISC-V, the GIC on aarch64) now that the device
-//!    is quiet. Without this, the level-triggered UART would re-fire forever.
-//!
-//! Fully portable: it names no architecture. `user_mode_runtime` supplies the `ecall`/`svc` ABI, and the one
-//! device-specific fact (the NS16550 register layout) is the driver's own knowledge, which is exactly
-//! what a driver is for.
-//!
+//! **A device driver is an unprivileged userspace process.** Its entire authority is an `Irq`
+//! capability for the UART's interrupt (slot 0), a report endpoint for what it reads (slot 1), and
+//! a device-typed mapping of the NS16550's registers at [`UART_VA`]. Its loop is the seL4
+//! `IRQHandler` protocol: `WAIT` on the `Irq` until the interrupt arrives as a message; read the
+//! byte through its own mapping, so the kernel is never in the data path; `SEND` it; `ACK`, which
+//! re-arms the source the kernel masked when it fired (`arch::irq::enable`), without which the
+//! level-triggered UART would re-fire forever. It names no architecture: `user_mode_runtime`
+//! supplies the syscall ABI, and the register layout is the driver's own knowledge.
 
 //! Name: ratified 2026-09-08 (calef, milestone 264). Shipped as `driver`, which was the fourth
 //! driver in `components/src/` and the only unqualified one, beside `block_driver`, `gpu_driver` and
