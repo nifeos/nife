@@ -35,8 +35,8 @@ It takes `name_` for the family beside `name_provenance.py`; `census` because it
 tree, where `name_provenance` parses one block. calef has not named it.
 
 BUGS. `_document_block` still reads a document's block from a README paragraph opening
-`` `stem` Name: `` until the sweep after milestone 929 (helpers/document_name_migrate.py --apply)
-moves the last one into its document; then that path goes.
+`` `stem` Name: ``, until `helpers/document_name_migrate.py --apply`, run once milestone 929's lanes
+have merged, moves the last one into its document; then that path goes.
 """
 
 import collections

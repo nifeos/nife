@@ -23,7 +23,7 @@ not named it.
 census never reads, and outside directories whose name opens with a digit, for the same reason. The
 paragraph's text is moved as it stands, emphasis stripped, and written under the document's title as
 `*Name: <text>*`, wrapped at 100 columns. The README loses the paragraph and the blank line that set
-it apart.
+it apart, and once its last one has gone, an introduction to "the stems below" says "here".
 
 **What does not.** A stem whose document already carries a block of its own. When the two say the
 same thing (the same status, and the README's text inside the document's) the README paragraph is
@@ -108,6 +108,17 @@ def remove_paragraph(text, first, last):
     return "\n".join(lines[:lo] + lines[hi:])
 
 
+# The sentence many collection READMEs open their stem list with ("Each stem below is named for its
+# content, and calef names files."). It is a reason for every stem's name, so it stays once the
+# list has gone, pointing at the directory instead of at nothing.
+_BELOW = re.compile(r"\b(stems?) below\b")
+
+
+def retarget(text):
+    """`text` with "stem(s) below" read as "stem(s) here", for a README whose stem list is empty."""
+    return _BELOW.sub(r"\1 here", text)
+
+
 def _norm(text):
     return re.sub(r"[\s*_`]+", " ", text).strip().rstrip(".").lower()
 
@@ -153,8 +164,18 @@ def migrate(readme, read):
             writes[doc] = insert_block(read(doc), content)
         text = remove_paragraph(text, first, last)
     if any(action != "keep" for *_rest, action in steps):
+        if not name_provenance.markdown_blocks(text)[1]:
+            text = retarget(text)
         writes[readme] = text
     return writes, sorted(kept)
+
+
+def unlinked(before, after):
+    """The stems a README linked before a migration and no longer links after it."""
+    if after is None:
+        return []
+    links = re.compile(r"\]\((?:\./)?([A-Za-z0-9_.-]+)\.md(?:#[^)]*)?\)")
+    return sorted(set(links.findall(before)) - set(links.findall(after)))
 
 
 def readmes(root):
@@ -190,6 +211,9 @@ def main(argv):
                 kept.append(f"{os.path.dirname(readme)}/{stem}.md")
         if apply:
             writes, _kept = migrate(readme, read)
+            for stem in unlinked(read(readme), writes.get(readme)):
+                print(f"UNLINKED  {readme}: the paragraph that moved held its only link to {stem}.md; "
+                      f"give that document an index line there (§212: an unlinked appendix is lost)")
             for path, text in writes.items():
                 with open(os.path.join(root, path), "w", encoding="utf-8") as fh:
                     fh.write(text)
@@ -211,7 +235,8 @@ def selftest():
     readme = ("# Notes\n\n*Name: ratified 2026-08-16 (calef, §75).*\n\n- [A](a.md): the a.\n\n"
               "`a.md`: Name: ratified 2026-10-18 (calef, \"Yes\"). Refused `aa` (too short).\n\n"
               "`b` Name: provisional, minted 2026-10-24 (UTC) by lane/b.\n")
-    sub = ("# X\n\n*Name: provisional.*\n\n- `c` Name: provisional. After the thing it\n"
+    sub = ("# X\n\n*Name: provisional.*\n\nEach stem below is named for its content.\n\n"
+           "- `c` Name: provisional. After the thing it\n"
            "  describes.\n- `d` Name: ratified 2026-10-18 (calef, \"Approve all\").\n")
     tree = {
         "notes/README.md": readme,
@@ -249,6 +274,13 @@ def selftest():
                                      "- [A](a.md): the a.\n"),
         ("a README paragraph the document already says is dropped",
          "`b` Name" not in after["notes/README.md"] and after["notes/b.md"] == tree["notes/b.md"]),
+        ("an introduction stays while a stem is left below it",
+         "Each stem below" in after["notes/x/README.md"]),
+        ("and points at the directory once none is", retarget("Each stem below is x.\nThe stems "
+                                                              "below were minted.")
+         == "Each stem here is x.\nThe stems here were minted."),
+        ("a moved paragraph's only link is reported",
+         unlinked("- [A](a.md)\n\n`b` Name: x. See [b.md](b.md).\n", "- [A](a.md)\n") == ["b"]),
         ("two that disagree both stay", kept == ["d"] and "`d` Name" in after["notes/x/README.md"]),
         ("and the census fails them",
          any("notes/x/d.md" in p and "disagree" not in p and "README paragraph says ratified" in p
