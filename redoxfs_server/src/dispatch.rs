@@ -21,9 +21,10 @@
 
 //! # BUGS
 //!
-//! - `SETXATTR` and `REMOVEXATTR` hand the core their attribute name as a slice of the shared
-//!   window, uncopied, so a client's second thread can rewrite it between `xattr::is_valid_name`
-//!   and the store's use of it. Only `GETXATTR` copies first.
+//! - `SETXATTR` and `REMOVEXATTR` hand the core their attribute name, and `SETXATTR` its value, as
+//!   slices of the shared window, uncopied, so a client's second thread can rewrite the name
+//!   between `xattr::is_valid_name` and the store's use of it, or the value as it is stored. Only
+//!   `GETXATTR` copies first.
 
 use filesystem_contract::{blk, fs, operation, reply_err, xattr};
 use redoxfs::Disk;

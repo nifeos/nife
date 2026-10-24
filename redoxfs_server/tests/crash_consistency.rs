@@ -181,14 +181,14 @@ struct Recorded {
     states: Vec<State>,
 }
 
-/// Build the fixture and run the workload once, recording every block write. Each step attacks a
-/// shape a crash is likely to catch out, in a real client's order:
+/// Record the workload once over a fresh fixture; each step is a shape a crash is likely to catch:
 /// 1. an overwrite of an existing file;
 /// 2. a shorter overwrite, leaving the old tail (DECISIONS §27), so a torn recovery is visible;
 /// 3. the `TRUNCATE` that removes it, a change to the file's shape rather than its bytes;
 /// 4. a `CREATE`, which extends a directory;
 /// 5. a 160 KiB write, over RedoxFS's 128 KiB record, so one operation is forty block writes;
-/// 6. a 60 KiB shrink of it, which frees records; 7. an overwrite, so the biggest is not last;
+/// 6. a 60 KiB shrink of it, which frees records;
+/// 7. an overwrite, so the biggest operation is not the last thing that happened;
 /// 8. a `RENAME`, changing two entries at once (§42 (a filesystem declares what it offers and must
 ///    be truthful)): "neither" and "both" fail the sweep.
 fn record_workload() -> Recorded {

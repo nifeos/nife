@@ -78,9 +78,9 @@ use crate::memo::Memo;
 /// # BUGS
 ///
 /// - Written for an upstream defect whose root fix is a pin divergence (#1606, level 4's `12` to
-///   `8` in `vendor/redoxfs/src/node.rs`); kept so the boundary answers `EFBIG` rather than an
-///   engine `ERANGE`. Conservative: 8 KiB records could address twice it. See
-///   notes/fs-server/the-core.md.
+///   `8` in `vendor/redoxfs/src/node.rs`); kept so the boundary answers `EFBIG`, not `ERANGE`. Every
+///   file this build creates has 8 KiB records, which could address twice it, and no image comes
+///   within a factor of a million. See notes/fs-server/the-core.md.
 pub const MAX_FILE_END: u64 =
     (128 + 64 * 256 + 32 * 256 * 256 + 16 * 256 * 256 * 256 + 8 * 256 * 256 * 256 * 256)
         * BLOCK as u64;

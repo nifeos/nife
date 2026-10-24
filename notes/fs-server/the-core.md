@@ -85,10 +85,14 @@ read-only holder has nothing outstanding to make durable.
 
 A name is copied out of the client's window before anything judges it (milestone 825 (a hostile
 client races the file server's name window)). The window is the client's shared page, and a confined
-client can run a second thread that rewrites it. Every name-taking verb takes a `NameCopy`, whose
-only constructor copies into the server's own buffer and validates UTF-8 there. The check
-(`check_component`) runs where each verb has always run it, after `dir_at` for the path verbs, which
-keeps every verb's error order. That is why it is not in the constructor.
+client can run a second thread that rewrites it. Every verb that takes a path name takes a
+`NameCopy`, whose only constructor copies into the server's own buffer and validates UTF-8 there.
+The check (`check_component`) runs where each verb has always run it, after `dir_at` for the path
+verbs, which keeps every verb's error order. That is why it is not in the constructor.
+
+Attribute names are not path names. `SETXATTR` and `REMOVEXATTR` still read theirs, and the
+value, from the shared window uncopied; the BUGS entry in `redoxfs_server/src/dispatch.rs` records
+the race that leaves open.
 
 `walk_prefix` hands `subtree_scope::walk` the copy's bytes rather than a `NameCopy`, because a shared
 crate cannot name this server's type. It is the one caller, and the bytes are never the window's.
@@ -115,11 +119,13 @@ usage table. Then `remove_node` queues it on the release list and `on_close_node
 `open_file_path` and `create_file_at` register, and `close` deregisters. That pairing is what makes
 `UNLINK` an unlink: without it, the read after an unlink reads a deallocated node.
 
-The server edits `fs.node_usages` directly rather than calling `Transaction::on_open_node`, which
-does the same three lines inside a transaction. Opening a transaction clones the engine's whole
-allocator, and that clone was most of the remaining time per request once the memo answered the
-lookup (milestone 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`).
-`close` opens a transaction only for the last use of a node while the release list is non-empty.
+`open_file_path` edits `fs.node_usages` directly rather than calling `Transaction::on_open_node`,
+which does the same three lines inside a transaction. Opening a transaction clones the engine's
+whole allocator, and that clone was most of the remaining time per request once the memo answered
+the lookup (milestone 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`).
+`create_file_at` is already inside its create's transaction, so it calls `tx.on_open_node`. `close`
+drops a use directly, and calls the engine's `on_close_node` in a transaction only for the last use
+of a node while the release list is non-empty.
 
 That transaction does not forget the memo. The unlink already forgot every listing, no handle names
 the node once `close` returns, and its id can only be reused by a verb that creates a node, which goes
@@ -204,14 +210,19 @@ wire the buffer is the shared page, larger than `xattr::MAX_VALUE`, so it cannot
 ## Where the server departs from upstream RedoxFS
 
 The engine is pinned in `vendor/redoxfs.pin`, and every change to it is a numbered divergence in
-`vendor/README.md` with its patch. The server touches the pin in two places:
+`vendor/README.md` with its patch. The server depends on three of them:
 
 - `NodeLevel::new` admitted `12 * 256^4` level-4 records where `NodeLevelData::level4` holds 8
   pointers. A record offset in that band indexed past the array and panicked the engine, which here
   is a dead server. The `redoxfs_server_session` fuzz target found it on 2026-10-04 (UTC). The root
   fix, `12` to `8` in `vendor/redoxfs/src/node.rs`, is a divergence taken by #1606. `MAX_FILE_END`
   stays beside it so the boundary answers `EFBIG` rather than an engine `ERANGE` deep in a
-  transaction. It is conservative: a file with 8 KiB records could address twice it.
+  transaction. It is conservative: every file this build creates has 8 KiB records, which could
+  address twice it, and no image this system serves comes within a factor of a million of either.
+- The record level is lowered and split in two (`vendor/README.md` divergence 5): `RECORD_LEVEL`,
+  the level a new file is created at, is 1 (8 KiB records), and `RECORD_LEVEL_MAX`, which the two
+  `BlockTrait::empty` guards compare against, stays 5. `block.rs` asserts `RECORD_LEVEL <=
+  RECORD_LEVEL_MAX` at compile time, so a file this build creates stays readable by it.
 - The `no_std` creation path takes the filesystem's uuid as an argument, as it already took `ctime`
   (`vendor/README.md` divergence 4, `patches/redoxfs-no-std-create-uuid.patch`). `mkfs` draws the
   bytes from an entropy capability, so no randomness enters vendored code.
@@ -224,7 +235,9 @@ of this contract and not a bug in an engine whose other callers may want otherwi
 - The write end: RedoxFS adds `offset + len` unchecked, and a wrapped end made its inline-data path
   slice backwards and panic. `write` refuses an end that overflows or passes `MAX_FILE_END`.
 - Durability: `Disk` has no flush, so `SYNC` is a block-protocol call in the binary.
-- The usage table, edited directly rather than through `on_open_node` and `on_close_node`.
+- The usage table on the hot paths: `open_file_path` registers a use directly rather than through
+  `on_open_node`, and `close` drops one directly unless the engine's `on_close_node` has a release
+  list to collect.
 
 One defect is left in the engine. Shrinking a file walks every record pointer in its logical size,
 sparse or not, and the server answers one request at a time. A client with a writable handle can grow
