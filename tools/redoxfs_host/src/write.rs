@@ -80,14 +80,10 @@ pub(crate) fn put_tx<D: Disk>(
 
 /// Copy the *contents* of the host directory `dir` into the image root, recursively.
 ///
-/// This is upstream's own archiver (`redoxfs::archive`, the engine half of `redoxfs-ar`) rather
-/// than a directory walk of ours, and that is the point: it is the write side of the format,
-/// written by the people who defined the format, so an `extract` proven against it is proven
-/// against something other than our own writer. `redoxfs-ar` itself cannot be used here because it
-/// *creates* the filesystem as it archives; this imports into an image `mkfs` already made.
-///
-/// A failure part-way leaves what it had already written in place, committed and consistent. The
-/// filesystem is not damaged, the import is simply incomplete, and the tool says so and exits
+/// This is upstream's own archiver (`redoxfs::archive`, the engine half of `redoxfs-ar`), so an
+/// `extract` proven against it is proven against a writer other than ours; `redoxfs-ar` itself
+/// creates the filesystem, and this fills one `mkfs` made. A failure part-way leaves what was
+/// written committed and consistent: the import is incomplete, and the tool says so and exits
 /// non-zero.
 pub fn import(image: &Path, dir: &Path) -> Result<(), String> {
     let mut fs = open_rw(image)?;
