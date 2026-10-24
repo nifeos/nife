@@ -3,9 +3,9 @@
 //! Every test here is a regression for a bug that was real. The other two test files parse the
 //! trees QEMU hands us; this one holds the parser to blobs a hostile or broken firmware could
 //! write, because the blob is the first thing the kernel reads and nothing can check it. Two of
-//! the bugs came out of milestone 42's fuzzing leg (`fuzz/fuzz_targets/device_tree_blob_walk`),
-//! one found by the fuzzer and one by reading the code; notes/fuzzing.md tells how. They run on
-//! the host in milliseconds, so inputs that cost real time to find cost nothing to keep.
+//! the bugs came out of milestone 42 (supply chain and fuzzing in CI)'s fuzzing leg, one found by
+//! the fuzzer and one by reading the code; notes/fuzzing.md tells how. They run on the host in
+//! milliseconds, so inputs that cost real time to find cost nothing to keep.
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -800,10 +800,10 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
     assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
 }
 
-/// **Each walker's own per-depth arrays have their own edge.** The four walkers beside
-/// `node_reg` keep 16-entry arrays behind the same `depth < MAX_DEPTH` guard, and milestone 326's
-/// mutation run found `<=` alive in every one; at depth exactly 16 that is an out-of-bounds index
-/// on firmware bytes, before a boot can report a failure.
+/// **Each walker's own per-depth arrays have their own edge.** The four walkers beside `node_reg`
+/// keep 16-entry arrays behind the same `depth < MAX_DEPTH` guard, and milestone 326 (nobody has
+/// been assigned to turn a mutation score upward) found `<=` alive in every one; at depth exactly
+/// 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
 ///
 /// The tree is nested to exactly the edge and carries the property, the `compatible` and the
 /// `phandle` there, so each arm of each walker is asked to record something where recording it

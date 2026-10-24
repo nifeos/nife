@@ -92,7 +92,7 @@ not ended yet. The policy around it stays this crate's, because a general HTTP p
 deliberately more lenient than a package client should be:
 
 - `Content-Length` is required. HTTP/1.0 lets a server end a body by closing the connection, but a
-  client that accepts that cannot tell a complete package from a truncated one, and the net server
+  client that accepts that cannot tell a complete package from a truncated one. The net server also
   reports a peer's close as a failed receive after a bounded wait, not as an end. A digest would
   still catch the truncation; refusing it says why.
 - `Transfer-Encoding` is refused, chunked included. A `GET` sent as HTTP/1.0 is never owed a

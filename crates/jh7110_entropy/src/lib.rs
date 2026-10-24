@@ -371,11 +371,11 @@ pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
 /// program (which depends on both) is where a reader can check.
 pub const WORD_BYTES: u64 = 8;
 
-/// **The 32 bytes in hand, and how many are still ours to give** (milestone 159), testable here
-/// without a register. [`take`](Pool::take) is handed a generator: a device poll in
-/// `components/src/jh7110_entropy.rs`, a counter in the tests. `cursor` only moves forward, so no
-/// byte is served twice, and each byte is zeroed as it leaves, as `components/src/entropy.rs`'s
-/// virtio-rng `Pool` does.
+/// **The 32 bytes in hand, and how many are still ours to give** (milestone 159 (a real hardware
+/// entropy source: the JH7110's TRNG)), testable here without a register. [`take`](Pool::take) is
+/// handed a generator: a device poll in `components/src/jh7110_entropy.rs`, a counter in the tests.
+/// `cursor` only moves forward, so no byte is served twice, and each byte is zeroed as it leaves,
+/// as `components/src/entropy.rs`'s virtio-rng `Pool` does.
 ///
 /// # Examples
 ///
@@ -727,8 +727,9 @@ mod tests {
     ///
     /// A transcription check: the constants came off \[trm\]'s tables by hand, and a bit copied to
     /// the wrong line, or a `<<` turned `>>` that takes a bit to zero, passes every test that does
-    /// not name the bit it exercises. Milestone 326's mutation run found fifteen survivors of that
-    /// shape. A duplicated bit inside one register is the copy-and-paste mistake the table invites.
+    /// not name the bit it exercises. Milestone 326 (nobody has been assigned to turn a mutation
+    /// score upward) found fifteen survivors of that shape. A duplicated bit inside one register is
+    /// the copy-and-paste mistake the table invites.
     #[test]
     fn every_named_bit_is_the_bit_the_datasheet_names() {
         // One row per named bit: (register, name, bit index, constant). The indices are \[trm\]'s
@@ -864,9 +865,10 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). The unit tests sample `interpret` at chosen bit
-/// patterns; `ISTAT` is a register a fault could set to anything, and `interpret` is a few
-/// comparisons over two `u32`s, so these exhaust the whole input space instead.
+/// Machine-checked proofs (§14 (the project's direction: a verified-Rust capability microkernel)).
+/// The unit tests sample `interpret` at chosen bit patterns; `ISTAT` is a register a fault could
+/// set to anything, and `interpret` is a few comparisons over two `u32`s, so these exhaust the
+/// whole input space instead.
 #[cfg(kani)]
 mod verification {
     use super::*;

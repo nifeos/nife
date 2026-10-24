@@ -363,9 +363,9 @@ pub fn expected_screen_pixel(n: usize, x: u32, y: u32) -> u32 {
 /// [`window_pixel`]**: the same topmost-window-wins lookup, with the per-window picture supplied by
 /// the caller as `content(id, surface_x, surface_y)`.
 ///
-/// For milestone 29's display terminals, whose content is a character grid. The composition rule
-/// is the compositor's and the content the client's, which is why `compositor` does not depend on
-/// `video_terminal`.
+/// For milestone 29 (a display terminal)'s windows, whose content is a character grid. The
+/// composition rule is the compositor's and the content the client's, which is why `compositor`
+/// does not depend on `video_terminal`.
 pub fn expected_screen_pixel_with(
     n: usize,
     x: u32,

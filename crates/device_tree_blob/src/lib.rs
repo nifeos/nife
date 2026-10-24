@@ -822,10 +822,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// Property `name` on **every** node whose name starts with `prefix`, in tree order.
     ///
     /// For a node that repeats, such as each hart's `cpu@` on a heterogeneous RISC-V machine like
-    /// the JH7110 (milestone 60). `out[i]` is `None` when the *i*th match has no such property,
-    /// which differs from there being no *i*th match. Returns the number of matching **nodes**,
-    /// which may exceed `out.len()`; the excess is counted and not written, so a caller can tell
-    /// it under-provisioned. See notes/device-tree.md.
+    /// the JH7110 (milestone 60 (ISA discovery)). `out[i]` is `None` when the *i*th match has no
+    /// such property, which differs from there being no *i*th match. Returns the number of matching
+    /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
+    /// can tell it under-provisioned. See notes/device-tree.md.
     ///
     /// # Examples
     ///

@@ -91,7 +91,8 @@ reads even and unchanged, pass its revalidation, and return a state from one pub
 offset from another. `AcqRel` and even `SeqCst` on the compare-exchange still tear, because an
 acquire or release RMW orders accesses around itself, and what is needed is its own store ordered
 ahead of the plain stores after it. The bug is not reachable on x86, QEMU's TCG explores almost
-none of the orderings that produce it, and milestone 80's loom run found it
+none of the orderings that produce it, and milestone 80 (Loom: the hand-rolled atomic protocols,
+model-checked) found it
 ([interleaving.md](interleaving.md)).
 
 Two limits stand. The orderings are checked against C11, not ARM's or RISC-V's model: loom
