@@ -11,15 +11,16 @@ Expected to fail: `assert_eq!` "an unbadged holder quiesced a supervised display
 0x51554954)", with `left: 1364543828` (`proto::QUIESCED`). Replayed red at exactly that assertion
 on aarch64 on 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only, after the test
 was made to check each answer before its next call; checked together, the second call parked on
-the quiesced terminal and the run ended at the watchdog instead.
+the quiesced terminal and the run ended at the watchdog instead. Re-cut the same day after a merge of main moved its
+context, and replayed red at the same assertion.
 
 diff --git a/components/src/display_terminal.rs b/components/src/display_terminal.rs
-index a9ae0ee74..8d2cd8cb5 100644
+index a4d630974..6e49800dc 100644
 --- a/components/src/display_terminal.rs
 +++ b/components/src/display_terminal.rs
-@@ -628,7 +628,7 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
+@@ -565,7 +565,7 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
          // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
-         // served as unbadged, as they always were.
+         // served as unbadged.
          let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
 -        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
 +        if from_supervisor && proto::operation(w0) != proto::OPERATION_QUIESCE {
