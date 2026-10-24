@@ -1,5 +1,7 @@
 # The toolchain: bare-metal clang, one compiler for two ISAs
 
+*Name: provisional. After the parent's own heading.*
+
 How the C component in [`notes/c-seam.md`](../c-seam.md) is compiled: how clang is found, why one compiler must have both
 backends, and the flags, one of which is load-bearing.
 
@@ -61,3 +63,23 @@ both:     -ffreestanding -fno-pic -fno-stack-protector -Os -std=c11 -Wall -Wextr
 - `-ffreestanding` so no hosted libc is implied. clang still supplies its own `stddef.h` and
   `stdint.h` from its resource directory, which is all the component includes.
 
+
+## The x86_64 flags, and the third backend
+
+```
+x86_64:   --target=x86_64-unknown-none-elf  -mno-sse -mno-mmx -mno-red-zone
+```
+
+- `-mno-sse` and `-mno-mmx` match the Rust target's `features = "-mmx,-sse,+soft-float"`. The
+  kernel does not enable the FP unit for ring 3, so a vectorized byte loop would take `#UD` on its
+  first `xmm` instruction (`CR4.OSFXSR` clear). It is the aarch64 argument for
+  `-mgeneral-regs-only`, one ISA over.
+- `-mno-red-zone` has no counterpart on the other two architectures. The red zone is the 128 bytes
+  below `rsp` that a leaf function may use without moving the pointer, and it is safe only if
+  nothing can push there behind the function's back. An interrupt in ring 3 switches to a different
+  stack, so a user program could keep it. It is off because the Rust target sets
+  `disable_redzone = true`, and two sides of one call that disagree about 128 bytes of stack do not
+  share an ABI.
+- `fixtures/build.rs` requires the X86 backend too, from the same clang. Every clang that has the
+  AArch64 and RISC-V backends (Homebrew's keg, a distro build) also has X86, and Apple's clang still
+  fails on RISC-V, so the third backend rejects no compiler the other two accept.

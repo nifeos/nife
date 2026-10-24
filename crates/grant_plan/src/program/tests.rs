@@ -46,25 +46,13 @@ fn the_wire_ids_already_shipped_never_move() {
     }
 }
 
-/// **A `std` program declares only what the progenitor can place in the std layout**
-/// (milestone 595 (provisional)). `std_runtime_contract` fixes eight slots, and the progenitor's
-/// std spawn fills the heap, the output, the clock, the configuration page, entropy and a
-/// directory. Everything else a manifest can ask for has no slot there or is not wired yet:
-///
-/// - a file: the contract has no slot for one;
-/// - `--mem`: slot 0 is already the heap, and the progenitor's, not the shell's;
-/// - a process domain: native `DOMAIN_SLOT` is 7, which in the std layout is the config page;
-/// - a second output stream: native `DIAGNOSTICS_SLOT` is 8, past the fixed eight.
-///
-/// The network is held since milestone 809 (the package client becomes a program): the
-/// progenitor places the stack at slot 2 and the job's own region at slot 3, which is the
-/// budget the net PAL retypes each socket's frame from.
-///
-/// An input stream is held since milestone 784 (reuse what the tree wrote), item (f2): the
-/// progenitor places it at `std_runtime_contract::STDIN_STREAM_SLOT`, which std's stdin reads.
-///
-/// The shell would plan any of these and the progenitor would silently not deliver it, so
-/// this is the gate: a manifest cannot declare one without failing here first.
+/// **A `std` program declares only what the progenitor can place in the std layout** (milestone
+/// 595 (provisional)), whose slots `std_runtime_contract` fixes: no file (no std slot carries
+/// one), no `--mem` (slot 0 is the heap, and the progenitor's), no process domain (native
+/// `DOMAIN_SLOT`, 7, is the std configuration page), no job frame, and one output byte stream
+/// (native `DIAGNOSTICS_SLOT`, 8, is the std argv page). The network and an input stream it may
+/// hold, at the std layout's own slots. The shell would plan any of the refused ones and the
+/// progenitor would silently not deliver it, so a manifest declaring one fails here first.
 #[test]
 fn a_std_program_declares_only_what_the_std_layout_can_hold() {
     let mut std_programs = 0;
@@ -102,9 +90,9 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
 /// **No manifest declares both a file and an input** (milestone 150). Both take a bare name on
 /// the command line, so a program declaring both would leave the parser two indistinguishable
 /// positions and nothing but order to tell them apart; `plan_against_with`'s input operand
-/// relies on the combination never occurring. That was a sentence in a comment until this
-/// test; an argument together with an input is a different case and is allowed (see
-/// design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
+/// relies on the combination never occurring. An argument together with an input is a different
+/// case and is allowed (milestone 498 (whether a program may take an argument and an input
+/// stream)).
 #[test]
 fn no_program_declares_both_a_file_and_an_input() {
     for &p in Program::ALL {
@@ -120,17 +108,10 @@ fn no_program_declares_both_a_file_and_an_input() {
 
 /// **Every program round trips through its id and its name, and every other id is a hole.**
 ///
-/// Since milestone 150 (adding a program should not need eight hand-maintained lists) the id, the
-/// name and [`PROGRAM_COUNT`] are generated from one declaration (`programs!`), so the failures this
-/// test used to exist for (an arm missing from `from_id` or `from_name`, and [`PROGRAM_COUNT`] not
-/// widened, which hid both) cannot be written
-/// any more. What is left is worth keeping as a statement of the contract the progenitor relies
-/// on: it sizes its table by [`PROGRAM_COUNT`] and indexes it by id, so every declared id must fit,
-/// and an id nothing declares must decode to `None` rather than to a neighbour.
-///
-/// The history is in git and in notes/adding-a-program.md: this test's own doc comment once
-/// claimed it caught a forgotten [`PROGRAM_COUNT`], and measurement on 2026-08-18 found it could
-/// not, because the sweep counted up to the constant it was meant to check.
+/// The id, the name and [`PROGRAM_COUNT`] are generated from one declaration (`programs!`), so
+/// this states the contract the progenitor relies on: it sizes its table by [`PROGRAM_COUNT`] and
+/// indexes it by id, so every declared id must fit, and an id nothing declares must decode to
+/// `None` rather than to a neighbour.
 #[test]
 fn prog_id_round_trips() {
     assert!(

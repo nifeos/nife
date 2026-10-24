@@ -1,5 +1,7 @@
 # The CPU-model matrix: the canary flake on `thead-c906`
 
+*Name: provisional. For the parent's resolved canary `BUGS` entry. calef names files.*
+
 An appendix to [`notes/cpu-models.md`](../cpu-models.md)'s BUGS, under the cap of §212 (a prose
 budget). The flake is diagnosed and fixed; the entry is kept for its reasoning.
 

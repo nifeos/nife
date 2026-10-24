@@ -1,16 +1,12 @@
 //! **Where the unmodified C programs run in the test image, and what they are told**
 //! (milestone 835 (a C library, stage 1: files, clock and memory)).
 //!
-//! A directory a C program may write in: empty in the image, a sibling of everything else at its
-//! root, and granted alone with every right, so SQLite's `speedtest1` can create its database and
-//! journal there and remove the journal, and what it writes cannot be confused with another test's
-//! files. The image builder (`xtask`'s `disk.rs`) makes it and `system_tests`' `c_program_tests`
-//! grants it, so its name is a crate rather than two string literals (rule 7). The command lines
-//! and the expected hash live beside it because they describe the same runs.
-//!
-//! It is its own crate because `filesystem_contract`, where the image's other fixtures live, is at
-//! its §266 (a Rust source file stays under 2,000 lines) ceiling and is copied whole into
-//! `std` by the farm, so it can neither grow nor split.
+//! [`ROOT`] is a directory a C program may write in: empty in the image, a sibling of everything
+//! else at its root, and granted alone with every right, so SQLite's `speedtest1` can create its
+//! database and journal there and remove the journal, apart from every other test's files. The
+//! image builder (`xtask`'s `disk.rs`) makes it and `system_tests`' `c_program_tests` grants it,
+//! so its name is a crate (AGENTS.md rule 7: anything two binaries agree on is a crate). The
+//! command lines and the expected hash live beside it because they describe the same runs.
 //!
 //! Name: ratified 2026-10-18 (calef), as it is. "Fixture" means test data here.
 

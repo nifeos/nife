@@ -1,32 +1,18 @@
 //! **Linux: disks from sysfs, filesystems from udev, erasing with `sfdisk` and `mkfs.vfat`.**
 //!
-//! Every fact the offer rule needs is a file under `/sys/block`, readable without root:
-//! `removable` is the SCSI removable-media bit, `device/type` says `SD` for an SD card on the MMC
-//! bus (whose `removable` is 0 even though the card comes out), and the canonical path of the
-//! device says whether it hangs off a USB controller. Mounts come from `/proc/self/mounts`, and a
-//! filesystem that is not mounted is named by udev's database in `/run/udev/data`, which is also
-//! readable without root. So listing needs no privileges and no tool; only erasing does.
-//!
-//! This file is the pure half: [`assemble`] takes the three roots as arguments, so the tests build a
-//! small fake sysfs rather than needing a Linux machine. `host/linux.rs` is the half that runs
-//! `sfdisk`, `mkfs.vfat` and `mount`.
-//!
+//! Every fact the offer rule needs is readable without root: `/sys/block` for the removable bit, an
+//! SD card's `device/type` (its `removable` is 0 though the card comes out) and the USB path;
+//! `/proc/self/mounts` for mounts; udev's `/run/udev/data` for an unmounted filesystem. Only
+//! erasing needs privileges. This is the pure half: [`assemble`] takes the three roots as
+//! arguments, so tests use a fake sysfs. `host/linux.rs` runs `sfdisk`, `mkfs.vfat` and `mount`.
+//! See notes/boot-stick/the-program.md, "Linux".
+
 //! # BUGS
 //!
-//! - **None of this has run on Linux.** The binary cross-compiles and the pure half is tested on
-//!   the development Mac against a synthetic sysfs; discovery, mounting and erasing have not
-//!   executed on a Linux kernel. The layouts read here are the kernel's documented ABI
-//!   (Documentation/ABI/stable/sysfs-block) and udev's database format, which is recalled rather
-//!   than read against a live system.
-//! - **Free space is not known before copying** (no `statvfs` without a dependency), so a FAT
-//!   volume that is too full is discovered by the copy failing, which leaves the previous files in
-//!   place (see `write.rs`) and says so.
-//! - **Erasing needs root and two tools**: `sfdisk` (util-linux, on every distribution) and
-//!   `mkfs.vfat` (dosfstools, on every desktop install and absent from some minimal ones). The
-//!   program says which package to install when one is missing.
-//! - **A system without udev** (some containers, Alpine with mdev) cannot name an unmounted
-//!   partition's filesystem, so an unmounted FAT stick there is offered for erasing rather than
-//!   copying. Mounting it first avoids that.
+//! - **None of this has run on Linux**; the pure half is tested against a synthetic sysfs.
+//! - **Free space is not known before copying**; a full volume fails the copy, keeping old files.
+//! - **Erasing needs root, `sfdisk` and `mkfs.vfat`** (dosfstools); the program names the package.
+//! - **Without udev** an unmounted FAT stick is offered for erasing; mounting it first avoids that.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -279,20 +265,20 @@ mod tests {
             "sda",
             "pci0000:00/usb2/2-1/host0/block",
             "0\n",
-            "5860533168\n",
+            "3906250000\n",
         );
-        fs::write(hdd.join("device/vendor"), "WD      \n").unwrap();
-        fs::write(hdd.join("device/model"), "My Book 1140    \n").unwrap();
+        fs::write(hdd.join("device/vendor"), "Generic \n").unwrap();
+        fs::write(hdd.join("device/model"), "USB Hard Disk   \n").unwrap();
         part(&hdd, "sda1", "8:1");
 
         let stick = disk(
             "sdb",
             "pci0000:00/usb3/3-2/host1/block",
             "1\n",
-            "60063744\n",
+            "62500000\n",
         );
-        fs::write(stick.join("device/vendor"), "SanDisk \n").unwrap();
-        fs::write(stick.join("device/model"), "Ultra           \n").unwrap();
+        fs::write(stick.join("device/vendor"), "Generic \n").unwrap();
+        fs::write(stick.join("device/model"), "USB Flash       \n").unwrap();
         part(&stick, "sdb1", "8:17");
         fs::write(
             udev.join("b8:17"),
@@ -313,15 +299,15 @@ mod tests {
 
         let image = disk("loop0", "virtual/block", "0\n", "131072\n");
         fs::create_dir_all(image.join("loop")).unwrap();
-        fs::write(image.join("loop/backing_file"), "/home/calef/stick.img\n").unwrap();
+        fs::write(image.join("loop/backing_file"), "/home/someone/stick.img\n").unwrap();
         let unattached = disk("loop1", "virtual/block", "0\n", "0\n");
         let _ = unattached;
         fs::create_dir_all(devices.join("virtual/block/ram0")).unwrap();
         std::os::unix::fs::symlink(devices.join("virtual/block/ram0"), block.join("ram0")).unwrap();
 
         let mounts = "/dev/nvme0n1p2 / ext4 rw 0 0\n\
-                      /dev/sda1 /media/calef/My\\040Backups ext4 rw 0 0\n\
-                      /dev/sdb1 /media/calef/NIFE vfat rw 0 0\n"
+                      /dev/sda1 /media/someone/My\\040Backups ext4 rw 0 0\n\
+                      /dev/sdb1 /media/someone/NIFE vfat rw 0 0\n"
             .to_owned();
         (block, mounts, udev)
     }
@@ -347,11 +333,11 @@ mod tests {
         );
         assert_eq!(
             backups.volumes[0].mount.as_deref(),
-            Some(Path::new("/media/calef/My Backups"))
+            Some(Path::new("/media/someone/My Backups"))
         );
 
         let stick = by("sdb");
-        assert_eq!(stick.description, "SanDisk Ultra");
+        assert_eq!(stick.description, "Generic USB Flash");
         assert_eq!(refusal(stick, Policy::default()), None);
         assert_eq!(stick.volumes[0].filesystem, Filesystem::Fat);
         assert_eq!(plan(stick, 1, |_| 0), Plan::Copy { volume: 0 });
@@ -430,7 +416,7 @@ mod tests {
         let by = |id: &str| disks.iter().find(|d| d.id == id).unwrap();
 
         let stick = by("sdb");
-        assert_eq!(stick.size, 60_063_744 * 512, "sectors are 512 bytes");
+        assert_eq!(stick.size, 62_500_000 * 512, "sectors are 512 bytes");
         assert_eq!(stick.volumes.len(), 1);
         assert_eq!(stick.volumes[0].id, "sdb1");
         assert_eq!(stick.volumes[0].label, "NIFE", "from udev");

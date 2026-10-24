@@ -28,13 +28,13 @@ nife stick maker, build 0d4399c98566
   x86_64   EFI/BOOT/BOOTX64.EFI     10.2 MB
 
 Removable disks:
-  1) disk8    SanDisk Ultra                  30.8 GB  USB            FAT "UNTITLED"
+  1) disk6    Generic USB Flash              32.0 GB  USB            FAT "UNTITLED"
 Which one? (1-1, or Enter to stop) 1
-Will copy 40.6 MB of boot files to /Volumes/UNTITLED on disk8 (SanDisk Ultra). Nothing on it is erased.
+Will copy 40.6 MB of boot files to /Volumes/UNTITLED on disk6 (Generic USB Flash). Nothing on it is erased.
 Type y to copy: y
   wrote /Volumes/UNTITLED/EFI/BOOT/BOOTAA64.EFI (16.0 MB)
   ...
-Ejected disk8; it can be pulled out.
+Ejected disk6; it can be pulled out.
 ```
 
 (The listing above is the program's real output shape; the disk in it is the synthesized stick of
@@ -66,21 +66,22 @@ against a fake host). `src/host/` only runs the tools, and is exempt from `scrip
 with the reason recorded there: the coverage run cannot execute `diskutil` or erase a disk. It is
 run for real on each host instead, by `helpers/stick-maker-proof.sh` and the CI workflow.
 
-The obvious rule was "external, on USB", and the machine this was written on refutes it. It has two
-USB hard disks attached, a 2 TB Seagate Portable and a 3 TB WD My Book, one holding backups:
+The obvious rule was "external, on USB", and two USB hard disks attached to the development Mac
+refute it. A removable USB flash stick is offered; USB hard disks, where backups usually live, are
+refused:
 
 ```console
 $ target/stick-maker/stick_maker-macos-arm64 --list --all
-  disk4    Seagate Portable                2.0 TB  USB            FAT "EFI", unrecognized
+  disk2    Generic External USB Disk       1.0 TB  USB            FAT "EFI", unrecognized
            not offered: not removable media (a USB hard disk or SSD, which is where backups live)
-  disk6    WD My Book 1140                 3.0 TB  USB            FAT "EFI", Journaled HFS+ "..."
+  disk4    Generic Desktop USB Disk        2.0 TB  USB            FAT "EFI", Journaled HFS+ "..."
            not offered: not removable media (a USB hard disk or SSD, which is where backups live)
 ```
 
-Both report `Internal = false` and `BusProtocol = USB`. Both report `RemovableMedia = false`. A rule
-keyed on the bus would have offered a backup disk for erasing. The documents `diskutil` printed for
-them are the test fixtures (`crates/stick_maker/tests/fixtures/macos/`), trimmed and with volume
-names scrubbed, so the test that proves a backup disk is never offered runs against the real thing.
+A USB hard disk reports `Internal = false`, `BusProtocol = USB` and `RemovableMedia = false`, so a
+rule keyed on the bus would offer a backup disk for erasing. The test fixtures
+(`crates/stick_maker/tests/fixtures/macos/`) are what `diskutil` printed for two such disks, with
+names and sizes made neutral and every flag as captured. The listing above uses their names.
 
 Three more refusals stand behind that one: a disk the host calls internal, a disk with a volume
 mounted where the running system lives, and a file-backed disk unless asked for.
@@ -103,7 +104,7 @@ stated: Linux needs `dosfstools`, which some minimal installs lack, and the prog
 package to install.
 
 MBR, not GPT, measured rather than preferred: `diskutil eraseDisk ... GPT` writes a 200 MB `EFI`
-partition ahead of the data one (disk4 and disk6 above both have that layout). So the stick would
+partition ahead of the data one (both USB hard disks above have that layout). So the stick would
 carry two FAT volumes, and a firmware that looks only at the first finds nothing. MBR gives one, and
 U-Boot's distro boot and every UEFI implementation read it.
 
@@ -164,7 +165,7 @@ wrong archive: radon's boot 12 and xenon's 2026-09-17 refusal have no way to hap
 | The aarch64 stick boots from ACPI alone, as a cloud machine offers it | `cargo xtask acpi-boot`: `BOOTAA64.EFI` under EDK2 with `acpi=on`, once on QEMU's default GICv2 and once with `gic-version=3`, a CI gate in the `boot-check` job (2026-10-19) | Both to the progenitor, with the loader's "describing this machine from ACPI" line, and on the GICv3 its GICv3 and ITS lines |
 | The program writes a stick that boots on all three | `helpers/stick-maker-proof.sh`: a blank file erased, a FAT32 file copied onto, each booted under all three | Six of six to the progenitor; a file already on the FAT32 stick survived |
 | Nothing is erased without `--erase` or the disk's name typed back; a refused disk stays refused when named; a host that cannot erase says so before asking | `crates/stick_maker/src/cli.rs`'s tests, which run the whole conversation against a fake host | All pass |
-| A backup disk is never offered | `crates/stick_maker` host tests on the captured `diskutil` documents, and `--list --all` on the machine itself | Both USB hard disks refused |
+| A backup disk is never offered | `crates/stick_maker` host tests on the captured `diskutil` documents, and `--list --all` on the development Mac | Every USB hard disk refused |
 | A mismatched kernel and archive cannot be embedded | The loader's build against a two-day-old archive | Build refused, entry named |
 | The x86_64 loader still boots after moving to `arch/x86_64` | `helpers/qemu-uefi-x86_64.sh target/esp` | Unchanged transcript |
 

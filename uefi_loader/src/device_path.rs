@@ -3,17 +3,12 @@
 //!
 //! A UEFI device path is a run of nodes, each `type: u8, subtype: u8, length: u16` (little-endian,
 //! header included) and then its data, ending in the end-of-entire-path node (type `0x7F`, subtype
-//! `0xFF`). A partition's path is its disk's path with one more node on the end, the `HARDDRIVE`
-//! node, so **"is this partition on that disk" is "does the disk's path, without its end node, begin
-//! the partition's"**. That a child handle's path is its parent's with nodes appended is recalled
-//! from the UEFI specification rather than re-read; what was measured is OVMF doing it, in boot 3 of
-//! `cargo xtask install-boot`.
-//!
-//! Comparing bytes is enough because every node carries its own length: two paths whose first `n`
-//! bytes are equal have the same first nodes, cut at the same boundaries. Nothing here decodes a
-//! node, which is why it is a dozen lines rather than the device-path parser the chooser's `BUGS`
-//! once said it wanted.
-//!
+//! `0xFF`). A partition's path is its disk's with one `HARDDRIVE` node appended (recalled from the
+//! UEFI specification; measured on OVMF in boot 3 of `cargo xtask install-boot`), so **"is this
+//! partition on that disk" is "does the disk's path, without its end node, begin the
+//! partition's"**. Comparing bytes is enough, because every node carries its own length: equal
+//! first `n` bytes are the same first nodes, cut at the same boundaries. Nothing decodes a node.
+
 //! # BUGS
 //!
 //! - **A firmware that builds a partition's path some other way** (a vendor node in the middle, a

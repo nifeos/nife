@@ -385,14 +385,14 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 /// +32 covers a measured two-frame local-against-CI divergence; and raising or lowering the
 /// number is a decision, so read the `[that test kept N frames]` lines and be able to say why.
 ///
-/// Current: `24_322`, the +32 over the 24,290 the riscv64 suite keeps (aarch64 24,267; CI run
-/// 39450063569, 2026-10-20 UTC, with milestone 142 (a text display good enough that people use it
-/// instead of a GUI)'s four faces). Part of that residue is program image size rather than any
-/// test's memory. Each of `c_seam_tests`' three confiner spawns keeps a space sized by
-/// `c_confiner`'s loadable segments, 15 pages in a debug build. Spaces that map the whole initial
-/// ramdisk keep revocation-log pages sized by it, so a larger archive moves this number too. A
-/// change that grows a program can therefore move it by a few frames with no leak behind it; the
-/// `[that test kept N frames]` lines and the programs' segment pages tell the two apart.
+/// Current: `24_371`, the +32 over the 24,339 the riscv64 suite keeps (aarch64 24,325), measured
+/// locally on nightly-2026-10-23, 2026-10-24 UTC. Part of that residue is program image size rather
+/// than any test's memory. Each of `c_seam_tests`' three confiner spawns keeps a space sized by
+/// `c_confiner`'s loadable segments, 17 pages in an aarch64 debug build. Spaces that map the whole
+/// initial ramdisk keep revocation-log pages sized by it, so a larger archive moves this number
+/// too. A change that grows a program can therefore move it by a few frames with no leak behind
+/// it; the `[that test kept N frames]` lines and the programs' segment pages tell the two apart. A
+/// nightly that grows debug images moves it with no change in the tree, so a bump re-measures it.
 ///
 /// # BUGS
 ///
@@ -407,7 +407,7 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 ///   `create_rendezvous` being `pub(crate)` does not reach them, because they are in this crate.
 ///   Milestone 670 (test helpers give their clients a region to retype from) and milestone 671
 ///   (tests retype their rendezvous from their own region) are that work.
-const SUITE_PAGE_FRAME_BUDGET: usize = 24_322;
+const SUITE_PAGE_FRAME_BUDGET: usize = 24_371;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///

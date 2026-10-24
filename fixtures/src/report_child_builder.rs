@@ -2,14 +2,12 @@
 //! `kernel::user::spawn_elf_child_builder` enters this program with a building budget in slot 0, a
 //! report endpoint in slot 1 and the initial ramdisk mapped read-only at
 //! `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, its length in `x1`. It reads
-//! `report_child` out of the archive by name, builds it out of its own budget through the granular
+//! `report_child` out of the archive by name, builds it from its own budget through the granular
 //! verbs (retype an address space, copy each segment into retyped frames, retype a thread, endow
 //! it, start it) and grants it the report endpoint. The kernel never touches the child's bytes, so
-//! [`capability_witness_contract::REPORT_CHILD_WORD`] arriving on the endpoint is the whole thesis
-//! of milestone 19: a kernel that runs a workload it did not load.
-//!
-//! A failed lookup, parse or build reports word 0.
-//!
+//! [`capability_witness_contract::REPORT_CHILD_WORD`] arriving is milestone 19's whole thesis: a
+//! kernel that runs a workload it did not load. A failed lookup, parse or build reports word 0.
+
 //! # BUGS
 //!
 //! The child is loaded unmeasured (notes/trusted-init.md).

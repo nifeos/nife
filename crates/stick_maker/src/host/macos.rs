@@ -38,8 +38,8 @@ pub fn discover() -> Result<Vec<Disk>, String> {
 /// **Erase a whole disk as one FAT32 volume named `NIFE`, with an MBR partition table.**
 ///
 /// MBR rather than GPT, and it is a measured choice: `diskutil eraseDisk FAT32 ... GPT` writes a
-/// 200 MB `EFI` partition *ahead of* the data partition (the capture of disk4 and disk6 in
-/// `tests/fixtures/macos/list-external.plist` shows that layout on two disks), so the stick would
+/// 200 MB `EFI` partition *ahead of* the data partition (the two USB hard disks in
+/// `tests/fixtures/macos/list-external.plist` show that layout), so the stick would
 /// carry two FAT volumes and a firmware that only looks at the first finds an empty one. MBR gives
 /// exactly one, which every UEFI implementation and U-Boot's distro boot read.
 ///

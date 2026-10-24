@@ -212,6 +212,23 @@ XpressRICH root complex is a different host bridge (no `pci-host-ecam-generic` n
 board-side follow-up, and this driver is written to need only a working enumeration and a BAR from
 it.
 
+## The DMA escape test
+
+`a_confined_el0_server_cannot_dma_outside_its_region` is the storage twin of
+`display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu` and of `block_driver`'s two
+virtio attacker roles. The headline test asserts `confined_by_iommu`, which is a claim the boot
+made rather than one it attacked: the decorative assertion milestone 202 (every confinement test is
+a ritual until somebody breaks the confinement and watches it fail) was minted against. Here an EL0
+server points the controller at a frame outside its region, in both directions. Milestone 202's
+convention holds: a claim, a test and a replayable falsification, whose patch widens the
+controller's IOMMU domain over the victim so the escape lands.
+
+The proof is the IOMMU fault and an untouched canary, not the controller's completion status.
+QEMU's NVMe model may answer a DMA it could not perform with an error or by dropping it, and the
+GPU and virtio escape tests anchor on the fault for the same reason. A CPU read of the victim
+bypasses the IOMMU, so the kernel can read the canary while the device's view of that frame is
+unmapped. The canary is the assertion the patch flips.
+
 ## BUGS
 
 - What the driver does not withhold ("What it does not withhold", above): the IOMMU bounds the *controller* to a
@@ -228,11 +245,13 @@ it.
   answered `EIO` rather than as `CSTS.CFS`. The direct price of not mapping the controller register
   page, and a worse diagnostic than the kernel-resident driver gave.
 - A doorbell stride above `non_volatile_memory_express::MAX_DSTRD` (8) is refused rather than
-  served. Doorbell N sits
-  at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell file past the one page of
-  BAR0 the server is mapped. Kani found this; QEMU reports 0 and §86 quotes the spec calling 0 "the
-  expected doorbell stride value" for hardware, so no controller this project has met would hit it,
-  and one that did now fails loudly at bring-up naming itself.
+  served. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell
+  file past the one page of BAR0 the server is mapped. Kani found this, producing `DSTRD = 15` in
+  under a second, which puts queue 1's submission tail at `0x41000`. A real controller reporting it
+  would have met `MappedWindow`'s bounds check as a panic in the disk driver rather than a
+  diagnosis. QEMU reports 0 and §86 quotes the spec calling 0 "the expected doorbell stride value"
+  for hardware, so no controller this project has met would hit it, and one that did now fails
+  loudly at bring-up naming itself.
 - Polling only. Completions are spotted by phase-tag polls with a spin bound, not by the
   interrupt-as-message path the virtio drivers use. Right for QEMU (which completes synchronously
   inside the doorbell write) and for a boot test; wrong for a shared machine under load. The

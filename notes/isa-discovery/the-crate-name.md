@@ -1,5 +1,7 @@
 # Why the crate is `machine_discovery`
 
+*Name: provisional. After the parent's "Naming". calef names files.*
+
 An appendix of [ISA discovery](../isa-discovery.md). The parent keeps the name; this file keeps the
 reasons and the prior art behind it.
 

@@ -123,8 +123,8 @@ A confirmed slot spends nothing, so an ordinary boot of a settled machine writes
 
 ## Which failures this catches, and which it does not
 
-The table is in `uefi_loader/src/chooser.rs` beside the code and is repeated here because it is what
-somebody deciding whether to trust this needs:
+`uefi_loader/src/chooser.rs` links this table, because it is what somebody deciding whether to
+trust this needs:
 
 | failure | caught | by what |
 |---|---|---|
@@ -233,6 +233,17 @@ never uses, sixty-eight of them, to pay for a window one caller has, and the fra
 that. What a caller owes is the cost above what `AS_OVERHEAD`'s margin was already providing, which is
 `WINDOW_IN_OVERHEAD` and its reasoning at the arithmetic.
 
+## The chooser's BUGS, in full
+
+`uefi_loader/src/chooser.rs` keeps one line per entry. The longer accounts:
+
+- A power cut during the chooser's four block writes can leave the two copies disagreeing.
+  `parse` then refuses the table, and the chooser's own image boots. Untested.
+- The writes go primary-first, so for a moment neither copy parses. `ROLE_CONFIRM` writes
+  backup-first, which leaves a consistent copy throughout. Reordering is untested either way.
+- An image started from a slot has no boot file, because its `DeviceHandle` is null. So it cannot
+  install onto a second disk, and `booted_from_nvme` assumes NVMe without looking.
+
 ## See also
 
 - [Installing nife onto a disk](installing.md): rung 2a, the disk this all sits on, and why the data
@@ -242,3 +253,5 @@ that. What a caller owes is the cost above what `AS_OVERHEAD`'s margin was alrea
 - [Booting x86_64 from real firmware](x86-uefi-boot.md): the loader the chooser is half of.
 - [The GUID partition table](globally-unique-identifier-partition-table.md): the format the
   attribute bits live in, and what the fixtures pinned.
+- [The two loader-to-kernel tokens](boot-slots/the-command-line.md): why the slot and the boot
+  medium travel as words on the kernel's command line.

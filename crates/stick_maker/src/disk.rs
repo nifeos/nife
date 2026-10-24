@@ -1,25 +1,18 @@
 //! **Which disks this program may touch, and what it would do to each.**
 //!
-//! Every host describes its disks differently (`diskutil` on macOS, sysfs on Linux, drive letters
-//! on Windows), and each host module turns its description into a [`Disk`]. Everything after that
-//! is here and host-independent, which is the point: the rule that decides whether a disk may be
-//! written is one function, [`refusal`], tested once, rather than three rules that can drift.
+//! Each host module turns its own description of its disks into a [`Disk`]; from there on all is
+//! host-independent, so whether a disk may be written is one function, [`refusal`], tested once.
 //!
-//! # The rule, and why it is the removable-media bit
+//! A disk is offered only when its media is removable: the SCSI removable-media bit, read as
+//! macOS's `RemovableMedia`, Linux's `/sys/block/<dev>/removable` (or an `SD` card type on the MMC
+//! bus) and Windows' `DRIVE_REMOVABLE`. "External" or "USB" is not enough: a USB hard disk is both
+//! and is not removable (`tests/fixtures/macos/usb-*-info.plist`). See notes/boot-stick.md,
+//! "Which disks it will touch, and the measurement that decided it".
+
+//! # BUGS
 //!
-//! **A disk is offered only when its media is removable**: the SCSI removable-media bit (RMB) a USB
-//! flash stick or an SD card reader sets, which macOS reports as `RemovableMedia`, Linux as
-//! `/sys/block/<dev>/removable` (or an `SD` card type on the MMC bus), and Windows as
-//! `DRIVE_REMOVABLE`. It is the same bit read three ways.
-//!
-//! "External" or "USB" is not enough, and the development Mac this was written on is the proof: it
-//! has two USB hard disks attached, a 2 TB Seagate Portable and a 3 TB WD My Book, one holding
-//! backups. Both report `Internal = false` and `BusProtocol = USB`, and both report
-//! `RemovableMedia = false` (`tests/fixtures/macos/usb-*-info.plist`). A rule keyed on the bus would
-//! have offered a backup disk for erasing; this one never lists it.
-//!
-//! **The cost is stated rather than hidden**: a few flash sticks sold as "fixed disks" (some models
-//! built for Windows To Go) clear the bit and are not offered. See the crate's BUGS.
+//! - A flash stick sold as a "fixed disk" (some built for Windows To Go) clears the bit and is not
+//!   offered.
 
 use std::path::PathBuf;
 
@@ -133,7 +126,7 @@ pub fn refusal(disk: &Disk, policy: Policy) -> Option<Refusal> {
 ///
 /// **Exact mount points for the directories a system is mounted AT, prefixes only for the two
 /// trees whose every mount is the system's.** A volume mounted at `/home` holds everyone's home
-/// directories; one mounted at `/home/calef/stick` is somebody's stick, and so is one under the
+/// directories; one mounted at `/home/someone/stick` is somebody's stick, and so is one under the
 /// macOS temporary directory (`/var/folders/...`), which is where this crate's tests mount theirs.
 fn holds_the_system(volume: &Volume) -> bool {
     let Some(mount) = &volume.mount else {
@@ -250,20 +243,20 @@ mod tests {
 
     fn stick() -> Disk {
         Disk {
-            id: "disk8".into(),
-            description: "SanDisk Ultra".into(),
-            size: 30_752_636_928,
+            id: "disk6".into(),
+            description: "Generic USB Flash".into(),
+            size: 32_000_000_000,
             bus: "USB".into(),
             internal: false,
             removable_media: true,
             disk_image: false,
             volumes: vec![Volume {
-                id: "disk8s1".into(),
+                id: "disk6s1".into(),
                 label: "NIFE".into(),
                 filesystem: Filesystem::Fat,
                 mount: Some("/Volumes/NIFE".into()),
                 free: Some(30_000_000_000),
-                size: 30_752_636_928,
+                size: 32_000_000_000,
             }],
         }
     }
@@ -279,7 +272,7 @@ mod tests {
     fn a_usb_hard_disk_is_never_offered() {
         let disk = Disk {
             removable_media: false,
-            description: "WD My Book 1140".into(),
+            description: "Generic USB Hard Disk".into(),
             ..stick()
         };
         assert_eq!(refusal(&disk, Policy::default()), Some(Refusal::FixedMedia));
@@ -311,8 +304,8 @@ mod tests {
             );
         }
         for mount in [
-            "/media/calef/NIFE",
-            "/home/calef/stick",
+            "/media/someone/NIFE",
+            "/home/someone/stick",
             "/var/folders/xy/T/stick",
         ] {
             let mut disk = stick();
@@ -368,7 +361,7 @@ mod tests {
     fn the_roomiest_fat_volume_wins() {
         let mut disk = stick();
         let mut second = disk.volumes[0].clone();
-        second.id = "disk8s2".into();
+        second.id = "disk6s2".into();
         second.free = Some(40_000_000_000);
         disk.volumes.push(second);
         assert_eq!(plan(&disk, 1, |_| 0), Plan::Copy { volume: 1 });
@@ -377,7 +370,7 @@ mod tests {
     #[test]
     fn sizes_read_like_the_label() {
         assert_eq!(human_size(512), "512 B");
-        assert_eq!(human_size(30_752_636_928), "30.8 GB");
+        assert_eq!(human_size(32_000_000_000), "32.0 GB");
         assert_eq!(human_size(10_158_080), "10.2 MB");
     }
 
@@ -389,7 +382,7 @@ mod tests {
     fn equal_room_keeps_the_first_volume() {
         let mut disk = stick();
         let mut second = disk.volumes[0].clone();
-        second.id = "disk8s2".into();
+        second.id = "disk6s2".into();
         disk.volumes.push(second);
         assert_eq!(plan(&disk, 1, |_| 0), Plan::Copy { volume: 0 });
     }

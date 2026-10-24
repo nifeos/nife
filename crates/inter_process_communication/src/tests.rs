@@ -1,13 +1,8 @@
-//! The crate's host tests, moved out of `lib.rs` on 2026-10-12 (UTC) by lane
-//! maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is
-//! split, the parent becomes an index) as its tests grow.
-
+//! The crate's host tests.
+//!
 //! Every node in these tests is minted once, through [`token`], on a `Box` declared before its
 //! `Rendezvous`; Rust drops locals in reverse declaration order, so the rendezvous goes first
-//! and a node parked on a queue when a test ends was valid for all of its time there. Since
-//! milestone 139's round 10 that is the only obligation left: the operations are safe, and a
-//! node whose token is queued cannot be passed again, which is what several of these tests used
-//! to argue site by site.
+//! and a node parked on a queue when a test ends was valid for all of its time there.
 
 use super::*;
 

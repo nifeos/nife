@@ -1,5 +1,7 @@
 # A record that never reaches a verdict: the per-record limit
 
+*Name: provisional.*
+
 An appendix to [`notes/falsification.md`](../falsification.md), which carries the limits and the
 override.
 

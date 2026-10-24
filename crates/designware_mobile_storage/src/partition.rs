@@ -1,16 +1,11 @@
-//! **Where on a card a write cannot hurt**: the MBR, and the gap before its first partition.
-//!
-//! radon's microSD card is the card it boots from (notes/visionfive2.md, "The microSD payload"):
-//! one FAT32 partition in an MBR, holding the boot script, the kernel and the archive U-Boot loads.
-//! A write test that lands inside that partition could leave the board unbootable, so the only
-//! sectors this crate will ever name for a write are the ones **before the first partition and
-//! after sector 0**: the alignment gap a partitioning tool leaves, which no filesystem owns and
-//! U-Boot does not read when the board boots from its QSPI flash, as radon does.
-//!
-//! The rule is total and conservative. A card with no MBR signature, a protective MBR (GPT, whose
-//! header and table live in exactly that gap), no partitions, or a first partition starting at
-//! sector 1 gets no scratch range at all. The bench probe then refuses to write, and says why.
-//! A Kani harness (`proofs` in the crate root) proves the range never touches a partition or sector 0, for every table.
+//! Where on a card a write cannot hurt: the MBR, and the gap before its first partition. radon
+//! boots from its microSD card (notes/visionfive2.md, "The microSD payload"), one FAT32 partition
+//! in an MBR, so the only sectors this crate names for a write are before the first partition and
+//! after sector 0: the alignment gap no filesystem owns and U-Boot does not read when the board
+//! boots from its QSPI flash, as radon does. A card with no MBR signature, a protective MBR (GPT,
+//! whose header and table live in that gap), no partitions, or a first partition at sector 1 gets
+//! no scratch range, and the bench probe refuses to write and says why. A Kani harness (`proofs` in
+//! the crate root) proves the range never touches a partition or sector 0, for every table.
 
 /// The MBR's last two bytes on a valid table.
 pub const SIGNATURE: [u8; 2] = [0x55, 0xaa];

@@ -1,5 +1,7 @@
 # The confinement test in detail
 
+*Name: provisional. After the parent's own heading.*
+
 The test [`notes/c-seam.md`](../c-seam.md) calls the milestone: the address-space layout and its two witnesses, the five
 assertions and the control, and what the machine printed on both ISAs.
 

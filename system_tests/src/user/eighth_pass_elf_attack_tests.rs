@@ -1,15 +1,12 @@
 //! **Forged ELF images the cited tests do not shape** (an eighth outsider pass at the confinement
 //! claim, claim 22).
 //!
-//! The cited tests refuse a segment that *starts* in the kernel half and a segment whose flags are
-//! exactly `R|W|X`. This module forges the shapes around those: a segment whose arithmetic
-//! overflows the whole address space, a segment starting in band whose claimed `memsz` reaches
-//! into the kernel half, a forged image whose *second* program header names the kernel while the
-//! first is benign, and a `W|X` request dressed in vendor OS bits the standard says to ignore.
-//!
-//! Every case must be refused by `load` with the error that names why, and refusing must leave the
-//! kernel executing. Cross-ISA: the band, the halves and `load` are portable over each ISA's
-//! `Mapper` (DECISIONS §19 (architectural parity is a tenet)).
+//! The cited tests refuse a segment *starting* in the kernel half and flags of exactly `R|W|X`.
+//! Here: segment arithmetic that overflows, an in-band segment whose `memsz` reaches the kernel
+//! half, a benign first header with a second naming the kernel, and `W|X` dressed in vendor OS
+//! bits. `load` must refuse each with the error that names why, and the kernel keeps executing.
+//! Cross-ISA over each ISA's `Mapper` (DECISIONS §19 (architectural parity is a tenet)). See
+//! notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::*;
 
@@ -121,12 +118,10 @@ fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
 
 /// **A forged image whose second program header names the kernel is refused.**
 ///
-/// The first segment is exactly what every loading test in this suite already trusts: in band,
-/// read-only, executable, sixteen bytes. The refusal is the band check's, and that is the stronger
-/// fact: a second segment reaching for the kernel half stretches the image's own span past every
-/// limit before a single page of it is spent, and `image_end` in the refusal names the kernel half
-/// page it was aiming at. A loader that inspected only the first program header would have
-/// reported success here.
+/// The first segment is what every loading test here trusts: in band, `R|X`, sixteen bytes. The
+/// refusal is the band check's, the stronger fact: the second segment stretches the image's span
+/// past every limit before a page is spent, and `image_end` names the kernel-half page it aimed
+/// at. A loader that inspected only the first program header would have reported success.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
