@@ -1,5 +1,16 @@
 //! The `cargo xtask test` command: the host tests in milliseconds, then each architecture's
-//! kernel under QEMU, and the Miri run beside them.
+//! kernel under QEMU, and the Miri run beside them. See notes/xtask-test.md.
+
+//! # EXAMPLES
+//!
+//! ```text
+//! $ script/test --arch aarch64 --test frames_are_zeroed
+//! --- test filter: frames_are_zeroed (kernel legs only; the host crates have `cargo test`) ---
+//! --- kernel tests, aarch64 (QEMU 11.1.2) ---
+//! running 1 of 312 tests (filter: frames_are_zeroed)
+//! test kernel::memory::tests::frames_are_zeroed ... ok
+//! test result: ok. 1 passed
+//! ```
 
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -28,23 +39,11 @@ use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, time_record, user
 
 /// The architecture legs `test` should run: all three by default, the ones `--arch` names otherwise.
 ///
-/// **`--arch` did not exist before milestone 59**, and this is the correction worth stating: the
-/// milestone brief said to follow how it "already threads through", and nothing in the tree parsed
-/// it. `test` ran both ISA legs unconditionally, which is right for the parity gate (§19) and wrong
-/// for a CPU-model matrix that wants the riscv64 leg four times over with a different `-cpu` each
-/// time. So the flag is new here, and the default is unchanged: no `--arch` means both legs, and
-/// the parity gate cannot be weakened by forgetting to pass something.
-///
-/// **It was `Both` and is now `All`** (milestone 161, roadmap item 4), because there are three
-/// architectures. The rename is not cosmetic: the two predicates below were written as
-/// `self != the_other_one`, which is correct for exactly two variants and answers `true` for every
-/// leg the moment there is a third. That shape is the same default-arm trap `crates/elf`'s
-/// `EXPECTED_MACHINE` fell into on the same day, so both are now explicit `matches!`.
-///
-/// **It is a set, not an enum, since 2026-10-12 (UTC)** (lane maintainer/split-test-job, #1930),
-/// because CI's suite runs as two jobs and one of them runs two legs: `--arch aarch64,riscv64`.
-/// An enum would need a variant per combination; three flags have no default arm to fall into. The
-/// constants keep the four values every other caller names.
+/// A set rather than an enum, because CI's suite runs as two jobs and one of them runs two legs
+/// (`--arch aarch64,riscv64`). An enum needs a variant per combination; three flags have no default
+/// arm for a leg to fall into, so each predicate is explicit. No `--arch` means every leg, so the
+/// parity gate (§19) cannot be weakened by forgetting a flag. The constants keep the four values
+/// every other caller names. See notes/xtask-test.md.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) struct ArchLegs {
     aarch64: bool,
@@ -122,46 +121,16 @@ impl ArchLegs {
     }
 }
 
-/// Host tests first, then the kernel under QEMU.
-///
-/// The host crates (`device_tree_blob`, `frames`) hold the pure logic and run in *milliseconds*
-/// with no emulator, so they fail fast and cheap. Only once they pass is it worth spending twenty
-/// seconds booting QEMU. See DECISIONS §7.
-///
-/// Five flags narrow what runs, and all five default to today's behaviour:
-///
-/// - `--arch aarch64|riscv64|x86_64` runs one ISA leg instead of all three (milestone 59; the
-///   third arrived with milestone 161 (the x86_64 kernel port)). A comma-separated list runs those legs, in the suite's own
-///   order (`--arch aarch64,riscv64`, 2026-10-12 UTC, for CI's two suite jobs).
-/// - `--no-host` skips the host pass (2026-10-12 UTC, name provisional). CI's `test-x86_64` row
-///   passes it because `test-aarch64-riscv64` has already run that pass on the same commit, and
-///   running it twice cost about two minutes of the shorter job for nothing.
-/// - `--cpu <model>` picks the emulated CPU model (`NIFE_CPU`, read by both QEMU runners).
-///   Unset means `cortex-a72` on aarch64 and `rv64` on riscv64, exactly as before (milestone 59).
-/// - `--hvf` runs the aarch64 kernel leg on the physical Apple Silicon core (milestone 81). It is
-///   aarch64-only by construction, so it narrows the run to that leg and refuses `--cpu`; see
-///   [`hvf_kernel_leg`] for the mechanism and notes/hvf-leg.md for what differs.
-/// - `--test <substring>` runs only the kernel tests whose full path contains `<substring>`, the
-///   same shape `cargo test <name>` has (milestone 210). It selects TESTS, not architectures: every
-///   leg still runs, because a filter that quietly narrowed to one ISA is what DECISIONS §19
-///   distrusts. It skips the host pass (those crates already have `cargo test`), skips the post-run
-///   image checks, and drops the host-side referees' verdicts, all because those assert what the
-///   unselected tests would have written. A filter matching nothing fails the run rather than
-///   reporting a green zero.
-///
-/// # EXAMPLES
-///
-/// ```text
-/// $ script/test --arch aarch64 --test frames_are_zeroed
-/// --- test filter: frames_are_zeroed (kernel legs only; the host crates have `cargo test`) ---
-/// --- kernel tests, aarch64 (QEMU 11.1.2) ---
-/// running 1 of 312 tests (filter: frames_are_zeroed)
-/// test kernel::memory::tests::frames_are_zeroed ... ok
-/// test result: ok. 1 passed
-/// ```
-///
-/// `script/cpu_matrix` is the caller that needs the first two (notes/cpu-models.md); `script/ci-build`
-/// is the caller that needs the third, and the list form of `--arch` and `--no-host`.
+/// Host tests first, then each architecture's kernel under QEMU, the boot tour on a screen and the
+/// post-run image checks; true when all passed. The host crates fail in milliseconds with no
+/// emulator, so they go first (DECISIONS §7). Every flag defaults to a full run:
+/// `--arch aarch64|riscv64|x86_64[,...]` runs the named legs in the suite's order; `--no-host` skips
+/// the host pass; `--cpu <model>` sets `NIFE_CPU`; `--hvf` runs the aarch64 leg on the physical core
+/// ([`hvf_kernel_leg`], notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
+/// kernel tests on every leg (§19), skips the host pass, the image checks and the referees'
+/// verdicts, and fails when nothing matches; `--repeat <N>` repeats that selection in one boot.
+/// Callers: `script/cpu_matrix` (`--arch`, `--cpu`; notes/cpu-models.md) and `script/ci-build`
+/// (`--hvf`, an `--arch` list, `--no-host`). See notes/xtask-test.md for each flag's reasons.
 pub(crate) fn test() -> bool {
     let Some((hvf, legs)) = legs_from_flags() else {
         return false;
@@ -203,60 +172,23 @@ pub(crate) fn test() -> bool {
     if legs.aarch64() && !aarch64_suite(hvf, filter.is_some()) {
         return false;
     }
-    // The same booted kernel test suite on the second architecture (parity workstream B). The
-    // portable tests (scheduler, capabilities, revocation, memory, sync) run on RISC-V's real Sv39
-    // kernel; what stays gated to aarch64 is what genuinely needs aarch64 (the userspace-exec suite's
-    // hand-written machine code, and SMP). The two interrupt-delivery tests used to be on that list
-    // because they trigger with a GIC SGI; milestone 19 made the trigger per-arch instead, so they
-    // run here too. RISC-V exits via the sifive_test finisher, same harness. See
-    // notes/riscv-parity-scope.md and notes/interrupts.md.
+    // The same booted suite on riscv64's Sv39 kernel (parity workstream B), exiting through the
+    // SiFive test finisher. What stays aarch64-only genuinely needs aarch64: the userspace-exec
+    // suite's hand-written machine code, and SMP. See notes/riscv-parity-scope.md.
     if legs.riscv64() && !riscv64_suite(filter.is_some()) {
         return false;
     }
-    // **The third architecture** (milestone 161, roadmap item 4). The same booted kernel suite on
-    // x86_64's real 4-level map, scheduler and ring 3, exiting through `isa-debug-exit` where the
-    // other two use semihosting and the SiFive test finisher.
-    //
-    // **It builds a userspace archive and one disk image**, which is where it now sits between the
-    // other two rather than below both. `initial_ramdisk_x86` compiles every program in `user/` for
-    // this target and packs the same table RISC-V's archive uses, so the thirty
-    // `cfg(initial_ramdisk)` test modules are in this binary; since milestone 164 (x86_64 userspace
-    // can't build `aes`) it packs the FS server and `mkfs` too. What it still does not build is a
-    // `std` farm. The disk fixtures are the other two legs' five (the leg below builds them all
-    // since milestone 420 (x86_64 has one fixture of five and no NIC, GPU, keyboard or RNG), and
-    // the runner attaches each as one `virtio-blk-pci` function), plus the NVMe image, the
-    // x86_64/VT-d data point DECISIONS §86 (whether an NVMe driver can leave the kernel) asked
-    // for once milestone 161 (the x86_64 kernel port) had landed VT-d: `mknvmedisk` writes it
-    // here the same way the aarch64 and riscv64 legs do, since NIFE_NVME names this leg's image
-    // too (set unconditionally above) and the runner attaches a controller behind it.
-    //
-    // **`NIFE_INITIAL_RAMDISK` is set here rather than left to `cargo()`**, and it has to be: this
-    // leg runs last, so whatever the aarch64 or riscv64 leg left in that variable is still there,
-    // and an x86 kernel handed an aarch64 archive refuses every program in it with a `machine`
-    // error that names neither the archive nor the leg. That wrapper's `NIFE_DISK` names the same
-    // path, and the boards' legs leave `NIFE_NET` behind in a full run; this leg sets both itself,
-    // below, so a single-architecture run describes its own machine.
+    // The third architecture (milestone 161, roadmap item 4), exiting through `isa-debug-exit`.
+    // It runs last and sets its own archive, disk and NIC, since the earlier legs leave theirs in
+    // the environment. notes/xtask-test.md has what it builds and attaches.
     if legs.x86_64() && !x86_64_suite(filter.is_some()) {
         return false;
     }
-    // **And the boot tour on a screen, on the two boards**, milestone 243 (a machine with no serial
-    // port). The x86_64 leg above proves the same claim through `uefi_boot`, on a framebuffer the
-    // firmware lit; these two prove it on a `ramfb`, which is what QEMU's `virt` can present. One
-    // extra TCG boot per leg, and it is the only thing in this suite that can fail when the screen
-    // is black: every other assertion here reads a serial line that says the same words whether or
-    // not a pixel was written.
-    //
-    // It is a boot of its own rather than a stage of the suite above, because `ramfb` adds a QEMU
-    // console and the suite's machine already has a virtio-gpu on console 0.
-    //
-    // **Not under `--cpu`**, and this is a cost decision rather than a way around a failure. The
-    // matrix (`script/cpu-matrix`) runs this suite five times to narrow the *ISA*, and nothing on
-    // the screen path varies with `-cpu`: the `fw_cfg` conversation is byte moves and MMIO stores,
-    // `screen_console` is integer arithmetic and byte stores, and every instruction either uses is
-    // one the three hundred tests above have already executed on that same model. Five more TCG
-    // boots buy a claim that cannot differ between models, and the script's own warning ("do not
-    // route around it by dropping the model") is not what this is: no model is dropped, and the leg
-    // still runs on every ordinary `script/test`, including `--arch riscv64`.
+    // The boot tour on a `ramfb` for the two boards, milestone 243 (a machine with no serial port):
+    // the only check here that fails when the screen is black. A boot of its own, because `ramfb`
+    // adds a QEMU console and the suite's machine has a virtio-gpu on console 0. Not under `--cpu`,
+    // a cost decision: nothing on the screen path varies with `-cpu`, and the leg still runs on
+    // every ordinary `script/test`. See notes/serial-less-output/ramfb.md.
     if flag_value("--cpu").is_none() {
         if legs.aarch64() && !crate::screen::screen_boot("aarch64") {
             return false;
@@ -373,18 +305,10 @@ pub(crate) fn export_test_repeat(filter: Option<&str>) -> bool {
 /// `--test`, onto `NIFE_TEST_FILTER` for the kernel's build, or the variables cleared when no flag
 /// was given. Returns the filter.
 pub(crate) fn export_test_filter() -> Option<String> {
-    // **`--test <substring>`: run one kernel test rather than the suite** (milestone 210).
-    //
-    // It rides to the kernel through the environment like `--cpu` does, but it lands in a different
-    // place: `kernel/build.rs` bakes it into the test binary as a `rustc-env`, because a kernel test
-    // runs inside a booted kernel and there is no command line to hand it. Changing it costs a
-    // kernel relink (~2.3 s) and buys the ~53 s the aarch64 suite spends running 312 tests. Unset it
-    // when no flag was given, on `--cpu`'s reasoning exactly: a stale value in the caller's shell
-    // must not silently change what a plain `script/test` means.
-    //
-    // **It does not narrow the architectures**, and that is deliberate (DECISIONS §19). A filter
-    // that quietly ran one ISA would be the parity hole the tenet distrusts; say `--arch aarch64`
-    // as well when one leg is what you want.
+    // `--test <substring>` (milestone 210) rides the environment into `kernel/build.rs`, which
+    // bakes it into the test binary as a `rustc-env`: a booted kernel has no command line. Unset
+    // without the flag, so a stale shell value cannot change what a plain `script/test` means. It
+    // does not narrow the architectures (DECISIONS §19). Timings in notes/xtask-test.md.
     let filter = flag_value("--test");
     match filter.as_deref() {
         Some(f) => {
@@ -450,24 +374,15 @@ fn host_pass(hvf: bool, filtered: bool) -> bool {
     }
 }
 
-/// The host-excluded crates, derived rather than listed (`helpers/host-excluded-crates.sh`).
+/// The host-excluded crates as `--exclude <crate>` pairs for a `--workspace` selection, derived by
+/// `helpers/host-excluded-crates.sh` rather than listed. Panics when the helper cannot run or fails.
 ///
-/// Every workspace member that reaches `crates/user_mode_runtime` cannot compile for the host:
-/// `svc` and `ecall` there are EL0 syscalls, a fault with no kernel under them. One derivation
-/// serves the whole tree (script/lint's two clippy passes, script/coverage, script/mutation, and
-/// this file's host and Miri passes), and script/lint's "the host pass excludes exactly the
-/// bare-metal crates" gate fails if this file stops calling it or if the derivation disagrees
-/// with the `cargo metadata` answer it checks against.
-///
-/// The returned arguments are `--exclude <crate>` pairs, ready to append to a `--workspace`
-/// selection. Excluding the whole set is what makes the selection safe, and it has to be the
-/// whole set: `--exclude` removes a package from the test SELECTION, not from the dependency
-/// graph, so excluding `user_mode_runtime` alone stopped working on 2026-08-03, when three crates
-/// took unconditional dependencies on it and cargo still had to build it for them. The host pass
-/// stopped compiling on x86_64 and nobody noticed, because CI moved to `ubuntu-24.04-arm` the
-/// same day and on an aarch64 host it builds by accident. A derivation cannot lag behind a new
-/// dependency the way that hand list did: the next crate to take one lands in the set by asking,
-/// not by being remembered.
+/// Every member that reaches `crates/user_mode_runtime` cannot compile for the host (`svc` and
+/// `ecall` there are EL0 syscalls), and the whole set must go: `--exclude` removes a package from the
+/// test selection, not from the dependency graph. One derivation serves script/lint's two clippy
+/// passes, script/coverage, script/mutation and this file's host and Miri passes. script/lint's
+/// "the host pass excludes exactly the bare-metal crates" gate fails if this file stops calling it
+/// or the derivation disagrees with `cargo metadata`. See notes/xtask-test.md.
 fn host_excluded_args() -> Vec<String> {
     let output = Command::new("sh")
         .arg("helpers/host-excluded-crates.sh")
@@ -497,19 +412,9 @@ fn host_excluded_args() -> Vec<String> {
 /// The host pass itself ([`host_pass`] says when it runs).
 fn host_tests() -> bool {
     eprintln!("--- host tests (pure logic, no emulator) ---");
-    // Every host crate, by asking cargo which ones those are instead of listing them.
-    //
-    // This was a hand-maintained list of twenty `-p` flags, and it drifted exactly the way a
-    // hand-maintained list does. It was written because `paging`, `heap` and `slab` were silently not
-    // run for four milestones; by milestone 51 (wall-clock time, the `date` command, and an NTP service) it had five crates missing again, and `filesystem_contract`,
-    // `compositor`, `video_terminal`, `bitmap_font` and `grant_plan` carried **82 host tests that this gate never ran**. All
-    // 82 passed when finally run, which is the point: nobody noticed because nothing failed, and a
-    // gate that quietly covers less than it claims is the failure mode script/fmt's `--check` bug
-    // already cost this project a day over.
-    //
-    // The selection is now `--workspace` with the DERIVED exclusions (see
-    // [`host_excluded_args`]). `kernel` and `system_tests` stay here by judgment rather than the
-    // derivation: they are bare metal through `kernel`, which the dependency walk does not see.
+    // Every host crate, by asking cargo rather than keeping a list ([`host_excluded_args`]).
+    // `kernel` and `system_tests` stay out by judgment: they are bare metal through `kernel`,
+    // which the dependency walk does not see.
     let mut args: Vec<String> = ["test", "--workspace"]
         .iter()
         .map(|s| s.to_string())
@@ -525,16 +430,11 @@ fn host_tests() -> bool {
         return false;
     }
 
-    // The vendored RedoxFS pin (vendor/redoxfs, milestone 32) is kept honest here, both halves of
-    // vendor/README.md's promise. Both are driven by --manifest-path because the engine and the
-    // host tool are their OWN workspaces, deliberately outside ours so upstream code never reaches
-    // our clippy/fmt gates (see the workspace `exclude` in Cargo.toml).
-    //
-    // First: the host tool's round trip (mkfs, put, ls, cat) against the pinned engine, the same
-    // code phase 2's FS server will open images with, so a regression is caught on the host in
-    // milliseconds. Second: the engine's no_std core built for BOTH bare-metal targets, because
-    // upstream does not CI the no_std path and it bit-rotted once already (the two Vec imports the
-    // pin carries); this build catches the next such regression instead of phase 2 doing it.
+    // The vendored RedoxFS pin (vendor/redoxfs, milestone 32), both halves of vendor/README.md's
+    // promise, by --manifest-path because the engine and the host tool are their own workspaces,
+    // outside our clippy/fmt gates. The host tool's round trip (mkfs, put, ls, cat) runs against
+    // the pinned engine; the engine's no_std core is built for both bare-metal targets below,
+    // because upstream does not CI the no_std path.
     eprintln!();
     eprintln!("--- vendored redoxfs: host round trip + no_std core (both targets) ---");
     if !run(
@@ -743,14 +643,9 @@ fn riscv64_suite(filtered: bool) -> bool {
     if !redoxfs_server_build(RISCV_TARGET) || !initial_ramdisk_riscv() {
         return false;
     }
-    // **A fresh RedoxFS image for this leg.** The two ISA legs share one image path, and the
-    // aarch64 leg above WRITES it (the std::fs test and the FS client both do). Reusing it here
-    // would make the riscv leg's writes land on an image a previous boot mutated, so the legs
-    // would be order-coupled and neither would be reproducible on its own. Each leg gets the
-    // same known-good fixture instead. This is test determinism, not a workaround: the
-    // cross-boot write failure it separates out is real, and notes/fs-server.md carries it as a
-    // tracked open item with the exact recipe to reproduce it (run one leg, then the other,
-    // without regenerating in between).
+    // Fresh images for this leg: the aarch64 leg writes the shared image, and reusing it would
+    // order-couple the legs. The cross-boot write failure this separates out is a tracked item in
+    // notes/fs-server.md, with its recipe.
     if !mkredoxfs() || !mkredoxfs_crash() || !mkgptdisk() || !mkblankdisk() || !mknvmedisk() {
         return false;
     }
@@ -796,20 +691,10 @@ fn x86_64_suite(filtered: bool) -> bool {
         "--- kernel tests, x86_64 (QEMU q35, {}) ---",
         crate::host::qemu_version("x86_64")
     );
-    // The FS server for this target BEFORE the archive that packs it (milestone 164), the same
-    // order the aarch64 and riscv64 legs use. `mkdisk` since milestone 215 (a PCI function's
-    // interrupt on x86_64), because this runner attaches the sibling `-pci.img` as a
-    // virtio-blk-pci function, and `mkredoxfs` since milestone 303, because it now attaches the
-    // `-redoxfs.img` sibling as a second one. The FS tests reach a real filesystem here. Since
-    // milestone 420 (x86_64 has one fixture of five and no NIC, GPU, keyboard or RNG) the runner
-    // attaches the other three fixtures the same way (the crash disk as the third function, the
-    // GPT and blank disks as the fourth and fifth), so this leg builds them like the other two
-    // legs do.
-    //
-    // **It runs after the other two legs, and regenerates every image they wrote**, which is
-    // the same freshness discipline the riscv64 leg's own `mkredoxfs` call documents: a leg
-    // that wrote to an image a previous leg mutated would be order-coupled and reproducible
-    // only in sequence. Each leg gets the known-good fixture.
+    // The FS server before the archive that packs it (milestone 164), as on the other legs. The
+    // runner attaches five fixtures as virtio-blk-pci functions (milestones 215, 303 and 420), so
+    // this leg builds all five, regenerating every image the earlier legs wrote so it is not
+    // order-coupled to them.
     if !redoxfs_server_build(X86_TARGET)
         || !initial_ramdisk_x86()
         || !mkdisk()
@@ -837,12 +722,9 @@ fn x86_64_suite(filtered: bool) -> bool {
     // spawned, and the only thread xtask ever starts (the transcript reader in
     // swish_check_leg) copies pipe bytes into a String and never touches the environment.
     unsafe { std::env::set_var("NIFE_DISK", disk_path()) };
-    // The e1000e NIC (milestone 494 (a driver for the network card a PC actually has)), on the
-    // riscv64 leg's terms: `attach_test_leg_devices` does
-    // not export NIFE_NET, so before milestone 420 only a full run had the NIC here (the value
-    // the riscv64 leg set leaked into this one), and an `--arch x86_64` run booted NIC-less and
-    // skipped its e1000e tests where the same tests run in the full suite. One machine per run,
-    // whichever legs it asked for.
+    // The e1000e NIC (milestone 494 (a driver for the network card a PC actually has)), set here
+    // because `attach_test_leg_devices` does not export NIFE_NET: an `--arch x86_64` run would boot
+    // NIC-less where a full run inherits the riscv64 leg's value. One machine per run.
     //
     // SAFETY: `set_var` became unsafe in edition 2024 because it races other threads. xtask is
     // single-threaded here: this runs on the main thread before the child that reads it is
@@ -903,22 +785,14 @@ fn x86_64_suite(filtered: bool) -> bool {
     true
 }
 
-/// **And one more boot, on a machine with a bridge on it** (milestone 320 (every PCI bus the
-/// machine has, not just bus zero)). `q35` is a flat root complex: every device hangs off bus 0, which is why a kernel that mapped one
-/// megabyte of configuration space and enumerated bus 0 passed every test in this tree for a
-/// year and then found no disk at all on the first real machine it met. `NIFE_PCIE_ROOT_PORT`
-/// puts the NVMe controller behind a `pcie-root-port`, which is the topology xenon's M.2 slot
-/// has.
+/// **One more boot, with the NVMe controller behind a `pcie-root-port`** (milestone 320 (every PCI
+/// bus the machine has, not just bus zero)), the topology xenon's M.2 slot has. `q35` is flat, so a
+/// kernel that enumerates only bus 0 passes there. Returns the test's verdict.
 ///
-/// **One test, not the suite**, and that is the cost decision stated where it is paid. The
-/// claim needing a second topology is one claim (the walk follows a bridge and finds what is
-/// behind it); re-running two hundred tests under it would buy coverage of the tests rather
-/// than of the topology, the same argument `uefi_boot` above makes about firmware. It costs
-/// about three seconds.
-///
-/// Skipped under `--test`, like the image checks below and for the same reason: the filter
-/// names a kernel test, and clobbering it here would run something the caller did not ask
-/// for and report it as what they did.
+/// One test, `found_on_the_bus_behind_it`, not the suite: the claim needing a second topology is
+/// that the walk follows a bridge, and re-running the suite would cover the tests rather than the
+/// topology. About three seconds. Skipped under `--test`, whose filter this would clobber, running
+/// something the caller did not ask for. See notes/xtask-test.md.
 fn x86_64_behind_a_root_port() -> bool {
     eprintln!();
     eprintln!("--- kernel test, x86_64 with the NVMe behind a PCIe root port ---");
@@ -947,19 +821,13 @@ fn x86_64_behind_a_root_port() -> bool {
     bridged
 }
 
-/// **And the whole suite again, on a machine whose IOMMU is AMD-Vi** (lane `amd-vi`,
-/// provisional). `q35` with `-device amd-iommu` writes an IVRS and no DMAR, so the kernel
-/// brings up `arch/x86_64/amd_vi.rs` instead of VT-d, and every confinement test above
-/// (the virtio and NVMe DMA escapes among them) runs against the other unit. The whole
-/// suite rather than the escape tests alone, because the claim is that every device the
-/// kernel confines is confined on this hardware too, and DECISIONS §19 (architectural
-/// parity is a tenet) says the same suite proves a capability on every machine it ships
-/// on; the cost is one more PVH boot of each image. Fresh images first, on the freshness
-/// rule the leg above states.
-///
-/// Skipped under `--test`, like the root-port boot and for its reason. A caller who wants
-/// one test on this machine sets `NIFE_IOMMU=amd` for the whole run, which is what a
-/// falsification record's `Environment:` line does.
+/// **The whole suite again, on a machine whose IOMMU is AMD-Vi** (lane `amd-vi`, provisional).
+/// `q35` with `-device amd-iommu` writes an IVRS and no DMAR, so the kernel brings up
+/// `arch/x86_64/amd_vi.rs` and every confinement test (the virtio and NVMe DMA escapes among them)
+/// runs against the other unit. The whole suite, because DECISIONS §19 (architectural parity is a
+/// tenet) has the same suite prove a capability on every machine it ships on; one PVH boot per image.
+/// Returns the verdict. Skipped under `--test`; a caller wanting one test here sets `NIFE_IOMMU=amd`
+/// for the run, as a falsification record's `Environment:` line does.
 fn x86_64_on_amd_vi() -> bool {
     eprintln!();
     eprintln!("--- kernel and system tests, x86_64 with AMD-Vi in place of VT-d ---");
@@ -997,20 +865,12 @@ fn x86_64_on_amd_vi() -> bool {
 }
 
 /// FS-level consistency after the runs (milestone 32 (a real filesystem: RedoxFS behind a
-/// capability FS server) phase 2): reopen the RedoxFS image with the
-/// host tool and confirm the FS server's write persisted and the filesystem still parses. This
-/// checks the image of whichever leg ran LAST, each of which regenerates the fixture and then
-/// writes it: x86_64 in a full run (milestone 303 (x86_64's FS service has a
-/// server and no disk it can find) gave it a RedoxFS disk), riscv64 when
-/// `--arch x86_64` was not asked for, aarch64 when it was the only leg.
-///
-/// **The crash and blank disks have an x86_64 shape now** (milestone 420): the runner attaches
-/// all five fixtures and the x86_64 leg writes the shared fixture and the blank disk, but no
-/// crash test runs on this ISA (the twins in `filesystem_tests` and `riscv_virtio_tests` are
-/// cfg-gated to their ISAs), so the crash check would open the pristine fixture and pass without
-/// witnessing anything. Until the crash test has an x86_64 arm, its host check runs only when
-/// the leg that ran last is one that runs the test. A check whose subject did not happen is
-/// worse than no check.
+/// capability FS server) phase 2): reopen the images with the host tool and confirm the FS server's
+/// writes persisted and the filesystems still parse. The images are the last leg's: x86_64 in a
+/// full run, riscv64 when `--arch x86_64` was not asked for, aarch64 when it was the only leg. No
+/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtio_tests` are cfg-gated
+/// to their ISAs), so after an x86_64 leg the crash check is skipped: a check whose subject did not
+/// happen is worse than no check. See notes/xtask-test.md.
 fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {
     // **Not under a filter** (milestone 210 (no kernel test can be run by name, so one
     // falsification costs a whole suite)), for the same reason the `--arch x86_64` guard
@@ -1022,11 +882,7 @@ fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {
     }
     eprintln!();
     eprintln!("--- redoxfs image consistency after the run (host tool) ---");
-    // The checks read the images of whichever leg ran LAST, each of which regenerates every
-    // fixture and then writes it. An x86_64 last leg leaves its own shared fixture and its own
-    // (now written) blank disk, but a pristine crash disk; on the other two ISAs all three
-    // checks have a subject. The shared fixture check runs either way: every leg's FS tests
-    // write it.
+    // The shared fixture check runs either way: every leg's FS tests write it.
     if legs.x86_64() {
         return redoxfs_check_after_run() && blank_check_after_run();
     }
@@ -1093,42 +949,16 @@ fn filtered_leg(arch: &str, target: &str) -> bool {
     true
 }
 
-/// **The aarch64 kernel suite on the physical Apple Silicon core** (milestone 81, `--hvf`).
+/// One test image on the physical Apple Silicon core (milestone 81, `--hvf`). Returns the verdict
+/// and how many tests its harness selected; `watch_devices` adds the scanout referee and inbound
+/// prober, which only the system suite needs.
 ///
-/// # Why this is not just `cargo test` with an env var set
-///
-/// **QEMU does not intercept ARM semihosting under HVF**, and the whole test harness reports its
-/// verdict through it: the kernel's `testing::runner` ends in `semihosting::exit`, and so do the panic
-/// handler and both watchdogs. Measured against QEMU 11.0.2 with a nine-instruction guest that
-/// writes a byte to the PL011 and then executes the semihosting trap: under TCG the process exits
-/// at the trap, under HVF the byte appears and `hlt #0xf000` never returns. So under HVF the guest
-/// prints its result and then wedges, and cargo (which waits for the child) would wait forever.
-///
-/// The answer is the one `run_bench` already uses for the same reason: **own the QEMU child and
-/// read its transcript.** We ask cargo for the test ELF without running it, hand that ELF to the
-/// same runner script everything else boots through, and read stdout until the harness says how it
-/// went. Three markers decide the verdict, all of them printed *before* the exit that will not
-/// happen:
-///
-/// - `test result: ok. N passed` from the runner: the suite passed;
-/// - `[PANIC] ` from the panic handler: a failing assertion, which is a failing test;
-/// - `WATCHDOG:` from either watchdog: a hang or a livelock, also a failure.
-///
-/// Reaching end of output with none of them means QEMU died on its own, which is a failure too.
-/// The guest's own watchdogs are what bound this leg, exactly as they bound the TCG one: they still
-/// fire (the virtual timer is passed through and QEMU injects the interrupt), and their message is
-/// what we read. So there is no host-side deadline.
-///
-/// # The referee runs beside it, on a thread, and it has to
-///
-/// [`ScanoutReferee`] is not optional here even though it is a *display* check: it is also what
-/// presses keys, over QEMU's monitor, and the keyboard test asserts that a keystroke arrived
-/// ("the keyboard driver came up but never typed anything in ten seconds"). Nothing in the guest
-/// can press a key. Reading the transcript blocks, so the referee is driven from a second thread
-/// and joined when the verdict is in. It touches a unix socket and two files and never the
-/// environment.
-///
-/// One test image on the physical core. Returns the verdict and how many tests its harness selected.
+/// QEMU does not answer ARM semihosting under HVF, and the harness reports through it, so the guest
+/// prints its verdict and wedges. Like `run_bench`, this owns the QEMU child and reads the
+/// transcript: `test result: ok.` passes, `[PANIC] ` or `WATCHDOG:` fails, and output ending with
+/// neither fails. The guest's watchdogs bound the leg, so there is no host deadline. The referee
+/// runs on a thread because it presses the keys the keyboard test waits for, and it never touches
+/// the environment. See notes/hvf-leg.md and notes/hvf-leg/semihosting.md.
 fn hvf_kernel_leg(package: &str, watch_devices: bool) -> (bool, usize) {
     let Some(elf) = kernel_test_elf(package, TARGET, "test --hvf") else {
         return (false, 0);
@@ -1143,16 +973,12 @@ fn hvf_kernel_leg(package: &str, watch_devices: bool) -> (bool, usize) {
         return (false, 0);
     }
 
-    // Constructed before the child, because it is what sets `NIFE_GPU_MON`: the runner reads
-    // that when it builds the QEMU command line, so a referee born later would find no monitor.
-    //
-    // Only the system suite paints the scanout and answers the network (milestone 609 (the system
-    // tests leave the kernel crate)), so only its run gets either.
+    // Constructed before the child, because it sets `NIFE_GPU_MON`, which the runner reads when it
+    // builds the QEMU command line. Only the system suite paints and answers the network
+    // (milestone 609 (the system tests leave the kernel crate)).
     let referee = watch_devices.then(|| ScanoutReferee::new("aarch64"));
-    // And the inbound prober, for the same reason and on the same terms: it sets
-    // `NIFE_HOSTFWD_PORT` before the child exists, and it runs on its own thread throughout. The
-    // accept test is not accelerator-sensitive, but it is in the suite, so a leg without a prober
-    // would fail it. Its "before the child" placement is load-bearing exactly as the referee's is.
+    // Before the child too, since it sets `NIFE_HOSTFWD_PORT`. The accept test is in the suite, so
+    // a leg without a prober would fail it.
     let mut prober = watch_devices.then(|| InboundProber::new("aarch64"));
 
     let mut cmd = Command::new(RUNNER);
@@ -1181,10 +1007,8 @@ fn hvf_kernel_leg(package: &str, watch_devices: bool) -> (bool, usize) {
     let stdout = child.stdout.take().expect("piped stdout");
     let (verdict, selected, load) = relay_until_verdict(stdout, prober.as_mut());
 
-    // A panic ends the suite on either leg (no unwinding in the custom test framework), so the
-    // scanout and inbound checks below then report on a guest that may never have reached the tests
-    // they referee. On 2026-09-24 one calibration failure printed four more FAILED lines that were
-    // all consequences of it, and they read as four more findings. Say which failure is first.
+    // A panic ends the suite (no unwinding in the custom test framework), so a scanout or inbound
+    // failure reported after it may only mean the guest never reached that test.
     if verdict == Some(false) {
         eprintln!(
             "test --hvf: the suite stopped at the failure above; a scanout or inbound failure \
@@ -1336,11 +1160,8 @@ fn relay_until_verdict(
 
 /// The leg's verdict from the transcript's and the referees' (`watched`).
 fn hvf_verdict(verdict: Option<bool>, watched: bool) -> bool {
-    // **A filtered run drops both verdicts**, as `test`'s own doc promises for every leg: the scanout
-    // and inbound tests were not selected, so their referees watch a guest that never ran them and
-    // fail on the absence. This leg printed three scanout FAILs and an inbound FAIL under `--test`
-    // until 2026-09-26, when milestone 121 (`ripgrep` on nife: enumeration as a capability)'s
-    // lane met it with its two selected tests passing.
+    // A filtered run drops both verdicts, as `test`'s doc promises: the scanout and inbound
+    // referees watch a guest that never ran their tests, and fail on the absence.
     let filtered = std::env::var_os("NIFE_TEST_FILTER").is_some_and(|f| !f.is_empty());
     match verdict {
         Some(true) => filtered || watched,
@@ -1424,36 +1245,16 @@ pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<
     found
 }
 
-/// **The host tests again, under Miri's interpreter** (milestone 79, notes/undefined-behavior.md).
+/// **The host tests again, under Miri's interpreter** (milestone 79): aliasing (tree borrows),
+/// provenance, uninitialized reads, leaks. Returns cargo's verdict. See notes/undefined-behavior.md.
 ///
-/// Miri checks the rules nothing else in this tree checks: aliasing (tree borrows), pointer
-/// provenance, uninitialized reads, leaks. The crate selection is `test()`'s: `--workspace` with
-/// the DERIVED host-excluded set ([`host_excluded_args`], `helpers/host-excluded-crates.sh`), so
-/// a crate that cannot compile for the host is out the moment the dependency graph says so. This
-/// list had drifted from `test()`'s and is the reason the selection is derived rather than
-/// restated: four bare-metal crates were missing here, invisible on CI's aarch64 runner, where
-/// they compile by accident.
-///
-/// Four judgment exclusions ride on top, none with `unsafe` Miri could execute:
-///
-/// - **`xtask`**, the build tool: its tests are safe pixel arithmetic, about seven minutes under
-///   the interpreter for nothing the type system has not said.
-/// - **`serial_console`**: no dependencies and no `unsafe`, about 55 minutes under Miri, and ten of
-///   its tests reach the host filesystem (refused by isolation) or run on wall-clock timeouts,
-///   which under an interpreter measure Miri.
-/// - **`stick_maker`**: its tests build trees under the temp dir, and isolation refuses `statx`;
-///   its only `unsafe` is FFI, which Miri cannot execute. `measured_boot` stays in on its own tests.
-/// - **`walk_pricing`**: `std::fs` code staging trees under the temp dir (`lstat` refused), and a
-///   timing instrument. `filesystem_fixture` stays in.
-///
-/// **"Miri-clean" means the sampled paths.** The exhaustive suites gate themselves down under
-/// `cfg(miri)` (`network_time_protocol`, `globally_unique_identifier_partition_table`, `calendar`,
-/// `glob`, `credentialer`, each saying so next to the test); the exhaustive claims are native-only.
-///
-/// `tools/redoxfs_host` and `redoxfs_server` stay out: their runtime is the vendored RedoxFS
-/// engine, whose findings land in the vendor pin (vendor/README.md). Extra args are forwarded to
-/// `cargo miri test` but do **not** narrow it (`-p` beside `--workspace` still runs everything); to
-/// check one crate, run `cargo miri test -p <crate>` directly.
+/// The selection is `test()`'s, `--workspace` less [`host_excluded_args`], plus four judgment
+/// exclusions with no `unsafe` Miri could execute: `xtask` (safe pixel arithmetic, about seven
+/// minutes under Miri); `serial_console` (about 55 minutes, and ten tests reach the host filesystem
+/// or wall-clock timeouts); `stick_maker` (isolation refuses `statx`, its `unsafe` is FFI;
+/// `measured_boot` stays in); `walk_pricing` (`lstat` refused, a timing instrument;
+/// `filesystem_fixture` stays in). Extra args are forwarded but do not narrow the run; check one
+/// crate with `cargo miri test -p <crate>`.
 pub(crate) fn undefined_behavior_check() -> bool {
     eprintln!("--- host tests under Miri (aliasing, provenance, uninitialized reads) ---");
     let mut args: Vec<String> = ["miri", "test", "--workspace"]
