@@ -3,11 +3,11 @@
 //! **A device driver is an unprivileged userspace process.** Its entire authority is an `Irq`
 //! capability for the UART's interrupt (slot 0), a report endpoint for what it reads (slot 1), and
 //! a device-typed mapping of the NS16550's registers at [`UART_VA`]. Its loop is the seL4
-//! `IRQHandler` protocol: `WAIT` on the `Irq` until the interrupt arrives as a message; read the
-//! byte through its own mapping, so the kernel is never in the data path; `SEND` it; `ACK`, which
-//! re-arms the source the kernel masked when it fired (`arch::irq::enable`), without which the
-//! level-triggered UART would re-fire forever. It names no architecture: `user_mode_runtime`
-//! supplies the syscall ABI, and the register layout is the driver's own knowledge.
+//! `IRQHandler` protocol: `WAIT` on the `Irq` for the interrupt as a message; read the byte through
+//! its own mapping, the kernel never in the data path; `SEND` it; `ACK`, re-arming the source the
+//! kernel masked when it fired (`arch::irq::enable`), or the level-triggered UART re-fires forever.
+//! It names no architecture: `user_mode_runtime` has the syscall ABI, the layout is its own.
+//!
 
 //! Name: ratified 2026-09-08 (calef, milestone 264). Shipped as `driver`, which was the fourth
 //! driver in `components/src/` and the only unqualified one, beside `block_driver`, `gpu_driver` and

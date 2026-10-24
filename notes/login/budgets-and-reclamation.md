@@ -52,9 +52,8 @@ allocates during a login with the channel still live.
 A rendezvous retyped by `RETYPE_OBJ` lives in the kernel's global rendezvous registry
 (`kernel::sched::MAX_RENDEZVOUS`, 512 slots shared by every process on the machine) until the
 region it was retyped from is destroyed. `cap_delete` removes only this process's reference. So a
-channel's request and result endpoints and its staging page are retyped from a small region of
-their own, along with the page tables for the page's mapping, and the region is destroyed when the
-login is done. With `cap_delete` alone, the suite's ~29 connects once spent 58 of the 512, and a
+channel's request and result endpoints, its staging page and that page's page tables all come from
+a small region of their own. The region is destroyed when the login is done. With `cap_delete` alone, the suite's ~29 connects once spent 58 of the 512, and a
 later unrelated test failed with "out of rendezvous points". No thread runs in a channel's region,
 so its `DESTROY` has nothing to wait on and is expected to succeed first time. It still goes
 through the bounded retry, so that expectation is not a correctness dependency.
@@ -76,11 +75,12 @@ what it retyped before the step that failed.
 `reclaim` retries a refused `DESTROY` up to `RECLAIM_ATTEMPTS` (1024) times, yielding between
 tries. A region holding a live thread is refused with §16 (object revocation)'s kill armed, and
 preemptions later the retry succeeds. `system_initializer` uses 64. `login` needs more because of
-`Durable::retire`: a session region's two store caretakers are killed by the cascade of §40 (a supervisor's death is its subtree's death) as their
-supervisor's supervisor exits, an asynchronous teardown this process can only wait out. Measured
-on 2026-09-30 on the riscv64 TCG leg: at 64 the wait gave up inside the race in 4 boots of 4,
-`discard` leaked the whole 784-page durable budget, and the next `SCHEDULE` login was `DENIED` for
-want of a split. At 1024 the same boot passed 7 of 7. `user_timetable_keeper`'s `ATTEMPTS` (1024,
+`Durable::retire`. A session region's two store caretakers are killed by the cascade of §40 (a
+supervisor's death is its subtree's death) as their supervisor's supervisor exits. That teardown is
+asynchronous, and this process can only wait it out. Measured
+on 2026-09-30 on the riscv64 TCG leg, at 64 the wait gave up inside the race in 4 boots of 4.
+`discard` then leaked the whole 784-page durable budget, and the next `SCHEDULE` login was `DENIED`
+for want of a split. At 1024 the same boot passed 7 of 7. `user_timetable_keeper`'s `ATTEMPTS` (1024,
 from `job_undertaker`) waits the same way.
 
 ## The capability table, in order

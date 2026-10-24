@@ -13,6 +13,8 @@
 //! - Run-unvouched ([`RUN_UNVOUCHED`]) goes `WRITE` without `GRANT`, to listed identities only.
 //! - One session holds the terminal ([`TERM_EP`]): another login is refused `NO_TERMINAL` before
 //!   its secret is relayed; `LOGOUT` releases it and authenticates nothing.
+//!
+//! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary-rulings.md`).
 
 //! # BUGS
 //! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary one.
@@ -24,8 +26,6 @@
 //! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
-
-//! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary-rulings.md`).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks
