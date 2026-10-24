@@ -1,8 +1,5 @@
 # The system tests' progenitor-shaped spawn
 
-Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06, after the function it
-explains. calef names files.
-
 `spawn_progenitor_shaped` in `system_tests/src/user/test_programs.rs` starts a program the way the
 kernel starts the progenitor. Milestone 794 (one progenitor-shaped spawn for the system tests) built
 it. This note keeps why its space is hand-built, which spawn sites do not use it, and why the bind
