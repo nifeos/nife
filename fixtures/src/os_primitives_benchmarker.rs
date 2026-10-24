@@ -3,11 +3,11 @@
 //! The kernel threads of `kernel/src/bench.rs` never pay the EL0->EL1 trap; lmbench measures from
 //! userspace, trap included, so this program self-times loops of real `svc` syscalls at EL0. The
 //! bench boot spawns it; it times each primitive with `user_mode_runtime::now` (the virtual
-//! counter, EL0-readable since milestone 19e) and SENDs `[ticks, iters]` on slot 0, its one grant,
-//! for the harness's machine-readable line, so the icount baseline gates it and `--real` gives its
-//! true magnitude. Five primitives: null syscall, context switch, IPC round trip, page map, and
-//! spawn, which object revocation was built for: its loop reclaims each child's region
-//! (`MemoryRegion::DESTROY`) to repeat. See notes/benchmarks/cross-os-primitives.md.
+//! counter, EL0-readable since milestone 19e (run a real workload)) and SENDs `[ticks, iters]` on
+//! slot 0, its one grant, for the harness's machine-readable line, so the icount baseline gates it
+//! and `--real` gives its true magnitude. Five primitives: null syscall, context switch, IPC round
+//! trip, page map, and spawn, which object revocation was built for: its loop reclaims each child's
+//! region (`MemoryRegion::DESTROY`) to repeat. See notes/benchmarks/cross-os-primitives.md.
 
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `elbench`, and it is the name that
 //! forced `nifefs`'s `NAME_LEN` from 24 to 32. The raise was taken first and on its own merits,

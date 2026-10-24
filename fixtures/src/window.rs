@@ -61,8 +61,9 @@ const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
 /// The screen and the window list, read-only, and **only** for a client granted them.
 ///
-/// `SCREEN_VA` is 2 MiB-aligned (milestone 142, DECISIONS §102), and `WLIST_VA` sits clear of the
-/// 4 MiB the screen spans at 900 page frames, the scanout's first size: inside that span,
+/// `SCREEN_VA` is 2 MiB-aligned (milestone 142 (a text display good enough that people use it
+/// instead of a GUI), DECISIONS §102 (a Frame names a run of pages)), and `WLIST_VA` sits clear of
+/// the 4 MiB the screen spans at 900 page frames, the scanout's first size: inside that span,
 /// `PageFrame::MAP` would refuse the window list as already mapped. At 924x344 (311 page frames,
 /// 1.25 MiB, the scanout since 2026-08-27) the screen fits one 2 MiB page-table window;
 /// `compositor_service::MAP_BUDGET_PAGES`'s comment has the arithmetic.
@@ -397,7 +398,8 @@ fn read_validated_geometry() -> (u32, u32, u32, u32) {
     // Told rather than assumed, because the compositor chooses the size; still bounded by the
     // largest surface the contract allows, since a larger claim describes memory we were not
     // granted. Checked arithmetic: `w * h * 4` in `u32` wraps, and `w = h = 0x10000` multiplies to
-    // exactly 0, which would pass the bound (milestone 43, notes/shared-page-audit.md finding 4).
+    // exactly 0, which would pass the bound (milestone 43 (a second security audit),
+    // notes/shared-page-audit.md finding 4).
     // `display_terminal.rs` validates the same geometry by division.
     let bytes = w
         .checked_mul(h)

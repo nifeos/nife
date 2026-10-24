@@ -1,5 +1,6 @@
 //! **Everything a network time client holds, and the clock page is still not reachable** (milestone
-//! 51, split out of the client's binary by milestone 290; notes/ntp.md).
+//! 51, split out of the client's binary by milestone 290 (`components/src/ntp.rs` is three programs
+//! wearing one name); notes/ntp.md).
 //!
 //! Spawned with `components/src/network_time_client.rs`'s five slots and told the address at which
 //! a process holding the *set* authority maps the clock page, it reports the address, writes there,
@@ -14,8 +15,8 @@
 //! binary. It and the client are endowed by **one function**, `spawn_with_client_endowment` in
 //! `kernel/src/user/ntp_service.rs`, which takes the image as a parameter, so a sixth slot added to
 //! the client is a sixth slot here. **Never write a second capability list**: a hand-kept copy of a
-//! fact the wiring holds is how a security claim decays without breaking a build (milestone 117's
-//! `swish` `caps` bug). See notes/ntp/the-client-tests.md.
+//! fact the wiring holds is how a security claim decays without breaking a build (milestone 117
+//! (the stranger test)'s `swish` `caps` bug). See notes/ntp/the-client-tests.md.
 
 //! # Reaching the second report is the failure
 //!

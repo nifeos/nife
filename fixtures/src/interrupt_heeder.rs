@@ -2,10 +2,10 @@
 //!
 //! It works forever in small units, and between units it reads the interrupt flag, one word in a
 //! page it shares with the shell. When the shell sets it (on the first `^C`), the program cleans
-//! up, records that it stopped gracefully, and exits: §24's cooperative tier made visible. The flag
-//! is shared memory and not an endpoint because a running computation can neither poll an endpoint
-//! (there is no non-blocking receive) nor block on one without stalling its work. See
-//! `grant_plan::job_page_frame` and notes/grant-expression.md.
+//! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
+//! foreground process) made visible. The flag is shared memory and not an endpoint because a
+//! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
+//! one without stalling its work. See `grant_plan::job_page_frame` and notes/grant-expression.md.
 
 //! # What it holds
 //!

@@ -3,8 +3,8 @@
 //! A tight loop that touches nothing and checks nothing: the case the cooperative tier cannot
 //! reach, and the reason the second `^C` exists. It never reads the interrupt flag and depends on
 //! no frame the shell could revoke, so it is the honest worst case: only the forcible tier ends it,
-//! the region owner's `DESTROY` force-killing the resident thread (DECISIONS §16, its milestone 22
-//! amendment).
+//! the region owner's `DESTROY` force-killing the resident thread (DECISIONS §16 (object
+//! revocation), as amended so that `DESTROY` force-kills a live resident thread).
 //!
 //! It holds nothing: no capabilities, and it does not even map the shared job frame it was granted.
 //!

@@ -98,8 +98,9 @@ pub extern "C" fn _start(role: u64, index: u64, seed: u64) -> ! {
 
     loop {
         if role == ROLE_WAITER {
-            // The waiter role (milestone 221): `interrupt_wait` is the `Irq::WAIT` a driver uses,
-            // and the kernel's soak build signals the route from `sched::on_tick` on every core. No
+            // The waiter role (milestone 221 (the soak never crosses cores, so build the hook that
+            // makes it)): `interrupt_wait` is the `Irq::WAIT` a driver uses, and the kernel's soak
+            // build signals the route from `sched::on_tick` on every core. No
             // `interrupt_acknowledge`: there is no line and nothing was masked, so an ack would be
             // a real controller write for an interrupt that does not exist. A refusal
             // (`abi::Error`) stops the counting rather than retrying, and the kernel's stall check

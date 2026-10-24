@@ -739,14 +739,14 @@ const DESTROY_WAIT_SECS: u64 = 5;
 
 /// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.
 ///
-/// For the caretaker's region, whose one transient refusal `login_contract::OK` names, and this
-/// client's budget. A clock, not an attempt count: the refusal clears when §16's armed kill lands
-/// at a tick (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
+/// For the caretaker's region (`login_contract::OK` names its one transient refusal) and this
+/// client's budget. Bounded by a clock: the refusal lasts until §16 (object revocation)'s armed
+/// kill lands at a tick (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
 ///
 /// # BUGS
 ///
-/// The bound is wall clock, which milestone 62 argues against, because a process cannot read
-/// delivered ticks; [`DESTROY_WAIT_SECS`]'s 40x margin is what makes it safe.
+/// The bound is wall clock, which milestone 62 (tests that assert on time) argues against, because
+/// a process cannot read delivered ticks; [`DESTROY_WAIT_SECS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
     let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
     let started = user_mode_runtime::now();

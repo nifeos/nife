@@ -6,8 +6,8 @@
 //! - slot 1, a **display** endpoint (WRITE): it CALLs the driver here;
 //! - slot 2, an **untyped**: the budget the page tables for its own mappings come out of;
 //! - slot 3, the **surface**: one `PageFrame` capability naming the whole
-//!   `gfx::SURFACE_PAGE_FRAMES`-page run (DECISIONS §102), which it maps itself in one call
-//!   (milestone 108).
+//!   `gfx::SURFACE_PAGE_FRAMES`-page run (DECISIONS §102 (a Frame names a run of pages)), which it
+//!   maps itself in one call (milestone 108 (the drivers move onto frame capabilities)).
 
 //! # What it does not hold
 //!

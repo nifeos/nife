@@ -3,11 +3,11 @@
 //!
 //! It writes [`byte_sink_contract::fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
 //! the last `SEND` classified, by value: "gone" and "never had one" must be two numbers to test
-//! milestone 50's one behaviour change. **The negative is the point**: it holds one writable
-//! endpoint and a report endpoint, nothing that names a file, a directory, a terminal or the FS
-//! server. `kernel::user::sink_tests` puts three things in slot 0 (an endpoint the kernel drains,
-//! `file_sink` over a real RedoxFS file, `terminal_sink_caretaker` before a real terminal) and the
-//! same bytes come out of all three.
+//! milestone 50 (one sink protocol)'s one behaviour change. **The negative is the point**: it holds
+//! one writable endpoint and a report endpoint, nothing that names a file, a directory, a terminal
+//! or the FS server. `kernel::user::sink_tests` puts three things in slot 0 (an endpoint the kernel
+//! drains, `file_sink` over a real RedoxFS file, `terminal_sink_caretaker` before a real terminal)
+//! and the same bytes come out of all three.
 
 //! # The wiring
 //!

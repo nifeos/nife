@@ -1,12 +1,13 @@
 //! `memory_grant_depleter`: a program that spends exactly the memory it was granted, and reports
-//! how much (milestone 31 phase 1).
+//! how much (milestone 31 (a capability shell: designation is authorization), phase 1).
 //!
 //! It makes `memory_grant_depleter --mem N` real. The shell splits `N` pages off its own untyped
 //! budget and delegates them (init inserts the untyped at slot 1); this program maps pages out of
 //! it one at a time until it is exhausted and reports the count on slot 0. With no grant slot 1 is
 //! empty, the first `MAP` returns `NoSuchSlot`, and it reports zero: there is no ambient pool. The
 //! count is `N` minus the page-table pages, which come from the same untyped (the kernel allocates
-//! nothing on a process's behalf, DECISIONS §10). See notes/grant-expression/memory-grant.md.
+//! nothing on a process's behalf, DECISIONS §10 (process model: capability-based, microkernel)).
+//! See notes/grant-expression/memory-grant.md.
 
 //! # What this program holds
 //!
