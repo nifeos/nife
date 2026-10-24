@@ -74,11 +74,11 @@ prints them, and they never gate
   arriving at the kernel standing in for the compositor, summed over 16 key presses the host makes
   one cue at a time.
 
-Measured 2026-10-24 (UTC) on Linux x86_64 under the pinned QEMU 11.1.2 and nightly-2026-10-24, TCG
-with `-icount shift=0,sleep=off`, one hart, the debug userspace every image ships. "Before" is the
-hand-written driver at this branch's bench commit, with the same kernel and wiring as "after".
-Ticks are each architecture's own counter (62.5 MHz on aarch64, 10 MHz on riscv64, the calibrated
-TSC on x86_64), so compare a row across its own line only.
+Measured 2026-10-24 (UTC) on Linux x86_64, under the pinned QEMU 11.1.2 and nightly-2026-10-24.
+Each run is TCG with `-icount shift=0,sleep=off`, one hart, and the debug userspace every image
+ships. The before column is the hand-written driver at this branch's bench commit. Both columns run
+the same kernel and wiring. Ticks are each architecture's own counter: 62.5 MHz on aarch64, 10 MHz
+on riscv64 and the calibrated TSC on x86_64. Compare a row only along its own line.
 
 | | before | after | change |
 |---|---|---|---|
