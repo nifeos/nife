@@ -423,13 +423,14 @@ mod interleavings {
         READ_THE_PAYLOAD.assert("an interleaving where the take catches the claim");
     }
 
-    /// **The read and the clear are one step**: two victims take the same claimed slot, and exactly
-    /// one may come away with the request; a `take` that read and then cleared would hand it to both.
+    /// **The read and the clear are one step**: two victims take the same claimed slot, and
+    /// exactly one may come away with the request; a `take` that read and then cleared would hand
+    /// it to both.
     ///
-    /// The kernel has one victim per slot today (`serve_steal_request` runs on the owning core with
-    /// interrupts masked), so this guards the discipline rather than the running code: with the swap
-    /// replaced by a load and a store, only this harness fails. See notes/interleaving.md, "And the
-    /// pilot found nothing, which is its own result".
+    /// The kernel has one victim per slot today (`serve_steal_request` runs on the owning core
+    /// with interrupts masked), so this guards the discipline rather than the running code: with
+    /// the swap replaced by a load and a store, only this harness fails. See notes/interleaving.md,
+    /// "And the pilot found nothing, which is its own result".
     #[test]
     fn a_second_victim_cannot_serve_the_same_request() {
         static BOTH_TRIED: Reached = Reached::new();

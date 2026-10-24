@@ -70,8 +70,9 @@ pub fn write_summary(rows: &[ps::Row], uptime_nanos: u64, out: &mut dyn FnMut(&[
 
 /// **The machine line under the summary, which is what became of `tload`** (milestone 126,
 /// DECISIONS §225 (`free` sees the machine and your share)): the threads runnable at each core's
-/// last tick, on how many cores, and the share of ticks since boot not spent idle. `None` prints the
-/// sentence a withheld page earns rather than a machine of zeroes. See notes/process-view/top.md.
+/// last tick, on how many cores, and the share of ticks since boot not spent idle. `None` prints
+/// the sentence a withheld page earns rather than a machine of zeroes. See
+/// notes/process-view/top.md.
 pub fn write_machine_line(
     machine: Option<&machine_statistics_contract::Snapshot>,
     out: &mut dyn FnMut(&[u8]),

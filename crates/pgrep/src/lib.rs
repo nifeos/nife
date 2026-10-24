@@ -75,7 +75,7 @@ impl Selector {
     /// its registers zeroed by whoever did not think about them, so "nobody said" means no filter.
     /// A pattern that matched no state does not collapse into this zero:
     /// [`from_pattern`](Selector::from_pattern) goes through [`of`](Selector::of) and can return
-    /// [`NONE`](Selector::NONE), which [`Selection::write_diagnostics`] reports as its own sentence.
+    /// [`NONE`](Selector::NONE), which [`Selection::write_diagnostics`] reports on its own.
     /// See notes/process-view/pgrep.md, "The zero on the wire".
     pub const fn from_wire(mask: u64) -> Selector {
         if mask == 0 {
