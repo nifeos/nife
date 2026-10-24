@@ -10,25 +10,11 @@ needs_person: yes
 # 260. Boot xenon over the network, because the stick is the tax and the router is ours
 
 calef, 2026-09-05: *"xenon already hurts. We can control our router since it runs OpenWRT."*
-Everything that does not need xenon or the house router is built. What remains is one bench
-session and one router edit, both calef's, and both written down as procedures rather than as
-intentions.
-
-In the second sense `notes/roadmap.md` names: xenon is here, the
-router is here, and what remains is a person standing at both. Two firmware settings (tick `Enable
-UEFI Network Stack`, move Integrated NIC to `Enabled w/PXE`), one router edit, one power cycle and
-one photograph. They are calef's because they are his machine and his house network, not because
-anything is unchosen. Everything else is a lane's, and none of it needed the machine.
-
-The token was `DECISION` from 2026-09-05 to 2026-09-19, and it is corrected here rather than
-quietly because it named the wrong kind of wait for fifteen days. Nothing in this block asks calef
-to choose between options: the settings are named, the photographs that show them are cited, the
-`dnsmasq` lines are written and a gate (`script/netboot-rehearsal --check`) already parses them. A
-reader asking *what would change this* got "a decision" and the true answer is "an evening at the
-bench". That is exactly the conflation calef corrected on 2026-08-18 when milestones 16 and 53 sat
-on the ready list after the VisionFive 2 arrived. `DECISION` and `HARDWARE` both keep a `PARTIAL`
-block off `script/roadmap --ready`, so nothing was mis-offered; what was wrong is what the gate
-told a reader.
+Everything that does not need xenon is built, and the firmware settings and the router edit are
+done. What remains is one power cycle at the bench and one photograph, calef's because it is his
+machine, not because anything is unchosen. Nothing in this block asks calef to choose between
+options: the step is written down in `notes/x86-uefi-boot/network-boot-xenon.md`, and CI rehearses
+everything up to the real NIC on every pull request.
 
 ## Why this is not the same problem radon had, and why the answer just changed
 
@@ -114,6 +100,10 @@ boot tour on serial. A second run an hour later, after the suite had rebuilt the
 the size not being a constant. The negative case (`--mac 02:00:00:00:00:01`) produces `PXE-E16: No valid offer
 received` and no boot, which is what a house machine that is not xenon must see.
 
+CI runs all three (the configuration check, the boot and the refused MAC) against the release image
+in the `boot-check` job, as `script/ci-build netboot-rehearsal`. On an x86_64 Linux host on
+2026-10-24 the release image (8,180,736 bytes) booted in 14.1 s and the whole row took 1 min 36 s.
+
 `-netdev user` was refused rather than missed. QEMU's slirp has a DHCP server and a TFTP server
 built in, and pointing them at `target/esp` PXE-boots this image in one line. That was the first
 thing tried and it worked, and it is what proved the payload boots at all. It proves nothing about
@@ -176,20 +166,35 @@ whose point is an unattended power cycle runs straight into that, and the two se
 change it are an architect's for the same reason as the two above. **Network boot without that is a
 faster bench session, not an unattended one.**
 
-## Status, 2026-10-04 (UTC)
+## Status, 2026-10-24 (UTC)
 
-- Firmware half done. calef ticked `Enable UEFI Network Stack` and set Integrated NIC to
-  `Enabled w/PXE`. Recorded in the table in `notes/xenon-firmware.md`; photos owed, so no IMG
-  numbers are cited yet.
+PARTIAL. The exit criterion is the proof above, a photograph of xenon booting nife with no removable
+media, and it does not exist yet. Against the tree:
+
+| Piece | State | Evidence |
+|---|---|---|
+| Router configuration, parsed and obeyed | built, gated | `bench/xenon-netboot/dnsmasq.conf`; `script/netboot-rehearsal --check`, six clients |
+| PXE boot through the real server, no disk | built, gated | `script/ci-build netboot-rehearsal` in CI's `boot-check` job |
+| A refused client gets no boot file | built, gated | the same row, `--mac 02:00:00:00:00:01`, ends at `PXE-E16` |
+| The bench procedure | written | `notes/x86-uefi-boot/network-boot-xenon.md`, steps 3 and 4 |
+| The two firmware settings | done 2026-10-04 | `notes/xenon-firmware.md`'s table; photographs owed |
+| The router edit | done 2026-10-04 | below |
+| xenon booted over the wire, photographed | **not done** | needs calef |
+
 - Router edit done (calef's homelab agent, 2026-10-04): the four lines are in the router's
   `/etc/dnsmasq.conf` inside a BEGIN/END xenon-pxe block, which the GL.iNet UI does not regenerate and
   firmware upgrades preserve. Server address confirmed `192.168.8.138`, reserved by UCI entry
   `patagonia-wifi`. Backup `/root/pxe-xenon-backup-2026-10-04.tgz`; rollback:
   `ssh root@192.168.8.1 'tar -xzf /root/pxe-xenon-backup-2026-10-04.tgz -C / && /etc/init.d/dnsmasq restart'`.
   `dnsmasq --test` passes, other clients' offers are unchanged, patagonia kept `.138` on reconnect.
-- One photographed power cycle remains, with `script/board-netboot` serving; it is the only thing
-  left. Check `ssh root@192.168.8.1 'logread | grep -i d8:9e:f3:74:b2:a2'` during it (dnsmasq logs no
-  boot filename unless `log-dhcp` is on). Not BUILT until it exists.
+- Needs calef: the bench step, steps 3 and 4 of the runbook. On patagonia, on the house LAN,
+  `cargo xtask uefi-image --release` and then `script/board-netboot --root target/esp`, allowing
+  python3 through macOS's firewall if asked. Take every nife stick out of xenon, cable its
+  motherboard ethernet to the LAN, leave the keyboard and monitor attached, and power it on (F12,
+  `UEFI PXEv4`, if it does not pick PXE itself). Photograph the `nife self-test:` line and the empty
+  ports, copy `board-netboot`'s `done` line, and during the boot run
+  `ssh root@192.168.8.1 'logread | grep -i d8:9e:f3:74:b2:a2'`. A lane then writes the photograph
+  numbers here and the rate into BUGS, and marks this block BUILT.
 
 ## BUGS
 
@@ -232,18 +237,16 @@ faster bench session, not an unattended one.**
 
 ## Follow-on
 
-- **Recorded.** The bench session itself, which is the proof and cannot be a lane: two firmware
-  settings, one router edit, one power cycle, and a photograph. The procedure is in
-  `notes/x86-uefi-boot.md` and the failure table is written for someone holding a camera rather than
-  a shell.
-- **Recorded.** The `dhcp-match` lines' OpenWRT siting. The runbook gives two ways in and says
-  which is likely to be awkward; whichever one takes should be written back into
-  `bench/xenon-netboot/dnsmasq.conf`'s header and into the runbook, because the next person to
-  reflash that router will need it.
-- **Recorded.** patagonia's ethernet MAC, so the boot server's address can be pinned. One
-  `dhcp-host` line, already drafted and commented out, waiting on a value only the bench can supply.
-- **Recorded.** The real-wire transfer rate, in this block's BUGS. It is one line of the bench
-  session's own output and it is worth writing down next to radon's 428 KiB/s.
+- **Outstanding.** The bench session, which is the proof and cannot be a lane: one power cycle of
+  xenon with `script/board-netboot` serving, one photograph, and the real-wire transfer rate for
+  this block's BUGS. Calef's; the exact step is under Status, and runbook steps 3 and 4 in
+  `notes/x86-uefi-boot/network-boot-xenon.md` have what each screen should show and the failure
+  table.
+- **Done.** The `dhcp-match` lines' OpenWRT siting: all four lines in the router's
+  `/etc/dnsmasq.conf`, written back into `bench/xenon-netboot/dnsmasq.conf`'s header and step 2 of
+  the runbook.
+- **Done.** The boot server's address is pinned, by the Wi-Fi reservation this block's BUGS
+  describes, rather than by an ethernet MAC.
 - **Recorded.** Three provisional names waiting on an architect, on `script/names --unratified`'s
   worklist rather than blocking anything: `script/netboot-rehearsal`,
   `bench/xenon-netboot/dnsmasq.conf`, and the `bench/xenon-netboot/` directory. The refusals are in
