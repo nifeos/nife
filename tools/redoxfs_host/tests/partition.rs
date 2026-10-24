@@ -4,10 +4,10 @@
 //!
 //! The filesystem is built as an image and then placed, so an offset wrong by one block opens
 //! nothing. The table comes from the parser the reader uses; xtask's `blank_check_after_run`
-//! covers a table both agree on wrongly. Partition 1 is an empty ESP (a selector must pick it, and
-//! a wrong pick fail cleanly), 2 starts on an odd LBA (refused, never rounded) and 3 holds the
-//! filesystem. One test uses a 320 MiB device with it past 256 MiB:
-//! `a_partition_past_the_engines_scan_is_reachable_only_by_name`.
+//! covers a table both agree on wrongly. Partition 1 is an empty ESP (it proves a selector picks
+//! a partition, not the only filesystem, and that a wrong pick fails cleanly), 2 starts on an odd
+//! LBA (refused, never rounded) and 3 holds the filesystem. One test uses a 320 MiB device with it
+//! past 256 MiB: `a_partition_past_the_engines_scan_is_reachable_only_by_name`.
 
 use std::fs::OpenOptions;
 use std::os::unix::fs::FileExt;

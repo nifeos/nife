@@ -2,8 +2,8 @@
 
 *An appendix to [`notes/std.md`](../std.md), which is the page to read. This file holds what
 `std_exerciser` does under each grant, which kernel tests spawn it, and the small `std` programs
-beside it. The directory `notes/std/`
-and this file's stem are provisional names. Naming is calef's.*
+beside it. The directory `notes/std/` and this file's stem are provisional names. Naming is
+calef's.*
 
 The records this file cites by number:
 
@@ -52,9 +52,9 @@ a directory capability (`File::open` on the fixture name) and then for the netwo
   a previous boot wrote. The kernel test
   `std_fs_reads_a_file_through_a_granted_directory_capability` spawns it this way.
 - Granted the network (slots 2 and 3, alongside a running net_stack): the bind succeeds. The program
-  does a UDP round trip to slirp's own TFTP server and a TCP echo round trip to slirp's guestfwd peer,
-  both through `std::net` and both asserted. The kernel test `std_net_runs_over_the_socket_contract`
-  spawns it this way.
+  does a UDP round trip to slirp's own TFTP server and a TCP echo round trip to slirp's guestfwd
+  peer, both through `std::net` and both asserted. The kernel test
+  `std_net_runs_over_the_socket_contract` spawns it this way.
 - Granted neither (only slots 0 and 1): both probes return `Unsupported`. The program runs
   the offline transcript, exercising `Vec` (10,000-element collect against the untyped heap),
   `String`, `HashMap` (the random seed), `Instant` (asserted monotonic and advancing), and the
@@ -85,13 +85,12 @@ nothing guarantees which of them the harness runs first.
 
 On every run:
 
-- The first `thread::sleep` retypes its timer and notification from slot 0, so it runs before
-  anything else draws on the budget.
+- The first `thread::sleep` retypes its timer and notification from slot 0.
 - At the prompt the shell always sends an argv, so the name the program was run by comes first.
   The kernel harness grants none, so its transcript prints `[]`.
 - `SystemTime::now()` needs only the clock page's offset and the counter register. The check is the
-  clock service's own sanity window, which 1970-plus-uptime fails. `SystemTime` and `Instant` read
-  one counter, so a wall clock that advances never makes the monotonic one jump.
+  clock service's own sanity window, which 1970-plus-uptime fails. `SystemTime` and `Instant` are
+  read from the same counter, so the wall clock advancing does not mean the monotonic one jumped.
 - The entropy endpoint names no device; only the entropy service reads the virtio-rng. Comparing
   two draws is what says the bytes came off a device.
 - `std_service::start` maps the inert-configuration page unconditionally, as it maps a clock. A
@@ -143,8 +142,8 @@ Granted the network:
 - `denied refused` matters most: a program that could bind an ungranted port would make inbound
   authority decoration, and no other line would show it. Exclusivity, `in use refused`, is what
   makes a port grantable. A listener that went deaf after one connection would pass a one-round gate
-  and fail the Samba-shaped workload of milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS). The guest and the host prober are one gate only
-  together.
+  and fail the Samba-shaped workload of milestone 55 (Time Machine: SMB3 with Apple's extensions,
+  and mDNS). The guest and the host prober are one gate only together.
 - A round keeps accepting through `WouldBlock`. On sifive-u54 and rva22s64 one 15 s window opened
   while the prober still held an earlier connection, and round 0 failed with nobody having tried
   (milestone 649 (every client of a network stack shares its socket numbers), cpu-matrix,
