@@ -136,7 +136,7 @@ pub const REMOVEXATTR: u64 = 17;
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
 /// shared page filled ([`super::statfs::LEN`]) with the [`super::statfs`] record, or an error;
 /// `EBADF` for a handle the server did not mint. See notes/fs-server/statfs.md.
-
+///
 /// # BUGS
 ///
 /// - It answers about the whole image, never a subtree; there are no quotas, so no smaller number
@@ -156,7 +156,7 @@ pub const STATFS: u64 = 18;
 /// [`super::dir::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
 /// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged. See
 /// notes/fs-server/file-protocol.md.
-
+///
 /// # BUGS
 ///
 /// - It syncs the whole device, never a subtree or a file.

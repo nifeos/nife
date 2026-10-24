@@ -112,7 +112,7 @@ pub mod dirent;
 /// units, and how many are free. The unit is a field, not [`PAGE`]. The reply's length is the
 /// version: a client reads the fields it knows when `r0 >= LEN` ([`statfs::decode`]), so there is
 /// no version word. See notes/fs-server/statfs.md.
-
+///
 /// # BUGS
 ///
 /// - Free space is a forecast, not a reservation; see [`fs::STATFS`]'s BUGS.
