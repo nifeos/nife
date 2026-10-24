@@ -2,17 +2,11 @@
 //! and the run of long-name entries that goes ahead of the short entry in a directory. Microsoft's
 //! "FAT: General Overview of On-Disk Format" (version 1.03), section 7, is the format.
 //!
-//! A long name is up to 255 UCS-2 units, spread thirteen to an entry over up to twenty entries. The
-//! run is written in reverse: the entry holding the name's last units comes first on disk, its
-//! ordinal carrying [`LAST_LONG_ENTRY`], and ordinal 1 sits immediately before the short entry.
-//! After the name's last unit comes one `0x0000`, then `0xFFFF` to the end of the entry, unless the
-//! name fills its last entry exactly.
-//!
-//! **The checksum is the part that fails silently.** A driver that finds a run whose checksum does
-//! not match the short entry after it ignores the run and shows the alias, so a wrong checksum is
-//! a volume that mounts, lists `BOOTRI~1.EFI`, and boots nothing. `verification.rs` proves the
-//! checksum and the run's layout for every name; `tests/a_third_party_driver_reads_it.rs` has the
-//! host's driver read the name back.
+//! A long name is up to 255 UCS-2 units, thirteen to an entry, written in reverse: the entry with
+//! the name's end comes first on disk, its ordinal carrying [`LAST_LONG_ENTRY`]. A wrong checksum
+//! fails silently, as a volume that lists `BOOTRI~1.EFI` and boots nothing; `verification.rs`
+//! proves the checksum and the run's layout for every name. notes/file-allocation-table.md, "Long
+//! names", has the run's padding and how the host's driver checks it.
 //!
 //! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
 //! for the thing the specification calls a long name. calef has not named it.

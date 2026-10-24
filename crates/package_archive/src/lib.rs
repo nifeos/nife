@@ -3,37 +3,28 @@
 //! package) puts the digest that decides whether the bytes may run in the recipe. A host tool
 //! writes a package with [`write_package`] and a target reads it with [`Package::parse`], as with
 //! `crates/nifefs`. Pure logic, `no_std` and allocation-free: a reader borrows out of its buffer,
-//! because the first consumer's loader has no allocator.
-//!
+//! because the first consumer's loader has no allocator. notes/packages.md, "The format".
+
 //! ```text
-//!   header, HEADER_LEN = 112 bytes
-//!     magic          "NIFEPKG1"   8 bytes, version in the last byte
-//!     name           NAME_LEN = 32 bytes, NUL-padded
-//!     version        NAME_LEN = 32 bytes, NUL-padded
-//!     architecture   NAME_LEN = 32 bytes, NUL-padded
-//!     member_count   u32 LE
-//!     reserved       u32 LE, zero, so the table starts 8-byte aligned
-//!
+//!   header, HEADER_LEN = 112 bytes; integers u32 LE, names NUL-padded to NAME_LEN = 32 bytes:
+//!     magic "NIFEPKG1" (8 bytes, version in the last) | name | version | architecture
+//!     member_count | reserved, zero, so the table starts 8-byte aligned
 //!   the table of contents, member_count entries of MEMBER_LEN = 72 bytes:
-//!     name           NAME_LEN = 32 bytes, NUL-padded
-//!     offset         u32 LE, absolute, from the start of the file
-//!     len            u32 LE
-//!     digest         DIGEST_LEN = 32 bytes, SHA-256 of that member's bytes
-//!
+//!     name | offset, absolute from the start of the file | len
+//!     digest, DIGEST_LEN = 32 bytes, SHA-256 of that member's bytes
 //!   member bytes, each starting at an 8-byte boundary
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - Nothing installs a package: that is milestone 507 (installing a package)'s activation fork.
-//! - The encoding and the crate's name are provisional: §197 ruled the container, and the day
-//!   somebody else fetches a package fixes these offsets. Where a manifest travels, and whether
-//!   the digest is a Merkle root, are open.
+//! - The encoding and name are provisional until somebody else fetches a package (§197); where a
+//!   manifest travels, and whether the digest is a Merkle root, are open.
 //! - No compression, which would be a second hostile-input parser; the size cost is unmeasured.
 //! - Members and files are bounded by `u32` (4 GiB).
 //! - A duplicate member name is refused by the writer and first-wins in the reader, as in `nifefs`.
-//! - [`Package::parse`] does not check that members do not overlap or follow the table: accessors
-//!   are bounds-checked, and [`Package::verify`] fails any arrangement the digests do not match.
+//! - [`Package::parse`] lets members overlap or precede the table: accessors are bounds-checked,
+//!   and [`Package::verify`] fails any arrangement the digests do not match.
 //! - Nothing here says where a package came from; §195's per-source trust is a client's job.
 //!
 //! Name: provisional 2026-09-23 (milestone 198's rung 3a lane): an archive of a package's files, in
@@ -433,34 +424,16 @@ pub enum Refusal {
     NotRequested,
 }
 
-/// **The installer's whole decision, on bytes alone** (milestone 198 rung 3a): may this package be
-/// installed, and if so, what is installed?
+/// **The installer's whole decision, on bytes alone** (milestone 198 rung 3a), in an order that is
+/// the argument (notes/packages/package-archive.md):
+/// 1. The header is parsed (hostile input before any digest; fuzzed and Kani-checked) for its stem.
+/// 2. **The whole file's SHA-256 must be the image's catalog line for that stem** ([`CATALOG`]).
+/// 3. **Every program member is found**: the one named after the package, and each
+///    `bin/<program>` ([`PROGRAM_PREFIX`], a provisional convention); none is
+///    [`Refusal::NoProgram`], a bad or repeated name [`Refusal::ProgramName`].
+/// 4. Each program's bytes are checked against its table digest before any is returned.
 ///
-/// In order, and the order is the argument:
-///
-/// 1. The header is parsed, because the stem the catalog is keyed by is written in it. That is
-///    hostile input reaching [`Package::parse`] before any digest is checked, which is what that
-///    function's fuzz target and Kani harnesses exist for.
-/// 2. **The whole file's SHA-256 must be the catalog's line for that stem.** The catalog is the
-///    image's own ([`CATALOG`]), measured with every other archive entry, so this is DECISIONS §195's
-///    "the image's measured table becomes the first source" taken literally: a person cannot install
-///    what the image does not vouch for, whatever file they point at.
-/// 3. **Every program member is found** (milestone 919 (a package carries several programs);
-///    calef, 2026-10-12 (UTC): "A package can contain many programs and they may be different from
-///    the package name."). The member named after the package is a program, and so is every
-///    member named `bin/<program>` ([`PROGRAM_PREFIX`]), whose program is the name after the
-///    prefix: the package `ripgrep` carries `bin/rg`, as Debian's does. **That convention is this
-///    function's and is provisional**: nothing in the format marks which member is executable. A
-///    package with no program installs nothing ([`Refusal::NoProgram`]); a `bin/` name that is
-///    empty or nested, or a program named twice, refuses the whole package
-///    ([`Refusal::ProgramName`]). Where a program's manifest travels is DECISIONS §197 (a package
-///    is one archive file)'s open question, and this does not answer it.
-/// 4. Each program's bytes are checked against the table of contents' digest before any is
-///    returned, so what is recorded is a digest this installer computed rather than one it was
-///    told.
-///
-/// `stem` is scratch for the `name-version-architecture` key; the caller reads it back with
-/// [`Package::stem`] when it needs the same string.
+/// `stem` is scratch for the `name-version-architecture` key ([`Package::stem`] reads it back).
 pub fn installable<'a>(catalogue: &str, bytes: &'a [u8]) -> Result<Installable<'a>, Refusal> {
     let package = Package::parse(bytes).map_err(|_| Refusal::Unreadable)?;
     let mut stem = [0u8; STEM_LEN];
@@ -480,23 +453,14 @@ pub const PROGRAM_PREFIX: &str = "bin/";
 
 /// **The catalog's stem for a package asked for by name** (milestone 198 (a package manager)
 /// rung 3a's fetch): the line whose stem is `<name>-<version>-<architecture>`, for a version with
-/// no hyphen in it. [`CatalogMiss::NoSuchPackage`] when the image vouches for no package of that name
-/// on this architecture, which is the refusal a fetch gives before it opens a connection.
+/// no hyphen in it. [`CatalogMiss::NoSuchPackage`] when the image vouches for no package of that
+/// name on this architecture, the refusal a fetch gives before it opens a connection.
 ///
 /// **`name@version` asks for one version; a bare name must mean exactly one** (milestone 614 (two
-/// installed versions of one program, each runnable, and a caller granted the one it needs)). The
-/// qualified spelling is the one `jig remove` takes, used here for the same reason: a word with
-/// `@` in it is never a package name. A bare name the catalog vouches for at two
-/// versions is [`CatalogMiss::SeveralVersions`]. Before this, the first matching line won, so which
-/// version a bare fetch asked for was decided by the order recipe *filenames* sort in
-/// (`greeting-0.2.0.recipe.toml` before `greeting.recipe.toml`, because `-` sorts before `.`),
-/// and the source, serving only 0.1.0, answered 404. Refusing is the reversible answer: ruling 3
-/// says a bare *run* means the newest install, and nothing here orders versions to say which
-/// cataloged one is newest.
-///
-/// The catalog is the image's own ([`CATALOG`]), so the answer is what the image vouches for
-/// and never what a package source offers. A name with a hyphen in it is looked up the same way;
-/// a *version* with one cannot be told from the name before it and is not matched.
+/// installed versions of one program, each runnable, and a caller granted the one it needs)), else
+/// [`CatalogMiss::SeveralVersions`]: nothing here orders versions to say which is newest. The
+/// catalog is the image's own ([`CATALOG`]), never what a source offers. A version with a hyphen
+/// cannot be told from the name before it and is not matched.
 pub fn cataloged_stem<'c>(
     catalogue: &'c str,
     name: &str,
@@ -628,13 +592,10 @@ pub fn package_size(members: &[(&str, &[u8])]) -> usize {
 
 /// Write a package into `buffer`, which must be exactly [`package_size`] bytes.
 ///
-/// Refuses rather than truncates or mangles: a name too long, a name with a NUL, a duplicate name,
-/// too many members, or a buffer of the wrong size. An archive is a mapping, and a writer that
-/// silently changes a key has lost data.
-///
-/// **No timestamp, no ordering pass, no padding byte that is not zero.** The bytes are a function of
-/// the inputs alone, so two hosts building the same recipe produce the same digest, which is the
-/// property §195's reviewed recipe rests on.
+/// Refuses rather than truncates or mangles: a name too long, with a NUL, or repeated, too many
+/// members, or a buffer of the wrong size. **No timestamp, no ordering pass, no nonzero padding**:
+/// the bytes are a function of the inputs alone, so two hosts building one recipe produce one
+/// digest, which §195's reviewed recipe rests on.
 ///
 /// # Examples
 ///

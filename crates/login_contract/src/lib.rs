@@ -2,38 +2,33 @@
 //! **The wire contract between a client and the login service**: on success it
 //! delegates capabilities back rather than changing anything ambient. See notes/login.md.
 //!
-//! # The exchange
-//!
 //! Not a `CALL`: a reply carries two words, and only `abi::rendezvous::SEND_CAP` hands back
 //! capabilities. `REQUEST`/`RESULT` are a front door shared by every client, carrying only a bare
-//! [`CONNECT`] (answered with a private [`CONNECTED`] channel) and [`LOGOUT`]. Neither carries a
-//! page or a secret, so the identity and secret travel only on the private channel.
-//!
+//! [`CONNECT`] (answered with a private [`CONNECTED`] channel), [`LOGOUT`] and the other bare
+//! words. Neither carries a page or a secret, so the identity and secret travel only on the
+//! private channel. [`OK`]'s doc gives what follows it; on [`DENIED`], [`MALFORMED`] or
+//! [`NO_TERMINAL`] nothing does. The request page is [`credential_contract`]'s, reused because
+//! login relays it unchanged.
+
 //! ```text
-//!   client --send(REQUEST, connect_word(), 0, 0)------------------------> login
-//!   client <----------------- receive(RESULT) -> CONNECTED ---------------- login
-//!   client <---- RECEIVE_CAP(RESULT) x 3: priv_request, priv_result, page - login
-//!
+//!   client --send(REQUEST, connect_word(), 0, 0)-------------------------> login
+//!   client <--- receive(RESULT) -> CONNECTED, then RECEIVE_CAP x 3: ------- login
+//!                priv_request, priv_result, page
 //!   client --place(), send(priv_request, w0, 0, 0)-----------------------> login
-//!   client <----------------- receive(priv_result) -> OK, DENIED or -------- login
-//!                                                   NO_TERMINAL
-//!   client <---- RECEIVE_CAP(priv_result) x 5, only after OK ---------------  login
-//!
-//!   client --send(REQUEST, logout_word(), 0, 0)---------------------------> login
-//!   client <----------------- receive(RESULT) -> LOGGED_OUT ----------------- login
+//!   client <--- receive(priv_result) -> OK, DENIED or NO_TERMINAL; -------- login
+//!                RECEIVE_CAP(priv_result) x 5, only after OK
+//!   client --send(REQUEST, logout_word(), 0, 0)--------------------------> login
+//!   client <--- receive(RESULT) -> LOGGED_OUT ----------------------------- login
 //! ```
-//!
-//! [`OK`]'s doc gives what follows it. On [`DENIED`], [`MALFORMED`] or [`NO_TERMINAL`] nothing
-//! does. The request page is [`credential_contract`]'s, reused because login relays it unchanged.
-//!
+
 //! # BUGS
 //!
-//! - [`RUN_UNVOUCHED_LIST`] (§221 ruling 2) is read on every login through the file service's one
-//!   shared page, sound only while one session is live. Delisting holds from the next login; a
-//!   built session keeps its copy, since nothing revokes a delegated capability.
-//! - [`LOGOUT`] authenticates nothing: any holder of `REQUEST` can free the terminal from under its
-//!   user. Accepted for one boot with one terminal and no untrusted co-tenant; a hostile deployment
-//!   needs `LOGOUT` to carry a capability only the session holds.
+//! - [`RUN_UNVOUCHED_LIST`] (§221 ruling 2) is read through the file service's one shared page,
+//!   sound only while one session is live; delisting holds from the next login, and a built
+//!   session keeps its copy, since nothing revokes a delegated capability.
+//! - [`LOGOUT`] authenticates nothing: any holder of `REQUEST` can free the terminal from under
+//!   its user. Accepted for one boot, one terminal and no untrusted co-tenant; a hostile
+//!   deployment needs `LOGOUT` to carry a capability only the session holds.
 //! - A terminal holder that exits without logging out wedges it until `login` restarts.
 //!
 //! Name: ratified 2026-08-23 (calef); see `design/naming/vocabulary-rulings.md`.
@@ -60,14 +55,11 @@ pub const LOGIN: u64 = 1;
 pub const LOGOUT: u64 = 3;
 /// **Authenticate, and open this identity's schedule** (milestone 152 (durable delegation),
 /// §222 (who holds a user's schedule), calef's L2 ruling of 2026-09-26). Sent on the private
-/// channel in place of [`LOGIN`], staged with [`place`] exactly as [`LOGIN`] is. On success `login`
-/// builds the `user_timetable_keeper` process that holds the identity's timetable, and [`OK`] carries
-/// [`SCHEDULE_FOLLOWS`]. A [`LOGIN`] for an identity whose session is already durable reattaches to
-/// it and carries [`SCHEDULE_FOLLOWS`] too.
-///
-/// The ruling said "a new request word after `OK`". It travels as the request itself instead,
-/// because `login` blocks on one endpoint at a time and could not wait for a word after `OK`
-/// without every existing client sending one. Name and value: provisional.
+/// channel in place of [`LOGIN`], staged with [`place`] as [`LOGIN`] is. On success `login` builds
+/// the `user_timetable_keeper` holding the identity's timetable, and [`OK`] carries
+/// [`SCHEDULE_FOLLOWS`]; a [`LOGIN`] that reattaches a durable session carries it too. The ruling
+/// said "a new request word after `OK`"; it is the request itself because `login` blocks on one
+/// endpoint at a time. Name and value: provisional.
 pub const SCHEDULE: u64 = 7;
 /// **The owner's suspended list changed: apply it now** (milestone 152 (durable delegation),
 /// calef's §108 (disabling credentials kills the durable session) ruling of 2026-09-26). A bare word on the front door, like [`LOGOUT`], built with
@@ -77,15 +69,12 @@ pub const SCHEDULE: u64 = 7;
 /// session cannot write. Name and value: provisional, a wire item.
 pub const SUSPEND: u64 = 8;
 
-/// **Report why the start-up pass skipped what it skipped** (milestone 152, added 2026-09-27
-/// against CI's own falsification of the "skipped, not failed" contract in `rederive`'s doc: a
-/// skip that leaves no reason anywhere is the defect, not the skip). A bare word on the front door,
-/// like [`SUSPEND`], built with [`rederive_skips_word`]. Answers [`SKIP_COUNTS`] with
-/// [`durable::pack_skip_counts`]'s word on `RESULT`'s second word; the third is always 0, reserved.
-/// Unauthenticated, like [`SUSPEND`] and [`LOGOUT`]: it names no identity, only counts. A fielded
-/// system has little reason to ask this of its own boot, but the counters cost a saturating add
-/// each and are always kept, in production too, so nothing here is test-only. Name and value:
-/// provisional.
+/// **Report why the start-up pass skipped what it skipped** (milestone 152): a skip that leaves no
+/// reason anywhere is the defect, not the skip. A bare word on the front door, like [`SUSPEND`],
+/// built with [`rederive_skips_word`]. Answers [`SKIP_COUNTS`] with [`durable::pack_skip_counts`]'s
+/// word on `RESULT`'s second word; the third is always 0, reserved. Unauthenticated, like
+/// [`SUSPEND`] and [`LOGOUT`]: it names no identity, only counts. The counters cost a saturating
+/// add each and are kept in production too. Name and value: provisional.
 pub const REDERIVE_SKIPS: u64 = 9;
 
 /// `send(REQUEST, connect_word(), 0, 0)`. The bare word [`CONNECT`] travels as; a client never calls
@@ -120,28 +109,26 @@ pub const CONNECTED: u64 = 4;
 /// reply's second word carries [`RUN_UNVOUCHED_FOLLOWS`], in this order:
 ///
 /// 1. the directory: a freshly built `fs_subtree_caretaker`'s endpoint, `WRITE`;
-/// 2. the file service's shared page, `READ | WRITE`, mapped wherever the client chooses and used
-///    for both hops, which is sound because every request on both is a blocking `CALL`;
+/// 2. the file service's shared page, `READ | WRITE`, mapped where the client chooses, for both
+///    hops, which is sound because every request on both is a blocking `CALL`;
 /// 3. the budget: a freshly split `MemoryRegion`, `WRITE | GRANT`, the client's own;
-/// 4. the logout ticket: the caretaker's construction region, `WRITE` only, whose one use is
-///    `abi::memory_region::DESTROY`. Retry a refused `DESTROY` a bounded few times: the caretaker
-///    can be mid-request to the file service, but never blocks permanently;
-/// 5. the terminal, `WRITE` only. Always present, since login refuses with [`NO_TERMINAL`] before
+/// 4. the logout ticket: the caretaker's construction region, `WRITE`, whose one use is
+///    `abi::memory_region::DESTROY`; retry a refused `DESTROY` a bounded few times, since the
+///    caretaker can be mid-request to the file service but never blocks permanently;
+/// 5. the terminal, `WRITE`; always present, since login answers [`NO_TERMINAL`] before
 ///    authenticating while another session holds it;
-/// 6. only with [`RUN_UNVOUCHED_FOLLOWS`]: run-unvouched, `WRITE` without `GRANT` (gate D2 of §219
-///    (how the shell names an installed program to the spawner)), for identities on
-///    [`RUN_UNVOUCHED_LIST`], so the session may run unvouched bytes and cannot pass that on.
+/// 6. only with [`RUN_UNVOUCHED_FOLLOWS`], for identities on [`RUN_UNVOUCHED_LIST`]:
+///    run-unvouched, `WRITE` without `GRANT` (§219 gate D2), so it cannot be passed on.
 ///
-/// A full logout destroys 3 before 4, and the order is load-bearing. `mint` splits 4 then 3 back to
-/// back from login's construction budget, and LIFO reclaim returns a child's pages only from the top
-/// of the watermark; destroying 4 first strands its pages. Logging out is optional.
+/// A full logout destroys 3 before 4, because LIFO reclaim strands 4's pages otherwise
+/// (notes/login/contract.md). Logging out is optional.
 pub const OK: u64 = 1;
 
 /// **A bit of [`OK`]'s second word: the sixth capability, the run-unvouched one, follows**
-/// (DECISIONS §219 gate D2). Carried on the reply rather than implied, because a client's sixth
-/// `RECEIVE_CAP` must match a sixth `SEND_CAP` exactly: a `login` spawned without the capability
-/// (every kernel test harness before this bit) sends five, and a client that always waited for six
-/// would block for ever. Name: provisional.
+/// (DECISIONS §219 (how the shell names an installed program to the spawner) gate D2). Carried on
+/// the reply because a client's sixth `RECEIVE_CAP` must match a sixth `SEND_CAP` exactly: a
+/// `login` spawned without the capability sends five, and a client waiting for six would block
+/// forever. Name: provisional.
 pub const RUN_UNVOUCHED_FOLLOWS: u64 = 1;
 /// **A bit of [`OK`]'s second word: the registration page follows** (milestone 152). After the
 /// run-unvouched capability when that is announced too, one more `RECEIVE_CAP` delivers a page frame
@@ -151,9 +138,8 @@ pub const SCHEDULE_FOLLOWS: u64 = 2;
 
 /// **The owner's list of identities whose sessions may run unvouched bytes** (DECISIONS §221 (the
 /// boot prompt is the owner's console), ruling 2): a file at the root of the file service, beside
-/// the identities' own subtrees, which is where this tree already keeps what it knows about an
-/// identity (DECISIONS §117 (a principal's subtree is named by its identity string)). A session
-/// is confined to its own subtree and cannot name it; the boot prompt, the owner's console, can
+/// the identities' own subtrees (DECISIONS §117 (a principal's subtree is named by its identity
+/// string)). A session is confined to its own subtree and cannot name it; the boot prompt can
 /// (`echo alice >> may-run-unvouched`).
 ///
 /// **Empty by default**: no file, an unreadable file, or one larger than a page lists nobody, so
@@ -331,40 +317,19 @@ pub fn identity_hint(identity: &[u8]) -> u64 {
 }
 
 // ===========================================================================================
-// **How the login service is started**, which is a contract between whoever spawns it and the
-// program itself rather than between the program and its clients (milestone 233).
-//
-// It is in this crate because rule 7 leaves nowhere else: three binaries have to agree on these
-// two addresses (`components/src/login.rs`, `crates/system_initializer`, and the kernel's own test
-// harness in `kernel/src/user/login_service.rs`), and what two binaries agree on is a crate. The
-// siting is the honest weak point: this crate's own first line calls itself "the wire contract
-// between a client and the login service", and a spawn contract is neither wire nor client. The
-// alternative was a crate holding two constants. Provisional, like every name a lane mints.
+// **How the login service is started** (milestone 233 (`login` dies on every boot)): a contract
+// between whoever spawns it and the program, here because three binaries agree on it (rule 7).
+// notes/login/contract.md has why a client contract's crate holds it.
 // ===========================================================================================
 
 /// **Where `fs_subtree_caretaker`'s ELF bytes are mapped, read-only, before `login`'s `_start`
 /// runs**, with the length in `x0`/`a0`/`rdi` (milestone 233).
 ///
-/// **This replaced a mapping of the whole initial ramdisk archive, and the reason is not economy.**
-/// `login` used to read the archive at `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA` and
-/// index it by name, which is what the kernel's own test harness handed it and what nothing else
-/// ever did: `crates/system_initializer` spawns this program through
-/// `supervision_protocol::build_child`, which can map only pages the spawner holds a `PageFrame`
-/// capability for, and the archive is reserved RAM the frame allocator does not own and no
-/// capability names. So the real interactive boot started `login` with no archive at all and it
-/// died at `_start` on every boot for an unknown length of time
-/// (design/roadmap/0233-login-never-runs.md).
-///
-/// The fix could have gone the other way, and giving `login` the archive is the option that was
-/// refused: it needs one program's bytes and a manifest to check them against, and a service that
-/// can read every file in the boot image to answer a password holds authority it never exercises.
-/// A blob costs the spawner **no capability-table slots at all** (`supervision_protocol`'s own
-/// `fill_and_map` holds one frame at a time and deletes it), which is what let this land against
-/// the 21-of-24 peak `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records.
-///
-/// Zero length means the spawner had no vouched-for caretaker to hand over. That is not a failure
-/// to start: `login` comes up and answers every login [`DENIED`], which is exactly what
-/// `crates/system_initializer` already does with a program it cannot measure.
+/// `login` gets this one program's bytes, not the boot archive: the spawner can map only pages it
+/// holds a `PageFrame` for, and a service that can read every boot file to answer a password holds
+/// authority it never exercises. The blob costs the spawner no capability-table slots
+/// (notes/login/contract.md). Zero length means no vouched-for caretaker: `login` still starts and
+/// answers every login [`DENIED`].
 pub const CARETAKER_ELF_VA: u64 = 0x0000_0000_0100_0000;
 
 /// **Where `measured_boot::PROGRAM_MEASUREMENTS`' bytes are mapped, read-only, before `login`'s
@@ -503,10 +468,8 @@ pub mod durable {
     /// **How many durable sessions fit a `table_slots`-slot capability table** with room left for
     /// one ordinary login beside them: the largest `n` with
     /// `SLOTS_AT_REST + SLOTS_PER_SESSION * n + SLOTS_LOGIN_PEAK <= table_slots`. Opening the last
-    /// of them at a login peaks at the same count and no higher, because `login` builds that
-    /// session's two store caretakers (Fork 8 D) before anything else of the session and mints the
-    /// client's own caretaker after it: 16 held at the open, 23 building the second caretaker, 24
-    /// building `user_timetable_keeper`. At start-up it peaks lower. Counted from the code on
+    /// at a login peaks no higher: 16 held at the open, 23 building the second store caretaker
+    /// (Fork 8 D), 24 building `user_timetable_keeper`; lower at start-up. Counted from the code on
     /// 2026-09-27, not measured.
     ///
     /// # EXAMPLES

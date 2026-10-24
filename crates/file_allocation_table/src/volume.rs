@@ -158,13 +158,11 @@ impl Volume {
             .checked_sub(RESERVED_SECTORS)
             .ok_or(Error::NotFat32)?;
         let per_fat_sector = (256 * CLUSTER_SECTORS + FATS) / 2;
-        // **Rounded up until the data area starts on a cluster boundary**, which is what every
-        // modern `mkfs.vfat` does and what this crate's caller depends on: an installer writing
-        // whole 4096-byte blocks through `filesystem_contract::blk` can only put a cluster where a
-        // block goes. The specification's own sizing leaves the alignment to chance, and the run
-        // that found this out wrote the boot file **six sectors early** onto a real disk, because
-        // `32 + 2 * 1023` is not a multiple of eight. See this crate's
-        // `the_data_area_begins_on_a_cluster_boundary`.
+        // **Rounded up until the data area starts on a cluster boundary**, as every modern
+        // `mkfs.vfat` does: the installer writes whole 4096-byte `filesystem_contract::blk`
+        // blocks, so a cluster can only start where a block does, and the specification's sizing
+        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). notes/installing.md,
+        // section 3; `the_data_area_begins_on_a_cluster_boundary`.
         let fat_sectors = after_reserved
             .div_ceil(per_fat_sector)
             .next_multiple_of(CLUSTER_SECTORS / FATS);
