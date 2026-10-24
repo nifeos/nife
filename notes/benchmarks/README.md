@@ -8,8 +8,6 @@ table is the index, one row per file with the dated entries it holds, so it is n
 [`kernel-bench-harness.md`](kernel-bench-harness.md) is the exception: it carries why each row in
 `kernel/src/bench/` is built the way it is, not a dated measurement.
 
-`kernel-bench-harness` Name: provisional.
-
 *Name: ratified 2026-09-24 (calef, approving #1200). The directory `notes/benchmarks/` and 18 of the
 21 stems were ratified as the splitting lane minted them. Three were renamed. Refused
 `milestone-138-steps-1-and-3` and `milestone-138-steps-4-and-2` (named by a milestone's step numbers

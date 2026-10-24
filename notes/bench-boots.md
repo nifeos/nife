@@ -1,6 +1,6 @@
 # The bench boots: what each prints, and why it prints it
 
-*Name: provisional. calef names notes.*
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-bench-rest. calef names notes.*
 
 A bench boot is a kernel feature that replaces the hand-over to the progenitor with one experiment
 on a real machine, prints what it found and halts. Each prefixes every line with its own word, so a

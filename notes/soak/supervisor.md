@@ -1,5 +1,7 @@
 # The soak supervisor: its constants and its orderings
 
+*Name: provisional. Each stem here is named for its content, and calef names files.*
+
 An appendix to [notes/soak.md](../soak.md). It carries the reasons behind `kernel/src/soak.rs`: why
 each constant has its value, and why each step happens where it does. The tick route is
 [tick-route.md](tick-route.md), the census is [placement-census.md](placement-census.md), and the
