@@ -313,10 +313,9 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// **Build the RISC-V userspace archive** (milestone 20, the richer initial ramdisk step): build
-/// both program packages for riscv64 and pack every entry under its own name into a nifefs archive.
-/// The kernel enters `progenitor` and nothing else. Point `NIFE_INITIAL_RAMDISK` at the result and
-/// boot the riscv kernel, e.g.:
+/// **Build the RISC-V userspace archive** (milestone 20): build both program packages for riscv64
+/// and pack each entry under its own name; the kernel enters `progenitor` and nothing else. Point
+/// `NIFE_INITIAL_RAMDISK` at the result and boot the riscv kernel, e.g.:
 ///
 /// ```text
 /// cargo xtask initial-ramdisk-riscv
