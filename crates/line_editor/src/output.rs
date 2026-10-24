@@ -1,10 +1,6 @@
 //! **The output side**: [`Sink`], where echo bytes go, and [`expand_output`], the newline
 //! translation applied to what an application prints.
 //!
-//! Cut out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to their
-//! own files), which left the crate root an index (§282 (when a file is split, the parent becomes
-//! an index)).
-//!
 //! Name: provisional (milestone 878's lane, 2026-10-12 UTC; §295 (the line editor's crate root
 //! splits into module files)), for the module and the file.
 

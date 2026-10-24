@@ -3,27 +3,10 @@
 //! I/O), milestones 299, 313, 768).
 //!
 //! `x86_port_tests` proves a non-holder faults, a holder transmits, a revoked holder faults, a
-//! self-deleter faults, and a `READ`-only capability grants no output. Every `out` it executes that
-//! is *meant* to be permitted, and every revoke it drives, comes at those claims from the paths the
-//! milestone audits found. This module comes at the same claims from fresh angles the suite did not
-//! have, each a child I build and drive through my own harness:
-//!
-//! - [`a_port_range_holder_cannot_reach_a_port_above_its_range`] (claim 27): every `out` in
-//!   `x86_port_tests` is *inside* the granted range; this writes the port one past it.
-//! - [`a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake`] (claim 28): the existing
-//!   revoke test uses the whole-machine `revoke_port_range`; this drives the *sparing*
-//!   `revoke_port_range_from_others`, the body `PortRange::REVOKE` runs for a live driver swap,
-//!   against a parked holder, which no test did.
-//! - [`a_self_deleting_holder_faults_on_its_next_write`] (claim 29): a holder that drops its own
-//!   port capability and then writes, built and driven here rather than read.
-//! - [`a_read_only_holder_cannot_write_a_port_inside_its_range`] (claim 33): a `READ`-only holder
-//!   writing a port it nominally names.
-//!
-//! The children are built ring-3 with their whole world in one region, the way `x86_port_tests` and
-//! `supervision_tests` build theirs, and reuse `x86_programs`' architect-ratified stub builders (no
-//! new ring-3 machine code is minted here; only fresh parameters and scenarios). The stubs that can
-//! be wrongly permitted exit cleanly in that case, so a broken gate arrives as `EVENT_EXIT` where
-//! the test wants `EVENT_FAULT` rather than hanging the run on a `SEND` nobody receives.
+//! self-deleter faults, and a `READ`-only capability grants no output. Each test here comes at one
+//! of those claims from an angle that suite lacks (notes/confinement-outsider-pass-9.md, "The
+//! kernel tests"). A wrongly permitted stub exits cleanly, so a broken gate arrives as `EVENT_EXIT`
+//! where the test wants `EVENT_FAULT`, never as a hang on a `SEND` nobody receives.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. x86_64 only: there is no port space and no TSS I/O bitmap on the other two
@@ -59,12 +42,13 @@ const PORT_SLOT_NO_WAKE: u64 = 1;
 const CODE_VA: u64 = address_space_map::IMAGE_BASE + 0x80_0000;
 const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE - 0x80_0000;
 
-/// Build a ring-3 child from `stub`, holding `PortRange(COM1)` with `rights`, supervised through
-/// `fault_ep` (in the reserved fault slot, so a #GP arrives as a message rather than panicking the
-/// kernel). Slot 0 is a report endpoint (no child here sends on it), slot 1 a wake endpoint when
-/// `wake` is given (a `receive_then_port_out` child parks on it), and the port capability the next
-/// slot. One region holds everything, so one reclaim frees it. Modeled on
-/// `x86_port_tests::build_child`.
+/// Build a ring-3 child from `stub`, one of `x86_programs`' architect-ratified stub builders (this
+/// module mints no ring-3 machine code), holding `PortRange(COM1)` with `rights`, supervised
+/// through `fault_ep` (in the reserved fault slot, so a #GP arrives as a message rather than
+/// panicking the kernel). Slot 0 is a report endpoint (no child here sends on it), slot 1 a wake
+/// endpoint when `wake` is given (a `receive_then_port_out` child parks on it), and the port
+/// capability the next slot. One region holds everything, so one reclaim frees it. Modeled on
+/// `x86_port_tests::build_child`. Returns the child's tid and its region.
 fn build_port_holder(
     stub: &[u32],
     rights: Rights,
@@ -209,14 +193,11 @@ fn a_port_range_holder_cannot_reach_a_port_above_its_range() {
 
 /// **A parked holder revoked by the sparing take-back faults on its next write** (claim 28).
 ///
-/// The child parks in `RECEIVE` on its wake endpoint while holding the port range. While it is
-/// parked the test runs `revoke_port_range_from_others`, the sparing take-back a live driver swap
-/// uses: it deletes the range from every table but the invoker's and resets the TSS on every core.
-/// The invoker here is the test thread, which holds no port range, so nothing of the test's is
-/// spared that matters; the child's capability and cached grant are taken. The test then wakes the
-/// child, and the `out` it executes faults. The existing revoke test drives the whole-machine
-/// `revoke_port_range`; this drives the syscall-reachable sparing body against a parked holder,
-/// which no test did.
+/// The child parks in `RECEIVE` holding the range; the test runs `revoke_port_range_from_others`,
+/// the sparing take-back `PortRange::REVOKE` runs for a live driver swap: it deletes the range from
+/// every table but the invoker's (the test thread, which holds none) and resets the TSS on every
+/// core. Woken, the child's `out` faults. The existing revoke test drives the whole-machine
+/// `revoke_port_range`; none drove the sparing body against a parked holder.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -256,11 +237,10 @@ fn a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake() {
 /// **A holder that deletes its own port capability faults on its next write** (claim 29, §12
 /// (call/reply IPC: a one-shot reply capability)).
 ///
-/// The child deletes the slot holding its port capability (`PORT_SLOT_NO_WAKE`) and then executes
-/// `out`. The port grant is a cached field the context switch installs; if `SYS_CAP_DELETE` cleared
-/// the table but not the cache, the child would keep the ports for life after dropping the
-/// capability, which is claim 29 failing for the one object enforced outside the table. So the `out`
-/// must fault at the instruction after the delete. Built and driven here rather than read.
+/// The child deletes its port capability's slot (`PORT_SLOT_NO_WAKE`), then executes `out`. The
+/// port grant is a cached field the context switch installs; if `SYS_CAP_DELETE` cleared the table
+/// but not the cache, the child would keep the ports for life, claim 29 failing for the one object
+/// enforced outside the table. So the `out` must fault, at the instruction after the delete.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -298,11 +278,10 @@ fn a_self_deleting_holder_faults_on_its_next_write() {
 /// **A `READ`-only holder cannot write a port inside its range** (claim 33, milestone 768 (a
 /// read-only port range grants nothing)).
 ///
-/// The capability names the COM1 range but carries `READ` alone (a `Serve`-shaped grant), not
-/// `WRITE`. The claim is that the TSS bitmap installs nothing for a capability without `WRITE`, so
-/// the holder's `out` faults exactly as a non-holder's does even though the port it writes is one it
-/// nominally names. The port is inside the range, so only the missing `WRITE` can refuse it, which
-/// is the point: the grant must read the capability's rights, not just its range.
+/// The capability names the COM1 range with `READ` alone (a `Serve`-shaped grant). The TSS bitmap
+/// installs nothing for a capability without `WRITE`, so the `out` faults as a non-holder's does.
+/// The port is inside the range, so only the missing `WRITE` can refuse it: the grant must read the
+/// capability's rights, not just its range.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

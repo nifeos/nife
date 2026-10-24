@@ -1,26 +1,11 @@
 //! **The map gate admits only the aligned low half, and no mapping path yields a writable
 //! executable page** (a ninth outsider pass at the confinement claim, claims 10 and 11).
 //!
-//! Claims 10 and 11 are proved per page-table format in `crates/paging`
+//! `crates/paging` proves both claims per page-table format
 //! (`the_user_va_gate_admits_only_the_aligned_low_half`,
-//! `no_encoded_leaf_is_both_writable_and_executable`). This module attacks them one layer up,
-//! through the live dispatcher, from a confined caller holding an ordinary memory budget:
-//!
-//! - [`a_confined_map_cannot_escape_the_aligned_low_half`] (claim 10): `MemoryRegion::MAP` with a
-//!   kernel-half address, and with an unaligned low-half address, each answers `BadPointer`, and
-//!   the gate the dispatcher consults (`paging::is_user_page_va`) rejects both while admitting a
-//!   valid low-half aligned address, so the refusal is the gate talking and the test is not
-//!   vacuous. A rejected address is refused before the budget is spent (the dispatcher's own
-//!   order), so a confined program cannot aim a mapping at the kernel's half nor leak a page per
-//!   bad request.
-//! - [`no_mapping_flag_is_both_writable_and_user_executable`] (claim 11): every `Flags` a mapping
-//!   path can install (`user_data`, `user_rodata`, `user_code`, `user_device`) is either writable
-//!   or user-executable, never both. The dispatcher's `MAP` installs `user_data` (W, not X) and
-//!   `MAP_INTO`'s `MAP_CODE` installs `user_code` (X, not W, and gated on READ, not WRITE), so no
-//!   syscall path a confined caller can take produces a W^X violation.
-//!
-//! Nothing here blocks or maps into a live space, so a regression is red at an assertion. The one
-//! budget is deleted and its region reclaimed.
+//! `no_encoded_leaf_is_both_writable_and_executable`). These attack them one layer up, through the
+//! live dispatcher, from a confined caller holding an ordinary memory budget. Nothing blocks or
+//! maps into a live space; the one budget is deleted and its region reclaimed.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC). Cross-ISA: `invoke`, the map gate and the
 //! flag constructors are portable kernel code, and `is_user_page_va` is instantiated at the running
@@ -50,6 +35,10 @@ const UNALIGNED_LOW: u64 = 0x4001;
 const VALID_LOW_PAGE: u64 = 0x4000_0000;
 
 /// **A confined caller cannot map outside the aligned low half** (claim 10).
+///
+/// `MemoryRegion::MAP` at a kernel-half and at an unaligned low-half address each answers
+/// `BadPointer`, refused before the budget is spent, so a confined program can neither aim a
+/// mapping at the kernel's half nor leak a page per bad request.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -96,10 +85,11 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
 
 /// **No mapping flag is both writable and user-executable** (claim 11, W^X).
 ///
-/// The four flag sets a mapping path can install, asserted at the boundary a leaf is encoded from.
-/// This is the kernel-visible twin of `paging`'s per-format
-/// `no_encoded_leaf_is_both_writable_and_executable`, and it covers every `Flags` the dispatcher's
-/// `MemoryRegion::MAP`, `PageFrame::MAP` and `AddressSpace::MAP_INTO` can reach.
+/// The four flag sets a mapping path can install, asserted where a leaf is encoded from: the
+/// kernel-visible twin of `paging`'s per-format `no_encoded_leaf_is_both_writable_and_executable`,
+/// covering every `Flags` that `MemoryRegion::MAP`, `PageFrame::MAP` and `AddressSpace::MAP_INTO`
+/// reach. `MAP` installs `user_data` (W, not X); `MAP_INTO`'s `MAP_CODE` installs `user_code` (X,
+/// not W, gated on READ, not WRITE).
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

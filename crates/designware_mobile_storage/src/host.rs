@@ -1,19 +1,12 @@
-//! **The controller, polled**: reset, power, clock, bus width, and one command with or without a
-//! data phase, moved through the FIFO by the CPU.
-//!
-//! Adapted from OpenBSD's `dwmmc_attach`, `dwmmc_bus_clock`, `dwmmc_bus_width`, `dwmmc_pio_mode`,
-//! `dwmmc_exec_command` and `dwmmc_transfer_data` (the crate root carries the notice). The
-//! differences are deliberate and each is a line below: every wait is a deadline on a clock the
-//! caller supplies rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays
-//! masked, and a 64-bit FIFO is refused rather than handled (radon's is measured by the bench step
-//! before anything depends on it).
-//!
-//! # Two data paths
-//!
-//! `Host<R>` moves every word through the FIFO by MMIO, which nothing but the controller and the
-//! card stands behind; that is what radon's first silicon read tested. `Host<R, D>`, made by
-//! [`Host::with_idmac`], hands each data phase to the controller's own DMA engine instead
-//! ([`crate::idmac`]). Commands and identification are the same on both.
+//! The controller, polled: reset, power, clock, bus width, and one command with or without a data
+//! phase. Adapted from OpenBSD's `dwmmc_attach`, `dwmmc_bus_clock`, `dwmmc_bus_width`,
+//! `dwmmc_pio_mode`, `dwmmc_exec_command` and `dwmmc_transfer_data` (the crate root carries the
+//! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
+//! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
+//! 64-bit FIFO is refused (radon's is measured by the bench step before anything depends on it).
+//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from [`Host::with_idmac`],
+//! hands each data phase to the controller's DMA engine ([`crate::idmac`]). Commands and
+//! identification are the same on both.
 
 use crate::command::{Command, UPDATE_CLOCK};
 use crate::idmac::{DirectMemoryAccessRegion, Idmac, NoDirectMemoryAccess, PAGE};
