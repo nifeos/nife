@@ -1,5 +1,7 @@
 # `fs_nameset_caretaker`, and why it is a third caretaker
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes.*
+
 An appendix to [`notes/glob-grant.md`](../glob-grant.md), which states the conclusion.
 
 There were three candidate shapes, and this was a real fork rather than a formality.

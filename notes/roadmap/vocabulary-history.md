@@ -1,5 +1,7 @@
 # The roadmap's vocabularies: why each word exists
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/roadmap.md](../roadmap.md), which carries each vocabulary's tables and rules.
 This page carries the history behind them: the failures that minted each status word, the reasons
 for the dependency fields, and how the follow-on dispositions arrived.

@@ -1,5 +1,7 @@
 # The manual: resolved BUGS entries
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), whose `BUGS` section now carries
 only what is still true. These entries are resolved and kept for their reasons.
 

@@ -5862,7 +5862,6 @@ notes/actions-cache-budget-2026-10-07.md
 notes/adding-a-program.md
 notes/address-space-identifiers.md
 notes/address-space-map.md
-notes/amd-vi.md
 notes/arch-audit.md
 notes/architecture-list-sweep.md
 notes/automation-identity.md
@@ -5885,11 +5884,9 @@ notes/calendar.md
 notes/capabilities.md
 notes/capability-lifecycle.md
 notes/capability-peak-trace.md
-notes/cfi-unwind.md
 notes/check-inventory.md
 notes/ci-failing.md
 notes/ci-log-baseline.md
-notes/ci.md
 notes/citations.md
 notes/clock.md
 notes/code-scanning.md
@@ -5915,8 +5912,6 @@ notes/credentials.md
 notes/cryptography-provider.md
 notes/date.md
 notes/deadlock.md
-notes/debt-paydown.md
-notes/delegated-review.md
 notes/delegation.md
 notes/denominators.md
 notes/dependency-census.md
@@ -5928,9 +5923,7 @@ notes/device-tree.md
 notes/dir-capability.md
 notes/dma.md
 notes/doc-coverage.md
-notes/documentation-audit.md
 notes/documentation.md
-notes/durable-delegation.md
 notes/e1000e.md
 notes/effort-levels.md
 notes/elf.md
@@ -5940,10 +5933,7 @@ notes/env-config.md
 notes/exceptions.md
 notes/falsification-coverage.md
 notes/falsification.md
-notes/fatal-risks-6-and-7-verdict-briefs.md
 notes/filesystem-crates-2026-10-07.md
-notes/fio-on-nife.md
-notes/follow-on-work.md
 notes/footprint-perturbation.md
 notes/foreign-program-arguments.md
 notes/frame-budget.md
@@ -5954,9 +5944,7 @@ notes/futex.md
 notes/fuzzing-the-services.md
 notes/fuzzing.md
 notes/generational-names.md
-notes/glm-5.3-flash-for-lanes.md
 notes/glob-grant.md
-notes/glob-scope.md
 notes/glob.md
 notes/globally-unique-identifier-partition-table.md
 notes/glyphs.md
@@ -5984,7 +5972,6 @@ notes/jh7110-clock-and-reset.md
 notes/job-mix.md
 notes/kani-catches-2026-10-06.md
 notes/kani-reach-2026-10-04.md
-notes/kani-upstream.md
 notes/kernel-budget.md
 notes/kernel-console-arbitration-pricing.md
 notes/kernel-proofs.md
@@ -6009,11 +5996,9 @@ notes/memory-regions.md
 notes/merge-queue.md
 notes/mmu.md
 notes/model-attribution-review.md
-notes/model-comparison.md
 notes/multicore-defect-curve.md
 notes/mutation-census.md
 notes/mutation-testing.md
-notes/name-resolution.md
 notes/naming-a-running-address-space.md
 notes/net.md
 notes/nifefs.md
@@ -6043,7 +6028,6 @@ notes/process-view.md
 notes/processes.md
 notes/progenitor-and-loading.md
 notes/program-manifest.md
-notes/project-metrics.md
 notes/proof-retrospective.md
 notes/push-while-queued.md
 notes/qemu.md
@@ -6067,7 +6051,6 @@ notes/riscv-summit-2026.md
 notes/riscv-tlb-shootdown.md
 notes/risk-6-bench-evening.md
 notes/rm.md
-notes/roadmap.md
 notes/rule-violations.md
 notes/scheduled-execution.md
 notes/scheduler.md
@@ -6106,13 +6089,11 @@ notes/thread-pointer.md
 notes/thread-spawn-fork.md
 notes/threads.md
 notes/time-command.md
-notes/timed-wait.md
 notes/timer-capability.md
 notes/timer.md
 notes/touch.md
 notes/trusted-base.md
 notes/trusted-init.md
-notes/tsc-under-tcg.md
 notes/two-trees.md
 notes/uart.md
 notes/uefi-boot-two-core-rate.md
@@ -6120,7 +6101,6 @@ notes/uefi-test-exit-rate.md
 notes/undefined-behavior.md
 notes/unmap.md
 notes/unsafe-obligations.md
-notes/untested-error-paths.md
 notes/untracked-work-sweep.md
 notes/untrusted-input-audit.md
 notes/usb.md

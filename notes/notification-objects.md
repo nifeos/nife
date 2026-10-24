@@ -144,6 +144,52 @@ interrupt's endpoint refuses every send) built it: `bind_irq` marks the endpoint
 `SEND_CAP` or `CALL` to it answers `NotPermitted`. Moving interrupts onto notifications is
 decided driver by driver.
 
+## The kernel half (`kernel/src/sched/notification.rs`)
+
+### Who counts as a bound receiver
+
+The crate's `signal` takes one boolean on trust: whether the bound thread is parked in a receive.
+`bound_receiver` decides it: `Blocked` on a rendezvous as a `Receiver` with nothing delivered yet.
+The last clause matters. A receiver a sender has already served stays `Blocked` with its `wait_on`
+intact until the wake completes, which can be a whole context switch later (a wake deferred behind
+`on_cpu` finishes in `finish_switch`). Its mailbox is full, and a notification delivered there would
+overwrite the message.
+
+Every way off a receiver queue marks the thread delivered or aborted in the same critical section: a
+sender's `serve`, an interrupt signal's `serve`, a drain's `abort`, a bound delivery's `serve`. The
+one exception is `finish_blocked_resident`, which ends the thread. So the test is exactly "still
+linked on that receiver queue", and `deliver_bound` asserts it. `RECEIVE`, `RECEIVE_CAP` and
+`Irq::WAIT` all park this way, so the binding wakes all three.
+
+`deliver_bound` takes the thread off its rendezvous's receiver queue with `remove_receiver`, a drain
+and repush, O(receivers queued). That is the cost of reaching into another object's singly linked
+FIFO. A server's endpoint usually holds one receiver, itself.
+
+### One signal path
+
+`signal_locked` serves a thread's `SIGNAL` and a kernel-originated signal alike. They differ only in
+where the woken thread is placed. A thread's signal wakes locally, because the pair is often a
+conversation and the signaling core is warm. A signal from interrupt context (the timer expiry walk)
+wakes load-aware (§28 (SMP placement) step 2), because an interrupt carries no locality. Everything
+in it is legal in interrupt context for `irq_notify`'s reason: `IPC_TABLES` masks interrupts while
+held, a wake is an enqueue rather than a switch, and nothing allocates. The timer expiry walk calls
+it directly, under one hold, for several timers. `signal_notification_from_interrupt` is the
+one-at-a-time entry, exercised by a kernel test and otherwise uncalled.
+
+### Binding, and a word already waiting
+
+A word waiting at bind time is delivered at once if the thread is already receiving. Otherwise a
+signal counted before the bind would wait for the thread's next receive, which for a server blocked
+forever in `RECEIVE` never comes. On entry to a later receive, `take_bound_signal` hands a bound
+thread a word counted while it was elsewhere. It is `#[cold]` and out of line. The receive fastpath
+tests `bound_notification.is_some()` on the thread it holds, §101's "one load and one compare", so
+only a bound thread pays for the body.
+
+`MAX_NOTIFICATIONS` is 256, half of `MAX_RENDEZVOUS`, because a notification is a per-thread or
+per-service doorbell where a rendezvous is per conversation. The pages come from the creators' own
+regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses a
+`RETYPE_OBJ` here.
+
 ## BUGS
 
 - The notification and timer registries are machine-wide (`MAX_NOTIFICATIONS` and `MAX_TIMERS`,

@@ -1,5 +1,7 @@
 # xenon's firmware: the full transcription
 
+*Name: provisional. After the parent's own heading.*
+
 An appendix to [`notes/xenon-firmware.md`](../xenon-firmware.md), which holds the settings nife
 depends on. This is every page of the 70 photographs of 2026-09-04 (UTC), each entry with its `IMG_`
 number. Where a setting has changed since, the parent's table is current and this is the record of

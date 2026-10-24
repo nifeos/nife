@@ -1,5 +1,8 @@
 # The 2036 problem in detail: the epoch, the wrap, and why the pivot is fixed
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, after the parent's
+"the pivot we chose".*
+
 An appendix to [`notes/ntp.md`](../ntp.md), which states the pivot and its table. This file holds
 the arithmetic behind the epoch constant, the case against a nearest-era rule, and the exact window
 `Timestamp::from_unix` accepts.

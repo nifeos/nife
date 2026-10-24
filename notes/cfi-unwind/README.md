@@ -13,7 +13,4 @@ evidence showed, and BUGS. These files carry the evidence its prose budget has n
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `link-script-discovery` Name: provisional. After the parent's own heading.
-- `gdb-transcripts` Name: provisional.
+Each stem here is named for its content, and calef names files.

@@ -1,5 +1,7 @@
 # The arch audit: how the PLIC lock was closed
 
+*Name: provisional.*
+
 An appendix to [`notes/arch-audit.md`](../arch-audit.md). It records the three things decided while
 closing finding 3, the PLIC enable-bit race, and what the tests can and cannot prove about it.
 

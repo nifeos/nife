@@ -1,5 +1,8 @@
 # MMIO timers: the route the kernel already knows how to delegate
 
+*Name: provisional. For the parent's "The other route: an MMIO timer the kernel already knows how to
+delegate". calef names files.*
+
 An appendix of [can a userspace process hold a timer?](../timer-capability.md). The parent keeps why
 this route does not rescue a userspace timer service. This file keeps the per-machine table and the
 sources, read on 2026-09-05.

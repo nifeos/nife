@@ -1,5 +1,7 @@
 # Functions that answer yes or no
 
+*Name: ratified 2026-10-18 (calef, "Yes"). Refused `boolean-predicates`.*
+
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds the prior
 art behind the rule for boolean predicates, measured rather than recalled, and the cases where the
 rule needed a judgement. It exists to verify or challenge the main page.*

@@ -7,10 +7,6 @@ Eight of the nine risk files are ratified (2026-10-05, UTC; calef, PR #1675: "Us
 forms."): each stem states its risk's claim. Refused `5-multicore-reliability` and
 `6-userspace-driver-speed`, which name a topic rather than the claim.
 
-`what-leaves-nife` Name: provisional, minted 2026-10-18 (UTC) by lane maintainer/risk-8-restatement
-for risk 8's appendix, with the risk file's stem `8-nobody-else-builds-on-nife`, which is provisional
-too. The risk stem states the claim in the claim form; the appendix stem names what risk 8 counts.
-
 calef, 2026-08-30: *"something that would kill nife for me as a project is a fatal characteristic
 that would demonstrate the approach isn't viable... We should then try to prove or disprove those
 things."*
