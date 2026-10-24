@@ -89,7 +89,7 @@ to 256 cost 141,359 ticks through this path alone (notes/benchmarks.md). Every l
 have paid again.
 
 `top` shrinks as well as grows, so it tracks live occupancy rather than peak occupancy. Removing the
-top entry walks down over empty slots and stops at the first live one. That is amortised O(1),
+top entry walks down over empty slots and stops at the first live one. That is amortized O(1),
 because a step down happens at most once per slot that was filled and freed. The walk is a `for`
 over `N` with a `break`, since CBMC cannot see `top <= N` from the field and would unwind a `while`
 without limit.

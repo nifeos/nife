@@ -87,7 +87,8 @@ pub const MALFORMED: u64 = 4;
 pub const FULL: u64 = 5;
 /// The service could not obtain a salt and therefore stored nothing. Provisioning only. Distinct
 /// from [`MALFORMED`], which is the provisioner's bug; serving anyway with a made-up salt is the
-/// silent degradation DECISIONS §42 forbids. See notes/credentials/contract.md.
+/// silent degradation DECISIONS §42 (a filesystem declares what it offers and must be truthful)
+/// forbids. See notes/credentials/contract.md.
 pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
