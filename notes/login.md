@@ -78,6 +78,24 @@ typo would produce. The audit trail does not help, since it only records a succe
 Distinguishing the two would need a deliberately-weaker operator-facing channel than the login
 result, real work this slice did not build.
 
+### Provisioning an identity: the subtree first
+
+`identity_provisioner` is `useradd` one level down. Whoever holds the credential service's provision
+endpoint (before its seal) and `WRITE` on the directory holding the principal tree may run it. It
+authenticates no caller, the same shape as the provision endpoint itself. How an operator comes to
+hold those two capabilities is the boot-wiring question `login.rs`'s BUGS name.
+
+It makes two calls to two servers with no cross-server commit, so their order decides what a
+failure leaves behind. The `MKDIR` of the home subtree goes first. If it fails, nothing was stored
+and the caller retries. If the `PUT` then fails (`credential_contract::FULL`, `NO_ENTROPY`, or a
+duplicate identity), the result is an orphaned, empty subtree with no identity. That is inert, and
+re-running recovers it. The other order risks a credential that verifies for an identity with no
+home. So `MKDIR`'s `EEXIST` means "already created, proceed", exactly the state a failed run
+leaves, and any other `MKDIR` failure stops before the store is touched.
+
+It never sends `SEAL`. Sealing ends provisioning for the whole store, and that is the caller's
+decision once every identity is in. It does not deprovision.
+
 ## Reclaiming a session: the design argument
 
 Moved here 2026-10-09 from the module doc; the resolved history is in git.
