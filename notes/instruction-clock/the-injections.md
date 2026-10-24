@@ -1,5 +1,7 @@
 # The instruction clock: the injections, and what each one settled
 
+*Name: provisional. Named after the parent's own heading.*
+
 An appendix to [`notes/instruction-clock.md`](../instruction-clock.md). It records the three defects
 injected into the timer handler on 2026-08-17 (UTC), and the pricing question for milestone 106 (a
 wait that ends on the interrupt or the deadline) that the third one answers.

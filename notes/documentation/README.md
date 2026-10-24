@@ -26,14 +26,4 @@ carry the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `corpus-test` Name: provisional.
-- `underscore-terms` Name: provisional.
-- `apropos-builtin` Name: provisional.
-- `repository-search` Name: provisional.
-- `index-cost` Name: provisional.
-- `search-limitations` Name: provisional.
-- `resolved-bugs` Name: provisional.
-- `where-next` Name: provisional. For the parent's "Where this goes next" and "Prior art".
-- `narrowing-bugs` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `narrowing-limitations`. For two of the parent's `BUGS` entries.
+Each stem here is named for its content, and calef names files.

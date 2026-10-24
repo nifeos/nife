@@ -10,6 +10,4 @@ what happened. This directory carries the analysis its prose budget has no room 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stem below is named for its content, and calef names files.
-
-- `without-an-mmu` Name: provisional.
+The stem here is named for its content, and calef names files.

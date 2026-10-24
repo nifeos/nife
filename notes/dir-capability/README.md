@@ -17,12 +17,5 @@ for.
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
+The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-
-- `caretaker` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `rename` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, after the
-  verb.
-- `tests-and-stack-usage` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `tests-and-stack`.
-- `limitations` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, after
-  `notes/soak/limitations.md` and `notes/frames/limitations.md`.

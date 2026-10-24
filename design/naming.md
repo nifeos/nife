@@ -158,10 +158,15 @@ Four more kinds are read by marker (2026-09-24), in the same grammar:
 - `item`: a `/// Name:` paragraph in the doc of a function, constant, type, field or variant.
 - `module`: a `//! Name:` block in a Rust file that is not a crate root or a program.
 - `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75.
-- `document`: a README paragraph opening `` `stem` Name: ``, else the directory's block.
+- `document`: the document's own `Name:` paragraph, else its directory's block.
 
-A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item is
-not tracked and never fails.
+A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item
+never fails.
+
+A document's block is an italic paragraph under its title by convention and read wherever it
+sits (calef, 2026-10-24 UTC), not frontmatter
+([why](naming/provenance.md#a-documents-block-is-a-paragraph-not-frontmatter)). A README
+`` `stem` Name: `` paragraph counts until `helpers/document_name_migrate.py` moves the last.
 
 The refusals are the valuable half. A refused name is visible nowhere else, and the person who most
 needs it is the one about to propose it again.
@@ -192,10 +197,8 @@ Name: provisional. <what was considered>
 - `unrecorded` is a first-class answer. Cite the commit that introduced the name.
 - One block per file, in plain spelling, per milestone 283 (one provenance block per file). The
   parse reads the first block only and cannot see a `Name:` line wearing markdown.
-- A lane never writes `ratified`. Nothing checks that state against calef.
+- A lane never writes `ratified`.
 - The maintainer writes the block at ratification, in the commit that applies the name.
-- A directory under `design/` or `notes/` records its name in its own `README.md`, per §75
-  (directories carry provenance in their own README).
 
 ### The commands
 

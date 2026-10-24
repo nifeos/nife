@@ -1,42 +1,14 @@
-//! **The nameset caretaker: a directory capability attenuated to the names a pattern matched**
+//! The nameset caretaker: a directory capability attenuated to the names a pattern matched
 //! (milestone 47's globbing lane, notes/glob-grant.md).
 //!
-//! `fs_file_caretaker` narrows a directory capability to one **file**. `fs_subtree_caretaker`
-//! narrows it to one **subtree**. This narrows it to a **set of names in one directory**, which is
-//! what `rm *.txt` designates. It speaks `filesystem_contract` above and below, over a wider
-//! namespace; nothing new in the kernel.
-//!
-//! It is a third caretaker rather than a mode of the others because `fs_subtree_caretaker`'s
-//! strength is performing no checks at all, and a name filter is a check on every name-taking verb;
-//! `fs_file_caretaker` serves the *file* protocol and refuses every directory verb; and a set does
-//! not fit in `START`'s argument words, so this one is started with a **frame**
-//! (`filesystem_contract::nameset`).
-//!
-//! # The rule, and the fact that there is only one
-//!
-//! **A name that is not in the set does not exist here.** Reading it, writing it, creating it,
-//! removing it and renaming onto it are all `ENOENT`: in this scope there is no such name and
-//! nothing consulted a permission (`fs_file_caretaker`'s sentence, DECISIONS §27 (the filesystem
-//! service), over a set), so there is no per-verb policy here to get wrong.
-//!
-//! The filter applies at the **granted directory** and nowhere else. A handle minted below it (by
-//! descending into a matched directory, which needs a `-r` grant's `DESCEND`) is unfiltered: the
-//! pattern selected top-level names, and what is under a selected directory was never its question.
-//!
+//! `fs_file_caretaker` narrows a directory capability to one file and `fs_subtree_caretaker` to
+//! one subtree; this narrows it to a set of names in one directory, which is what `rm *.txt`
+//! designates. A name not in the set does not exist here: every verb that names it is `ENOENT`, at
+//! the granted directory and nowhere below it. `start_granted_set` in
+//! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the directory's name and rights
+//! in the three `START` words, and maps the set at [`SET_VA`] ([`filesystem_contract::nameset`]).
+//! Why it is a third caretaker is in notes/glob-grant/third-caretaker.md.
 
-//! # Capability contract (`kernel/src/user/fs_service/set_grant.rs`, `start_granted_set`)
-//!
-//! - **slot 0**: the FS-service endpoint, `WRITE`. The directory capability being attenuated.
-//! - **slot 1**: the narrowed endpoint, `READ`. Holding it is holding the set.
-//! - **slot 2**: a report endpoint, `WRITE`. Readiness, sent once the descent has succeeded.
-//! - **[`PAGE_VA`]**: the page shared with the FS server *and* the client, for
-//!   `fs_file_caretaker`'s reason.
-//! - **[`SET_VA`]**: a **read-only** frame holding the encoded set, copied into a local at startup
-//!   and never read again, so nothing that happens to that page afterwards can widen the namespace.
-//!
-//! The granted directory's name and rights ride in the three `START` argument words exactly as
-//! `fs_subtree_caretaker`'s do.
-//!
 //! # BUGS
 //!
 //! **No host fuzz target reaches this caretaker's decode.** It is inline in this EL0 binary with no
@@ -56,17 +28,21 @@ use filesystem_contract::{dirent, fs, grant, nameset, operation, reply_err, repl
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
-/// The FS-service endpoint: the directory capability this process attenuates.
+/// The FS-service endpoint (slot 0, `WRITE`): the directory capability this process attenuates.
 const FS: u64 = 0;
-/// The narrowed endpoint: where the confined program calls. Holding it is holding the set.
+/// The narrowed endpoint (slot 1, `READ`): where the confined program calls. Holding it is holding
+/// the set.
 const CLIENT: u64 = 1;
-/// Where readiness goes, once.
+/// The report endpoint (slot 2, `WRITE`): readiness, sent once the descent has succeeded.
 const REPORT: u64 = 2;
 
-/// The one page, shared with the FS server above and the client below.
+/// The one page, shared with the FS server above and the client below, for `fs_file_caretaker`'s
+/// reason: every request on both hops is a blocking `CALL`.
 const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 /// The read-only page the encoded name set arrives in. A second frame, and the only place in the
 /// grant machinery that needs one: a set is the first thing a grant carries that registers cannot.
+/// It is copied into a local at startup and never read again, so nothing that happens to this page
+/// afterwards can widen the namespace.
 const SET_VA: u64 = address_space_map::pair_page(0x0000_0000_0070_0000);
 /// The shared page's size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
@@ -162,22 +138,13 @@ fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAX_NAME]) -> usize {
     len
 }
 
-/// **The serve loop.** `fs_subtree_caretaker`'s dispatch, plus one question asked in one place: when
-/// a request names something **in the granted directory**, is that name in the set?
+/// Serve [`CLIENT`] forever: `fs_subtree_caretaker`'s dispatch, plus one question asked in one
+/// place, whether a name in the granted directory `dir` is in `set`.
 ///
-/// # Milestone 61: the filter now sees every name-taking verb by construction
-///
-/// Which verbs get asked the question used to be a list of match arms here, and the failure mode was
-/// the sharp one: a name-taking verb added to the contract would arrive **unfiltered**, so a set
-/// capability would quietly reach a name the pattern never matched. It is now
-/// [`verb::Verb::takes_name`], a row in `filesystem_contract`'s verb table, so the filter covers a new verb
-/// from the moment its row exists.
-///
-/// The distinction that makes this safe is a variant of [`verb::Operand`]. An **attribute** name is
-/// a payload, not a name in the directory, so the four extended-attribute verbs pass the filter
-/// without being compared against the set. Filtering them would have refused a program its own
-/// file's attributes on the grounds that `user.com.apple.metadata` is not one of the names the
-/// pattern matched, which is a category error the table forecloses.
+/// Which verbs are asked is [`verb::Verb::takes_name`], a row in `filesystem_contract`'s verb
+/// table, so a name-taking verb added to the contract is filtered from the day its row exists. An
+/// attribute name ([`verb::Operand::Payload`]) is a payload, not a name in the directory, so the
+/// four extended-attribute verbs are never compared against the set. See notes/glob-grant.md.
 fn serve(dir: u64, set: &[u8]) -> ! {
     let mut table = Table([None; SLOTS]);
     table.0[0] = Some(dir);
@@ -206,17 +173,13 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // pattern matched was never a question the pattern asked.
         let filtered = asked == fs::ROOT;
 
-        // **The one question, asked once, for every verb whose operand is a directory name.** A name
-        // outside the set is refused *before* anything is forwarded, so the FS server is never asked
-        // about a name this capability cannot designate, and a refusal cannot be told apart from a
-        // name that is not on the disk. `RENAME` needs both halves and is checked below.
+        // A name outside the set is refused before anything is forwarded, so the refusal cannot
+        // be told apart from a name not on the disk. `RENAME` needs both halves, below.
         if filtered && v.takes_name() && v.operand == verb::Operand::Name {
             let mut buf = [0u8; grant::MAX_NAME];
             // `OPEN` and `OPENDIR` may carry a relative path (milestone 606 (a directory walk
-            // costs what it does on Linux), ruling A), and only its first component is a name in
-            // this directory; the rest are names below one the set already admits, which this
-            // grant never filtered. So the check is on the first component, and that is also all
-            // that is written back.
+            // costs what it does on Linux), ruling A). Only its first component is a name in this
+            // directory, so only it is checked and written back.
             let first = if code == fs::OPEN || code == fs::OPENDIR {
                 first_component(len)
             } else {
@@ -227,12 +190,9 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 reply(reply_slot, reply_err(ENOENT), 0);
                 continue;
             }
-            // **Write the checked name back before forwarding** (milestone 43,
-            // notes/shared-page-audit.md finding 2). The check above is made against a copy on
-            // this stack; the FS server then does its OWN read of the same shared page and
-            // resolves whatever is there *then*. Two reads, one check. Re-staging makes the bytes
-            // the server resolves the bytes the filter approved, so the set is a namespace rather
-            // than a race. On the honest path it rewrites the identical bytes.
+            // Write the checked name back before forwarding (milestone 43,
+            // notes/shared-page-audit.md finding 2): the FS server reads the shared page again,
+            // so re-staging makes the bytes it resolves the bytes the filter approved.
             put_at(0, &buf[..n]);
         }
 
@@ -247,23 +207,14 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 forward(fs::req(fs::CLOSE, server_handle, 0), 0)
             }
         } else if code == fs::READDIR && filtered {
-            // **`READDIR` at the granted directory is answered from the set itself**, with no round
-            // trip and no cursor translation, because the set *is* the namespace: there is nothing
-            // to filter out of a server's listing that is not already absent from this one.
-            //
-            // It is deliberately not gated on the `ENUMERATE` the grant carries, and that is not a
-            // widening: what a listing here reveals is exactly the set, which the command line
-            // already printed before this process existed. Below the granted directory the server's
-            // own listing is forwarded, and its rights apply as usual.
+            // At the granted directory `READDIR` is answered from the set, which is the namespace.
+            // It is not gated on the grant's `ENUMERATE`: a listing here reveals exactly the set,
+            // which the command line already printed (notes/glob-grant.md).
             list(set, w1 as usize)
         } else if v.operand == verb::Operand::Rename {
-            // **`RENAME` needs both names in the set**, and the destination is the load-bearing
-            // half: renaming a matched name onto an unmatched one would destroy a name this
-            // capability was never granted, which is an escape even though nothing was opened.
-            //
-            // The consequence is real and is declared rather than worked around: a set is a *fixed*
-            // namespace, so a set capability cannot move a name out of it. `mv *.txt` is not
-            // something this shape can express.
+            // `RENAME` needs both names in the set: renaming a matched name onto an unmatched one
+            // destroys a name this capability was never granted. So a set capability cannot move a
+            // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
             let dst_len = fs::dst_len(w1).min(PAGE);
             let mut src = [0u8; grant::MAX_NAME];
             let mut dst = [0u8; grant::MAX_NAME];
@@ -272,9 +223,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             let dst_handle = table.get(fs::dst_handle(w1));
             let src_ok = !filtered || nameset::contains(set, &src[..sn]);
             let dst_ok = dst_handle != Some(dir) || nameset::contains(set, &dst[..dn]);
-            // Re-stage both halves, for the reason above: the destination is the load-bearing one,
-            // because renaming a matched name onto a substituted one destroys a name this
-            // capability was never granted.
+            // Re-stage both halves, for the shared-page reason above.
             if src_ok && dst_ok {
                 put_at(0, &src[..sn]);
                 put_at(len, &dst[..dn]);

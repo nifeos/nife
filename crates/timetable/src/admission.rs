@@ -2,9 +2,8 @@
 //! becomes against it. An entry fires, is refused by its program's own manifest, or is unbacked by
 //! this scheduler, and these are the types and the checks that tell the three apart.
 //!
-//! Moved out of the crate root unchanged by milestone 877 (the timetable crate root is split along
-//! its seams), as §294 (the timetable crate root splits into private modules) lays out; the root
-//! re-exports every public item at its old path.
+//! The crate root re-exports every public item, as §294 (the timetable crate root splits into
+//! private modules) lays out.
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
@@ -13,18 +12,15 @@ use grant_plan::{Endowment, Holdings, Manifest, Refusal};
 
 use crate::{Entry, Schedule};
 
+/// **What this scheduler holds**: `grant_plan::Holdings` one level out, the authority it could
+/// back an entry's grants with.
 ///
-/// This is `grant_plan::Holdings` one level out, and it is a parameter for exactly the same reason:
-/// "this scheduler holds nothing to back that" must be a statement about a particular scheduler's
-/// capability table rather than a hardcoded era. The same document is four refusals in a scheduler granted
-/// nothing but a budget and four running jobs in one granted a clock, a directory and a terminal,
-/// and neither the document nor the program manifests can tell them apart.
-///
-/// Every field but `mem_pages` is `false` today, because the scheduler `components/src/timetable.rs`
-/// really does hold nothing but memory and its own children's channels. Adding a capability to it
-/// is then a visible edit here and a visible change in what the printed plan says, which is the
-/// property worth having: **widening a scheduler is a decision somebody makes on purpose**, not
-/// something an entry can talk it into.
+/// A parameter, so that "this scheduler holds nothing to back that" is a statement about one
+/// scheduler's capability table: the same document is four refusals in a scheduler granted only a
+/// budget and four running jobs in one granted a clock, a directory and a terminal. Widening a
+/// scheduler is a visible edit to its `Held` and to its printed plan, never something an entry can
+/// talk it into. See notes/scheduled-execution.md, "`Held`: what the scheduler holds is a
+/// parameter, not an era".
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Held {
     /// Pages of untyped this scheduler may split off for an entry's `--mem` grant. Zero means it
@@ -50,16 +46,12 @@ pub struct Held {
     pub report: bool,
 }
 
-/// **What the shipped `components/src/timetable.rs` actually holds**, and the one `Held` value it and
-/// this crate's own host test both use, so the two cannot drift the way [`Registry::register`](crate::Registry::register)'s
-/// module doc already warns a document and a spawn site can. `PLANNED_PROGRAMS` in
-/// `system_tests/src/user/timetable_tests.rs` is the same idea applied to the archive; this is it applied
-/// to what the scheduler holds.
+/// **What the shipped `components/src/timetable.rs` actually holds**, and the one `Held` value it
+/// and this crate's own host test both use, so the two cannot drift. `PLANNED_PROGRAMS` in
+/// `system_tests/src/user/timetable_tests.rs` is the same idea applied to the archive.
 ///
-/// Four pages: enough to admit one `at-boot memory_grant_depleter --mem 4` line as this milestone's proof that a
-/// grant can be backed at all, and small on purpose. Nothing about the mechanism needs a bigger
-/// number; picking one only because it looks more impressive would be gold-plating a demonstration
-/// that already makes its point at four.
+/// Four pages: enough to admit one `at-boot memory_grant_depleter --mem 4` line, the proof that a
+/// grant can be backed at all, and small on purpose, since nothing about the mechanism needs more.
 pub const SHIPPED_HELD: Held = Held {
     mem_pages: 4,
     clock: false,
@@ -71,25 +63,14 @@ pub const SHIPPED_HELD: Held = Held {
 
 /// **An authority the entry's plan needs and this scheduler does not hold.**
 ///
-/// The distinction from [`Refusal`] is the whole point and it is not a shade of the same thing.
-/// A `Refusal` is a fact about **the line**: `memory_grant_depleter` with no `--mem` is wrong wherever it is
-/// typed, and the fix is to edit the entry. An `Unbacked` is a fact about **the scheduler**: the
-/// line is exactly right and would run at a prompt, and the fix is to grant the scheduler something
-/// it was not granted. Collapsing the two would tell a person to edit a line that has nothing wrong
-/// with it.
+/// A [`Refusal`] is a fact about **the line**, fixed by editing the entry; an `Unbacked` is a fact
+/// about **the scheduler**: the line would run at a prompt, and the fix is to grant the scheduler
+/// more. See notes/scheduled-execution.md, "The four answers, and why three of them are the point".
 ///
 /// # BUGS
 ///
-/// **[`Unbacked::File`] is reached only through a streamed operand** (`wc report.txt`), never
-/// through `Endowment::file`, because no shipped program declares a `FileGrantDeclaration::Required`.
-/// `grant_plan` keeps that branch live with a fixture of its own rather than a program.
-///
-/// Fixed 2026-09-26 by milestone 129 (scheduled execution): `admit` used to plan against the scheduler's own `dir`, so a
-/// designation this scheduler could not back was refused during planning and arrived as
-/// [`Admission::Refused`] carrying `Refusal::NoSuchCapability`, telling a reader to edit a line
-/// that had nothing wrong with it. Milestone 326 (turn a mutation score upward) found it on 2026-09-19 from two mutants that
-/// deleted the `!` in `unbacked`'s `!held.dir` tests and survived the whole suite. The planner is
-/// now lent a directory unconditionally and `unbacked` alone answers whether one is held.
+/// - [`Unbacked::File`] is reached only through a streamed operand (`wc report.txt`), never
+///   `Endowment::file`: no shipped program declares a `FileGrantDeclaration::Required`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Unbacked {
     /// The entry designates a file, and this scheduler holds no directory to narrow.
@@ -161,18 +142,12 @@ pub enum Admission {
 /// Plan one entry's command against its program's manifest and against what the scheduler holds.
 pub(super) fn admit(command: &[u8], held: Held) -> Admission {
     let spec = grant_plan::parse_run(command);
-    // **The plan is made as if this scheduler held a directory, whether or not it does**, and
-    // `unbacked` below is what answers whether it really does. Planning against `held.dir` instead
-    // made `grant_plan` refuse a designation (`rm -r logs`, `wc report.txt`) during planning, so a
-    // line with nothing wrong with it came back as a `Refused` ("edit the line") when the truth was
-    // an `Unbacked` ("grant the scheduler a directory"), and `Unbacked::File`/`Directory` could not
-    // arrive at all. Milestone 326's mutation run found that on 2026-09-19; milestone 129 closed it
-    // on 2026-09-26. A line that is wrong for any other reason is still refused here, because the
-    // directory is the only holding this lends the planner.
-    //
-    // The position is the root, because a scheduler has no `cd`: there is no prompt to have typed
-    // one at, and a working directory that could move between registration and a fire would make
-    // an already planned grant mean something different later.
+    // Planned as if this scheduler held a directory, whether or not it does: planning against
+    // `held.dir` would refuse a designation (`wc report.txt`) as the line's fault when it is the
+    // scheduler's, and `unbacked` below answers whether one is held. The directory is the only
+    // holding lent, so a line wrong for any other reason is still refused. The position is the
+    // root: a scheduler has no `cd`, and a working directory that moved between registration and a
+    // fire would change what an already planned grant means.
     let holdings = Holdings {
         directory: true,
         ..Holdings::default()
@@ -187,9 +162,8 @@ pub(super) fn admit(command: &[u8], held: Held) -> Admission {
 }
 
 /// [`admit_installed`] for a whole entry: a calendar line needs the wall clock before its
-/// program's manifest is asked, as [`Registry::register`](crate::Registry::register) rules for an archive program, so store
-/// mode keeps that answer rather than overwriting it (milestone 129's rule met milestone 152's
-/// store mode at the merge of 2026-10-03 (UTC)).
+/// program's manifest is asked, as [`Registry::register`](crate::Registry::register) rules for an
+/// archive program, so store mode keeps that answer rather than overwriting it.
 pub(super) fn admit_installed_row(entry: &Entry<'_>, m: Manifest, held: Held) -> Admission {
     match entry.schedule {
         Schedule::Calendar(_) if !held.clock => Admission::Unbacked(Unbacked::WallClock),
@@ -279,9 +253,8 @@ mod tests {
     fn the_shipped_document_parses_and_says_what_it_claims() {
         let doc = parse(REFERENCE).expect("the shipped timetable must parse");
         let reg = Registry::register(&doc, SHIPPED_HELD);
-        // The document is written to show every answer registration can give, so every variant
-        // must actually appear in it. A document that drifted into being all-happy-path would
-        // still pass a "it parses" test and would have stopped demonstrating anything.
+        // The document shows every answer registration can give, so every variant must appear: an
+        // all-happy-path document would still parse and would demonstrate nothing.
         let mut fires = 0;
         let mut refused = 0;
         let mut unbacked = 0;
@@ -336,11 +309,9 @@ mod tests {
         // Legal lines this scheduler holds nothing to back. All four are entries a Unix cron would
         // simply have run.
         assert_eq!(rows[2].admission, Admission::Unbacked(Unbacked::Clock));
-        // `wc` reads a stream, and `grant_plan` refuses that at the prompt already
-        // (`InputDeclaration::Required` with nothing feeding it). It arrives here as the shell's own
-        // refusal rather than as an `Unbacked`, which is the right shape: one authority decides
-        // whether a line is runnable, and this crate only adds the question the shell cannot ask,
-        // which is what the *scheduler* holds.
+        // `wc` with nothing feeding it is refused at the prompt (`InputDeclaration::Required`), so
+        // it arrives as the shell's refusal, not an `Unbacked`: this crate only adds the question
+        // the shell cannot ask, what the scheduler holds.
         assert_eq!(
             rows[3].admission,
             Admission::Refused(Refusal::InputRequired)
@@ -407,18 +378,11 @@ mod tests {
     }
 
     /// **What a designation costs when the scheduler holds a directory, and what it costs when it
-    /// does not.** `admit` lends `grant_plan::plan` a directory, and until the 2026-09-19 mutation
-    /// run nothing tested that it does: that run deleted the field from the `Holdings` expression,
-    /// falling back to the default `false`, and no test noticed. A timetable that holds a directory
-    /// and reports every `rm` line as unbackable is a scheduler that has forgotten what it was
-    /// given.
-    ///
-    /// The two `!held.dir` tests in `unbacked` are also called here directly. Until 2026-09-26
-    /// `admit` could not reach either, because the `dir` it passed to `plan` was the same bit
-    /// `unbacked` then re-tested, and the mutants that deleted both `!`s survived on exactly that;
-    /// `a_designation_the_scheduler_cannot_back_is_unbacked_rather_than_refused` now reaches them
-    /// through `register`. `e.file` has no route in at all, since no shipped program declares a
-    /// `FileGrantDeclaration::Required`, so the grant below is lifted off a real `wc` plan rather than forged.
+    /// does not.** `admit` lends `grant_plan::plan` a directory, and a timetable that holds one and
+    /// reports every `rm` line as unbackable has forgotten what it was given. The two `!held.dir`
+    /// tests in `unbacked` are called directly too. `e.file` has no route in, since no shipped
+    /// program declares a `FileGrantDeclaration::Required`, so the grant below is lifted off a real
+    /// `wc` plan rather than forged.
     #[test]
     fn a_designation_is_backed_by_the_directory_the_scheduler_holds() {
         let doc = parse("every 5s rm -r logs\nevery 5s wc report.txt\n").unwrap();
@@ -473,11 +437,10 @@ mod tests {
     }
 
     /// **A designation in a scheduler holding no directory is the scheduler's fault, not the
-    /// line's.** Until 2026-09-26 `admit` planned against the scheduler's own `dir`, so these two
-    /// lines came back `Refused(NoSuchCapability)`, which tells a reader to edit a line that has
-    /// nothing wrong with it; milestone 326's mutation run found the arms unreachable. The negative
-    /// control is the third line: a line that is wrong for its own reasons is still refused even
-    /// though the planner is lent a directory.
+    /// line's.** Planned against the scheduler's own `dir`, these two lines would come back
+    /// `Refused(NoSuchCapability)`, telling a reader to edit a line with nothing wrong with it. The
+    /// negative control is the third line: a line wrong for its own reasons is still refused though
+    /// the planner is lent a directory.
     #[test]
     fn a_designation_the_scheduler_cannot_back_is_unbacked_rather_than_refused() {
         let doc = parse(

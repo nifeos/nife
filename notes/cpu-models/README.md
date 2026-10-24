@@ -9,6 +9,3 @@ its prose budget has no room for.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
-
-- `canary-flake` Name: provisional. For the parent's resolved canary `BUGS` entry. calef names
-  files.

@@ -1,5 +1,7 @@
 # What the corpus test caught, and what it cannot see
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), which states the lesson.
 `every_character_survives` checks that every letter and digit of the corpus reaches the rendered
 output, in order.
