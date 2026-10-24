@@ -25,9 +25,10 @@ fn gpu_shot_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-scanout-{arch}.ppm"))
 }
 
-/// Where the composed screen's matching dump is kept (milestone 33). A separate file because the
-/// composed screen is transient: the poll loop overwrites [`gpu_shot_path`] on every dump, so the one
-/// that matched has to be copied aside or there is nothing left to look at after a run.
+/// Where the composed screen's matching dump is kept (milestone 33 (a compositor)). A separate file
+/// because the composed screen is transient: the poll loop overwrites [`gpu_shot_path`] on every
+/// dump, so the one that matched has to be copied aside or there is nothing left to look at after a
+/// run.
 fn gpu_compose_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-compose-{arch}.ppm"))
 }
@@ -38,7 +39,7 @@ fn gpu_text_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-text-{arch}.ppm"))
 }
 
-/// Does this PPM hold the pattern rung one's client painted (milestone 29)?
+/// Does this PPM hold the pattern rung one's client painted (milestone 29 (a display terminal))?
 ///
 /// Compares against `graphics_contract::pixel`, the same definition the client painted from and the kernel
 /// test digested against, so the host cannot disagree with the guest about what the pattern is.
