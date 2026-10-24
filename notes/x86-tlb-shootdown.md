@@ -173,11 +173,14 @@ either had no grant installed anywhere or had the holder switch away in time.
 
 ## BUGS
 
-- One page per round trip. A thread reap unmaps six pages and pays for six full shootdowns,
-  where a batched protocol would pay for one. Correct and unbatched was chosen over fast and first:
-  batching needs `unmap_page` to hand its caller an undischarged obligation, which is the one thing
-  `paging::TlbFlush` exists to prevent. Worth revisiting with `script/bench` numbers rather than by
-  argument, and there are no numbers yet because the bench path pins a single hart.
+- One page per round trip, outside two batched paths. A thread reap unmaps
+  `crate::thread::STACK_PAGES` pages and pays for six full shootdowns, where a batched protocol
+  would pay for one. The two paths that move whole runs batch: `revoke::revoke_region` through
+  `mmu::unmap_user_pages`, and `PageFrame::MAP` through `mmu::UserMapBatch`. Each keeps the
+  obligation inside the arch layer (a closure, a `Drop`) rather than handing its caller an
+  undischarged one, which is what `paging::TlbFlush` exists to prevent. The reap is worth the same
+  move once `script/bench` says it matters; there are no numbers yet, because the bench path pins a
+  single hart.
 - Nothing shoots down a core that is online-but-not-yet-listed. A secondary between installing
   the kernel `CR3` and setting its bit in `ONLINE_MASK` is not a target. Its TLB is fresh and the
   only addresses it touches in that window are the direct map and its own never-recycled boot stack,

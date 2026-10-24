@@ -67,39 +67,14 @@ static SHOOTDOWN_PENDING: AtomicUsize = AtomicUsize::new(0);
 
 /// **Make every other online CPU discharge `va` from its TLB, and do not return until they have.**
 ///
-/// # Why this is an NMI and not an ordinary IPI
+/// It is an NMI, not an ordinary IPI: [`unmap_page`] calls this under `KERNEL_MMU`, so cores
+/// contending for that lock have interrupts masked and a maskable IPI would deadlock them. Nothing
+/// is sent before the local APIC is up or with one core online. See notes/x86-tlb-shootdown.md.
 ///
-/// This is called from inside [`unmap_page`], which holds `KERNEL_MMU`, an `IrqSafeMutex`: **this
-/// core reaches here with interrupts masked, and so does every other core running the same code.**
-/// (`flush_asid` reaches it unmasked, which is why [`broadcast`] masks for itself.)
-/// A maskable IPI would therefore deadlock on the first concurrent spawn-and-reap: core A holds
-/// `KERNEL_MMU` and waits for core B's acknowledgement, while core B spins for `KERNEL_MMU` with
-/// interrupts off and can never take the message that would let A finish. That is not a corner
-/// case; it is what two cores running the thread tests do continuously.
-///
-/// notes/riscv-tlb-shootdown.md already names the property that makes the RISC-V protocol work,
-/// and it is exactly the one at issue: *"The IPI arrives as an M-mode software interrupt, so a hart
-/// with S-mode interrupts masked still services it. That is not a footnote: without it, any kernel
-/// code that disables interrupts and spins would deadlock whoever was flushing, and this kernel
-/// disables interrupts routinely."* RISC-V gets that from a privilege level below the kernel's, and
-/// aarch64 does not need it at all because `tlbi ..., is` is broadcast by the hardware. x86 has
-/// neither, and has exactly one delivery mode `cli` cannot suppress, so the NMI is not a stylistic
-/// choice here: it is the only message that keeps the guarantee.
-///
-/// # What it does not do
-///
-/// Nothing before the local APIC is up, and nothing when this is the only online core: boot maps a
-/// great many pages with nobody to tell.
+/// Context: masks interrupts for the round and takes `SHOOTDOWN_LOCK`, a raw spin.
 ///
 /// # BUGS
-///
-/// **One page per round trip, outside two batched paths.** A thread reap unmaps
-/// [`crate::thread::STACK_PAGES`] pages and pays for six full shootdowns, where a batched protocol
-/// (collect the range, send once) would pay for one. The two paths that move whole runs batch:
-/// `revoke::revoke_region` through [`super::unmap_user_pages`] and `PageFrame::MAP` through
-/// [`super::UserMapBatch`]. Each keeps the obligation inside the arch layer (a closure, a `Drop`)
-/// rather than handing its caller an undischarged one, which is what `paging::TlbFlush` exists to
-/// prevent. The reap is worth the same move once `script/bench` says it matters.
+/// - One page per round trip outside two batched paths, so a thread reap pays six shootdowns.
 pub(super) fn shoot_down_others(va: u64) {
     broadcast(KIND_PAGE, va);
 }
@@ -125,19 +100,9 @@ fn broadcast(kind: u8, word: u64) {
         return;
     }
 
-    // **Masked for the whole round, whatever the caller held** (2026-10-13 UTC). This function was
-    // written for `unmap_page`, which calls it under `KERNEL_MMU` and so with interrupts already
-    // off, and it assumed every caller would. `flush_asid` does not: an `AddressSpace` drop calls it
-    // with no lock held and interrupts on. A tick landing in the ack wait below then preempted a
-    // thread that held `SHOOTDOWN_LOCK`. When that thread was switched back in, its `finish_switch`
-    // reaped the corpse that had run in between, the reap freed the corpse's kernel stack, and
-    // `unmap_page` came back here to spin, interrupts masked, on the lock its own thread held. The
-    // other core then spun on `KERNEL_MMU`, also masked, and the machine stopped taking ticks, so
-    // even the test watchdogs went quiet. That is the x86_64 hang in
-    // `a_child_can_neither_learn_nor_forge_its_label`, recorded in the BUGS of milestone 105 (the
-    // two forks), caught with both cores' stacks under gdb. Masking here also pins the `cpu::id()`
-    // read below to the core the round runs on, which a preemptible caller could otherwise leave
-    // behind.
+    // Masked for the whole round, whatever the caller held: `flush_asid` calls this unmasked, and a
+    // tick in the ack wait could preempt the holder of `SHOOTDOWN_LOCK` into a reap that comes back
+    // here and spins on it. Masking also pins the `cpu::id()` read below to this core.
     let irqs_were_enabled = crate::arch::interrupts::disable();
     #[cfg(test)]
     if crate::arch::interrupts::is_enabled() {
@@ -165,10 +130,8 @@ fn broadcast(kind: u8, word: u64) {
     SHOOTDOWN_PENDING.store(others, Ordering::Release);
 
     for cpu in cpu_set::cpus_in(others) {
-        // The local APIC id *is* the cpu id on this port: `smp::seat_cpus_from_acpi` seats every
-        // core at the slot its own APIC id names, which is what makes `smp::hwid(id) == Some(id)`
-        // for a filled slot. Asserted rather than assumed, because the whole protocol is addressed
-        // by this number.
+        // The local APIC id is the cpu id on this port (`smp::seat_cpus_from_acpi` seats each core
+        // at the slot its APIC id names). Asserted, because the whole protocol is addressed by it.
         debug_assert_eq!(
             crate::smp::hwid(cpu),
             Some(cpu as u64),
@@ -185,18 +148,14 @@ fn broadcast(kind: u8, word: u64) {
     crate::arch::interrupts::restore(irqs_were_enabled);
 }
 
-/// **Serve a shootdown NMI**: the receiving half of [`shoot_down_others`].
+/// **Serve a shootdown NMI**: the receiving half of [`shoot_down_others`], called from the trap
+/// path for vector 2 only. Returns whether this NMI was one of ours.
 ///
-/// Called from the trap path for vector 2 and from nowhere else. Returns whether this NMI was one
-/// of ours, so the caller can tell a shootdown from an NMI this kernel did not send.
+/// It names its core from the local APIC's id register, not `cpu::id()`: `isr_paranoid` has
+/// already installed the kernel's GS base, but the APIC is hardware ground truth, so the shootdown
+/// does not depend on the paranoid entry being right.
 ///
-/// # It names its core from the local APIC
-///
-/// `isr_paranoid` (trap.s) has already put the kernel's GS base in place, so `cpu::id()` would
-/// answer correctly here even in the windows around `swapgs` where the interrupted code held the
-/// user's. This still names its core from the local APIC's own id register, which is hardware
-/// ground truth and needs no per-CPU pointer, so the shootdown does not depend on the paranoid
-/// entry being right. Nothing here takes a lock or prints.
+/// Context: NMI; takes no lock and prints nothing.
 pub fn serve_shootdown_nmi() -> bool {
     let me = super::irq::local_apic_id() as usize;
     let bit = 1usize << me;

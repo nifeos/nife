@@ -1,22 +1,10 @@
 //! **Starting a second logical CPU: INIT-SIPI-SIPI and the real-mode trampoline it needs.**
 //!
-//! aarch64 asks firmware to start a core (PSCI `CPU_ON`) and RISC-V asks SBI (`hart_start`); x86
-//! has no firmware call for this at all. Starting a second CPU here means sending it two kinds of
-//! inter-processor interrupt through the local APIC: an INIT (reset it into a wait-for-SIPI state)
-//! and two STARTUP IPIs ("SIPI"), which name a *physical page below 1 MiB* the target begins
-//! executing at, in 16-bit real mode. See `irq::send_init`/`irq::send_startup` for the messages
-//! themselves and `boot.s`'s `secondary_boot` (the trampoline that page holds) for what runs there.
-//!
-//! **This module's whole job is the one thing INIT-SIPI-SIPI cannot do for itself**: getting the
-//! trampoline's bytes onto that low page and handing it the one value that varies per core (the
-//! stack top), before the messages are sent.
-//!
-//! Two constraints a reader of the SMP path needs, each argued at its site: `super::cpu_start`
-//! reads the online count once, before the INIT, because a fast secondary can check in during the
-//! SIPI delays; and the cross-core TLB shootdown (`mmu::shoot_down_others`) is an NMI, because
-//! `unmap_page` runs with interrupts masked on every core. `NIFE_SMP` defaults to 2; three or more
-//! cores are unmeasured on silicon, and xenon has not been asked to bring all four online (the line
-//! to read there is `smp: 4 core(s) online`).
+//! x86 has no firmware call for this (aarch64 has PSCI `CPU_ON`, RISC-V SBI `hart_start`): an
+//! INIT resets the target into wait-for-SIPI, and a STARTUP IPI names a physical page below 1 MiB
+//! where it begins in 16-bit real mode (`irq::send_init`, `irq::send_startup`, `boot.s`'s
+//! `secondary_boot`). This module copies the trampoline onto that page and hands it the one
+//! per-core value, the stack top. `NIFE_SMP` defaults to 2. See notes/x86-port/smp-bring-up.md.
 
 use super::mmu::phys_to_virt;
 
@@ -51,17 +39,12 @@ pub(crate) fn trampoline_size() -> u64 {
     (&raw const __ap_trampoline_end) as u64 - trampoline_phys()
 }
 
-/// **Where the trampoline's bytes actually live in the loaded image**, physically: link-x86_64.ld
-/// places `.ap_trampoline`'s LMA in the gap it deliberately opens between `.rodata` and `.data`
-/// (see that file's own comment on why not `.boot_scratch` or the secondary stacks).
+/// **Where the trampoline's bytes live in the loaded image**, physically: link-x86_64.ld places
+/// `.ap_trampoline`'s LMA in the gap it opens between `.rodata` and `.data`.
 ///
-/// **Neither the direct map nor the image's own section-by-section map covers this range on its
-/// own**, and both for the same reason: it sits inside `memory::image_start()..image_end()` (so
-/// `mmu::map_everything`'s direct-map step skips it, the same way it skips `.text`, to avoid a
-/// second writable alias), and it is *between* two mapped sections (`.rodata`, `.data`) rather than
-/// inside either one, so neither section's own `map_range` reaches it either. `mmu::map_everything`
-/// direct-maps it explicitly, by name, the same way `map_firmware_regions` already covers other
-/// gaps the general rules miss.
+/// Neither general mapping rule covers that gap: the direct map skips the image (no second
+/// writable alias), and the gap lies between two sections rather than inside either. So
+/// `mmu::map_everything` direct-maps it by name, as `map_firmware_regions` covers other gaps.
 pub(crate) fn trampoline_lma() -> u64 {
     (&raw const __ap_trampoline_lma) as u64
 }
