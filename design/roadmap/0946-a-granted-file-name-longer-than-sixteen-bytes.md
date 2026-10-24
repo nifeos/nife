@@ -48,10 +48,11 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
   `fs_nameset_caretaker` maps, as every designated name already did.
 - `rm` with a name over two words: `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE` and grants the
   set of that one name, which `rm` sweeps.
-- Where the file server binds badges (milestone 606 (a directory walk costs what it does on Linux)), a grant carrying a set is bound and then
-  served by `fs_nameset_caretaker` over the bound channel, told with an empty name that the bound
-  root is its directory (`client_windows::at_bound_root`). The badge alone would hold the whole
-  directory, and the set is what narrows it.
+- Where the file server binds badges (milestone 606 (a directory walk costs what it does on
+  Linux)), a grant carrying a set is bound. `fs_nameset_caretaker` then serves it over the bound
+  channel, told with an empty name that the bound root is its directory
+  (`client_windows::at_bound_root`). The badge alone would hold the whole directory, and the set is
+  what narrows it.
 
 Reuse: none exists; this is nife's own grant wiring between the shell, the progenitor and a
 caretaker, and no library carries a capability's name by argument words or frame.
