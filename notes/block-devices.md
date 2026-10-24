@@ -194,6 +194,35 @@ handed to a second driver after the first programmed the device. That is a lifet
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.
 
+## The disk tree: a whole disk as one file, with no cache
+
+`crates/disk_tree` is the pure half of `components/src/disk_tree.rs`, built for milestone 834 (ioping
+on nife and Linux). It serves a namespace of two names, a directory `nvme0` and a file `n1` in it,
+whose bytes are the disk's from block 0.
+
+It exists so that a program run at the prompt can measure the device rather than a file server's
+memory. `redoxfs_server` keeps whole small files and recently read blocks in memory. Linux answers
+the same need with `/dev/nvme0n1` opened with `O_DIRECT`. Every read the disk tree answers becomes
+exactly one device read, and its tests hold that.
+
+It is read-only twice over. No mutating verb is answered (each gets `EROFS`), and the server's block
+endpoint is badged with a window the NVMe server never writes from
+(`non_volatile_memory_express::can_write`).
+
+The shell mounts it as its second tree (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"),
+so a measurement names the file inside the mounted directory:
+
+```text
+cd /disk/nvme0
+ioping -D -c 1000 -i 0 -s 4k -S 64m -o 1m n1
+```
+
+One file is the whole namespace, whatever partitions are on the disk. A partition is a byte range of
+`n1`, given to ioping with `-o` and `-S`. Naming partitions would need the table read in the server.
+A read longer than the server's transfer window comes back short, at most `blk::TRANSFER_BLOCKS`
+blocks from the first one touched. POSIX allows that, and every client in this tree loops on a short
+read.
+
 ## See also
 
 - [The GUID Partition Table](globally-unique-identifier-partition-table.md) for the format, the fixtures and the proofs.
