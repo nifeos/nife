@@ -47,8 +47,7 @@ block's end, and a `Name:` paragraph (design/naming.md) from its marker to the n
 **The in-body count** (milestone 929). An `in-body` row holds the plain whole-line comment lines
 inside `fn` bodies under one directory, nested closures and items included and `// SAFETY:`
 comments left out, to a ceiling. The ceiling only falls, `--bank` lowers it, and once written it may
-not be removed, though it may rise to exactly the lesser of the merge base's own count under the
-changed helper and the tree's count, which is how a fix to finding bodies lands. Bodies are found by the lexer: a `fn` outside brackets starts
+not be removed. Bodies are found by the lexer: a `fn` outside brackets starts
 a signature, and the next `{` outside brackets and the signature's `<>` opens its body unless a
 `;` or `}` comes first, or a `,` outside `<>` before any `where`, or a `>` closing generics the
 `fn` sits in (a trait method, a `fn` pointer type).
@@ -726,17 +725,13 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=(), moves=(
 STEPS = (40, 20, 10)
 
 
-def table_problems(caps, base_caps, in_body, base_in_body, in_body_counts, base_recount=None):
+def table_problems(caps, base_caps, in_body, base_in_body, in_body_counts):
     """Every failure in the cap and in-body rows, against the tree and the merge base.
 
     A cap is one of the steps, 40, 20 or 10, and may only fall; a cap row may not go, since that
     lifts the directory back to 40. An in-body ceiling holds its directory's count and may only
-    fall; one may be added, which starts a directory's stage, and none may go. A ceiling that rises
-    must equal the lesser of `base_recount`, the merge base's own count under this helper, and the
-    tree's count: a change to how bodies are found moves the recount and a comment added in this
-    change does not, and holding the rise to the tree's count banks no slack a later change could
-    fill. `base_caps` and `base_in_body` are
-    None when the base had no baseline."""
+    fall; one may be added, which starts a directory's stage, and none may go. `base_caps` and
+    `base_in_body` are None when the base had no baseline."""
     bad = []
     for prefix, cap in sorted(caps.items()):
         if cap not in STEPS:
@@ -765,16 +760,8 @@ def table_problems(caps, base_caps, in_body, base_in_body, in_body_counts, base_
             if prefix not in in_body:
                 bad.append(f'{BASELINE}: in-body {prefix} is gone. A ceiling only falls')
             elif in_body[prefix] > was:
-                recount = (base_recount or {}).get(prefix)
-                now = in_body_counts.get(prefix, 0)
-                if recount is not None and in_body[prefix] == min(recount, now):
-                    continue
-                at_base = '' if recount is None else (
-                    f', not the lesser of the merge base\'s own count under this helper '
-                    f'({fmt(recount)}) and the tree\'s ({fmt(now)})')
                 bad.append(f'{BASELINE}: in-body {prefix} rose from {fmt(was)} to '
-                           f'{fmt(in_body[prefix])}{at_base}. A ceiling only falls, or rises to '
-                           f'exactly that lesser count when the helper finds bodies it missed')
+                           f'{fmt(in_body[prefix])}. A ceiling only falls')
     return bad
 
 
@@ -826,34 +813,6 @@ def read_file(path):
     return open(path, encoding='utf-8', errors='replace').read()
 
 
-def base_in_body_counts(base, prefixes):
-    """{prefix: in-body lines} over the merge base's tree, measured by this helper, so a change to
-    how bodies are found can be told from comment lines added to them."""
-    def refuse(why):
-        sys.exit(f'comment-block ratchet: cannot recount the in-body lines at {base}: {why}')
-    names = git('ls-tree', '-r', '-z', '--name-only', base)
-    if names is None:
-        refuse('git ls-tree failed')
-    paths = sorted(f for f in names.split('\0')
-                   if in_scope(f) and any(f.startswith(p) for p in prefixes))
-    r = subprocess.run(['git', 'cat-file', '--batch'], capture_output=True,
-                       input=''.join(f'{base}:{f}\n' for f in paths).encode())
-    if r.returncode != 0:
-        refuse(f'git cat-file --batch exited {r.returncode}: '
-               f'{r.stderr.decode(errors="replace").strip()}')
-    out, texts, k = r.stdout, {}, 0
-    for f in paths:
-        header_end = out.find(b'\n', k)
-        header = out[k:header_end].split() if header_end >= 0 else []
-        if len(header) != 3 or header[1] != b'blob' or not header[2].isdigit():
-            refuse(f'{f} read back as {out[k:header_end if header_end >= 0 else None]!r}, '
-                   f'not a blob')
-        size = int(header[2])
-        texts[f] = out[header_end + 1:header_end + 1 + size].decode('utf-8', 'replace')
-        k = header_end + 2 + size
-    return in_body_counts(paths, texts.__getitem__, prefixes)
-
-
 def gather():
     """The tree and its merge base, as the rules take them: a dict of counts, rows, caps, in-body
     ceilings and counts, and each at the base where there is one."""
@@ -862,7 +821,7 @@ def gather():
     g = {'counts': block_counts(paths, read_file, caps), 'rows': rows, 'caps': caps,
          'in_body': in_body, 'in_body_counts': in_body_counts(paths, read_file, in_body),
          'base_counts': None, 'base_rows': None, 'base_caps': None, 'base_in_body': None,
-         'renames': (), 'moves': (), 'base_recount': {}}
+         'renames': (), 'moves': ()}
     base = merge_base()
     if not base:
         return g
@@ -870,9 +829,6 @@ def gather():
     old_text = git('show', f'{base}:{BASELINE}')
     if old_text is not None:
         g['base_rows'], g['base_caps'], g['base_in_body'] = read_table(old_text)
-        risen = [p for p, c in in_body.items() if c > g['base_in_body'].get(p, c)]
-        if risen:
-            g['base_recount'] = base_in_body_counts(base, risen)
     # The base's listed files are read too, not only the tree's, so a file whose every row a split
     # carried away is still there to carry from. Each is measured at the tree's cap for its
     # directory, so rows pair with the same blocks on both sides of a step.
@@ -900,7 +856,7 @@ def all_problems(g):
     return (problems(g['counts'], g['rows'], g['base_counts'], g['base_rows'], g['renames'],
                      g['moves'], g['caps'], stepped_dirs(g['caps'], g['base_caps']))
             + table_problems(g['caps'], g['base_caps'], g['in_body'], g['base_in_body'],
-                             g['in_body_counts'], g['base_recount']))
+                             g['in_body_counts']))
 
 
 def run_check():
@@ -1177,14 +1133,6 @@ def selftest():
           table_problems({}, {}, {'x/': 10}, {'x/': 9}, {'x/': 9}))
     fails('an in-body ceiling that goes fails', table_problems({}, {}, {}, {'x/': 9}, {}))
     passes('an in-body ceiling may start', table_problems({}, {}, {'x/': 9}, {}, {'x/': 9}))
-    passes('an in-body ceiling may rise to the base\'s recount under this helper',
-           table_problems({}, {}, {'x/': 12}, {'x/': 9}, {'x/': 12}, {'x/': 12}))
-    fails('an in-body ceiling may not rise past the base\'s recount',
-          table_problems({}, {}, {'x/': 13}, {'x/': 9}, {'x/': 13}, {'x/': 12}))
-    fails('an in-body ceiling may not rise above the tree\'s count, banking slack',
-          table_problems({}, {}, {'x/': 12}, {'x/': 9}, {'x/': 11}, {'x/': 12}))
-    passes('a rise to the tree\'s count under the recount passes',
-           table_problems({}, {}, {'x/': 11}, {'x/': 9}, {'x/': 11}, {'x/': 12}))
     # What the cap does not count: a SAFETY comment from its marker, a Name: paragraph.
     safety = '// why\n' * 5 + '// SAFETY: the lock is held.\n' + '// more of the argument\n' * 30
     if blocks_over(safety, 10) or blocks_over('// why\n' * 11 + '// SAFETY: x\n', 10) != [(1, 11)]:

@@ -11,7 +11,7 @@
 # moved unchanged (or only cut) into a file with no rows keeps its row under its new path, which
 # `--bank` writes for you. A block that must exceed its row needs §267 amended by an architect.
 cap	kernel/	20
-in-body	kernel/	6361
+in-body	kernel/	5289
 block	lines
 kernel/build.rs:142	23
 kernel/src/arch/aarch64/fp.rs:1	37
