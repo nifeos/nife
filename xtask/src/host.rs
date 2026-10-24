@@ -58,6 +58,12 @@ pub(crate) fn flag_value(name: &str) -> Option<String> {
     None
 }
 
+/// Locate an LLVM tool inside the rustup sysroot.
+///
+/// These ship with the `llvm-tools` component, which `rust-toolchain.toml` pins. We
+/// do NOT use the `rust-objdump` / `rust-objcopy` wrappers, because those require a
+/// separate `cargo install cargo-binutils` that nothing else in the project needs,
+/// and its absence produces a confusing "command not found" rather than a real error.
 pub(crate) fn llvm_tool(name: &str) -> Option<String> {
     let sysroot = capture("rustc", &["--print", "sysroot"])?;
     let verbose = capture("rustc", &["-vV"])?;
