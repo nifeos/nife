@@ -1,5 +1,7 @@
 # What is left of `procps`, and the forks it waits on
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `what-is-left`.*
+
 An appendix to [the process view](../process-view.md), written 2026-09-26 by the lane
 `milestone/126-procps` for milestone 126 (the `procps` package: who else is running, and who is
 allowed to ask). Every remaining program in the package is blocked on a fork rather than on effort.

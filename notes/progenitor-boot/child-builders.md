@@ -1,5 +1,7 @@
 # The ELF child builders: an appendix to notes/progenitor-boot.md
 
+*Name: provisional. For the six builders in `fixtures/`. calef names files.*
+
 `user::spawn_elf_child_builder` enters one of the six test builders (`report_child_builder`,
 `device_child_builder`, `interrupt_child_builder`, `console_server_builder`,
 `least_authority_demo_builder` and `coremark_builder`, all in `fixtures/`). A builder reads its child

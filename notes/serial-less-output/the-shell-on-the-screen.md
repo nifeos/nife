@@ -1,5 +1,7 @@
 # The shell on the firmware's screen
 
+*Name: provisional, after the parent's "The shell on the screen, too".*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md). It holds how milestone 400
 (the shell on the firmware's screen) put the shell's prompt on the screen beside the serial console:
 the pipeline, the three pieces, and the gate.

@@ -1,5 +1,7 @@
 # Credentials: Argon2id, and why the service depends rather than writes
 
+*Name: provisional, after the algorithm it records.*
+
 An appendix to [`notes/credentials.md`](../credentials.md). It records the dependency decision, the
 known-answer vectors, a bug found in the dependency, and the cost parameters with their
 measurements. The crates were renamed after this was written: `cred` is now `credentialer` and

@@ -1,5 +1,7 @@
 # Proved, symbolically
 
+*Name: provisional.*
+
 The Kani harnesses behind
 [`notes/globally-unique-identifier-partition-table.md`](../globally-unique-identifier-partition-table.md):
 what each quantifies over, how long it takes, and the three whose reasoning needs spelling out.

@@ -14,6 +14,3 @@ work that page points at but does not need to carry whole.
 
 *Name: provisional, minted 2026-09-27 (UTC) by the lane for milestone 152 (durable delegation), for
 the directory and every stem in it. Naming is calef's; `script/names --unratified` lists each stem.*
-
-*`user-timetable-keeper` Name: provisional, minted 2026-10-24 (UTC) for milestone 929 (comments in
-the Linux style across first-party Rust), after the program it describes.*

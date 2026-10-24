@@ -1,5 +1,7 @@
 # The hand-assembled x86_64 user programs
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.*
+
 `kernel/src/user/x86_programs.rs` holds the user programs the `x86_64` kernel runs without a
 compiler. This note carries their design. Each builder's doc comment says what its program does and
 where it faults.

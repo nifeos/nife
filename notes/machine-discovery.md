@@ -1,5 +1,7 @@
 # Machine discovery: the shared readers
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.*
+
 `crates/machine_discovery` reads what the machine is rather than what the target triple implies.
 Its per-architecture records, the tiers of discovery and why there is no trait are in
 [isa-discovery.md](isa-discovery.md). This note covers the rest: the aarch64 decoder's traps, and

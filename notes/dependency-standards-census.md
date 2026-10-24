@@ -1,5 +1,7 @@
 # nife's dependencies, held to nife's own standards
 
+*Name: provisional, minted 2026-10-19 (UTC) by maintainer/dependency-standards-census.*
+
 Measured 2026-10-18 and 2026-10-19 (UTC) at nife `6a71434e4` (the branch point of this note's pull
 request). calef asked on 2026-10-18 whether nife should review its dependencies against its
 internal standards and then derive its dependency standards from what it finds. This note is the

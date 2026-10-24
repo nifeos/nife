@@ -9,5 +9,3 @@ what its prose budget has no room for.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
-
-- `the-command-line` Name: provisional, for what the page describes. calef names files.

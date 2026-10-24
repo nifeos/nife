@@ -1,5 +1,7 @@
 # Focus, cashed: two terminals and one keyboard
 
+*Name: provisional.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), which states the conclusion.
 
 The claim that a terminal is a client of this compositor was cashed on 2026-07-30 (milestone 29 (a

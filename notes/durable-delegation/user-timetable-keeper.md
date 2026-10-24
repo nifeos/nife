@@ -1,5 +1,8 @@
 # The user timetable keeper, step by step
 
+*Name: provisional, minted 2026-10-24 (UTC) for milestone 929 (comments in the Linux style across
+first-party Rust), after the program it describes.*
+
 An appendix to [notes/durable-delegation.md](../durable-delegation.md). The doc comments in
 `components/src/user_timetable_keeper.rs` state its capabilities and its BUGS. This page holds what
 the program does, in order, from the moment `login` starts it.

@@ -1,5 +1,8 @@
 # Narrowing the archive: where the program set is computed
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for the parent's "Where the
+set is computed, and why not at the spawn site". calef names files.*
+
 An appendix of [scheduled execution](../scheduled-execution.md), for its section "The archive it
 holds is narrowed to the plan", under §212 (a prose budget). The
 parent keeps what is narrowed and why. This file keeps why the set is not computed at the spawn
