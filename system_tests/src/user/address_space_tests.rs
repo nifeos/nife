@@ -14,13 +14,13 @@ use crate::sched;
 
 /// **The milestone 15 witness: address spaces stay apart with NO flush on switch.**
 ///
-/// Two spaces map the *same* virtual address to different frames holding different bytes. The
-/// test installs A and reads through the VA, loading A's ASID-tagged translation into the TLB, then
+/// Two spaces map the *same* virtual address to different frames holding different bytes. The test
+/// installs A and reads through the VA, loading A's ASID-tagged translation into the TLB, then
 /// installs B, which flushes nothing, and reads again. If user mappings were global, or the ASID
 /// did not ride the root register, or two spaces shared a tag, B's read would hit A's cached entry
 /// and see A's byte: one process reading another's memory. The assertion means the same on aarch64
-/// and RISC-V only because neither context switch flushes (DECISIONS §19); see
-/// notes/system-test-modules/address-space-tests.md.
+/// and RISC-V only because neither context switch flushes (DECISIONS §19 (architectural parity is a
+/// tenet)); see notes/system-test-modules/address-space-tests.md.
 #[test_case]
 fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
     let mut a = AddressSpace::new(2).expect("no space A");
@@ -486,9 +486,10 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
     assert!(wait_for(|| !sched::is_thread_present(warmup)));
 
     // Sample the baseline only once `used()` has STOPPED MOVING. The warm-up's space is freed by
-    // `finish_switch` on whatever core ran it (§28 placement), a beat after its ThreadId stops
-    // resolving; a baseline sampled in that window settles high and reads as a negative leak. Two
-    // agreeing samples a yield apart mean nothing is in flight; `wait_for`'s deadline bounds it.
+    // `finish_switch` on whatever core ran it (§28 (SMP placement)), a beat after its ThreadId
+    // stops resolving; a baseline sampled in that window settles high and reads as a negative leak.
+    // Two agreeing samples a yield apart mean nothing is in flight; `wait_for`'s deadline bounds
+    // it.
     let mut last = used();
     let settled = wait_for(|| {
         sched::yield_now();

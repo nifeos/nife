@@ -709,10 +709,10 @@ fn input_reaches_only_the_focused_client_and_focus_is_the_compositors_call() {
 /// Two display terminals, each a compositor client with a window client's authority. An `A` typed
 /// while terminal 0 has focus appears in its grid, TAB moves focus, and a `B` appears in terminal
 /// 1's; the kernel compares every pixel of the composed screen against two engines it ran itself.
-/// Terminal 1 receives because it holds an input endpoint (DECISIONS §33), and the compositor
-/// cannot tell a terminal from a `window` client. It uses the kernel's display stand-in, because a
-/// third `gpu_driver` would race the host's scanout check. See
-/// notes/system-test-modules/compositor-tests.md.
+/// Terminal 1 receives because it holds an input endpoint (§33 (the compositor's authority is
+/// memory, not messages)), and the compositor cannot tell a terminal from a `window` client. It
+/// uses the kernel's display stand-in, because a third `gpu_driver` would race the host's scanout
+/// check. See notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
     let (display, screen, display_region) = kernel_display();

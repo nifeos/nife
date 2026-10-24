@@ -112,7 +112,7 @@ macro_rules! wired_or_skip {
 #[cfg(all(test, initial_ramdisk))]
 mod disk_tests;
 
-/// **Wall-clock time** (milestone 51 lane A, DECISIONS §43).
+/// **Wall-clock time** (milestone 51 lane A, DECISIONS §43 (reading the clock is a page)).
 ///
 /// Arch-neutral on purpose: one portable binary carrying both RTC drivers, one host-tested
 /// contract, and the machine's own device tree choosing between them, so **both ISAs run literally
@@ -190,14 +190,13 @@ mod net_confinement_tests;
 
 /// **Randomness that an adversary cannot predict** (milestone 56, DECISIONS §44).
 ///
-/// Not arch-gated and not transport-gated: the same binary, the same contract, the same assertions,
-/// over virtio-mmio and over PCIe, because a random source that works on one bus is not a random
-/// source (§18, §19). They prove that bytes from a *device* reach a userspace client through a
-/// capability that names no device, that consecutive draws are not the same bytes (a stuck source,
-/// a re-served buffer, or a driver reading a stale ring all present as repeats), and that the count
-/// in a reply is honoured, so a caller cannot be handed zeros it mistakes for entropy.
-///
-/// `cfg(initial_ramdisk)`: see `kernel/build.rs::declare_initial_ramdisk_cfg`.
+/// Not arch-gated and not transport-gated: the same binary, contract and assertions over
+/// virtio-mmio and over PCIe, because a random source that works on one bus is not a random source
+/// (§18 (the PCIe transport), §19). They prove that bytes from a *device* reach a userspace client
+/// through a capability that names no device, that consecutive draws differ (a stuck source, a
+/// re-served buffer or a stale ring all present as repeats), and that a reply's count is honoured,
+/// so a caller is never handed zeros it mistakes for entropy. `cfg(initial_ramdisk)`: see
+/// `kernel/build.rs::declare_initial_ramdisk_cfg`.
 #[cfg(all(test, initial_ramdisk))]
 mod entropy_tests;
 
@@ -277,13 +276,13 @@ mod identity_provisioning_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod ntp_tests;
 
-/// **The untyped-backed userspace heap** (milestone 27): spawn the `allocator_exerciser` workload, the
-/// first program that links `extern crate alloc`, with an untyped budget (slot 0) and a report
-/// endpoint (slot 1). The program wires `memory_region_heap` as its global allocator, churns
-/// `Vec`/`String`/`BTreeMap` with frees in arbitrary order, asserts every intermediate result
-/// itself (a wrong value faults), and reports a magic word plus how many bytes of heap it
-/// committed. Portable: the same test runs the riscv64 ELF on riscv and the aarch64 ELF on
-/// aarch64, out of each arch's own initial ramdisk.
+/// **The untyped-backed userspace heap** (milestone 27 (Rust `std` on the native ABI)): spawn the
+/// `allocator_exerciser` workload, the first program that links `extern crate alloc`, with an
+/// untyped budget (slot 0) and a report endpoint (slot 1). The program wires `memory_region_heap`
+/// as its global allocator, churns `Vec`/`String`/`BTreeMap` with frees in arbitrary order, asserts
+/// every intermediate result itself (a wrong value faults), and reports a magic word plus how many
+/// bytes of heap it committed. Portable: the same test runs the riscv64 ELF on riscv and the
+/// aarch64 ELF on aarch64, out of each arch's own initial ramdisk.
 #[cfg(test)]
 pub mod alloc_service;
 
@@ -396,10 +395,10 @@ pub mod page_frame_service;
 /// **Capability delegation: authority moves between processes at runtime.**
 ///
 /// A process passes authority it holds to another, narrowing it on the way, and only if it was
-/// trusted to (`GRANT`), so the kernel is not the only source of authority (§10). A *granter*
-/// delegates a resource capability to a *receiver* over a channel, narrowed to `WRITE` (no
-/// `GRANT`); the receiver uses it and then cannot pass it on. See
-/// `fixtures/src/delegation_granter.rs` and `fixtures/src/delegation_receiver.rs`.
+/// trusted to (`GRANT`), so the kernel is not the only source of authority (§10 (process model:
+/// capability-based, microkernel)). A *granter* delegates a resource capability to a *receiver*
+/// over a channel, narrowed to `WRITE` (no `GRANT`); the receiver uses it and then cannot pass it
+/// on. See `fixtures/src/delegation_granter.rs` and `fixtures/src/delegation_receiver.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs.
 #[cfg(test)]
 pub mod delegation_service;
@@ -424,8 +423,8 @@ pub mod retype_ep_service;
 #[cfg(all(test, initial_ramdisk))]
 pub mod process_composition_service;
 
-/// **Milestone 12: Call/Reply, at EL0.** One request endpoint, a server that answers a caller it
-/// was never wired to, and the one-shot reply capability proven across the boundary. See
+/// **Milestone 12: Call/Reply, at EL0.** One request endpoint, a server that answers a caller it was
+/// never wired to, and the one-shot reply capability proven across the boundary. See
 /// `fixtures/src/call_server.rs` and `fixtures/src/call_client.rs`.
 // Test scaffolding: `capability_tests` below is the only caller, and it runs on both ISAs.
 #[cfg(test)]
@@ -505,8 +504,8 @@ mod child_thread_tests;
 #[cfg(test)]
 mod force_kill_tests;
 
-/// **A first process that gives its authority away, and a supervision tree that outlives it**
-/// (milestone 22 phase B.2).
+/// **A first process that gives its authority away, and a supervision tree that outlives it** (milestone 22
+/// phase B.2).
 ///
 /// Cross-ISA: the tree is four ordinary user programs (`root_supervisor`, `spawner`,
 /// `sub_server_supervisor`, `first_attempt_crasher`), and the kernel's only part is the fault
@@ -523,23 +522,23 @@ mod authority_tests;
 /// The interactive progenitor stays the shell's spawn service, so it keeps a **bounded**, renewable
 /// budget: every job is built in a region split off that pool and born supervised, and
 /// `job_undertaker` (one endpoint capability, no memory) reaps it through `Rendezvous::REAP`, which
-/// returns the region to the progenitor's pool under §13 region ownership. The pair is a control
-/// and a claim: three jobs exhaust the pool when nothing collects, and twelve go through it when
-/// `job_undertaker` does. The assertion in both is which budget the pages are in, not timing.
-/// Cross-ISA: `job_undertaker` is in both archives, and the reap check reads two TCB fields.
+/// returns the region to the progenitor's pool (§13 (capability revocation and untyped
+/// reclamation)). Three jobs exhaust the pool when nothing collects, and twelve go through it when
+/// `job_undertaker` does; both assert which budget the pages are in, not timing. Cross-ISA:
+/// `job_undertaker` is in both archives, and the reap check reads two TCB fields.
 #[cfg(all(test, initial_ramdisk))]
 mod job_undertaker_tests;
 
-/// **A memory-unsafe C component, confined** (milestone 36, DECISIONS §31).
+/// **A memory-unsafe C component, confined** (milestone 36, DECISIONS §31 (the foreign-language
+/// seam)).
 ///
-/// C is the most unverified workload there is, so it is the sharpest test of a verified core that
-/// confines unverified workloads (§14): a C bug that corrupts a monolith's kernel is here a page
-/// fault in an unprivileged process, and its supervisor restarts it. What is under test is the
-/// seam, not the throwaway `fixtures/c/c_seam.c`. `c_confiner` asserts four claims from outside the
-/// dead address space: it faults, at the address the C computed, changing nothing outside its grant
-/// (`WITNESS_RO` and `WITNESS_FAR`), and the restart does real work. An in-grant marker store is
-/// the control. Both ISAs, by different fault paths (a permission fault on the read-only page, a
-/// translation fault on the unmapped one). See notes/c-seam/the-confinement-test.md.
+/// C is the sharpest test of a verified core that confines unverified workloads (§14 (the project's
+/// direction)): a C bug that corrupts a monolith's kernel is here a page fault in an unprivileged
+/// process, restarted by its supervisor. What is under test is the seam, not the throwaway
+/// `fixtures/c/c_seam.c`. `c_confiner` asserts four claims from outside the dead address space: it
+/// faults, at the address the C computed, changing nothing outside its grant, and the restart does
+/// real work; an in-grant marker store is the control. Both ISAs, by different fault paths. See
+/// notes/c-seam/the-confinement-test.md.
 #[cfg(all(test, initial_ramdisk))]
 mod c_seam_tests;
 
@@ -547,17 +546,17 @@ mod c_seam_tests;
 ///
 /// The kernel has no component object, no swap syscall and no naming service: `swapper` is an
 /// unprivileged process with a budget, one device capability and four endpoints, and the only
-/// kernel addition is `PageFrame::REVOKE` answering on a `DeviceFrame` with take-back semantics
-/// (§41). **The claim is that a client does not notice**, held by the client's own witness, the
-/// operator's version page (no request unserved, never two owners of the device), a control that
-/// must fail (the outgoing instance reads its revoked UART and faults), and a usurper refused
-/// `RECEIVE_CAP`. The replacement is C (`fixtures/c/c_swappable.c`, the seam DECISIONS §31
+/// kernel addition is `PageFrame::REVOKE` taking a `DeviceFrame` back (§41 (a device is revoked
+/// by taking it back)). **The claim is that a client does not notice**, held by the client's own
+/// witness, the operator's version page (no request unserved, never two owners of the device), a
+/// control that must fail (the outgoing instance reads its revoked UART and faults), and a usurper
+/// refused `RECEIVE_CAP`. The replacement is C (`fixtures/c/c_swappable.c`, the seam DECISIONS §31
 /// built). The second test covers the opt-in `broker` rung. Both ISAs; notes/live-replacement.md.
 #[cfg(all(test, initial_ramdisk))]
 mod live_swap_tests;
 
-/// **Measured boot: the kernel refuses to enter a first process it was not built for** (milestone
-/// 22 phase B.1, DECISIONS §22).
+/// **Measured boot: the kernel refuses to enter a first process it was not built for** (milestone 22 phase
+/// B.1, DECISIONS §22).
 ///
 /// Cross-ISA: one hash implementation (`crates/measured_boot`) and one trust root `build.rs`
 /// generates into the kernel, checked from the boot path on every architecture (`boot_progenitor`,
@@ -721,8 +720,7 @@ mod process_tests;
 #[cfg(test)]
 mod machine_statistics_tests;
 
-/// **Scheduled execution, where every entry is a grant** (milestone 129,
-/// notes/scheduled-execution.md).
+/// **Scheduled execution, where every entry is a grant** (milestone 129, notes/scheduled-execution.md).
 ///
 /// One module for both ISAs (DECISIONS §19). A crontab line runs with its user's whole authority;
 /// here an entry is a grant expression checked at registration by the `grant_plan::plan` the prompt

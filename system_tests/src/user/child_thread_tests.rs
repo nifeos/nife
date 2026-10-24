@@ -108,10 +108,9 @@ fn a_process_can_build_start_and_run_a_child_thread() {
 /// it has run, exited and been reaped, both regions reclaim *exactly*: the bound space died with
 /// the thread (the `Drop` chain), leaving its region object-free for `reclaim_region`.
 ///
-/// No reclaim of the TCB region may be tried while the child is live: a refused reclaim arms §16's
-/// kill on every thread in the region (§24's `^C` escalation), dooming the child before its `SEND`.
-/// `force_kill_tests` proves refuse-then-arm-then-reclaim on a runaway that is meant to die. See
-/// notes/system-test-modules.md.
+/// Never try to reclaim the TCB region while the child is live: a refused reclaim arms §16 (object
+/// revocation)'s kill on its threads (§24 (interrupting the foreground process)), dooming the child
+/// before its `SEND`. `force_kill_tests` covers the refusal; see notes/system-test-modules.md.
 #[test_case]
 fn reclaim_frees_a_started_then_exited_childs_regions() {
     const CODE_VA: u64 = address_space_map::IMAGE_BASE;

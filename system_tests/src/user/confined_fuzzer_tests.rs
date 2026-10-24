@@ -1257,7 +1257,8 @@ fn park_and_take_baselines(c: &mut Conductor) {
     for x in 0..FUZZERS {
         let parked = wait_for(|| parked_on_go(c, x));
         assert!(parked, "fuzzer {x} never parked on its conductor channel");
-        // A failure here is not yet understood; the `BUGS` of milestone 779's block
+        // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
+        // confined process can reach)'s block
         // (design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the two
         // hypotheses, and the message re-reads the state to say which: a fuzzer not live or not
         // parked on GO, or a live fuzzer parked on GO that lost its space.

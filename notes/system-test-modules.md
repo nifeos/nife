@@ -54,7 +54,7 @@ the accounting check exists.
 the kernel's whole part is one message per death. The progenitor deleted its untyped before the
 crash, and the companion test confirms it can no longer use it, so the evidence that it did not
 build the replacement is authority, not scheduling order. The same test is where the real tree
-proves restart by label (milestone 105 (the two forks milestone 22 named and left)).
+proves restart by label (milestone 105 (the two forks milestone 22 (trusted init) named and left)).
 `sub_server_supervisor` has two children on one endpoint,
 identical programs told nothing but an attempt number; one crashes, one finishes, and it restarts
 by label alone. That check shares the test because every `run_tree` leaves a parked tree of about

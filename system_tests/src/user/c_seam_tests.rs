@@ -201,11 +201,11 @@ fn a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant() {
 /// **The supervisor restarts the crashed C component, and the restarted component does real
 /// work.**
 ///
-/// The restart half of §26: two instances crash, and the third computes a checksum and a transform
-/// in C into the shared grant and exits. The confiner checks that output against an independent
-/// Rust implementation (`OUTPUT_CORRECT`), because "the C produced the right answer after two
-/// crashes" is the claim. The clean exit must arrive as `EVENT_EXIT` and must **not** be restarted
-/// (§26.3), which ends the run.
+/// The restart half of §26 (the fault endpoint): two instances crash, and the third computes a
+/// checksum and a transform in C into the shared grant and exits. The confiner checks that output
+/// against an independent Rust implementation (`OUTPUT_CORRECT`), because "the C produced the right
+/// answer after two crashes" is the claim. The clean exit must arrive as `EVENT_EXIT` and must
+/// **not** be restarted (§26.3), which ends the run.
 #[test_case]
 fn the_supervisor_restarts_the_faulted_c_component_and_the_restart_does_real_work() {
     let msgs = run_seam();

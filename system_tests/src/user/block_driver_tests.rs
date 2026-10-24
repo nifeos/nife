@@ -69,13 +69,14 @@ fn the_kernel_refuses_an_indirect_descriptor_escape() {
     );
 }
 
-/// **The PCIe transport end to end** (DECISIONS §18): the same driver reads the same file off the
-/// disk QEMU attached as `virtio-blk-pci`, found by ECAM enumeration, BARs placed by the kernel,
-/// and the completion arriving as an interrupt the kernel turned into a message. On aarch64 that is
-/// INTx through the GIC (SPI 3 + swizzle). On `x86_64` it is an **MSI-X** message the device writes
-/// straight to the local APIC, because a legacy INTx pin on `q35` goes through a PIRQ router only
-/// ACPI's `_PRT` describes (milestone 215 (a PCI function's interrupt reaches nothing on
-/// `x86_64`)). The assertion is the same either way: a driver binds an intid and waits.
+/// **The PCIe transport end to end** (DECISIONS §18 (the PCIe transport: one driver, two buses)):
+/// the same driver reads the same file off the disk QEMU attached as `virtio-blk-pci`, found by
+/// ECAM enumeration, BARs placed by the kernel, and the completion arriving as an interrupt the
+/// kernel turned into a message. On aarch64 that is INTx through the GIC (SPI 3 + swizzle). On
+/// `x86_64` it is an **MSI-X** message the device writes straight to the local APIC, because a
+/// legacy INTx pin on `q35` goes through a PIRQ router only ACPI's `_PRT` describes (milestone 215
+/// (a PCI function's interrupt reaches nothing on `x86_64`)). The assertion is the same either way:
+/// a driver binds an intid and waits.
 // RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport`, the
 // same property through the same `block_driver` and `net_stack` binaries; a second copy here would
 // double the suite's slowest tests to prove nothing new. See this module's comment on the two
