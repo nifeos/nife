@@ -1,7 +1,7 @@
-//! Measured boot: the hash the kernel checks the progenitor against (milestone 22 phase B.1). The
-//! kernel hashes the archive entry it is about to load against a trust root of `(name, digest)`
-//! pairs compiled into its image by `kernel/build.rs`, and refuses to enter userspace on a mismatch
-//! (DECISIONS §14 (the project's direction)).
+//! Measured boot: the hash the kernel checks the progenitor against (milestone 22 (trusted init:
+//! verify it, and shrink what a broken one can do) phase B.1). The kernel hashes the entry it is
+//! about to load against a trust root `kernel/build.rs` compiles into its image, and refuses to
+//! enter userspace on a mismatch (DECISIONS §14 (the project's direction)).
 //!
 //! The hash is SHA-256, written here: collision- and preimage-resistant, about a hundred lines with
 //! no dependency, allocation or unsafe (§46 (thin primitives or whole subsystems); calef,
