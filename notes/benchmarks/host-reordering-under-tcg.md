@@ -2,8 +2,9 @@
 
 *An appendix to [`notes/benchmarks.md`](../benchmarks.md), measured 2026-10-24 (UTC) by the lane
 maintainer/measure-arm64-host-reordering. Name: provisional (that lane). It tests the claim
-`.github/workflows/ci.yml` gives for keeping the SMP QEMU jobs on `ubuntu-24.04-arm`, which
-milestone 587 records as recalled from QEMU's documentation rather than measured.*
+`.github/workflows/ci.yml` gives for keeping the SMP QEMU jobs on `ubuntu-24.04-arm`. Milestone
+587 (most CI jobs do not need an arm64 host) records that claim as recalled from QEMU's
+documentation rather than measured.*
 
 ## The answer
 
@@ -14,9 +15,9 @@ Two halves, and they come apart.
   a spinlock with a Relaxed unlock lost 20% of its updates. On an x86_64 host the same guest
   binaries showed none, in 3.8 billion messages over two runs and 96 million increments under a
   Relaxed unlock.
-- **The suite half does not.** With every kernel spinlock's unlock weakened to Relaxed, and then
-  with its acquire weakened too so that no kernel lock orders anything, the aarch64 and riscv64
-  legs of the kernel suite passed on both hosts: 4 runs on aarch64, 5 on x86_64 in CI, all green.
+- **The suite half does not.** First every kernel spinlock's unlock was weakened to Relaxed, then
+  its acquire too, so that no kernel lock orders anything. The aarch64 and riscv64 legs of the
+  kernel suite passed on both hosts: 4 runs on aarch64, 5 on x86_64 in CI, all green.
   The suite never contends a lock hard enough, inside the reorder window, to turn the exposure into
   a failure.
 
@@ -28,20 +29,20 @@ with a dedicated contended test, which the tree does not have.
 `.qemu-version` pins 11.1.2. References are to its source tarball.
 
 - A guest's own memory model is `TCGCPUOps::guest_default_memory_order`: 0 (no ordering) for Arm
-  (`target/arm/cpu.c:2589`) and RISC-V (`target/riscv/tcg/tcg-cpu.c:277`), TSO for x86
-  (`target/i386/tcg/tcg-cpu.c:166`). A host backend's is `TCG_TARGET_DEFAULT_MO`: 0 for aarch64
-  (`tcg/aarch64/tcg-target-mo.h:10`), TSO for x86_64 (`tcg/x86_64/tcg-target-mo.h:17`).
-- Before each guest load or store, `tcg_gen_req_mo` (`tcg/tcg-op-ldst.c:117`) emits a host barrier
+  (`arm_tcg_ops`) and RISC-V (`riscv_tcg_ops`), TSO for x86 (`x86_tcg_ops`). A host backend's is `TCG_TARGET_DEFAULT_MO`: 0 for aarch64
+  (`tcg/aarch64/tcg-target-mo.h`), TSO for x86_64 (`tcg/x86_64/tcg-target-mo.h`).
+- Before each guest load or store, `tcg_gen_req_mo` (`tcg/tcg-op-ldst.c`) emits a host barrier
   for the orderings the guest model promises and the host lacks. An Arm or RISC-V guest promises
   none, so its plain loads and stores become plain host loads and stores on either host.
-- Guest barriers become `tcg_gen_mb`. `DMB` maps by type (`target/arm/tcg/translate-a64.c:2362`);
-  `STLR` is a full barrier then the store (`:3669`); `LDAR` the load then a full barrier (`:3697`);
-  a RISC-V `FENCE` of any kind is a full barrier (`target/riscv/tcg/insn_trans/trans_rvi.c.inc:963`).
+- Guest barriers become `tcg_gen_mb`. `DMB` maps by type (`trans_DSB_DMB` in
+  `target/arm/tcg/translate-a64.c`); `STLR` is a full barrier then the store (`trans_STLR`); `LDAR`
+  the load then a full barrier (`trans_LDAR`); a RISC-V `FENCE` of any kind is a full barrier
+  (`trans_fence` in `target/riscv/tcg/insn_trans/trans_rvi.c.inc`).
 - The x86_64 backend emits a barrier only when it must order a store before a later load, as
-  `lock orl` (`tcg/x86_64/tcg-target.c.inc:1076`); the aarch64 backend emits `DMB ISH`, `ISHLD` or
-  `ISHST` (`tcg/aarch64/tcg-target.c.inc:1584`).
+  `lock orl`; the aarch64 backend emits `DMB ISH`, `ISHLD` or `ISHST` (`tcg_out_mb` in each
+  backend's `tcg-target.c.inc`).
 - Every guest core gets its own host thread whenever the target supports it and `-icount` is off
-  (`accel/tcg/tcg-all.c:113`). The suite does not use `-icount`; only `cargo xtask bench` does,
+  (`tcg_init_machine` in `accel/tcg/tcg-all.c`). The suite does not use `-icount`; only `cargo xtask bench` does,
   single-hart.
 
 The prediction: on an x86_64 host the guest sees exactly TSO. Message passing (MP) cannot reorder
@@ -52,7 +53,9 @@ by a SeqCst load can reorder on either host, which Armv8 forbids.
 
 ## The method
 
-**The litmus guest**, `tools/host_reordering_litmus`. A bare-metal program for QEMU's `virt`
+### The litmus guest
+
+`tools/host_reordering_litmus` is a bare-metal program for QEMU's `virt`
 machine, built for `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf`, the
 kernel's own targets, so its atomics lower the way the kernel's do. Four cores; the aarch64 build
 turns the MMU on so the litmus lines are Normal, inner-shareable memory. Each test's instruction
@@ -68,12 +71,16 @@ reordering counted is the host's.
   `SpinMutex`, which the kernel's `IrqSafeMutex` wraps; unlock Release or Relaxed. Lost updates
   are the reordering.
 
-**The weakened suite.** `weaken-spin.sh` points the workspace at a copy of `spin` 0.12.3 with
-the guard's unlock Relaxed (`release`), or that and the lock's compare-exchange Relaxed (`both`),
-then `script/test --arch aarch64,riscv64 --no-host` runs, `NIFE_SMP` at its default of 4, as many
-times as fit a bounded job. The build logs show the patched crate compiled in.
+### The weakened suite
 
-**The hosts.** A temporary workflow ran the same steps on `ubuntu-24.04-arm` (Neoverse-N2, 4 vCPUs)
+`weaken-spin.sh` points the workspace at a copy of `spin` 0.12.3 with the guard's unlock Relaxed
+(`release`), or that and the lock's compare-exchange Relaxed (`both`). Then `script/test --arch
+aarch64,riscv64 --no-host` runs, `NIFE_SMP` at its default of 4, as many times as fit a bounded
+job. The build logs show the patched crate compiled in.
+
+### The hosts
+
+A temporary workflow ran the same steps on `ubuntu-24.04-arm` (Neoverse-N2, 4 vCPUs)
 and `ubuntu-24.04` (AMD EPYC 7763, 9V45 and 9V74, 4 vCPUs), QEMU 11.1.2 from the CI cache, LITMUS_SCALE 60.
 
 ## The counts
@@ -92,7 +99,7 @@ cell is per million, first run / second run.
 | riscv64 MP release/relaxed | 600 / 671 | 0 / 0 |
 | riscv64 MP relaxed/acquire | 3,700 / 4,479 | 0 / 0 |
 | aarch64 SB relaxed | 19,551 / 17,453 | 16,726 / 210,567 |
-| aarch64 SB SeqCst | **50,275 / 1,640** | **7,146 / 61,431** |
+| aarch64 SB SeqCst | 50,275 / 1,640 | 7,146 / 61,431 |
 | aarch64 SB SeqCst fence | 0 / 0 | 0 / 0 |
 | riscv64 SB relaxed | 2,298 / 3,491 | 8,015 / 24,886 |
 | riscv64 SB SeqCst, and SeqCst fence | 0 / 0 | 0 / 0 |
@@ -150,4 +157,5 @@ stronger than its host; nothing here measures them.
   GitHub can change.
 - `helpers/qemu-runner-x86_64.sh` measured round-robin vCPUs for an x86_64 guest on an aarch64
   host under 11.1.1. The 11.1.2 source has no memory-order check left that would choose it
-  (`docs/devel/multi-thread-tcg.rst:31` still describes one). Not resolved here.
+  (the "vCPU Scheduling" section of
+  `docs/devel/multi-thread-tcg.rst` still describes one). Not resolved here.
