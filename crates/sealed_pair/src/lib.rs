@@ -1,31 +1,16 @@
-//! **Does this kernel vouch for this archive?** The host-side half of measured boot. A kernel image
-//! and the userspace archive beside it are one sealed set: the build compiles the digests of the
-//! archive entries the kernel may enter into its `.rodata` (`kernel/build.rs`), and the kernel
-//! refuses userspace when the bytes do not match (`kernel::trust::require`). A mismatched pair
-//! boots, prints `MEASURED BOOT REFUSED` and halts, discovered only after a walk to the board; this
-//! asks the same question on the host, where the answer costs nothing.
-//!
-//! [`inspect`] hashes each entry the kernel would hand over (the [`BOOT_PROGRAMS`] and the
-//! measurement table) and looks for the digest's 32 raw bytes inside the kernel image. That is what
-//! the trust root compiles to, a chance match is not worth a sentence, and it needs no knowledge of
-//! where the array landed, so one function reads a flat `booti` image, an ELF, and a UEFI boot file.
-//! Finding a digest proves the kernel vouches for those bytes; not finding one cannot say what it
-//! expected instead. It also checks the archive's measurement table against its own contents, a
-//! separate refusal the progenitor would make one level up.
-//!
+//! **Does this kernel vouch for this archive?** The host-side half of measured boot: the kernel
+//! compiles the digests of the archive entries it may enter into its `.rodata` (`kernel/build.rs`)
+//! and refuses userspace whose bytes do not match (`kernel::trust::require`). [`inspect`] asks the
+//! same question on the host by searching the kernel image for the digest of each entry it would
+//! hand over, and checks the archive's measurement table against its own contents. See
+//! notes/sealed-pair.md.
+
 //! # BUGS
 //!
-//! - It duplicates the kernel's check as an early warning; if they disagree, the kernel is right,
-//!   and [`Seal::explain`] says so.
-//! - A refusal names the entry and the digest the archive has, never the one the kernel wanted;
-//!   `cargo xtask card-check` recovers that by comparing against the tree's own build.
-//! - It says nothing about a boot script or `extlinux.conf`, and nothing forces anyone to run it on
-//!   a hand-written card (`uefi_loader/build.rs` makes it a build failure where the pair is built).
-//! - It asks whether a digest is present, not whether the kernel checks it, so a build carrying
-//!   the digest without reaching the check would read as sealed. Every build reaches it today
-//!   through `kernel::trust::require_program`; option C in
-//!   `design/roadmap/0563-a-seal-check-that-reads-bytes-cannot-see-a-check-that-was-dropped.md`
-//!   prices a build that says so itself.
+//! - It duplicates the kernel's check; if they disagree, the kernel is right ([`Seal::explain`]).
+//! - A refusal names the archive's digest, never the kernel's; `cargo xtask card-check` has it.
+//! - Nothing checks a boot script or `extlinux.conf`, or forces a hand-written card through this.
+//! - It asks whether a digest is present, not whether the kernel checks it; notes/sealed-pair.md.
 //!
 //! Name: provisional: the thing (a sealed pair), not the act. Refused `card_check` (three of the
 //! checked places are not a card) and `seal` (a generic verb).
@@ -35,18 +20,10 @@ use std::fmt::Write as _;
 use measured_boot::Digest;
 
 /// The archive entries the kernel itself may enter as a boot program, and therefore the ones its
-/// trust root names.
-///
-/// **One list, three readers.** `xtask::measure` writes the manifest from it, `uefi_loader`'s build
-/// refuses an unsealed pair against it, and [`inspect`] reads a card with it. It was written out
-/// twice before this crate existed, and a kernel measuring a name the checkers did not know about
-/// would have been invisible to both of them.
-///
-/// `progenitor` comes first, and [`inspect`] reads it as the one program every archive must carry.
-/// The six after it are not boot programs in the ordinary sense: they are milestone 19 (run a real
-/// workload)'s ELF child builders, and `kernel::user::spawn_elf_child_builder` enters each of them
-/// directly, so the trust root has to name them or the kernel could enter a program it never
-/// measured.
+/// trust root names: `progenitor` first, which [`inspect`] requires of every archive, then
+/// milestone 19 (run a real workload)'s six ELF child builders, which
+/// `kernel::user::spawn_elf_child_builder` enters directly. One list for `xtask::measure`,
+/// `uefi_loader`'s build and [`inspect`]; see notes/sealed-pair.md, "One list of boot programs".
 pub const BOOT_PROGRAMS: [&str; 7] = [
     "progenitor",
     "report_child_builder",
@@ -274,8 +251,8 @@ pub const THE_BOARD_IS_THE_AUTHORITY: &str = "The kernel's own check is the auth
 /// **Judge a kernel image against an archive.** The whole of this crate's question.
 ///
 /// `kernel` is the image as it will be loaded: a flat `booti` image, an ELF, or a UEFI boot file
-/// with the pair embedded. Nothing is parsed out of it; only its bytes are searched, for the reason
-/// the module header gives.
+/// with the pair embedded. Nothing is parsed out of it; only its bytes are searched (see
+/// notes/sealed-pair.md, "Searching bytes, not parsing them").
 ///
 /// # Errors
 ///
