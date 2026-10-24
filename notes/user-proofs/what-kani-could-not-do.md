@@ -34,3 +34,23 @@ It can be evidence that the assertion was not asking anything.
 
 What Kani is good at here, and what shipped, is the opposite shape. It is bounded byte movement
 with comparisons: no sums, no division, no symbolic indices into large objects.
+
+## Two traps in printenv's harnesses
+
+Both harnesses in `components/src/printenv.rs` are shaped around something Kani does badly.
+
+A loop over a range whose endpoint is symbolic has no unwinding bound CBMC can find, and the harness
+never terminates. So `push_never_writes_past_the_buffer_it_was_given` does not walk `0..start` and
+`n..CAP`. Each walk spans the whole buffer and selects the interesting range inside. That costs `CAP`
+iterations of a byte comparison and finishes in a tenth of a second. It was found the slow way.
+
+A `cover` alone cannot go red. Kani 0.67.0 reports an unsatisfiable `cover` as "0 of 1 cover
+properties satisfied" and still prints `VERIFICATION:- SUCCESSFUL`, with exit code zero. A `push`
+that reserved its last byte (`*n + 1 < buf.len()`) kept `the_buffer_can_be_filled_exactly` green on
+its `cover` alone (milestone 323 (the falsification record is incomplete in five ways, and each was
+found by a different lane), 2026-10-05). The harness therefore also asserts the boundary: `push`
+takes exactly as many bytes as fit, `min(CAP, start + bytes.len())`.
+
+The unwind bound of four bytes is stated rather than raised. Raising it costs solver time and buys
+nothing the argument in [notes/user-proofs.md](../user-proofs.md), "What is proved today", does not
+already give.

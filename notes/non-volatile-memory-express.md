@@ -212,6 +212,25 @@ XpressRICH root complex is a different host bridge (no `pci-host-ecam-generic` n
 board-side follow-up, and this driver is written to need only a working enumeration and a BAR from
 it.
 
+## The DMA-escape attacker and the client windows
+
+The confinement test needs a driver that tries to escape, and the attacker is this exact server
+differing by one field: the physical address it puts in a PRP. So the attack tests the IOMMU rather
+than a straw man. It is the NVMe twin of `block_driver`'s two virtio attacker roles (milestone 261
+(the NVMe driver leaves the kernel), milestone 202). `start_dma_escape` in the kernel's wiring
+writes a magic word and a victim's physical address into the transfer buffer before the server
+runs. The server reads them before its readiness transfer, which reuses that page. The victim is a
+raw number read out of shared memory, exactly the authority an escaping driver would fabricate from
+nothing. The test's point is that holding the number buys the controller no reach the IOMMU did not
+grant it. The role is compiled only with the `confinement_attackers` feature, which only `cargo
+xtask test` turns on, so a shipped server has neither the check nor the attack. The zeroed buffer
+of a real boot is not the only thing standing between it and the attack.
+
+Each client stages in the transfer window its badge names (milestone 834 (ioping on nife and
+Linux)). A client maps only its own window, and the server answers one request at a time, so two
+clients staging at once touch different pages. A badge no client was given is refused before
+anything is staged.
+
 ## BUGS
 
 - What the driver does not withhold ("What it does not withhold", above): the IOMMU bounds the *controller* to a

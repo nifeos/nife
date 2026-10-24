@@ -1,38 +1,29 @@
 //! **The NVMe block server, at EL0**: option 2a of §86 (whether an NVMe driver can leave the
 //! kernel), and notes/non-volatile-memory-express.md. It drives a real DMA device with no authority
 //! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
-//! confined the controller to.
-//!
-//! ```text
-//!   NVMe controller ──doorbell page (1 page of BAR0)──► this program ──blk IPC──► clients
-//!    (a PCIe function)                                     │
-//!    confined by the IOMMU to ──────────────────────────── its data plane: two I/O rings
-//!    the kernel's DMA region                                and a transfer buffer
-//! ```
+//! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
+//! host-tested and Kani-reachable, including the block-range check
+//! [`non_volatile_memory_express::Handoff::transfer_command`] applies; what is left here is
+//! volatile access, two barriers and a bounded poll.
+
+//! # Capability contract
 //!
 //! Held, the complete list: slot 0, the request endpoint (`filesystem_contract::blk`, as the virtio
-//! block server speaks); slot 1, a readiness endpoint; the data plane's pages at [`DATA_PLANE_VA`]
-//! (the I/O rings and one window of [`TRANSFER_BLOCKS`] pages of buffer per client); and one page of
-//! BAR0, the doorbells, at [`DOORBELL_VA`]. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the admin ring
+//! block server speaks); slot 1, a readiness endpoint; the data plane at [`DATA_PLANE_VA`] (the two
+//! I/O rings and one window of [`TRANSFER_BLOCKS`] pages per client); and BAR0's doorbell page at
+//! [`DOORBELL_VA`]. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the admin ring
 //! registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the admin
 //! plane's pages; every admin command, so where the rings live is the kernel's statement; an `Irq`;
 //! a `Virtio`; any name for the two windows, installed before `_start`; and everything else.
-//!
-//! All the arithmetic is in `crates/non_volatile_memory_express`, host-tested and Kani-reachable,
-//! including the block-range check [`non_volatile_memory_express::Handoff::transfer_command`]
-//! applies. What is left here is volatile access, two barriers and a bounded poll.
-//!
+
 //! # BUGS
 //!
 //! - One command in flight, so measured throughput is a lower bound on the device.
-//! - It polls: the controller is created with no interrupt vector, and nothing would confine an
-//!   interrupt a userspace driver aimed on these machines (§86's interrupt finding).
-//! - A hung controller is a timeout after [`SPIN_BOUND`] polls, `EIO`, because reading `CSTS.CFS`
-//!   needs the register page this process cannot map.
-//! - A PRP computed backwards from [`Handoff::data_plane_phys`] could overwrite the admin ring: not
-//!   an escape, and §86 option 4's doorbell validator would close it.
-//! - One command per filesystem block, since `non_volatile_memory_express::prp_pair` builds no PRP
-//!   list; bulk transfers are slower than virtio's by construction.
+//! - It polls: no interrupt vector, and nothing would confine one aimed from userspace (§86).
+//! - A hung controller is `EIO` after [`SPIN_BOUND`] polls: `CSTS.CFS` is on the unmapped page.
+//! - A PRP aimed backwards from [`Handoff::data_plane_phys`] could overwrite the admin ring; not an
+//!   escape, and §86 option 4's doorbell validator would close it.
+//! - One command per filesystem block (`prp_pair` builds no PRP list); bulk trails virtio.
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)), the
 //! program's half 2026-09-18: it shares the crate's name, as `compositor` does. Refused
@@ -118,18 +109,14 @@ const STEP_FIRST_READ: u64 = 0xDEAD_0002;
 /// before the payload it gates.** The controller is another observer of this memory, and on a
 /// weakly-ordered CPU nothing else stops a doorbell write hoisting above the command it announces.
 ///
-/// **Local rather than shared, and now for a stated reason rather than for want of a name.**
-/// Milestone 186 (derive the architecture list) lifted the five virtqueue copies into
-/// [`user_mode_runtime::virtio::virtio_ring_barrier`], which is a weaker barrier: those drivers
+/// Stronger than [`user_mode_runtime::virtio::virtio_ring_barrier`] on purpose: those drivers
 /// notify through a syscall instruction, so `x86_64` needs only a compiler fence and aarch64 only
-/// `dmb ish`. This one's doorbell is a direct store to a device-typed page in this address space,
-/// with no syscall between the ring stores and it, so it keeps `dmb sy` and a real `mfence`.
-/// Sharing the two would mean strengthening the ring barrier or weakening this one, and both are
-/// ordering changes rather than deduplication.
+/// `dmb ish`. This doorbell is a direct store to a device-typed page with no syscall between the
+/// ring stores and it, so it keeps `dmb sy` and a real `mfence`. Sharing the two would be an
+/// ordering change, not deduplication.
 fn barrier() {
-    // Lifted to the runtime on 2026-10-04 when the `e1000e` data plane became its second caller
-    // (milestone 494 (a driver for the network card a PC actually has)); the instructions are
-    // unchanged, and the paragraph above is still the reason they are these.
+    // Shared with the `e1000e` data plane (milestone 494 (a driver for the network card a PC
+    // actually has)); the paragraph above is the reason for its instructions.
     user_mode_runtime::mapped_window::doorbell_barrier();
 }
 
@@ -254,31 +241,20 @@ pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         flushes: 0,
     };
 
-    // **Test-only: the DMA-escape attacker role** (milestone 261 (the NVMe driver leaves the
-    // kernel)'s Outstanding item; milestone 202
-    // (every confinement test is a ritual until somebody breaks the confinement and watches it
-    // fail)). The confinement-falsification wiring in
-    // `kernel/src/user/non_volatile_memory_express_service.rs::start_dma_escape` writes
-    // `[ESCAPE_MAGIC, victim_phys]` into the first two `u64`s of the transfer buffer before this
-    // process runs; a real boot's data plane is zeroed, so the magic never matches and this falls
-    // through to serving. Read before the readiness transfer, which reuses transfer page 0. This
-    // is the NVMe twin of `block_driver`'s two virtio attacker roles: the attacker is this exact
-    // server differing by one field, the physical address it puts in a PRP, so the attack tests
-    // the IOMMU rather than a straw man.
-    //
-    // **Compiled only with `confinement_attackers`**, which only `cargo xtask test` turns on: a
-    // shipped server has neither this check nor `run_dma_escape`, so the zeroed buffer is not the
-    // only thing standing between it and the attack.
+    // **Test-only: the DMA-escape attacker role**, compiled only with `confinement_attackers`,
+    // which only `cargo xtask test` turns on. `start_dma_escape` in
+    // `kernel/src/user/non_volatile_memory_express_service.rs` writes `[ESCAPE_MAGIC, victim_phys]`
+    // into the transfer buffer's first two `u64`s before this runs; a real boot's is zeroed. Read
+    // before the readiness transfer, which reuses transfer page 0. See
+    // notes/non-volatile-memory-express.md, "The DMA-escape attacker and the client windows".
     #[cfg(feature = "confinement_attackers")]
     if DATA.r64(TRANSFER_OFF) == non_volatile_memory_express::ESCAPE_MAGIC {
         let victim = DATA.r64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
 
-    // **Read one block before reporting ready**, the discipline `entropy.rs` uses: "the service is
-    // up" should mean "a client that asks will be answered", not that the spawn completed. It is
-    // also the only end-to-end check available here, since this process cannot read `CSTS` to ask
-    // the controller how it is.
+    // **Read one block before reporting ready** (`entropy.rs`'s discipline): "up" means a client
+    // that asks is answered. It is also the only end-to-end check here, since `CSTS` is unmapped.
     let first = plane.transfer(0, 0, 0, false);
     let report = if first.is_ok() {
         filesystem_contract::READY
@@ -337,11 +313,9 @@ fn serve(mut plane: Plane) -> ! {
             blk::FLUSH => {
                 let cid = plane.next_cid();
                 match plane.transact(Command::flush(cid, NSID)) {
-                    // Unlike the virtio server, this one never answers EOPNOTSUPP: NVMe 1.4 §6.8
-                    // makes Flush mandatory, so a controller that answered a command at all has
-                    // one. The count discipline is the contract's, and it is what makes a
-                    // success falsifiable: two syncs returning the same number would mean the
-                    // second never reached the device.
+                    // Never EOPNOTSUPP, unlike the virtio server: NVMe 1.4 §6.8 makes Flush
+                    // mandatory. The rising count is the contract's: two syncs returning one
+                    // number would mean the second never reached the device.
                     Ok(()) => {
                         plane.flushes += 1;
                         plane.flushes
@@ -356,18 +330,13 @@ fn serve(mut plane: Plane) -> ! {
 }
 
 /// **Aim DMA outside this server's region, both directions, and report what the controller did**
-/// (milestone 261's Outstanding item; milestone 202). The honest server only ever asks
-/// [`Handoff::transfer_command`] for a PRP, which refuses a block outside the namespace; this role
-/// goes around that and hands [`Command::read`]/[`Command::write`] a PRP of its own choosing,
-/// `victim`, a physical address outside the DMA window this process was given. A `READ` would have
-/// the controller DMA disk data *into* `victim` (overwriting a frame this server was never granted);
-/// a `WRITE` would have it DMA *out of* `victim` onto the disk (a leak). With the IOMMU confining
-/// the controller to its own region, both faults, and the kernel test then reads `victim`'s canary
-/// (untouched) and the IOMMU's fault record.
-///
-/// **This process holds no name for `victim`.** It is a raw physical number read out of shared
-/// memory, exactly the authority an escaping driver would fabricate from nothing, and the point of
-/// the test is that holding the number buys the controller no reach the IOMMU did not grant it.
+/// (milestone 261's Outstanding item; milestone 202). It goes around
+/// [`Handoff::transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
+/// its own, `victim`, a physical address outside this process's DMA window: a `READ` would
+/// overwrite a frame this server was never granted, a `WRITE` would leak `victim` onto the disk.
+/// With the IOMMU confining the controller to its own region both fault, and the kernel test reads
+/// `victim`'s untouched canary and the IOMMU's fault record. **This process holds no name for
+/// `victim`**: a raw number out of shared memory, the authority an escaping driver would fabricate.
 #[cfg(feature = "confinement_attackers")]
 fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
     let blocks = plane.handoff.blocks_per;
@@ -381,11 +350,9 @@ fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
         let cid = plane.next_cid();
         plane.transact(Command::write(cid, NSID, 0, blocks, victim, 0))
     };
-    // Report both outcomes on the readiness endpoint: word 1 the read-escape status, word 2 the
-    // write-escape status. A confined controller never completes the transfer, so each is an Err
-    // (a controller status, or u16::MAX for a completion that never came). The kernel test's proof
-    // is the IOMMU fault and the untouched canary, not which status a refused command carried;
-    // these words are for the transcript.
+    // Word 1 the read-escape status, word 2 the write-escape status: each an Err from a confined
+    // controller (its status, or u16::MAX for no completion), and for the transcript only. The
+    // kernel test's proof is the IOMMU fault and the untouched canary.
     let code = |r: Result<(), u16>| r.err().unwrap_or(0) as u64;
     send(READY, code(rd), code(wr), 0);
     exit();

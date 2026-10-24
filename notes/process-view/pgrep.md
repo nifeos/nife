@@ -100,3 +100,24 @@ selectors over a real domain, which is the only place in the tree that can.
 Worth noticing rather than fixing: this is a capability system's shape showing through a Unix
 program's interface, not a missing feature. A command line here is a list of designations, and a
 regular expression is not a designation of anything.
+
+## At the prompt
+
+What `components/src/pgrep.rs` prints, and the two answers Unix's `pgrep` cannot tell apart (both
+print nothing and exit 1 there):
+
+```text
+$ pgrep
+5
+9
+$ pgrep | wc            the domain, counted, and no /proc was read to make it
+$ pgrep > names.txt     the names land in the file
+$ caps pgrep            the scope, printed before anything is spawned
+$ pgrep                 pgrep: none of the 2 processes in this domain are dead
+$ pgrep                 pgrep: this process holds no process-domain capability
+```
+
+The program walks first, filters second, complains third and prints fourth. DECISIONS §67's reader
+drains diagnostics to end-of-stream before it reads a byte of output. A survey cannot know its
+complaints up front, since the domain may be refused on the first call or vanish on the tenth. And
+"nothing matched" needs the count, so the filter runs before the second stream too.

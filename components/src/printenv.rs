@@ -1,26 +1,22 @@
 //! **`printenv`**: print the inert-configuration page (milestone 47's environment-variable fork,
 //! DECISIONS §111, notes/env-config.md).
 //!
-//! The whole program is: read a page, print what it carries. It holds two capabilities and neither
-//! can change anything, `date`'s shape one manifest field over ([`grant_plan::Manifest::configuration`]
-//! rather than [`grant_plan::Manifest::clock`]). The page is mapped `READ`-only, which is why there
-//! is no `printenv -s TZ=...`: the missing authority is a page permission, not a check here.
-//!
-//! `environment_contract::ConfigPage` answers `Option<&str>` per key: `Some(value)` when the page is
-//! valid and carries that key, and `None` both when the key was never set and when nobody assembled
-//! a page at all. This program tells "no grant" apart the way `date` tells "no clock capability"
-//! apart: by checking whether it holds the capability before printing anything.
+//! Read a page, print what it carries. Its two capabilities can change nothing: `date`'s shape,
+//! [`grant_plan::Manifest::configuration`] in place of [`grant_plan::Manifest::clock`]. The page
+//! is mapped `READ`-only, so there is no `printenv -s TZ=...`: the missing authority is a page
+//! permission, not a check here. "No grant" is told apart from an unset key by checking for the
+//! capability before printing anything, as `date` does: `environment_contract::ConfigPage`
+//! answers `None` both for a key never set and for a page nobody assembled.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! printenv                  TZ=UTC
-//!                            LANG=C
-//!                            TERM=dumb
-//! printenv  (a key unset)   TZ=UTC
 //!                            LANG (unset)
 //!                            TERM=dumb
 //! printenv  (no grant)      printenv: no configuration was granted
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - **No filtering.** Unix's `printenv NAME` prints one variable; this always prints all three,
@@ -168,35 +164,13 @@ mod proofs {
     const UNTOUCHED: u8 = 0xAA;
 
     /// **`push` writes only inside its buffer, appends only at the offset it was given, and never
-    /// leaves that offset past the end.**
+    /// leaves that offset past the end.** `key_line`'s running offset is a function of the page's
+    /// bytes, so this holds the guard for **every** offset and content, not the three it produces.
     ///
-    /// The one thing standing between a value this program did not write and a byte past the end of
-    /// a fixed array is the `*n < buf.len()` inside [`super::push`]. `key_line` calls it up to
-    /// three times against one 96-byte buffer, with two of the three arguments coming out of the
-    /// configuration page (`ConfigPage::tz`, `lang`, `term`), so the running offset is a function
-    /// of somebody else's bytes. This says the guard holds for **every** offset it could be handed
-    /// and every content, rather than for the three the program happens to produce.
-    ///
-    /// Four claims, none implied by the others:
-    ///
-    /// - Nothing outside `buf` is written. Kani checks that for free on any run, which is why the
-    ///   starting offset below is left **unconstrained**: `push` must be memory-safe even when
-    ///   handed an offset already past the end, and it is, because the guard is a comparison rather
-    ///   than a subtraction.
-    /// - The offset never *becomes* out of range. Conditional on starting in range, which is the
-    ///   precondition every call site here satisfies by starting at zero.
-    /// - It appends: nothing below the starting offset moves.
-    /// - It reports what it wrote: nothing at or above the final offset moves either, so a caller
-    ///   that keeps pushing lands on ground nobody has touched.
-    ///
-    /// **The unwind bound is `bytes.len() == 4`, and here is what it does and does not cost.** The
-    /// loop body is one comparison and one store per byte, and the starting offset is symbolic over
-    /// the whole of `usize`, so four bytes already exercise every way a push can meet the
-    /// boundary: entirely below it, crossing it, sitting exactly on it, and entirely past it. What
-    /// four bytes cannot see is a defect that only appears at some larger length, and no such
-    /// defect is expressible in a loop whose state is a single `usize` that only ever increments.
-    /// Stating the bound rather than raising it is the honest trade; raising it costs solver time
-    /// and buys nothing this argument does not already give.
+    /// Nothing outside `buf` is written, for an unconstrained starting offset; given one in range,
+    /// the offset stays in range, nothing below it moves, and nothing at or above the final offset
+    /// moves. The unwind bound is `bytes.len() == 4`; notes/user-proofs.md, "What is proved today",
+    /// says why four bytes meet the boundary every way it can be met.
     ///
     /// Falsification: replayable `components/falsifications/proofs.push_never_writes_past_the_buffer_it_was_given.patch`
     #[kani::proof]
@@ -211,11 +185,8 @@ mod proofs {
         if start <= CAP {
             assert!(n <= CAP);
             assert!(n >= start);
-            // Both walks are written over the whole buffer with the interesting range selected
-            // inside, rather than as `0..start` and `n..CAP`. A range whose endpoint is symbolic
-            // has no unwinding bound CBMC can find, and the harness simply never terminates; this
-            // shape costs `CAP` iterations of a byte comparison and finishes in a tenth of a
-            // second. Found the slow way, and recorded in notes/user-proofs.md.
+            // Each walk spans the whole buffer and selects its range inside: a range with a
+            // symbolic endpoint has no unwinding bound CBMC can find, so it never terminates.
             for k in 0..CAP {
                 if k < start || k >= n {
                     assert!(buf[k] == UNTOUCHED);
@@ -231,18 +202,12 @@ mod proofs {
     }
 
     /// **The buffer can actually be filled**, so the assertion above is not proved by an assumption
-    /// set that never reaches the boundary.
+    /// set that never reaches the boundary: an offset and four bytes exist that leave the buffer
+    /// exactly full with bytes still to place, the truncation [`super::push`]'s own doc describes.
     ///
-    /// DECISIONS §134's note is that this tree carried 23 `cover` sites against 141 harnesses, and
-    /// a bound nothing approaches is how a proof becomes decoration. This says an offset and four
-    /// bytes exist that leave the buffer exactly full with bytes still to place, which is the
-    /// truncation [`super::push`]'s own doc describes.
-    ///
-    /// **Falsification gap, found 2026-10-05 (milestone 323 (the falsification record is incomplete in five ways, and each was found by a different lane), batch 2):** the `cover` alone could not
-    /// go red. Kani 0.67.0 reports an unsatisfiable `cover` as "0 of 1 cover properties satisfied"
-    /// and still prints `VERIFICATION:- SUCCESSFUL` with exit code zero, so a `push` that reserved
-    /// its last byte (`*n + 1 < buf.len()`) kept this harness green. The assertion below states the
-    /// same boundary as a check: `push` takes exactly as many bytes as fit.
+    /// The `cover` alone cannot go red (Kani 0.67.0 passes an unsatisfiable one), so the assertion
+    /// states the same boundary as a check: `push` takes exactly as many bytes as fit. See
+    /// notes/user-proofs/what-kani-could-not-do.md, "Two traps in printenv's harnesses".
     /// Falsification: replayable `components/falsifications/proofs.the_buffer_can_be_filled_exactly.patch`
     #[kani::proof]
     fn the_buffer_can_be_filled_exactly() {
