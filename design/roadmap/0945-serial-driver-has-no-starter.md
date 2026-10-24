@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: serial-driver-has-no-starter
 raised: 2026-10-20
 milestone_dependencies: 890
 decision_dependencies: none
@@ -7,9 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# `serial_driver` ships with nothing to start it
+# 945. `serial_driver` ships with nothing to start it
 
-*(Title and slug provisional.)*
+*Name: provisional. The number 945 is provisional until the merge queue lands it, and the title
+and slug are too.*
 
 Reuse: not applicable; this removes or rewires an existing program and writes none.
 
@@ -27,3 +29,9 @@ serves riscv64's UART, so nothing in the kernel or the progenitor starts this pr
   better driver for the NS16550 than what runs there now.
 
 Measure first: compare it with the hand-over's riscv64 input driver before choosing.
+
+## Index row
+
+riscv64's NS16550 receive driver from milestone 20 lost its only starter when the self-test
+replaced the riscv64 tour, and the drivers package still ships it. Compare it with the input driver
+the progenitor starts, then retire it or make it the one riscv64 runs.

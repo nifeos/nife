@@ -281,8 +281,8 @@ reaches the wire.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
-- **Proposed.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
-  `design/roadmap/proposals/serial-driver-has-no-starter.md`.
+- **Milestone 945.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
+  `design/roadmap/0945-serial-driver-has-no-starter.md`.
 
 ## Index row
 
