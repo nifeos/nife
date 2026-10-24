@@ -1,27 +1,19 @@
 //! **The host side of the search measurement in milestone 121 (`ripgrep` on nife)**: stage the
-//! priced tree, then run unmodified `ripgrep` over it exactly as nife's kernel harness and bench boot do, and print what
-//! `rg --stats` says it spent.
+//! priced tree, then run unmodified `ripgrep` over it as nife's kernel harness and bench boot do.
 //!
 //! ```text
 //! cargo run --release -p walk_pricing --example rg_host -- <path to rg> [runs]
 //! ```
 //!
-//! The command line is `filesystem_fixture::walk::RG_SEARCH`, split into words by
-//! `grant_plan::each_word`, the function that builds nife's argv, so both sides hear the same
-//! words. It runs with the staged tree as its working directory. Its output goes to a pipe this program drains, which is
-//! the nearest thing on a host to nife's byte sink. The figure compared is ripgrep's own
-//! `seconds` line: it starts after argument parsing and ends after the last file, so neither side's
-//! process creation or image loading is in it. The spawn-to-exit time is printed beside it for
-//! what it is, a different and less comparable number.
-//!
-//! `bench/host/run_linux_rg.sh` builds this static for musl and boots it as PID 1 on the machine
-//! nife's bench boot uses, with a static Linux `rg` beside it in the initramfs. On macOS it is a
-//! reference point only (APFS on NVMe, a different kernel and a different `rg` build).
-//!
+//! The words are `filesystem_fixture::walk::RG_SEARCH` split by nife's argv builder,
+//! `grant_plan::each_word`, run in the staged tree with output to a drained pipe (a host's nearest
+//! thing to nife's byte sink). It prints ripgrep's own `seconds` line and spawn-to-exit beside it.
+
 //! # BUGS
 //!
-//! - The tree is staged on whatever filesystem `DIR` is on, which under the Linux script is tmpfs.
-//!   Every timed run after the first is warm on both sides, which is the figure compared.
+//! - The tree is staged on whatever filesystem `DIR` is on (tmpfs under the Linux script), and
+//!   every timed run after the first is warm; see notes/ripgrep-on-nife.md,
+//!   "The search against Linux".
 
 use std::process::Command;
 use std::time::Instant;
