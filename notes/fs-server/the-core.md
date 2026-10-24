@@ -1,6 +1,6 @@
 # The server core: handles, names, verbs and the engine boundary
 
-Name: the file's provisional, minted 2026-10-24 (UTC) by `comments/929-redoxfs-server`; calef names
+Name: provisional, minted 2026-10-24 (UTC) by `comments/929-redoxfs-server`; calef names
 files, and the directory's own block in [README.md](README.md) covers the stem.
 
 An appendix to [notes/fs-server.md](../fs-server.md). It carries the design behind the

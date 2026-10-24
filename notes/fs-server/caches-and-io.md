@@ -1,6 +1,6 @@
 # The server core's caches and IO: the memo, the block layer, the dispatch and the binary
 
-Name: the file's provisional, minted 2026-10-24 (UTC) by `comments/929-redoxfs-server`; calef names
+Name: provisional, minted 2026-10-24 (UTC) by `comments/929-redoxfs-server`; calef names
 files, and the directory's own block in [README.md](README.md) covers the stem.
 
 An appendix to [notes/fs-server.md](../fs-server.md), beside [the-core.md](the-core.md), which has
