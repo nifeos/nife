@@ -84,8 +84,7 @@ fn any_slot() -> u64 {
 /// word at slot `i` is exactly `caps[i].direction.rights()`: no `Use` becomes a `READ` (§41 (the
 /// endpoint is the broker)), and nothing carries `GRANT`, which no declaration can ask for.
 /// The unwind bound is a termination proof: ten, against real bounds of two capability needs, two
-/// page needs, two routed names and a one-byte role name. `SHAPES[i]` makes the slice CBMC reads a
-/// symbolic pointer, so the lengths it walks are symbolic and `str_eq` would unwind forever.
+/// page needs, two routed names and a one-byte role name.
 /// Falsification: replayable `crates/capability_plan/falsifications/proofs.a_plan_never_grants_a_right_the_declaration_did_not_ask_for.patch`
 #[kani::proof]
 #[kani::unwind(10)]

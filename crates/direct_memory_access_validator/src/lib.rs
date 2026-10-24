@@ -9,11 +9,8 @@
 //! copy nothing reads. See notes/dma.md.
 
 //! # BUGS
-//! - The shadow descriptor is published in two stores. [`shadow_one_head`] writes `addr` then
-//!   `word` with no barrier and no check that the slot is idle, so a driver that republishes a head
-//!   the device still holds can have it see the new `addr` with the old `len`, a span never
-//!   admitted. The proof models no concurrent reader, and on virtio-mmio this walk is the only
-//!   boundary (`notes/confinement-claims.md` row 17;
+//! - The shadow descriptor is published in two stores; a device can see the new `addr` with the
+//!   old `len` (`notes/confinement-claims.md` row 17;
 //!   design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md).
 //!
 //! Name: ratified 2026-09-24 (calef, #1229), replacing `dma_validator`, under §154 (the acronym test
@@ -236,9 +233,9 @@ pub fn validate_and_shadow(
 /// from `head` is checked with [`is_descriptor_allowed`] before it is copied verbatim into the
 /// shadow table at the same index, so no descriptor the device can read out of the shadow is
 /// out-of-region or indirect (the `validate_and_shadow_confines_every_chain` proof). The walk is
-/// bounded by `qsize`, so a `next` cycle cannot loop forever. Returns `false` on a refusal, perhaps
-/// after copying earlier validated descriptors, which is harmless: the caller does not publish the
-/// head.
+/// bounded by `qsize`, so a `next` cycle cannot loop forever. Returns `false` if a buffer escapes
+/// the region, a descriptor is indirect, or a `next` is out of range, perhaps after copying earlier
+/// validated descriptors, which is harmless: the caller does not publish the head.
 ///
 /// BUGS: the two `write64`s below are not one publish (the crate's BUGS), and the walk overwrites
 /// a slot the device may still own, because nothing here knows which shadow slots are idle.

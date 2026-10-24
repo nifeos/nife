@@ -158,16 +158,15 @@ highest page anything still holds: a live child's end, or the region's own retyp
 (`retyped_to`). `coalesced_watermark` is that rule, proved.
 
 The drop happens only when no sibling is in flight. A sibling that has been claimed but not yet
-returned has left the table while its pages are still being revoked, so the scan cannot see where
-it sits. Dropping the watermark under it would let the parent carve pages a peer may still map,
-the use-after-free of §13 (capability revocation and untyped reclamation). The parent's child count
-tells, because it drops at the return and not at the claim. A count above the live children the
-scan found means a sibling in flight (or the phantom child below), and then only the LIFO un-bump
-happens. The
-next return with nothing in flight reclaims the holes, because the scan starts from the live set
-each time. The count dropping at the return is also what keeps the parent from being reclaimed
-while this child's pages are in flight. Decrementing at the claim would reopen the claim's window
-one level up the tree.
+returned has left the table while its pages are still being revoked, so the scan cannot see where it
+sits. Dropping the watermark under it would let the parent carve pages a peer may still map, the
+use-after-free of §13 (capability revocation and untyped reclamation). The parent's child count
+tells, because it drops at the return and not at the claim. A count above the live children the scan
+found means a sibling in flight (or the phantom child below), and then only the LIFO un-bump
+happens. The next return with nothing in flight reclaims the holes, because the scan starts from the
+live set each time. The count dropping at the return is also what keeps the parent from being
+reclaimed while this child's pages are in flight. Decrementing at the claim would reopen the claim's
+window one level up the tree.
 
 `spent` counts `Frames` and each `Object` kind over the whole subtree. A job budget's own pages are
 almost all carved into job regions, and the objects live in those, so a count of the budget alone
