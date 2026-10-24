@@ -40,6 +40,11 @@ test's job. A table that survives the CRC and then makes one of those wrap is wh
 The fixtures use 512-byte blocks. 4K-native disks exist, and the parser takes the block size from
 the header block's length, so a second split would be worth adding.
 
+## `domain_name_system_reply`
+
+The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and
+`script/fuzz` passes that directory read-only, as it passes every seed directory.
+
 ## `http_response_feed`
 
 The digest decides whether a package may run, but it cannot stop a head that panics the reader, and
