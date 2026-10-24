@@ -1,66 +1,11 @@
-//! The ARM Generic Timer: the preemption source.
+//! The ARM Generic Timer: the preemption source, and the counter `Instant` is made of.
 //!
-//! # Why this lives in `arch/` and not `drivers/`
-//!
-//! It is not an MMIO device. It is **part of the CPU**, reached through system registers, and
-//! every aarch64 core has one whether the board's designer wanted it or not. There is no base
-//! address to discover and nothing in the device tree to look up except which interrupt it
-//! raises.
-//!
-//! That is a real convenience and it is why aarch64 kernels can have a working clock before
-//! they can enumerate a single peripheral.
-//!
-//! # The registers
-//!
-//! | | |
-//! |---|---|
-//! | `CNTFRQ_EL0` | how fast the counter ticks. **Set by firmware, read by us.** QEMU says 62.5 MHz. |
-//! | `CNTVCT_EL0` | the counter itself: a 64-bit number that only ever goes up |
-//! | `CNTV_CVAL_EL0` | an **absolute deadline**. Fire when `CNTVCT_EL0` reaches this. |
-//! | `CNTV_TVAL_EL0` | a **relative countdown**, which is just `CVAL = CNTPCT + N`. A trap. |
-//! | `CNTV_CTL_EL0` | enable, mask, and a read-only "did it fire" bit |
-//!
-//! `CNTVCT_EL0` is what `Instant` is made of. It never wraps in any timescale that matters (at
-//! 62.5 MHz, 64 bits is about 9000 years) and it does not stop when interrupts are masked,
-//! which makes it the only honest way to measure a critical section.
-//!
-//! # Re-arming is not optional
-//!
-//! The timer is **one-shot**. It counts down, fires, and then sits there with its "I fired" bit
-//! set, raising the interrupt line forever. The handler must set a new deadline, and *that
-//! write is what lowers the line*.
-//!
-//! Forget it and the timer fires exactly once and then the machine wedges in a permanent
-//! interrupt storm, which looks nothing like "you forgot to write a register".
-//!
+//! Part of the CPU, reached through system registers, one per core. The handler re-arms from the
+//! absolute deadline (`CNTV_CVAL_EL0`), so the ticks sit on a grid anchored at boot. See
+//! notes/aarch64-port.md, "The Generic Timer", and notes/interrupts.md.
 
-//! # And re-arming with TVAL silently loses ticks
-//!
-//! We shipped this bug and then measured it. `TVAL` is a **relative** countdown: writing N
-//! means "fire N ticks from *now*". So re-arming with `TVAL = interval` in the handler gives a
-//! real period of
-//!
-//! ```text
-//!     interval  +  however long it took to get into the handler and back
-//! ```
-//!
-//! Every tick starts its countdown *late*, and the lateness is never recovered. **The clock
-//! runs slow, permanently, and nothing tells you.** Measured under QEMU: 100 Hz configured,
-//! ~70 Hz observed. Thirty percent of our preemptions, gone.
-//!
-//! `CVAL` is an **absolute** deadline: fire when the counter reaches this exact value. Set the
-//! next one to `previous_deadline + interval` and the deadlines sit on a **fixed grid**. A slow
-//! handler makes one tick *late*; it does not make the next one late as well.
-//!
-//! This is the difference between a clock that drifts and a clock that doesn't, and it is one
-//! register.
-
-// Four accessors below (`ticks`, `missed_ticks`, `uptime_ms`, `interval`) have no caller outside
-// this file's own test module on aarch64: the tick handler re-arms from CVAL rather than from
-// `interval()`, and the boot banner prints a tick count only on the RISC-V tour. They are each
-// marked `cfg_attr(not(test), allow(dead_code))` rather than the whole module being suppressed,
-// so a test that stops exercising one is a gate failure instead of silence. (The header comment
-// this replaces predicted callers in "milestone 6 and 8", both long since shipped without them.)
+// `ticks`, `missed_ticks`, `uptime_ms` and `interval` have no caller outside this file's tests on
+// aarch64, so each is `cfg_attr(not(test), allow(dead_code))` rather than the whole module.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -71,78 +16,39 @@ use crate::cpu::{self, MAX_CPUS};
 
 /// The EL1 **virtual** timer, as a GIC interrupt ID.
 ///
-/// **A PPI, not an SPI**, and the device tree says so: `interrupts = <1 11 ...>` on the timer
-/// node, where type 1 means PPI and 11 is the PPI number. PPIs start at INTID 16, so
-/// `16 + 11 = 27`.
-///
-/// It *has* to be per-core. A timer that fired on only one core could not preempt threads
-/// running on the others, so every core has its own, wearing the same number.
-///
-/// # Why the *virtual* timer, and not the physical one (INTID 30)
-///
-/// We used the physical timer (`CNTP_*`, INTID 30) through milestone 9, and it worked on QEMU's
-/// software CPU and would work on bare metal. It **traps under a hypervisor**: the physical timer
-/// belongs to EL2, and a guest at EL1 that writes `CNTP_CVAL_EL0` takes an "Unknown reason" trap
-/// (ESR EC 0x00). We found this the first time we booted under Apple's Hypervisor.framework on an
-/// M3, which is exactly the "which assumptions were secretly QEMU-shaped" moment
-/// design/decisions/ and notes/portability.md anticipate for a new target, arriving early because
-/// HVF runs the real
-/// core.
-///
-/// The **virtual** timer (`CNTV_*`, INTID 27) is the one a guest is meant to use, and it is
-/// available at EL1 both on bare metal and under any hypervisor. So this is strictly more
-/// portable: it keeps working under QEMU/TCG, under HVF, and on a real board, with no
-/// per-environment branching. See notes/virtualization.md.
+/// A PPI, per core: the device tree's `interrupts = <1 11 ...>` is PPI 11, and PPIs start at INTID
+/// 16. The virtual timer, not the physical one, because a hypervisor owns the physical timer and
+/// a guest that touches it traps. See notes/virtualization.md.
 pub(crate) const TIMER_INTID: u32 = 27;
 
 /// 100 Hz. Ten milliseconds per tick.
 ///
-/// The classic tradeoff, and it is a real one. Faster ticks mean finer-grained preemption (a
-/// thread cannot hog the CPU for longer than one tick) but more time spent in the handler
-/// doing nothing useful. Linux ships 250 Hz and can be built tickless; 100 Hz is the old Unix
-/// default and it is plenty for a kernel with no threads yet.
-///
-/// **1 Hz in the bench build** (milestone 939 (the icount bench runs without a preemption tick in
-/// its windows)), so a timed window opened just after a tick has a full second of virtual time
-/// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
-/// way and fails the run if a tick lands inside one.
+/// **1 Hz in the bench build**, so a timed window opened just after a tick has a second of virtual
+/// time before the next; `kernel/src/bench/timing.rs`'s `TickWindow` fails a run if a tick lands
+/// inside a window.
 pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
-/// Every tick, forever. The heartbeat.
-/// Per-CPU, because each core has its own timer (a banked PPI). A single global counter would be
-/// advanced by every core's tick, which breaks the "holding a lock masks *my* timer" invariant the
-/// tests check: a lock masks only the holding core's interrupts, not the others'. See DECISIONS §11.
+/// Ticks delivered, per core: each core has its own timer, and a lock masks only the holding core's
+/// interrupts. See §11 (SMP: per-CPU run queues).
 static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
-/// Counter ticks between interrupts. Computed from `CNTFRQ_EL0`, never hardcoded: the
-/// frequency is a property of the board, and a hardcoded one would make our 10 ms into
-/// something else entirely on a Pi.
+/// Counter ticks between interrupts, computed from `CNTFRQ_EL0`: the rate is the board's.
 static INTERVAL: AtomicU64 = AtomicU64::new(0);
 
-/// **Does this core have the register the cycle-counter grant is written to** (milestone 229).
-/// `PMUSERENR_EL0` exists only with `FEAT_PMUv3`, so `init` reads `ID_AA64DFR0_EL1.PMUVer` once per
-/// core and records the answer here rather than re-reading an ID register on every context switch.
-/// Per core because `PMUVer` is a per-PE ID register and this kernel does not assume a homogeneous
-/// machine anywhere else either.
+/// **Does this core have `PMUSERENR_EL0`**, the register the cycle-counter grant writes? Recorded
+/// per core by `init` from `ID_AA64DFR0_EL1.PMUVer`, so the context switch reads no ID register.
 static PMU_PRESENT: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// **What this core last wrote to `PMUSERENR_EL0`**, as a bool: open (`CR` set) or closed (zero).
 /// `init` writes zero, so `false` is the truth at boot on every core.
 ///
-/// This is a cache rather than a read-back, which is the one place `set_cycle_counter_grant` below
-/// departs from `mmu::switch_user_root`'s shape (plain backticks rather than a doc link because
-/// that function is behind `cycle_counter_grant` and this static is not, milestone 237), and the
-/// reason is the register above: on a part
-/// without `FEAT_PMUv3` an `mrs` from `PMUSERENR_EL0` is as UNDEFINED as an `msr` to it, so "read
-/// what the hardware holds" is not available on the architecture the way it is for `TTBR0_EL1`.
-/// Nothing else in this kernel writes `PMUSERENR_EL0` after `init`, so the cache cannot go stale
-/// behind our back. `arch::pmu` (milestone 74) writes the PMU's other registers and deliberately
-/// not this one; `close_cycle_counter_to_el0`'s doc comment says why.
+/// A cache, not a read-back, because without `FEAT_PMUv3` reading the register is UNDEFINED.
+/// Nothing but this file writes `PMUSERENR_EL0`, so the cache cannot go stale.
 static COUNTER_OPEN: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// Start the heartbeat.
 ///
-/// The GIC must already be up: we ask it to deliver INTID 30, and it has to exist to be asked.
+/// The GIC must already be up: this enables [`TIMER_INTID`] at it.
 pub fn init() {
     let freq = CNTFRQ_EL0.get();
     assert!(
@@ -151,23 +57,13 @@ pub fn init() {
          nonsense"
     );
 
-    // Let EL0 read the virtual counter (`CNTVCT_EL0`) and `CNTFRQ_EL0`, so a userspace program can
-    // time *itself*, the way Linux exposes the counter to its vDSO. Without this the read traps.
-    //
-    // This is a deliberate, eyes-open exception to §10's no-ambient-authority rule (notes/abi.md).
-    // A monotonic counter grants no authority to *affect* anything, only to observe the passage of
-    // time; the cost is that it is a timing side channel, which every OS that offers userspace
-    // timing accepts. We accept it too, and we accept it *knowingly*, because the cross-OS primitive
-    // suite needs userspace self-timing to be comparable to lmbench (which measures from userspace).
-    // The physical counter and the timer registers stay trapped; only the virtual counter opens.
-    // `aarch64_cpu` gives CNTKCTL_EL1 no named fields, so set the bit by hand: EL0VCTEN is bit 1.
+    // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (notes/abi.md);
+    // the physical counter and the timer registers stay trapped. `aarch64_cpu` names no fields of
+    // CNTKCTL_EL1, so EL0VCTEN is bit 1 by hand.
     const EL0VCTEN: u64 = 1 << 1;
     CNTKCTL_EL1.set(CNTKCTL_EL1.get() | EL0VCTEN);
 
     close_cycle_counter_to_el0();
-    // Start this core's cycle counter and check it moves (milestone 74's aarch64 half). Here
-    // because this is the per-core init every core runs, beside the register that says whether EL0
-    // may read the same counter. Init-time only; nothing on the switch path. See arch/aarch64/pmu.rs.
     super::pmu::init_this_cpu();
 
     let interval = freq / TICK_HZ;
@@ -180,56 +76,13 @@ pub fn init() {
 
 /// Write `PMUSERENR_EL0 = 0`, so EL0 cannot read the **cycle** counter.
 ///
-/// # Why this is beside the `CNTKCTL_EL1` write and not in a PMU driver
-///
-/// The two writes are one decision seen twice. `CNTKCTL_EL1.EL0VCTEN` says EL0 may read the coarse
-/// virtual counter; `PMUSERENR_EL0` says whether it may also read the fine one (`PMCCNTR_EL0`) and
-/// the event counters. On riscv64 both answers live in a single CSR, `scounteren`, whose `TM` and
-/// `CY` bits this project's per-hart timer init now writes together. This is that same pair, split
-/// across two registers by the ISA rather than by us, so it belongs at the same site.
-///
-/// **`arch::pmu` now exists (milestone 74) and still does not own this line.** It starts the
-/// counter; this decides who may read it from EL0, and that decision is the context switch's
-/// (`set_cycle_counter_grant` below, which `sched` calls as `arch::timer::` on all three ISAs).
-/// Moving the boot-time half into `pmu` would split one register's writers across two files, which
-/// is what makes the `COUNTER_OPEN` cache above safe to keep: nothing but this file writes it.
-///
-/// # Why writing zero is not a policy change
-///
-/// Zero is what the rest of the tree already believes the value is. Nothing here grants or revokes
-/// anything a program was using: `crates/user_mode_runtime`'s `now()` reads `CNTVCT_EL0`, which the line above
-/// opens, and nothing in this tree reads `PMCCNTR_EL0` from EL0 at all. What changes is that the
-/// belief stops being firmware's to confirm.
-///
-/// Arm says of every field in `PMUSERENR_EL0`, `EN`, `SW`, `CR` and `ER` alike, that on a warm reset
-/// it "resets to an architecturally UNKNOWN value". Under QEMU it is almost certainly zero. On
-/// the **Jetson TX1** nobody has booted this kernel on (argon), it is whatever TF-A and the boot
-/// ROM left, and a claim that rests on that is not a claim. Linux writes the same zero for the same
-/// reason, in the commit `arm64: kernel: enforce pmuserenr_el0 initialization and restore`, whose
-/// message says the register "is architecturally UNKNOWN on reset".
-///
-/// Whether EL0 should ever be *granted* the cycle counter is a different question with a different
-/// owner: milestone 75 (who may read the cycle counter, and by what authority), which is `Gate:
-/// DECISION` and calef's.
-///
-/// # Why per core
-///
-/// `PMUSERENR_EL0` is banked per PE, so a secondary that skipped this would run on whatever that
-/// core's reset value was, and only the threads that happened to be placed there would see it. That
-/// is the identical argument the riscv64 timer records for `scounteren`, and it is why this sits in
-/// the per-core `init` rather than in a boot-core-only path.
+/// Per core, beside the `CNTKCTL_EL1` write, because the register is banked and resets to an
+/// UNKNOWN value. See notes/pmu.md, "Who may read the cycle counter from EL0".
 fn close_cycle_counter_to_el0() {
-    // `PMUSERENR_EL0` exists only when FEAT_PMUv3 does; without it a direct access is UNDEFINED and
-    // would take an undefined-instruction exception on the first line of every core's timer init.
-    // `ID_AA64DFR0_EL1.PMUVer` reports it: 0 means no PMU, 0xf means an IMPLEMENTATION DEFINED PMU
-    // that does not follow PMUv3 and so does not carry this register either. Both are boards where
-    // there is no EL0 cycle-counter door to close.
+    // Without FEAT_PMUv3 the register does not exist and an access is UNDEFINED.
     if !super::pmu::is_pmuv3_present() {
         return;
     }
-    // Milestone 229 reads this back on the context-switch path, where re-reading an ID register
-    // every switch would be paying for an answer that cannot change. Recorded here because this is
-    // the one place that already had to work it out.
     PMU_PRESENT[cpu::id()].store(true, Ordering::Relaxed);
 
     // SAFETY: writing zero to `pmuserenr_el0` only *removes* EL0 permissions; every field of that register
@@ -244,63 +97,24 @@ fn close_cycle_counter_to_el0() {
 /// **Can a thread on this core be granted the cycle counter at all?** False on a part with no
 /// `FEAT_PMUv3`, where `PMCCNTR_EL0` and the register that gates it both simply do not exist.
 ///
-/// The grant is still *accepted* on such a part (a manifest is a declaration, and refusing it at
-/// `START` would make a program un-runnable on a board rather than merely un-instrumented); this is
-/// what lets a test say "there is nothing here to measure" instead of faulting.
-///
-/// **Built only under `test` or `--features cycle_counter_grant`** (milestone 237): the grant is
-/// a measurement build the way `soak_test` is. `kernel/Cargo.toml`'s feature block carries the
-/// reasoning and the measured cost. Milestone 228's closed default at `init` is NOT gated.
-// Asked only by tests today (`sched`'s grant round trip and `user`'s EL0 one), which are the
-// callers that have to skip rather than fault on a part with no counter to grant. Milestone 74's
-// aarch64 half answers the neighbouring question (does the counter *run*) in `arch::pmu::outcome`,
-// and deliberately did not fold the two: a counter can be grantable and stuck.
+/// The grant is still accepted on such a part; this lets a test skip instead of faulting. Whether
+/// the counter runs is `arch::pmu::outcome`, a separate question: a counter can be grantable and
+/// stuck. Built only under `test` or `--features cycle_counter_grant` (`kernel/Cargo.toml`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub fn is_cycle_counter_grantable() -> bool {
     PMU_PRESENT[cpu::id()].load(Ordering::Relaxed)
 }
 
-/// **Open or close EL0's view of `PMCCNTR_EL0` for the thread about to run** (milestone 229,
-/// DECISIONS 139 option 4).
-///
-/// Called from the context switch, on every switch, right beside
-/// [`mmu::switch_user_root`](crate::arch::mmu::switch_user_root), and deliberately the same shape:
-/// compare first, write only when the value changes, so with no granted thread on this core the
-/// cost is a load, a compare and a return.
-///
-/// # What it writes
-///
-/// `PMUSERENR_EL0.CR` (bit 2), and nothing else. `CR` is the field that permits an EL0 read of
-/// `PMCCNTR_EL0` specifically; `EN` (bit 0) would open every PMU register at once and `ER` (bit 3)
-/// the event counters, and neither is what DECISIONS 139 granted. So a granted thread runs with
-/// exactly `CR` set and every other thread runs with the register at zero, which is what
-/// [`close_cycle_counter_to_el0`] established at boot.
-///
-/// # What it is not
-///
-/// It is not timing confinement. An ungranted thread can still time itself against `CNTVCT_EL0`
-/// (41 ns), and two threads sharing a word reconstruct a far finer clock than that; see
-/// `notes/confinement-claims.md`. What closing the register buys is that the *cheap accurate*
-/// instrument is granted rather than ambient.
-///
-/// # No barrier, on purpose
-///
-/// There is no `isb` here: the only way back to EL0 from this path is the `eret` that ends the
-/// return-to-user sequence, a context-synchronizing event. Linux's arm64 per-task hook does the
-/// same.
+/// **Open or close EL0's view of `PMCCNTR_EL0` for the thread about to run** (DECISIONS 139
+/// option 4). Writes `PMUSERENR_EL0.CR` and nothing else, and only when the value changes. No
+/// `isb`: the way back to EL0 is an `eret`. See notes/pmu.md, "Who may read the cycle counter".
 ///
 /// # BUGS
 ///
-/// **Under QEMU with Hypervisor.framework, closing does not close.** On an Apple core,
-/// `user::tests::a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults` fails its
-/// negative half with this register at zero: the PMU access likely traps to the hypervisor and is
-/// answered without consulting the guest's `PMUSERENR_EL0`. Under TCG it passes; silicon is
-/// untested, and an HVF run is not evidence either way.
-///
-/// **Built only under `test` or `--features cycle_counter_grant`** (milestone 237): the grant is
-/// a measurement build the way `soak_test` is. `kernel/Cargo.toml`'s feature block carries the
-/// reasoning and the measured cost. Milestone 228's closed default at `init` is NOT gated.
+/// - **Under HVF, closing does not close**: the ungranted half of the EL0 grant test fails on an
+///   Apple core, likely answered by the hypervisor. Under TCG it passes; silicon is untested.
+/// - **Built only under `test` or `--features cycle_counter_grant`** (`kernel/Cargo.toml`).
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(granted: bool) {
     let cpu = cpu::id();
@@ -308,9 +122,7 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
         return;
     }
     if !PMU_PRESENT[cpu].load(Ordering::Relaxed) {
-        // No `FEAT_PMUv3`: there is no register to write and nothing to open. Leaving the cache
-        // `false` means a granted thread costs the same two loads every switch here rather than
-        // one, on a board where the grant can never be honoured anyway.
+        // No `FEAT_PMUv3`: nothing to open, and the cache stays `false`.
         return;
     }
 
@@ -329,8 +141,7 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
 
 /// Set the first deadline and enable.
 ///
-/// `IMASK` clear means "and actually raise the interrupt line". The timer will happily count
-/// down and set its status bit with the interrupt masked; the mask only stops the line.
+/// `IMASK` clear raises the line; with it set the timer still fires and sets `ISTATUS`.
 fn start(interval: u64) {
     CNTV_CVAL_EL0.set(CNTVCT_EL0.get() + interval);
     CNTV_CTL_EL0.write(CNTV_CTL_EL0::ENABLE::SET + CNTV_CTL_EL0::IMASK::CLEAR);
@@ -338,29 +149,17 @@ fn start(interval: u64) {
 
 /// Move the deadline forward by exactly one interval.
 ///
-/// **`previous + interval`, not `now + interval`.** That is the entire point: the deadlines sit
-/// on a fixed grid anchored at boot, so however long the handler took, the next tick is still
-/// where it always was going to be. A slow handler makes *one* tick late; it does not push the
-/// next one out too.
-///
-/// The `if` is the safety valve. If we fell so far behind that the next deadline is *already in
-/// the past*, we would fire again immediately, and again, and spin in the handler forever
-/// trying to catch up on a debt we cannot pay. So we give up on the missed ticks and re-anchor
-/// the grid to now. Linux calls this the same thing every kernel calls it: dropping ticks.
+/// **`previous + interval`, not `now + interval`**, so the deadlines stay on the boot grid. A
+/// deadline already past counts a missed tick and re-anchors to now, rather than firing in a loop.
 fn rearm(interval: u64) {
     let now = CNTVCT_EL0.get();
-    // The deadline that just fired, named rather than folded into the sum below: milestone 78's
-    // instruction-count instrument compares the arrival against it, and a value read after the
-    // write is a different value.
+    // Read before the write below: the icount instrument compares the arrival against it.
     let fired = CNTV_CVAL_EL0.get();
     let mut next = fired + interval;
 
     if next <= now {
         MISSED_TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
-        // Test builds only: keep the numbers, so a failure says HOW LATE rather than only that it
-        // was late. Two relaxed stores, no branch on the hot path, and nothing printed: this runs in
-        // interrupt context and DECISIONS §9's rule (handlers record and defer) applies to
-        // diagnostics too.
+        // Interrupt context: record, never print (§9 (locking: IrqSafeMutex, plus a discipline)).
         #[cfg(any(test, feature = "system_tests"))]
         miss_detail::record(now, next);
         next = now + interval;
@@ -368,10 +167,8 @@ fn rearm(interval: u64) {
 
     CNTV_CVAL_EL0.set(next);
 
-    // The instruction-count instrument (milestone 78), in the boot mode that owns it and nowhere
-    // else: three relaxed counters, after the deadline is armed so the measured span is the whole
-    // handler rather than a prefix of it. Absent from the test and shipping builds, so what this
-    // number describes is the handler that ships. See kernel/src/icount.rs.
+    // After the deadline is armed, so the span measured is the whole handler. See
+    // kernel/src/icount.rs.
     #[cfg(feature = "icount")]
     crate::icount::tick_trace::record(fired, now, CNTVCT_EL0.get());
 }
@@ -379,11 +176,9 @@ fn rearm(interval: u64) {
 /// **Instructions between a deadline and the handler observing it** (milestone 78's instrument),
 /// the ceiling `icount::run` asserts.
 ///
-/// Interrupt delivery, the vector, the register save, `exception_dispatch`, the GIC acknowledge and
-/// `tick`'s counter bump, in the debug build this boot compiles. Measured rather than reasoned: the
-/// run prints what it saw beside this number, so the margin is visible. The value is a ceiling with
-/// room for ordinary codegen movement, not a baseline; a change that halves it is not a failure and
-/// a change that doubles it is a fact worth stopping for.
+/// Delivery, the vector, the register save, dispatch, the acknowledge and the counter bump, in
+/// the debug build. A ceiling with room for codegen movement, not a baseline; the run prints what
+/// it measured beside it.
 #[cfg(feature = "icount")]
 pub(crate) const ARRIVAL_BOUND: u64 = 2_000;
 
@@ -391,15 +186,8 @@ pub(crate) const ARRIVAL_BOUND: u64 = 2_000;
 /// whole handler, which is [`ARRIVAL_BOUND`]'s span plus the tick bookkeeping and the `CNTV_CVAL_EL0`
 /// write.
 ///
-/// This is the claim the missed-tick assertions could never make. A miss is this number exceeding
-/// one tick period, which is **10,000,000 instructions** of virtual time at 100 Hz: ten
-/// milliseconds, and one instruction is one nanosecond. So the bound here is about **4,000 times**
-/// tighter than the thing it replaces, and unlike it, nothing the host does can move it.
-///
-/// *(Corrected 2026-08-18. This said "625,000 instructions of virtual time", which is the interval
-/// in **counter ticks** wearing instructions' units; at 16 instructions per counter tick the two
-/// differ by that factor, and `script/icount` prints both side by side as `tick_interval 625000
-/// 10000000`. notes/instruction-clock.md carried the same slip and is fixed with it.)*
+/// A miss is this exceeding one tick period, 10,000,000 instructions at 100 Hz, so the bound is
+/// about 4,000 times tighter, and no host can move it. See notes/instruction-clock.md.
 #[cfg(feature = "icount")]
 pub(crate) const HANDLER_BOUND: u64 = 2_500;
 
@@ -407,16 +195,9 @@ pub(crate) const HANDLER_BOUND: u64 = 2_500;
 /// virtual clock against a known instruction count and refuse to measure anything if this boot is
 /// not on the instrument.
 ///
-/// The loop is written in assembly on purpose. The whole value of the check is that the expected
-/// instruction count is *known*, and a Rust loop's count is whatever the optimizer decided this
-/// week. `subs`/`b.ne` is two instructions per iteration on every aarch64 that has ever existed.
-///
-/// **The return is the loop body only.** Materializing the operand costs the compiler a `mov` or
-/// two either side, which is why the caller's tolerance is a percentage of a seven-figure window
-/// rather than an equality: a handful of setup instructions must not be the thing that decides
-/// whether the instrument is believed.
-///
-/// Here rather than in `icount.rs` because DECISIONS §3 puts every `asm!` under `arch/`.
+/// Assembly, because the count must be known: `subs`/`b.ne` is two instructions per iteration.
+/// The return counts the loop body only, so the caller's tolerance is a percentage rather than an
+/// equality.
 #[cfg(feature = "icount")]
 pub(crate) fn calibration_loop(iters: u64) -> u64 {
     // SAFETY: a self-contained counted loop in a caller-saved scratch register. It touches no
@@ -434,9 +215,8 @@ pub(crate) fn calibration_loop(iters: u64) -> u64 {
     2 * iters
 }
 
-/// Deadlines that had already passed by the time we re-armed. **Should be zero.** A nonzero
-/// count means the handler is taking longer than a whole tick period, which is a real problem
-/// and not a rounding error.
+/// Deadlines already past when the handler re-armed, per core. Zero unless the handler took longer
+/// than a tick period or the emulator was descheduled.
 static MISSED_TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// This core's missed ticks.
@@ -445,9 +225,7 @@ pub fn missed_ticks() -> u64 {
     missed_ticks_on(cpu::id())
 }
 
-/// A named core's missed ticks. The [`ticks_on`] argument, applied to the miss count: a test that
-/// reads it either side of a wait must name the core, or a migration compares two unrelated
-/// counters.
+/// A named core's missed ticks, for the reason [`ticks_on`] gives.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn missed_ticks_on(cpu: usize) -> u64 {
     MISSED_TICKS[cpu].load(Ordering::Relaxed)
@@ -455,13 +233,8 @@ pub fn missed_ticks_on(cpu: usize) -> u64 {
 
 /// This core's next armed deadline: `CNTV_CVAL_EL0`, the grid cell [`rearm`] advances from.
 ///
-/// Exposed so the drift test can assert the re-arm law directly (deadlines advance by exactly one
-/// interval per delivered tick) instead of inferring it from a wall-clock tick rate, which a
-/// descheduled emulator falsifies. The register is banked per core, like the counter.
-///
-/// **Two callers now**, which is milestone 62's shape: the suite's test, which measures the law on
-/// a wall clock and may report `UNMEASURED` when a loaded host denies it a miss-free window, and
-/// `icount::run`'s claim 4, which measures the same law in instructions and always answers.
+/// Banked per core. Read by the drift test and `icount::run`'s claim 4, which assert the re-arm
+/// law: one interval per delivered tick.
 #[cfg_attr(
     all(not(any(test, feature = "system_tests")), not(feature = "icount")),
     allow(dead_code)
@@ -472,13 +245,8 @@ pub fn deadline() -> u64 {
 
 /// Why a miss happened, kept only in test builds.
 ///
-/// `missed_ticks()` says a deadline was already past when the handler re-armed. It does not say by
-/// how much, and the difference matters: **a few hundred cycles late is a slow handler, and a whole
-/// tick period late is the emulator having been descheduled.** Without the numbers those two look
-/// identical in a panic message, which is the position milestone 78 records the suite being in.
-///
-/// The last miss only, plus a count. A burst records once and reports the final pair, which is
-/// enough to tell the two cases apart and cheaper than a ring buffer in interrupt context.
+/// The last miss's counter and deadline, plus a count, so a report says how late: a few hundred
+/// cycles is a slow handler, a whole period a descheduled emulator.
 #[cfg(any(test, feature = "system_tests"))]
 pub mod miss_detail {
     use core::sync::atomic::{AtomicU64, Ordering};
@@ -511,17 +279,12 @@ pub mod miss_detail {
     }
 }
 
-/// Called from the IRQ handler. **Must re-arm**, or the interrupt line stays high forever and
-/// the machine drowns in its own timer.
+/// The tick handler: count, re-arm, return. Re-arming is what lowers the line.
 ///
-/// This is the whole handler, and it is deliberately tiny: bump a counter, reload the
-/// countdown, return. DECISIONS §9: **interrupt handlers record and defer; they do not do
-/// work.** At milestone 6 this will also set a "reschedule wanted" flag, and the *scheduler*
-/// will act on it in normal context.
+/// Context: interrupt context, IRQs masked; records and defers (DECISIONS §9).
 pub(crate) fn tick() {
     TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
-    // Test builds only: watch for a hung test (a lost IPC wakeup) and fail fast with a diagnostic
-    // instead of blocking the run forever. Costs a couple of atomic loads per tick.
+    // Test builds: fail fast on a hung test rather than block the run.
     #[cfg(any(test, feature = "system_tests"))]
     crate::testing::watchdog_tick();
     rearm(INTERVAL.load(Ordering::Relaxed));
@@ -536,18 +299,14 @@ pub fn ticks() -> u64 {
 /// Ticks since boot on a **named** core, which is what a test needs when the thread doing the
 /// measuring can move between the two reads.
 ///
-/// [`TICKS`] is per core, so `ticks()` before a wait and `ticks()` after it are the same counter
-/// only if nothing migrated the caller in between; a kernel thread on a run queue can be stolen by
-/// an idle core at any preemption point (DECISIONS §28.3). Reading by index makes the pair name one
-/// core on purpose. See notes/load-sensitive-assertions.md.
+/// A kernel thread can be stolen by an idle core at any preemption point (§28 (SMP placement)),
+/// so two reads of [`ticks`] may be of two counters. See notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     TICKS[cpu].load(Ordering::Relaxed)
 }
 
-/// The raw counter. Monotonic, never wraps in any timescale that matters, and **keeps counting
-/// while interrupts are masked**, which is precisely what makes it the only honest way to
-/// measure how long a critical section held the CPU.
+/// The raw counter: monotonic, and counting while interrupts are masked.
 pub fn now() -> u64 {
     CNTVCT_EL0.get()
 }
@@ -556,41 +315,16 @@ pub fn frequency() -> u64 {
     CNTFRQ_EL0.get()
 }
 
-/// **Cross-check `CNTFRQ_EL0` against what the device tree says the timer runs at**, and refuse the
-/// boot if the two disagree.
+/// **Refuse the boot if `CNTFRQ_EL0` and the device tree's timer rate disagree.**
 ///
-/// This architecture is the one that needs no timebase page: `CNTFRQ_EL0` is architected, EL0 may
-/// read the same register the kernel does (`init` opens `CNTKCTL_EL1.EL0VCTEN`), so there is one
-/// source and nothing to keep in sync. That is a strong position and it has one weakness, which the
-/// register table at the top of this file already states in three words: **set by firmware**. The
-/// part does not know its own counter frequency; something running before us wrote it, and on real
-/// ARM boards that something is wrong often enough that the device-tree binding carries an override
-/// for it. `arm,armv8-timer`'s optional `clock-frequency` property exists for exactly that case, and
-/// Linux honours it in preference to the register.
-///
-/// **This refuses rather than preferring either one.** Linux takes the override because Linux must
-/// boot on the board in front of it; this kernel's ruling is calef's, 2026-09-21, that a wrong
-/// number is worse than no number, and two sources that disagree mean we do not know which is
-/// right. Preferring the device tree would be a guess with a rationale, and the failure it hides is
-/// the one this whole change exists to stop: a plausible rate that silently scales every
-/// measurement. Reversible: a board that turns up with a bad register and a good tree is an
-/// argument for preferring the tree, and it is an argument somebody can make with that board's
-/// numbers in hand.
-///
-/// **Unexercised on silicon, and that is stated rather than implied.** QEMU's `virt` machine states
-/// no `clock-frequency` (measured 2026-09-21 with `-machine virt,dumpdtb=`: the `timer` node carries
-/// `interrupts`, `always-on` and `compatible`, and nothing else), so on every machine this kernel is
-/// tested on today this function finds no property and returns without comparing anything. The first
-/// board that exercises it is argon, the Jetson TX1, which is the seL4 comparison bench and so the
-/// one machine where a wrong rate would corrupt the numbers this project is most measured on. Until
-/// something reports a real mismatch, the only thing proven here is that the absent-property path
-/// does not stop a boot.
+/// `CNTFRQ_EL0` is written by firmware, and `arm,armv8-timer`'s optional `clock-frequency` exists
+/// for boards where firmware gets it wrong. This refuses rather than preferring either (calef,
+/// 2026-09-21 UTC). QEMU's `virt` states no such property, so only the absent path has run. See
+/// notes/aarch64-port.md, "The counter's rate is checked against the device tree".
 ///
 /// # Panics
 ///
-/// If the device tree states a rate and the register disagrees with it, naming both values. Also if
-/// the tree is unreadable, which is the same `expect` `isa::init` makes of the same pointer one
-/// call earlier.
+/// If the tree's rate and the register disagree, naming both, or if the tree is unreadable.
 pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, whose magic `memory::init` has already checked, named
     // through the boot map's direct region. Same read `isa::init` makes of the same pointer.
@@ -604,8 +338,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
     let Ok(Some(bytes)) = dt.node_prop_compatible(b"arm,armv8-timer", b"clock-frequency") else {
         return;
     };
-    // The binding spells this one cell, and a property that is not one cell is a tree we do not
-    // understand rather than a mismatch to panic about.
+    // The binding spells one cell; anything else is not understood, and is not a mismatch.
     let Ok(cell) = <[u8; 4]>::try_from(bytes) else {
         return;
     };
@@ -621,10 +354,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
 
 /// Milliseconds since boot, from the counter rather than from the tick count.
 ///
-/// **Deliberately not `ticks() * 10`.** If an interrupt is ever missed: a long critical
-/// section, a slow handler: the tick count undercounts and time appears to slow down. The
-/// hardware counter cannot lie. This is `Instant`, and it is the thing `core` could never give
-/// us because nothing in `core` knows what time it is.
+/// Not `ticks() * 10`, which undercounts every missed tick.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // this file's tests are the callers
 pub fn uptime_ms() -> u64 {
     let freq = CNTFRQ_EL0.get();
@@ -638,11 +368,8 @@ pub fn uptime_ms() -> u64 {
 /// passed and the timer has signalled it, until the handler moves `CNTV_CVAL_EL0` forward, whether
 /// or not interrupts are masked.
 ///
-/// The twin of the riscv64 `is_tick_pending`, whose comment has the measurement: the emulator
-/// raises the timer from its own main loop, milliseconds and occasionally tens of milliseconds
-/// after the deadline, so a test that assumes a tick is pending after a fixed masked spin can be
-/// measuring the host. The tests that hold a tick across a mask wait for this bit instead. See
-/// notes/load-sensitive-assertions.md.
+/// The emulator can raise the timer tens of milliseconds after the deadline, so tests that hold a
+/// tick across a mask wait for this bit. See notes/load-sensitive-assertions.md.
 ///
 /// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in design/naming.md). Refused
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
@@ -651,11 +378,8 @@ pub fn is_tick_pending() -> bool {
     CNTV_CTL_EL0.is_set(CNTV_CTL_EL0::ISTATUS)
 }
 
-/// Busy-wait. Uses the counter, so it works with interrupts masked, which is exactly when a
-/// tick-based delay would hang forever.
-///
-/// The callers are the milestone tour and the tests. A `bench` boot diverges before the tour and
-/// runs no tests, so in that configuration this has no caller.
+/// Busy-wait `counter_ticks` on the counter, so it works with interrupts masked. A `bench` boot
+/// has no caller.
 #[cfg_attr(feature = "bench", allow(dead_code))]
 pub fn spin_for(counter_ticks: u64) {
     let start = now();
@@ -675,17 +399,10 @@ mod tests {
     //! Tests for the timer, and for the thing the whole locking discipline was written to
     //! prevent.
 
-    /// **The cycle-counter grant opens and closes `PMUSERENR_EL0.CR`, and opens nothing else**
-    /// (milestone 229, DECISIONS 139 option 4).
+    /// **The cycle-counter grant opens and closes `PMUSERENR_EL0.CR`, and opens nothing else.**
     ///
-    /// Reads the register back out of the core rather than out of the cache
-    /// [`set_cycle_counter_grant`](super::set_cycle_counter_grant) keeps, which is the only way the
-    /// cache can be caught lying. `EN` (bit 0) and `ER` (bit 3) stay clear throughout: DECISIONS
-    /// 139 granted the cycle counter, not the event counters and not the whole PMU.
-    ///
-    /// Four calls where only two change anything, because the context switch makes this call on
-    /// every switch and the cheap path has to be right as well as fast. Leaves the register at
-    /// zero, which is where `init` left it and where every other test expects it.
+    /// Reads the register out of the core, not the cache. Each call is made twice because the
+    /// switch makes it on every switch and the unchanged path must be right too. Leaves zero.
     #[test_case]
     fn the_cycle_counter_grant_moves_cr_and_nothing_else() {
         if !super::is_cycle_counter_grantable() {
@@ -726,14 +443,10 @@ mod tests {
     fn the_timer_is_ticking() {
         use crate::arch::timer;
 
-        // Name the core. `ticks()` reads a per-core counter and this thread can be migrated by a
-        // steal at any preemption point, which would compare two unrelated counters (`ticks_on`).
+        // Name the core, for `ticks_on`'s reason.
         let cpu = crate::cpu::id();
         let before = timer::ticks_on(cpu);
-        // **Waited for, not spun for.** A fixed three periods asked the emulator to have raised the
-        // timer within 30 ms of wall clock, and it raises it from its own main loop: measured on
-        // 2026-09-24 at up to 86 ms after the deadline (`is_tick_pending`'s comment has the
-        // numbers). A timer that is genuinely dead still fails, a second later.
+        // Waited for, not spun for: the emulator raises the timer up to 86 ms late.
         let ticked = within_periods(RAISE_BOUND_PERIODS, || timer::ticks_on(cpu) > before);
 
         assert!(
@@ -744,35 +457,15 @@ mod tests {
 
     /// Ticks arrive at the configured rate, proven by the grid rather than by the wall clock.
     ///
-    /// This is the test that caught the drift. We re-armed with `CNTV_TVAL_EL0` (a *relative*
-    /// countdown), so every period was `interval + handler latency`, the lateness compounded,
-    /// and 100 Hz became about 70 Hz. Silently. `CNTV_CVAL_EL0` puts the deadlines on a fixed
-    /// grid and the rate is right.
-    ///
-    /// The original assertion compared delivered ticks against elapsed counter time, one period
-    /// of slack either way. That measures the emulator as much as the re-arm: the test runner
-    /// passes no `-icount`, so `CNTVCT_EL0` follows host time, and a host that deschedules the
-    /// vCPU for a few periods coalesces ticks into exactly the deficit the TVAL defect produced.
-    /// It failed a quiet-window gate run on 2026-08-03 as "22 ticks in 25 periods" while the
-    /// host compiled beside QEMU, the same shape its riscv64 twin kept failing CI with, and no
-    /// margin separates "our re-arm is late" from "the emulator was not running"
-    /// (notes/load-sensitive-assertions.md).
-    ///
-    /// So assert the re-arm LAW instead, the property this test exists for: over a window in
-    /// which no miss was recorded, [`rearm`] moved `CNTV_CVAL_EL0` by **exactly one interval per
-    /// delivered tick**. The TVAL defect fails this on the first tick (each re-arm lands late by
-    /// the handler latency, so the sum overshoots the grid); a descheduled emulator cannot fail
-    /// it, because a deschedule long enough to slip the grid is counted by `MISSED_TICKS` and
-    /// the window is retried. Kept in lockstep with the riscv64 twin, whose grid is software
-    /// (`DEADLINE`) because SBI's `set_timer` is write-only where CVAL reads back.
+    /// Over a window with no miss, [`rearm`] moves `CNTV_CVAL_EL0` by exactly one interval per
+    /// delivered tick; re-arming with `TVAL` fails it on the first tick. Kept in lockstep with the
+    /// riscv64 twin. See notes/aarch64-port.md, "What the timer tests can and cannot claim".
     #[test_case]
     fn ticks_arrive_at_the_configured_rate() {
         use crate::arch::timer;
 
-        // A consistent (ticks, missed, deadline, counter) snapshot without masking: a tick
-        // between the reads would skew them, so re-read until the tick count brackets the others
-        // unchanged. The core id is in the bracket too: the statics and CVAL are per core, and a
-        // snapshot pair taken on two cores compares unrelated grids.
+        // Re-read until the tick count and the core id bracket the other reads unchanged: a tick
+        // between them would skew the snapshot, and the statics and CVAL are per core.
         let snapshot = || loop {
             let cpu = crate::cpu::id();
             let t = timer::ticks();
@@ -784,26 +477,8 @@ mod tests {
             }
         };
 
-        // A miss re-anchors the grid, which is correct behaviour (`rearm`'s safety valve), so a
-        // window containing one proves nothing about the law either way: retry it.
-        //
-        // **Exhausting the budget is not a failure, and milestone 62 settled that on 2026-08-18.**
-        // It used to be. The assertion that stood here read "either the host is too contended to
-        // observe the grid, or the handler is slower than a whole tick period", and the word
-        // deciding between those two is `or`: this is the family's signature confound, a claim
-        // whose truth depends on the host, written from inside a guest that cannot see the host.
-        // The acceptance run fired it four times in forty-five loaded runs, twice per ISA, and
-        // widening the budget is the one fix DECISIONS §61 and this milestone both forbid by name,
-        // because it changes how often you notice rather than what is measured.
-        //
-        // What is kept is everything below, and it is the whole reason this test exists: the
-        // re-arm law is exact, and a host can only cost us the chance to measure it, never the
-        // answer. What is given up is the second, implicit claim, which `script/icount` now
-        // asserts with no host term in it (claim 2, the handler bounded at 2,500 instructions
-        // against a measured 1,056, and claim 3, zero missed ticks) and with the law itself
-        // beside them (claim 4, added by this milestone after an injection showed the instrument
-        // was blind to the very defect this test catches). `script/ci-build` and CI both run it. See
-        // notes/load-sensitive-assertions.md.
+        // A miss re-anchors the grid, so a window holding one proves nothing: retry it. An
+        // exhausted budget skips rather than fails, and the budget is not widened.
         const ATTEMPTS: u32 = 8;
         let mut attempts = 0;
         let measured = loop {
@@ -820,10 +495,6 @@ mod tests {
             }
         };
 
-        // Loud rather than silent, because a test that quietly measures nothing is worse than one
-        // that flakes: the reader has to be able to tell "the law held" from "the law was not
-        // looked at". The numbers come with it so a human can triage without re-running, which is
-        // what `miss_detail` was added for in the first place.
         let Some((elapsed_ticks, deadline_delta, expected)) = measured else {
             let (now, next, misses) = super::miss_detail::last();
             crate::println!(
@@ -839,9 +510,8 @@ mod tests {
                 now.saturating_sub(next),
                 timer::interval(),
             );
-            // The diagnostic above is the detail; this is the verdict, and it has to reach the
-            // final line. A test that measures nothing is not a pass (milestone 214,
-            // design/roadmap/0214-print-and-return-skips.md).
+            // A test that measures nothing is a skip, not a pass (milestone 214 (a test that
+            // prints "skipping" and returns is counted as passed)).
             crate::testing::skip!(
                 "no miss-free window in which to measure the re-arm law this run"
             );
@@ -854,66 +524,22 @@ mod tests {
              a RELATIVE countdown (TVAL) instead of an absolute deadline (CVAL) does exactly this."
         );
 
-        // The one wall-clock bound a contended host cannot falsify: descheduling only DROPS
-        // ticks, so more ticks than elapsed periods (plus one for starting mid-period) means the
-        // timer is firing faster than the grid, which is `rearm`'s spin-forever failure mode.
+        // Descheduling only drops ticks, so a surplus means the timer fires faster than the grid.
         assert!(
             elapsed_ticks <= expected + 1,
             "{elapsed_ticks} ticks in {expected} periods: the timer fires faster than configured"
         );
     }
 
-    // **`the_handler_keeps_up_when_no_lock_is_held` was deleted here** (milestone 62, 2026-08-18),
-    // and this comment is the argument, because a deleted test leaves no trace and the next person
-    // to notice that the timer has no handler-latency test deserves to find out why rather than to
-    // rebuild it.
-    //
-    // What it meant to prove: with interrupts live and no critical section in the way, a missed
-    // deadline would mean the handler itself is too slow, which at milestone 6 means threads losing
-    // time slices. What it actually measured: the missed-tick delta over five tick periods, with a
-    // taxonomy deciding by how late the re-arm was. Less than one interval late was called a slow
-    // handler and failed; a whole interval or more was called the emulator descheduled and passed.
-    //
-    // **Its true-positive band and its false-positive band are the same band**, which is what
-    // makes this a deletion rather than a fix. Both were measured by injection on 2026-08-18, on
-    // this ISA, against `script/icount` run on the same tree:
-    //
-    // | handler slow by | this assertion | `script/icount` |
-    // |---|---|---|
-    // | under 1 period | silent: no miss to classify | fails on the bound, 2,500 instructions |
-    // | 1.5 periods | **fails**, correctly, "late by less than one interval" | fails |
-    // | 2.5 periods | **passes**, printing "the emulator was descheduled; not this kernel's bug, not failed" | fails: handler 25,001,200 instructions, missed_ticks 32 |
-    //
-    // The third row is not a false negative so much as a false exoneration, printed, on the worst
-    // timer defect this kernel could have. And the middle row is the same band in which milestone
-    // 62's acceptance run caught a real host deschedule wearing the slow-handler message twice per
-    // ISA (measured at 0.56 and 0.83 of an interval). Inside the band the assertion cannot tell the
-    // two apart; outside it, it says nothing or says the wrong thing. No cut fixes that, because
-    // from inside the guest a 30 ms handler and a 30 ms deschedule are the same observation.
-    //
-    // The claim now lives on `script/icount`, denominated in instructions, which the host cannot
-    // move: the handler is bounded deadline-to-re-armed at `HANDLER_BOUND` against a measured 1,056
-    // with zero variance across 64 consecutive ticks, and `missed_ticks == 0` is asserted with no
-    // taxonomy at all. That is roughly 4,000x tighter than "did not exceed one tick period" and it
-    // has no second explanation. `miss_detail` survives, now consumed by the drift test's
-    // unmeasured-window report. See notes/load-sensitive-assertions.md and
-    // notes/instruction-clock.md.
+    // No wall-clock test bounds the handler's latency: a slow handler and a descheduled host land
+    // in the same band. `script/icount` bounds it in instructions. See
+    // notes/load-sensitive-assertions/timer-assertion-disposition.md.
 
     /// **The cost of masking, made visible.**
     ///
-    /// `IrqSafeMutex` prevents the deadlock by masking interrupts for as long as the lock is
-    /// held. That is not free, and this is the bill: hold a lock across a tick deadline and the
-    /// tick is *late*. Hold it across more than one and a tick is **lost outright**: the
-    /// deadline passes, we re-arm to a deadline already in the past, and the only sane thing to
-    /// do is give up on it and re-anchor.
-    ///
-    /// This is exactly why DECISIONS §9 says **keep critical sections short**, and it is the
-    /// reason that rule has teeth rather than being good manners. At milestone 6, a lost tick is
-    /// a thread that didn't get preempted.
-    ///
-    /// The test asserts the cost is *real*, which is a strange thing to assert until you notice
-    /// that if it ever stopped being real, `IrqSafeMutex` would have stopped masking, and the
-    /// deadlock would be back.
+    /// A lock held across more than one tick period loses a tick, which is why DECISIONS §9 keeps
+    /// critical sections short. If it stopped costing one, `IrqSafeMutex` would have stopped
+    /// masking. See notes/interrupts.md.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
@@ -921,23 +547,16 @@ mod tests {
 
         static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
 
-        // `before` is read **inside** the critical section, and it names its core. Interrupts are
-        // masked in there, so this thread can neither be preempted nor migrated and the measured
-        // window is exactly the window under test. Read outside, it straddled a preemption point
-        // and compared per-core counters across a possible steal (see `ticks_on`).
+        // Read inside the critical section, where this thread cannot be preempted or migrated.
         let (cpu, before) = {
             let _guard = M.lock();
             let cpu = crate::cpu::id();
             let before = timer::missed_ticks_on(cpu);
-            // Two whole tick periods with interrupts masked. At least one deadline passes while
-            // we cannot service it.
             timer::spin_for(timer::interval() * 2 + timer::interval() / 2);
             (cpu, before)
         };
 
-        // Let the pending interrupt land and the miss be counted. Bounded rather than a fixed
-        // single period: the claim is that the miss *happens*, and a host that descheduled the
-        // emulator only makes the delivery later.
+        // Bounded, not one period: a descheduled host only makes the delivery later.
         assert!(
             within_periods(20, || timer::missed_ticks_on(cpu) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
@@ -947,9 +566,7 @@ mod tests {
 
     /// Uptime comes from the *counter*, not the tick count.
     ///
-    /// If a tick were ever missed, `ticks * 10ms` would undercount and time would appear to
-    /// slow down. The hardware counter cannot lie. This is what `Instant` is made of, and it is
-    /// the thing `core` could never give us: nothing in `core` knows what time it is.
+    /// A tick count would undercount every missed tick.
     #[test_case]
     fn uptime_advances_monotonically() {
         use crate::arch::timer;
@@ -966,23 +583,10 @@ mod tests {
         );
     }
 
-    /// **THE TEST.**
-    ///
-    /// Everything in DECISIONS §9 and notes/locking.md exists to prevent one thing: a timer
-    /// interrupt landing inside a critical section, taking the same lock, and spinning forever
-    /// waiting for code that cannot run until it returns. On one core. Permanently.
-    ///
-    /// Until this milestone that was a hypothesis. There were no interrupts. Now there are, and
-    /// this is the proof:
-    ///
-    ///   1. confirm ticks are flowing
-    ///   2. take a lock and busy-wait across **three whole tick periods**
-    ///   3. assert not one tick landed
-    ///   4. release, and watch them resume
-    ///
-    /// Step 2 works because `spin_for` reads `CNTVCT_EL0`, the hardware counter, which **keeps
-    /// counting while interrupts are masked**. A tick-based delay would simply hang here, which
-    /// is its own kind of proof.
+    /// **No tick lands while a lock is held**, the deadlock DECISIONS §9 and notes/locking.md
+    /// exist to prevent. Confirms ticks flow, holds a lock across three periods, asserts none
+    /// landed and one is pending, then releases and watches them resume. See notes/interrupts.md,
+    /// "The test the whole locking discipline was written for".
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
@@ -998,32 +602,19 @@ mod tests {
         // The timer is alive. Core-scoped, for `ticks_on`'s reason.
         let alive_on = crate::cpu::id();
         let t0 = timer::ticks_on(alive_on);
-        // Waited for rather than spun for, for `the_timer_is_ticking`'s reason: the emulator can
-        // raise a tick tens of milliseconds late, and this assertion (aarch64's copy) went red that
-        // way before the suite's userspace half on 2026-08-27. See
-        // notes/load-sensitive-assertions.md.
+        // Waited for, for `the_timer_is_ticking`'s reason.
         assert!(
             within_periods(RAISE_BOUND_PERIODS, || timer::ticks_on(alive_on) > t0),
             "the timer is not ticking at all"
         );
 
-        // **Both reads of the tick count happen inside the critical section**, and that is the
-        // fix milestone 78 made here. `before` used to be read before `M.lock()`, which makes the
-        // measured window wider than the property: a tick landing in the handful of instructions
-        // between the read and the mask is charged to the lock. A contended host puts a tick there
-        // almost by construction, because a descheduled vCPU resumes with its deadline already
-        // past and takes the interrupt at the first instruction it executes. The riscv64 twin
-        // failed CI that way on 2026-08-04 ("left: 41, right: 40", one surplus tick, on `rv64`,
-        // the control model). The same window also straddled a preemption point, and TICKS is per
-        // core, so a steal (§28.3) moving this thread compared two unrelated counters.
+        // Both reads inside the critical section: a tick between a read and the mask would be
+        // charged to the lock, and a descheduled vCPU takes its late tick at the first instruction.
         let (cpu, before) = {
             let _guard = M.lock();
-            // Interrupts are masked from here, so this core cannot switch threads: `cpu::id()` is
-            // fixed for the whole block and both reads below are of one counter.
             let cpu = crate::cpu::id();
             let before = timer::ticks_on(cpu);
 
-            // Thirty milliseconds. Three ticks' worth. Not one of them may land.
             timer::spin_for(timer::interval() * 3);
 
             assert_eq!(
@@ -1034,13 +625,8 @@ mod tests {
                  would spin forever waiting for code that cannot run."
             );
 
-            // **And a tick is now raised and waiting**, which is what makes the release below a
-            // test of `restore` rather than of the host. The spin above is thirty milliseconds of
-            // wall clock, and the emulator raises the timer from its own main loop, as much as 86
-            // ms after the deadline (measured 2026-09-24; `is_tick_pending`'s comment). This twin
-            // failed CI once exactly that way, on `sifive-u54`, "interrupts did not resume" after
-            // twenty periods of waiting for a tick nobody had raised. Still masked, so still this
-            // core, and the assertion above is repeated because the wait is part of the window.
+            // A raised tick makes the release below a test of `restore`, not of the host. The
+            // first assertion is repeated because the wait is part of the window.
             assert!(
                 within_raise_bound(timer::is_tick_pending),
                 "the timer was never raised in a second with the lock held, so the release below \
@@ -1057,27 +643,15 @@ mod tests {
             (cpu, before)
         };
 
-        // And the moment we let go, the pending interrupt is delivered. Bounded rather than a
-        // fixed two periods, and read by core index because dropping the guard is a preemption
-        // point: this thread may be on another core by the next instruction, and the core we left
-        // keeps ticking either way.
+        // By core index: dropping the guard is a preemption point.
         assert!(
             within_periods(20, || timer::ticks_on(cpu) > before),
             "interrupts did not resume after the lock was released: `restore` is broken"
         );
     }
 
-    /// Wait for `cond`, bounded in **tick periods of the free-running counter**, checking once a
-    /// period.
-    ///
-    /// Every use is on the "has it happened yet" side of a property (a pending interrupt being
-    /// delivered, a miss being counted), which is the direction where a busy host produces a late
-    /// pass rather than a wrong answer. The fixed spins these replaced turned a late delivery into
-    /// a failure. See notes/load-sensitive-assertions.md.
     /// How long a wait on the timer being raised may take, in tick periods: one second, against a
-    /// worst case measured at under nine periods (86 ms, `is_tick_pending`'s comment). **A leak
-    /// trap, not a timing claim**: nothing the kernel does is inside it once the deadline has
-    /// passed.
+    /// worst case measured at under nine periods (86 ms). A leak trap, not a timing claim.
     ///
     /// Name: provisional, minted 2026-09-24 (`cda66d656`, waiting for the tick to be raised).
     const RAISE_BOUND_PERIODS: u32 = 100;
@@ -1100,6 +674,9 @@ mod tests {
         true
     }
 
+    /// Wait for `cond`, bounded in tick periods of the free-running counter, checking once a
+    /// period. Used only on the "has it happened yet" side of a property, where a busy host makes
+    /// a late pass rather than a wrong answer. See notes/load-sensitive-assertions.md.
     fn within_periods(periods: u32, mut cond: impl FnMut() -> bool) -> bool {
         for _ in 0..periods {
             if cond() {

@@ -128,21 +128,14 @@ fn the_jh7110_backend_refuses_to_wire_where_there_is_no_jh7110() {
     );
 }
 
-/// **No clock-and-reset window is mapped on a machine that is not a JH7110** (milestone 220).
+/// No clock-and-reset window is mapped on a machine that is not a JH7110 (milestone 220).
 ///
-/// The guard on the one genuinely dangerous thing this milestone added: `jh7110_clock_and_reset::discover`
-/// deliberately never fails to produce an address, falling back to the constant both published
-/// device trees agree on, so a caller that took its answer unconditionally would store to
-/// `0x1023_0000` on every board this kernel boots. `memory::init` is what stops that, by
-/// recording the window only for a machine whose tree names a JH7110, and this pins it.
-///
-/// **A comment could not do this job**, because the failure is silent in the direction that
-/// matters: on QEMU's `virt` board `0x1023_0000` is unmapped, so the symptom would be a load or
-/// store fault during boot on a machine nobody would think to blame the clock driver for.
-///
-/// This is also the honest boundary of what an emulator can gate here. QEMU's `virt` machine has
-/// no clock or reset controller of any kind, so what CI exercises is the *absence* path; the
-/// sequence itself has never run against silicon. See `notes/jh7110-clock-and-reset.md`.
+/// `jh7110_clock_and_reset::discover` always produces an address, falling back to `0x1023_0000`,
+/// so an unconditional caller would store there on every board; `memory::init` records the window
+/// only when the tree names a JH7110, and this pins it. The failure is silent: a boot fault nobody
+/// would blame on the clock driver. QEMU's `virt` has no clock or reset controller, so CI runs
+/// only the absence path; the sequence itself has never run against silicon. See
+/// `notes/jh7110-clock-and-reset.md`.
 #[test_case]
 fn no_clock_window_is_mapped_where_there_is_no_jh7110() {
     if entropy_service::jh7110_trng_device().is_some() {
@@ -224,18 +217,13 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
     );
 }
 
-/// **More than one word's worth takes more than one round trip, and the loop that does it is
-/// checked here** (milestone 159).
+/// A fill of more than one exchange gathers across round trips (milestone 159 (a real hardware
+/// entropy source: the JH7110's TRNG)).
 ///
-/// `entropy_contract` carries [`entropy_contract::MAX_BYTES`] bytes per exchange, so a caller wanting a
-/// 32-byte buffer needs four. Nothing in this suite exercised that until now, and the gap had a
-/// cost: the riscv64 boot tour asked `get(32, ..)`, compared the 8 it got against 32, and printed
-/// FAILED on a working JH7110 for three days, on the one machine in the world that runs the
-/// branch. `Wiring::fill` is the loop, and this runs it against the backend CI actually has.
-///
-/// Two claims, and the second is the one the tour was really making. A full buffer comes back
-/// full, across round trips. And two consecutive fills differ, which for a 32-byte fill means the
-/// service crossed at least one internal refill boundary without repeating itself.
+/// `entropy_contract` carries [`entropy_contract::MAX_BYTES`] bytes per exchange, so a 32-byte
+/// buffer takes four; `Wiring::fill` is the loop, run here against the backend CI has. A full
+/// buffer comes back full, and two consecutive fills differ, which for 32 bytes means the service
+/// crossed an internal refill boundary without repeating itself.
 #[test_case]
 fn a_fill_gathers_across_round_trips() {
     let Some(w) = start(Bus::Mmio) else {
@@ -257,23 +245,16 @@ fn a_fill_gathers_across_round_trips() {
     assert_ne!(a, b, "two fills returned identical bytes");
 }
 
-/// **The instruction backend, milestone 162: RNDRRS on aarch64, no virtio device at all.**
+/// The instruction backend (milestone 162 (real hardware entropy on x86_64 and aarch64: RDSEED
+/// and RNDRRS)): `RNDRRS` on aarch64, with no virtio device at all.
 ///
-/// `Bus::Instruction` needs `ID_AA64ISAR0_EL1.RNDR` set, which the suite's default CPU
-/// (`cortex-a72`, ARMv8.0-A) does not implement: `FEAT_RNG` is ARMv8.5. That is a real hardware
-/// precondition this suite cannot fake, named rather than assumed, so the test skips there. Run it
-/// for real **under TCG** with `script/test --arch aarch64 --cpu neoverse-n2` or `--cpu max`.
-///
-/// **A flag reaches a TCG run and nothing else.** Under HVF the guest runs the physical core and
-/// `helpers/qemu-runner-aarch64.sh` refuses `NIFE_CPU`, so whether Apple Silicon implements
-/// `FEAT_RNG` is not established here. CI's aarch64 legs run the default CPU, and its CPU matrix
-/// sweeps riscv64 models only, so **CI always takes the skip**; aarch64 CPU-matrix coverage would
-/// be a roadmap item of its own.
-///
-/// On riscv64 `is_instruction_backend_available` is unconditionally `false`: the ISA has neither
-/// instruction, a refusal recorded under "Follow-on" in
-/// `design/roadmap/0162-cpu-instruction-entropy.md` (the JH7110's hardware source is a separate
-/// driver). On `x86_64` it checks `arch::isa::get().has_random_seed_instruction()`.
+/// It needs `ID_AA64ISAR0_EL1.RNDR` (`FEAT_RNG`, ARMv8.5), which the default `cortex-a72` lacks, so
+/// it skips there; run it under TCG with `script/test --arch aarch64 --cpu neoverse-n2` or
+/// `--cpu max`. Under HVF `helpers/qemu-runner-aarch64.sh` refuses `NIFE_CPU` (so Apple Silicon's
+/// `FEAT_RNG` is not established), and CI's CPU matrix sweeps riscv64 only, so CI always takes the
+/// skip. riscv64 has neither instruction ("Follow-on" in
+/// `design/roadmap/0162-cpu-instruction-entropy.md`); `x86_64` checks
+/// `arch::isa::get().has_random_seed_instruction()`. See notes/entropy.md, "Honest limits".
 #[test_case]
 fn a_client_obtains_unpredictable_bytes_from_rndrrs_with_no_device_at_all() {
     let Some(w) = start(Bus::Instruction) else {

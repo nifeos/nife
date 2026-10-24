@@ -3,6 +3,7 @@
 Part of [the notes index](../README.md), which says how to add a line.
 
 - [How portable kernels are written](../portability.md): what belongs in `arch/`, and why port early.
+- [The aarch64 port](../aarch64-port.md): what `kernel/src/arch/aarch64/` decides that no subsystem note carries. Name provisional.
 - [Porting to RISC-V](../riscv-port.md): the second-architecture port and the `arch/` boundary it tested.
 - [Scoping RISC-V / aarch64 parity](../riscv-parity-scope.md): the RISC-V parity gaps, all now closed, with corrections.
 - [The RISC-V arch tests](../riscv-arch-tests.md): RISC-V twins of the aarch64 arch unit tests.

@@ -233,9 +233,41 @@ sweep passed, and a `PageFrame` has no generation to make it inert.
 `system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAP`,
 `CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
 
+The tests drive the frame because it has the most to lose: under `MemoryRegion::DESTROY` a
+surviving copy names pages the allocator is about to hand to somebody else. `DeviceFrame::REVOKE`
+and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAP` and `CAP_INSERT` path, so
+the one fix covers them. Two cores could produce the interleaving by timing, but the window is a few
+hundred instructions wide. So `delegation_pause` holds an armed thread at the start of its
+delegation with no lock held. The test runs the whole sweep, then lets the thread go.
+
 Objects with generational names do not need this. `Rendezvous::BADGE` and `MemoryRegion::SPLIT`
 still read, then grant, and a copy minted after its object died names a dead generation and fails
 on use (§16 (object revocation)).
+
+### A sweep inside a `MAP`
+
+`PageFrame::MAP` and `AddressSpace::MAP_INTO` read the frame capability, then build page tables, map,
+and record the mapping in the log a sweep unmaps from. A sweep deletes capabilities first, then
+unmaps what the log holds when it scans. Without a common hold, a `MAP` that read its frame before
+the sweep and recorded after the scan would leave a live mapping of a frame no capability names.
+Under `PageFrame::REVOKE` that is authority the revoker took back. Under `MemoryRegion::DESTROY` it
+is a mapping of a page the allocator hands to somebody else, which is the use-after-free of DECISIONS
+§13 (capability revocation and untyped reclamation).
+
+`revoke::MappingHold` closes it. The frame is read under the same hold of the mapping registry that
+maps and records it, and every sweep's unmap pass takes that hold after its capability pass. So a
+sweep is wholly before the read, and the `MAP` finds the slot empty and answers `NoSuchSlot` as if it
+had started after the revoke, or wholly after the record, and the scan finds it. `MemoryRegion::MAP`
+had the same window, narrower because a region is generational: a retype that succeeded before
+`DESTROY` claimed the region, recorded after the scan. The same hold closes it.
+
+`system_tests::user::map_revocation_window_tests` forces the interleaving with `delegation_pause`,
+the seam the delegation tests use. A `MAP` is a use, not a delegation, but the question is the same,
+and a second seam would be a second thing to keep in step. The seam holds an armed thread inside the
+`MAP` with no lock held while the test runs the whole sweep, then lets it go. The `PageFrame` and
+`MAP_INTO` tests run under each sweep, because the two delete capabilities by different predicates
+(the exact object for `REVOKE`, overlap for `DESTROY`) and unmap by different scans (scoped to the
+capability's family, and object-blind over the range).
 
 ### BUGS
 

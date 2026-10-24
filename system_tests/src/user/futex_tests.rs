@@ -5,15 +5,14 @@
 //! longer holds what the waiter expected does not sleep; every form §269 reserves is refused; and
 //! a waiter whose region is destroyed leaves the futex table. One hand-written waiter per ISA, so
 //! the same claims are proved on all three (§19 (architectural parity is a tenet)).
-//!
+
 //! # BUGS
 //!
-//! - **The waker here is the kernel test, not a second user thread.** Two threads cannot share a
-//!   space until the join is built (it waits on calef's ruling on pull request #1892), so the wake
-//!   is `sched::futex_wake` called directly, past the syscall layer's own-space check. The
-//!   syscall layer's checks are proved separately below, by a caller that is refused at each one.
-//!   The milestone's exit test, four threads contending a `std::sync::Mutex`, is the end-to-end
-//!   proof.
+//! - The waker is the kernel test, not a second user thread: two threads cannot share a space
+//!   until the join is built (it waits on calef's ruling on pull request #1892), so the wake is
+//!   `sched::futex_wake` called directly, past the own-space check. The syscall layer's checks are
+//!   proved below, by a caller refused at each; the end-to-end proof is the milestone's exit test,
+//!   four threads contending a `std::sync::Mutex`.
 
 use abi::Error;
 use abi::futex::{PRIVATE, SIZE_U32, SIZE_U64};
@@ -164,15 +163,13 @@ fn stop(tid: u64, region: u64) {
     sched::reclaim_region(region).expect("the waiter's region did not come back");
 }
 
-/// **A thread parked on a word sleeps until a wake names that word, and a word that has changed
-/// does not put it to sleep.**
+/// A thread parked on a word sleeps until a wake names that word, and a changed word does not put
+/// it to sleep.
 ///
-/// The waiter calls `WAIT` expecting `0` and the word is `0`, so it parks, and it must stay parked
-/// with no return at all: a futex that returned on its own would make every `std` lock a spin. A
-/// wake for the neighboring word wakes nobody. Then the word becomes `1` and one wake releases
-/// it; from then on its `WAIT` expects `0`, finds `1`, and returns `1` at once, every time. So at
-/// the end it has returned many times, and its results are exactly a wake (`0`) and changed words
-/// (`1`), and nothing else.
+/// The waiter's `WAIT` expects `0` and parks with no return at all (a futex that returned on its
+/// own would make every `std` lock a spin); a wake for the neighboring word wakes nobody. Then the
+/// word becomes `1` and one wake releases it, and every later `WAIT` returns `1` at once. Its
+/// results are exactly a wake (`0`) and changed words (`1`).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.futex_tests.a_waiter_sleeps_until_its_word_is_woken.patch`
 #[test_case]
