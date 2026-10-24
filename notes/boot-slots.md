@@ -233,6 +233,18 @@ never uses, sixty-eight of them, to pay for a window one caller has, and the fra
 that. What a caller owes is the cost above what `AS_OVERHEAD`'s margin was already providing, which is
 `WINDOW_IN_OVERHEAD` and its reasoning at the arithmetic.
 
+## The rollback gate's BUGS, in full
+
+The `BUGS` in `xtask/src/rollback.rs` are one line each. Here is what stands behind them.
+
+- The gate writes the upgrade itself, because nothing in this tree writes an upgrade to a running
+  machine yet. The bytes and attribute bits go through the same `crates/boot_slot` and
+  `globally_unique_identifier_partition_table` code the installer uses.
+- The upgrade gets one try, not three. The policy is the same at any count, and
+  `cargo test -p boot_slot` covers the counting.
+- The power cut comes at the handoff, not during the table write. A machine interrupted between the
+  chooser's four block writes is not covered, and `uefi_loader/src/chooser.rs`'s `BUGS` says so.
+
 ## See also
 
 - [Installing nife onto a disk](installing.md): rung 2a, the disk this all sits on, and why the data
