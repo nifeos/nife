@@ -76,19 +76,21 @@ pub fn drain_inbox() {
     }
 }
 
-/// Put an already-created thread onto core `target`'s run queue: this core's own, or the target's
-/// inbox. Returns the core that owes a reschedule SGI (`Some(target)` for a remote inbox), which
-/// the caller sends after releasing `IPC_TABLES`. The caller must act on this answer and never compare
-/// `target` with [`cpu::id()`] again: outside the lock it can be stolen to another core in between,
-/// and a skipped SGI strands the thread in an inbox nothing drains. The inbox lock's
-/// release/acquire orders the caller's thread-table insert before the target's drain (§11 (SMP)).
-/// See notes/scheduler/missed-reschedule-poke.md.
+/// Put an already-created thread onto core `target`'s run queue, this core's or the target's inbox.
+/// Returns the core owed a reschedule SGI, which the caller sends after releasing `IPC_TABLES` and
+/// never re-derives from [`cpu::id()`]: a steal in between would strand the thread. The inbox lock
+/// orders the thread-table insert before the drain (§11 (SMP)). See
+/// notes/scheduler/missed-reschedule-poke.md.
 ///
 /// Context: caller holds `IPC_TABLES` (interrupts masked); takes the target's inbox lock.
+///
+/// # BUGS
+/// The `#[must_use]` meant for this answer sits on `spawn_on`, so dropping it here compiles.
 pub(super) fn place_on(target: usize, thread: Unqueued<Thread>) -> Option<usize> {
-    // A remote parked core's inbox is drained by nothing (notes/visionfive2.md, third stop).
-    // Placing onto oneself is exempt: a secondary's bring-up probe spawns onto its own core one
-    // step before that core sets its online bit, and a local push needs no drain.
+    // A remote parked core's inbox is drained by nothing (notes/visionfive2.md, third stop). The
+    // release board build compiles this out; `dump_threads`'s parked-inbox line is the field
+    // diagnostic. Placing onto oneself is exempt: a secondary's bring-up probe spawns onto its own
+    // core one step before that core sets its online bit, and a local push needs no drain.
     debug_assert!(
         target == cpu::id() || {
             let mask = crate::smp::online_harts_mask();

@@ -91,8 +91,10 @@ pub(crate) fn count_preemption() {
 /// stack, because the handler may have run on this core's interrupt stack and `schedule()` runs
 /// only on a stack the interrupted thread owns (`kernel/src/interrupt_stack.rs`).
 ///
-/// `#[inline(never)]` for [`on_tick`]'s reason: an inlined copy would charge every syscall for a
-/// `schedule()` call site no syscall fetches (notes/benchmarks/fastpath-footprint-gate.md).
+/// `#[inline(never)]` for [`on_tick`]'s reason: inlined into aarch64's `exception_dispatch` on
+/// 2026-10-20 (UTC), after milestone 890 (riscv64 and `x86_64` join the shared boot path), it took
+/// that symbol from 0x98 to 0x11c bytes and `syscall_entry` from 1,696 to 1,828 B, 7.8% over a 5%
+/// band (notes/benchmarks/fastpath-footprint-gate.md).
 #[inline(never)]
 pub fn preempt_if_needed() {
     if take_need_resched() && is_running() {

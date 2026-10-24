@@ -155,6 +155,6 @@ copy lands beside its caller.
 
 ## BUGS
 
-- `thread::init_fp_state`'s doc gives "a `kmem` page is not zeroed" as its reason, and
-  `kmem::page` zeroes a recycled page. Either the doc is stale or a path hands out unzeroed pages;
-  nobody has checked which.
+- `thread::init_fp_state`'s doc, and `thread::init_capability_table`'s after it, give "a `kmem`
+  page is not zeroed" as their reason. That is stale: `kmem::page` zeroes a page it recycles, and
+  `memory_region::retype_object_page` zeroes a fresh one.
