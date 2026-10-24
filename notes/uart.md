@@ -101,6 +101,32 @@ standing.
 
 Every kernel on earth learns to do this first, for that reason.
 
+## The console server
+
+`components/src/console.rs` is the userspace program that drives the UART for its clients. A client
+writes text into a shared page and sends the length; the server copies that many bytes to the UART
+and acknowledges with the count it printed. The count is clamped to the page, because the client
+chooses it.
+
+Started in screen mode, it hands every byte to `display_terminal` as well, so the wire and the screen
+show one stream. It holds no screen device: the pixels are `display_terminal`'s and the aperture is
+`framebuffer_driver`'s.
+
+The screen can be batched. Writes are staged into the out page, and one `OPERATION_WRITE` hands the
+batch over when a timer deadline ends the next receive. The deadline arrives through a notification
+bound to the server's thread (`receive_bound`) and `Timer::ARM`. A paint per write cost most of the
+`x86_64` swish leg's time under TCG, which is what batching is for. With batching on, an ack
+promises the wire, and the screen within one window. A spawner that gives no timer or notification
+slot still gets a working console, since the first refused `ARM` drops it to one paint per write.
+The batcher is off today, behind `SCREEN_BATCHING_ENABLED`, and that constant's doc comment says why.
+
+The system log service sends kernel lines to the same server, sixteen bytes a message and never
+acknowledged. The acknowledgement belongs to the client waiting on the reply endpoint. A kernel line
+goes out only at the start of a terminal line. Mid-line it waits for the client to end the line, or
+for the service's `OPERATION_FLUSH`, which prints it on its own line and redraws the partial line
+beneath it. A client write is split after its last newline, so waiting lines go out before a prompt
+rather than after it.
+
 ## Trivia that bites later
 
 PL011 is ARM's UART design (part of their PrimeCell peripheral family). The classic PC one

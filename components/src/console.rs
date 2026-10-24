@@ -11,22 +11,13 @@
 
 //! # A screen beside the wire (milestone 198 (a package manager)'s rung 1b)
 //!
-//! Started with `arg0` = [`MODE_SCREEN`], it also holds a **terminal on a screen**: slot 2 is
-//! `display_terminal`'s served endpoint (`WRITE`) and [`SCREEN_OUT_VA`] maps the page that terminal
-//! reads an `OPERATION_WRITE`'s bytes from. Every byte it puts on the UART it hands that terminal
-//! too, so **the same stream reaches both surfaces**, as the kernel's own console does
-//! (`kernel/src/console.rs`, "both, not either"). It holds no device for the screen: the pixels are
-//! `display_terminal`'s and the aperture is `framebuffer_driver`'s.
-//!
-//! **The screen is batched, the wire is not.** Bytes reach the UART the moment they arrive, but
-//! the screen paints at most once per [`SCREEN_BATCH_NANOS`] window: writes are staged into the out
-//! page and one `OPERATION_WRITE` hands the batch over when the timer's deadline ends the next
-//! receive, through a notification bound to this thread (`receive_bound`) and `Timer::ARM`. A paint
-//! per write cost most of the `x86_64` swish leg's time under TCG. **An ack promises the wire, and
-//! the screen within one window.** A spawner that passes [`MODE_SCREEN`] without the timer and
-//! notification slots still gets a working console: the first refused `ARM` drops it back to one
-//! paint per write.
-//!
+//! Started with `arg0` = [`MODE_SCREEN`], it also holds slot 2, `display_terminal`'s served
+//! endpoint (`WRITE`), and [`SCREEN_OUT_VA`], the page that terminal reads an `OPERATION_WRITE`'s
+//! bytes from. Every byte it puts on the UART it hands that terminal too, as the kernel's console
+//! does (`kernel/src/console.rs`, "both, not either"). It holds no device for the screen. A batcher
+//! that paints at most once per [`SCREEN_BATCH_NANOS`] is built but off
+//! ([`SCREEN_BATCHING_ENABLED`]), so each write paints before its ack, as it does after a refused
+//! `Timer::ARM`. See notes/uart.md, "The console server".
 
 //! # Kernel lines (milestone 342 (the kernel and the `console` server drive one UART from two
 //! address spaces))
@@ -36,17 +27,16 @@
 //! only at the start of a terminal line: mid-line they wait for this console's own client to end
 //! the line, or for the service's `OPERATION_FLUSH`, which puts them on a line of their own and
 //! redraws the partial line beneath them.
-//!
+
 //! # BUGS
 //!
 //! - **A redraw replays the partial line's bytes, not the line editor's state**; a partial line
 //!   longer than 512 bytes is not redrawn at all.
-//! - **The batcher assumes the bind, and cannot probe it.** A spawner that granted both slots and
-//!   did not bind the notification to this thread would leave batches flushing only when the page
-//!   filled. Today's only `MODE_SCREEN` spawner (`system_initializer`) treats a refused bind as a
-//!   refused boot.
-//! - **A screen terminal that stopped answering still stalls the console**, one window at a time:
-//!   the paint at the deadline is a synchronous `CALL`. The bytes reach the UART first.
+//! - **The batcher assumes the bind, and cannot probe it**: granted slots without the bind flush a
+//!   batch only when the page fills. `system_initializer`, the one `MODE_SCREEN` spawner, refuses
+//!   a boot whose bind is refused.
+//! - **A screen terminal that stopped answering still stalls the console**, one paint at a time:
+//!   the paint is a synchronous `CALL`. The bytes reach the UART first.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -128,12 +118,7 @@ const NOTIFIED: u64 = 3;
 /// The timer that ends each batching window (slot 4, `WRITE`, in [`MODE_SCREEN`] only; milestone
 /// 106).
 const TIMER: u64 = 4;
-/// How long the screen may lag the wire: the batching window. Two scheduler ticks (the timer's
-/// resolution is the 10 ms tick, `abi::timer`), which is one to two frames at 60 Hz: a screen that
-/// lands within the window reads as instant to the person it is for, while every write a line
-/// generates (echo, output, prompt) folds into one paint instead of one paint per write.
-const SCREEN_BATCHING_ENABLED: bool = false;
-const SCREEN_BATCH_NANOS: u32 = 20_000_000;
+/// Whether the screen is batched at all.
 ///
 /// **Off until the deadline path is root-caused, bisected `2026-09-30`.** The first bisect of the `x86_64`
 /// leg's wild-transfer kill (a user thread at an address one byte into an instruction, after a
@@ -141,6 +126,12 @@ const SCREEN_BATCH_NANOS: u32 = 20_000_000;
 /// with it true the kill reproduced within one boot. The suspects are the timer's deadline
 /// delivery and the notification that ends the bounded receive, not the staging math, which the
 /// green run exercised in full. Ship the 3.4x; the batcher's remaining win waits on the why.
+const SCREEN_BATCHING_ENABLED: bool = false;
+/// How long the screen may lag the wire: the batching window. Two scheduler ticks (the timer's
+/// resolution is the 10 ms tick, `abi::timer`), which is one to two frames at 60 Hz: a screen that
+/// lands within the window reads as instant to the person it is for, while every write a line
+/// generates (echo, output, prompt) folds into one paint instead of one paint per write.
+const SCREEN_BATCH_NANOS: u32 = 20_000_000;
 /// Where the page `display_terminal` reads an `OPERATION_WRITE`'s bytes from is mapped, in [`MODE_SCREEN`]
 /// only. Must match `crates/system_initializer`'s `CON_SCREEN_OUT_VA`.
 const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
@@ -162,7 +153,7 @@ pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
     let screen = mode == MODE_SCREEN;
     // The screen's batching state; `batching` turns itself off the first time the timer refuses
     // (`ARM` is the whole probe: a spawner that gave no timer slot answers once, negatively, and
-    // every later write takes the synchronous path the console had before 2026-09-30).
+    // every later write paints synchronously).
     let mut batch = ScreenBatch {
         pending: 0,
         armed: false,
@@ -206,17 +197,11 @@ pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
             _ => {}
         }
 
-        // **Clamp to the page, because the length is the CLIENT's** (milestone 43,
-        // notes/shared-page-audit.md finding 3). This used to be unbounded, with a comment calling
-        // an over-long count "a driver bug" and shrugging it off as a crashed process. The count
-        // does not come from the driver; it arrives in the request word from whoever holds WRITE
-        // on the request endpoint, so `u64::MAX` was a one-message kill of a server every other
-        // client of this console shares. `line_editor` clamps at all four of its length sites; the
-        // asymmetry was the finding.
+        // **Clamp to the page, because the length is the CLIENT's** (notes/shared-page-audit.md
+        // finding 3): any holder of WRITE on the request endpoint picks it, and an unclamped
+        // `u64::MAX` kills a server every client of this console shares.
         let len = len.min(PAGE);
 
-        // Copy that many bytes from the shared page to the UART, one at a time, exactly as the
-        // kernel's PL011 driver used to. The difference is only where this code runs.
         let shared = SHARED_VA as *const u8;
         // SAFETY: the shared page is mapped read-only in our address space and `len` is clamped
         // to it above; the client is blocked on our acknowledgement, so it is not rewriting it.
@@ -230,8 +215,6 @@ pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
             .rposition(|&b| b == b'\n')
             .map_or(0, |i| i + 1);
         for part in [&written[..cut], &written[cut..]] {
-            // Copy to the UART one byte at a time, exactly as the kernel's PL011 driver used to.
-            // The difference is only where this code runs.
             for &byte in part {
                 uart_put(byte);
             }
@@ -249,7 +232,7 @@ pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
         // Acknowledge with the count actually printed, not the count asked for: a client that
         // asked for more than a page learns that fewer bytes went out rather than being told its
         // whole request was honoured. The ack means the wire has them; the screen has them within
-        // one window (the module doc records the change from the old both-surfaces meaning).
+        // one batching window.
         send(REPLY, len, 0, 0);
     }
 }
@@ -292,9 +275,9 @@ struct ScreenBatch {
 
 /// **Stage `len` bytes for the screen**, painting first if the batch cannot hold them.
 ///
-/// The copy lands in the out page at `pending`, the same page `show` used to fill, so the terminal
-/// contract is untouched: one `OPERATION_WRITE` naming a length, bytes from the page's start. Staging is
-/// copies through cacheable RAM, which is why the reply no longer has to wait for a paint.
+/// The copy lands in the out page at `pending`, so the terminal contract is untouched: one
+/// `OPERATION_WRITE` naming a length, bytes from the page's start. Staging is copies through
+/// cacheable RAM, so a batched reply need not wait for a paint.
 fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
     if b.pending + len > PAGE {
         // The batch cannot hold this write on top of what it has; hand the terminal what is
@@ -317,8 +300,8 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
     b.pending += len;
     if !b.batching || b.pending >= PAGE {
         // No batching (the flag, or a refused `ARM` turned it off mid-run): one paint per
-        // write, the behavior this console had before any of this. Staging without this was
-        // kilobyte-cadence screen updates, found as stale rows in the firmware-screen test.
+        // write. Staging without painting here leaves stale rows on the screen until a page
+        // fills.
         paint_screen(b);
         return;
     }
@@ -334,8 +317,8 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         if timer_arm(TIMER, deadline, NOTIFIED, 1) >= 0 {
             b.armed = true;
         } else {
-            // No timer, or no right to it: one paint per write, the behavior this console had
-            // before batching. Paint now rather than arming nothing.
+            // No timer, or no right to it: one paint per write from here on. Paint now rather
+            // than arming nothing.
             b.batching = false;
             paint_screen(b);
         }

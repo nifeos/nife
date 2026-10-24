@@ -1,39 +1,12 @@
-//! **The compositor: one screen, several mutually distrusting clients** (milestone 33, the display
-//! ladder's rung two).
+//! The compositor: one screen, several mutually distrusting clients (milestone 33).
 //!
-//! This process is rung one's *client*, unchanged at that seam: it holds the display endpoint and the
-//! scanout frames exactly as `painter` did, and `gpu_driver` cannot tell the difference. What it adds is
-//! everything above the seam, and it holds these capabilities and nothing else:
-//!
-//! - slot 0, a **report** endpoint: how it tells its spawner it came up;
-//! - slot 1, the **display** endpoint (WRITE): `gfx FLUSH(damage)` to whoever serves the screen;
-//! - slot 2, the **doorbell** (READ): where every client rings. One endpoint for all of them;
-//! - slots 3.., one **input endpoint per focusable client** (WRITE): where a keystroke goes when that
-//!   client has focus. Focus is *which of these capabilities the compositor uses*, and a client that
-//!   holds no such endpoint cannot be sent input at all.
-//!
-//! Plus mappings: the scanout, the window-list page it publishes, the input ring it shares with the
-//! input source, and each client's control page and surface. It holds no device, no interrupt, no DMA
-//! authority, and no physical address.
-//!
-//! # Why the doorbell can be shared, and why there is no authorization code here
-//!
-//! The full argument is in `compositor`'s crate docs and notes/compositor.md; the short version is that
-//! a shared endpoint carries no sender identity, so **nothing in a message is trusted**. The two verbs
-//! are content-free (`HELLO`, `COMMIT`), every per-client fact is read from that client's own control
-//! page, and every privileged answer travels through memory the holder was granted rather than
-//! through a reply. So this program never asks "may you?" about anything. It cannot leak the screen to
-//! a client that asks for it, because handing over the screen is not something it can do.
-//!
-//! # What it does not do
-//!
-//! No window management (the scene is `compositor::SCENE`, fixed), no alpha, no GPU (rung four), no text
-//! (rung three). And one structural limit worth reading before believing anything else here: this
-//! process has **one blocking wait point**, because a thread can only be parked in one `RECEIVE` and
-//! this kernel has no wait-any primitive and no threads sharing an address space. That is the reason
-//! the design routes everything through one doorbell plus shared memory rather than one endpoint per
-//! source, and the reason a client that stops answering can stall the compositor. See
-//! notes/compositor.md, "The primitive this rung wants and does not have".
+//! It is `gpu_driver`'s client exactly as `painter` was, and holds only: slot 0, a report
+//! endpoint; slot 1, the display endpoint (WRITE, `gfx FLUSH(damage)`); slot 2, the doorbell
+//! (READ) every client rings; slots 3.., one input endpoint per focusable client (WRITE). Focus is
+//! which input capability it uses, so a client holding none cannot be sent input. Its mappings are
+//! the scanout, the window-list page, the input ring and each client's control page and surface;
+//! it holds no device, interrupt, DMA authority or physical address. Nothing in a doorbell message
+//! is trusted, and its one wait point lets a silent client stall it. See notes/compositor.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `compd`.
 //! Refused `compd` (the `-d` claim). Sharing the crate's name is deliberate: the crate is this
@@ -139,19 +112,10 @@ fn publish(n: usize, focus: u32) {
         wr32(c + ctl::STRIDE, win.stride());
         wr32(c + ctl::STATUS, ctl::STATUS_OK);
         wr32(c + ctl::ACKED, 0);
-        // MAGIC last: a client that sees it knows every field above is already written.
-        //
-        // **The store order is not what makes that true, and an earlier version of this comment said
-        // it was.** `wr32` is `write_volatile`, which guarantees the access happens and guarantees
-        // no ordering whatsoever; on aarch64 the interconnect may make MAGIC visible before the
-        // fields above it. What actually makes the check sound is the rendezvous: `publish` is
-        // called once, before this program enters its serve loop, so a client's `HELLO` reply cannot
-        // arrive until every control page is written. Both clients say so at their end
-        // (`fixtures/src/window.rs`, `components/src/display_terminal.rs`) and this end did not.
-        //
-        // MAGIC stays last anyway, because it costs nothing and is the right shape if this ever
-        // publishes again while clients run. If it does, this needs a release fence and every client
-        // needs an acquire one, the way `clock_contract` does it. See notes/memory-ordering.md.
+        // MAGIC last, though `write_volatile` orders nothing: the check is sound because
+        // `publish` runs once before the serve loop, so no client's `HELLO` reply can arrive
+        // before every control page is written. Publishing again while clients run would need
+        // a release fence here and an acquire in each client. See notes/memory-ordering.md.
         wr32(c + ctl::MAGIC, ctl::MAGIC_VALUE);
     }
 
@@ -268,18 +232,8 @@ fn serve_frame(
         last_seq[i] = seq;
         committed[i] = true;
 
-        // **The acquire half of the client's release** (milestone 43,
-        // notes/shared-page-audit.md finding 7). Both clients (`window.rs`, `display_terminal.rs`)
-        // put a fence between their pixel and rectangle stores and the sequence store, each with a
-        // comment saying the sequence must become visible last "or the compositor could composite
-        // a frame we have not finished writing". That is the release side, and it was the only
-        // side there was: nothing here ordered the rectangle and pixel loads *after* the sequence
-        // load, so on a weakly-ordered machine this could read a fresh sequence beside the
-        // previous frame's pixels. A one-sided fence is not a fence.
-        //
-        // The same shape, in the clock page's seqlock, is milestone 80's finding; it is recorded
-        // here because it is a different page, a different pair, and the reader's half rather than
-        // the writer's.
+        // The acquire half of each client's release (notes/shared-page-audit.md finding 7):
+        // without it a fresh sequence can be read beside the previous frame's pixels.
         // PAIR: each client's release fence in fixtures/src/window.rs and components/src/display_terminal.rs
         // (milestone 43), between the pixel/rectangle stores and the `ctl::SEQ` store loaded above.
         core::sync::atomic::fence(core::sync::atomic::Ordering::Acquire);
