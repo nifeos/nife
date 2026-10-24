@@ -17,9 +17,4 @@ section's number and heading, because other files cite the sections by number.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `the-three-structures` Name: provisional.
-- `the-tick-path` Name: provisional.
-- `the-interrupt-stack` Name: provisional.
-- `the-cost-of-spinning` Name: provisional.
+Each stem here is named for its content, and calef names files.

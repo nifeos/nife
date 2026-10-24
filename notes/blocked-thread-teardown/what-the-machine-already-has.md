@@ -1,5 +1,7 @@
 # What the machine already has, which reframes the question
 
+*Name: provisional. Named after the parent's own heading.*
+
 [`notes/blocked-thread-teardown.md`](../blocked-thread-teardown.md) summarizes this finding: the mechanism to end a blocked thread was nearly free, and the
 authority is the whole problem. This is the reading of the kernel behind it, as it stood on
 2026-08-17. The parent's opening paragraphs say what

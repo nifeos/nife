@@ -21,13 +21,13 @@ so the defect is the same and only the path, the enclosing function and the line
 Replayed on all three architectures the same day, and each failed with the expected message.
 
 diff --git a/kernel/src/arch/riscv64/exceptions.rs b/kernel/src/arch/riscv64/exceptions.rs
-index fef4e42d3..fa525f2c3 100644
+index 6e4d7b92e..0a3483ac2 100644
 --- a/kernel/src/arch/riscv64/exceptions.rs
 +++ b/kernel/src/arch/riscv64/exceptions.rs
-@@ -110,7 +110,6 @@ impl TrapFrame {
-         // kernel address. It is read here, while the frame is still a value, because the frame's
-         // final home at the top of the kernel stack may not be touched by a call once it is written
-         // (`enter_user`). On the other two architectures the context switch installed it.
+@@ -86,7 +86,6 @@ impl TrapFrame {
+         // has none, never the kernel's per-hart one. Read now, while the frame is a value: once
+         // written at the stack top no call may run (`enter_user`). See notes/riscv-port.md, the
+         // per-hart `tp` hazard.
 -        x[4] = crate::sched::current_thread_pointer();
          TrapFrame {
              x,

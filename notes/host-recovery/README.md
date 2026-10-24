@@ -20,3 +20,4 @@ Each stem below is named for its content, and calef names files.
 - `extended-attributes` Name: provisional. After the parent's own heading.
 - `devices-and-partitions` Name: provisional. After the parent's own heading.
 - `the-library` Name: provisional. After the parent's own heading.
+Each stem here is named for its content, and calef names files.
