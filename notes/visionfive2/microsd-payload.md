@@ -1,5 +1,7 @@
 # The microSD payload, in detail
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), which keeps the commands. This file holds
 why the card is one matched set, what `script/card-check` reads, why extlinux is a dead end on this
 board, and what the boot script says line by line.

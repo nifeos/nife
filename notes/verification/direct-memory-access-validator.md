@@ -1,5 +1,7 @@
 # The DMA-confinement validator: harnesses, bounds and non-vacuity
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `dma-validator`.*
+
 An appendix to [notes/verification.md](../verification.md). It holds milestone 35 (prove the
 DMA-confinement boundary): the seven harnesses on the validator, the bounds each one uses and why
 each is adequate, and `kani::cover!`. The IOMMU half, and what the proof does not establish, is in

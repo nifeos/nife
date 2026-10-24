@@ -1,5 +1,7 @@
 # A push to `main` cites the merge group, and the queue's 240-minute timeout
 
+*Name: provisional.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md). It holds two changes of 2026-09-24 that
 were both answers to starved runners: A′, which stops a push to `main` repeating the merge group's
 suite, and the check timeout raised from 60 minutes to 240.

@@ -21,3 +21,4 @@ Each stem below is named for its content, and calef names files.
 - `the-getrandom-gap` Name: provisional.
 - `pricing-the-glue-path` Name: provisional. After the parent's own heading.
 - `the-glue` Name: provisional.
+Each stem here is named for its content, and calef names files.

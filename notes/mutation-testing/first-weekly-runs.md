@@ -1,5 +1,7 @@
 # The first weekly runs: the 2026-09-03 sample and the 2026-09-14 census
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `the-first-weekly-censuses`.*
+
 This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the first two refreshes of
 the 2026-08-03 baseline. The 2026-09-03 sample read a fall to 74.4%, then 83.4%, then 85.3%; the
 2026-09-14 census found no fall at all.

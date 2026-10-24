@@ -1,5 +1,7 @@
 # A lift is only worth what its caller does
 
+*Name: ratified 2026-10-18 (calef, "Yes") Refused `lift-and-caller`.*
+
 An appendix to [notes/interleaving.md](../interleaving.md), which summarizes it.
 
 Every retrofit here has the same shape: take a protocol out of the code that runs it, put it in a

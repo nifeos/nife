@@ -1,5 +1,7 @@
 # mDNS: the QEMU gate, what it proved, and how
 
+*Name: provisional. After the main page's own heading.*
+
 An appendix to [`notes/mdns.md`](../mdns.md). The code it describes was retired on 2026-09-15; read
 it in the past tense.
 

@@ -25,3 +25,4 @@ Each stem below is named for its content, and calef names files.
 - `ci-budget` Name: provisional.
 - `elf-seeds` Name: provisional.
 - `targets` Name: provisional.
+Each stem here is named for its content, and calef names files.

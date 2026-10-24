@@ -26,8 +26,3 @@ beside `notes/X.md`. calef names directories.*
 Each stem below is named for its content, and calef names files.
 
 - `x86_64`, `aarch64` and `riscv64` Name: provisional. After the parent's own architecture headings.
-- `oracle-a1` Name: provisional. After the shape the experiment boots on.
-- `aws-graviton` Name: provisional. After the machine family the probe runs on.
-- `a-second-provider` Name: provisional. After the parent's "What a second provider is a test of".
-- `settling-milestone-225` Name: provisional. After the parent's "What it would cost to settle
-  milestone 225".

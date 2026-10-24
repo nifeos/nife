@@ -1,5 +1,7 @@
 # `getrandom`, which was a major-version gap rather than a missing backend
 
+*Name: provisional.*
+
 The first of the two build failures [`notes/cryptography-provider.md`](../cryptography-provider.md) names, in full.
 
 `rustls-rustcrypto` and `ring` both died at `getrandom`'s `compile_error!`, exactly as §196

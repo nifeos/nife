@@ -1,5 +1,7 @@
 # The PSCI conduit: two failure shapes and the `smc` fixture
 
+*Name: provisional. For the parent's PSCI failure shapes and `smc` fixture. calef names files.*
+
 An appendix of [ISA discovery](../isa-discovery.md). The parent keeps what milestone 100 (read the
 machine's PSCI and its CPU list) reads, what it still assumes and what the boot says. This file
 keeps why the two hardcoded facts failed differently, and how a QEMU option made the `smc` half

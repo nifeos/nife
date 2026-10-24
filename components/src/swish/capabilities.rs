@@ -1,9 +1,6 @@
 //! **`caps`**: the shell's whole endowment, the preview of what a line would grant,
 //! `caps_image`, the live generation table, and what a bare word names (`bare`).
 //!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
-//!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
 

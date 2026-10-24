@@ -9,12 +9,12 @@ Expected to fail: `assert!(Rights::from_bits(raw).is_subset_of(Rights::ALL))`, o
 `raw` with a bit above bit 3 set.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index 33b5819a..b161f763 100644
+index d65bed7d..f33c0989 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -119,7 +119,7 @@ impl Rights {
-     /// this turns those bits back into a `Rights` the subset check can vet. Undefined bits are
-     /// dropped, so a caller cannot conjure a right that does not exist.
+@@ -93,7 +93,7 @@ impl Rights {
+     /// [`bits`](Self::bits), for rights that crossed a boundary in a syscall register. Undefined
+     /// bits are dropped, so a caller cannot conjure a right that does not exist.
      pub const fn from_bits(bits: u32) -> Rights {
 -        Rights(bits & Rights::ALL.0)
 +        Rights(bits)

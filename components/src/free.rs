@@ -1,35 +1,19 @@
 //! **`free`: the machine's memory, and this prompt's share of it** (milestone 126 (the `procps` package), DECISIONS §225
 //! (`free` sees the machine and your share), `crates/free`).
 //!
-//! Two reads and two sinks. The machine line reads the machine statistics page the progenitor
-//! mapped at `machine_statistics_contract::PAGE_VA`; the "yours" line asks `MemoryRegion::USAGE`
-//! twice of this prompt's job budget. Everything that decides what to print is `crates/free`.
-//!
-//! # Capability contract
-//!
-//! | slot | what | why |
-//! |---|---|---|
-//! | 0 | the output sink, `WRITE` | where the table goes |
-//! | 8 | the diagnostics sink, `WRITE` | where a withheld page or a refusal is said |
-//! | 11 | the machine statistics page, `READ`, also mapped read-only | the `Mem:` line |
-//! | 12 | this prompt's job budget, `ENUMERATE` | the `Yours:` line; it cannot spend, split or destroy |
-//!
-//! Neither view can change anything. The page is written by the kernel alone, and `ENUMERATE` on a
-//! region answers what it spent and nothing else.
-//!
-//! # EXAMPLES
-//!
-//! ```text
-//! $ free
-//!               total        used        free
-//! Mem:         131072       20480      110592
-//! Yours:         2048         320        1728
-//! ```
-//!
+//! Two reads and two sinks; what to print, with examples, is `crates/free`. Slot 0 is the output
+//! sink and slot 8 the diagnostics sink (both `WRITE`). Slot 11 is the machine statistics page
+//! (`READ`, also mapped read-only at `machine_statistics_contract::PAGE_VA`, written by the kernel
+//! alone) for the `Mem:` line. Slot 12 is the job pool behind `Yours:`, asked `MemoryRegion::USAGE`
+//! twice through a view narrowed to `ENUMERATE`, which answers what was spent and cannot spend,
+//! split or destroy. Neither view can change anything.
+
 //! # BUGS
 //!
 //! `crates/free`'s, all of them: no cache columns because the kernel keeps none, no `Swap:` line
-//! because nife refuses paging out (pull request #1356), and `Yours:` counts `free` itself.
+//! because nife refuses paging out (pull request #1356), `Yours:` counts `free` itself, the two
+//! lines are read at slightly different moments, and `Yours:` is the machine's whole job pool,
+//! shared by every prompt and session, not one prompt's.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table), as milestone 126's `free` lane minted it.
 

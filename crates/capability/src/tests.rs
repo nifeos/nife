@@ -241,25 +241,18 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 
 /// **Both halves of the packed high-water word, read exactly rather than as a floor.**
 ///
-/// The floor test below cannot pin either half, because `PEAK` is one static shared by every
-/// `CapabilityTable` in this binary, and a mutation run (milestone 326) showed what that costs:
-/// `>>` for `<<` in the peak half and `&` for `|` or `^` in the ceiling half all survived,
-/// since a garbage number is still above a floor of five.
-///
-/// Exactness is available here because `fetch_max` only ever raises: an occupancy and a
-/// capacity larger than any other test in this module reaches is a record nothing else can
-/// overwrite, whatever order the harness runs things in. That is also this test's one
-/// maintenance cost, and it fails loudly rather than silently if a future test outgrows it.
+/// `PEAK` is shared by every table in this binary, so a floor cannot pin either half: `>>` for
+/// `<<` in the peak half and `&` for `|` or `^` in the ceiling half survived one (milestone 326
+/// (nobody has been assigned to turn a mutation score upward)). Exactness holds because
+/// `fetch_max` only raises and no other test exceeds 64 of 64 (the free-slot edge test ties it,
+/// writing the same word); a test that outgrows it fails loudly.
 #[test]
 fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
     let cap = Cap {
         object: Obj::PageFrame(3),
         rights: Rights::READ,
     };
-    // Full at sixty-four, the most a table may have (`MAX_SLOTS`). This was forty of sixty-four
-    // until the free-slot word capped a table at one `u32`, then 32 of 32; milestone 754 (the capability table grows to 64 slots) made
-    // the word a `u64`, so the ceiling is sixty-four again and the free-slot word's edge test
-    // fills a 64-slot table too, which writes the same word.
+    // Full at sixty-four, the most a table may have (`MAX_SLOTS`).
     let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
     for _ in 0..64 {
         cs.insert(cap).expect("sixty-four slots hold sixty-four");
@@ -319,18 +312,6 @@ fn a_full_table_says_so() {
     assert_eq!(cs.insert(cap).err(), Some(Error::NoFreeSlot));
 }
 
-/// The rights bits are the syscall wire format: delegation names them in a register, and
-/// `from_bits` is what turns the register back into authority. Milestone 85's mutation run
-/// showed the exact values were pinned nowhere (WRITE's `1 << 1` could become `1 >> 1`, zero,
-/// and delegating WRITE would delegate nothing), and `from_bits` could OR instead of mask, so
-/// undefined bits became defined rights.
-///
-/// `ENUMERATE` and the `ALL` identity below were added by the 2026-08-17 documentation sweep,
-/// which found this test pinning three bits the day after a fourth landed. The `ALL` assertion
-/// is the one worth having: [`Rights::ALL`]'s own comment warns that a constant defined without
-/// widening that mask is **silently dropped at every delegation**, and until now nothing
-/// checked it. Spelling the union out by hand is deliberate, because a derivation that read
-/// `ALL` to check `ALL` would pass whatever it was given.
 /// **`insert_at_or_above` never lands below its floor**, finds the first free slot at or above
 /// it, and is `insert` at floor 0 (milestone 812).
 #[test]
@@ -361,6 +342,12 @@ fn insert_at_or_above_respects_its_floor() {
     );
 }
 
+/// The rights bits are the syscall wire format: delegation names them in a register, and
+/// `from_bits` turns the register back into authority, masking off undefined bits. The exact values
+/// are pinned because milestone 85 (mutation testing over the host crates)'s mutants (`1 << 1` as
+/// `1 >> 1`, `from_bits` using `|` instead of a mask) survived when nothing pinned them. The `ALL`
+/// union is spelled out by hand, since a right missing from `ALL` is dropped at every delegation
+/// and a check that read `ALL` to check `ALL` would pass whatever it was given.
 #[test]
 fn rights_bits_are_the_wire_format() {
     assert_eq!(
