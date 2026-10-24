@@ -149,3 +149,26 @@ documents (the deliberate exception to §10 (process model: capability-based, mi
 no-ambient-authority rule). So `uptime`'s manifest is `least_authority_demo`'s, not `date`'s: no
 memory, no file, no clock capability, no domain, nothing but the report channel every spawn
 carries. `free` and `vmstat` are the different body of work this appendix records.
+
+## `free`'s two lines, and what `Yours:` counts
+
+`crates/free` prints two lines, §225's two answers. `Mem:` is the machine, from the machine
+statistics page, which the owner grants every login by default and can withhold. `Yours:` is the job
+pool this prompt's jobs are carved from, read through `MemoryRegion::USAGE` on a view narrowed to
+`ENUMERATE`. It is the limit that binds a program started here, which the machine line is not.
+Upstream `free` prints only the first line, and inside a container that line describes memory the
+caller can never have; LXCFS exists to patch that. Printing both, labelled, answers both readers.
+A prompt whose owner withheld the machine page prints the `Yours:` line alone and says on its
+second stream: `free: the machine's owner has not granted the machine statistics page`. If the
+refusal of paging out is ever lifted, §225 says a `Swap:` line takes the same two-row shape.
+
+There are no `shared`, `buff/cache` or `available` columns. The kernel has no page cache and no
+shared memory accounting to report, so `available` would only repeat `free`.
+
+`Yours:` is the machine's whole job pool, not one prompt's. The share view the progenitor places at
+`grant_plan::SHARE_SLOT` is `jobs_ut` (`crates/system_initializer`), the single region every job
+and every graphical terminal session is split from, and `USAGE`'s subtree records sum all of them.
+So `free` and `slabtop` in one session see pages another session spent. That is a counting channel
+of the kind the 2026-08-17 security audit accepted for `SURVEY`: a number, never a name, and nothing
+a holder can act on. A per-prompt figure needs a per-prompt budget, a split the progenitor does not
+make.
