@@ -1,38 +1,13 @@
-//! **The confiner: the process that confines a C component and proves it** (milestone 36,
-//! DECISIONS §31).
+//! The confiner: builds a C component, supervises it and checks from outside that it stayed
+//! confined (milestone 36, DECISIONS §31). Three roles, fused on purpose; notes/c-seam.md has why.
 //!
-//! It is three roles in one program, and the fusion is deliberate rather than lazy:
-//!
-//! 1. **Builder.** It splits a region off its budget per instance and lays `c_shim` out in it, so a
-//!    single `MemoryRegion::DESTROY` reaps a whole instance (§16 object revocation).
-//! 2. **Supervisor.** It holds the C component's supervision endpoint (§26), so a fault becomes a
-//!    five-word message it receives rather than a silence it has to guess at, and it decides whether
-//!    to restart. The kernel relaunches nothing.
-//! 3. **Checker.** It holds the witness pages in *its own* address space, so "nothing outside the
-//!    grant changed" is asserted from the other side of an MMU boundary rather than from inside the
-//!    process that just misbehaved.
-//!
-//! **Why roles 1 and 2 are one process here, and what that no longer costs.** This program is the
-//! measurement that produced DECISIONS §32: reaping used to need `WRITE` on the region the corpse
-//! lives in, which is the same right that *builds* a process out of it, so a supervisor that
-//! restarted its child either held construction authority or proxied the reap through something that
-//! did. §32 put the reap on the supervision endpoint instead, and role 2 here now uses it: the
-//! corpse is collected with `user_mode_runtime::reap`, and the per-instance region capability is deleted as
-//! soon as the child is started rather than held for the instance's whole life.
-//!
-//! **What that did not remove, which is itself a finding about §32.** This program still holds a full
-//! construction budget, because it is *also* role 1, the builder: it splits a region per instance and
-//! lays `c_shim` out in it, and §32 does not touch construction. What §32 removed is the reason a
-//! *supervisor* had to hold one. Read as a measurement: the bundling §31 recorded was two things, and
-//! only one of them was the reap. Split roles 1 and 2 into separate processes and the supervisor half
-//! would now hold nothing but endpoints, which is exactly what milestone 22's `sub_server_supervisor` does since
-//! §32. Keeping them fused here is still deliberate (§31: the requirement is visible in one program
-//! instead of hidden behind an IPC hop). See DECISIONS §31's "what the supervisor had to hold".
-//!
-//! Role 3 is genuinely separate from the C component and must be: a checker inside the faulting
-//! address space could only report what that address space could see, which is exactly the thing
-//! under suspicion.
-//!
+//! 1. Builder: splits a region off its budget per instance and lays `c_shim` out in it, so a single
+//!    `MemoryRegion::DESTROY` reaps a whole instance (§16 object revocation).
+//! 2. Supervisor: holds the component's supervision endpoint (§26), receives each death as a
+//!    five-word message, reaps through it (§32) and decides whether to restart. The kernel
+//!    relaunches nothing.
+//! 3. Checker: holds the witness pages in its own address space, so "nothing outside the grant
+//!    changed" is asserted from the other side of an MMU boundary.
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `cwarden`. Refused `cwarden` and the
 //! whole `warden` family, a synonym this project invented for a pattern that already has a name:
@@ -48,11 +23,9 @@
 #![allow(missing_docs)]
 #![no_main]
 
-// This is its own binary. What it shares with `c_shim` and the supervision tree comes from the
-// `c_seam` and `supervision_protocol` crates.
-// Shared code was a `#[path]` module compiled into each binary until rule 7 (2026-08-01) made it
-// a crate, so this file needs no dead-code allow under §38 (a suppression is scoped to an item
-// and carries a reason).
+// What this binary shares with `c_shim` and the supervision tree comes from the `c_seam` and
+// `supervision_protocol` crates (rule 7), so this file needs no dead-code allow under §38 (a
+// suppression is scoped to an item and carries a reason).
 
 // The loader, shared with the milestone-22 supervision tree. `ChildEndowment.maps` and `ChildEndowment.fault` are the
 // two parts this milestone leans on: a child born with shared pages and born supervised.
