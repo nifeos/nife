@@ -154,6 +154,7 @@ needed to use the contract.
 | [the-inbound-check.md](net/the-inbound-check.md) | The inbound check's intermittent red, as it was investigated before the cause was found. |
 | [std-tcp-listener.md](net/std-tcp-listener.md) | `std::net::TcpListener` on this contract, and why the prober requires three rounds of four. |
 | [memory-and-reclamation.md](net/memory-and-reclamation.md) | How net servers ran the aarch64 test boot out of memory, and what reclaiming them returned. |
+| [the-test-clients.md](net/the-test-clients.md) | What the client roles in the `net_stack` binary prove per spawn, and the hostile squatter's five steps. |
 
 ## BUGS
 

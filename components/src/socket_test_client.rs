@@ -1,42 +1,11 @@
 //! A client of the net server's socket contract (milestone 30, piece 3 phase B).
 //!
-//! It exercises the capability-shaped contract from the outside: mint a shared frame from its own
-//! untyped budget, delegate it to the net server, and drive real network exchanges through socket
-//! ids on the `Stack` endpoint, no ambient network anywhere. It holds a capability to the stack or
-//! it does not; here it was granted one.
-//!
-//! The exchanges, selected by the entry role, all against QEMU user-mode networking with zero host
-//! setup:
-//!   - `TEST_UDP_TFTP`: a UDP request/response round trip against **slirp's own built-in TFTP
-//!     server** (10.0.2.2:69), which libslirp answers itself with no host network involved. This is
-//!     the gating UDP test: deterministic and offline, the UDP twin of the guestfwd echo peer.
-//!   - `TEST_NAME_RESOLUTION` (milestone 384 (in a capability system the resolver is a grant)):
-//!     two exchanges through `domain_name_system`, reported as two words. **The first gates**: six
-//!     queries over TCP to the runners' name server peer (10.0.2.9:53, `helpers/name-server-peer`),
-//!     two of which must resolve and four of which are lies or failures the resolver must refuse
-//!     for the right reason, then a TCP connection to the address a name resolved to. **The second
-//!     does not**: a real query for `example.com` over UDP to 10.0.2.3, which is not a resolver;
-//!     libslirp NATs anything sent there to the *host's* configured nameserver
-//!     (`get_dns_addr_libresolv`), so it depends on the developer's DNS at that instant and a host
-//!     that does not answer reports `NO_ANSWER`. A reply that arrives and is not ours still fails,
-//!     because that would be our bug. See notes/net/the-outbound-gates.md and
-//!     notes/name-resolution.md.
-//!   - `TEST_TCP_ECHO`: a full TCP round trip to slirp's guestfwd echo peer (10.0.2.9:7777 -> a
-//!     `/bin/cat`): connect (handshake), send, receive the echo, close (teardown).
-//!   - `TEST_TCP_ACCEPT`: **the inbound half** (milestone 107), and the only exchange here that is
-//!     not the guest as a client. A port outside the stack's listen grant is refused as a matter of
-//!     authority, the granted one binds and is exclusive, and then a *host* process connects to it
-//!     through QEMU's `hostfwd` twice, which proves the listener re-arms. The same spawn carries
-//!     **the UDP bind grant's refusals** (milestone 55 (Time Machine)), because a second net server
-//!     does not fit the aarch64 boot (notes/net/memory-and-reclamation.md): a fixed port outside
-//!     the grant is refused as authority, a granted one binds and is exclusive. Nothing exercises
-//!     multicast.
-//!
-//! On success it reports `OK`; any failure reports a stage code rather than hanging.
-//!
-//! This is a **module of the `net_stack` binary** (dispatched by its entry role), not a separate binary,
-//! because the initial ramdisk archive's directory holds at most 15 files; folding the client in
-//! keeps the entry count under that ceiling (see xtask `initial_ramdisk_aarch64`).
+//! It mints a shared frame from its own budget, delegates it to the net server, and drives real
+//! exchanges through socket capabilities, against QEMU user-mode networking with no host setup.
+//! The entry role selects the exchange (the `TEST_*` constants), and each reports `OK` or a stage
+//! code rather than hanging. It is a module of the `net_stack` binary (notes/net.md, "One binary,
+//! one archive entry"). What each role proves, and why several share one spawn, is in
+//! notes/net/the-test-clients.md and notes/net/the-outbound-gates.md.
 //!
 
 //! # Capability contract (when entered as the client)
@@ -171,9 +140,8 @@ const NAME_SERVER_CASES: [(&str, Expect); 6] = [
 /// spawn service hands this stack, so asking for it proves the grant refuses rather than that
 /// nothing happened to bind.
 ///
-/// Both come from `socket_contract::fixture` since milestone 64 (enough `std` to run somebody else's crate), when `std_exerciser` became a second
-/// binary that has to agree with this one about which port is granted and which is not. Rule 7:
-/// what two binaries agree on is a crate.
+/// Both come from `socket_contract::fixture`, because `std_exerciser` must agree with this binary
+/// about which port is granted and which is not (rule 7: what two binaries agree on is a crate).
 const LISTEN_PORT: u64 = socket_contract::fixture::LISTEN_PORT as u64;
 const DENIED_PORT: u64 = socket_contract::fixture::DENIED_PORT as u64;
 /// Which of [`SOCKETS`] an exchange means. Most exchanges use one socket at a time, [`SOCKET`].
@@ -200,16 +168,14 @@ const TFTP_BODY: &[u8] = b"nife-tftp!";
 /// range the kernel test grants this spawn, so asking for it proves the grant *refuses* rather than
 /// that nothing happened to bind; `UDP_GRANTED_PORT` is inside it.
 ///
-/// It is 5354 rather than 5353 because the multicast DNS responder held 5353 as a second client of
-/// this same stack until milestone 298 retired it on 2026-09-15 (notes/mdns.md). The numbers must
-/// match the kernel test's `NET_UDP_GRANT_*` and mean nothing else.
+/// 5354 rather than multicast DNS's 5353 (notes/net/the-test-clients.md). The numbers must match
+/// the kernel test's `NET_UDP_GRANT_*` and mean nothing else.
 const UDP_DENIED_PORT: u64 = 4444;
 const UDP_GRANTED_PORT: u64 = 5354;
 
-/// How many times the real-DNS check sends its query before giving up. A DNS client retries; UDP has
-/// no retransmit of its own and the measured single-query loss to a real resolver was ~2.5%, so one
-/// attempt made an environment-dependent test look like a code defect. Three attempts is ordinary
-/// resolver behaviour, not a widened timeout.
+/// How many times the real-DNS check sends its query before giving up. UDP has no retransmit of its
+/// own, and one query to a real resolver is lost about 2.5% of the time; three attempts is ordinary
+/// resolver behavior, not a widened timeout.
 const DNS_ATTEMPTS: u32 = 3;
 
 /// [`TEST_UDP_TFTP_HELD`]: open the socket, say so, and wait for the go before using it. The wait
@@ -224,11 +190,9 @@ fn udp_tftp_held() -> ! {
     tftp_on_socket()
 }
 
-/// [`TEST_SOCKET_GIVE`]: open a UDP socket and send it to the taker, keeping our own copy. Then wait
-/// for the go on slot 4, which the test sends once the taker has used the socket and closed it, and
-/// report whether our copy still reaches anything: `OK` when it reaches nothing, which is what a
-/// close is for. The probe is a zero-length `SENDTO`, which a closed socket answers `REP_ERR` at
-/// once, so it cannot be mistaken for a receive that timed out.
+/// [`TEST_SOCKET_GIVE`]: open a UDP socket and send it to the taker, keeping our own copy. After the
+/// go on slot 4, sent once the taker has used and closed it, report `OK` if our copy reaches
+/// nothing. The probe is a zero-length `SENDTO`, which a closed socket answers `REP_ERR` at once.
 ///
 /// # BUGS
 ///
@@ -289,11 +253,8 @@ fn socket_take() -> ! {
 /// Report `code` and stop.
 fn done(code: u64) -> ! {
     send(REPORT, code, 0, 0);
-    // Exit so the kernel reaps this one-shot client rather than leaving it spinning on a run queue
-    // forever. Leaked net-client spinners accumulate across the socket-contract tests and starve the
-    // later std_net test on core 0 (the same test-thread-starvation finding that made the driver
-    // roles exit; nothing balances threads across cores yet, DECISIONS Open design ideas). A
-    // one-shot role must exit, not spin.
+    // A one-shot role exits rather than spins: unreaped spinners starve later tests on core 0,
+    // because nothing balances threads across cores (notes/net/the-test-clients.md).
     exit();
 }
 
@@ -543,15 +504,10 @@ fn ask_the_host_resolver() -> u64 {
     NO_ANSWER
 }
 
-/// **The gating UDP test: a round trip against slirp's own TFTP server.** libslirp implements TFTP
-/// internally (enabled by `tftp=` on the netdev), so this request and its reply never leave the
-/// emulator: no host resolver, no internet, no packet that can be dropped by somebody else's router.
-/// It proves exactly what the DNS test was there to prove about *our* code, and nothing about the
-/// host: a client holding only a `Stack` endpoint and a shared frame can open a UDP socket,
-/// send a datagram to a chosen address, and read the reply back through the same frame.
-///
-/// Send a read request (opcode 1, `octet` mode) for the fixture the runners planted, and require the
-/// first data packet back: opcode 3, block 1, and the fixture's bytes exactly.
+/// **The gating UDP test: a round trip against slirp's own TFTP server**, which answers inside the
+/// emulator, so nothing about the host is tested. Send a read request (opcode 1, `octet` mode) for
+/// the fixture the runners planted, and require the first data packet back: opcode 3, block 1, and
+/// the fixture's bytes exactly. See notes/net/the-test-clients.md.
 fn udp_tftp() -> ! {
     attach_page_frame();
     if open(OPERATION_OPEN_UDP, SOCKET, 0) != REP_OK {
@@ -605,11 +561,8 @@ fn tftp_on_socket() -> ! {
         }
     }
 
-    // The RECEIVE reply now carries the DATA packet's source endpoint in the frame header (milestone
-    // 55's stack half), and this is the slirp-provable check of it: the DATA came from the gateway,
-    // from a real port. The port is deliberately not pinned to 69: TFTP's own protocol has the
-    // server answer from a transfer-id port of its choosing (RFC 1350 §4), so asserting 69 would
-    // pin a libslirp implementation detail.
+    // The DATA's source endpoint, which `RECEIVE` reports in the frame header: the gateway, from a
+    // real port. Not pinned to 69, since TFTP answers from a transfer-id port (RFC 1350 §4).
     let (src_ip, src_port) = (SHARED_FRAME.dst_ip(), SHARED_FRAME.dst_port());
     if src_ip != GW_IP {
         done(0xE046); // the reported source is not the server that answered
@@ -618,14 +571,9 @@ fn tftp_on_socket() -> ! {
         done(0xE047); // no source port arrived at all
     }
 
-    // ACK block 1, which ends the transfer properly: { u16 opcode = 4 }{ u16 block = 1 }. The fixture
-    // is one short block, so this is the last packet of the exchange. Without it the server would sit
-    // retransmitting its DATA at a socket we are about to close, which is rude to the next test that
-    // brings this NIC up even though libslirp eventually gives up on its own.
-    //
-    // Addressed to the DATA's reported source rather than to :69, which is what TFTP's TID scheme
-    // asks for and is the first real consumer of the source endpoint: replying to the querier is
-    // exactly the move any UDP responder makes.
+    // ACK block 1, { u16 opcode = 4 }{ u16 block = 1 }, the last packet of a one-block transfer,
+    // sent to the DATA's reported source as TFTP's transfer ids require. Without it the server
+    // retransmits its DATA at a closed socket while the next test brings this NIC up.
     let ack = [0x00u8, 0x04, 0x00, 0x01];
     SHARED_FRAME.payload_write(&ack);
     SHARED_FRAME.set_dst(src_ip, src_port);
@@ -669,15 +617,10 @@ fn tcp_echo() -> ! {
     done(OK);
 }
 
-/// **Regression: closing a socket and opening the next one is safe.** Open a TCP socket, connect to
-/// the echo peer, close it, then open another and connect again. Before `net_stack` assigned
-/// ephemeral local ports independent of the socket's place in its table, the reopen reused the exact
-/// local port, and the second connect on a 4-tuple whose slirp flow had not yet cleared stalled
-/// `net_stack`'s bounded poll forever (found by the `std::net` PAL,
-/// notes/net/the-outbound-gates.md). With the rotating allocator the reopen gets a fresh port, so
-/// both connects complete. Since §255 (each socket is its own capability) the second socket also
-/// lands in the table entry the first one left, with a new badge, so this exercises the entry's
-/// page being taken back and attached again.
+/// **Closing a socket and opening the next one is safe.** Open a TCP socket, connect to the echo
+/// peer, close it, then open another and connect again. The reopen must get a fresh ephemeral port,
+/// and it lands in the entry the first socket left with a new badge, so the entry's page is taken
+/// back and attached again. See notes/net/the-test-clients.md and notes/net/the-outbound-gates.md.
 fn tcp_reopen() -> ! {
     attach_page_frame();
     SHARED_FRAME.set_dst(ECHO_IP, ECHO_PORT);
@@ -691,8 +634,7 @@ fn tcp_reopen() -> ! {
     }
     let _ = close(SOCKET);
 
-    // A second socket, in the entry the first left, and connect again. This is the exact path that
-    // hung before the port fix.
+    // A second socket, in the entry the first left, and connect again.
     if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
         done(0xE032);
     }
@@ -704,25 +646,14 @@ fn tcp_reopen() -> ! {
     done(OK);
 }
 
-/// **The inbound gate: a granted port, and the guest connected TO through it, twice** (milestone
+/// **The inbound gate: a granted port, and the guest connected to through it, twice** (milestone
 /// 107).
 ///
-/// Everything else in this file is the guest as a client. Here it is the server: listen on a port it
-/// was granted, accept a connection a *host* process opened through QEMU's `hostfwd`, read what
-/// arrived, answer it, and then do the whole thing again on the same listener. The second round is
-/// the load-bearing one: a listener that can accept exactly one connection is a listener a file
-/// server cannot use, and nothing but a second accept proves the re-arm.
-///
-/// **The grant checks ride in the same exchange rather than in a test of their own, and that is the
-/// machine's call, not a preference.** A second net server costs a 192-page untyped region that is
-/// never reclaimed (nothing unregisters a transport or reaps `net_stack`), and the aarch64 test boot
-/// has no room for one: with two, a later test asking for 128 contiguous pages found 137 free frames
-/// and no run that long. So one spawn proves both halves, with distinct stage codes standing in for
-/// the separate test names.
-///
-/// The frame is attached to the *connection* and never to the listener, and it is attached only
-/// after the listener is bound. That ordering is the two-object split made visible: the whole grant
-/// half runs with no shared frame anywhere, because a listener carries no bytes.
+/// Listen on a granted port, accept a connection a host process opened through QEMU's `hostfwd`,
+/// check what arrived, answer it, and do it again on the same listener: only a second accept proves
+/// the re-arm. The TCP and UDP grant refusals ride in the same spawn, because a second net server
+/// does not fit the aarch64 boot. The frame goes to the connection only, after the listener is
+/// bound. See notes/net/the-test-clients.md.
 fn tcp_accept_inbound() -> ! {
     // A port outside the grant is refused as a matter of AUTHORITY, which is a different answer from
     // "somebody has it" and calls for a different response from a client.
@@ -758,23 +689,16 @@ fn tcp_accept_inbound() -> ! {
 
     let _ = close(LISTENER);
 
-    // The UDP bind half rides in this same spawn (milestone 55's stack half), because a second net
-    // server does not fit the aarch64 boot: the spawn is ~154 frames nothing ever reclaims, and
-    // this lane measured the eleventh one dying as `Unmappable(OutOfPageFrames)` in an unrelated later
-    // test, the exact failure notes/net/memory-and-reclamation.md's memory receipt predicted.
-    // Milestone 107 (the socket contract learns to accept) folded its grant half for the same
-    // reason; the stage codes stand in for the separate test's name.
+    // The UDP bind half rides in this same spawn, for the reason in this function's doc.
     udp_bind_half();
     done(OK);
 }
 
-/// **An accept nobody connects to ends at `net_stack`'s bound** (the riscv-cpu-net-flake lane,
-/// 2026-10-13 UTC). Listen on the granted port and accept once on a NIC no host process can reach.
-/// The stack's wait must end by its own 15 s bound with `REP_ERR`. Until `nic_wait` learned the
-/// caller's deadline it blocked for a frame that never came, so every retry built on that bound
-/// (this client's [`ACCEPT_TRIES`], `std_exerciser`'s) was a retry on nothing, and a listener whose
-/// peer went silent hung the suite into a 60 s watchdog. `OK` when refused, `0xE0C0`/`0xE0C1` if the
-/// listen or the refusal went wrong. How long it took is the kernel test's to judge.
+/// **An accept nobody connects to ends at `net_stack`'s bound.** Listen on the granted port and
+/// accept once on a NIC no host process can reach: the stack's wait must end by its own 15 s bound
+/// with `REP_ERR`, or every retry built on that bound ([`ACCEPT_TRIES`], `std_exerciser`'s) retries
+/// nothing. `OK` when refused, `0xE0C0`/`0xE0C1` if the listen or the refusal went wrong; how long
+/// it took is the kernel test's to judge. See notes/net/the-test-clients.md.
 ///
 /// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 fn tcp_accept_unheard() -> ! {
@@ -789,16 +713,9 @@ fn tcp_accept_unheard() -> ! {
 }
 
 /// How many of `net_stack`'s 15 s bounded accept waits a round sits through before it calls the
-/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECS`).
-///
-/// **One wait was a fifteen-second window against a timer nothing here controls** (milestone 514
-/// (the HVF std listener hangs in some full runs), measured 2026-10-12 UTC). The host prober's
-/// first connection is opened at boot, long before this listener exists, and slirp retransmits its
-/// SYN into the guest with exponential backoff, so by the time this program listens the gaps
-/// between retransmits are 16 and then 32 seconds. A single window that falls inside one of those
-/// gaps sees nothing, and the round fails with nobody having been refused. On this leg's HVF runs
-/// the first round was answered 10.3 s into a 15 s window from a connection held 31 s. Re-arming
-/// spans the gap. `std_exerciser`'s `serve_one_inbound` does the same for the same reason.
+/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECS`). One wait
+/// can fall inside a gap in slirp's SYN backoff, 16 and then 32 s by the time this program listens;
+/// notes/net/the-test-clients.md has the measurement.
 ///
 /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). The same name `std_exerciser` uses.
 const ACCEPT_TRIES: usize = 5;
@@ -833,21 +750,11 @@ fn serve_one_inbound(base: u64) {
     }
 }
 
-/// **A fixed UDP port is an authority, and this is the half that proves the refusals** (milestone
-/// 55; runs inside the accept test's spawn, see `tcp_accept_inbound`).
-///
-/// - **A port outside the grant is `LISTEN_DENIED`**, which is the capability answer and a
-///   different one from "somebody has it": no retry helps, and no other port will do unless the
-///   spawn site granted it. Since this spawn's word also carries the TCP listen grant the accept
-///   half just spent, the machine is exercising the *composed* word rather than one half alone.
-/// - **A granted port binds**, and asking for it again collides, which is
-///   the exclusivity that makes a port a grantable thing rather than a number.
-///
-/// **What is deliberately not here any more**: the marker-payload exchange with xtask's multicast
-/// prober. It proved that a joined group receives, that a multicast `SENDTO` reaches the wire, and
-/// that a datagram's source endpoint rides back on `RECEIVE`. The multicast DNS responder took over
-/// the first two with real DNS messages, and milestone 298 retired it and the prober on 2026-09-15
-/// (notes/mdns.md), so **nothing proves multicast now**. The third is still proved, by `udp_tftp`.
+/// **The UDP bind grant's refusals** (milestone 55), inside the accept test's spawn (see
+/// [`tcp_accept_inbound`]). A port outside the grant is `LISTEN_DENIED`, the capability answer that
+/// no retry helps; a granted port binds, and asking for it again collides. The spawn word also
+/// carries the TCP listen grant, so this exercises the composed word. Nothing proves multicast
+/// (notes/net/the-test-clients.md).
 fn udp_bind_half() {
     match open(OPERATION_BIND_UDP, LISTENER, UDP_DENIED_PORT) {
         LISTEN_DENIED => {}
@@ -884,21 +791,14 @@ use socket_contract::fixture::{
     PACKAGE_PEER_HOST, PACKAGE_PEER_IP as PACKAGE_IP, PACKAGE_PEER_PORT as PACKAGE_PORT,
 };
 
-/// **Rung 3a's fetch and verify** (milestone 198 (a package manager)): `GET` a package from a host
-/// over plain HTTP, hash it as it arrives, and accept it only if the digest is the one the image's
-/// own catalogue names. **Twice, in one spawn**: the genuine package, which must be accepted, then
-/// the peer's copy with one byte flipped, which must be refused. The two verdicts go back as the
-/// report's first and second words. One spawn rather than two tests because every `net_stack` a
-/// test starts takes a virtio slot for the rest of the boot, and the table was full (see
-/// `MAX_DEVICES` in `kernel/src/virtio.rs`); milestone 107 (the socket contract learns to accept)
-/// made the same trade the same way.
-///
-/// The catalogue is what makes plain HTTP enough. It is an archive entry packed above the
-/// measurement table, so the kernel's trust root vouches for it, and the digest it carries never
-/// crossed the network (DECISIONS §195 (a reviewed recipe vouches for a package)). The body is never
-/// held: each read goes through `http_response` and into the hash, so a package costs this client
-/// one page of socket frame and the hash state. **That is also this exchange's limit**: it proves
-/// the bytes, and installing them is `notes/packages.md`'s "Where this stops".
+/// **Rung 3a's fetch and verify** (milestone 198 (a package manager)): `GET` a package over plain
+/// HTTP, hash it as it arrives, and accept it only if the digest is the one the image's catalogue
+/// names. The genuine package must be accepted and the copy with one byte flipped refused, in one
+/// spawn (notes/net/the-test-clients.md); the verdicts are the report's first two words. Plain HTTP
+/// is enough because the catalogue is an archive entry above the measurement table, vouched for by
+/// the kernel's trust root, and its digest never crossed the network (DECISIONS §195 (a reviewed
+/// recipe vouches for a package)). The body is never held, so a package costs one page of frame and
+/// the hash state. It proves the bytes; installing them is `notes/packages.md`'s "Where this stops".
 ///
 /// `len` is the catalogue's length; the spawner maps it read-only at [`CATALOGUE_VA`].
 fn http_package(len: u64) -> ! {
