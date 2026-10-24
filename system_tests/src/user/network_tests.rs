@@ -191,10 +191,9 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
 /// **The socket contract, UDP end to end** (milestone 30 (the network stack as a confined
 /// component), piece 3 phase B; DECISIONS §25 (socket identity)). A client process holds a `Stack`
 /// rendezvous and its own untyped, mints a shared frame, delegates it, opens a UDP socket by id,
-/// sends a datagram, and reads the reply back through the same frame. No ambient network: the
-/// client acts only through the capability it was granted, and the bytes cross in the shared frame,
-/// never in a message. Proves the whole path, client to `net_stack` to smoltcp to the confined NIC,
-/// over the mmio transport.
+/// sends a datagram, and reads the reply back through the same frame. No ambient network: it acts
+/// only through its granted capability, and the bytes cross in the frame, never in a message. The
+/// whole path, client to `net_stack` to smoltcp to the confined NIC, over the mmio transport.
 ///
 /// The peer is slirp's own TFTP server (10.0.2.2:69), served inside libslirp, so the exchange is
 /// deterministic and never leaves the emulator. 10.0.2.3:53 is not a local resolver: libslirp NATs
