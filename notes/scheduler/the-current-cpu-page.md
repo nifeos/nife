@@ -40,7 +40,7 @@ number.
 The page is the one frame an address space owns that its region does not pay for.
 `memory_region::destroy` does not cover it, so `Drop` frees it by hand, and that is where a leak
 would hide. The third test asks the allocator about that frame's own bit after the drop. A
-neighbour freeing frames cannot move that bit, and a leak still fails it. Bracketing the machine's
+neighbor freeing frames cannot move that bit, and a leak still fails it. Bracketing the machine's
 free total would instead assert that nothing else allocated or freed anything during the window,
 which this test cannot promise. [The `free_page_frames` sweep](../load-sensitive-assertions/free-page-frames-sweep.md)
 generalizes this fix. `memory_region::usage` cannot scope the check, because the frame belongs to no

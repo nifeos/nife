@@ -113,7 +113,7 @@ fn a_space_that_never_ran_has_no_answer_and_then_has_the_right_one() {
 /// hand, which is the shape a leak hides in.
 ///
 /// It asks the allocator about that one frame's bit rather than bracketing the machine's free total,
-/// which a neighbouring test's late teardown can move; a leak still fails it, because a frame `Drop`
+/// which a neighboring test's late teardown can move; a leak still fails it, because a frame `Drop`
 /// never returned stays marked used. `memory_region::usage` cannot scope it, since the frame belongs
 /// to no region. See notes/load-sensitive-assertions.md and notes/scheduler/the-current-cpu-page.md.
 #[test_case]

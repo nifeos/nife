@@ -53,7 +53,7 @@ architectures, and it presents what a real machine could and OVMF does not.
 - A stride padded by 60 bytes. With it the stride is 228, an odd number of words, so every other
   row is off qword alignment. That is the geometry the flush's wide-copy path has to survive.
 - rgbx order, so red and blue must be exchanged. It is checked on a red and a blue cell, because
-  every grey in the default picture reads the same in both orders.
+  every gray in the default picture reads the same in both orders.
 - An aperture that is not page-aligned, so the driver's sub-page offset is what lands pixel (0, 0).
 
 Clipping to a screen taller than the surface, and the scale-two layout, are proven by

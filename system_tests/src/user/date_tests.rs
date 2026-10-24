@@ -68,11 +68,11 @@ fn spawn_date(
 /// reading (see [`spawn_date`]).
 ///
 /// The diagnostic endpoint goes in at the slot `date`'s manifest declares, through `grant_at`, as
-/// the real progenitor does with `abi::thread_control_block::CAP_INSERT`'s explicit target:
-/// DECISIONS the named slot of §67 (a program's second stream is a declaration, not a number),
-/// which does not move with whatever else the child was granted. No clock, deliberately: a `date`
-/// granted no clock is one of the two real unknown-clock causes rather than an injected fault, and
-/// it reaches the sentence §67 was taken for.
+/// the real progenitor does with `abi::thread_control_block::CAP_INSERT`'s explicit target: the
+/// named slot of DECISIONS §67 (a program's second stream is a declaration, not a number), which
+/// does not move with whatever else the child was granted. No clock, deliberately: a `date` granted
+/// no clock is one of the two real unknown-clock causes rather than an injected fault, and it
+/// reaches the sentence §67 was taken for.
 fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
     let image = program("date").expect("no date program in the initial ramdisk");
     let region = crate::memory_region::create(2).expect("no region for date's two streams");
@@ -225,11 +225,11 @@ fn date_prints_the_wall_clock_it_was_granted() {
 /// The no-silent-degradation rule of DECISIONS §42 (a filesystem declares what it offers and must
 /// be truthful) where a person can see it, and why `date` reads `clock_contract::state` before the
 /// offset. `std`'s `SystemTime::now()` would have to panic; `date` names the cause. Either a frame
-/// nobody published to, which a machine with no RTC, or whose reading the clock service refused,
-/// leaves; the page is the contract, so a blank page is that machine, which proves in the guest
-/// what §43 (reading the clock is a page, setting it is a page you may write) left proven by
-/// construction. Or no clock capability at all, a different fix and sentence. Then there is no
-/// mapping either, and `date` must answer without touching `CLOCK_VA` (notes/date.md).
+/// nobody published to (what a machine with no RTC, or one whose RTC reading was refused, leaves);
+/// the page is the contract, so a blank page is that machine, which proves in the guest what §43
+/// (reading the clock is a page, setting it is a page you may write) left proven by construction.
+/// Or no clock capability at all, a different fix and sentence. Then there is no mapping either,
+/// and `date` must answer without touching `CLOCK_VA` (notes/date.md).
 #[test_case]
 fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
     let mut buf = [0u8; 128];

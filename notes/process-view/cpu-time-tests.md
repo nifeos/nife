@@ -50,7 +50,7 @@ would make each file's edit the other's problem.
 
 The headline test asks whether the two runs it allocated came back, not whether the machine's free
 count did. A force-killed runaway becomes a corpse on a tick on whichever core holds it, so its last
-pages can land after the test returns. A neighbour bracketing the global count would then see them.
+pages can land after the test returns. A neighbor bracketing the global count would then see them.
 [Two unowned reds](../load-sensitive-assertions/unowned-reds.md) records that failure.
 
 The check does not cover the child's own pages outside any region, including its current-cpu page.

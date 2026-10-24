@@ -9,10 +9,10 @@ use crate::sched;
 /// position-sensitive digest, so a blank, stale, shifted, transposed or truncated surface fails.
 /// Two witnesses in two address spaces digest it, the client after the flush and the driver after
 /// the device reported the transfer, and the kernel checks both against its own value. The backing
-/// attach succeeded under translation, so the device reached exactly the driver's DMA region. This
-/// proves the framebuffer, not the scanout (`-display none`); `cargo xtask`'s scanout check proves
-/// that from the host (notes/framebuffer-contract.md, "What the test proves, and the one thing it
-/// does not" and "Proving the scanout, from the host").
+/// attach succeeded under translation, and the IOMMU domain maps exactly the driver's DMA region.
+/// This proves the framebuffer, not the scanout (`-display none`); `cargo xtask`'s scanout check
+/// proves that from the host (notes/framebuffer-contract.md, "What the test proves, and the one
+/// thing it does not" and "Proving the scanout, from the host").
 #[test_case]
 fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");

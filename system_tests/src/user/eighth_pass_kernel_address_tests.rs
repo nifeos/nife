@@ -2,8 +2,8 @@
 //! outsider pass at the confinement claim, claim 21).
 //!
 //! The cited test reads one kernel static at its link-time address. This module aims the same
-//! `kernel_test_subject` at kernel text and at the **direct map**, the kernel's writable alias of
-//! physical memory, on every architecture whose walk names one (§19 (architectural parity is a
+//! `kernel_test_subject` at kernel text and, on every architecture whose walk names one, at the
+//! **direct map**, the kernel's writable alias of physical memory (§19 (architectural parity is a
 //! tenet)). A precondition asserts each target is mapped for the kernel (`mmu::translate`), so a
 //! refusal to fault cannot hide behind "the address was unmapped anyway". See
 //! notes/confinement-claims/the-eighth-pass-tests.md.

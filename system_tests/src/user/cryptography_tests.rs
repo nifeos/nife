@@ -3,11 +3,11 @@
 //! DECISIONS §196 (nife carries TLS: `rustls` for the protocol, and a crypto provider we make work).
 //!
 //! A green build is not a computation: the x86_64 target sets `+soft-float` with every SSE level
-//! off, so each crate runs its portable fallback, and only the vectors show that the fallback
-//! computes what the specifications print. All three ISAs run it, DECISIONS §19 (architectural parity is a tenet; the targets are aarch64, riscv64 and x86_64).
-//! `helpers/build-cryptography-exerciser.sh` builds the program, and `cargo xtask test` runs it for
-//! every leg it boots; a boot that skips that build (`cargo xtask run`, a bench) carries no program,
-//! and this skips. See notes/cryptography-provider/the-exerciser-test.md.
+//! off, so each crate runs its portable fallback, and only the vectors show it computes what the
+//! specifications print. All three ISAs run it, DECISIONS §19 (architectural parity is a tenet).
+//! `cargo xtask test` builds the program (`helpers/build-cryptography-exerciser.sh`) for every leg
+//! it boots; a boot that skips that build (`cargo xtask run`, a bench) has none, and this skips.
+//! See notes/cryptography-provider/the-exerciser-test.md.
 
 use super::*;
 
@@ -50,11 +50,11 @@ const VECTORS: &[&str] = &[
 /// **A `rustls` crypto provider's algorithms compute what their specifications say, here.**
 ///
 /// `entropy 0.2 ok` has no published vector: the program draws twice through `getrandom` 0.2 and
-/// asserts the draws differ, the claim milestone 56 (secrets, credentials, and the entropy to make them safe) made for `std::random`, which a
-/// silently stubbed backend fails. `provider ok` is the object §196's ruling is about, this tree's
-/// own `cryptography_provider`: three TLS 1.3 suites, two key exchange groups with X25519 first,
-/// three signature algorithms, and a key provider that refuses. No handshake happens. See
-/// notes/cryptography-provider/the-exerciser-test.md.
+/// asserts the draws differ, the claim milestone 56 (secrets, credentials, and the entropy to make
+/// them safe) made for `std::random`, which a silently stubbed backend fails. `provider ok` is the
+/// object §196's ruling is about, this tree's own `cryptography_provider`: three TLS 1.3 suites,
+/// two key exchange groups with X25519 first, three signature algorithms, and a key provider that
+/// refuses. No handshake happens. See notes/cryptography-provider/the-exerciser-test.md.
 #[test_case]
 fn a_tls_crypto_provider_computes_what_the_specifications_say() {
     if program("cryptography_exerciser").is_none() {

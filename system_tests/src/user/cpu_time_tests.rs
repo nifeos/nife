@@ -155,7 +155,7 @@ fn the_thread_that_ran_is_the_thread_that_is_charged() {
     tidy(budget, rendezvous_region, &[viewer, supervisor]);
 
     // This test's own frames are back before it leaves, asked of the two runs it allocated rather
-    // than of the machine's free count, which a neighbour's late teardown can move. Not covered: the
+    // than of the machine's free count, which a neighbor's late teardown can move. Not covered: the
     // child's non-region pages (the current-cpu page among them), which no region names;
     // `user/current_cpu_tests.rs` asserts on that frame, and the whole-boot frame ledger in
     // `testing.rs` catches a drift. See notes/load-sensitive-assertions/unowned-reds.md.
