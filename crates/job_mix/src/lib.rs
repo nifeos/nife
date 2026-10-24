@@ -22,7 +22,8 @@
 #![no_std]
 #![deny(missing_docs)]
 
-// **The console markers, which are a contract and not a wording** (milestone 324 part 2).
+// **The console markers, which are a contract and not a wording** (milestone 324 (the bench
+// console cannot speak to any of the three boards) part 2).
 //
 // Everything below this comment and above `COMPUTE` is text that leaves the machine and is read
 // back by `crates/serial_console` and `cargo xtask job-mix`. They are **stable heads**, on

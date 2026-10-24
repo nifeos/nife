@@ -13,9 +13,10 @@ order of its steps is the argument.
    hostile input reaching `Package::parse` before any digest is checked, which is what that
    function's fuzz target and Kani harnesses exist for.
 2. The whole file's SHA-256 must be the catalog's line for that stem. The catalog is the image's
-   own (`package_catalog`), measured with every other archive entry. This is DECISIONS §195's "the
-   image's measured table becomes the first source" taken literally: a person cannot install what
-   the image does not vouch for, whatever file they point at.
+   own (`package_catalog`), measured with every other archive entry. This is DECISIONS §195 (a
+   reviewed recipe vouches for a package)'s "the image's measured table becomes the first source"
+   taken literally: a person cannot install what the image does not vouch for, whatever file they
+   point at.
 3. Every program member is found (milestone 919 (a package carries several programs); calef,
    2026-10-12 UTC: "A package can contain many programs and they may be different from the package
    name."). The member named after the package is a program, and so is every member named
@@ -34,9 +35,10 @@ order of its steps is the argument.
 one version, the same spelling `jig remove` takes, because a word with `@` in it is never a package
 name. A bare name the catalog vouches for at two versions is refused as `SeveralVersions`.
 
-Refusing is the reversible answer. Ruling 3 of milestone 614 says a bare *run* means the newest
-install, but nothing in the catalog orders versions to say which cataloged one is newest. Taking the
-first matching line instead would let the order recipe filenames sort in choose the version.
+Refusing is the reversible answer. Ruling 3 of milestone 614 (two installed versions of one program,
+each runnable) says a bare *run* means the newest install, but nothing in the catalog orders
+versions to say which cataloged one is newest. Taking the first matching line instead would let the
+order recipe filenames sort in choose the version.
 
 ## The writer refuses rather than mangles
 

@@ -315,9 +315,9 @@ pub fn identity_hint(identity: &[u8]) -> u64 {
 }
 
 // ===========================================================================================
-// **How the login service is started** (milestone 233): a contract between whoever spawns it and
-// the program, here because three binaries agree on it (rule 7). notes/login/contract.md has why
-// a client contract's crate holds it.
+// **How the login service is started** (milestone 233 (`login` dies on every boot)): a contract
+// between whoever spawns it and the program, here because three binaries agree on it (rule 7).
+// notes/login/contract.md has why a client contract's crate holds it.
 // ===========================================================================================
 
 /// **Where `fs_subtree_caretaker`'s ELF bytes are mapped, read-only, before `login`'s `_start`

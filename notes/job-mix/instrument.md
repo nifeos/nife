@@ -32,11 +32,11 @@ The weighting is stated rather than derived.
 
 ## The console markers are a contract
 
-The markers are text that leaves the machine and is read back by something that is not the
-machine: `crates/serial_console` on a bench or in CI, and `cargo xtask job-mix` under QEMU.
+The markers are text that leaves the machine and is read back by something that is not the machine:
+`crates/serial_console` on a bench or in CI, and `cargo xtask job-mix` under QEMU.
 `crates/boot_ladder` holds the boot tour's markers for the same reason, and its header carries the
-argument. Three copies of a contract agreeing because a reader checked them is milestone 268's
-finding 3, and the fix that milestone found is to have one copy.
+argument. Three copies of a contract agreeing because a reader checked them is milestone 268 (every
+architecture boots the same way)'s finding 3, and the fix that milestone found is to have one copy.
 
 What is shared is the head; the fields inside the line are not. That gap is what
 `crates/serial_console`'s `SweepPoint` carries a `BUGS` entry for. When the point line's tail
@@ -64,9 +64,9 @@ reported figure:
 | median of 15 | 5.1% |
 | median of 21 | 4.2% |
 
-`tasks=16` and `tasks=32` already sat at 2.7 to 6.7% with three. 21 brings the worst point into
-the band the stable points were in, and it is odd so the median is a sample rather than an average
-of two. The method is in milestone 168's appendix,
+`tasks=16` and `tasks=32` already sat at 2.7 to 6.7% with three. 21 brings the worst point into the
+band the stable points were in, and it is odd so the median is a sample rather than an average of
+two. The method is in milestone 168 (a multi-tasking workload benchmark)'s appendix,
 `design/roadmap/0168-multitasking-benchmark/holes-closed-2026-09-19.md`.
 
 One count serves every point; a table varying it by point was refused. The whole sweep's timed
