@@ -7,15 +7,10 @@ use super::*;
 
 // --- The attribute store, from the recovery side (milestone 57) --------------------------------
 //
-// A nife image carries `.nife-attrs` in its root: one file per node that has extended
-// attributes, named for that node's `TreePtr` id in hex, holding the records `filesystem_contract::xattr::store`
-// defines. The FS server writes it; nothing else does. This tool reads it, and the reading is why
-// `filesystem_contract` is a dependency rather than a comment describing the layout (CLAUDE.md rule 7).
-//
-// **Nothing here is allowed to fail an extraction.** A recovery that abandoned a hundred thousand
-// files because one attribute blob was damaged would be worse than useless, so every function below
-// reports a problem to the caller as a *skip* and the caller keeps walking. The files come out even
-// when the metadata does not, and the summary says how much did not.
+// `.nife-attrs` in an image's root holds one file per node with extended attributes, named for
+// its `TreePtr` id in hex, in the records `filesystem_contract::xattr::store` defines (a crate, per
+// CLAUDE.md rule 7); only the FS server writes it. Nothing here may fail an extraction: a problem
+// is a skip the caller counts and walks past, so the files come out when the metadata does not.
 
 /// One extended attribute, as recovery sees it: the name and value as bytes, plus the type code
 /// [`filesystem_contract::xattr`] carries and no host filesystem can hold.
