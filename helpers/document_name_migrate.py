@@ -3,6 +3,7 @@
     python3 helpers/document_name_migrate.py                 list what would move, and what cannot
     python3 helpers/document_name_migrate.py --apply         move every one that can
     python3 helpers/document_name_migrate.py --apply README  only the paragraphs in these READMEs
+    python3 helpers/document_name_migrate.py --check         exit 1 if anything is left to move
     python3 helpers/document_name_migrate.py --selftest      the rules, as fixtures
 
 A document under `design/`, `notes/` or `briefs/` carries its own `Name:` block, a paragraph under
@@ -10,7 +11,8 @@ its title (design/naming.md, "Where a name's provenance lives"; calef, 2026-10-2
 home was a paragraph opening `` `stem` Name: `` in the directory's `README.md`, and
 `helpers/name_census.py` still reads it so that pull requests opened before the rule changed keep
 passing. This is the sweep that empties the older home. It is re-runnable: a tree with nothing left
-to move lists nothing and changes nothing.
+to move lists nothing and changes nothing. `--check`, which `script/lint` runs, holds the older home
+empty: any paragraph it would move, drop or keep fails the build.
 
 Name: provisional, minted 2026-10-24 (UTC) by lane maintainer/note-names-in-notes. A shared helper
 under `helpers/`, which `script/names` puts out of its own scope, so this paragraph is the record.
@@ -196,6 +198,7 @@ def main(argv):
             return None
 
     apply = "--apply" in argv
+    check = "--check" in argv
     chosen = [a for a in argv if not a.startswith("--")]
     targets = chosen or readmes(root)
     moved = dropped = 0
@@ -222,6 +225,12 @@ def main(argv):
     verb = "moved" if apply else "to move"
     print(f"document_name_migrate: {moved} {verb}, {dropped} already in the document, "
           f"{len(kept)} kept in both places for a person to merge")
+    if check and (moved or dropped or kept):
+        print("document_name_migrate: a document's Name: block goes under its own title, never in "
+              "its directory's README (design/naming.md, \"Where a name's provenance lives\"). "
+              "Run python3 helpers/document_name_migrate.py --apply, merge any KEEP BOTH by hand, "
+              "and commit.")
+        return 1
     return 1 if apply and kept else 0
 
 
