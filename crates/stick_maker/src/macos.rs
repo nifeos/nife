@@ -9,7 +9,7 @@
 //!
 //! - **The flash-stick fixture is synthesized**, because no stick was attached when the fixtures
 //!   were captured; its file says so in its first line. The two USB hard disks and the disk image
-//!   are real captures.
+//!   are real captures with identifiers, names and sizes made neutral.
 //! - **`diskutil eraseDisk` on a physical stick has not been run by this program.** It was run on
 //!   file-backed disks only (`hdiutil attach`), which is the one place this lane was allowed to
 //!   erase anything. Apple documents the same command for both.
@@ -48,8 +48,8 @@ pub fn assemble(list: &Value, info: &dyn Fn(&str) -> Option<Value>) -> Vec<Disk>
         let bus = whole.string("BusProtocol").unwrap_or("").to_owned();
         let media = whole.string("MediaName").unwrap_or("").trim();
         let registry = whole.string("IORegistryEntryName").unwrap_or("").trim();
-        // `MediaName` is the model ("Ultra"); the registry name carries the vendor ("SanDisk
-        // Ultra Media"). The longer of the two, without the " Media" suffix IOKit appends, reads
+        // `MediaName` is the model ("USB Flash"); the registry name carries the vendor ("Generic
+        // USB Flash Media"). The longer of the two, without the " Media" suffix IOKit appends, reads
         // the way the stick's label does.
         let registry = registry.strip_suffix(" Media").unwrap_or(registry);
         let description = if registry.len() > media.len() {
@@ -143,16 +143,16 @@ mod tests {
     fn fixture(name: &str) -> Value {
         let text = match name {
             "list" => include_str!("../tests/fixtures/macos/list-external.plist"),
-            "disk4" => include_str!("../tests/fixtures/macos/usb-portable-disk-info.plist"),
-            "disk5" => include_str!("../tests/fixtures/macos/usb-apfs-container-info.plist"),
-            "disk6" => include_str!("../tests/fixtures/macos/usb-hard-disk-info.plist"),
-            "disk6s2" => include_str!("../tests/fixtures/macos/usb-hard-disk-volume-info.plist"),
-            "disk7" => include_str!("../tests/fixtures/macos/disk-image-info.plist"),
-            "disk7s1" => {
+            "disk2" => include_str!("../tests/fixtures/macos/usb-portable-disk-info.plist"),
+            "disk3" => include_str!("../tests/fixtures/macos/usb-apfs-container-info.plist"),
+            "disk4" => include_str!("../tests/fixtures/macos/usb-hard-disk-info.plist"),
+            "disk4s2" => include_str!("../tests/fixtures/macos/usb-hard-disk-volume-info.plist"),
+            "disk5" => include_str!("../tests/fixtures/macos/disk-image-info.plist"),
+            "disk5s1" => {
                 include_str!("../tests/fixtures/macos/disk-image-fat32-volume-info.plist")
             }
             "disk0" => include_str!("../tests/fixtures/macos/internal-info.plist"),
-            "disk8" => include_str!("../tests/fixtures/macos/usb-flash-stick-info.plist"),
+            "disk6" => include_str!("../tests/fixtures/macos/usb-flash-stick-info.plist"),
             _ => return Value::Dict(Default::default()),
         };
         plist::parse(text).unwrap()
@@ -165,14 +165,14 @@ mod tests {
         })
     }
 
-    /// **The test this module exists to pass**: on the machine it was written on, with two USB
-    /// hard disks attached (one holding backups) and a disk image, the default policy offers
+    /// **The test this module exists to pass**: on a captured machine with two USB hard disks
+    /// attached, the kind that hold backups, and a disk image, the default policy offers
     /// nothing, and asking for disk images offers the disk image and nothing else.
     #[test]
     fn on_the_captured_machine_only_the_disk_image_is_ever_offered() {
         let disks = captured();
         let ids: Vec<&str> = disks.iter().map(|d| d.id.as_str()).collect();
-        assert_eq!(ids, ["disk4", "disk5", "disk6", "disk7"]);
+        assert_eq!(ids, ["disk2", "disk3", "disk4", "disk5"]);
 
         for disk in &disks {
             assert!(
@@ -189,9 +189,9 @@ mod tests {
             .filter(|d| refusal(d, permissive).is_none())
             .map(|d| d.id.as_str())
             .collect();
-        assert_eq!(offered, ["disk7"]);
+        assert_eq!(offered, ["disk5"]);
 
-        let backups = disks.iter().find(|d| d.id == "disk6").unwrap();
+        let backups = disks.iter().find(|d| d.id == "disk4").unwrap();
         assert_eq!(refusal(backups, permissive), Some(Refusal::FixedMedia));
         assert_eq!(backups.bus, "USB");
         assert!(
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn the_disk_image_reads_as_a_mounted_fat32_volume_to_copy_onto() {
         let disks = captured();
-        let image = disks.iter().find(|d| d.id == "disk7").unwrap();
+        let image = disks.iter().find(|d| d.id == "disk5").unwrap();
         assert!(image.disk_image);
         assert_eq!(image.size, 67_108_864);
         assert_eq!(image.volumes.len(), 1);
@@ -241,17 +241,17 @@ mod tests {
     fn a_flash_stick_is_offered_and_named_by_vendor_and_model() {
         let list = plist::parse(
             "<plist><dict><key>AllDisksAndPartitions</key><array><dict>\
-             <key>DeviceIdentifier</key><string>disk8</string>\
+             <key>DeviceIdentifier</key><string>disk6</string>\
              <key>Partitions</key><array><dict>\
              <key>Content</key><string>Windows_FAT_32</string>\
-             <key>DeviceIdentifier</key><string>disk8s1</string>\
+             <key>DeviceIdentifier</key><string>disk6s1</string>\
              <key>MountPoint</key><string>/Volumes/UNTITLED</string>\
              </dict></array></dict></array></dict></plist>",
         )
         .unwrap();
-        let disks = assemble(&list, &|id| (id == "disk8").then(|| fixture("disk8")));
+        let disks = assemble(&list, &|id| (id == "disk6").then(|| fixture("disk6")));
         let stick = &disks[0];
-        assert_eq!(stick.description, "SanDisk Ultra");
+        assert_eq!(stick.description, "Generic USB Flash");
         assert_eq!(refusal(stick, Policy::default()), None);
         assert_eq!(stick.volumes[0].filesystem, Filesystem::Fat);
         assert_eq!(plan(stick, 1, |_| 0), Plan::Copy { volume: 0 });
@@ -261,7 +261,7 @@ mod tests {
     fn a_document_missing_the_internal_key_is_not_offered() {
         let list = plist::parse(
             "<plist><dict><key>AllDisksAndPartitions</key><array><dict>\
-             <key>DeviceIdentifier</key><string>disk9</string></dict></array></dict></plist>",
+             <key>DeviceIdentifier</key><string>disk7</string></dict></array></dict></plist>",
         )
         .unwrap();
         let bare =
@@ -282,13 +282,13 @@ mod tests {
     fn an_unmounted_whole_disk_filesystem_is_still_a_volume() {
         let list = plist::parse(
             "<plist><dict><key>AllDisksAndPartitions</key><array><dict>\
-             <key>DeviceIdentifier</key><string>disk8</string>\
+             <key>DeviceIdentifier</key><string>disk6</string>\
              <key>Content</key><string>DOS_FAT_32</string>\
              <key>VolumeName</key><string>NIFE</string>\
              </dict></array></dict></plist>",
         )
         .unwrap();
-        let whole = fixture("disk8");
+        let whole = fixture("disk6");
         let disks = assemble(&list, &|_| Some(whole.clone()));
         assert_eq!(disks[0].volumes.len(), 1);
         assert_eq!(disks[0].volumes[0].mount, None);
@@ -304,15 +304,15 @@ mod tests {
     fn the_registry_name_wins_only_when_it_is_longer() {
         let list = plist::parse(
             "<plist><dict><key>AllDisksAndPartitions</key><array><dict>\
-             <key>DeviceIdentifier</key><string>disk9</string></dict></array></dict></plist>",
+             <key>DeviceIdentifier</key><string>disk7</string></dict></array></dict></plist>",
         )
         .unwrap();
         let whole = plist::parse(
-            "<plist><dict><key>MediaName</key><string>Ultra</string>\
+            "<plist><dict><key>MediaName</key><string>Stick</string>\
              <key>IORegistryEntryName</key><string>Flash Media</string></dict></plist>",
         )
         .unwrap();
         let disks = assemble(&list, &|_| Some(whole.clone()));
-        assert_eq!(disks[0].description, "Ultra");
+        assert_eq!(disks[0].description, "Stick");
     }
 }

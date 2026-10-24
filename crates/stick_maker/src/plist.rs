@@ -10,7 +10,7 @@
 //! (1.10.1) would bring nine crates new to the tree, `serde` among them, to read the output of a
 //! trusted local `diskutil`, in a program that runs only on the host. The XML plist grammar `diskutil` emits is eight element types and five
 //! character entities, fully specified by Apple's DTD, and the whole of correctness is "does it
-//! read what `diskutil` wrote", which the fixtures captured from this machine answer.
+//! read what `diskutil` wrote", which the captured fixtures answer.
 //!
 //! # BUGS
 //!
@@ -343,9 +343,9 @@ mod tests {
         assert!(parse("not xml").is_err());
     }
 
-    /// The real documents, captured from this project's development Mac on 2026-09-19. The
-    /// fixtures are trimmed to the keys the offer rule reads and scrubbed of volume names and
-    /// UUIDs, but every key and value that remains is verbatim.
+    /// The documents `diskutil` wrote, captured on 2026-09-19. The fixtures are trimmed to the
+    /// keys the offer rule reads, with UUIDs removed and identifiers, names and sizes made
+    /// neutral; every key, and every value the offer rule decides on, is as captured.
     #[test]
     fn reads_the_captured_fixtures() {
         for fixture in [
