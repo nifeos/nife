@@ -1,35 +1,29 @@
-//! **A thread reading the CPU's cycle counter from user mode**, milestone 229.
+//! A thread reading the CPU's cycle counter from user mode (milestone 229 (build the cycle-counter
+//! grant)).
 //!
-//! Reads the counter twice through `user_mode_runtime::cycle_reading` and reports
-//! [`capability_witness_contract::CYCLE_COUNTER_WORD`], the difference of the two reads, and what
-//! they count (an `abi::cycle_counter::CycleMeaning`, as its word). Until milestone 353 (the aarch64 half of 74) this program
-//! held its own raw read, so that milestone 74 (cycle counters) would design the shared function rather than inherit
-//! one from a test vehicle; calef's ruling B4 (2026-10-07 UTC) designed it, and this is now its
-//! first caller. Holds a report endpoint (slot 0) and nothing else: the grant is **not** a capability in
-//! a slot, it is a property of this thread that the context switch writes into a system register
-//! before the thread runs.
+//! Reads the counter twice through `user_mode_runtime::cycle_reading` (calef's ruling B4,
+//! 2026-10-07 UTC) and reports [`capability_witness_contract::CYCLE_COUNTER_WORD`], the difference,
+//! and what they count (an `abi::cycle_counter::CycleMeaning` as its word). It holds a report
+//! endpoint (slot 0) and nothing else: the grant is a property of this thread, which the context
+//! switch writes into a system register before it runs. Without it the EL0 read is one
+//! `PMUSERENR_EL0` (aarch64) or `scounteren` (riscv64) forbids, which traps and kills the thread;
+//! the kernel-side test runs this both ways and asserts each outcome.
+
+//! # Why two reads
 //!
-//! **Getting here at all is the result.** Without the grant the read is an EL0 access that
-//! `PMUSERENR_EL0` (aarch64) or `scounteren` (riscv64) does not permit, which traps and kills the
-//! thread, and nothing is sent. The kernel-side test runs this program both ways and asserts each
-//! outcome.
-//!
-//! **The `yield` between the two reads is the point of there being two.** The first read proves
-//! the grant reached a thread that had not yet been switched; the yield gives the scheduler a
-//! chance to switch this thread out and back in, so the second read is one taken *after* the
-//! context switch re-applied the grant from the thread's own field. A yield is not a guarantee
-//! that a switch happened (this may be the only runnable thread on the core), so the second read
-//! is evidence rather than proof, and the register-level assertions in `arch::*::timer`'s tests
-//! are what prove the write itself.
-//!
+//! The first read proves the grant reached a thread not yet switched. The `yield` gives the
+//! scheduler a chance to switch this thread out and back in, so the second read follows the context
+//! switch re-applying the grant from the thread's own field. A yield does not guarantee a switch
+//! (this may be the core's only runnable thread), so the second read is evidence; the
+//! register-level assertions in `arch::*::timer`'s tests prove the write itself.
+
 //! # Bugs
 //!
-//! **The difference is checked on the kernel side, and only partly.** Since milestone 74's aarch64
-//! half the kernel starts `PMCCNTR_EL0` on every core, so the kernel's test asserts the difference
-//! is positive wherever `arch::pmu` reports the counter running (and always on `x86_64`). It does not
-//! assert on riscv64, where the kernel's counter and the `cycle` CSR this program reads may not be
-//! the same counter. Nothing asserts on the size of the difference: under QEMU it is emulator time.
-//! The meaning is checked on all three.
+//! **The difference is checked on the kernel side, and only partly.** The kernel starts
+//! `PMCCNTR_EL0` on every core, so its test asserts the difference is positive wherever `arch::pmu`
+//! reports the counter running (and always on `x86_64`). Not on riscv64, where the kernel's counter
+//! and the `cycle` CSR this program reads may differ. Nothing asserts the size: under QEMU it is
+//! emulator time. The meaning is checked on all three.
 //!
 //! Name: provisional (milestone 291). This was `hello`'s `CYCLE_COUNTER_CHILD` role, number 42.
 //! Refused keeping `_child`: nothing builds this program as a child. The kernel's own test starts

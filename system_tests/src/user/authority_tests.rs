@@ -103,15 +103,11 @@ fn of_kind(msgs: &[[u64; 5]; EXPECTED_REPORTS], kind: u64) -> impl Iterator<Item
 
 /// **The progenitor drops its construction authority, and the drop is real.**
 ///
-/// `root_supervisor` builds its two servers, deletes the wiring capabilities and then the untyped budget
-/// itself, and immediately tries the two primitives that build things: retype a page, and retype a
-/// kernel object. Both must fail, and they must fail with `NoSuchSlot` (there is nothing there)
-/// rather than `NotPermitted` (there is something there and you may not use it), because the
-/// capability is *gone*, not narrowed. That distinction is the whole difference between "we asked
-/// the progenitor not to" and "progenitor cannot."
-///
-/// It is reported from inside the process on purpose: what matters is what the *holder* can do,
-/// and only the holder can ask.
+/// `root_supervisor` builds its two servers, deletes the wiring capabilities and then the untyped
+/// budget, and immediately tries to retype a page and a kernel object. Both must fail with
+/// `NoSuchSlot` (there is nothing there), not `NotPermitted` (there is something you may not use):
+/// the capability is *gone*, not narrowed. It is reported from inside the process, because what
+/// matters is what the *holder* can do, and only the holder can ask.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.authority_tests.the_root_supervisor_drops_its_construction_authority_and_cannot_build_again.patch`
 #[test_case]
@@ -133,27 +129,13 @@ fn the_root_supervisor_drops_its_construction_authority_and_cannot_build_again()
     );
 }
 
-/// **A dead sub-server is restarted by its own supervisor, in userspace, and the progenitor cannot have
-/// helped.**
+/// **A dead sub-server is restarted by its own supervisor, in userspace, and the progenitor cannot
+/// have helped.**
 ///
-/// The sequence, for the child the supervisor starts at attempt 0: it crashes on a load from an
-/// unmapped address; its supervisor receives the kernel's fault message, reaps the corpse (§32 (a supervisor may collect a corpse)), and
-/// asks for attempt 1; attempt 1 runs and exits cleanly; the supervisor reads EXIT as "finished" and
-/// does **not** restart it again. Every decision in that paragraph is code in an unprivileged
-/// process that holds no memory at all, and the kernel's whole contribution is one message per death.
-///
-/// **How "without the progenitor's involvement" is proven, and why it is not a timing argument.** The progenitor has
-/// no construction authority by then: it deleted its untyped, and the companion test above
-/// confirms it can no longer use it. A process that cannot retype a page cannot have built the
-/// replacement. Authority, not scheduling order, is the evidence.
-///
-/// **It is also where the real tree proves labels** (milestone 105). `sub_server_supervisor` has two
-/// children on one endpoint, identical programs told nothing but an attempt number; one crashes and
-/// one finishes, and it restarts by label alone. The check lives here rather than in a test of its
-/// own because every `run_tree` leaves a parked tree of about 1,100 frames for the rest of the suite,
-/// and a third would put the suite over `SUITE_PAGE_FRAME_BUDGET`, which CI measured on 2026-10-05.
-/// Dropping the label fails this in `run_tree` (stage 23), not at an assertion below, so the kernel
-/// claim's falsification lives in `supervision_tests::a_supervisor_tells_two_dead_children_apart_by_label`.
+/// Attempt 0 crashes; its supervisor gets the kernel's fault message, reaps the corpse (§32 (a
+/// supervisor may collect a corpse)) and starts attempt 1, which exits and is **not** restarted.
+/// The progenitor has deleted its untyped by then, so it cannot have built the replacement. It also
+/// proves restart by label (milestone 105); see notes/system-test-modules.md.
 ///
 /// Falsification: unfalsified. Renamed by milestone 405 (the nine `INIT` roles), which ran it green
 /// on all three architectures but did not break the code it guards to watch it go red.

@@ -169,6 +169,17 @@ internals after all. The honest backlog is the three harness-only files: the she
 pipeline and redirection tests, which drive `swish` and read what it printed. Every other file
 observes kernel state no syscall exposes, which is the case rule 2 allows.
 
+## The shared spawn's bound notification
+
+`test_programs::spawn_progenitor_shaped` starts a program the way the kernel starts the
+progenitor; [milestone 794 (one progenitor-shaped spawn for the system tests)](../design/roadmap/0794-one-progenitor-shaped-spawn-for-the-system-tests.md)
+records why its space is hand-built and which spawn sites keep their own. Its `bound_notification`
+is bound between configure and start, because that is the only order without a race. A program
+that reached a wait before its notification was bound would park outside the
+bind-delivers-what-was-counted rule. The bind is the spawner's to make, because a running thread
+holds no capability to its own TCB. `net_stack`'s wiring makes the same bind for its retransmit
+wait.
+
 ## BUGS
 
 - Five service crates are still kernel dependencies, pending #1389's division of them.

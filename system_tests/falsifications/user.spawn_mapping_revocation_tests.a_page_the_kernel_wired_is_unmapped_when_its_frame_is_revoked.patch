@@ -213,14 +213,14 @@ diff --git a/kernel/src/user/address_space_registry.rs b/kernel/src/user/address
 index bf11208b4..df7726509 100644
 --- a/kernel/src/user/address_space_registry.rs
 +++ b/kernel/src/user/address_space_registry.rs
-@@ -245,6 +245,10 @@ pub fn user_address_space_map(
-     // remembered to record, which is exactly why it is now the one caller with nothing extra to
-     // remember. See that function's own docs for the defect the other callers carried.
+@@ -192,6 +192,10 @@ pub fn user_address_space_map(
+     let space = &mut spaces.get_mut(name).ok_or(MapError::NotMapped)?.space;
+ 
      space.map_physical(va, phys, flags, under)?;
 +    if !crate::revoke::hold().record_mapping(phys, space.root(), va, under) {
 +        mmu::unmap_user_at(space.root(), va);
 +        return Err(MapError::OutOfPageFrames);
 +    }
-     // A code page a loader just filled via data writes (milestone 19d): the instruction fetcher
-     // has its own cache and has never heard of those bytes. On aarch64 the I-cache is not
-     // coherent with the D-cache, so make it so now, via the frame's direct-map VA (any VA that
+     // The I-cache is not coherent with the D-cache on aarch64, so a code page a loader filled with
+     // data writes is synced through its direct-map VA (caches are PIPT to the point of
+     // unification), or the child fetches the frame's old contents.

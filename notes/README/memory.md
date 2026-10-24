@@ -8,6 +8,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The paging crate](../paging.md): the page-table formats one walk serves, the IOMMU encodings, and what the DMA-domain proofs cover.
 - [The higher-half kernel](../higher-half.md): why the kernel lives in TTBR1, and how it boots.
 - [The user address-space map](../address-space-map.md): which band of a process holds what, and where a new page goes.
+- [User address spaces in the kernel](../user-address-spaces.md): who frees a space's region, what a window costs, the registry, and handing a test service's memory back.
 - [Tearing down an address space](../teardown.md): how the kernel reclaims a dead address space's frames.
 - [Memory regions: the kernel stops allocating](../memory-regions.md): processes spend pages from their own memory capability.
 - [Region reaping](../region-reaping.md): what destroying a region does to the threads, rendezvous and other objects in it.
