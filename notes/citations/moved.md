@@ -1,5 +1,7 @@
 # `--moved`: why it tells, how it was shaped, and what it costs
 
+*Name: provisional. Named after the `--moved` mode it is about.*
+
 An appendix to [`notes/citations.md`](../citations.md), which states the conclusion.
 
 ## Why it tells rather than obliges

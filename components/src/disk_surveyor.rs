@@ -1,48 +1,23 @@
-//! **`disk_surveyor`**: what drives are attached, and how the one we hold is divided up
+//! `disk_surveyor`: what drives are attached, and how the one we hold is divided up
 //! (milestone 57, notes/block-devices.md).
 //!
-//! It holds two things that look like one thing on every other operating system:
-//!
-//! - a **`READ`-only `PageFrame` capability on the roster page**, which says what block devices
-//!   exist (`block_roster`), so a writable mapping cannot be obtained at all (see [`probe`]); and
-//! - a **block-service endpoint**, which lets it read and write the blocks of **one** device
-//!   (`filesystem_contract::blk`).
-//!
-//! On Linux a tool that can see a disk can usually be pointed at it (`parted /dev/sda` as root
-//! reaches every disk). Here that is structural: this program was handed one disk, with no path to
-//! type and nothing in the roster that can be turned into a handle.
-//!
-//! # What it does
-//!
-//! Reads LBA 1 of the disk it holds, parses the GUID Partition Table there, checks the backup table
-//! at the far end of the disk against it, and reports. Every byte of judging is
-//! `crates/globally_unique_identifier_partition_table`, host-tested against tables written by
-//! `sgdisk` and macOS `diskutil`; this file is the I/O.
-//!
+//! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster`), so no
+//! writable mapping of the listing can be obtained (see [`probe`]), and a block-service endpoint
+//! for one device (`filesystem_contract::blk`). It was handed one disk: no path to type, and
+//! nothing in the roster turns into a handle. It reads LBA 1, parses the GUID Partition Table,
+//! checks the backup at the far end against it, and reports. Every byte of judging is
+//! `crates/globally_unique_identifier_partition_table`; this file is the I/O.
 
-//! # The two roles
+//! # The roles
 //!
 //! | `a0` | |
 //! |---|---|
 //! | [`ROLE_SURVEY`] | enumerate, read the table, report |
 //! | [`ROLE_PROBE`] | announce the roster's address, write to it, and die |
+//! | [`ROLE_HOLDER`] | map the roster, then fault on it once the kernel revokes the frame |
 //!
-//! The second is the negative control: **the roster is a listing, not a lever.** A program that
-//! knows exactly where the page is still cannot change it; the kernel-side test watches the fault
-//! land at that address.
-//!
-//! # EXAMPLES
-//!
-//! ```text
-//!   ROLE_SURVEY on the milestone-57 test disk (a 64 MiB image sgdisk partitioned):
-//!     roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
-//!     table  : 3 partitions, disk GUID 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506
-//!              1  EFI system    2048..10239
-//!              2  linux root   10240..30719
-//!              3  nife data 30720..131038
-//!     backup : agrees with the primary
-//! ```
-//!
+//! [`ROLE_PROBE`] is the negative control: **the roster is a listing, not a lever**, and the
+//! kernel-side test watches the fault land at the address it announced.
 
 //! # BUGS
 //!
@@ -165,15 +140,10 @@ pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
 
 /// **Hold the roster, then have it taken away** (milestone 108).
 ///
-/// Maps the frame, reads its first word and reports it, waits for a go-ahead, and reads again. The
-/// second read is the whole point: between the two, the kernel revokes the frame, and a page a
-/// process mapped from a capability it holds *goes away* when that capability is revoked. So the
-/// second read faults.
-///
-/// **This role could not have existed before the migration.** A page wired in at spawn is in no
-/// mapping record, so `PageFrame::REVOKE` walks past it and the second read returns the same word as
-/// the first. There is no way to un-share a page a program was handed at birth, which is the cost
-/// the milestone was raised to pay off.
+/// Maps the frame, reports its first word, waits for a go-ahead, and reads again. Between the two
+/// reads the kernel revokes the frame, and a page mapped from a revoked capability goes away, so
+/// the second read faults. A page wired in at spawn is in no mapping record and `PageFrame::REVOKE`
+/// cannot reach it, which is why the roster is mapped from a capability (notes/frames.md).
 fn holder() -> ! {
     if !user_mode_runtime::map_page_frame(ROSTER_PAGE_FRAME, ROSTER_VA, false, BUDGET) {
         user_mode_runtime::exit()
@@ -344,18 +314,12 @@ fn read_span(span: Span, into: &mut [u8]) -> bool {
     true
 }
 
-/// **The negative control**, and since milestone 108 it attacks two rungs instead of one.
+/// **The negative control**, at two rungs.
 ///
-/// First it asks `PageFrame::MAP` for a **writable** window on the roster. It holds the frame with
-/// `READ` alone, so the kernel refuses before it writes a page-table entry: there is no writable
-/// mapping of the roster anywhere in this address space to be found, because the capability could
-/// not produce one. Then it maps the page read-only, which it may, announces the address, and
-/// writes there anyway. That faults.
-///
-/// Knowing the address buys nothing at either rung, which is the whole claim: enumeration is a
-/// listing and not a lever, and there is no address at which this write succeeds because the
-/// boundary is a capability's rights and then a page's permissions, rather than anything this
-/// program could be persuaded to skip.
+/// It asks `PageFrame::MAP` for a writable window on the roster, which the kernel refuses because
+/// the frame carries `READ` alone. Then it maps the page read-only, announces the address, and
+/// writes there anyway, which faults. Knowing the address buys nothing: the boundary is a
+/// capability's rights and then a page's permissions, not a check this program could skip.
 fn probe() -> ! {
     // Rung one: a writable mapping, refused by the rights on the capability itself.
     let rw_refused = !user_mode_runtime::map_page_frame(ROSTER_PAGE_FRAME, ROSTER_VA, true, BUDGET);

@@ -1,34 +1,22 @@
-//! **The JH7110 TRNG driver** (notes/entropy.md): an alternate backend for the entropy contract
-//! (`entropy_contract`) beside `entropy.rs`'s virtio-rng one. Same contract, different device: no
-//! virtqueue, no DMA page, just a register window. `kernel/src/user/entropy_service.rs` spawns it on
-//! the riscv64 boot tour; QEMU has no JH7110, so CI resolves that to a skip. The register decode,
-//! the device-tree query and the byte buffer are in `crates/jh7110_entropy`, host-tested and
-//! Kani-reachable; what is left here is the volatile access and two polling bounds.
-//!
-//! Slot 0 is the request endpoint (RECEIVE, `entropy_contract`'s wire format) and slot 1 a
-//! readiness endpoint (WRITE) that gets one message: [`proto::READY`](entropy_contract::READY) once
-//! a first generation is not all zero, or a [`bringup_failure`](entropy_contract::bringup_failure)
-//! word naming the failed step. Mapped: one device page at [`TRNG_VA`], placed by the spawner (rule
-//! 2); the binding's window is `0x4000`, but `jh7110_entropy::regs` reaches only `0x68`. Nothing
-//! else: no DMA page and no IRQ, so its authority is smaller than virtio-rng's by construction.
-//!
-//! It polls `ISTAT` rather than taking PLIC line 30: a wrong interrupt binding fails silently as a
-//! hang, a wrong poll bound fails loudly as `NO_ENTROPY`, and switching once the board confirms
-//! the binding is reversible.
-//!
+//! The JH7110 TRNG driver (notes/entropy.md): a backend for `entropy_contract` beside
+//! `entropy.rs`'s virtio-rng one, with no virtqueue and no DMA page, just a register window.
+//! `kernel/src/user/entropy_service.rs` spawns it on the riscv64 boot tour; QEMU has no JH7110, so
+//! CI resolves that to a skip. The register decode, the device-tree query and the byte buffer are
+//! in `crates/jh7110_entropy`, host-tested and Kani-reachable. It holds [`REQ`], [`READY`] and one
+//! device page at [`TRNG_VA`], and no IRQ, so its authority is smaller than virtio-rng's by
+//! construction. It polls `ISTAT` rather than taking PLIC line 30: a wrong interrupt binding fails
+//! silently as a hang, a wrong poll bound loudly as `NO_ENTROPY`. See
+//! notes/entropy/jh7110-trng.md.
+
 //! # BUGS
 //!
-//! - It programs no clock and deasserts no reset: the kernel ungates `SEC_HCLK` and
-//!   `SEC_MISCAHB_CLK` and releases the block's reset before spawning it, and nothing here checks
-//!   that happened; a boot where it did not presents as zeros.
-//! - An all-zero first generation condemns the device for the boot
-//!   ([`proto::STEP_FIRST_ALL_ZERO`](entropy_contract::STEP_FIRST_ALL_ZERO)), even if it powers on
-//!   a moment later.
-//! - [`POLL_TRIES`] and [`LOCKUP_RETRIES`] are unmeasured guesses, and [`POLL_TRIES`] counts loop
-//!   iterations with no delay, so it is a guard against hanging, not a timeout in microseconds.
-//! - **`MODE.R256` has never been read back.** [`init`] writes it and reports `STAT`; if radon's
-//!   `STAT.R256` reads clear, the upper four `RAND` words are not device output and only 16 bytes
-//!   may be served. One line of a bench transcript closes the one open question about the bytes.
+//! - It programs no clock and deasserts no reset, and checks neither: a boot where the kernel did
+//!   not ungate `SEC_HCLK` and `SEC_MISCAHB_CLK` and release the reset presents as zeros.
+//! - An all-zero first generation condemns the device for the boot, even if it powers on later.
+//! - [`POLL_TRIES`] and [`LOCKUP_RETRIES`] are unmeasured guesses; [`POLL_TRIES`] counts undelayed
+//!   loop iterations, so it guards against a hang and is not a timeout in microseconds.
+//! - `MODE.R256` has never been read back. If radon's `STAT.R256` reads clear, only 16 bytes of
+//!   each generation are device output (notes/entropy/jh7110-trng.md).
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `jh7110_entropy_source`. It shares the crate's
 //! name as the crate-and-program pair; `jh7110_entropy_driver` was refused for hiding that pair.
@@ -51,16 +39,11 @@ use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 use user_mode_runtime::{receive_request, reply, send};
 
 register_structs! {
-    /// The JH7110 TRNG's register block, migrated onto `tock_registers` (milestone 139 round 5):
-    /// offsets transcribed from `jh7110_entropy::regs` (itself transcribed from the Linux driver, see
-    /// `crates/jh7110_entropy`'s module doc), now checked at compile time instead of asserted by a
-    /// hand-written comment. Unlike the NS16550 (`kernel/src/drivers/ns16550.rs`'s own module
-    /// doc), this device's layout has no runtime-variable stride or width: [binding] gives one
-    /// `reg` window (`reg = <0x1600C000 0x4000>`) with no `reg-shift`/`reg-io-width` knob, so there
-    /// is nothing here `register_structs!`'s compile-time-fixed layout cannot express. Only the
-    /// registers this driver touches are named (`CTRL`, `STAT`, `ISTAT`, `RAND0..RAND7`); `MODE`,
-    /// `SMODE`, `IE`, `AUTO_RQSTS` and `AUTO_AGE` are reserved padding here, the same "not
-    /// otherwise used" status `jh7110_entropy::regs`'s own doc gives several of them.
+    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::regs` (itself transcribed
+    /// from the Linux driver), checked at compile time. Unlike the NS16550's, this layout has no
+    /// runtime stride or width: [binding] gives one `reg` window (`reg = <0x1600C000 0x4000>`) with
+    /// no `reg-shift` or `reg-io-width`. Only the registers this driver touches are named; the rest
+    /// are reserved padding here.
     ///
     /// [binding]: https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/rng/starfive%2Cjh7110-trng.yaml
     #[allow(non_snake_case)]
@@ -73,10 +56,9 @@ register_structs! {
         (0x08 => MODE: ReadWrite<u32>),
         (0x0c => _reserved_smode),
         (0x10 => IE: ReadWrite<u32>),
-        // **Write-1-to-clear**, per the TRM's own register map (see `jh7110_entropy::regs::ISTAT`).
-        // It was `ReadOnly` here while how to acknowledge a bit was unknown, and that is exactly
-        // the bug: `RAND_RDY` latches, so a driver that never writes this register sees every
-        // generation after the first complete instantly.
+        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::regs::ISTAT`). `RAND_RDY`
+        // latches, so a driver that never writes this register sees every generation after the
+        // first complete instantly.
         (0x14 => ISTAT: ReadWrite<u32>),
         (0x18 => _reserved_pad),
         (0x20 => RAND0: ReadOnly<u32>),
@@ -94,13 +76,18 @@ register_structs! {
     }
 }
 
-/// Capability slots, by convention with whatever kernel-side wiring eventually spawns this (see
-/// the module doc: none does yet).
+/// Capability slots, by convention with `kernel/src/user/entropy_service.rs`. Slot 0, the request
+/// endpoint, received on in `entropy_contract`'s wire format.
 const REQ: u64 = 0;
+/// Slot 1, a readiness endpoint (`WRITE`) that gets one message:
+/// [`proto::READY`](entropy_contract::READY) once a first generation is not all zero, or a
+/// [`bringup_failure`](entropy_contract::bringup_failure) word naming the failed step.
 const READY: u64 = 1;
 
 /// Where the spawner maps the TRNG's register page (a device-typed mapping, the same mechanism
-/// `console.rs`'s `UART_VA` uses). **Must match `kernel/src/user/entropy_service.rs`'s `TRNG_VA`.**
+/// `console.rs`'s `UART_VA` uses), placed by the spawner (rule 2). One page: the binding's window is
+/// `0x4000`, but `jh7110_entropy::regs` reaches only `0x68`. **Must match
+/// `kernel/src/user/entropy_service.rs`'s `TRNG_VA`.**
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
 /// mapped in different processes at once.
@@ -145,23 +132,14 @@ fn ack(bits: u32) {
     regs().ISTAT.set(bits);
 }
 
-/// **Put the block in a known state before asking it for anything** (milestone 159), the sequence
-/// all three drivers `jh7110_entropy`'s module doc cites agree on. Each step is there because a
-/// reset value nobody documented is not something to rely on:
+/// Put the block in a known state before asking it for anything (milestone 159 (a real hardware
+/// entropy source: the JH7110's TRNG)): zero `AUTO_AGE` and `AUTO_RQSTS`, disabling the reseed alarms; clear every `ISTAT` bit, since a `RAND_RDY`
+/// latched under U-Boot would satisfy the first poll; set `MODE.R256`, since the width after reset
+/// is a build-time parameter of the silicon; and leave `IE` at zero to poll. The order and the
+/// reasons are in notes/entropy/jh7110-trng.md.
 ///
-/// 1. `AUTO_AGE` and `AUTO_RQSTS` to zero, which is how the TRM says the two reseed-reminder
-///    alarms are disabled. Left alone, a nonzero counter raises `AGE_ALARM` or `RQST_ALARM` in a
-///    register this driver polls for other reasons.
-/// 2. Clear every `ISTAT` bit, because this block was running under U-Boot before nife started
-///    and a latched `RAND_RDY` from then would make the first poll below return instantly.
-/// 3. `MODE.R256`, so a generation answers with all eight `RAND` words. **Without it the device
-///    may be in 128-bit mode**, where only `RAND0..RAND3` carry the answer and this driver's
-///    32-byte assembly is half real bytes and half whatever the upper words hold. The width after
-///    reset is a build-time parameter of the silicon, so it has to be set rather than assumed.
-/// 4. `IE` left at zero, deliberately: see the module doc's "Why polling".
-///
-/// Returns what `STAT` read back afterwards, which is the bench diagnostic: `STAT.R256` says
-/// whether step 3 took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.
+/// Returns `STAT` as read afterwards, the bench diagnostic: `STAT.R256` says whether `MODE.R256`
+/// took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.
 fn init() -> u32 {
     let r = regs();
     r.AUTO_AGE.set(0);
@@ -175,10 +153,8 @@ fn init() -> u32 {
 /// Force a reseed and wait (bounded) for `ISTAT.SEED_DONE`, acknowledging it. Called once at
 /// bring-up, mirroring the init sequence in `jh7110_entropy`'s module doc, and again whenever
 /// [`generate`] sees [`jh7110_entropy::Outcome::Lockup`] or [`jh7110_entropy::Outcome::Unseeded`].
-/// `false` on a bound-out: the caller decides what that means.
-///
-/// **The acknowledgement is the part that was missing.** `SEED_DONE` is latched, so an unacked one
-/// makes every later reseed appear to complete immediately.
+/// `false` on a bound-out: the caller decides what that means. `SEED_DONE` is latched, so it is
+/// acknowledged on both sides; an unacked one makes every later reseed appear to complete at once.
 fn reseed_and_wait() -> bool {
     ack(ISTAT_SEED_DONE);
     regs().CTRL.set(CTRL_EXEC_RANDRESEED);
@@ -196,13 +172,9 @@ fn reseed_and_wait() -> bool {
 /// the bound: this driver's whole failure mode, reported to callers as [`proto::NO_ENTROPY`]
 /// rather than a hang.
 ///
-/// **`RAND_RDY` is acknowledged on both sides of the command**, and that is the fix for the defect
-/// this milestone found. Before the write, because a bit standing from the previous generation
-/// would otherwise satisfy the very first poll and hand back the *previous* answer. After the
-/// words are read, so the next call starts from a clean register. A driver that never wrote
-/// `ISTAT` served its first generation correctly and then answered every later request instantly
-/// with whatever the register file happened to hold, which is indistinguishable from working right
-/// up until two draws come back identical.
+/// `RAND_RDY` is acknowledged on both sides of the command: before the write, because a bit
+/// standing from the previous generation would satisfy the first poll and hand back the previous
+/// answer, and after the words are read, so the next call starts from a clean register.
 fn generate() -> Option<[u8; 32]> {
     for _ in 0..=LOCKUP_RETRIES {
         ack(ISTAT_RAND_RDY);
@@ -235,36 +207,22 @@ pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let stat_after_init = init();
     reseed_and_wait();
 
-    // Draw the first 32 bytes before reporting anything, the same discipline `entropy.rs` uses:
-    // "the service is up" should mean "a client that asks will be answered", not just that the
-    // handshake completed. **The bytes decide the word**, which is the fix for the defect radon
-    // found on 2026-09-04: this line used to send `proto::READY` unconditionally and put the
-    // truth in a second word nothing was obliged to read, so a device whose clock was gated
-    // reported itself ready holding zeros.
+    // Draw the first 32 bytes before reporting, as `entropy.rs` does, so "up" means a client that
+    // asks will be answered. The bytes decide the word, so a device whose clock is gated cannot
+    // report itself ready holding zeros.
     let first = generate();
     let report = proto::readiness(first.into_iter().flatten());
     let mut pool = Pool::new();
     if let Some(bytes) = first {
         pool.refill(&mut || Some(bytes));
     }
-    // **Word 2 is always the same fact now**, and that change is this milestone's other finding.
-    // It used to be the byte count on success and a `(STAT << 32) | ISTAT` snapshot on failure,
-    // which meant the number a bench session read first meant two different things depending on a
-    // word printed beside it. On 2026-09-04 radon printed `0x20` there and it was read as
-    // `ISTAT` bit 5, an undocumented status bit, when it was in fact `pool.remaining() == 32`:
-    // the success path's byte count, on a boot the tour had labelled FAILED for an unrelated
-    // reason. An hour went into decoding a number that was never a register.
-    //
-    // So the diagnostic is unconditionally `(STAT << 32) | ISTAT`, read now, and the byte count
-    // moves into word 1 beside the flag it belongs with. An all-zero pair still says the register
-    // window read as nothing (a gated clock, an undeasserted reset, or a base that is not the
-    // TRNG); a nonzero `STAT` with `SEEDED` clear still says the device is alive and the seeding
-    // sequence did not finish. Both readings now hold whatever word 0 says.
+    // Word 2 is always `(STAT << 32) | ISTAT`, read now, whatever word 0 says, so the number a
+    // bench session reads first means one thing. All zeros says the window read as nothing (a gated
+    // clock, an undeasserted reset, or a base that is not the TRNG); a nonzero `STAT` with `SEEDED`
+    // clear says the device is alive and the seeding sequence did not finish.
     let diagnostic = (u64::from(regs().STAT.get()) << 32) | u64::from(regs().ISTAT.get());
-    // Word 1 carries the byte count and, in its high half, the `STAT` this driver saw right after
-    // `init`. `STAT.R256` there is the answer to "is this device in 256-bit mode", which decides
-    // whether the 32 bytes above are 32 bytes of device output or 16 bytes and 16 of something
-    // else. Nothing has read it on silicon yet; the bench procedure now says to.
+    // Word 1 carries the byte count and, in its high half, the `STAT` seen right after `init`,
+    // whose `R256` says whether the 32 bytes are all device output or only 16 of them.
     let bytes_in_hand = pool.remaining() as u64;
     send(
         READY,
@@ -273,13 +231,10 @@ pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         diagnostic,
     );
 
-    // **A device that answered with zeros is refused for the rest of the boot**, and that is a
-    // stronger response than the report word alone. The report reaches whoever wired this service;
-    // a client only ever sees a reply, so a service that reported dead and went on serving its
-    // zero buffer would hand out those zeros as randomness to everyone who was not watching the
-    // handshake. A device that answered with *nothing* is not refused: it has told the truth at
-    // every step, `take` already answers `NO_ENTROPY` while it stays dry, and it recovers by
-    // itself if it starts answering.
+    // A device that answered with zeros is refused for the rest of the boot: a client only sees a
+    // reply, so serving that zero buffer would hand zeros out as randomness to everyone not
+    // watching the handshake. A device that answered nothing is not refused: `take` answers
+    // `NO_ENTROPY` while it stays dry, and it recovers by itself if it starts answering.
     serve(
         pool,
         report == proto::bringup_failure(proto::STEP_FIRST_ALL_ZERO),

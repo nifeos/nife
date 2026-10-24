@@ -1,5 +1,7 @@
 # The roadmap index, and why it is gone
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/roadmap.md](../roadmap.md), which summarizes it.
 
 The table was hand-maintained, then generated from the blocks (2026-09-14), and is not built at

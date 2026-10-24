@@ -13,8 +13,4 @@ files carry the rest.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `what-was-modeled` Name: provisional.
-- `lift-is-only-worth-what-its-caller-does` Name: ratified 2026-10-18 (calef, "Yes") Refused `lift-and-caller`.
-- `limitations` Name: provisional.
+Each stem here is named for its content, and calef names files.

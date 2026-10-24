@@ -1,5 +1,7 @@
 # The counts, and how to re-derive them
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes.*
+
 Every figure [`notes/proof-retrospective.md`](../proof-retrospective.md) rests on, with the command
 that produced it. Take these numbers from the tree, not from here: this page will drift the same way
 the roadmap's "112+" did, and the commands below are the re-derivation.

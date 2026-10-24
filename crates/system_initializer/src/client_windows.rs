@@ -1,7 +1,5 @@
 //! The file service's client windows: one frame per channel, the bound and job channels built on
-//! them, and `FsCalls`. Moved out of `lib.rs` unchanged but for visibility by milestone 843 (the
-//! system-initializer crate root is split along its seams), under §279 (the system-initializer
-//! crate root splits into private modules).
+//! them, and `FsCalls`.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -51,30 +49,16 @@ pub(super) fn window_zero(fs: Fs) -> Option<Fs> {
     })
 }
 
-/// **The pool of windows directory-granted jobs get** (milestone 599, the rule since milestone 685
-/// (a job is finished when its memory is back)): windows `1..login_contract::DURABLE_WINDOW`, each
-/// held by the job it was handed to until `job_undertaker` says that job is reaped. Window 0 is the
-/// boot's long-lived clients' (see [`window_zero`]), and the last is `login`'s durable sessions'
-/// (milestone 152).
-///
-/// The bookkeeping and its host test live in `grant_plan::job_windows`; this process owns the
-/// capabilities and the binding.
-///
-/// A bound window's grant is taken back at its job's reap ([`unbind`], from
-/// `SpawnEndpoint::reaped`), and `grant_plan::job_windows` refuses to hand out a window that is
-/// still bound. So no binding outlives its job, and no live job holds an old badge when the window
-/// is bound to a new root: confinement claim 24 in `notes/confinement-claims.md`.
+/// **The pool of windows directory-granted jobs get**: windows `1..login_contract::DURABLE_WINDOW`,
+/// each held by its job until its reap takes the grant back ([`unbind`]); `grant_plan::job_windows`
+/// refuses a still-bound window, so no binding outlives its job (confinement claim 24 in
+/// `notes/confinement-claims.md`). Window 0 is [`window_zero`]'s, the last `login`'s.
 ///
 /// # BUGS
 ///
-/// - **A window whose job is never reaped by `job_undertaker` is never free again**: see
-///   `grant_plan::job_windows`'s `BUGS` (a screen-narrowed job behind a directory grant, which no
-///   manifest asks for today).
-/// - **A caretaker on a window that was once bound reaches nothing.** `UNBIND` leaves a badge
-///   revoked, not open, and only `BIND` changes a revoked badge again. So a caretaker
-///   [`job_channel`] builds on such a window (the fallback when a `BIND` failed) gets `EBADF` on
-///   every request, and its job's grant is a refusal rather than a widening. Nothing in the file
-///   protocol reopens a badge today.
+/// - A window whose job is never reaped is never free again (`grant_plan::job_windows`).
+/// - A caretaker on a once-bound window (the fallback after a failed `BIND`) gets `EBADF`
+///   throughout, since `UNBIND` leaves the badge revoked: the grant fails closed.
 pub(super) const fn job_windows() -> Windows {
     Windows::new(1, login_contract::DURABLE_WINDOW)
 }
@@ -483,8 +467,6 @@ impl FsCalls {
         Ok((number, self.generation(act, number, out)?))
     }
 
-    /// **Generation `number`'s table**, read whole into `out`; its length. `Err` if it cannot be
-    /// opened or read, or fills the page.
     /// **The copy of the image's index** in the index store under `act` (milestone 801 (packages
     /// over the internet)), read into `out`. `Err` when there is none, or when it fills the page,
     /// for [`FsCalls::generation`]'s reason: a copy cut short vouches for nothing.
@@ -516,6 +498,8 @@ impl FsCalls {
         }
     }
 
+    /// **Generation `number`'s table**, read whole into `out`; its length. `Err` if it cannot be
+    /// opened or read, or fills the page.
     pub(super) fn generation(
         &self,
         act: u64,

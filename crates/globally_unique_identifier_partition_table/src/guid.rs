@@ -1,38 +1,13 @@
-//! GPT's GUIDs: how the GUID Partition Table stores a UUID on disk, and the partition types worth
-//! recognizing by name.
+//! GPT's GUIDs: how a GPT stores a UUID on disk, and the partition types worth recognizing by name.
 //!
-//! The identifier itself is [`Uuid`], from the `uuid` crate, in RFC 9562's
-//! byte order. This module keeps only what is GPT's: the on-disk byte layout and the type constants.
-//! It keeps the spec's word, GUID, because the UEFI fields it serves are spelled that way
-//! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`). Everything else says UUID, RFC 9562's
-//! term (calef approved the split on 2026-10-06 (UTC)).
-//!
-//! # The mixed-endian trap
-//!
-//! A GUID is 16 bytes and everybody writes it as `C12A7328-F81F-11D2-BA4B-00A0C93EC93B`. The trap is
-//! that **the five groups are not stored the same way on a GPT**. The first three are integers and
-//! go on disk little-endian; the last two are byte strings and go on disk in the order written. So
-//! the bytes of that GUID on disk are:
-//!
-//! ```text
-//!   28 73 2A C1  1F F8  D2 11  BA 4B  00 A0 C9 3E C9 3B
-//!   \--------/   \---/  \---/  \---/  \-----------------/
-//!    u32 LE       u16 LE u16 LE  as written
-//! ```
-//!
-//! where RFC 9562 order (what [`Uuid::into_bytes`] returns) is `C1 2A 73 28 F8 1F 11 D2 BA 4B ...`.
-//! This is Microsoft's `GUID` struct, which UEFI inherited; RFC 9562 section 4 names it as the one known
-//! exception to big-endian storage. Getting it wrong gives you a GUID that looks plausible, matches
-//! nothing, and is byte-reversed in three places out of five. [`from_disk`] and [`to_disk`] are the
-//! only two functions that see the on-disk order, and [`Entry`](crate::Entry) and
-//! [`Header`](crate::Header) call nothing else, so a [`Uuid`] in this crate is always canonical and
-//! always prints right.
-//!
-//! # Type GUIDs versus unique GUIDs
-//!
-//! Every entry carries two. The **type** GUID says what the partition is for and is a shared
-//! constant ([`types`]); the **unique** GUID names this particular partition and is generated once,
-//! never reused. Confusing them is how you get two partitions the OS thinks are the same one.
+//! [`Uuid`] is in RFC 9562 byte order. On a GPT the first three groups are integers stored
+//! little-endian and the last two are stored as written (Microsoft's `GUID` struct, which RFC 9562
+//! section 4 names as the one known exception to big-endian storage): `C12A7328-F81F-11D2-BA4B-...`
+//! is `28 73 2A C1 1F F8 D2 11 BA 4B ...` on disk. [`from_disk`] and [`to_disk`] alone see that
+//! order, so a [`Uuid`] here is always canonical. This module says GUID, as the UEFI fields do
+//! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says UUID (calef, 2026-10-06
+//! UTC). See notes/globally-unique-identifier-partition-table.md, "1. A GUID is mixed-endian, and
+//! only partly".
 
 pub use uuid::Uuid;
 
@@ -180,21 +155,12 @@ pub mod types {
     /// **A nife boot slot**, holding one copy of the image the firmware's chooser starts
     /// (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
     ///
-    /// A random version-4 GUID, generated once on 2026-09-21 and fixed forever, for the same
-    /// reason [`NIFE_DATA`] is: there is no registry to ask and a disk written by one release has
-    /// only this number to agree on with the next. **Never change this value.**
-    ///
-    /// It has a second job [`NIFE_DATA`] does not, and it is the reason a boot slot is a partition
-    /// of its own rather than a file. UEFI 2.11 5.3.3 reserves attribute bits 48 to 63 for
-    /// "GUID specific use" and says *"Only the owner of the `PartitionTypeGUID` is allowed to modify
-    /// these bits"*. Those bits carry the priority, the tries and the confirmed flag that decide
-    /// which image boots (`crates/boot_slot`), and they are ours to define **because this GUID is
-    /// ours**. On a partition of somebody else's type they would be somebody else's bits.
-    ///
-    /// **Ratified by calef on 2026-09-21** ("Ratify the GUID and bit positions"), the same day it
-    /// was minted. A type GUID is a value two programs agree on, so ratification is what moves it
-    /// from a lane's proposal to a number this project has committed to; from here it changes only
-    /// the way [`NIFE_DATA`] would, which is to say not at all.
+    /// A random version-4 GUID generated on 2026-09-21 and ratified by calef that day ("Ratify the
+    /// GUID and bit positions"). **Never change this value**, for [`NIFE_DATA`]'s reason. UEFI 2.11
+    /// 5.3.3 reserves attribute bits 48 to 63 for "GUID specific use": *"Only the owner of the
+    /// `PartitionTypeGUID` is allowed to modify these bits"*. They carry `crates/boot_slot`'s
+    /// priority, tries and confirmed flag, and are ours because this GUID is, which is why a boot
+    /// slot is a partition and not a file.
     pub const NIFE_BOOT: Uuid = Uuid::from_fields(
         0x1163_1EE3,
         0xE18F,
@@ -328,9 +294,8 @@ mod tests {
     }
 
     /// A version-4 UUID written to a GPT has its version nibble in on-disk byte 7, where `sgdisk`
-    /// and UEFI read the third group's high nibble from. Before 2026-10-06 the stamp itself wrote
-    /// byte 7 because the type held on-disk bytes; now the stamp writes RFC byte 6 and `to_disk`
-    /// moves it, and this is the check that the two together land where the old one did.
+    /// and UEFI read the third group's high nibble, and its variant bits in byte 8. The stamp
+    /// writes RFC byte 6 and `to_disk` moves it.
     #[test]
     fn a_version_4_uuid_lands_its_version_in_on_disk_byte_7() {
         for fill in [0x00u8, 0xff, 0x5a] {

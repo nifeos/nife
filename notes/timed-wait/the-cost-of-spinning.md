@@ -1,5 +1,7 @@
 # 5. What the current spinning costs, so the comparison is not against zero
 
+*Name: provisional.*
+
 Section 5 of [`notes/timed-wait.md`](../timed-wait.md) in full: what one second of today's
 yield-spin costs, derived from the tree's own baselines, against one second waited on a deadline.
 
