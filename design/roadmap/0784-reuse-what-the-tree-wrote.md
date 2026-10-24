@@ -215,6 +215,7 @@ on the customer path.
   device behind the IOMMU. It did, on all three.
 - (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
   number before and after on all three architectures.
+  - (c3) is [949](0949-virtio-block-on-virtio-drivers.md).
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
