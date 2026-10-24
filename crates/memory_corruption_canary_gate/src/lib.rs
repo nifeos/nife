@@ -1,29 +1,11 @@
 //! **The corruption canary's arm/check/disarm serialization**, lifted out of `kernel/src/sched.rs`
-//! so loom can explore every interleaving of it on the host. Two flags let a caller's decisive
-//! `check()` lose a race and return having checked nothing (the `thead-c906` flake in
-//! notes/cpu-models.md), and let `arm()` rewrite the watch table while a checker read it. So it is
-//! one word, four states, every transition a single compare-exchange:
-//!
-//! ```text
-//!            arm()                    drop(ArmGuard)
-//! DISARMED ─────────► ARMING ──────────────────────► ARMED ◄──┐
-//!    ▲                  ▲                              │      │ drop(CheckGuard)
-//!    │ disarm()         │ arm()                        │      │
-//!    │                  │              try_check()     ▼      │
-//!    └───────────────── ARMED ◄──────────────────── CHECKING ─┘
-//! ```
-//!
-//! - [`arm`](Gate::arm) spins until the instrument is idle, takes it exclusively, and returns an
-//!   [`ArmGuard`]; dropping it publishes `ARMED`.
-//! - [`try_check`](Gate::try_check) takes it exclusively ([`CheckGuard`]) or answers [`None`], and
-//!   the caller knows which: the timer tick shrugs, a caller that needs a completed pass loops.
-//! - [`disarm`](Gate::disarm) quiesces: when it returns, no pass is running or can start, so the
-//!   watched memory may be freed.
-//!
-//! The kernel touches its watch table and shadow only while holding a guard, and the gate admits
-//! one guard of either kind at a time; the loom harnesses check that and the quiescence promise
-//! under every interleaving C11 permits. No fairness: `arm` and `disarm` spin, bounded in practice
-//! by the kernel's callers, outside IRQ context. What a divergence means is the kernel's business.
+//! so loom can explore every interleaving of it on the host: one word, four states, every
+//! transition a single compare-exchange. [`arm`](Gate::arm) spins until idle and returns an
+//! [`ArmGuard`], whose drop publishes `ARMED`; [`try_check`](Gate::try_check) returns a
+//! [`CheckGuard`] or [`None`]; [`disarm`](Gate::disarm) quiesces, so once it returns no pass is
+//! running or can start. One guard of either kind at a time. No fairness: `arm` and `disarm` spin,
+//! bounded by the kernel's callers, outside IRQ context. See
+//! notes/interleaving/what-was-modeled.md, "the corruption canary's serialization".
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `canary_gate`: a memory-corruption detector
 //! over arbitrary byte ranges, not a stack canary.
@@ -252,22 +234,11 @@ mod tests {
 
     use super::*;
 
-    /// **Every test body runs on a worker with a deadline, and that is the point rather than
-    /// housekeeping.**
-    ///
-    /// Two of the three entry points here are spin loops: `arm` and `disarm` keep looking until
-    /// they win. So the way to break one is not to make it return the wrong thing, it is to make
-    /// it never return, and a suite that calls it directly does not fail on that, it *hangs*.
-    /// Milestone 326 (nobody has been assigned to turn a mutation score upward) measured the cost:
-    /// four mutants of this crate (both halves of `arm`'s
-    /// acceptance condition, `disarm`'s, and deleting `ArmGuard`'s `Drop`) produced a deadlock
-    /// rather than a failed assertion, and `cargo mutants` can only report a suite that never
-    /// finished as a timeout, which is indistinguishable from a slow one. Liveness is the
-    /// property, this is what states it, and the kernel cares about it more than the host does:
-    /// `arm` spins on a core that cannot be preempted by the owner.
-    ///
-    /// A panic inside the body drops the sender, so the two failures are told apart rather than
-    /// both reading as a hang. See the `## 2026-09-20` section of
+    /// **Every test body runs on a worker with a deadline**: `arm` and `disarm` spin until they
+    /// win, so a mutant that breaks one never returns, and a suite calling it directly would hang
+    /// rather than fail. Four mutants did (both halves of `arm`'s acceptance condition, `disarm`'s,
+    /// and deleting `ArmGuard`'s `Drop`). A panic inside the body drops the sender, so the two
+    /// failures are told apart. See the `## 2026-09-20` section of
     /// notes/mutation-testing/new-crate-backlog.md.
     fn bounded(what: &str, body: impl FnOnce() + Send + 'static) {
         let (tx, rx) = mpsc::channel();

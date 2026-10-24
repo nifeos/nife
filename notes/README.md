@@ -47,6 +47,10 @@ area directories), ruled B). Appendices under
 - [How the tree is run](README/how-the-tree-is-run.md): gates, records and the merge queue that keep many lanes honest.
 - [Delegation and the method](README/delegation-and-the-method.md): how agents do the work here, and what it costs.
 
+`system-log.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
+
+`sealed-pair.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
+
 `dependency-standards-census.md`: Name: provisional, minted 2026-10-19 (UTC) by maintainer/dependency-standards-census.
 
 `ci-toolchain-download.md`: Name: provisional, minted 2026-10-19 (UTC) by maintainer/rustup-retry.

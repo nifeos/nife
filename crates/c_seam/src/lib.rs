@@ -1,15 +1,13 @@
 #![cfg_attr(not(test), no_std)]
-//! **The C seam's shared half** (milestone 36, DECISIONS §31).
-//!
-//! Two Rust programs sit either side of the foreign component: `c_shim` is the shell that links the
-//! C and calls it, and `c_confiner` is the process that builds `c_shim`, supervises it, and holds
-//! the witness pages that prove what the C could not reach. This is what they agree on: the
-//! address-space layout, the report protocol, and the constants that are also written down in
-//! `fixtures/c/c_seam.c`.
-//!
-//! A crate (CLAUDE.md rule 7), so the agreement is reachable by host tests and by Kani.
-//!
-//! # The layout, and why these numbers
+//! **The C seam's shared half** (milestone 36 (a foreign-language component, seam first), DECISIONS
+//! §31). `c_shim` links the C and calls it; `c_confiner` builds and supervises `c_shim` and holds
+//! the witness pages that prove what the C could not reach. This crate is what they agree on,
+//! reachable by host tests and Kani: the address-space layout below, the report protocol, and the
+//! constants also written in `fixtures/c/c_seam.c`. `WITNESS_RO` is the same frame, mapped
+//! read-only into the C; `WITNESS_FAR` is a different frame at an address the C has not mapped;
+//! both patterns are position-derived. See notes/c-seam/the-confinement-test.md.
+
+//! # The layout
 //!
 //! ```text
 //!   c_shim (the C component's process)          c_confiner (the checker)
@@ -22,19 +20,6 @@
 //!   0x6000_0000  text / rodata / data          0x6000_0000  text / rodata / data
 //!   0x7FFE_F000  stack                         0x7FFE_F000  stack
 //! ```
-//!
-//! The two witness pages answer two different questions, which is why there are two:
-//!
-//! - **`WITNESS_RO` is the same physical page, present in the C component's own page tables.** So
-//!   when the off-by-one store does not change it, that is not "the write went somewhere else"; the
-//!   page was right there, reachable, and the write did not happen. This is the stronger witness.
-//! - **`WITNESS_FAR` is a different physical page at the same virtual address.** The C component has
-//!   no mapping at `0x5000_2000` at all, and the checker does. So when a wild store to that address
-//!   does not change the checker's page, that is the statement "a virtual address means nothing
-//!   outside the address space that owns it," which is the MMU claim, made concrete.
-//!
-//! Both patterns are position-derived, the discipline milestone 29 used for the framebuffer: a
-//! partial overwrite is detected, and a `memset` of any single value could not pass.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 61 (the caretakers)), with the C symbols
 //! `c_seam_*`. The `c_` prefix means "written in C" (DECISIONS §31 (the foreign-language seam)).
@@ -278,18 +263,11 @@ mod tests {
         assert!(OUT_OFF < PAGE as usize, "output half starts past the page");
     }
 
-    /// **The two witness patterns are different sequences, but they are not different everywhere,
-    /// and the exact number matters.**
-    ///
-    /// `pattern_ro(i) = 31i + 7` and `pattern_far(i) = 17i + 3`, both mod 256. Setting them equal
-    /// gives `14i = -4 (mod 256)`, which reduces to `i = 18 (mod 128)`: they agree at exactly 32 of
-    /// a page's 4096 offsets, and nowhere else.
-    ///
-    /// This test exists because an earlier version of it asserted they never collide, which is
-    /// false, and the arithmetic corrected the assertion. Pinning the real number is worth more
-    /// than the wrong absolute: it says a page filled with the *other* pattern differs in 4064
-    /// places, so a checker comparing whole pages cannot miss a swap, while recording that a
-    /// single-byte comparison at a chosen offset could.
+    /// **The two witness patterns differ, but not everywhere, and the exact number matters.**
+    /// `pattern_ro(i) = 31i + 7` and `pattern_far(i) = 17i + 3`, mod 256, agree where
+    /// `14i = -4 (mod 256)`, that is `i = 18 (mod 128)`: at exactly 32 of a page's 4096 offsets.
+    /// So a page filled with the other pattern differs in 4064 places and a whole-page compare
+    /// cannot miss a swap, while a single-byte comparison at a chosen offset could.
     #[test]
     fn the_witness_patterns_collide_exactly_32_times_in_a_page() {
         let collisions = (0..PAGE as usize)
