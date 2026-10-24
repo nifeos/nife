@@ -47,12 +47,18 @@ pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), abi::Error> {
     Ok(())
 }
 
-/// Grant the running thread the cycle counter, in system tests only, which breaks the embryo rule
-/// [`grant_cycle_counter`] enforces so the EL0 half can be exercised without a syscall method.
+/// Grant the running thread the cycle counter, which breaks the embryo rule [`grant_cycle_counter`]
+/// enforces. Two kernel callers, each on a kernel thread before it drops to EL0 through
+/// `user::run`: the system test of the EL0 grant, and the bench boot's `ipc_rtt_el0_cycles` probe
+/// under `cycle_counter_grant` (milestone 101). Neither is a program asking, so the rule's reason
+/// (the grant is the spawner's choice, never the grantee's) still holds.
 ///
 /// It writes the register as well as the field, because the caller will not pass through
 /// `schedule`'s switch again before it drops to EL0; later switches reapply the field.
-#[cfg(feature = "system_tests")]
+#[cfg(any(
+    feature = "system_tests",
+    all(feature = "bench", feature = "cycle_counter_grant")
+))]
 pub fn grant_cycle_counter_to_current() {
     {
         let mut guard = IPC_TABLES.lock();

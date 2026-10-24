@@ -25,7 +25,7 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_map_into, cap_delete, destroy_memory_region, exit, map_page_frame, now, receive,
+    address_space_map_into, cap_delete, cycle_reading, destroy_memory_region, exit, map_page_frame, now, receive,
     retype_into_kernel_object, retype_into_page_frame, send, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start, yield_now,
@@ -77,6 +77,12 @@ const SRV_REPLY: u64 = 1; // server SENDs the reply here
 const CLI_REQUEST: u64 = 1; // client SENDs the request here (slot 0 is REPORT)
 const CLI_REPLY: u64 = 2; // client receives the reply here
 
+/// `x1` for [`ROLE_IPC_CLIENT`] when the bench boot has granted the client the cycle counter: read
+/// it across the timed loop too, and send a second report. Any other value leaves the client as it
+/// always was, so the `ipc_rtt_el0` row is the same code with or without it. It must match
+/// `IPC_CLIENT_READS_CYCLES` in `kernel/src/bench/el0.rs`.
+const IPC_CLIENT_READS_CYCLES: u64 = 1;
+
 /// Iterations for the IPC round-trip loop. One iteration is a `SEND` to the server and a `RECEIVE` of
 /// its reply: two rendezvous, four `svc`s (two on each side), two context switches. lmbench's
 /// `lat_pipe` shape, over our endpoints.
@@ -110,13 +116,13 @@ const MAP_WARM_BASE: u64 = address_space_map::pair_page(0x20_0000);
 const MAP_TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
 
 #[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _x1: u64, _x2: u64) -> ! {
+pub extern "C" fn _start(role: u64, x1: u64, _x2: u64) -> ! {
     match role {
         ROLE_NULL_SYSCALL => null_syscall_bench(),
         ROLE_YIELDER => yielder(),
         ROLE_CTX_SWITCH => ctx_switch_bench(),
         ROLE_IPC_SERVER => ipc_server(),
-        ROLE_IPC_CLIENT => ipc_client(),
+        ROLE_IPC_CLIENT => ipc_client(x1 == IPC_CLIENT_READS_CYCLES),
         ROLE_MAP => map_bench(),
         ROLE_SPAWN => spawn_bench(),
         ROLE_SINK_PRODUCER => sink_producer(),
@@ -224,19 +230,34 @@ fn ipc_server() -> ! {
 /// iteration is a SEND to the server and a RECEIVE of its reply: two rendezvous, four `svc`s, two
 /// context switches. Self-timed; the bench boot spawns the server first so a request always meets a
 /// waiting receiver.
-fn ipc_client() -> ! {
+///
+/// With `reads_cycles` (the caller holds the cycle-counter grant) the cycle counter is read just
+/// inside the tick reads, and a second report follows the first: `[cycles, meaning, 0]`, the
+/// meaning as [`user_mode_runtime::CycleMeaning::to_word`]. Without the grant those reads would
+/// trap, so the flag is the bench boot's statement that it granted. See milestone 101.
+fn ipc_client(reads_cycles: bool) -> ! {
     // Warm up: pay the first rendezvous and any cold paths outside the timed loop.
     for _ in 0..64 {
         send(CLI_REQUEST, 1, 0, 0);
         receive(CLI_REPLY);
     }
     let start = now();
+    let first = reads_cycles.then(cycle_reading);
     for _ in 0..IPC_ITERS {
         send(CLI_REQUEST, 1, 0, 0);
         receive(CLI_REPLY);
     }
+    let last = reads_cycles.then(cycle_reading);
     let ticks = now().wrapping_sub(start);
     send(REPORT, ticks, IPC_ITERS, 0);
+    if let (Some(first), Some(last)) = (first, last) {
+        send(
+            REPORT,
+            last.count.wrapping_sub(first.count),
+            last.meaning.to_word(),
+            0,
+        );
+    }
     exit();
 }
 

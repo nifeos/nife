@@ -418,9 +418,11 @@ cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unkn
 # empties, which is how milestone 265's crate check passed by checking zero crates. This loop cannot
 # do that -- an empty `for` list is visible in the diff and in the output, since every iteration
 # echoes its own `==>` line -- so removing a feature here is a deletion a reader can see rather than
-# a silence. Count: 7 features x 2 targets = 14 `==>` lines. `lock_wait` joined on 2026-10-04: it
-# is a measurement build no gate otherwise compiles, and it is the only build that compiles the
-# counting arm of `IrqSafeMutex::lock` and the reaper's timing (kernel/src/lock_wait.rs).
+# a silence. Count: 8 builds x 2 targets = 16 `==>` lines. `lock_wait` is a measurement build no
+# gate otherwise compiles, and it is the only build that compiles the counting arm of
+# `IrqSafeMutex::lock` and the reaper's timing (kernel/src/lock_wait.rs). `bench,cycle_counter_grant`
+# is the one pair: it alone compiles the bench boot's `ipc_rtt_el0_cycles` probe (milestone 101),
+# which neither feature builds by itself.
 #
 # On BOTH ISAs since milestone 41. riscv64 was linted only under `watchdog_probe` before, so the
 # whole riscv hand-over path (`boot_progenitor`) and the console it builds were compiled by
@@ -428,7 +430,7 @@ cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unkn
 # Architectural parity is a gate, not an aspiration (DECISIONS §19 (architectural parity is a
 # tenet)), and that applies to the gate itself.
 for tgt in aarch64-unknown-none-softfloat riscv64imac-unknown-none-elf; do
-    for feat in bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait; do
+    for feat in bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait bench,cycle_counter_grant; do
         echo "==> clippy: kernel --features $feat ($tgt)"
         cargo clippy -p kernel --features "$feat" --target "$tgt" -- -D warnings
     done

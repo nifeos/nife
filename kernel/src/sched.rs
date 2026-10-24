@@ -45,7 +45,10 @@ pub use configure::current_thread_pointer;
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(unused_imports))] // as the function
 pub use configure::grant_cycle_counter;
-#[cfg(feature = "system_tests")]
+#[cfg(any(
+    feature = "system_tests",
+    all(feature = "bench", feature = "cycle_counter_grant")
+))]
 pub use configure::grant_cycle_counter_to_current;
 pub use configure::{
     configure_thread_control_block, configure_thread_control_block_joining,

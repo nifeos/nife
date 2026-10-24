@@ -18,6 +18,11 @@ const EL_SPAWN: u64 = 6;
 const EL_SINK_PRODUCER: u64 = 7;
 const EL_SINK_CONSUMER: u64 = 8;
 
+/// `arg1` for the IPC client when it holds the cycle-counter grant: it reads the counter across its
+/// timed loop and sends a second report. It must equal `IPC_CLIENT_READS_CYCLES` in
+/// `fixtures/src/os_primitives_benchmarker.rs`; the two crates share no header.
+const IPC_CLIENT_READS_CYCLES: u64 = 1;
+
 /// The spawner's untyped budget, in pages: one child plus the shared code frame and scratch tables,
 /// since children are destroyed LIFO and return their pages (§16 (object revocation: reclaim the
 /// objects a process built)). See notes/benchmarks/kernel-bench-harness.md.
@@ -93,6 +98,10 @@ pub(super) fn ctx_switch_el0() {
 /// IPC round-trip latency, measured from EL0 (lmbench's `lat_pipe`): a server and a client that
 /// self-times SEND-then-RECEIVE. The server is spawned first so a request meets a waiting receiver.
 /// Its gap to `ipc_rtt` is roughly the four `svc` traps per round trip.
+///
+/// Under `cycle_counter_grant` the client is also granted the cycle counter and reads it across the
+/// same loop, and a `bench-probe: ipc_rtt_el0_cycles` line follows the row: the round trip in the
+/// counter's own units, read rather than converted (milestone 101). The row itself does not change.
 pub(super) fn ipc_rtt_el0() {
     let Some(image) = crate::trust::require_program("os_primitives_benchmarker") else {
         println!("bench: ipc_rtt skipped (no os_primitives_benchmarker in the initial ramdisk)");
@@ -101,6 +110,15 @@ pub(super) fn ipc_rtt_el0() {
     let request = sched::create_rendezvous();
     let reply = sched::create_rendezvous();
     let report = sched::create_rendezvous();
+
+    // Decided before anything is spawned: a granted read that traps kills the client, and the
+    // report this function waits for would never come.
+    #[cfg(feature = "cycle_counter_grant")]
+    let cycle_refusal = el0_cycle_counter_refusal();
+    #[cfg(feature = "cycle_counter_grant")]
+    let reads_cycles = cycle_refusal.is_none();
+    #[cfg(not(feature = "cycle_counter_grant"))]
+    let reads_cycles = false;
 
     let window = TickWindow::open("ipc_rtt_el0");
     sched::spawn(move || {
@@ -121,11 +139,19 @@ pub(super) fn ipc_rtt_el0() {
     .expect("bench: could not spawn the ipc server");
 
     sched::spawn(move || {
+        #[cfg(feature = "cycle_counter_grant")]
+        if reads_cycles {
+            sched::grant_cycle_counter_to_current();
+        }
         crate::user::run(
             image,
             crate::user::Spawn {
                 arg0: EL_IPC_CLIENT,
-                arg1: 0,
+                arg1: if reads_cycles {
+                    IPC_CLIENT_READS_CYCLES
+                } else {
+                    0
+                },
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE), // slot 0: report the result
@@ -141,6 +167,77 @@ pub(super) fn ipc_rtt_el0() {
     let [ticks, iters, ..] = sched::ipc_receive(report);
     window.close();
     println!("bench: ipc_rtt_el0 {ticks} {iters}");
+
+    #[cfg(feature = "cycle_counter_grant")]
+    match cycle_refusal {
+        Some(why) => println!("bench-probe: ipc_rtt_el0_cycles unavailable ({why})"),
+        None => {
+            let [cycles, meaning, ..] = sched::ipc_receive(report);
+            print_ipc_rtt_el0_cycles(cycles, meaning, ticks, iters);
+        }
+    }
+}
+
+/// Why the `ipc_rtt_el0` client cannot be given a cycle counter whose difference means anything,
+/// or `None` when it can.
+///
+/// One core only, because aarch64 and riscv64 counters are per core and the client may move
+/// between reads on a machine with more; `--real` and `board-image --bench` boot one. On aarch64
+/// the core must have a running `PMCCNTR_EL0`. On riscv64 the kernel's counter must be the `cycle`
+/// CSR itself, which proves firmware lets a lower mode read it. `x86_64`'s TSC is ambient.
+#[cfg(feature = "cycle_counter_grant")]
+fn el0_cycle_counter_refusal() -> Option<&'static str> {
+    if crate::smp::online_cpus().count() != 1 {
+        return Some("more than one core online, and the cycle counters are per core");
+    }
+    #[cfg(target_arch = "aarch64")]
+    if !crate::arch::timer::is_cycle_counter_grantable()
+        || crate::arch::pmu::outcome() != crate::arch::pmu::CycleCounter::Running
+    {
+        return Some("this core has no running PMCCNTR_EL0 to grant");
+    }
+    #[cfg(target_arch = "riscv64")]
+    if !crate::arch::pmu::counts_through_the_cycle_csr() {
+        return Some("the kernel's cycle counter is not the `cycle` CSR a granted U-mode read uses");
+    }
+    None
+}
+
+/// Print the `ipc_rtt_el0` client's own cycle count: per round trip in hundredths, the raw inputs,
+/// and cycles per tick over the same window, which should agree with the `cycles_per_tick` probe
+/// earlier in the boot. A disagreement means the core's clock moved between the two (frequency
+/// scaling), and this line, read across the loop itself, is the one to believe. A second line says
+/// what the client's counter counts, as the client reported it. See
+/// notes/benchmarks/kernel-bench-harness.md.
+#[cfg(feature = "cycle_counter_grant")]
+fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
+    if cycles == 0 || cycles > u64::MAX / 200 {
+        println!("bench-probe: ipc_rtt_el0_cycles unavailable (the counter read {cycles} across the loop)");
+        return;
+    }
+    let per_iter = (cycles * 100).checked_div(iters).unwrap_or(0);
+    let per_tick = (cycles * 100).checked_div(ticks).unwrap_or(0);
+    println!(
+        "bench-probe: ipc_rtt_el0_cycles {}.{:02} per round trip ({cycles} cycles over {iters} \
+         iters; {}.{:02} per tick across the same {ticks} ticks)",
+        per_iter / 100,
+        per_iter % 100,
+        per_tick / 100,
+        per_tick % 100,
+    );
+    let means = match abi::cycle_counter::CycleMeaning::from_word(meaning) {
+        Some(abi::cycle_counter::CycleMeaning::CoreCyclesUserAndKernel) => {
+            "core cycles at EL0 and EL1 (PMCCNTR_EL0, PMCCFILTR_EL0 0)"
+        }
+        Some(abi::cycle_counter::CycleMeaning::CoreCyclesEveryMode) => {
+            "core cycles in every mode (the `cycle` CSR)"
+        }
+        Some(abi::cycle_counter::CycleMeaning::ConstantRateReferenceCycles) => {
+            "constant-rate reference cycles (the TSC), not core cycles"
+        }
+        None => "nothing: the client reported no meaning",
+    };
+    println!("bench-probe: ipc_rtt_el0_cycles_means {means}");
 }
 
 /// `a | b` throughput, measured from EL0: a producer with `WRITE` and a consumer with `READ` on one
