@@ -158,23 +158,14 @@ Four more kinds are read by marker (2026-09-24), in the same grammar:
 - `item`: a `/// Name:` paragraph in the doc of a function, constant, type, field or variant.
 - `module`: a `//! Name:` block in a Rust file that is not a crate root or a program.
 - `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75.
-- `document`: a paragraph of the document opening `Name:`, else the directory's block.
+- `document`: the document's own `Name:` paragraph, else its directory's block.
 
-A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item is
-not tracked and never fails.
+A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item
+never fails.
 
-A document's block is an italic paragraph directly under its title, `*Name: provisional, minted
-<date> (UTC) by <lane>.*`, the shape a directory's README already gives its own (calef, 2026-10-24
-UTC). Adding a note then touches the note and one index line, and no lane appends to a shared
-README. It is a paragraph rather than frontmatter for four reasons. `script/names` already parses
-the paragraph, in every kind. A refusal is prose with backticks and parentheses, which YAML would
-have to quote. GitHub renders frontmatter as a table above the title, where this reads as a line.
-And no note carries frontmatter, where dozens already carried this paragraph.
-
-Until the sweep after milestone 929, `script/names` also reads a README paragraph opening
-`` `stem` Name: `` as that document's block, so pull requests opened before this rule keep passing.
-Where both exist it reads the two together and fails statuses that disagree.
-`helpers/document_name_migrate.py --apply` moves them, and `--check` counts what is left.
+A document's block is an italic paragraph under its title (calef, 2026-10-24 UTC), not frontmatter
+([why](naming/provenance.md#a-documents-block-is-a-paragraph-not-frontmatter)). Until the sweep
+after milestone 929, a README paragraph opening `` `stem` Name: `` is read too.
 
 The refusals are the valuable half. A refused name is visible nowhere else, and the person who most
 needs it is the one about to propose it again.
@@ -205,10 +196,8 @@ Name: provisional. <what was considered>
 - `unrecorded` is a first-class answer. Cite the commit that introduced the name.
 - One block per file, in plain spelling, per milestone 283 (one provenance block per file). The
   parse reads the first block only and cannot see a `Name:` line wearing markdown.
-- A lane never writes `ratified`. Nothing checks that state against calef.
+- A lane never writes `ratified`.
 - The maintainer writes the block at ratification, in the commit that applies the name.
-- A directory under `design/` or `notes/` records its name in its own `README.md`, per §75
-  (directories carry provenance in their own README).
 
 ### The commands
 
