@@ -27,16 +27,16 @@ bounds, permissions and address arithmetic before it returns. A loader that vali
 mapped would have mapped half a bad program by the time it found out. Every later accessor trusts
 that pass.
 
-The per-segment arithmetic a hostile header can weaponize, `p_offset + p_filesz` within the file
-and `p_vaddr + p_memsz` without overflow, is factored into `check_segment_bounds`. It is pure and
-loopless, so Kani proves it panic-free and its result in bounds for every field combination. A
-proof that the whole of `parse` is total did not finish:
+The per-segment arithmetic a hostile header can weaponize, `p_offset + p_filesz` within the file and
+`p_vaddr + p_memsz` without overflow, is factored into `check_segment_bounds`. It is pure and
+loopless, so Kani proves it panic-free and its result in bounds for every field combination. A proof
+that the whole of `parse` is total did not finish:
 [`notes/verification/elf-parser-wall.md`](../verification/elf-parser-wall.md) says why. In short,
 the overlap check is a loop over up to `MAX_PHNUM` (64) headers inside a loop over the same, and
 Kani unrolls it by the linear 64 bound it can see. On top of that, `phoff` and `p_offset` place
-reads at symbolic offsets in a symbolic array. The solver did not return in minutes even with the header count
-pinned to one segment. Totality wants a loop-invariant tool such as Verus, or more of the leaf
-arithmetic factored out. The tests cover the specific hostile files by example.
+reads at symbolic offsets in a symbolic array. The solver did not return in minutes even with the
+header count pinned to one segment. Totality wants a loop-invariant tool such as Verus, or more of
+the leaf arithmetic factored out. The tests cover the specific hostile files by example.
 
 A near-`u64::MAX` `p_memsz` would wrap `vaddr + memsz`. Under the dev profile's overflow checks
 that is a panic, which is a crafted binary halting the kernel. `Error::AddressOverflow` refuses it

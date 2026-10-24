@@ -234,14 +234,23 @@ kernel has one way in rather than two.
 `crates/supervision_protocol` is the tree's only userspace ELF loader. These are the choices its
 doc comments link here.
 
-The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages,
-at the bottom of `address_space_map::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
-window. A window rather than a cursor that only climbs, because the kernel takes scratch pages back
-for the builder. A scratch page maps a frame retyped from the child's region, and destroying that
-region revokes every mapping of its pages (§13 (capability revocation and untyped reclamation)). So
-`map_scratch` wraps at the window's end and asks the kernel, page by page, which addresses are
-free. The size holds every page one builder can have built and not yet reaped, and its page tables
-are a budget a builder can state. The progenitor checks both at compile time.
+The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages, at
+the bottom of `address_space_map::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
+window. `std_runtime_contract`'s three pages sit inside it, but only in a `std` program's space, and
+no `std` program builds children. A window rather than a cursor that only climbs, because the kernel
+takes scratch pages back for the builder. A scratch page maps a frame retyped from the child's
+region, and destroying that region revokes every mapping of its pages (§13 (capability revocation
+and untyped reclamation)). So `map_scratch` wraps at the window's end and asks the kernel, page by
+page, which addresses are free. The size holds every page one builder can have built and not yet
+reaped, and its page tables are a budget a builder can state. The progenitor checks both at compile
+time.
+
+The kernel's page table is the free list. `PageFrame::MAP` refuses a mapped address whole, with
+`BadPointer`, so a refusal means the page is taken and the next is tried. The kernel gives the same
+error for a misaligned or kernel-half address, and neither can occur for a page of the window. Any
+other refusal returns at once with the cursor unmoved. A page that stays mapped for good costs one
+refused probe per lap. `design/roadmap/0604-the-builders-scratch-cursor-is-bounded.md` has the
+progenitor's arithmetic.
 
 A child at the interactive prompt gets three times the default stack
 (`system_initializer::CHILD_STACK_PAGES`), because the shell's redirection path runs in those
@@ -253,7 +262,8 @@ than typed fields, and that is a marked exception. A typed `Option<u64>` field c
 larger, which pushed the install path below `kernel/src/progenitor_stack.rs`'s floor. No capability
 slot is that high, so a sentinel cannot name a real slot by accident.
 
-Every child gets a timebase page, and the loader writes it from the builder's own. A child needs
+On x86_64 and riscv64 every child gets a timebase page, and the loader writes it from the builder's
+own. A child needs
 the number, not the kernel's frame, and the builder already has the number mapped read-only. A
 builder that does not know the rate writes a zeroed page, and the child then refuses rather than
 inherit a number nobody measured (calef, 2026-09-21: only accurate numbers, never hardcoded ones).

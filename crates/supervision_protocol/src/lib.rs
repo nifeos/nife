@@ -141,8 +141,8 @@ const _: () = assert!(
 static SCRATCH_NEXT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(SCRATCH_WINDOW.start);
 
-/// **Map `frame` at the next free page of [`SCRATCH_WINDOW`]**, tables from `own_ut`, read/write if
-/// `writable`; `BadPointer` means "taken", another refusal returns, `Err` after a full lap.
+/// **Map `frame` at the next free page of [`SCRATCH_WINDOW`]**, with page tables from `own_ut`,
+/// read/write if `writable`; `Err` after a full lap. See notes/progenitor-and-loading.md.
 ///
 /// # BUGS
 /// - One thread per builder: the cursor takes no lock, so two building threads waste a probe.
@@ -202,9 +202,11 @@ pub fn give_up_scratch_through(own_space: u64) {
 }
 
 /// **Give up one page this process mapped for itself**: `AddressSpace::UNMAP` of `va` in its own
-/// space, through the capability [`give_up_scratch_through`] named. `true` if the page is gone,
-/// `false` if no capability was named or the kernel refused, and then the page stays mapped until
-/// the child's region is destroyed.
+/// space, through the capability [`give_up_scratch_through`] named: a filled scratch page, or
+/// another window a builder opened onto memory it hands on (the progenitor's view of the shell's
+/// output page, and of two devices' DMA pages). `true` if the page is gone, `false` if no
+/// capability was named or the kernel refused; a scratch page is then taken back when the child's
+/// region is.
 ///
 /// Afterward a write to `va` faults (milestone 95's negative control, `system_tests`'
 /// `running_space_tests`), and [`map_scratch`]'s probe finds the address free.

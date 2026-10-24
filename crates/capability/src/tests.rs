@@ -244,8 +244,8 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 /// `PEAK` is shared by every table in this binary, so a floor cannot pin either half: `>>` for
 /// `<<` in the peak half and `&` for `|` or `^` in the ceiling half survived one (milestone 326
 /// (nobody has been assigned to turn a mutation score upward)). Exactness holds because
-/// `fetch_max` only raises and no other test here reaches 64 of 64; a test that outgrows it fails
-/// loudly.
+/// `fetch_max` only raises and no other test exceeds 64 of 64 (the free-slot edge test ties it,
+/// writing the same word); a test that outgrows it fails loudly.
 #[test]
 fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
     let cap = Cap {

@@ -87,9 +87,9 @@ mutator outside it (`insert`, `insert_at`, `put`, `derive`, `delete`, `delete_ma
 in terms of those two, so a new one cannot forget the bookkeeping: the compiler refuses the field
 access. That is rung one of the ladder in `AGENTS.md`.
 
-The free-slot word has bit `i` set when slot `i` is empty. Set-means-free makes `insert`'s first free
-slot one `trailing_zeros` with no inversion, and keeps bits at and above `N` clear, so a full table
-is a zero word. It replaced a linear scan that LLVM unrolled once per slot, which grew the IPC
+The free-slot word has bit `i` set when slot `i` is empty. Set-means-free makes `insert`'s first
+free slot one `trailing_zeros` with no inversion, and keeps bits at and above `N` clear, so a full
+table is a zero word. It replaced a linear scan that LLVM unrolled once per slot, which grew the IPC
 fastpath with every slot (`script/fastpath-footprint`). The word is a `u64` (milestone 754 (the
 capability table grows to 64 slots)), so a table holds at most 64 slots and a larger one does not
 build. A 64-slot table rounds to 2,064 bytes, eight more than the slots, word and counts need.
@@ -103,10 +103,10 @@ what a table holds, not its capacity. It reads each slot once rather than a `get
 `used` is kept by the doors rather than counted on demand, and `peak` is the largest `used` ever
 held. `peak` never falls: a mark that dropped when the table drained would report what a boot is
 holding, not what it reached. The crate also keeps one global, `PEAK`, packing `peak << 16 |
-ceiling` into an `AtomicU32` so the pair is read from one instant. It lets the kernel's idle loop see
-that the mark moved without walking 256 thread tables under the scheduler lock. `fetch_max` suffices
-because the peak sits in the high half. A `static` cannot be keyed by a const generic, so `PEAK`
-does not say which table set it; the kernel has exactly one instantiation.
+ceiling` into an `AtomicU32` so the pair is read from one instant. It lets the kernel's idle loop
+see that the mark moved without walking 256 thread tables under the scheduler lock. `fetch_max`
+suffices because the peak sits in the high half. A `static` cannot be keyed by a const generic, so
+`PEAK` does not say which table set it; the kernel has exactly one instantiation.
 
 ## The proofs
 
