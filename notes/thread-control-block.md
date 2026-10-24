@@ -53,6 +53,58 @@ declined for the same reason it was for endpoints (19a). One memory rule for the
 family, packing a later placement optimization behind the table, not a slab rebuilt in the
 milestone that deleted the slab.
 
+## What shares the TCB page
+
+A `Thread` sits at the start of its page, and the page's idle space holds two more things: the
+thread's FP/SIMD register file, then its capability table behind its own lock. The saved
+general-purpose state is one stack pointer in the struct. The vector registers are four times its
+size, and they live in the page beside it. Compile-time assertions in `kernel/src/thread.rs` are what keep
+all three inside 4,096 bytes; growing `Thread` past the point where they fit stops the build.
+
+The capability table lives outside the struct for soundness, not layout. The running thread reads
+its own table with `IPC_TABLES` not held. Meanwhile another core holding `IPC_TABLES` may hold a
+`&mut Thread` for the same thread: a revocation sweep's `iter_mut`, or an IPC writing its mailbox.
+A `&mut` asserts that nothing else touches any byte it covers. A lock inside the struct would be
+read by one core under another core's exclusive reference. No reference to the `Thread` covers the
+bytes past its end, which is the same provenance rule the FP register file follows. Its own lock at
+`rank::CAPABILITY_TABLE` keeps the running thread's lookups off the global lock. The order is
+written at the rank in `kernel/src/sync.rs`.
+
+## Fields that are there for a measured reason
+
+- `last_cpu` records the core a thread last ran on, to count migrations. The scheduler's own
+  `PlaceRemote` trace event cannot. A rendezvous wake makes its peer ready on the waker's core, so
+  it is local by construction. On 2026-09-01 (UTC) a four-core IPC soak doing 65,000 round trips a
+  second reported `remote` frozen at 23 while threads moved between cores continuously. The write
+  sits in `schedule()`'s switch. Shipping it cost 5.7% of `ipc_fastpath`'s footprint on aarch64
+  (5,788 to 6,120 bytes), over the bound `script/fastpath-footprint` holds. riscv64 and x86_64 grew
+  4.7% and 4.6%. So it exists only in a `soak_test` build.
+- `placement` records where a thread was placed when it started, written once at creation. A
+  supervisor in the kernel gets the same fact as a return value from the spawn. A userspace
+  supervisor did not do the spawning, so the field gives it a path out through a survey. One store
+  per creation is free where a store per switch was not.
+- `port_range_grant` makes the TSS I/O bitmap lazy. An always-write cost about 2,682 ns a switch.
+  Rewriting only when the incoming thread's grant differs costs one compare on nearly every switch,
+  since one process ever holds a port capability. This lazy form is §121 (x86 port I/O)'s refinement of
+  2026-08-25 (UTC), and binds here.
+- `cycle_counter_grant` costs `sched::schedule` 192 bytes for an instrument nothing can request yet,
+  so the whole mechanism is a measurement build, like the soak.
+- `own_token` holds the thread's queue token while no queue does. It deviates from ruling C's
+  letter, which put the running thread's token in a per-core slot. Round 10's report of milestone
+  139 (drive the unsafe count down) puts that deviation to calef.
+
+## A parked capability in a corpse
+
+`Thread::outgoing_cap` holds a capability a `SEND_CAP` parked while no receiver was waiting. The
+teardown paths `depart`, `finish_blocked_resident` and `reap_region_objects` never clear it. That
+is a latent hazard, not a defect today. `Cap` is `Copy` and lives in the TCB page, so nothing
+leaks. Victims are unlinked before their pages go, so nothing is used after free. Every revocation
+sweep clears a parked capability on `Finished` and `Dead` threads too, so none outlives a revoke.
+Every wake of a parked sender goes through `set_ipc_aborted`, which clears the slot. A future wake
+that skipped it would deliver the parked capability to the supervisor's endpoint. The fix is one
+line in each of the three paths; `finish_blocked_resident` already clears a parked `Reply` through
+`delete_reply_caps_naming`. `notes/confinement-claims.md` row 30 lists the sweeps that clear it.
+
 ## The thread table (`kernel/src/sched/thread_table.rs`)
 
 `Threads` is a generational table of `ThreadControlBlockPointer`s, one per page-resident TCB. The

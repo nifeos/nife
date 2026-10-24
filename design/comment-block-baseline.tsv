@@ -13,15 +13,8 @@
 cap	kernel/	20
 in-body	kernel/	5289
 block	lines
-kernel/src/cap.rs:60	27
-kernel/src/cap.rs:155	26
-kernel/src/cap.rs:204	21
-kernel/src/cap.rs:263	23
-kernel/src/cap.rs:392	22
-kernel/src/cap.rs:564	21
 kernel/src/console.rs:368	32
 kernel/src/console.rs:408	30
-kernel/src/delegation_pause.rs:1	39
 kernel/src/designware_ethernet.rs:1	39
 kernel/src/drivers/gic.rs:1	39
 kernel/src/drivers/gicv3.rs:20	31
@@ -39,28 +32,8 @@ kernel/src/pci.rs:94	31
 kernel/src/pci.rs:201	31
 kernel/src/pci.rs:604	34
 kernel/src/pci.rs:869	26
-kernel/src/retype_fault.rs:1	36
-kernel/src/revoke.rs:1	40
-kernel/src/revoke.rs:45	33
-kernel/src/revoke.rs:443	33
-kernel/src/revoke.rs:651	36
-kernel/src/revoke.rs:792	29
-kernel/src/revoke.rs:829	38
-kernel/src/revoke.rs:874	25
-kernel/src/revoke.rs:930	39
 kernel/src/screen.rs:1	21
 kernel/src/screen.rs:23	23
-kernel/src/thread.rs:1	25
-kernel/src/thread.rs:37	23
-kernel/src/thread.rs:391	27
-kernel/src/thread.rs:588	21
-kernel/src/thread.rs:612	22
-kernel/src/thread.rs:1018	29
-kernel/src/trust.rs:1	29
-kernel/src/user.rs:1	38
-kernel/src/user.rs:173	23
-kernel/src/user.rs:200	25
-kernel/src/user.rs:360	23
 kernel/src/virtio.rs:137	27
 kernel/src/virtio.rs:319	31
 kernel/src/virtio.rs:1021	21
