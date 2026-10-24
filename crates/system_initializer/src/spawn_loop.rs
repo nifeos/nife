@@ -324,7 +324,6 @@ type StdParts = (
 struct DirWiring {
     label: u64,
     window: Option<u64>,
-    bound: Option<Fs>,
     channel: Option<Fs>,
     narrowed: Option<u64>,
     dir_failed: bool,
@@ -1077,7 +1076,6 @@ impl Service<'_> {
         DirWiring {
             label,
             window,
-            bound,
             channel,
             narrowed,
             dir_failed,
@@ -1120,7 +1118,6 @@ impl Service<'_> {
         DirWiring {
             label,
             window,
-            bound: None,
             channel,
             dir_failed: narrowed.is_none(),
             narrowed,
