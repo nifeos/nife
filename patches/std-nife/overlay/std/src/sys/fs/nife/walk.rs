@@ -14,10 +14,10 @@ use super::*;
 /// server (which enforces it again), so a would-be escape is a legible `io::Error` rather than an
 /// `ENOENT` that reads like a missing file. Every refusal is [`io::ErrorKind::InvalidFilename`],
 /// never `PermissionDenied`: no permission was consulted, and no capability designates what was
-/// asked. The message says which case it was: `..` at any position, or a Windows-shaped prefix.
-/// A nested path is a chain of names [`walk`] descends (milestone 122), and a leading `/` is the
-/// root of *this process's* namespace (milestone 47), so `/motd` and `motd` name one file. See
-/// notes/std/fs.md.
+/// asked. Refused, each with its own message: `..` at any position, a Windows-shaped prefix, and a
+/// name that is not UTF-8 or is longer than the page. A nested path is a chain of names [`walk`]
+/// descends (milestone 122), and a leading `/` is the root of *this process's* namespace
+/// (milestone 47), so `/motd` and `motd` name one file. See notes/std/fs.md.
 pub(super) fn count_names(path: &Path) -> io::Result<usize> {
     let mut n = 0;
     for c in path.components() {

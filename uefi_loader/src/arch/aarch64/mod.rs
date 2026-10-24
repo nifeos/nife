@@ -2,12 +2,12 @@
 //!
 //! The kernel's entry contract is U-Boot's `booti` (Linux's Documentation/arch/arm64/booting.rst,
 //! which `kernel/src/arch/aarch64/boot.s` cites): entered at the image's first byte with **the MMU
-//! off**, `x0` = the device tree's physical address and `x1`..`x3` zero, at EL2 or EL1. UEFI hands
-//! over MMU and caches on with an identity map. So the loader copies the firmware's device tree,
-//! adding `/chosen/linux,initrd-*` (`uefi_loader::device_tree_patch`); exits boot services; cleans
-//! and invalidates the data cache to the point of coherency over everything the kernel reads with
-//! its caches off; and turns the MMU and data cache off at its exception level and branches
-//! (`leave_uefi.s`). See notes/x86-uefi-boot/loader-design.md.
+//! off**, `x0` = the device tree's physical address and `x1`..`x3` zero, at EL2 or EL1 (the kernel
+//! drops itself from EL2). UEFI hands over MMU and caches on, identity-mapped. So the loader copies
+//! the firmware's device tree adding `/chosen/linux,initrd-*` (`uefi_loader::device_tree_patch`);
+//! exits boot services; cleans and invalidates the data cache to the point of coherency over all
+//! the kernel reads with its caches off; and turns the MMU and data cache off at its exception
+//! level and branches (`leave_uefi.s`). See notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!
