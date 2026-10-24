@@ -1,12 +1,11 @@
-//! Console input, at EL0: the raw UART receive driver (milestone 19f.4 (run a real workload), raw
-//! since milestone 28 (a solid terminal: the line discipline as a component)).
+//! Console input, at EL0: the raw UART receive driver (step 4 of milestone 19f (run a real
+//! workload), raw since milestone 28 (a solid terminal: the line discipline as a component)).
 //!
 //! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
-//! assembling, echoing and interpreting nothing; editing lives in `line_editor`. Bytes travel up to
-//! 8 per `OPERATION_BYTES` `CALL` (notes/terminal-contract.md), and the `CALL`'s rendezvous is the
-//! flow control. Its whole authority is `WRITE` on the terminal endpoint ([`TERM`]), the receive
-//! interrupt ([`IRQ`]) and the device: the UART registers mapped device-typed on aarch64 and
-//! riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
+//! interpreting nothing. Bytes travel up to 8 per `OPERATION_BYTES` `CALL`
+//! (notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
+//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`IRQ`]) and the device: the
+//! UART registers mapped device-typed on aarch64 and riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
 //! capability: the serial console becomes a userspace driver)). See notes/uart.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always

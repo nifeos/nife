@@ -5,10 +5,9 @@
 //! `arg0` picks where the bytes go. In [`MODE_RING`] they go into the input ring it shares with the
 //! compositor, and that mapping is its power to type (DECISIONS §33 (the compositor's authority is
 //! memory, not messages)): the doorbell it rings is content-free, and focus is the compositor's
-//! decision. In [`MODE_DIRECT`], for a boot with exactly one terminal, it holds one fixed `CALL`
-//! capability to `line_editor`'s served endpoint and sends the
-//! [`line_editor::proto::OPERATION_BYTES`] framing the UART driver uses: narrower authority, not
-//! looser. The two wirings are drawn in notes/line-discipline.md; see also notes/glyphs.md.
+//! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
+//! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
+//! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
 
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.

@@ -2,12 +2,11 @@
 //! virtio-gpu, and a foreign component), the display ladder's rung one).
 //!
 //! It owns the device and the transport and serves [`graphics_contract`] to a client that owns the
-//! pixels and no device, so a hostile client can draw nonsense and nothing more; this process never
-//! draws a pixel. Its DMA region is one `PageFrame` capability for one contiguous run (DECISIONS
-//! §102): page 0 holds the rings and the control buffers, and pages 1.. hold the surface the client
-//! also maps. The kernel registers the whole run as this driver's region, so the shadow-ring
-//! validator and the IOMMU domain both bound every device access to it. Fonts, VT state, scrollback
-//! and input arrive as clients of the contract, never as code in here. See
+//! pixels and no device, so a hostile client can draw nonsense and nothing more. Its DMA region is
+//! one `PageFrame` capability for one contiguous run (DECISIONS §102): page 0 holds the rings and
+//! the control buffers, pages 1.. the surface the client also maps. The kernel registers the whole
+//! run, so the shadow-ring validator and the IOMMU domain bound every device access to it. Fonts,
+//! VT state, scrollback and input arrive as clients of the contract, never as code in here. See
 //! notes/framebuffer-contract.md and notes/frames.md.
 
 //! Name: ratified 2026-08-27 (calef). Renamed from `display` to `gpu_driver`, matching the
