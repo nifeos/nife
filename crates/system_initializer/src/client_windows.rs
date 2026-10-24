@@ -157,7 +157,7 @@ pub(super) fn bound_channel(
 
 /// **A caretaker's `START` words for a channel already bound to its directory**: the rights kept,
 /// the name emptied, which tells `fs_nameset_caretaker` its directory is the bound root and there is
-/// nothing to descend into (milestone 946).
+/// nothing to descend into (milestone 946 (a granted file name can be longer than sixteen bytes)).
 ///
 /// Name: provisional (milestone 946).
 pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {

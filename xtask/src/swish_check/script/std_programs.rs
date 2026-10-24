@@ -71,7 +71,11 @@ pub(super) const LINES: &[Line] = &[
     // **A word naming a file past two words' sixteen bytes** (milestone 946 (a granted file name
     // can be longer than sixteen bytes)). The name rides the grant's set, on a page, so the program
     // is granted that one file and reads it.
-    line(0, "echo the needle in a long name > the-quarterly-report.txt", &[]),
+    line(
+        0,
+        "echo the needle in a long name > the-quarterly-report.txt",
+        &[],
+    ),
     line(
         1,
         "/installed/std-grep needle the-quarterly-report.txt",

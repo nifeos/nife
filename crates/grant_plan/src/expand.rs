@@ -27,7 +27,7 @@ pub const MAX_NAMES: usize = 8;
 /// matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and exceeding it is
 /// the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a set carries").
 ///
-/// Name: provisional (milestone 946).
+/// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const NAME_BYTES: usize = 2 * (MAX_NAME + 1);
 
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
@@ -201,9 +201,7 @@ impl NameSet {
     /// grant.
     fn keep_smallest(&mut self, name: &[u8], is_directory: bool) -> bool {
         // Where it belongs: the first slot holding a name that sorts after it.
-        let at = (0..self.n)
-            .find(|&i| self.name(i) > name)
-            .unwrap_or(self.n);
+        let at = (0..self.n).find(|&i| self.name(i) > name).unwrap_or(self.n);
         let mut kept_all = true;
         while !self.has_room_for(name.len()) && self.n > at {
             self.n -= 1;
@@ -357,9 +355,7 @@ impl<'a> Expander<'a> {
         // Once a match was left out, everything this batch has left out sorts after its last name,
         // and so must every later match it leaves out, or the next batch, which resumes after that
         // last name, would skip one. A match below the last name may still displace it.
-        if self.more
-            && self.set.last().is_some_and(|last| name > last)
-        {
+        if self.more && self.set.last().is_some_and(|last| name > last) {
             return;
         }
         if !self.set.keep_smallest(name, is_directory) {
@@ -959,15 +955,24 @@ mod tests {
         let listing: [(&[u8], bool); 4] = [(&c, false), (&a, false), (&b, false), (b"d", false)];
         let first = batch(b"*", Resume::Start, &listing).unwrap();
         let want: [(&[u8], bool); 2] = [(&a, false), (&b, false)];
-        assert!(first.names.iter().eq(want.iter().copied()), "{:?}", first.names);
+        assert!(
+            first.names.iter().eq(want.iter().copied()),
+            "{:?}",
+            first.names
+        );
         assert!(first.more);
         let second = batch(b"*", first.next().unwrap(), &listing).unwrap();
         let want: [(&[u8], bool); 2] = [(&c, false), (b"d", false)];
-        assert!(second.names.iter().eq(want.iter().copied()), "{:?}", second.names);
+        assert!(
+            second.names.iter().eq(want.iter().copied()),
+            "{:?}",
+            second.names
+        );
         assert!(!second.more);
         // And a long name that displaces held ones for room still leaves out only names after
         // what is kept.
-        let listing: [(&[u8], bool); 4] = [(b"b1", false), (&c, false), (&b, false), (b"b2", false)];
+        let listing: [(&[u8], bool); 4] =
+            [(b"b1", false), (&c, false), (&b, false), (b"b2", false)];
         let first = batch(b"*", Resume::Start, &listing).unwrap();
         let mut held = first.names.iter().map(|(n, _)| n);
         assert_eq!(held.next(), Some(&b"b1"[..]));

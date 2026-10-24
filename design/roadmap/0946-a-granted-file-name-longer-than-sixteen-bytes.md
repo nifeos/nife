@@ -44,11 +44,11 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
 
 - A file the shell opens itself: `wc quarterly-report.txt`, `<`, `>` and `2>`, and a program
   run by its path. Nothing travels but the shell's own `OPEN`, through the file service's page.
-- A word a program hears (§170): the name rides the grant's set, on the page
+- A word a program hears (§170 (how a foreign program is told what to do)): the name rides the grant's set, on the page
   `fs_nameset_caretaker` maps, as every designated name already did.
 - `rm` with a name over two words: `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE` and grants the
   set of that one name, which `rm` sweeps.
-- Where the file server binds badges (milestone 606), a grant carrying a set is bound and then
+- Where the file server binds badges (milestone 606 (a directory walk costs what it does on Linux)), a grant carrying a set is bound and then
   served by `fs_nameset_caretaker` over the bound channel, told with an empty name that the bound
   root is its directory (`client_windows::at_bound_root`). The badge alone would hold the whole
   directory, and the set is what narrows it.

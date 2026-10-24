@@ -8,7 +8,7 @@ use super::*;
 /// The longest file name the shell can name and grant. Duplicated from `filesystem_contract::grant::MAX_NAME`
 /// rather than imported, because `grant_plan` is the shell's parser and must not depend on the filesystem
 /// contract to check a command line; the pair is pinned by a test in each crate so a change to one
-/// without the other fails on the host in milliseconds. Provisional at 255 (milestone 946).
+/// without the other fails on the host in milliseconds. Provisional at 255 (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const MAX_FILE_NAME: usize = 255;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, duplicated from

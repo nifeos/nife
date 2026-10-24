@@ -13,7 +13,7 @@ pub const MAX_NAMES: usize = 8;
 /// [`MAX_NAMES`], for the same stack: a set travels by value through the shell's frames, so what it
 /// costs is its bytes, and holding eight names of [`grant::MAX_NAME`] each would cost eight times
 /// what a set of ordinary names needs. Two of the longest names fit, or eight of 64 bytes. Measured
-/// with milestone 946; the measurement is in notes/glob-grant/xargs.md ("The bytes a set carries").
+/// with milestone 946 (a granted file name can be longer than sixteen bytes); the measurement is in notes/glob-grant/xargs.md ("The bytes a set carries").
 /// Over it is the same refusal as a ninth name, never a truncation.
 ///
 /// Name: provisional (milestone 946).

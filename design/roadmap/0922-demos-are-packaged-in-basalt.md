@@ -13,7 +13,7 @@ needs_person: no
 accepts its digest on all three architectures. The installer then refuses it, because every image
 still carries `least_authority_demo`. Left: running an installed demo, which waits on milestone 909
 alone. The shell opens a program by a path whose last component is `least_authority_demo`'s 20
-bytes (milestone 946), so the name no longer stands in the way ("BUGS" below).
+bytes (milestone 946 (a granted file name can be longer than sixteen bytes)), so the name no longer stands in the way ("BUGS" below).
 
 *(Minted 2026-10-14 (UTC) by lane `milestone/922-demos-are-packaged-in-basalt`, under §297
 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel

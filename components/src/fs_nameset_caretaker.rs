@@ -301,7 +301,7 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
     // through the handle this one request minted. An empty name is a channel the progenitor already
-    // bound to the directory (milestone 946), whose root is the granted directory and whose rights
+    // bound to the directory (milestone 946 (a granted file name can be longer than sixteen bytes)), whose root is the granted directory and whose rights
     // the server holds it to, so there is nothing to descend into.
     let dir = if n == 0 {
         fs::ROOT

@@ -804,7 +804,7 @@ pub(super) struct DirWords {
 /// `Ok` is `(the caretaker's START words, the program's)`: the directory and the
 /// `filesystem_contract::dir` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
 /// `flags`, plus whether the operand rides a name set rather than the words. A name longer than
-/// two words hold (`grant::WORDS_NAME`, milestone 946) does: the program is told
+/// two words hold (`grant::WORDS_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
 /// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
 /// the process decodes the words. Refused with nothing spawned: a second tree, the namespace root,
@@ -873,7 +873,10 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
         ),
         None => (
             (
-                filesystem_contract::grant::spec(filesystem_contract::grant::WHOLE_NAMESPACE, flags),
+                filesystem_contract::grant::spec(
+                    filesystem_contract::grant::WHOLE_NAMESPACE,
+                    flags,
+                ),
                 0,
                 0,
             ),

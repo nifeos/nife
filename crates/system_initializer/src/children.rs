@@ -15,7 +15,7 @@ use super::*;
 /// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` with its name set
 /// (`set_seen`, `spawnproto::NAMESET_BIT`) on a page from the job's `region`. A set only narrows
 /// the directory it names, so it is taken for any program: a program that hears words is granted
-/// the names its words designated, and `rm` a name too long for its `START` words (milestone 946).
+/// the names its words designated, and `rm` a name too long for its `START` words (milestone 946 (a granted file name can be longer than sixteen bytes)).
 /// For a program that hears words, the rights the shell asked for are clamped to what `manifest`
 /// allows (§170 (how a foreign program is told what to do) clause 4), which for unvouched bytes is
 /// read-only. Out of line so its locals stay off the spawn service's frame.

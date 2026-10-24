@@ -33,13 +33,17 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         nameset::encode(&full, &mut buf),
         Some(2 * nameset::MAX_NAMES + each * nameset::MAX_NAMES + 1),
     );
-    assert_eq!(each * nameset::MAX_NAMES, nameset::NAME_BYTES, "the full set meets the bound");
+    assert_eq!(
+        each * nameset::MAX_NAMES,
+        nameset::NAME_BYTES,
+        "the full set meets the bound"
+    );
     assert_eq!(
         2 * nameset::MAX_NAMES + nameset::NAME_BYTES + 1,
         nameset::BYTES,
         "the widest set this contract carries must fit its own buffer exactly",
     );
-    // And the longest name travels in a set (milestone 946), twice over, with room for nothing
+    // And the longest name travels in a set (milestone 946 (a granted file name can be longer than sixteen bytes)), twice over, with room for nothing
     // that would take the set past its bytes.
     let longest = [b'l'; grant::MAX_NAME];
     let two: [(&[u8], bool); 2] = [(&longest[..], false), (&longest[..], true)];
@@ -47,7 +51,11 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     assert_eq!(nameset::iter(&buf[..n]).count(), 2);
     assert!(nameset::contains(&buf[..n], &longest));
     let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAX_NAME + 1];
-    let three: [(&[u8], bool); 3] = [(&longest[..], false), (&longest[..], true), (&spill[..], false)];
+    let three: [(&[u8], bool); 3] = [
+        (&longest[..], false),
+        (&longest[..], true),
+        (&spill[..], false),
+    ];
     assert_eq!(
         nameset::encode(&three, &mut buf),
         None,

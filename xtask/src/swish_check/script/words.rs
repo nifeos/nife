@@ -39,7 +39,11 @@ pub(super) const LINES: &[Line] = &[
     line(0, "echo a quarterly report > quarterly-report.txt", &[]),
     line(1, "wc < quarterly-report.txt", &["1 3 19"]),
     line(1, "wc quarterly-report.txt", &["1 3 19"]),
-    line(0, "caps wc quarterly-report.txt", &["input    quarterly-report.txt"]),
+    line(
+        0,
+        "caps wc quarterly-report.txt",
+        &["input    quarterly-report.txt"],
+    ),
     // **Sequencing and the status** (milestone 67). `least_authority_demo 3` runs and `least_authority_demo` alone is refused at
     // the prompt for the integer its manifest requires, so these three lines cover both arms of the
     // condition table with real commands rather than with a branch written for a gate.

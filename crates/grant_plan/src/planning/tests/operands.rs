@@ -212,10 +212,7 @@ fn a_directory_grant_cannot_be_named_out_of_the_shells_root() {
         (b"rm ..", Refusal::FileNotNameable),
         (b"rm ../motd", Refusal::FileNotNameable),
         (too_long, Refusal::FileNotNameable),
-        (
-            b"rm seventeen-bytes!!/old.txt",
-            Refusal::FileNotNameable,
-        ),
+        (b"rm seventeen-bytes!!/old.txt", Refusal::FileNotNameable),
     ] {
         let Command::Run(r) = parse(line) else {
             panic!()

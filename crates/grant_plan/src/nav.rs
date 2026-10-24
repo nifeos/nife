@@ -26,7 +26,7 @@ pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 /// It is also what keeps a [`Cwd`] small, and the shell carries one by value in every
 /// [`crate::Holdings`] and several in an [`crate::Endowment`].
 ///
-/// Name: provisional (milestone 946).
+/// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const MAX_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
@@ -870,16 +870,33 @@ mod tests {
         assert_eq!(path(b"."), Err(Refused::NotAName));
         let mut long = [b'/'; MAX_NAME + 3];
         long[1..MAX_NAME + 2].fill(b'n');
-        assert_eq!(path(&long[..MAX_NAME + 2]), Err(Refused::NotAName), "/ and one byte too many");
+        assert_eq!(
+            path(&long[..MAX_NAME + 2]),
+            Err(Refused::NotAName),
+            "/ and one byte too many"
+        );
         let mut under = [b'n'; MAX_NAME + 3];
         under[..2].copy_from_slice(b"a/");
-        assert_eq!(path(&under), Err(Refused::NotAName), "a/ and one byte too many");
+        assert_eq!(
+            path(&under),
+            Err(Refused::NotAName),
+            "a/ and one byte too many"
+        );
         // A component as long as a file's name may be is a path, and only standing in it is not.
         assert!(path(b"a/least_authority_demo").is_ok());
         let mut cwd = Cwd::root();
-        assert_eq!(cd(&mut cwd, "seventeen-bytes!!"), Err(Refused::DirectoryNameTooLong));
-        assert_eq!(cd(&mut cwd, "seventeen-bytes!!/a"), Err(Refused::DirectoryNameTooLong));
-        assert!(cwd.is_root(), "a refused descent leaves the shell where it was");
+        assert_eq!(
+            cd(&mut cwd, "seventeen-bytes!!"),
+            Err(Refused::DirectoryNameTooLong)
+        );
+        assert_eq!(
+            cd(&mut cwd, "seventeen-bytes!!/a"),
+            Err(Refused::DirectoryNameTooLong)
+        );
+        assert!(
+            cwd.is_root(),
+            "a refused descent leaves the shell where it was"
+        );
         assert_eq!(cd(&mut cwd, "sixteen-bytes!!!"), Ok(()));
         assert_eq!(path(b"a/b\\c"), Err(Refused::NotAName));
         assert_eq!(path(b"a:b"), Err(Refused::NotAName));
