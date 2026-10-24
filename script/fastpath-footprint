@@ -367,28 +367,32 @@ size = {s: last.get(s, start[s]) - start[s] + 4 for s in start}
 # capability lookup that IS the security check, and the general scheduler re-selection that a
 # hand-written fastpath would be trying to skip.
 #
-# **The optional module segment** is there because a mangled name follows the defining module, not
-# the `pub use` that keeps the Rust path: `ipc_*` are `kernel5sched10rendezvous...`, `current_cap`
-# is `kernel5sched12capabilities...`, and `schedule` and `finish_switch` are
-# `kernel5sched6switch...` (kernel/src/sched/switch.rs). A root whose module is missing here matches
-# nothing and drops out of the root set without a word.
+# **Each root names its own module**, because a mangled name follows the defining module, not the
+# `pub use` that keeps the Rust path: `ipc_*` are `kernel5sched10rendezvous...`
+# (kernel/src/sched/rendezvous.rs), `current_cap` is `kernel5sched12capabilities...`
+# (capabilities.rs), and `schedule` and `finish_switch` are `kernel5sched6switch...` (switch.rs).
+# Each entry below is `<len><module><len><function>` as v0 mangling writes it, and the shape's
+# regex and the guard below are both built from that one list.
 #
 # `schedule` and `finish_switch` are roots even though every IPC root reaches them today, because
-# the closure only follows unconditional direct calls. If a root came to reach them through a
-# conditional branch, a function pointer or an inlined call that stops being a symbol, the walk
-# would lose their bytes while the IPC still ran them. Naming them makes their coverage independent
-# of how a callee happens to be compiled.
+# the closure follows only unconditional direct calls and tail branches. If a root came to reach
+# them through a conditional branch or a function pointer, the walk would lose their bytes while
+# the IPC still ran them. Naming them keeps their bytes in the closure whatever call shape reaches
+# them.
 #
 # **Every root must match a symbol**, checked below, or the run fails. `INLINED` names the two that
 # are `#[inline(always)]` badge-0 wrappers (see `ipc_call_badged` below) and so have no symbol in a
 # release build; they stay in the lists so a build that does emit them still measures them.
 SHAPES = [
     ("ipc_send_receive",
-     re.compile(r"kernel5sched(?:10rendezvous|12capabilities|6switch)?(8ipc_send|15ipc_send_badged|11ipc_receive|8schedule|13finish_switch|11current_cap)")),
+     ["10rendezvous8ipc_send", "10rendezvous15ipc_send_badged", "10rendezvous11ipc_receive",
+      "6switch8schedule", "6switch13finish_switch", "12capabilities11current_cap"]),
     ("ipc_call_reply",
-     re.compile(r"kernel5sched(?:10rendezvous|12capabilities|6switch)?(8ipc_call|15ipc_call_badged|15ipc_receive_cap|9ipc_reply|8schedule|13finish_switch|11current_cap)")),
+     ["10rendezvous8ipc_call", "10rendezvous15ipc_call_badged", "10rendezvous15ipc_receive_cap",
+      "10rendezvous9ipc_reply", "6switch8schedule", "6switch13finish_switch",
+      "12capabilities11current_cap"]),
 ]
-INLINED = {"8ipc_send", "8ipc_call"}
+INLINED = {"10rendezvous8ipc_send", "10rendezvous8ipc_call"}
 # **`ipc_call_badged` is a root because it IS the CALL body** (milestone 599 (a frame per filesystem
 # client channel), 2026-09-26). The syscall's `CALL` dispatches to it, and `ipc_call` became an
 # `#[inline(always)]` wrapper that passes badge 0, so the `ipc_call` symbol no longer exists in a
@@ -510,21 +514,17 @@ ENTRY = {
 }[arch]
 
 shape_totals, shape_syms = {}, {}
-for label, rootre in SHAPES:
-    # Each alternative of the root group on its own, so one root that stops matching (a module
-    # split, a rename) fails the run instead of shrinking the closure inside the 5% band.
-    prefix, group = rootre.pattern.rsplit("(", 1)
-    lost = [alt for alt in group.rstrip(")").split("|")
-            if alt not in INLINED and not any(re.search(prefix + alt, s) for s in size)]
+for label, names in SHAPES:
+    # Each root on its own, so one that stops matching (a module split, a rename) fails the run
+    # instead of shrinking the closure inside the 5% band.
+    lost = [n for n in names
+            if n not in INLINED and not any(re.search("kernel5sched" + n, s) for s in size)]
     if lost:
         print(f"fastpath-footprint: {arch}: {label} root(s) {', '.join(lost)} matched no symbol; "
-              "the module segment or the name moved", file=sys.stderr)
+              "the module or the name moved", file=sys.stderr)
         sys.exit(1)
+    rootre = re.compile("kernel5sched(" + "|".join(names) + ")")
     roots = [s for s in size if rootre.search(s)]
-    if not roots:
-        print(f"fastpath-footprint: {arch}: no {label} root symbols matched; the kernel or the names moved",
-              file=sys.stderr)
-        sys.exit(1)
     seen, stack = set(), list(roots)
     while stack:
         s = stack.pop()
