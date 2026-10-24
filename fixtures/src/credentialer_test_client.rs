@@ -16,6 +16,7 @@
 //!   whether the credential it tried to install works. It must not.
 //! - [`ROLE_PROVISIONER`] runs *before* either, on the **provision** endpoint. It is a role rather
 //!   than a binary, so provisioning and verifying differ by one field of a `Spawn` literal: slot 0.
+//!
 
 //! # What the attacker proves, and what it does not
 //!

@@ -16,6 +16,7 @@
 //! - **`channel::FILE_VA`**: the base of the channel shared with the FS server (a name out, file bytes
 //!   both ways). `filesystem_contract::fs::TRANSFER_PAGES` pages, all of them mapped by this client's wiring,
 //!   because the throughput role asks for the whole of it in one request.
+//!
 
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `fsclient`. Refused `fsclient`
 //! (squished) and `fs_client` (any program that wants files is an FS client, so that name belongs

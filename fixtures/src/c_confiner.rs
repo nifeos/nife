@@ -3,11 +3,11 @@
 //!
 //! 1. Builder: splits a region off its budget per instance and lays `c_shim` out in it, so a single
 //!    `MemoryRegion::DESTROY` reaps a whole instance (§16 (object revocation)).
-//! 2. Supervisor: holds the component's supervision endpoint (§26), receives each death as a
-//!    five-word message, reaps through it (§32 (a supervisor may collect a corpse without being
-//!    able to build one)) and decides whether to restart. The kernel relaunches nothing.
+//! 2. Supervisor: holds the supervision endpoint (§26), reaps each death through it (§32 (a
+//!    supervisor may collect a corpse)) and restarts; the kernel relaunches nothing.
 //! 3. Checker: holds the witness pages in its own address space, so "nothing outside the grant
 //!    changed" is asserted from the other side of an MMU boundary.
+//!
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `cwarden`. Refused `cwarden` and the
 //! whole `warden` family, a synonym this project invented for a pattern that already has a name:
