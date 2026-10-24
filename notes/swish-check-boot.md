@@ -83,10 +83,12 @@ comes from a shell the progenitor starts afterwards.
   one. The negative sentence names the programs it refused.
 - **Its directory grants go through a bound badge** (milestone 606 (walk cost), calef's rulings D
   and T1 of 2026-09-27). Every leg's image carries `redoxfs_server`, whose bytes carry the
-  subtree-grants note. A progenitor that lost the note falls back to a caretaker and says so.
+  subtree-grants note, so the `rm` lines run through the server's own narrowing. A progenitor that
+  lost the note falls back to a caretaker and says so.
 - **It has an entropy service from this machine's source** (milestone 595 (provisional)): a
   virtio-rng on the two `virt` machines, `RDSEED` on `q35`. Without it the `uuid` and
-  `std_exerciser` lines fail as a refused draw several lines on, which says nothing about why.
+  `std_exerciser` lines fail as a refused draw several lines on, which says nothing about why. The
+  negative is the kernel's own refusal, which both of its no-entropy sentences end with.
 
 ## Nothing may die
 

@@ -956,10 +956,11 @@ fn filtered_leg(arch: &str, target: &str) -> bool {
 /// `watch_devices` adds the scanout referee and inbound prober, which only the system suite needs.
 /// QEMU does not answer ARM semihosting under HVF, and the harness reports through it, so the guest
 /// prints its verdict and wedges. Like `run_bench`, this owns the QEMU child and reads the
-/// transcript: `test result: ok.` passes, `[PANIC] ` or `WATCHDOG:` fails, and output ending with
-/// neither fails. The guest's watchdogs bound the leg, so there is no host deadline. The referee
-/// runs on a thread because it presses the keys the keyboard test waits for, and it never touches
-/// the environment. See notes/hvf-leg.md and notes/hvf-leg/semihosting.md.
+/// transcript: `test result: ok.` passes, `[PANIC] ` or `WATCHDOG:` fails, and so does output
+/// ending with neither. The guest's watchdogs still fire (the virtual timer is passed through and
+/// QEMU injects the interrupt), so they bound the leg and there is no host deadline. The referee
+/// runs on a thread, never touching the environment, because it presses the keys the keyboard test
+/// waits for. See notes/hvf-leg.md and notes/hvf-leg/semihosting.md.
 fn hvf_kernel_leg(package: &str, watch_devices: bool) -> (bool, usize) {
     let Some(elf) = kernel_test_elf(package, TARGET, "test --hvf") else {
         return (false, 0);
