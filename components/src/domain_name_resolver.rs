@@ -1,29 +1,14 @@
 //! **The name resolver** (§248 (the name resolver is its own confined program)): host names to
-//! IPv4 addresses for a client holding a grant to ask, and nobody else. A client of `net_stack` and
-//! a server to its own clients; the contract is `crates/domain_name_resolution_contract`, and
-//! `crates/domain_name_system`'s `Query::accept` decides what is believed.
+//! IPv4 addresses for a client holding a grant to ask, and nobody else (notes/name-resolution.md).
 //!
-//! ```text
-//!   spawner ──GRANT (badge 0)──►┌───────────────┐──Stack (socket contract)──► net_stack ──► name server
-//!   client ──RESOLVE (badge B)─►│ domain_name_resolver │
-//!     (its page holds the name, └──────┬────────┘
-//!      and gets the addresses)         └──entropy──► the transaction id
-//! ```
-//!
-//! Slots: 0, its own endpoint for grants and requests (`READ`); 1, `net_stack`'s `Stack`, its whole
-//! network authority (`WRITE`); 2, an untyped budget for the socket page and clients' page tables;
-//! 3, the entropy service (`WRITE`); 4, its own address space, to give up a forgotten client's page
-//! (`WRITE`). The start words ([`domain_name_resolution_contract::endowment`]) name the server and
-//! transport, which the spawner reads from the DHCP lease.
-//!
-//! **A name is judged against the zone its badge was granted before anything is sent**, so a client
-//! granted `nife.test` asking about `example.com` gets [`status::DENIED`] and the network sees
-//! nothing. Only badge 0, the spawner's, can grant; `OPERATION_FORGET` unmaps and deletes a client's
-//! page; each badge's page has its own window, and the name is copied out before it is parsed. A
-//! fresh entropy-drawn id per query, TCP after a truncated UDP reply (or TCP only, when told), and
-//! a datagram from elsewhere or one `Query::accept` refuses is dropped without ending the exchange.
-//! **With no entropy it asks nothing** ([`status::NO_ENTROPY`]): a guessable id is a forger's gift.
-//!
+//! A client of `net_stack` and a server to its own clients: the contract is
+//! `crates/domain_name_resolution_contract`, and `crates/domain_name_system`'s `Query::accept`
+//! decides what is believed. **A name is judged against its badge's granted zone before anything is
+//! sent**, so a client granted `nife.test` asking about `example.com` gets [`status::DENIED`] and
+//! the network sees nothing. Only badge 0, the spawner's, can grant. **With no entropy it asks
+//! nothing** ([`status::NO_ENTROPY`]): a guessable transaction id is a forger's gift. Its slots
+//! and windows are the constants below.
+
 //! # BUGS
 //!
 //! - One request at a time, and `net_stack` serves one too, so an unanswered UDP query stalls every
@@ -58,20 +43,23 @@ use user_mode_runtime::{
     retype_into_page_frame, send_capability,
 };
 
-/// Slot 0: where grants and requests arrive.
+/// Slot 0: its own endpoint, where grants and requests arrive (`READ`).
 const SERVICE: u64 = 0;
-/// Slot 1: the socket contract's endpoint.
+/// Slot 1: `net_stack`'s `Stack`, the socket contract's endpoint and its whole network authority
+/// (`WRITE`).
 const STACK: u64 = 1;
-/// Slot 2: the untyped budget.
+/// Slot 2: the untyped budget, for the socket page and clients' page tables.
 const MEMORY_REGION: u64 = 2;
-/// Slot 3: the entropy service.
+/// Slot 3: the entropy service (`WRITE`), which draws each query's transaction id.
 const ENTROPY: u64 = 3;
-/// Slot 4: our own address space, for `UNMAP` at a forget.
+/// Slot 4: our own address space (`WRITE`), for `UNMAP` at a forget: `OPERATION_FORGET` unmaps
+/// and deletes a client's page.
 const OWN_SPACE: u64 = protocol::endowment::OWN_SPACE_SLOT;
 
 /// Where the socket page is mapped. A private pair page: nobody else knows this address.
 const SOCKET_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
-/// Where client window 0 is mapped; window `i` is `i` pages above it.
+/// Where client window 0 is mapped; window `i` is `i` pages above it. Each badge's page has its
+/// own window, and a name is copied out of it before it is parsed.
 const CLIENT_VA: u64 = address_space_map::pair_page(0x0000_0000_00B0_0000);
 /// The last window, checked against the map at compile time like the first.
 const _: u64 = address_space_map::pair_page(CLIENT_VA + (protocol::GRANTS_MAX as u64 - 1) * PAGE);
@@ -81,10 +69,12 @@ const _: u64 = address_space_map::pair_page(CLIENT_VA + (protocol::GRANTS_MAX as
 const SOCKET: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE) };
 
 /// How many UDP queries one resolve sends before it gives up, a fresh id each. Three, the number
-/// the network time client and the socket test client settled on for a lossy path.
+/// the network time client and the socket test client settled on for a lossy path. A truncated UDP
+/// reply moves the query to TCP; the start words can ask for TCP only.
 const ATTEMPTS: u32 = 3;
 /// How many datagrams one attempt reads looking for its answer, so a flood of forgeries ends the
-/// attempt rather than holding the resolver forever.
+/// attempt rather than holding the resolver forever. A datagram from elsewhere, or one
+/// `Query::accept` refuses, is dropped without ending the exchange.
 const DATAGRAMS_PER_ATTEMPT: u32 = 8;
 
 /// The largest reply over TCP this resolver reads. RFC 7766 allows 65,535 bytes; a host-name lookup
@@ -128,6 +118,8 @@ enum Fail {
     Status(Outcome),
 }
 
+/// The start words ([`domain_name_resolution_contract::endowment`]) name the server and the
+/// transport, which the spawner reads from the DHCP lease.
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
     // SAFETY: one thread, and `_start` is the only code that names `STATE`, once, here.

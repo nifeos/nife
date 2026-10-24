@@ -1,5 +1,8 @@
 # What the wire-format crate proves, and where a solver was the wrong tool
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, after the parent's
+own heading.*
+
 An appendix to [`notes/ntp.md`](../ntp.md). It holds the seven Kani harnesses over
 `crates/network_time_protocol`, and the nanosecond round trip that a model checker could not finish
 and an exhaustive test could.

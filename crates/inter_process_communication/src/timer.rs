@@ -1,23 +1,9 @@
-//! **The timer's decision core** (milestone 106 (a wait that ends on either the interrupt or the
-//! deadline), DECISIONS §147 (a timer a userspace service cannot hold)): one armed deadline per
-//! timer, the cached earliest deadline the tick compares against, and the expiry walk.
+//! The timer's decision core for §147 (a timer a userspace service cannot hold): one armed
+//! deadline per timer, the cached earliest deadline the tick compares against, and the expiry walk.
 //!
-//! §147 ruled that the kernel owns the comparator on every architecture and signals a notification
-//! at the deadline on the holder's behalf: `Timer::ARM(deadline, notification)`. What that needs
-//! from the scheduler is small, and `notes/timed-wait.md` priced it before anything was built: a
-//! deadline word per timer, **one cached `earliest`**, and a walk that runs only when the tick finds
-//! `now >= earliest`. This module is those three things, with no kernel in them, so the arithmetic
-//! can be proved on the host.
-//!
-//! It lives beside the notification because it is a signal source for one, and its proofs have the
-//! same shape (a small symbolic state, one operation, an assertion), so they share this crate's row
-//! in `script/verify`. The module name is **provisional**.
-//!
-//! **The load-bearing invariant is on the cache, not on a timer:** the cached earliest is never
-//! later than any armed deadline. It may be *earlier* (a cancel does not raise it, because raising
-//! it would mean a walk), and that costs one wasted walk at most. Later would be a missed expiry
-//! that nothing ever notices, which is the one bug this structure can have.
-//!
+//! The cached earliest is never later than any armed deadline; it may be earlier, which costs one
+//! walk that fires nothing. See `notes/inter-process-communication.md` ("The timer"). The module
+//! name is provisional.
 
 //! # Examples
 //!
@@ -67,9 +53,8 @@ pub const NEVER: u64 = u64::MAX;
 pub enum Arm<T> {
     /// The deadline is in the future: armed, and the caller lowers the cache with [`lowered`].
     Pending,
-    /// The deadline is at or before `now`: nothing was armed, and the caller signals `T` at once.
-    /// Without this a deadline that passed between the caller reading the clock and the kernel
-    /// taking the lock would still fire, but a tick late, which is the one delay nobody asked for.
+    /// The deadline is at or before `now`: nothing was armed, and the caller signals `T` at once
+    /// rather than a tick late.
     DueNow(T),
 }
 
@@ -92,9 +77,8 @@ impl<T: Copy> Timer<T> {
         Timer { armed: None }
     }
 
-    /// **Arm for `deadline`, replacing whatever was pending.** A replaced deadline is gone: it can
-    /// never fire, which is what "a re-armed timer never fires stale" means, and it is structural
-    /// here because there is one slot.
+    /// Arm for `deadline`, replacing whatever was pending; a replaced deadline can never fire.
+    /// Returns [`Arm::DueNow`] without arming when `deadline` is at or before `now`.
     pub fn arm(&mut self, deadline: u64, target: T, now: u64) -> Arm<T> {
         if deadline <= now {
             self.armed = None;
@@ -146,10 +130,9 @@ pub fn is_due(cached: u64, now: u64) -> bool {
     now >= cached
 }
 
-/// **One step of the expiry walk**: fire the first due timer and return its target, or `None`
-/// when none is due. The kernel calls this in a loop and signals each target between calls, which
-/// is the "rescan rather than list" shape its region sweeps use: no buffer of fired targets, so no
-/// bound on how many can fire in one tick.
+/// One step of the expiry walk: fire the first due timer and return its target, or `None` when
+/// none is due. The kernel calls it in a loop and signals each target between calls, so no buffer
+/// bounds how many fire in one tick.
 pub fn next_due<'a, T: Copy + 'a>(
     timers: impl Iterator<Item = &'a mut Timer<T>>,
     now: u64,

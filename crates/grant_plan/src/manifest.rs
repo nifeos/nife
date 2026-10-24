@@ -2,9 +2,8 @@
 //! the slots the progenitor endows at, `Manifest`, `StartupContract`, and the region a `std` image is built
 //! in.
 //!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
+//! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -31,16 +30,9 @@ pub enum OutputDeclaration {
     /// [`Bytes`](OutputDeclaration::Bytes) **and a second byte stream** for this program's own
     /// diagnostics, in the capability table slot named here (DECISIONS §67).
     ///
-    /// This is what `2>` binds to, and the slot number is why it is a declaration rather than
-    /// Unix's fd 2 with a capability underneath. Nothing in this system agrees in advance that any
-    /// number means anything; the program says where its second stream goes, `caps` prints it, and a
-    /// program that says nothing has no second stream to name.
-    ///
-    /// **The slot is high and out of the way on purpose**, which is `abi::fault::FAULT_EP_SLOT`'s
-    /// reasoning applied a second time: a child's ordinary grants fill from zero upward and how many
-    /// there are depends on the wiring (`date` gets a clock from the progenitor and none from the guest test
-    /// harness), so a low number would move under the program and it would probe the wrong slot. A
-    /// number nothing else can reach is the same number in every wiring.
+    /// This is what `2>` binds to: the program says where its second stream goes, `caps` prints it,
+    /// and a program that says nothing has no second stream to name. The slot is high and out of
+    /// the way so it is the same in every wiring; see notes/program-manifest.md ("The named slots").
     BytesAndDiagnostics {
         /// The capability table slot the diagnostic endpoint is inserted into.
         slot: u64,
@@ -86,23 +78,14 @@ pub enum InputDeclaration {
     /// The program reads an input stream and cannot do anything without one. A line that gives it
     /// none is [`Refusal::InputRequired`](crate::Refusal::InputRequired) **at the prompt**, which is a check Unix cannot make.
     Required {
-        /// **Whether this program's output may begin before its input has ended.**
+        /// **Whether this program's output may begin before its input has ended.** `wc` counts to
+        /// end of stream and then prints one line, so it is `false`; a filter that transforms as it
+        /// reads is `true`.
         ///
-        /// `wc` counts to end of stream and then prints one line, so it is `false`. A renderer or a
-        /// filter that transforms as it reads is `true`, and the difference is not a performance
-        /// note: it decides whether **this shell** can run the program at all.
-        ///
-        /// A sink message is a rendezvous `SEND` and a process has exactly one wait point (no
-        /// select and no poll. Milestone 106 (a wait that ends on either the interrupt or the
-        /// deadline) added a timer and milestone 151 (notification objects) a notification binding, but a `SEND` still
-        /// blocks on its one receiver alone). So a shell that is feeding a stage cannot also be
-        /// receiving from it, and a stage that writes while it reads blocks against a shell that is
-        /// still writing. Both stop, and the prompt never comes back.
-        ///
-        /// A program that declares `false` is a **barrier**: it absorbs the whole stream before it
-        /// answers, which lets the shell finish feeding before anything comes back. One barrier
-        /// anywhere in a chain is enough, which is why `mdr page.md | wc` runs and `mdr page.md`
-        /// does not. See [`check_chain`](crate::check_chain) and notes/pipes.md.
+        /// It decides whether this shell can run a line at all: a `SEND` blocks on its one receiver,
+        /// so a shell feeding a stage cannot also receive from it. A `false` stage is a barrier that
+        /// absorbs the whole stream first, and a chain needs one ([`check_chain`](crate::check_chain)).
+        /// See notes/pipes/one-wait-point.md.
         writes_while_reading: bool,
     },
 }
@@ -187,49 +170,27 @@ impl ShortOptions {
 /// **The capability table slot a declared diagnostic stream lands in** (DECISIONS §67), for the programs that
 /// declare one at all.
 ///
-/// It is a constant here rather than a number each manifest picks, and that is not a retreat to an
-/// ambient convention: what the manifest declares is **whether** there is a second stream, and the
-/// slot is a placement detail every declarer may as well share. What matters is that a program that
-/// declares nothing has no slot and no stream, which is where the model differs from fd 2.
-///
-/// **Eight**, which is above every ordinary grant (a child's are inserted from zero and the most
-/// any manifest asks for is four) and below `abi::fault::FAULT_EP_SLOT` at fifteen. Out-of-the-way
-/// is load-bearing: how many low slots a child gets depends on the wiring, so a low number would
-/// move under the program. `abi::thread_control_block::CAP_INSERT`'s explicit target is what puts it there, and it
-/// exists already, for the fault endpoint, for exactly this reason.
+/// One constant every declarer shares: the manifest declares whether there is a second stream, and
+/// a program that declares none has no slot. Eight, above every ordinary grant, placed by
+/// `abi::thread_control_block::CAP_INSERT`'s explicit target. See notes/program-manifest.md ("The
+/// named slots").
 pub const DIAGNOSTICS_SLOT: u64 = 8;
 
 /// **The capability table slot a process-domain capability lands in** (milestone 126), for the programs that
 /// declare [`Manifest::domain`].
 ///
-/// Placed rather than taken from the next free slot, for exactly the reason above: how many low
-/// slots a child gets depends on what else the line granted it, and `ps` reads a fixed number. Seven
-/// sits below [`DIAGNOSTICS_SLOT`] and above every ordinary grant, so the two named slots read as one
-/// small block a person can hold in their head.
-///
-/// A number is not a right. What it means to hold this slot is decided by the capability the progenitor puts
-/// in it, and a program spawned without the declaration holds an empty slot here and is refused by
-/// the kernel rather than shown an empty domain.
+/// Seven, just below [`DIAGNOSTICS_SLOT`], placed for that constant's reason. A program spawned
+/// without the declaration holds an empty slot here and is refused by the kernel rather than shown
+/// an empty domain.
 pub const DOMAIN_SLOT: u64 = 7;
 
 /// **The capability table slot a client view of the entropy service lands in** (milestone 111), for
 /// the programs that declare [`Manifest::entropy`].
 ///
-/// Nine, one past [`DIAGNOSTICS_SLOT`], so the three named slots stay one small contiguous block a
-/// person can hold in their head. Placed rather than taken from the next free slot for the reason
-/// the other two are: how many low slots a child gets depends on what else the line granted it, and
-/// a program that reads a fixed number needs that number not to move.
-///
-/// **It clears the shell's own table as well as a child's**, which the other two named slots never
-/// had to: the progenitor hands the shell up to seven positional capabilities (slots 0 through 6), so a
-/// number below seven would have collided with the shell's clock on a boot with a filesystem and a
-/// second directory grant. Nine is above every one of them and far below
-/// `abi::fault::FAULT_EP_SLOT`.
-///
-/// A number is not a right. What it means to hold this slot is decided by the capability the progenitor puts
-/// in it, and a program spawned without the declaration holds an empty slot here: its first `CALL`
-/// answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered` reads as `None` rather than
-/// as a count.
+/// Nine, one past [`DIAGNOSTICS_SLOT`], placed for that constant's reason and above the shell's own
+/// seven positional capabilities. A program spawned without the declaration holds an empty slot
+/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered`
+/// reads as `None`. See notes/program-manifest.md ("The named slots").
 pub const ENTROPY_SLOT: u64 = 9;
 
 /// **The capability table slot a client view of the network stack lands in** (milestone 590
@@ -248,14 +209,9 @@ pub const NETWORK_SLOT: u64 = 10;
 /// some.
 ///
 /// The progenitor places the **same frame** it endows every such child with here, `READ` only, and
-/// maps it at [`SHELL_CONFIGURATION_VIRTUAL_ADDRESS`]. The same frame is the point: a preview that printed values from a
-/// copy of the defaults would agree with the child by coincidence and drift from it the first time
-/// either changed, while a second holder of one page cannot disagree with the first.
-///
-/// Twenty-one, one under `spawnproto::RUN_UNVOUCHED_SLOT`, for that constant's reason: a named
-/// slot is probed at `_start`, before the shell has allocated anything, so the slot holds exactly
-/// what its builder placed. A shell built by anything else (a `login` session, a kernel test role)
-/// finds it empty and says it cannot see the values, which is true.
+/// maps it at [`SHELL_CONFIGURATION_VIRTUAL_ADDRESS`], so the preview cannot drift from the child.
+/// A shell built by anything else (a `login` session, a kernel test role) finds it empty and says it
+/// cannot see the values. See notes/program-manifest.md ("The named slots").
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 pub const SHELL_CONFIGURATION_SLOT: u64 = 21;
@@ -272,7 +228,7 @@ pub const SHELL_CONFIGURATION_VIRTUAL_ADDRESS: u64 = 0x0000_0000_00d0_1000;
 /// **Where a program that declares [`Manifest::installer`] finds the installer endpoint**
 /// (milestone 809 (the package client becomes a program), DECISIONS §270 (a package manager holds
 /// an installer endpoint, not the spawn endpoint)). Fifteen, one past [`SYNC_SLOT`], for
-/// [`ENTROPY_SLOT`]'s reasons, and above `std_runtime_contract`'s ten fixed slots, so the same
+/// [`ENTROPY_SLOT`]'s reasons, and above `std_runtime_contract`'s fixed low slots, so the same
 /// number in either layout. `WRITE` alone: the holder may send a request and may not receive
 /// another's or pass the endpoint on.
 ///
@@ -341,15 +297,10 @@ pub const SYNC_SLOT: u64 = 14;
 /// the clock and config pages."*).
 ///
 /// The ruling in one value. Of the authorities the progenitor endows from a manifest rather than
-/// from the line (`clock`, `domain`, `config`, `entropy`, `network`, and since milestone 805
-/// `reboot`), an unvouched child gets the two read-only pages and none of the rest: never the
-/// process domain, the network, entropy, the reboot object or the file service. Everything else it holds is what the caller delegated, which is the output
-/// alone: [`image_manifest`](crate::image_manifest) refuses unvouched bytes whose note asks the line to designate more.
-///
-/// Where the two pages land, for a native child: slot 0 the output, slot 1 the clock page (mapped
-/// read-only at the address `date` reads), slot 2 the configuration page (at the address
-/// `printenv` reads). The bytes' own declaration is not consulted; a program asking for more finds
-/// the slot empty.
+/// from the line, an unvouched child gets the two read-only pages and none of the rest. Everything
+/// else it holds is what the caller delegated, the output alone (slot 0, then the clock page and
+/// the configuration page, for a native child). The bytes' own declaration is not consulted, and
+/// [`image_manifest`](crate::image_manifest) refuses one that asks the line to designate more.
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26).
 pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
@@ -399,18 +350,11 @@ pub enum ProgramArgumentDeclaration {
     /// The program takes no argument; supplying one is [`Refusal::ProgramArgumentForbidden`](crate::Refusal::ProgramArgumentForbidden).
     Forbidden,
     /// **The program hears the line's words as its argv, as bytes** (milestone 205 (how a foreign
-    /// program is told what to do), DECISIONS §170). Everything typed after the program's name, up
-    /// to the first operator, reaches it as one argument per word with its quotes taken off,
-    /// preceded by the name itself as `argv[0]`. Nothing is classified: an option letter the shell
-    /// has never heard of is the program's business, not a refusal, because §170 ruled that these
-    /// bytes carry no authority. What a word may reach is decided by the grants alone, so a
-    /// manifest declaring this declares no positional grant (`a_program_that_hears_words_places_no_positional_grant`).
-    ///
-    /// Only a program on the `std` layout can read an argv ([`StartupContract::Std`]); see [`argv`](crate::argv) for how
-    /// the page is assembled. Name: provisional (2026-09-26).
-    ///
-    /// **A word that names something here is granted it, as the [`WordGrant`] says** (§170 clauses
-    /// 2 to 5, milestone 205's designation half): see [`expand::Designation`](crate::expand::Designation) for which words those are.
+    /// program is told what to do), DECISIONS §170). Every word after the program's name, up to the
+    /// first operator, reaches it unquoted after `argv[0]`, unclassified, since §170 ruled these
+    /// bytes carry no authority; such a manifest declares no positional grant. A word that names
+    /// something is granted it as the [`WordGrant`] says ([`expand::Designation`](crate::expand::Designation)).
+    /// Only a `std` program can read an argv ([`argv`](crate::argv)). Name: provisional (2026-09-26).
     Words(WordGrant),
 }
 
@@ -422,18 +366,14 @@ impl ProgramArgumentDeclaration {
 }
 
 /// **What a word that names an existing file is granted** (§170 (how a foreign program is told what
-/// to do) clause 2, and clause 3's create), declared by a program that hears words. The field §170
-/// calls the manifest's `words`, carried inside [`ProgramArgumentDeclaration::Words`] so a program that hears no words
-/// cannot declare one.
+/// to do) clause 2, and clause 3's create): §170's `words`, carried inside
+/// [`ProgramArgumentDeclaration::Words`] so a program that hears no words cannot declare one.
 ///
-/// Every variant grants the named names and nothing else in their directory, with the walk below a
-/// named directory (`filesystem_contract`'s `DESCEND`), because a program handed `src` means to
-/// read what is in it. **An unvouched program gets [`WordGrant::ReadOnly`] whatever it declares**
-/// (clause 4): [`UNVOUCHED_STD_MANIFEST`] is read-only. A mark on a word that widens it is clause 4's
-/// other half, and its spelling is not ruled, so none is built.
-///
-/// §170's third shape, "the file's directory", is not a variant: a line says it by naming the
-/// directory, `.` included (calef's N1 ruling, 2026-09-27T06:27Z: `rg pattern .`).
+/// Every variant grants the named names and nothing else, with the walk below a named directory
+/// (`DESCEND`), since a program handed `src` means to read what is in it. An unvouched program gets
+/// [`WordGrant::ReadOnly`] whatever it declares (clause 4); a widening mark is unruled and unbuilt.
+/// "The file's directory" is not a variant: a line names it, `.` included (calef's N1 ruling,
+/// 2026-09-27T06:27Z: `rg pattern .`).
 ///
 /// Name: provisional (2026-09-27).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -480,19 +420,10 @@ pub enum MemoryGrantDeclaration {
 
 /// A program's expectation about a **file grant**, milestone 31 (a capability shell: designation is authorization) phase 2.
 ///
-/// **The manifest declares the direction; the command line designates the file.** That split is the
-/// SHILL shape and it is deliberate: a program knows whether it needs to write (that is a property of
-/// what it does), while *which* file is the human's business and belongs on the command line. So
-/// `wc report.txt` reads and `tee report.txt` writes, with no flag either way, and the authority is
-/// still exactly what the line says because the program's half is fixed and published.
-///
-/// This enum is also what decides that a bare token *is* a file at all. Milestone 47 removed the
-/// `file:` prefix on the finding that it announced the visible half of the grant and was silent on
-/// the half that matters: `least_authority_demo 5 extra` is refused because `least_authority_demo`'s manifest says `Forbidden`,
-/// not because of any prefix. The manifest was doing all the work.
-///
-/// One file, not a list. A program that needs two files needs a manifest that says so, and that is a
-/// later widening (`Required { count }`) rather than something to leave ambiguous now.
+/// The manifest declares the direction and the command line designates the file, so `wc
+/// report.txt` reads and `tee report.txt` writes with no flag either way. This enum also decides
+/// that a bare token is a file at all. One file, not a list: a program needing two needs a manifest
+/// that says so. See notes/program-manifest.md ("The file endowment declares a direction").
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -506,27 +437,11 @@ pub enum FileGrantDeclaration {
 
 /// A program's expectation about a **directory grant**, milestone 47's `rm -r`.
 ///
-/// [`FileGrantDeclaration`] narrows a directory capability down to one file. This is the rung above: the program
-/// is granted a capability to **a whole directory**, because what it does cannot be expressed as one
-/// file. `rm` is the case that forced it: removing a name is an operation on the *directory that
-/// holds it*, and no per-file capability carries the authority to do it.
-///
-/// # The grant is the directory the name is in, and that is wider than the name
-///
-/// `rm logs/old` hands `rm` a capability to `logs`, not to `old`, because that is what the
-/// filesystem contract can express: `UNLINK` resolves a name under a directory handle. So the
-/// program could remove any name in that directory, and it removes the one it was told. That is a
-/// real over-grant, it is declared rather than hidden, and it is the same gap globbing closes: the
-/// answer is a directory capability attenuated to a **name set** (the caretaker `fs_file_caretaker`
-/// already is for one name), which is a later lane. Until then the honest statement is that `rm` is
-/// granted the directory, and `caps rm -r logs` prints exactly that before anything happens.
-///
-/// # Why the rights are not a mask here
-///
-/// The fields say what the program will *do*, not what the wire calls it. `filesystem_contract::dir`'s
-/// six-rung ladder is the filesystem contract's vocabulary, and translating into it belongs to the
-/// shell, which holds both contracts; keeping it out of `grant_plan` is [`MAX_FILE_NAME`](crate::MAX_FILE_NAME)'s rule, that a
-/// command line can be checked without linking the filesystem.
+/// The rung above [`FileGrantDeclaration`]: the program is granted a capability to the directory
+/// that holds what the command names, because removing a name is an operation on that directory.
+/// The planned grant attenuates it to the names designated ([`DirectoryGrant`](crate::DirectoryGrant)).
+/// The fields say what the program will do, not the filesystem contract's rights: the shell
+/// translates, so a command line is checked without linking the filesystem.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -564,12 +479,9 @@ pub struct Manifest {
     /// numbered ([`Endowment::short_options`](crate::Endowment::short_options)). Empty for a program that takes none, which is every program
     /// but `rm` today.
     ///
-    /// The manifest owns this for the same reason it owns the file's direction: which options exist
-    /// is a property of what the program does, and the shell must be able to refuse `-q` at the
-    /// prompt rather than pass a letter along for the program to ignore. An option is **not**
-    /// authority by itself, which is why the parser may collect letters before it knows the
-    /// program; what makes one matter here is that `subtree_option` lets one *widen a grant*, and
-    /// that widening is checked and printed before anything is spawned.
+    /// The manifest owns this so the shell refuses `-q` at the prompt rather than pass a letter
+    /// along to be ignored. An option is not authority by itself, but `subtree_option` lets one
+    /// widen a grant, and that widening is checked and printed before anything is spawned.
     ///
     /// Name: ratified 2026-10-18 (calef: "Yes").
     pub short_options: ShortOptions,
@@ -595,90 +507,45 @@ pub struct Manifest {
     /// path for it; a program that finishes in one step (`least_authority_demo`) declares `false` and is simply
     /// waited on. "Granted by default to interactive programs" is expressed here, per program.
     pub interruptible: bool,
-    /// **Endowed a read-only mapping of the wall clock** (milestone 51's wiring).
-    ///
-    /// The odd one out in this struct, and deliberately: every other field is about something the
-    /// command line can designate, and this is about something it cannot. A clock is not a name a
-    /// person types, so there is no token to place and no refusal to write; what the manifest is for
-    /// here is telling **The progenitor** which children to endow, and telling a person reading `caps date`
-    /// that the authority exists at all.
-    ///
-    /// It is a *read-only* mapping and nothing else, which is the whole of DECISIONS §43's split
-    /// made concrete: a program declaring this can read the time and has no object through which it
-    /// could set or propose one. See notes/date.md.
+    /// **Endowed a read-only mapping of the wall clock** (milestone 51 (wall-clock time)), with no
+    /// object through which to set or propose the time (DECISIONS §43 (reading the clock is a
+    /// page)). The first of the fields for what a command line cannot designate; see
+    /// notes/program-manifest.md ("What the line cannot name") and notes/date.md.
     pub clock: bool,
     /// **Endowed a view over the supervision domain it is spawned into** (milestone 126,
     /// notes/process-view.md).
     ///
-    /// [`clock`](Manifest::clock)'s twin, and for the same reason: a process domain is not a name a
-    /// person types, so there is no token to place and no refusal to write. What this field does is
-    /// tell **The progenitor** which children to endow, and tell a person reading `caps ps` that the authority
-    /// exists and how wide it is.
-    ///
-    /// It lands in [`DOMAIN_SLOT`] carrying `READ`, which is what `abi::rendezvous::SURVEY` takes. A
-    /// program that does not declare it holds nothing there, and the kernel refuses its survey
-    /// loudly instead of answering with an empty list: **that difference is the whole feature**, and
-    /// `ps` prints the two apart.
+    /// [`clock`](Manifest::clock)'s family. It lands in [`DOMAIN_SLOT`] carrying `READ`, which is
+    /// what `abi::rendezvous::SURVEY` takes; without it the kernel refuses the survey, and `ps`
+    /// prints that apart from an empty domain.
     pub domain: bool,
     /// **Endowed a read-only mapping of the inert-configuration page** (milestone 47's
     /// environment-variable fork, DECISIONS §111; `crates/environment_contract`).
     ///
-    /// [`clock`](Manifest::clock)'s twin again, for the identical reason: `TZ`/`LANG`/`TERM` are
-    /// not something a command line designates, so there is no token to place and no refusal to
-    /// write. What this field does is tell **The progenitor** which children to endow, and tell a person
-    /// reading `caps printenv` that the authority exists at all. Before this field existed, the
-    /// page was granted **unconditionally** to a `std` program by a kernel test harness standing
-    /// in for a real customer (`system_tests/src/user/std_service.rs`); this is the manifest declaration
-    /// that section's own "Not yet built" line named, now with a real, `no_std`, shell-spawnable
-    /// customer ([`Program::Printenv`](crate::Program::Printenv)) declaring it.
-    ///
-    /// It is a *read-only* mapping, the same rung [`clock`](Manifest::clock) uses: a program
-    /// declaring this can read the three inert values and has no object through which it could
-    /// change what a shell hands its children.
+    /// [`clock`](Manifest::clock)'s family: a read-only mapping of the three inert values
+    /// (`TZ`, `LANG`, `TERM`), with no object through which to change what a shell hands its
+    /// children. [`Program::Printenv`](crate::Program::Printenv) declares it.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
     pub configuration: bool,
     /// **Endowed a client view of the entropy service** (milestone 111; DECISIONS §44,
     /// `crates/entropy_contract`, notes/entropy.md).
     ///
-    /// The fourth member of [`clock`](Manifest::clock)'s family and the first one that is an
-    /// *endpoint a service answers on* rather than a page: randomness is not a name a person types,
-    /// so there is no token to place and no refusal to write, and what this field does is tell
-    /// **The progenitor** which children to endow and tell a person reading `caps uuid` that the program
-    /// draws random numbers at all.
-    ///
-    /// It lands in [`ENTROPY_SLOT`] carrying `WRITE`, which on an endpoint is the right to `CALL`
-    /// and nothing else: a declaring program may ask the service for bytes and may not receive
-    /// another client's request, and it holds no `GRANT`, so it cannot hand randomness to anything
-    /// it spawns. A program that does not declare it holds an empty slot there and its first
-    /// `CALL` comes back as a kernel error, which `entropy_contract::delivered` reports as `None`
-    /// rather than as a short reply: **that difference is the whole feature**, and it is what
-    /// `disk_partitioner` already turns into `R_NO_ENTROPY` instead of writing a GPT full of
-    /// counter-derived ids.
-    ///
-    /// **Ambient entropy would be ambient authority.** A shell that handed every child a random
-    /// source would make a program's dependence on randomness invisible, which is the one property
-    /// the service was built to have (DECISIONS §44).
+    /// [`clock`](Manifest::clock)'s family, as an endpoint rather than a page. It lands in
+    /// [`ENTROPY_SLOT`] carrying `WRITE` alone, the right to `CALL`: no other client's request, and
+    /// no `GRANT` to pass it on. Without it the first `CALL` fails and
+    /// `entropy_contract::delivered` reports `None`. Ambient entropy would be ambient authority
+    /// (DECISIONS §44 (entropy is a capability)); see notes/program-manifest.md ("What the line
+    /// cannot name").
     pub entropy: bool,
     /// **Endowed a client view of the network stack** (milestone 590 (provisional), the booted
     /// system starts its network stack; `crates/socket_contract`, `components/src/net_stack.rs`).
     ///
-    /// [`entropy`](Manifest::entropy)'s shape exactly, one service over: an endpoint the progenitor
-    /// holds because it built the service, placed at [`NETWORK_SLOT`] carrying `WRITE` for a child
-    /// that declares it, and at no slot for one that does not. A network is not a name a person
-    /// types, so nothing on the command line can ask for it; the declaration is the whole of who
-    /// may reach the network from this prompt, and `caps` prints it before anything runs.
-    ///
-    /// `WRITE` is the right to `CALL` the socket contract. It is not `READ` (which would let a
-    /// client take another client's request off the endpoint) and not `GRANT` (which would let it
-    /// hand the network to anything it spawns). **It reaches no other program's sockets**: each
-    /// socket is a capability the stack hands back when it is opened (§255 (each socket is its own
-    /// capability)), so this front door makes sockets and names none. Until milestone 649 (every
-    /// client of a network stack shares its socket numbers) a socket was a small integer every
-    /// client shared, and this comment said two declaring programs could each operate the other's
-    /// sockets. No inbound authority rides with it: the stack the progenitor
-    /// builds holds `socket_contract::NO_LISTEN_GRANT`, so a declaring program can connect out and
-    /// cannot listen.
+    /// [`entropy`](Manifest::entropy)'s shape, one service over: `WRITE` at [`NETWORK_SLOT`], the
+    /// right to `CALL` the socket contract, and the declaration is the whole of who may reach the
+    /// network from this prompt. It reaches no other program's sockets, each being its own
+    /// capability (§255 (each socket is its own capability)), and the stack holds
+    /// `socket_contract::NO_LISTEN_GRANT`, so a declaring program can connect out and cannot listen.
     ///
     /// **Provisional field name.**
     pub network: bool,
@@ -686,13 +553,10 @@ pub struct Manifest {
     /// `crates/machine_statistics_contract`): a read-only mapping at that crate's `PAGE_VA`, and
     /// the frame's capability at [`MACHINE_SLOT`] carrying `READ`.
     ///
-    /// [`clock`](Manifest::clock)'s family again: how the box is doing is not something a command
-    /// line designates, so this tells the progenitor which children to endow and tells a person
-    /// reading `caps free` that the program sees the machine. §225 ruled it granted to every login
-    /// by default and withholdable by the owner. The page travels with the session: the shell
-    /// holds it at [`spawnproto::MACHINE_PAGE_SLOT`] and sends it with the request, so a session
-    /// the owner withheld it from (`system_initializer::GRANT_MACHINE_PAGE`) spawns programs that
-    /// print that they cannot see the machine rather than a machine of zero bytes.
+    /// [`clock`](Manifest::clock)'s family. §225 grants it to every login by default, withholdable
+    /// by the owner (`system_initializer::GRANT_MACHINE_PAGE`): the shell holds it at
+    /// [`spawnproto::MACHINE_PAGE_SLOT`] and sends it with the request, so a withheld session's
+    /// programs say they cannot see the machine.
     ///
     /// **Provisional field name.**
     pub machine: bool,
@@ -706,19 +570,11 @@ pub struct Manifest {
     /// **Endowed the reboot object** (milestone 805 (`reboot` at the prompt), DECISIONS §251
     /// (restarting the machine is a kernel object the progenitor hands out)), at [`REBOOT_SLOT`].
     ///
-    /// The authority to restart the machine. The kernel grants the progenitor the one there is, and
-    /// the progenitor endows it to a declaring child and to nothing else, so what this field does is
-    /// tell **The progenitor** which children to endow and tell a person reading `caps reboot` that
-    /// the program can restart the machine. A program spawned without the declaration holds an
-    /// empty slot there, and the kernel refuses its invoke with `abi::Error::NoSuchSlot`.
-    ///
-    /// **It does not sync anything.** The kernel syncs nothing (§251), and the progenitor does
-    /// not either: the program syncs for itself through [`Manifest::sync`], which it declares
-    /// beside this.
-    ///
-    /// **Exactly one program declares it, and no image can** ([`image_can_carry`](crate::image_can_carry)), so "only one
-    /// program can restart the machine" is a fact about this table rather than about what somebody
-    /// installed. An unvouched child never gets it ([`UNVOUCHED_MANIFEST`]).
+    /// The authority to restart the machine: the kernel grants the progenitor the one there is.
+    /// Without the declaration the kernel refuses the invoke with `abi::Error::NoSuchSlot`. It syncs
+    /// nothing (§251); the program syncs through [`Manifest::sync`]. Exactly one program declares
+    /// it, and no image can ([`image_can_carry`](crate::image_can_carry)). See
+    /// notes/program-manifest.md ("What the line cannot name").
     ///
     /// **Provisional field name.**
     pub reboot: bool,
@@ -728,11 +584,8 @@ pub struct Manifest {
     /// verb. It names no directory and reaches no file. The progenitor makes one for the job from
     /// a client window the job holds until it is reaped, places it, and keeps no copy.
     ///
-    /// Only `reboot` declares it, and no image can ([`image_can_carry`](crate::image_can_carry)): a sync stalls every
-    /// client's queue, which is a lever this tree has handed out only to the program about to
-    /// restart the machine. A boot with no writable filesystem leaves the slot empty, and a boot
-    /// whose file server could not make one refuses the spawn rather than start `reboot` unable to
-    /// sync.
+    /// Only `reboot` declares it, and no image can ([`image_can_carry`](crate::image_can_carry)),
+    /// because a sync stalls every client's queue.
     ///
     /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
     /// request and its capability, and flush for the device cache only.").
@@ -741,15 +594,10 @@ pub struct Manifest {
     /// DECISIONS §270 (a package manager holds an installer endpoint, not the spawn endpoint)), at
     /// [`INSTALLER_SLOT`], and the endpoint its answers come back on at [`INSTALLER_REPLY_SLOT`].
     ///
-    /// The installer endpoint is the progenitor's spawn endpoint, badged for this one job and
-    /// narrowed to `WRITE`: on it the progenitor serves `spawnproto`'s activation request for
-    /// install, remove and rollback, and refuses every other request, `vouch` and a spawn
-    /// included. So the holder can change what is installed and cannot run anything, and it holds
-    /// no `GRANT`, so it cannot hand the endpoint to anything it spawns. **Only the owner's console
-    /// grants it**: the progenitor places it only for a request that arrived on the unbadged spawn
-    /// endpoint, which the boot prompt alone holds (DECISIONS §221 (the boot prompt is the owner's
-    /// console)), so a `login` session cannot pass it on. No image can declare it
-    /// ([`image_can_carry`](crate::image_can_carry)).
+    /// The progenitor's spawn endpoint, badged for this job and narrowed to `WRITE`: it serves
+    /// install, remove and rollback and refuses every other request, so the holder can change what
+    /// is installed and cannot run anything. Only the owner's console grants it (DECISIONS §221 (the
+    /// boot prompt is the owner's console)); no image can declare it. See notes/program-manifest.md.
     ///
     /// **Provisional field name** (the block's draft was `activation`).
     pub installer: bool,
@@ -765,15 +613,10 @@ pub struct Manifest {
     /// item 6 of milestone 809 (the package client becomes a program)): a directory grant on
     /// `activation/indexes`, placed where a line's own directory grant would go, and a read-only
     /// copy of the image's index sources (`package_index::SOURCES_ENTRY`) mapped at
-    /// `std_runtime_contract::INDEX_SOURCES_PAGE`. The directory holds the index copy a package
-    /// manager writes, which the progenitor then installs from: ruling I2 of 2026-10-06 (calef, "I
-    /// would think jig"), under which the progenitor trusts the copy in a directory only the owner's
-    /// console grants. See [`IndexStoreDeclaration`].
-    ///
-    /// Only the owner's console grants it, as [`installer`](Manifest::installer), and no image may
-    /// declare it ([`image_can_carry`](crate::image_can_carry)). A line that designates a
-    /// directory of its own (`jig install ./x.nifepkg`) is given that one instead: the `std` layout
-    /// has one directory slot.
+    /// `std_runtime_contract::INDEX_SOURCES_PAGE`. The progenitor installs from the copy a package
+    /// manager writes there (ruling I2; see notes/program-manifest.md). Only the owner's console
+    /// grants it and no image may declare it; a line that designates its own directory
+    /// (`jig install ./x.nifepkg`) gets that one instead, the `std` layout having one directory slot.
     ///
     /// **Provisional field name.**
     pub indexes: IndexStoreDeclaration,
@@ -783,11 +626,9 @@ pub struct Manifest {
     /// beneath it, the index store, so one grant shows what is installed and what the index copy
     /// offers. `jig list -u` holds it, to say which installed packages the index offers newer.
     ///
-    /// Knowledge, not authority: read only, so nothing installed or vouched for changes through
-    /// it. It is still the owner's console's to grant, as [`indexes`](Manifest::indexes) is,
-    /// because what is installed is the owner's to show. No image may declare it
-    /// ([`image_can_carry`](crate::image_can_carry)), no note may carry it, and a verb holding it
-    /// holds no index store ([`narrow_by_verb`](crate::narrow_by_verb)), since there is one slot.
+    /// Read only, and still the owner's console's to grant, as [`indexes`](Manifest::indexes) is.
+    /// No image or note may carry it, and a verb holding it holds no index store
+    /// ([`narrow_by_verb`](crate::narrow_by_verb)), since there is one slot.
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane `milestone/809-jig-list-u`. Not
     /// `activation`, which was the draft spelling of [`installer`](Manifest::installer).
@@ -859,7 +700,7 @@ impl IndexStoreDeclaration {
 pub enum StartupContract {
     /// Capabilities in order, the output first. Every program in `components/` and `fixtures/`.
     Native,
-    /// `std_runtime_contract`'s eight fixed slots, its three shared pages, and a heap carved from
+    /// `std_runtime_contract`'s fixed slots, its shared pages, and a heap carved from
     /// [`STD_REGION_PAGES`]. A program built with `-Zbuild-std` for a `*-unknown-nife`
     /// target.
     Std,
@@ -869,22 +710,11 @@ pub enum StartupContract {
 /// (milestone 595 (provisional)). The shell prints it in `caps` and the progenitor spends it, so it
 /// is here, where both read it.
 ///
-/// **One region, not a heap beside a job**, and the reason is the reap rather than tidiness. A
-/// region that has been `SPLIT` cannot be `DESTROY`ed until its children are, so a heap split off
-/// the job's region would stop `job_undertaker` reclaiming the job; and a heap split off the pool
-/// beside it would be a second region nothing reclaims at all. So the child's address space, image,
-/// stack and TCB come out of this region first, and the same region, narrowed to `WRITE`, is the
-/// budget at `std_runtime_contract::MEMORY_REGION_SLOT` its allocator maps from. Its heap is what
-/// the build left, and one reclaim returns all of it.
-///
-/// Sized as the 256 pages of heap the kernel test harness has given every `std` program since
-/// milestone 27 (Rust `std` on the native ABI), `BUDGET_PAGES` in `system_tests/src/user/std_service.rs`, which is the budget
-/// `std_exerciser`'s transcript is proven under, plus 128 for the build: about 40 pages of image,
-/// 32 of stack, the page tables for the windows a `std` child touches, and a caretaker if a
-/// directory grant rides along. It is not a measurement of any program's high-water mark, and it is
-/// nowhere near what `rg` over a real tree needs. A budget a person sizes at the prompt would be
-/// `--mem`'s shape, which no `std` manifest declares yet; §170 (how a foreign program is told what
-/// to do) gave a `std` program its words and not a budget.
+/// One region, so one reclaim returns all of it: the child is built from it first, and the same
+/// region, narrowed to `WRITE`, is its allocator's budget at
+/// `std_runtime_contract::MEMORY_REGION_SLOT`. 256 pages of heap, the test harness's
+/// `BUDGET_PAGES`, plus 128 for the build; not a measured high-water mark. See
+/// notes/grant-expression/grant-plan-crate.md ("The `std` region").
 ///
 /// Name: provisional.
 pub const STD_REGION_PAGES: u64 = 256 + 128;
@@ -893,14 +723,10 @@ pub const STD_REGION_PAGES: u64 = 256 + 128;
 /// package's worth ([`spawnproto::IMAGE_MAX_PAGES`]) for a program that declares
 /// [`Manifest::installer`] (milestone 809 (the package client becomes a program)).
 ///
-/// A package manager reads a whole package before it sends it (it checks the digest first), and
-/// what it sends are frames of its own: it maps one run of pages, reads the package into it, and
-/// hands the progenitor a page of that run at a time (`abi::page_frame::SLICE`). So the run is
-/// both its buffer and its frames, and it lives in the program's own region, which is built from
-/// the progenitor's image pool rather than the job pool: what it holds is a package's bytes,
-/// exactly what that pool is sized for, and the progenitor's copy of the same package is carved
-/// beside it. The shell's own staging pages ([`spawnproto::SHELL_BUDGET_PAGES`]) are left for a
-/// file run by its path.
+/// A package manager reads a whole package into one run of its own pages before it sends it a page
+/// at a time, so the run is its buffer and its frames. It comes from the progenitor's image pool,
+/// which is sized for a package's bytes. See notes/grant-expression/grant-plan-crate.md ("The `std`
+/// region").
 ///
 /// Name: provisional.
 pub const fn named_std_region_pages(m: &Manifest) -> u64 {

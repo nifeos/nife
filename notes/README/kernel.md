@@ -22,6 +22,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
 - [The thread pointer, and the one asymmetry below its ABI](../thread-pointer.md): each thread's own `TPIDR_EL0`, `tp` or `FS` base, set by the kernel.
+- [The IPC decision core](../inter-process-communication.md): the rendezvous, notification, timer and futex state machines the kernel wraps, and how their proofs are shaped. Name provisional.
 - [Notification objects](../notification-objects.md): a doorbell bound to a thread, and why the receive tag lives in `w4`.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.
@@ -36,6 +37,8 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Can a userspace process hold a timer?](../timer-capability.md).
 - [Trusted init: measuring the boot program, and then everything the progenitor loads](../trusted-init.md).
 - [The progenitor, and loading a program from userspace](../progenitor-and-loading.md).
+- [The system initializer](../system-initializer.md): what the progenitor builds, how it measures
+  what it loads, and the spawn service.
 - [Auditing the hand-written arch assembly](../arch-audit.md): a by-hand audit of the least-verified TCB code.
 - [The L4 lessons, audited against this kernel](../l4-lessons.md): the kernel checked against L4's twenty-year retrospective.
 - [How the log service drains the kernel's ring](../kernel-ring-drain.md): milestone 342 (the kernel and the `console` server drive one UART)'s proposal, a read-only frame plus a notification against a read method on a new object, with the seven questions answered.

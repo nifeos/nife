@@ -12,7 +12,4 @@ timer behavior, and BUGS. These files carry the evidence its prose budget has no
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `semihosting` Name: provisional.
-- `five-assertions` Name: provisional. After the parent's own heading.
+Each stem here is named for its content, and calef names files.

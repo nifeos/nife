@@ -22,10 +22,3 @@ detail lives here too, moved whole when the page was split to fit its budget.
 *Name: provisional, minted 2026-10-03 (UTC) by the `maintainer/radon-footprint-experiment` lane,
 for the directory and the `executed-footprint` stem. Naming is an architect's;
 `script/names --unratified` lists each stem.*
-
-- `layout-control` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `session-2026-09-04` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `why-it-runs-on-radon` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `background`.
-- `two-build-procedure` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `reading-a-two-build-session` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.
-- `limitations` Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.

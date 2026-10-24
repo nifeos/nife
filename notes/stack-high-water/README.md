@@ -15,9 +15,4 @@ the rest.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `secondary-guard-page` Name: provisional.
-- `stack-frame-sizes` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `frame-cost`.
-- `per-ipc-depth` Name: provisional.
-- `limitations` Name: provisional.
+Each stem here is named for its content, and calef names files.

@@ -1,5 +1,7 @@
 # The spawn job's `Gone`: a miscompiled yield, not a race
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `spawn-destroy-gone`.*
+
 Under HVF on aarch64, `script/job-mix --hvf --release --smp 4` failed every sweep. Risk 4's lane
 (#1661) found it on 2026-10-05: nine runs out of nine, seven refused with `-11` (`Gone`) in a spawn
 job and two wedged. It tagged the refusal to the spawn job's `DESTROY` of its child region, saw a

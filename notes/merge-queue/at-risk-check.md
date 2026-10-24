@@ -1,5 +1,7 @@
 # `helpers/at-risk-check.sh`, in full
 
+*Name: provisional. After the script it documents.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md). It holds why the at-risk watch was built,
 how it reads a worktree, why it never acts, and why it was folded into the trunk watcher and then
 unfolded.

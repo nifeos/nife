@@ -1,5 +1,7 @@
 # Stack high water: the BUGS list in full
 
+*Name: provisional.*
+
 An appendix to [notes/stack-high-water.md](../stack-high-water.md), whose BUGS section lists each
 entry in one line.
 

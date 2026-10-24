@@ -1,36 +1,13 @@
 //! **Is device DMA coherent with the CPU's caches on this machine? Measured, not assumed.**
 //!
-//! Milestone 655 (DMA on a non-coherent RISC-V machine) records that every riscv64 machine nife
-//! has run on keeps DMA coherent, and that a machine which does not needs cache maintenance around
-//! every DMA buffer. radon has never done DMA under nife, so for radon that sentence was an
-//! inference. This probe turns it into a measurement, once per bring-up, before any frame is
-//! trusted.
-//!
-//! # What the reading says, and why it is not enough
-//!
-//! Every published source treats the JH7110 as coherent (notes/designware-ethernet.md has the
-//! citations): mainline Linux's `arch/riscv/Kconfig` selects `ARCH_DMA_DEFAULT_COHERENT`, so a
-//! RISC-V device is coherent unless its tree says `dma-noncoherent`; mainline's `jh7110.dtsi` says
-//! it nowhere, where its predecessor's `jh7100.dtsi` says it on `/soc`; radon's own vendor tree
-//! says it nowhere and marks its USB controller `dma-coherent`. That is three sources agreeing on
-//! what a tree says, and none of them is the bus. A probe costs one frame.
-//!
-//! # The probe
-//!
-//! The controller is put in MAC loopback, so nothing depends on a cable or a link partner. Then,
-//! with ordinary cached stores and nothing but the barrier the data plane already uses:
-//!
-//! 1. the receive ring is posted ([`crate::DataPlane::start`]);
-//! 2. receive buffer 0 is filled with [`POISON`] and **read back**, so a write-back cache that the
-//!    device does not snoop is holding the poison when the device writes the frame;
-//! 3. one frame ([`probe_frame`]) is queued for transmission;
-//! 4. the caller polls receive descriptor 0's ownership bit for up to [`WAIT_US`], then reads the
-//!    channel status register: the device's own account of what it did.
-//!
-//! The two accounts are then compared ([`classify`]). The comparison is what makes this a
-//! measurement rather than a smoke test: a non-coherent machine fails it in a way that says
-//! *which direction* is not coherent, because the device's status register is read through MMIO,
-//! which no cache stands in front of.
+//! Once per bring-up, before any frame is trusted, with the controller in MAC loopback and only
+//! ordinary cached stores and the data plane's barrier: post the receive ring, fill receive buffer
+//! 0 with [`POISON`] and **read it back** (so a write-back cache the device does not snoop holds
+//! the poison when the device writes), queue [`probe_frame`], poll receive descriptor 0 for up to
+//! [`WAIT_US`], then read the channel status register. [`classify`] compares the two accounts; the
+//! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
+//! fails in a way that names the direction. See notes/designware-ethernet.md, "Is radon's DMA
+//! coherent? Yes, by measurement".
 
 use crate::{
     CRC_BYTES, DataPlane, RDES3_OWN, RX_ENTRIES, Region, RxVerdict, TDES3_OWN, Tails, TxError,

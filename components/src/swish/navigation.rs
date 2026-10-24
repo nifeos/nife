@@ -3,9 +3,6 @@
 //! `ls`, `mkdir`, `bind` and `touch`, and pattern expansion, the one place a pattern becomes a
 //! set. See notes/shell-navigation.md.
 //!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
-//!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
 
@@ -31,19 +28,13 @@ pub(super) struct Nav {
     /// for `dir::ALL` from a narrower capability could not `cd` at all. See notes/shell-navigation.md.
     pub(super) rights: u64,
     /// **What this shell holds, as the planner sees it**: where it stands (`holds.cwd`, a path in
-    /// the one tree it presents), the names it has bound (`holds.binds`; `bind` is milestone 47
-    /// (navigation and naming), and a bound name is a value rather than a capability, so no
-    /// cspace slot is spent minting one), and, when it holds two trees, where the second is
-    /// mounted (`holds.second`).
-    ///
-    /// **Kept whole rather than assembled on demand**, because the resolver reads it on every
-    /// walk: building an 800-byte `Holdings` in each walking frame overflowed the globbing
-    /// witness's stack, which is the frame-size budget `glob_grant_tests` records.
-    ///
-    /// `holds.second` is `Some` only in a wiring that told this shell it holds two trees: the
-    /// two-tree witness ([`two_trees`]), and the boot shell on a machine with an NVMe disk, which
-    /// finds the disk tree at `spawnproto::MOUNTED_TREE_SLOT` and mounts it at `/disk`
-    /// (milestone 834 (ioping on nife and Linux)).
+    /// the one tree it presents), the names it has bound (`holds.binds`, values rather than
+    /// capabilities, so no cspace slot is spent), and where a second tree is mounted
+    /// (`holds.second`, `Some` only for the two-tree witness [`two_trees`] and for the boot shell
+    /// that finds an NVMe disk tree at `spawnproto::MOUNTED_TREE_SLOT` and mounts it at `/disk`,
+    /// milestone 834 (ioping on nife and Linux)). Kept whole because the resolver reads it on
+    /// every walk: an 800-byte `Holdings` built per walking frame overflowed the globbing witness's
+    /// stack, the frame budget `glob_grant_tests` records.
     pub(super) holds: grant_plan::Holdings,
     /// `handles[i]` is the directory capability for level `i + 1`; level 0 is [`fs::ROOT`], the
     /// capability the rendezvous itself designates.
@@ -220,26 +211,15 @@ impl Nav {
         self.walk_steps(p.is_from_root(), p.steps())
     }
 
-    /// [`Nav::walk`] with the lead of a path rather than the whole of it: the same walk, stopping
-    /// one component short, which is what every verb that acts on a *name* needs.
+    /// [`Nav::walk`] stopping one component short, which every verb that acts on a *name* needs.
     ///
-    /// **The path is resolved first, as a path, and then opened.** [`grant_plan::Holdings::anchor`]
-    /// says where the steps start (where the shell stands, a bound name's position, or the root)
-    /// and [`Cwd::apply`] applies them, which is where `..` is answered and where `..` past the
-    /// root is refused with nothing sent. [`grant_plan::Holdings::locate`] then says which tree
-    /// serves the result and where inside it, and the walk opens that position one `OPENDIR` at
-    /// a time from that tree's own root, because the FS contract takes a single component per
-    /// request and nothing here walks a path.
-    ///
-    /// That is milestone 154's one-tree presentation in one place: `..` from a mount point is its
-    /// parent in the first tree, because that is what the path says, and a path through the mount
-    /// point is opened on the second tree's endpoint and no other. A bound name misdirects a path
-    /// and cannot manufacture a boundary, since `..` past it is the same arithmetic on the same
-    /// path a direct walk would do.
-    ///
-    /// **Depth safety.** [`Cwd::apply`] refuses a path deeper than [`nav::MAX_DEPTH`], and a
-    /// position inside a mounted tree is never deeper than the path it came from, so
-    /// [`Walk::tmp`]'s fixed capacity is never at risk.
+    /// The path is resolved first, then opened: [`grant_plan::Holdings::anchor`] says where the
+    /// steps start, [`Cwd::apply`] applies them (refusing `..` past the root with nothing sent, and
+    /// a path deeper than [`nav::MAX_DEPTH`], which bounds [`Walk::tmp`]), and
+    /// [`grant_plan::Holdings::locate`] says which tree serves the result. The walk opens it one
+    /// `OPENDIR` at a time from that tree's root, since the FS contract takes one component per
+    /// request. So `..` from a mount point is its parent in the first tree, and a bound name can
+    /// misdirect a path but not manufacture a boundary (milestone 154; notes/shell/the-program.md).
     pub(super) fn walk_steps(&mut self, from_root: bool, steps: &[Step<'_>]) -> Result<Walk, Say> {
         let mut place = Cwd::root();
         let rest = self.holds.anchor(from_root, steps, &mut place);
@@ -404,19 +384,12 @@ impl Nav {
     }
 
     /// **`bind <target> <name>`**: name a position this shell already reached some other way, so
-    /// `/<name>/...` reaches it too (milestone 47, "`bind` is not blocked on a mount table. It is
-    /// blocked on a second grant"; milestone 154 supplied the second grant, [`nav::Bindings`] is
-    /// the mechanism it unblocked). `target` is resolved through [`Nav::plan_path`], exactly as
-    /// any other operand is, which is itself bind-aware, so binding a name under an existing bind
-    /// composes rather than needing a special case.
-    ///
-    /// **A builtin, [`Nav::mkdir`]'s category**: it mints no capability, spawns nothing, and needs
-    /// no more than the directory capability this shell already holds. A value is filed under a
-    /// name; nothing is opened and nothing is kept.
-    ///
-    /// **A bound position is a path in the one tree**, so a bound name can point through a mount
-    /// point, and [`grant_plan::Holdings::bind`] refuses a name that would hide the path to one
-    /// (milestone 154).
+    /// `/<name>/...` reaches it too (milestone 47; [`nav::Bindings`] is the mechanism milestone 154's
+    /// second grant unblocked). `target` resolves through the bind-aware [`Nav::plan_path`], so a
+    /// bind under a bind composes. A builtin like [`Nav::mkdir`]: it mints no capability, spawns
+    /// nothing, and files a value under a name. A bound position is a path in the one tree, so it
+    /// can point through a mount point, and [`grant_plan::Holdings::bind`] refuses a name that
+    /// would hide the path to one (milestone 154).
     pub(super) fn bind(&mut self, target: &[u8], name: &[u8]) -> Say {
         if self.dir.is_none() {
             return Say::NoDirectory;
@@ -521,17 +494,13 @@ impl Nav {
 // ---- expansion: the one place a pattern becomes a set (milestone 47's globbing lane) ----
 
 impl Nav {
-    /// **Expand one pattern token against the directory its leading path names.**
-    ///
-    /// This is the only function in the shell that turns a pattern into names, and both callers go
-    /// through it: `echo` (which prints the set) and the grant planner (which grants it). That is
-    /// what makes "the expansion you see is the grant" a property of the code rather than a promise
-    /// two call sites are trusted to keep.
-    ///
-    /// It needs `ENUMERATE` on the directory and nothing more, which is the rung the ladder already
-    /// separates out (DECISIONS §47): expanding a pattern is listing a directory, so it costs the
-    /// authority to list a directory. A shell that may not enumerate gets the server's `EPERM` here
-    /// rather than a quietly empty set, which would be `§42`'s silent degradation exactly.
+    /// **Expand one pattern token against the directory its leading path names**: the only function
+    /// that turns a pattern into names, for `echo` (which prints the set) and the grant planner
+    /// (which grants it) alike, so the expansion you see is the grant. It needs `ENUMERATE` and
+    /// nothing more (DECISIONS §47 (a directory capability carries six rights, and a child can
+    /// never exceed its parent)), and a shell that may not enumerate gets the server's `EPERM`
+    /// rather than a quietly empty set, which would be the silent degradation §42 (a filesystem
+    /// declares what it offers and must be truthful) forbids.
     pub(super) fn expand(&mut self, token: &[u8]) -> Result<NameSet, Say> {
         if self.dir.is_none() {
             return Err(Say::NoDirectory);

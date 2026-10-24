@@ -11,12 +11,11 @@ rendezvous, which is the loss this ordering exists to prevent: a signal delivere
 waiting must not be overtaken by a sender that arrived later.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..0d91560bc 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -277,11 +277,11 @@ impl<T: Node> Rendezvous<T> {
+@@ -263,11 +263,11 @@ impl<T: Node> Rendezvous<T> {
      /// sender), then collect a queued sender, otherwise `me` joins the receiver queue (and the
-     /// caller should block it). Safe, for [`send`](Self::send)'s reason.
+     /// caller should block it).
      pub fn receive(&mut self, me: Unqueued<T>) -> Receive<T> {
 -        if self.pending > 0 {
 +        if let Some(sender) = self.senders.pop_front() {
