@@ -212,42 +212,18 @@ XpressRICH root complex is a different host bridge (no `pci-host-ecam-generic` n
 board-side follow-up, and this driver is written to need only a working enumeration and a BAR from
 it.
 
-## The DMA-escape attacker and the client windows
+## The DMA escape test
 
-The confinement test needs a driver that tries to escape, and the attacker is this exact server
-differing by one field: the physical address it puts in a PRP. So the attack tests the IOMMU rather
-than a straw man. It is the NVMe twin of `block_driver`'s two virtio attacker roles (milestone 261
-(the NVMe driver leaves the kernel), milestone 202 (every confinement test is a ritual until
-somebody breaks the confinement and watches it fail)). `start_dma_escape` in the kernel's wiring
-writes a magic word and a victim's physical address into the transfer buffer before the server
-runs. The server reads them before its readiness transfer, which reuses that page. The victim is a
-raw number read out of shared memory, exactly the authority an escaping driver would fabricate from
-nothing. The test's point is that holding the number buys the controller no reach the IOMMU did not
-grant it. The role is compiled only with the `confinement_attackers` feature, which only `cargo
-xtask test` turns on, so a shipped server has neither the check nor the attack. The zeroed buffer
-of a real boot is not the only thing standing between it and the attack.
+[`non-volatile-memory-express/the-dma-escape-test.md`](non-volatile-memory-express/the-dma-escape-test.md)
+carries the test that aims a confined server's controller outside its region, and its attacker
+role.
+
+## The client windows
 
 Each client stages in the transfer window its badge names (milestone 834 (ioping on nife and
 Linux)). A client maps only its own window, and the server answers one request at a time, so two
 clients staging at once touch different pages. A badge no client was given is refused before
 anything is staged.
-
-## The DMA escape test
-
-`a_confined_el0_server_cannot_dma_outside_its_region` is the storage twin of
-`display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu` and of `block_driver`'s two
-virtio attacker roles. The headline test asserts `confined_by_iommu`, which is a claim the boot
-made rather than one it attacked: the decorative assertion milestone 202 (every confinement test is
-a ritual until somebody breaks the confinement and watches it fail) was minted against. Here an EL0
-server points the controller at a frame outside its region, in both directions. Milestone 202's
-convention holds: a claim, a test and a replayable falsification, whose patch widens the
-controller's IOMMU domain over the victim so the escape lands.
-
-The proof is the IOMMU fault and an untouched canary, not the controller's completion status.
-QEMU's NVMe model may answer a DMA it could not perform with an error or by dropping it, and the
-GPU and virtio escape tests anchor on the fault for the same reason. A CPU read of the victim
-bypasses the IOMMU, so the kernel can read the canary while the device's view of that frame is
-unmapped. The canary is the assertion the patch flips.
 
 ## BUGS
 

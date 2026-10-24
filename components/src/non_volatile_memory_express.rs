@@ -246,7 +246,7 @@ pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // `kernel/src/user/non_volatile_memory_express_service.rs` writes `[ESCAPE_MAGIC, victim_phys]`
     // into the transfer buffer's first two `u64`s before this runs; a real boot's is zeroed. Read
     // before the readiness transfer, which reuses transfer page 0. See
-    // notes/non-volatile-memory-express.md, "The DMA-escape attacker and the client windows".
+    // notes/non-volatile-memory-express/the-dma-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
     if DATA.r64(TRANSFER_OFF) == non_volatile_memory_express::ESCAPE_MAGIC {
         let victim = DATA.r64(TRANSFER_OFF + 8);
