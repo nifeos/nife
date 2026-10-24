@@ -61,6 +61,27 @@ Neither the datasheet nor the driver documents an SP 800-90B-class test. Whether
 needs one before trusting these bytes for anything security-shaped is undecided. It is an
 architect's call, and no section in `design/decisions/` records it yet.
 
+## The kernel's wiring
+
+`kernel/src/user/entropy_service.rs` gives the TRNG driver less authority than any other entropy
+backend: a request endpoint it receives on, a readiness endpoint it sends on once, and one page of
+device memory. That page is the first `0x1000` of the binding's `0x4000` register window, mapped
+device-typed. `jh7110_entropy::regs` reaches only `0x68`, and a driver that cannot name a register
+cannot touch it. It gets no DMA page, because the device writes nothing to memory. It gets no `Irq`
+capability, because the driver polls. And it gets no `Virtio` capability, because there is no
+transport. With no DMA there is nothing for an IOMMU to confine, which is a narrower attack surface
+rather than a weaker claim.
+
+This is the shape of fatal risk 6's experiment (`design/fatal-risks/README.md`): an unprivileged
+process holding one device page and two endpoints, driving a real device that is not virtio.
+Whether it runs at real speed is what the bench measures.
+
+The kernel enables the TRNG's two clocks and releases its reset before the spawn. The driver's
+first act is to read `STAT`, and a gated block answers that read with zeros. The clock and reset
+controller is admin plane and stays in the kernel
+(`kernel/src/drivers/jh7110_clock_and_reset.rs`), on the argument of §86 (whether an NVMe driver can
+leave the kernel). A virtio-rng needs no such step, since a QEMU device comes up running.
+
 ## The driver's own choices
 
 `components/src/jh7110_entropy.rs` polls `ISTAT` rather than taking PLIC line 30. A wrong interrupt

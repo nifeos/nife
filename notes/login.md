@@ -81,8 +81,8 @@ result, real work this slice did not build.
 ### Provisioning an identity: the subtree first
 
 `identity_provisioner` is `useradd` one level down. Whoever holds the credential service's provision
-endpoint (before its seal) and `WRITE` on the directory holding the principal tree may run it. It
-authenticates no caller, the same shape as the provision endpoint itself. How an operator comes to
+endpoint (before its seal) and `WRITE` on the principal tree may run it. It authenticates no caller,
+like the provision endpoint itself. How an operator comes to
 hold those two capabilities is the boot-wiring question `login.rs`'s BUGS name.
 
 It makes two calls to two servers with no cross-server commit, so their order decides what a
@@ -93,8 +93,8 @@ re-running recovers it. The other order risks a credential that verifies for an 
 home. So `MKDIR`'s `EEXIST` means "already created, proceed", exactly the state a failed run
 leaves, and any other `MKDIR` failure stops before the store is touched.
 
-It never sends `SEAL`. Sealing ends provisioning for the whole store, and that is the caller's
-decision once every identity is in. It does not deprovision.
+It never sends `SEAL`: sealing ends provisioning for the whole store, the caller's decision once
+every identity is in. It does not deprovision.
 
 ## Reclaiming a session: the design argument
 
@@ -258,6 +258,31 @@ Guest tests (`kernel::user::login_tests`, both aarch64 and riscv64):
   (`the_login_service_serves_past_the_old_capability_table_ceiling`).
 - The caretaker measurement matches the real table and a tampered one would be refused
   (`logins_caretaker_measurement_matches_the_real_table_and_a_tampered_one_would_be_refused`).
+
+## The kernel's test harness
+
+`kernel/src/user/login_service.rs` starts `login` for the guest tests, and it starts it the way
+`crates/system_initializer` does. `login` gets the caretaker, the program measurements and the
+durable-session programs as read-only blobs, never the initial ramdisk itself. A harness that
+starts a program differently from the system is not testing that program.
+
+`start` returns only once `login`'s start-up pass is over. That pass reads the manifest, the
+suspended list and each stored schedule through the file service's shared page, which `login` treats
+as its own because no session is live yet. A caller that writes that page during the pass races it.
+So `start` sends `REDERIVE_SKIPS`, the one front-door word with no side effect, and waits for its
+answer.
+
+The eight capabilities are granted one at a time, each asserted into the slot
+`components/src/login.rs` expects. Collected into an array first, an unoptimised build put the whole
+table and a temporary per element on the stack. That took the frame to 4,288 bytes, past the
+4,096-byte guard page `script/stack-frame-check` gates. One at a time it is 1,632 bytes on aarch64
+and 1,648 on riscv64.
+
+Each `login_test_client` run gets a five-page scratch region of its own. It pays the page tables for
+mapping the frame `CONNECT` delegates, before the run holds any other budget, and its report endpoint
+is retyped from it. The kernel's own endpoint chunks are never given back, and the machine shares
+`sched::MAX_RENDEZVOUS` endpoints and `memory_region::MAX_REGIONS` regions. So `wait_client` reclaims
+the scratch once the run's thread is dead, and the endpoint goes with it.
 
 ## BUGS
 

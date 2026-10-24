@@ -17,7 +17,9 @@ block, through step 3; sixteen pages, up to sixteen blocks, since. So one reques
 whole blocks, and the device DMAs them straight into the FS server's region as a single descriptor,
 with no per-sector loop and no copy. The driver roles of milestone 9 (a virtio-blk driver at EL0,
 and an interrupt becomes a message) still transfer one 512-byte sector at a time; this role does not.
-This is what keeps the mount's read count in the low hundreds rather than thousands.
+This is what keeps the mount's read count in the low hundreds rather than thousands. The block
+server's other clients, `disk_surveyor` and `disk_partitioner`, map only the first data page and
+send only single-block requests, so the region's growth leaves them unchanged.
 
 ## It waits on the completion interrupt
 
