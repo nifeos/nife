@@ -222,7 +222,6 @@ went), and the difference is accounted rather than shrugged at:
 - **The suite's total depends on where the tree is checked out.** On 2026-10-24 (UTC) the same
   commit, unpatched, kept 24312 page frames on aarch64 and 24316 on riscv64 in a lane worktree and
   in CI. In a checkout under a longer path on the same machine it kept 24320 and 24330, two runs
-  each.
-  riscv64 then fails against the 24322 budget with every test green. The mechanism is not
-  identified; path strings embedded in the programs a test loads are the suspect. The measurement
-  is in [host-reordering-under-tcg](../benchmarks/host-reordering-under-tcg.md).
+  each. riscv64 then fails against the 24322 budget with every test green. The mechanism is not
+  identified; path strings embedded in the programs a test loads are the suspect. It was found
+  during the measurement in [host-reordering-under-tcg](../benchmarks/host-reordering-under-tcg.md).

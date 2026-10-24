@@ -18,8 +18,8 @@ Two halves, and they come apart.
 - **The suite half does not.** First every kernel spinlock's unlock was weakened to Relaxed, then
   its acquire too, so that no kernel lock orders anything. The aarch64 and riscv64 legs of the
   kernel suite passed on both hosts: 4 runs on aarch64, 5 on x86_64 in CI, all green.
-  The suite never contends a lock hard enough, inside the reorder window, to turn the exposure into
-  a failure.
+  The likely reason is that the suite never contends a lock hard enough, inside the reorder window,
+  to turn the exposure into a failure.
 
 So the arm64 placement buys exposure the suite does not use. It is partial: it earns its cost only
 with a dedicated contended test, which the tree does not have.
@@ -129,8 +129,8 @@ the BUGS of [the page frame budget](../frames/page-frame-budget.md), and not the
 
 The SMP QEMU jobs on `ubuntu-24.04-arm` are the only CI jobs that put guest code where a missing
 Release can be seen. The suite they run does not look: no kernel lock with no ordering at all
-failed a test on either host. On today's suite the placement buys nothing measurable, and costs
-about 84 of every 128 job-minutes in the queue that waits longest.
+failed a test on either host. On today's suite the placement buys nothing measurable for lock
+ordering, and it spends runner time in the queue that waits longest.
 
 The exposure is real and cheap to use. The LOCK test, a minute of guest time, turns a Relaxed
 unlock into 20% lost updates on an aarch64 host and nothing on x86_64. A kernel test of that shape
