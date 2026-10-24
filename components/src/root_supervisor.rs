@@ -5,8 +5,8 @@
 //! memory, then **deletes it** and becomes a `RECEIVE` loop on its own supervision endpoint. After
 //! that it cannot build a process, endow anyone with memory, or reach the sub-servers' internals: a
 //! compromised `root_supervisor` can lie about deaths on one endpoint, and that is the entire blast
-//! radius. The restart policy is `sub_server_supervisor`'s, and the kernel never relaunches
-//! anything (DECISIONS §26). notes/trusted-init/supervision-tree.md draws the tree.
+//! radius. The restart policy is `sub_server_supervisor`'s; the kernel never relaunches anything
+//! (DECISIONS §26 (the fault endpoint)). notes/trusted-init/supervision-tree.md draws the tree.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `rootsup`. Refused `rootsup` and
 //! `root_sup` (`sup` was the abbreviation, so putting a separator in it would have relocated the

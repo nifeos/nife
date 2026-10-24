@@ -53,7 +53,8 @@ riscv64  PASS, 128s in: attempt 1 of 1: SBI SRST system_reset, reset type 1 (col
 `components/src/reboot.rs` syncs the writable filesystem, says what the sync answered, then
 invokes the reboot object. Its capability table is in its module doc.
 
-**Why a sync-only capability.** §251's clause 3 puts the sync before the reset, and the kernel does
+**Why a sync-only capability.** §251 (restarting the machine is a kernel object the progenitor
+hands out), clause 3, puts the sync before the reset, and the kernel does
 none of it. `SYNC` needs `dir::WRITE` on a handle for an ordinary client, which is also the right to
 open and truncate files by name. So the file server binds this program's badge sync-only
 (`filesystem_contract::fs::BIND_SYNC`): it answers `SYNC`, refuses every other verb, and nothing in
