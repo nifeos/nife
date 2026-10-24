@@ -2,43 +2,24 @@
 //! (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each
 //! item cost)).
 //!
-//! The guest prints its own record (`crates/test_times`), and this module does three things with
-//! it for every booted test image:
-//!
-//! 1. **Times the host side.** The child's stdout is passed through line by line, exactly as it was
-//!    when the child inherited it, and each line is stamped as it arrives. From the stamps come four
-//!    phases: `build` (spawn to the guest's first line, which is cargo building the image and QEMU
-//!    starting), `boot` (to the runner's `running` line), `suite` (to `test result:`) and `exit` (to
-//!    the child's exit).
-//! 2. **Proves the record is whole.** Every test the transcript names on a `test <path> ... ` line
-//!    has a `time` line, every `time` line names such a test, and their count is the `running` line's.
-//!    A record with a gap fails the leg.
-//! 3. **Proves the guest clock is honest.** The sum of the guest's per-test times must sit inside
-//!    [`ClockCheck`]'s band around the host's span for the same tests. On x86_64 the guest's clock is
-//!    a TSC calibrated once at boot, which milestone 571 (the x86 boot calibrates the TSC once, and
-//!    can be wrong by 4x) found fragile; nothing else in the tree would notice a guest clock that
-//!    lies. A sum outside the band fails the leg.
-//!
-//! Then it appends one row per phase and per test to the run's time record file, a tab-separated
-//! table (see [`record_path`]) that CI uploads as an artifact and [`summary`] turns into the step
-//! summary (§254, Fork 3).
-//!
+//! For every booted test image, from the guest's own record (`crates/test_times`), it stamps the
+//! child's stdout into four host phases (`build`, `boot`, `suite`, `exit`), proves every announced
+//! test has exactly one time line, and holds the guest's sum inside [`ClockCheck`]'s band, since on
+//! x86_64 the clock is a TSC calibrated once (milestone 571). A gap or a lying clock fails the leg.
+//! The rows go to the file at [`record_path`], which CI uploads and [`summary`] turns into the step
+//! summary (§254, Fork 3). See notes/kernel-suite-time.md, "How the record is taken".
 
 //! # The file
 //!
 //! A header line, then rows of five tab-separated fields (shown here with ` | ` for the tabs):
-//!
 //! ```text
 //! leg | image | kind | name | milliseconds
 //! riscv64 | system_tests | phase | suite | 129034
 //! riscv64 | system_tests | test | system_tests::display_tests::a_bitmap_font | 9912
 //! ```
-//!
-//! `leg` is the architecture plus whatever makes this boot a different machine (`cpu=rva23s64`,
-//! `iommu=amd`, `ovmf`, `root-port`). `kind` is `phase` or `test`. Milestone 808 (every gate
-//! accounts for its time) adds kinds for the gates beyond the kernel suite; a reader skips a kind it
-//! does not know.
-//!
+//! `leg` is the architecture plus what makes the boot another machine (`cpu=rva23s64`, `iommu=amd`,
+//! `ovmf`, `root-port`). `kind` is `phase`, `test`, or a gate's own (milestone 808); skip unknowns.
+
 //! # EXAMPLES
 //!
 //! ```text
@@ -47,19 +28,17 @@
 //! time-record: riscv64 system_tests: 320 tests, guest 127.4 s against host 129.0 s (0.99)
 //! $ cargo xtask time-summary target/time-record.tsv >> "$GITHUB_STEP_SUMMARY"
 //! ```
-//!
+
 //! # BUGS
 //!
-//! - **Under `--hvf` nothing is recorded.** That leg reads its own transcript to work around a
-//!   semihosting exit HVF does not deliver (`hvf_kernel_leg`), and never runs in CI.
+//! - **Under `--hvf` nothing is recorded.** That leg reads its own transcript (`hvf_kernel_leg`)
+//!   and never runs in CI.
 //! - **A filtered run (`--test`) is not recorded either**, apart from x86_64's one-test root-port
-//!   boot, which is part of every unfiltered run. A filtered run is a person chasing one test, and
-//!   the figure is on their screen.
+//!   boot, part of every unfiltered run. The person chasing one test has the figure on screen.
 //! - **The phases are host wall time on a shared runner**, so one run is a premise check and not a
 //!   baseline. Milestone 808's daily record takes medians.
-//! - **`build` includes QEMU's start-up**, because the first thing the host can see is the guest's
-//!   first line. It is under a second against tens of seconds of cargo.
-//!
+//! - **`build` includes QEMU's start-up**, under a second against tens of seconds of cargo.
+
 //! Name: provisional (milestone 807's lane, 2026-10-07 UTC), the module, the `time-summary`
 //! subcommand, the `NIFE_TIME_RECORD` variable and the file's default name alike. §254 left every
 //! name in this design to a separate ratification.
@@ -81,34 +60,16 @@ pub(crate) struct Stamped {
     pub(crate) text: String,
 }
 
-/// **The host watchdog's grace: how long the host waits past a test's own budget before it ends
-/// the boot itself.** [`Watch`] reads the running test's name off the transcript, and
-/// [`Watch::wait`] or [`Watch::enforce`] kills QEMU's whole tree once that test has run past
-/// [`bound_for`]. The guest's two watchdogs (`kernel/src/testing.rs`, notes/scheduler.md) both run
-/// off the boot core's timer interrupt, so a guest that loses it loses both; this is the backstop
-/// that needs nothing from the guest. Why it exists, a 9.5-hour hang on 2026-10-11 (#1912), is in
-/// notes/scheduler.md.
-///
-/// The guest's ceiling fires on the first tick past its budget, prints the test's name and a
-/// thread dump, and exits. That report says more than this one can, so the host stays out of its
-/// way: 60 s is far more than that exit takes, with room for a guest clock that runs a little
-/// behind the host's (`ClockCheck` bounds it). The default host bound is 90 + 60 = 150 s.
-///
-/// Against what it guards: the slowest honest test in about 27,000 per-test records (three
-/// merge-group CI runs on 2026-10-11 and eight lane runs on patagonia, a shared and busy host) was
-/// 20.5 s, `package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`
-/// on aarch64; no test reached 30 s. CI's `test` job runs every leg in a median of about 17
-/// minutes, against milestone 721 (each merge-group CI job has a 20-minute budget) and a
-/// 25-minute `timeout-minutes`. A hang now costs a run 2.5 minutes and fails with its name, where
-/// it used to cost the job its timeout (a cancellation with no name) or, locally, forever.
-///
+/// **The host watchdog's grace: how long past a test's own budget the host ends the boot itself.**
+/// [`Watch::wait`] and [`Watch::enforce`] kill QEMU's whole tree once the running stage passes
+/// [`bound_for`]. The guest's two watchdogs (`kernel/src/testing.rs`) both run off the boot core's
+/// timer interrupt, so this backstop needs nothing from the guest (notes/scheduler.md). The grace
+/// lets the guest's own ceiling, whose report says more, exit first; the default bound is 150 s,
+/// against a slowest honest test of 20.5 s. See notes/kernel-suite-time.md, "How the record is
+/// taken".
 /// # BUGS
-///
-/// - **`build` is not bounded**, the stretch before the guest's first line, because that is cargo
-///   compiling and a cold build is minutes. A guest that wedges before printing anything has only
-///   CI's `timeout-minutes` over it.
-/// - **The `--hvf` leg is not watched.** It reads its own transcript (`hvf_kernel_leg`) and trusts
-///   the guest's watchdogs. It runs only on a laptop, by hand.
+/// - **`build` is not bounded**: a cold build is minutes, so only CI's `timeout-minutes` covers it.
+/// - **The `--hvf` leg is not watched.** It trusts the guest's watchdogs, by hand on a laptop.
 pub(crate) const HOST_GRACE_SECS: u64 = 60;
 
 /// **Where a booted image's transcript has got to**, as the host watchdog reads it.
@@ -614,11 +575,8 @@ fn running_count(line: &str) -> Option<usize> {
 /// extra, first few of each.
 pub(crate) fn whole(r: &Reading) -> Result<(), String> {
     use std::collections::BTreeSet;
-    // A filtered run that selected nothing in this image (`script/test --test` names a test that
-    // lives in the other image) has no test to time, and the kernel prints no record for it. The
-    // QEMU legs already count such a leg; the OVMF leg failed it for want of a record until
-    // milestone 353 (the aarch64 half of 74) hit it on 2026-10-07 (UTC) with a test
-    // that lives only in the system-tests image.
+    // A filtered run that selected nothing in this image (`--test` names a test in the other
+    // image) has no test to time, and the kernel prints no record for it.
     if r.heading.is_none() && r.selected == Some(0) && r.tests.is_empty() {
         return Ok(());
     }
@@ -655,21 +613,11 @@ pub(crate) fn whole(r: &Reading) -> Result<(), String> {
 
 /// The band the guest's sum must sit in, around the host's span for the same tests.
 ///
-/// The host span runs from the `running` line to the record's heading, so it holds every test plus
-/// what the guest does between them (the name, the frame ledger's charge) and the reports after the
-/// last one. The guest's sum holds only the bodies. So the sum is below the span by an overhead,
-/// and it can exceed the span only if the guest's clock runs fast.
-///
-/// - **Upper: the sum may not exceed the span by more than 5% plus half a second.** Under TCG the
-///   guest's counter follows the host's clock and stops when the VM stops, so it cannot honestly
-///   run ahead. The slack is for the host's stamp landing a pipe read late.
-/// - **Lower: the sum must reach half the span, less three seconds.** The overhead between tests is
-///   console output and a ledger read; half is far below any measured share and far above the 25%
-///   a 4x TSC error would give. The absolute slack keeps a short image (137 kernel unit tests in
-///   about six seconds on riscv64) from failing on fixed costs.
-///
-/// Both bounds are first guesses stated as such. The first runs are the measurement, every run
-/// prints its ratio, and a band that turns out wrong is widened here with the run that showed it.
+/// The span (`running` line to the record's heading) holds the test bodies plus overhead, so the
+/// sum sits below it, and above it only if the guest clock runs fast. Upper: the span plus 5% and
+/// half a second. Lower: half the span less three seconds, far above the 25% a 4x TSC error gives.
+/// Both are first guesses: every run prints its ratio, and a wrong band is widened here with the
+/// run that showed it. See notes/kernel-suite-time.md, "How the record is taken".
 pub(crate) struct ClockCheck;
 
 impl ClockCheck {
@@ -766,10 +714,8 @@ pub(crate) fn account(
         guest as f64 / 1000.0,
         host as f64 / 1000.0,
     );
-    // **Not judged on a repeated run.** Between runs the runner scans the frame bitmap twice and
-    // prints a line, which is fixed cost per run; against a test of a few milliseconds that is most
-    // of the span (measured: 0.10 at 200 runs of a 5 ms test under OVMF), so the band would fail an
-    // honest clock. The single-run legs CI runs still judge it.
+    // Not judged on a repeated run: the runner's fixed cost between runs is most of the span for
+    // a test of a few milliseconds (0.10 at 200 runs of a 5 ms test under OVMF).
     if r.repeated {
         eprintln!(
             "time-record: {leg} {image}: a repeated run, so the clock check is not applied (the \
