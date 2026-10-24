@@ -1,43 +1,19 @@
 //! **Quoting: what a word is, and therefore what a command designates** (milestone 67,
 //! notes/swish-language.md).
 //!
-//! In a shell where naming a resource is granting it, a name you cannot type (`my notes.txt`) is a
-//! resource you cannot grant. Quoting is what makes such names nameable.
-//!
-//! # Quoting delimits a word. It never rewrites one.
-//!
-//! Every token in this shell is a **slice of the line you typed**, which is what lets a crate with
-//! no allocator hand a name straight to the grant planner (and `line::split` keep a stage's command
-//! text as a slice, notes/pipes.md). A backslash escape would remove a byte from the middle of a
-//! word, and a word with a byte removed is not a slice of anything. So:
-//!
-//! - `'...'` and `"..."` **wrap a whole word**, and the word is the span between them.
-//! - There is **no backslash escape**. A `\` is an ordinary byte in a name.
-//! - Two quoted pieces are **not joined**. `a"b c"d` is [`Refusal::PartlyQuoted`].
-//!
-//! So **what is between the quotes is exactly what is designated, byte for byte**, and a preview
-//! (`caps`, `echo`) and a grant cannot disagree about what a name is.
-//!
-//! # What quoting does and does not change about authority
-//!
-//! It changes a word's boundaries, so a name with a space, `>` or `|` can be named at all. It
-//! **suppresses pattern expansion**, so `rm "*.txt"` designates one name and `rm *.txt` the set, a
-//! narrowing visible before anything moves (`echo` prints both). Nothing else: no quoting form
-//! widens a grant or skips a manifest check; `"secret.txt"` is planned exactly as `secret.txt` is.
-//!
-//! `'` and `"` are both literal today. POSIX distinguishes them by `$` expansion, and this shell
-//! has no variables (milestone 47 (navigation and naming) owns them), so the distinction waits for them. They differ only in
-//! which quote byte they let you write: `echo "it's"` and `echo 'say "hi"'`.
-//!
+//! Quoting delimits a word and never rewrites one, so every token stays a slice of the line and
+//! what is between the quotes is exactly what is designated. `'...'` and `"..."` wrap a whole word,
+//! there is no backslash escape, and two quoted pieces are not joined ([`Refusal::PartlyQuoted`]).
+//! Quoting suppresses pattern expansion and changes nothing else about authority; `'` and `"` are
+//! both literal while the shell has no variables. notes/swish-language.md, "Quoting delimits a
+//! word", has why.
+
 //! # BUGS
 //!
-//! - **No backslash escape, and none is planned while tokens are slices.** `my\ notes.txt` names a
-//!   file whose name contains a backslash, and `nav::component_fits` refuses that byte, so the line
-//!   is refused rather than misread.
-//! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are [`Refusal::PartlyQuoted`] where
-//!   POSIX would join them. Write `"it's"`.
-//! - **`"$?"` prints `$?`**, because both forms are literal. When variables arrive the two forms
-//!   have to stop being the same thing, and that decision belongs with them.
+//! - **No backslash escape while tokens are slices.** `my\ notes.txt` names a file whose name
+//!   contains a backslash, and `nav::component_fits` refuses that byte, so the line is refused.
+//! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are refused where POSIX joins them.
+//! - **`"$?"` prints `$?`**, because both forms are literal; variables will have to split them.
 
 use crate::Refusal;
 
@@ -61,10 +37,9 @@ pub enum Quote {
 
 /// **A cursor that says, byte by byte, whether what it is looking at is an operator or a letter.**
 ///
-/// Three scanners need this and none of them can share a tokenizer: [`crate::tokenize`] splits on
-/// whitespace, [`crate::line::split`] splits on `>`, `<` and `|`, and the shell's sequence splitter
-/// splits on `;`, `&&` and `||`. What they have in common is the question "is this byte quoted",
-/// which is a two-bit state machine, so that is what is shared.
+/// Shared by three scanners that cannot share a tokenizer: [`crate::tokenize`] on whitespace,
+/// [`crate::line::split`] on `>`, `<` and `|`, and the shell's sequence splitter on `;`, `&&` and
+/// `||`. What they share is "is this byte quoted", a two-bit state machine.
 ///
 /// ```
 /// use grant_plan::word::Cursor;
@@ -151,17 +126,9 @@ impl<'a> Word<'a> {
 
 /// **Take the quotes off one whole token.**
 ///
-/// The token is what a quote-aware tokenizer already produced, so the quotes (if any) are on the
-/// ends. Three shapes are legal and everything else is refused:
-///
-/// - no quote byte anywhere: the token is the word,
-/// - a matching pair on the ends with no copy of itself inside: the word is what is between them,
-/// - and that is all.
-///
-/// Refusing rather than guessing is the same rule the rest of this crate follows for an unplaceable
-/// token: **the line means exactly what it says or it does not run.** A shell that read `a"b"` as
-/// `ab` would be joining pieces, and a shell that read it as the four literal bytes would be
-/// silently disagreeing with every other shell a person has used.
+/// The token is what a quote-aware tokenizer produced, so any quotes are on the ends. A token with
+/// no quote byte is the word; a matching pair on the ends with no copy of itself inside wraps the
+/// word; anything else is refused, because the line means exactly what it says or it does not run.
 ///
 /// # Examples
 ///
