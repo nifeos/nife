@@ -19,9 +19,10 @@
 #                              and, with a RedoxFS disk attached, the filesystem ones: fs_read and
 #                              milestone 38's four throughput phases (fs_seq_read and friends)
 #   script/bench --keyboard  attach a virtio keyboard and press it over the QEMU monitor, for the
-#                            keyboard_up and keyboard_event rows (milestone 947); composes with
-#                            --riscv and --x86, never gates. See
-#                            notes/benchmarks/kernel-bench-harness.md, "The keyboard rows"
+#                            keyboard_up and keyboard_event rows (milestone 947 (the virtio input
+#                            device runs on `virtio-drivers`)); composes with --riscv and --x86,
+#                            never gates. See notes/benchmarks/kernel-bench-harness.md, "The
+#                            keyboard rows"
 #
 # **All three architectures, each against its own baseline.** With no architecture flag the
 # instrument is aarch64 and the baseline is `bench/baseline-aarch64.txt`; `--riscv` and `--x86`

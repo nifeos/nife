@@ -105,7 +105,6 @@ components/src/identity_provisioner.rs::_start
 components/src/input.rs::_start
 components/src/jh7110_entropy.rs::_start
 components/src/job_undertaker.rs::_start
-components/src/keyboard_driver.rs::_start
 components/src/least_authority_demo.rs::_start
 components/src/line_editor.rs::_start
 components/src/login.rs::_start

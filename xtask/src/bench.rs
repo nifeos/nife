@@ -54,9 +54,9 @@ pub(crate) fn bench() -> bool {
         return false;
     }
 
-    // `--keyboard` (milestone 947): attach the virtio keyboard and press its keys, for the
-    // `keyboard_up` and `keyboard_event` rows. A host actor is in the loop, and no baseline holds
-    // those rows, so it reports and never gates.
+    // `--keyboard` (milestone 947 (the virtio input device runs on `virtio-drivers`)): attach the
+    // virtio keyboard and press its keys, for the `keyboard_up` and `keyboard_event` rows. A host
+    // actor is in the loop, and no baseline holds those rows, so it reports and never gates.
     if keyboard() && (real || check || save) {
         eprintln!(
             "bench: --keyboard reports the keyboard rows and never gates; no --check/--save/--real"

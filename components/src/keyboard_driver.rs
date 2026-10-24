@@ -9,10 +9,11 @@
 //! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
 //!
-//! The device is driven through `vendor/virtio-drivers` (milestone 947): the crate's `Transport`
-//! status dance and its `VirtQueue`, over the kernel's confined transport and the one DMA page,
-//! by way of `user_mode_runtime::confined_virtio`. What stays here is nife's: the keymap, the two
-//! delivery modes, the bring-up codes and the check on a device-written buffer index.
+//! The device is driven through `vendor/virtio-drivers` (milestone 947 (the virtio input device
+//! runs on `virtio-drivers`)): the crate's `Transport` status dance and its `VirtQueue`, over the
+//! kernel's confined transport and the one DMA page, by way of the
+//! `confined_virtio` crate. What stays here is nife's: the keymap, the two delivery
+//! modes, the bring-up codes and the check on a device-written buffer index.
 //!
 //! Reuse: `virtio-drivers` 0.13.0 plus rcore-os/virtio-drivers#232 for the queue and the status
 //! dance (calef, #2586, 2026-10-22 UTC). Its `VirtIOInput` is not used: it fixes 32-entry queues,
@@ -24,7 +25,7 @@
 //! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`. The
 //!   crate cannot step past a used entry it will not pop, so dropping the entry and going on is not
 //!   available; a lying device stops the keyboard, which it could do anyway by staying silent.
-
+//!
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
 
@@ -35,13 +36,11 @@
 #![allow(missing_docs)]
 #![no_main]
 
+use confined_virtio::virtio_drivers::device::common::Feature;
+use confined_virtio::virtio_drivers::queue::VirtQueue;
+use confined_virtio::virtio_drivers::transport::{DeviceStatus, DeviceType, Transport};
+use confined_virtio::{ConfinedTransport, QUEUE_SIZE, Refusal, WindowHal};
 use line_editor::proto;
-use user_mode_runtime::confined_virtio::virtio_drivers::device::common::Feature;
-use user_mode_runtime::confined_virtio::virtio_drivers::queue::VirtQueue;
-use user_mode_runtime::confined_virtio::virtio_drivers::transport::{
-    DeviceStatus, DeviceType, Transport,
-};
-use user_mode_runtime::confined_virtio::{self, ConfinedTransport, QUEUE_SIZE, Refusal, WindowHal};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 

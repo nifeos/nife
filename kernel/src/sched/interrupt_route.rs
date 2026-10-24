@@ -96,6 +96,8 @@ static WATCHED_AT: AtomicU64 = AtomicU64::new(0);
 /// Timestamp every interrupt delivered to `ep` from now on, for a bench row that times a driver
 /// from its interrupt to its answer (`bench::keyboard`). Bench builds only: the store costs one
 /// compare on every interrupt.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 #[cfg(feature = "bench")]
 pub fn watch_irq(ep: RendezvousId) {
     WATCHED.store(ep + 1, Ordering::Relaxed);
@@ -106,6 +108,8 @@ pub fn watch_irq(ep: RendezvousId) {
 /// Relaxed on both sides: a reader learns that the interrupt happened through an IPC the driver
 /// sent after waking from it, and that IPC passes through `IPC_TABLES`, which orders this load
 /// after the store.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 #[cfg(feature = "bench")]
 pub fn watched_irq_at() -> u64 {
     WATCHED_AT.load(Ordering::Relaxed)

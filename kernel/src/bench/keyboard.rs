@@ -3,7 +3,8 @@
 //! ordinary bench boot has no keyboard and prints neither row. See
 //! notes/benchmarks/kernel-bench-harness.md, "The keyboard rows".
 //!
-//! Name: provisional (milestone 947, 2026-10-24 UTC), for the module, the file and both rows.
+//! Name: provisional (milestone 947 (the virtio input device runs on `virtio-drivers`), 2026-10-24
+//! UTC), for the module, the file and both rows.
 
 use super::*;
 use crate::user::keyboard_service;

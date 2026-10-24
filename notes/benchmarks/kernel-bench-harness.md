@@ -142,8 +142,8 @@ the bench thread, which stands in for the compositor. The wait for the host is o
 and under icount an idle guest skips that wait anyway. The kernel prints a cue before each press,
 and `xtask` answers it with one `sendkey` after 200 ms of real time. By then the previous release has
 had its own interrupt, so every press is one interrupt carrying an `EV_KEY` and an `EV_SYN`. Two
-runs on aarch64 gave identical counts. Milestone 947 has the numbers before and after the driver
-moved onto `virtio-drivers`.
+runs on aarch64 gave identical counts. Milestone 947 (the virtio input device runs on
+`virtio-drivers`) has the numbers before and after the driver moved onto the crate.
 
 ## Multi-hart throughput
 

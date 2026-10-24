@@ -213,10 +213,8 @@ on the customer path.
   2026-10-22 21:58 (UTC), on #2586: *"A"*, once
   [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
   device behind the IOMMU. It did, on all three.
-- (c1) BUILT: input, as milestone 947 ([the virtio input device runs on `virtio-drivers`](0947-virtio-input-on-virtio-drivers.md)),
-  with its bench numbers there.
-  (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
-  number before and after on all three architectures.
+- (c1) BUILT: input, milestone 947 (the virtio input device runs on `virtio-drivers`), benched
+  before and after. (c2) GPU, (c3) block, (c4) net: likewise.
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
@@ -264,8 +262,8 @@ the measured-boot trusted base.
 - **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Done.** Item (c0), nifeos/nife#2587, on calef's "A" on #2586.
-- **Done.** Item (c1), milestone 947.
-- **Outstanding.** (c2) to (c4) are milestones 948, 949 and 950.
+- **Done.** Item (c1), milestone 947, nifeos/nife#2687.
+- **Outstanding.** (c2) to (c4): milestones 948 to 950, drafts (checked 2026-10-24 UTC).
 
 ## Index row
 

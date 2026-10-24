@@ -202,11 +202,11 @@ bounds-checked against the DMA region and its high-water mark.
 
 ## `virtio-drivers` over the confined transport
 
-With the `virtio-drivers` feature, `confined_virtio` lets a driver use `vendor/virtio-drivers`
-without mapping its device. `ConfinedTransport` is the crate's `Transport` over a `Virtio`
+The `confined_virtio` crate, built on this one, lets a driver use `vendor/virtio-drivers` without
+mapping its device. `ConfinedTransport` is the crate's `Transport` over a `Virtio`
 capability, and `WindowHal` is its `Hal` over the one DMA window the spawner mapped. A driver calls
 `install_window` once, then builds a `VirtQueue<WindowHal, QUEUE_SIZE>`. `keyboard_driver` is the
-first user (milestone 947).
+first user (milestone 947 (the virtio input device runs on `virtio-drivers`)).
 
 The kernel chooses where a queue's rings go, and the crate allocates them itself, so the two have
 to agree. `WindowHal::dma_alloc` answers each queue's two allocations with the kernel's fixed

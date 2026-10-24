@@ -38,6 +38,7 @@ component_plan	shared	retired
 compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures
+confined_virtio	userspace	components
 coremark	shared	fixtures,kernel
 counter_frequency_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 counter_frequency_protocol	shared	retired
@@ -54,7 +55,7 @@ current_cpu_protocol	shared	retired
 designware_ethernet	shared	components,kernel
 designware_mobile_storage	shared	components,kernel
 device_tree_blob	shared	components,kernel,uefi_loader
-direct_memory_access_validator	kernel	kernel
+direct_memory_access_validator	shared	components,kernel
 disk_tree	userspace	components
 dma_validator	kernel	retired
 documentation	userspace	components,mdr

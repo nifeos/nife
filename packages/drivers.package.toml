@@ -20,5 +20,14 @@ paths = ["vendor/virtio-drivers.divergence.patch", "vendor/virtio-drivers.pin"]
 # `designware_mobile_storage` is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
-interfaces = ["e1000e", "designware_ethernet", "designware_mobile_storage"]
+# `confined_virtio` joins `virtio-drivers` to the kernel's confined transport (milestone 947 (the
+# virtio input device runs on `virtio-drivers`)). `keyboard_driver`, in the display package, links
+# it, and so will the network package's virtio driver, so it is an interface.
+interfaces = ["e1000e", "designware_ethernet", "designware_mobile_storage", "confined_virtio"]
 programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]
+
+[[exception]]
+date = 2026-10-24
+member = "confined_virtio"
+crate = "direct_memory_access_validator"
+reason = "WindowHal must hand out exactly the ring layout the kernel validates against, and that layout lives in the kernel's proved validator crate; a copy would drift (milestone 947 (the virtio input device runs on `virtio-drivers`))"

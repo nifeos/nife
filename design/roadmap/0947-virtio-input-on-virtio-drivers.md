@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-10-24
+built: 2026-10-24
 milestone_dependencies: 784
 decision_dependencies: 46
 machine_requirements: none
@@ -20,7 +21,7 @@ and 950 (net).
 
 `keyboard_driver` drives the virtio keyboard through `vendor/virtio-drivers` (0.13.0 plus upstream
 #232) instead of a hand-written queue, over the kernel's confined transport and behind each
-architecture's IOMMU, with its cost measured before and after on all three.
+architecture's IOMMU. Its cost is measured before and after on all three.
 
 ## What it moves
 
@@ -39,8 +40,8 @@ The appendix [virtio-drivers-probe.md](0784-reuse-what-the-tree-wrote/virtio-dri
 left two questions for (c1): how the crate's `VirtQueue`, which allocates its own rings, meets a
 kernel that places the rings itself, and where the static `Hal` keeps its DMA window.
 
-The answer is two types in `user_mode_runtime::confined_virtio` (provisional), behind the
-`virtio-drivers` feature, so 948 to 950 can use the same pair:
+The answer is two types in a new crate, `crates/confined_virtio` (provisional). 948 to 950 can
+share them, and a program that drives no device links none of it.
 
 - `ConfinedTransport` implements the crate's `Transport` over a `Virtio` capability. Register reads
   and writes are `READ_REGISTER` and `WRITE_REGISTER`; `queue_set` is `SETUP_QUEUE`, after checking
@@ -62,9 +63,9 @@ lines, and the driver has its own.
 ## The measurement
 
 784's exit criterion is a `script/bench` number before and after on all three architectures. No
-existing row touches a virtio device, so this milestone adds two, printed only by
-`script/bench --keyboard` and never gated
-([the keyboard rows](../../notes/benchmarks/kernel-bench-harness.md)):
+existing row touches a virtio device, so this milestone adds two. Only `script/bench --keyboard`
+prints them, and they never gate
+([the keyboard rows](../../notes/benchmarks/kernel-bench-harness.md)).
 
 - `keyboard_up`: from the driver's spawn being queued, after the kernel has wired the device, to its
   `KEYBOARD_UP` report. Loading the image, feature negotiation, queue setup and the first eight
@@ -102,7 +103,7 @@ What the numbers mean:
   one tick between runs. x86_64's `keyboard_event` moved by 0.4% between two runs of the same
   driver, so read its row to about half a percent.
 - Code lines (blank and comment lines removed): `keyboard_driver.rs` went from 252 to 207, and
-  `user_mode_runtime::confined_virtio`, which 948 to 950 can share, is 257. The ring walking the
+  `confined_virtio`, which 948 to 950 can share, is 257. The ring walking the
   driver no longer holds is the crate's, under its upstream tests and users.
 
 ## Done when
@@ -130,3 +131,13 @@ still enter misaligned, recorded in that macro's `BUGS` and in notes/user-mode-r
   queue dropped the entry and went on. The crate cannot skip a used entry it will not pop, so a
   lying device stops the keyboard instead of being ignored. A device can stop a keyboard anyway by
   not answering, so nothing is lost that confinement held.
+
+## Follow-on
+
+- **Recorded.** A device that completes a buffer the driver never posted stops the keyboard, in
+  `components/src/keyboard_driver.rs`'s `BUGS`.
+- **Recorded.** What `confined_virtio` does not serve yet (DMA beyond rings, configuration past
+  eight bytes on PCI, two devices in one process), in
+  `crates/confined_virtio/src/lib.rs`. 948 to 950 meet these first.
+- **Recorded.** Every other `no_std` program enters `_start` misaligned on `x86_64`, in
+  `crates/user_mode_runtime/src/process.rs`, at `program_entry!`'s `BUGS`.

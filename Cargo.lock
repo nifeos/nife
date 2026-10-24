@@ -211,6 +211,7 @@ dependencies = [
  "capability_plan",
  "clock_contract",
  "compositor",
+ "confined_virtio",
  "credential_contract",
  "credentialer",
  "designware_ethernet",
@@ -281,6 +282,16 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
+]
+
+[[package]]
+name = "confined_virtio"
+version = "0.1.0"
+dependencies = [
+ "direct_memory_access_validator",
+ "user_mode_runtime",
+ "virtio-drivers",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1625,11 +1636,8 @@ dependencies = [
  "abi",
  "counter_frequency_contract",
  "current_cpu_contract",
- "direct_memory_access_validator",
  "entropy_contract",
  "socket_contract",
- "virtio-drivers",
- "zerocopy",
 ]
 
 [[package]]

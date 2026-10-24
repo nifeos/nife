@@ -735,9 +735,10 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # names and the manifest format `login.rs` writes at a login and reads at start-up, which neither
 # `timetable` nor `filesystem_contract` already owns.
 timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
-# `virtio-drivers`: `confined_virtio`, the crate over the confined transport, for `keyboard_driver`
-# (milestone 947) and the virtio drivers that follow it onto the crate.
-user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime", features = ["virtio-drivers"] }
+# `vendor/virtio-drivers` over the kernel's confined transport, for `keyboard_driver` (milestone 947
+# (the virtio input device runs on `virtio-drivers`)) and the virtio drivers that follow it.
+confined_virtio = { version = "0.1.0", path = "../crates/confined_virtio" }
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # The heap, for the programs that name one (a program that names none links neither it nor `alloc`).
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }

@@ -163,14 +163,18 @@ macro_rules! panic_handler {
 /// ```
 ///
 /// # BUGS
-/// Only `keyboard_driver` uses it (milestone 947). Every other `no_std` program still writes its
-/// own `extern "C" fn _start` and runs misaligned on `x86_64`, which nothing notices until one
-/// holds a 16-byte-aligned local.
+/// Only `keyboard_driver` uses it (milestone 947 (the virtio input device runs on
+/// `virtio-drivers`)). Every other `no_std` program still writes its own `extern "C" fn _start` and
+/// runs misaligned on `x86_64`, which nothing notices until one holds a 16-byte-aligned local.
 ///
 /// Name: provisional (milestone 947, 2026-10-24 UTC).
 #[macro_export]
 macro_rules! program_entry {
     ($entry:path) => {
+        /// The process entry point `program_entry!` writes.
+        ///
+        /// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers,
+        /// as the symbol the link script's `ENTRY(_start)` reads.
         #[cfg(not(target_arch = "x86_64"))]
         #[unsafe(no_mangle)]
         pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {

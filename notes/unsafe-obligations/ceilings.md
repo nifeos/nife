@@ -189,12 +189,16 @@ atomics and a lock, so it needs no claim of its own.
 
 ## Other unsafe traits
 
-Other than `Send`/`Sync`, at most 12 <!--count-at-most:unsafe-trait-claims--> `unsafe impl`s of
+Other than `Send`/`Sync`, at most 13 <!--count-at-most:unsafe-trait-claims--> `unsafe impl`s of
 an unsafe trait, at the tree's exact value for the reason the line above
 gives (milestone 139 round 9, 2026-10-07 UTC; the marker's name is provisional). The census once
 counted `unsafe impl` as one number and the gate watched only its `Send`/`Sync` half. This is the
-rest (`GlobalAlloc`, `intrusive_fifo::Node`, `ns16550::RegisterSpace`). It read 7, 9, 9, 9, 11
-and 12 from 2026-08-18 to 2026-10-10, the last for the futex host tests.
+rest (`GlobalAlloc`, `intrusive_fifo::Node`, `ns16550::RegisterSpace`, `virtio_drivers::Hal`).
+It read 7, 9, 9, 9, 11 and 12 from 2026-08-18 to 2026-10-10, the last for the futex host tests.
+The thirteenth is
+`confined_virtio::WindowHal`, milestone 947 (the virtio input device runs on `virtio-drivers`):
+a driver built on that crate has to claim its `Hal` contract, and the module's `BUGS` say which
+part this claim does not meet.
 
 ## Mutable statics
 

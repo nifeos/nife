@@ -8,8 +8,8 @@
 //! `Hal::dma_alloc` and hands their addresses to `Transport::queue_set`. The two meet because
 //! [`WindowHal`] answers each queue's two allocations with exactly the kernel's offsets, in queue
 //! order, and [`ConfinedTransport::queue_set`] refuses any other address before it asks the kernel.
-//! Behind the `virtio-drivers` feature, so a program that does not drive a device links nothing
-//! of the crate. See notes/user-mode-runtime.md, "`virtio-drivers` over the confined transport".
+//! A crate of its own, so only a program that drives a device links `virtio-drivers`. See
+//! notes/user-mode-runtime.md, "`virtio-drivers` over the confined transport".
 //!
 //! # BUGS
 //!
@@ -29,8 +29,10 @@
 //! - Built without its `alloc` feature, the crate warns of an unused `indirect` parameter in
 //!   `queue.rs`. The warning is upstream's and harmless; the vendored tree carries no patch for it.
 //!
-//! Name: provisional (milestone 947, 2026-10-24 UTC), for the module, both types, [`Refusal`],
-//! [`install_window`] and [`QUEUE_SIZE`].
+//! Name: provisional (milestone 947 (the virtio input device runs on `virtio-drivers`), 2026-10-24
+//! UTC), for the crate, after the transport it confines the crate to.
+
+#![no_std]
 
 use core::ptr::NonNull;
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -43,6 +45,8 @@ use virtio_drivers::transport::{DeviceStatus, DeviceType, InterruptStatus, Trans
 use virtio_drivers::{BufferDirection, Error, Hal, PhysAddr};
 
 /// The most entries a queue may have under the confinement: a driver's `VirtQueue` size.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 pub const QUEUE_SIZE: usize = LAYOUT_QSIZE as usize;
 
 // The virtio-mmio register vocabulary the kernel answers on both buses (virtio spec 4.2.2).
@@ -64,6 +68,8 @@ const MAGIC: u32 = 0x7472_6976;
 
 /// Why a [`ConfinedTransport`] could not be built or refused an operation. The crate's `Transport`
 /// methods return nothing, so a refusal is kept and read back with [`ConfinedTransport::refusal`].
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// The capability's device does not read the virtio magic.
@@ -96,6 +102,8 @@ pub enum Refusal {
 /// **The crate's `Transport`, over a `Virtio` capability.** Every register access is a
 /// capability invocation the kernel checks; queue setup and notification go through the two
 /// validated methods.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 pub struct ConfinedTransport {
     slot: u64,
     device_type: DeviceType,
@@ -107,6 +115,8 @@ pub struct ConfinedTransport {
 impl ConfinedTransport {
     /// The transport over the `Virtio` capability in `slot`. Refuses a device that does not read
     /// the virtio magic, or whose type the crate does not know.
+    ///
+    /// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
     pub fn new(slot: u64) -> Result<Self, Refusal> {
         let transport = Self {
             slot,
@@ -127,6 +137,8 @@ impl ConfinedTransport {
 
     /// The first operation the kernel refused, if any: a driver checks this after setting up its
     /// queues and after notifying.
+    ///
+    /// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
     pub fn refusal(&self) -> Option<Refusal> {
         self.refusal
     }
@@ -136,11 +148,11 @@ impl ConfinedTransport {
     }
 
     fn read(&self, off: u64) -> u32 {
-        crate::virtio::read_register(self.slot, off) as u32
+        user_mode_runtime::virtio::read_register(self.slot, off) as u32
     }
 
     fn write(&mut self, off: u64, val: u32) {
-        crate::virtio::write_register(self.slot, off, val as u64);
+        user_mode_runtime::virtio::write_register(self.slot, off, val as u64);
     }
 }
 
@@ -172,7 +184,7 @@ impl Transport for ConfinedTransport {
     }
 
     fn notify(&mut self, queue: u16) {
-        let error = crate::virtio::notify(self.slot, queue as u64);
+        let error = user_mode_runtime::virtio::notify(self.slot, queue as u64);
         if error < 0 {
             self.refuse(Refusal::Notify { queue, error });
         }
@@ -211,7 +223,7 @@ impl Transport for ConfinedTransport {
             self.refuse(Refusal::Layout { queue });
             return;
         }
-        let error = crate::virtio::setup_queue(self.slot, size as u64, queue as u64);
+        let error = user_mode_runtime::virtio::setup_queue(self.slot, size as u64, queue as u64);
         if error != 0 {
             self.refuse(Refusal::SetupQueue { queue, error });
             return;
@@ -248,7 +260,7 @@ impl Transport for ConfinedTransport {
         let mut value = T::new_zeroed();
         for (i, byte) in value.as_mut_bytes().iter_mut().enumerate() {
             let at = REG_DEVICE_CONFIG + (offset + i) as u64;
-            let word = crate::virtio::read_register(self.slot, at & !3);
+            let word = user_mode_runtime::virtio::read_register(self.slot, at & !3);
             if word < 0 {
                 return Err(Error::IoError);
             }
@@ -279,6 +291,8 @@ static RING_ALLOCATIONS: AtomicU64 = AtomicU64::new(0);
 /// Tell [`WindowHal`] where the DMA window is: mapped at `va`, at physical (and, behind the
 /// IOMMU's identity domain, device) address `pa`, `len` bytes. Called once, before the first
 /// `VirtQueue`; a program is one thread, so the relaxed stores are seen by every later load.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 pub fn install_window(va: u64, pa: u64, len: u64) {
     WINDOW_VA.store(va, Ordering::Relaxed);
     WINDOW_PA.store(pa, Ordering::Relaxed);
@@ -291,6 +305,8 @@ fn window_pa() -> u64 {
 
 /// **The crate's `Hal`, over the one DMA window.** Ring allocations come out of the kernel's fixed
 /// ring blocks; a shared buffer must already be in the window and is translated, never copied.
+///
+/// Name: provisional, minted 2026-10-24 (UTC) by milestone/947-virtio-input-on-virtio-drivers.
 pub struct WindowHal;
 
 // SAFETY: `dma_alloc` returns addresses inside the window the spawner mapped read/write for this

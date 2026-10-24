@@ -11,9 +11,10 @@ const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
 const DMA_PAGE_FRAMES: u64 = 1;
 
 /// Stack pages mapped below the one every spawn gets. The driver's bring-up through
-/// `virtio-drivers` (milestone 947) peaks near 5 KiB in a debug build, `VirtQueue::new` alone
-/// taking 1.9 KiB, and one page faulted in its prologue. Three, so four in all, as
-/// `usb_keyboard_service` has; the boot's `system_initializer` gives every child twelve.
+/// `virtio-drivers` (milestone 947 (the virtio input device runs on `virtio-drivers`)) peaks near 5
+/// KiB in a debug build, `VirtQueue::new` alone taking 1.9 KiB, and one page faulted in its
+/// prologue. Three, so four in all, as `usb_keyboard_service` has; the boot's `system_initializer`
+/// gives every child twelve.
 const EXTRA_STACK_PAGES: usize = 3;
 
 pub struct Wiring {
