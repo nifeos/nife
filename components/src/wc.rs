@@ -2,16 +2,14 @@
 //!
 //! It counts lines, words and bytes on its input and writes the three numbers to its output. Both
 //! ends are the sink contract (`crates/byte_sink_contract`), the same sixteen-byte framing that
-//! `date` and every `println!` write.
-//!
-//! # It cannot tell what is feeding it
-//!
-//! Slot 1 holds an endpoint with `READ`; sink messages arrive on it until
+//! `date` and every `println!` write. Sink messages arrive on slot 1 until
 //! [`byte_sink_contract::OPERATION_EOF`]. Behind it is another program (`date | wc`), a file the
-//! shell opened and streamed (`wc < report.txt`, or `wc report.txt`), or the shell itself
-//! (`echo hello | wc`), and nothing this program holds can ask which. `wc report.txt` reads like
-//! Unix's `wc`, but the name is a designation the *shell* resolves, and what arrives is bytes: a
-//! `wc` that opened the file it counts would be a `wc` that could open any file.
+//! shell opened and streamed (`wc < report.txt`, or `wc report.txt`, the same bytes), or the shell
+//! itself (`echo hello | wc`), and nothing this program holds can ask which. In `wc report.txt`
+//! the name is a designation the *shell* resolves: a `wc` that opened the file it counts would be
+//! a `wc` that could open any file.
+
+//! # Capability contract
 //!
 //! | slot | what | why |
 //! |---|---|---|
@@ -19,7 +17,6 @@
 //! | 1 | the input source, `READ` | where the bytes come from |
 //!
 //! Two capabilities, no memory grant, no file, no directory, no shared page.
-//!
 
 //! # EXAMPLES
 //!
@@ -35,18 +32,14 @@
 //! $ wc
 //!   wc: reads an input stream: name a file, redirect with '<', or pipe into it
 //! ```
-//!
+
 //! # BUGS
 //!
-//! - **No `-l`, `-w` or `-c`.** It prints all three; selecting among them is formatting, and the
-//!   pipeline is where formatting belongs.
-//! - **A word is a run of non-whitespace**, which is Unix's definition and is wrong for text that
-//!   is not ASCII.
-//! - **A line with no trailing newline still counts as a line**, unlike Unix's `wc -l`, which
-//!   counts newlines.
-//! - **One name, and it cannot count two files or print a total.** `wc a.txt b.txt` is refused at
-//!   the prompt: a manifest here declares one input, and a second would need positional arity the
-//!   shell does not have yet.
+//! - **No `-l`, `-w` or `-c`.** It prints all three; selecting is formatting, the pipeline's job.
+//! - **A word is a run of non-whitespace**, Unix's definition, wrong for text that is not ASCII.
+//! - **A line with no trailing newline still counts**, unlike Unix's `wc -l`, which counts newlines.
+//! - **One name, no second file, no total.** `wc a.txt b.txt` is refused at the prompt: a manifest
+//!   declares one input, and a second needs positional arity the shell does not have yet.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist). The Unix command's own name,
 //! in the protected class AGENTS.md's naming section calls the best available, and which it argues
