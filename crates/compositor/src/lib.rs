@@ -1,29 +1,12 @@
-//! **The compositor contract**: one screen, several mutually distrusting clients, each with its own
-//! surface. This crate is the arithmetic half, checked on the host: the scene (which windows exist,
-//! where, and in what order they stack), the clipping and damage-rectangle math, the composition,
-//! and the protocol. One definition is shared by the compositor (`components/src/compositor.rs`),
-//! its clients (`fixtures/src/window.rs`), the kernel-side test and the host scanout check, so none
-//! can drift about what the screen should show. The prose contract is notes/compositor.md.
+//! The compositor contract's arithmetic: one screen, several mutually distrusting clients, a
+//! surface each.
 //!
-//! ```text
-//!   virtio-gpu ──► display ──gfx FLUSH(damage)──► compositor ◄──doorbell CALL──── window clients
-//!                   │      (rung one's            │  │                        (one surface each)
-//!                   └──the scanout, shared────────┘  └──per-client input endpoint (focus)
-//! ```
-//!
-//! The compositor is rung one's display client unchanged, so `gpu_driver` cannot tell it from
-//! `painter`.
-//!
-//! **There is no authorization code in it at all.** Every client rings one shared doorbell with
-//! content-free requests (`HELLO`, `COMMIT`), because a shared endpoint carries no sender identity
-//! and any request that named a surface would be forgeable. Every per-client fact lives in
-//! per-client memory (the control page in [`proto::ctl`]), every privileged answer travels through
-//! privileged memory (a screenshot lands in the requester's own capture mapping), and the reply
-//! words carry status only. Reading the screen is a mapping the compositor does not hand out, which
-//! is the difference in kind from Wayland's policy checks.
-//!
-//! Not here: GPU acceleration, fonts, window management (the scene is fixed, [`SCENE`]) and alpha
-//! blending; windows are opaque and composition is a copy in stacking order.
+//! It holds the scene ([`SCENE`]), the clipping and damage math, the composition and the protocol
+//! ([`proto`]), checked on the host and shared by `components/src/compositor.rs`, its clients
+//! (`fixtures/src/window.rs`), the kernel-side test and the host scanout check, so none can drift.
+//! It holds no authorization code: every per-client fact lives in per-client memory and the reply
+//! words carry status only. No GPU acceleration, fonts, window management or alpha blending. See
+//! notes/compositor.md, and notes/compositor/arithmetic.md for the scene and the clips.
 //!
 //! Name: ratified 2026-08-01 (calef), replacing `compose`. Refused `compose` (a verb, where a
 //! namespace is a thing), `compositor_proto` (promises a wire definition and delivers an algorithm)
@@ -93,15 +76,12 @@ impl Rect {
         self.w == 0 || self.h == 0
     }
 
-    /// The first column past the rectangle. **Half-open**, like every sane pixel interval: a
-    /// rectangle covers `x .. right()`, and two rectangles that share this edge do not overlap. Every
-    /// classic clipping off-by-one is a confusion between this and "the last column".
+    /// The first column past the rectangle. **Half-open**: a rectangle covers `x .. right()`, and
+    /// two rectangles that share this edge do not overlap.
     ///
-    /// **Saturating, because a client chooses these numbers** (milestone 719 (compositor confinement claim 25)). A damage rectangle
-    /// is read from a client's control page as `(i32, i32, u32, u32)` and reaches this function
-    /// before any clip: `x = i32::MAX, w = 1` is `x + w` past `i32::MAX`, and `w as i32` is negative
-    /// for any `w` above `i32::MAX`. Plain `+` panics on the first in a debug build, which
-    /// kills the compositor and wedges every client behind its one doorbell; in a release build it
+    /// **Saturating, because a client chooses these numbers** (milestone 719 (compositor
+    /// confinement claim 25)): a damage rectangle reaches this before any clip. A plain `+` panics
+    /// in a debug build, killing the compositor and every client behind its doorbell; in release it
     /// wraps. Saturating keeps the sum on the number line, so every caller's clip sees a rectangle
     /// that really is as wide as the client claimed rather than one the wrap folded back.
     pub const fn right(&self) -> i32 {
@@ -260,28 +240,11 @@ impl Window {
 /// **The scene, bottom window first.** A window's index in this array is both its id and its
 /// stacking order: index 0 is at the back, the last is in front.
 ///
-/// Fixed at compile time, and that is a real limitation stated plainly: a compositor normally learns
-/// its windows from clients that ask for surfaces and from a user who moves them. Rung two's subject
-/// is *authority* routing, not window management, so the scene is a constant that the compositor, the
-/// clients, the kernel test, and the host-side scanout check all read, which is what makes the
-/// composed screen a value that can be predicted and then checked pixel for pixel.
-///
-/// The geometry is chosen so that a wrong composite cannot pass:
-///
-/// - three different sizes, so a compositor that assumed one geometry for all surfaces fails;
-/// - **overlap**: windows 1 and 2 each cover part of window 0, so stacking order is observable;
-/// - **clipping**: window 2 hangs off the left edge (negative origin), so a compositor that
-///   clipped only against the surface, or only against the screen, produces a different picture.
-///   (The other edges are covered by the host tests with synthetic windows, so the live scene does
-///   not have to carry every case.)
-///
-/// Each window holds a terminal grid of a few `video_terminal` cells (14x26): 5x2, 5x2 and 2x3,
-/// each with a strip no cell covers. The two terminal windows are five columns because their
-/// scroller lines (`video_terminal::script::window_scroll_line`, `wN-MM`) are five characters: a
-/// narrower window wraps them and scrolls the window's own digit out of sight, and the two
-/// terminals then show the same picture. Each surface is at most four page frames, because the
-/// kernel maps a client's surface one `Spawn::maps` entry a page
-/// (`kernel/src/user/compositor_service.rs`'s `MAX_SURFACE_PAGES`, asserted at build time).
+/// Fixed at compile time, so the composed screen is a value every party can predict and check pixel
+/// for pixel. The geometry makes a wrong composite fail: three sizes, overlap, and a window hanging
+/// off the left edge. Each surface is at most four page frames, because the kernel maps a surface
+/// one `Spawn::maps` entry a page (`kernel/src/user/compositor_service.rs`'s `MAX_SURFACE_PAGES`,
+/// asserted at build time). See notes/compositor/arithmetic.md for why each choice.
 pub const SCENE: &[Window] = &[
     Window::new(16, 26, 72, 52),
     Window::new(40, 50, 71, 56),
@@ -400,11 +363,9 @@ pub fn expected_screen_pixel(n: usize, x: u32, y: u32) -> u32 {
 /// [`window_pixel`]**: the same topmost-window-wins lookup, with the per-window picture supplied by
 /// the caller as `content(id, surface_x, surface_y)`.
 ///
-/// Added for milestone 29's display terminals (a window whose content is a *character grid* rendered
-/// by the `video_terminal` engine, not a coordinate pattern). The composition rule is the compositor's and the
-/// content is the client's, and keeping that split here rather than teaching this crate about fonts
-/// is why `compositor` still does not depend on `video_terminal`: a window is a rectangle of pixels, whatever put
-/// them there.
+/// For milestone 29's display terminals, whose content is a character grid. The composition rule
+/// is the compositor's and the content the client's, which is why `compositor` does not depend on
+/// `video_terminal`.
 pub fn expected_screen_pixel_with(
     n: usize,
     x: u32,
@@ -486,14 +447,13 @@ pub fn damage_to_screen(win: &Window, damage: Rect) -> Rect {
 /// wrote it into its control page (four untrusted words), mapped to what the screen must redraw, and
 /// the status word the compositor writes back into the same page.
 ///
-/// The rectangle is **untrusted input**. It is clipped to the surface the client owns, and the
-/// status says so if it had to be ([`proto::ctl::STATUS_CLIPPED`], per-client feedback through the
-/// only channel that can carry it). The worst a lie can do is make the compositor re-copy the liar's
-/// own pixels: the returned damage is always inside `win` on the screen.
+/// The rectangle is clipped to the client's surface, and the status says so
+/// ([`proto::ctl::STATUS_CLIPPED`]). The worst a lie can do is make the compositor re-copy the
+/// liar's own pixels: the returned damage is always inside `win` on the screen.
 ///
-/// Moved here from the compositor binary's frame loop by the fuzz lane (`lane/fuzz-service-handlers`,
-/// 2026-10-04 UTC) so the host fuzz target `compositor_session` runs the decode the binary runs.
-/// Name: provisional.
+/// Name: provisional, minted 2026-10-04 (UTC) by `lane/fuzz-service-handlers`, which lifted it out
+/// of the compositor binary's frame loop so the host fuzz target `compositor_session` runs the
+/// decode the binary runs.
 pub fn commit_damage(win: &Window, x: u32, y: u32, w: u32, h: u32) -> (Rect, u32) {
     let asked = Rect::new(x as i32, y as i32, w, h);
     let inside = asked.intersect(&win.bounds());
@@ -508,21 +468,10 @@ pub fn commit_damage(win: &Window, x: u32, y: u32, w: u32, h: u32) -> (Rect, u32
 /// **Composite the first `n` windows into `screen`, touching only `damage`.**
 ///
 /// `screen` is `SCREEN_W * SCREEN_H` pixels; `sources[i]` is window `i`'s surface, at least
-/// `SCENE[i].pixels()` long. `damage` is in screen coordinates and is clipped here, so a caller
-/// cannot make this write outside the framebuffer.
-///
-/// Painter's algorithm: background first, then each window in stacking order, each clipped to the
-/// damage. Opaque windows, so "blend" is a copy and the last writer wins, which is what makes the
-/// stacking order observable in the result.
-///
-/// **An empty source is a window that is not on screen yet.** The compositor passes `&[]` for a client
-/// that has never committed, so the first paint (before any client has run) is the background alone
-/// rather than a screen full of somebody's uninitialised frames. It is also the honest answer to "what
-/// does a window with no content look like": nothing.
-///
-/// Every pixel *outside* `damage` is left exactly as it was. That is the whole point of a damage
-/// rectangle, and it is what the host tests and the kernel test both check by poisoning the rest of
-/// the screen and finding the poison intact afterwards.
+/// `SCENE[i].pixels()` long, or empty for a window that has never committed (drawn as nothing).
+/// `damage` is in screen coordinates and clipped here, so a caller cannot make this write outside
+/// the framebuffer. Background first, then each opaque window in stacking order; every pixel
+/// outside `damage` is left as it was. See notes/compositor/arithmetic.md.
 pub fn composite(screen: &mut [u32], sources: &[&[u32]], n: usize, damage: Rect) {
     let damage = damage.intersect(&Rect::screen());
     if damage.is_empty() {
@@ -674,15 +623,10 @@ pub mod proto {
 
     /// **The input ring**: one page the input source shares with the compositor, and nobody else.
     ///
-    /// Keystrokes arrive as bytes here, not as message words, for exactly the reason surfaces do: the
-    /// doorbell is shared, so a keystroke carried in a message would be forgeable and any client
-    /// could inject input into the focused client. Writing this page is the input driver's authority,
-    /// and it is a mapping no client has.
-    ///
-    /// The compositor forwards what it reads here to the focused client as
-    /// `line_editor::proto::OPERATION_BYTES`, the terminal contract's driver half verbatim
-    /// (notes/terminal-contract.md), so a terminal is a client of this compositor without changing a
-    /// line of either contract.
+    /// Keystrokes arrive here rather than in message words because the doorbell is shared, so a
+    /// keystroke in a message would be forgeable. The compositor forwards them to the focused
+    /// client as `line_editor::proto::OPERATION_BYTES`, the terminal contract's driver half
+    /// verbatim (notes/terminal-contract.md), so a terminal needs no change to be a client.
     pub mod ring {
         /// u32, compositor: bytes consumed.
         pub const HEAD: u64 = 0x00;
