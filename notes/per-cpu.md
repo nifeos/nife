@@ -1,6 +1,7 @@
 # The per-CPU block
 
-*Name: provisional, for this note. calef names files.*
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-stacks-cpu, for this note.
+calef names files.*
 
 Each core reaches its own private data in one instruction, through a pointer the architecture
 keeps in a register for that purpose: `TPIDR_EL1` on aarch64, `tp` on RISC-V, `IA32_GS_BASE` on
