@@ -1,36 +1,22 @@
 #![no_std]
-// `Result<_, ()>` is deliberate throughout the build path, and clippy's `result_unit_err` is asking
-// for an error type this layer has nothing to put in. Every failure here is a syscall that already
-// returned its own error to the caller through the ABI; a second, richer error would be inventing
-// detail the kernel did not provide. The unit is honest: it means "the syscall said no", and the
-// caller's recourse is the same regardless of which one.
-//
-// Per-crate rather than per-item because it is one decision about one calling convention, and
-// DECISIONS §38's rule is against blanket dead-code suppression hiding unreachable code, which this
-// is not: nothing here is hidden, and the lint is a style opinion about an error type.
+// `Result<_, ()>` is deliberate: every failure here is a syscall that already returned its own
+// error through the ABI, so the unit means "the syscall said no". Per-crate because it is one
+// decision about one calling convention. §38 (a suppression is scoped to an item and carries a
+// reason)'s rule that a dead-code suppression is an item attribute, never an inner one (milestone
+// 41 (dead code: triage the suppressions)), does not reach a style lint about an error type.
 #![allow(clippy::result_unit_err)]
-// `ChildEndowment::new(retention)` is an empty endowment, and a `Default` impl would give a second
-// spelling for the same thing in a crate whose whole job is that two binaries agree on one
-// spelling. Since DECISIONS §142 it could not be `Default` anyway: the constructor takes the
-// retention declaration precisely so that nothing supplies one silently.
+// `ChildEndowment::new(retention)` is the one spelling of an empty endowment, and it takes the
+// retention declaration so nothing supplies one silently (§142 (what a spawner retains over a child
+// after `START`)).
 #![allow(clippy::new_without_default)]
-//! **The supervision tree: the shared half.** The programs that shrink init's authority
-//! (`root_supervisor`, `spawner`, `sub_server_supervisor`, and the `first_attempt_crasher`
-//! sub-server they manage) share this: the protocol words they speak, and **the tree's only
-//! userspace ELF loader**. `system_initializer` builds with it too; nothing else builds a process
-//! in userspace.
+//! **The supervision tree: the shared half.** The protocol words `root_supervisor`, `spawner`,
+//! `sub_server_supervisor` and `first_attempt_crasher` speak, and the tree's only userspace ELF
+//! loader, which `system_initializer` builds with too. A [`ChildEndowment`] states a child's
+//! complete authority in both directions (§142). See notes/supervision.md and
+//! notes/progenitor-and-loading.md.
 //!
-//! The loader takes the builder's own budget and the budget the child is built *from* as separate
-//! arguments (the same for a server building from its own memory, different for a spawner building
-//! each child in its own reclaimable region), a capability for the reserved fault slot so the child
-//! is born supervised, capabilities for named slots, and **blobs** to copy into the child, which is
-//! what lets a construction sub-server hold one program image instead of the whole initial ramdisk.
-//! A [`ChildEndowment`] states the child's complete authority in both directions: what it is given,
-//! and what its spawner keeps (§142 (what a spawner retains over a child after `START`)).
-//!
-//! The examples are not checked by the gate: this crate depends on `user_mode_runtime`, so
-//! `script/test`'s host pass excludes it; they run under `cargo test --doc -p supervision_protocol`
-//! on an aarch64 host.
+//! The examples run under `cargo test --doc -p supervision_protocol` on an aarch64 host, not in
+//! `script/test`'s host pass, which excludes this crate for its `user_mode_runtime` dependency.
 //!
 //! Name: provisional. Reopened by calef on 2026-10-22 (UTC, #2562), whose ruling was
 //! "`supervision_protocol`: reopen". The question put to him: the crate holds the supervision tree's
@@ -73,16 +59,11 @@ pub const REPORT_SUP_GAVE_UP: u64 = 4;
 pub const REPORT_FAILED: u64 = 9;
 
 // ===========================================================================================
-// The construction protocol: the supervisor asks, the spawner builds. This is the authority split
-// made concrete. The supervisor holds no memory at all, so it cannot build anything itself; the
-// spawner holds a budget and exactly one program image, so it cannot build anything else.
-//
-// **Building is all that is asked here now** (DECISIONS §32). There used to be a `REQ_REAP` too,
-// because reaping was `MemoryRegion::DESTROY` and only the spawner held the region capability, so the
-// supervisor had to proxy the reap through the process that could. §32 put the reap on the
-// supervision endpoint the supervisor already holds, so the hop is gone and with it the handle the
-// spawner had to invent to name an instance the kernel names by tid.
-// ===========================================================================================
+// The construction protocol: the supervisor asks, the spawner builds. The supervisor holds no
+// memory, so it cannot build anything; the spawner holds a budget and one program image, so it
+// cannot build anything else. Reaping is not asked here: it is on the supervision endpoint the
+// supervisor already holds (§32 (a supervisor may collect a corpse without being able to build
+// one)).
 
 /// `send(req, REQ_BUILD, attempt, label)` -> `(REP_BUILT, 0, 0)` or `(REP_FAILED, 0, 0)`. The
 /// spawner starts the child with `attempt` in its second argument register and stamps `label` on
@@ -93,11 +74,9 @@ pub const REQ_BUILD: u64 = 1;
 
 /// **The labels `sub_server_supervisor` gives its two children, and the attempt each starts at**
 /// (milestone 105, DECISIONS §148 (resolves by asking the kernel) as amended 2026-10-04; name
-/// provisional). The supervisor
-/// tells its children apart by nothing else. The first starts at attempt 0, which
-/// `first_attempt_crasher` crashes on; the second at attempt 10, which it finishes cleanly. So a
-/// supervisor that confused the two would restart the wrong one, which is what makes the difference
-/// observable. Mirrored in the kernel's `authority_tests`.
+/// provisional). The first starts at attempt 0, which `first_attempt_crasher` crashes on; the
+/// second at attempt 10, which it finishes, so a supervisor that confused them would restart the
+/// wrong one. Mirrored in the kernel's `authority_tests`.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Plural because it holds both children's labels and their
 /// first attempts; `CHILD_LABELS` was considered and is less specific about whose children.
@@ -115,54 +94,28 @@ pub const REP_FAILED: u64 = 3;
 /// The page size the loader maps in.
 pub const PAGE: u64 = 4096;
 
-/// Where a child's highest stack page sits. One address for every process this system builds, which
-/// is what lets [`configure_child`] compute the entry `sp` without being told.
+/// Where a child's highest stack page sits, one address for every process this system builds, so
+/// [`configure_child`] computes the entry `sp` without being told.
 ///
-/// **The map's `STACK_TOP_PAGE`** (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D), the same page
-/// `kernel::user::USER_STACK_VA` names, derived rather than restated. It was `0x50_0000` until
-/// 2026-09-26, and moving the kernel's copy alone broke `authority_tests` at stage 10 because this
-/// one did not move with it; now neither can move without the other.
+/// The map's `STACK_TOP_PAGE` (milestone 206 (a program image has under 896 KiB), DECISIONS §171
+/// (where a program image starts) option D), which `kernel::user::USER_STACK_VA` also names, so
+/// neither can move without the other.
 pub const CHILD_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
 
-/// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]). Four pages,
-/// which is enough for the supervision tree's programs; the `first_attempt_crasher` sub-server
-/// would be fine with one.
-///
-/// **A child at the interactive prompt gets three times this** (`system_initializer::CHILD_STACK_PAGES`),
-/// and the difference is deliberate rather than drift: the prompt's children run the shell's
-/// redirection path, whose frames grew twice under measurement. The number is a field on [`ChildEndowment`]
-/// so a caller states it, because a builder that silently inherits somebody else's stack size finds
-/// faults that builder does not have (notes/pipes/the-boot.md).
+/// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]): four
+/// pages, enough for the supervision tree's programs. A child at the interactive prompt gets three
+/// times this (`system_initializer::CHILD_STACK_PAGES`), which is why it is a field each caller
+/// states. See notes/progenitor-and-loading.md and notes/pipes/the-boot.md.
 pub const CHILD_STACK_PAGES: u64 = 4;
 
 /// **The builder's scratch window**: where a builder maps each frame it fills for a child, and each
 /// frame of somebody else's it reads (the image request of DECISIONS §219 (how the shell names an
-/// installed program to the spawner)), in its own address space.
-/// 64 MiB, 16,384 pages, from the bottom of the map's runtime windows.
+/// installed program to the spawner)). 64 MiB, 16,384 pages, from the bottom of the map's runtime
+/// windows.
 ///
-/// **Why a window rather than a cursor that only climbs** (milestone 604 (provisional), the
-/// builder's scratch cursor is bounded). Written when there was no unmap: a builder that holds no
-/// capability to its own address space still cannot give a scratch page back itself (one that does
-/// gives each page up as soon as it is filled, [`give_up_own_page`]). But the kernel takes
-/// it back for the builder: a scratch page maps a frame retyped from the child's region, and
-/// destroying that region revokes every mapping of its pages, the builder's included (DECISIONS §13
-/// (frame revocation)). So the page is free again once the child is reaped, and only the builder's
-/// cursor did not know it. Until 2026-09-26 the cursor advanced one page per page built and never
-/// came back; in the progenitor it ran into the kernel's initial ramdisk window at `0x2000_0000`
-/// after 256 MiB, or into the end of its own page-table budget first (milestone 604's block has the
-/// arithmetic). Now [`map_scratch`] wraps at the window's end and asks the kernel, page by page,
-/// which addresses are free.
-///
-/// **Siting.** In [`address_space_map::RUNTIME_WINDOWS`], starting where the cursor always started,
-/// and ending well under the progenitor's initial ramdisk window. `std_runtime_contract`'s three
-/// pages sit inside it, but only in a `std` program's space, and no `std` program builds children.
-/// A window some other party does map in a builder's space costs a probe, not a failure:
-/// [`map_scratch`] skips any page the kernel says is taken.
-///
-/// **Why this size.** Big enough to hold every page one builder can have built and not yet
-/// reaped, which is what must fit at once; small enough that its page tables are a budget a
-/// builder can state ([`SCRATCH_TABLE_PAGES`]). The progenitor checks both at compile time against
-/// its own numbers (`system_initializer::PROGENITOR_RESERVED_PAGES` and `JOBS_BUDGET_PAGES`).
+/// [`map_scratch`] wraps around it, since destroying a child's region revokes the builder's
+/// mappings of it (milestone 604 (provisional), DECISIONS §13 (frame revocation)). The progenitor
+/// checks its size against its own budgets at compile time. See notes/progenitor-and-loading.md.
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
 pub const SCRATCH_WINDOW: address_space_map::Band = address_space_map::Band {
@@ -189,40 +142,15 @@ const _: () = assert!(
 static SCRATCH_NEXT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(SCRATCH_WINDOW.start);
 
-/// **Map `frame` at the next free page of [`SCRATCH_WINDOW`] in our own address space**, with page
-/// tables from `own_ut`, and return the address. `writable` asks for read/write (the frame needs
-/// `WRITE`), otherwise read-only (`READ`).
-///
-/// **The kernel's page table is the free list.** `PageFrame::MAP` refuses an address that is
-/// already mapped, and refuses it whole, so a refusal here means "taken" and the next page is
-/// tried. That refusal is `BadPointer`, which the kernel also returns for a misaligned or
-/// kernel-half address; neither can happen here, because every address this tries is a page of
-/// [`SCRATCH_WINDOW`]. Any other refusal (a frame without the right, an `own_ut` out of pages for a
-/// table) is returned at once, and the cursor stays where it was.
-///
-/// The cursor wraps at the window's end, so a page a reaped child's region gave back is used again
-/// on the next lap. Pages that stay mapped for good (the boot servers' in the progenitor, a running
-/// job's) cost one refused probe per lap each. `Err` after a whole lap with nothing free, which
-/// means the builder holds [`SCRATCH_WINDOW_PAGES`] pages of live children at once.
+/// **Map `frame` at the next free page of [`SCRATCH_WINDOW`]**, with page tables from `own_ut`,
+/// read/write if `writable`; `Err` after a full lap. See notes/progenitor-and-loading.md.
 ///
 /// # BUGS
-///
-/// - **One thread per builder**, which is every builder in the tree: the cursor is read, probed and
-///   written back without a lock, so two threads building at once could try the same page. The
-///   kernel would refuse the second, and it would then be skipped, so the failure is a wasted probe
-///   rather than a shared page.
-/// - **`BadPointer` means "taken" only because every address tried is valid.** A distinct
-///   `AlreadyMapped` error would let the probe say what it means; that is an ABI change, not worth
-///   one on its own.
-/// - **A builder that holds no capability to its own address space still maps every live child's
-///   pages**, read/write. Wrapping bounds how much address space that costs, not what it lets the
-///   builder reach. One that does (the progenitor, at slot 28 since §249 (a running address space
-///   stays nameable)) names it with [`give_up_scratch_through`], and then every page this crate
-///   fills for a child is given up with `AddressSpace::UNMAP` the moment it is in the child
-///   ([`give_up_own_page`]). No other builder in the tree is handed one: §249 makes the grant the
-///   builder's builder's choice, and nothing chose it for them.
-/// - **The progenitor's use of it is computed, not measured**: milestone 604's block has the
-///   arithmetic, and `system_initializer` checks its budgets against the window at compile time.
+/// - One thread per builder: the cursor takes no lock, so two building threads waste a probe.
+/// - `BadPointer` means "taken" only because every address tried is a valid window page.
+/// - Without [`give_up_scratch_through`] (§249 (a running address space stays nameable)), live
+///   children's pages stay mapped read/write in the builder.
+/// - The progenitor's use is computed, not measured (milestone 604's block has the arithmetic).
 ///
 /// Name: provisional (milestone 604). It replaces `scratch_pages`, which handed out a contiguous
 /// run that was never reused.
@@ -275,16 +203,14 @@ pub fn give_up_scratch_through(own_space: u64) {
 }
 
 /// **Give up one page this process mapped for itself**: `AddressSpace::UNMAP` of `va` in its own
-/// space, through the capability [`give_up_scratch_through`] named. A page of the scratch window
-/// once the loader has filled it, and any other window a builder opened onto memory it hands on (the
-/// progenitor's view of the shell's output page, and of two devices' DMA pages). `true` if the page
-/// is gone, `false` if no capability was named or the kernel refused, in which case the page stays
-/// mapped exactly as it did before §162 had a method, and a scratch page is taken back when the
-/// child's region is.
+/// space, through the capability [`give_up_scratch_through`] named: a filled scratch page, or
+/// another window a builder opened onto memory it hands on (the progenitor's view of the shell's
+/// output page, and of two devices' DMA pages). `true` if the page is gone, `false` if no
+/// capability was named or the kernel refused; a scratch page is then taken back when the child's
+/// region is.
 ///
-/// After this the builder cannot reach the child's page at all: a write to `va` faults, which is
-/// milestone 95's negative control (`system_tests`' `running_space_tests`). And the address is free
-/// again, so [`map_scratch`]'s probe finds it on the next page rather than a lap later.
+/// Afterward a write to `va` faults (milestone 95's negative control, `system_tests`'
+/// `running_space_tests`), and [`map_scratch`]'s probe finds the address free.
 ///
 /// Name: provisional (milestone 95's §249 lane, 2026-10-05 UTC).
 pub fn give_up_own_page(va: u64) -> bool {
@@ -336,16 +262,12 @@ pub struct ChildEndowment<'a> {
     /// Capabilities to insert, `(our_slot, rights)`, landing in the child's slots 0, 1, 2, ...
     pub caps: &'a [(u64, u64)],
     /// Capabilities to insert at a slot the caller **names**, `(child_slot, our_slot, rights)`,
-    /// after [`caps`](ChildEndowment::caps). One caller today: a declared diagnostic stream (DECISIONS §67),
-    /// which cannot take the next free slot because how many low slots a child gets depends on what
-    /// else the command line granted it, and a program that probes one slot number needs that
-    /// number not to move.
+    /// after [`caps`](ChildEndowment::caps). For a declared diagnostic stream (DECISIONS §67 (a
+    /// program's second stream is a declaration, not a number)), whose slot must not move with how
+    /// many low slots the command line granted. It cannot collide with
+    /// [`fault`](ChildEndowment::fault), which lands in the table's last slot.
     ///
-    /// It cannot collide with [`fault`](ChildEndowment::fault): that one lands in the last slot of the
-    /// capability table, and a manifest's diagnostics slot is one the program reads at startup, far below it.
-    ///
-    /// `our_slot` may be [`CHILDS_OWN_SPACE`], which places the child's own address space rather
-    /// than a capability of ours; see that constant.
+    /// `our_slot` may be [`CHILDS_OWN_SPACE`], [`CHILDS_OWN_PROCESS`] or [`CHILDS_OWN_THREAD`].
     pub placed: &'a [(u64, u64, u64)],
     /// Pages of ours to map into the child, `(child_va, our_slot, mode)`.
     pub maps: &'a [(u64, u64, u64)],
@@ -366,19 +288,13 @@ pub struct ChildEndowment<'a> {
 }
 
 /// **`our_slot` in a [`ChildEndowment::placed`] entry that means "the child's own address space"**
-/// (§255 (each socket is its own capability); name provisional). For a server that maps pages its
-/// clients hand it and must `UNMAP` one before the next client's page takes its place: the network
-/// stack, which is the only caller today. The rights must be exactly `WRITE`, which lets the child
-/// `MAP_INTO` and `UNMAP` its own space (`PageFrame::MAP` already let it half do that); anything else
-/// refuses the spawn, so no child is ever handed `GRANT` on its own memory. It is inserted before
-/// `CONFIGURE`, while the builder still holds the space, and goes on naming the space while the
-/// child runs (§249 (a running address space stays nameable)).
+/// (§255 (each socket is its own capability); name provisional), for a server that must `UNMAP`
+/// one client's page before the next takes its place: the network stack. The rights must be
+/// exactly `WRITE`, so no child is handed `GRANT` on its own memory. Inserted before `CONFIGURE`,
+/// and it names the space while the child runs (§249).
 ///
-/// **A sentinel rather than a field, and that is an exception.** A typed `Option<u64>` field was the
-/// first version, and it cost the progenitor 352 bytes of stack: debug `boot` keeps about twenty-two
-/// `ChildEndowment`s in its frame, each 16 bytes larger, and that pushed the install path below
-/// `kernel/src/progenitor_stack.rs`'s floor. No capability slot is `u64::MAX`, so the value cannot
-/// name one of ours by accident.
+/// A sentinel rather than a field, and that is an exception: a typed field cost the progenitor's
+/// stack 352 bytes. See notes/progenitor-and-loading.md.
 pub const CHILDS_OWN_SPACE: u64 = u64::MAX;
 
 /// **[`ChildEndowment::placed`]'s marker for the child's own process** (milestone 812
@@ -396,16 +312,12 @@ pub const CHILDS_OWN_THREAD: u64 = u64::MAX - 2;
 
 impl<'a> ChildEndowment<'a> {
     /// An endowment of nothing: no capabilities, no mappings, no supervision, and the default
-    /// stack, retaining whatever `retention` says. Every other field is public, so the intended use
-    /// is `..ChildEndowment::new(Retention::Nothing)` at the end of a struct literal, which is also
-    /// what keeps a later field from being a change to every caller.
+    /// stack, retaining whatever `retention` says. Use it as
+    /// `..ChildEndowment::new(Retention::Nothing)` at the end of a struct literal.
     ///
-    /// **Retention is the one thing this constructor will not supply for you**, and that is
-    /// deliberate (DECISIONS §142). Every other field defaults to "not granted", which is a safe
-    /// default because the failure mode of forgetting one is a child that cannot do something. The
-    /// failure mode of forgetting retention is the opposite: a spawner that silently keeps
-    /// authority over a running child. So it is an argument rather than a default, and the
-    /// nothing-endowment idiom still reads as one line while saying both halves.
+    /// Retention is an argument, not a default (DECISIONS §142): forgetting any other field leaves
+    /// a child unable to do something, but forgetting retention would leave a spawner silently
+    /// keeping authority over a running child.
     pub const fn new(retention: Retention) -> Self {
         Self {
             caps: &[],
@@ -419,24 +331,10 @@ impl<'a> ChildEndowment<'a> {
     }
 }
 
-/// **What the spawner keeps over the child after `START`** (DECISIONS §142). The reciprocal of the
-/// rest of [`ChildEndowment`]: those fields say what the child is given, this one says what the
-/// parent does not let go of.
-///
-/// The tree's answer today is [`Nothing`](Retention::Nothing), which is R0 in §142's vocabulary and
-/// what 25 of the 30 `START` sites already did by calling `cap_delete` a line later. Writing it
-/// down is the point: before this existed the convention was inferable only by grepping for
-/// `cap_delete`, and a spawn path that forgot to decide looked exactly like one that had decided.
-///
-/// **Nothing here can grant an authority the kernel does not offer.** A `ThreadControlBlock`
-/// capability held after `START` authorizes pausing the thread and nothing else: `CONFIGURE`,
-/// `CAP_INSERT`, `START` and `SET_THREAD_POINTER` refuse anything but an `Embryo`, and only
-/// `SUSPEND` and `RESUME` (DECISIONS §300 (the paused state, a TCB verb, silent)) act on a started
-/// thread. So keeping one, or handing it on, is a claim that someone will pause this thread, and
-/// that is why both variants that keep it carry a reason.
-///
-/// The region the child was built from is not declared here, by DECISIONS §303: its disposal is the
-/// builder's bookkeeping across the child's whole life, and its rule is on [`build_child`].
+/// **What the spawner keeps over the child after `START`** (DECISIONS §142,
+/// design/decisions/0142-spawn-retention.md). A `ThreadControlBlock` kept after `START` authorizes
+/// only `SUSPEND` and `RESUME` (DECISIONS §300 (the paused state, a TCB verb, silent)), so the
+/// variants that keep one carry a reason. The child's region is not declared here (§303).
 ///
 /// # Examples
 ///
@@ -454,21 +352,13 @@ pub enum Retention {
     /// (`MemoryRegion::DESTROY`) and the supervision endpoint it was born under (`REAP`).
     Nothing,
     /// The spawner keeps the child's `ThreadControlBlock` capability past `START`, for the reason
-    /// given.
-    ///
-    /// The reason is a required part of the variant rather than a comment beside it, which is
-    /// milestone 50 (pipes and redirection)'s `InputDeclaration::Required` shape: a spawn path cannot keep a capability without
-    /// saying why, because the variant will not build. Every one of the five sites that kept theirs
-    /// before §142 was written had no reason at all, and all five turned out to be
-    /// [`Nothing`](Retention::Nothing) once anybody asked.
+    /// given. The reason is part of the variant, milestone 50 (pipes and redirection)'s
+    /// `InputDeclaration::Required` shape, so a spawn path cannot keep it without saying why.
     ///
     /// # BUGS
     ///
-    /// **The reason is not checked and cannot be.** Nothing reads the string, no gate parses it,
-    /// and `Retention::ThreadControlBlock { reason: "" }` compiles. This is rung one of AGENTS.md's
-    /// ladder for the *question* (you cannot omit the declaration) and rung three for the *answer*
-    /// (the reason is a written record at the thing itself). A caller determined to say nothing can
-    /// still say nothing; what it cannot do is say nothing invisibly.
+    /// - The reason is not checked and cannot be: `reason: ""` compiles. A caller can still say
+    ///   nothing, but not invisibly.
     ThreadControlBlock {
         /// Why this spawner keeps the capability, in the words a reader of the call site needs.
         reason: &'static str,
@@ -488,11 +378,9 @@ pub enum Retention {
 /// **A built child, and what its builder declared it would keep.** What [`build_child`] returns and
 /// [`start_child`] consumes.
 ///
-/// The pair exists so the declaration travels with the handle. `build_child` cannot act on
-/// [`ChildEndowment::retention`] itself, because the deletion happens at `START` and `START` is a
-/// separate step (that seam is [`build_child_space`]'s, and milestone 23's live replacement needs
-/// it). Returning the tcb alone would leave the declaration behind at the build site and the
-/// deletion up to whoever remembered, which is the arrangement §142 exists to end.
+/// The declaration travels with the handle because the deletion happens at `START`, a separate step
+/// from the build ([`build_child_space`]'s seam), and §142 exists so it is not left to whoever
+/// remembers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Child {
     /// The child's `ThreadControlBlock` capability slot, in the builder's own table.
@@ -560,23 +448,13 @@ pub fn build_child(
 
 /// Everything [`build_child`] does **except** the final `CONFIGURE`: lay each segment W^X at the VA
 /// it names, map a stack, copy the blobs in, map `maps`, retype a TCB, insert the endowment.
-/// Returns `(child, address space)`, both still held by us. The [`Child`] carries the retention the
-/// endowment declared, so [`start_child`] can act on it without the caller re-stating it.
+/// Returns `(child, address space)`, both still held by us; the [`Child`] carries the retention.
 ///
-/// Split out for milestone 23's live replacement (DECISIONS §41), which needs to do one more thing
-/// to the child's address space *between* building it and configuring it: map in a device the
-/// operator could not hand over any earlier, because revoking it from the outgoing owner would have
-/// taken the incoming owner's copy too. `CONFIGURE` consumes the address space capability, so once it has
-/// run there is no way to reach the child's memory again; this is where that seam is.
-///
-/// **A failure gives back every capability slot it took** (milestone 757 (a test kernel fails a
-/// process on its Nth retype), provisional). Until then every `?` here returned `Err(())` with the
-/// address space, the frame it was part-way through and any TCB still in the **caller's** table,
-/// recorded 2026-08-26 by milestone 49 (users, login, and attribution) and left because no test could reach it. Milestone 757's
-/// sweep reached it: failing `login`'s tenth retype of a login (this function's first frame) left
-/// one slot behind per failed login. Now the address space is deleted on the way out of
-/// [`lay_out_child`], the TCB on the way out of [`endow_child`], and a frame by whoever retyped it.
-/// The memory itself is the caller's to give back, by destroying `build_ut`, as it always was.
+/// Split out for milestone 23 (a capability-routed component OS with live replacement)'s live
+/// replacement (DECISIONS §41 (the endpoint is the broker)), which maps a device in before
+/// `CONFIGURE` consumes the address space (notes/live-replacement.md). A failure gives back every
+/// capability slot it took (milestone 757 (a test kernel fails a process on its Nth retype),
+/// provisional); the memory is the caller's, given back by destroying `build_ut`.
 pub fn build_child_space(
     own_ut: u64,
     build_ut: u64,
@@ -663,27 +541,10 @@ fn lay_out_child(
         cap_delete(stack_frame);
     }
 
-    // The timebase page, from milestone 161 (the kernel port) and its `cntfrq` follow-up;
-    // riscv64 joined on 2026-09-21. This is
-    // the tree's only
-    // userspace ELF loader, so it is the one place that reaches every child any program here
-    // builds (`root_supervisor`, `spawner`, `hello`'s roles, `system_initializer`, ...) without
-    // every individual caller needing to know about it.
-    //
-    // **The child inherits our rate, and this needs no capability from the kernel.** The first
-    // version of this mapped a freshly retyped, *zeroed* page, on the reasoning that nothing hands
-    // this crate a capability naming the kernel's physical frame, so it could not forward the real
-    // number; a child then read "unknown" and `user_mode_runtime::cntfrq` substituted 1 GHz. The
-    // premise was true and the conclusion did not follow. The real frame is not what a child needs:
-    // the *number* is, and this process already has it, mapped read-only at the same VA by whoever
-    // built us. So we read it (`cntfrq_checked`, no syscall) and write a fresh page for the child out
-    // of `build_ut`, the child's own budget, exactly the way `fill_and_map` already fills every
-    // other blob we hand down.
-    //
-    // **A parent that does not know the rate writes a zeroed page**, deliberately, and the child
-    // then refuses rather than inheriting a number nobody measured (calef, 2026-09-21: only
-    // accurate numbers, never hardcoded ones). Truth propagates down the supervision tree and so
-    // does its absence, which is the honest shape: a subtree cannot know more than its root did.
+    // The timebase page: the builder's own rate, written into a fresh page from `build_ut`, so
+    // every child of this, the only userspace loader, inherits it. A builder that does not know
+    // the rate writes a zeroed page and the child refuses (calef, 2026-09-21: only accurate
+    // numbers). See notes/progenitor-and-loading.md.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
     {
         let page = user_mode_runtime::cntfrq_checked().map(counter_frequency_contract::build_page);
@@ -886,19 +747,9 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 }
 
 /// **Make `child` runnable and then keep or drop its capability as its endowment declared**, with
-/// `a0`, `a1`, `a2` in its entry registers. `false` if the thread was not fully configured (no bound
-/// address space or no entry point) and the kernel refused.
-///
-/// This is the only way to `START` a child in this tree, and that is the mechanism rather than a
-/// convention (DECISIONS §142). A bare `START` helper taking a slot number would let a spawn path
-/// run a child without ever saying what it keeps over it, which is precisely the state §142 wrote
-/// the [`Retention`] field to make unrepresentable. [`Child`] carries the declaration from
-/// [`build_child`] to here, so no call site has to remember it and none can restate it differently.
-///
-/// **The disposal does not depend on whether `START` succeeded.** Retention is a statement about
-/// what the spawner keeps, not about what worked: under [`Retention::Nothing`] the capability goes
-/// back either way, which is what every call site did by hand before this existed (`START`, then an
-/// unconditional `cap_delete`, then a check of the result).
+/// `a0`, `a1`, `a2` in its entry registers. `false` if the kernel refused (no bound address space
+/// or no entry point). The only way to `START` a child here (DECISIONS §142); the disposal holds
+/// whether or not `START` succeeded.
 ///
 /// # Examples
 ///
@@ -915,13 +766,9 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 ///
 /// # BUGS
 ///
-/// **[`Retention::ThreadControlBlock`]'s arm has no caller and therefore no test.** Every spawn
-/// site declares [`Retention::Nothing`] (DECISIONS §142 chose R4 declaring R0) except the
-/// supervised-job spawn in `system_initializer`, which declares [`Retention::Requester`] (§309),
-/// so the arm that keeps the capability for the builder is reached by nothing that runs, and this crate is excluded from `script/test`'s
-/// host pass anyway for its unconditional `user_mode_runtime` dependency. The arm is three lines and does
-/// nothing, which is the only reason that is tolerable; the first site that declares
-/// [`Retention::ThreadControlBlock`] is exercising it for the first time and should say so.
+/// - [`Retention::ThreadControlBlock`]'s arm has no caller and therefore no test: every spawn site
+///   declares [`Retention::Nothing`] or, in `system_initializer`'s supervised-job spawn,
+///   [`Retention::Requester`] (§309). The first site that declares it exercises it first.
 pub fn start_child(child: Child, a0: u64, a1: u64, a2: u64) -> bool {
     let started = thread_control_block_start(child.tcb, a0, a1, a2) == 0;
     match child.retention {
@@ -957,11 +804,8 @@ pub fn forget_thread_control_block(tcb: u64) {
 /// Trap. A half-built system is not worth limping along, and a fault is legible: the kernel prints
 /// the pc and the process dies where the mistake was.
 ///
-/// The instruction moved to [`user_mode_runtime::trap`] in milestone 130; this stays because callers here
-/// mean something more specific than "trap" (a supervision-protocol step failed, and limping on
-/// would build half a system), and that reason is worth a name. What it no longer does is spell
-/// the asm out: this body and `hot_swap_contract::fail`'s were byte-identical copies of each other and of
-/// forty-six other sites.
+/// Named rather than a bare [`user_mode_runtime::trap`] because a caller here means a
+/// supervision-protocol step failed, and limping on would build half a system.
 pub fn fail() -> ! {
     user_mode_runtime::trap()
 }

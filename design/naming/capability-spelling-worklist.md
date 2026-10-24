@@ -1,5 +1,7 @@
 # Capability, spelled out: the worklist
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `capability-worklist`.*
+
 *An appendix to [`design/naming.md`](../naming.md), which is the rule, and the worklist for the
 ruling recorded in [spelled-out-rulings.md](spelled-out-rulings.md#the-tree-spells-capability-never-cap).
 It is a dated census of the tree on 2026-10-06 (UTC), taken before any rename. The counts will

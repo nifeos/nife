@@ -1,5 +1,7 @@
 # Inductive Validity Cores: checked first, and they are not available
 
+*Name: provisional. Named after the main page's own heading.*
+
 An appendix to [`notes/falsification.md`](../falsification.md), which states the conclusion.
 
 §134 named IVCs as the cheaper family and said the implementing milestone should look before

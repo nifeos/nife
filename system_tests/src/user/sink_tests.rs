@@ -5,17 +5,14 @@ use crate::cap::{Rights, rendezvous_cap};
 use crate::sched::RendezvousId;
 
 /// Spawn `fixtures/src/sink_transcript_writer.rs` against `sink`, and return the endpoint it
-/// reports its classification on. `repeat` is how many times to write the transcript, with 0
-/// meaning "until the sink stops taking it", and it is the program's `a0` because the program has
-/// no other argument: there used to be a role number in front of it.
+/// reports its classification on.
 ///
-/// `None` is the case that has no sink, and the wiring says so by **leaving slot 0 empty**
-/// rather than by passing a flag: an empty capability table slot is how this kernel spells "you were
-/// never given one", and it is the refusal an ungranted display client meets too (§29). The
-/// report still goes in at slot 1, placed rather than appended, so the program that holds no
-/// sink is otherwise wired identically to the one that does.
-///
-/// The report endpoint is carved from `endpoints`, a region the caller owns and reclaims.
+/// `repeat` is the program's `a0`, its only argument: how many times to write the transcript, 0
+/// meaning "until the sink stops taking it". `None` leaves slot 0 empty rather than passing a flag:
+/// an empty slot is how this kernel spells "you were never given one", the refusal an ungranted
+/// display client meets too (§29 (the framebuffer is a bigger grant, not an exemption)). The
+/// report goes in at slot 1, placed rather than appended, so the two programs are otherwise wired
+/// identically. Its endpoint is carved from `endpoints`, a region the caller owns and reclaims.
 fn spawn_writer(
     image: &'static [u8],
     sink: Option<RendezvousId>,
@@ -101,27 +98,14 @@ fn wc_counts(out: RendezvousId, what: &str) -> (u64, u64, u64) {
     )
 }
 
-/// **`<` proven the way `>` is: the same `wc`, two sources, the same answer.**
+/// `<` proven the way `>` is: the same `wc`, two sources, the same answer.
 ///
-/// This is the indifference claim on the **input** side, which milestone 50's protocol lane
-/// explicitly left open ("both `< file` and a pipe's read end need an input-slot convention
-/// that does not exist"). The convention chosen is the smallest one available: a source is the
-/// sink contract *received* rather than sent. So this test is what says that choice was real.
-///
-/// One `wc` ELF, spawned twice with identical grants except for what is behind slot 1:
-///
-/// - **a pipe**: this test sends the transcript on an endpoint itself, sixteen bytes at a time,
-///   then `OPERATION_EOF`. That is exactly what a program on the left of a `|` does.
-/// - **a file**: the transcript is written into a real file on the real RedoxFS image by
-///   `file_sink`, and read back out by `file_source`, which streams it over the same contract.
-///   That is `wc < report.txt`, minus the shell that would name the file.
-///
-/// The two arms share nothing but the framing. The second crosses two userspace processes, an
-/// FS server, a block server and a virtio disk; the first does not leave this address space.
-/// `wc` was not told which and holds nothing that could tell it.
-///
-/// The answers must be equal **and** must equal what the transcript actually is, because two
-/// arms broken the same way would satisfy equality on its own.
+/// The indifference claim on the input side, where a source is the sink contract received rather
+/// than sent. One `wc` ELF is spawned twice with identical grants except slot 1: a pipe (this test
+/// sends the transcript sixteen bytes at a time, then `OPERATION_EOF`) and a file (`file_sink`
+/// writes it to the RedoxFS image and `file_source` streams it back, `wc < report.txt` without the
+/// shell). `wc` holds nothing that could tell which. The answers must be equal and must equal the
+/// transcript, because two arms broken the same way would satisfy equality alone.
 #[test_case]
 fn one_reader_two_sources_and_the_same_answer() {
     if fs_service::fs_server_image().is_none() {
@@ -131,13 +115,8 @@ fn one_reader_two_sources_and_the_same_answer() {
         .expect("no sink_transcript_writer in the initial ramdisk");
     let file_sink_image = program("file_sink").expect("no file_sink in the initial ramdisk");
     let file_source_image = program("file_source").expect("no file_source in the initial ramdisk");
-    // **The block server, whichever binary carries it here.** This named `"init"` outright, which
-    // was the aarch64 convention: there `init` *was* the hello binary and hello carried the role. On
-    // both other architectures `init` was the portable `builder` demo, which has no such role, so
-    // this asked for the wrong program on two of three. It never bit, because
-    // `fs_service::start_file_sink` short-circuits on a machine with no disk and neither of those
-    // architectures attaches one to a leg that reaches here; `fs_service::blk_server_image()` is
-    // the one place that disagreement is written down, and now this goes through it.
+    // The block server, whichever binary carries it on this architecture: the binary differs per
+    // ISA, and `fs_service::blk_server_image()` is the one place that records which.
     let blk = fs_service::blk_server_image();
     let Some(redoxfs_server) = program("redoxfs_server") else {
         crate::testing::skip!("no redoxfs_server program in this archive");
@@ -177,12 +156,9 @@ fn one_reader_two_sources_and_the_same_answer() {
     let Some(file_sink) =
         fs_service::start_file_sink(blk, redoxfs_server, file_sink_image, endpoints)
     else {
-        // **The pipe arm above ran and asserted; the file arm is what is missing.** This is
-        // reported as a skip rather than as a pass because the claim in this test's *name* is that
-        // two sources agree, and one source cannot agree with anything. The reason says which half
-        // ran, so the transcript still records that the pipe arm was exercised (and would still
-        // have failed the run had it been wrong): a skip here is a statement about the two-source
-        // property, not about the code that already executed.
+        // The pipe arm ran and asserted; the file arm is missing. A skip, not a pass, because the
+        // test's name claims two sources agree and one cannot agree with anything. The reason says
+        // which half ran.
         crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
         crate::testing::skip!(
             "no RedoxFS disk attached: the pipe arm ran, the file arm did not, so the two \
@@ -236,25 +212,14 @@ fn one_reader_two_sources_and_the_same_answer() {
     crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **The same program, two destinations, the same bytes.**
+/// The same program, two destinations, the same bytes.
 ///
-/// `std_exerciser` is spawned twice with **identical grants except for what is behind slot 1**: once
-/// with an endpoint this test receives on, which is the pipe shape (an ordinary receiver, no
-/// page, no reply), and once with an endpoint served by `file_sink`, which appends
-/// every message into a file on the real RedoxFS image through the real FS server. The file is
-/// then read back by a **third** process with its own FS session and streamed home over the
-/// sink contract.
-///
-/// The two arms share nothing but sixteen bytes of message. One ends in the kernel's own
-/// address space; the other crosses two userspace processes, an FS server, a block server and a
-/// virtio disk. The binary is identical, its code never chose either, and the bytes must be
-/// equal.
-///
-/// **What would make this vacuous, and why it is not.** Comparing each arm against a constant
-/// would pass if both arms were broken the same way, so the second arm is compared against
-/// *what the first arm actually received*, and the first arm against the pinned transcript. An
-/// empty file would satisfy "equal" if the program printed nothing, so the byte count is
-/// asserted on both sides as well.
+/// `std_exerciser` is spawned twice with identical grants except slot 1: an endpoint this test
+/// receives on (the pipe shape), and one served by `file_sink`, which appends every message to a
+/// file on the RedoxFS image; a third process reads the file back over the sink contract. The
+/// second arm is compared against what the first actually received, and the first against the
+/// pinned transcript, since a constant would pass two arms broken alike. Byte counts are asserted
+/// on both sides, since an empty file would satisfy "equal" if the program printed nothing.
 #[test_case]
 fn a_program_cannot_tell_what_its_output_slot_holds() {
     if fs_service::fs_server_image().is_none() {
@@ -294,13 +259,8 @@ fn a_program_cannot_tell_what_its_output_slot_holds() {
     // Arm two: a file sink. It opens its file before the writer exists, for the reason
     // `fs_service::wait_for_caretaker` records: it stages a name in the page it shares with the
     // FS server, and a client that already existed could write over it.
-    // **The block server, whichever binary carries it here.** This named `"init"` outright, which
-    // was the aarch64 convention: there `init` *was* the hello binary and hello carried the role. On
-    // both other architectures `init` was the portable `builder` demo, which has no such role, so
-    // this asked for the wrong program on two of three. It never bit, because
-    // `fs_service::start_file_sink` short-circuits on a machine with no disk and neither of those
-    // architectures attaches one to a leg that reaches here; `fs_service::blk_server_image()` is
-    // the one place that disagreement is written down, and now this goes through it.
+    // The block server, whichever binary carries it on this architecture: the binary differs per
+    // ISA, and `fs_service::blk_server_image()` is the one place that records which.
     let blk = fs_service::blk_server_image();
     // The sink's endpoints and the verifier's, reclaimed at the end once both have exited.
     let endpoints =
@@ -363,23 +323,14 @@ fn a_program_cannot_tell_what_its_output_slot_holds() {
     crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **A dead reader ends the writer, and a missing one does not.** Milestone 50's one behaviour
-/// change, asserted by value on all three outcomes.
+/// A dead reader ends the writer, and a missing one does not: the one behavior change of
+/// milestone 50 (pipes and redirection: one sink protocol), asserted on all three outcomes.
 ///
-/// Unix needs `SIGPIPE` here because an anonymous file descriptor gives the kernel no way to
-/// reach a writer that is not making a syscall. This writer *is* making a syscall, on a
-/// capability the kernel can see is dead, so the fact arrives as a return code.
-///
-/// 1. **A sink that stays**: the transcript arrives and the writer classifies `Ok`.
-/// 2. **A sink destroyed under it**: this test takes a few messages, reclaims the region the
-///    endpoint was retyped from (§16), and the writer's blocked `SEND` classifies `Gone`.
-///    Blocked is the case that matters: a producer in `yes | head` is almost always parked in a
-///    send when its reader exits.
-/// 3. **No sink at all**: an empty slot classifies `NoSink` and the program **keeps running**.
-///
-/// Case 3 is what makes case 2 mean anything. Both used to be `NoSuchSlot`, so a writer that
-/// ended on case 2 would have ended on case 3 as well, killing every program that was simply
-/// never given a console.
+/// A sink that stays classifies `Ok`. A sink whose region this test reclaims after a few messages
+/// (§16 (object revocation)) classifies `Gone` from a blocked `SEND`, as in `yes | head`. An empty
+/// slot classifies `NoSink` and the program keeps running, which is what makes `Gone` mean
+/// anything: a writer that ended on both would kill every program never given a console. A writer
+/// in a syscall on a dead capability needs no `SIGPIPE`. See notes/sink-protocol.md.
 #[test_case]
 fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
     let image = program("sink_transcript_writer")
@@ -446,27 +397,15 @@ fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
     crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **The same indifferent writer, a third destination: the terminal** (milestone 50's last
-/// remainder, notes/sink-protocol.md).
+/// The same indifferent writer, a third destination: the terminal (milestone 50's last remainder).
 ///
-/// `one_reader_two_sources_and_the_same_answer` proved a pipe and a file are interchangeable. This
-/// adds the destination that had been left out, and it is the one with a capability argument under
-/// it rather than a plumbing one.
-///
-/// **The terminal could not simply serve the contract itself.** Its endpoint also carries
-/// `OPERATION_READLINE`, and `WRITE` on an endpoint is the right to `CALL`, so a child handed it as its
-/// output slot would hold the keyboard. A sink capability that can read the keyboard is not a sink
-/// capability. So the terminal's sink is a **separate endpoint served by an adapter**, which is
-/// `fs_file_caretaker`'s shape and exactly what `file_sink` already is for a file.
-///
-/// The wiring is the real one with the terminal replaced by this test: `terminal_sink_caretaker` holds the
-/// sink endpoint `READ` and a terminal endpoint `WRITE`, and the kernel serves the terminal contract
-/// on the far side and collects what arrives. So the assertion is the transcript, byte for byte,
-/// through a real adapter process speaking `line_editor::proto::OPERATION_PRINT`.
-///
-/// It also proves a negative worth having: the writer holds **one** capability, an endpoint to the
-/// adapter. It cannot reach the terminal, so it cannot read a line, and nothing in the program had
-/// to be written to make that true.
+/// The terminal's endpoint also carries `OPERATION_READLINE`, and `WRITE` on it is the right to
+/// `CALL`, so a child handed it as output would hold the keyboard. Its sink is a separate endpoint
+/// served by `terminal_sink_caretaker`, holding the sink `READ` and a terminal endpoint `WRITE`;
+/// the kernel serves the terminal contract on the far side here, so the transcript is asserted byte
+/// for byte through a real adapter speaking `line_editor::proto::OPERATION_PRINT`. The writer holds
+/// one capability, to the adapter, so it cannot read a line. See notes/sink-protocol.md, "The
+/// terminal's sink adapter, and the wall it hit".
 #[test_case]
 fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
     let adapter = program("terminal_sink_caretaker")

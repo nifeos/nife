@@ -3,7 +3,9 @@
 //! one beside the stick and boots it, so the file a person uploads is the file the gate booted.
 //! `cargo xtask stick-boot` writes and boots the riscv64 one, whose `BOOTRISCV64.EFI` is the name
 //! that needs `file_allocation_table`'s long-name entries, so EDK2 reads that run on every run of
-//! the gate.
+//! the gate. The import procedure and what it costs are in `notes/rented-metal/oracle-a1.md`.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! cargo xtask acpi-boot                                   # writes target/cloud-image/nife-aarch64.img
@@ -11,16 +13,17 @@
 //! qemu-img convert -f raw -O vmdk -o subformat=streamOptimized \
 //!     target/cloud-image/nife-aarch64.img target/cloud-image/nife-aarch64.vmdk
 //! ```
+
+//! # Layout
 //!
-//! The disk is a GPT with one partition, an EFI system partition holding the boot file at its
-//! removable-media path (`\EFI\BOOT\BOOTAA64.EFI` on aarch64), which every UEFI firmware looks
-//! for when it has no boot entry of its own, and a freshly imported disk never has one. The partition table and the FAT32 volume are laid
-//! out by the same crates `components/src/system_installer.rs` writes a real disk with, so this is
-//! a host-side caller of the installer's formats, not a second spelling of them. Nothing here reads
-//! its own output back: EDK2 reading it in `acpi-boot` is the check, as OVMF is for the installer.
-//!
-//! The import procedure and what it costs are in `notes/rented-metal/oracle-a1.md`.
-//!
+//! A GPT with one partition, an EFI system partition holding the boot file at its removable-media
+//! path (`\EFI\BOOT\BOOTAA64.EFI` on aarch64), which every UEFI firmware looks for when it has no
+//! boot entry of its own, and a freshly imported disk never has one. The partition table and the
+//! FAT32 volume come from the crates `components/src/system_installer.rs` writes a real disk with,
+//! so this is a host-side caller of the installer's formats, not a second spelling of them. Nothing
+//! here reads its own output back: EDK2 reading it in `acpi-boot` is the check, as OVMF is for
+//! the installer.
+
 //! # BUGS
 //!
 //! - Raw only. Conversion is `qemu-img`'s, run by the person importing, because which container a

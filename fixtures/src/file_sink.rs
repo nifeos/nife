@@ -1,19 +1,23 @@
-//! **A file behind a byte sink** (notes/sink-protocol.md). It holds a directory capability on the
-//! FS service, which can open, read, write anywhere, truncate and stat; its client holds an
-//! endpoint over which the only expressible request is *here are up to sixteen bytes, append
-//! them*. So `> report.txt` grants strictly less than a Unix fd 1, structurally: no message seeks,
+//! A file behind a byte sink (notes/sink-protocol.md). It holds a directory capability on the FS
+//! service, which can open, read, write anywhere, truncate and stat; its client holds an endpoint
+//! over which the only expressible request is *here are up to sixteen bytes, append them*. So
+//! `> report.txt` grants strictly less than a Unix fd 1, structurally: no message seeks,
 //! truncates, re-reads or stats, and nothing in the client's table names the FS server.
 //!
 //! | slot 0 | slot 1 | slot 2 | [`PAGE_VA`] |
 //! |---|---|---|---|
 //! | the sink it serves, `READ` | the FS service, `WRITE` | the report, `WRITE` | shared with the FS server |
+
+//! # Report
 //!
-//! The report carries [`fixture::READY`] once the file is open, then [`fixture::DONE`] and the byte
-//! total, or [`fixture::BAD`] and the failing request; readiness is separate so a caller never
-//! hands the sink to a writer before anything serves it. This is a fixture: the shell's `>` goes
-//! through `components/src/fs_file_caretaker.rs`, and `kernel::user::fs_service::start_file_sink`
-//! is this program's only caller.
-//!
+//! [`fixture::READY`] once the file is open, then [`fixture::DONE`] and the byte total, or
+//! [`fixture::BAD`] and the failing request; readiness is separate so a caller never hands the sink
+//! to a writer before anything serves it. This is a fixture: the shell's `>` goes through
+//! `components/src/fs_file_caretaker.rs`, and `kernel::user::fs_service::start_file_sink` is this
+//! program's only caller. The two messages under EXAMPLES are the whole contract: there is no
+//! third, and that absence is the confinement.
+
+//! # EXAMPLES
 //! ```
 //! use byte_sink_contract::{eof, pack};
 //!
@@ -23,8 +27,7 @@
 //! # let _ = (w0, w1, w2);
 //! ```
 //!
-//! There is no third message, and that absence is the confinement.
-//!
+
 //! # BUGS
 //!
 //! - Each message is written straight through, an FS round trip per sixteen bytes; buffering would

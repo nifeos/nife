@@ -9,6 +9,8 @@ Both are parts of milestone 7 (user mode: EL0, capabilities, the ELF loader, and
   confused deputy by asking the hardware.
 - [`ipc-endpoints.md`](ipc-endpoints.md): milestone 7e. The endpoint as a rendezvous, rights as
   which end you hold, the `Blocked` state, where the message lives, and what single core made easy.
+- [`table.md`](table.md): the design of `crates/capability`, the table, the rights, minting
+  outside `derive`, reap and survey, the two doors and the proofs.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
@@ -17,3 +19,4 @@ Each stem below is named for its content, and calef names files.
 
 - `syscall-surface` Name: provisional. After the parent's own heading.
 - `ipc-endpoints` Name: provisional.
+- `table` Name: provisional.

@@ -13,7 +13,4 @@ detail its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `extended-attributes` Name: provisional. After the parent's own heading.
-- `devices-and-partitions` Name: provisional. After the parent's own heading.
+Each stem here is named for its content, and calef names files.

@@ -94,7 +94,7 @@ SBI defines a remote fence as covering everything in two different ways, and for
 
 Both are correct. The second silently undoes this milestone on every hart but the caller's, which is
 the worst kind of wrong: nothing fails, the numbers just quietly stop improving. The kernel passes
-`start = 0, size = usize::MAX`, and `SBI_RFENCE_ALL` is named in `arch/riscv64/mod.rs` so the choice
+`start = 0, size = usize::MAX`, and `SBI_RFENCE_ALL` is named in `arch/riscv64/remote_fence.rs` so the choice
 is legible at the call site.
 
 ## How it is proved

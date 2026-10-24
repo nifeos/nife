@@ -2,18 +2,11 @@
 //! over the kernel** (a ninth outsider pass at the confinement claim, claim 22; DECISIONS §15 (the
 //! native ABI)).
 //!
-//! `elf_loader_tests` forges a *single*-segment image: one `PT_LOAD` at the kernel's base, or one
-//! that is writable-and-executable. Each of those is refused. This module comes at the same claim
-//! from the angle a single-segment test cannot reach: a program the linker would never emit, with
-//! **two** load segments, the first entirely benign, the second the attack. A loader that checked
-//! only the first segment, or stopped at the first `PT_LOAD` it could place, would load the second
-//! over the kernel or as a writable-executable page. And one segment whose `p_vaddr + p_memsz`
-//! wraps the 64-bit address space, so a low-half base names a high-half span (or the reverse): the
-//! kind of input an attacker reaches for when the half check reads only the base.
-//!
-//! Every image is forged by hand (the loader has no heap; milestone 14 (kernel objects from
-//! untyped) phase C), ELFCLASS64, this build's own machine, so the forgery reaches the property
-//! under test rather than being refused for being foreign. `load` is the real loader `exec` uses.
+//! `elf_loader_tests` forges single-segment images. These forge what one segment cannot: two
+//! `PT_LOAD`s, the first benign and the second the attack, against a loader that checks only the
+//! first; and one segment whose `p_vaddr + p_memsz` wraps, against a half check that reads only the
+//! base. Each is forged by hand (the loader has no heap; milestone 14 (kernel objects from untyped)
+//! phase C) for this build's machine, so it is not refused as foreign; `load` is `exec`'s loader.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: `load` builds a `Half::Low` user `Mapper` on each architecture and refuses
@@ -99,17 +92,11 @@ fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
 
 /// **A benign first segment does not buy a second segment mapped over the kernel.**
 ///
-/// The first `PT_LOAD` is benign text at the image base; the second names the base of the kernel's
-/// half. A loader that placed segments one at a time and stopped checking after the first would map
-/// the second on top of the kernel.
-///
-/// It is refused, which is the claim. **Which refusal is itself informative**: the kernel's half
-/// base is astronomically far above the image band (`0xffff_0000_0000_0000` against a band near
-/// `0x40_0000`), so the span the image would need overruns the band and the *placement* check
-/// (`Misplaced(TooLarge)`) fires before the mapper's `Half::Low` `WrongHalf` guard ever runs. Two
-/// independent guards stand between this forgery and the kernel, and the outer one catches it, so
-/// the assertion is that it is refused, not which guard did it. The entry is kept off the result so
-/// a success is printable (`AddressSpace` is not `Debug`).
+/// The first `PT_LOAD` is benign text at the image base; the second names the kernel half's base,
+/// which a loader that stopped checking after the first would map over the kernel. Either guard may
+/// refuse it: that base (`0xffff_0000_0000_0000`) is far above the image band (near `0x40_0000`),
+/// so the placement check (`Misplaced(TooLarge)`) fires before the mapper's `Half::Low` `WrongHalf`
+/// guard runs. The entry is kept off the result so a success prints (`AddressSpace` lacks `Debug`).
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -138,12 +125,10 @@ fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
 
 /// **A segment whose span wraps the address space is refused, not wrapped into the low half.**
 ///
-/// `p_vaddr` is one page below the top of the 64-bit space and `p_memsz` is four pages, so
-/// `p_vaddr + p_memsz` overflows: a naive `base .. base + memsz` would wrap to a low-half range and
-/// a credulous loader would map pages the attacker never legitimately named, straddling the
-/// canonical hole. The loader must refuse rather than wrap. The base alone is already a high-half
-/// address, so `WrongHalf` is the floor; the point of the oversized `memsz` is that even arithmetic
-/// on it must not turn the refusal into a low-half success.
+/// `p_vaddr` is the last page of the 64-bit space and `p_memsz` is four pages, so a naive
+/// `base .. base + memsz` wraps to a low-half range straddling the canonical hole. The base alone
+/// is high-half, so `WrongHalf` is the floor; the oversized `memsz` tests that arithmetic on it
+/// cannot turn the refusal into a low-half success.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

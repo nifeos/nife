@@ -1,10 +1,7 @@
-//! **Interrupt masking, RISC-V.** The S-mode analog of aarch64's `PSTATE.DAIF` handling.
+//! S-mode interrupt masking on RISC-V, the analog of aarch64's `PSTATE.DAIF` handling.
 //!
-//! On RISC-V, S-mode interrupts are gated by one bit, `SIE` (Supervisor Interrupt Enable) in the
-//! `sstatus` CSR. Setting it lets enabled sources (in `sie`) interrupt; clearing it masks them all.
-//! These are leaf primitives with no dependencies, so they are implemented for real even though the
-//! rest of the RISC-V trap path is not yet built. They are correct standard rv64, but unexercised
-//! until the kernel boots on RISC-V.
+//! One bit, `sstatus.SIE`, gates every S-mode interrupt: set, the sources enabled in `sie` may
+//! interrupt; clear, all are masked.
 
 use super::instructions;
 

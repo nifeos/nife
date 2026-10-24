@@ -2,34 +2,12 @@
 //! page-tables-outlive-destroy lane, 2026-10-05 UTC, provisional; fatal risk 7's confinement claim,
 //! DECISIONS §13 (frame revocation) and §16 (object revocation)).
 //!
-//! `PageFrame::MAP` and `MemoryRegion::MAP` build the intermediate page tables a mapping needs out
-//! of a region the caller names, and until this lane nothing recorded them. `MemoryRegion::DESTROY`
-//! unmaps every *leaf* the mapping log holds in the region and hands the pages back, so the tables
-//! went back too while the space that paid with them still linked them. The next owner of such a
-//! page would be writing that space's translations: a page table is the one page whose contents
-//! are authority. Found by reading the code while landing milestone 762 (a mapping cannot outlive
-//! its frame's revoke) and recorded in `revoke::revoke_region`'s `BUGS`; this module
-//! drives it.
-//!
-//! **What the fix does**, so the assertions read: a table a caller-named region paid for is
-//! recorded in the space's mapping log beside the leaves, and `revoke_region` cuts each recorded
-//! table out of the walk that reaches it before the pages go back. A space keeps running and loses
-//! whatever hung beneath the table, which is what already happens to a leaf the region paid for.
-//!
-//! Each round maps once with tables from `R`, destroys `R` through the real `DESTROY` syscall,
-//! and then looks at the space three ways: does the first page still translate, does the log still
-//! list it, and does a second map beside it (tables from a second region `R2`) build fresh tables
-//! or descend into a page `R` gave back. The last is the one that names the use-after-free: before
-//! the fix it spent nothing from `R2` for tables, because it wrote its leaf into the freed one.
-//!
-//! **Why a kernel test** (notes/scripts.md's rule for one): the property is about the walk, a
-//! page the space links but no longer owns, and a program cannot see its own page tables. It reads
-//! the walk with `translate_at`, the region's spend and the space's log from inside the kernel.
-//!
-//! The rounds run once per path that takes a caller-named region, because the two differ in what
-//! the leaf is: `PageFrame::MAP`'s leaf is another region's page and survives the destroy (so the
-//! first page *still translated* before the fix), while `MemoryRegion::MAP`'s leaf is `R`'s own and
-//! was always unmapped (so only the second map could tell).
+//! `PageFrame::MAP` and `MemoryRegion::MAP` build intermediate page tables from a region the caller
+//! names, and a page table is the one page whose contents are authority. Each round maps with
+//! tables from `R`, destroys `R` through the real `DESTROY`, then asks whether the first page still
+//! translates, whether the log lists it, and whether a second map (tables from `R2`) builds fresh
+//! tables or descends into a page `R` gave back, which names the use-after-free. A kernel test, as
+//! a program cannot see its page tables. See notes/frames.md, "Page tables a region paid for".
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

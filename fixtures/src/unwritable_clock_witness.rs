@@ -1,53 +1,39 @@
-//! **Everything a network time client holds, and the clock page is still not reachable**
-//! (milestone 51, split out of the client's binary by milestone 290; notes/ntp.md).
+//! **Everything a network time client holds, and the clock page is still not reachable** (milestone
+//! 51, split out of the client's binary by milestone 290 (`components/src/ntp.rs` is three programs
+//! wearing one name); notes/ntp.md).
 //!
 //! Spawned with `components/src/network_time_client.rs`'s five slots and told the address at which
-//! a process holding the *set* authority maps the clock page. It reports the address, writes there,
-//! and faults, because its address space has no mapping of that frame at any address. **The
-//! boundary is the mapping, not the layout**, and knowing where to look buys nothing.
+//! a process holding the *set* authority maps the clock page, it reports the address, writes there,
+//! and faults: its address space maps that frame nowhere. **The boundary is the mapping, not the
+//! layout.** This is the claim Unix cannot make, since `ntpd` runs as root.
+//! `an_ntp_client_holds_no_writable_clock_page` in `system_tests/src/user/ntp_tests.rs` is the
+//! assertion; this program is the thing it asserts about.
+
+//! # What keeps it honest
 //!
-//! This is the claim Unix cannot make. `ntpd` runs as root: there is no address in a Unix system
-//! its `settimeofday` cannot reach. `an_ntp_client_holds_no_writable_clock_page` in
-//! `system_tests/src/user/ntp_tests.rs` is the assertion; this program is the thing it asserts about.
-//!
-//! # Why this can be its own binary, and what actually keeps it honest
-//!
-//! Until milestone 290 this was a role of the client's binary, and the client's header said the
-//! proof rested on it being *the same binary*. **That argument is false, and it is worth recording
-//! because it was believed.** The fault is caused by the **capability set**: any process holding
-//! that endowment faults at that address whatever code it runs, and no amount of shared machine
-//! code would make a stale capability list fault.
-//!
-//! What keeps this witness honest is that it and the client are endowed by **one function**,
-//! `spawn_with_client_endowment` in `kernel/src/user/ntp_service.rs`, which takes the image as a
-//! parameter. A sixth slot added to the client is a sixth slot this program gets, and there is no
-//! second capability list anywhere to forget to update. **If you are ever about to write one, stop**:
-//! a hand-maintained second copy of a fact the wiring already holds is how a security claim decays
-//! without breaking a build, which is milestone 117's `swish` `caps` bug.
-//!
+//! The fault comes from the **capability set**, not the code, so this need not share the client's
+//! binary. It and the client are endowed by **one function**, `spawn_with_client_endowment` in
+//! `kernel/src/user/ntp_service.rs`, which takes the image as a parameter, so a sixth slot added to
+//! the client is a sixth slot here. **Never write a second capability list**: a hand-kept copy of a
+//! fact the wiring holds is how a security claim decays without breaking a build (milestone 117
+//! (the stranger test)'s `swish` `caps` bug). See notes/ntp/the-client-tests.md.
+
 //! # Reaching the second report is the failure
 //!
-//! It reports [`RPT_PROBING`] **before** the write. Anything after that means the write did not
-//! fault, so the test asserts three things at once: that the user-fault counter rose, that the
-//! faulting address was exactly the one it aimed at, and that **no second report is waiting**.
-//!
-//! The fault is a **translation** fault rather than a permission fault, because this process holds
-//! no mapping of the clock page at all. The test deliberately does not assert the kind: the claim
-//! is about the address a client aimed at and was stopped at, and pinning the kind would make the
-//! test fail if the page were ever mapped read-only, which would be a *weaker* system passing a
-//! stricter-looking assertion.
-//!
+//! It reports [`RPT_PROBING`] **before** the write, so the test asserts that the user-fault counter
+//! rose, that the faulting address was exactly the one it aimed at, and that **no second report is
+//! waiting**. The fault is a translation fault (it maps the page nowhere), and the test
+//! deliberately does not assert the kind: pinning it would fail if the page were ever mapped
+//! read-only, a *weaker* system passing a stricter-looking assertion.
 
 //! # BUGS
 //!
-//! - **This proves an absence, so it can only ever be a witness to one wiring.** It shows that the
-//!   client's endowment does not reach the clock page at the address the setter uses. It does not,
-//!   and cannot, show there is no other page in the system that would let a client move time; that
-//!   would be a proof over the whole capability graph, which nothing here performs.
-//! - **It writes `clock_contract::state::SET` because that is what a real attempt would write**, and
-//!   nothing checks the value, since the write never lands. If the confinement ever broke, the
-//!   clock page would be left holding a plausible state word rather than an obvious sentinel, and
-//!   the test would catch it through `clock.page()` changing rather than through the value.
+//! - **This proves an absence, so it witnesses one wiring.** The client's endowment does not reach
+//!   the clock page at the setter's address; showing no other page lets a client move time would be
+//!   a proof over the whole capability graph, which nothing here performs.
+//! - **It writes `clock_contract::state::SET` because a real attempt would**, and nothing checks
+//!   the value, since the write never lands. If confinement broke, the page would hold a plausible
+//!   state word, not a sentinel, and the test would catch it through `clock.page()` changing.
 //!
 //! Name: ratified 2026-09-14 (calef, milestone 290), ruled on being offered it against
 //! `clock_page_write_attempt`. The register is this tree's existing fixture names

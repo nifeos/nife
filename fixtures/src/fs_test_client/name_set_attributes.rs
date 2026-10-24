@@ -14,21 +14,14 @@ use user_mode_runtime::{call, exit, send};
 
 use crate::channel::{FILE, REPORT, dir_descend, dir_open, get_page, put_page, put_page_at};
 
-/// **The attribute witness behind a name-set grant** (milestone 61, the third caretaker).
+/// The attribute witness behind a name-set grant (milestone 61, the third caretaker).
 ///
-/// `fs_nameset_caretaker` narrows a directory capability to a designated *set* of names, and it is
-/// the one caretaker that inspects a name on every request. Milestone 61 taught it four verbs whose
-/// operand is an **attribute** name rather than a directory name, and that distinction is the whole
-/// risk: filtering an attribute name against the set would refuse a program its own file's
-/// attributes, and *not* filtering a directory name would be an escape. This asks both questions.
-///
-/// It is told nothing about its grant. The kernel test wires it over the `sub` fixture with a set of
-/// exactly one name, so `inner` is designated and `deeper`, one entry away in the same directory, is
-/// not. `rm`'s witness already asks the naming question with `REMOVE` alone; this asks it with
-/// `READ`, because closing an attribute gap by opening a naming one would be a poor trade.
-///
-/// The attribute is removed before it reports, so the file the gate's post-run host check pins is
-/// left byte for byte as it was found, with nothing attached.
+/// `fs_nameset_caretaker` filters names against a set, and its four attribute verbs take an
+/// attribute name, not a directory name: filtering the first would refuse a program its own file's
+/// attributes, and not filtering the second would be an escape. The kernel test wires it over `sub`
+/// with the set `{inner}`, so `deeper` is one entry away and undesignated; this asks the naming
+/// question with `READ`. It removes its attribute before reporting, so the file the post-run host
+/// check pins is left as found. See notes/fs-server/the-test-client.md.
 pub(crate) fn set_attrs() -> ! {
     use fixture::{dirscape as esc, tree};
     let mut v = 0u64;

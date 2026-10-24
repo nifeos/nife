@@ -1,15 +1,12 @@
 //! **Milestone 30 (the network stack as a confined component)'s gates, over the network card a PC
 //! actually has** (milestone 494 (a driver for the network card a PC actually has); notes/e1000e.md).
 //!
-//! The same `net_stack`, the same smoltcp, the same socket contract and the same client role as
-//! the virtio gates in `network_tests.rs`, with one thing changed: the NIC is QEMU's `e1000e` (an Intel
-//! 82574L, the family xenon's I219 belongs to), reset and programmed by the kernel and driven at
-//! EL0 through two pages of BAR0 and a DMA region confined by the IOMMU. **One module for all three
-//! architectures**, because this is the first NIC the x86_64 leg has, and the parity claim is that
-//! the same cases pass on each.
-//!
-//! What a pass here is not: a claim about the I219. QEMU's model is the 82574L; xenon's bench step
-//! (notes/e1000e.md) is what proves the real part.
+//! The same `net_stack`, smoltcp, socket contract and client role as the virtio gates in
+//! `network_tests.rs`, with the NIC changed to QEMU's `e1000e` (an Intel 82574L, the family xenon's
+//! I219 belongs to): reset and programmed by the kernel, driven at EL0 through two pages of BAR0 and
+//! a DMA region the IOMMU confines. One module for all three architectures; the parity claim is that
+//! the same cases pass on each. A pass is not a claim about the I219: xenon's bench step
+//! (notes/e1000e.md) proves the real part.
 
 use super::*;
 
@@ -27,11 +24,8 @@ fn image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
 }
 
-/// **The lease, and the confinement it was won under.** smoltcp's DHCP round trip completes over
-/// the `e1000e` data plane at EL0, and the address lands in slirp's 10.0.2.0/24, which only a real
-/// exchange through the device can produce. The IOMMU that owns the NIC was translating it: on this
-/// device the queue pages carry the ring base registers, so the IOMMU is the whole of the DMA
-/// confinement and a pass without it would prove the driver and not the claim.
+/// **The lease, and the confinement it was won under:** DHCP over the `e1000e` at EL0 reaches
+/// slirp's 10.0.2.0/24 behind the IOMMU that owns the NIC (notes/e1000e/the-system-tests.md).
 ///
 /// Falsification: attested 2026-10-04. On patagonia, x86_64 under the PVH runner, with
 /// `kernel/src/e1000e.rs::region_for`'s `iommu::confine` call skipped so the NIC had no domain:

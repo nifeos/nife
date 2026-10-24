@@ -1,5 +1,7 @@
 # The terminal's sink adapter needed a new opcode, which was not known
 
+*Name: provisional. After the opcode it is about.*
+
 An appendix to [`notes/sink-protocol.md`](../sink-protocol.md), which states the result.
 
 The plan said the adapter would be `file_sink`'s shape and that the work was rewiring the progenitor. Building

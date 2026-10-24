@@ -1,10 +1,8 @@
 //! **The farm's input stamp**: a hash of everything that decides what the farm holds, so a stale
 //! farm is rebuilt rather than trusted.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -55,8 +53,7 @@ pub(crate) fn std_inputs_stamp() -> u64 {
         // The argument page (milestone 205, DECISIONS §170 (how a foreign program is told what to do)): `sys/args` reads the byte argv's
         // layout out of this crate, so a change to it must rebuild the farm.
         root.join("crates/program_argument_contract/src/lib.rs"),
-        // The byte-sink contract, generated into the PAL as `sinkproto` like the rest, and missing
-        // from this list until 2026-10-09 (UTC): a change to it did not rebuild the farm.
+        // The byte-sink contract, generated into the PAL as `sinkproto` like the rest.
         root.join("crates/byte_sink_contract/src/lib.rs"),
         // The std runtime contract (milestone 595 (provisional)): `rt`'s slot numbers and page
         // addresses, generated verbatim into the PAL, so the loader and the PAL read one file.
@@ -67,10 +64,9 @@ pub(crate) fn std_inputs_stamp() -> u64 {
         root.join("targets/aarch64-unknown-nife.json"),
         root.join("targets/riscv64-unknown-nife.json"),
         root.join("targets/x86_64-unknown-nife.json"),
-        // The timebase page, from milestone 184 (extend the `std` port to x86_64); riscv64 joined
-        // 2026-09-21. `rt::cntfrq` reads it on
-        // the two architectures with no register stating the rate, and its layout is generated
-        // verbatim into the PAL like every contract above.
+        // The timebase page (milestone 184 (extend the `std` port to x86_64)): `rt::cntfrq` reads
+        // it on riscv64 and x86_64, which have no register stating the rate, and its layout is
+        // generated verbatim into the PAL like every contract above.
         root.join("crates/counter_frequency_contract/src/lib.rs"),
         // The current-CPU page and the map it is placed by (milestone 812 (`std::thread::spawn`
         // runs real threads in one address space)): `available_parallelism` reads the allowance
@@ -93,18 +89,11 @@ pub(crate) fn std_inputs_stamp() -> u64 {
     collect_files(&talc_source_dir().join("src"), &mut files);
     files.sort();
     for f in files {
-        // **Hash the path RELATIVE to the workspace root, never the absolute path.** An absolute path
-        // makes the stamp a function of *where the checkout lives*, so two trees with byte-identical
-        // inputs never match and `std_src` rebuilds the farm unconditionally. Until 2026-10-10 that
-        // rebuild also repointed the one machine-wide `nife-dev` link, which is the race behind
-        // three broken toolchains on 2026-07-31: an agent worktree ran `script/test`, took the
-        // link, and deleting that worktree left `nife-dev` dangling for everything else, failing
-        // far from the cause as "override toolchain 'nife-dev' is not installed". Each worktree
-        // links its own name now ([`toolchain_name`]); a needless rebuild still costs minutes.
-        //
-        // The stamp is meant to answer "are the farm's *inputs* unchanged", and a checkout's location
-        // is not one of its inputs. `strip_prefix` cannot fail here (every path is built from `root` or
-        // collected beneath it), but fall back to the full path rather than panicking in a build tool.
+        // Hash the path relative to the workspace root, never the absolute path: the stamp answers
+        // "are the farm's inputs unchanged", and where the checkout lives is not an input. An
+        // absolute path would make two trees with identical inputs never match, and `std_src`
+        // would rebuild the farm every time, at minutes a rebuild. `strip_prefix` cannot fail
+        // (every path is built from `root` or collected beneath it); the fallback avoids a panic.
         let rel = f.strip_prefix(&root).unwrap_or(&f);
         h = fnv(h, rel.to_string_lossy().as_bytes());
         if let Ok(bytes) = std::fs::read(&f) {

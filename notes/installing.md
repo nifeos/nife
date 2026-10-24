@@ -212,6 +212,24 @@ The sixth, the partition-bounded mount, is a `BUGS` entry in `system_installer` 
 because what closes it is a wire value two programs agree on and that is an architect's to name
 rather than a lane's to propose.
 
+## The install gate's BUGS, in full
+
+The `BUGS` in `xtask/src/install.rs` are one line each. Here is what stands behind them.
+
+- The disk is one 1 GiB image. The installer's layout arithmetic has a floor and a rounding step
+  that nothing varies, and a disk under about 600 MiB is refused by code no test exercises.
+- The gate takes about 42 seconds warm. It is still not in `script/test`'s default legs, and
+  nothing schedules it.
+- Boot 3 proves the stick left the disk alone under OVMF, and only there. What keeps it so is the
+  `boot_slot::medium` token above. The loader writes it only when its file is on an NVMe namespace.
+  A real firmware that built that device path differently would leave an installed machine without
+  its filesystem, rather than a stick with one.
+- Boot 3 needs the disk in the firmware's boot order. OVMF connects only the devices its boot
+  options name, so with the stick alone the loader never sees the disk and G1 cannot happen.
+  `NIFE_NVME_DEVICE_OPTS=,bootindex=1` makes it the machine a boot menu would give.
+- A failure leaves the NVMe image behind, because it is the evidence. `hdiutil attach -imagekey
+  diskimage-class=CRawDiskImage` on the partition reads the EFI system partition it wrote.
+
 ## See also
 
 - [Booting x86_64 from real firmware](x86-uefi-boot.md): the loader this builds on, and the bench

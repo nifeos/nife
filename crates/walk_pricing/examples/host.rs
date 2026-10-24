@@ -1,25 +1,17 @@
 //! **The host side of milestone 121 (`ripgrep` on nife: enumeration as a capability)'s walk
-//! pricing**: stage the fixture tree in a scratch
-//! directory and price a walk over it, with the very function nife's `std_exerciser` runs through
-//! a granted directory.
-//!
-//! On macOS this is a reference point, not a competitor: APFS on the real NVMe device with its
-//! dentry and page caches, against nife under an emulator or a hypervisor. Build it in release,
-//! as every comparison does:
+//! pricing**: stage the fixture tree in a scratch directory and price a walk over it, with the
+//! very function nife's `std_exerciser` runs through a granted directory. On macOS this is a
+//! reference point, not a competitor (APFS on NVMe against nife under an emulator or hypervisor).
+//! `DIR` defaults to a fresh directory under the host's temp dir, and is removed afterwards.
 //!
 //! ```text
 //! cargo run --release -p walk_pricing --example host [DIR]
 //! ```
-//!
-//! `DIR` defaults to a fresh directory under the host's temp dir, and is removed afterwards.
-//!
+
 //! # BUGS
 //!
-//! - **The matched-tier Linux run stages on tmpfs.** `bench/host/run_linux_walk.sh` (milestone
-//!   606, a directory walk costs what it does on Linux) builds this example static for musl and
-//!   boots it as PID 1 under QEMU-HVF on the machine nife's bench boot uses, so the tree lives on
-//!   the initramfs rather than ext4 on virtio. For a warm walk that does not matter; for a cold
-//!   one it does, and notes/walk-cost.md says so.
+//! - The matched-tier Linux run stages on tmpfs, which matters for a cold walk; see
+//!   notes/walk-pricing.md, "What the instrument does not see".
 
 fn main() {
     let dir = std::env::args_os()

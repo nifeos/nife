@@ -1,9 +1,7 @@
 //! **Where each std-built program's ELF lands**, for the archive to pack.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -129,21 +127,15 @@ pub(crate) fn pinned_tls_exerciser_elf(triple: &str) -> PathBuf {
     ))
 }
 
-/// **Build the TLS graph's two programs for `triples`**: milestone 855 (the TLS graph enters the
-/// gated build).
+/// **Build the TLS graph's two programs for `triples`**, and return whether both built: milestone
+/// 855 (the TLS graph enters the gated build).
 ///
 /// `cryptography_exerciser` (milestone 442) and `pinned_tls_exerciser`'s workspace, whose second
-/// binary is milestone 801 (packages over the internet)'s `package_fetch_exerciser`. Each is its own
-/// workspace, fetched from crates.io as the rest of the tree is, and this runs the two helpers that
-/// already built them by hand rather than a second copy of their cargo lines. calef launched the
-/// milestone on 2026-10-10 (UTC), option 1 of its block: the programs build wherever the kernel
-/// suite runs, so a toolchain bump or a `std` overlay change that breaks them turns a pull request
-/// red instead of nobody's.
-///
-/// Only the legs being run are built, through `NIFE_CRYPTO_TRIPLES`, so `--arch riscv64` pays for
-/// one triple. Cold, both workspaces measured about 28 s a triple on patagonia (the block's figure);
-/// warm, cargo finds nothing to do. The helpers start with `cargo xtask std-src`, which the caller's
-/// [`std_exerciser`] has just run, so it returns on its stamp.
+/// binary is milestone 801 (packages over the internet)'s `package_fetch_exerciser`, built by their
+/// two helpers (no second copy of the cargo lines) wherever the kernel suite runs, so a toolchain
+/// bump or `std` overlay change that breaks them turns a pull request red. Only `triples` are built
+/// (`NIFE_CRYPTO_TRIPLES`). Cold, both measured about 28 s a triple on patagonia (the block's
+/// figure); warm, nothing to do. The helpers start with `cargo xtask std-src`, already run.
 ///
 /// Name: provisional, 2026-10-10 (UTC), after the milestone's own words.
 pub(crate) fn tls_graph(triples: &[&str]) -> bool {

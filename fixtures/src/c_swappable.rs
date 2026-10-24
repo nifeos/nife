@@ -1,21 +1,14 @@
-//! **The swappable component, version 2: the replacement, and it is written in C** (milestone 23,
-//! DECISIONS §41, over the seam DECISIONS §31 built).
+//! The swappable component, version 2: the replacement, written in C (milestone 23 (a
+//! capability-routed component OS with live replacement), DECISIONS §41 (the endpoint is the
+//! broker), over the seam DECISIONS §31 (the foreign-language seam) built).
 //!
-//! Identical to [`rust_swappable`](../rust_swappable/index.html) in every respect a client could
-//! observe: same capability layout, same wire protocol, same serving loop (both compile `swap.rs`).
-//! The one difference is the function that computes a request's answer, which here is `cx_digest`
-//! in `fixtures/c/c_swappable.c`, compiled by a bare-metal clang and linked into this binary alone.
-//!
-//! **Why that difference is the point.** "A client did not notice the swap" is a much weaker claim
-//! if the replacement is a recompile of the same source. Here the replacement is a different
-//! implementation, in a language the kernel's safety argument does not extend to, and the client
-//! checks every answer against its own independent computation. What holds across the swap is the
-//! *contract*, which is exactly what the milestone says a component is.
-//!
-//! The confinement story is unchanged from milestone 36: the C holds no capability and makes no
-//! syscall, because this Rust shell holds every capability and does every syscall. The C's entire
-//! interface to the system is `(uint64_t) -> uint64_t`.
-//!
+//! Identical to [`rust_swappable`](../rust_swappable/index.html) in everything a client can
+//! observe: capability layout, wire protocol and serving loop (both compile `swap.rs`). Only the
+//! answer differs in origin: `cx_digest` in `fixtures/c/c_swappable.c`, linked into this binary
+//! alone. The C holds no capability and makes no syscall; its whole interface is
+//! `(uint64_t) -> uint64_t`. A different implementation in another language is what makes "a client
+//! did not notice the swap" a claim about the contract. See notes/live-replacement.md.
+
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `cconx`. Refused `conx` and `cconx`:
 //! no expansion for `conx` is recorded anywhere, not in DECISIONS §41, not in
 //! notes/live-replacement.md, not in the commit that introduced it, and that absence is one of the
