@@ -106,6 +106,26 @@ through the backoff instead of spinning. That is a small kernel-surface addition
 timeout, or a timer notification) and is left as the follow-up. The yield-poll is correct and needs no
 new syscall.
 
+## The wait ends at the caller's deadline
+
+`wait_for_nic` (`components/src/nic_wait.rs`) now ends at the earliest of three things: a frame,
+smoltcp's next timer, and the caller's deadline. It sleeps on a timer bound to the server thread
+(slots 5 and 6, milestone 106 (a wait that ends on either the interrupt or the deadline)), so the
+hart is idle through a retransmit backoff. It blocks on the interrupt alone only when there is
+neither a timer nor a deadline.
+
+The deadline is what makes `service_until`'s 15 s bound a bound (2026-10-13 UTC). A listener with
+nobody connecting, or a connection whose peer has gone silent, leaves smoltcp no timer. Without the
+deadline the wait blocked until a frame that might never come. The inbound prober holding a
+connection to nobody (milestone 514 (the HVF std listener hangs in some full runs)) sends nothing,
+so the std listener's `ACCEPT` never expired and its retries never ran. A filtered run of the
+hand-written listener test, which starts no prober, hung the same way every time.
+`an_accept_nobody_answers_ends_at_the_stacks_bound` holds the bound on riscv and aarch64.
+
+A polled NIC (the `e1000e` server, and radon's Ethernet port) holds no interrupt. Its wait,
+`poll_without_interrupt`, sleeps at most `e1000e_transport::POLL_MS`, so the caller's bound holds
+there too.
+
 ## The UDP gate must not depend on the host's resolver (a testing-hygiene defect, fixed)
 
 The UDP socket-contract test queried `10.0.2.3:53` and called it "slirp's built-in resolver". That
