@@ -98,3 +98,7 @@ area directories), ruled B). Appendices under
 `aarch64-port.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings `riscv-port.md` and `x86-port.md`.
 
 `swish-check-harness.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-04. The stem names the program, `script/swish-check`, and the part of it the page covers: the host side that types the script and reads the transcript back.
+
+`xtask-test.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-03.
+
+`swish-check-boot.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-03.
