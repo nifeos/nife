@@ -1,5 +1,8 @@
 # Probing an AWS Graviton metal instance
 
+*Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC), after the machine family it
+probes. The directory `aws-graviton/` follows §212 (a prose budget)'s siting default.*
+
 The runbook for one paid hour on a `c7g.metal` (Graviton3, Neoverse V1, 64 cores), the first ARM
 machine under calef's ruling "Rent first." (2026-10-21 UTC, on #2517). The hour answers four
 questions with primary evidence, read off the machine rather than off documentation:
@@ -280,6 +283,3 @@ watchdog's 180 minutes, and more if the workstation sleeps.
 - AWS, [EC2 on-demand pricing](https://aws.amazon.com/ec2/pricing/on-demand/): per-second billing, 60-second minimum.
 - AWS, [instance type quotas](https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html) (through a mirror and the CLI examples): quota `L-1216C47A`, default 5 vCPUs.
 - instances.vantage.sh, [c7g.metal](https://instances.vantage.sh/aws/ec2/c7g.metal) (secondary): $2.32 an hour.
-
-*Name: provisional (the AWS Graviton probe's lane, 2026-10-21 UTC), after the machine family it
-probes. The directory `aws-graviton/` follows §212 (a prose budget)'s siting default.*

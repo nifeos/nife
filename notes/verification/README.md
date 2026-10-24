@@ -19,5 +19,3 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
 Name: provisional, for the directory and every stem in it. The directory follows the `notes/<stem>/`
 appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named
 for its content. calef names directories and files, and `script/names --unratified` lists each stem.
-
-- `direct-memory-access-validator` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `dma-validator`.

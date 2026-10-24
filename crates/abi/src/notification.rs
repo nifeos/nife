@@ -24,16 +24,11 @@ pub const POLL: u64 = 2;
 /// the word is non-zero, the bind delivers it at once rather than leaving it for later.
 pub const BIND: u64 = 3;
 
-/// **The tag on a receive that the bound notification ended** rather than a message.
-///
-/// A receive (`RECEIVE`, `RECEIVE_CAP`, `Irq::WAIT`) woken by the bound notification returns
-/// `(BOUND, word, 0, 0, BOUND)`: this value in `x0` as §101 specified, the notification's word
-/// in `x1`, **and this value again in `x4`, which is the one to test.** `x0` is a sender's own
-/// first word on an ordinary `RECEIVE`, so any sender can put `BOUND` there; `x4` is written only by
-/// the kernel, and is `0` on every other receive (ordinary messages, `CALL`s, interrupt
-/// signals, and §26 death messages, whose fifth word is reserved `0`).
-///
-/// Ruled by calef on 2026-09-26 (`notes/notification-objects.md`, option B). §26.4's
-/// fault-reply protocol, which [`fault`](super::fault) says arrives in `w4`, must not put this
-/// value there.
+/// **The tag on a receive that the bound notification ended** rather than a message. A receive
+/// (`RECEIVE`, `RECEIVE_CAP`, `Irq::WAIT`) woken by the bound notification returns `(BOUND, word,
+/// 0, 0, BOUND)`: this value in `x0` as §101 (notification objects) specified, the word in `x1`,
+/// **and this value again in `x4`, which is the one to test.** Any sender can put `BOUND` in `x0`;
+/// `x4` is written only by the kernel, and is `0` on every other receive. Ruled by calef on
+/// 2026-09-26 (`notes/notification-objects.md`, option B). The fault-reply protocol
+/// that §26 (the fault endpoint) reserves `w4` for must not put this value there.
 pub const BOUND: u64 = 2;

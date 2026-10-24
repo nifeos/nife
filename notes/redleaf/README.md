@@ -22,13 +22,4 @@ sources read on 2026-09-20.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `sources` Name: provisional. For the source table it holds.
-- `the-2017-ancestor` Name: provisional. After the parent's "The ancestor: the 2017 case".
-- `corrections-to-the-brief` Name: provisional. After the parent's "Corrections to the sketch this
-  lane was briefed with".
-- `the-trusted-build` Name: provisional. For the trusted compilation environment it describes.
-- `crossing-costs` Name: provisional. After the parent's "Bet two: the cost per crossing".
-- `where-redleaf-is-ahead` Name: provisional. After the parent's own heading.
-- `after-2020` Name: provisional. After the parent's "What happened after 2020".
+Each stem here is named for its content, and calef names files.

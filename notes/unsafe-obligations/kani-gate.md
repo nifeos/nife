@@ -1,5 +1,7 @@
 # The gate over cfg(kani), and the measurement that chose it (milestone 113)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/unsafe-obligations.md](../unsafe-obligations.md), which summarizes it. Its
 BUGS item 2 is the finding this page closes. Milestone 113 (the proofs' own unsafe code is ungated)
 closed it.

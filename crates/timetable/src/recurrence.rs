@@ -1,28 +1,12 @@
 //! **Calendar entries: G5's grammar, each line exactly one RFC 5545 RRULE** (milestone 129
-//! (scheduled execution); calef ruled "G5 full" on 2026-09-26, recorded in
-//! notes/scheduled-execution/calendar-grammar-g5.md).
+//! (scheduled execution); calef ruled "G5 full" on 2026-09-26).
 //!
-//! A calendar line says a time of day in UTC: `every day at 02:00`, `every month on last fri at
-//! 17:00`, `every 2 weeks on mon starting 2026-10-05 at 08:00`. It is parsed here into a [`Rule`],
-//! and [`next`] answers the first occurrence strictly after a minute. Every field RFC 5545 would
-//! derive from DTSTART is written in the line, so a rule's occurrences do not depend on when it was
-//! registered (the note's rule 4).
-//!
-//! # Time, here
-//!
-//! A **minute** is a count of whole UTC minutes since 1970-01-01T00:00Z, as an `i64`. A **day** is
-//! that divided by 1440. Seconds do not exist in this grammar (BYSECOND=0), and neither do zones: a
-//! line with no zone clause means UTC, forever (the note's rule 5). The conversion to year, month
-//! and day is `crates/calendar`'s, which Kani already proves inverse over its whole range.
-//!
-//! # What the grammar refuses, and why a refusal beats a quiet answer
-//!
-//! Each refusal in the note's table is an [`Refusal`] variant whose message names the alternative:
-//! days 29 to 31 (they skip short months silently; `last day` says month-end), a `5th` weekday,
-//! times that do not share a minute (BYHOUR times BYMINUTE is a product), a range that does not end
-//! on its last step, a count limited with `in`, a count with no `starting`, a `starting` the rule
-//! would not fire on, and `every 15 minutes` spelled out (one space from `every 15m`, which runs on
-//! the other clock).
+//! A line parses into a [`Rule`], and [`next`] answers the first occurrence strictly after a
+//! minute. Every field RFC 5545 would derive from DTSTART is written in the line, so occurrences
+//! do not depend on registration (rule 4 of notes/scheduled-execution/calendar-grammar-g5.md). A
+//! **minute** counts whole UTC minutes since 1970-01-01T00:00Z, a **day** is that over 1440, and
+//! civil dates are `crates/calendar`'s, which Kani proves inverse over its whole range. No seconds
+//! (BYSECOND=0) and no zones: a line means UTC forever (rule 5).
 //!
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module and every
 //! public item in it. Naming is calef's.
@@ -105,13 +89,14 @@ pub(crate) const ALL_MONTHS: u16 = 0x0fff;
 pub enum Refusal {
     /// A token the grammar does not have where it was expected.
     Malformed,
-    /// A day of the month from 29 to 31.
+    /// A day of the month from 29 to 31, which would skip short months silently; `last day` says
+    /// month-end.
     DayPast28,
     /// `5th <dow>`.
     FifthWeekday,
     /// A count outside 2 to 99.
     BadCount,
-    /// `every 15 minutes`, spelled out.
+    /// `every 15 minutes`, spelled out: one space from `every 15m`, which runs on the other clock.
     SpelledInterval,
     /// A count with `in`.
     CountWithIn,
@@ -121,7 +106,7 @@ pub enum Refusal {
     StartingOffRule,
     /// `through` before `starting`.
     ThroughBeforeStarting,
-    /// Times in one `at` list with different minutes.
+    /// Times in one `at` list with different minutes: BYHOUR times BYMINUTE is a product.
     MixedMinutes,
     /// A `by` step that neither divides 60 minutes nor is whole hours.
     StepDoesNotDivide,

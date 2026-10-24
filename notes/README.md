@@ -12,6 +12,8 @@ page stays short while the list grows. Naming conventions are a rule rather than
 
 To add a note, add one line to the area page that fits, in the shape of the lines already there.
 The area pages sit one directory down, so the link is `../your-note.md`. Keep the line short; commentary belongs in the note.
+The note's name goes in the note, as `*Name: provisional, minted <date> (UTC) by <lane>.*` under its
+title ([design/naming.md](../design/naming.md)), never on this page.
 `script/lint` fails if a `notes/*.md` file has no line on this page or on an area page. A new area
 gets its own page under `notes/README/` and a line in the list below.
 A new *collection* of notes, several that belong together as in `notes/coes/`, gets a directory with its own
@@ -45,10 +47,6 @@ area directories), ruled B). Appendices under
 - [How the tree is run](README/how-the-tree-is-run.md): gates, records and the merge queue that keep many lanes honest.
 - [Delegation and the method](README/delegation-and-the-method.md): how agents do the work here, and what it costs.
 
-`suspend-and-resume.md`: Name: provisional, minted 2026-10-18 (UTC) by lane/48-tcb-suspend-resume.
-
-`xenon-bench-2026-10-18.md`: Name: provisional, minted 2026-10-18 (UTC) by lane/xenon-bench-2026-10-18.
-
 `dependency-standards-census.md`: Name: provisional, minted 2026-10-19 (UTC) by maintainer/dependency-standards-census.
 
 `ci-toolchain-download.md`: Name: provisional, minted 2026-10-19 (UTC) by maintainer/rustup-retry.
@@ -72,5 +70,7 @@ area directories), ruled B). Appendices under
 `kernel-test-harness.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
 
 `self-test-checks.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
+
+`system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.

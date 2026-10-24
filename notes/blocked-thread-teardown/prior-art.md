@@ -1,5 +1,7 @@
 # Prior art: how seven systems end a blocked thread
 
+*Name: provisional. Named after the parent's own heading.*
+
 The survey behind the table in
 [`notes/blocked-thread-teardown.md`](../blocked-thread-teardown.md). The table itself stays there.
 Seven systems, in the order that makes the argument. Every quote below was fetched and read in this

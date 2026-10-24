@@ -1,18 +1,12 @@
 use super::grant;
 
-/// **The most names one set grant carries**, and the point where `ARG_MAX` becomes a capability
-/// limit rather than a buffer limit.
+/// **The most names one set grant carries**, where `ARG_MAX` becomes a capability limit.
 ///
-/// The number is set by what the two ends can hold **by value** with no allocator, and it was
-/// **measured rather than chosen**: at sixteen names the shell ran off the bottom of its stack
-/// planning one grant, because a set travels by value through four frames a debug build does not
-/// collapse. Eight names of sixteen bytes is 152 bytes per copy, and the shell fits.
-///
-/// There is a second reason, and it is the one that decides the *shape* of the failure: `caps rm
-/// *.txt` prints the set before anything runs, and a grant nobody can read is a grant nobody
-/// checked. Exceeding this is a **refusal at the prompt** (`grant_plan::Refusal::TooManyNames`), never
-/// a truncation, because a glob that quietly granted a prefix of what it matched would be the
-/// worst outcome this lane could produce.
+/// Measured, not chosen: at sixteen names the shell ran off its stack planning one grant, because a
+/// set travels by value through four frames a debug build does not collapse. Eight names of sixteen
+/// bytes is 152 bytes per copy. Exceeding it is a refusal at the prompt
+/// (`grant_plan::Refusal::TooManyNames`), never a truncation, because `caps rm *.txt` prints the
+/// set before anything runs and a grant that quietly took a prefix would be one nobody checked.
 pub const MAX_NAMES: usize = 8;
 
 /// Bytes an encoded set occupies at most: a header and a name each, plus the terminator.

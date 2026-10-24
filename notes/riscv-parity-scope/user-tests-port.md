@@ -1,5 +1,7 @@
 # The test suite reaches RISC-V: the follow-ons of §19 (architectural parity)
 
+*Name: provisional.*
+
 An appendix to [notes/riscv-parity-scope.md](../riscv-parity-scope.md), moved there on 2026-10-11
 (UTC) under §212 (a prose budget). It is the record of making `kernel::sched::tests` and
 `kernel::user::tests` run on both ISAs: what moved, the three defects the port surfaced, the
