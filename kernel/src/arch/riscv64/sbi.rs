@@ -1,15 +1,9 @@
-//! **One SBI call**: the single `ecall` every Supervisor Binary Interface (SBI) request in the kernel
-//! goes through.
+//! One SBI call: the single `ecall` every Supervisor Binary Interface request in the kernel goes
+//! through, so the calling convention is stated once and a proof can stub one function
+//! (notes/kernel-proofs.md).
 //!
 //! *Name provisional (a lane minted it 2026-09-25; names are calef's). `sbi` is the specification's
 //! own name for the interface.*
-//!
-//! Until 2026-09-25 this `ecall` was written out seven times, once per request (hart start, IPI,
-//! three remote fences, set-timer, system reset) plus two private `sbi_call` helpers in `isa.rs` and
-//! `pmu.rs`, each passing only the registers its call reads. They agreed, and nothing made them. One
-//! helper means one place that states the calling convention, and one function a proof stubs to
-//! reach the logic around a firmware call (see [`super::instructions`] for the pattern and
-//! notes/kernel-proofs.md for the caveat that a stub is an assumption about the firmware).
 
 use core::arch::asm;
 
@@ -23,13 +17,8 @@ pub(super) struct SbiRet {
 
 /// One SBI call: extension `eid` in `a7`, function `fid` in `a6`, arguments in `a0` through `a5`.
 ///
-/// Every call passes all six arguments; a function that takes fewer ignores the rest (SBI spec,
-/// "Binary Encoding"), so the unused ones are zero rather than whatever the registers held. The
-/// firmware preserves every register except `a0` and `a1`, which is what the operand list states;
-/// `nostack` is right because M-mode runs on its own stack.
-///
-/// `#[inline(always)]`: the six `li`s for a call's constant arguments fold into its caller exactly as
-/// they did when each site wrote its own `asm!`.
+/// Returns `a0` as the error and `a1` as the value. Unused arguments are passed as zero. Inlined so
+/// a call's constant arguments fold into its caller.
 ///
 /// # Safety
 /// An `ecall` can do anything the firmware implements, including start a hart at an arbitrary

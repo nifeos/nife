@@ -1,22 +1,9 @@
-//! **A thread's own thread pointer, `tp`, kept per thread by the kernel** (milestone 812
-//! (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
+//! The riscv64 register half of each thread's own thread pointer, `tp` (§269 (how threads share a
 //! process) fork 4).
 //!
-//! The ABI is the same on all three architectures and lives in `sched`: the kernel holds each
-//! thread's value in `Thread::thread_pointer`, sets it from `CONFIGURE` and
-//! `ThreadControlBlock::SET_THREAD_POINTER`, and makes it the register the thread sees. This file
-//! is the riscv64 register half of that, and it is the odd one out.
-//!
-//! **`tp` is a general register, so it already travels in the trap frame.** `trap.s` saves the
-//! user's `tp` on every entry from U-mode, borrows the register for the kernel's per-hart pointer
-//! (through `sscratch`), and restores the saved value on the way out. So the context switch has
-//! nothing to move, and the kernel's copy matters at two moments only: the first entry to U-mode,
-//! whose frame `TrapFrame::for_user_entry` builds with it, and a thread setting its own value,
-//! which edits the frame it will return through.
-//!
-//! **U-mode can write `tp` itself**, which is the asymmetry §269 records below the ABI. A user
-//! write is not part of the contract; it persists for that thread, because the frame saves it,
-//! and no other thread sees it. `notes/thread-pointer.md` is the scope note.
+//! `tp` is a general register, so it travels in the trap frame and the context switch moves
+//! nothing. The kernel's copy matters only at the first entry to U-mode and when a thread sets its
+//! own. U-mode may also write `tp` itself. See notes/thread-pointer.md.
 
 use super::exceptions::TrapFrame;
 

@@ -577,6 +577,9 @@ pub(crate) unsafe fn fp_state_of(thread: *mut Thread) -> *mut crate::arch::fp::F
 /// flag would be whatever the last owner of the page left there, and `crate::fp::hand_over` would
 /// read it on the very first switch.
 ///
+/// # BUGS
+/// Stale: `kmem::page` and `memory_region::retype_object_page` both zero the page they hand out.
+///
 /// # Safety
 /// As [`fp_state_of`], and the register file must not already hold anything worth keeping.
 pub(crate) unsafe fn init_fp_state(thread: *mut Thread) {
@@ -669,6 +672,9 @@ pub(crate) unsafe fn own_capability_table_of(thread: *mut Thread) -> *const Capa
 
 /// Give a freshly-born thread its empty capability table. Called beside [`init_fp_state`] by both
 /// `Threads` inserts, for its reason: a `kmem` page is not zeroed.
+///
+/// # BUGS
+/// Stale, as [`init_fp_state`]'s: both page sources zero the page.
 ///
 /// # Safety
 ///

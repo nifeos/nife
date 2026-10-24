@@ -104,3 +104,109 @@ Every wake of a parked sender goes through `set_ipc_aborted`, which clears the s
 that skipped it would deliver the parked capability to the supervisor's endpoint. The fix is one
 line in each of the three paths; `finish_blocked_resident` already clears a parked `Reply` through
 `delete_reply_caps_naming`. `notes/confinement-claims.md` row 30 lists the sweeps that clear it.
+
+## The thread table (`kernel/src/sched/thread_table.rs`)
+
+`Threads` is a generational table of `ThreadControlBlockPointer`s, one per page-resident TCB. The
+table stores the pointer, and the generational name is what everything else carries. A pointer may
+move between cores. The `Thread` it names is touched only under `IPC_TABLES`, and its queue link
+only under the intrusive discipline (notes/intrusive-queues.md).
+
+### One page, three things
+
+The `Thread` sits at the start of its page. The FP register file comes after it, and the capability
+table after that. `get` and `get_mut` narrow the page pointer to a reference over
+`size_of::<Thread>()` bytes. So the register file and the table are reached from the stored page
+pointer (`Threads::pointer`, `thread::capability_table_of`), never from a `&Thread`. A pointer
+derived from the reference would reach outside its own provenance.
+
+The two inserts initialize the register file and the table in place. The register file's `live` flag
+must be written before anything reads it (`thread::init_fp_state`). That is a fact about a place, so
+it is not in a `Thread` constructor. `insert_at_in_place` hands `build` the destination rather than
+taking a returned `Thread`, because a `Thread` is large and a debug build copies it at every hop.
+
+### Queue tokens
+
+Every thread's queue token is minted once, at insert. `mint_token` is the only place in the kernel
+a token is made. From there it moves onto a queue at a push, and back onto `Thread::own_token` at a
+pop or removal (`hold_token`). It goes nowhere else. `mint_token` discharges `Unqueued::new`'s three
+obligations:
+
+- The `Thread` lives until `Threads::remove`. That is reached only for a `Finished` thread off its
+  core, which is on no queue because a running thread holds its own token, or for one that
+  `finish_blocked_resident` has unlinked.
+- The name is a moment old, so no other token for the page exists.
+- Every queue holding a `Thread` is behind `IPC_TABLES` or an inbox lock.
+
+### Removal order
+
+`remove` first reads whether the page came from `kmem`. Then it drops the `Thread` in place, which
+frees its kernel stack, address space and quota token. Then it kills the name. Only then does a
+`kmem` page go home. A user TCB's page belongs to its region and is reclaimed when the region is
+destroyed.
+
+### CPU time, per slot
+
+`CPU_TICKS` holds each thread's scheduled ticks in an array beside the table, keyed by slot.
+`abi::survey::record::CPU_TIME` reads it (§150 (how does a thread's CPU time reach userspace?)).
+
+It is not a `u64` on `Thread`. The increment happens in `on_tick`, in interrupt context, where a core
+knows its running thread only as a tid. Reaching the `Thread` would take `IPC_TABLES`, a lock wait
+at every tick on every core. `try_lock` would drop samples exactly when the machine is busiest. The
+slot is the tid's low 32 bits, so the array needs no lock, no lookup and no ordering beyond relaxed.
+`cpu::NO_TID` (`u64::MAX`) falls out of range at no cost. The array is 2 KiB of `.bss`.
+
+It is not on `cpu::PerCpu` either. The counter is per thread. Growing `PerCpu` from 128 to 136 bytes
+cost riscv64's IPC fastpath 5.4%, because `PERCPU[id]` stopped indexing with a shift, and
+`kernel/src/cpu.rs` const-asserts that size.
+
+A core's tick increments only the slot of the thread it runs, so the write is uncontended. A survey
+reading a slot another core is incrementing gets a value that was true a moment ago. It is never
+torn, since the unit is an aligned `u64`. The counter is zeroed when a slot is filled, not emptied,
+so a corpse keeps the time it earned until its supervisor reaps it.
+
+### The peak
+
+`PEAK_THREADS` is the most threads alive at once on this boot, which makes `MAX_THREADS` a measured
+number. By the time a spawn is refused, the table is full and every earlier number is gone. It is one
+high-water mark rather than a per-test ledger. What fills the table is the services earlier tests
+left running on purpose (notes/frames.md's "held" list), not one test's spend. Both inserts update
+it under `IPC_TABLES` with `fetch_max`.
+
+### The running thread, per core
+
+`kernel/src/sched/current.rs` keeps two things per core. The running thread's id is in
+`cpu::PerCpu::current`. A pointer to its capability table is in `CURRENT_CAPABILITIES`, so a
+capability lookup takes the table's own lock and never `IPC_TABLES`. `set_current` is the only
+writer of either, on the owning core. So a lookup never finds one thread's name beside another's
+table.
+
+The id is read through `arch::read_current_thread`, because the read must be indivisible from a
+preemptible caller. A kernel thread migrated between finding its per-CPU block and reading the field
+would get another thread's name. `adopt_address_space` would then bind a new space to that thread.
+`smp::tests::a_migrated_kernel_thread_reads_its_own_name` fails on all three architectures without
+it.
+
+`CURRENT_CAPABILITIES` is its own array, because `PerCpu` is held to 128 bytes. Each entry fills a
+cache line. Every core writes its entry on every switch and reads it on every syscall, and a shared
+line would trade the lock for line traffic between the same cores
+(notes/job-mix/null-syscall-under-load.md's BUGS has that shape).
+
+The pointer is valid without a lock, because it names the page of the thread running on this core,
+and a running thread's page is not recycled. `Threads::remove` is reached only from
+`reap_switched_out`, for a thread its successor has switched off, and from `reap_region_objects`.
+That one's verdict refuses a `Ready` or `Running` thread and one a core still stands on. `schedule`
+replaces the pointer before the switch that makes the old thread reapable.
+
+`current_thread_id` and `set_current` are on every IPC and must land in `.text.hot` beside their
+callers. Whether LLVM inlines them moves with the codegen unit and the build host. So they are
+forced inline where that does not cost the band: `current_thread_id` on riscv64, and `set_current`
+on riscv64 and `x86_64`. On aarch64, forcing either grows `syscall_entry` past its band. There
+`set_current` carries a `.text.hot` section instead. Inlined, the section is unused; out of line, the
+copy lands beside its caller.
+
+## BUGS
+
+- `thread::init_fp_state`'s doc, and `thread::init_capability_table`'s after it, give "a `kmem`
+  page is not zeroed" as their reason. That is stale: `kmem::page` zeroes a page it recycles, and
+  `memory_region::retype_object_page` zeroes a fresh one.
