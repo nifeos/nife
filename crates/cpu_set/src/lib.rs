@@ -1,17 +1,11 @@
 //! The online-cpu set as pure logic: **which cpus a hart mask names, and the k-th of them.**
 //!
 //! The kernel's set of online cpus is a bitmask (`smp::ONLINE_MASK`), and the bug class this crate
-//! exists to kill is treating that set as if it were `0..count`. On QEMU `virt` the online set is
-//! contiguous from zero, so `0..online_count()` works by coincidence; on the VisionFive 2 it is
-//! `{1, 2, 3}` (slot 0 is the excluded S7, an M-mode monitor core with no MMU), and count-as-index
-//! does two wrong things at once: it touches a parked core's per-CPU state, and it skips an online
-//! cpu entirely. The first-silicon bench hit exactly that on 2026-08-14, as spawn placement putting
-//! `init` into parked slot 0's inbox, which nothing will ever drain (three boots to diagnose; see
-//! notes/visionfive2.md and the sched.rs placement fix).
-//!
-//! The functions here are the mask arithmetic with no kernel state attached, so the `{1, 2, 3}`
-//! shape the QEMU suite can never boot is proven on the host, in milliseconds, below. The kernel's
-//! `smp::online_cpus` and `smp::nth_online` delegate here and add only the live mask.
+//! exists to kill is treating that set as `0..count`. On QEMU `virt` the set is contiguous from
+//! zero; on the VisionFive 2 it is `{1, 2, 3}` (slot 0 is the S7, an M-mode monitor core with no
+//! MMU), where count-as-index touches a parked core's per-CPU state and skips an online cpu. The
+//! kernel's `smp::online_cpus` and `smp::nth_online` delegate here and add only the live mask, so
+//! the shape QEMU cannot boot is proven on the host. See notes/visionfive2/hart-roster-stops.md.
 //!
 //! # EXAMPLES
 //!

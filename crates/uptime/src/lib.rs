@@ -1,32 +1,20 @@
 //! **`uptime`: how long the machine has been counting** (milestone 126,
 //! design/roadmap/0126-who-else-is-running.md).
 //!
-//! This is the program's whole logic, lifted out so it runs on the host in milliseconds;
-//! `components/src/uptime.rs` is the syscall and nothing else. The crate and the program share a name,
-//! the same split `ps`, `line_editor` and `compositor` already are.
-//!
-//! # Where the number comes from
-//!
-//! `components/src/uptime.rs` reads `user_mode_runtime::monotonic_nanos`, the ambient counter
-//! `date` reads too. `kernel/src/arch/*/timer.rs`'s `init` grants it to every EL0 program as a
+//! The program's whole logic, lifted out so it runs on the host; `components/src/uptime.rs` is the
+//! syscall and nothing else. It reads `user_mode_runtime::monotonic_nanos`, the ambient counter
+//! `date` reads too, which `kernel/src/arch/*/timer.rs`'s `init` grants every EL0 program as a
 //! deliberate exception to DECISIONS §10 (process model: capability-based, microkernel)'s
-//! no-ambient-authority rule (a monotonic counter observes time and affects nothing), so `uptime`
-//! needed no manifest field and no new capability.
-//!
+//! no-ambient-authority rule: a monotonic counter observes time and affects nothing. So `uptime`
+//! needs no manifest field and no new capability.
+
 //! # BUGS
 //!
-//! - **No load average, no logged-in-user count.** Upstream `uptime` prints both; neither concept
-//!   exists here. There is no scheduler-load figure this kernel maintains (`sched.rs` tracks
-//!   preemptions and per-core run queues, not a decaying load average), and "logged in" presumes a
-//!   login registry this system does not keep. A placeholder zero would read as a real answer.
-//! - **The counter's zero predates the kernel's own init by an unmeasured amount.** `CNTVCT_EL0`
-//!   (and its RISC-V/`x86_64` equivalents) is a free-running hardware counter set by firmware or the
-//!   VMM at reset, not by this kernel; `date`'s own module docs call it "ambient and untouched" for
-//!   the same reason. So "up" here means "since the counter started counting," which is at or
-//!   before kernel entry; on real hardware the gap is whatever the boot ROM and firmware took.
-//!   There is no kernel-boot epoch (Linux's `CLOCK_BOOTTIME`) to read instead.
-//! - **One-second resolution**, `date`'s own limitation, for the same reason: `monotonic_nanos`
-//!   is exact, but there is no sub-second field in the printed format to spend it on.
+//! - No load average and no logged-in-user count: this kernel keeps no decaying load figure and no
+//!   login registry, and a placeholder zero would read as a real answer.
+//! - The counter's zero predates the kernel's init by an unmeasured amount: firmware or the VMM
+//!   starts it, and there is no kernel-boot epoch (Linux's `CLOCK_BOOTTIME`). See notes/clock.md.
+//! - One-second resolution, `date`'s own limitation: the printed format has no sub-second field.
 //!
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), for this crate and the
 //! program: upstream `procps`'s own name. It prints only elapsed time, a narrowing rather than a

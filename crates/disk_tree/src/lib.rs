@@ -2,32 +2,16 @@
 //! (milestone 834 (ioping on nife and Linux)). The pure half of `components/src/disk_tree.rs`.
 //!
 //! A `filesystem_contract::fs` namespace of exactly two names: [`DIRECTORY`] under the root, and
-//! [`FILE`] in it, whose bytes are the disk's bytes from block 0 and whose size is the disk's. It
-//! exists so a program run at the prompt can measure the device rather than a file server's
-//! memory: `redoxfs_server` keeps whole small files and recently read blocks in memory, and Linux's
-//! answer to the same problem is `/dev/nvme0n1` opened with `O_DIRECT`. Every [`fs::READ`] this
-//! answers becomes exactly one device read ([`Answer::Read`]); there is no buffer here to answer
-//! from, and the tests below hold that.
-//!
-//! Read-only by construction twice over: no mutating verb is answered (each is
-//! [`dir::EROFS`]), and the server's block endpoint is badged with a window the NVMe server never
-//! writes from (`non_volatile_memory_express::can_write`).
-//!
-//! **What the shell sees** (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"): this tree is
-//! the shell's second mounted tree, so `cd` into [`DIRECTORY`] and name [`FILE`]:
-//!
-//! ```text
-//! cd /disk/nvme0
-//! ioping -D -c 1000 -i 0 -s 4k -S 64m -o 1m n1
-//! ```
-//!
+//! [`FILE`] in it, whose bytes are the disk's bytes from block 0 and whose size is the disk's. Every
+//! [`fs::READ`] this answers becomes exactly one device read ([`Answer::Read`]), with no buffer to
+//! answer from, and no mutating verb is answered (each is [`dir::EROFS`]). The shell mounts it as
+//! its second tree. See notes/block-devices.md, "The disk tree: a whole disk as one file, with no
+//! cache".
+
 //! # BUGS
 //!
-//! - **One file is the whole namespace**, whatever partitions are on it. A partition is a byte
-//!   range of [`FILE`] (`-o` and `-S` for ioping); naming them would need the table read here.
-//! - **A read longer than the server's transfer window comes back short**, at most
-//!   `blk::TRANSFER_BLOCKS` blocks from the first one touched. POSIX allows it and every client in
-//!   this tree loops on a short read.
+//! - One file is the whole namespace, whatever partitions are on it; a partition is a byte range.
+//! - A read longer than the server's transfer window (`blk::TRANSFER_BLOCKS`) comes back short.
 //!
 //! Name: provisional (lane `lane/ioping-direct-io`, 2026-10-18 UTC), for the crate, the program,
 //! [`DIRECTORY`] and [`FILE`]. The mount path is `grant_plan::MOUNTED_TREE_PATH`'s.

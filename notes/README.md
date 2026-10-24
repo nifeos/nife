@@ -85,6 +85,10 @@ area directories), ruled B). Appendices under
 
 `system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
 
+`jh7110-watchdog.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.
+
+`machine-statistics.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.
+
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
 
 `system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.

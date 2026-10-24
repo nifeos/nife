@@ -30,7 +30,7 @@ on nife), fits with room for a hundred and ninety of it.
 
 ## Where a new page goes
 
-Ask in order, and stop at the first yes. The crate's docs carry the same list.
+Ask in order, and stop at the first yes.
 
 1. Is it the program's code or data? `IMAGE`. A child built by hand from a stub puts its code page
    at `IMAGE_BASE` too.
