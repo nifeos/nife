@@ -1,59 +1,11 @@
 //! **The operator: replace a running component under a talking client** (milestone 23,
 //! DECISIONS §41).
 //!
-//! This is the milestone's flagship, and it is an unprivileged process. The kernel does not know a
-//! swap is happening, has no notion of a component, and gained no method for one. What it supplies
-//! is what it already supplied: endpoints that name no peer (§12), a death message (§26), a reap
-//! that needs no construction authority (§32), and revocation (§13, §16, and §41's device
-//! take-back). Everything else is code here.
-//!
-//! # Four roles: two rungs of the latency ladder, one component that stops answering, and one that carries state
-//!
-//! - [`ROLE_DIRECT`](hot_swap_contract::ROLE_DIRECT): the default rung. The stable name a client holds is the
-//!   endpoint object itself, and the swap changes who is parked in `RECEIVE_CAP` on it. **No process
-//!   sits in the data path**, so the steady state costs exactly what an unbrokered call costs.
-//! - [`ROLE_QUEUED`](hot_swap_contract::ROLE_QUEUED): the opt-in rung. A `broker` stands between producer and
-//!   backend so the producer never blocks on an absent consumer. One extra hop, priced by the
-//!   `broker_rtt` benchmark, and chosen per channel rather than imposed on every IPC.
-//! - [`ROLE_HUNG`](hot_swap_contract::ROLE_HUNG): the same system as the direct rung, against an
-//!   incumbent that **stops answering without dying** (milestone 23 (a capability-routed component
-//!   OS with live replacement)'s third residual). The operator notices because its quiesce goes
-//!   unanswered within a bound, skips the drain the hang made redundant, restores the service with
-//!   the other three steps, and destroys the hung incumbent's region.
-//!   [`ROLE_HUNG_WITHOUT_DEVICE`](hot_swap_contract::ROLE_HUNG_WITHOUT_DEVICE) is the same run with
-//!   no device, for `x86_64`. See notes/hung-component.md.
-//! - [`ROLE_HANDOFF`](hot_swap_contract::ROLE_HANDOFF): **state handoff** (DECISIONS §209 (state handoff is an opaque blob over a granted frame, and it is optional)). The component
-//!   carries a tally across the swap on a handoff page, and the swap is tried twice: against a
-//!   replacement that cannot absorb the state, which must not commit, and then against one that can.
-//!   See notes/state-handoff.md.
-//! - [`ROLE_UNWARNED`](hot_swap_contract::ROLE_UNWARNED): the queued system **with the dependent never
-//!   warned**, which is what a supervisor is left with when the dependent the graph names will not
-//!   answer. It measures what skipping the warning costs, and the answer is latency, not loss. See
-//!   notes/non-cooperative-fallback.md.
-//!
-
-//! # The direct swap, step by step, and why the order is this
-//!
-//! ```text
-//!   1 BUILT    lay the replacement out, endow it, retype its TCB -- but do NOT configure or start
-//!              it. A thread that has never been started is in nobody's queue, so it cannot take a
-//!              request the incumbent is still there to serve.
-//!   2 DRAINED  CALL OPERATION_QUIESCE on the service endpoint itself. The endpoint's sender queue is
-//!              FIFO, so by the time this arrives the incumbent has answered every request queued
-//!              ahead of it. It replies and stops receiving.
-//!   3 REVOKED  PageFrame::REVOKE the device capability: gone from every holder but us.
-//!   4 STARTED  map the registers into the replacement, CONFIGURE, START. The down window ends.
-//!   5 REAPED   the incumbent is told to touch the device it no longer has; it faults, its death
-//!              arrives on the supervision endpoint, and Rendezvous::REAP collects the corpse.
-//! ```
-//!
-//! **The roadmap put "start the new server" first and the revoke second, and building it that way
-//! does not work.** §13 revocation is by *physical page*: a revoke that ran after the replacement
-//! had been endowed with the device would take the replacement's copy too, and since the kernel
-//! mints a device capability once, at boot, nothing could ever hand one back. So the replacement is
-//! built and endowed with everything *except* the device, and receives the registers on the far
-//! side of the revoke. What had to move is the endowment, not the build, which is why the down
-//! window is still four syscalls wide. Recorded rather than quietly reordered.
+//! An unprivileged process: the kernel has no notion of a component or a swap, and supplies only
+//! endpoints that name no peer (§12), a death message (§26), a reap that needs no construction
+//! authority (§32), and revocation (§13, §16, and §41's device take-back). The entry role picks the
+//! system (`hot_swap_contract`'s `ROLE_*`). The swap's five steps and their order are in
+//! notes/live-replacement.md, and each role's design in notes/live-replacement/the-operator.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `swapd`.
 //! Refused `swapd` (the `-d` claim).
@@ -86,10 +38,9 @@ const DEVICE: u64 = 2; // the UART's registers, WRITE|GRANT: ours to lend, and o
 const WAKE: u64 = 3;
 const TIMER: u64 = 4;
 
-// Pages per process we build is NOT here any more. It is `hot_swap_contract::INSTANCE_PAGES`, declared by
-// each contract, and it reaches this program through `capability_plan::Plan::pages`. It is a
-// **peak**, because this operator destroys a region only on the hung channel, and otherwise all
-// five splits are live at once and the budget has to cover them together.
+// Pages per child come from each contract (`hot_swap_contract::INSTANCE_PAGES`, through
+// `capability_plan::Plan::pages`) and are a peak: only the hung channel destroys a region, so
+// otherwise all five splits are live at once and the budget covers them together.
 
 /// The channels this operator owns, created once out of its own budget.
 struct Wiring {
@@ -214,17 +165,10 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v2 = image(fs, "c_swappable", 3);
     let client_img = image(fs, "swap_boundary_witness", 4);
 
-    // **What this operator will route, per child, by the name the component uses for it.** This is
-    // the whole of what used to be four literal endowment arrays: no rights are spelled here, no
-    // addresses, and no slot order, because every one of those is declared by the component and
-    // computed by `capability_plan`. What is left is the only thing an operator actually knows,
-    // which is which of *its own* objects answers to which name.
-    //
-    // Two tables rather than one, and the reason is not that the manifests would take too much from
-    // a wide one (they take what they declare either way). It is that the two bounds are
-    // independent: the manifest bounds what a component may *ask* for, and a routing table bounds
-    // what this operator *offers* it. A client that could be routed the device is a client one
-    // manifest edit away from holding it.
+    // What this operator routes, per child, by the name the component uses for it; rights,
+    // addresses and slot order come from each declaration. Two tables, because the manifest bounds
+    // what a component may ask for and a routing table what this operator offers: a client that
+    // could be routed the device is one manifest edit away from holding it.
     let to_component = Provisions {
         held: &[
             ("service", w.svc),
@@ -239,14 +183,9 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
         held: &[("service", w.svc), ("report", REPORT), ("operator", w.note)],
     };
 
-    // ------------------------------------------------------------------------------------------
-    // **The control that must fail, before anything exists.** The queue broker's declaration names
-    // `requests` and `backend`, and this channel routes neither: the queued rung is the other role's
-    // system. So a component this operator cannot provide for is refused as a *value*, with nothing
-    // built, nothing mapped and nothing started, which is what makes a manifest a request rather
-    // than an instruction. A run in which this *succeeds* is failed loudly, the same way an
-    // instance's post-revoke probe surviving is.
-    // ------------------------------------------------------------------------------------------
+    // The control that must fail, before anything exists: the broker's declaration names
+    // `requests` and `backend`, which this channel routes neither of, so it is refused as a value
+    // with nothing built. A run in which it succeeds fails loudly.
 
     match capability_plan::plan(&hot_swap_contract::BROKER, &to_component) {
         Ok(_) => bail(60),
@@ -260,31 +199,18 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
         bail(62)
     };
 
-    // ------------------------------------------------------------------------------------------
     // The incumbent.
-    // ------------------------------------------------------------------------------------------
-
     start_child(&v1, &component, w.faultep, [1, 0, 0], 11); // a device, log entries from 0
 
-    // ------------------------------------------------------------------------------------------
-    // Step 1: build the replacement, **before anyone is talking**. Endowed with everything except
-    // the device, and not configured, so it cannot run and cannot race the incumbent for requests.
-    //
-    // Doing this first is the roadmap's own ordering, and there is a measurement behind keeping it:
-    // building a process is a few hundred syscalls, and when this ran *after* the swap trigger the
-    // client got through its entire conversation on RISC-V before the operator was ready. Laying
-    // the replacement out ahead of time is what keeps the down window four syscalls wide instead of
-    // "however long a build takes".
-    // ------------------------------------------------------------------------------------------
+    // Step 1: build the replacement before anyone is talking, endowed with everything except the
+    // device and not configured, so it cannot race the incumbent for requests. A build is a few
+    // hundred syscalls; done after the trigger it lost the race on RISC-V, and done here it keeps
+    // the down window four syscalls wide.
 
     let replacement = build_without_devices(&v2, &component, w.faultep, 20);
 
-    // ------------------------------------------------------------------------------------------
-    // The client that will talk across the swap, and the wait for its conversation to be well under
-    // way. The incumbent tells us on its own channel after it has served SWAP_TRIGGER requests, so
-    // the swap lands in the middle of a live conversation rather than at a moment we picked by
-    // counting yields.
-    // ------------------------------------------------------------------------------------------
+    // The client that talks across the swap. The incumbent notes us after SWAP_TRIGGER requests,
+    // so the swap lands mid-conversation rather than at a moment picked by counting yields.
 
     start_child(
         &client_img,
@@ -295,15 +221,9 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     );
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 17);
 
-    // ------------------------------------------------------------------------------------------
-    // **Dependency-aware orchestration's own question, asked and answered before step 2 acts.**
-    // Milestone 23's residual: if some other live component is a client of the one about to be
-    // swapped, swapping it means warning that client first. On this channel the answer is a real
-    // empty set rather than a fixture: nothing this operator runs declares `console` in its own
-    // `depends_on` (`CLIENT` is a pure consumer and never needs telling, per §41's sender-queue
-    // argument recorded in `capability_plan::Requirements::depends_on`'s doc comment). Reported so
-    // the test can check the graph agrees with what this channel has always done: nothing extra.
-    // ------------------------------------------------------------------------------------------
+    // Who depends on `console`, asked before step 2 acts: an empty set here, since nothing this
+    // operator runs declares it in `depends_on` (`CLIENT` is a pure consumer, §41). Reported so the
+    // test can check the graph agrees.
 
     let live = [capability_plan::LiveInstance {
         id: 1,
@@ -311,33 +231,22 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     }];
     report_dependents("console", &live, 64);
 
-    // ------------------------------------------------------------------------------------------
-    // Step 2: drain. The quiesce request travels on the endpoint being drained, so FIFO ordering
-    // does the waiting for us.
-    // ------------------------------------------------------------------------------------------
+    // Step 2: drain. The quiesce travels on the endpoint being drained, so FIFO does the waiting.
 
     drain(w, 22);
 
-    // ------------------------------------------------------------------------------------------
     // Step 3: take the registers back. Every other holder loses the capability and the mapping; we
     // keep ours, which is what makes this a transfer rather than a demolition (DECISIONS §41).
-    // ------------------------------------------------------------------------------------------
 
     revoke_device(23);
 
-    // ------------------------------------------------------------------------------------------
     // Step 4: endow the replacement with the registers and start it. It drains whatever parked on
     // the service endpoint's sender queue while nobody was receiving.
-    // ------------------------------------------------------------------------------------------
 
     endow_devices_and_start(replacement, &v2, &component, 24);
 
-    // ------------------------------------------------------------------------------------------
-    // Step 5: the receipt for the revoke, and the teardown.
-    //
-    // The incumbent is quiesced and alive, holding a virtual address that used to be a UART. Tell
-    // it to read one register. If step 3 was real it faults, and the kernel tells us where.
-    // ------------------------------------------------------------------------------------------
+    // Step 5: the receipt for the revoke. The incumbent is quiesced and alive, holding an address
+    // that used to be a UART; told to read one register, it faults if step 3 was real.
 
     send(w.poke, hot_swap_contract::POKE_PROBE, 0, 0);
     let mut corpses = 0u64;
@@ -371,31 +280,15 @@ fn attack_the_service(
     client: &capability_plan::Plan,
     corpses: &mut u64,
 ) {
-    // ------------------------------------------------------------------------------------------
-    // The attacker, once the honest system has finished being interesting. It gets exactly the
-    // client's capabilities and tries to become the server on the endpoint it is a client of.
-    //
-    // **The replacement is retired first, and that order is the point** (milestone 800 (a
-    // non-Anthropic model attacks the confinement claim), fourth pass). A `RECEIVE_CAP` the kernel
-    // fails to refuse takes from the queue or blocks; with a live server receiving on the endpoint
-    // the queue is always empty, so the break surfaced as a watchdog hang rather than a report
-    // (measured 2026-09-16, milestone 305 (the six kernel confinement rows get a falsification a
-    // machine can replay)). Once the replacement has answered QUIESCE it provably never receives on
-    // the endpoint again, so the plant's parked message is the only thing in the queue, and a
-    // let-open `RECEIVE_CAP` returns it: the attacker reports a word nothing honest produces, and
-    // the test goes red at its own assertion.
-    // ------------------------------------------------------------------------------------------
-
-    // Retire the replacement and collect it too, so the run ends with every region back in this
-    // budget. Not tidiness: this is the same lifecycle machinery the swap itself is made of, run to
-    // the end, and the test asserts on the memory coming home.
+    // The replacement is retired first, and the order is the point: once it has answered QUIESCE
+    // it never receives again, so the plant's message is the only thing in the queue and a
+    // let-open `RECEIVE_CAP` returns it. With a live server receiving, the queue is always empty
+    // and a break would surface as a watchdog hang. The test asserts on its region coming home.
     retire(w, corpses, 3, 34);
 
-    // The plant, wired from the client's own declaration (an instrument, but one whose whole
-    // point is to hold nothing the honest client does not). It parks one message on the endpoint
-    // and exits when anyone takes it. No handshake is needed and none would help: if the
-    // attacker's try has already parked as a receiver, the plant's send delivers to it directly,
-    // so every interleaving ends with the message taken by whoever the kernel's gate allowed.
+    // The plant, holding nothing the honest client does not: it parks one message on the endpoint
+    // and exits when anyone takes it. No handshake: if the attacker already parked as a receiver,
+    // the send delivers to it directly, so whoever the kernel's gate allowed takes the message.
     start_child(
         client_img,
         client,
@@ -421,19 +314,11 @@ fn attack_the_service(
         (w1 as i64) > 0
     };
 
-    // **Un-park the plant, bounded, and the bound is what makes this honest in both worlds.** On a
-    // kernel that refused the attacker, the plant is still parked and this receive returns its
-    // marker at once. On a kernel that let the attacker through, the attacker already took it and
-    // the queue is empty, so the plain receive would block forever; the bound notification (armed
-    // below by the timer our spawner granted, the `net_stack` retransmit pattern) ends the wait
-    // instead, and the run goes on to fail at the test's assertion rather than at a watchdog.
-    //
-    // There is a third case, and an honest kernel can still reach it: the bound fires *before the
-    // plant has sent* (spawn order is not run order). Then the plant is still blocked in its `SEND`
-    // and will never exit, so the reap below would wait for a corpse that never comes, and the
-    // break would surface as the watchdog hang this reshape exists to remove. When the attacker
-    // reported a refusal, that is what the bound means, so the operator bails on its own stage
-    // number instead: an infrastructure failure that names itself, not a verdict and not a hang.
+    // Un-park the plant within a bound. A refused attacker leaves it parked and this returns its
+    // marker; a let-through one leaves the queue empty, and the bound notification ends the wait
+    // so the run fails at the test's assertion rather than a watchdog. The bound can also fire
+    // before the plant has sent (spawn order is not run order), and then the plant never exits and
+    // the reap would hang, so with a refusal reported that case bails on its own stage.
     if timer_arm(TIMER, now() + cntfrq() / 2, WAKE, 1) < 0 {
         bail(35);
     }
@@ -551,23 +436,11 @@ fn report_dependents(
 // state was not absorbed does not commit.
 // ===============================================================================================
 
-/// **The swap, for a component that declared a handoff page.** Five things differ from [`direct`],
-/// and each is a sentence of §209:
-///
-/// - **No device.** The state is the point, and a device would put this system behind the same x86
-///   gap the other three are behind (`hot_swap_contract::probe_device`'s x86 arm). So it runs on all
-///   three architectures.
-/// - **One frame routed to every instance under the handoff role**, installed at build time. The
-///   operator never maps it itself and never reads it: the bytes are the component's.
-/// - **The replacements' `control` is a different endpoint from the incumbent's.** Both are built
-///   from one declaration, and the declaration's role name is the component's while the object is
-///   this operator's, so a resume meant for the incumbent cannot reach a replacement.
-/// - **The incumbent is retired only after the replacement says it absorbed the state.** Before that,
-///   nothing has committed.
-/// - **A replacement that refuses leaves nothing behind.** It never received a request, it exits, and
-///   the reap that collects it returns its region: the new grant is revoked by the machinery of §16 (object revocation), with
-///   no rollback mechanism of its own. The incumbent is told to resume, holding the state it never
-///   lost.
+/// **The swap, for a component that declared a handoff page** (§209): no device, one handoff frame
+/// routed to every instance and never read here, replacements on a `control` endpoint distinct from
+/// the incumbent's, and a commit only on a replacement's `NOTE_ABSORBED`. A replacement that refuses
+/// exits and is collected, which returns its region, and the incumbent resumes with the state it
+/// never lost. See notes/live-replacement/the-operator.md.
 fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
@@ -618,17 +491,13 @@ fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
     );
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 17);
 
-    // ------------------------------------------------------------------------------------------
     // Attempt one: a replacement that cannot read the incumbent's layout.
-    // ------------------------------------------------------------------------------------------
 
     let mut corpses = 0u64;
     attempt_refused(w, refuser, &v2, &mut corpses);
 
-    // ------------------------------------------------------------------------------------------
     // Attempt two: the incumbent asks again once it has served another SWAP_TRIGGER requests, and
     // this replacement understands the layout. Only its `NOTE_ABSORBED` commits the swap.
-    // ------------------------------------------------------------------------------------------
 
     attempt_absorbed(w, absorber, &v2);
 
@@ -688,12 +557,9 @@ fn plan_handoff(
         held: &[("service", w.svc), ("report", REPORT), ("operator", w.note)],
     };
 
-    // ------------------------------------------------------------------------------------------
-    // **The control that must fail, before anything exists.** A supervisor that routes no handoff
-    // page cannot carry state, and wiring a stateful component anyway would be a kill-and-replace
-    // that reads exactly like a successful swap while the tally went to zero. The client's routing
-    // table is such a supervisor, so asking it for the stateful contract is a real refusal.
-    // ------------------------------------------------------------------------------------------
+    // The control that must fail: the client's routing offers no handoff page, and a stateful
+    // component wired without one would be a kill-and-replace that reads like a swap while the
+    // tally went to zero.
 
     match capability_plan::plan(&hot_swap_contract::STATEFUL_BACKEND, &to_client) {
         Ok(_) => bail(92),
@@ -916,16 +782,9 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
 
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 45);
 
-    // ------------------------------------------------------------------------------------------
-    // **Dependency-aware orchestration, for real this time.** The warning below used to be
-    // unconditional: every system on this channel happens to have exactly one component
-    // (`broker`) that forwards synchronously to the backend, so "always warn it" and "warn
-    // whoever the graph names" have always produced the same four syscalls. What changed is which
-    // one this operator actually asked. `broker`'s own manifest (`hot_swap_contract::BROKER`) declares
-    // `depends_on: &["backend"]`, so a two-instance live registry naming this system's broker and
-    // backend, checked against `capability_plan::dependents`, is what decides whether the broker is
-    // warned at all -- not this function's own memory of what it built five lines up.
-    // ------------------------------------------------------------------------------------------
+    // Whether the broker is warned is the graph's answer, not this function's memory of what it
+    // built: `hot_swap_contract::BROKER` declares `depends_on: &["backend"]`, checked against a
+    // two-instance live registry by `capability_plan::dependents`.
 
     let live = [
         capability_plan::LiveInstance {
@@ -940,12 +799,9 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
     let deps = report_dependents("backend", &live, 64);
     let order = deps.quiesce_order();
 
-    // Tell every dependent the graph named to take custody. From here until it is told the backend
-    // is back there is no backend at all on this channel, and the producer keeps running: that
-    // window is the whole reason this rung exists. This system's registry has exactly one entry
-    // (`broker`, id 2); a system with a second forwarding dependent would warn each one the graph
-    // named. **Without waiting for any of them** (§231): a dependent that never looks at its page
-    // costs its callers the down window and nothing else, which `ROLE_UNWARNED` measures.
+    // Tell every dependent the graph named to take custody, without waiting for any (§231): one
+    // that never looks costs its callers the down window and nothing else, which `ROLE_UNWARNED`
+    // measures. This registry's only dependent is `broker`, id 2.
     for &id in order {
         if id == 2 && warn == Warn::OnTime {
             warn_broker(signal, true);
@@ -1014,12 +870,9 @@ struct QueuedPlans {
 /// **The queued channel's routing**: the broker's warning page and signal, the refusal it must see
 /// first, and the three plans.
 fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
-    // **Three routing tables, and the interesting thing about them is `service`.** The producer's
-    // declaration is `hot_swap_contract::CLIENT`, byte for byte the one the direct channel's client is
-    // wired from, and it asks to use an endpoint it calls `service`. Here that name resolves to the
-    // broker's front endpoint instead of to the component's. One declaration, two routings, and the
-    // program cannot tell which it got: that is the indirection the manifest buys, and it is what
-    // makes a component's *peer* substitutable and not only the component.
+    // The producer's declaration is `CLIENT`, the direct channel's client's, and here its `service`
+    // resolves to the broker's front endpoint: one declaration, two routings, and the program
+    // cannot tell which it got.
     let to_backend = Provisions {
         held: &[
             ("service", w.svc),
@@ -1050,11 +903,8 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
         held: &[("service", front), ("report", REPORT), ("operator", w.note)],
     };
 
-    // The control that must fail on this channel, and it is the mirror of the direct one: no device
-    // is routed here, so the console component's declaration cannot be satisfied and is refused
-    // before anything is built. This is the same refusal from the other side, which is why both
-    // roles report it: a mechanism that only worked for the one component it was written against
-    // would not be a mechanism.
+    // The control that must fail, the direct channel's mirror: no device is routed here, so the
+    // console's declaration is refused before anything is built.
     match capability_plan::plan(&hot_swap_contract::CONSOLE, &to_backend) {
         Ok(_) => bail(60),
         Err(refusal) => send(REPORT, hot_swap_contract::RPT_REFUSED, refusal.code(), 0),
@@ -1080,47 +930,20 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
 }
 
 // ===============================================================================================
-// The third residual: a component that stops answering **without dying**.
-//
-// Every failure the rest of this program handles is a death. The incumbent quiesces because it was
-// asked to, or it faults on a device it no longer has, and either way the kernel sends a
-// five-word message to the supervision endpoint, `Rendezvous::REAP` collects the corpse, and the
-// region comes home. A component that simply stops answering produces none of that: it holds its
-// endpoint, holds its device, sits `Blocked`, and is indistinguishable from a healthy server waiting
-// for work, because that is what a healthy server waiting for work is.
-//
-// This role runs the swap against one. The operator notices the hang on its own, by its quiesce going
-// unanswered within a bound, then restores the service and destroys the hung incumbent's region.
-// See notes/hung-component.md.
+// The third residual: a component that stops answering **without dying**. It holds its endpoint
+// and its device, sits `Blocked` like a healthy server waiting for work, and sends no death
+// message. The operator notices by its quiesce going unanswered within a bound, then restores the
+// service and destroys the hung incumbent's region. See notes/hung-component.md.
 // ===============================================================================================
 
 /// **How long the operator waits for `OPERATION_QUIESCE` to be answered before it treats the
 /// incumbent as hung**, in milliseconds of the counter `user_mode_runtime::now` reads.
 ///
-/// **Chosen by measurement, with a margin of about forty.** A healthy incumbent's answer, timed the
-/// way [`quiesce_within`] times it (from starting the stand-in to receiving its forwarded answer, so
-/// including the one client request the quiesce can queue behind), measured on 2026-10-18 (UTC),
-/// ten runs per leg, under `script/test`, on a 16 GB Apple Silicon host with a load average of 25
-/// to 34 from other lanes' builds:
-///
-/// | ISA | counter | fastest | slowest |
-/// |---|---|---|---|
-/// | aarch64 (4 cores) | 62.5 MHz | 1.2 ms | 3.4 ms |
-/// | riscv64 (4 cores) | 10 MHz | 1.2 ms | 2.4 ms |
-/// | `x86_64` (2 cores, and the 1-core leg) | TSC, about 1 GHz | 1.1 ms | 6.5 ms |
-///
-/// 250 ms is about 38 times the slowest of the forty, and 25 scheduler ticks. The deadline fires at
-/// the first 10 ms tick at or after it (milestone 106 (a wait that ends on either the interrupt or
-/// the deadline)'s `BUGS`), so the real wait is 250 to 260 ms; the hung test prints what it was.
-///
-/// **This is wall time under QEMU, not instructions.** `script/test` runs TCG without `-icount`
-/// (only `script/bench` and `script/icount` pass it), so the guest counter follows the host clock
-/// and a loaded host stretches a healthy answer. The margin is for that. It is also this fixture's
-/// bound: its incumbent answers a request with eight multiplications, and a component whose
-/// requests take longer needs a supervisor's bound measured against it. A bound that convicts a
-/// healthy component destroys it mid-work: a caller it was serving is answered `Gone` and asks
-/// again, which is safe only for a request that may be repeated. One that is too long costs only
-/// a longer down window.
+/// About 38 times the slowest healthy answer measured on three ISAs on a loaded host, timed as
+/// [`quiesce_within`] times it; the deadline fires at the first 10 ms tick at or after it, so the
+/// real wait is 250 to 260 ms. Wall time under TCG, and this fixture's bound only: too short
+/// destroys a healthy component mid-work, too long costs only a longer down window. The
+/// measurement is in notes/hung-component/what-counts-as-hung.md.
 const QUIESCE_BOUND_MS: u64 = 250;
 
 /// What a bounded quiesce found.
@@ -1137,11 +960,9 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     let v2 = image(fs, "c_swappable", 3);
     let client_img = image(fs, "swap_boundary_witness", 4);
 
-    // Identical to the direct channel's routing: same declarations, same objects, same rights.
-    // Nothing about the wiring says this channel is different, which is the point. What differs is
-    // one start argument, and a start argument carries no authority. Without a device page the
-    // contract is `BACKEND`, the console's capability half with no registers, and the routing
-    // offers no `uart`.
+    // The direct channel's routing: what differs is one start argument, which carries no
+    // authority. Without a device the contract is `BACKEND`, the console's capability half with no
+    // registers, and the routing offers no `uart`.
     let held_with_device: &[(&str, u64)] = &[
         ("service", w.svc),
         ("report", REPORT),
@@ -1184,11 +1005,9 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
         72,
     );
 
-    // The replacement, built and endowed with everything except the device, and **not configured**,
-    // exactly as on the direct channel and for the same measured reason: a build is a few hundred
-    // syscalls, and doing it after the trigger loses the race against a conversation already in
-    // flight. Here it matters more, not less: a hung component gives the operator no drain to hide
-    // the build behind. With no device in the plan, "everything except the device" is everything.
+    // The replacement, built ahead and not configured, for the direct channel's reason; a hung
+    // component gives no drain to hide a build behind. With no device in the plan, everything
+    // except the device is everything.
     let replacement = build_without_devices(&v2, &component, w.faultep, 75);
 
     // The stand-in that will carry the quiesce, built now for the replacement's reason: starting it
@@ -1204,12 +1023,9 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     );
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 80);
 
-    // ------------------------------------------------------------------------------------------
-    // **Step 2, bounded.** The trigger is the one a healthy incumbent sends, and nothing in it says
-    // the incumbent has stopped. So the operator asks for the drain as on the direct channel, and
-    // gives the answer a deadline: milestone 106's timed wait. An answer means a healthy
-    // incumbent, drained. No answer within the bound means hung.
-    // ------------------------------------------------------------------------------------------
+    // Step 2, bounded: nothing in the trigger says the incumbent has stopped, so the drain is
+    // asked as on the direct channel with a deadline (milestone 106's timed wait). No answer
+    // within the bound means hung.
 
     let bound = cntfrq() * QUIESCE_BOUND_MS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {
@@ -1221,68 +1037,35 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     };
     send(REPORT, hot_swap_contract::RPT_UNANSWERED, bound, waited);
 
-    // ------------------------------------------------------------------------------------------
-    // **What the supervisor can see.** Two reports, and both of them are negative results.
-    //
-    // The domain, through `abi::rendezvous::SURVEY` (milestone 126), which is the only view of its own
-    // children this operator has: every member `BLOCKED`, none `DEAD`. That is also what a healthy
-    // idle system looks like from here, and no amount of looking again changes it. The verdict
-    // above came from the clock, not from this view.
-    //
-    // Then `Rendezvous::REAP` on every member, which is the supervisor's entire vocabulary over its
-    // domain since DECISIONS §32: refused, every one, `StillAlive`. Asking about all of them rather
-    // than about the one suspect is both easier (a survey returns tids and nothing that says which
-    // is which) and the stronger claim.
-    // ------------------------------------------------------------------------------------------
+    // What the supervisor can see, two negative results: `SURVEY` shows every member `BLOCKED`
+    // and none `DEAD`, as a healthy idle system does, and `Rendezvous::REAP` (§32) refuses every
+    // member `StillAlive`. The verdict above came from the clock, not from this view.
 
     let (members, states) = survey_domain(w.faultep);
     send(REPORT, hot_swap_contract::RPT_SURVEY, members, states);
     let (asked, refused) = ask_the_domain_to_be_collected(w.faultep);
     send(REPORT, hot_swap_contract::RPT_UNCOLLECTABLE, asked, refused);
 
-    // ------------------------------------------------------------------------------------------
-    // **The stand-in goes first.** It is parked on the stable endpoint's sender queue holding a
-    // quiesce request, and the replacement is about to receive on that endpoint: left there, it
+    // The stand-in goes first: parked on the stable endpoint's sender queue with a quiesce, it
     // would drain the replacement the moment it started. Destroying its region finishes it in place
     // and unlinks it from the queue (milestone 133), so the request is never delivered.
-    // ------------------------------------------------------------------------------------------
 
     end_region(stand_in, 117);
 
-    // ------------------------------------------------------------------------------------------
-    // **Recovery, with no authority this operator did not already hold.** DECISIONS §32 records that
-    // a supervisor which must restart a *hung* child "still needs the stronger right", meaning the
-    // construction authority reaping was moved off. For restarting the **service**, that is not so:
-    //
-    //   - The device comes back with `PageFrame::REVOKE`, which is `GRANT`-gated take-back (§41) and
-    //     asks the current holder for nothing. It works on a live, wedged, wholly uncooperative
-    //     holder exactly as it works on a quiesced one.
-    //   - There is nothing to drain, and nothing to drain it *for*: a component that is not
-    //     receiving has already achieved what `OPERATION_QUIESCE` exists to achieve.
-    //   - The replacement parks in `RECEIVE_CAP` on the same endpoint and picks up whatever queued
-    //     behind the silence, because the stable name is the endpoint object and the kernel's sender
-    //     queue is the buffer (§41).
-    // ------------------------------------------------------------------------------------------
+    // Recovery needs no authority this operator did not already hold: `PageFrame::REVOKE` is
+    // `GRANT`-gated take-back (§41) that asks a wedged holder for nothing, there is nothing to
+    // drain, and the replacement picks up whatever queued behind the silence.
 
     if device {
         revoke_device(82);
     }
     endow_devices_and_start(replacement, &v2, &component, 83);
 
-    // ------------------------------------------------------------------------------------------
-    // **Reclaiming the hung incumbent, which is where §32 (a supervisor may collect a corpse)'s
-    // "stronger right" was right**, and the right is the region capability this operator kept.
-    // `DESTROY` finishes the `Blocked` incumbent where it sits without waking it (milestone 133,
-    // `sched::finish_blocked_resident`), and freeing it answers every caller it still held a reply
-    // capability for with `abi::Error::Gone` (milestone 254 (a caller stranded by a server that
-    // died), `sched::strand_callers_of`). That is the client whose request it swallowed, which asks
-    // again and is served by the replacement. Nothing here asks the incumbent for anything, and it
-    // never runs another instruction.
-    //
-    // After `STARTED`, so the freed caller's second attempt finds a server rather than parking in
-    // the down window. The witness is the budget's own count of pages in live child regions, read
-    // on either side of the `DESTROY`.
-    // ------------------------------------------------------------------------------------------
+    // Reclaim the hung incumbent with the region capability kept for it, §32's stronger right.
+    // `DESTROY` finishes it without waking it and answers the caller it swallowed with `Gone`
+    // (milestone 254 (a caller stranded by a server that died)), who asks the replacement again.
+    // After `STARTED`, so that retry finds a server. The witness is the budget's live-children
+    // page count, read on either side.
 
     let before = live_children_pages(118);
     end_region(incumbent, 119);
@@ -1427,20 +1210,13 @@ fn survey_domain(faultep: u64) -> (u64, u64) {
 /// **Ask the kernel to collect every member of the domain, and count the refusals.** Returns
 /// `(asked, refused_still_alive)`.
 ///
-/// This is not a reap loop that happens to fail. It is the assertion that a supervisor's whole
-/// vocabulary over a live domain is empty: `Rendezvous::REAP` (DECISIONS §32) authorizes *collecting a
-/// corpse* and refuses a thread that is still alive, deliberately, because killing is the stronger
-/// act and lives elsewhere. Against a hung component, "collect the corpse" is the only verb a
-/// supervisor has and there is no corpse.
-///
-/// It is side-effect free by construction: `reap_supervised` decides `StillAlive` before it looks up
-/// a region, so a refused reap moves nothing and frees nothing.
+/// The assertion that a supervisor's whole vocabulary over a live domain is empty:
+/// `Rendezvous::REAP` (DECISIONS §32) collects a corpse and refuses a thread still alive, because
+/// killing is the stronger act and lives elsewhere. Side-effect free: `reap_supervised` decides
+/// `StillAlive` before it looks up a region, so a refused reap moves nothing and frees nothing.
 fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
-    // The raw syscall return, which is the **negative** discriminant: `abi::Error`'s variants are
-    // already negative (`StillAlive = -9`) and `invoke` hands them back unchanged. Programs that
-    // report an error upward negate it to get a positive code (`swap_boundary_witness`'s attack
-    // report does), and comparing against a negated constant here was this lane's one wrong line:
-    // it made every refusal look like a success and the test said 0 of 2.
+    // The raw syscall return is the negative discriminant (`StillAlive = -9`), which `invoke`
+    // hands back unchanged; a reporter that negates it (`swap_boundary_witness`) is the other case.
     let still_alive = abi::Error::StillAlive as i64;
     let mut asked = 0u64;
     let mut refused = 0u64;
