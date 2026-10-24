@@ -1,5 +1,5 @@
-//! The glyph bitmaps (milestone 29), generated data in a file of its own so the code that uses the
-//! font is not buried in 128 rows of hexadecimal.
+//! The glyph bitmaps (milestone 29 (a display terminal)), generated data in a file of its own so
+//! the code that uses the font is not buried in 128 rows of hexadecimal.
 //!
 //! The rows are `crates/bitmap_font/kaypro-style-7x8.art` transcribed: an original drawing in the
 //! Kaypro II's style, not its ROM or any other font's table, licensed from nobody, and the file to

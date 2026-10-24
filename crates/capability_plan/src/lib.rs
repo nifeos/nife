@@ -158,9 +158,10 @@ pub struct StateHandoff {
 /// What a component declares it needs: the capability half of a contract, beside the wire half.
 /// The order of [`caps`](Requirements::caps) is the component's capability table slot order,
 /// because `supervision_protocol::ChildEndowment::caps` lands its entries in slots 0, 1, 2, ...,
-/// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32) and start
-/// arguments are not declared: a manifest declares what a component needs, not how it is started.
-/// See notes/component-manifest.md.
+/// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32 (a supervisor
+/// may collect a corpse without being able to build one)) and start arguments are not declared: a
+/// manifest declares what a component needs, not how it is started. See
+/// notes/component-manifest.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Requirements {
     /// The contract this component implements, for a reader and for a diagnostic. Not matched

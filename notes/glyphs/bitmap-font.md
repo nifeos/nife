@@ -15,9 +15,9 @@ a screen provable rather than plausible.
 
 `glyph` is total. A byte the font has no picture for draws `MISSING`, a hollow box, the convention
 every terminal uses for "I cannot draw this". A font that returned nothing or a blank for an
-unmapped byte would make a mojibake bug look like a spacing bug. Since the UTF-8 increment of
-milestone 142 (a text display good enough that people use it instead of a GUI) the function takes a
-`char`, so a multi-byte UTF-8 sequence decodes to one `char` and takes one cell, drawn as the box,
+unmapped byte would make a mojibake bug look like a spacing bug. The function takes a `char` since
+the UTF-8 increment of milestone 142 (a text display good enough that people use it instead of a
+GUI). So a multi-byte UTF-8 sequence decodes to one `char` and takes one cell, drawn as the box,
 rather than a run of wrong pictures, one per byte. The repertoire did not grow with the signature; a
 real repertoire needs a real font.
 

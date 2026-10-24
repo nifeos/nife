@@ -6,7 +6,7 @@
 //! chose at spawn, never a card address, and [`Window::translate`] is the one place a block becomes
 //! a sector; a Kani harness proves no request reaches outside it. Which window radon's filesystem
 //! gets is a fact two programs must agree on, so an architect's call (the crate root's BUGS and
-//! milestone 53's block).
+//! the block of milestone 53 (the board's own peripherals)).
 
 use filesystem_contract::blk;
 

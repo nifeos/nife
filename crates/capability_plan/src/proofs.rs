@@ -81,8 +81,8 @@ fn any_slot() -> u64 {
 
 /// No routing table ever gives a component a right its declaration did not ask for. For every
 /// declaration of two needs and every pair of slot numbers a supervisor could route, the rights
-/// word at slot `i` is exactly `caps[i].direction.rights()`: no `Use` becomes a `READ` (§41), and
-/// nothing carries `GRANT`, which no declaration can ask for.
+/// word at slot `i` is exactly `caps[i].direction.rights()`: no `Use` becomes a `READ` (§41 (the
+/// endpoint is the broker)), and nothing carries `GRANT`, which no declaration can ask for.
 /// The unwind bound is a termination proof: ten, against real bounds of two capability needs, two
 /// page needs, two routed names and a one-byte role name. `SHAPES[i]` makes the slice CBMC reads a
 /// symbolic pointer, so the lengths it walks are symbolic and `str_eq` would unwind forever.

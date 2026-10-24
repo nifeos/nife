@@ -1,4 +1,4 @@
-//! The memory-region accounting as pure logic (object revocation, DECISIONS §16): the arithmetic
+//! The memory-region accounting as pure logic (DECISIONS §16 (object revocation)): the arithmetic
 //! the kernel's region allocator (`kernel/src/memory_region.rs`) calls, so Kani proves the code the
 //! kernel runs. [`split_new_watermark`] carves a child off a parent's budget. [`destroy_outcome`]
 //! decides whether a region refuses, frees its run to the allocator (a root) or returns it to its
