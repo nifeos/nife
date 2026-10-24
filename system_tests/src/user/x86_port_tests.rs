@@ -1,33 +1,21 @@
 //! **The load-bearing tests of the x86 port-range capability** (milestone 299, DECISIONS §121
-//! reversed 2026-09-15; a third added by milestone 313's audit). A `PortRange` capability is enforced entirely at the context switch, by the
-//! TSS I/O permission bitmap, with nothing on the syscall path to assert on; the only honest test is
-//! a ring-3 program that executes `out` and observes whether the CPU allowed it. So these build
-//! hand-assembled `x86_64` children (`super::x86_programs`) exactly as `supervision_tests` does, and
-//! read the outcome from the child's supervision endpoint: a word arrives if the `out` was allowed,
-//! an `EVENT_FAULT` if it was not.
-//!
-//! Two properties, both named load-bearing in the milestone's own BUGS:
-//!
-//! 1. **A non-holder cannot touch the port, and a holder's grant does not leak across a switch.**
-//!    [`port_holder_transmits_then_a_non_holder_faults`] runs a holder (which transmits) and then a
-//!    child with no port capability (which faults on the same `out`). The second running *after* the
-//!    first is the hand-off test: if the switch away from the holder had left the TSS permitting the
-//!    port, the non-holder would inherit it and not fault.
-//! 2. **A revoked holder faults on its next `in`/`out`.**
-//!    [`a_revoked_holder_faults_on_its_next_port_write`] parks a holder in `RECEIVE`, revokes its port
-//!    range while it is parked, wakes it, and confirms the `out` it then executes faults.
-//! 3. **A holder that drops its own port capability faults on its next `in`/`out`.**
-//!    [`a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write`] is milestone 313's
-//!    audit finding turned into a test: the first two prove the grant follows the capability across
-//!    a switch and a revoke, and neither could see that `SYS_CAP_DELETE` left it behind.
-//!
-//! 4. **A holder that takes the range back from everyone else keeps its own bitmap.**
-//!    [`a_take_back_leaves_the_invokers_own_bitmap_installed`] is the 2026-09-24 audit's finding
-//!    turned into a test: `PortRange::REVOKE` spares the invoker's capability, and until that audit
-//!    the arch half reset the invoker's own core anyway, so the sparing was true of the table and
-//!    false of the hardware until the next switch-in.
-//!
+//! reversed 2026-09-15; the delete test from milestone 313's audit). A `PortRange` capability is
+//! enforced entirely at the context switch, by the TSS I/O permission bitmap, so the only honest
+//! test is a ring-3 program that executes `out`. These build hand-assembled `x86_64` children
+//! (`super::x86_programs`) as `supervision_tests` does and read the outcome from the child's
+//! supervision endpoint: a word if the `out` was allowed, an `EVENT_FAULT` if it was not.
 //! `x86_64` only: there is no port space, and no TSS I/O bitmap, on the other two architectures.
+//! See notes/x86-port/the-port-range-tests.md.
+
+//! # The load-bearing properties
+//!
+//! 1. A non-holder cannot touch the port, and a holder's grant does not leak across a switch:
+//!    [`port_holder_transmits_then_a_non_holder_faults`].
+//! 2. A revoked holder faults on its next `in`/`out`: [`a_revoked_holder_faults_on_its_next_port_write`].
+//! 3. A holder that drops its own port capability faults on its next `in`/`out`:
+//!    [`a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write`].
+//! 4. A holder that takes the range back from everyone else keeps its own bitmap:
+//!    [`a_take_back_leaves_the_invokers_own_bitmap_installed`].
 
 use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
 
@@ -172,25 +160,13 @@ fn reap(region: u64) {
 const NON_HOLDER_ATTEMPTS: u32 = 64;
 
 /// **A holder transmits; a non-holder that runs next on the same core faults.** The non-holder
-/// test and the hand-off test in one, because the order is the hand-off: the non-holder is
-/// scheduled after the holder installed and then vacated the TSS bitmap, so its fault is proof the
-/// switch left the port denied rather than inheriting the holder's grant.
-///
-/// **The same core is the precondition, and until 2026-10-03 nothing asserted it.** The bitmap is
-/// per core. On one core the order alone makes the hand-off; on two, the non-holder can start on
-/// the core the holder never touched and fault there whatever the switch did. That is what the
-/// direct boot did from the day it went to `NIFE_SMP=2` (2026-09-23): the falsification below left
-/// the holder's grant on cpu 0, the non-holder was placed on cpu 1, faulted, and the test passed.
-/// Only the real-firmware leg, which boots the suite on one core, went red. So the holder now
-/// reports the core it wrote on ([`port_out_reporting_cpu`]), and the non-holder executes its `out`
-/// only when it is on that core and otherwise faults at a different pc
-/// ([`port_out_on_cpu_then_exit`]), which this test counts as a miss and retries.
-///
-/// What the core check does not cover: a thread preempted and moved between its core read and its
-/// `out` (three instructions, so two preemptions and a steal for the holder's bracket to lie).
-///
-/// [`port_out_reporting_cpu`]: super::x86_programs::port_out_reporting_cpu
-/// [`port_out_on_cpu_then_exit`]: super::x86_programs::port_out_on_cpu_then_exit
+/// test and the hand-off test in one, because the order is the hand-off: the non-holder runs after
+/// the holder installed and vacated the TSS bitmap, so its fault proves the switch left the port
+/// denied. The bitmap is per core, so the holder reports the core it wrote on
+/// ([`super::x86_programs::port_out_reporting_cpu`]) and the non-holder executes its `out` only on
+/// that core, otherwise faulting at a different pc ([`super::x86_programs::port_out_on_cpu_then_exit`]),
+/// which counts as a miss and is retried. A thread moved between its core read and its `out` is not
+/// covered. See notes/x86-port/the-port-range-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.port_holder_transmits_then_a_non_holder_faults.patch`
 #[test_case]
@@ -322,23 +298,13 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
 }
 
 /// **A holder that deletes its own port capability faults on its next `out`** (milestone 313's
-/// audit, 2026-09-17). The third property, and the one the first two could not see: they establish
-/// that the grant follows the capability across a switch and across a revoke, and this establishes
-/// that it follows the capability out of the thread's own table. Before the audit it did not. The
-/// grant is a cached field the switch installs, `SYS_CAP_DELETE` cleared the table and not the
-/// cache, and a thread that dropped its port capability kept the ports for life, which is §12's
-/// "a consumed capability cannot be used again" failing for the one object enforced outside the
-/// table. The progenitor does exactly this drop on every x86 boot (`cap_delete(g.uart_dev)`).
-///
-/// The child deletes [`PORT_SLOT_WITHOUT_WAKE`] and then executes `out`, and **exits rather than
-/// reporting** if the `out` is permitted; the first draft reported, and on the unfixed kernel that
-/// `SEND` parked on a rendezvous nobody was receiving and the run hung instead of going red (row
-/// 26's shape, and the program's doc carries the account). Which assertion fires is stated here so
-/// nobody has to run milestone 307's sweep on it: a permitted `out` means the child exits cleanly,
-/// so the supervisor's message is `EVENT_EXIT` and the **first** `assert_eq!` is the one that goes
-/// red, holding `EVENT_EXIT` where it wanted `EVENT_FAULT`. The pc equality below it is the
-/// wrong-reason guard for the other direction: a `syscall` that faulted, or a bad slot, would
-/// report a different pc.
+/// audit, 2026-09-17): the grant is a cached field the switch installs, and `SYS_CAP_DELETE` must
+/// clear it with the slot, or §12's "a consumed capability cannot be used again" fails for the one
+/// object enforced outside the table. The progenitor makes this drop on every x86 boot. The child
+/// deletes [`PORT_SLOT_WITHOUT_WAKE`], executes `out` and exits rather than reporting, so a
+/// permitted `out` goes red instead of hanging (row 26's shape): the first `assert_eq!` fails,
+/// holding `EVENT_EXIT` where it wanted `EVENT_FAULT`, and the pc check guards the other direction.
+/// See notes/x86-port/the-port-range-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write.patch`
 #[test_case]
@@ -404,24 +370,14 @@ fn a_take_back_leaves_the_invokers_own_bitmap_installed() {
     );
 }
 
-/// **A `PortRange` capability without `WRITE` must not grant port I/O** (lane/633-outsider-2, an
-/// outsider pass over `notes/confinement-claims.md`, 2026-10-05 UTC).
-///
-/// Rows 27 to 29 claim things about *holding* a port capability, revoking one and deleting one.
-/// None of them claims that the capability's **rights** gate the `in`/`out`, yet the rest of the
-/// tree treats `WRITE` as the right that drives a port: `build_child` grants the driver `WRITE`
-/// with the comment "the rights a driver gets", and `capability_plan` maps a `Use` component to
-/// `WRITE` and a `Serve` component to `READ`. So a thread handed a `PortRange` narrowed to `READ`
-/// alone (a `Serve`-shaped grant) should fault on `out`, exactly as a non-holder does.
-///
-/// **Fixed by milestone 768 (provisional)** (calef's ruling, 2026-10-05 UTC): the TSS bitmap cannot
-/// grant `in` without `out`, so `sched::thread_control_block_insert_from` installs
-/// `Thread::port_range_grant` only for a `PortRange` carrying `WRITE`, and this `READ`-only
-/// capability grants nothing. Before the fix the grant ignored rights and the `out` was permitted
-/// (supervision message `[EVENT_EXIT, ..]`); the escape is written up in
-/// `notes/confinement-outsider-pass-2.md`. The claim is row 33 of `notes/confinement-claims.md`. The
-/// stub is [`super::x86_programs::port_out_then_exit`], chosen over `port_out` so a wrongly-permitted
-/// `out` exits rather than parking on a SEND and hanging the run (the row-26 hazard).
+/// **A `PortRange` capability without `WRITE` must not grant port I/O** (row 33 of
+/// `notes/confinement-claims.md`; milestone 768 (provisional), calef's ruling of 2026-10-05 UTC).
+/// The TSS bitmap cannot grant `in` without `out`, so `sched::thread_control_block_insert_from`
+/// installs `Thread::port_range_grant` only for a `PortRange` carrying `WRITE`, and a `READ`-only
+/// capability grants nothing. The stub is [`super::x86_programs::port_out_then_exit`], so a wrongly
+/// permitted `out` exits rather than parking on a `SEND` and hanging the run (the row-26 hazard).
+/// Why `WRITE` is the right that drives a port is in notes/x86-port/the-port-range-tests.md, and
+/// the escape it closed in `notes/confinement-outsider-pass-2.md`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.a_read_only_port_capability_must_not_grant_port_output.patch`
 #[test_case]
