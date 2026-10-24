@@ -1,50 +1,37 @@
 //! **The two steps of `schedule`'s locked decision that are not the switch itself**: choosing the
 //! thread to run next, and reading the switch's operands off both threads' TCB pages. Both run
 //! under `IPC_TABLES` with interrupts masked, once per switch, and both are `#[inline(always)]`, so
-//! their bytes are `schedule`'s own and stay in its pinned hot section.
-//!
-//! Cut out of `schedule` by maintainer/schedule-split for milestone 888 (a ratchet on function
-//! length), with every comment kept on its line. They live in a child rather than beside
-//! `schedule` because `sched.rs` is a split parent that may only shrink, per §282 (when a file is
-//! split, the parent becomes an index).
+//! their bytes are `schedule`'s own and stay in its pinned hot section. They live in a child of
+//! `sched` because `sched.rs` is a split parent, which only shrinks (§282 (when a file is split,
+//! the parent becomes an index)). See notes/scheduler/switch.md.
 //!
 //! Name: provisional (maintainer/schedule-split, 2026-10-12 UTC). The module and both functions,
 //! `choose_next` and `switch_operands`, are provisional names.
 
 use super::*;
 
-/// **Choose the thread `schedule` runs next, and put the outgoing one back on the queue.** `None`
-/// means keep running `current`: the queue was empty and it can still run, or the pop handed back
-/// `current` itself, which `heal_self_pop` repairs. Split out of `schedule` for milestone 888 (a
-/// ratchet on function length), with every comment kept on its line.
+/// **Choose the thread `schedule` runs next, and put the outgoing one back on the queue.**
 ///
-/// Caller holds `IPC_TABLES` with interrupts masked, and has already turned a killed `current` into
-/// a corpse, so the state read here is what the thread really is now. The read is here rather than
-/// a parameter because passing it in made LLVM duplicate the run-queue pop once per way of
-/// producing the `Option<State>` (76 bytes of `schedule` on aarch64, measured 2026-10-12 UTC).
+/// Returns `None` to keep running `current`: the queue was empty and it can still run, or the pop
+/// handed back `current` itself, which `heal_self_pop` repairs. Panics when nothing can run and
+/// there is no idle thread. `current`'s state is read here rather than passed in, and the function
+/// is `#[inline(always)]`, both for code size; see notes/scheduler/switch.md.
 ///
-/// `#[inline(always)]` for the debug build the icount gate measures, which inlines nothing on its
-/// own: with both of `schedule`'s helpers left to the compiler, `yield_switch` and `ctx_switch`
-/// rose 1.0 to 1.2% on all three ISAs (2026-10-12 UTC). The release build inlined them either way.
-///
+/// Context: caller holds `IPC_TABLES` with interrupts masked, and has already carried out any kill
+/// or suspension order on `current`.
 #[inline(always)]
 pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<ThreadId> {
     let state = sched.threads.get(current).map(|t| t.handshake.state);
 
-    // **Only a still-Running thread goes back on the ready queue.** A thread that reached
-    // here after marking itself `Blocked` (it is waiting for IPC), `Finished`, or `Dead` (a
-    // supervised corpse) must not be rescheduled, and this one line is what makes blocking work:
-    // `schedule()` can be called from the timer IRQ *while* a thread is mid-way through blocking
-    // itself, and it must not undo that by helpfully requeueing it.
+    // Only a `Running` thread is requeued: the timer can run `schedule` while a thread is
+    // blocking itself.
     let runnable = state == Some(State::Running);
 
     let idle_tid = cpu::current().idle.load(Ordering::Relaxed);
 
-    // The popped token goes home to its thread, which holds it while it runs, and the id is what
-    // everything below uses. **A popped thread carrying a suspension order is parked rather than
-    // run** (DECISIONS §300 (the paused state, a TCB verb, silent)) and the pick goes on: this is
-    // the one place a queued thread reaches a CPU, whichever wake or placement queued it, so an
-    // order given while it waited is kept here.
+    // A popped thread carrying a suspension order (DECISIONS §300 (the paused state, a TCB verb,
+    // silent)) is parked and the pick goes on: the pop is the one place a queued thread reaches
+    // a CPU.
     let popped = match cpu::current().with_runq(|q| q.pop_front()) {
         None => None,
         Some(token) => match hold_token_reading_order(token) {
@@ -56,17 +43,12 @@ pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<Th
         Some(id) => id,
         None => {
             if runnable {
-                // Keep it. A thread yielding into an empty run queue simply carries on. (The
-                // idle thread lands here too: nothing to do, so it wfi's again.) No switch.
+                // A thread yielding into an empty queue, the idle thread included, carries on.
                 return None;
             }
-            // Current is Blocked or Finished and the ready queue is empty. This is NOT a
-            // deadlock: a thread blocked on a device interrupt is waiting for an event that
-            // will arrive. Fall back to the idle thread, which wfi's until it does.
+            // Nothing to run and current cannot: the idle thread waits for the interrupt.
             if idle_tid == u64::MAX || current == idle_tid {
-                // No idle thread yet (before init finished), or the idle thread itself is
-                // somehow not runnable, which cannot happen. Either way there is genuinely
-                // nothing to run.
+                // No idle thread yet, or the idle thread itself cannot run.
                 match state {
                     Some(State::Finished) => {
                         panic!("the last thread exited; nothing left to run")
@@ -78,27 +60,18 @@ pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<Th
         }
     };
 
-    // **The running thread must never come off its own run queue** (boot 8's downstream
-    // catastrophe, guarded here on its own merits). The pop above precedes the requeue below,
-    // so a legal schedule can never hand back `current`; if it ever does, something queued a
-    // thread that was still running, and switching into it would restore `t.context`, a
-    // pointer to a frame this very thread has already resumed and consumed: execution
-    // time-travels to its previous switch-out point on a reused stack and spins there
-    // forever, off every instrument. Debug builds fail loudly; the board build heals by
-    // keeping the thread running, which is the only state that is still coherent.
+    // The pop precedes the requeue, so `current` coming off its own queue means something queued
+    // a running thread; see `heal_self_pop`.
     if next == current {
         heal_self_pop(sched, current);
         return None;
     }
 
-    // Requeue the outgoing thread if it can still run, but never the idle thread, which lives
-    // outside the ready queue. A killed thread is already `Finished` (`schedule` handled it), so it
-    // is not runnable here and is reaped by `finish_switch` after the switch, no queue surgery.
+    // Never requeue the idle thread, which lives outside the ready queue. A killed thread is
+    // already `Finished`, so `finish_switch` reaps it.
     if runnable && current != idle_tid {
-        // `preempt` marks Ready and deliberately leaves `on_cpu` set: the thread is in a
-        // queue AND still standing on this core until finish_switch runs, which is the one
-        // legal overlap and the reason only this core may pop its own queue (the extracted
-        // protocol's steal-vs-switch-out rule; see crates/wake_handshake).
+        // `preempt` leaves `on_cpu` set until `finish_switch`, so only this core may pop its own
+        // queue (`crates/thread_wake_handshake`'s steal-versus-switch-out rule).
         let t = sched.threads.get_mut(current).unwrap();
         t.handshake.preempt();
         // The token a running thread holds on its own TCB. Round robin: the back.
@@ -110,23 +83,15 @@ pub(super) fn choose_next(sched: &mut IpcTables, current: ThreadId) -> Option<Th
     Some(next)
 }
 
-/// **Read what the switch needs off both threads' TCB pages while `IPC_TABLES` is still held:**
-/// the outgoing context slot and register file, the incoming context, register file and root. It
-/// also publishes the incoming thread's current-CPU page, hands the thread pointer over, and on
-/// x86_64 installs the incoming port grant, since each must happen under the lock. Split out of
-/// `schedule` for milestone 888 (a ratchet on function length), with every comment kept on its
-/// line.
-///
-/// `#[inline(always)]` for the debug build the icount gate measures, which inlines nothing on its
-/// own: with both of `schedule`'s helpers left to the compiler, `yield_switch` and `ctx_switch`
-/// rose 1.0 to 1.2% on all three ISAs (2026-10-12 UTC). The release build inlined them either way.
-///
+/// **Read the switch's operands off both threads' TCB pages while `IPC_TABLES` is held**: the
+/// outgoing context slot and register file, and the incoming context, root and register file. Also
+/// publishes the incoming current-CPU page, hands the thread pointer over and, on x86_64, installs
+/// the port grant, each of which must happen under the lock. Inlined as [`choose_next`] is.
 ///
 /// # Safety
 ///
-/// The caller holds `IPC_TABLES` with interrupts masked, `current` and `next` are live threads in
-/// `sched`, `next` has been switched in and made current, and `next_tcb` is its page pointer from
-/// `sched.threads.pointer(next)`.
+/// The caller holds `IPC_TABLES` with interrupts masked, `current` and `next` are live, `next` has
+/// been switched in and made current, and `next_tcb` is `sched.threads.pointer(next)`.
 #[inline(always)]
 pub(super) unsafe fn switch_operands(
     sched: &mut IpcTables,
@@ -140,17 +105,9 @@ pub(super) unsafe fn switch_operands(
     *mut crate::arch::fp::FpState,
     *const crate::arch::fp::FpState,
 ) {
-    // The incoming thread's low half. A kernel thread gets the empty reserved table, which
-    // makes every low address fault, which is exactly right: it has no business down there.
-    //
-    // **And its current-CPU page, off the same borrow**, which is the whole of this kernel's
-    // half of calef's 2026-09-21 ruling that a thread observing itself is a page rather than a
-    // crossing. Here rather than at any wake or placement site for `last_cpu`'s reason one
-    // field over: this is the one point every path to a CPU passes through, whatever moved the
-    // thread. And on this core rather than the one that queued it, which is what makes writer
-    // and reader the same hardware thread and the ordering argument a short one
-    // (`crates/current_cpu_contract`). A kernel thread has no space and needs no page: it has
-    // no userspace to read one from.
+    // The incoming low half; a kernel thread gets the empty reserved table, so every low address
+    // faults. The current-CPU page is published here, on the core that will run the thread, so
+    // writer and reader are one hardware thread (`crates/current_cpu_contract`).
     let next_root = match sched.threads.get(next).unwrap().space.as_ref() {
         Some(space) => {
             space.publish_current_cpu(cpu::id() as u64);
@@ -159,15 +116,9 @@ pub(super) unsafe fn switch_operands(
         None => crate::arch::mmu::reserved_root(),
     };
 
-    // Copy the raw pointers out before the lock drops. The assembly writes through the
-    // context slot and reads the incoming context, and both threads' TCB pages keep their
-    // contents pinned.
-    //
-    // **The TCB page pointer rather than `get_mut`** (milestone 447), and it is one probe per
-    // side rather than the two the obvious shape would cost. Each thread's FP register file
-    // lives in the free space of the same page, past the end of the struct, so a `&mut Thread`
-    // is exactly the wrong thing to hold: its provenance stops at the struct.
-    // `Threads::pointer` hands back the page cast unnarrowed and both addresses fall out of it.
+    // Raw pointers, copied out before the lock drops; the TCB pages pin their contents. The page
+    // pointer, not `get_mut`: the FP register file lives past the struct in the same page, and a
+    // `&mut Thread`'s provenance stops at the struct.
     let prev_ptr = sched.threads.pointer(current).unwrap();
 
     // The thread pointer, from the outgoing thread to the incoming one (milestone 812), here
@@ -191,14 +142,8 @@ pub(super) unsafe fn switch_operands(
         )
     };
 
-    // `next_ctx`, and on x86 the incoming thread's port grant (milestone 299) beside it, out of
-    // ONE lookup. The two arms are byte-identical bar the port read, and the split is
-    // deliberate: the port read goes into the `x86_64`-only variable declared just below it,
-    // not the switch tuple, so it costs the other two architectures nothing at all. The
-    // cycle-counter grant is carried the same way, by milestone 300 (decompose the icount
-    // baseline drift, and re-baseline only what is proven), so neither grant widens this
-    // tuple: it is back to its pre-139 width `(prev_slot, next_ctx, next_root)` on every
-    // shipping build, plus milestone 447's two register-file pointers.
+    // `next_ctx`, and on x86 the port grant beside it, out of one lookup. The grant goes in an
+    // `x86_64`-only variable rather than the switch tuple, so the other ISAs pay nothing.
     #[cfg(not(target_arch = "x86_64"))]
     // SAFETY: as `prev_ptr`; `next` was popped off this core's run queue and marked `Running`
     // inside the caller's locked block, which still holds the lock.
@@ -224,18 +169,9 @@ pub(super) unsafe fn switch_operands(
         )
     };
 
-    // **The incoming thread's authority to reach x86 I/O ports from ring 3, installed here and
-    // not after the lock drops** (milestone 315; it was beside the address-space install until
-    // then). The TSS I/O-bitmap grant is the one per-core fact a *revocation* has to be able to
-    // take back from a core it is not running on, and `delete_port_range_caps_impl` does that by
-    // NMI while holding this lock. Reading the grant under the lock and installing it outside
-    // left two windows that broadcast could not close: a core could install a grant the sweep had
-    // already cleared, and the NMI could land in the middle of the install. Both shut if every
-    // writer of a bitmap holds `IPC_TABLES`, which costs, on a machine where nothing holds a
-    // port, one compare inside the critical section instead of one outside it.
-    //
-    // Nothing can execute a ring-3 `in`/`out` between here and the switch: this core is in the
-    // kernel with interrupts masked the whole way.
+    // Under the lock, not after it drops: a revocation clears grants on other cores by NMI while
+    // holding `IPC_TABLES`, which closes every window only if every bitmap writer holds it too.
+    // No ring-3 `in`/`out` runs before the switch: interrupts are masked throughout.
     #[cfg(target_arch = "x86_64")]
     install_port_grant(next_port_grant);
 
