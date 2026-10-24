@@ -21,6 +21,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Memory ordering, and the fences with no partner](../memory-ordering.md): every fence and ordered atomic, adjudicated.
 - [The IPC_TABLES lock inventory](../ipc-tables-lock-inventory.md): what the one remaining IPC lock protects, by heat.
 - [Capabilities, and why the kernel has no `open()`](../capabilities.md): capabilities, the confused deputy, first syscalls and IPC.
+- [What a capability can name](../capability-objects.md): each kernel object a capability names and why it is there, the table's size and peak, and the rights checks.
 - [Who does IPC name?](../ipc-naming.md): IPC names a rendezvous, never the peer.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Futex wait and wake](../futex.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
@@ -30,6 +31,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.
 - [The progenitor's capability-table peak, slot by slot](../capability-peak-trace.md): which capabilities hold the 31 of 32, and what each option to lower it saves. Name provisional.
+- [The mapping log: how revocation finds every mapping](../mapping-log.md): the per-space record of every mapping and the capability it was made under, and the sweeps that read it.
 - [Object revocation: tearing a process back down](../object-revocation.md): reclaiming the kernel objects a process built.
 - [Ending a permanently blocked thread](../blocked-thread-teardown.md): research and proposals for ending a blocked thread.
 - [Suspending and resuming a thread](../suspend-and-resume.md): how `SUSPEND` and `RESUME` stop and continue a thread, case by case.
@@ -40,6 +42,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Can a userspace process hold a timer?](../timer-capability.md).
 - [Trusted init: measuring the boot program, and then everything the progenitor loads](../trusted-init.md).
 - [The progenitor, and loading a program from userspace](../progenitor-and-loading.md).
+- [Two seams only the test kernel has](../test-kernel-seams.md): holding a delegation open for a revocation sweep, and failing a thread's Nth retype.
 - [Booting the progenitor](../progenitor-boot.md): the boot capability set, slot by slot, and the devices the kernel starts itself.
 - [The system initializer](../system-initializer.md): what the progenitor builds, how it measures
   what it loads, and the spawn service.

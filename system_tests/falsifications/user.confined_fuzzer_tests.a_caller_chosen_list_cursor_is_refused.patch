@@ -27,7 +27,7 @@ patch adds the one thing the fix took away, a walk that starts wherever its call
 diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 --- a/kernel/src/revoke.rs
 +++ b/kernel/src/revoke.rs
-@@ -279,6 +279,14 @@
+@@ -180,6 +180,14 @@ mod chain {
              }
          }
  
@@ -39,20 +39,19 @@ diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 +            }
 +        }
 +
-         /// **Link a fresh page from `region` as the new head, holding `entry`.** `false` when the
+         /// Link a fresh page from `region` as the new head, holding `entry`. `false` when the
          /// region is spent: the caller unmaps, and the process pays for its own limit.
          ///
-@@ -702,20 +710,12 @@
+@@ -506,19 +514,12 @@ pub fn list_mapping(root: u64, cursor: u64) -> Listing {
      };
  
      const PAGE_MASK: u64 = !(page_frames::FRAME_SIZE - 1);
 -    let mut chain = space.log.pages_mut().peekable();
 -    let mut index = 0usize;
 -    if cursor != 0 {
--        // The caller's word: find its page on this space's chain before following it. The walk
--        // starts at the head and stops at the wanted page, so a hit also proves every page the
--        // listing walk below will follow is this chain's own, and it is the same walk: the listing
--        // resumes from the page the check stopped on.
+-        // The caller's word: find its page on this space's chain, walking from the head. The
+-        // listing resumes from the page the check stopped on, so every page it follows is this
+-        // chain's own.
 -        let want = cursor & PAGE_MASK;
 -        while chain.next_if(|(phys, _)| *phys != want).is_some() {}
 -        if chain.peek().is_none() {

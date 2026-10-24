@@ -229,6 +229,69 @@ At boot:
 
 The argument was right, and the kernel can host untrusted code.
 
+
+## Kernel thread stacks
+
+Every kernel thread stack is six pages, 24 KiB, with an unmapped guard page beneath it. The guard
+turns an overflow into an instant, precise fault rather than silent corruption, and threads are
+where deep recursion actually happens. `kernel/src/thread.rs` builds both with `mmu::map_page` and
+`mmu::unmap_page`, whose break-before-make and TLB flush the stack relies on.
+
+Linux's arm64 stack is 16 KiB, sized for optimized code. This kernel's suite runs at debug codegen,
+where frames are severalfold larger, and the measured worst case did not fit 16 KiB:
+
+- the deepest standing path the suite reaches on a thread stack, about 11.7 KiB
+  ([stack high-water](stack-high-water.md));
+- the residue of blocking from that depth (`ipc_receive` 656 bytes, `IPC_TABLES.lock` 256,
+  `schedule` 448, plus the switch), about 1.4 KiB, resident while the thread stays blocked;
+- one preemption landing at the deepest point (a 272-byte trap frame, dispatch, the interrupt
+  controller's claim, `canary::check`, `schedule` and a contended `IPC_TABLES.lock` spin), about
+  2.3 KiB.
+
+That is about 15.5 KiB. CI on loaded two-core hosts overflowed 16 KiB on both aarch64 and riscv64:
+the guard page caught an exception-entry push mid-cascade, with the interrupted context spinning in
+`IPC_TABLES.lock`. A loaded host multiplies timer preemptions per guest instruction, so one
+eventually lands on the deepest frame of the deepest thread. Six pages leave about 8 KiB above the
+measured worst case, at a cost of two more frames per live thread. The high-water gate in
+`stack.rs` still alarms well before the guard.
+
+Stacks live in their own virtual area, far above the direct map, so a stack address can never
+collide with the virtual name of a physical page. The area is each architecture's
+`arch::mmu::THREAD_STACK_AREA`, because on `x86_64` the kernel base already carries the bit a
+portable computation would have set, and every stack would have landed on the kernel image.
+
+A dead thread's address range is reused. `unmap_page` frees the leaf mapping but leaves the
+intermediate tables standing ([teardown](teardown.md)), so bump-allocating addresses forever would
+cost an L2 and an L3 table for every 2 MiB consumed. A reused range lands in tables that already
+exist, and a test asserts that a second batch of threads costs zero additional frames. The free
+list is sized from `sched::MAX_THREADS`, so raising the thread ceiling cannot overflow it.
+
+The physical pages come from the kernel's own budget (`kmem`), not the frame allocator, so the
+kernel's stack spending is bounded by its boot carve. Unmapping a dead stack must invalidate the
+translation, because the address goes to a different thread's stack next, and a stale entry would
+let that thread read and write the dead thread's saved registers.
+
+## Building a thread in place
+
+`Thread::spawn_into` moves the closure, at its concrete type, to the top of the new stack, above a
+faked `switch_to` frame. A monomorphized `call_closure::<F>` is handed over beside it to call it, so
+there is no heap allocation and no vtable, and the closure's memory is freed by being the stack.
+The closure slot is aligned down to 16 so the switch frame keeps `sp` 16-aligned, and bytes above
+the initial `sp` are never touched by the thread's own execution. A capture over 1 KiB, or aligned
+past 16, is refused at build time. If a thread is torn down before it ever runs, its closure's
+destructors do not run and its captures leak in place; that is fine for what kernel threads
+capture (ids and statics).
+
+A `Thread` is large, and a debug build copies rather than elides at every move. Returned by value,
+it traveled through several frames, each a real copy through a stack temporary. `sched::spawn_on`'s
+instantiations measured 3,888 to 4,592 bytes. That is over the 4,096-byte guard page, where a frame
+can step past the guard in one move ([the stack](stack.md)). So every constructor
+writes through a pointer the caller already has, the TCB page `Threads::insert_at` claimed. The
+struct literal itself sits in `write_kernel_thread`, one non-generic, never-inlined frame, because an
+unoptimized build materializes the literal as temporaries worth about two `Thread`s, and inside the
+generic `spawn_into` every closure type paid that on top of its capture
+(`script/stack-frame-check`). It stays a literal so the compiler checks it for completeness.
+
 ---
 
 *Add to this file as new scheduling concepts come up.*
