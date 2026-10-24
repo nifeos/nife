@@ -1,20 +1,12 @@
 #![cfg_attr(not(test), no_std)]
-//! **The `StarFive` JH7110 TRNG, as pure logic** (notes/entropy.md): the register
-//! layout, the device-tree query that finds the device, and the decision of whether a generation
-//! attempt succeeded, failed or is still running. It never dereferences a pointer, which keeps it
-//! host-testable and Kani-reachable; `components/src/jh7110_entropy.rs` is the backend that
-//! touches the registers. [`discover`] returns the address rather than assuming one.
+//! The `StarFive` JH7110 TRNG, as pure logic: the register layout, the device-tree query that
+//! finds the device, and the decision of whether a generation succeeded, failed or is running.
 //!
-//! **None of it has run against real silicon.** Offsets and bits come from Linux's driver, named
-//! from the TRM and checked against NetBSD's polling driver, whose rule this crate applies:
-//! `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is set. `notes/entropy/jh7110-trng.md` has the
-//! sources, the bring-up order all three drivers agree on, and the health-testing argument.
-//!
-//! # Health testing
-//!
-//! The one hardware fault signal is `ISTAT.LFSR_LOCKUP`, surfaced as [`Outcome::Lockup`] rather
-//! than "not ready", so a caller can count it, retry or refuse. It does not catch a degraded ring
-//! oscillator, and whether a software SP 800-90B test is needed is an undecided architect's call.
+//! It never dereferences a pointer, so it is host-testable and Kani-reachable; the backend is
+//! `components/src/jh7110_entropy.rs`. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is set,
+//! and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is [`Outcome::Lockup`]. None of it has
+//! run on silicon. The `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels below name the
+//! sources in notes/entropy/jh7110-trng.md, which has the bring-up order and health testing.
 //!
 //! # Examples
 //!
@@ -50,14 +42,10 @@ pub mod regs {
     /// Output width mode: [`super::MODE_R256`] selects a 256-bit rather than a 128-bit `RAND`
     /// answer.
     ///
-    /// **A driver that never writes this register does not get 32 usable bytes**, and the earlier
-    /// version of this comment (that reading all eight words made the write unnecessary) had it
-    /// backwards. \[trm\]'s `FEATURES.MAX_RAND_LENGTH` and `BUILD_CONFIG.PRNG_LEN_AFTER_RST` are
-    /// build-time parameters, so the width this block resets to is a property of the silicon and
-    /// not something a reader can assume; `STAT.R256` ([`super::STAT_R256`]) reports what it
-    /// currently is. In 128-bit mode only `RAND0..RAND3` carry the answer, which is exactly why
-    /// \[driver\] clamps its read to four words when it has not selected `R256`, and why all
-    /// three drivers this crate cites write `MODE` during bring-up.
+    /// **A driver that never writes this register does not get 32 usable bytes.** The width after
+    /// reset is a build-time parameter (\[trm\]'s `BUILD_CONFIG.PRNG_LEN_AFTER_RST`), and in
+    /// 128-bit mode only `RAND0..RAND3` carry the answer; `STAT.R256` ([`super::STAT_R256`])
+    /// reports the current width, and all three cited drivers write `MODE` during bring-up.
     pub const MODE: u64 = 0x08;
     /// Status-mode register: `MISSION_MODE`, `NONCE_MODE` and `MAX_REJECTS` per \[trm\]. None of
     /// the three drivers cited here writes a value of its own into it (mainline leaves it alone
@@ -69,9 +57,8 @@ pub mod regs {
     /// see [`super::ISTAT_ALL`].
     pub const IE: u64 = 0x10;
     /// Interrupt status, and **\[trm\]'s register map marks it `R/W1C`**: a bit is acknowledged by
-    /// writing a one to it, which is what \[driver\] and \[netbsd\] both do and what this crate's
-    /// earlier "not confirmed from the summarized driver source" note could not say. A driver that
-    /// only ever reads this register sees `RAND_RDY` stay set forever after the first generation.
+    /// writing a one to it, as \[driver\] and \[netbsd\] both do. A driver that only ever reads
+    /// this register sees `RAND_RDY` stay set forever after the first generation.
     pub const ISTAT: u64 = 0x14;
     /// Build-time parameter enumerations, read-only: `MISSION_MODE_RESET_STATE`,
     /// `RAND_SEED_AVAIL` and `MAX_RAND_LENGTH` \[trm\]. Offset named so a bench session can dump
@@ -172,18 +159,13 @@ pub const IE_RQST_ALARM_EN: u32 = 1 << 3;
 pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// `IE` bit 31: the global interrupt enable.
 ///
-/// **The `IE_*` bits gate the IRQ pin, not [`regs::ISTAT`]**, and that distinction is what lets a
-/// polling driver leave this register at zero. \[trm\] describes each `IE` bit as including or
-/// excluding an "interrupt contribution" and describes `ISTAT` as monitoring "the interrupt
-/// **and/or status** contributions", which reads as latch-regardless but is not decisive on its
-/// own. **The board settled it**: on 2026-09-04 radon completed a reseed and a generation, both
-/// detected by polling `ISTAT`, with this driver having never written `IE` at all
-/// (`target/board/radon-2026-09-04-clock-and-first-entropy.log`). So `ISTAT` latches with the
-/// interrupt disabled, measured rather than inferred.
-///
-/// A driver that wants the completion interrupt instead needs this bit plus the contribution bits,
-/// routed at PLIC line 30 per \[binding\]'s `interrupts = <30>`. `components/src/jh7110_entropy.rs` says
-/// why it does not.
+/// **The `IE_*` bits gate the IRQ pin, not [`regs::ISTAT`]**, so a polling driver may leave this
+/// register at zero. \[trm\]'s wording ("interrupt **and/or status** contributions") is not
+/// decisive; the bench settled it on 2026-09-04, when a reseed and a generation were both seen by
+/// polling `ISTAT` with `IE` never written
+/// (`target/board/radon-2026-09-04-clock-and-first-entropy.log`). The completion interrupt needs
+/// this bit plus the contribution bits, at PLIC line 30 (\[binding\]'s `interrupts = <30>`);
+/// `components/src/jh7110_entropy.rs` says why it is not used.
 pub const IE_GLBL_EN: u32 = 1 << 31;
 
 /// `ISTAT` bit 0: a generation completed and `RAND0..RAND7` hold a fresh answer.
@@ -193,11 +175,9 @@ pub const ISTAT_SEED_DONE: u32 = 1 << 1;
 /// `ISTAT` bit 2: the auto-reseed **age** alarm, a reminder that `AUTO_AGE` counted down to zero
 /// and the seed is stale \[trm\], \[netbsd\].
 ///
-/// **Named here because it was missing, and missing bits are how a status word becomes
-/// unreadable.** Mainline's `jh7110-trng.c` does not define this bit at all, and this crate was
-/// transcribed from it, so a bench session that read a 2 or an 8 in `ISTAT` had nothing in this
-/// tree to decode it with. It is a reminder rather than a fault: [`interpret`] does not act on it,
-/// and a bring-up that writes 0 to [`regs::AUTO_AGE`] never raises it.
+/// Mainline's `jh7110-trng.c` does not define it, and a bit with no name leaves a status word
+/// undecodable. [`interpret`] does not act on it, and a bring-up that writes 0 to
+/// [`regs::AUTO_AGE`] never raises it.
 pub(crate) const ISTAT_AGE_ALARM: u32 = 1 << 2;
 /// `ISTAT` bit 3: the auto-reseed **request-count** alarm, the `AUTO_RQSTS` counterpart of
 /// [`ISTAT_AGE_ALARM`] \[trm\], \[netbsd\]. Same status: named, not acted on, and disabled by a
@@ -214,13 +194,10 @@ pub const ISTAT_LFSR_LOCKUP: u32 = 1 << 4;
 
 /// Every `ISTAT` bit this crate can name, for the write-1-to-clear that starts a bring-up.
 ///
-/// A driver clears the whole register rather than the bits it cares about, because the point of
-/// the init clear is to discard whatever the block latched before this kernel existed: U-Boot, a
-/// previous boot of nife, or a reset that left a stale `RAND_RDY` standing. \[netbsd\] writes
-/// `~0` for exactly this and \[driver\] reads-then-writes-back, which reaches the same place for
-/// the bits that are set. This crate names the five documented bits instead of `!0` so the
-/// constant says what it is acknowledging, and so a future undocumented bit shows up as a residue
-/// a driver can report rather than being silently swallowed.
+/// The init clear discards whatever the block latched before this kernel ran (U-Boot, a previous
+/// boot, a stale `RAND_RDY`). \[netbsd\] writes `~0`; this names the five documented bits instead,
+/// so the constant says what it acknowledges and an undocumented bit shows up as a residue a
+/// driver can report.
 pub const ISTAT_ALL: u32 =
     ISTAT_RAND_RDY | ISTAT_SEED_DONE | ISTAT_AGE_ALARM | ISTAT_RQST_ALARM | ISTAT_LFSR_LOCKUP;
 
@@ -230,43 +207,14 @@ pub const ISTAT_ALL: u32 =
 /// this project has no board for.
 pub(crate) const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
 
-/// **The spelling radon's own firmware uses for the same device**, and the reason milestone 239
-/// (radon's device tree does not describe the TRNG, so a working driver never runs) exists.
+/// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control DTB
+/// uses (milestone 239 (radon's device tree does not describe the TRNG, so a working driver never
+/// runs)).
 ///
-/// The tree nife is handed on the VisionFive 2 is the vendor U-Boot's control DTB (U-Boot 2021.10,
-/// per `crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`), from
-/// `StarFive`'s fork, which spells the node \[uboot-dtsi\]:
-///
-/// ```text
-/// trng: trng@1600C000 {
-///     compatible = "starfive,trng";
-///     reg = <0x0 0x1600C000 0x0 0x4000>;
-///     clocks = <&clkgen JH7110_SEC_HCLK>,
-///          <&clkgen JH7110_SEC_MISCAHB_CLK>;
-///     clock-names = "hclk", "miscahb_clk";
-///     resets = <&rstgen RSTN_U0_SEC_TOP_HRESETN>;
-///     interrupts = <30>;
-///     status = "disabled";
-/// };
-/// ```
-///
-/// **Same device, same window, same interrupt, different string**: a stale fork, not different
-/// silicon. `StarFive`'s own kernel driver for this block \[vendor-driver\] defines its registers
-/// byte-for-byte as the offsets in [`regs`].
-///
-/// **Accepting it is a claim about the register layout, so here is the evidence for that claim.**
-/// The vendor Linux driver at the firmware's own vintage \[vendor-driver\] defines `STARFIVE_CTRL`
-/// 0x00, `STAT` 0x04, `MODE` 0x08, `SMODE` 0x0C, `IE` 0x10, `ISTAT` 0x14, `RAND0`..`RAND7`
-/// 0x20..0x3C, `AUTO_RQSTS` 0x60, `AUTO_AGE` 0x64, and the same `CTRL`/`STAT`/`ISTAT` bit
-/// positions mainline's `jh7110-trng.c` does. Two drivers written against one IP block agree
-/// completely, so a node claiming `starfive,trng` at `0x1600_C000` is claiming [`regs`].
-///
-/// \[uboot-dtsi\]: `arch/riscv/dts/jh7110.dtsi` in `starfive-tech/u-boot` at `bfbdce9b86a2`:
-/// <https://github.com/starfive-tech/u-boot/blob/bfbdce9b86a2/arch/riscv/dts/jh7110.dtsi>
-///
-/// \[vendor-driver\]: `drivers/char/hw_random/starfive-trng.c` in `starfive-tech/linux` at
-/// `202b558ae34c`:
-/// <https://github.com/starfive-tech/linux/blob/202b558ae34c/drivers/char/hw_random/starfive-trng.c>
+/// Same window (`0x1600_C000`), interrupt and clocks, a different string: a stale fork, not
+/// different silicon. Accepting it claims the [`regs`] layout, and `StarFive`'s own Linux driver
+/// for the block defines byte-for-byte the same offsets and bits as mainline's.
+/// notes/entropy/jh7110-trng.md ("The vendor spelling") has the node and the evidence.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,trng";
 
 /// What [`discover`] found: the register window's physical base and size (from `reg`), and the
@@ -290,36 +238,19 @@ pub struct Discovered {
     /// device be used? `true` when the property is absent (the device-tree specification's default
     /// is `"okay"`) or spells `"okay"`/`"ok"`; `false` for `"disabled"` and every other value.
     ///
-    /// **[`discover`] reports this and does not act on it**, deliberately. The vendor control tree
-    /// marks the TRNG `status = "disabled"` because *U-Boot* has no driver for it, not because the
-    /// silicon is absent: `StarFive`'s own Linux enables the same node from
-    /// `jh7110-common.dtsi` (`&trng { status = "okay"; };`). This tree also has a recorded reason
-    /// not to take that firmware's `status` at face value, in the other direction: the same DTB
-    /// marks the S7 monitor core `status = "okay"` and claims it has an Sv39 MMU, and both are
-    /// false (notes/visionfive2.md, "Second bench stop"). So the honest thing is to say what the
-    /// tree says and let the caller decide, rather than to refuse a device that is there or trust
-    /// one that is not.
-    ///
-    /// It is also the first thing to read when the register window comes back all zeros: a node
-    /// the firmware calls disabled is a node whose clocks the firmware had no reason to ungate.
+    /// **[`discover`] reports this and does not act on it.** The vendor control tree marks the
+    /// TRNG disabled because U-Boot has no driver for it, and the same tree misdescribes the S7
+    /// core in the other direction, so the caller decides (notes/entropy/jh7110-trng.md). A node
+    /// the firmware calls disabled is the first suspect when the window reads all zeros.
     pub status_okay: bool,
 }
 
 /// Find the JH7110 TRNG in `tree`, if it is there at all.
 ///
-/// **`Ok(None)` is not a parse failure, it is the honest answer on every machine this repository
-/// currently boots under CI**: QEMU's riscv64 `virt` board has no TRNG node under either spelling,
-/// so this function must return `None` against it, and the fixture test below pins exactly that
-/// against the same `.dtb` `crates/device_tree_blob`'s own tests already boot-verify against.
-/// Discovery is the one piece of "does this device exist at all" this crate can prove without
-/// silicon: it is a pure query over bytes, and a device tree dumped from the real board (once
-/// someone captures one) is a drop-in fixture for the same test, not a new code path.
-///
-/// **Two spellings are tried, mainline's first** ([`COMPATIBLE`], then [`COMPATIBLE_VENDOR`]), and
-/// the order is the whole of the policy: a tree that carries both is describing itself in the
-/// language the binding standardised, and that is the one to believe. Trying the vendor string at
-/// all is milestone 239's finding; [`COMPATIBLE_VENDOR`] carries the evidence that it names the
-/// same register block.
+/// `Ok(None)` is not a parse failure: it is the answer on QEMU's riscv64 `virt`, which every CI
+/// boot uses, and a test pins it. Two spellings are tried, mainline's first ([`COMPATIBLE`], then
+/// [`COMPATIBLE_VENDOR`]): a tree that carries the standardized binding is describing itself in
+/// that language, and that is the one to believe.
 pub fn discover(
     tree: &device_tree_blob::DeviceTreeBlob<'_>,
 ) -> Result<Option<Discovered>, device_tree_blob::Error> {
@@ -395,38 +326,21 @@ pub enum Outcome {
     /// **`STAT.SEEDED` was clear**, so whatever the `RAND` words hold did not come from a seeded
     /// PRNG core and must not be served as randomness.
     ///
-    /// This is \[netbsd\]'s gate, and it is the one check the other two drivers leave implicit:
-    /// its poll path reads `STAT` and only looks at `RAND_RDY` when [`STAT_SEEDED`] is set,
-    /// issuing [`CTRL_EXEC_RANDRESEED`] when it is not, and its interrupt handler asserts
-    /// `STAT & SEEDED` whenever `RAND_RDY` fires. \[trm\] backs it: `STAT.LAST_RESEED` has an
-    /// enumerated value `0x7` meaning "Unseeded (zeroized state)", so an unseeded core is a state
-    /// the block can genuinely be in and report.
-    ///
-    /// A caller answers this by reseeding and retrying, bounded, not by reading the words anyway.
+    /// This is \[netbsd\]'s gate: its poll path looks at `RAND_RDY` only when [`STAT_SEEDED`] is
+    /// set, reseeding otherwise. \[trm\]'s `STAT.LAST_RESEED` value `0x7`, "Unseeded (zeroized
+    /// state)", shows the block can really be in this state. A caller reseeds and retries,
+    /// bounded, rather than reading the words anyway.
     Unseeded,
 }
 
 /// Decide what one `(STAT, ISTAT)` snapshot means, given the `RAND` words alongside it.
 ///
-/// `rand` is read every call regardless of the status words, which costs nothing (it is already in
-/// hand, the same eight loads a real driver would do) and keeps this function a pure decode with
-/// no hidden state: the same `(stat, istat, rand)` triple always decides the same [`Outcome`].
-///
-/// **The precedence is fault, then seeded, then ready**, and each step is refusing to hand back
-/// bytes for a different reason:
-///
-/// - **Lockup beats everything**, even though the bits live in unrelated positions and nothing in
-///   \[driver\] says they cannot both be set in one snapshot: a register file the hardware is
-///   actively re-seeding must not be read as if it had just answered cleanly, so a caller cannot
-///   be handed 32 bytes from underneath a fault.
-/// - **`SEEDED` beats `RAND_RDY`** (\[netbsd\]'s gate; see [`Outcome::Unseeded`]). `RAND_RDY` is
-///   a latched, write-1-to-clear bit, so it can be standing from a generation that happened before
-///   this driver ran or before the last reset, while `STAT.SEEDED` is live state. Trusting the
-///   latch alone is how a driver serves the contents of a register file nobody seeded.
-///
-/// **`stat` is a parameter because reading it is not optional** (milestone 159). An earlier version
-/// of this function took `istat` alone, which made "the device says it has never been seeded" a
-/// state this crate could not express and a driver could not check.
+/// A pure decode: the same `(stat, istat, rand)` always decides the same [`Outcome`]. The
+/// precedence is fault, then seeded, then ready. A lockup beats everything, because a register
+/// file the hardware is re-seeding must not be read as a clean answer. `SEEDED` beats `RAND_RDY`,
+/// because `RAND_RDY` is a latched write-1-to-clear bit that can be standing from before this
+/// driver ran, while `STAT.SEEDED` is live state; that is why `stat` is a parameter (milestone
+/// 159).
 pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
     if istat & ISTAT_LFSR_LOCKUP != 0 {
         Outcome::Lockup
@@ -457,19 +371,11 @@ pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
 /// program (which depends on both) is where a reader can check.
 pub const WORD_BYTES: u64 = 8;
 
-/// **The 32 bytes in hand, and how many are still ours to give** (milestone 159), lifted out of
-/// `components/src/jh7110_entropy.rs` so it can be tested somewhere a register does not have to exist.
-///
-/// This is the one piece of the driver that can serve a byte twice, hand back a byte it already
-/// zeroed, or lose the seam between two generations, and none of that is visible in the register
-/// decode above. It has no idea where its bytes come from: [`take`](Pool::take) is handed a
-/// generator, which in the program is a poll of a real device and in the tests below is a counter.
-///
-/// **Not a pool in the "reservoir" sense.** `cursor` only ever moves forward, so no byte is served
-/// twice, and each byte is zeroed as it leaves: a byte a client now holds is not also still
-/// sitting in a buffer a long-lived process keeps for the rest of the boot. The same shape
-/// `components/src/entropy.rs`'s virtio-rng `Pool` has, at a quarter the size, because there is no
-/// device round trip here to amortize over.
+/// **The 32 bytes in hand, and how many are still ours to give** (milestone 159), testable here
+/// without a register. [`take`](Pool::take) is handed a generator: a device poll in
+/// `components/src/jh7110_entropy.rs`, a counter in the tests. `cursor` only moves forward, so no
+/// byte is served twice, and each byte is zeroed as it leaves, as `components/src/entropy.rs`'s
+/// virtio-rng `Pool` does.
 ///
 /// # Examples
 ///
@@ -691,17 +597,11 @@ mod tests {
     const JH7110_TRNG_VENDOR_UBOOT: &[u8] =
         include_bytes!("../tests/fixtures/jh7110-trng-vendor-uboot.dtb");
 
-    /// **Milestone 239's whole finding, in one assertion.** radon is handed the vendor U-Boot's
-    /// control DTB, and that tree does describe the TRNG: as `trng@1600C000`, `compatible =
-    /// "starfive,trng"`, `status = "disabled"`. Before this milestone `discover` matched mainline's
-    /// string only and answered `None`, so the boot tour printed "this machine's tree describes no
-    /// starfive,jh7110-trng" against a tree that describes the device at the address the driver
-    /// wanted.
-    ///
-    /// The fixture is transcribed from the firmware's own source, not dumped from the board (see
-    /// its header), so what this test proves is that the decoder handles that shape. **Whether the
-    /// running firmware's tree really carries the node is a bench fact and is still open**;
-    /// `design/roadmap/0239-radons-tree-describes-less-than-the-chip-has.md` carries the two
+    /// **Milestone 239's finding, in one assertion**: the vendor U-Boot's control DTB describes the
+    /// TRNG as `trng@1600C000`, `compatible = "starfive,trng"`, `status = "disabled"`, and
+    /// `discover` must find it. The fixture is transcribed from the firmware's source, not dumped
+    /// from a board, so whether the running firmware's tree carries the node is still a bench
+    /// fact; `design/roadmap/0239-radons-tree-describes-less-than-the-chip-has.md` has the two
     /// commands that settle it.
     #[test]
     fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {
@@ -731,18 +631,9 @@ mod tests {
         assert!(!status_says_okay(b""));
     }
 
-    /// **The negative case this milestone can actually prove without hardware.** QEMU's riscv64
-    /// `virt` machine (the board every kernel test in this repository boots against) has no
-    /// `starfive,jh7110-trng` node, so `discover` must say so rather than finding a false match at
-    /// some unrelated node's `reg`. This is
-    /// `crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb` itself, the same bytes
-    /// `crates/device_tree_blob/tests/qemu_riscv64_virt.rs` already boot-verifies, so a green
-    /// result here is a claim about the tree this project actually runs, not a claim about a tree
-    /// nobody has looked at.
     /// **No byte is ever served twice**, across as many refills as it takes to drain several
     /// generations. The generator hands out a distinct byte per call, so a cursor that wrapped
-    /// instead of refilling, or a refill that did not reset the cursor, shows up as a repeat here
-    /// rather than as a security property nobody checked.
+    /// instead of refilling, or a refill that did not reset the cursor, shows up as a repeat.
     #[test]
     fn no_byte_is_served_twice_across_refills() {
         let mut next = 1u8;
@@ -834,18 +725,10 @@ mod tests {
     /// **Every named bit is the bit its own documentation says it is, and no two bits in a
     /// register are the same bit.**
     ///
-    /// This is a transcription check and says so: the constants came off \[trm\]'s register tables
-    /// by hand, one line at a time, and the failure a hand transcription produces is not a clever
-    /// one. It is a bit copied to the wrong line, which reads as a device that is permanently in
-    /// mission mode, or never seeded, or that reports a lockup the silicon never raised. Fifteen
-    /// of this crate's mutation survivors were exactly this shape: a `<<` becoming
-    /// a `>>`, which takes a named bit to **zero**, at which point `stat & STAT_SEEDED` is false
-    /// forever and every test that samples [`interpret`] still passes, because none of them names
-    /// the bit it is exercising. Found by milestone 326 (nobody has been assigned to turn a mutation score upward).
-    ///
-    /// The distinctness half is the one a reader should care about more. A duplicated bit inside a
-    /// register is the copy-and-paste mistake this table invites, and it is invisible in the
-    /// source: two constants twenty lines apart, both `1 << 3`, look correct individually.
+    /// A transcription check: the constants came off \[trm\]'s tables by hand, and a bit copied to
+    /// the wrong line, or a `<<` turned `>>` that takes a bit to zero, passes every test that does
+    /// not name the bit it exercises. Milestone 326's mutation run found fifteen survivors of that
+    /// shape. A duplicated bit inside one register is the copy-and-paste mistake the table invites.
     #[test]
     fn every_named_bit_is_the_bit_the_datasheet_names() {
         // One row per named bit: (register, name, bit index, constant). The indices are \[trm\]'s
@@ -926,14 +809,9 @@ mod tests {
     /// **`take` returns**, and what this asserts is that it returns at all rather than what it
     /// returns.
     ///
-    /// Every pass of the gather loop ends by making progress: it refills a spent buffer, copies a
-    /// run, and advances both the cursor and the count. Break any one of those and the function
-    /// does not give a wrong answer, it gives none. Milestone 326 found four mutants here (a
-    /// `refill` reporting success without filling, `got < n` widened to `got <= n`, the
-    /// spent-buffer test inverted, and `got += run` turned into a multiply) and every one of them
-    /// spun, with the suite above answering by hanging, which `cargo mutants` can only report as a
-    /// timeout. The same shape `memory_corruption_canary_gate`'s own tests carry, and for the same
-    /// reason: a loop that waits is broken by making it wait forever.
+    /// Every pass of the gather loop must make progress (refill, copy, advance cursor and count);
+    /// break one and the call never answers. Milestone 326 found four such mutants, each of which
+    /// hung the suite, so this test runs `take` under a deadline.
     #[test]
     fn take_returns_rather_than_spinning() {
         assert_eq!(
@@ -973,6 +851,11 @@ mod tests {
             .expect("take never returned: its gather loop made no progress")
     }
 
+    /// **The negative case provable without hardware.** QEMU's riscv64 `virt` machine has no
+    /// `starfive,jh7110-trng` node, so `discover` must say so rather than match some unrelated
+    /// node's `reg`. The fixture is the same `qemu-riscv64-virt.dtb` that
+    /// `crates/device_tree_blob/tests/qemu_riscv64_virt.rs` verifies, so this is a claim about the
+    /// tree this project runs.
     #[test]
     fn discover_finds_nothing_on_qemus_virt_board() {
         let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT)
@@ -981,13 +864,9 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). The four `#[test]`s above sample `interpret`'s
-/// classification at a handful of chosen bit patterns; `ISTAT` is a real register a fault could
-/// set to anything, so what matters is the classification rule holding for **every** 32-bit value,
-/// not the four this crate's author thought to write down. That is exactly the gap Kani closes
-/// cheaply here: `interpret` is a few comparisons over two `u32`s (well, one `u32` and an unused
-/// `[u32; 8]` for the `NotReady`/`Lockup` cases), so the whole input space is small enough to
-/// exhaust rather than sample.
+/// Machine-checked proofs (DECISIONS §14). The unit tests sample `interpret` at chosen bit
+/// patterns; `ISTAT` is a register a fault could set to anything, and `interpret` is a few
+/// comparisons over two `u32`s, so these exhaust the whole input space instead.
 #[cfg(kani)]
 mod verification {
     use super::*;
