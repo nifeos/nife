@@ -13,3 +13,4 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Reading the backup from a MacBook or a Linux host](../host-recovery.md).
 - [The GUID Partition Table](../globally-unique-identifier-partition-table.md): reading, writing and validating GPT, host-tested and proved.
 - [nifefs](../nifefs.md): the boot archive format and its 32-byte names.
+- [The filesystem test fixture](../filesystem-fixture.md): why each witness file, verdict word and benchmark shape is the one it is.
