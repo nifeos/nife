@@ -8,6 +8,9 @@ budget has no room for.
   and its four pairs of assertions.
 - [`quote-state-machine.md`](quote-state-machine.md): where the quote state machine lives, and why
   the three scanners share it and not a tokenizer.
+- [`running.md`](running.md): how the shell turns a planned line into spawn messages, the grants
+  it can and cannot deliver, and the drains.
+- [`witness.md`](witness.md): the shell's witness scripts, and why each line is there.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
@@ -16,3 +19,5 @@ beside `notes/X.md`. calef names directories.*
   files.
 - `quote-state-machine` Name: provisional, after the parent's heading of the same name. calef names
   files.
+- `running` Name: provisional, after `components/src/swish/running.rs`. calef names files.
+- `witness` Name: provisional, after `components/src/swish/witness.rs`. calef names files.

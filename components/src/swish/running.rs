@@ -2,8 +2,8 @@
 //! manifest note, `dir_grant`, `spawn`, draining what a child prints and its second stream, and
 //! `outcome`.
 //!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
+//! One of the modules §273 (the shell program becomes a directory of modules) lays out. The design
+//! is in `notes/swish-language/running.md`.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -82,22 +82,14 @@ pub(super) struct WordsGrant {
 
 /// **Turn a word designation into what the progenitor builds it from**, through set window `stage`.
 ///
-/// The caretaker descends into the shell's current directory with the rights `grant` asks for
-/// (`WordGrant::rights`; the progenitor clamps them to the manifest it endows, so an unvouched
-/// program gets read-only whatever this says). Names: `fs_nameset_caretaker`, with the set on a
-/// page. The whole directory (`.`): `fs_subtree_caretaker`, no page. The confined program's own
-/// `START` words are zero, because a `std` program reads none.
-///
-/// `Err(Some(sentence))` is a grant this shell cannot deliver, `Err(None)` its budget.
+/// The caretaker descends into the current directory with `grant`'s rights, clamped by the
+/// progenitor: a `fs_nameset_caretaker` with the set on a page, or for `.` a `fs_subtree_caretaker`.
+/// `Err(Some(sentence))` cannot be delivered, `Err(None)` is the budget (`notes/swish-language/running.md`).
 ///
 /// # BUGS
 ///
-/// **The set's filter can be raced on a real boot.** The caretaker forwards a checked name through
-/// the file service's one shared frame, which this shell writes too while it drains a redirected
-/// job (`std_grep needle docs > out.txt`). A write landing between the caretaker's re-staging and
-/// the server's read opens a name the set never approved. `notes/a-set-grant-at-the-prompt.md`
-/// has the case, `notes/shared-page-audit.md` finding 1 the mechanism; milestone 599 (a frame per
-/// filesystem client channel)'s production pool closes it.
+/// - A redirected job's drain can race the set's filter (`notes/a-set-grant-at-the-prompt.md`)
+///   until milestone 599 (a frame per filesystem client channel).
 pub(super) fn words_grant(
     g: &GrantDir,
     grant: grant_plan::WordGrant,
@@ -218,42 +210,27 @@ pub(super) const IMAGE_WINDOW_END: u64 =
     IMAGE_VA + spawnproto::IMAGE_MAX_PAGES * spawnproto::IMAGE_PAGE;
 
 /// **The pages that pay for [`IMAGE_WINDOW`]'s page tables**, split off [`BUDGET`] once per shell
-/// and never given back. It exists because of how a region returns memory: a staging region's
-/// pages go back to [`BUDGET`] on `DESTROY` only if it is the budget's most recent carve, and a
-/// page table allocated from the budget *while* staging would sit above it and strand every
-/// staging page for the life of the shell. Every mapping in the window takes its tables from this
-/// region instead, so none comes from the budget after the first image. Tables, once, are the price
-/// of having no unmap (DECISIONS §162 (whether a holder can give up a mapping)).
+/// and never given back. A staging region's pages go back to [`BUDGET`] on `DESTROY` only if it is
+/// the budget's most recent carve, so a page table allocated from the budget while staging would
+/// strand every staging page. Tables, once, are the price of having no unmap (DECISIONS §162
+/// (whether a holder can give up a mapping)).
 ///
 /// One last-level table per 2 MiB span the window touches, and one more for the level above in
-/// case the window is the first thing this shell maps in its gigabyte. Until milestone 595 (the
-/// shell runs a `std` program) raised the image cap past 2 MiB, one primer page mapped at the
-/// window's base paid for its one table.
+/// case the window is the first thing this shell maps in its gigabyte.
 const IMAGE_TABLE_PAGES: u64 = (IMAGE_WINDOW_END - 1) / 0x20_0000 - IMAGE_WINDOW / 0x20_0000 + 2;
 
 /// The region [`IMAGE_TABLE_PAGES`] describes, once split; [`u64::MAX`] until then.
 static IMAGE_TABLES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(u64::MAX);
 
-/// **Run a file by its bytes** (DECISIONS §219 option D, ruled 2026-09-26; milestone 198 rung 3a).
+/// **Run a file by its bytes** (DECISIONS §219 (how the shell names an installed program to the
+/// spawner) option D; milestone 198 (a package manager) rung 3a).
 ///
-/// The shell reads the file through the file service it already holds, into frames split from its
-/// own budget, and sends them on the spawn endpoint under `IMAGE_BIT`. The progenitor hashes its own
-/// copy and looks the digest up in the installed-programs table: a hit runs with the manifest the bytes
-/// carry. A miss runs only if this session holds the run-unvouched capability
-/// ([`HOLDS_RUN_UNVOUCHED`], §219's gate D2), which this request then claims and presents as its
-/// last message; the child gets what the line granted and the clock and configuration pages.
-/// Otherwise the miss is refused with its own word ([`swish::UNVOUCHED_SENTENCE`]).
-///
-/// **The line is bound against the manifest the file carries** (milestone 597 (a program carries
-/// its manifest in an ELF note), provisional), read by [`read_manifest_note`] before anything is
-/// sent, or against `grant_plan::NO_NOTE_MANIFEST` when it carries none. So an argument the note
-/// does not declare is refused here, exactly as `uptime 3` is, and a note that cannot be read or
-/// asks for what an image cannot be given is refused with nothing sent. Whether the note is
-/// honored is the progenitor's call, on its own copy (`grant_plan::image_manifest`).
-///
-/// One frame is held at a time: retyped, filled, delegated narrowed to `READ`, deleted. The staging
-/// region is destroyed once the answer is in, which revokes the frames from both address spaces.
-/// See `spawnproto`'s BUGS for what this first cut does not do.
+/// Sends the file's frames on the spawn endpoint under `IMAGE_BIT`; a digest the progenitor does
+/// not find runs only under [`HOLDS_RUN_UNVOUCHED`], presented last. The line is bound against the
+/// manifest note [`read_manifest_note`] finds (milestone 597 (a program carries its manifest in an
+/// ELF note)), or `grant_plan::NO_NOTE_MANIFEST`, and every refusal sends nothing. The staging
+/// region is destroyed once the answer is in, revoking the frames from both address spaces. See
+/// `notes/swish-language/running.md` and `spawnproto`'s BUGS.
 pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     let Some(PlannedImage {
         t,
@@ -560,20 +537,12 @@ fn carve_image_grants(
 static mut NOTE_HEAD: [u8; filesystem_contract::PAGE] = [0; filesystem_contract::PAGE];
 static mut NOTE_SEGMENT: [u8; filesystem_contract::PAGE] = [0; filesystem_contract::PAGE];
 
-/// **The manifest the open file `handle` carries in its own bytes** (milestone 597, provisional),
-/// read the way the progenitor reads its copy: the `PT_NOTE` headers from the file's first page
-/// (`elf::NoteSegments::from_head`), each note segment read whole and searched with the same
-/// `elf::NoteSearch`, the descriptor decoded by `capability_manifest_note::decode`. `Ok(None)` is a file with
-/// no manifest note, and a note that is there and cannot be read is a refusal, as it is at the
-/// progenitor.
-///
-/// **A file whose first page is not an ELF header with its program headers inside it reads as
-/// carrying no note**, because that is not this reader's question to answer: the progenitor's
-/// `Elf::parse` refuses what is not a program, and says so. The one real program that could land
-/// here is one whose header table starts past its first page, which no linker script in this tree
-/// produces; the line is then bound against the no-note default, and if the progenitor finds a
-/// note the request does not fit, it refuses (`spawnproto::SPAWN_REFUSED_BY_MANIFEST`). A note
-/// segment larger than one page is refused for the same fail-closed reason.
+/// **The manifest the open file `handle` carries in its own bytes** (milestone 597 (a program
+/// carries its manifest in an ELF note)), read the way the progenitor reads its copy: `PT_NOTE`
+/// headers from the first page, each note segment searched whole, decoded by
+/// `capability_manifest_note::decode`. `Ok(None)` is no manifest note, and also a first page that
+/// is not an ELF header holding its program headers. A note that cannot be read, or a note segment
+/// over one page, is `Err`. See `notes/swish-language/running.md`, "The manifest note".
 pub(super) fn read_manifest_note(
     dir: u64,
     handle: u64,
@@ -711,10 +680,8 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
     for i in 0..pages {
         let va = IMAGE_VA + i * PAGE;
         let Ok(frame) = u64::try_from(user_mode_runtime::retype_into_page_frame(staging)) else {
-            // A staging region sized to `pages` cannot run out before the last page, and this
-            // loop holds one frame at a time, so this is a full capability table or a kernel
-            // contradicting the budget. There is then no frame to send, and the progenitor will
-            // wait for it: the prompt hangs. Recorded rather than papered over; see
+            // Only a full capability table or a kernel contradicting the budget lands here. The
+            // progenitor then waits for a frame that never comes, and the prompt hangs; see
             // `spawnproto`'s BUGS.
             return false;
         };
@@ -743,11 +710,9 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
 /// bytes exactly as [`run_image`] sends an executable's, so the progenitor hashes its own copy, and
 /// then the name to record them under. One reply names the generation live afterwards.
 ///
-/// Install, remove and rollback were this function's too, as the `package` builtin, until
-/// milestone 809 (the package client becomes a program) moved them into `jig`, which asks on an
-/// installer endpoint that refuses a vouch. So a vouch stays here, on the endpoint only the owner's
-/// console holds. The shell never reads or writes `activation/` itself here; §221 ruled that this
-/// prompt, the owner's console, may.
+/// It stays here, on the endpoint only the owner's console holds, because `jig`'s installer
+/// endpoint refuses a vouch (milestone 809 (the package client becomes a program)). The shell never
+/// reads or writes `activation/` itself here; §221 ruled that this prompt, the owner's console, may.
 pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     use spawnproto::{Activation, ActivationStatus as S};
     let Some(path) = path else {
@@ -823,38 +788,15 @@ pub(super) struct DirWords {
     pub(super) child: StartWords,
 }
 
-/// **Turn a planned directory grant into the two triples the progenitor needs**, or into the sentence that
-/// says why this one cannot be delivered (milestone 31 phase 3).
+/// **Turn a planned directory grant into the two triples the progenitor needs**, or into the
+/// sentence that says why it cannot be delivered (milestone 31 (a capability shell: designation is
+/// authorization) phase 3).
 ///
-/// The `Ok` half is the whole of the delivery: `(the caretaker's START words, the program's)`. The
-/// caretaker is told the directory and the `filesystem_contract::dir` rights to ask for; the program is told
-/// the operand and the options that were typed. Neither triple is decoded by anything between here
-/// and the process it starts, which is why `spawnproto` can carry them without linking the
-/// filesystem contract.
-///
-/// **The rights are computed from what was typed, and that is the point of `-r` being an option
-/// rather than a mode.** Without it the capability is `REMOVE` alone: the program may take a name
-/// out of this one directory and cannot enumerate it, read it, or walk into it. With it the
-/// capability is `REMOVE_TREE`, which adds exactly the walk. Typing one letter visibly widens the
-/// grant, and `caps rm -r logs` prints the difference before anything happens.
-///
-/// # The two shapes this cannot deliver, and neither is a permission
-///
-/// Both are facts about what a `fs_subtree_caretaker` is, so both are refused here with nothing
-/// spawned rather than half-granted.
-///
-/// **A grant on the root of this shell's namespace.** A caretaker's whole attenuation is one
-/// `OPENDIR` *into* the granted directory, and the root has no name to descend into: `filesystem_contract`'s
-/// contract resolves a single component under a handle, and there is no verb for "the directory I
-/// already hold, with fewer rights". So `rm gate.txt` typed at the top prompt cannot be narrowed at
-/// all, and handing the program the unnarrowed service would be granting it the whole disk. The
-/// answer is a design fork rather than a line of code (a `NARROW` verb on the contract, or a boot
-/// whose shell is rooted one level down), and it is recorded in the roadmap rather than guessed at
-/// here.
-///
-/// **A set of more than one name.** That grant is a `fs_nameset_caretaker`, which is a different
-/// program taking its set in a frame; the progenitor builds the subtree one today. `rm *.txt` is planned,
-/// previewed by `caps`, and refused at the point of delivery.
+/// `Ok` is `(the caretaker's START words, the program's)`: the directory and the
+/// `filesystem_contract::dir` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
+/// `flags`. Nothing between here and the process decodes them. Refused with nothing spawned: a
+/// second tree, the namespace root, a directory deeper than one level, and a set of more than one
+/// name. See `notes/swish-language/running.md`, "The directory grant".
 pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<DirWords, &'static [u8]> {
     // **A grant in a two-grant shell's second tree** (milestone 154). The progenitor builds the
     // caretaker by descending from the root of the one filesystem it holds, which is the first
@@ -919,11 +861,8 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<DirWords, &'static [
 /// Grant and spawn. The one moment authority moves: split any memory grant off our own budget,
 /// direct the progenitor to load the program, delegate the grant, and read the one answer that comes back.
 pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
-    // A grant this path cannot deliver must stop here, loudly. `plan` already refuses a `file:` when
-    // `holdings().dir` is false, so today this is unreachable; it exists because the day that flips,
-    // the thing that must NOT happen is a child spawned without the file the command named while the
-    // prompt says nothing. Authority the user thought they granted must never quietly evaporate,
-    // which is the same rule that makes an unexpected token a refusal instead of a shrug.
+    // Unreachable while `plan` refuses a `file:` without `holdings().dir`. If that flips, a file
+    // grant must be refused loudly here, never dropped while the child runs without it.
     if e.file.is_some() {
         refused();
         print(
@@ -982,10 +921,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
         send_set(w);
     }
 
-    // If a budget rode along, delegate it now with every right so the progenitor can re-insert it into
-    // the child (the progenitor narrows it there to `SPEND_ONLY`: the child spends it, it does not
-    // lend it). Every right and not WRITE|GRANT since milestone 824: a budget's rights are what its
-    // retypes carry.
+    // The progenitor narrows the budget to `SPEND_ONLY` in the child.
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
@@ -1026,14 +962,8 @@ fn spawn_dir_grant(
     e: &Endowment,
     argv: Option<Argv>,
 ) -> Option<(Option<DirWords>, Option<WordsGrant>)> {
-    // **The directory grant, which the progenitor delivers** (milestone 31 phase 3). This shell's file-service
-    // rendezvous carries no GRANT, so it holds nothing it could hand a caretaker; what it can do is
-    // say what the grant *is*, and the progenitor, which holds the service, builds a `fs_subtree_caretaker`
-    // for it. [`dir_grant`] is where the shape of the grant meets the shape of what can be
-    // delivered, and it returns the words rather than sending them so a refusal happens here, with
-    // nothing spawned.
-    // **A program that hears words is granted what they designated** (milestone 205), as a name
-    // set or the whole directory, through `words_grant` rather than `rm`'s `dir_grant`.
+    // The progenitor builds the caretaker, because this shell holds no GRANT on the file service.
+    // Both helpers return words rather than sending them, so a refusal spawns nothing.
     let mut set_grant = None;
     let dir_words = match (e.directory, e.program.manifest().program_argument) {
         (None, _) => None,
@@ -1071,12 +1001,9 @@ fn spawn_dir_grant(
 
 /// [`spawn`]'s request words for a plain line: `args`, `dir` and `nameset` say what follows it.
 fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u64, u64) {
-    // The request: program id, argument, page count, and the operators' answer (grant_plan::spawnproto).
-    //
-    // **`diagnostics` is false here and always will be** (DECISIONS §67). This path runs a line with
-    // no operators on it, so there is no `2>` and nothing for this shell to back; a program that
-    // declares a second stream gets the terminal's own sink, which the progenitor endows from the manifest the
-    // way it endows the clock. `2>` makes a line non-plain and goes down [`pipeline`].
+    // `diagnostics` is false (DECISIONS §67 (a program's second stream is a declaration)): a plain
+    // line has no `2>`, and a declared second stream gets the terminal's own sink. `2>` goes down
+    // [`pipeline`].
     spawnproto::request(
         e.program.id(),
         e.program_argument,
@@ -1091,25 +1018,19 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // nothing here constructs a two-directory grant for a spawned program; see
             // `spawnproto::SECOND_DIRECTORY_GRANT_BIT`'s own doc and notes/two-trees.md's BUGS.
             second_directory_grant: false,
-            // **Also always false here** (DECISIONS §106), and for the same shape of reason as
-            // `diagnostics`: a program only reaches this path (no file operand, no pipe, no
-            // redirection at all) when `plan` put nothing in its source slot, and every program
-            // that declares `writes_while_reading` also declares `InputDeclaration::Required`, which
-            // sends it down [`run`]'s other arm (`Source::File`) instead. So this bit would never
-            // have anything to narrow.
+            // Always false (DECISIONS §106 (an unredirected tail stage's output goes to the
+            // screen)): every `writes_while_reading` program also declares
+            // `InputDeclaration::Required`, which takes [`run`]'s `Source::File` arm instead.
             screen: false,
             image: false,
             run_unvouched: false,
             program_arguments: args,
             nameset,
             machine: machine_wiring(e),
-            // **"This is a graphical terminal launch", and nothing follows it** (milestone 715
-            // (provisional)): the spawn service holds the display devices and this shell holds
-            // none, so the bit is the whole request, and a boot with no display answers
-            // `spawnproto::SPAWN_NO_DISPLAY`. Set only on a plain line, which is the only line
-            // `graphical_terminal`'s manifest can reach this path on (`Words` output refuses `>`
-            // and a pipe's left, `InputDeclaration::Forbidden` its right). `keyboard` is never set: the
-            // spawn service decides the arm from what the boot granted.
+            // The whole request, nothing follows (milestone 715 (the spawn service holds the
+            // display grants, and the shell holds none)); no display answers `SPAWN_NO_DISPLAY`.
+            // A plain line is the only one `graphical_terminal` reaches. `keyboard` is the spawn
+            // service's call, from what the boot granted.
             graphics: e.program == grant_plan::Program::GraphicalTerminal,
             keyboard: false,
         },
@@ -1119,13 +1040,8 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
 /// **Drain a byte stream off the result rendezvous and print it**, which is what the shell does when
 /// a program's output slot is the shell's own (`Sink::Report`, the default).
 ///
-/// This used to stop at the first newline, because the framing was a convention rather than a
-/// contract and there was nothing else to stop at. Milestone 50 gave it an end: it drains until
-/// `OPERATION_EOF`, so a program that prints two lines prints two lines, and the rendezvous is left clean for
-/// the next command instead of holding a message the next `receive` would mistake for an answer.
-///
-/// That change is not optional. Before it, a `date` that announced end of stream would leave that
-/// message queued, and the next command's single read would take it.
+/// It drains until `OPERATION_EOF` (milestone 50 (pipes and redirection)). Stopping earlier would
+/// leave a message queued that the next command's single `receive` takes as its answer.
 pub(super) fn drain_text() {
     print(b"  ");
     for _ in 0..MAX_OUTPUT_CHUNKS {
@@ -1224,17 +1140,14 @@ pub(super) fn screen_rendezvous() -> Option<u64> {
 
 /// **Wait for a screen-narrowed tail to finish, then free its region.**
 ///
-/// The kernel's own exit-delivery (DECISIONS §26 (the fault endpoint)) is the completion signal: `receive_fault` blocks
-/// until the child is dead-until-reaped, which is stronger than "it painted its last line" (a dead
-/// thread cannot enqueue any further `SEND`, so the child itself cannot still be mid-write here).
-/// What can still be in flight is `terminal_sink_caretaker`'s own trailing `CALL` to `line_editor`,
-/// which is the caretaker-hop display race DECISIONS §106 carries as a known, accepted interim
-/// (tracked at milestone 151): the next `$ ` this shell prints can interleave with that call's
-/// output. A display glitch, not a correctness or confinement failure.
+/// The completion signal is the child's death on `ep` (DECISIONS §26 (the fault endpoint)), and the
+/// reap retries with a yield, as `job_undertaker::collect` does. See
+/// `notes/swish-language/running.md`, "The screen-narrowed tail".
 ///
-/// The retry loop mirrors `job_undertaker::collect`'s reason: a corpse can be refused once if its
-/// region still holds something schedulable, and yielding between attempts is what lets that settle
-/// without spinning the only core there is.
+/// # BUGS
+///
+/// - The next `$ ` can interleave with `terminal_sink_caretaker`'s trailing `CALL`, the display race
+///   DECISIONS §106 (an unredirected tail stage's output goes to the screen) accepts.
 pub(super) fn await_screen(ep: u64) {
     let (_event, tid, ..) = receive_fault(ep);
     for _ in 0..SCREEN_REAP_ATTEMPTS {
@@ -1258,19 +1171,10 @@ const SCREEN_REAP_ATTEMPTS: usize = 1024;
 
 /// **Drain every declaring stage's second stream into `dest`, then hand it back.**
 ///
-/// It runs **before** the output is drained, and the order is forced rather than chosen. In
-/// `date | wc` the shell is not the reader of `date`'s output (`wc` is), so a shell that drained the
-/// output first would be waiting on `wc`, which is waiting on `date`, which is blocked in a
-/// rendezvous `SEND` on this rendezvous. Diagnostics first is the only order in which nobody waits on
-/// somebody who is waiting on them.
-///
-/// What that costs is a rule the declaring program has to keep, and it is in notes/pipes.md's BUGS:
-/// **say everything you have to say before you produce anything.** `date` does, because its
-/// complaints are all reasons it has no answer.
-///
-/// `writers` is how many stages were handed the rendezvous, and the drain ends when that many have
-/// announced end of stream. Each declaring stage sends exactly one `OPERATION_EOF`, so the count is the
-/// termination condition and no stage's silence can be mistaken for the line being over.
+/// Runs before the output is drained, the only order that cannot deadlock in `date | wc`, so a
+/// declaring program must say everything before it produces anything (notes/pipes.md's BUGS).
+/// `writers` is how many stages hold the rendezvous; each sends exactly one `OPERATION_EOF`, and
+/// the drain ends at that count. See `notes/swish-language/running.md`, "The second stream".
 pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
     let Some(ep) = diag_rendezvous() else { return };
     let mut done = 0usize;
@@ -1294,18 +1198,9 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
 /// **The most 16-byte chunks one program's output may take before this shell stops reading**: 64
 /// KiB, and one number for every destination.
 ///
-/// The ceiling is not a policy about how much a program may say. It is there so a program that
-/// never announces end of stream costs a truncated answer instead of a prompt that never returns,
-/// which is a bound on a **bug**, and a bug is not more tolerable when the bytes are going into a
-/// file. There were two numbers here until milestone 40's viewer met the smaller one: printing was
-/// capped at 32 chunks (512 bytes) while a `>` allowed 1024, so the same program's output was
-/// silently cut at the terminal and whole in a file, and nothing said which had happened. The
-/// reason on record for the split ("a file is where output goes when there is too much of it to
-/// read") is a policy about length, which the same comment disclaimed in its next sentence.
-///
-/// 64 KiB rather than 16, because the number's whole job is to be larger than anything a working
-/// program says and smaller than forever. A rendered manual page is tens of kilobytes; a few
-/// seconds of serial output is the cost of hitting it, against a prompt that never comes back.
+/// A bound on a bug, a program that never announces end of stream, and not a policy about length:
+/// larger than anything a working program says (a rendered manual page is tens of kilobytes) and
+/// smaller than forever. See `notes/swish-language/running.md`, "The output ceiling".
 pub(super) const MAX_OUTPUT_CHUNKS: usize = 4096;
 
 /// Report what the spawned program did, in terms of the grant it was given.
@@ -1375,21 +1270,15 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
         // A supervised job runs under the two-tier ^C path (DECISIONS §24); a fast job is simply
         // spawned and waited on.
         Ok(endow) if endow.interruptible => spawn_interruptible(&mut nav.jobs, endow),
-        // **`wc report.txt`**, which is `wc < report.txt` with the operator left out: the planner
-        // put the designated name in the *source* (`grant_plan`'s input operand), so this line is a
-        // one-stage pipeline the shell feeds, and it runs down exactly the path a `<` runs down.
-        // There is no second mechanism here, which is the reason to do it this way: the bytes reach
-        // the child the same way, and the child still cannot tell a file from a pipe.
+        // `wc report.txt` is `wc < report.txt`: the planner put the name in the source, so this is
+        // a one-stage pipeline down the same path a `<` takes, and the child cannot tell the two apart.
         Ok(endow) => match endow.source {
             Source::File(g) => {
-                // The line reparses into the one stage it is. It cannot fail (this command came out
-                // of it), and a `Line` is what `run_pipeline` reads its stage count off.
+                // Cannot fail: this command came out of `cmd`.
                 let Ok(l) = line::split(cmd) else { return };
-                // **One element, not `MAX_STAGES`**, and that is a stack decision rather than a
-                // tidiness one. An `Endowment` carries a whole `NameSet` by value, so a full-width
-                // array here overflowed the shell's stack at the *first* line this arm ran, which
-                // presented as a data abort one word below the lowest mapped stack page. This line
-                // is a single stage by construction, and `run_pipeline` takes a slice.
+                // One element, not `MAX_STAGES`: an `Endowment` carries a whole `NameSet` by value,
+                // and a full-width array overflows the shell's stack (a data abort one word below
+                // the lowest mapped stack page).
                 run_pipeline(nav, l, &[Some(endow)], false, None, Some(g), None);
             }
             // **A program that hears words gets the line as its argv** (milestone 205,
