@@ -66,3 +66,5 @@ area directories), ruled B). Appendices under
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
+
+`swish-check-harness.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-04. The stem names the program, `script/swish-check`, and the part of it the page covers: the host side that types the script and reads the transcript back.

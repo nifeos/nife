@@ -71,11 +71,11 @@ pub(super) const LINES: &[Line] = &[
     // **Unmodified `ripgrep` searches what its words name** (milestone 595 (the shell runs a `std`
     // program), fatal risk 1): crates.io's `rg` 14.1.1 as basalt packaged it, unvouched, carrying
     // only the `cargo xtask foreign-note` note. `docs` is granted read-only because a word named
-    // it. `../hay/secret.txt` grants nothing, so the caretaker refuses the `..` by name (in the
-    // parallel walker's words under milestone 812 (`std::thread::spawn` runs real threads in one
-    // address space)'s threads). With no word, the PAL refuses the working directory
-    // (`sys/paths/nife.rs`) and `rg` guesses "did your CWD get deleted?". Typed only after `cargo
-    // xtask basalt-fetch`, as in CI.
+    // it. `../hay/secret.txt` holds the needle, but its first component is not an entry here, so
+    // nothing is granted and the caretaker refuses the `..` by name (in the parallel walker's words
+    // under milestone 812 (`std::thread::spawn` runs real threads in one address space)). With no
+    // word, the PAL refuses the working directory (`sys/paths/nife.rs`) and `rg` guesses "did your
+    // CWD get deleted?". Typed only after `cargo xtask basalt-fetch`, as in CI.
     line(0, "echo the needle outside the grant > secret.txt", &[]),
     line(
         0,

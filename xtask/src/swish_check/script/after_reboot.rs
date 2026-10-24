@@ -423,7 +423,8 @@ pub(in crate::swish_check) const SWISH_CHECK_AFTER_REBOOT: &[Line] = &[
             "refused: the image carries the program least_authority_demo; a new base updates it, not \
              install; generation 15 is live",
         ],
-    ), // **A yes grants exactly what was asked, and the program holds it** (milestone 892). `reach`
+    ),
+    // **A yes grants exactly what was asked, and the program holds it** (milestone 892). `reach`
     // is a `std` program whose note asks for the network and `nife.test`. The gate answers `y`, so
     // the generation records a `grant` line for each, and run at the prompt it connects to the
     // runner's echo peer and holds a resolver badge for its zone: a name outside it is the

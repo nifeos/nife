@@ -1,12 +1,14 @@
 # How swish-check reads what the shell answered
 
-Name: provisional. The stem names the program, `script/swish-check`, and the part of it this page
-covers: the host side that types the script and reads the transcript back.
-
 `cargo xtask swish-check` boots the whole system, types each row of its script at the swish prompt
 over the UART, and checks what came back. The code is `xtask/src/swish_check/`. This page carries the
 design behind its readers, its timeouts and the shape of its assertions. The flake history and its
 measurements are in [swish-check-flake.md](swish-check-flake.md).
+
+It is the one gate that spawns through the real progenitor. Every other test that runs the shell has
+the kernel serve the spawn protocol in its place. A break in the real spawn path, such as a
+virtual-address collision, a full capability table or a stack one call short, presents as a boot
+that prints nothing at all.
 
 ## Two writers share one UART
 

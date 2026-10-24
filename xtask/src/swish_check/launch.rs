@@ -249,8 +249,8 @@ fn screen_rows(
     Ok(screen)
 }
 
-/// **Launch `graphical_terminal` from the prompt a boot is sitting at, and read the screen**
-/// (the second and third steps of [`Keystrokes`]'s doc). Called by [`swish_check_boot`] once its
+/// **Launch `graphical_terminal` from the prompt a boot is sitting at, read the screen, and press
+/// one key** through either [`Keystrokes`] source. Called by [`swish_check_boot`] once its
 /// script has finished and the prompt is back, on a boot that has a virtio-gpu attached; `sock` is
 /// that gpu's monitor socket, which `screendump` reads. `Ok` carries the sentence to print.
 pub(super) fn launch_graphical_terminal(

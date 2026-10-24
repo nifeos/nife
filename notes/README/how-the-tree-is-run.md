@@ -53,6 +53,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The system tests and the kernel crate](../system-tests-and-the-kernel-crate.md): what the kernel linked for its tests, the gate that keeps them out, and where the tests go. Name provisional.
 - [The suite's frame budget](../frame-budget.md): what the system tests may leave unreturned, what they legitimately keep, the conventions, and every number the ceiling has been. Name provisional.
 - [The swish-check CI flake, measured](../swish-check-flake.md): two timing-race reds at one gate, counted over 30 days, explained mechanically. Name provisional.
+- [How swish-check reads what the shell answered](../swish-check-harness.md): the transcript readers, the gauges, the timeouts with their measurements, and why each script row asserts what it does. Name provisional.
 - [swish-check failures, 2026W40](../swish-check-flake-2026w40.md): the week's 18 failures classified; the echo splice that looked like it survived milestone 342 (the kernel and the `console` server drive one UART from two address spaces) all predates it. Name provisional.
 - [The truncated echo, 2026W42](../swish-check-flake-2026w42.md): a typed line whose input stopped mid-echo on aarch64, a receive interrupt cleared while a byte waited in the PL011's FIFO, and the `--input-race` boot that proves the fix. Name provisional.
 - [Crates that could be released on their own, 2026-10-07](../releasable-crates-2026-10-07.md): which crates could leave, who else implements each, and whether to offer them our proofs. Name provisional.
