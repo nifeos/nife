@@ -115,6 +115,42 @@ old DB9 port on a 1990s PC used RS-232, which swings ±12V *and inverts the sign
 straight to the other and you destroy the Pi. The ~$10 USB-TTL cable is a level converter,
 which is why you buy one instead of soldering a DB9.
 
+## The receive side, at EL0
+
+`components/src/input.rs` is the console's receive driver, and it is a driver and nothing more. It
+owns the UART's receive side and its interrupt and forwards every byte to the line discipline. Line
+assembly, echo and editing live in `line_editor`, where Unix keeps them too: a UART driver feeds
+the tty layer and is not the tty layer. Its authority is `WRITE` on the terminal endpoint, the
+receive interrupt and the device, so it cannot print, spawn, or read what anyone else typed. On x86
+the device is a `PortRange` capability for COM1, which the kernel's TSS I/O bitmap reads; the
+driver never invokes it.
+
+A keystroke is one byte and control flow, not bulk data, so the bytes ride in registers, up to eight
+in the words of one `OPERATION_BYTES` `CALL`, as the rule of §10 (process model: capability-based, microkernel) asks of control traffic. A paste drains
+in 8-byte messages, and the `CALL`'s rendezvous keeps a fast sender from outrunning the discipline.
+
+It is interrupt-driven on all three architectures, and the reason is measured. Until milestone 505
+(an x86_64 input driver that never lets the core idle) x86 had a polled twin,
+`loop { drain(); yield_now(); }`. A thread that always yields is always runnable, so the run queue
+was never empty and the idle loop never ran on that core. QEMU sat at 99 to 100% of a host core at
+an idle prompt, 76 CPU-seconds in 78 wall-seconds, measured by milestone 182 (x86_64's own
+interactive-boot entry point). The capability-slot gauge the idle loop prints never moved past the
+hand-over.
+
+Two orderings are load-bearing:
+
+- It drains the FIFO by polling before it arms the interrupt, because input piped in at boot is
+  already waiting there. That narrows the race with the first interrupt and does not close it. A
+  line burst-piped into QEMU in the few instructions before that drain runs can lose its leading
+  character. A person typing after the prompt never hits it, and every line after the first is
+  interrupt-driven and intact. Closing it needs the driver armed before any input arrives.
+- In the loop it clears the interrupt at the device first and drains second. QEMU's PL011 raises
+  its receive interrupt only when the FIFO goes from empty to one byte, and `ICR` lowers it whatever
+  the FIFO holds. Cleared after the drain, a byte that lands between the drain's last empty check
+  and the clear has its interrupt wiped while it sits in the FIFO. Every byte behind it lands on a
+  non-empty FIFO and raises nothing, so input stops for good. Cleared first, a late byte leaves the
+  interrupt raised and the next wait returns at once.
+
 ---
 
 *Add to this file as new serial concepts come up.*
