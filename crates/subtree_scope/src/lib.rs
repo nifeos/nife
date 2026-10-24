@@ -7,8 +7,7 @@
 //! The Kani harnesses at the bottom prove that a step is one name, a walk never widens, follows a
 //! symbolic link or crosses a mount, and a bound badge reaches only its own root and the handles it
 //! minted, ever after. `..` and `.` are never names ([`is_name`]), and a file reached by a hard link
-//! inside the grant is inside it. See notes/walk-cost.md, "The hard cases, as one crate decides
-//! them".
+//! inside the grant is inside it. See notes/walk-cost.md, which covers the hard cases.
 
 //! # BUGS
 //!
