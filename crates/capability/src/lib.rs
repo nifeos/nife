@@ -751,9 +751,9 @@ mod verification {
     /// grant.** `MemoryRegion::SPLIT` mints outside [`CapabilityTable::derive`] through
     /// [`Cap::mint_child`], and this proves the child's rights are exactly the parent's (milestone
     /// 35 (prove the DMA-confinement boundary)), which implies the subset relation. Equality is the
-    /// precise claim because §16's amendment has `SPLIT` give the child `GRANT`: delegability comes
-    /// from the root's mint with `Rights::ALL`, and rights down a budget tree never increase. See
-    /// notes/capabilities/table.md ("Minting outside `derive`").
+    /// precise claim because §16's amendment has `SPLIT` pass `GRANT` down only when the parent
+    /// holds it, so delegability comes from the root's mint, and rights down a budget tree never
+    /// increase. See notes/capabilities/table.md ("Minting outside `derive`").
     /// Falsification: replayable `crates/capability/falsifications/verification.split_never_widens_rights.patch`
     #[kani::proof]
     fn split_never_widens_rights() {

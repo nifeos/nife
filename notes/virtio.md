@@ -144,9 +144,8 @@ crate). See [nifefs.md](nifefs.md).
 The driver runs at EL0 and holds three things the kernel handed it. The DMA page is mapped at
 `DMA_VA`, and its physical address arrives as `_start`'s argument, because descriptors speak
 physical addresses. The other two are an `Irq` capability in slot 1 and a `Virtio` capability in
-slot 2. The device registers
-are not mapped. Every register access, the queue setup and the "go" go through the `Virtio`
-capability, so the driver cannot point the device outside its DMA region
+slot 2. The device registers are not mapped. Every register access, the queue setup and the "go" go
+through the `Virtio` capability, so the driver cannot point the device outside its DMA region
 ([dma.md](dma.md)). If anything here is wrong, this process faults and the kernel does not. The
 transport is modern virtio-mmio (version 2), virtio 1.x sections 4.2 (MMIO) and 5.2 (block).
 

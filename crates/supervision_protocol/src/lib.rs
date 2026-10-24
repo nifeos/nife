@@ -1,8 +1,9 @@
 #![no_std]
 // `Result<_, ()>` is deliberate: every failure here is a syscall that already returned its own
 // error through the ABI, so the unit means "the syscall said no". Per-crate because it is one
-// decision about one calling convention; §38 (a suppression is scoped to an item and carries a
-// reason) targets suppressions that hide unreachable code, which this is not.
+// decision about one calling convention. §38 (a suppression is scoped to an item and carries a
+// reason)'s rule that a dead-code suppression is an item attribute, never an inner one (milestone
+// 41 (dead code: triage the suppressions)), does not reach a style lint about an error type.
 #![allow(clippy::result_unit_err)]
 // `ChildEndowment::new(retention)` is the one spelling of an empty endowment, and it takes the
 // retention declaration so nothing supplies one silently (§142 (what a spawner retains over a child

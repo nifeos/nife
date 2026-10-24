@@ -58,11 +58,10 @@ All of them go through `Cap::mint_child`, which takes no rights argument and cop
 `split_never_widens_rights` proves the child's rights equal the parent's, which implies the subset
 relation the rest of the model is stated in.
 
-Equality is the precise claim because of §16's amendment. `SPLIT` gives the child `GRANT` so a
-budget can be delegated onward, so "never changes rights" would misdescribe the intent. The
-delegability is a property of the root's mint: `memory_region_root_cap` mints once with
-`Rights::ALL`, `SPLIT` inherits, and `CAP_INSERT` narrows on the way into a child. Rights down a
-budget tree never increase, and a spend-only (`GRANT`-less) budget cannot split itself a
+Equality is the precise claim because of §16's amendment, which has `SPLIT` pass `GRANT` down only
+when the parent holds it, so delegability comes from the root's mint. `memory_region_root_cap` mints
+once with `Rights::ALL`, `SPLIT` inherits, and `CAP_INSERT` narrows on the way into a child. Rights
+down a budget tree never increase, and a spend-only (`GRANT`-less) budget cannot split itself a
 `GRANT`-bearing child.
 
 ## Reap and survey
@@ -106,7 +105,8 @@ holding, not what it reached. The crate also keeps one global, `PEAK`, packing `
 ceiling` into an `AtomicU32` so the pair is read from one instant. It lets the kernel's idle loop
 see that the mark moved without walking 256 thread tables under the scheduler lock. `fetch_max`
 suffices because the peak sits in the high half. A `static` cannot be keyed by a const generic, so
-`PEAK` does not say which table set it; the kernel has exactly one instantiation.
+`PEAK` does not say which table set it; the kernel has exactly one instantiation, and
+`kernel/src/sched.rs` scans for the owning thread once, only when it is about to print.
 
 ## The proofs
 

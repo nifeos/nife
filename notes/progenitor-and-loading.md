@@ -249,8 +249,11 @@ The kernel's page table is the free list. `PageFrame::MAP` refuses a mapped addr
 `BadPointer`, so a refusal means the page is taken and the next is tried. The kernel gives the same
 error for a misaligned or kernel-half address, and neither can occur for a page of the window. Any
 other refusal returns at once with the cursor unmoved. A page that stays mapped for good costs one
-refused probe per lap. `design/roadmap/0604-the-builders-scratch-cursor-is-bounded.md` has the
-progenitor's arithmetic.
+refused probe per lap. Wrapping limits how much address space this costs, not what the builder can
+reach: a builder without a capability to its own space keeps live children's pages mapped. Only the
+progenitor is given one and names it with `give_up_scratch_through`, because §249 (a running address
+space stays nameable) leaves that grant to whoever builds the builder.
+`design/roadmap/0604-the-builders-scratch-cursor-is-bounded.md` has the progenitor's arithmetic.
 
 A child at the interactive prompt gets three times the default stack
 (`system_initializer::CHILD_STACK_PAGES`), because the shell's redirection path runs in those
@@ -263,10 +266,10 @@ larger, which pushed the install path below `kernel/src/progenitor_stack.rs`'s f
 slot is that high, so a sentinel cannot name a real slot by accident.
 
 On x86_64 and riscv64 every child gets a timebase page, and the loader writes it from the builder's
-own. A child needs
-the number, not the kernel's frame, and the builder already has the number mapped read-only. A
-builder that does not know the rate writes a zeroed page, and the child then refuses rather than
-inherit a number nobody measured (calef, 2026-09-21: only accurate numbers, never hardcoded ones).
+own. A child needs the number, not the kernel's frame, and the builder already has the number mapped
+read-only. A builder that does not know the rate writes a zeroed page, and the child then refuses
+rather than inherit a number nobody measured (calef, 2026-09-21: only accurate numbers, never
+hardcoded ones).
 
 A failed build gives back every capability slot it took: the address space on the way out of
 `lay_out_child`, the TCB on the way out of `endow_child`, and a frame by whoever retyped it. The

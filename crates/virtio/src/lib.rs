@@ -4,7 +4,7 @@
 //! The kernel hands the process a DMA page, an `Irq` capability (slot 1) and a `Virtio` transport
 //! capability (slot 2); the device registers are not mapped, so every access goes through the
 //! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
-//! sections 4.2 (MMIO) and 5.2 (block).
+//! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
 //!
 //! Every entry point drives a device and returns `!`, so the example on [`run`] is `no_run`; the
 //! checkable parts of this subsystem are `direct_memory_access_validator` and
