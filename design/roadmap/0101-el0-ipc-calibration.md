@@ -204,12 +204,11 @@ and it did not.
   riscv64 half, argon has run nothing). Its `cycles_per_tick` probe gave this block radon's
   converted figure.
 - **Milestone 374.** Milestone 374 (cycles per IPC on the bench card) is a cycle column on every
-  bench row. This block added one probe line for one
-  row and left the row format, which 374 calls a decision about a recorded artifact, alone.
+  bench row. This block added one probe line for one row and left the row format, which 374 calls
+  a decision about a recorded artifact, alone.
 - **Milestone 16.** radon is the board of milestone 16 (real hardware and IOMMU-backed driver
   isolation), as 16a. It ran the bench suite on 2026-09-16
-  (`bench/radon-2026-09-16/bench-134300.log`). HVF on the development machine passes through no
-  PMU.
+  (`bench/radon-2026-09-16/bench-134300.log`). HVF on the development machine passes no PMU.
 - **Recorded.** The kernel-side numbers stay. The IPC round trip is the gating instrument the
   icount tripwires run against, and `notes/benchmarks.md` explains why a kernel-internal path
   length is right for a gate and wrong for a comparison.
