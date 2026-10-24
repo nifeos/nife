@@ -1,15 +1,6 @@
-//! **`memory_region_heap`: the untyped-backed heap, `alloc` for userspace, paid from the
-//! process's own budget** (milestone 27 (Rust `std` on the native ABI)). Its own crate, so a program
-//! with no heap links no allocator.
-//!
-//! A [`GlobalAlloc`] that grows by mapping pages out of the untyped capability the process was
-//! granted (`memory_region::MAP`, one zeroed page per invoke). The algorithm is `talc`'s core,
-//! [`talc::base::Talc`] (milestone 784 (reuse what the tree wrote), item d), with the `Manual`
-//! source: growing is a syscall that can fail on a budget, so the retry lives here, by the cap.
-//! This crate is the policy: a spinlock, a committed-range cursor and grow-on-demand.
-//!
-//! A program declares it in its own source, because the heap's inputs are part of its capability
-//! contract (notes/abi.md, the out-of-band slot convention):
+//! The untyped-backed heap: a [`GlobalAlloc`] for userspace that maps pages out of the process's
+//! own untyped capability, so `alloc` is paid from its budget (milestone 27 (Rust `std` on the
+//! native ABI)). A program declares it in its own source (see notes/heap.md):
 //!
 //! ```ignore
 //! #[global_allocator]
@@ -17,20 +8,6 @@
 //! // first thing in _start:
 //! HEAP.init(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
 //! ```
-//!
-//! - **Which untyped slot** pays is the program's convention with its parent. No untyped, no heap.
-//! - **Where the heap lives**: [`DEFAULT_BASE`] (1 GiB) starts `address_space_map::HEAP`, the band
-//!   the address-space map keeps for a heap and nothing else.
-//! - **`max_bytes`** caps growth, so a leak exhausts the heap visibly before it eats the budget the
-//!   program builds children from. `MAP`'s `OutOfMemory` is the hard ceiling either way, reported
-//!   as an allocation failure. Allocating before `init` fails the same way.
-//!
-//! A spinlock is enough: the holder is always scheduled again to release it under this kernel's
-//! preemptive scheduler. It is not efficient under real contention (notes/heap.md).
-//!
-//! **A crate of its own** because `talc` brings `alloc` into a program's crate graph (through
-//! `allocator-api2`), and a graph with `alloc` in it must name a global allocator. Only a program
-//! that names this crate links it, so a program with no heap needs none.
 //!
 //! Name: provisional (lane/784-talc, 2026-10-21 UTC), for the type it holds; calef has not ruled
 //! on it.
