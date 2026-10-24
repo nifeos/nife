@@ -3,7 +3,8 @@
 //! It fails on exactly one call, counted from 0, so a mapper that swallowed the error would leave a
 //! hole. After every failure the sweep asserts that no table frame leaked (every frame handed out
 //! is reachable from the root), that what is left mapped is a prefix of what the successful run
-//! maps, and that the error is `OutOfPageFrames`. See notes/paging.md, "The Nth-allocation sweep".
+//! maps (empty for `map_block`), and that the error is `OutOfPageFrames`. See notes/paging.md,
+//! "The Nth-allocation sweep".
 //!
 //! Names in this file (the file, the helpers, the tests) are provisional.
 

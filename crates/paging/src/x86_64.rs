@@ -289,9 +289,9 @@ impl PageFormat for Vtd {
 /// document 48882 revision 2.62, section 2.2.3 (Figures 9 and 10, Tables 17 and 18).
 ///
 /// A directory entry written at walk level `L` names the AMD level it points at in `NextLevel`
-/// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) combine by AND down the
-/// walk, so a directory grants both. `FC` (bit 60, leaves only) keeps a device's DMA coherent
-/// whatever it asks for. See notes/paging.md, "AMD-Vi". Name provisional.
+/// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) combine by AND
+/// down the walk, so a directory grants both. `FC` (bit 60, leaves only) keeps a device's DMA
+/// coherent whatever it asks for. See notes/paging.md, "AMD-Vi". Name provisional.
 pub struct AmdVi;
 
 /// `PR`: present. Bit 0, at every level.
@@ -937,21 +937,9 @@ mod verification {
         let flags = all[i];
 
         let leaf = Ia32e::leaf_entry(pa, flags);
-        // **The address field read out of the word, not through `entry_pa`** (milestone 211).
-        // `leaf_entry` and `entry_pa` are an encoder and its own decoder, so a round trip
-        // between them is satisfied by any pair that agree: a shift wrong in both would leave
-        // this green while the hardware read the wrong page. The line below states where the
-        // architecture puts the address, which is the one thing the implementation does not
-        // get to choose, and it is spelled as a literal rather than through this crate's own
-        // ADDR_MASK or PPN_SHIFT: a defect in one of those constants moves the implementation
-        // and any harness that cited it together, which is the same trap one level down.
-        //
-        // **This comment used to say `no_vtd_entry_ever_sets_a_reserved_bit` already worked this
-        // way. It did not** (milestone 307): that harness stated its address property through
-        // `VTD_ADDR_MASK`, which is the constant its encoder builds the entry out of, so the
-        // property held for every value of the constant. The citation was the only place in the
-        // tree claiming the trap had been avoided there, and it was written by a lane that had
-        // just avoided it here. Both are literals now.
+        // The address field read out of the word as a literal, not through `entry_pa` or
+        // `ADDR_MASK`: an encoder and its own decoder agree even when both shift wrong. See
+        // notes/paging.md, "Reserved bits are spelled as literals".
         assert_eq!(
             leaf & 0x000f_ffff_ffff_f000,
             pa,
@@ -1053,39 +1041,18 @@ mod verification {
     /// **No `Vtd` leaf or table entry ever sets a bit VT-d treats as reserved**, over every
     /// physical address and every portable `Flags` constructor. This is the property
     /// `a_vtd_leaf_sets_no_bit_outside_read_write_and_address` checks by example; Kani closes it
-    /// for every address and every flag combination the type accepts, which matters here more than
-    /// on `Ia32e` because QEMU's model (and real silicon) faults a transaction over a reserved bit
-    /// rather than merely ignoring it.
-    ///
-    /// # Every assertion here is spelled in literals, and milestone 307 is why
-    ///
-    /// This harness used to state all three of its assertions, and its `assume`, through
-    /// `VTD_ADDR_MASK`, `VTD_R` and `VTD_W`: the same three constants `Vtd::leaf_entry` and
-    /// `Vtd::table_entry` build their result out of. `(pa & M) | bits` sets no bit outside
-    /// `M | VTD_R | VTD_W` **for every value of M**, so the address half of the reserved-bit claim
-    /// was a tautology and this harness could not fail on it. Widening `VTD_ADDR_MASK` over bits
-    /// 52..63, which this crate's own note says has never been narrowed to the `CAP_REG.MGAW` the
-    /// hardware reports, moves the encoder and the assertion together; every DMA the IOMMU
-    /// translates then faults on a reserved bit while the proof stays green, and the symptom is a
-    /// device that reads as broken rather than a table that reads as wrong.
-    ///
-    /// It was found by asking which assertion fires when the claim is broken, and it is worth the
-    /// paragraph because the tree had recorded the opposite: the comment on
-    /// `the_leaf_keeps_address_and_permissions_apart` cited *this* harness as already avoiding the
-    /// trap it was demonstrating. [`VTD_PERMITTED_BITS`] carries the argument in full.
+    /// for every address and flag combination, since QEMU's model and real silicon fault a
+    /// transaction on a reserved bit. Every assertion is a literal, because a check through the
+    /// encoder's own constants holds for every value they take. See notes/paging.md, "Reserved
+    /// bits are spelled as literals".
     /// Falsification: replayable `crates/paging/falsifications/x86_64.verification.no_vtd_entry_ever_sets_a_reserved_bit.patch`
     #[kani::proof]
     fn no_vtd_entry_ever_sets_a_reserved_bit() {
         // The address field, bits 51:12, written out rather than cited.
         const ADDRESS_BITS: u64 = 0x000f_ffff_ffff_f000;
 
-        // **No assumption on `pa`, and that is half the fix.** This harness used to open with
-        // `kani::assume(pa & !VTD_ADDR_MASK == 0)`, which defines the input space in terms of the
-        // constant under test: widen the mask and the harness quietly admits the very addresses
-        // that would now reach the entry, so the defect and the guard against it move together and
-        // the proof stays green. Masking the address down is `leaf_entry`'s own job, so the claim
-        // is over *every* `u64`, and the address assertions below say `pa & ADDRESS_BITS` rather
-        // than `pa` because that is what a correct encoder keeps.
+        // No assumption on `pa`: an assumption through `VTD_ADDR_MASK` would widen with the mask.
+        // Masking is `leaf_entry`'s job, so the assertions below expect `pa & ADDRESS_BITS`.
         let pa: u64 = kani::any();
 
         let all = [

@@ -195,12 +195,8 @@ mod verification {
     /// every accepted region and every page-aligned address whose whole page lies inside it, there is
     /// an index below the page count that enumerates exactly that address. Proved constructively (the
     /// witness is `(iova - base) / PAGE_SIZE`), which is stronger than an existence claim: it says
-    /// *which* iteration maps it.
-    ///
-    /// Without this, "maps exactly the grant" would be half a property. A domain that mapped nothing
-    /// at all would satisfy soundness perfectly and confine the device by starving it, which is not
-    /// the confinement anybody wants, and the failure would surface as a mysterious device fault
-    /// rather than as a refusal.
+    /// *which* iteration maps it. Without it, a domain that mapped nothing would satisfy soundness
+    /// and confine the device by starving it.
     /// Falsification: replayable `crates/paging/falsifications/domain.verification.every_whole_page_of_the_grant_is_enumerated.patch`
     #[kani::proof]
     fn every_whole_page_of_the_grant_is_enumerated() {

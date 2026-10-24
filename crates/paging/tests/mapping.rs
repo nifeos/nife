@@ -516,7 +516,8 @@ fn dropping_the_tlb_obligation_is_fatal() {
 }
 
 /// **Cutting a table takes its whole span out of the walk, and nothing beside it.** The kernel
-/// cuts a table whose page is about to be handed back (`revoke::revoke_region`); this pins what the cut does to the walk.
+/// cuts a table whose page is about to be handed back (`revoke::revoke_region`); this pins what
+/// the cut does to the walk.
 ///
 /// The second chain's L2 is cut. Both pages under it stop translating, the page under the first
 /// chain's L2 keeps translating, the span reported is the 1 GiB that L2 covered, and a table below

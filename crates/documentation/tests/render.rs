@@ -423,8 +423,8 @@ fn a_table_wider_than_the_terminal_shrinks_its_widest_column() {
 }
 
 /// Losing text is the one failure a documentation service cannot have, and a long table is one
-/// block: no row is lost and no blank line splits it. `notes/releasable-crates-2026-10-07/inventory.md`
-/// is about 100 rows, so this is real.
+/// block: no row is lost and no blank line splits it.
+/// `notes/releasable-crates-2026-10-07/inventory.md` is about 100 rows, so this is real.
 #[test]
 fn a_long_table_keeps_every_row_in_one_block() {
     let mut src = String::from("| n | v |\n|---|---|\n");

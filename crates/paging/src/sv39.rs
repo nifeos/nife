@@ -128,11 +128,11 @@ impl PageFormat for Sv39 {
 /// firmware has set `MAEE` in `th.mxstatus`, as OpenSBI does on the TH1520. The core then reads
 /// PTE bits 63:59, reserved in standard Sv39, on every leaf (SO, C, B, SH below; SEC unused), and
 /// all five clear is undefined for normal memory. The values are Linux's (`_PAGE_PMA_THEAD`,
-/// `_PAGE_IO_THEAD`): memory is C, B and SH, a device SO and SH, and pointer entries carry none.
+/// `_PAGE_IO_THEAD` in `arch/riscv/include/asm/pgtable-64.h`): memory is C, B and SH, a device
+/// SO and SH, and pointer entries carry none.
 ///
-/// Everything else is delegated to [`Sv39`]. A type rather than a runtime switch: the kernel picks
-/// it per machine at compile time (`board_th1520`), keeping this crate free of global state, and
-/// checks at boot that the hart agrees.
+/// Everything else is delegated to [`Sv39`]; the kernel picks the type per machine at compile
+/// time (`board_th1520`). See notes/paging.md, "T-Head memory types".
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC).
 pub struct Sv39Mae;

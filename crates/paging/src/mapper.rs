@@ -354,9 +354,10 @@ where
     }
 
     /// **Cut the intermediate table at physical `table` out of the walk that reaches `va`**, and
-    /// return `(base, span)`, the aligned range `table` translated, which now translates to nothing.
+    /// return `(base, span)`, the aligned range it translated, which now translates to nothing.
     /// `None` when the walk to `va` never passes through `table`, which a caller cutting tables
-    /// top-down meets for every table below the first. Nothing is freed. Name provisional.
+    /// top-down meets for every table below the first. Nothing is freed, and the root is never a
+    /// candidate, since no entry points at it. Name provisional.
     ///
     /// The kernel cuts a table whose page is about to be handed back (`revoke::revoke_region`): one
     /// store makes the page unreachable, where clearing its leaves would leave it linked. The

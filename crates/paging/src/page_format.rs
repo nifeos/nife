@@ -12,7 +12,8 @@ use super::*;
 ///
 /// **The top bits of a virtual address are not translated**: they select which set of tables to
 /// use (aarch64 `TTBR0`/`TTBR1`; on RISC-V one `satp` per space, the sign-extended top bit telling
-/// the halves apart), and the index comes from the lower bits identically for both halves. A higher-half kernel is a separate set of tables. See notes/page-tables.md.
+/// the halves apart), and the index comes from the lower bits identically for both halves. A
+/// higher-half kernel is a separate set of tables. See notes/page-tables.md.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Half {
     /// The low half: user space.

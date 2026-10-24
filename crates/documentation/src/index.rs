@@ -12,9 +12,11 @@
 //! # BUGS
 //!
 //! - A term is truncated to [`TERM_MAX`] bytes, so long identifiers can share a posting list.
-//! - Terms are ASCII-folded and split on any byte that is not a letter, digit or underscore join.
+//! - Terms are ASCII-folded and split on any byte that is not a letter or digit; an
+//!   underscore-joined name is also indexed whole.
 //! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
-//! - A shard whose [`VERSION`] is not this reader's is refused, not migrated.
+//! - A shard whose [`VERSION`] is not this reader's is refused, not migrated; a shard from
+//!   elsewhere is the day to revisit this.
 //! - A search keeps [`RESULTS_MAX`] results and counts the rest ([`Ranked::offered`]).
 //! - A search answer names pages, never grants them ([`Found::location`]).
 
@@ -222,7 +224,8 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAX]) -> usize {
 }
 
 /// Split text into terms the way the builder does: runs of ASCII letters and digits, folded to
-/// lower case, truncated to [`TERM_MAX`], and dropped if shorter than two characters.
+/// lower case, truncated to [`TERM_MAX`], and dropped if shorter than two characters (a posting
+/// list per letter answers no question anybody asks a manual).
 ///
 /// An underscore-joined name is also one term: `line_editor` yields `line`, `editor` and
 /// `lineeditor`, which is what [`normalize`] makes of the query. Only the underscore joins. See

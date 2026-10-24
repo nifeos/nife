@@ -441,7 +441,8 @@ impl Layout {
     }
 
     /// Open a heading. Level one is the page's own name and is uppercased, as a man page does, so
-    /// a reader scanning a screenful finds the title; lower levels are sentences and keep their case.
+    /// a reader scanning a screenful finds the title; lower levels are sentences and keep their
+    /// case.
     fn heading(&mut self, level: HeadingLevel, out: &mut impl Sink) {
         let level = level as usize;
         self.item_fresh = false;

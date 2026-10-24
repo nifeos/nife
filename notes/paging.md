@@ -69,11 +69,11 @@ level `L` (0 at the top) names AMD level `LEVELS - 1 - L`, so the top table's en
 bottom directory's say 1. That is why `PageFormat::table_entry` takes the level. A leaf says 0,
 "the default page size of this level", which at the bottom is 4 KiB.
 
-`IR` (bit 61) and `IW` (bit 62) are combined by AND down the walk and through the device table entry, so a
-directory grants both. `FC` (bit 60) makes the IOMMU clear the PCI No Snoop attribute, so DMA stays
-coherent with the CPU caches whatever the device asks. Linux sets it on every leaf too
-(`drivers/iommu/amd/io_pgtable.c`, read at v6.12). Bit 60 is reserved in a directory entry, so
-only leaves carry it.
+`IR` (bit 61) and `IW` (bit 62) are combined by AND down the walk and through the device table
+entry, so a directory grants both. `FC` (bit 60) makes the IOMMU clear the PCI No Snoop attribute,
+so DMA stays coherent with the CPU caches whatever the device asks. Linux sets it on every leaf too
+(`drivers/iommu/amd/io_pgtable.c`, read at v6.12). Bit 60 is reserved in a directory entry, so only
+leaves carry it.
 
 The device table entry lives in this crate rather than in the kernel's driver. Its claims are bit
 positions, so Kani can prove them on any host, where the kernel's x86_64 proofs compile only on an
@@ -177,4 +177,5 @@ reserves. With `MAEE` set the core reads them on every leaf:
 
 A leaf with all five clear is undefined for normal memory, so plain `Sv39` on that core runs on
 behavior nobody promised. `Sv39Mae` is a type rather than a switch inside `Sv39`. The kernel
-chooses it per machine at compile time, the way it chooses the early console.
+chooses it per machine at compile time, the way it chooses the early console. A type keeps the
+crate free of global state, and the kernel checks at boot that the hart agrees with it.

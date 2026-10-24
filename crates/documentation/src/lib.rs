@@ -4,8 +4,8 @@
 //! # BUGS
 //! - Width counts characters, not columns, so a wide CJK character counts as one.
 //! - A table wider than the terminal shrinks its widest column, and a shrunk cell loses its tail.
-//! - HTML is shown as text, a link reference definition (`[x]: url`) prints nothing of its own, and
-//!   an ordered list is numbered `1.` whatever its source used.
+//! - HTML is shown as text, and a link reference definition (`[x]: url`) prints nothing of its own.
+//! - An ordered list is numbered `1.` style whatever its source used.
 //!
 //! Name: ratified 2026-09-13 (calef). Refused `manual`, `doc`, `documentation_system`, `markdown`.
 

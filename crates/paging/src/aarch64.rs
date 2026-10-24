@@ -1,5 +1,5 @@
-//! The aarch64 page-table format: four levels, 4 KiB pages, 48-bit virtual addresses. The
-//! descriptor is full of traps; the constants below carry the ones that bite (notes/page-tables.md).
+//! The aarch64 format: four levels, 4 KiB pages, 48-bit virtual addresses. The descriptor is full
+//! of traps; the constants below carry the ones that bite. See notes/page-tables.md.
 //!
 //! ```text
 //!  47      39 38      30 29      21 20      12 11         0
