@@ -17,10 +17,3 @@ has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-Each stem below is named for its content, and calef names files.
-
-- `the-getrandom-gap` Name: provisional.
-- `pricing-the-glue-path` Name: provisional. After the parent's own heading.
-- `the-glue` Name: provisional.
-Each stem here is named for its content, and calef names files.

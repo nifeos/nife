@@ -1,6 +1,6 @@
 # The machine statistics page
 
-*Name: provisional. calef names notes.*
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.*
 
 `crates/machine_statistics_contract` defines one read-only page of machine-wide counters: physical
 frames, and per core the ticks spent busy and idle, the context switches, the interrupts taken and

@@ -1,5 +1,8 @@
 # The `redoxfs_host` library: its boundaries and its tests
 
+*Name: provisional. After the parent's own heading. Each stem here is named for its content, and
+calef names files.*
+
 *An appendix to [`notes/host-recovery.md`](../host-recovery.md). It holds the reasons behind the
 seams in `tools/redoxfs_host/src/` and the shape of its tests, which the code's doc comments state
 briefly and link here.*
