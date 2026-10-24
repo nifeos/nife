@@ -40,15 +40,16 @@ connect to.
 
 A host whose last label is a number must be canonical dotted-decimal IPv4, or it is refused
 (the-index-format.md has the ruling and the CVEs behind it). The test for ending in a number is
-WHATWG's: the last label is all decimal digits, or `0x` and hex digits. A refusal means nothing downstream
-has to agree with the crate about which address a host is, so the resolved-address check stops
-being the only guard. `is_host` has already admitted the host, so a part holds only letters, digits
-and hyphens, and `u8`'s parser refuses every one of those that is not a decimal number up to 255.
+WHATWG's: the last label is all decimal digits, or `0x` and hex digits. A refusal means nothing
+downstream has to agree with the crate about which address a host is, so the resolved-address check
+stops being the only guard. `is_host` has already admitted the host, so a part holds only letters,
+digits and hyphens, and `u8`'s parser refuses every one of those that is not a decimal number up to
+255.
 
 ## Versions in Debian's order
 
-calef ruled on 2026-10-18 (UTC), asked how `jig` should order versions: "Debian dpkg order". That
-is the order `jig list -u` reports against (milestone 809 (the package client becomes a program)), and
+calef ruled on 2026-10-18 (UTC), asked how `jig` should order versions: "Debian dpkg order". That is
+the order `jig list -u` reports against (milestone 809 (the package client becomes a program)), and
 the one the reserved `upgrade` verb will install by.
 
 A version is what a stem carries between its name and its architecture. So it is dpkg's upstream

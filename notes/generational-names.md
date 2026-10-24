@@ -1,7 +1,8 @@
 # Generational names
 
-*(Milestone 14 phase A. The mechanism behind `crates/generational_table`, the scheduler's thread table since
-the `BTreeMap` was retired. See design/kernel-objects-from-untyped.md, decision D2.)*
+*(Milestone 14 (kernel objects from untyped) phase A. The mechanism behind
+`crates/generational_table`, the scheduler's thread table since the `BTreeMap` was retired. See
+design/kernel-objects-from-untyped.md, decision D2.)*
 
 ## The problem it solves
 
@@ -106,10 +107,11 @@ resume after a caller gives its lock back between entries. A position in the fil
 would move when entries in the gap are removed. A slot index does not: if the entry at slot `k`
 died, `k` is empty rather than somebody else's.
 
-`rendezvous::SURVEY` (milestone 126 (the `procps` package, now `process-tools`)) reports one supervised thread per syscall and hands the next
-slot back to userspace as a cursor. The set can change between calls, so a resumed sweep is a
-sequence of snapshots rather than one. It never reports an entry twice and never resolves a cursor
-to the wrong thread, which is all a `readdir` shape ever promised.
+`rendezvous::SURVEY` (milestone 126 (the `procps` package, now `process-tools`)) reports one
+supervised thread per syscall and hands the next slot back to userspace as a cursor. The set can
+change between calls, so a resumed sweep is a sequence of snapshots rather than one. It never
+reports an entry twice and never resolves a cursor to the wrong thread, which is all a `readdir`
+shape ever promised.
 
 ## What is proved (milestone 18 style, before anything leans on it)
 

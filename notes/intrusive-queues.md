@@ -45,9 +45,9 @@ transition under `SCHED`.
 The queue borrows nodes it does not own, and the borrow checker cannot see any of it. The
 safety is a discipline, stated once and kept:
 
-1. **A queued thread is `Ready`, and only `Finished` threads are reaped**, so a queued TCB is
-   never freed. This is the load-bearing rule, and it is why `sched::thread_control_block_ptr` (the one place a
-   ThreadId becomes a pointer) documents it rather than each push site re-arguing it.
+1. **A queued thread is `Ready`, and only `Finished` threads are reaped**, so a queued TCB is never
+   freed. This is the load-bearing rule, and it is why `sched::thread_control_block_ptr` (the one
+   place a ThreadId becomes a pointer) documents it rather than each push site re-arguing it.
 2. **The `Box` in the thread table pins the address** (phase B replaces it with a TCB page from
    untyped, pinned the same way).
 3. **Only the queue that holds a thread touches its link**, under that queue's synchronization:
@@ -108,8 +108,8 @@ A `Finished` thread cannot be freed while its core is still switching off its st
 reaps it from its successor, after the switch (`finish_switch`). Being woken is the same
 hazard as being freed, for the same reason, with the same fix:
 
-- `on_cpu` (on the thread's embedded `thread_wake_handshake::Handshake`): set when a core schedules a
-  thread in, cleared by that core's successor after the switch away.
+- `on_cpu` (on the thread's embedded `thread_wake_handshake::Handshake`): set when a core schedules
+  a thread in, cleared by that core's successor after the switch away.
 - `wake()` finding `on_cpu` set does not queue the thread; it parks the wake in the handshake's
   `wake_pending`.
 - `finish_switch`, running on the thread's own core with the context provably saved, completes

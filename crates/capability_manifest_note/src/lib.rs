@@ -4,13 +4,67 @@
 //! progenitor that read it (AGENTS.md rule 7); `crates/elf` finds the note, and this crate starts
 //! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_LEN`] bytes) or
 //! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
-//! [`encode`] would not write. See notes/capability-manifest-note.md for the layouts.
+//! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
+//! reasons.
 
 //! # BUGS
 //!
 //! - A foreign build carries a note only by linking an object that holds one: `-Clink-arg=note.o`
 //!   works and `llvm-objcopy --add-section` makes no program header. Nothing writes that object yet.
 //! - Changing a manifest means relinking, and a new digest: M2's accepted cost.
+//!
+
+//! # The descriptor, version 1
+//!
+//! A version word, then little-endian fields in a fixed order (the encoding calef ratified
+//! 2026-09-26). Every field is one of `grant_plan::Manifest`'s, in bytes; nothing here is a new
+//! authority.
+//!
+//! | offset | size | field | values |
+//! |---|---|---|---|
+//! | 0 | 4 | version | `1` |
+//! | 4 | 1 | `arg` | 0 forbidden, 1 required; hears words (milestone 205): 2 read-only, 3 read-write, 4 create |
+//! | 5 | 1 | `mem` | 0 forbidden, 1 required |
+//! | 6 | 1 | `file` | 0 forbidden, 1 read-only, 2 read-write |
+//! | 7 | 1 | `dir` | 0 forbidden, 1 required |
+//! | 8 | 8 | `mem` minimum pages | 0 unless `mem` is required |
+//! | 16 | 8 | `mem` maximum pages | 0 unless `mem` is required; at least the minimum |
+//! | 24 | 1 | `output` | 0 silent, 1 words, 2 bytes, 3 bytes and diagnostics (at `grant_plan::DIAGNOSTICS_SLOT`) |
+//! | 25 | 1 | `input` | 0 forbidden, 1 required |
+//! | 26 | 1 | `input` writes while reading | 0 or 1; 0 unless `input` is required |
+//! | 27 | 1 | `dir`'s subtree option | 0 for none, else one of the declared option letters; 0 unless `dir` is required |
+//! | 28 | 1 | `reports` | 0 or 1 |
+//! | 29 | 1 | `interruptible` | 0 or 1 |
+//! | 30 | 1 | `clock` | 0 or 1 |
+//! | 31 | 1 | `domain` | 0 or 1 |
+//! | 32 | 1 | `config` | 0 or 1 |
+//! | 33 | 1 | `entropy` | 0 or 1 |
+//! | 34 | 1 | `network` | 0 or 1 |
+//! | 35 | 1 | `startup` | 0 native, 1 std |
+//! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_SHORT_OPTIONS` (16) |
+//! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
+//! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
+//! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
+//! | 55 | 1 | zero | |
+//!
+//! Byte 55 is the last zero.
+
+//! # The descriptor, version 2: a manifest and the resolver zones it asks for
+//!
+//! calef, 2026-10-19 (UTC), on #2405 (milestone 892 (a std program at the prompt holds the network
+//! and a resolver)'s Q1, "approve version 2?"): "Yes". Version 1's 56 bytes at the same offsets,
+//! with `2` in the version word, then:
+//!
+//! | offset | size | field | values |
+//! |---|---|---|---|
+//! | 56 | 1 | zone count | 1 to [`MAX_ZONES`] |
+//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most [`ZONE_MAX`]; 0 is the root zone |
+//!
+//! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
+//! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
+//! version 1, so a version 2 count of 0 is refused, and the zones are canonical ([`zones`] says
+//! how). Zones are what the program asks for; the owner grants them at install, and nothing here
+//! grants anything (§252 (a resolver grant is one zone per client badge)).
 //!
 //! Name: ratified 2026-10-18 (calef, "`capability_manifest_note`"). The descriptor is the capabilities
 //! a program requests ("manifest" in the Android sense), and "note" separates the ELF-note encoding
@@ -40,14 +94,14 @@ pub const MANIFEST: u32 = 1;
 
 /// The descriptor version this crate writes and the only one it reads. The encoding it numbers (a
 /// version word, then little-endian fields in a fixed order) is calef's ruling of 2026-09-26; the
-/// field order is in notes/capability-manifest-note.md.
+/// field order of version 1 is milestone 597's lane's design, in the module documentation.
 pub const VERSION: u32 = 1;
 
-/// How long a version 1 descriptor is, exactly; notes/capability-manifest-note.md has the layout.
+/// How long a version 1 descriptor is, exactly; the module documentation has the layout.
 pub const DESCRIPTOR_LEN: usize = 56;
 
-/// The descriptor version that carries resolver zones after version 1's fields (the version 2
-/// table in notes/capability-manifest-note.md). Provisional name; the number and layout are
+/// The descriptor version that carries resolver zones after version 1's fields (the module's
+/// version 2 table). Provisional name; the number and layout are
 /// calef's 2026-10-19 (UTC) ruling.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.

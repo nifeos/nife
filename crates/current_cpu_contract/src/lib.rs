@@ -13,7 +13,7 @@
 //!
 //! - Nothing outside tests reads the word yet; the write costs under 1.5 ns on an M3 (#1904).
 //! - The reader forms an `&AtomicU64` over read-only memory, which Miri rejects; see the note.
-//! - At most [`THREAD_PAGE_SLOTS`] threads per process (§269 fork 6); see [`thread_page_va`].
+//! - At most [`THREAD_PAGE_SLOTS`] threads a process (§269 fork 6); see notes/current-cpu-page.md.
 //! - An address space never bound to a TCB has no page, so `current_cpu` there faults.
 //! - [`CPU_ID_BOUND`] is the compile-time `MAX_CPUS`: right for sizing, useless for iterating.
 //!

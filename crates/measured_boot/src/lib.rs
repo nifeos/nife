@@ -4,9 +4,11 @@
 //! enter userspace on a mismatch (DECISIONS §14 (the project's direction)).
 //!
 //! The hash is SHA-256, written here: collision- and preimage-resistant, about a hundred lines with
-//! no dependency, allocation or unsafe (§46 (thin primitives or whole subsystems); calef,
-//! 2026-10-22 UTC: "Keep our SHA-256."). The build and the kernel both hash through this crate, and
-//! the tests are the published FIPS 180-4 vectors. See notes/trusted-init/measured-boot.md.
+//! no dependency, allocation or unsafe. calef ruled on 2026-10-22 (UTC), "Keep our SHA-256.", on
+//! milestone 784 (reuse what the tree wrote)'s question of which of §46 (thin primitives or whole
+//! subsystems)'s rules wins: `sha2` stays out of the measured-boot trusted base. The build and the
+//! kernel both hash through this crate, and the tests are the published FIPS 180-4 vectors. See
+//! notes/trusted-init/measured-boot.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `measure`. Refused `measure` (a verb,
 //! and generic enough to name almost anything). "Measured boot" is the standard term for boot-time
@@ -281,8 +283,9 @@ pub const SHA256_LABEL: &str = "sha256";
 pub const DIGEST_TEXT_LEN: usize = SHA256_LABEL.len() + 1 + DIGEST_LEN * 2;
 
 /// A digest as the text every file and program in this tree writes it in: `sha256:` and 64
-/// lowercase hex characters. One formatter and one parser, [`parse_digest`], so catalogs, recipes
-/// and the measurement table cannot drift apart (rule 7). No allocation.
+/// lowercase hex characters. One formatter and one parser, [`parse_digest`], so a catalog line, a
+/// recipe, an installed-programs row, the measurement table and `caps`'s provenance line cannot
+/// drift apart (rule 7). No allocation.
 ///
 /// ```
 /// use measured_boot::{digest_text, parse_digest, sha256};

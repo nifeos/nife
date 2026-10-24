@@ -1,8 +1,8 @@
 # The socket contract crate: its protocol, its waits and its ports
 
-*An appendix to [`notes/net.md`](../net.md), which is the page to read. It carries the design
-behind `crates/socket_contract`, whose doc comments link here. The contract's decision is
-[§255 (each socket is its own capability)](../../design/decisions/0255-each-socket-is-its-own-capability.md).*
+*An appendix to [`notes/net.md`](../net.md), which is the page to read. It carries the design behind
+`crates/socket_contract`, whose doc comments link here. The contract's decision is §255 (each
+socket is its own capability), [here](../../design/decisions/0255-each-socket-is-its-own-capability.md).*
 
 ## One capability per socket
 
@@ -14,10 +14,10 @@ operation is a `CALL` on a socket: an opcode, one argument and one reply word. `
 the connection's capability.
 
 The stack names a socket only by the kernel-stamped badge it arrived on. It mints each badge with
-`SOCKET_BADGE` set, from a counter that never rewinds, and drops it at `CLOSE`. A request whose badge
-has the bit names a socket, and any other badge is a front door. So a closed socket's copies reach
-nothing: the badge is in the socket range and no longer in the stack's table. Passing a socket is
-passing its capability.
+`SOCKET_BADGE` set, from a counter that never rewinds, and drops it at `CLOSE`. A request whose
+badge has the bit names a socket, and any other badge is a front door. So a closed socket's copies
+reach nothing: the badge is in the socket range and no longer in the stack's table. Passing a socket
+is passing its capability.
 
 Each socket's capability is minted with `BADGE` from the stack's own endpoint, held a second time at
 `stack_slots::MINT` with `WRITE | GRANT`. It is not minted from the `READ` copy the stack serves on,
@@ -37,10 +37,10 @@ are otherwise dead on a reply. A TCP reply leaves them alone.
 
 A listener and a connection are two authorities. A listener receives connections on one exclusive
 port and carries no frame, since no bytes cross it. A connection speaks with one peer. Claiming a
-port, by `LISTEN` or a fixed `BIND_UDP`, is a claim on a shared namespace, so it is granted and never
-assumed. The stack is spawned with a listen grant and a UDP bind grant packed into one word, and it
-refuses a port outside them with `LISTEN_DENIED`. [the-inbound-half.md](the-inbound-half.md) has
-who grants a port and why.
+port, by `LISTEN` or a fixed `BIND_UDP`, is a claim on a shared namespace, so it is granted and
+never assumed. The stack is spawned with a listen grant and a UDP bind grant packed into one word,
+and it refuses a port outside them with `LISTEN_DENIED`. [the-inbound-half.md](the-inbound-half.md)
+has who grants a port and why.
 
 `LISTEN` has its own small vocabulary for the same reason `CONNECT` has one. A client that cannot
 tell "never granted this port" from "somebody else holds it" cannot report anything useful. The two
@@ -48,10 +48,11 @@ call for opposite responses: ask for authority, or pick another port.
 
 ## Waiting on a NIC with no interrupt
 
-`polled_wait` decides whether `net_stack` may sleep while it waits on a NIC that raises no interrupt:
-the `e1000e`, and radon's `DesignWare` port. A timed wait ends at the first scheduler tick at or after
-its deadline. The tick is 100 Hz, as the kernel publishes it on the current-CPU page
-(`user_mode_runtime::tick_hz`). So the 1 ms poll sleep the polled NICs ask for lasts up to 10 ms.
+`polled_wait` decides whether `net_stack` may sleep while it waits on a NIC that raises no
+interrupt: the `e1000e`, and radon's `DesignWare` port. A timed wait ends at the first scheduler
+tick at or after its deadline. The tick is 100 Hz, as the kernel publishes it on the current-CPU
+page (`user_mode_runtime::tick_hz`). So the 1 ms poll sleep the polled NICs ask for lasts up to 10
+ms.
 
 On a stream, the next segment arrives one round trip after the stack's acknowledgment, and on a LAN
 that is well under a tick. A stack that sleeps once nothing is waiting adds up to a tick to every
@@ -62,9 +63,9 @@ measurements).
 So for one tick after the last frame the stack keeps looking at the ring, yielding the core between
 looks. It sleeps only once a whole tick has passed with nothing. A tick is the bound because it is
 what a sleep costs: looking longer can never deliver a frame sooner than sleeping would. The cost is
-a busy core while a stream flows. Each look yields, so another thread on that core still runs, but an
-idle core does not idle. An interrupt for the NIC, or a timed wait finer than the tick, would remove
-it, and neither exists for these NICs.
+a busy core while a stream flows. Each look yields, so another thread on that core still runs, but
+an idle core does not idle. An interrupt for the NIC, or a timed wait finer than the tick, would
+remove it, and neither exists for these NICs.
 
 ## Ephemeral ports and the boot clock
 
@@ -75,11 +76,11 @@ smoltcp's sequence numbers are random, so a reused 4-tuple's SYNs go unanswered 
 not start on ports an earlier stack used moments ago.
 
 `ephemeral::Ports` walks the private range (RFC 6335). Each allocation takes the later of its cursor
-and a clock that advances `PER_SECOND` ports a second. The clock is the boot counter, shared by every
-stack, so a later stack starts past an earlier one's ports. RFC 6528 applies the same idea to
-sequence numbers, which smoltcp does not offer. `PER_SECOND` is 256, which makes one clock step about
-4 ms and keeps the wrap at 64 s, above the 60 s `TIME_WAIT` of Linux and the BSDs. The capture, and
-the CI failures it explained, are in [the-outbound-gates.md](the-outbound-gates.md).
+and a clock that advances `PER_SECOND` ports a second. The clock is the boot counter, shared by
+every stack, so a later stack starts past an earlier one's ports. RFC 6528 applies the same idea to
+sequence numbers, which smoltcp does not offer. `PER_SECOND` is 256, which makes one clock step
+about 4 ms and keeps the wrap at 64 s, above the 60 s `TIME_WAIT` of Linux and the BSDs. The
+capture, and the CI failures it explained, are in [the-outbound-gates.md](the-outbound-gates.md).
 
 The module's BUGS, at length:
 
@@ -103,8 +104,8 @@ are separate binaries: `socket_test_client`, `std_exerciser` in its own workspac
 test that decides which ports each stack is granted. It is `filesystem_fixture`'s discipline and
 rule 7's reason.
 
-The host's copy is deliberately not here. `xtask`'s prober spells `IN_MSG` and `OUT_MSG` again as its
-own literals, as the pinned [MS-NLMP] vectors beside the credential tests are spelled twice. The
+The host's copy is deliberately not here. `xtask`'s prober spells `IN_MSG` and `OUT_MSG` again as
+its own literals, as the pinned [MS-NLMP] vectors beside the credential tests are spelled twice. The
 gate's claim is that two independently written sides agree, and a shared constant would let one edit
 move both. The port is spelled a third time in `helpers/qemu-runner-*.sh`, where a `hostfwd` names
 the guest side, because a shell script cannot read a Rust crate. A drift in either is loud: the

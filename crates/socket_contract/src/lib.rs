@@ -386,7 +386,7 @@ pub mod ephemeral {
             }
         }
 
-        /// The cursor walks the whole private range and nothing outside it** (RFC 6335's
+        /// The cursor walks the whole private range and nothing outside it (RFC 6335's
         /// 49152 to 65535), in order, and wraps to its bottom. Spelled as numbers, because the
         /// other tests compare ports only with each other and would pass on any range.
         #[test]

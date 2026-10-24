@@ -87,8 +87,8 @@ pub const MALFORMED: u64 = 4;
 pub const FULL: u64 = 5;
 /// The service could not obtain a salt and therefore stored nothing. Provisioning only. Distinct
 /// from [`MALFORMED`], which is the provisioner's bug; serving anyway with a made-up salt is the
-/// silent degradation DECISIONS §42 (a filesystem declares what it offers and must be truthful)
-/// forbids. See notes/credentials/contract.md.
+/// silent degradation §44 (entropy is a capability, and the refusal is loud) forbids. See
+/// notes/credentials/contract.md.
 pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
@@ -236,8 +236,7 @@ pub const fn is_authenticated(r0: u64) -> bool {
 /// The one login the gates share, so several programs agree on an account down to the byte. It is
 /// the account section 4.2.1 of [MS-NLMP] publishes, so a gate asserts against numbers Microsoft
 /// printed. A fixture, not a deployment: a real share's account must never be these (notes/smb.md's
-/// BUGS).
-/// See notes/credentials/contract.md.
+/// BUGS). See notes/credentials/contract.md.
 pub mod fixture {
     /// The resource the SMB gate's share authenticates against: the name its NTLM key is stored
     /// under. A *resource* rather than an account, which is milestone 65's model

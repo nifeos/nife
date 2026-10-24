@@ -1,10 +1,10 @@
 # The current-CPU page
 
 `crates/current_cpu_contract` defines the page through which a thread reads which CPU it runs on.
-[§204 (how userspace asks where a thread runs)](../design/decisions/0204-how-userspace-asks-where-a-thread-runs.md)
-decided the mechanism: observing another thread is a rendezvous selector, and a thread observing
-itself reads a per-thread page shaped like Linux's `rseq(2)`. This note carries the crate's design;
-its doc comments link here.
+§204 (how userspace asks where a thread runs) decided the mechanism: observing another thread is a
+rendezvous selector, and a thread observing itself reads a per-thread page shaped like Linux's
+`rseq(2)` ([the decision](../design/decisions/0204-how-userspace-asks-where-a-thread-runs.md)).
+This note carries the crate's design; its doc comments link here.
 
 ## Why a page, and why one crate
 
