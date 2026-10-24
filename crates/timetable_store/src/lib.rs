@@ -1,27 +1,13 @@
 //! **The durable schedule store's shared names, and the one document `timetable` does not already
 //! own** (milestone 152, DECISIONS §122 and §125).
 //!
-//! §122 (the on-disk, per-user schedule store) decided the schedule itself: one file per identity,
-//! inside that identity's own subtree, in `timetable::parse`'s format. This crate answers what
-//! tells boot-time re-derivation *which* identities have one, as §125 (what tells boot-time
-//! re-derivation which identities have pending work) recorded: a **manifest** at a fixed,
-//! well-known location, listing the identities with pending scheduled work, one name per line.
-//!
-//! # Why a manifest rather than a directory listing
-//!
-//! `READDIR` of the principal tree's root would be enumeration, which §123 (boot-time
-//! re-derivation) refuses the re-deriver, and it would answer a different question: every
-//! provisioned identity gets a subtree whether or not it ever registers a schedule. `OPEN`ing one
-//! file at a name known at compile time ([`MANIFEST_FILE_NAME`]) is a targeted lookup, and what
-//! the manifest's contents name is data, not a directory the reader walked.
-//!
-//! # What this crate is not
-//!
-//! It performs no IO and makes no syscalls. Both sides are `components/src/login.rs`: it writes an
-//! identity's line when a schedule opens at a login and reads the manifest at start-up to
-//! re-derive each session, and the parser and the renderer stay one function here. It does not
-//! touch `timetable::Schedule` or `timetable::parse`, and depends on nothing.
-//!
+//! §122 (the on-disk, per-user schedule store) keeps one schedule file per identity in that
+//! identity's own subtree. Boot-time re-derivation learns which identities have one from a manifest
+//! at a fixed name ([`MANIFEST_FILE_NAME`]), one identity per line, as §125 (what tells boot-time
+//! re-derivation which identities have pending work) recorded; a directory listing would be
+//! enumeration, which §123 (boot-time re-derivation) refuses. The crate does no IO and depends on
+//! nothing: `components/src/login.rs` writes and reads the manifest. See
+//! notes/scheduled-execution/durable-store.md.
 
 //! Name: ratified 2026-09-13 (calef), replacing `schedule_store`. A reader scanning `crates/` asks
 //! *"What kind of schedule? Is this the thread scheduler?"*, and `crates/timetable` already avoids
@@ -154,13 +140,12 @@ fn strip_comment(line: &str) -> &str {
     }
 }
 
-/// **Render a manifest**, one identity name per line: the write-path half of this crate, used by
-/// whoever records that an identity now has a durable session with pending work. `login` edits the
-/// manifest a line at a time instead (`login_contract::with_listed`, the same format), so this is
-/// the whole-document form, host-tested against [`parse_manifest`].
+/// **Render a manifest**, one identity name per line: the whole-document write path, host-tested
+/// against [`parse_manifest`]. `login` edits the manifest a line at a time instead
+/// (`login_contract::with_listed`, the same format).
 ///
-/// A fixed buffer rather than a `String`, because this crate is `no_std` with no `alloc`
-/// (`timetable::write_plan`'s own reasoning, matching it exactly). `None` if `names` will not fit
+/// A fixed buffer, because this crate is `no_std` with no `alloc`, as `timetable::write_plan` is.
+/// `None` if `names` will not fit
 /// [`MAX_IDENTITIES`], any one name is longer than [`MAX_IDENTITY_LEN`], or the rendered document is
 /// wider than `buf`; otherwise `Some(bytes written)`.
 ///
@@ -202,17 +187,13 @@ pub fn render_manifest(names: &[&[u8]], buf: &mut [u8]) -> Option<usize> {
 /// `timetable_tests` and in `login_tests`' start-up test is the same one, matching
 /// `filesystem_fixture`'s own convention.
 pub mod fixture {
-    /// One `at-boot` entry and one `every` entry, matching `timetable::parse`'s own document shape
-    /// (`components/timetable.conf`'s own reference document is the model): enough to prove the format
-    /// round-trips through a real read from the filesystem, not merely through `include_str!`.
+    /// One `at-boot` entry and one `every` entry in `timetable::parse`'s document shape, enough to
+    /// prove the format round-trips through a real read from the filesystem.
     ///
-    /// The commands name the suite's installed fixture program (provisional `scheduled_demo`,
-    /// `login_tests`'s `install_scheduled_program`), because a durable session's timetable resolves
-    /// them in the installed-programs table, where §229 (how a bare name at the prompt reaches an installed
-    /// program) forbids a package from taking a name the image
-    /// carries. `timetable_tests`'s registrar control copies this document's shape with an image
-    /// program's name back in, because an archive-mode timetable plans against `grant_plan`'s
-    /// static manifests and knows only image programs; see its `STORED_SCHEDULE_CONTROL`.
+    /// The commands name the suite's installed fixture program (provisional `scheduled_demo`),
+    /// because a durable session's timetable resolves them among installed programs, and §229 (how
+    /// a bare name at the prompt reaches an installed program) forbids a package from taking a name
+    /// the image carries. See notes/scheduled-execution/durable-store.md.
     pub const DEMO_SCHEDULE_DOC: &str = "at-boot scheduled_demo 3\nevery 30s scheduled_demo 7\n";
 }
 
