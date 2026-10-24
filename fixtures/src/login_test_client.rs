@@ -375,12 +375,14 @@ pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
     }
 
     // `budget` is destroyed before `region`: `mint()` (`components/src/login.rs`) splits `region`
-    // then `budget` off `CONSTRUCTION_UT`, and `crates/regions`' `return_to_parent` reclaims a
-    // child only from the top of its parent's watermark (LIFO, as §16's object revocation does).
-    // Reversed, both `DESTROY`s still succeed and every flag sets, but the pages stay a stranded
-    // hole until `CONSTRUCTION_UT` itself goes, and later tests starve into the anti-oracle failure
-    // `login_contract::DENIED` guards against (a real password answered as wrong); see
-    // `caretaker_teardown_reclaims_a_full_session_worth_of_memory` and `login_contract`'s docs.
+    // then `budget` off `CONSTRUCTION_UT`, so `budget` sits on top. `crates/memory_regions`'
+    // `return_to_parent` reclaims a hole only once nothing above it is held (`coalesced_watermark`,
+    // §16 (object revocation)), and only the plain LIFO un-bump while a sibling is mid-teardown.
+    // Freed first, `region` would be a hole under the live `budget`, not reused while it lives, and
+    // kept past the logout if a sibling is mid-teardown when `budget` returns; later tests then starve into
+    // the anti-oracle failure `login_contract::DENIED` guards against (a real password answered as
+    // wrong). See `caretaker_teardown_reclaims_a_full_session_worth_of_memory` and
+    // `login_contract`'s docs.
     if (behaviour == LOGOUT
         || behaviour == HOLD_TERMINAL
         || behaviour == PRESENT_RUN_UNVOUCHED
@@ -730,18 +732,19 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
 /// **How long [`destroy_with_retry`] waits for a refusal to clear, in seconds of counter time.**
 ///
 /// A watchdog, not a rate: the loop returns the moment the region comes down, so only a failing run
-/// pays it, at most twice (the budget and the region) against the harness's 90 s per-test ceiling.
-/// Measured on 2026-08-27 (an eight-core Mac under TCG, ten logouts per run, 70 waits over seven
-/// full-suite runs), the worst single wait was 12.8 ms on a quiet aarch64 host, 44.3 ms at a
-/// one-minute load average of 13 to 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x
-/// the worst.
+/// pays it, and since the driving test stops at its first bad logout, at most twice (the budget and
+/// the region) against the harness's 90 s per-test ceiling. Measured on 2026-08-27 (an eight-core
+/// Mac under TCG, ten logouts per run, 100 waits over ten full-suite runs), the worst single wait
+/// was 12.8 ms on aarch64 with no induced load (load average 7 to 15), 44.3 ms on aarch64 at 13 to
+/// 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x the worst
+/// (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
 const DESTROY_WAIT_SECS: u64 = 5;
 
 /// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.
 ///
 /// For the caretaker's region (`login_contract::OK` names its one transient refusal) and this
-/// client's budget. Bounded by a clock: the refusal lasts until §16 (object revocation)'s armed
-/// kill lands at a tick (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
+/// client's budget, where nothing else runs, so its first `DESTROY` should succeed. The bound is a
+/// clock because the refusal lasts until §16 (object revocation)'s armed kill lands at a tick.
 ///
 /// # BUGS
 ///

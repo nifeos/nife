@@ -25,6 +25,7 @@
 //! it would be able to park itself in `RECEIVE_CAP` and take the client's requests. It cannot: its
 //! capability carries `WRITE` and not `READ`, and the same object handed out with different rights
 //! is a one-way pipe in whichever direction each holder was trusted with. It reports the refusal.
+//!
 
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `chatty`.
 //! Introduced 2026-07-30 with milestone 23's live replacement, as a fixture rather than a

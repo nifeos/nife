@@ -1,13 +1,13 @@
 //! **The kernel test subject: the two programs the privilege-boundary tests need, and nothing else
 //! wants.**
 //!
-//! A real ELF, built for whichever target is being built and loaded the way the kernel loads any
-//! other program, so the tests that drive it (`kernel::user::tests`) are the same tests on both
-//! ISAs. It is not a role of `hello` (milestone 291 (`fixtures/src/hello.rs` was thirty-one
-//! programs wearing one name): a program does one thing): these two exist only to be killed or to
-//! be counted, and a process that reads a forbidden address on purpose has no business sharing an
-//! image with init. Staying separate also keeps it tiny, which the frame-accounting test needs: it
-//! spawns this program five times and asserts every frame comes back exactly.
+//! A real ELF, built for whichever target is being built and loaded like any other program, so the
+//! tests that drive it (`kernel::user::tests`) are the same on both ISAs. It is not a role of
+//! `hello` (milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one name): a
+//! program does one thing): these two exist only to be killed or counted, and a program that faults
+//! on purpose has no business sharing an image with init. Separate, it stays tiny for the
+//! frame-accounting test, which spawns it five times and asserts every frame comes back.
+//!
 
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `outlaw`.
 //! Introduced 2026-07-31 as the fixture that does what it is not permitted to do, so the kernel's

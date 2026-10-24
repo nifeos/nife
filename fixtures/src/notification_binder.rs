@@ -3,11 +3,11 @@
 //! the real syscall boundary.
 //!
 //! Slots: 0 a memory region, 1 a `ThreadControlBlock` capability to *this* thread (minted by the
-//! kernel test: a running thread holds none to itself), 2 an endpoint to receive on, 3 a report.
+//! kernel test: a running thread holds none to itself), 2 an endpoint to receive on, 3 a report. A
+//! failed `check` traps, indistinguishable from a broken program. What only the other side sees (a
+//! wake that arrived while this thread was blocked, a sender's attempt to forge one) goes to slot 3
+//! as `(w0, w1, tag)`, `tag` 1 for a notification and 0 for a message, for the kernel test.
 //!
-//! A failed `check` traps, indistinguishable from a broken program. What only the other side sees
-//! (a wake that arrived while this thread was blocked, a sender's attempt to forge one) goes to
-//! slot 3 as `(w0, w1, tag)`, `tag` 1 for a notification and 0 for a message, for the kernel test.
 
 //! Name: provisional (milestone 151's lane, 2026-09-26).
 

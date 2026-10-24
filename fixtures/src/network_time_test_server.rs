@@ -15,10 +15,10 @@
 //! kernel because this process holds no clock, so every expectation is an exact number. Four slots:
 //! the report endpoint, `READ` on the socket endpoint, an untyped budget to map the client's frame,
 //! and the socket endpoint again with `WRITE | GRANT`, from which it mints the socket it hands the
-//! client on `OPEN` (§255 (each socket is its own capability)). No entropy and no propose endpoint,
-//! so the endowment alone shows it cannot reach the clock. It reports once, after the first
-//! request, and that `send` blocks until the test drains it; one per request would deadlock once
-//! nobody drained.
+//! client on `OPEN` (§255 (each socket is its own capability)). With no entropy or propose
+//! endpoint, it visibly cannot reach the clock. It reports once, after the first request, and that
+//! `send` blocks until the test drains it; one per request would deadlock once nobody drained.
+//!
 
 //! Name: ratified 2026-09-14 (calef, milestone 290), his own words, lifted out of the `ntp` binary's
 //! `ROLE_SERVER`. **The directory is half the name**: milestone 175 drew the line between
