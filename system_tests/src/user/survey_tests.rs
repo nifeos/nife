@@ -118,17 +118,13 @@ pub(super) fn drain(parking: sched::RendezvousId, n: usize) {
     }
 }
 
-/// **Collect every member of a domain through the rendezvous that showed it.**
+/// Collect every member of a domain through the rendezvous that showed it.
 ///
-/// A test that keeps children alive in order to survey them has to end them deliberately: a region
-/// holding a live thread refuses to be reclaimed, and the refusal is destructive on the way past
-/// (§16's amendment arms the kill), so leaving it to `tidy` would hand the next test an arena in a
-/// state it did not ask for.
-///
-/// It doubles as an assertion worth having on its own: **every tid a survey reported is a tid the
-/// same rendezvous can reap**, which is `capability::survey_includes`'s scope property observed from
-/// the control side rather than the view side. The wait is the clock's, not a yield count, because
-/// how long a released child takes to reach its exit is a property of the host (notes/hvf-leg.md).
+/// A region holding a live thread refuses reclamation, and the refusal arms a kill on the way past
+/// (§16's amendment), so a test that keeps children alive ends them itself rather than leaving them
+/// to `tidy`. It also asserts every tid a survey reported is reapable through the same rendezvous,
+/// `capability::survey_includes`'s scope property from the control side. The wait is the clock's,
+/// not a yield count: a released child's time to exit is the host's (notes/hvf-leg.md).
 pub(super) fn collect_all(cap: u64, tids: &[u64]) {
     for &tid in tids {
         assert!(
@@ -167,17 +163,12 @@ pub(super) fn child_in(
     build_child_in(region, stub, report, Some(fault_ep))
 }
 
-/// **The headline: a domain is exactly the rendezvous's own children, and nothing else on the
-/// machine.**
+/// A domain is exactly the rendezvous's own children, and nothing else on the machine.
 ///
-/// Two children under one supervision rendezvous, one under another, and the whole rest of the
-/// system (this thread, the idle threads, every kernel thread and every other test's leftovers)
-/// unsupervised. The survey of the first rendezvous reports its two and stops.
-///
-/// This is the confinement claim, and it is the one Linux's `/proc` cannot make: there, a listing
-/// is a fact about the machine and every process gets it for free. Here it is a fact about a
-/// capability, so the answer changes with which rendezvous you hold and there is nothing to hold that
-/// would widen it.
+/// Two children under one supervision rendezvous, one under another, and the rest of the system
+/// (this thread, the idle and kernel threads, other tests' leftovers) unsupervised. The survey of
+/// the first reports its two and stops. Unlike Linux's `/proc`, a listing here is a fact about a
+/// capability, not the machine, so it changes with the rendezvous held and nothing widens it.
 #[test_case]
 fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
     let (budget, rendezvous_region) = arena();
@@ -252,21 +243,14 @@ fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
     );
 }
 
-/// **The negative control, and it is the point of the whole method** (milestone 126, the block's
-/// own requirement): a viewer that was not granted the domain is **refused loudly**, not shown an
-/// empty list.
+/// The negative control (milestone 126, the block's own requirement): a viewer not granted the
+/// domain is refused loudly, not shown an empty list.
 ///
-/// Three answers, all distinct, all reached through the real dispatcher:
-///
-/// - a **send-only** holder, a peer that may report to this supervisor, gets `NotPermitted`;
-/// - a holder of **nothing at all** gets `NoSuchSlot`, which is what no-ambient-authority feels
-///   like: there is nothing there to name;
-/// - a `READ` holder of a domain that is genuinely **empty** gets `DONE`, an answer rather than a
-///   refusal, because its authority was never in question.
-///
-/// A monitor that reported nothing because it could not look would read exactly like a quiet
-/// machine, which is the worst failure this tool has available. `filesystem_contract` chose `EPERM` over an
-/// empty listing for the same reason.
+/// Through the real dispatcher: a send-only holder gets `NotPermitted`; a holder of nothing gets
+/// `NoSuchSlot`, there being nothing to name; a `READ` holder of a genuinely empty domain gets
+/// `DONE`, an answer, since its authority was never in question. A monitor that reported nothing
+/// because it could not look would read like a quiet machine; `filesystem_contract` chose `EPERM`
+/// over an empty listing for the same reason.
 #[test_case]
 fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
     let (budget, rendezvous_region) = arena();
@@ -328,17 +312,9 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
         Some(child)
     );
 
-    // **A domain names its members and does not act on them** (calef, 2026-08-17), and this pair
-    // is what makes that a property rather than a promise about `ps`'s source code. The two rights
-    // are separable in both directions:
-    //
-    // - a viewer holding `ENUMERATE` alone can look and **cannot reap**, so the widest thing a
-    //   monitor can be handed still confers no authority over what it lists;
-    // - a supervisor's plain `READ` handle can reap and **cannot look**, so the view is a grant
-    //   somebody made rather than a power that came along with receiving deaths.
-    //
-    // Before the right existed both operations rode on `READ`, and every `ps` in this system could
-    // have collected the children it listed.
+    // A domain names its members and does not act on them (calef, 2026-08-17), and the two rights
+    // separate both ways: a viewer holding `ENUMERATE` alone can look and cannot reap, and a
+    // supervisor's plain `READ` handle can reap and cannot look, so a view is a grant somebody made.
     let viewer = hold_view(ep);
     assert_eq!(
         reap(viewer, child),
@@ -380,13 +356,9 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     let cap = hold_supervisor(ep);
     // The corpse parks on its supervision rendezvous's sender queue with its death message when
     // nobody is in RECEIVE, which is how a survey can see it before anyone has collected the news.
-    // **The failure message carries the evidence, because the machine that produced it is not
-    // this one** (milestone 321). This assertion failed on xenon on 2026-09-17 with four real
-    // cores, and the transcript could not say which of three things had happened: the count is
-    // `== 1`, not `>= 1`, so two senders and none read identically; and even a count of zero
-    // leaves "never parked" and "parked, then removed" indistinguishable. The count settles the
-    // first question and `thread_death_disposition` settles the second, so the next failure on a
-    // bench is diagnosable from the log instead of needing the bench back.
+    // The failure message carries the evidence, because a failure may come from a bench that is
+    // not this machine (milestone 321): the count tells two senders from none, and
+    // `thread_death_disposition` tells "never parked" from "parked, then removed".
     assert!(
         super::wait_for(|| sched::rendezvous_waiting_senders(ep) == 1),
         "the child never died onto its supervision rendezvous: {} senders parked on it, \
@@ -433,19 +405,13 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     tidy(budget, rendezvous_region, &[cap]);
 }
 
-/// **A corpse still leaving its core is collected, not refused** (milestone 321).
+/// A corpse still leaving its core is collected, not refused (milestone 321).
 ///
-/// `depart` marks a supervised thread `Dead` and delivers its death message under `IPC_TABLES`,
-/// releases the lock, and only then switches away; `handshake.on_cpu` stays set until that core's
-/// next thread runs `finish_switch`. A supervisor on another core can receive the message and
-/// `REAP` inside that window, and `reclaim_region` rightly refuses to free a stack a core still
-/// stands on. What `REAP` must not do is report that as `NotPermitted`: its ABI names one cause for
-/// that error (a child region of the corpse's), and `terminal_supervisor` and
-/// `sub_server_supervisor` fail on the first one, as they should for the cause the ABI names.
-///
-/// The window is a few hundred instructions on silicon, so this holds it open on purpose: the
-/// corpse is marked standing, a helper on any core clears the mark after a delay, and the reap must
-/// return `Ok` having waited for it.
+/// `depart` delivers a supervised thread's death under `IPC_TABLES`, then switches away, and
+/// `handshake.on_cpu` stays set until that core's next `finish_switch`. A `REAP` in that window
+/// meets `reclaim_region` refusing a stack a core stands on, and must wait rather than answer
+/// `NotPermitted`, whose one ABI cause `terminal_supervisor` and `sub_server_supervisor` fail on.
+/// The test holds the window open with a standing mark a helper clears after a delay.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
 ///
@@ -551,24 +517,14 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
     tidy(budget, rendezvous_region, &[cap, sup]);
 }
 
-/// **The cursor and the tid are machine-wide slot indices, so a viewer can count threads it cannot
-/// see.** The 2026-08-17 security audit's finding, landed as the test that states the limit rather
-/// than as a claim in a report nobody runs.
+/// The cursor and the tid are machine-wide slot indices, so a viewer can count threads it cannot
+/// see (the 2026-08-17 security audit's finding, stated as a test).
 ///
-/// This does not contradict the confinement claim above, and the difference is exactly what makes
-/// it worth a test of its own. A viewer still cannot **name** a thread outside its domain: no
-/// stranger's tid is ever reported, `REAP` still refuses one, and
-/// `a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted` proves both. What leaks is
-/// arithmetic on the numbers the survey hands back about the viewer's **own** members:
-///
-/// - `next_cursor` is `generational_table::Table` slot + 1, and that table is the whole machine's;
-/// - `tid` is the generational name over the same slot, so its low half **is** that index and its
-///   high half is the number of times that slot has been recycled machine-wide.
-///
-/// So a viewer with two members reads two cursors, and the gap between them counts the threads
-/// created in between that it is not shown. `caps ps` used to print "not learn that a process
-/// outside this domain exists"; it now says what this test asserts instead. See the `BUGS` section
-/// of notes/process-view.md for the disposition and why the fix is a milestone rather than a patch.
+/// A viewer still cannot name a thread outside its domain (see
+/// `a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted`). But `next_cursor` is the
+/// machine-wide `generational_table::Table` slot + 1, and a tid's low half is that slot and its high
+/// half the slot's machine-wide recycle count, so the gap between two members' cursors counts the
+/// threads created between them. notes/process-view.md's `BUGS` has the disposition.
 #[test_case]
 fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     let (budget, rendezvous_region) = arena();
@@ -653,26 +609,15 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     tidy(budget, rendezvous_region, &[cap, sup_mine, sup_theirs]);
 }
 
-/// **`pgrep`: the filter over the same domain, and the fourth answer it adds** (milestone 126).
+/// `pgrep`: the filter over the same domain, and the fourth answer it adds (milestone 126).
 ///
-/// This is the only place in the tree that can drive the filter with a real selector over a real
-/// kernel domain. At the prompt the selector arrives in a register and nothing carries bytes from a
-/// command line to a program, so a shell-spawned `pgrep` always takes the default and names every
-/// member (`crates/pgrep`'s `BUGS`). Here a selector can be handed over directly.
-///
-/// Four answers, all distinct, all over one rendezvous the kernel really built:
-///
-/// - **members matched**: `pgrep dead` names the corpse and neither live child;
-/// - **nothing matched**: `pgrep ready` over a domain of three says so, and it is *not* the empty
-///   answer and *not* a refusal. Upstream `pgrep` cannot tell these apart, because there all three
-///   are "print nothing, exit 1", so a monitor cannot distinguish an idle machine from a closed
-///   door;
-/// - **the domain is empty**: `crates/ps`'s sentence, reused rather than restated;
-/// - **refused**: a send-only holder, loudly, keeping milestone 108's shape.
-///
-/// And the claim the whole pair exists to make, asserted rather than promised: **the tid `pgrep`
-/// printed cannot be reaped through the capability that printed it.** That is why there is no
-/// `pkill` here. A domain names its members and does not act on them (calef, 2026-08-17).
+/// The only place a real selector reaches the filter over a real domain: at the prompt the selector
+/// arrives in a register, so a shell-spawned `pgrep` names every member (`crates/pgrep`'s `BUGS`).
+/// Four distinct answers: members matched (`pgrep dead` names the corpse alone), nothing matched
+/// (not the empty answer, not a refusal, which upstream's exit 1 conflates), the domain is empty
+/// (`crates/ps`'s sentence), and refused (a send-only holder, milestone 108's shape). The tid
+/// `pgrep` printed cannot be reaped through the capability that printed it, which is why there is
+/// no `pkill`. See notes/process-view/pgrep.md.
 #[test_case]
 fn a_filter_names_members_and_tells_its_four_answers_apart() {
     let (budget, rendezvous_region) = arena();

@@ -1,19 +1,12 @@
-//! **The `SURVEY` selector, and the records it answers: a thread's placement, and its CPU time.**
+//! The `SURVEY` selector, and the records it answers: a thread's placement, and its CPU time.
 //!
-//! `survey_tests` proves the *walk*: what a domain contains and who may look at it. This file
-//! proves the *selector*, which is the other axis calef's 2026-09-21 ruling added: which per-thread
-//! fact a walk asks for. The two are deliberately separate files rather than one, because the
-//! properties are independent and the failures read completely differently. A broken walk reports
-//! the wrong threads; a broken selector reports the wrong fact about the right threads, which is
-//! the more dangerous of the two, because every tid still looks correct.
-//!
-//! Its own file also keeps this out of `tests.rs`, which is the tree's merge hotspot.
-//!
-//! Arch-neutral, and that is a claim rather than a convenience DECISIONS §19 (architectural parity is a tenet). Placement is
-//! `sched`'s: `pick_spawn_target` samples two online cpus' runnable counters and `place_on` puts
-//! the thread on the winner, and not one line of either is under `arch/`. So all three
-//! architectures run literally these assertions, and a divergence would mean something is wrong in
-//! the scheduler rather than in an ISA.
+//! `survey_tests` proves the walk (what a domain contains, who may look); this proves the selector
+//! (which per-thread fact a walk asks for), the axis calef's 2026-09-21 ruling added. They are
+//! separate because a broken selector reports the wrong fact about the right threads, which reads
+//! nothing like a broken walk and is the more dangerous, since every tid still looks correct.
+//! Placement is `sched`'s (`pick_spawn_target`, `place_on`), with no line under `arch/`, so all
+//! three ISAs run these assertions literally (DECISIONS §19 (architectural parity is a tenet)). See
+//! notes/process-view/survey-design.md.
 
 use abi::Error;
 use abi::survey::record;
@@ -141,18 +134,13 @@ impl Domain {
     }
 }
 
-/// **Every thread a survey reports was placed on a cpu that is actually online.**
+/// Every thread a survey reports was placed on a cpu that is actually online.
 ///
-/// The headline, and the assertion is the online *mask* rather than a count, deliberately. The bug
-/// class this guards is the one `cpu_set` exists to kill: the online set is not `0..n`, it is
-/// `{1, 2, 3}` on the VisionFive 2 because slot 0 is an M-mode monitor core with no MMU, and
-/// treating the count as an index put `init` into a parked core's inbox for three boots on first
-/// silicon. A test written as `id < online_count()` would pass on QEMU `virt`, where the set
-/// happens to be contiguous from zero, and would go on passing while reporting a parked core. So
-/// this asks the mask whether the bit is set, which is the same question on both machines.
-///
-/// It also pins the sentinel from the other side: a started thread never reports
-/// [`record::NO_CPU`], so a reader is not quietly tallying "no answer" as a core.
+/// The assertion asks the online mask, not a count. The online set is not `0..n`: it is
+/// `{1, 2, 3}` on the VisionFive 2, whose slot 0 is an M-mode monitor core with no MMU, so
+/// `id < online_count()` would pass on QEMU `virt` while reporting a parked core. It also pins the
+/// sentinel: a started thread never reports [`record::NO_CPU`], so a reader is not tallying "no
+/// answer" as a core. See notes/process-view/survey-design.md, "The cpu id is a name, not an index".
 #[test_case]
 fn every_surveyed_thread_reports_a_cpu_that_is_online() {
     let domain = Domain::build();
@@ -183,18 +171,13 @@ fn every_surveyed_thread_reports_a_cpu_that_is_online() {
     domain.tidy(&[viewer]);
 }
 
-/// **A placement census needs no online mask**, which is the claim that decides whether this record
-/// is safe to hand a userspace supervisor on its own.
+/// A placement census needs no online mask, which decides whether this record is safe to hand a
+/// userspace supervisor on its own.
 ///
-/// A reader tempted to write `for cpu in 0..count` has the VisionFive 2 bug. A reader that keys a
-/// tally by the id the record returns cannot have it, because the ids it observes are by
-/// construction a subset of the online set. This asserts exactly that subset relation, which is the
-/// property that makes "you do not need the mask" true rather than merely convenient.
-///
-/// The gap it does *not* close is stated rather than hidden: a census cannot tell an online core
-/// with no threads on it from a core that is not online, because it never saw either. That is a
-/// question about the machine and not about a domain, and nothing in this tree answers it for
-/// userspace today.
+/// A reader keying a tally by the ids the record returns cannot have the VisionFive 2 bug, because
+/// those ids are by construction a subset of the online set; this asserts that subset relation. A
+/// census still cannot tell an online core with no threads from a core that is not online, and
+/// nothing in this tree answers that for userspace today.
 #[test_case]
 fn the_cpus_a_census_observes_are_a_subset_of_the_online_set() {
     let domain = Domain::build();
@@ -281,16 +264,12 @@ fn two_records_walk_the_same_domain_in_the_same_order() {
     domain.tidy(&[viewer]);
 }
 
-/// **An unknown record is refused, and refused loudly.**
+/// An unknown record is refused, and refused loudly.
 ///
-/// A selector this kernel does not answer gets `BadMethod`, the same refusal an unknown method word
-/// gets, because the selector is part of the method's name. The alternative that had to be refused
-/// is a silent default: a kernel that answered record 7 with the state record would hand a program
-/// built against a later kernel a well-formed number meaning something else entirely, and this
-/// tree's ruling is that a plausible wrong answer is worse than an error.
-///
-/// Two unknown values, and they are the two ways an unknown one actually arrives: one past the last
-/// record this kernel knows (a reader built against a later kernel), and a wild value (a register
+/// A selector this kernel does not answer gets `BadMethod`, as an unknown method word does, since
+/// the selector is part of the method's name. A silent default would hand a program built against
+/// a later kernel a well-formed number meaning something else. Two unknown values, the two ways one
+/// arrives: one past the last known record (a later kernel's reader), and a wild value (a register
 /// that held something else).
 #[test_case]
 fn an_unknown_record_is_refused_rather_than_defaulted() {
