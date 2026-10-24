@@ -1,28 +1,19 @@
-//! **The second-mount repro, on the host** (fix/redoxfs-second-mount).
+//! The second-mount repro, on the host (fix/redoxfs-second-mount).
 //!
-//! A second mount of a *used* RedoxFS image fails its write on device. The open question is why, and
-//! the recorded hypothesis is accumulated mount state driving the FS server past its 8 MiB heap cap.
-//! This binary settles it without an emulator: it runs the real engine under the **same allocator the
-//! FS server uses** (`talc`, the algorithm behind `memory_region_heap::MemoryRegionHeap`), grown incrementally
-//! and capped exactly the way `redoxfs_server.rs` caps it, and it does the two mounts in one process:
-//!
-//! 1. create the fixture image, then mount it and write (this is what makes the image *used*),
-//! 2. drop the mount the way a dying process does (no unmount), then **mount again and write**.
-//!
-//! The disk image lives in a `static`, off the heap, because on device the image is on a disk reached
-//! over blk IPC and never occupies the server's heap. Keeping it out is what makes the cap mean the
-//! same thing here as there.
-//!
-//! The cap is the experiment's dial:
+//! Runs the real engine under the same allocator the FS server uses (`talc`, the algorithm behind
+//! `memory_region_heap::MemoryRegionHeap`), grown incrementally and capped as `redoxfs_server.rs`
+//! caps it, and mounts a used image again and again in one process: create the fixture, mount and
+//! write, drop the mount without unmounting, then mount again and write. The image lives in a
+//! `static`, off the heap, as a disk reached over blk IPC is. A write that fails at the device's
+//! 8 MiB cap and succeeds at 64 is heap exhaustion; notes/fs-server/write-path-history.md records
+//! what it measured.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! cargo run --manifest-path redoxfs_server/Cargo.toml --bin second_mount            # 8 MiB, the device cap
 //! NIFE_HEAP_MIB=64 cargo run --manifest-path redoxfs_server/Cargo.toml --bin second_mount
 //! ```
-//!
-//! If mount 2's write fails at 8 MiB and succeeds at 64, the failure is heap exhaustion and the
-//! hypothesis holds. If it fails at both, or succeeds at both, the hypothesis is dead and the note
-//! must say so instead of carrying a plausible-sounding guess.
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::UnsafeCell;
@@ -37,8 +28,7 @@ use talc::source::Manual;
 
 /// The pool the capped allocator draws from. Large enough to serve any cap we dial in; the *cap*,
 /// not the pool, is what limits the heap. Asked of the host's own allocator on the first growth and
-/// never returned, so it costs nothing in the binary and only touched pages cost memory. It was a
-/// `static mut` until milestone 891 (a mutable static becomes an atomic, a lock or a recorded cell).
+/// never returned, so it costs nothing in the binary and only touched pages cost memory.
 const POOL_SIZE: usize = 512 * 1024 * 1024;
 
 const PAGE: usize = 4096;

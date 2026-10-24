@@ -1,19 +1,12 @@
 //! The scanout check (milestone 29): prove the pixels reached the DEVICE, not only our buffer.
 //!
-//! The in-guest test proves the framebuffer byte for byte, and cannot do better: the suite runs
-//! `-display none` and nothing inside the guest can read QEMU's host-side surface back, so a wrong
-//! pixel format or scanout rectangle would pass it and show garbage on a real screen.
-//!
-//! QEMU's monitor closes that gap, and it works headlessly: `screendump FILE` writes a PPM of the
-//! scanout even with no display backend. So the runners take a monitor socket (`NIFE_GPU_MON`), and
-//! this drives it **while the ordinary test run is happening**, rather than paying for a second boot:
-//! the suite is minutes long per ISA and the pattern stays on the scanout from the display test until
-//! QEMU exits, so there is no need to synchronize with the guest at all. Poll, dump, compare; the
-//! first match ends the polling.
-//!
-//! Fail-safe by construction. If the pattern never reaches the scanout, or the display test stops
-//! running, or the confinement test's device reset moves after it and wipes the surface, no dump
-//! matches and this reports it. Nothing here can make a broken scanout look fine.
+//! The in-guest test proves the framebuffer byte for byte, but the suite runs `-display none` and
+//! nothing inside the guest can read QEMU's host-side surface, so a wrong pixel format or scanout
+//! rectangle would pass it. QEMU's monitor `screendump FILE` writes a PPM of the scanout even
+//! headless, so the runners take a monitor socket (`NIFE_GPU_MON`) and this polls, dumps and
+//! compares **while the ordinary test run happens**, with no second boot and no synchronization
+//! with the guest. Fail-safe: a pattern that never reaches the scanout, a display test that stops
+//! running, or a device reset that wipes the surface leaves no dump matching, and that is reported.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -32,9 +25,10 @@ fn gpu_shot_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-scanout-{arch}.ppm"))
 }
 
-/// Where the composed screen's matching dump is kept (milestone 33). A separate file because the
-/// composed screen is transient: the poll loop overwrites [`gpu_shot_path`] on every dump, so the one
-/// that matched has to be copied aside or there is nothing left to look at after a run.
+/// Where the composed screen's matching dump is kept (milestone 33 (a compositor)). A separate file
+/// because the composed screen is transient: the poll loop overwrites [`gpu_shot_path`] on every
+/// dump, so the one that matched has to be copied aside or there is nothing left to look at after a
+/// run.
 fn gpu_compose_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-compose-{arch}.ppm"))
 }
@@ -45,7 +39,7 @@ fn gpu_text_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/gpu-text-{arch}.ppm"))
 }
 
-/// Does this PPM hold the pattern rung one's client painted (milestone 29)?
+/// Does this PPM hold the pattern rung one's client painted (milestone 29 (a display terminal))?
 ///
 /// Compares against `graphics_contract::pixel`, the same definition the client painted from and the kernel
 /// test digested against, so the host cannot disagree with the guest about what the pattern is.
@@ -67,27 +61,20 @@ fn scanout_holds_the_composed_screen(ppm: &[u8]) -> Result<(), String> {
     })
 }
 
-/// Does this PPM hold the **text** the display terminal drew (milestone 29's remaining increment)?
+/// Does `ppm` hold the **text** the display terminal drew (milestone 29's remaining increment)?
+/// `Ok` if every pixel matches, else why not.
 ///
-/// The definition is the VT engine itself, run here on the host over `video_terminal::script`, the same script
-/// the kernel sent the terminal and the same engine the terminal drew from. So this is not "is there
-/// ink on the screen": it is every pixel of every glyph, in the right cell, in the right colour,
-/// with the cursor where the engine says it is.
-///
-/// **This is the check a guest-side digest cannot replace**, and for text it matters more than for a
-/// pattern: a wrong pixel format turns a test pattern into an odd-looking test pattern, and it turns
-/// text into text nobody can read. Its negative control is
+/// The definition is the VT engine itself, run on the host over `video_terminal::script`, the
+/// script and engine the kernel's terminal drew from: every pixel of every glyph, in the right cell
+/// and colour, with the cursor where the engine says. **A guest-side digest cannot replace this**:
+/// a wrong pixel format turns text into text nobody can read. Its negative control is
 /// `tests::the_scanout_check_rejects_text_that_is_one_letter_wrong`.
 fn scanout_holds_the_terminals_text(ppm: &[u8]) -> Result<(), String> {
-    // `Vt::new` then the script fed into it rather than the old `-> Vt` shape: a `Vt` is
-    // hundreds of KiB since milestone 142's grid growth, and while this host binary's stack has
-    // room either way, the crate's own signature changed for its kernel-side callers and this is
-    // the one shape that works for both (see `Vt`'s and `script::full_screen`'s own doc comments).
-    //
-    // **The scrolled script, since the paint path (2026-09-30)**: the kernel-side test scrolls
-    // the terminal before holding the picture up, and this check grades the same end state, so
-    // what the host verifies includes the scroll path the terminal now takes (pixels moved
-    // rather than re-rendered), not just a static page.
+    // `Vt::new` then the script fed into it: a `Vt` is hundreds of KiB, and this is the one shape
+    // that works for the crate's kernel-side callers too (see `Vt`'s and `script::full_screen`'s
+    // doc comments). The scrolled script, because the kernel-side test scrolls the terminal before
+    // holding the picture up, so the host grades the scroll path (pixels moved, not re-rendered) as
+    // well.
     let mut expect =
         video_terminal::Vt::new(video_terminal::script::COLS, video_terminal::script::ROWS);
     video_terminal::script::scrolled_full_screen(&mut expect, None);
@@ -170,17 +157,14 @@ fn scanout_matches(ppm: &[u8], want_pixel: impl Fn(u32, u32) -> u32) -> Result<(
     Ok(())
 }
 
-/// **Press a key on the guest's keyboard**, over the same monitor the scanout check uses.
+/// **Press `key` on the guest's keyboard** over the monitor socket `sock`, the one the scanout
+/// check uses; a connection that fails is ignored.
 ///
-/// Nothing inside the guest can press a key, which is the point of testing a real input device, so
-/// this is the one place the host is an *actor* rather than an observer. `sendkey` sends a press and
-/// a release, which is also what makes the driver's handling of the event's value field checkable:
-/// counting the release would double every character.
-///
-/// Sent on every poll, from the start of the run. That needs no synchronization with the guest
-/// because QEMU **drops key events until a driver sets `DRIVER_OK`**, so keys pressed before the
-/// keyboard driver exists go nowhere, and once it exists the next one lands. `video_terminal::script::HOST_KEY`
-/// is the one definition of which key, shared with the kernel test that asserts the byte.
+/// Nothing inside the guest can press a key, so here the host is an *actor*. `sendkey` sends a
+/// press and a release, which makes the driver's handling of the value field checkable: counting
+/// the release would double every character. It is sent every poll from the start, because QEMU
+/// **drops key events until a driver sets `DRIVER_OK`**. `video_terminal::script::HOST_KEY` is the
+/// one definition of which key, shared with the kernel test that asserts the byte.
 pub(crate) fn sendkey(sock: &str, key: &str) {
     if let Ok(mut monitor) = Monitor::connect(sock) {
         let _ = monitor.sendkey(key);
@@ -196,26 +180,12 @@ pub(crate) fn screendump(sock: &str, out: &Path) -> bool {
 
 /// **One connection to QEMU's human monitor, which waits for each command's answer.**
 ///
-/// # Why it reads the reply (2026-10-12, lane/scanout-referee-flake)
-///
-/// Until this existed, `sendkey` and `screendump` each opened a connection, wrote a line and hung
-/// up without reading anything, and `screendump` then slept 150 ms and hoped the file was there.
-/// Two things were wrong with that, and both were measured, not inferred:
-///
-/// - **QEMU's monitor socket has a listen backlog of one, and serves one client at a time.** A
-///   connection made while the previous one has not yet been accepted is refused. The referee
-///   pressed a key and then asked for a dump on two connections a few microseconds apart, so the
-///   dump's connection was usually refused: 9 of 10 times against an idle QEMU, and a refusal
-///   meant no dump that poll. A picture held for three seconds could pass through a run of
-///   refused polls unseen, and a busy host makes QEMU slower to accept, so the miss grew with load.
-/// - **A fixed sleep is a guess about how long QEMU takes.** On a loaded host the read could land
-///   before the write and grade the previous poll's file.
-///
-/// QEMU prints its `(qemu) ` prompt only after a command has finished, `screendump` included (the
-/// file is complete and closed by then: 50 of 50 dumps measured whole the moment the prompt came
-/// back). So waiting for the prompt makes each command synchronous, and a client that does that
-/// never has a connection waiting in the backlog. notes/framebuffer-contract/scanout-referee.md
-/// has the runs.
+/// QEMU's monitor socket serves one client with a listen backlog of one, so a second connection
+/// made before the first is accepted can be refused (9 of 10 times against an idle QEMU, and more
+/// under load). QEMU prints its `(qemu) ` prompt only after a command finishes, `screendump`
+/// included (50 of 50 dumps whole when the prompt came back), so waiting for it makes each command
+/// synchronous and leaves nothing waiting in the backlog.
+/// notes/framebuffer-contract/scanout-referee.md has the runs.
 ///
 /// Name: provisional, minted 2026-10-12 by lane/scanout-referee-flake.
 pub(crate) struct Monitor {
@@ -300,39 +270,14 @@ fn monitor_output(reply: &[u8]) -> String {
 }
 
 /// **The host's load average across one emulated leg**, so a red timing assertion says whether the
-/// machine was busy (milestone 117's third stranger run, 2026-08-18).
-///
-/// # Why the harness and not the guest
-///
-/// The whole family of assertions in notes/load-sensitive-assertions.md has one signature: a claim
-/// whose truth depends on the host, written from inside a guest that cannot see the host. The guest
-/// can measure how late it was; it cannot know whether eleven other QEMUs were on the same eight
-/// cores. **This process can**, and it is the only participant that can, which is why the number is
-/// printed here rather than woven into a panic message.
-///
-/// The run that asked for it: `script/test` went red in 2 of 13 aarch64 legs while other lanes had
-/// this laptop at a one-minute load average of 45 to 63, and nothing in the transcript said so, so
-/// an hour went into a defect that was not there. One line at the failure would have decided it.
-///
-/// # What it does and does not claim
-///
-/// It **suggests**, and it says so in its own output. A loaded host does not make a failure
-/// spurious; a quiet host does not make it real. What it removes is the reader having to guess,
-/// and the peak matters as much as the number at the end: a suite runs for minutes and the
-/// one-minute average decays, so a burst of contention halfway through is invisible by the time
-/// the leg fails.
-///
-/// min/mean/peak is `script/repeat-under-load`'s vocabulary, deliberately: the acceptance harness
-/// already reports contention in those three numbers, and a reader who has seen one table should
-/// recognise this line without learning a second shape.
+/// machine was busy (milestone 117 (the stranger test)). The guest knows how late it was, not who
+/// shared its cores; this process does. It **suggests**, and says so, with min/mean/peak, since the
+/// one-minute average decays over a leg. See notes/load-sensitive-assertions/host-load-line.md.
 ///
 /// # BUGS
-///
-/// Sampled only while a leg is *running*. A host that was quiet during the leg and thrashing during
-/// the build before it produces an honest, unhelpful line. The subprocess is one `uptime` every
-/// five seconds, which is free next to QEMU, but it is a subprocess: on a host where `uptime` is
-/// missing or prints an unfamiliar shape, every field stays `None` and the report says "unavailable"
-/// rather than guessing.
+/// - Sampled only while a leg runs, so contention during the build before it is not seen.
+/// - It is one `uptime` every five seconds; where that is missing or prints an unfamiliar shape,
+///   the report says "unavailable" rather than guessing.
 pub(crate) struct HostLoad {
     min: f64,
     max: f64,
@@ -357,9 +302,7 @@ impl HostLoad {
             samples: 0,
             // Back-dated so the first `sample()` call fires rather than waiting out the interval.
             // `checked_sub` rather than `-`: `Instant` counts from boot on both our platforms, and
-            // subtracting past zero is a panic. A machine that booted four seconds ago is a real
-            // CI shape, and a harness that panicked there would be a mystery worth more than the
-            // one sample it costs to fall back to waiting the interval out.
+            // subtracting past zero panics on a machine that booted seconds ago, a real CI shape.
             last: std::time::Instant::now()
                 .checked_sub(Self::EVERY)
                 .unwrap_or_else(std::time::Instant::now),
@@ -457,23 +400,16 @@ fn parse_load_average(uptime_output: &str) -> Option<f64> {
     None
 }
 
-/// **Run the kernel test suite for `arch` and prove BOTH scanouts while it runs.** `test_args` is the
-/// cargo invocation the caller would otherwise have handed to [`crate::host::run`].
+/// **Run the kernel test suite for `arch` (`test_args`, the cargo invocation) and prove every
+/// scanout picture while it runs.** Returns whether the suite and, unless `--test` filtered it,
+/// every host-side check passed.
 ///
-/// **Three** pictures reach the device's scanout over one boot, in this order, because that is the
-/// order the suite runs them in (tests sort by name, so `compositor_tests` comes before
-/// `display_tests`, and within the latter `a_backing...` < `a_bitmap...` < `a_confined...`):
-///
-/// 1. rung two's **composed screen** (milestone 33): three clients' surfaces, composited by `compositor`.
-///    The compositor test holds it up for a few seconds precisely so this poll cannot miss it;
-/// 2. the display terminal's **text** (milestone 29's remaining increment): real glyphs from the
-///    `glyph_atlas` tables, laid out by the `video_terminal` engine. Held up the same way, for the same reason;
-/// 3. rung one's **test pattern** (milestone 29), which then stays on the scanout until QEMU exits.
-///
-/// All three must be seen or the run fails, and the order is part of the check: this looks for each
-/// picture until it finds it and only then starts looking for the next. So a reordering of the suite,
-/// or a component that never got its picture to the device, fails loudly instead of being waved
-/// through. The child inherits stdio, so the suite's output streams exactly as before.
+/// Three pictures, in the order the suite runs them (tests sort by name, so `compositor_tests`
+/// precede `display_tests`, and there `a_backing...` < `a_bitmap...` < `a_confined...`): rung two's
+/// composed screen (milestone 33) and the display terminal's text (milestone 29's remaining
+/// increment), each held a few seconds so the poll cannot miss it, then rung one's test pattern
+/// (milestone 29), which stays until QEMU exits. Each is looked for only once the one before is
+/// found, so a reordered suite or missing picture fails loudly.
 pub(crate) fn cargo_test_with_scanout_check(arch: &str, test_args: &[&str]) -> bool {
     scanout_check(arch, test_args, true)
 }
@@ -509,11 +445,8 @@ fn scanout_check(arch: &str, test_args: &[&str], inbound_wanted: bool) -> bool {
             }
         };
 
-    // **The suite's verdict is collected, not returned early.** An early return here skipped every
-    // prober's report exactly when a guest-side assertion had failed, which is the run where their
-    // findings matter most: milestone 55's responder lane spent two five-minute suites learning
-    // nothing, because the guest said "nobody ever asked me anything" and the host side, which
-    // knew precisely why it had stopped asking, was never given the chance to say so.
+    // **The suite's verdict is collected, not returned early**: the probers' reports matter most
+    // on exactly the run where a guest-side assertion failed, and an early return would skip them.
     let mut child_ok = false;
     // Sampled here, in the loop that already exists, because the number worth having is the one
     // from *while the leg ran*: a suite takes minutes and the one-minute average has decayed by the
@@ -560,8 +493,6 @@ fn scanout_check(arch: &str, test_args: &[&str], inbound_wanted: bool) -> bool {
         );
     }
     let scanout = referee.report();
-    // There were three until 2026-09-15, when milestone 298 retired the multicast DNS responder
-    // and the multicast prober that checked its answers (notes/mdns.md).
     let inbound = prober.is_none_or(|prober| prober.report());
     let (lines, exited) = watch.finish();
     let image = test_args

@@ -1,14 +1,12 @@
 //! **The regenerate-and-compare gate** (milestone 142 (a text display good enough that people use
 //! it instead of a GUI) increment 3).
 //!
-//! Neither `skrifa` nor `ab_glyph_rasterizer` documents its output as stable, and the
-//! rasteriser's raw output has already moved in a patch release. Two investigations measured it
-//! bit-identical across aarch64 and x86_64 hosts, which is a property of its code that nothing
-//! upstream defends. This test turns that assumption into a check: on every host that runs
-//! `cargo xtask test`, the tables the terminal ships are exactly what the pinned pair makes from
-//! the vendored fonts. A pin bump, a font swap or a host whose float arithmetic disagrees fails
-//! here, naming the glyph and the pixel, instead of moving a pixel on a screen whose checker would
-//! then fail somewhere far less legible.
+//! Neither `skrifa` nor `ab_glyph_rasterizer` documents its output as stable, and the rasteriser's
+//! raw output has moved in a patch release; two investigations measured it bit-identical across
+//! aarch64 and x86_64 hosts, which nothing upstream defends. So on every host that runs `cargo
+//! xtask test` the shipped tables must be exactly what the pinned pair makes from the vendored
+//! fonts. A pin bump, a font swap or a disagreeing host fails here, naming the glyph and pixel,
+//! rather than as a moved pixel that a screen checker reports far less legibly.
 
 #[test]
 fn the_checked_in_atlas_is_what_the_generator_makes() {

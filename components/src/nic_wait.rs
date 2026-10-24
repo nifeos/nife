@@ -11,29 +11,6 @@ use socket_contract::polled_wait;
 
 use super::*;
 
-/// **Wait for the NIC to need attention again, without stalling smoltcp's timers or the caller's
-/// bound.**
-///
-/// The obvious loop, "block on the NIC interrupt, service on each wakeup," has a hole that SMP timing
-/// on riscv exposed and that a lone core hid: smoltcp drives TCP retransmits, delayed ACKs, and DNS
-/// timeouts from *its* clock, advanced only when we call `poll`. If we block on the interrupt alone
-/// and the exchange is waiting on one of those timers (a segment we must retransmit because its ACK
-/// was dropped), no RX interrupt is coming (the peer is waiting for that retransmit), so the block
-/// never returns and the whole pipeline deadlocks with every core idle. aarch64 happened never to
-/// drop a segment and so never hit it; riscv under the SMP scatter did. See notes/net/the-outbound-gates.md.
-///
-/// So the wait ends at the earliest of a frame, smoltcp's next timer and `deadline_ms` (the
-/// caller's bound, on `instant`'s clock). It blocks on the interrupt alone only when neither a timer
-/// nor a deadline exists.
-///
-/// **The deadline is what makes `service_until`'s 15 s bound a bound** (2026-10-13 UTC). A listener
-/// with nobody connecting, or a connection whose peer has gone silent, leaves smoltcp no timer, and
-/// before this the wait blocked until a frame that might never come. The inbound prober holding a
-/// connection to nobody (milestone 514 (the HVF std listener hangs in some full runs)) sends
-/// nothing, so the std listener's `ACCEPT` never expired, its retries never ran, and the CPU
-/// matrix's 2026-10-12 red was a 60 s "lost-wakeup" watchdog rather than a failed accept. A
-/// filtered run of the hand-written listener test, which starts no prober, hung the same way every
-/// time. `an_accept_nobody_answers_ends_at_the_stacks_bound` (riscv and aarch64) holds it.
 /// When a polled NIC last handed `net_stack` a frame, on the counter. One server thread reads and
 /// writes it; an atomic only because a `static` must be `Sync`.
 static LAST_FRAME: AtomicU64 = AtomicU64::new(0);
@@ -44,6 +21,16 @@ pub(super) fn frame_taken() {
     LAST_FRAME.store(now(), Ordering::Relaxed);
 }
 
+/// **Wait for the NIC to need attention again, without stalling smoltcp's timers or the caller's
+/// bound.**
+///
+/// The wait ends at the earliest of a frame, smoltcp's next timer and `deadline_ms` (the caller's
+/// bound, on `instant`'s clock), and blocks on the interrupt alone only when neither exists. On the
+/// interrupt alone, an exchange waiting on one of smoltcp's own timers (a retransmit whose ACK was
+/// dropped) deadlocks, because no frame is coming; without the deadline, a listener nobody connects
+/// to never lets `service_until`'s 15 s bound expire. A polled NIC sleeps at most
+/// `e1000e_transport::POLL_MS` instead. See notes/net/the-outbound-gates.md, "The wait ends at the
+/// caller's deadline".
 pub(super) fn wait_for_nic(
     iface: &mut Interface,
     dev: &mut Nic,
@@ -69,11 +56,8 @@ pub(super) fn wait_for_nic(
         dev.ack_irq();
         return;
     };
-    // Wait for a frame **or** that deadline, whichever comes first (milestone 106 (a wait that ends
-    // on either the interrupt or the deadline)). The notification in `WAKE` is bound to this
-    // thread, so `Irq::WAIT` ends on either and the hart is idle in between. Until 2026-09-26 this
-    // yielded and re-polled instead, spinning a hart through every retransmit backoff
-    // (`notes/timed-wait.md`, section 5).
+    // Wait for a frame **or** that deadline, whichever comes first: the notification in `WAKE` is
+    // bound to this thread, so `Irq::WAIT` ends on either and the hart is idle in between.
     let micros = delay.total_micros();
     let ticks = abi::timer::counter_ticks_for(
         micros / 1_000_000,

@@ -1,8 +1,6 @@
 //! **The block layer beneath RedoxFS**: whole-block transfers ([`BlockIo`], [`BlockDisk`]) and the
 //! single-block read cache ([`CachedDisk`]); [`crate::Server`] reaches it only through
-//! [`redoxfs::Disk`]. Moved from `lib.rs` unchanged by milestone 846 (the file-server core moves
-//! its tests out), as calef ruled on 2026-10-11 (UTC) in §275 (the file server core's tests move
-//! into child modules by topic). The module name is provisional.
+//! [`redoxfs::Disk`]. See notes/fs-server/caches-and-io.md. The module name is provisional.
 
 use alloc::vec::Vec;
 
@@ -12,49 +10,35 @@ use syscall::error::Result;
 /// One filesystem block, in bytes (RedoxFS's `BLOCK_SIZE`): the unit [`BlockIo`] transfers.
 pub const BLOCK: usize = 4096;
 
-/// **How many blocks [`CachedDisk`] holds in the EL0 server**, here rather than in the binary so a
-/// host test measures the cache the device runs.
-///
-/// 256 blocks, 1 MiB at most, allocated as they fill. Milestone 138 (close the read gap) chose 64
-/// for one open file's
-/// five-block tree spine. Milestone 606 (a directory walk costs what it does on Linux) measured a
-/// walk (`examples/walk_replay.rs`, the walk
-/// fixture): after a namespace change forgets the memo (`memo.rs`), the next walk went to the device 372
-/// times at 64 slots, 212 at 128, 71 at 192 and 2 at 256, because the tree's metadata working set
-/// is 207 blocks. A larger tree wants more; this is the smallest size that holds the one we price.
+/// How many blocks [`CachedDisk`] holds in the EL0 server, here rather than in the binary so a
+/// host test measures the cache the device runs. 256 blocks, 1 MiB at most, allocated as they
+/// fill: the smallest size that holds the walk fixture's 207-block metadata working set
+/// (milestone 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`). A
+/// larger tree wants more. See notes/fs-server/caches-and-io.md.
 pub const CACHE_SLOTS: usize = 256;
 
-/// **The one place in this tree that sees both the wire protocol and the store**, which is what
-/// makes the two assertions below possible at all: `filesystem_contract` deliberately depends on nothing, and
-/// the vendored engine has never heard of it. Milestone 138 wrote them because it moved the record
-/// level, and `filesystem_fixture::throughput::RECORD`'s own comment named itself the soft spot a
-/// change like that would break silently.
-///
-/// They are `const` assertions rather than tests so that they fire in the EL0 build too, where no
-/// test harness runs. A build is the only artifact that can be wrong about this.
+/// The wire-to-store assertions, here because this is the one place in the tree that sees both
+/// `filesystem_contract` and the store. `const` rather than tests, so they fire in the EL0 build
+/// too, where no test harness runs. See notes/fs-server/caches-and-io.md.
 const _: () = {
-    // `BLOCK` is the transfer unit for a store whose block size is `BLOCK_SIZE`. If they ever
-    // disagree, every chunked read and write in this file is off by a factor.
+    // `BLOCK` is the transfer unit for a store whose block size is `BLOCK_SIZE`; if they disagree,
+    // every chunked read and write in this file is off by a factor.
     assert!(BLOCK as u64 == redoxfs::BLOCK_SIZE);
 
-    // The record-aligned throughput phase reads at multiples of `RECORD`, and that means what it
-    // claims only while every such multiple is also a record boundary. See that constant's comment.
+    // The record-aligned throughput phase reads at multiples of `RECORD`, which means what it
+    // claims only while each multiple is a record boundary. See that constant's comment.
     assert!(
         filesystem_fixture::throughput::RECORD
             .is_multiple_of(redoxfs::BLOCK_SIZE << redoxfs::RECORD_LEVEL)
     );
 
-    // A file this build creates must be readable by this build. The creation level and the ceiling
-    // the two `BlockTrait::empty` guards enforce are separate constants since milestone 138, and
-    // this is what stops them being separated in the wrong direction.
+    // A file this build creates must be readable by this build: the creation level may not pass
+    // the ceiling the two `BlockTrait::empty` guards enforce, a separate constant.
     assert!(redoxfs::RECORD_LEVEL <= redoxfs::RECORD_LEVEL_MAX);
 
-    // **The file channel is a whole number of blocks** (milestone 138 step 3). A `READ` or `WRITE`
-    // now carries up to `fs::TRANSFER_MAX` bytes straight into the shared region, and RedoxFS reads
-    // and writes it a record at a time from there; a channel that ended part way through a block
-    // would make the last chunk of every full-channel request a partial one, which is the shape the
-    // repeat-write bug had. Nothing else in the tree can check this: `filesystem_contract` has never heard of
-    // the store and the store has never heard of `filesystem_contract`.
+    // The file channel is a whole number of blocks (milestone 138 (close the read gap) step 3): a
+    // channel ending part way through a block would make the last chunk of every full-channel
+    // request partial, the repeat-write bug's shape.
     assert!(filesystem_contract::fs::TRANSFER_MAX.is_multiple_of(BLOCK));
     assert!(filesystem_contract::fs::TRANSFER_MAX >= BLOCK);
 };
@@ -112,20 +96,11 @@ impl<T: BlockIo> Disk for BlockDisk<T> {
     }
 }
 
-/// **A direct-mapped, write-through cache of single-block reads** (milestone 138 step 2). Every
-/// slot holds at most one `(block number, block bytes)` pair, chosen by `block % capacity`; a
-/// collision simply evicts, which is safe because a miss just falls through to the disk.
-///
-/// **Why this and not an LRU.** An LRU would hit more often at the same slot count, at the cost of
-/// bookkeeping (a recency list, a pointer to update on every hit) this cache does not need to be
-/// correct: [`BlockCache::get`] and [`BlockCache::insert`] are each one array index and one
-/// comparison. The fewer-moving-parts option wins while it costs nothing measurable: at
-/// [`CACHE_SLOTS`] the walk fixture's whole metadata working set (207 blocks) stays resident.
-///
-/// **A slot's 4 KiB is allocated the first time something lands in it** (milestone 606). The cache
-/// is sized for the ordinary server's 8 MiB heap, and the crash test's servers run on 2 MiB and
-/// touch a few dozen blocks; allocating on use lets one constant serve both, because what a server
-/// pays is what it touched, never more than `capacity` blocks.
+/// A direct-mapped, write-through cache of single-block reads (milestone 138 step 2). Each slot
+/// holds at most one `(block number, block bytes)` pair, chosen by `block % capacity`; a collision
+/// evicts, which is safe because a miss falls through to the disk. A slot's 4 KiB is allocated the
+/// first time something lands in it, so a server pays only for what it touched.
+/// Why not an LRU, and the heap sizes, are in notes/fs-server/caches-and-io.md.
 struct BlockCache {
     slots: Vec<Option<alloc::boxed::Box<Slot>>>,
 }
@@ -183,34 +158,22 @@ impl BlockCache {
     }
 }
 
-/// **Whether `block` is one [`CachedDisk`] keeps** (milestone 606): everything but the header ring.
-///
-/// The ring's 256 blocks are read once, all of them, when the image is mounted, and after that
-/// only written, one per commit. Caching them bought nothing and cost the whole cache: at mount
-/// they filled every slot they mapped to, and a 256-slot cache on a 2 MiB crash-test server would
-/// have spent half its heap on blocks nobody reads again. RedoxFS puts the ring at the start of
-/// the filesystem, and this server opens images whose filesystem starts at block 0
-/// (`FileSystem::open(disk, None, ..)`), so the ring is blocks `0..HEADER_RING`.
+/// Whether `block` is one [`CachedDisk`] keeps (milestone 606): everything but the header ring,
+/// which is read once at mount and then only written. This server opens images whose filesystem
+/// starts at block 0 (`FileSystem::open(disk, None, ..)`), so the ring is blocks
+/// `0..HEADER_RING`. See notes/fs-server/caches-and-io.md.
 fn cacheable(block: u64) -> bool {
     block >= redoxfs::HEADER_RING
 }
 
-/// **A [`Disk`] wrapping another, caching single-block reads** (milestone 138 step 2).
-/// `Transaction::read_tree_and_addr`'s four-level tree walk plus the target node is five
-/// single-block reads on every `Server::read`/`write`/`fstat` call, even for the node the last call
-/// resolved (notes/benchmarks/read-path-block-contract-and-metadata-cache.md).
+/// A [`Disk`] wrapping another, caching single-block reads (milestone 138 step 2): the five
+/// single-block reads of `Transaction::read_tree_and_addr`'s tree walk on every
+/// `Server::read`/`write`/`fstat` (notes/benchmarks/read-path-block-contract-and-metadata-cache.md).
 ///
-/// **Only a `buffer.len() == BLOCK` read consults the cache.** A multi-block record body is read
-/// once per access, so caching it would spend this process's small heap for little repetition; the
-/// cache stays proportional to the metadata working set.
-///
-/// **A write updates the cache only after the inner write succeeded**, so the cache never holds
-/// bytes a failed write did not land. A short final chunk is a read-modify-write below this type
-/// whose merged result it never sees, so that block's slot is invalidated instead.
-///
-/// **Safe against RedoxFS's copy-on-write allocator without a generation counter**: RedoxFS never
-/// rewrites a live block in place, so a cached address goes stale only by being **written**, and
-/// this type's [`Disk::write_at`] is the only path a write reaches the platter through.
+/// Only a `buffer.len() == BLOCK` read consults the cache. A write updates it only after the inner
+/// write succeeded, and a short final chunk invalidates its slot. No generation counter is needed:
+/// RedoxFS never rewrites a live block in place, and this type's [`Disk::write_at`] is the only
+/// path a write reaches the platter through. See notes/fs-server/caches-and-io.md.
 pub struct CachedDisk<D> {
     inner: D,
     cache: BlockCache,
@@ -248,17 +211,16 @@ impl<D: Disk> Disk for CachedDisk<D> {
             }
             return Ok(n);
         }
-        // A record body or larger: already batched by step 4, and not this cache's target. See the
-        // type's own doc for why caching it would cost more than it is worth.
+        // A record body or larger: already batched by step 4, and not this cache's target.
+        // SAFETY: forwarded from this method's own caller, on a buffer of the same shape.
         unsafe { self.inner.read_at(block, buffer) }
     }
 
     unsafe fn write_at(&mut self, block: u64, buffer: &[u8]) -> Result<usize> {
         // SAFETY: forwarded from this method's own caller, on a buffer of the same shape.
         let n = unsafe { self.inner.write_at(block, buffer)? };
-        // Only the bytes the inner disk confirmed writing are cached; a short count from a
-        // hypothetical partial write must not be papered over with an entry that claims more
-        // landed than did.
+        // Only the bytes the inner disk confirmed writing are cached, so a short count cannot be
+        // papered over with an entry claiming more landed than did.
         let mut off = 0;
         let mut b = block;
         while off < n {

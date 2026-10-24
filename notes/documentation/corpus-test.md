@@ -31,3 +31,18 @@ closed: the rest of the page would render as quoted code. Verbatim output loses 
 subsequence check is blind to it. A unit test is the guard (`a_fence_inside_a_block_quote_closes`).
 The lesson generalizes. A subsequence check proves nothing was dropped and nothing about what was
 ruined, so a renderer wants both kinds of test.
+
+## Why it runs wide, and natively only
+
+The test renders at a terminal 4,000 columns wide. A real terminal truncates a table cell to its
+column, and that is a layout choice the `BUGS` section records, not lost text. At 1,000 columns the
+widest table in this repository still shrinks, so the width was measured rather than picked.
+
+It is ignored under Miri. Its subject is a corpus on disk, 547 markdown files and 7.2 MB, and
+reading it under the interpreter needs `-Zmiri-env-forward=CARGO_MANIFEST_DIR` and
+`-Zmiri-disable-isolation` for the whole workspace run. Measured 2026-09-03 (UTC), it took 0.74
+seconds natively and was still running after 12 minutes under Miri. Miri would find little here.
+The crate has no `unsafe` of its own, and `pulldown-cmark` is fuzzed upstream. The unit tests in
+the same file cover every construct on in-memory input and do run under Miri. That is the
+`cfg(miri)` sampling convention of notes/undefined-behavior.md taken to its limit: the unit tests
+are the sample, and the corpus stays native.

@@ -16,10 +16,10 @@ this record names the `Ia32e` harness only.
 diff --git a/crates/paging/src/x86_64.rs b/crates/paging/src/x86_64.rs
 --- a/crates/paging/src/x86_64.rs
 +++ b/crates/paging/src/x86_64.rs
-@@ -141,7 +141,7 @@ impl PageFormat for Ia32e {
+@@ -133,7 +133,7 @@
      fn table_entry(pa: u64, _level: usize) -> u64 {
          // Maximally permissive, because x86 ANDs the levels together and the leaf must be able to
-         // grant anything. See this module's header for what that trades away.
+         // grant anything. See notes/paging.md for what that trades away.
 -        (pa & ADDR_MASK) | P | RW | US
 +        (pa & ADDR_MASK) | P | RW | US | PS
      }

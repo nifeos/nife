@@ -146,6 +146,19 @@ This is the irreversible list, the part a ruling fixes:
 - whether the environment rides in the same block, as Fuchsia and Genode do, or stays on the
   validated page of §111 (inert configuration is a read-only page).
 
+## The page as built
+
+`crates/program_argument_contract` is that layout, built. Its rules beyond the table:
+
+- Records are length-prefixed, not NUL-terminated, so an argument may hold any byte, including NUL
+  and the `0xff` a regex can carry.
+- `argv[0]` is present. The builder does not insist, because an empty argv is a representable thing
+  to hand a program, and the shell always pushes the name it ran.
+- Everything past the records is unspecified. A reader never looks there, so a page reused for a
+  shorter line needs no clearing.
+- One page holds 4,080 bytes of records, the four-byte prefixes included. A line that does not fit is
+  refused at assembly and never truncated.
+
 ## Prior art, read from source
 
 - Fuchsia, `zircon/system/public/zircon/processargs.h`. The bootstrap message carries `args_off`

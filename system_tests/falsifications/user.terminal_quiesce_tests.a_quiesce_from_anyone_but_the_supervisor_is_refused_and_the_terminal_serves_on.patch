@@ -1,0 +1,27 @@
+Falsifies `system_tests::user::terminal_quiesce_tests::a_quiesce_from_anyone_but_the_supervisor_is_refused_and_the_terminal_serves_on`.
+
+Architecture: aarch64
+
+The patch adds `OPERATION_QUIESCE` to the unbadged allowlist in `line_editor::proto::admits`, so
+it is served again on the unbadged copy the shell, `login`, the input driver and the spawner hold.
+A supervised `line_editor` then honors a stranger's quiesce: it hands the parked reader back `FLAG_RETRY`,
+answers `QUIESCED` and stops on its control endpoint, where only the supervisor speaks.
+
+Expected to fail: `assert_eq!` "an unbadged holder quiesced a supervised terminal (reply
+0x51554954)", with `left: 1364543828` (`proto::QUIESCED`). Replayed red at exactly that
+assertion on aarch64 on 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only. The
+same patch turns the host test `line_editor::proto::tests::only_the_supervisor_badge_admits_a_quiesce`
+red.
+
+diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
+index 44da33940..30cfa6407 100644
+--- a/crates/line_editor/src/proto.rs
++++ b/crates/line_editor/src/proto.rs
+@@ -200,6 +200,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+                 | OPERATION_PRINT
+                 | OPERATION_RAWMODE
+                 | OPERATION_READRAW
++                | OPERATION_QUIESCE
+         ),
+         RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
+         STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,

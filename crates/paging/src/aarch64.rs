@@ -1,4 +1,5 @@
-//! The aarch64 page-table format: four levels, 4 KiB pages, 48-bit virtual addresses.
+//! The aarch64 format: four levels, 4 KiB pages, 48-bit virtual addresses. The descriptor is full
+//! of traps; the constants below carry the ones that bite. See notes/page-tables.md.
 //!
 //! ```text
 //!  47      39 38      30 29      21 20      12 11         0
@@ -7,10 +8,6 @@
 //! │  9 bits  │  9 bits  │  9 bits  │  9 bits  │  12 bits   │
 //! └──────────┴──────────┴──────────┴──────────┴────────────┘
 //! ```
-//!
-//! The descriptor format is compact and full of traps. The constants below carry the ones that
-//! actually bite. [`Aarch64`] implements [`PageFormat`] by translating the
-//! crate's portable [`Flags`] to and from these bits.
 
 use crate::{
     CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, Flags, PageFormat,
@@ -279,8 +276,8 @@ mod tests {
         }
     }
 
-    /// **A write-combining request is encoded as plain device memory here** (the console-scroll
-    /// lane, 2026-10-04): correct, because device memory is the stricter of the two, and slower.
+    /// **A write-combining request is encoded as plain device memory here**: correct, because
+    /// device memory is the stricter of the two, and slower.
     /// Nothing on this architecture maps a device aperture as a screen yet; when something does,
     /// this is the test that says the request is being ignored.
     #[test]

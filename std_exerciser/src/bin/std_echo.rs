@@ -1,14 +1,9 @@
 //! **`std_echo`: a `std` program that prints the words it was run with, and nothing else**
 //! (milestone 205 (how a foreign program is told what to do)). It is the smallest `std` program
-//! that carries a manifest note saying it hears words, which is what an installed foreign program
-//! run by path is: `std_exerciser` is too big to travel as an image (256 KiB,
-//! `spawnproto::IMAGE_MAX_PAGES`), and `ripgrep` is ten times that.
-//!
-//! `script/swish-check` copies it to the disk unvouched and runs it by path, so the line proves
-//! three things at once: the shell read the note and sent the argv, the progenitor sized a `std`
-//! region from the argv bit and built the `std` layout for an image, and `std::env::args_os()`
-//! read the page. It prints one line, `words [...]`, in `{:?}` form so a byte that is not text is
-//! still visible.
+//! whose manifest note says it hears words; `std_exerciser` is too big to travel as an image (256
+//! KiB, `spawnproto::IMAGE_MAX_PAGES`). `script/swish-check` runs it unvouched by path, so its one
+//! line, `words [...]` in `{:?}` form, proves the shell sent the argv, the progenitor built the
+//! `std` layout for an image, and `std::env::args_os()` read the page. See notes/std/the-proof.md.
 //!
 //! Name: provisional (2026-09-27).
 

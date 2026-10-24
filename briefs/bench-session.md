@@ -28,7 +28,7 @@ every later boot from calef's hands into a command.**
   and four direct-write resets came back through `U-Boot SPL` on 2026-10-10. `reboot` at the prompt
   (milestone 805 (`reboot` at the prompt)) is not proven, because no radon boot has reached the prompt. So today a watched
   reset needs `script/board-image --soak --reboot`; any other image needs a power cycle per boot.
-  Nothing on patagonia can reach radon's outlet (milestone 224 (nothing can power-cycle radon, so a
+  Nothing a lane runs can reach radon's outlet (milestone 224 (nothing can power-cycle radon, so a
   hung soak needs a person)).
 - xenon. The first step is one kernel-initiated reset, the `script/soak-test --reboot` path (pull request #1279, not yet on `main` when this was written),
   watched to a full boot. The firmware is set to halt at POST on warnings, so a reset that lands on
@@ -167,8 +167,8 @@ same image under QEMU (step 2) before anyone writes "silicon-only".
   until calef is next at the desk.
 - The plug state is invisible to a lane. Nothing reports whether radon's outlet is on, so an empty
   log cannot tell a board that is off from one that died before its UART came up.
-- The TFTP address is read off patagonia at card-write time. The card written on 2026-09-16
-  asks for the address patagonia's USB ethernet adapter had then. Its Wi-Fi address has moved
+- The TFTP address is read off the serving Mac at card-write time. The card written on 2026-09-16
+  asks for the address that Mac's USB ethernet adapter had then. Its Wi-Fi address has moved
   since, and the boot survives only while the adapter has a link and its address. When the adapter
   has no link the board prints `nothing came over the network, falling back to the card`, and the
   ways back are the adapter's link, a `setenv` typed at U-Boot, or a rewritten card.

@@ -1,9 +1,7 @@
 //! **The edits std's own source takes**: the size hint and the `target_os = "nife"` dispatch arms.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -229,25 +227,12 @@ const DISPATCH_ARMS: &[SysEdit] = &[
         "cfg_select! {",
         "    target_os = \"nife\" => {\n        #[allow(dead_code)]\n        mod unsupported;\n        mod nife;\n        mod imp {\n            pub use super::nife::getpid;\n            pub use super::unsupported::{\n                ChildPipe, Command, CommandArgs, EnvKey, ExitCode, ExitStatus, ExitStatusError,\n                Process, Stdio, output, read_output,\n            };\n        }\n    }",
     ),
-    // **exit: `std::process::exit` was a trap instruction** (milestone 64, fourth pass).
-    //
-    // `sys/exit.rs` is not a `sys/<module>/mod.rs` backend dispatcher; it is one file whose
-    // `cfg_select!` sits *inside* `pub fn exit`, and its `_ =>` arm is
-    // `crate::intrinsics::abort()`. So a nife program calling `std::process::exit(0)` compiled
-    // perfectly and then executed `brk`, which the kernel reports as `EVENT_FAULT` with a pc
-    // and an address: a clean exit arriving at its supervisor as a crash, and a fault report on
-    // the console for a program that did nothing wrong.
-    //
-    // Nothing noticed because the normal path never goes through here. `sys/pal/nife/mod.rs`'s
-    // `_start` calls `rt::exit` on `main`'s return value directly, and `std::process::exit` is
-    // the *only* caller of `sys::exit::exit` in the whole of std. The two ways a Rust program
-    // ends took different exits, and only one of them was wired.
-    //
-    // The arm is what `_start` already does, which is why this needs no new decision: the same
-    // `SYS_EXIT` with the same code. The kernel discards the code (`sched::exit` is
-    // `depart(EVENT_EXIT, 0, 0)`), which is a real limitation recorded in notes/std.md rather
-    // than something this arm can fix; what it fixes is exit-versus-fault, which is observable
-    // today and which `a_whole_std_program_runs_on_the_native_abi` now asserts.
+    // exit (milestone 64 (enough `std` to run somebody else's crate)): `sys/exit.rs` is not a
+    // `sys/<module>/mod.rs` dispatcher; its `cfg_select!` sits inside `pub fn exit`, and the `_ =>`
+    // arm is `crate::intrinsics::abort()`, which the kernel reports as a fault. This arm does what
+    // `_start` already does on `main`'s return, the same `SYS_EXIT` with the same code (which the
+    // kernel discards). `a_whole_std_program_runs_on_the_native_abi` asserts exit, not fault. See
+    // notes/std/caveats.md.
     SysEdit::After(
         "exit.rs",
         "pub fn exit(code: i32) -> ! {\n    cfg_select! {",

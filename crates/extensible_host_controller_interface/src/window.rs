@@ -25,18 +25,10 @@ pub enum WindowRefusal {
 /// **Which pages of the register file a confined driver is mapped**, as a mask (bit `n` is the
 /// page at byte `n * 4096`), or why none can be.
 ///
-/// Every page of the BAR up to [`MAX_REGISTER_PAGES`] is mapped **except** any page that overlaps
-/// a `withheld` byte range. The kernel passes the MSI-X table and pending-bit array there, so the
-/// rule a reader can check is one sentence: *the driver holds every register page of its
-/// controller except the page its interrupt message is programmed through.* With interrupt
-/// remapping off (every x86 boot here, DECISIONS §86 (whether an NVMe driver can leave the kernel)'s interrupt finding), a process that could
-/// write an MSI-X entry could make the device deliver any vector it liked, and no IOMMU would stop
-/// it, because an interrupt message is not a DMA the IOMMU translates.
-///
-/// Then the pages the driver **needs** are checked against the mask: the capability and
-/// operational registers through the last port's status register, interrupter 0's registers, and
-/// the doorbells for every slot. A needed page that is withheld or out of reach is a refusal,
-/// because a driver started without one of those would fault on its first access to it.
+/// Every page of the BAR up to [`MAX_REGISTER_PAGES`] is mapped except any page that overlaps a
+/// `withheld` byte range, where the kernel passes the MSI-X table and pending-bit array. A page the
+/// driver needs ([`Capabilities`]' registers through the last `PORTSC`, interrupter 0, every
+/// doorbell) that is withheld or out of reach is refused. See notes/usb.md, "The register window".
 ///
 /// # Examples
 ///

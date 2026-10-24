@@ -106,7 +106,7 @@ An action, so a verb. It starts one reviewer and records what actually ran.
 Where a harness cannot resume a session or report its model (a cloud runner the launcher does not
 start), the launcher has no way to start it, rather than recording a guess.
 
-The prompt's runner text is the launch brief's Mac section (its `### GLM 5.3 on patagonia`
+The prompt's runner text is the launch brief's Mac section (its `### GLM 5.3 on a Mac`
 heredoc), word for word with its values filled and its commit trailer set to the reviewer's (calef,
 2026-10-14 UTC: use the runner text already on main, unchanged). The launcher refuses if that text
 changes shape, and its selftest assembles both reviewers' prompts from the real briefs and fails on

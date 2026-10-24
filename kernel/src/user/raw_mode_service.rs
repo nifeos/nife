@@ -27,7 +27,7 @@ pub struct Wiring {
     pub app_in_phys: u64,
     /// `line_editor`'s control endpoint, when [`start_replaceable`] built it with one: the test
     /// plays the supervisor and `SEND`s `CTL_RESUME` or `CTL_QUIT` here after an `OPERATION_QUIESCE`.
-    /// `None` from [`start`], which wires `line_editor` exactly as every boot does today.
+    /// `None` from [`start`], which wires `line_editor` with no supervisor.
     pub control: Option<RendezvousId>,
 }
 

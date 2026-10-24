@@ -4,8 +4,10 @@
 //! `OPERATION_READRAW` is answered `FLAG_RETRY` before the terminal stops receiving, because the
 //! reply capability that names the reader cannot leave `line_editor`'s capability table.
 //!
-//! The test plays the supervisor, the input driver and the reader on `raw_mode_service`'s harness,
-//! and proves the incumbent's half of a swap: the reader is handed back, the half-typed line
+//! The test plays the supervisor as well as the input driver and the reader, on the harness
+//! `raw_mode_service` already provides. As the supervisor it quiesces through a copy badged
+//! `proto::SUPERVISOR_BADGE`; as anyone else, through the unbadged copy every client holds. What it
+//! proves is the incumbent's half of a swap: the reader is handed back, the half-typed line
 //! survives a resume, and the resumed read repaints nothing. The replacement's half needs the
 //! handoff page count first (`design/roadmap/0659-a-region-retypes-a-frame-run.md`).
 
@@ -16,6 +18,15 @@ use super::*;
 use crate::sched;
 
 const SENTINEL: u8 = 0xaa;
+
+/// `OPERATION_QUIESCE` as the supervisor sends it, through its badged copy.
+fn quiesce_as_supervisor(term: sched::RendezvousId) -> [u64; 3] {
+    sched::ipc_call_badged(
+        term,
+        [proto::req(proto::OPERATION_QUIESCE, 0), 0],
+        proto::SUPERVISOR_BADGE,
+    )
+}
 
 fn bytes_call(term: sched::RendezvousId, bytes: &[u8]) {
     let mut w1 = 0u64;
@@ -50,16 +61,16 @@ fn fill(phys: u64, bytes: &[u8]) {
     }
 }
 
-/// **A terminal nobody can resume refuses to quiesce.** Every boot builds its terminal this way
-/// today, so the new opcode must change nothing there: honouring it would be a dead terminal.
+/// **A terminal nobody can resume refuses to quiesce**, even from the supervisor's badge:
+/// honoring it would be a dead terminal.
 #[test_case]
 fn a_terminal_with_no_control_endpoint_refuses_to_quiesce() {
     let (w, held) = svc::start();
-    let r = sched::ipc_call(w.term, [proto::req(proto::OPERATION_QUIESCE, 0), 0]);
+    let r = quiesce_as_supervisor(w.term);
     assert_eq!(
         r[0],
         proto::BAD_REQUEST,
-        "an unsupervised terminal honoured OPERATION_QUIESCE"
+        "an unsupervised terminal honored OPERATION_QUIESCE"
     );
     bytes_call(w.term, b"ok\r");
     let r = sched::ipc_call(w.term, [proto::req(proto::OPERATION_READLINE, 0), 0]);
@@ -68,6 +79,78 @@ fn a_terminal_with_no_control_endpoint_refuses_to_quiesce() {
         "the terminal stopped serving after refusing a quiesce"
     );
     held.release_or_fail("raw_mode_service");
+}
+
+/// **A terminal that can be quiesced takes the quiesce from its supervisor and from nobody
+/// else** (§232 (the `line_editor` swap contract): "only a supervisor sends it"). The input
+/// driver, the shell, `login` and the spawner all hold the unbadged copy this test calls through
+/// first. Honored, that quiesce would stop the terminal on its control endpoint, where only the
+/// supervisor speaks, and a supervisor that did not ask never says `CTL_RESUME`: the boot console
+/// would be dead until reboot. So it is refused, the terminal goes on serving a parked reader
+/// across it, and the supervisor's badged copy still quiesces it, and carries nothing else.
+///
+/// Falsification: replayable `system_tests/falsifications/user.terminal_quiesce_tests.a_quiesce_from_anyone_but_the_supervisor_is_refused_and_the_terminal_serves_on.patch`
+#[test_case]
+fn a_quiesce_from_anyone_but_the_supervisor_is_refused_and_the_terminal_serves_on() {
+    let (w, held) = svc::start_replaceable();
+    let control = w
+        .control
+        .expect("start_replaceable grants a control endpoint");
+
+    let endpoints = crate::memory_region::create(1).expect("no endpoint region");
+    let report = sched::create_rendezvous_from(endpoints).expect("no report rendezvous");
+    let term = w.term;
+    sched::spawn(move || {
+        let r = sched::ipc_call(term, [proto::req(proto::OPERATION_READLINE, 0), 0]);
+        sched::ipc_send(report, [r[0], r[1], 0]);
+    })
+    .expect("could not spawn the reader");
+    settle();
+    bytes_call(w.term, b"ec");
+
+    let q = sched::ipc_call(w.term, [proto::req(proto::OPERATION_QUIESCE, 0), 0]);
+    assert_eq!(
+        q[0],
+        proto::BAD_REQUEST,
+        "an unbadged holder quiesced a supervised terminal (reply {:#x}): any client could stop \
+         the boot console until a CTL_RESUME nobody sends",
+        q[0],
+    );
+
+    // Still serving, and the parked read was neither handed back nor lost: the line finishes.
+    bytes_call(w.term, b"ho\r");
+    let done = sched::ipc_receive(report);
+    assert_eq!(
+        (done[0], done[1]),
+        (4, 0),
+        "the read parked across a refused quiesce did not come back as the line"
+    );
+    let got: [u8; 4] = core::array::from_fn(|i| page_byte(w.app_in_phys, i as u64));
+    assert_eq!(
+        &got, b"echo",
+        "the line typed across the refused quiesce came back wrong"
+    );
+
+    // The supervisor's copy is a quiesce and nothing more: it cannot type into the terminal.
+    let typed = sched::ipc_call_badged(
+        w.term,
+        [proto::req(proto::OPERATION_BYTES, 1), u64::from(b'x')],
+        proto::SUPERVISOR_BADGE,
+    );
+    assert_eq!(
+        typed[0],
+        proto::BAD_REQUEST,
+        "the supervisor's badged copy was served OPERATION_BYTES"
+    );
+
+    assert_eq!(
+        quiesce_as_supervisor(w.term)[0],
+        proto::QUIESCED,
+        "the supervisor's own quiesce was refused"
+    );
+    sched::ipc_send(control, [proto::CTL_QUIT, 0, 0]);
+    held.release_or_fail("raw_mode_service");
+    sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
 /// **A parked line read is handed back, and the line resumes where it was.** The reader sees
@@ -97,7 +180,7 @@ fn a_parked_line_read_is_handed_back_and_resumes_where_it_was() {
     settle();
     bytes_call(w.term, b"ec");
 
-    let q = sched::ipc_call(w.term, [proto::req(proto::OPERATION_QUIESCE, 0), 0]);
+    let q = quiesce_as_supervisor(w.term);
     assert_eq!(q[0], proto::QUIESCED, "the quiesce was not acknowledged");
     let first = sched::ipc_receive(report);
     assert!(
@@ -152,7 +235,7 @@ fn a_parked_raw_read_is_handed_back_and_the_terminal_can_be_retired() {
     .expect("could not spawn the raw reader");
     settle();
 
-    let q = sched::ipc_call(w.term, [proto::req(proto::OPERATION_QUIESCE, 0), 0]);
+    let q = quiesce_as_supervisor(w.term);
     assert_eq!(q[0], proto::QUIESCED);
     let got = sched::ipc_receive(report);
     assert_eq!(

@@ -2,26 +2,28 @@
 //! program), 2026-10-07 (UTC)). Name: provisional, `cargo xtask foreign-note`.
 //!
 //! A program run by its path is endowed from the manifest note in its own bytes (milestone 597 (a
-//! program carries its manifest in an ELF note), DECISIONS §197 (a package is one archive file) option M2). An in-tree program
-//! carries one with `capability_manifest_note::carry!`. `ripgrep` is unmodified source from crates.io, so it
-//! cannot, and with no note the shell runs it as a native program that hears no words, which a `std`
-//! program cannot survive. This writes the note as a relocatable object of its own, which
-//! basalt's package build passes to the link (`-Clink-arg=<object>`). The shared link script
-//! keeps every `.note.nife.*` input section in the `PT_NOTE`, so the note lands where the readers
-//! look and the program's source stays untouched. #1319 measured this route first.
+//! program carries its manifest in an ELF note), DECISIONS §197 (a package is one archive file)
+//! option M2). `ripgrep` is unmodified crates.io source, so it cannot carry one with
+//! `capability_manifest_note::carry!`, and with no note the shell runs it as a native program that
+//! hears no words, which a `std` program cannot survive. This writes the note as a relocatable
+//! object for basalt's package build to link (`-Clink-arg=<object>`); the shared link script keeps
+//! every `.note.nife.*` section in the `PT_NOTE`. #1319 measured this route.
+
+//! # The manifest
 //!
-//! The manifest is [`grant_plan::UNVOUCHED_STD_MANIFEST`], and only that: a `std` program that hears
-//! its line and reads what its words name, read-only. That is what an unvouched program is endowed
-//! with whatever it declares, so declaring more would only be refused (`ImageRefusal::ExceedsVouch`).
-//! Declaring exactly the vouch is also what `std_grep`'s note does.
+//! It is [`grant_plan::UNVOUCHED_STD_MANIFEST`], and only that: a `std` program that hears its line
+//! and reads what its words name, read-only. An unvouched program is endowed with that whatever it
+//! declares, so declaring more would only be refused (`ImageRefusal::ExceedsVouch`). Declaring
+//! exactly the vouch is also what `std_grep`'s note does.
+
+//! # Why `rustc` and not hand-written ELF
 //!
-//! **Why `rustc` and not hand-written ELF.** The object is a `#![no_std]` crate with one static,
-//! compiled for the bare-metal target of the same ISA, whose `core` the pinned toolchain already
-//! ships (`rust-toolchain.toml`'s `targets`). That leaves the object's header, and on riscv64 its
-//! float-ABI flags, to the compiler that knows them. `riscv64imac-unknown-none-elf` is `lp64` with
-//! `C`, as `targets/riscv64-unknown-nife.json` is, so `lld` accepts the mix. The bytes themselves
-//! come from `capability_manifest_note::Note::of`, the same function `carry!` expands to, so there is one
-//! encoder.
+//! The object is a `#![no_std]` crate with one static, compiled for the bare-metal target of the
+//! same ISA, whose `core` the pinned toolchain already ships (`rust-toolchain.toml`'s `targets`).
+//! That leaves the object's header, and on riscv64 its float-ABI flags, to the compiler that knows
+//! them. `riscv64imac-unknown-none-elf` is `lp64` with `C`, as `targets/riscv64-unknown-nife.json`
+//! is, so `lld` accepts the mix. The bytes come from `capability_manifest_note::Note::of`, the same
+//! function `carry!` expands to, so there is one encoder.
 
 use std::path::Path;
 

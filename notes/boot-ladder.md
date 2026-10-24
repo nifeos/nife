@@ -106,6 +106,23 @@ is a machine you cannot fix.
 That is exactly why the verdict has to be read by something other than a person, and why a check
 that prints `FAILED:` anywhere but the verdict would go unread.
 
+## One list of checks, for every architecture
+
+`boot_ladder::SELF_TEST_CHECKS` is the self-test's set. Before it, the set was a compile-time fact
+inside `kernel/src/self_test.rs`. An architecture that ran a different set, or a smaller one with
+the count adjusted to match, still printed *N of N passed* and read as green. Measured on 2026-09-14
+(UTC): `x86_64` with `scheduler` cut and the count set to four printed
+`nife self-test: 4 of 4 passed`, and `boot-check` passed it. So the kernel's verdict now counts
+against the list, and changing the set is an edit to that one list.
+
+## The screen hold
+
+`boot_ladder::SCREEN_HELD` exists because the alternative was sampling. The window between the
+kernel painting its tour and the handover clearing it closes in guest time, so no host-side
+deadline widens it. On 2026-09-20 (UTC) a loaded `script/test` run caught zero rows where the same
+leg run alone caught 56. Holding the screen until the host answers on the serial line means the
+screendump is taken while the tour is still on the framebuffer.
+
 ## EXAMPLES
 
 Boot all three, require a green verdict, and require each one to reach a `swish` prompt (a `local`

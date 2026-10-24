@@ -85,17 +85,12 @@ fn the_shuffle_that_failed_ci_reads_again() {
     ));
 }
 
-/// **The one that matters: a shuffle too severe to read is not a failure.**
-///
-/// Two attempts at hardening a matcher were each defeated by a shuffle worse than the fixture
-/// they were tested against, so this stops betting on the matcher. What passes this transcript
-/// is not a cleverer match: it is that neither sentence is readable AND the kernel was
-/// demonstrably writing during the boot, which is the only condition under which a line can go
-/// missing without the progenitor having gone quiet.
-///
-/// Synthetic, and said so: no CI run has produced a shuffle this bad, and the point is that
-/// nothing rules one out. Every character of the marker is present and in order, spread through
-/// far more foreign text than one fault report accounts for.
+/// **The one that matters: a shuffle too severe to read is not a failure.** What passes is not
+/// a cleverer match: neither sentence is readable AND the kernel was demonstrably writing during
+/// the boot, the only condition under which a line can go missing without the progenitor going
+/// quiet. Synthetic, and said so: no CI run has produced a shuffle this bad, and nothing rules one
+/// out. Every character of the marker is present and in order, spread through far more foreign
+/// text than one fault report accounts for.
 #[test]
 fn a_shuffle_too_severe_to_read_is_reported_rather_than_failed() {
     let mut shredded = String::from("  user thread 17 killed: scause 0x3 (code 3)\n");
